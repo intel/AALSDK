@@ -526,6 +526,7 @@ setup() {
    local    copy
 
    local    usehash=false
+   local -i files=0
 
    if [ -d "${gitdir}" ] && [ -f "${gitdir}/config" ]; then
       usehash=true
@@ -534,12 +535,24 @@ setup() {
       usehash=true
    fi
 
+   if ! ${usehash} ; then
+      gitdir="${srcdir}/../.git"
+      if [ -d "${gitdir}" ] && [ -f "${gitdir}/config" ]; then
+         usehash=true
+         gitdir="`cd "${gitdir}" && pwd`"
+      elif [ -f "${gitdir}" ]; then
+         # .git is a file when inside a submodule.
+         usehash=true
+         gitdir="`cd "${gitdir%/*}" && pwd`/.git"
+      fi
+   fi
+
    if ${usehash} ; then
       # use abbreviated commit hash
       tmp="`${GIT} --git-dir=${gitdir} log -1 --format='%h'`"
       val="${val}/${tmp}"
    else
-      #printf ".git not found at ${srcdir}\n"
+      #printf ".git not found\n"
       val="${val}/unknown"
    fi
 
@@ -551,6 +564,15 @@ setup() {
    fi
 
    [ -d "${val}" ] || cmd ${MKDIR} -p "${val}"
+
+   # Make sure git submodule aaluser/doc is populated.
+   for x in `${FIND} "${srcdir}/doc" -type f` ; do
+      let $(( ++files ))
+   done
+   if ${usehash} && [ 0 -eq ${files} ]; then
+      cmd ${GIT} --git-dir="${gitdir}" submodule init
+      cmd ${GIT} --git-dir="${gitdir}" submodule update --merge "aaluser/doc"
+   fi
 
    return 0
 }

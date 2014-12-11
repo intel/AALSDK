@@ -203,7 +203,8 @@ AC_DEFUN([AALSDK_PROG_GIT], [
    _aal_git_commit_id=unknown
    AS_IF([test "x${GIT}" = x], [AC_PATH_PROG([GIT], [git])])
    AS_IF([test "x${GIT}" = x],       [],
-         [test -e "${srcdir}/.git"], [_aal_git_commit_id="`${GIT} --git-dir="${srcdir}/.git" log -1 --format='%H%d'`"])
+         [test -e "${srcdir}/.git"],    [_aal_git_commit_id="`${GIT} --git-dir="${srcdir}/.git" log -1 --format='%H%d'`"],
+         [test -e "${srcdir}/../.git"], [_aal_git_commit_id="`${GIT} --git-dir="${srcdir}/../.git" log -1 --format='%H%d'`"])
    AC_CACHE_VAL([ac_cv_aal_git_commit_id], [ac_cv_aal_git_commit_id="${_aal_git_commit_id}"])
    AC_DEFINE_UNQUOTED(GIT_COMMIT_ID, "${ac_cv_aal_git_commit_id}", [git commit id.])
    AC_SUBST([GIT_COMMIT_ID], [${ac_cv_aal_git_commit_id}])

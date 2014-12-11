@@ -13,18 +13,20 @@ declare -r CP="`which cp`" 2>/dev/null
 [ "x${CP}" = x ] && exit 21
 declare -r FIND="`which find`" 2>/dev/null
 [ "x${FIND}" = x ] && exit 22
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = x ] && exit 23
 declare -r MAKE="`which make`" 2>/dev/null
-[ "x${MAKE}" = x ] && exit 23
+[ "x${MAKE}" = x ] && exit 24
 declare -r MKDIR="`which mkdir`" 2>/dev/null
-[ "x${MKDIR}" = x ] && exit 24
+[ "x${MKDIR}" = x ] && exit 25
 declare -r MKTEMP="`which mktemp`" 2>/dev/null
-[ "x${MKTEMP}" = x ] && exit 25
+[ "x${MKTEMP}" = x ] && exit 26
 declare -r MV="`which mv`" 2>/dev/null
-[ "x${MV}" = x ] && exit 26
+[ "x${MV}" = x ] && exit 27
 declare -r RM="`which rm`" 2>/dev/null
-[ "x${RM}" = x ] && exit 27
+[ "x${RM}" = x ] && exit 28
 declare -r TAR="`which tar`" 2>/dev/null
-[ "x${TAR}" = x ] && exit 28
+[ "x${TAR}" = x ] && exit 29
 
 set -e
 
@@ -79,7 +81,24 @@ create_kernel_dist() {
    done
 }
 
+# Make sure that git submodule aaluser/doc is populated.
+pre_create_user_dist() {
+   local -i files=0
+
+   for x in `${FIND} ${PWD}/aaluser/doc -type f` ; do
+      let $(( ++files ))
+   done
+
+   if [ 0 -eq ${files} ]; then
+      # Load the submodule
+      ${GIT} --git-dir="${PWD}/.git" submodule init
+      ${GIT} --git-dir="${PWD}/.git" submodule update aaluser/doc
+   fi
+}
+
 create_user_dist() {
+   pre_create_user_dist   
+
    local -r d="${PWD}/aaluser"
    local -r regex='aalsdk-[[:digit:]]+[.][[:digit:]]+[.][[:digit:]]+'
    local    x
