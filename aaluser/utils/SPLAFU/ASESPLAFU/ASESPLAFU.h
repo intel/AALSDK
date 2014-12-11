@@ -1,0 +1,131 @@
+// Copyright (c) 2014, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+/// @file ASESPLAFU.h
+/// @brief Definitions for ASE SPL AFU Service.
+/// @ingroup ASESPLAFU
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+///
+///    This application is for example purposes only.
+///    It is not intended to represent a model for developing commercially-deployable applications.
+///    It is designed to show working examples of the AAL programming model and APIs.
+///
+/// AUTHORS: Tim Whisonant, Intel Corporation
+///          Joseph Grecco, Intel Corporation
+///          
+///
+/// HISTORY:
+/// WHEN:          WHO:     WHAT:
+/// 07/31/2014     TSW      Initial version.@endverbatim
+//****************************************************************************
+#ifndef __ASESPLAFU_H__
+#define __ASESPLAFU_H__
+#include <aalsdk/aas/AALService.h>
+#include <aalsdk/ase/ase_common.h>
+#include <aalsdk/service/ISPLAFU.h>
+#include <aalsdk/service/SPLAFUService.h>
+#include <aalsdk/service/ASESPLAFUService.h>
+
+BEGIN_NAMESPACE(AAL)
+
+/// @addtogroup ASESPLAFU
+/// @{
+
+/// @brief This is the Delegate of the Strategy pattern used by SPLAFU to interact with the
+/// AFU Simulation Environment.
+///
+/// ASESPLAFU is selected by passing the Named Value pair (SPLAFU_NVS_KEY_TARGET, SPLAFU_NVS_VAL_TARGET_ASE)
+/// in the arguments to IRuntime::allocService when requesting an SPLAFU.
+class ASESPLAFU_API ASESPLAFU : public AAL::AAS::ServiceBase,
+                                public ISPLAFU
+{
+public:
+   // <ServiceBase>
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASESPLAFU, AAL::AAS::ServiceBase),
+      m_Last3c4(0xffffffff),
+      m_Last3cc(0xffffffff)
+   {
+      SetInterface(        iidSPLAFU,    dynamic_cast<ISPLAFU *>(this));
+      SetSubClassInterface(iidASESPLAFU, dynamic_cast<ISPLAFU *>(this));
+   }
+
+   virtual void init(TransactionID const &TranID);
+
+   virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
+   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
+   // </ServiceBase>
+
+   // <ISPLAFU>
+   virtual void WorkspaceAllocate(btWSSize             Length,
+                                  TransactionID const &TranID);
+
+   virtual void     WorkspaceFree(btVirtAddr           Address,
+                                  TransactionID const &TranID);
+
+   virtual btBool         CSRRead(btCSROffset CSR,
+                                  btCSRValue *pValue);
+
+   virtual btBool        CSRWrite(btCSROffset CSR,
+                                  btCSRValue  Value);
+   virtual btBool      CSRWrite64(btCSROffset CSR,
+                                  bt64bitCSR  Value);
+
+   virtual void StartTransactionContext(TransactionID const &TranID,
+                                        btVirtAddr           Address=NULL,
+                                        btTime               Pollrate=0);
+
+   virtual void StopTransactionContext(TransactionID const &TranID);
+
+   virtual void SetContextWorkspace(TransactionID const &TranID,
+                                    btVirtAddr           Address,
+                                    btTime               Pollrate=0);
+   // </ISPLAFU>
+
+protected:
+   typedef std::map<btVirtAddr, buffer_t> map_t;
+   typedef map_t::iterator                map_iter;
+   typedef map_t::const_iterator          const_map_iter;
+
+   btCSRValue             m_Last3c4;
+   btCSRValue             m_Last3cc;
+   map_t                  m_WkspcMap;
+
+   struct buffer_t *m_dsm;
+   struct buffer_t *m_spl_pt;
+   struct buffer_t *m_spl_cxt;
+
+   uint64_t *m_AFUCntxt_vbase;
+
+   static CriticalSection sm_ASEMtx;
+};
+
+/// @} group ASESPLAFU
+
+END_NAMESPACE(AAL)
+
+#endif // __ASESPLAFU_H__
+

@@ -1,0 +1,9 @@
+ACTION=="remove", GOTO="aalsdk_end"
+
+KERNEL=="aalrms*",      MODE="0666"
+KERNEL=="aalresmgr*",   MODE="0666"
+KERNEL=="aalui*",       MODE="0666"
+
+KERNEL=="fapdiag*",     MODE="0666"
+
+LABEL="aalsdk_end"

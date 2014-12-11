@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\aalsdk">
+      <UniqueIdentifier>{7622990c-69a1-4dcd-a5db-43ea61dd321d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\aalsdk\osal">
+      <UniqueIdentifier>{3fb31eb1-aa01-4bf6-a840-06d96b2ea4d9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\CriticalSection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DynLinkLibrary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OSLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OSSemaphore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OSServiceModule.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Sleep.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThreadGroup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\CriticalSection.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\DynLinkLibrary.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\IDispatchable.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\OSSemaphore.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\OSServiceModule.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\Sleep.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\Thread.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\ThreadGroup.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\aalsdk\osal\Timer.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

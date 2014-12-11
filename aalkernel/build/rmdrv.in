@@ -1,0 +1,161 @@
+#!/bin/bash
+##****************************************************************************
+## Part of the  Intel(R)  QuickAssist Technology Accelerator Abstraction Layer
+##
+## This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
+##       redistributing this file, you may do so under either license.
+##
+##                             GPL LICENSE SUMMARY
+##
+##       Copyright (c) 2007-2014 Intel Corporation. All rights reserved.
+##
+## This program is free software;  you can  redistribute it  and/or modify  it
+## under  the  terms  and  conditions  of  the  GNU  General  Public  License,
+## version 2, as published by the Free Software Foundation.
+##
+## This program  is distributed  in the  hope it  will be useful,  but WITHOUT
+## ANY WARRANTY;  without  even  the implied  warranty  of  MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE.  See the  GNU General Public License  for
+## more details.
+##
+## The full GNU General Public License is included in this distribution in the
+## file called README.GPLV2-LICENSE.TXT.
+##
+## Contact Information:
+## Henry Mitchel, henry.mitchel at intel.com
+## 77 Reed Rd., Hudson, MA  01749
+##
+##                                 BSD LICENSE
+##
+##       Copyright (c) 2007-2014 Intel Corporation. All rights reserved.
+##
+## Redistribution  and  use  in source  and  binary  forms,  with  or  without
+## modification, are permitted provided that the following conditions are met:
+##
+##   * Redistributions of  source code must retain the  above copyright notice
+##     this list of conditions and the following disclaimer.
+##   * Redistributions in  binary  form  must  reproduce  the  above copyright
+##     notice,  this list of  conditions and  the following disclaimer  in the
+##     documentation and/or other materials provided with the distribution.
+##   * Neither the name of Intel Corporation nor the names of its contributors
+##     may be used  to endorse or promote  products derived from this software
+##     without specific prior written permission.
+##
+## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+## AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT LIMITED TO, THE
+## IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+## ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+## LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+## CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED TO,  PROCUREMENT  OF
+## SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,  DATA,  OR PROFITS;  OR BUSINESS
+## INTERRUPTION)  HOWEVER  CAUSED  AND ON ANY THEORY OF LIABILITY,  WHETHER IN
+## CONTRACT,  STRICT  LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)
+## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+## POSSIBILITY OF SUCH DAMAGE.
+##****************************************************************************
+
+shopt -o -s nounset
+
+declare -r GREP="`which grep`" 2>/dev/null
+if [ "x${GREP}" = "x" ]; then
+   printf "no grep?\n"
+   exit 1
+fi
+declare -r LSMOD="`which lsmod`" 2>/dev/null
+if [ "x${LSMOD}" = "x" ]; then
+   printf "no lsmod?\n"
+   exit 1
+fi
+declare -r RMMOD='/sbin/rmmod'
+
+
+declare -i errors=0
+error() {
+   local -r msg="$1"
+   printf "%s\n" "${msg}"
+   let $(( ++errors ))
+}
+
+declare -a  DEV_FILES=()
+declare -ri MAX_DEV_RETRIES=20
+
+on_exit() {
+   local -i i
+   if [ ${errors} -eq 0 ]; then
+      if [ ${#DEV_FILES[@]} -gt 0 ]; then
+         for devfile in ${DEV_FILES[@]} ; do
+            # Wait for the device file to disappear, up to a predefined timeout.
+
+            i=0
+            while [ $i -lt ${MAX_DEV_RETRIES} ]; do
+
+               if [ ! -c "${devfile}" ]; then
+                  break
+               fi
+
+               sleep 1
+               let $(( ++i ))
+
+               printf "."
+            done
+
+            if [ $i -ge ${MAX_DEV_RETRIES} ]; then
+               error "char device still present : ${devfile}"
+            fi
+         done
+      fi
+   elif [ ${EUID} -ne 0 ]; then
+      printf "Got root?\n"
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit -2
+}
+trap 'on_sigint' SIGINT
+
+# $1 : driver module file.
+# $2 : device file or '_none_' if none.
+# $3 : driver description.
+rm_drv() {
+   local -r module="$1"
+   local -r drv="${module%%.ko}"
+   local -r devfile="$2"
+   local -r descr="$3"
+
+   if ${LSMOD} | ${GREP} -q "^${drv}" ; then
+
+      printf "rmmod  %-15s " "${drv}"
+
+      if ${RMMOD} "${drv}" ; then
+         printf "[ OK ]\n"
+      else
+         error "[FAIL] rmmod ${module} (${descr})"
+         return 1
+      fi
+
+   fi
+
+   if [ "${devfile}" != "_none_" ]; then
+      if [ ${#DEV_FILES[@]} -eq 0 ]; then
+         DEV_FILES=("${devfile}")
+      else
+         DEV_FILES=("${DEV_FILES[@]}" "${devfile}")
+      fi
+   fi
+
+   return 0
+}
+
+
+rm_drv '@SPL2PIP_DRV_NAME@.ko'  '_none_'         'AAL System Protocol Layer 2 driver'
+rm_drv '@AALUIDRV_DRV_NAME@.ko' '/dev/aalui'     'AAL Universal Interface driver'
+rm_drv '@AALRMC_DRV_NAME@.ko'   '/dev/aalresmgr' 'AAL Resource Manager Client driver'
+rm_drv '@AALRMS_DRV_NAME@.ko'   '/dev/aalrms'    'AAL Resource Manager Server driver'
+rm_drv '@AALBUS_DRV_NAME@.ko'   '_none_'         'AAL Bus driver'
+rm_drv 'fapdiag.ko'             '/dev/fapdiag'   'FPGA Diagnostics driver'
+
+exit ${errors}
+

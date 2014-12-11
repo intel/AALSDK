@@ -1,0 +1,15 @@
+install direct     /sbin/modprobe --ignore-install   fapdiag qpi_aperture_phys=0x88080000
+install direct-nhm /sbin/modprobe --ignore-install   fapdiag qpi_aperture_phys=0x88080000
+install direct-jkt /sbin/modprobe --ignore-install   fapdiag qpi_aperture_phys=0xc8080000
+install direct-nul /sbin/modprobe --ignore-install   fapdiag qpi_aperture_phys=0x0
+remove  direct     /sbin/modprobe -r --ignore-remove fapdiag
+
+install spl /sbin/modprobe @AALBUS_DRV_NAME@ && /sbin/modprobe @AALRMS_DRV_NAME@ && /sbin/modprobe @AALRMC_DRV_NAME@ && /sbin/modprobe @AALUIDRV_DRV_NAME@ && /sbin/modprobe --ignore-install @SPL2PIP_DRV_NAME@
+remove  spl /sbin/modprobe -r --ignore-remove @SPL2PIP_DRV_NAME@ && /sbin/modprobe -r @AALUIDRV_DRV_NAME@ && /sbin/modprobe -r @AALRMC_DRV_NAME@ && /sbin/modprobe -r @AALRMS_DRV_NAME@ && /sbin/modprobe -r @AALBUS_DRV_NAME@
+
+install spl-nhm /sbin/modprobe @AALBUS_DRV_NAME@ && /sbin/modprobe @AALRMS_DRV_NAME@ && /sbin/modprobe @AALRMC_DRV_NAME@ && /sbin/modprobe @AALUIDRV_DRV_NAME@ && /sbin/modprobe --ignore-install @SPL2PIP_DRV_NAME@ nopcie=2
+remove  spl-nhm /sbin/modprobe -r --ignore-remove @SPL2PIP_DRV_NAME@ && /sbin/modprobe -r @AALUIDRV_DRV_NAME@ && /sbin/modprobe -r @AALRMC_DRV_NAME@ && /sbin/modprobe -r @AALRMS_DRV_NAME@ && /sbin/modprobe -r @AALBUS_DRV_NAME@
+
+install spl-jkt /sbin/modprobe @AALBUS_DRV_NAME@ && /sbin/modprobe @AALRMS_DRV_NAME@ && /sbin/modprobe @AALRMC_DRV_NAME@ && /sbin/modprobe @AALUIDRV_DRV_NAME@ && /sbin/modprobe --ignore-install @SPL2PIP_DRV_NAME@ nopcie=3
+remove  spl-jkt /sbin/modprobe -r --ignore-remove @SPL2PIP_DRV_NAME@ && /sbin/modprobe -r @AALUIDRV_DRV_NAME@ && /sbin/modprobe -r @AALRMC_DRV_NAME@ && /sbin/modprobe -r @AALRMS_DRV_NAME@ && /sbin/modprobe -r @AALBUS_DRV_NAME@
+

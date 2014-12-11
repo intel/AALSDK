@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{cea310e7-61bb-4079-826f-758f86a7606b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{60a1af60-d4f8-4a3d-a1b8-2f52952524d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\kosal">
+      <UniqueIdentifier>{b7c463d9-99b8-472d-bac0-98b3fcd164d4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="instdrv.bat" />
+    <None Include="rmdrv.bat" />
+    <None Include="ntsd.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\aal_pcie.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\kOSAL\kOSAL.c">
+      <Filter>Source Files\kosal</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="AAL_PCIe.inf" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\aal_pcie.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\aal_pciedriver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

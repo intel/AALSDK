@@ -1,0 +1,10 @@
+9 7 AFUName
+	9 13 Sample_AFUPkg
+9 9 DependsOn
+	9 7 NullPIP
+9 10 Executable
+	9 19 libSample_AFUPkg.so
+9 12 __RecordName
+	9 21 AFU_For_Sample_AFUPkg
+9 20 ---- End of NVS ----
+	9999 

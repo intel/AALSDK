@@ -1,0 +1,4 @@
+2014-10-08  Tim Whisonant  <tim.whisonant@intel.com>
+
+* all: Initial Autotools build for external distribution (4.1.0).
+

@@ -1,0 +1,1 @@
+devcon install .\AAL_PCIe.inf root\AAL
