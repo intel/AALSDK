@@ -1,0 +1,148 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='create-dist'
+
+declare -r SAMPLES_VERSION='4.2.0'
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" = x ] && exit 20
+declare -r CP="`which cp`" 2>/dev/null
+[ "x${CP}" = x ] && exit 21
+declare -r FIND="`which find`" 2>/dev/null
+[ "x${FIND}" = x ] && exit 22
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = x ] && exit 23
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = x ] && exit 24
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" = x ] && exit 25
+declare -r MV="`which mv`" 2>/dev/null
+[ "x${MV}" = x ] && exit 26
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = x ] && exit 27
+declare -r TAR="`which tar`" 2>/dev/null
+[ "x${TAR}" = x ] && exit 28
+
+set -e
+
+declare KERNEL_VPATH=''
+declare USER_VPATH=''
+declare SAMPLES_TMPDIR=''
+
+on_exit() {
+   local -r remove=true
+   if ${remove} ; then
+      [ -d "${KERNEL_VPATH}" ] && ${RM} -rf "${KERNEL_VPATH}"
+      [ -d "${USER_VPATH}" ] && ${RM} -rf "${USER_VPATH}"
+      [ -d "${SAMPLES_TMPDIR}" ] && ${RM} -rf "${SAMPLES_TMPDIR}"
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+create_kernel_dist() {
+   local -r d="${PWD}/aalkernel"
+   local -r regex='aalkernel-[[:digit:]]+[.][[:digit:]]+[.][[:digit:]]+'
+   local    x
+   local    tmp
+   local    renamed
+
+   pushd "$d" >/dev/null 2>&1
+   ${AUTORECONF} -vi
+   popd >/dev/null 2>&1
+
+   KERNEL_VPATH="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.k.XXXXXXXXXX"`"
+   pushd "${KERNEL_VPATH}" >/dev/null 2>&1
+
+   $d/configure
+   ${MAKE}
+   ${MAKE} DESTDIR="${KERNEL_VPATH}/DESTDIR" distcheck
+
+   popd >/dev/null 2>&1
+
+   for x in `${FIND} "${KERNEL_VPATH}" -maxdepth 1 -type f` ; do
+      tmp="$x"
+      if [[ ${tmp} =~ ${regex} ]]; then
+         renamed="${x##*/}"
+         renamed="${renamed/.tar.gz/.Dual-BSD-GPLv2-License.tar.gz}"
+         ${MV} "$x" "./${renamed}"
+         break
+      fi
+   done
+}
+
+create_user_dist() {
+   local -r d="${PWD}/aaluser"
+   local -r regex='aalsdk-[[:digit:]]+[.][[:digit:]]+[.][[:digit:]]+'
+   local    x
+   local    tmp
+   local    renamed
+
+   pushd "$d" >/dev/null 2>&1
+   ${AUTORECONF} -vi
+   popd >/dev/null 2>&1
+
+   USER_VPATH="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.u.XXXXXXXXXX"`"
+   pushd "${USER_VPATH}" >/dev/null 2>&1
+
+   $d/configure
+   ${MAKE}
+   ${MAKE} DESTDIR="${USER_VPATH}/DESTDIR" distcheck
+
+   popd >/dev/null 2>&1
+
+   for x in `${FIND} "${USER_VPATH}" -maxdepth 1 -type f` ; do
+      tmp="$x"
+      if [[ ${tmp} =~ ${regex} ]]; then
+         renamed="${x##*/}"
+         renamed="${renamed/.tar.gz/.BSD-License.tar.gz}"
+         ${MV} "$x" "./${renamed}"
+         break
+      fi
+   done
+}
+
+create_samples_dist() {
+   local -r d="${PWD}/aalsamples"
+
+   SAMPLES_TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.s.XXXXXXXXXX"`"
+
+   ${MKDIR} -p "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+
+   for x in `${FIND} "$d" -maxdepth 1 -type d` ; do
+      [ "x${x##*/}" = "x.git" ] && continue
+      [ "x$x" = "x$d" ] && continue
+      ${CP} -R "$x" "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+   done
+
+   for x in `${FIND} "$d" -maxdepth 1 -type f` ; do
+      [ "x${x##*/}" = "x.git" ] && continue
+      ${CP} "$x" "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+   done
+
+   ${FIND} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}" -type f \( -iname "*.vcxproj" -o -iname "*.vcxproj.filters" \) -delete
+
+   pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
+   ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" "aalsamples-${SAMPLES_VERSION}"
+   popd >/dev/null 2>&1
+
+   ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" .
+}
+
+main() {
+   create_kernel_dist
+   create_user_dist
+   create_samples_dist
+   [ -f "./Readme.MultiPackage.txt" ] || ${CP} "${PWD}/aaluser/doc/Readme.MultiPackage.txt" .
+}
+main
+
+exit 0
