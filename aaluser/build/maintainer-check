@@ -570,8 +570,10 @@ setup() {
       let $(( ++files ))
    done
    if ${usehash} && [ 0 -eq ${files} ]; then
-      cmd ${GIT} --git-dir="${gitdir}" submodule init
-      cmd ${GIT} --git-dir="${gitdir}" submodule update --merge "aaluser/doc"
+      pushd "${gitdir%/*}" >/dev/null 2>&1
+      cmd ${GIT} submodule init
+      cmd_as_coproc ${GIT} submodule update --merge "aaluser/doc"
+      popd >/dev/null 2>&1
    fi
 
    return 0
