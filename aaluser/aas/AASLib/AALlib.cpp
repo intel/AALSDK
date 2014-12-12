@@ -327,23 +327,11 @@ AAS_END_MOD()
 /// @defgroup aalclp AAL Command Line Parser
 /// @brief Generic Linux Command Line Parser library.
 
-/// @defgroup faplib (Deprecated) FPGA Diagnostics Interface Library
-/// @brief faplib is an application library which abstracts the ioctl() interface of the fapdiag device driver.
-/// @deprecated Replaced by proper AALSDK CCI driver support.
-
-/// @defgroup SampleAFUs AALSDK Sample AFUs
-/// @brief Sample AALSDK Accelerator Function Units.
-
-   /// @defgroup sample_afu1 Sample AFU 1
-   /// @ingroup SampleAFUs
-   /// @brief ISampleAFUPing and related interfaces.
-
-   /// @defgroup sample_afu2 Sample AFU 2
-   /// @ingroup SampleAFUs
-   /// @brief ISampleAFU2Producer, ISampleAFU2Consumer, and related interfaces.
+/// @defgroup UtilityAFUs AALSDK Utility AFUs
+/// @brief Utility AALSDK Accelerator Function Units.
 
    /// @defgroup CCIAFU CCIAFU - Generalized Implementation of ICCIAFU
-   /// @ingroup SampleAFUs
+   /// @ingroup UtilityAFUs
    /// @brief Facilitates @ref HWCCIAFU "Hardware", @ref ASECCIAFU "ASE", and @ref SWSimCCIAFU "Software-simulated CCI" access via ICCIAFU.
 
       /// @defgroup HWCCIAFU HWCCIAFU - FPGA Implementation of ICCIAFU
@@ -359,7 +347,7 @@ AAS_END_MOD()
       /// @brief Simulated CCI access via ICCIAFU.
 
    /// @defgroup SPLAFU SPLAFU - Generalized Implementation of ISPLAFU
-   /// @ingroup SampleAFUs
+   /// @ingroup UtilityAFUs
    /// @brief Facilitates @ref HWSPLAFU "Hardware", @ref ASESPLAFU "ASE", and @ref SWSimSPLAFU "Software-simulated SPL" access via ISPLAFU.
 
       /// @defgroup HWSPLAFU HWSPLAFU - FPGA Implementation of ISPLAFU
@@ -374,47 +362,6 @@ AAS_END_MOD()
       /// @ingroup SPLAFU 
       /// @brief Simulated SPL access via ISPLAFU.
 
-/// @defgroup Samples AALSDK Sample Applications
-/// @brief Applications illustrating various features, capabilities, and techniques of the AALSDK.
-
-   /// @defgroup XLSample1 AAL Sample 1
-   /// @ingroup Samples
-   /// @brief Illustrates the basic structure of an AAL program using the XL APIs.
-
-      /// @defgroup XLSyncSample1 Synchronous AAL Sample 1
-      /// @ingroup XLSample1
-      /// @brief Illustrates the basic structure of an AAL program using the XL APIs and CSyncClient.
-
-   /// @defgroup XLSample2 AAL Sample 2
-   /// @ingroup Samples
-   /// @brief Streaming AFU Producer/Consumer
-
-   /// @defgroup cciapp cciapp - AAL CCI Sample
-   /// @ingroup Samples
-   /// @brief Uses XL and ICCIAFU to interact with CCI.
-
-   /// @defgroup splapp splapp - AAL SPL Sample
-   /// @ingroup Samples
-   /// @brief Uses XL and ISPLAFU to interact with SPL.
-
-      /// @defgroup splapp2 splapp2 - Synchronous AAL SPL Sample
-      /// @ingroup splapp
-      /// @brief Uses XL, ISPLAFU, and CSyncClient to interact with SPL.
-
-      /// @defgroup splapp3 splapp3 - Synchronous AAL SPL Sample
-      /// @ingroup splapp
-      /// @brief Uses XL, ISPLAFU, and CSyncClient to interact with SPL.
-
-   /// @defgroup fapdemo (Deprecated) fapdemo
-   /// @ingroup Samples
-   /// @brief faplib sample application
-   /// @deprecated Replaced by cciapp.
-
-   /// @defgroup CCIDemo (Deprecated) CCI Demo
-   /// @ingroup Samples
-   /// @brief Sample application which utilizes CCILib.
-   /// @deprecated Replaced by cciapp.
-
 /// @defgroup UtilApps AALSDK Utility Applications
 /// @brief Applications that provide information about the current AALSDK installation.
 
@@ -426,37 +373,10 @@ AAS_END_MOD()
    /// @ingroup UtilApps
    /// @brief AALSDK Utility.
 
-/// @defgroup CCILib (Deprecated) Cache-Coherent Interface Library (CCILib)
-/// @deprecated Replaced by ICCIAFU class hierarchy.
-/// CCILib is an application library which abstracts CCI Device and Workspace
-/// implementation, enabling the same client code to execute transparently
-/// against different underlying implementations.
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main (outline) page /////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-/*
-  <li>@ref Debugging "Internal Debugging Facilities"</li>
-**  <li>@ref aalclp "AAL Command Line Parser"</li> **
-  <li>@ref faplib "(Deprecated) FPGA Diagnostics Interface Library"</li>
-  <li>@ref SampleAFUs "AALSDK Sample AFUs"</li>
-
-          <li>@ref AASUtils     "AAS Utilities"</li>
-**          <li>@ref EventUtils   "Event Utilities"</li> **
-          <li>@ref RMUtils      "Resource Manager Utilities"</li>
-          <li>@ref SingleAFUApp "ISingleAFUApp - XL application template"</li>
-          <li>@ref CSyncClient  "CSyncClient - synchronous XL application base class"</li>
-
-
-**              <li>@ref FactoryService "Factory Service"</li> **
-              <li>@ref EDS            "Event Delivery Service"</li>
-**              <li>@ref Registrar      "Registrar"</li> **
-**              <li>@ref ResMgr         "Resource Manager"</li> **
-**              <li>@ref uAIA           "Universal Accelerator Interface Adapter (UAIA)"</li> **
-
-*/
-
 /**
 @mainpage
 
@@ -498,11 +418,8 @@ AAS_END_MOD()
           <li>@ref CSyncClient  "CSyncClient - synchronous XL application base class"</li>
         </ul>
   <li>@ref Debugging "Internal Debugging Facilities"</li>
-  <li>@ref faplib "(Deprecated) FPGA Diagnostics Interface Library"</li>
-  <li>@ref SampleAFUs "AALSDK Sample AFUs"</li>
+  <li>@ref UtilityAFUs "AALSDK Utility AFUs"</li>
     <ul>
-      <li>@ref sample_afu1 "Sample AFU 1"</li>
-      <li>@ref sample_afu2 "Sample AFU 2"</li>
       <li>@ref CCIAFU      "CCIAFU"</li>
       <ul>
         <li>@ref HWCCIAFU     "HWCCIAFU"</li>
@@ -515,22 +432,6 @@ AAS_END_MOD()
         <li>@ref ASESPLAFU    "ASESPLAFU"</li>
         <li>@ref SWSimSPLAFU  "SWSimSPLAFU"</li>
       </ul>
-    </ul>
-  <li>@ref Samples "AALSDK Sample Applications"</li>
-    <ul>
-      <li>@ref XLSample1     "XLSample1 - AAL Sample 1"</li>
-      <ul>
-        <li>@ref XLSyncSample1  "XLSyncSample1 - Synchronous AAL Sample 1"</li>
-      </ul>
-      <li>@ref XLSample2     "XLSample2 - AAL Sample 2"</li>
-      <li>@ref cciapp        "cciapp - AAL XL CCI Sample"</li>
-      <li>@ref splapp        "splapp - AAL XL SPL Sample"</li>
-      <ul>
-        <li>@ref splapp2     "splapp2 - Synchronous XL SPL Sample"</li>
-        <li>@ref splapp3     "splapp3 - Synchronous XL SPL Sample"</li>
-      </ul>
-      <li>@ref fapdemo       "(Deprecated) fapdemo"</li>
-      <li>@ref CCIDemo       "(Deprecated) CCI Demo"</li>
     </ul>
   <li>@ref UtilApps "AALSDK Utility Applications"</li>
     <ul>

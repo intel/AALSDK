@@ -481,40 +481,6 @@ This application is for example purposes only.
 It is not intended to represent a model for developing commercially-deployable applications.
 It is designed to show working examples of the AAL programming model and APIs.@endverbatim
 
-This Sample demonstrates using CCILib to access the Native Loopback (NLB) VAFU.
-
-It is intended to be a simpler illustration of writing software that interfaces
-with the NLB VAFU than NLBTest, the latter of which is more suitable for hardware
-validation than for illustration purposes.
-
-The sample also illustrates the programming model differences between NLB 1.0 and NLB 1.1.
-
-1 Principles of Operation
-
-CCIDemo runs an NLB mode 0 (lpbk1) memcpy transfer for a buffer size of 1 cache line.
-
-2 Running the application
-
-2.1 Using the Direct Driver
-
-@code
-$ sudo /sbin/insmod fapdiag.ko qpi_aperture_phys=0xc8080000 # Jaketown -OR-
-$ sudo /sbin/insmod fapdiag.ko qpi_aperture_phys=0x88080000 # Nehalem
-$ sudo chmod 'a+rw' /dev/fapdiag
-$ CCIDemo --target=Direct@endcode
-
-2.2 Using ASE
-
-(xterm 0)
-@code
-$ cd AALSDK/ase
-$ make dpi CAFU=nlb
-$ make sim@endcode
-
-(xterm 1)
-@code
-$ CCIDemo --target=ASE@endcode
-
 @} group CCIDemo
 */
 

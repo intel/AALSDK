@@ -73,3 +73,11 @@ all clean:
 	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
 
 .PHONY:all clean
+
+doc docs: docclean
+	doxygen doc/Doxyfile
+
+docclean docsclean:
+	@$(RM) -rf doc/doxygen
+
+.PHONY:doc docs docclean docsclean

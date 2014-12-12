@@ -24,6 +24,208 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
+
+/// @defgroup SampleAFUs AALSDK Sample AFUs
+/// @brief Sample AALSDK Accelerator Function Units.
+
+   /// @defgroup sample_afu1 Sample AFU 1
+   /// @ingroup SampleAFUs
+   /// @brief ISampleAFUPing and related interfaces.
+
+   /// @defgroup sample_afu2 Sample AFU 2
+   /// @ingroup SampleAFUs
+   /// @brief ISampleAFU2Producer, ISampleAFU2Consumer, and related interfaces.
+
+/// @defgroup Samples AALSDK Sample Applications
+/// @brief Applications illustrating various features, capabilities, and techniques of the AALSDK.
+
+   /// @defgroup XLSample1 AAL Sample 1
+   /// @ingroup Samples
+   /// @brief Illustrates the basic structure of an AAL program using the XL APIs.
+
+      /// @defgroup XLSyncSample1 Synchronous AAL Sample 1
+      /// @ingroup XLSample1
+      /// @brief Illustrates the basic structure of an AAL program using the XL APIs and CSyncClient.
+
+   /// @defgroup XLSample2 AAL Sample 2
+   /// @ingroup Samples
+   /// @brief Streaming AFU Producer/Consumer
+
+   /// @defgroup cciapp cciapp - AAL CCI Sample
+   /// @ingroup Samples
+   /// @brief Uses XL and ICCIAFU to interact with CCI.
+
+   /// @defgroup splapp splapp - AAL SPL Sample
+   /// @ingroup Samples
+   /// @brief Uses XL and ISPLAFU to interact with SPL.
+
+      /// @defgroup splapp2 splapp2 - Synchronous AAL SPL Sample
+      /// @ingroup splapp
+      /// @brief Uses XL, ISPLAFU, and CSyncClient to interact with SPL.
+
+      /// @defgroup splapp3 splapp3 - Synchronous AAL SPL Sample
+      /// @ingroup splapp
+      /// @brief Uses XL, ISPLAFU, and CSyncClient to interact with SPL.
+
+   /// @defgroup CCIDemo (Deprecated) CCI Demo
+   /// @ingroup Samples
+   /// @brief Sample application which utilizes CCILib.
+   /// @deprecated Replaced by cciapp.
+
+/// @defgroup CCILib (Deprecated) Cache-Coherent Interface Library (CCILib)
+/// @deprecated Replaced by ICCIAFU class hierarchy.
+/// CCILib is an application library which abstracts CCI Device and Workspace
+/// implementation, enabling the same client code to execute transparently
+/// against different underlying implementations.
+
+/**
+@mainpage
+
+<ul>
+  <li>@ref SampleAFUs "AALSDK Sample Accelerator Function Units"</li>
+    <ul>
+      <li>@ref sample_afu1 "Sample AFU 1"</li>
+      <li>@ref sample_afu2 "Sample AFU 2"</li>
+    </ul>
+  <li>@ref Samples "AALSDK Sample Applications"</li>
+    <ul>
+      <li>@ref XLSample1     "XLSample1 - AAL Sample 1"</li>
+      <ul>
+        <li>@ref XLSyncSample1  "XLSyncSample1 - Synchronous AAL Sample 1"</li>
+      </ul>
+      <li>@ref XLSample2     "XLSample2 - AAL Sample 2"</li>
+      <li>@ref cciapp        "cciapp - AAL XL CCI Sample"</li>
+      <li>@ref splapp        "splapp - AAL XL SPL Sample"</li>
+      <ul>
+        <li>@ref splapp2     "splapp2 - Synchronous XL SPL Sample"</li>
+        <li>@ref splapp3     "splapp3 - Synchronous XL SPL Sample"</li>
+      </ul>
+      <li>@ref CCIDemo       "(Deprecated) CCI Demo"</li>
+    </ul>
+</ul>
+
+
+@verbatim
+   INFORMATION IN THIS DOCUMENT IS PROVIDED IN  CONNECTION  WITH  INTEL(R)
+   PRODUCTS. NO LICENSE, EXPRESS OR IMPLIED, BY ESTOPPEL OR  OTHERWISE, TO
+   ANY INTELLECTUAL PROPERTY RIGHTS IS GRANTED BY THIS DOCUMENT. EXCEPT AS
+   PROVIDED IN INTEL'S TERMS AND CONDITIONS OF  SALE  FOR  SUCH  PRODUCTS,
+   INTEL ASSUMES NO LIABILITY WHATSOEVER, AND  INTEL DISCLAIMS ANY EXPRESS
+   OR IMPLIED WARRANTY, RELATING TO  SALE AND/OR  USE  OF  INTEL  PRODUCTS
+   INCLUDING LIABILITY OR WARRANTIES  RELATING TO FITNESS FOR A PARTICULAR
+   PURPOSE, MERCHANTABILITY, OR INFRINGEMENT  OF  ANY PATENT, COPYRIGHT OR
+   OTHER INTELLECTUAL PROPERTY RIGHT.
+                            
+   UNLESS OTHERWISE AGREED IN WRITING BY INTEL, THE INTEL PRODUCTS ARE NOT
+   DESIGNED NOR INTENDED FOR ANY APPLICATION IN WHICH THE  FAILURE  OF THE
+   INTEL PRODUCT COULD CREATE A SITUATION WHERE PERSONAL INJURY  OR  DEATH
+   MAY OCCUR.
+                                        
+   Intel may make changes to specifications and  product  descriptions  at
+   any time, without notice.  Designers  must  not  rely on the absence or
+   characteristics of  any  features  or instructions marked "reserved" or
+   "undefined." Intel reserves these for  future definition and shall have
+   no responsibility whatsoever for conflicts or incompatibilities arising
+   from future changes to them. The information  here is subject to change
+   without notice. Do not finalize a design with this information.
+                                                             
+   The  products described  in this document may contain design defects or
+   errors known as errata which  may  cause  the  product  to deviate from
+   published specifications. Current characterized errata are available on
+   request.
+                                                                         
+   Contact your local Intel sales office or your distributor to obtain the
+   latest specifications and before placing your product order.
+                                                                               
+   Copies  of  documents  which have an order number and are referenced in
+   this document, or other Intel literature, may be obtained by calling 1-
+   800-548-4725, or by visiting Intel's Web Site, www.intel.com.@endverbatim
+
+
+@verbatim
+   The information in this manual is subject to change without notice and
+   Intel Corporation assumes no responsibility or liability for any
+   errors or inaccuracies that may appear in this document or any
+   software that may be provided in association with this document. This
+   document and the software described in it are furnished under license
+   and may only be used or copied in accordance with the terms of the
+   license. No license, express or implied, by estoppel or otherwise, to
+   any intellectual property rights is granted by this document. The
+   information in this document is provided in connection with Intel
+   products and should not be construed as a commitment by Intel
+   Corporation.
+   
+   EXCEPT AS PROVIDED IN INTEL'S TERMS AND CONDITIONS OF SALE FOR SUCH
+   PRODUCTS, INTEL ASSUMES NO LIABILITY WHATSOEVER, AND INTEL DISCLAIMS
+   ANY EXPRESS OR IMPLIED WARRANTY, RELATING TO SALE AND/OR USE OF INTEL
+   PRODUCTS INCLUDING LIABILITY OR WARRANTIES RELATING TO FITNESS FOR A
+   PARTICULAR PURPOSE, MERCHANTABILITY, OR INFRINGEMENT OF ANY PATENT,
+   COPYRIGHT OR OTHER INTELLECTUAL PROPERTY RIGHT. Intel products are not
+   intended for use in medical, life saving, life sustaining, critical
+   control or safety systems, or in nuclear facility applications.
+    
+   Designers must not rely on the absence or characteristics of any
+   features or instructions marked "reserved" or "undefined." Intel
+   reserves these for future definition and shall have no responsibility
+   whatsoever for conflicts or incompat- ibilities arising from future
+   changes to them.
+     
+   The software described in this document may contain software defects
+   which may cause the product to deviate from published
+   specifications. Current characterized software defects are available
+   on request.
+      
+   Intel, the Intel logo, Intel SpeedStep, Intel NetBurst, Intel
+   NetStructure, MMX, Intel386, Intel486, Celeron, Intel Centrino, Intel
+   Xeon, Intel XScale, Itanium, Pentium, Pentium II Xeon, Pentium III
+   Xeon, Pentium M, and VTune are trademarks or registered trademarks of
+   Intel Corporation or its subsidiaries in the United States and other
+   countries.
+
+   * Other names and brands may be claimed as the property of others. 
+        
+   Copyright 2003-2014, Intel Corporation.@endverbatim 
+
+
+Unless otherwise stated, any software source code reprinted in this document
+is furnished under a software license and may only be used or copied in
+accordance with the terms of that license. Specifically:
+
+@verbatim
+Copyright (c) 2003-2014, Intel Corporation
+
+Redistribution  and  use  in source  and  binary  forms,  with  or  without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of  source code  must retain the  above copyright notice,
+  this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name  of Intel Corporation  nor the names of its contributors
+  may be used to  endorse or promote  products derived  from this  software
+  without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.@endverbatim
+
+This document contains information on products in the design phase of
+development.
+
+*/
+
+// SampleBrokerService
+
+//****************************************************************************
 /// @file SampleAFU1Service.h
 /// @brief ISampleAFUPing and related interfaces.
 /// @ingroup sample_afu1

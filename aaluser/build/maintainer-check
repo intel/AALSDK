@@ -879,7 +879,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'AASService.h' \
 'AASEDSService.h' \
 'AASRegistrarService.h' \
-'CCILibService.h' \
 'FAP10Service.h' \
 'FAP20Service.h' \
 'ltmain.sh' \
