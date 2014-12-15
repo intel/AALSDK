@@ -526,7 +526,16 @@ void ase_init()
   calc_phys_memory_ranges();
 
   // Random number for csr_pinned_addr
-  srand(time(NULL));
+  if (cfg->enable_reuse_seed)
+    {
+      ase_addr_seed = ase_read_seed ();
+     }
+  else
+    {
+      ase_addr_seed = time(NULL);
+      ase_write_seed ( ase_addr_seed );
+    }
+  srand ( ase_addr_seed );
 
   FUNC_CALL_EXIT;
 
@@ -768,6 +777,7 @@ void ase_config_parse(char *filename)
 
   // Default values
   cfg->enable_timeout = 500;
+  cfg->enable_reuse_seed = 0;
   cfg->enable_capcm = 0;
   cfg->memmap_sad_setting = 0;
   cfg->enable_umsg = 0;
@@ -800,6 +810,8 @@ void ase_config_parse(char *filename)
 	      value = atoi(strtok(NULL, ""));
 	      if (strcmp (parameter,"ENABLE_TIMEOUT") == 0)
 	      	cfg->enable_timeout = value;
+	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0) 
+		cfg->enable_reuse_seed = value;
 	      else if (strcmp (parameter,"ENABLE_CAPCM") == 0)
 	      	cfg->enable_capcm = value;
 	      else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0)
@@ -877,6 +889,12 @@ void ase_config_parse(char *filename)
     printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->enable_timeout);
   else
     printf("        Inactivity kill-switch     ... DISABLED \n");
+
+  // Reuse seed
+  if (cfg->enable_reuse_seed != 0)
+    printf("        Reuse simulation seed      ... ENABLED \n");
+  else
+    printf("        Reuse simulation seed      ... DISABLED \n");
   
   // UMSG
   if (cfg->enable_umsg != 0)

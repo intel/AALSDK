@@ -32,7 +32,7 @@
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  */
  
 module sdp_ram
@@ -52,23 +52,25 @@ module sdp_ram
    // Memory
    reg [DATA_WIDTH-1:0] 	  ram [(2**DEPTH_BASE2)-1:0];
    
-   reg [DEPTH_BASE2-1:0] 	  raddr_q;
-   reg [DATA_WIDTH-1:0] 	  ram_dout;
+   // reg [DEPTH_BASE2-1:0] 	  raddr_q;
+   // reg [DATA_WIDTH-1:0] 	  ram_dout;
    
    always @(posedge clk) begin
       if (we)
 	ram[waddr]<=din; // synchronous write the RAM
    end
    
-   always @(posedge clk) begin
-      raddr_q <= raddr;
-      dout    <= ram_dout;
-   end
+   // always @(posedge clk) begin
+   //    raddr_q <= raddr;
+   //    dout    <= ram_dout;
+   // end
    
-   always @(*) begin
-      ram_dout = ram[raddr_q];
-   end
-   
+   // always @(*) begin
+   //    ram_dout = ram[raddr_q];
+   // end
+
+   assign dout = ram[raddr];
+      
 endmodule
 
 

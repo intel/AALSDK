@@ -35,3 +35,7 @@ ylwrap
 # eclipse cdt project files
 .cproject
 .project
+
+# ASE stuff here | RRS
+aaluser/ase/scripts/__pycache__/
+aaluser/ase/work/

@@ -43,6 +43,9 @@
 
 include ase_sources.mk
 
+## ASE Version
+ASE_VERSION = 4.2
+
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -148,7 +151,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel QuickAsisst AFU Simulation Environment w/ AAL 4.1  #"
+	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)    #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -156,11 +159,19 @@ header:
 # Help information
 help: header
 	@echo "#                                                          #"
-	@echo "# USAGE: make SIMULATOR={VCS|QUESTA}                       #"
-	@echo "#                                                          #"
-	@echo "#             SIMULATOR: RTL Simulation tool               #"
-	@echo "#               VCS    = Synopsys VCS                      #"
-	@echo "#               QUESTA = MentorGraphics Modelsim/Questasim #"
+	@echo "#  COMMAND       |   DESCRIPTION                           #"
+	@echo "# -------------------------------------------------------- #"
+	@echo "# make build     | Build the HW Model using RTL supplied   #"
+	@echo "#                |                                         #"
+	@echo "# make sim       | Run simulator (if in PERSISTENT mode)   #"
+	@echo "#                | Command is unused in ONESHOT mode       #"
+	@echo "#                |                                         #"
+	@echo "# make wave      | Open the waveform (f created)           #"
+	@echo "#                | To be run after simulation completes    #"
+	@echo "#                |                                         #"
+	@echo "# make clean     | Clean simulation files                  #"
+	@echo "#                |                                         #"
+	@echo "# make distclean | Clean ASE sub-distribution              #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -256,7 +267,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/
 	rm -rf simv* csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf .ase_* *.o 
+	rm -rf .ase_* *.o ase_seed.txt
 
 distclean: header clean
 	./distclean.sh

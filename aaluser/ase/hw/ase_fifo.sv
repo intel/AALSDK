@@ -38,6 +38,13 @@
  * - DEPTH_BASE2    : Radix of element array, used for counting elements
  * - ALMFULL_THRESH : AlmostFull threshold
  * 
+ * Description:
+ * - WRITE: Data is written when write_enable is HIGH
+ * - READ : Data is available in next clock it is in RAM
+ *          Empty is an ASYNC signal & must be check
+ *          read_enable must be used asynchronously with EMPTY signal
+ * - Overflow and underflow signals are asserted
+ * 
  */
  
 module ase_fifo
@@ -62,41 +69,28 @@ module ase_fifo
     output logic 		  underflow
     );
 
-   logic 			  valid;
    logic 			  prog_full;   
    logic 			  mywr_en;
+   logic 			  myrd_en;
    logic 			  empty_current;
-   logic 			  empty_next;
    logic 			  full_current;
    logic 			  full_next;
    logic [DEPTH_BASE2-1:0] 	  rd_addr;
    logic [DEPTH_BASE2-1:0] 	  wr_addr;
    logic [DEPTH_BASE2:0] 	  counter;
+   logic [DEPTH_BASE2:0] 	  counter_reg;
    
-   // discard incoming data when FIFO is full
+   /*
+    * Filtering legal transactions
+    * Overflow and underflow will not corrupt RAM contents
+    */ 
    assign mywr_en = wr_en & (~full_current);
+   assign myrd_en = rd_en & (~empty_current);   
    assign count   = counter [DEPTH_BASE2-1:0];
 
-   // writing pointer doesn't change when overflow
-   always @(posedge clk) begin
-      if (rst == 1'b1)
-	wr_addr <= 0;
-      else begin
-	 if (mywr_en) 
-	   wr_addr <= wr_addr + 1'b1;
-      end
-   end
-   
-   // overflow being asserted for one cycle means one incoming data was discarded
-   always @(posedge clk)
-     begin
-	if (rst == 1'b1)
-	  overflow <= 0;
-	else
-	  overflow <= wr_en & full_current;
-     end
-
-   // Memory instance
+   /*
+    * Memory instance
+    */ 
    sdp_ram #(
 	     .DEPTH_BASE2 (DEPTH_BASE2), 
              .DATA_WIDTH  (DATA_WIDTH)
@@ -110,6 +104,19 @@ module ase_fifo
           .dout  (data_out)
           );
 
+   /*
+    * Read & Write address movement
+    */
+   // writing pointer doesn't change when overflow
+   always @(posedge clk) begin
+      if (rst == 1'b1)
+	wr_addr <= 0;
+      else begin
+	 if (mywr_en) 
+	   wr_addr <= wr_addr + 1'b1;
+      end
+   end
+   
    // reading empty FIFO will not get valid data, reading pointer doesn't change.
    always @(posedge clk) begin
       if (rst == 1'b1)
@@ -120,15 +127,19 @@ module ase_fifo
       end
    end
 
-   // active valid indicate valid read data
-   always @(posedge clk) begin
-      if (rst == 1'b1)
-	valid <= 0;
+   /*
+    * Data valid signals
+    */ 
+   always @(*) begin
+      if (rst)
+	data_out_v <= 1'b0;	 
       else
-	valid <= rd_en & (~empty_current);
-   end
-   assign data_out_v = valid;
-      
+	data_out_v <= rd_en && ~empty_current;	 
+   end     
+
+   /*
+    * Overflow & Underflow signals
+    */ 
    // underflow being asserted for one cycle means unsuccessful read
    always @(posedge clk) begin
       if (rst == 1'b1)
@@ -137,44 +148,54 @@ module ase_fifo
 	underflow <= rd_en & empty_current;
    end
 
-   // number of valid entries in FIFO
+   // overflow being asserted for one cycle means one incoming data was discarded
    always @(posedge clk) begin
+      if (rst == 1'b1)
+	overflow <= 0;
+      else
+	overflow <= wr_en & full_current;
+   end
+
+   /*
+    * FIFO Counter
+    */
+   always @(*) begin
       if (rst == 1'b1)
 	counter <= 0;
-      else
-	counter <= counter - (rd_en & (~empty_current)) + (wr_en & (~full_current));
+      else begin
+	// counter <= counter - (rd_en & (~empty_current)) + (wr_en & (~full_current));
+	 casex ({(rd_en && ~empty_current), (wr_en && ~full_current)})
+	   2'b01  : counter <= counter_reg + 1;
+	   2'b10  : counter <= counter_reg - 1;
+	   default: counter <= counter_reg;
+	 endcase	 
+      end
    end
 
-   // FIFO empty state machine
-   always @(*) begin
-      case (empty_current)
-	0: 
-	  begin
-	     if ((counter == 1)&&(rd_en == 1)&&(wr_en == 0))
-	       empty_next = 1;
-	     else
-	       empty_next = 0;
-	  end
-	1:
-	  begin
-	     if (wr_en)
-	       empty_next = 0;
-	     else
-	       empty_next = 1;
-	  end
-      endcase
-   end
-
-   always @(posedge clk) begin
-      if (rst == 1'b1)
-	empty_current <= 1;
-      else
-	empty_current <= empty_next;
-   end
+   always @(posedge clk)
+     counter_reg <= counter;
    
+   /*
+    * Asynchronous EMPTY signal
+    */ 
+   always @(*) begin
+      if (rst) begin
+	 empty_current <= 1;
+      end
+      else begin
+	 if (counter_reg == 0) begin
+	    empty_current <= 1;	    
+	 end
+	 else begin
+	    empty_current <= 0;	    
+	 end
+      end
+   end
    assign empty = empty_current;
-
-   // FIFO full state machine
+      
+   /*
+    * FIFO full state machine
+    */
    always @(*) begin
       case (full_current)
 	0: 
@@ -199,11 +220,12 @@ module ase_fifo
 	full_current <= 0;
       else
 	full_current <= full_next;
-   end
-   
+   end   
    assign full = full_current;
 
-   // Programmable full signal
+   /*
+    * Programmable full signal
+    */ 
    always @(posedge clk) begin
       if (rst == 1'b1)
         prog_full <= 0;
@@ -216,7 +238,14 @@ module ase_fifo
       end
    end
    assign alm_full = prog_full;
-   
+
+   /*
+    * Display flow errors
+    */ 
+   always @(posedge clk) begin
+      if (overflow)  $display ("\t%m => *** OVERFLOW DETECTED ***");
+      if (underflow) $display ("\t%m => *** UNDERFLOW DETECTED ***");      
+   end       
    
 endmodule
 

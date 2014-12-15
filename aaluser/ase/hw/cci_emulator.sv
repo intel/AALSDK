@@ -26,7 +26,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * **************************************************************************
- * 
+ *
  * Module Info: CCI Emulation top-level - SystemVerilog Module
  * Language   : System{Verilog}
  * Owner      : Rahul R Sharma
@@ -76,8 +76,8 @@ module cci_emulator();
    // UMSG init
    export "DPI-C" task umsg_init;
    // Umsg completed
-   import "DPI-C" function void umsg_completed();   
-   
+   import "DPI-C" function void umsg_completed();
+
    // CAPCM initilize
    import "DPI-C" context task capcm_init();
    // CAPCM destroy
@@ -111,7 +111,7 @@ module cci_emulator();
    logic rx0_active, rx1_active;
    logic rx_free;
    integer test_ret;
-   
+
    assign rx_free = ( (rx0_active == 1'b0)||(rx1_active == 1'b0) ) ? 1'b1 : 1'b0;
 
    /*
@@ -203,7 +203,14 @@ module cci_emulator();
    // Derived clocks
    logic 			  clk_32ui; // Normal 200 Mhz clock
    logic 			  clk_16ui; // Faster 400 Mhz clock
-      
+
+   /*
+    * Overflow/underflow signal checks
+    */
+   logic 			  tx0_underflow;
+   logic 			  tx1_underflow;
+   logic 			  tx0_overflow;
+   logic 			  tx1_overflow;
 
    /*
     * Clock process: Operates the CAFU clock
@@ -236,8 +243,8 @@ module cci_emulator();
 	 end
       end
    end
-	 
-   
+
+
    /*
     * Reset management
     */
@@ -296,7 +303,7 @@ module cci_emulator();
       end
    endtask
 
-   /* 
+   /*
     * Umsg infrastructure
     * - C: umsg call calls SV:umsg_init
     * - SV:umsg_init sets a umsg_enabled = 1
@@ -314,17 +321,17 @@ module cci_emulator();
       end
    endtask
 
-    
+
    /*
     * Config data exchange - Supplied by ase.cfg
-    */ 
+    */
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
 	 cfg.enable_timeout    = cfg_in.enable_timeout   ;
 	 cfg.enable_capcm      = cfg_in.enable_capcm     ;
 	 cfg.memmap_sad_setting     = cfg_in.memmap_sad_setting    ;
 	 cfg.enable_umsg       = cfg_in.enable_umsg      ;
-	 cfg.num_umsg_log2     = cfg_in.num_umsg_log2    ;	 
+	 cfg.num_umsg_log2     = cfg_in.num_umsg_log2    ;
 	 cfg.enable_intr       = cfg_in.enable_intr      ;
 	 cfg.enable_ccirules   = cfg_in.enable_ccirules  ;
 	 cfg.enable_bufferinfo = cfg_in.enable_bufferinfo;
@@ -342,19 +349,19 @@ module cci_emulator();
    int ase_rx0_wrvalid_cnt;
    int ase_rx1_wrvalid_cnt;
    int ase_tx0_rdvalid_cnt;
-   int ase_tx1_wrvalid_cnt; 
+   int ase_tx1_wrvalid_cnt;
 
    int csr_write_enabled_cnt;
-      
+
    always @(posedge clk) begin
       if (sys_reset_n == 1'b0) begin
 	 ase_rx0_cfgvalid_cnt = 0;
-	 ase_rx0_rdvalid_cnt = 0; 
-	 ase_rx0_wrvalid_cnt = 0; 
-	 ase_rx1_wrvalid_cnt = 0; 
-	 ase_tx0_rdvalid_cnt = 0; 
+	 ase_rx0_rdvalid_cnt = 0;
+	 ase_rx0_wrvalid_cnt = 0;
+	 ase_rx1_wrvalid_cnt = 0;
+	 ase_tx0_rdvalid_cnt = 0;
 	 ase_tx1_wrvalid_cnt = 0;
-	 csr_write_enabled_cnt = 0;	 
+	 csr_write_enabled_cnt = 0;
       end
       else begin
 	 // TX channels
@@ -387,7 +394,7 @@ module cci_emulator();
 	 // Valid Count
 	 if (cfg.enable_asedbgdump) begin
 	    // Print transactions
-	    `BEGIN_YELLOW_FONTCOLOR;	    
+	    `BEGIN_YELLOW_FONTCOLOR;
 	    $display("HW Transaction counts => ");
 	    $display("\tConfigs    = %d", ase_rx0_cfgvalid_cnt );
 	    $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt );
@@ -404,7 +411,7 @@ module cci_emulator();
 	      $display("\tREADs  : Response counts dont match request count !!");
 	    if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
 	      $display("\tWRITEs : Response counts dont match request count !!");
-	    `END_RED_FONTCOLOR;	    
+	    `END_RED_FONTCOLOR;
 	 end
 	 $finish;
       end
@@ -423,7 +430,7 @@ module cci_emulator();
 	 buffer_replicator();
 	 csr_write_listener();
 	 if (cfg.enable_umsg)
-	   umsg_listener();	 
+	   umsg_listener();
       end
    end
 
@@ -455,7 +462,7 @@ module cci_emulator();
    logic [13:0] 	       rx1_wrline_meta;
    int 			       ii;
 
-   
+
    /* *******************************************************************
     * Forwarding path implementations
     * - ASE -> CAFU paths are pure FIFOs
@@ -531,7 +538,7 @@ module cci_emulator();
 		   rx0_state <= RX0_rdline_dex;
 		end
 		else if (umsg_enabled == 1) begin
-		   rx0_state <= RX0_umsg_dex;		   
+		   rx0_state <= RX0_umsg_dex;
 		end
 		else begin
 		   rx0_state <= RX0_inactive;
@@ -592,7 +599,7 @@ module cci_emulator();
 	     begin
 		umsg_dex (rx0_pkt);
 		umsg_completed();
-		rx0_state <= RX0_write_fifo;		
+		rx0_state <= RX0_write_fifo;
 	     end
 
 	   // Write to RX0 FIFO
@@ -707,7 +714,9 @@ module cci_emulator();
       .valid_out	(  ),
       .read_en		( cf2as_latbuf_ch0_read ),
       .empty		( cf2as_latbuf_ch0_empty ),
-      .full             ( tx_c0_almostfull )
+      .full             ( tx_c0_almostfull ),
+      .overflow         ( tx0_overflow ),
+      .underflow        ( tx0_underflow )
       );
 `else // !`ifdef ASE_RANDOMIZE_TRANSACTIONS
    // FIFO (no randomization)
@@ -730,8 +739,8 @@ module cci_emulator();
       .full       ( ),
       .empty      ( cf2as_latbuf_ch0_empty ),
       .count      ( ),
-      .overflow   ( ),
-      .underflow  ( )
+      .overflow   ( tx0_overflow ),
+      .underflow  ( tx0_underflow )
       );
 `endif
 
@@ -826,7 +835,9 @@ module cci_emulator();
       .valid_out	(  ),
       .read_en		( cf2as_latbuf_ch1_read ),
       .empty		( cf2as_latbuf_ch1_empty ),
-      .full             ( tx_c1_almostfull )
+      .full             ( tx_c1_almostfull ),
+      .overflow         ( tx1_overflow ),
+      .underflow        ( tx1_underflow )
       );
 `else // !`ifdef ASE_RANDOMIZE_TRANSACTIONS
    // FIFO (no shuffling, simple forwarding)
@@ -849,8 +860,8 @@ module cci_emulator();
       .full       ( ),
       .empty      ( cf2as_latbuf_ch1_empty ),
       .count      ( ),
-      .overflow   ( ),
-      .underflow  ( )
+      .overflow   ( tx1_overflow ),
+      .underflow  ( tx1_underflow )
       );
 `endif
 
@@ -1095,18 +1106,18 @@ module cci_emulator();
       // 	 @(posedge clk);
       // end
       #100ns;
-      
+
       sys_reset_n = 1;
       // for (sys_rst_iter=0; sys_rst_iter<`INITIAL_SYSTEM_RESET_DURATION; sys_rst_iter = sys_rst_iter + 1) begin
       // 	 @(posedge clk);
       // end
       #100ns;
-      
+
       // Setting up CA-private memory
       // if (ENABLE_CACHING_AGENT_PRIVATE_MEMORY) begin
       if (cfg.enable_capcm) begin
 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
-	 capcm_init();	 
+	 capcm_init();
       end
 
       // Link layer ready signal
@@ -1183,13 +1194,13 @@ module cci_emulator();
       .tx_c1_data      (tx_c1_data),
       .tx_c1_wrvalid   (tx_c1_wrvalid),
       .tx_c1_intrvalid (tx_c1_intrvalid_sel ),
-      .rx_c0_header    (rx_c0_header),    
-      .rx_c0_data      (rx_c0_data),      
-      .rx_c0_rdvalid   (rx_c0_rdvalid),   
-      .rx_c0_wrvalid   (rx_c0_wrvalid),   
-      .rx_c0_cfgvalid  (rx_c0_cfgvalid),  
-      .rx_c1_header    (rx_c1_header),    
-      .rx_c1_wrvalid   (rx_c1_wrvalid),   
+      .rx_c0_header    (rx_c0_header),
+      .rx_c0_data      (rx_c0_data),
+      .rx_c0_rdvalid   (rx_c0_rdvalid),
+      .rx_c0_wrvalid   (rx_c0_wrvalid),
+      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
+      .rx_c1_header    (rx_c1_header),
+      .rx_c1_wrvalid   (rx_c1_wrvalid),
       // Error signals
       .tx_ch0_error    (tx0_rc_error),
       .tx_ch1_error    (tx1_rc_error),
@@ -1206,7 +1217,7 @@ module cci_emulator();
 
 
    // Call simkill on bad outcome of checker process
-   task checker_simkill(int sim_time) ;
+   task xz_simkill(int sim_time) ;
       begin
    	 `BEGIN_RED_FONTCOLOR;
    	 $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
@@ -1218,19 +1229,60 @@ module cci_emulator();
       end
    endtask
 
+   // Flow simkill
+   task flowerror_simkill(int sim_time, int channel) ;
+      begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("SIM-SV: ASE has detected a possible OVERFLOW or UNDERFLOW error.");
+	 $display("SIM-SV: Check simulation around time, t = %d in Channel %d", sim_time, channel);
+   	 $display("SIM-SV: Simulation will end now");
+	 `END_RED_FONTCOLOR;
+      end
+   endtask
+
+   // Almostfull disobedience warning
+   always @(posedge clk) begin
+      if ( tx_c0_almostfull && tx_c0_rdvalid ) begin
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display ("SIM-SV: t = ", $time, " => *** TX-CH0 almostfull was HIGH and READ request was seen !! ***");
+	 `END_YELLOW_FONTCOLOR;
+      end
+      if ( tx_c1_almostfull && tx_c1_wrvalid ) begin
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display ("SIM-SV: t = ", $time, " => *** TX-CH1 almostfull was HIGH and WRITE request was seen !! ***");
+	 `END_YELLOW_FONTCOLOR;
+      end
+   end
+
+   // Flow error messages
+   always @(posedge clk) begin
+      if (tx0_overflow) begin
+	 flowerror_simkill($time, 0);
+      end
+      if (tx0_underflow) begin
+	 flowerror_simkill($time, 0);
+      end
+      if (tx1_overflow) begin
+	 flowerror_simkill($time, 1);
+      end
+      if (tx1_underflow) begin
+	 flowerror_simkill($time, 1);
+      end
+   end
+
    // Watch checker signal
    always @(posedge clk) begin
       if (tx0_rc_error) begin
-	 checker_simkill(tx0_rc_time);
+	 xz_simkill(tx0_rc_time);
       end
       else if (tx1_rc_error) begin
-	 checker_simkill(tx1_rc_time);
+	 xz_simkill(tx1_rc_time);
       end
       else if (rx0_rc_error) begin
-	 checker_simkill(rx0_rc_time);
+	 xz_simkill(rx0_rc_time);
       end
       else if (rx1_rc_error) begin
-	 checker_simkill(rx1_rc_time);
+	 xz_simkill(rx1_rc_time);
       end
    end
 
@@ -1303,7 +1355,7 @@ module cci_emulator();
 	       end
 	       else begin                                               // Umsg with data
 		  $fwrite(log_fd, "%d\tUmsg    \t0\t%x\n", $time, rx_c0_data );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t\t0\t%x\n", $time, rx_c0_data ); 
+		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t\t0\t%x\n", $time, rx_c0_data );
 	       end
 	    end
 	    /////////////////////////////// RX1 wrvalid /////////////////////////////////
