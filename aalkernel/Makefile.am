@@ -64,6 +64,18 @@ dist-file-list: dist-all
 clean-local:
 	@$(RM) $(top_builddir)/dist-file-list
 
+if AAL_COND_MAINTAINER
+
+MAINTAINER_CHECK=maintainer-check
+maintainer-check:
+	   @+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
+			--conf='$(abs_top_srcdir)/configure' \
+			--srcdir='$(abs_top_srcdir)' \
+			--distdir='$(distdir)' \
+			--wkspc='$(abs_top_builddir)/maintainer-check''
+
+endif
+.PHONY: $(MAINTAINER_CHECK)
 
 SUBDIRS=\
 aalbus \

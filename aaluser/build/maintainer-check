@@ -565,15 +565,17 @@ setup() {
 
    [ -d "${val}" ] || cmd ${MKDIR} -p "${val}"
 
-   # Make sure git submodule aaluser/doc is populated.
-   for x in `${FIND} "${srcdir}/doc" -type f` ; do
-      let $(( ++files ))
-   done
-   if ${usehash} && [ 0 -eq ${files} ]; then
-      pushd "${gitdir%/*}" >/dev/null 2>&1
-      cmd ${GIT} submodule init
-      cmd_as_coproc ${GIT} submodule update --merge "aaluser/doc"
-      popd >/dev/null 2>&1
+   if [ "${srcdir##*/}" = aaluser ] && [ -d "${srcdir}/doc" ]; then
+      # Make sure git submodule aaluser/doc is populated.
+      for x in `${FIND} "${srcdir}/doc" -type f` ; do
+         let $(( ++files ))
+      done
+      if ${usehash} && [ 0 -eq ${files} ]; then
+         pushd "${gitdir%/*}" >/dev/null 2>&1
+         cmd ${GIT} submodule init
+         cmd_as_coproc ${GIT} submodule update --merge "aaluser/doc"
+         popd >/dev/null 2>&1
+      fi
    fi
 
    return 0
@@ -966,7 +968,8 @@ declare -ra COPYRIGHT_KERNEL_CHECKED_NAMES=(\
 declare -ra COPYRIGHT_KERNEL_EXCEPT_NAMES=(\
 'Ext2Remove.lst' \
 'ListOfExecutableFiles' \
-'README.GPLV2-LICENSE.TXT'\
+'README.GPLV2-LICENSE.TXT' \
+'KernelStructs.h'\
 )
 
 
@@ -2096,9 +2099,14 @@ verify_copyrights() {
    pass_checkpoint "${cpath}" "${chkpt}"
 
    chkpt="copyrights_verify"
-   print_title     "copyrights : verify"
-   checkpoint "${cpath}" "${chkpt}" || copyrights_check_user _verify_user_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
-   pass_checkpoint "${cpath}" "${chkpt}"
+   print_title "copyrights : verify"
+   if [ "${SRCDIR##*/}" = aaluser ]; then
+      checkpoint "${cpath}" "${chkpt}" || copyrights_check_user _verify_user_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
+      pass_checkpoint "${cpath}" "${chkpt}"
+   else
+      checkpoint "${cpath}" "${chkpt}" || copyrights_check_kernel _verify_kernel_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
+      pass_checkpoint "${cpath}" "${chkpt}"
+   fi
 }
 
 # Copyrights

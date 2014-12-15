@@ -300,14 +300,20 @@ dnl Maintainer
 
 dnl # AALSDK_MAINTAINER
 AC_DEFUN([AALSDK_MAINTAINER], [
-if test -f "${ac_cv_aal_package_srcdir}/build/maintainer-check" ; then
-   chmod 'u+rx' "${ac_cv_aal_package_srcdir}/build/maintainer-check"
-   test "x${BASH}" = x && AC_PATH_PROG([BASH], [bash])
-   test "x${TIME}" = x && AC_PATH_PROG([TIME], [time])
-   AM_CONDITIONAL([AAL_COND_MAINTAINER],[true])
-else
-   AM_CONDITIONAL([AAL_COND_MAINTAINER],[false])
-fi
+   AS_IF([test -f "${srcdir}/build/maintainer-check"],
+         [
+          chmod 'u+rx' "${srcdir}/build/maintainer-check"
+          AS_IF([test "x${BASH}" = x], [AC_PATH_PROG([BASH], [bash])])
+          AS_IF([test "x${TIME}" = x], [AC_PATH_PROG([TIME], [time])])
+          AM_CONDITIONAL([AAL_COND_MAINTAINER], [true])
+         ],
+         [test -L "${srcdir}/build/maintainer-check"],
+         [
+          AS_IF([test "x${BASH}" = x], [AC_PATH_PROG([BASH], [bash])])
+          AS_IF([test "x${TIME}" = x], [AC_PATH_PROG([TIME], [time])])
+          AM_CONDITIONAL([AAL_COND_MAINTAINER], [true])
+         ],
+         [AM_CONDITIONAL([AAL_COND_MAINTAINER], [false])])
 ]) dnl # AALSDK_MAINTAINER
 
 
