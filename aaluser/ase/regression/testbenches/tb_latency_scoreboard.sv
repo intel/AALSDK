@@ -39,10 +39,10 @@ module tb_latency_scoreboard();
 	 valid_in <= 0;
 	 wr_iter <= 0;
 	 data_in <= 0;	 
-	 meta_in <= 64'h22222222_22222222;	 
+	 meta_in <= 64'h00000000_00000000;	 
       end
       else begin
-	 if ((~full) && (wr_iter < 5)) begin
+	 if ((~full) && (wr_iter < 9)) begin
 	    wr_iter <= wr_iter + 1;
 	    meta_in <= meta_in + 64'h11111111_11111111;
 	    valid_in <= 1;	    
@@ -53,77 +53,11 @@ module tb_latency_scoreboard();
       end
    end
 
-   assign read_en = 0;   
+   assign read_en = ~empty;   
 
    initial begin
       #2000;
-      $finish;
-      
+      $finish;     
    end
-   
-   // testbench
-   // initial begin
-   //    valid_in = 1'b0;
-   //    meta_in = 64'h0000000000000000;
-   //    data_in = 64'h0000000000000000;      
-   //    rst = 0;
-   //    read_en = 0;
-      
-   //    #20;
-   //    rst = 1;
-   //    #100;
-   //    rst = 0;
-   //    #40;
-   //    wait (full == 0);
-   //    @(posedge clk);
-   //    @(posedge clk);
-   //    @(posedge clk);
-   //    @(posedge clk);
-      
-   //    // {data_in, meta_in} = {64'hcafebabecafeba00, 64'hcafebabecafeba00};
-   //    // valid_in = 0;
-   //    // @(posedge clk);
-   //    // @(posedge clk);
-   //    // @(posedge clk);
-   //    // @(posedge clk);
-   //    // {data_in, meta_in} = {64'hcafebabecafeba01, 64'hcafebabecafeba01};
-   //    // valid_in = 1;
-   //    // @(posedge clk);
-   //    // {data_in, meta_in} = {64'h5555555555555555, 64'h5555555555555555};
-   //    // valid_in = 1;
-   //    // @(posedge clk);
-   //    // {data_in, meta_in} = {64'hcafebabecafeba02, 64'hcafebabecafeba02};
-   //    // valid_in = 1;
-   //    // @(posedge clk);
-   //    // {data_in, meta_in} = {64'hcafebabecafeba03, 64'hcafebabecafeba03};
-   //    // valid_in = 1;
-   //    // @(posedge clk);
-   //    // {data_in, meta_in} = {64'h0000000000000000, 64'h0000000000000000};
-   //    // valid_in = 0;
-      
-      
-   //    meta_in = 64'h3333333333333333;
-   //    data_in = 64'h3333333333333333;
-   //    for(ii = 0; ii < 5;) begin
-   //    	 if (full)	   
-   //    	   valid_in = 0;
-   //    	 else begin
-   //    	    valid_in = 1;
-   //    	    meta_in = meta_in + 64'h1111111111111111 ;
-   //    	    data_in = data_in + 64'h1111111111111111 ;	    
-   //    	    ii = ii + 1;
-   //    	    $display("Push word");	 
-   //    	 end	 
-   //    	 @(posedge clk);	 
-   //    end
-   //     valid_in = 1'b0;
-   //     meta_in = 64'h0000000000000000;
-   //     data_in = 64'h0000000000000000;
-   //    @(posedge clk);
-      
-   //    #1000;      
-   //    $finish;      
-   // end
-   
       
 endmodule

@@ -7,7 +7,9 @@
 # gcc -g -o mq_test         mq_test.c     ../../sw/tstamp_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c ../../sw/ipc_mgmt_ops.c -I ../../sw/    -lrt
 # gcc -g -o mq_test         mq_test.c        -lrt
 
-# gcc -g -o shuffle         shuffle.c
+gcc -g -o shuffle \
+    -I ../../sw/  -I $VCS_HOME/include/ -D SIM_SIDE=1 \
+    shuffle.c ../../sw/randomness_control.c ../../sw/error_report.c 
 
 # gcc -g -o server_sock     server_sock.c
 
@@ -26,7 +28,7 @@
 
 # gcc -g -o cfg_parse cfg_parse.c ../../sw/error_report.c -D SIM_SIDE=1 -I /usr/synopsys/vcs-mx/G-2012.09-SP1/include/
 
-gcc -g -o reusable_seed reusable_seed.c ../../sw/error_report.c -lrt -lm -D SIM_SIDE=1 -I $VCS_HOME/include/
+# gcc -g -o reusable_seed reusable_seed.c ../../sw/error_report.c -lrt -lm -D SIM_SIDE=1 -I $VCS_HOME/include/
 
 # gcc -g -o remote_start remote_start.c \
 #    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c \

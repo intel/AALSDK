@@ -12,12 +12,6 @@ module tb_ase_fifo();
    int 			  rd_iter;
 
     ase_fifo inst_fifo (clk, rst, valid_in, data_in, read_en, data_out, valid_out, full, , empty, count, , );
-<<<<<<< HEAD
-=======
-//   sbv_gfifo #(64, 3, 0, 5) inst_fifo (~rst, clk, data_in, valid_in, , data_out, valid_out, empty, , , full );
-  
-   // initial $vcdpluson;
->>>>>>> 05c4bb7fac7b761fadb4b03b29677ab78d274e90
 
    //clk
    initial begin
@@ -49,14 +43,9 @@ module tb_ase_fifo();
       start_reading = 1;
    end
 
-<<<<<<< HEAD
-   // Write process
-=======
-   
    int ii;
    int jj;
    
->>>>>>> 05c4bb7fac7b761fadb4b03b29677ab78d274e90
    always @(posedge clk) begin
       if (rst) begin
 	 valid_in <= 0;
@@ -98,7 +87,6 @@ module tb_ase_fifo();
    	 end
       end
    end
-<<<<<<< HEAD
    
    assign read_en = ~empty && read_trig;
 
@@ -108,30 +96,4 @@ module tb_ase_fifo();
       $finish;
    end
 
-=======
-  
-   // Push
-   // initial begin
-   //    data_in = 64'h00000000_00000000;
-   //    valid_in = 0;      
-   //    wait (rst != 1);
-   //    #100;
-   //    @(posedge clk);
-   //    data_in = 64'hCAFEBABE_DECAFBAD;
-   //    valid_in = 1;
-   //    @(posedge clk);
-   //    valid_in = 0;
-   //    #200;
-   // end // initial begin
-
-   // // Pop
-   // initial begin
-   //    read_en = 0;      
-   //    wait (empty != 1);
-   //    @(posedge clk);
-   //    // read_en = 1;
-   //    $display("Ready to pop ?", $time);
-   // end
-   
->>>>>>> 05c4bb7fac7b761fadb4b03b29677ab78d274e90
 endmodule
