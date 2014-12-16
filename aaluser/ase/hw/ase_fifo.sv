@@ -226,17 +226,12 @@ module ase_fifo
    /*
     * Programmable full signal
     */ 
-   always @(posedge clk) begin
-      if (rst == 1'b1)
-        prog_full <= 0;
-      else begin
-	 casex ({(rd_en && ~empty_current), (wr_en && ~full_current)})
-           2'b10:        prog_full       <= (counter-1) >= ALMFULL_THRESH;
-           2'b01:        prog_full       <= (counter+1) >= ALMFULL_THRESH;
-           default:      prog_full       <= prog_full;
-	 endcase
-      end
-   end
+   always @(*) begin
+      if (counter > ALMFULL_THRESH)
+	prog_full <= 1;
+      else
+	prog_full <= 0;      
+   end			   
    assign alm_full = prog_full;
 
    /*
