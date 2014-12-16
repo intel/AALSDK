@@ -102,7 +102,7 @@ module cci_emulator();
    // import "DPI-C" function void wr_capcmline_dex(inout cci_pkt foo, int cl_addr, int mdata, bit [511:0] wr_data );
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
-
+   
 
    /*
     * Declare packets for each channel

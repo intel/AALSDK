@@ -141,7 +141,7 @@ void ll_remove_buffer(struct buffer_t *);
 struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
 
-// DPI functions
+// Mem-ops functions
 void ase_mqueue_setup();
 void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
@@ -153,6 +153,8 @@ void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
 uint64_t get_range_checked_physaddr(uint32_t);
+void ase_write_seed(uint64_t);
+uint64_t ase_read_seed();
 
 // ASE operations
 void ase_buffer_info(struct buffer_t *);
@@ -451,6 +453,7 @@ extern uint64_t fake_off_low_bound;
 struct ase_cfg_t
 {
   int enable_timeout;
+  int enable_reuse_seed;
   int enable_capcm;
   int memmap_sad_setting;
   int enable_umsg;
@@ -466,6 +469,8 @@ struct ase_cfg_t *cfg;
 // ASE config file
 #define ASE_CONFIG_FILE "ase.cfg"
 
+// ASE seed file
+#define ASE_SEED_FILE  "ase_seed.txt"
 
 /* 
  * Data-exchange functions and structures
@@ -548,6 +553,8 @@ void ase_umsg_init();
 FILE *ase_ready_fd;
 #define ASE_READY_FILENAME ".ase_ready"
 
+// ASE seed 
+uint64_t ase_addr_seed;
 
 
 /*

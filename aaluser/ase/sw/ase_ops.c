@@ -285,10 +285,10 @@ void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
 /*
  * Generate 64-bit random number
  */
-uint64_t ase_rand64()
-{
-  uint64_t random;
-  random = rand();
-  random = (random << 32) | rand();
-  return random;
-}
+/* uint64_t ase_rand64() */
+/* { */
+/*   uint64_t random; */
+/*   random = rand(); */
+/*   random = (random << 32) | rand(); */
+/*   return random; */
+/* } */
