@@ -1,49 +1,14 @@
-## Copyright (c) 2013-2014, Intel Corporation
-##
-## Redistribution  and  use  in source  and  binary  forms,  with  or  without
-## modification, are permitted provided that the following conditions are met:
-##
-## * Redistributions of  source code  must retain the  above copyright notice,
-##   this list of conditions and the following disclaimer.
-## * Redistributions in binary form must reproduce the above copyright notice,
-##   this list of conditions and the following disclaimer in the documentation
-##   and/or other materials provided with the distribution.
-## * Neither the name  of Intel Corporation  nor the names of its contributors
-##   may be used to  endorse or promote  products derived  from this  software
-##   without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-## AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
-## IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-## ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
-## LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
-## CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
-## SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
-## INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
-## CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
-## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
-## POSSIBILITY OF SUCH DAMAGE.
-##****************************************************************************
-##     Intel(R) Accelerator Abstraction Layer Library Software Developer
-##        Kit (SDK)
-##  Content:
-##     Intel(R) QuickAssist Technology
-##     AALSDK/configure.ac
-##  Author:
-##     Tim Whisonant, Intel Corporation
-##  History:
-##     06/26/2013    TSW   Initial version
-##     04/01/2014    JG    Added XLrtlib for AAL 4.x
-##******************************************************************************
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalsdk], [4.2.0], [joe.grecco@intel.com])
-AC_COPYRIGHT([Copyright (c) 2003-2014 Intel Corporation])
+AC_INIT([aalsdk-bat], [0.0.0], [tim.whisonant@intel.com])
+AC_COPYRIGHT([Copyright (c) 2014 Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([aas/AASLib/AALlib.cpp])
+AC_CONFIG_TESTDIR([tests])
 AC_CONFIG_HEADERS([config.h])
 AC_LANG([C++])
 
@@ -95,6 +60,7 @@ AALSDK_DEBUG_OUTPUT([yes])
 AALSDK_DEBUG_DYNLOAD([no])
 AALSDK_ASSERT([yes])
 AALSDK_MAINTAINER
+AALSDK_LOCAL_GTEST([tests/gtest], [1.6.0])
 
 dnl ############################################################################
 dnl ## Checks for programs #####################################################
@@ -108,6 +74,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_MKDIR_P
 AM_PROG_CC_C_O
+AM_MISSING_PROG([AUTOM4TE], [autom4te])
 
 AALSDK_PROG_BASH
 AALSDK_PROG_FLEX
@@ -211,6 +178,10 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
                  utils/SPLAFU/SWSimSPLAFU/Makefile])
 
+AC_CONFIG_FILES([tests/bat/Makefile
+                 tests/OSAL_TestSem/Makefile
+                 tests/OSAL_TestThreadGroup/Makefile])
+
 AC_OUTPUT
 
 dnl ############################################################################
@@ -218,16 +189,5 @@ dnl ## Config / Next Steps #####################################################
 dnl ############################################################################
 echo \
 "
-${ac_cv_aal_copyright}
-Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-
-${PACKAGE_NAME} ${PACKAGE_VERSION}
-
-Prefix       : ${prefix}
-C compiler   : ${CC} ${CFLAGS}
-C++ compiler : ${CXX} ${CXXFLAGS}
-Linker       : ${LD} ${LDFLAGS} ${LIBS}
-
-To build     : make
-To install   : sudo make install
+AALSDK Basic Acceptance Tests
 "
