@@ -72,9 +72,7 @@ utils/aalscan \
 utils/data_model \
 utils/CCIAFU \
 utils/SPLAFU \
-tests/bat \
-tests/OSAL_TestSem \
-tests/OSAL_TestThreadGroup
+tests
 
 
 aalsdkhdrsdir=$(includedir)/aalsdk

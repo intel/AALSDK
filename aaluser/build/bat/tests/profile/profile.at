@@ -1,0 +1,5 @@
+# Process this file with autom4te to create testsuite. -*- Autotest -*-
+
+# gprof
+m4_include([profile/gprof/gprof.at])
+

@@ -1,0 +1,23 @@
+# Process this -*- Autotest -*- file with autom4te.
+
+# Macros for the @PACKAGE@ test suite.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+m4_version_prereq([2.58])
+
+AT_INIT
+AT_COPYRIGHT([INTEL CONFIDENTIAL - For Intel Internal Use Only])
+
+dnl AT_ARG_OPTION(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
+dnl AT_ARG_OPTION_ARG(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
+
+AT_ARG_OPTION_ARG([aal-xlstress-iters],
+                  [AS_HELP_STRING([--aal-xlstress-iters], [Iteration count for XL stress tests])],
+                  [],
+                  [at_arg_aal_xlstress_iters=5000])
+
+
+AT_COLOR_TESTS
+
+dnl AT_TESTED([myapp]) dnl list of executables
+

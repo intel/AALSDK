@@ -1,0 +1,11 @@
+# Process this file with autom4te to create testsuite. -*- Autotest -*-
+
+# Basic Acceptance Tests
+m4_include([unit/bat/bat.at])
+
+# OSAL_TestSem
+m4_include([unit/OSAL_TestSem/OSAL_TestSem.at])
+
+# OSAL_TestThreadGroup
+m4_include([unit/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at])
+

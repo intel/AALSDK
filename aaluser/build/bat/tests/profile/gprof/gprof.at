@@ -1,0 +1,14 @@
+# Run gprof profiling analysis. -*- Autotest -*-
+
+AT_BANNER([[gprof Profiling Analysis]])
+
+AT_SETUP([bat gprof profiling analysis])
+AT_SKIP_IF([test "x${WITH_GPROF}" != xyes || test "x${WITH_GTEST}" != xyes])
+AT_CHECK([gprof-bat], [0], [ignore], [ignore])
+AT_CLEANUP
+
+dnl AT_SETUP([myapp gprof profiling analysis])
+dnl AT_SKIP_IF([test "x${WITH_GPROF}" != xyes])
+dnl AT_CHECK([gprof-myapp], [0], [ignore], [ignore])
+dnl AT_CLEANUP
+

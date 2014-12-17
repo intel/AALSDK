@@ -1,40 +1,15 @@
-// Copyright (c) 2014, Intel Corporation
-//
-// Redistribution  and  use  in source  and  binary  forms,  with  or  without
-// modification, are permitted provided that the following conditions are met:
-//
-// * Redistributions of  source code  must retain the  above copyright notice,
-//   this list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name  of Intel Corporation  nor the names of its contributors
-//   may be used to  endorse or promote  products derived  from this  software
-//   without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
-// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
-// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
-// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
-// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
-// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
-// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-#if 0
+//#include <aalsdk/service/SampleAFU1Service.h>
 
-#include <aalsdk/service/SampleAFU1Service.h>
 #ifdef MSG
 # undef MSG
 #endif // MSG
 
 // Simple test fixture
-class batStartup : public AAL::CAASBase,
-                   public ::testing::Test,
-                   public AAL::XL::RT::IRuntimeClient
+class XLStartup : public AAL::CAASBase,
+                  public ::testing::Test,
+                  public AAL::XL::RT::IRuntimeClient
 {
 public:
    // <begin IRuntimeClient interface>
@@ -44,30 +19,30 @@ public:
    void runtimeStopped(AAL::XL::RT::IRuntime *pRuntime);
 
    void runtimeStartFailed(const AAL::IEvent &rEvent);
-   void runtimeAllocateServiceFailed( IEvent const &rEvent){};
+   void runtimeAllocateServiceFailed(IEvent const &rEvent) {}
 
-   void runtimeAllocateServiceSucceeded( AAL::IBase *pClient,
-                                         TransactionID const &rTranID){};
+   void runtimeAllocateServiceSucceeded(AAL::IBase *pClient,
+                                        TransactionID const &rTranID) {}
    void runtimeEvent(const AAL::IEvent &rEvent);
    // <end IRuntimeClient interface>
 
 protected:
-batStartup() :
-   AAL::CAASBase(),
-   m_RTStartFailed(0),
-   m_RTMsgs(0)
-{
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
-}
+   XLStartup() :
+      AAL::CAASBase(),
+      m_RTStartFailed(0),
+      m_RTMsgs(0)
+   {
+      SetSubClassInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
+   }
 
-virtual void SetUp()
-{
-   ASSERT_TRUE(m_Sem.Create(0, INT_MAX));
-}
-virtual void TearDown()
-{
-   ASSERT_TRUE(m_Sem.Destroy());
-}
+   virtual void SetUp()
+   {
+      ASSERT_TRUE(m_Sem.Create(0, INT_MAX));
+   }
+   virtual void TearDown()
+   {
+      ASSERT_TRUE(m_Sem.Destroy());
+   }
 
    void WaitSem() { m_Sem.Wait();  }
    void PostSem() { m_Sem.Post(1); }
@@ -106,8 +81,8 @@ virtual void TearDown()
 # define MSG(x)
 #endif
 
-void batStartup::runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
-                                const AAL::NamedValueSet &rConfigParms)
+void XLStartup::runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
+                               const AAL::NamedValueSet &rConfigParms)
 {
    AutoLock(&m_CS);
 
@@ -117,7 +92,7 @@ void batStartup::runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
    PostSem();
 }
 
-void batStartup::runtimeStopped(AAL::XL::RT::IRuntime *pRuntime)
+void XLStartup::runtimeStopped(AAL::XL::RT::IRuntime *pRuntime)
 {
    AutoLock(&m_CS);
 
@@ -126,7 +101,7 @@ void batStartup::runtimeStopped(AAL::XL::RT::IRuntime *pRuntime)
    PostSem();
 }
 
-void batStartup::runtimeStartFailed(const AAL::IEvent &rEvent)
+void XLStartup::runtimeStartFailed(const AAL::IEvent &rEvent)
 {
    AutoLock(&m_CS);
 
@@ -136,7 +111,7 @@ void batStartup::runtimeStartFailed(const AAL::IEvent &rEvent)
    PostSem();
 }
 
-void batStartup::runtimeEvent(const AAL::IEvent &rEvent)
+void XLStartup::runtimeEvent(const AAL::IEvent &rEvent)
 {
    AutoLock(&m_CS);
 
@@ -147,7 +122,7 @@ void batStartup::runtimeEvent(const AAL::IEvent &rEvent)
 }
 
 // Tests normal AAL runtime start/stop.
-TEST_F(batStartup, StartThenCleanStop)
+TEST_F(XLStartup, StartThenCleanStop)
 {
    AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
    ASSERT_NONNULL(pRT);
@@ -202,6 +177,8 @@ TEST_F(batStartup, StartThenCleanStop)
 }
 
 #undef MSG
+
+#if 0
 
 #if 0
 # define MSG(x) std::cerr << x << std::endl;

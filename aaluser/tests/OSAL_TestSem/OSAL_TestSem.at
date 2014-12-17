@@ -1,0 +1,8 @@
+# OSAL_TestSem -*- Autotest -*-
+
+AT_BANNER([[OSAL_TestSem]])
+
+AT_SETUP([Sem checkout])
+AT_CHECK([OSAL_TestSem], [0], [ignore], [ignore])
+AT_CLEANUP
+

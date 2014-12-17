@@ -1,0 +1,56 @@
+#!@SHELL@
+# @configure_input@              -*- shell-script -*-
+# Coverage analysis script for @PACKAGE@ test suite and apps.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+set -e
+
+EXE=$1
+shift
+D=`cd @abs_top_builddir@ && pwd`
+
+LCOV=@LCOV@
+test -z ${LCOV} && echo "need to install lcov." && exit 1
+GENHTML=@GENHTML@
+test -z ${GENHTML} && echo "need to install genhtml." && exit 1
+MKDIR=`which mkdir` 2>/dev/null
+test -z ${MKDIR} && echo "need to install mkdir." && exit 1
+SED=`which sed` 2>/dev/null
+test -z ${SED} && echo "need to install sed." && exit 1
+
+LCOV_VER=`lcov --version | ${SED} -re 's,.*(([0-9]+[.])+[0-9]+),\1,'`
+LCOV_VER_MAJOR=`echo ${LCOV_VER} | ${SED} -re 's,([0-9]+)[.].*,\1,'`
+LCOV_VER_MINOR=`echo ${LCOV_VER} | ${SED} -re 's,(([0-9]+)[.])([0-9]+)[.]?,\3,'`
+
+if test ${LCOV_VER_MAJOR} -ge 1 && test ${LCOV_VER_MINOR} -ge 10 ; then
+   # lcov/genhtml 1.10 adds the --rc parameter and disables branch analysis by default.
+   # This turns branch analysis back on, along with some other goodies..
+   LCOV="${LCOV} --rc lcov_branch_coverage=1 --rc geninfo_auto_base=1"
+   GENHTML="${GENHTML} --rc genhtml_branch_coverage=1 --rc genhtml_num_spaces=3 --rc genhtml_legend=1 --rc genhtml_sort=1"
+else
+   GENHTML="${GENHTML} --branch-coverage --function-coverage"
+fi
+
+test -d $D/tests/lcov || ${MKDIR} -p $D/tests/lcov
+
+${LCOV} --capture \
+        --directory $D \
+        --output-file $D/tests/lcov/${EXE}-base.info \
+        --initial \
+        --compat-libtool
+
+$D/tests/${EXE} ${1+"$@"}
+
+${LCOV} --capture \
+        --directory $D \
+        --output-file $D/tests/lcov/${EXE}-test.info \
+        --compat-libtool
+
+${LCOV} --add-tracefile $D/tests/lcov/${EXE}-base.info \
+        --add-tracefile $D/tests/lcov/${EXE}-test.info \
+        --output-file $D/tests/lcov/${EXE}-totals.info
+
+${GENHTML} --output-directory $D/tests/lcov/${EXE} \
+           $D/tests/lcov/${EXE}-totals.info
+
+exit $?

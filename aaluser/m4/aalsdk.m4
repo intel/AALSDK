@@ -129,19 +129,19 @@ dnl # Users specify whether they want to see debug print output / enable debuggi
 AC_DEFUN([AALSDK_DEBUG_OUTPUT], [
    _aal_dbg_output="$1"
    AC_ARG_ENABLE([aal-dbg],
-                 [AS_HELP_STRING([--enable-aal-dbg], [AAL Debug output @<:@default=$1@:>@])],
+                 [AS_HELP_STRING([--enable-aal-dbg], [Enable debug facilities @<:@default=$1@:>@])],
                  [AALSDK_YES_NO([${enableval}], [_aal_dbg_output], [], [],
                                 [AC_MSG_ERROR([Invalid value '${enableval}' for --enable-aal-dbg])])])
-   AC_CACHE_CHECK([whether to enable AALSDK debug output], [ac_cv_aal_enable_dbg_output],
+   AC_CACHE_CHECK([whether to create a debug build], [ac_cv_aal_enable_dbg_output],
                   [ac_cv_aal_enable_dbg_output="${_aal_dbg_output}"])
    AC_SUBST([AALSDK_ENABLE_DBG], [${ac_cv_aal_enable_dbg_output}])
    AM_CONDITIONAL([AAL_COND_ENABLE_DBG_OUTPUT], [test "x${ac_cv_aal_enable_dbg_output}" = xyes])
    AM_COND_IF([AAL_COND_ENABLE_DBG_OUTPUT],
               [
+               DEBUG_CPPFLAGS='-DENABLE_DEBUG=1'
                CPPFLAGS+=' -DENABLE_DEBUG=1'
-               AC_SUBST([ENABLE_DEBUG], [1])
-              ],
-              [AC_SUBST([ENABLE_DEBUG], [0])])
+              ])
+   AC_SUBST([DEBUG_CPPFLAGS], [${DEBUG_CPPFLAGS}])
 ]) dnl # AALSDK_DEBUG_OUTPUT
 
 dnl # AALSDK_DEBUG_DYNLOAD(DEF-VAL)
@@ -175,10 +175,10 @@ AC_DEFUN([AALSDK_ASSERT], [
    AM_CONDITIONAL([AAL_COND_ENABLE_ASSERT], [test "x${ac_cv_aal_enable_assert}" = xyes])
    AM_COND_IF([AAL_COND_ENABLE_ASSERT],
               [
+               ASSERT_CPPFLAGS='-DENABLE_ASSERT=1'
                CPPFLAGS+=' -DENABLE_ASSERT=1'
-               AC_SUBST([ENABLE_ASSERT], [1])
-              ],
-              [AC_SUBST([ENABLE_ASSERT], [0])])
+              ])
+   AC_SUBST([ASSERT_CPPFLAGS], [${ASSERT_CPPFLAGS}])
 ]) dnl # AALSDK_ASSERT
 
 

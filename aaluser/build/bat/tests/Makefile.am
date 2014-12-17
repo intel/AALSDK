@@ -1,0 +1,108 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+SUBDIRS=\
+unit
+
+#TESTSUITE_AT=
+#coverage/coverage.at 
+#coverage/lcov/lcov.at 
+#local.at 
+#run/myapp.at 
+#profile/gprof/gprof.at 
+#profile/profile.at 
+#testsuite.at 
+#unit/bat/bat.at 
+#unit/unit.at 
+#memory/memory.at 
+#memory/valgrind/leak-check.at
+
+TESTSUITE_AT=\
+coverage/coverage.at \
+coverage/lcov/lcov.at \
+local.at \
+profile/gprof/gprof.at \
+profile/profile.at \
+testsuite.at \
+unit/bat/bat.at \
+unit/unit.at \
+unit/OSAL_TestSem/OSAL_TestSem.at \
+unit/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at
+
+#EXTRA_DIST=
+#$(TESTSUITE_AT) 
+#atlocal.in 
+#testsuite 
+#package.m4 
+#coverage/lcov/lcov-coverage.in 
+#run/myapp.in 
+#run/bat.in 
+#profile/gprof/gprof-myapp.in 
+#profile/gprof/gprof-bat.in 
+#memory/valgrind/valgrind-leak-check.in
+
+EXTRA_DIST=\
+$(TESTSUITE_AT) \
+atlocal.in \
+testsuite \
+package.m4 \
+coverage/lcov/lcov-coverage.in \
+run/bat.in \
+run/OSAL_TestSem.in \
+run/OSAL_TestThreadGroup.in \
+profile/gprof/gprof-bat.in
+
+DISTCLEANFILES=\
+atconfig \
+$(check_SCRIPTS)
+
+MAINTAINERCLEANFILES=\
+Makefile.in \
+$(TESTSUITE)
+
+$(srcdir)/package.m4: $(top_srcdir)/configure.ac
+	@{ \
+	   echo '# Signature of the current package.' ; \
+	   echo 'm4_define([AT_PACKAGE_NAME],      [$(PACKAGE_NAME)])' ; \
+	   echo 'm4_define([AT_PACKAGE_TARNAME],   [$(PACKAGE_TARNAME)])' ; \
+	   echo 'm4_define([AT_PACKAGE_VERSION],   [$(PACKAGE_VERSION)])' ; \
+	   echo 'm4_define([AT_PACKAGE_STRING],    [$(PACKAGE_STRING)])' ; \
+	   echo 'm4_define([AT_PACKAGE_BUGREPORT], [$(PACKAGE_BUGREPORT)])' ; \
+	   echo 'm4_define([AT_PACKAGE_URL],       [$(PACKAGE_URL)])' ; \
+	} >'$(srcdir)/package.m4'
+
+TESTSUITE=$(srcdir)/testsuite
+
+AUTOTEST=$(AUTOM4TE) --language=autotest
+
+$(TESTSUITE): package.m4 $(TESTSUITE_AT)
+	$(AUTOTEST) -I $(srcdir) testsuite.at -o $@.tmp
+	mv $@.tmp $@
+
+atconfig: $(top_builddir)/config.status
+	cd $(top_builddir) && ./config.status tests/$@
+
+#check_SCRIPTS=
+#bat 
+#myapp 
+#gprof-bat 
+#gprof-myapp 
+#lcov-coverage
+
+check_SCRIPTS=\
+bat \
+OSAL_TestSem \
+OSAL_TestThreadGroup \
+gprof-bat \
+lcov-coverage
+
+clean-local:
+	test ! -f '$(TESTSUITE)' || $(SHELL) '$(TESTSUITE)' --clean
+
+# Run the test suite locally.
+check-local: atconfig atlocal $(TESTSUITE)
+	$(SHELL) '$(TESTSUITE)' $(TESTSUITEFLAGS)
+
+# Run the test suite on the *installed* tree.
+installcheck-local: atconfig atlocal $(TESTSUITE)
+	$(SHELL) '$(TESTSUITE)' AUTOTEST_PATH='$(bindir)' $(TESTSUITEFLAGS)
+

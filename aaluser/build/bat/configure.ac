@@ -3,8 +3,8 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalsdk-bat], [0.0.0], [tim.whisonant@intel.com])
-AC_COPYRIGHT([Copyright (c) 2014 Intel Corporation])
+AC_INIT([aalsdk-bat], [1.1.1], [tim.whisonant@intel.com])
+AC_COPYRIGHT([INTEL CONFIDENTIAL - For Intel Internal Use Only])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([aas/AASLib/AALlib.cpp])
@@ -24,34 +24,36 @@ LT_PREREQ([2.2])
 LT_INIT([dlopen])
 LT_LANG([C++])
 
-AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2014 Intel Corporation])
+AALSDK_COPYRIGHT_NOTICE([INTEL CONFIDENTIAL - For Intel Internal Use Only])
 AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
 dnl ############################################################################
-AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [3],[4],[0])
-AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [3],[4],[0])
-AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [0],[0],[0])
-AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [2],[0],[0])
-AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [1],[0],[0])
-AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [3],[4],[0])
-AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [3],[4],[0])
-AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[1],[0])
-AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [0],[0],[0])
-AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [0],[0],[0])
+AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [1],[1],[1])
+AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [1],[1],[1])
+AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [1],[1],[1])
+AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [1],[1],[1])
+AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [1],[1],[1])
+AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [1],[1],[1])
+AALSDK_LTLIB_VERSION([ASE],          [libASE],          [1],[1],[1])
+AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [1],[1],[1])
+AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [1],[1],[1])
+AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [1],[1],[1])
+AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [1],[1],[1])
+AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
+AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
 dnl ############################################################################
+WITH_GCOV_ANALYSIS
+WITH_GPROF_PROFILING
 
 dnl ############################################################################
 dnl ## Optional Features #######################################################
@@ -132,6 +134,14 @@ AC_CHECK_FUNCS([gettimeofday memset munmap strchr strerror strncpy])
 dnl ############################################################################
 dnl ## Makefile substitutions ##################################################
 dnl ############################################################################
+VERIFY_OPTIONS
+
+AC_CONFIG_FILES([tests/atlocal])
+AC_CONFIG_FILES([tests/bat:tests/run/bat.in], [chmod 755 tests/bat])
+AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
+AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
+AC_CONFIG_FILES([tests/lcov-coverage:tests/coverage/lcov/lcov-coverage.in], [chmod 755 tests/lcov-coverage])
+AC_CONFIG_FILES([tests/gprof-bat:tests/profile/gprof/gprof-bat.in], [chmod 755 tests/gprof-bat])
 
 AC_CONFIG_FILES([doc/Doxyfile:build/Doxyfile.in])
 
@@ -178,9 +188,11 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
                  utils/SPLAFU/SWSimSPLAFU/Makefile])
 
-AC_CONFIG_FILES([tests/bat/Makefile
-                 tests/OSAL_TestSem/Makefile
-                 tests/OSAL_TestThreadGroup/Makefile])
+AC_CONFIG_FILES([tests/Makefile
+                 tests/unit/Makefile
+                 tests/unit/bat/Makefile
+                 tests/unit/OSAL_TestSem/Makefile
+                 tests/unit/OSAL_TestThreadGroup/Makefile])
 
 AC_OUTPUT
 
@@ -189,5 +201,7 @@ dnl ## Config / Next Steps #####################################################
 dnl ############################################################################
 echo \
 "
-AALSDK Basic Acceptance Tests
-"
+${ac_cv_aal_copyright}
+
+AALSDK Basic Acceptance Tests"
+SHOW_OPTIONS

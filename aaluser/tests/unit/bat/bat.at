@@ -1,0 +1,18 @@
+# Basic Acceptance Tests. -*- Autotest -*-
+
+AT_BANNER([[XL Runtime]])
+
+AT_SETUP([Runtime Start])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes])
+AT_CHECK([bat --gtest_filter=*XLStartup*], [0], [ignore], [ignore])
+AT_CLEANUP
+
+AT_SETUP([Runtime Start Stress])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes])
+AT_SKIP_IF([test "x${at_arg_aal_xlstress_iters}" = 'x0'])
+AT_CHECK([echo 'iters=${at_arg_aal_xlstress_iters}' && bat --gtest_filter="*XLStartup*" --gtest_repeat=${at_arg_aal_xlstress_iters} >/dev/null 2>&1], [0], [ignore], [ignore])
+AT_CLEANUP
+
+
+# ################################################################################
+
