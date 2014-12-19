@@ -66,7 +66,8 @@ module latency_scoreboard
     parameter int DATA_WIDTH = 512,
     parameter int COUNT_WIDTH = 8,
     parameter int FIFO_FULL_THRESH = 5,
-    parameter int FIFO_DEPTH_BASE2 = 3
+    parameter int FIFO_DEPTH_BASE2 = 3,
+    parameter int VISIBLE_DEPTH_BASE2 = 7
     )
    (
     input logic 		  clk,
@@ -84,14 +85,29 @@ module latency_scoreboard
     output logic 		  empty,
     output logic 		  full,
     output logic 		  overflow,
-    output logic 		  underflow
+    output logic 		  underflow,
+    output logic [31:0] 	  count
     );
 
-   parameter int 		  LATBUF_POP_INVALID = 255;
+   parameter int 		  LATBUF_SLOT_INVALID = 255;
+   parameter int 		  TID_WIDTH = 32;
+   parameter int 		  FIFO_WIDTH = TID_WIDTH + HDR_WIDTH + DATA_WIDTH;
 
-   /*
-    * Setup slot usage order
-    */
+   // Tracking ID
+   logic [TID_WIDTH-1:0] 	  tid_counter;
+   logic [TID_WIDTH-1:0] 	  tid_in;
+   logic [TID_WIDTH-1:0] 	  tid_out;
+
+   // Tagging process
+   always @(posedge clk) begin
+      if (rst)
+	tid_in <= {TID_WIDTH{1'b0}};
+      else if (write_en)
+	tid_in <= tid_in + 1;
+   end
+
+
+   // Setup slot usage order
    int 				  slot_lookup[NUM_TRANSACTIONS];
 
    // Initialize slot usage order
@@ -116,31 +132,62 @@ module latency_scoreboard
    logic [0:NUM_TRANSACTIONS-1]   latbuf_ready;
    logic 			  latbuf_empty;
    logic 			  latbuf_full;
+   logic 			  latbuf_almfull;
+   logic 			  latbuf_full_reg;
    logic 			  latbuf_push;
    logic 			  latbuf_pop;
+   int 				  latbuf_count;
+   logic 			  latbuf_anyready;
+
+   // always @(posedge clk)
+   //   latbuf_pop_reg <= latbuf_pop;
 
    // Stage 1 signals
    logic [HDR_WIDTH-1:0] 	  stg1_meta;
    logic [DATA_WIDTH-1:0] 	  stg1_data;
+   logic [TID_WIDTH-1:0] 	  stg1_tid;
    logic 			  stg1_valid;
    logic 			  stg1_empty;
    logic 			  stg1_full;
    logic 			  stg1_pop;
+   logic [FIFO_DEPTH_BASE2:0] 	  stg1_count;
 
    // Stage 1 (write fence filtered)
    logic [HDR_WIDTH-1:0] 	  q_meta;
    logic [DATA_WIDTH-1:0] 	  q_data;
+   logic [TID_WIDTH-1:0] 	  q_tid;
    logic 			  q_valid;
    logic 			  q_full;
    logic 			  q_empty;
    logic 			  q_pop;
    logic 			  q_push;
+   logic [FIFO_DEPTH_BASE2:0] 	  q_count;
+
+   logic [HDR_WIDTH-1:0] 	  stg2_meta;
+   logic [DATA_WIDTH-1:0] 	  stg2_data;
+   logic [TID_WIDTH-1:0] 	  stg2_tid;
+   logic 			  stg2_valid;
 
    // Push/Pop iterator
    int 				  push_ptr;
    int 				  pop_ptr;
    int 				  push_slot_num;
    int 				  pop_slot_num;
+
+   // stage 3 signals
+   logic [FIFO_WIDTH-1:0] 	  stg3_din;
+   logic 			  stg3_wen;
+   logic 			  stg3_full;
+   logic 			  stg3_empty;
+   logic [FIFO_DEPTH_BASE2:0] 	  stg3_count;
+
+   int 				  jj;
+   int 				  ii;
+
+   logic [FIFO_WIDTH-1:0] 	  reg_stg3_din;
+   logic 			  reg_stg3_wen;
+   logic 			  reg_latbuf_pop;
+
 
    /*
     * Flow errors
@@ -166,9 +213,7 @@ module latency_scoreboard
       end
    end
 
-   /*
-    * Full-empty status
-    */
+   // FULL
    assign full = stg1_full;
 
 
@@ -178,19 +223,13 @@ module latency_scoreboard
    // Enumerate states
    typedef enum {LatSc_Disabled, LatSc_Enabled, LatSc_Countdown, LatSc_DoneReady, LatSc_PopRecord} latsc_fsmState;
 
-   // PUSH FSM
-   typedef enum {Push_Enabled, Push_WriteFence, Push_WaitState}  push_fsmState;
-   push_fsmState push_state;
-
-   // POP FSM
-   // typedef enum {Pop_Disabled, Pop_Enabled} pop_fsmState;
-   // pop_fsmState pop_state;
 
    // Transaction storage
    typedef struct packed
 		  {
 		     logic [HDR_WIDTH-1:0]   meta;
 		     logic [DATA_WIDTH-1:0]  data;
+		     logic [TID_WIDTH-1:0]   tid;
 		     logic [COUNT_WIDTH-1:0] ctr_out;
 		     logic 		     ready_to_go;
 		     logic 		     record_valid;
@@ -200,13 +239,6 @@ module latency_scoreboard
    // Array of stored transactions
    transact_t records[NUM_TRANSACTIONS] ;
 
-   // stage 3 signals
-   logic [HDR_WIDTH+DATA_WIDTH-1:0] 	     stg3_din;
-   logic 				     stg3_wen;
-   logic 				     stg3_full;
-   int 					     jj;
-   int 					     ii;
-
    /*
     * Find a next free slot
     */
@@ -214,42 +246,35 @@ module latency_scoreboard
       int 				     find_iter;
       int 				     ret_free_slot;
       begin
-	 if (latbuf_full) begin
-	    return LATBUF_POP_INVALID;
-	 end
-	 else begin
-   	    for(find_iter = push_ptr; find_iter < push_ptr + NUM_TRANSACTIONS; find_iter = find_iter + 1) begin
-	       ret_free_slot = slot_lookup[find_iter % NUM_TRANSACTIONS];
-   	       if (records[ret_free_slot].record_valid == 1'b0) begin
-		  push_ptr = find_iter;
-   		  return ret_free_slot;
-   	       end
+   	 for(find_iter = push_ptr; find_iter < push_ptr + NUM_TRANSACTIONS; find_iter = find_iter + 1) begin
+	    ret_free_slot = slot_lookup[find_iter % NUM_TRANSACTIONS];
+   	    if ((records[ret_free_slot].record_valid == 0) && (records[ret_free_slot].state == LatSc_Disabled)) begin
+   	       push_ptr = find_iter;
+   	       return ret_free_slot;
    	    end
-	 end
+   	 end
+	 return LATBUF_SLOT_INVALID;
       end
    endfunction
 
    /*
     * Find a transaction to release to output stage
     */
-   function integer find_next_pop_slot(int last_popped_slot);
+   function integer find_next_pop_slot();
       int ret_pop_slot;
       int start_ptr;
       int pop_iter;
       int sel_slot;
+      int prev_pop_slot_num;
       begin
-	 if (~(|latbuf_ready)) begin
-	    return LATBUF_POP_INVALID;
-	 end
-	 else begin
-	    for(pop_iter = 0; pop_iter < NUM_TRANSACTIONS; pop_iter = pop_iter + 1) begin
-	       sel_slot = pop_iter;
-	       if ( records[sel_slot].ready_to_go == 1'b1 ) begin
-		  ret_pop_slot = sel_slot;
-		  return ret_pop_slot;
-	       end
+	 for(pop_iter = pop_ptr; pop_iter < pop_ptr + NUM_TRANSACTIONS ; pop_iter = pop_iter + 1) begin
+	    sel_slot = pop_iter % NUM_TRANSACTIONS;
+	    if ( (records[sel_slot].ready_to_go == 1) && (records[sel_slot].state == LatSc_DoneReady) ) begin
+	       pop_ptr = pop_iter; 
+	       return sel_slot;
 	    end
 	 end
+	 return LATBUF_SLOT_INVALID;
       end
    endfunction
 
@@ -282,9 +307,11 @@ module latency_scoreboard
 	   // WriteFence
 	   `ASE_TX1_WRFENCE:
 	     begin
+`ifdef ASE_DEBUG
 		`BEGIN_YELLOW_FONTCOLOR;
 		$display("SIM-SV: %m =>  WriteFence must not enter latency model");
 		`END_YELLOW_FONTCOLOR;
+`endif
 		ret_random_lat = 1;
 	     end
 
@@ -297,10 +324,12 @@ module latency_scoreboard
 	   // Unspecified type (warn but specify latency
 	   default:
 	     begin
+`ifdef ASE_DEBUG
 		`BEGIN_YELLOW_FONTCOLOR;
 		$display("SIM-SV: %m =>");
 		$display("No Latency model available for meta type %x, using LAT_UNDEFINED", meta);
 		`END_YELLOW_FONTCOLOR;
+`endif
 		ret_random_lat = `LAT_UNDEFINED;
 	     end
 
@@ -318,7 +347,7 @@ module latency_scoreboard
     */
    ase_fifo
      #(
-       .DATA_WIDTH     (HDR_WIDTH + DATA_WIDTH),
+       .DATA_WIDTH     (FIFO_WIDTH),
        .DEPTH_BASE2    (FIFO_DEPTH_BASE2),
        .ALMFULL_THRESH (FIFO_FULL_THRESH)
        )
@@ -327,14 +356,14 @@ module latency_scoreboard
       .clk        (clk),
       .rst        (rst),
       .wr_en      (write_en),
-      .data_in    ({meta_in, data_in}),
+      .data_in    ({tid_in, meta_in, data_in}),
       .rd_en      (stg1_pop),
-      .data_out   ({stg1_meta, stg1_data}),
+      .data_out   ({stg1_tid, stg1_meta, stg1_data}),
       .data_out_v (stg1_valid),
       .alm_full   (stg1_full),
       .full       (),
       .empty      (stg1_empty),
-      .count      (),
+      .count      (stg1_count),
       .overflow   (stg1_overflow),
       .underflow  (stg1_underflow)
       );
@@ -348,13 +377,13 @@ module latency_scoreboard
    end
 
    // Filter WRFENCE
-   assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || wrfence_pop);
+   assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || (assert_wrfence && wrfence_pop));
    assign q_push   = ~stg1_empty && (~assert_wrfence && ~q_full);
 
    // Request FIFO with Write fence filtered out
    ase_fifo
      #(
-       .DATA_WIDTH     (HDR_WIDTH + DATA_WIDTH),
+       .DATA_WIDTH     (FIFO_WIDTH),
        .DEPTH_BASE2    (FIFO_DEPTH_BASE2),
        .ALMFULL_THRESH (FIFO_FULL_THRESH)
        )
@@ -363,88 +392,66 @@ module latency_scoreboard
       .clk        (clk),
       .rst        (rst),
       .wr_en      (q_push),
-      .data_in    ({stg1_meta, stg1_data}),
+      .data_in    ({stg1_tid, stg1_meta, stg1_data}),
       .rd_en      (q_pop),
-      .data_out   ({q_meta, q_data}),
+      .data_out   ({q_tid, q_meta, q_data}),
       .data_out_v (q_valid),
       .alm_full   (q_full),
       .full       (),
       .empty      (q_empty),
-      .count      (),
+      .count      (q_count),
       .overflow   (q_overflow),
       .underflow  (q_underflow)
       );
 
    // Read from filtered data
-   assign q_pop = ~q_empty && latbuf_push;
+   assign q_pop = ~q_empty && ~latbuf_almfull && (push_slot_num != LATBUF_SLOT_INVALID);
+   always @(posedge clk)
+     latbuf_push <= q_pop;
 
-   /*
-    * Push transaction to latency scoreboard
-    */
-   // STG1_FIFO -> LATBUF
+   // Register stg2 output
    always @(posedge clk) begin
-      if (rst) begin
-   	 wrfence_pop <= 0;
-   	 latbuf_push <= 0;
-   	 push_state  <= Push_Enabled;
-      end
-      else begin
-   	 case (push_state)
-   	   // Regular push (non-Wrfence
-   	   Push_Enabled:
-   	     begin
-   		wrfence_pop <= 0;
-   		if (~q_empty && ~latbuf_full) begin
-   		   push_slot_num <= find_next_push_slot();
-   		   latbuf_push <= 1;
-   		   push_state <= Push_Enabled;
-   		end
-   		else if (q_empty && assert_wrfence) begin
-   		   latbuf_push <= 0;
-   		   push_state <= Push_WriteFence;
-   		end
-   		else begin
-   		   latbuf_push <= 0;
-   		   push_state <= Push_Enabled;
-   		end
-   	     end
-
-   	   // Write fence processing
-   	   Push_WriteFence:
-   	     begin
-   		latbuf_push <= 0;
-   		if (~latbuf_empty) begin
-   		   wrfence_pop <= 0;
-   		   push_state <= Push_WriteFence;
-   		end
-   		else begin
-   		   wrfence_pop <= 1;
-   		   push_state <= Push_WaitState;
-   		end
-   	     end
-
-   	   // Write fence wait state
-   	   Push_WaitState:
-   	     begin
-   		wrfence_pop <= 0;
-   		latbuf_push <= 0;
-   		push_state <= Push_Enabled;
-   	     end
-
-   	   default:
-   	     begin
-   		wrfence_pop <= 0;
-   		latbuf_push <= 0;
-   		push_state <= Push_Enabled;
-   	     end
-
-   	 endcase
-      end
+      stg2_valid <= q_valid;
+      stg2_meta <= q_meta;
+      stg2_data <= q_data;
+      stg2_tid <= q_tid;
    end
 
+
+   /*
+    * Calculate PUSH and POP slot
+    */
+   always @(posedge clk) begin
+      push_slot_num <= find_next_push_slot();
+      pop_slot_num <= find_next_pop_slot();
+   end
+
+   // Wrfence POP
+   always @(posedge clk) begin
+      if (rst)
+	wrfence_pop <= 0;
+      else if (latbuf_empty && stg3_empty && q_empty  && assert_wrfence)
+	wrfence_pop <= 1;
+      else
+	wrfence_pop <= 0;
+   end
+
+
+   // Latency scoreboard counter
+   assign latbuf_count = $countones(latbuf_status);
+
+   // Assign latbuf_count & other status signals
+   assign latbuf_empty = (latbuf_count == 0) ? 1 : 0;
+   assign latbuf_full  = (latbuf_count == NUM_TRANSACTIONS) ? 1 : 0;
+   assign latbuf_almfull = (latbuf_count >= (NUM_TRANSACTIONS-1)) ? 1 : 0;
+   assign latbuf_anyready = |latbuf_ready;
+
    // LATBUF Full and empty, and if ready to pop
-   assign latbuf_empty = (latbuf_status == {NUM_TRANSACTIONS{1'b0}}) ? 1'b1 : 1'b0;
-   assign latbuf_full  = (latbuf_status == {NUM_TRANSACTIONS{1'b1}}) ? 1'b1 : 1'b0;
+   // assign latbuf_empty = (latbuf_status == {NUM_TRANSACTIONS{1'b0}}) ? 1'b1 : 1'b0;
+   // assign latbuf_full  = (latbuf_status == {NUM_TRANSACTIONS{1'b1}}) ? 1'b1 : 1'b0;
+
+   // always @(posedge clk)
+   //   latbuf_full_reg <= latbuf_full;
 
 
    /*
@@ -455,32 +462,56 @@ module latency_scoreboard
       // Managing each slot in transaction record
       for (gen_i = 0 ; gen_i < NUM_TRANSACTIONS ; gen_i = gen_i + 1) begin
 	 logic record_valid_reg;
-
+	 logic ready_to_go_reg;
+	 
 	 assign latbuf_status[gen_i] = records[gen_i].record_valid ;
 	 assign latbuf_ready[gen_i]  = records[gen_i].ready_to_go;
 
 	 // Record valid Assignment
 	 always @(*) begin
-	    if (q_valid && (push_slot_num == gen_i)) begin
-	       records[gen_i].record_valid <= 1;
-	    end
-	    else if (latbuf_pop && (pop_slot_num == gen_i)) begin
+	    if (rst) begin
 	       records[gen_i].record_valid <= 0;
 	    end
 	    else begin
-	       records[gen_i].record_valid <= record_valid_reg;
+	       if (stg2_valid && (push_slot_num == gen_i) && (push_slot_num != LATBUF_SLOT_INVALID)) begin
+	 	  records[gen_i].record_valid <= 1;
+	       end
+	       else if (latbuf_pop && (pop_slot_num == gen_i)) begin
+	 	  records[gen_i].record_valid <= 0;
+	       end
+	       else begin
+	 	  records[gen_i].record_valid <= record_valid_reg;
+	       end
 	    end
 	 end
 
+	 // Ready to go assignment
+	 // always @(*) begin
+	 //    if (rst) begin
+	 //       records[gen_i].ready_to_go <= 0;	       
+	 //    end
+	 //    else begin
+	 //       if (records[gen_i].record_valid && (records[gen_i].state == LatSc_DoneReady)) begin
+	 // 	  records[gen_i].ready_to_go <= 1;	       		  
+	 //       end
+	 //       else if ((pop_slot_num == gen_i) && (records[gen_i].state == LatSc_DoneReady) && latbuf_pop) begin
+	 // 	  records[gen_i].ready_to_go <= 0;	       
+	 //       end
+	 //       else begin
+	 // 	  records[gen_i].ready_to_go <= ready_to_go_reg;	       
+	 //       end
+	 //    end
+	 // end 
+	 
 	 // Register process
-	 always @(posedge clk)
-	   record_valid_reg <= records[gen_i].record_valid;
-
+	 always @(posedge clk) begin
+	    record_valid_reg <= records[gen_i].record_valid;
+	    ready_to_go_reg  <= records[gen_i].ready_to_go;	    
+	 end
 
    	 // State management
    	 always @(posedge clk) begin
 	    if (rst) begin
-   	       records[gen_i].record_valid <= 1'b0;
    	       records[gen_i].ready_to_go <= 1'b0;
       	       records[gen_i].state <= LatSc_Disabled;
 	    end
@@ -490,11 +521,17 @@ module latency_scoreboard
    		 // Disabled, not a valid transaction
    		 LatSc_Disabled:
    		   begin
-   		      if ( (push_slot_num == gen_i) && latbuf_push && records[gen_i].record_valid ) begin
+   		      if ( (push_slot_num == gen_i) && latbuf_push ) begin
+`ifdef ASE_DEBUG
+			 `BEGIN_YELLOW_FONTCOLOR;
+			 $display("INFO (%d) => latbuf_push tid=%x", $time, stg2_tid);
+			 `END_YELLOW_FONTCOLOR;
+`endif
    			 records[gen_i].ready_to_go <= 1'b0;
-   			 records[gen_i].meta  <= q_meta;
-   			 records[gen_i].data  <= q_data;
-   			 records[gen_i].ctr_out <= get_random_delay(q_meta[`TX_META_TYPERANGE]);
+   			 records[gen_i].meta  <= stg2_meta;
+   			 records[gen_i].data  <= stg2_data;
+			 records[gen_i].tid   <= stg2_tid;
+   			 records[gen_i].ctr_out <= get_random_delay(stg2_meta[`TX_META_TYPERANGE]);
    			 records[gen_i].state <= LatSc_Countdown;
    		      end
    		      else begin
@@ -520,11 +557,12 @@ module latency_scoreboard
    		 // Transaction is ready to be processed out
    		 LatSc_DoneReady:
    		   begin
-   		      records[gen_i].ready_to_go <= 1'b1;
    		      if ((gen_i == pop_slot_num) && latbuf_pop) begin
+   			 records[gen_i].ready_to_go <= 0;
    			 records[gen_i].state <= LatSc_PopRecord;
    		      end
    		      else begin
+   			 records[gen_i].ready_to_go <= 1;
    			 records[gen_i].state <= LatSc_DoneReady;
    		      end
    		   end
@@ -532,11 +570,12 @@ module latency_scoreboard
    		 // Pop Record to STG3 FIFO when selected
    		 LatSc_PopRecord:
    		   begin
-   		      if (stg3_full != 1'b1) begin
+   		      records[gen_i].ready_to_go <= 0;
+   		      if (records[gen_i].record_valid == 0) begin
    			 records[gen_i].state <= LatSc_Disabled;
    		      end
    		      else begin
-   			 records[gen_i].state <= LatSc_PopRecord;
+   		      	 records[gen_i].state <= LatSc_PopRecord;
    		      end
    		   end
 
@@ -558,34 +597,51 @@ module latency_scoreboard
     */
    always @(posedge clk) begin
       if (rst) begin
-	 stg3_wen   <= 0;
+	 stg3_wen <= 0;
+	 stg3_din <= {FIFO_WIDTH{1'b0}};
 	 latbuf_pop <= 0;
       end
       else begin
-	 if ((pop_slot_num != LATBUF_POP_INVALID) && ~stg3_full && ~latbuf_empty && records[pop_slot_num].record_valid ) begin
-	    latbuf_pop <= 1;
+	 if ((pop_slot_num != LATBUF_SLOT_INVALID) && ~stg3_full && ~latbuf_empty) begin
 	    stg3_wen <= 1;
+	    stg3_din <= {records[pop_slot_num].tid, records[pop_slot_num].meta, records[pop_slot_num].data};
+	    latbuf_pop <= 1;
 	 end
 	 else begin
-	    latbuf_pop <= 0;
 	    stg3_wen <= 0;
+	    stg3_din <= {FIFO_WIDTH{1'b0}};
+	    latbuf_pop <= 0;
 	 end
       end
    end
 
-   always @(posedge clk)
-     pop_slot_num <= find_next_pop_slot(pop_slot_num);
 
+   // always @(posedge clk) begin
+   //    if (rst) begin
+   // 	 stg3_wen   <= 0;
+   // 	 latbuf_pop <= 0;
+   //    end
+   //    else begin
+   //    	 if ((pop_slot_num != LATBUF_SLOT_INVALID) && ~stg3_full && ~latbuf_empty && records[pop_slot_num].ready_to_go ) begin
+   //    	    latbuf_pop <= 1;
+   //    	    stg3_wen <= 1;
+   //    	 end
+   //    	 else begin
+   //    	    latbuf_pop <= 0;
+   //    	    stg3_wen <= 0;
+   //    	 end
+   //    end
+   // end
 
-   // Data into outfifo is a concat of data from reordering emulation
-   assign stg3_din = {records[pop_slot_num].meta, records[pop_slot_num].data};
+   // // Data into outfifo is a concat of data from reordering emulation
+   // assign stg3_din = {records[pop_slot_num].tid, records[pop_slot_num].meta, records[pop_slot_num].data};
 
    /*
     * Stage III - Output FIFO
     */
    ase_fifo
      #(
-       .DATA_WIDTH     (HDR_WIDTH + DATA_WIDTH),
+       .DATA_WIDTH     (FIFO_WIDTH),
        .DEPTH_BASE2    (FIFO_DEPTH_BASE2),
        .ALMFULL_THRESH (FIFO_FULL_THRESH)
        )
@@ -596,15 +652,74 @@ module latency_scoreboard
       .wr_en      (stg3_wen),
       .data_in    (stg3_din),
       .rd_en      (read_en),
-      .data_out   ({meta_out, data_out}),
+      .data_out   ({tid_out, meta_out, data_out}),
       .data_out_v (valid_out),
       .alm_full   (stg3_full),
       .full       (),
-      .empty      (empty),
-      .count      (),
+      .empty      (stg3_empty),
+      .count      (stg3_count),
       .overflow   (stg3_overflow),
       .underflow  (stg3_underflow)
       );
 
+   assign empty = stg3_empty;
+
+   // Count
+   assign count = stg1_count + q_count + latbuf_count + stg3_count;
+
+
+   /*
+    * Transaction IN-OUT checker
+    * Sniffs dropped transactions
+    */
+`ifdef ASE_DEBUG
+   int checker_mem[*];
+   // Add/remove to checker as things come and go
+   always @(posedge clk) begin
+      if (write_en) begin
+	 checker_mem[tid_in] = tid_in;
+      end
+      else if (valid_out) begin
+	 if (checker_mem.exists(tid_out)) begin
+	    checker_mem.delete(tid_out);
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display("ERROR (%d): tid_out = %x was not found in checker memory !!", $time, tid_out);
+	    `END_RED_FONTCOLOR;
+	 end
+      end
+      else if (wrfence_pop) begin
+	 if (checker_mem.exists(stg1_tid)) begin
+	    checker_mem.delete(stg1_tid);
+	 end
+	 else begin
+	    `BEGIN_RED_FONTCOLOR;
+	    $display("ERROR (%d): tid_out = %x was not found in checker memory !!", $time, stg1_tid);
+	    `END_RED_FONTCOLOR;
+	 end
+      end
+   end
+
+   // Monitor-print process
+   always @(posedge clk) begin
+      if (q_pop && latbuf_full) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("ERROR (%d) => Latbuf push and full were HIGH, tid = %d", $time, q_tid);
+	 `END_RED_FONTCOLOR;
+      end
+      if (latbuf_pop && latbuf_empty) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("ERROR (%d) => Latbuf pop and empty were HIGH, tid = %d", $time, q_tid);
+	 `END_RED_FONTCOLOR;
+      end
+      if (q_pop) begin
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("INFO (%d) => QPOP q_tid = %d", $time, q_tid);
+	 `END_YELLOW_FONTCOLOR;
+      end
+   end
+
+`endif
 
 endmodule // latency_scoreboard
