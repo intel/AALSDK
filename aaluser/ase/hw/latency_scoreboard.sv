@@ -139,9 +139,6 @@ module latency_scoreboard
    int 				  latbuf_count;
    logic 			  latbuf_anyready;
 
-   // always @(posedge clk)
-   //   latbuf_pop_reg <= latbuf_pop;
-
    // Stage 1 signals
    logic [HDR_WIDTH-1:0] 	  stg1_meta;
    logic [DATA_WIDTH-1:0] 	  stg1_data;
@@ -660,26 +657,6 @@ module latency_scoreboard
       end
    end
    
-   // always @(posedge clk) begin
-   //    if (rst) begin
-   // 	 stg3_wen <= 0;
-   // 	 stg3_din <= {FIFO_WIDTH{1'b0}};
-   // 	 latbuf_pop <= 0;
-   //    end
-   //    else begin
-   // 	 if ((pop_slot_num != LATBUF_SLOT_INVALID) && ~stg3_full && ~latbuf_empty) begin
-   // 	    stg3_wen <= 1;
-   // 	    stg3_din <= {records[pop_slot_num].tid, records[pop_slot_num].meta, records[pop_slot_num].data};
-   // 	    latbuf_pop <= 1;
-   // 	 end
-   // 	 else begin
-   // 	    stg3_wen <= 0;
-   // 	    stg3_din <= {FIFO_WIDTH{1'b0}};
-   // 	    latbuf_pop <= 0;
-   // 	 end
-   //    end
-   // end
-
 
    /*
     * Stage III - Output FIFO
@@ -748,20 +725,20 @@ module latency_scoreboard
 
    // Monitor-print process
    always @(posedge clk) begin
-      if (q_pop && latbuf_full) begin
-	 `BEGIN_RED_FONTCOLOR;
-	 $display("ERROR (%d) => Latbuf push and full were HIGH, tid = %d", $time, q_tid);
-	 `END_RED_FONTCOLOR;
+      if (latbuf_push && latbuf_full) begin
+   	 `BEGIN_RED_FONTCOLOR;
+   	 $display("ERROR (%d) => Latbuf push and full were HIGH, tid = %d", $time, q_tid);
+   	 `END_RED_FONTCOLOR;
       end
       if (latbuf_pop && latbuf_empty) begin
-	 `BEGIN_RED_FONTCOLOR;
-	 $display("ERROR (%d) => Latbuf pop and empty were HIGH, tid = %d", $time, q_tid);
-	 `END_RED_FONTCOLOR;
+   	 `BEGIN_RED_FONTCOLOR;
+   	 $display("ERROR (%d) => Latbuf pop and empty were HIGH, tid = %d", $time, q_tid);
+   	 `END_RED_FONTCOLOR;
       end
       if (q_pop) begin
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("INFO (%d) => QPOP q_tid = %d", $time, q_tid);
-	 `END_YELLOW_FONTCOLOR;
+   	 `BEGIN_YELLOW_FONTCOLOR;
+   	 $display("INFO (%d) => QPOP q_tid = %d", $time, q_tid);
+   	 `END_YELLOW_FONTCOLOR;
       end
    end
 
