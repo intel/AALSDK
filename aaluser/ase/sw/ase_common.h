@@ -499,8 +499,9 @@ extern void ase_config_dex(struct ase_cfg_t *);
 // DPI-C import(SV to C) calls
 void ase_init();
 void ase_ready();
-int csr_write_listener();
-int buffer_replicator();
+/* int csr_write_listener(); */
+// int buffer_replicator();
+int ase_listener();
 void ase_config_parse(char*);
 
 // Simulation control function
@@ -522,7 +523,7 @@ extern void capcm_init();
 
 // UMSG functions
 void ase_umsg_init();
-int umsg_listener();
+/* int umsg_listener(); */
 void ase_umsg_init();
 
 

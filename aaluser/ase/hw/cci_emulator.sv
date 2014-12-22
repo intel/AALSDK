@@ -59,20 +59,21 @@ module cci_emulator();
    // import "DPI-C" context task ase_ready();
    import "DPI-C" function void ase_ready();
    // Buffer replicator daemon
-   import "DPI-C" context task buffer_replicator();
+   // import "DPI-C" context task buffer_replicator();
+   import "DPI-C" context task ase_listener();
 
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
 
    // CSR write listener daemon
-   import "DPI-C" context task csr_write_listener();
+   // import "DPI-C" context task csr_write_listener();
    // CSR write initiator (SV)
    export "DPI-C" task csr_write_init;
    // CSR write completed
    import "DPI-C" function void csr_write_completed();
 
    // Umsg listener darmon
-   import "DPI-C" context task umsg_listener();
+   // import "DPI-C" context task umsg_listener();
    // UMSG init
    export "DPI-C" task umsg_init;
    // Umsg completed
@@ -427,10 +428,11 @@ module cci_emulator();
     */
    always @(posedge clk) begin : daemon_proc
       if (lp_initdone) begin
-	 buffer_replicator();
-	 csr_write_listener();
-	 if (cfg.enable_umsg)
-	   umsg_listener();
+	 // buffer_replicator();
+	 ase_listener();	 
+	 // csr_write_listener();
+	 // if (cfg.enable_umsg)
+	 //   umsg_listener();
       end
    end
 

@@ -351,7 +351,7 @@ module latency_scoreboard
    ase_fifo
      #(
        .DATA_WIDTH     (FIFO_WIDTH),
-       .DEPTH_BASE2    (FIFO_DEPTH_BASE2),
+       .DEPTH_BASE2    (VISIBLE_DEPTH_BASE2),
        .ALMFULL_THRESH (FIFO_FULL_THRESH)
        )
    infifo

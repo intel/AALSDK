@@ -223,10 +223,10 @@ void umsg_completed()
 /*
  * CSR_write listener
  */
-int csr_write_listener()
+#if 0
+// int csr_write_listener()
 {
    FUNC_CALL_ENTRY;
-
   // Message string
   char csr_wr_str[ASE_MQ_MSGSIZE];
   char *pch;
@@ -265,10 +265,10 @@ int csr_write_listener()
       // Reset csr_write flag
       csr_write_init (0);
     }
-  
   FUNC_CALL_EXIT;
   return 0;
 }
+#endif  
 
 
 /*
@@ -276,7 +276,8 @@ int csr_write_listener()
  * Action: Opens message queue and listens for incoming UMsg requests
  *         Writes such messages to DPI-SV side
  */
-int umsg_listener()
+#if 0
+// int umsg_listener()
 {
   FUNC_CALL_ENTRY;
 
@@ -346,7 +347,7 @@ int umsg_listener()
   FUNC_CALL_EXIT;
   return 0;
 }
-
+#endif
 
 // -----------------------------------------------------------------------
 // vbase/pbase exchange THREAD
@@ -354,10 +355,14 @@ int umsg_listener()
 // linked list. The reply consists of the pbase, fakeaddr and fd_ase.
 // When a deallocate message is received, the buffer is invalidated.
 // -----------------------------------------------------------------------
-int buffer_replicator()
+//int buffer_replicator()
+int ase_listener()
 {
    FUNC_CALL_ENTRY;
 
+   /*
+    * Buffer Replicator
+    */
   // DPI buffer
   struct buffer_t ase_buffer;
 
@@ -388,6 +393,116 @@ int buffer_replicator()
       ase_buffer_oneline(&ase_buffer);
     #endif
     }
+
+
+  /*
+   * CSR Write listener
+   */
+  // Message string
+  char csr_wr_str[ASE_MQ_MSGSIZE];
+  char *pch;
+  char ase_msg_data[CL_BYTE_WIDTH]; 
+  // csr_offset and csr_data
+  uint32_t csr_offset;
+  uint32_t csr_data;
+  
+  // Cleanse receptacle string
+  memset(ase_msg_data, '\0', sizeof(ase_msg_data));
+  
+  // Receive csr_write packet
+  if(mqueue_recv(app2ase_csr_wr_rx, (char*)csr_wr_str)==1)
+    {
+      // Tokenize message to get CSR offset and data
+      pch = strtok(csr_wr_str, " ");
+      csr_offset = atoi(pch);
+      pch = strtok(NULL, " ");
+      csr_data = atoi(pch);
+      
+      // Set csr_write flag
+      glbl_csr_serviced = 0;
+      csr_write_init (1);
+      // Set data
+      glbl_csr_meta = (ASE_RX0_CSR_WRITE << 14) | ( (csr_offset >> 2) & 0x00003FFF);
+      glbl_csr_data = csr_data;
+      while (glbl_csr_serviced != 1)
+	{
+	  run_clocks (1);
+	}
+      
+      // Count 
+      csr_write_listener_activecnt++;
+
+      // Reset csr_write flag
+      csr_write_init (0);
+    }
+
+
+  /*
+   * UMSG listener
+   */
+  // Message string
+  char umsg_str[ASE_MQ_MSGSIZE];
+
+  // Umsg parameters
+  uint32_t umsg_id;
+  uint32_t umsg_hint;
+  char umsg_data[CL_BYTE_WIDTH];
+  uint64_t *umas_target_addr;
+  uint64_t umas_target_addrint;
+
+  // Cleanse receptacle string
+  memset (umsg_str, '\0', sizeof(umsg_str));
+
+  // Keep checking message queue
+  if (mqueue_recv(app2ase_umsg_rx, (char*)umsg_str ) == 1) 
+    {
+      // Tokenize messgae to get msg_id & umsg_data
+      sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
+      umas_target_addr = (uint64_t*)umas_target_addrint;
+      memcpy(umsg_data, umas_target_addr, CL_BYTE_WIDTH);
+
+#if 0
+      int ii;
+      BEGIN_RED_FONTCOLOR;
+      printf("Printing data...\n");
+      printf("umsg_hint = %08x\n", umsg_hint);
+      printf("umsg_id   = %08x\n", umsg_id);
+      for (ii = 0; ii < CL_BYTE_WIDTH; ii++)
+	printf("%02d ", umsg_data[ii]);
+      printf("\nDONE\n");
+      END_RED_FONTCOLOR;
+#endif
+
+      // UMSG Hint
+      if (umsg_hint)
+	{
+	  glbl_umsg_serviced = 0;
+	  umsg_init(1);
+	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14) | (umsg_hint << 12);
+	  memset(glbl_umsg_data, '\0', CL_BYTE_WIDTH);
+	  while(glbl_umsg_serviced != 1)
+	    {
+	      run_clocks(1);
+	    }
+	  umsg_listener_activecnt++;
+	  umsg_init(0);
+	}
+      else
+	{
+	  // Send UMSG with data
+	  glbl_umsg_serviced = 0;
+	  umsg_init(1);
+	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14);
+	  memcpy(glbl_umsg_data, umsg_data, CL_BYTE_WIDTH);
+	  while(glbl_umsg_serviced != 1)
+	    {
+	      run_clocks(1);
+	    }
+	  umsg_listener_activecnt++;
+	  umsg_init(0);
+	}
+    }
+
   
   FUNC_CALL_EXIT;
   return 0;
