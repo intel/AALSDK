@@ -417,6 +417,9 @@ int ase_listener()
       csr_offset = atoi(pch);
       pch = strtok(NULL, " ");
       csr_data = atoi(pch);
+
+      // CSRWrite Dispatch
+      csr_write_dispatch ( csr_offset, csr_data );
       
       // Set csr_write flag
       glbl_csr_serviced = 0;

@@ -69,9 +69,10 @@ module cci_emulator();
    // import "DPI-C" context task csr_write_listener();
    // CSR write initiator (SV)
    export "DPI-C" task csr_write_init;
+   export "DPI-C" task csr_write_dispatch;   
    // CSR write completed
    import "DPI-C" function void csr_write_completed();
-
+   
    // Umsg listener darmon
    // import "DPI-C" context task umsg_listener();
    // UMSG init
@@ -145,10 +146,9 @@ module cci_emulator();
    endfunction
 
 
-   /*
+   /* ***************************************************************************
     * CCI signals declarations
-    *
-    *****************************************************************************
+    * ***************************************************************************
     *
     *                          -------------------
     *   tx0_header     ---61-->|                 |---18---> rx0_header
@@ -166,12 +166,7 @@ module cci_emulator();
     *                          |                 |--------> clk
     *                          -------------------
     *
-    * ***************************************************************************
-    *
-    * MODIFIED:
-    * - Thu Aug  4 10:54:49 PDT 2011: CCI 1.8 diagram
-    *
-    * **************************************************************************/
+    * ***************************************************************************/
 
    logic                          clk   ;                  // out
    logic 			  resetb ;                 // out
@@ -304,6 +299,66 @@ module cci_emulator();
       end
    endtask
 
+   /*
+    * csr_write_dispatch process
+    * A Single task to dispatch CSR Writes
+    */ 
+   parameter int CSR_FIFO_WIDTH = 32 + 32;
+
+   logic [CSR_FIFO_WIDTH-1:0] csrff_din;
+   logic [CSR_FIFO_WIDTH-1:0] csrff_dout;
+   logic 		      csrff_write;
+   logic 		      csrff_read;
+   logic 		      csrff_valid;
+   logic 		      csrff_full;
+   logic 		      csrff_empty;
+   logic 		      csrff_overflow;
+   logic 		      csrff_underflow;
+   
+   task csr_write_dispatch(int csr_index, int csr_data);
+      begin
+	 csrff_write = 0;	 
+	 while (csrff_full) begin
+	    `BEGIN_RED_FONTCOLOR;	    
+	    $display("SIM-SV: WARNING => CSR FIFO is almost full, waiting to clear up");
+	    `END_RED_FONTCOLOR;
+	    run_clocks(1);	    
+	 end
+	 run_clocks(1);	 
+	 csrff_din = {csr_index, csr_data};
+	 csrff_write = 1;
+	 run_clocks(1);
+	 csrff_write = 0;	 
+      end
+   endtask
+   
+
+   // CSR write FIFO
+   ase_fifo
+     #(
+       .DATA_WIDTH     ( CSR_FIFO_WIDTH ),
+       .DEPTH_BASE2    ( 10 ),
+       .ALMFULL_THRESH ( 960 )
+       )
+   csrwr_fifo
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( csrff_write ),
+      .data_in    ( csrff_din ),
+      .rd_en      ( csrff_read ),
+      .data_out   ( csrff_dout ),
+      .data_out_v ( csrff_valid ),
+      .alm_full   ( csrff_full ),
+      .full       (  ),
+      .empty      ( csrff_empty ),
+      .count      (  ),
+      .overflow   ( csrff_overflow ),
+      .underflow  ( csrff_underflow )
+      );
+
+
+   
    /*
     * Umsg infrastructure
     * - C: umsg call calls SV:umsg_init
