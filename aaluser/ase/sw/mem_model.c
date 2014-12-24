@@ -531,8 +531,8 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       printf("@ERROR: Simulation cannot continue, please check the code.\n");
       printf("@ERROR: Failure @ phys_addr = %016lx \n", req_paddr );
       END_RED_FONTCOLOR;
-      ase_perror_teardown();
-      final_ipc_cleanup();
+      // ase_perror_teardown();
+      // final_ipc_cleanup();
       start_simkill_countdown(); // RRS: exit(1);
     }
 
