@@ -38,10 +38,10 @@
  *   Completed FIFO'ing all channels in all directions
  * - RRS: Tue Jun 17 16:46:06 PDT 2014
  *   Started cleaning up code to add latency model
- *   - Protect existing code
- *   - Step-by-step modify channels
  *   Connect up new transactions CCI 1.8
- *
+ * - RRS: Tue Dec 23 11:01:28 PST 2014
+ *   Optimizing ASE for performance
+ *   Added return path FIFOs for marshalling
  */
 
 `include "ase_global.vh"
@@ -56,29 +56,17 @@ module cci_emulator();
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
-   // import "DPI-C" context task ase_ready();
    import "DPI-C" function void ase_ready();
-   // Buffer replicator daemon
-   // import "DPI-C" context task buffer_replicator();
+   // Global listener function
    import "DPI-C" context task ase_listener();
 
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
 
-   // CSR write listener daemon
-   // import "DPI-C" context task csr_write_listener();
-   // CSR write initiator (SV)
-   export "DPI-C" task csr_write_init;
-   export "DPI-C" task csr_write_dispatch;   
-   // CSR write completed
-   import "DPI-C" function void csr_write_completed();
-   
-   // Umsg listener darmon
-   // import "DPI-C" context task umsg_listener();
-   // UMSG init
-   export "DPI-C" task umsg_init;
-   // Umsg completed
-   import "DPI-C" function void umsg_completed();
+   // CSR Write Dispatch
+   export "DPI-C" task csr_write_dispatch;
+   // Unordered message dispatch
+   export "DPI-C" task umsg_dispatch;
 
    // CAPCM initilize
    import "DPI-C" context task capcm_init();
@@ -90,50 +78,45 @@ module cci_emulator();
    // Signal to kill simulation
    export "DPI-C" task simkill;
 
-   // Data exchange for CSR write
-   import "DPI-C" function void csr_write_dex(inout cci_pkt foo);
-   // Data exchange for UMSG
-   import "DPI-C" function void umsg_dex(inout cci_pkt foo);
-   // Data exchange for READ system memory line
-   import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, int cl_addr, int mdata );
-   // Data exchange for READ CAPCM line
-   // import "DPI-C" function void rd_capcmline_dex(inout cci_pkt foo, int cl_addr, int mdata );
-   // Data exchange for WRITE system memory line
-   import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, int cl_addr, int mdata, bit [511:0] wr_data );
-   // Data exchange for WRITE CAPCM line
-   // import "DPI-C" function void wr_capcmline_dex(inout cci_pkt foo, int cl_addr, int mdata, bit [511:0] wr_data );
+   // Data exchange for READ system/CAPCM memory line
+   import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
+   // Data exchange for WRITE system/CAPCM memory line
+   import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata, inout bit [511:0] wr_data );
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
-   
 
-   /*
-    * Declare packets for each channel
-    */
+   // Declare packets for each channel
    cci_pkt rx0_pkt, rx1_pkt;
-   logic rx0_active, rx1_active;
-   logic rx_free;
-   integer test_ret;
 
-   assign rx_free = ( (rx0_active == 1'b0)||(rx1_active == 1'b0) ) ? 1'b1 : 1'b0;
 
    /*
-    * FUNCTION: Find a free return path
+    * Return return channel
     */
-   function automatic int find_free_rx_channel();
-      int ch = 7;
-      begin
-	 if ((rx0_active == 1'b0) && (rx1_active == 1'b0)) begin
-	    ch = $random % 2;
-	 end
-	 else if ((rx0_active == 1'b1) && (rx1_active == 1'b0)) begin
-	    ch = 1;
-	 end
-	 else if ((rx0_active == 1'b0) && (rx1_active == 1'b1)) begin
-	    ch = 0;
-	 end
-	 return ch;
-      end
-   endfunction
+   // logic rx0_active, rx1_active;
+   // logic rx_free;
+
+   // tx_to_rx_channel: 0 selects RX0, 1 selects RX1, 7 indicates illegal
+   int 	 tx_to_rx_channel;
+
+
+   // assign rx_free = ( (rx0_active == 1'b0)||(rx1_active == 1'b0) ) ? 1'b1 : 1'b0;
+
+   // FUNCTION: Find a free return path
+   // function automatic int find_free_rx_channel();
+   //    int ch = 7;
+   //    begin
+   // 	 if ((rx0_active == 1'b0) && (rx1_active == 1'b0)) begin
+   // 	    ch = $random % 2;
+   // 	 end
+   // 	 else if ((rx0_active == 1'b1) && (rx1_active == 1'b0)) begin
+   // 	    ch = 1;
+   // 	 end
+   // 	 else if ((rx0_active == 1'b0) && (rx1_active == 1'b1)) begin
+   // 	    ch = 0;
+   // 	 end
+   // 	 return ch;
+   //    end
+   // endfunction
 
 
    /*
@@ -209,6 +192,15 @@ module cci_emulator();
    logic 			  tx1_overflow;
 
    /*
+    * State indicators
+    */ 
+   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsgHint, RxUmsgData, RxIntrResp} 
+				  RxGlue_StateEnum;
+   RxGlue_StateEnum rx0_state;
+   RxGlue_StateEnum rx1_state;
+  		  
+   
+   /*
     * Clock process: Operates the CAFU clock
     */
    // 200 Mhz clock
@@ -240,17 +232,10 @@ module cci_emulator();
       end
    end
 
-
-   /*
-    * Reset management
-    */
+   // Reset management
    logic 			  sys_reset_n;
    logic 			  sw_reset_n;
    logic 			  sw_reset_n_q;
-
-   // Cycle counter for toggling sys_reset_n
-   int 				  sys_rst_iter;
-
 
    /*
     * AFU reset - software & system resets
@@ -282,56 +267,44 @@ module cci_emulator();
 
    /*
     * CSR Write infrastructure
-    * - C:csr_write call calls SV:csr_write_init
-    * - SV:csr_write_init sets a csr_write_enabled = 1
-    * - When csr_write_enabled = 1, process tries to exchange data with
-        C:csr_write_dex, gets written to RX0 path
-    *
+    * csr_write_dispatch: A Single task to dispatch CSR Writes
     */
-   // Declare csr_write_enabled
-   logic csr_write_enabled;
-
-   // csr_write_init
-   task csr_write_init(int flag);
-      begin
-	 csr_write_enabled = flag[0];
-	 @(posedge clk);
-      end
-   endtask
-
-   /*
-    * csr_write_dispatch process
-    * A Single task to dispatch CSR Writes
-    */ 
    parameter int CSR_FIFO_WIDTH = 32 + 32;
 
    logic [CSR_FIFO_WIDTH-1:0] csrff_din;
    logic [CSR_FIFO_WIDTH-1:0] csrff_dout;
    logic 		      csrff_write;
+   logic 		      csrff_pop;
    logic 		      csrff_read;
    logic 		      csrff_valid;
    logic 		      csrff_full;
    logic 		      csrff_empty;
    logic 		      csrff_overflow;
    logic 		      csrff_underflow;
-   
-   task csr_write_dispatch(int csr_index, int csr_data);
+
+   task csr_write_dispatch(int init, int csr_index, int csr_data);
       begin
-	 csrff_write = 0;	 
-	 while (csrff_full) begin
-	    `BEGIN_RED_FONTCOLOR;	    
-	    $display("SIM-SV: WARNING => CSR FIFO is almost full, waiting to clear up");
-	    `END_RED_FONTCOLOR;
-	    run_clocks(1);	    
+	 if (init) begin
+	    csrff_write = 0;
+	    csrff_din = 0;
 	 end
-	 run_clocks(1);	 
-	 csrff_din = {csr_index, csr_data};
-	 csrff_write = 1;
-	 run_clocks(1);
-	 csrff_write = 0;	 
+	 else begin
+	    csrff_write = 0;
+	    while (csrff_full) begin
+	       `BEGIN_RED_FONTCOLOR;
+	       $display("SIM-SV: WARNING => CSR FIFO is almost full, waiting to clear up");
+	       `END_RED_FONTCOLOR;
+	       run_clocks(1);
+	    end
+	    run_clocks(1);
+	    csrff_din = {csr_index, csr_data};
+	    csrff_write = 1;
+	    run_clocks(1);
+	    csrff_write = 0;
+	 end
       end
    endtask
-   
+
 
    // CSR write FIFO
    ase_fifo
@@ -346,7 +319,7 @@ module cci_emulator();
       .rst        ( ~sys_reset_n ),
       .wr_en      ( csrff_write ),
       .data_in    ( csrff_din ),
-      .rd_en      ( csrff_read ),
+      .rd_en      ( csrff_pop ),
       .data_out   ( csrff_dout ),
       .data_out_v ( csrff_valid ),
       .alm_full   ( csrff_full ),
@@ -357,23 +330,16 @@ module cci_emulator();
       .underflow  ( csrff_underflow )
       );
 
+   assign csrff_pop = ~csrff_empty && csrff_read;
 
-   
    /*
     * Umsg infrastructure
-    * - C: umsg call calls SV:umsg_init
-    * - SV:umsg_init sets a umsg_enabled = 1
-    * - When umsg_enabled = 1, process tries to exchange data with
-    *   C:umsg_dex, gets written to RX0 path /
-    *
+    * umsg_dispatch: Single push process triggering UMSG machinery
     */
-   logic umsg_enabled;
-
-   // Umsg_init
-   task umsg_init(int flag);
+   // UMSG dispatch function
+   task umsg_dispatch();
       begin
-	 umsg_enabled = flag[0];
-	 @(posedge clk);
+	 // *FIXME*:
       end
    endtask
 
@@ -383,16 +349,17 @@ module cci_emulator();
     */
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
-	 cfg.enable_timeout    = cfg_in.enable_timeout   ;
-	 cfg.enable_capcm      = cfg_in.enable_capcm     ;
-	 cfg.memmap_sad_setting     = cfg_in.memmap_sad_setting    ;
-	 cfg.enable_umsg       = cfg_in.enable_umsg      ;
-	 cfg.num_umsg_log2     = cfg_in.num_umsg_log2    ;
-	 cfg.enable_intr       = cfg_in.enable_intr      ;
-	 cfg.enable_ccirules   = cfg_in.enable_ccirules  ;
-	 cfg.enable_bufferinfo = cfg_in.enable_bufferinfo;
-	 cfg.enable_cl_view    = cfg_in.enable_cl_view   ;
-	 cfg.enable_asedbgdump = cfg_in.enable_asedbgdump;
+	 cfg.enable_timeout     = cfg_in.enable_timeout   ;
+	 cfg.enable_reuse_seed  = cfg_in.enable_reuse_seed;
+	 cfg.enable_capcm       = cfg_in.enable_capcm     ;
+	 cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
+	 cfg.enable_umsg        = cfg_in.enable_umsg      ;
+	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
+	 cfg.enable_intr        = cfg_in.enable_intr      ;
+	 cfg.enable_ccirules    = cfg_in.enable_ccirules  ;
+	 cfg.enable_bufferinfo  = cfg_in.enable_bufferinfo;
+	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
+	 cfg.enable_asedbgdump  = cfg_in.enable_asedbgdump;
       end
    endtask
 
@@ -403,11 +370,15 @@ module cci_emulator();
    int ase_rx0_cfgvalid_cnt;
    int ase_rx0_rdvalid_cnt;
    int ase_rx0_wrvalid_cnt;
+   int ase_rx0_umsgvalid_cnt;
+   int ase_rx0_intrvalid_cnt;
    int ase_rx1_wrvalid_cnt;
+   int ase_rx1_intrvalid_cnt;
    int ase_tx0_rdvalid_cnt;
    int ase_tx1_wrvalid_cnt;
+   int ase_tx1_intrvalid_cnt;
 
-   int csr_write_enabled_cnt;
+   // int csr_write_enabled_cnt;
 
    always @(posedge clk) begin
       if (sys_reset_n == 1'b0) begin
@@ -417,7 +388,7 @@ module cci_emulator();
 	 ase_rx1_wrvalid_cnt = 0;
 	 ase_tx0_rdvalid_cnt = 0;
 	 ase_tx1_wrvalid_cnt = 0;
-	 csr_write_enabled_cnt = 0;
+	 // csr_write_enabled_cnt = 0;
       end
       else begin
 	 // TX channels
@@ -429,7 +400,7 @@ module cci_emulator();
 	 if (tx_c0_rdvalid)  ase_tx0_rdvalid_cnt  <= ase_tx0_rdvalid_cnt + 1;
 	 if (tx_c1_wrvalid)  ase_tx1_wrvalid_cnt  <= ase_tx1_wrvalid_cnt + 1;
 	 // CSR write enabled counting
-	 if (csr_write_enabled) csr_write_enabled_cnt <= csr_write_enabled_cnt + 1;
+	 // if (csr_write_enabled) csr_write_enabled_cnt <= csr_write_enabled_cnt + 1;
       end
    end
 
@@ -459,7 +430,7 @@ module cci_emulator();
 	    $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
 	    $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
 	    $display("");
-	    $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
+	    // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
 	    `END_YELLOW_FONTCOLOR;
 	    // Print errors
 	    `BEGIN_RED_FONTCOLOR;
@@ -474,17 +445,12 @@ module cci_emulator();
    endtask
 
    /*
-    * Start daemon functions
-    * - Buffer replicator: replicates access to DSM & Workspaces
-    *   opened by application
-    * - CSR_write listener: Receiver for CSR writes originating
-    *   from SW application
-    *
+    * Unified message watcher daemon
     */
    always @(posedge clk) begin : daemon_proc
       if (lp_initdone) begin
 	 // buffer_replicator();
-	 ase_listener();	 
+	 ase_listener();
 	 // csr_write_listener();
 	 // if (cfg.enable_umsg)
 	 //   umsg_listener();
@@ -492,272 +458,53 @@ module cci_emulator();
    end
 
 
-   /*
-    * Read Line loop-around
-    */
-   logic 		       rdline_enabled;
-   logic 		       rdline_completed;
-   logic [31:0] 	       rdline_addr;
-   logic [13:0] 	       rdline_meta;
-
-
-   /*
-    * TX1 to RX0/RX1 loop-around
-    */
-   // Bridge TX1-RX0
-   logic tx1_to_rx0_enabled;
-   logic tx1_to_rx0_completed;
-   logic [`CCI_DATA_WIDTH-1:0] rx0_wrline_data;
-   logic [13:0] 	       rx0_wrline_meta;
-   logic [31:0] 	       rx0_wrline_addr;
-
-   // Bridge TX1-RX1
-   logic tx1_to_rx1_enabled;
-   logic tx1_to_rx1_completed;
-   logic [`CCI_DATA_WIDTH-1:0] rx1_wrline_data;
-   logic [31:0] 	       rx1_wrline_addr;
-   logic [13:0] 	       rx1_wrline_meta;
-   int 			       ii;
-
-
    /* *******************************************************************
-    * Forwarding path implementations
-    * - ASE -> CAFU paths are pure FIFOs
-    * - CAFU -> ASE paths are shuffling paths (with latency scoreboarding)
+    * Staging incoming requests for TX0 and TX1 channels
+    * - cf2as_latbuf_ch0
+    * - cf2as_latbuf_ch1
     *
     * *******************************************************************/
    // CAFU->ASE CH0
    logic [`CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
+   logic 			 cf2as_latbuf_ch0_pop;
    logic 			 cf2as_latbuf_ch0_read;
    logic 			 cf2as_latbuf_ch0_empty;
+   logic 			 cf2as_latbuf_ch0_empty_q;
+   logic 			 cf2as_latbuf_ch0_valid;
+   logic [31:0] 		 cf2as_latbuf_ch0_claddr;
+   logic [13:0] 		 cf2as_latbuf_ch0_meta;
 
    // CAFU->ASE CH0
    logic [`CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch1_header;
    logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data;
-   logic 			 cf2as_latbuf_ch1_read;
+   logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_0;
+   logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_1;
+   logic 			 cf2as_latbuf_ch1_pop;
+   logic 			 cf2as_latbuf_ch1_read_0;
+   logic 			 cf2as_latbuf_ch1_read_1;
    logic 			 cf2as_latbuf_ch1_empty;
-
-   /*
-    * RX0 channel management
-    */
-   // FSM states
-   typedef enum { RX0_inactive,
-		  RX0_csr_write_dex,
-		  RX0_csr_action,
-		  RX0_rdline_dex,
-		  RX0_wrline_dex,
-		  RX0_intr_dex,
-		  RX0_umsg_dex,
-		  RX0_write_fifo
-		  } rx0_state_enum;
-   rx0_state_enum rx0_state;
-
-   // RX0 Write FIFO controls
-   always @(posedge clk) begin
-      rx_c0_cfgvalid <= 1'b0;
-      rx_c0_wrvalid <= 1'b0;
-      rx_c0_rdvalid <= 1'b0;
-      rx_c0_umsgvalid <= 1'b0;
-      rx_c0_intrvalid <= 1'b0;
-      rx_c0_header <= `CCI_RX_HDR_WIDTH'b0;
-      rx_c0_data <= `CCI_DATA_WIDTH'b0;
-      rx0_active <= 1'b1;
-      tx1_to_rx0_completed <= 1'b0;
-      rdline_completed <= 1'b0;
-      if (sys_reset_n == 1'b0) begin
-	 sw_reset_n <= 1'b1;
-	 rx0_state <= RX0_inactive;
-      end
-      else begin
-	 case (rx0_state)
-	   // Inactive
-	   RX0_inactive:
-	     begin
-		rx0_active <=1'b0;
-		rx0_pkt.cfgvalid <= 0;
-		rx0_pkt.wrvalid <= 0;
-		rx0_pkt.rdvalid <= 0;
-		rx0_pkt.umsgvalid <= 0;
-		rx0_pkt.intrvalid <= 0;
-		rx0_pkt.meta <= 0;
-		for(ii = 0; ii < 8; ii = ii + 1) begin
-		   rx0_pkt.qword[ii] <= 0;
-		end
-		// Transaction filtering
-		if (csr_write_enabled == 1) begin
-		   rx0_state <= RX0_csr_write_dex;
-		end
-		else if ( (tx1_to_rx0_enabled == 1) && ((cf2as_latbuf_ch1_header[`TX_META_TYPERANGE]==`ASE_TX1_WRTHRU)||(cf2as_latbuf_ch1_header[`TX_META_TYPERANGE]==`ASE_TX1_WRLINE)) ) begin
-		   rx0_state <= RX0_wrline_dex;
-		end
-		else if ( (rdline_enabled == 1'b1) && ((cf2as_latbuf_ch0_header[`TX_META_TYPERANGE]==`ASE_TX0_RDLINE)||(cf2as_latbuf_ch0_header[`TX_META_TYPERANGE]==`ASE_TX0_RDLINE_S)
-						       ||(cf2as_latbuf_ch0_header[`TX_META_TYPERANGE]==`ASE_TX0_RDLINE_I)||(cf2as_latbuf_ch0_header[`TX_META_TYPERANGE]==`ASE_TX0_RDLINE_O)) ) begin
-		   rx0_state <= RX0_rdline_dex;
-		end
-		else if (umsg_enabled == 1) begin
-		   rx0_state <= RX0_umsg_dex;
-		end
-		else begin
-		   rx0_state <= RX0_inactive;
-		end
-	     end // case: RX0_inactive
-
-	   // CSR_write
-	   RX0_csr_write_dex:
-	     begin
-		csr_write_dex (rx0_pkt);
-		csr_write_completed();
-	   	rx0_state <= RX0_csr_action;
-	     end
-
-	   // CSR action, implements some QLP behaviour
-	   RX0_csr_action:
-	     begin
-		if (rx0_pkt.meta[`RX_CSR_BITRANGE] < CCI_AFU_LOW_OFFSET) begin
-		   rx0_state <= RX0_inactive;
-		   if (rx0_pkt.meta[`RX_CSR_BITRANGE] == CCI_RESET_CTRL_OFFSET ) begin
-		      sw_reset_n <= ~rx0_pkt.qword[0][CCI_RESET_CTRL_BITLOC];
-		   end
-		   else begin
-		      `BEGIN_YELLOW_FONTCOLOR;
-		      $display("CSR_write: offset = %x data = %x ", rx0_pkt.meta[`RX_CSR_BITRANGE], rx0_pkt.qword[0][31:0] );
-		      `END_YELLOW_FONTCOLOR;
-		   end
-		end
-		else begin
-		   rx0_state <= RX0_write_fifo;
-		end
-	   	csr_write_completed();
-	     end
-
-	   // RDLine response
-	   RX0_rdline_dex:
-	     begin
-		rd_memline_dex (rx0_pkt, rdline_addr, rdline_meta );
-		rdline_completed <= 1'b1;
-		rx0_state <= RX0_write_fifo;
-	     end
-
-	   // WRline response
-	   RX0_wrline_dex:
-	     begin
-		wr_memline_dex (rx0_pkt, rx0_wrline_addr, rx0_wrline_meta, rx0_wrline_data );
-		tx1_to_rx0_completed <= 1'b1;
-		rx0_state <= RX0_write_fifo;
-	     end // case: RX0_wrline_dex
-
-	   // Interrupt response *FIXME*
-	   RX0_intr_dex:
-	     begin
-	     end
-
-	   // Umsg valid *FIXME*
-	   RX0_umsg_dex:
-	     begin
-		umsg_dex (rx0_pkt);
-		umsg_completed();
-		rx0_state <= RX0_write_fifo;
-	     end
-
-	   // Write to RX0 FIFO
-	   RX0_write_fifo:
-	     begin
-		tx1_to_rx0_completed <= 1'b0;
-		rdline_completed <= 1'b0;
-		rx0_state       <= RX0_inactive;
-		rx_c0_cfgvalid  <= rx0_pkt.cfgvalid[0];
-		rx_c0_wrvalid   <= rx0_pkt.wrvalid[0];
-		rx_c0_rdvalid   <= rx0_pkt.rdvalid[0];
-		rx_c0_umsgvalid <= rx0_pkt.umsgvalid[0];
-		rx_c0_intrvalid <= rx0_pkt.intrvalid[0];
-		rx_c0_header    <= rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0];
-		rx_c0_data      <= unpack_ccipkt_to_vector(rx0_pkt);
-	     end // case: RX0_write_fifo
-
-	   // Illegal
-	   default:
-	     begin
-		rx0_state <= RX0_inactive;
-	     end
-	 endcase
-      end
-   end
-
-   /*
-    * RX1 Channel Management
-    */
-   // RX1 states
-   typedef enum { RX1_inactive,
-		  RX1_wrline_dex,
-		  RX1_write_fifo
-		  } rx1_state_enum;
-   rx1_state_enum rx1_state;
-
-   // RX1 control FSM
-   always @(posedge clk) begin
-      rx_c1_wrvalid <= 1'b0;
-      rx_c1_intrvalid <= 1'b0;
-      rx_c1_header  <= `CCI_RX_HDR_WIDTH'b0;
-      rx1_active <= 1'b1;
-      tx1_to_rx1_completed <= 1'b0;
-      if (sys_reset_n == 1'b0) begin
-	 rx1_state <= RX1_inactive;
-      end
-      else begin
-	 case (rx1_state)
-	   // Inactive
-	   RX1_inactive:
-	     begin
-		rx1_active <= 1'b0;
-		if ( (tx1_to_rx1_enabled == 1'b1) && ((cf2as_latbuf_ch1_header[`TX_META_TYPERANGE]==`ASE_TX1_WRTHRU)||(cf2as_latbuf_ch1_header[`TX_META_TYPERANGE]==`ASE_TX1_WRLINE))) begin
-		   rx1_state <= RX1_wrline_dex;
-		end
-		else begin
-		   rx1_state <= RX1_inactive;
-		end
-	     end // case: RX1_inactive
-
-	   // Wrline Data-exchange
-	   RX1_wrline_dex:
-	     begin
-		wr_memline_dex (rx1_pkt, rx1_wrline_addr, rx1_wrline_meta, rx1_wrline_data );
-		tx1_to_rx1_completed <= 1'b1;
-		rx1_state <= RX1_write_fifo;
-	     end
-
-	   // Write to TX1 FIFO
-	   RX1_write_fifo:
-	     begin
-		rx1_state  <= RX1_inactive;
-		rx_c1_wrvalid <= rx1_pkt.wrvalid[0];
-		rx_c1_intrvalid <= rx1_pkt.intrvalid[0];
-		rx_c1_header    <= rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0];
-	     end
-
-	   // default
-	   default:
-	     begin
-		rx1_state <= RX1_inactive;
-	     end
-	 endcase
-      end
-   end
+   logic 			 cf2as_latbuf_ch1_empty_q;
+   logic 			 cf2as_latbuf_ch1_valid;
+   logic [31:0] 		 cf2as_latbuf_ch1_claddr;
+   logic [31:0] 		 cf2as_latbuf_ch1_claddr_0;
+   logic [31:0] 		 cf2as_latbuf_ch1_claddr_1;
+   logic [13:0] 		 cf2as_latbuf_ch1_meta;
+   logic [13:0] 		 cf2as_latbuf_ch1_meta_0;
+   logic [13:0] 		 cf2as_latbuf_ch1_meta_1;
 
 
-   /*
-    * CAFU->ASE CH0 (TX0)
-    * Composed as {header, data}
-    */
+   // CAFU->ASE CH0 (TX0)
+   // Composed as {header, data}
 `ifdef ASE_RANDOMIZE_TRANSACTIONS
    // Latency scoreboard (for latency modeling and shuffling)
    latency_scoreboard
      #(
-       .NUM_TRANSACTIONS (`LATBUF_NUM_TRANSACTIONS),
-       .HDR_WIDTH        (`CCI_TX_HDR_WIDTH),
-       .DATA_WIDTH       (`CCI_DATA_WIDTH),
-       .COUNT_WIDTH      (`LATBUF_COUNT_WIDTH),
-       .FIFO_FULL_THRESH (`LATBUF_FULL_THRESHOLD),
-       .FIFO_DEPTH_BASE2 (`LATBUF_DEPTH_BASE2)
+       .NUM_TRANSACTIONS    (`LATBUF_NUM_TRANSACTIONS),
+       .HDR_WIDTH           (`CCI_TX_HDR_WIDTH),
+       .DATA_WIDTH          (`CCI_DATA_WIDTH),
+       .COUNT_WIDTH         (`LATBUF_COUNT_WIDTH),
+       .FIFO_FULL_THRESH    (`LATBUF_FULL_THRESHOLD),
+       .FIFO_DEPTH_BASE2    (`LATBUF_DEPTH_BASE2)
        )
    cf2as_latbuf_ch0
      (
@@ -768,12 +515,13 @@ module cci_emulator();
       .write_en		( tx_c0_rdvalid ),
       .meta_out		( cf2as_latbuf_ch0_header ),
       .data_out		(  ),
-      .valid_out	(  ),
-      .read_en		( cf2as_latbuf_ch0_read ),
+      .valid_out	( cf2as_latbuf_ch0_valid ),
+      .read_en		( cf2as_latbuf_ch0_pop ),
       .empty		( cf2as_latbuf_ch0_empty ),
       .full             ( tx_c0_almostfull ),
       .overflow         ( tx0_overflow ),
-      .underflow        ( tx0_underflow )
+      .underflow        ( tx0_underflow ),
+      .count            ( )
       );
 `else // !`ifdef ASE_RANDOMIZE_TRANSACTIONS
    // FIFO (no randomization)
@@ -789,9 +537,9 @@ module cci_emulator();
       .rst        ( ~sys_reset_n ),
       .wr_en      ( tx_c0_rdvalid ),
       .data_in    ( tx_c0_header ),
-      .rd_en      ( cf2as_latbuf_ch0_read ),
+      .rd_en      ( cf2as_latbuf_ch0_pop ),
       .data_out   ( cf2as_latbuf_ch0_header ),
-      .data_out_v ( ),
+      .data_out_v ( cf2as_latbuf_ch0_valid ),
       .alm_full   ( tx_c0_almostfull ),
       .full       ( ),
       .empty      ( cf2as_latbuf_ch0_empty ),
@@ -801,74 +549,20 @@ module cci_emulator();
       );
 `endif
 
+   // POP CH0 staging
+   assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
 
-   // TX0 states
-   typedef enum {TX0_inactive,     // TX0 is empty, nothing to do
-		 TX0_rx0_select,   // Respond with CH0
-		 TX0_done          // TX0 done
-		 } tx0_state_enum;
-   tx0_state_enum tx0_state;
-
-   // TX0 FSM
-   always @(posedge clk) begin
-      if (sys_reset_n == 1'b0) begin
-	 cf2as_latbuf_ch0_read <= 1'b0;
-	 tx0_state <= TX0_inactive;
-      end
-      else begin
-	 case (tx0_state)
-	   // Inactive
-	   TX0_inactive:
-	     begin
-		cf2as_latbuf_ch0_read <= 1'b0;
-		rdline_enabled <= 1'b0;
-		rdline_addr <= 0;
-		rdline_meta <= 0;
-		if (cf2as_latbuf_ch0_empty != 1'b1) begin
-		   tx0_state <= TX0_rx0_select;
-		end
-		else begin
-		   tx0_state <= TX0_inactive;
-		end
-	     end // case: TX0_inactive
-
-	   // ReadLine - wait for completion
-	   TX0_rx0_select:
-	     begin
-		rdline_addr <= cf2as_latbuf_ch0_header[45:14];
-		rdline_meta <= cf2as_latbuf_ch0_header[13:0];
-		if (rdline_completed == 1'b1) begin
-		   cf2as_latbuf_ch0_read <= 1'b1;
-		   rdline_enabled <= 1'b0;
-		   tx0_state <= TX0_done;
-		end
-		else begin
-		   rdline_enabled <= 1'b1;
-		   tx0_state <= TX0_rx0_select;
-		end
-	     end
-
-	   // Done, stablize before moving to next
-	   TX0_done:
-	     begin
-		cf2as_latbuf_ch0_read <= 1'b0;
-		rdline_enabled <= 1'b0;
-		tx0_state <= TX0_inactive;
-	     end
-
-	   // Undefined
-	   default:
-	     begin
-		tx0_state <= TX0_inactive;
-	     end
-	 endcase
-      end
+   always @(posedge clk)
+     cf2as_latbuf_ch0_empty_q <= cf2as_latbuf_ch0_empty;
+ 
+   // Duplicate signals
+   always @(*) begin
+      cf2as_latbuf_ch0_claddr <= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch0_meta   <= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
    end
 
-
-   /*
-    * CAFU->ASE CH1 (TX1)
-    */
+   
+   // CAFU->ASE CH1 (TX1)
 `ifdef ASE_RANDOMIZE_TRANSACTIONS
    // Latency scoreboard (latency modeling and shuffling)
    latency_scoreboard
@@ -889,12 +583,13 @@ module cci_emulator();
       .write_en		( tx_c1_wrvalid ),
       .meta_out		( cf2as_latbuf_ch1_header ),
       .data_out		( cf2as_latbuf_ch1_data ),
-      .valid_out	(  ),
-      .read_en		( cf2as_latbuf_ch1_read ),
+      .valid_out	( cf2as_latbuf_ch1_valid ),
+      .read_en		( cf2as_latbuf_ch1_pop ),
       .empty		( cf2as_latbuf_ch1_empty ),
       .full             ( tx_c1_almostfull ),
       .overflow         ( tx1_overflow ),
-      .underflow        ( tx1_underflow )
+      .underflow        ( tx1_underflow ),
+      .count            ( )
       );
 `else // !`ifdef ASE_RANDOMIZE_TRANSACTIONS
    // FIFO (no shuffling, simple forwarding)
@@ -910,9 +605,9 @@ module cci_emulator();
       .rst        ( ~sys_reset_n ),
       .wr_en      ( tx_c1_wrvalid ),
       .data_in    ( {tx_c1_header,tx_c1_data} ),
-      .rd_en      ( cf2as_latbuf_ch1_read ),
+      .rd_en      ( cf2as_latbuf_ch1_pop ),
       .data_out   ( {cf2as_latbuf_ch1_header,cf2as_latbuf_ch1_data} ),
-      .data_out_v ( ),
+      .data_out_v ( cf2as_latbuf_ch1_valid ),
       .alm_full   ( tx_c1_almostfull ),
       .full       ( ),
       .empty      ( cf2as_latbuf_ch1_empty ),
@@ -922,100 +617,267 @@ module cci_emulator();
       );
 `endif
 
+   // POP CH1 staging
+   assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && (cf2as_latbuf_ch1_read_0 ^ cf2as_latbuf_ch1_read_1);
 
-   // TX1 states
-   typedef enum { TX1_inactive,    // TX1 is empty, nothing to do
-		  TX1_rx0_select,  // Respond with CH0
-		  TX1_rx1_select,  // Respond with CH1
-		  TX1_done         // TX1 done
-		  } tx1_state_enum;
-   tx1_state_enum tx1_state;
-
-   // TX1 FSM
-   always @(posedge clk) begin
-      cf2as_latbuf_ch1_read <= 1'b0;
-      if (sys_reset_n == 1'b0) begin
-	 tx1_to_rx0_enabled <= 1'b0;
-	 tx1_to_rx1_enabled <= 1'b0;
-	 rx0_wrline_meta    <= 14'b0;
-	 rx0_wrline_addr    <= 32'b0;
-	 rx0_wrline_data    <= `CCI_DATA_WIDTH'b0;
-	 rx1_wrline_meta    <= 14'b0;
-	 rx1_wrline_addr    <= 32'b0;
-	 rx1_wrline_data    <= `CCI_DATA_WIDTH'b0;
-	 tx1_state <= TX1_inactive;
+   always @(posedge clk)
+     cf2as_latbuf_ch1_empty_q <= cf2as_latbuf_ch1_empty;
+   
+   // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
+   // Since requests on TX1 can return either via RX0 or RX1, this is needed
+   // always @(posedge clk) begin
+   always @(*) begin
+      if (~sys_reset_n) begin
+	 tx_to_rx_channel <= 7;
+      end
+      else if (~cf2as_latbuf_ch1_empty) begin
+	 // tx_to_rx_channel <= $random % 2;
+	 tx_to_rx_channel <= 1;	 
       end
       else begin
-	 case (tx1_state)
-	   // Inactive
-	   TX1_inactive:
-	     begin
-		tx1_to_rx0_enabled <= 1'b0;
-		tx1_to_rx1_enabled <= 1'b0;
-		rx0_wrline_meta    <= 14'b0;
-		rx0_wrline_addr    <= 32'b0;
-		rx0_wrline_data    <= `CCI_DATA_WIDTH'b0;
-		rx1_wrline_meta    <= 0;
-		rx1_wrline_addr    <= 32'b0;
-		rx1_wrline_data    <= `CCI_DATA_WIDTH'b0;
-		if ((cf2as_latbuf_ch1_empty != 1'b1) && (rx_free == 1'b1) && (find_free_rx_channel() == 0)) begin
-		   tx1_state <= TX1_rx0_select;
-		end
-		else if ((cf2as_latbuf_ch1_empty != 1'b1) && (rx_free == 1'b1) && (find_free_rx_channel() == 1)) begin
-		   tx1_state <= TX1_rx1_select;
-		end
-		else begin
-		   tx1_state <= TX1_inactive;
-		end
-	     end // case: TX1_inactive
+	 tx_to_rx_channel <= 7;
+      end
+   end
 
-	   // Write request occured
-	   TX1_rx0_select:
-	     begin
-		rx0_wrline_meta    <= cf2as_latbuf_ch1_header[13:0];
-		rx0_wrline_addr    <= cf2as_latbuf_ch1_header[45:14];
-		rx0_wrline_data    <= cf2as_latbuf_ch1_data;
-		if (tx1_to_rx0_completed == 1'b1) begin
-		   cf2as_latbuf_ch1_read <= 1'b1;
-		   tx1_to_rx0_enabled <= 1'b0;
-		   tx1_state <= TX1_done;
-		end
-		else begin
-		   tx1_to_rx0_enabled <= 1'b1;
-		   tx1_state <= TX1_rx0_select;
-		end
-	     end // case: TX1_rx0_select
+   // Duplicating signals (DPI seems to cause errors in DEX function) --- P2 debug priority
+   always @(*) begin      
+      cf2as_latbuf_ch1_claddr_1 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch1_meta_1 <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch1_data_1 <= cf2as_latbuf_ch1_data;
+      cf2as_latbuf_ch1_claddr_0 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch1_meta_0 <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch1_data_0 <= cf2as_latbuf_ch1_data;
+      cf2as_latbuf_ch1_claddr <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch1_meta <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+   end
 
-	   // Interrupt request occured
-	   TX1_rx1_select:
-	     begin
-		rx1_wrline_meta    <= cf2as_latbuf_ch1_header[13:0];
-		rx1_wrline_addr    <= cf2as_latbuf_ch1_header[45:14];
-		rx1_wrline_data    <= cf2as_latbuf_ch1_data;
-		if (tx1_to_rx1_completed == 1'b1) begin
-		   cf2as_latbuf_ch1_read <= 1'b1;
-		   tx1_to_rx1_enabled <= 1'b0;
-		   tx1_state <= TX1_done;
-		end
-		else begin
-		   tx1_to_rx1_enabled <= 1'b1;
-		   tx1_state <= TX1_rx1_select;
-		end
-	     end // case: TX1_rx1_select
 
-	   // Done state
-	   TX1_done:
-	     begin
-		cf2as_latbuf_ch1_read <= 1'b0;
-		tx1_state <= TX1_inactive;
-	     end
+   /* *******************************************************************
+    * Response path management
+    * - as2cf_fifo_ch0
+    * - as2cf_fifo_ch1
+    *
+    * *******************************************************************/
+   parameter int 		 ASE_RX0_PATHWIDTH = 5 + `CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
+   parameter int 		 ASE_RX1_PATHWIDTH = 2 + `CCI_RX_HDR_WIDTH;
 
-	   // Undefined
-	   default:
-	     begin
-		tx1_state <= TX1_inactive;
-	     end
-	 endcase
+   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
+   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
+   logic 			 as2cf_fifo_ch0_write;
+   logic 			 as2cf_fifo_ch0_read;
+   logic 			 as2cf_fifo_ch0_full;
+   logic 			 as2cf_fifo_ch0_empty;
+   logic 			 as2cf_fifo_ch0_overflow;
+   logic 			 as2cf_fifo_ch0_underflow;
+   logic 			 as2cf_fifo_ch0_valid;
+
+   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_din;
+   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_dout;
+   logic 			 as2cf_fifo_ch1_write;
+   logic 			 as2cf_fifo_ch1_read;
+   logic 			 as2cf_fifo_ch1_full;
+   logic 			 as2cf_fifo_ch1_empty;
+   logic 			 as2cf_fifo_ch1_overflow;
+   logic 			 as2cf_fifo_ch1_underflow;
+   logic 			 as2cf_fifo_ch1_valid;
+
+
+   // CH0 coded as {intrvalid, umsgvalid, wrvalid, rdvalid, cfgvalid, hdr, data}
+   ase_fifo
+     #(
+       .DATA_WIDTH (ASE_RX0_PATHWIDTH)
+       )
+   as2cf_fifo_ch0
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( as2cf_fifo_ch0_write ),
+      .data_in    ( as2cf_fifo_ch0_din ),
+      .rd_en      ( as2cf_fifo_ch0_read ),
+      .data_out   ( as2cf_fifo_ch0_dout ),
+      .data_out_v ( as2cf_fifo_ch0_valid ),
+      .alm_full   ( as2cf_fifo_ch0_full ),
+      .full       ( ),
+      .empty      ( as2cf_fifo_ch0_empty ),
+      .count      ( ),
+      .overflow   ( as2cf_fifo_ch0_overflow ),
+      .underflow  ( as2cf_fifo_ch0_underflow )
+      );
+
+   // CH1 coded as {intrvalid, wrvalid, hdr}
+   ase_fifo
+     #(
+       .DATA_WIDTH (ASE_RX1_PATHWIDTH)
+       )
+   as2cf_fifo_ch1
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( as2cf_fifo_ch1_write ),
+      .data_in    ( as2cf_fifo_ch1_din ),
+      .rd_en      ( as2cf_fifo_ch1_read ),
+      .data_out   ( as2cf_fifo_ch1_dout ),
+      .data_out_v ( as2cf_fifo_ch1_valid ),
+      .alm_full   ( as2cf_fifo_ch1_full ),
+      .full       ( ),
+      .empty      ( as2cf_fifo_ch1_empty ),
+      .count      ( ),
+      .overflow   ( as2cf_fifo_ch1_overflow ),
+      .underflow  ( as2cf_fifo_ch1_underflow )
+      );
+
+   // read control (no flow control on RX0 channels (pop when available)
+   assign as2cf_fifo_ch0_read = ~as2cf_fifo_ch0_empty;
+   assign as2cf_fifo_ch1_read = ~as2cf_fifo_ch1_empty;
+
+   // RX0 channel
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 rx_c0_data <= `CCI_DATA_WIDTH'b0;
+	 rx_c0_header <= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c0_cfgvalid <= 0;
+	 rx_c0_wrvalid <= 0;
+	 rx_c0_rdvalid <= 0;
+	 rx_c0_intrvalid <= 0;
+	 rx_c0_umsgvalid <= 0;
+      end
+      else if (as2cf_fifo_ch0_valid) begin
+	 rx_c0_data <= as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
+	 rx_c0_header <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
+	 rx_c0_cfgvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH)];
+	 rx_c0_rdvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+1)];
+	 rx_c0_wrvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+2)];
+	 rx_c0_umsgvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+3)];
+	 rx_c0_intrvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+4)];
+      end
+      else begin
+	 rx_c0_data <= 0; // as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
+	 rx_c0_header <= 0; // as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
+	 rx_c0_cfgvalid <= 0;
+	 rx_c0_wrvalid <= 0;
+	 rx_c0_rdvalid <= 0;
+	 rx_c0_intrvalid <= 0;
+	 rx_c0_umsgvalid <= 0;
+      end
+   end
+
+   // RX1 channel
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 rx_c1_header <= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c1_wrvalid <= 1'b0;
+	 rx_c1_intrvalid <= 1'b0;
+      end
+      else if (as2cf_fifo_ch1_valid) begin
+	 rx_c1_header <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_wrvalid <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH];
+	 rx_c1_intrvalid <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH+1];
+      end
+      else begin
+	 rx_c1_header <= 0; // as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_wrvalid <= 1'b0;
+	 rx_c1_intrvalid <= 1'b0;
+      end
+   end
+
+
+   /*
+    * RX0 channel management
+    */
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 csrff_read <= 0;
+	 as2cf_fifo_ch0_write <= 0;
+	 cf2as_latbuf_ch0_read <= 0;
+	 cf2as_latbuf_ch1_read_0 <= 0;
+	 rx0_state <= RxIdle;
+      end
+      else begin
+	 csrff_read <= 0;
+	 as2cf_fifo_ch0_write <= 0;
+	 cf2as_latbuf_ch0_read <= 0;
+	 cf2as_latbuf_ch1_read_0 <= 0;
+	 // CSR Write in AFU space
+	 if (~csrff_empty && (csrff_dout[45:32] > CCI_AFU_LOW_OFFSET)) begin
+	    as2cf_fifo_ch0_din <= { 5'b00001, {`ASE_RX0_CSR_WRITE, 2'b0, csrff_dout[45:34]}, {480'b0, csrff_dout[31:0]}};
+	    as2cf_fifo_ch0_write <= csrff_valid;
+	    csrff_read <= 1;
+	    rx0_state <= RxAFUCSRWrite;
+	    cf2as_latbuf_ch0_read <= 0;
+	 end
+	 // CSR Write in QLP region
+	 else if (~csrff_empty && (csrff_dout[45:32] <= CCI_AFU_LOW_OFFSET)) begin
+	    if (csrff_dout[45:32] <= CCI_AFU_LOW_OFFSET) begin
+	       sw_reset_n <= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+	    end
+	    csrff_read <= 1;
+	    rx0_state <= RxQLPCSRWrite;
+	    cf2as_latbuf_ch0_read <= 0;
+	 end
+	 // Read request
+	 else if (~cf2as_latbuf_ch0_empty) begin
+	    rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
+	    as2cf_fifo_ch0_din <= {5'b00010,
+	    			   rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0],
+	    			   unpack_ccipkt_to_vector(rx0_pkt)};
+	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch0_valid;
+	    cf2as_latbuf_ch0_read <= 1;
+	    $display("WR: %x", cf2as_latbuf_ch0_claddr);
+	    rx0_state <= RxReadResp;
+	 end
+	 // Write request & RX0 is selected
+	 else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0)) begin
+	    wr_memline_dex(rx0_pkt,
+	    		   cf2as_latbuf_ch1_claddr_0,
+	    		   cf2as_latbuf_ch1_meta_0,
+	    		   cf2as_latbuf_ch1_data_0 );
+	    $display("WR: %x", cf2as_latbuf_ch1_claddr_0);
+	    as2cf_fifo_ch0_din <= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
+	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch1_valid;
+	    cf2as_latbuf_ch1_read_0 <= 1;
+	    cf2as_latbuf_ch0_read <= 0;
+	    rx0_state <= RxWriteResp;
+	 end
+	 // Else
+	 else begin
+	    sw_reset_n <= sw_reset_n_q;	    
+	    csrff_read <= 0;
+	    as2cf_fifo_ch0_write <= 0;
+	    cf2as_latbuf_ch0_read <= 0;
+	    cf2as_latbuf_ch1_read_0 <= 0;
+	    rx0_state <= RxIdle;
+	 end
+      end
+   end
+
+
+   /*
+    * RX1 channel management
+    */
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 as2cf_fifo_ch1_write <= 0;
+	 cf2as_latbuf_ch1_read_1 <= 0;
+	 rx1_state <= RxIdle;	 
+      end
+      else begin
+	 cf2as_latbuf_ch1_read_1 <= 0;
+	 as2cf_fifo_ch1_write    <= 0;
+	 // If Write Request was received & RX1 is selected
+	 if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1)) begin
+	    wr_memline_dex(rx1_pkt,
+	    		   cf2as_latbuf_ch1_claddr_1,
+	    		   cf2as_latbuf_ch1_meta_1,
+	    		   cf2as_latbuf_ch1_data_1 );
+	    $display("WR: %x", cf2as_latbuf_ch1_claddr_1);
+	    as2cf_fifo_ch1_din <= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
+	    as2cf_fifo_ch1_write <= cf2as_latbuf_ch1_valid;
+	    cf2as_latbuf_ch1_read_1 <= 1;
+	    rx0_state <= RxWriteResp;
+	 end
+	 else begin
+	    rx0_state <= RxIdle;
+	 end
       end
    end
 
@@ -1040,15 +902,15 @@ module cci_emulator();
 
    // Inactivity management - Sense first transaction
    assign any_valid =    rx_c0_umsgvalid
-		      || tx_c1_intrvalid_sel
-		      || rx_c0_intrvalid
-		      || rx_c1_intrvalid
-		      || rx_c0_wrvalid
-                      || rx_c0_rdvalid
-                      || rx_c0_cfgvalid
-                      || rx_c1_wrvalid
-                      || tx_c0_rdvalid
-                      || tx_c1_wrvalid ;
+			 || tx_c1_intrvalid_sel
+			 || rx_c0_intrvalid
+			 || rx_c1_intrvalid
+			 || rx_c0_wrvalid
+			 || rx_c0_rdvalid
+			 || rx_c0_cfgvalid
+			 || rx_c1_wrvalid
+			 || tx_c0_rdvalid
+			 || tx_c1_wrvalid ;
 
 
    // Check for first transaction
@@ -1154,24 +1016,17 @@ module cci_emulator();
    initial begin : ase_entry_point
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
+      csr_write_dispatch(1, 0, 0);
       ase_init();
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       sys_reset_n = 0;
-      // for (sys_rst_iter=0; sys_rst_iter<`INITIAL_SYSTEM_RESET_DURATION; sys_rst_iter = sys_rst_iter + 1) begin
-      // 	 @(posedge clk);
-      // end
       #100ns;
-
       sys_reset_n = 1;
-      // for (sys_rst_iter=0; sys_rst_iter<`INITIAL_SYSTEM_RESET_DURATION; sys_rst_iter = sys_rst_iter + 1) begin
-      // 	 @(posedge clk);
-      // end
       #100ns;
 
       // Setting up CA-private memory
-      // if (ENABLE_CACHING_AGENT_PRIVATE_MEMORY) begin
       if (cfg.enable_capcm) begin
 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
 	 capcm_init();
@@ -1391,8 +1246,8 @@ module cci_emulator();
 	 if (lp_initdone) begin
 	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
 	    if (rx_c0_cfgvalid) begin
-	       $fwrite(log_fd, "%d\tCSRWrite\t0\tNA\t%x\t%x\n", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
-	       if (cfg.enable_cl_view) $display("%d\tCSRWrite\t0\tNA\t%x\t%x", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[`CCI_CSR_WIDTH]);
+	       $fwrite(log_fd, "%d\tCSRWrite\t\t\t%x\t%x\n", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
+	       if (cfg.enable_cl_view) $display("%d\tCSRWrite\t\t\t%x\t%x", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
 	    end
 	    /////////////////////////////// RX0 wrvalid /////////////////////////////////
 	    if (rx_c0_wrvalid) begin

@@ -163,7 +163,7 @@ module ase_fifo
       if (rst == 1'b1)
 	counter <= 0;
       else begin
-	// counter <= counter - (rd_en & (~empty_current)) + (wr_en & (~full_current));
+	 // counter <= counter - (rd_en & (~empty_current)) + (wr_en & (~full_current));
 	 casex ({(rd_en && ~empty_current), (wr_en && ~full_current)})
 	   2'b01  : counter <= counter_reg + 1;
 	   2'b10  : counter <= counter_reg - 1;
@@ -192,7 +192,7 @@ module ase_fifo
       end
    end
    assign empty = empty_current;
-      
+   
    /*
     * FIFO full state machine
     */

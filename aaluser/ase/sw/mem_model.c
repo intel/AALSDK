@@ -495,7 +495,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   struct buffer_t *trav_ptr;
 
   // For debug only
-#if ASE_DEBUG
+#ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("req_paddr = %p | ", (uint64_t*)req_paddr);
   END_YELLOW_FONTCOLOR;
@@ -511,7 +511,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
 	  // Debug only
-#if ASE_DEBUG
+#ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
 	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, ase_pbase);
 	  END_YELLOW_FONTCOLOR;

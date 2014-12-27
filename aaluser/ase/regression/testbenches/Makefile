@@ -5,11 +5,15 @@ latency_pipe:
 
 latency_scoreboard:
 	vcs -j 4 -full64 -nc \
-	 -Mupdate -sverilog -override_timescale=10ps/10ps +incdir+../../hw/ -debug_all +lint=all \
+	 -Mupdate -sverilog -override_timescale=10ps/10ps +incdir+../../hw/ -debug_all +define+ASE_DEBUG \
+	+vcs+loopreport +vcs+loopdetect \
 	tb_latency_scoreboard.sv \
+	../../hw/stream_checker.sv \
 	../../hw/latency_scoreboard.sv \
 	../../hw/ase_fifo.sv \
 	../../hw/sdp_ram.sv
+
+# +define+ASE_DEBUG \
 
 ase_fifo:
 	vcs -j 4 -full64 -nc  -sverilog -override_timescale=10ps/10ps \

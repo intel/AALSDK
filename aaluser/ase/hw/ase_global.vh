@@ -179,6 +179,7 @@ typedef struct {
  */
 typedef struct {
    int 	       enable_timeout;
+   int 	       enable_reuse_seed;
    int 	       enable_capcm;
    int 	       memmap_sad_setting;
    int 	       enable_umsg;

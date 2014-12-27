@@ -39,7 +39,8 @@
 #define M_LPBK3 5
 
 
-#define NUM_CL_TEST       1024 // 0x8
+// #define NUM_CL_TEST       16
+// #define NUM_CL_TEST       32768 // 1024 // 0x8
 
 #define TEST_MODE         M_LPBK1
 //#define TEST_MODE         M_READ
@@ -52,14 +53,14 @@
 #define TEST_CFG          0
 #define TEST_INACT_THRESH 10
 
-// PMM: Random write sequence to unknown CSRs
+int num_cl ;
 
 void init_buff_random(struct buffer_t *inp_buf)
 {
   uint32_t *hi_addr, *lo_addr, *ptr;
   int i;
   lo_addr = (uint32_t*)inp_buf->vbase;
-  hi_addr = (uint32_t*)((uint64_t)inp_buf->vbase + 64*NUM_CL_TEST);
+  hi_addr = (uint32_t*)((uint64_t)inp_buf->vbase + 64*num_cl); // NUM_CL_TEST);
   
   for(ptr=lo_addr, i= 0 ; ptr < hi_addr; ptr++, i++)
     *ptr = i; // rand();
@@ -135,8 +136,19 @@ int poll_status(unsigned char *dsm_status_addr)
 
 
 
-int main()
+// int main()
+int main(int argc, char *argv[])
 {
+  if (argc > 1) 
+    {
+      num_cl = atoi( argv[1] );
+    }
+  else
+    {
+      num_cl = 16;
+    }
+  printf("Num CL = %d\n", num_cl);
+
   int wait = 0;
 
   // Buffer Allocation and Initialization
@@ -157,8 +169,8 @@ int main()
 
   //Assign buffer size
   dsm->memsize  = 2*1024*1024;
-  buf1->memsize = NUM_CL_TEST*64;
-  buf2->memsize = NUM_CL_TEST*64;
+  buf1->memsize = num_cl*64;
+  buf2->memsize = num_cl*64;
 
   // Allocate buffer
   allocate_buffer(dsm);
@@ -250,7 +262,7 @@ int main()
   
   csr_write(NLB_SRC_ADDR_OFF , (uint32_t)nlb_src_addr);
   csr_write(NLB_DST_ADDR_OFF , (uint32_t)nlb_dst_addr);
-  csr_write(NLB_NUM_LINES_OFF, NUM_CL_TEST);
+  csr_write(NLB_NUM_LINES_OFF, num_cl);
 
   printf("src  = %x\n", (uint32_t)nlb_src_addr);  
   printf("dst  = %x\n", (uint32_t)nlb_dst_addr);  
@@ -280,7 +292,7 @@ int main()
           ase_dump_to_file(buf2, "buf2.dump");
         
           // Memcpy check
-          if( memcmp((unsigned char*)buf1->vbase, (unsigned char*) buf2->vbase, NUM_CL_TEST*64) == 0)
+          if( memcmp((unsigned char*)buf1->vbase, (unsigned char*) buf2->vbase, num_cl*64) == 0)
             printf("LPBK1: Memory Copy TEST Successful\n");
           else
             printf("LPBK1: Memory Copy TEST Failed\n");        

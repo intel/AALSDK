@@ -98,7 +98,7 @@ void umsg_dex(cci_pkt *umsg)
 
   umsg->meta = glbl_umsg_meta;
   memcpy(umsg->qword, glbl_umsg_data, CL_BYTE_WIDTH);
-#if ASE_DEBUG
+#ifdef ASE_DEBUG
   int i;
   printf("UMSG_DEX =>\n");
   printf("%08x", (uint32_t)umsg->meta);
@@ -419,8 +419,11 @@ int ase_listener()
       csr_data = atoi(pch);
 
       // CSRWrite Dispatch
-      csr_write_dispatch ( csr_offset, csr_data );
-      
+      csr_write_dispatch ( 0, csr_offset, csr_data );
+    
+      // *FIXME*: Synchronizer must go here
+  
+#if 0
       // Set csr_write flag
       glbl_csr_serviced = 0;
       csr_write_init (1);
@@ -437,12 +440,14 @@ int ase_listener()
 
       // Reset csr_write flag
       csr_write_init (0);
+#endif
     }
 
 
   /*
    * UMSG listener
    */
+#if 0
   // Message string
   char umsg_str[ASE_MQ_MSGSIZE];
 
@@ -464,7 +469,6 @@ int ase_listener()
       umas_target_addr = (uint64_t*)umas_target_addrint;
       memcpy(umsg_data, umas_target_addr, CL_BYTE_WIDTH);
 
-#if 0
       int ii;
       BEGIN_RED_FONTCOLOR;
       printf("Printing data...\n");
@@ -474,7 +478,6 @@ int ase_listener()
 	printf("%02d ", umsg_data[ii]);
       printf("\nDONE\n");
       END_RED_FONTCOLOR;
-#endif
 
       // UMSG Hint
       if (umsg_hint)
@@ -505,6 +508,7 @@ int ase_listener()
 	  umsg_init(0);
 	}
     }
+#endif
 
   
   FUNC_CALL_EXIT;
@@ -631,7 +635,7 @@ void ase_init()
 #endif
 
   // Set CSR write to '0', i.e. no CSR write has occured
-  csr_write_init (0);
+  // csr_write_init (0);
 
   // Set up message queues
 #ifdef SIM_SIDE
