@@ -49,19 +49,24 @@ mqd_t app2ase_umsg_rx;      // UMsg receiver pipe
  * ASE transaction type counts
  * Enabled during ASEDBGDUMP
  */
+#if 0
 int ase_cfg_cnt   = 0;
 int ase_read_cnt  = 0;
 int ase_write_cnt = 0;
 int ase_umsg_cnt  = 0;
+#endif
 
+#if 0 
 int csr_write_completed_cnt = 0;
 int csr_write_listener_activecnt = 0;
+#endif
 int umsg_completed_cnt = 0;
 int umsg_listener_activecnt = 0;
 
 /*
  * DPI: CSR write data exchange
  */
+#if 0
 int glbl_csr_meta;
 int glbl_csr_data;
 int glbl_csr_serviced;
@@ -84,7 +89,7 @@ void csr_write_dex(cci_pkt *csr)
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 /* 
  * DPI: UMSG Data exchange
@@ -112,7 +117,7 @@ void umsg_dex(cci_pkt *umsg)
   umsg->intrvalid = 0;
   umsg->umsgvalid = 1;
 
-  ase_umsg_cnt++;  
+  // ase_umsg_cnt++;  
 
   FUNC_CALL_EXIT;
 }
@@ -151,7 +156,7 @@ void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
   pkt->intrvalid = 0;
   pkt->umsgvalid = 0;
 
-  ase_write_cnt++;
+  // ase_write_cnt++;
 
   FUNC_CALL_EXIT;
 }
@@ -186,7 +191,7 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
   pkt->intrvalid = 0;
   pkt->umsgvalid = 0;
 
-  ase_read_cnt++;
+  // ase_read_cnt++;
 
   FUNC_CALL_EXIT;
 }
@@ -195,6 +200,7 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 /*
  * DPI-controlled: CSR Write completed
  */
+#if 0
 void csr_write_completed()
 {
   FUNC_CALL_ENTRY;
@@ -204,7 +210,7 @@ void csr_write_completed()
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 /*
  * DPI-controlled: UMSG completed
@@ -762,19 +768,19 @@ void start_simkill_countdown()
   END_GREEN_FONTCOLOR;
 
   // Print Debug info
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("\nSW Transaction counts =>\n");
-  printf("\tConfigs = %d\n", ase_cfg_cnt);
-  printf("\tReads   = %d\n", ase_read_cnt);
-  printf("\tWrites  = %d\n", ase_write_cnt);
-  printf("\n");
-  if (cfg->enable_asedbgdump)
-    {
-      printf("\tcsr_write_completed_cnt = %d\n", csr_write_completed_cnt);
-      printf("\tcsr_write_listener_activecnt = %d\n", csr_write_listener_activecnt);
-      printf("\n");
-    }
-  END_YELLOW_FONTCOLOR;  
+  /* BEGIN_YELLOW_FONTCOLOR; */
+  /* printf("\nSW Transaction counts =>\n"); */
+  /* printf("\tConfigs = %d\n", ase_cfg_cnt); */
+  /* printf("\tReads   = %d\n", ase_read_cnt); */
+  /* printf("\tWrites  = %d\n", ase_write_cnt); */
+  /* printf("\n"); */
+  /* if (cfg->enable_asedbgdump) */
+  /*   { */
+  /*     printf("\tcsr_write_completed_cnt = %d\n", csr_write_completed_cnt); */
+  /*     printf("\tcsr_write_listener_activecnt = %d\n", csr_write_listener_activecnt); */
+  /*     printf("\n"); */
+  /*   } */
+  /* END_YELLOW_FONTCOLOR;   */
 
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");

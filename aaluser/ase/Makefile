@@ -95,12 +95,13 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
+SNPS_VLOGAN_OPT+= +define+ASE_DEBUG
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/simv
-SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
+SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
 

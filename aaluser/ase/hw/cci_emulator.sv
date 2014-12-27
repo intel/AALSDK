@@ -193,13 +193,13 @@ module cci_emulator();
 
    /*
     * State indicators
-    */ 
-   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsgHint, RxUmsgData, RxIntrResp} 
+    */
+   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsgHint, RxUmsgData, RxIntrResp}
 				  RxGlue_StateEnum;
    RxGlue_StateEnum rx0_state;
    RxGlue_StateEnum rx1_state;
-  		  
-   
+
+
    /*
     * Clock process: Operates the CAFU clock
     */
@@ -381,14 +381,15 @@ module cci_emulator();
    // int csr_write_enabled_cnt;
 
    always @(posedge clk) begin
-      if (sys_reset_n == 1'b0) begin
+      if (~sys_reset_n) begin
 	 ase_rx0_cfgvalid_cnt = 0;
 	 ase_rx0_rdvalid_cnt = 0;
 	 ase_rx0_wrvalid_cnt = 0;
+	 ase_rx0_umsgvalid_cnt = 0;
+	 ase_rx0_intrvalid_cnt = 0;
 	 ase_rx1_wrvalid_cnt = 0;
 	 ase_tx0_rdvalid_cnt = 0;
 	 ase_tx1_wrvalid_cnt = 0;
-	 // csr_write_enabled_cnt = 0;
       end
       else begin
 	 // TX channels
@@ -399,8 +400,6 @@ module cci_emulator();
 	 // TX channels
 	 if (tx_c0_rdvalid)  ase_tx0_rdvalid_cnt  <= ase_tx0_rdvalid_cnt + 1;
 	 if (tx_c1_wrvalid)  ase_tx1_wrvalid_cnt  <= ase_tx1_wrvalid_cnt + 1;
-	 // CSR write enabled counting
-	 // if (csr_write_enabled) csr_write_enabled_cnt <= csr_write_enabled_cnt + 1;
       end
    end
 
@@ -422,7 +421,7 @@ module cci_emulator();
 	 if (cfg.enable_asedbgdump) begin
 	    // Print transactions
 	    `BEGIN_YELLOW_FONTCOLOR;
-	    $display("HW Transaction counts => ");
+	    $display("Transaction counts => ");
 	    $display("\tConfigs    = %d", ase_rx0_cfgvalid_cnt );
 	    $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt );
 	    $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt );
@@ -439,6 +438,14 @@ module cci_emulator();
 	    if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
 	      $display("\tWRITEs : Response counts dont match request count !!");
 	    `END_RED_FONTCOLOR;
+`ifdef ASE_DEBUG
+	    `BEGIN_YELLOW_FONTCOLOR;
+	    $display("cf2as_latbuf_ch0 dropped =>");
+	    $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	    $display("cf2as_latbuf_ch1 dropped =>");
+	    $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	    `END_YELLOW_FONTCOLOR;
+`endif
 	 end
 	 $finish;
       end
@@ -554,14 +561,14 @@ module cci_emulator();
 
    always @(posedge clk)
      cf2as_latbuf_ch0_empty_q <= cf2as_latbuf_ch0_empty;
- 
+
    // Duplicate signals
    always @(*) begin
       cf2as_latbuf_ch0_claddr <= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
       cf2as_latbuf_ch0_meta   <= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
    end
 
-   
+
    // CAFU->ASE CH1 (TX1)
 `ifdef ASE_RANDOMIZE_TRANSACTIONS
    // Latency scoreboard (latency modeling and shuffling)
@@ -622,7 +629,7 @@ module cci_emulator();
 
    always @(posedge clk)
      cf2as_latbuf_ch1_empty_q <= cf2as_latbuf_ch1_empty;
-   
+
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
    // always @(posedge clk) begin
@@ -632,7 +639,8 @@ module cci_emulator();
       end
       else if (~cf2as_latbuf_ch1_empty) begin
 	 // tx_to_rx_channel <= $random % 2;
-	 tx_to_rx_channel <= 1;	 
+	 // tx_to_rx_channel <= 0;
+	 tx_to_rx_channel <= 1;
       end
       else begin
 	 tx_to_rx_channel <= 7;
@@ -640,7 +648,7 @@ module cci_emulator();
    end
 
    // Duplicating signals (DPI seems to cause errors in DEX function) --- P2 debug priority
-   always @(*) begin      
+   always @(*) begin
       cf2as_latbuf_ch1_claddr_1 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
       cf2as_latbuf_ch1_meta_1 <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
       cf2as_latbuf_ch1_data_1 <= cf2as_latbuf_ch1_data;
@@ -822,7 +830,6 @@ module cci_emulator();
 	    			   unpack_ccipkt_to_vector(rx0_pkt)};
 	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch0_valid;
 	    cf2as_latbuf_ch0_read <= 1;
-	    $display("WR: %x", cf2as_latbuf_ch0_claddr);
 	    rx0_state <= RxReadResp;
 	 end
 	 // Write request & RX0 is selected
@@ -831,7 +838,6 @@ module cci_emulator();
 	    		   cf2as_latbuf_ch1_claddr_0,
 	    		   cf2as_latbuf_ch1_meta_0,
 	    		   cf2as_latbuf_ch1_data_0 );
-	    $display("WR: %x", cf2as_latbuf_ch1_claddr_0);
 	    as2cf_fifo_ch0_din <= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
 	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch1_valid;
 	    cf2as_latbuf_ch1_read_0 <= 1;
@@ -840,7 +846,7 @@ module cci_emulator();
 	 end
 	 // Else
 	 else begin
-	    sw_reset_n <= sw_reset_n_q;	    
+	    sw_reset_n <= sw_reset_n_q;
 	    csrff_read <= 0;
 	    as2cf_fifo_ch0_write <= 0;
 	    cf2as_latbuf_ch0_read <= 0;
@@ -858,7 +864,7 @@ module cci_emulator();
       if (~sys_reset_n) begin
 	 as2cf_fifo_ch1_write <= 0;
 	 cf2as_latbuf_ch1_read_1 <= 0;
-	 rx1_state <= RxIdle;	 
+	 rx1_state <= RxIdle;
       end
       else begin
 	 cf2as_latbuf_ch1_read_1 <= 0;
@@ -869,7 +875,6 @@ module cci_emulator();
 	    		   cf2as_latbuf_ch1_claddr_1,
 	    		   cf2as_latbuf_ch1_meta_1,
 	    		   cf2as_latbuf_ch1_data_1 );
-	    $display("WR: %x", cf2as_latbuf_ch1_claddr_1);
 	    as2cf_fifo_ch1_din <= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
 	    as2cf_fifo_ch1_write <= cf2as_latbuf_ch1_valid;
 	    cf2as_latbuf_ch1_read_1 <= 1;

@@ -65,7 +65,7 @@
 #endif
 
 // Debug switch
-#define ASE_DEBUG
+// #define ASE_DEBUG
 
 /*
  * Return integers

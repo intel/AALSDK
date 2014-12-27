@@ -705,7 +705,7 @@ module latency_scoreboard
     */
 `ifdef ASE_DEBUG
    stream_checker #(HDR_WIDTH, TID_WIDTH)
-   checker (clk, write_en, meta_in, tid_in, valid_out, meta_out, tid_out);   
+   checkunit (clk, write_en, meta_in, tid_in, valid_out, meta_out, tid_out);   
 `endif
 
 endmodule // latency_scoreboard
