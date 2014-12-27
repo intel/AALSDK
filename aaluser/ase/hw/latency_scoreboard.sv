@@ -61,13 +61,14 @@
 
 module latency_scoreboard
   #(
-    parameter int NUM_TRANSACTIONS = 128,
+    parameter int NUM_TRANSACTIONS = 16,
     parameter int HDR_WIDTH = 61,
     parameter int DATA_WIDTH = 512,
     parameter int COUNT_WIDTH = 8,
     parameter int FIFO_FULL_THRESH = 5,
     parameter int FIFO_DEPTH_BASE2 = 3,
-    parameter int VISIBLE_DEPTH_BASE2 = 7
+    parameter int VISIBLE_DEPTH_BASE2 = 7,
+    parameter int VISIBLE_FULL_THRESH = 96
     )
    (
     input logic 		  clk,
@@ -147,7 +148,7 @@ module latency_scoreboard
    logic 			  stg1_empty;
    logic 			  stg1_full;
    logic 			  stg1_pop;
-   logic [FIFO_DEPTH_BASE2:0] 	  stg1_count;
+   logic [VISIBLE_DEPTH_BASE2:0]  stg1_count;
 
    // Stage 1 (write fence filtered)
    logic [HDR_WIDTH-1:0] 	  q_meta;
@@ -159,6 +160,7 @@ module latency_scoreboard
    logic 			  q_pop;
    logic 			  q_push;
    logic [FIFO_DEPTH_BASE2:0] 	  q_count;
+   logic [FIFO_WIDTH-1:0] 	  q_din;   
 
    logic [HDR_WIDTH-1:0] 	  stg2_meta;
    logic [DATA_WIDTH-1:0] 	  stg2_data;
@@ -352,7 +354,7 @@ module latency_scoreboard
      #(
        .DATA_WIDTH     (FIFO_WIDTH),
        .DEPTH_BASE2    (VISIBLE_DEPTH_BASE2),
-       .ALMFULL_THRESH (FIFO_FULL_THRESH)
+       .ALMFULL_THRESH (VISIBLE_FULL_THRESH)
        )
    infifo
      (
@@ -380,8 +382,15 @@ module latency_scoreboard
    end
 
    // Filter WRFENCE
-   assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || wrfence_pop );
-   assign q_push   = ~stg1_empty && (~assert_wrfence && ~q_full);
+   always @(posedge clk) begin
+      q_din <= {stg1_tid, stg1_meta, stg1_data};
+      // q_push   <= ~stg1_empty && (~assert_wrfence && ~q_full);      
+      q_push   <= stg1_valid && (~assert_wrfence && ~q_full);      
+      // stg1_pop <= ~stg1_empty && ((~assert_wrfence && ~q_full) || wrfence_pop );
+   end
+   // assign q_din    = {stg1_tid, stg1_meta, stg1_data};
+   assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || (assert_wrfence && wrfence_pop));
+   // assign q_push   = ~stg1_empty && (~assert_wrfence && ~q_full);
 
    // WriteFence passthru/trap FSM
    always @(posedge clk) begin
@@ -442,7 +451,7 @@ module latency_scoreboard
       .clk        (clk),
       .rst        (rst),
       .wr_en      (q_push),
-      .data_in    ({stg1_tid, stg1_meta, stg1_data}),
+      .data_in    (q_din), // ({stg1_tid, stg1_meta, stg1_data}),
       .rd_en      (q_pop),
       .data_out   ({q_tid, q_meta, q_data}),
       .data_out_v (q_valid),
@@ -689,59 +698,14 @@ module latency_scoreboard
    // Count
    assign count = stg1_count + q_count + latbuf_count + stg3_count;
 
-
+   
    /*
     * Transaction IN-OUT checker
     * Sniffs dropped transactions
     */
 `ifdef ASE_DEBUG
-   int checker_mem[*];
-   // Add/remove to checker as things come and go
-   always @(posedge clk) begin
-      if (write_en) begin
-	 checker_mem[tid_in] = tid_in;
-      end
-      else if (valid_out) begin
-	 if (checker_mem.exists(tid_out)) begin
-	    checker_mem.delete(tid_out);
-	 end
-	 else begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display("ERROR (%d): tid_out = %x was not found in checker memory !!", $time, tid_out);
-	    `END_RED_FONTCOLOR;
-	 end
-      end
-      else if (wrfence_pop) begin
-	 if (checker_mem.exists(stg1_tid)) begin
-	    checker_mem.delete(stg1_tid);
-	 end
-	 else begin
-	    `BEGIN_RED_FONTCOLOR;
-	    $display("ERROR (%d): tid_out = %x was not found in checker memory !!", $time, stg1_tid);
-	    `END_RED_FONTCOLOR;
-	 end
-      end
-   end
-
-   // Monitor-print process
-   always @(posedge clk) begin
-      if (latbuf_push && latbuf_full) begin
-   	 `BEGIN_RED_FONTCOLOR;
-   	 $display("ERROR (%d) => Latbuf push and full were HIGH, tid = %d", $time, q_tid);
-   	 `END_RED_FONTCOLOR;
-      end
-      if (latbuf_pop && latbuf_empty) begin
-   	 `BEGIN_RED_FONTCOLOR;
-   	 $display("ERROR (%d) => Latbuf pop and empty were HIGH, tid = %d", $time, q_tid);
-   	 `END_RED_FONTCOLOR;
-      end
-      if (q_pop) begin
-   	 `BEGIN_YELLOW_FONTCOLOR;
-   	 $display("INFO (%d) => QPOP q_tid = %d", $time, q_tid);
-   	 `END_YELLOW_FONTCOLOR;
-      end
-   end
-
+   stream_checker #(HDR_WIDTH, TID_WIDTH)
+   checker (clk, write_en, meta_in, tid_in, valid_out, meta_out, tid_out);   
 `endif
 
 endmodule // latency_scoreboard

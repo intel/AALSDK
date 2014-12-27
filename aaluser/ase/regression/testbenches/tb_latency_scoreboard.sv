@@ -1,3 +1,5 @@
+`include "ase_global.vh"
+
 module tb_latency_scoreboard();
 
    parameter DATA_WIDTH = 64;
@@ -10,8 +12,13 @@ module tb_latency_scoreboard();
    logic 		  overflow, underflow;
    
       
-   latency_scoreboard #(4, HDR_WIDTH, DATA_WIDTH, 8, 5, 3) 
-   buffer (clk, rst, meta_in, data_in, valid_in, meta_out, data_out, valid_out, read_en, empty, full, overflow, underflow);
+   latency_scoreboard 
+     #(
+       .NUM_TRANSACTIONS (4),
+       .HDR_WIDTH  (HDR_WIDTH), 
+       .DATA_WIDTH (DATA_WIDTH)
+       ) 
+   buffer (clk, rst, meta_in, data_in, valid_in, meta_out, data_out, valid_out, read_en, empty, full, overflow, underflow, );
 
    //clk
    initial begin
@@ -42,7 +49,7 @@ module tb_latency_scoreboard();
 	 meta_in <= 64'h00000000_00000000;	 
       end
       else begin
-	 if ((~full) && (wr_iter < 9)) begin
+	 if ((~full) && (wr_iter < 500000)) begin
 	    wr_iter <= wr_iter + 1;
 	    meta_in <= meta_in + 64'h11111111_11111111;
 	    valid_in <= 1;	    
@@ -55,9 +62,16 @@ module tb_latency_scoreboard();
 
    assign read_en = ~empty;   
 
+   
+   // int checker_meta[*];
+   
    initial begin
-      #2000;
+      #1_0000_0000;
+`ifdef ASE_DEBUG
+      $display (buffer.checker.check_array);
+`endif
       $finish;     
    end
+
       
 endmodule
