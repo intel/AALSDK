@@ -158,12 +158,14 @@ void mqueue_send(mqd_t mq, char* str)
   // Print message if enabled
   //#ifdef ASE_MSG_VIEW
 #ifdef SIM_SIDE
+ #ifdef ASE_MSG_VIEW
   if (cfg->enable_asedbgdump)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("ASE_msg sent  : %s\n", str);
       END_YELLOW_FONTCOLOR;
     }
+ #endif
 #endif
   //#endif
 
@@ -227,12 +229,14 @@ int mqueue_recv(mqd_t mq, char* str)
           // Print message if enabled
 	  //#ifdef ASE_MSG_VIEW
         #ifdef SIM_SIDE
+         #ifdef ASE_MSG_VIEW
 	  if (cfg->enable_asedbgdump)
 	    {
 	      BEGIN_YELLOW_FONTCOLOR;
 	      printf("ASE_msg recvd : %s\n", str);
 	      END_YELLOW_FONTCOLOR;
 	    }
+	 #endif
         #endif
 	  //#endif
         FUNC_CALL_EXIT;

@@ -564,11 +564,6 @@ module latency_scoreboard
    		 LatSc_Disabled:
    		   begin
    		      if ( (push_slot_num == gen_i) && latbuf_push ) begin
-`ifdef ASE_DEBUG
-			 `BEGIN_YELLOW_FONTCOLOR;
-			 $display("INFO (%d) => latbuf_push tid=%x", $time, stg2_tid);
-			 `END_YELLOW_FONTCOLOR;
-`endif
    			 // records[gen_i].ready_to_go <= 1'b0;
    			 records[gen_i].meta  <= stg2_meta;
    			 records[gen_i].data  <= stg2_data;
