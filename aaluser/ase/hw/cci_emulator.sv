@@ -1164,18 +1164,18 @@ module cci_emulator();
    endtask
 
    // Almostfull disobedience warning
-   always @(posedge clk) begin
-      if ( tx_c0_almostfull && tx_c0_rdvalid ) begin
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display ("SIM-SV: t = ", $time, " => *** TX-CH0 almostfull was HIGH and READ request was seen !! ***");
-	 `END_YELLOW_FONTCOLOR;
-      end
-      if ( tx_c1_almostfull && tx_c1_wrvalid ) begin
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display ("SIM-SV: t = ", $time, " => *** TX-CH1 almostfull was HIGH and WRITE request was seen !! ***");
-	 `END_YELLOW_FONTCOLOR;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if ( tx_c0_almostfull && tx_c0_rdvalid ) begin
+   // 	 `BEGIN_YELLOW_FONTCOLOR;
+   // 	 $display ("SIM-SV: t = ", $time, " => *** TX-CH0 almostfull was HIGH and READ request was seen !! ***");
+   // 	 `END_YELLOW_FONTCOLOR;
+   //    end
+   //    if ( tx_c1_almostfull && tx_c1_wrvalid ) begin
+   // 	 `BEGIN_YELLOW_FONTCOLOR;
+   // 	 $display ("SIM-SV: t = ", $time, " => *** TX-CH1 almostfull was HIGH and WRITE request was seen !! ***");
+   // 	 `END_YELLOW_FONTCOLOR;
+   //    end
+   // end
 
    // Flow error messages
    always @(posedge clk) begin

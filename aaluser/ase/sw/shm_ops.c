@@ -35,10 +35,12 @@
 #include "ase_common.h"
 
 // Message queues opened by APP
-mqd_t app2ase_tx;           // app2ase mesaage queue in TX mode
-mqd_t ase2app_rx;           // ase2app mesaage queue in RX mode
-mqd_t app2ase_csr_wr_tx;    // CSR Write MQ in TX mode
-mqd_t app2ase_umsg_tx;      // UMSG MQ in TX mode
+mqd_t app2sim_tx;           // app2sim mesaage queue in TX mode
+mqd_t sim2app_rx;           // sim2app mesaage queue in RX mode
+mqd_t app2sim_csr_wr_tx;    // CSR Write MQ in TX mode
+mqd_t app2sim_umsg_tx;      // UMSG MQ in TX mode
+mqd_t sim2app_intr_rx;      // INTR MQ in RX mode
+mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
 
 #ifndef SIM_SIDE
 int ase_pid;
@@ -120,10 +122,12 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
-  app2ase_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
-  app2ase_tx        = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
-  ase2app_rx        = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
-  app2ase_umsg_tx   = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
+  app2sim_csr_wr_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
+  app2sim_tx         = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
+  sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
+  app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
+  app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
+  sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf(" DONE\n");
@@ -164,10 +168,12 @@ void session_deinit()
   printf("  [APP]  Deinitializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
-  mqueue_close(app2ase_csr_wr_tx);
-  mqueue_close(app2ase_tx);
-  mqueue_close(ase2app_rx);
-  mqueue_close(app2ase_umsg_tx);
+  mqueue_close(app2sim_csr_wr_tx);
+  mqueue_close(app2sim_tx);
+  mqueue_close(sim2app_rx);
+  mqueue_close(app2sim_umsg_tx);
+  mqueue_close(sim2app_intr_rx);
+  mqueue_close(app2sim_simkill_tx);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf(" DONE\n");
@@ -205,17 +211,17 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   // ---------------------------------------------------
   // #ifdef ASE_MQ_ENABLE
   // Open message queue
-  // app2ase_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
+  // app2sim_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
   // Send message
   sprintf(csr_wr_str, "%u %u", csr_offset, data);
-  mqueue_send(app2ase_csr_wr_tx, csr_wr_str);
+  mqueue_send(app2sim_csr_wr_tx, csr_wr_str);
 
   // Close message queue
-  /* mqueue_close(app2ase_csr_wr_tx); */
+  /* mqueue_close(app2sim_csr_wr_tx); */
   // #endif
   csr_write_cnt++;
   // RRS: Write inside DSM
@@ -342,10 +348,10 @@ void allocate_buffer(struct buffer_t *mem)
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2ase_tx, tmp_msg);
+  mqueue_send(app2sim_tx, tmp_msg);
 
   // Receive message from DPI with pbase populated
-  while(mqueue_recv(ase2app_rx, tmp_msg)==0) { /* wait */ }
+  while(mqueue_recv(sim2app_rx, tmp_msg)==0) { /* wait */ }
   ase_str_to_buffer_t(tmp_msg, mem);
 
   // Print out the buffer
@@ -383,11 +389,11 @@ void deallocate_buffer(struct buffer_t *mem)
   // Open message queue
   strcpy(mq_name, APP2SIM_SMQ_PREFIX);
   strcat(mq_name, get_timestamp(1));
-  app2ase_tx = mq_open(mq_name, O_WRONLY);
+  app2sim_tx = mq_open(mq_name, O_WRONLY);
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2ase_tx, tmp_msg);
+  mqueue_send(app2sim_tx, tmp_msg);
 
   // Unmap the memory accordingly
   ret = munmap((void*)mem->vbase, (size_t)mem->memsize);
@@ -570,7 +576,7 @@ void send_umsg(struct buffer_t *umas, uint32_t msg_id, char* umsg_data)
   umas_sim_addr = ((uint64_t)umas->pbase + (uint64_t)(msg_id*ASE_PAGESIZE));
   sprintf(umsg_str, "%u %u %lu", msg_id, umsg_hint, umas_sim_addr);
 
-  mqueue_send(app2ase_umsg_tx, umsg_str);
+  mqueue_send(app2sim_umsg_tx, umsg_str);
   usleep(500);
 
   FUNC_CALL_EXIT;

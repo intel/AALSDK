@@ -40,10 +40,13 @@
 // ---------------------------------------------------------------
 // Message queues descriptors
 // ---------------------------------------------------------------
-mqd_t app2ase_rx;           // app2ase mesaage queue in RX mode
-mqd_t ase2app_tx;           // ase2app mesaage queue in TX mode
-mqd_t app2ase_csr_wr_rx;    // CSR Write listener MQ in RX mode
-mqd_t app2ase_umsg_rx;      // UMsg receiver pipe 
+mqd_t app2sim_rx;           // app2sim mesaage queue in RX mode
+mqd_t sim2app_tx;           // sim2app mesaage queue in TX mode
+mqd_t app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
+mqd_t app2sim_umsg_rx;      // UMSG    message queue in RX mode
+mqd_t app2sim_simkill_rx;   // app2sim message queue in RX mode
+mqd_t sim2app_intr_tx;      // sim2app message queue in TX mode
+
 
 /*
  * ASE transaction type counts
@@ -246,7 +249,7 @@ void umsg_completed()
   memset(ase_msg_data, '\0', sizeof(ase_msg_data));
   
   // Receive csr_write packet
-  if(mqueue_recv(app2ase_csr_wr_rx, (char*)csr_wr_str)==1)
+  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==1)
     {
       // Tokenize message to get CSR offset and data
       pch = strtok(csr_wr_str, " ");
@@ -301,7 +304,7 @@ void umsg_completed()
   memset (umsg_str, '\0', sizeof(umsg_str));
 
   // Keep checking message queue
-  if (mqueue_recv(app2ase_umsg_rx, (char*)umsg_str ) == 1) 
+  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1) 
     {
       // Tokenize messgae to get msg_id & umsg_data
       sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
@@ -416,7 +419,7 @@ int ase_listener()
   memset(ase_msg_data, '\0', sizeof(ase_msg_data));
   
   // Receive csr_write packet
-  if(mqueue_recv(app2ase_csr_wr_rx, (char*)csr_wr_str)==1)
+  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==1)
     {
       // Tokenize message to get CSR offset and data
       pch = strtok(csr_wr_str, " ");
@@ -468,7 +471,7 @@ int ase_listener()
   memset (umsg_str, '\0', sizeof(umsg_str));
 
   // Keep checking message queue
-  if (mqueue_recv(app2ase_umsg_rx, (char*)umsg_str ) == 1) 
+  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1) 
     {
       // Tokenize messgae to get msg_id & umsg_data
       sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
