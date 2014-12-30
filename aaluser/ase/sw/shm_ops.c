@@ -120,10 +120,10 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
-  app2ase_csr_wr_tx = mqueue_create(APP2DPI_CSR_WR_SMQ_PREFIX, O_WRONLY);
-  app2ase_tx        = mqueue_create(APP2DPI_SMQ_PREFIX, O_WRONLY);
-  ase2app_rx        = mqueue_create(DPI2APP_SMQ_PREFIX, O_RDONLY);
-  app2ase_umsg_tx   = mqueue_create(APP2DPI_UMSG_SMQ_PREFIX, O_WRONLY);
+  app2ase_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
+  app2ase_tx        = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
+  ase2app_rx        = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
+  app2ase_umsg_tx   = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf(" DONE\n");
@@ -205,7 +205,7 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   // ---------------------------------------------------
   // #ifdef ASE_MQ_ENABLE
   // Open message queue
-  // app2ase_csr_wr_tx = mqueue_create(APP2DPI_CSR_WR_SMQ_PREFIX, O_WRONLY);
+  // app2ase_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
@@ -381,7 +381,7 @@ void deallocate_buffer(struct buffer_t *mem)
   mem->metadata = HDR_MEM_DEALLOC_REQ;
 
   // Open message queue
-  strcpy(mq_name, APP2DPI_SMQ_PREFIX);
+  strcpy(mq_name, APP2SIM_SMQ_PREFIX);
   strcat(mq_name, get_timestamp(1));
   app2ase_tx = mq_open(mq_name, O_WRONLY);
 

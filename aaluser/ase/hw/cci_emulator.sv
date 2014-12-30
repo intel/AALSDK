@@ -55,13 +55,13 @@ module cci_emulator();
     */
    // ASE Initialize function
    import "DPI-C" context task ase_init();
-      // Indication that ASE is ready
-      import "DPI-C" function void ase_ready();
+   // Indication that ASE is ready
+   import "DPI-C" function void ase_ready();
    // Global listener function
    import "DPI-C" context task ase_listener();
 
-      // ASE config data exchange (read from ase.cfg)
-      export "DPI-C" task ase_config_dex;
+   // ASE config data exchange (read from ase.cfg)
+   export "DPI-C" task ase_config_dex;
 
    // CSR Write Dispatch
    export "DPI-C" task csr_write_dispatch;
@@ -70,13 +70,13 @@ module cci_emulator();
 
    // CAPCM initilize
    import "DPI-C" context task capcm_init();
-      // CAPCM destroy
-      // import "DPI-C" context task capcm_deinit();
+   // CAPCM destroy
+   // import "DPI-C" context task capcm_deinit();
 
-      // Start simulation structures teardown
-      import "DPI-C" context task start_simkill_countdown();
-	 // Signal to kill simulation
-	 export "DPI-C" task simkill;
+   // Start simulation structures teardown
+   import "DPI-C" context task start_simkill_countdown();
+   // Signal to kill simulation
+   export "DPI-C" task simkill;
 
    // Data exchange for READ system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
@@ -372,13 +372,13 @@ module cci_emulator();
       end
       else begin
 	 // TX channels
-	 if (rx_c0_cfgvalid) ase_rx0_cfgvalid_cnt <= ase_rx0_cfgvalid_cnt + 1;
-	 if (rx_c0_rdvalid)  ase_rx0_rdvalid_cnt  <= ase_rx0_rdvalid_cnt + 1;
-	 if (rx_c0_wrvalid)  ase_rx0_wrvalid_cnt  <= ase_rx0_wrvalid_cnt + 1;
-	 if (rx_c1_wrvalid)  ase_rx1_wrvalid_cnt  <= ase_rx1_wrvalid_cnt + 1;
+	 if (rx_c0_cfgvalid) ase_rx0_cfgvalid_cnt	<= ase_rx0_cfgvalid_cnt + 1;
+	 if (rx_c0_rdvalid)  ase_rx0_rdvalid_cnt	<= ase_rx0_rdvalid_cnt + 1;
+	 if (rx_c0_wrvalid)  ase_rx0_wrvalid_cnt	<= ase_rx0_wrvalid_cnt + 1;
+	 if (rx_c1_wrvalid)  ase_rx1_wrvalid_cnt	<= ase_rx1_wrvalid_cnt + 1;
 	 // TX channels
-	 if (tx_c0_rdvalid)  ase_tx0_rdvalid_cnt  <= ase_tx0_rdvalid_cnt + 1;
-	 if (tx_c1_wrvalid)  ase_tx1_wrvalid_cnt  <= ase_tx1_wrvalid_cnt + 1;
+	 if (tx_c0_rdvalid)  ase_tx0_rdvalid_cnt	<= ase_tx0_rdvalid_cnt + 1;
+	 if (tx_c1_wrvalid)  ase_tx1_wrvalid_cnt	<= ase_tx1_wrvalid_cnt + 1;
       end
    end
 
@@ -542,12 +542,12 @@ module cci_emulator();
    assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
 
    always @(posedge clk)
-     cf2as_latbuf_ch0_empty_q <= cf2as_latbuf_ch0_empty;
+     cf2as_latbuf_ch0_empty_q	<= cf2as_latbuf_ch0_empty;
 
    // Duplicate signals
    always @(*) begin
-      cf2as_latbuf_ch0_claddr <= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
-      cf2as_latbuf_ch0_meta   <= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch0_claddr	<= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch0_meta	<= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
    end
 
 
@@ -611,18 +611,18 @@ module cci_emulator();
    assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;   
 
    always @(posedge clk)
-     cf2as_latbuf_ch1_empty_q <= cf2as_latbuf_ch1_empty;
+     cf2as_latbuf_ch1_empty_q	<= cf2as_latbuf_ch1_empty;
 
    // Duplicating signals (DPI seems to cause errors in DEX function) --- P2 debug priority
    always @(*) begin
       cf2as_latbuf_ch1_claddr_1 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-      cf2as_latbuf_ch1_meta_1 <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
-      cf2as_latbuf_ch1_data_1 <= cf2as_latbuf_ch1_data;
+      cf2as_latbuf_ch1_meta_1	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch1_data_1	<= cf2as_latbuf_ch1_data;
       cf2as_latbuf_ch1_claddr_0 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-      cf2as_latbuf_ch1_meta_0 <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
-      cf2as_latbuf_ch1_data_0 <= cf2as_latbuf_ch1_data;
-      cf2as_latbuf_ch1_claddr <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-      cf2as_latbuf_ch1_meta <= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch1_meta_0	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
+      cf2as_latbuf_ch1_data_0	<= cf2as_latbuf_ch1_data;
+      cf2as_latbuf_ch1_claddr	<= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
+      cf2as_latbuf_ch1_meta	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
    end
 
 
@@ -642,21 +642,21 @@ module cci_emulator();
    // always @(posedge clk) begin
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 tx_to_rx_channel <= 1;
+	 tx_to_rx_channel		<= 1;
       end
       // else if (~cf2as_latbuf_ch1_empty) begin
       else if (cf2as_latbuf_ch1_valid) begin
-	 // tx_to_rx_channel <= abs_val($random) % 2;
-	 tx_to_rx_channel <= 1;
-	 // tx_to_rx_channel <= 1;
+	 // tx_to_rx_channel		<= abs_val($random) % 2;
+	 tx_to_rx_channel		<= 1;
+	 // tx_to_rx_channel		<= 1;
       end
       // else begin
-      // 	 tx_to_rx_channel <= tx_to_rx_channel_reg;
+      // 	 tx_to_rx_channel	<= tx_to_rx_channel_reg;
       // end
    end
    
    // always @(posedge clk)
-   //   tx_to_rx_channel_reg <= tx_to_rx_channel;
+   //   tx_to_rx_channel_reg	<= tx_to_rx_channel;
    
 
    /* *******************************************************************
@@ -740,50 +740,50 @@ module cci_emulator();
    // RX0 channel
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 rx_c0_data <= `CCI_DATA_WIDTH'b0;
-	 rx_c0_header <= `CCI_RX_HDR_WIDTH'b0;
-	 rx_c0_cfgvalid <= 0;
-	 rx_c0_wrvalid <= 0;
-	 rx_c0_rdvalid <= 0;
-	 rx_c0_intrvalid <= 0;
-	 rx_c0_umsgvalid <= 0;
+	 rx_c0_data		<= `CCI_DATA_WIDTH'b0;
+	 rx_c0_header		<= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c0_cfgvalid		<= 0;
+	 rx_c0_wrvalid		<= 0;
+	 rx_c0_rdvalid		<= 0;
+	 rx_c0_intrvalid	<= 0;
+	 rx_c0_umsgvalid	<= 0;
       end
       else if (as2cf_fifo_ch0_valid) begin
-	 rx_c0_data <= as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
-	 rx_c0_header <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
-	 rx_c0_cfgvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH)];
-	 rx_c0_rdvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+1)];
-	 rx_c0_wrvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+2)];
-	 rx_c0_umsgvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+3)];
-	 rx_c0_intrvalid <= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+4)];
+	 rx_c0_data		<= as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
+	 rx_c0_header		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
+	 rx_c0_cfgvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH)];
+	 rx_c0_rdvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+1)];
+	 rx_c0_wrvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+2)];
+	 rx_c0_umsgvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+3)];
+	 rx_c0_intrvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+4)];
       end
       else begin
-	 rx_c0_data <= 0;
-	 rx_c0_header <= 0;
-	 rx_c0_cfgvalid <= 0;
-	 rx_c0_wrvalid <= 0;
-	 rx_c0_rdvalid <= 0;
-	 rx_c0_intrvalid <= 0;
-	 rx_c0_umsgvalid <= 0;
+	 rx_c0_data		<= 0;
+	 rx_c0_header		<= 0;
+	 rx_c0_cfgvalid		<= 0;
+	 rx_c0_wrvalid		<= 0;
+	 rx_c0_rdvalid		<= 0;
+	 rx_c0_intrvalid	<= 0;
+	 rx_c0_umsgvalid	<= 0;
       end
    end
 
    // RX1 channel
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 rx_c1_header <= `CCI_RX_HDR_WIDTH'b0;
-	 rx_c1_wrvalid <= 1'b0;
-	 rx_c1_intrvalid <= 1'b0;
+	 rx_c1_header		<= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c1_wrvalid		<= 1'b0;
+	 rx_c1_intrvalid	<= 1'b0;
       end
       else if (as2cf_fifo_ch1_valid) begin
-	 rx_c1_header <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
-	 rx_c1_wrvalid <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH];
-	 rx_c1_intrvalid <= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH+1];
+	 rx_c1_header		<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_wrvalid		<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH];
+	 rx_c1_intrvalid	<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH+1];
       end
       else begin
-	 rx_c1_header <= 0; // as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
-	 rx_c1_wrvalid <= 1'b0;
-	 rx_c1_intrvalid <= 1'b0;
+	 rx_c1_header		<= 0; // as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_wrvalid		<= 1'b0;
+	 rx_c1_intrvalid	<= 1'b0;
       end
    end
 
@@ -793,47 +793,47 @@ module cci_emulator();
     */
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 csrff_read <= 0;
-	 as2cf_fifo_ch0_write <= 0;
-	 cf2as_latbuf_ch0_read <= 0;
-	 cf2as_latbuf_ch1_read_0 <= 0;
-	 rx0_state <= RxIdle;
+	 csrff_read					<= 0;
+	 as2cf_fifo_ch0_write				<= 0;
+	 cf2as_latbuf_ch0_read				<= 0;
+	 cf2as_latbuf_ch1_read_0			<= 0;
+	 rx0_state					<= RxIdle;
       end
       else begin
-	 csrff_read <= 0;
-	 as2cf_fifo_ch0_write <= 0;
-	 cf2as_latbuf_ch0_read <= 0;
-	 cf2as_latbuf_ch1_read_0 <= 0;
+	 csrff_read					<= 0;
+	 as2cf_fifo_ch0_write				<= 0;
+	 cf2as_latbuf_ch0_read				<= 0;
+	 cf2as_latbuf_ch1_read_0			<= 0;
 	 // CSR Write in AFU space
 	 if (~csrff_empty && (csrff_dout[45:32] > CCI_AFU_LOW_OFFSET)) begin
-	    as2cf_fifo_ch0_din <= { 5'b00001, {`ASE_RX0_CSR_WRITE, 2'b0, csrff_dout[45:34]}, {480'b0, csrff_dout[31:0]}};
-	    as2cf_fifo_ch0_write <= csrff_valid;
-	    csrff_read <= 1;
-	    rx0_state <= RxAFUCSRWrite;
-	    cf2as_latbuf_ch1_read_0 <= 0;
-	    cf2as_latbuf_ch0_read <= 0;
+	    as2cf_fifo_ch0_din				<= { 5'b00001, {`ASE_RX0_CSR_WRITE, 2'b0, csrff_dout[45:34]}, {480'b0, csrff_dout[31:0]}};
+	    as2cf_fifo_ch0_write			<= csrff_valid;
+	    csrff_read					<= 1;
+	    rx0_state					<= RxAFUCSRWrite;
+	    cf2as_latbuf_ch1_read_0			<= 0;
+	    cf2as_latbuf_ch0_read			<= 0;
 	 end
 	 // CSR Write in QLP region
-	 else if (~csrff_empty && (csrff_dout[45:32] <= CCI_AFU_LOW_OFFSET)) begin
-	    if (csrff_dout[45:32] <= CCI_AFU_LOW_OFFSET) begin
-	       sw_reset_n <= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+	 else if (~csrff_empty && (csrff_dout[45:32]	<= CCI_AFU_LOW_OFFSET)) begin
+	    if (csrff_dout[45:32]			<= CCI_AFU_LOW_OFFSET) begin
+	       sw_reset_n				<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
 	    end
-	    csrff_read <= 1;
-	    rx0_state <= RxQLPCSRWrite;
-	    cf2as_latbuf_ch1_read_0 <= 0;
-	    cf2as_latbuf_ch0_read <= 0;
+	    csrff_read					<= 1;
+	    rx0_state					<= RxQLPCSRWrite;
+	    cf2as_latbuf_ch1_read_0			<= 0;
+	    cf2as_latbuf_ch0_read			<= 0;
 	 end
 	 // Read request
 	 else if (~cf2as_latbuf_ch0_empty) begin
 	    rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
-	    as2cf_fifo_ch0_din <= {5'b00010,
+	    as2cf_fifo_ch0_din				<= {5'b00010,
 	    			   rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0],
 	    			   unpack_ccipkt_to_vector(rx0_pkt)};
-	    csrff_read <= 0;
-	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch0_valid;
-	    cf2as_latbuf_ch0_read <= 1;
-	    cf2as_latbuf_ch1_read_0 <= 0;
-	    rx0_state <= RxReadResp;
+	    csrff_read					<= 0;
+	    as2cf_fifo_ch0_write			<= cf2as_latbuf_ch0_valid;
+	    cf2as_latbuf_ch0_read			<= 1;
+	    cf2as_latbuf_ch1_read_0			<= 0;
+	    rx0_state					<= RxReadResp;
 	 end
 	 // Write request & RX0 is selected
 	 else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0)) begin
@@ -841,21 +841,21 @@ module cci_emulator();
 	    		   cf2as_latbuf_ch1_claddr_0,
 	    		   cf2as_latbuf_ch1_meta_0,
 	    		   cf2as_latbuf_ch1_data_0 );
-	    csrff_read <= 0;
-	    as2cf_fifo_ch0_din <= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
-	    as2cf_fifo_ch0_write <= cf2as_latbuf_ch1_valid;
-	    cf2as_latbuf_ch1_read_0 <= 1;
-	    cf2as_latbuf_ch0_read <= 0;
-	    rx0_state <= RxWriteResp;
+	    csrff_read					<= 0;
+	    as2cf_fifo_ch0_din				<= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
+	    as2cf_fifo_ch0_write			<= cf2as_latbuf_ch1_valid;
+	    cf2as_latbuf_ch1_read_0			<= 1;
+	    cf2as_latbuf_ch0_read			<= 0;
+	    rx0_state					<= RxWriteResp;
 	 end
 	 // Else
 	 else begin
-	    sw_reset_n <= sw_reset_n_q;
-	    csrff_read <= 0;
-	    as2cf_fifo_ch0_write <= 0;
-	    cf2as_latbuf_ch0_read <= 0;
-	    cf2as_latbuf_ch1_read_0 <= 0;
-	    rx0_state <= RxIdle;
+	    sw_reset_n					<= sw_reset_n_q;
+	    csrff_read					<= 0;
+	    as2cf_fifo_ch0_write			<= 0;
+	    cf2as_latbuf_ch0_read			<= 0;
+	    cf2as_latbuf_ch1_read_0			<= 0;
+	    rx0_state					<= RxIdle;
 	 end
       end
    end
@@ -866,28 +866,28 @@ module cci_emulator();
     */
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 as2cf_fifo_ch1_write <= 0;
-	 cf2as_latbuf_ch1_read_1 <= 0;
-	 rx1_state <= RxIdle;
+	 as2cf_fifo_ch1_write		<= 0;
+	 cf2as_latbuf_ch1_read_1	<= 0;
+	 rx1_state			<= RxIdle;
       end
       else begin
-	 cf2as_latbuf_ch1_read_1 <= 0;
-	 as2cf_fifo_ch1_write    <= 0;
+	 cf2as_latbuf_ch1_read_1	<= 0;
+	 as2cf_fifo_ch1_write		<= 0;
 	 // If Write Request was received & RX1 is selected
 	 if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1)) begin
 	    wr_memline_dex(rx1_pkt,
 	    		   cf2as_latbuf_ch1_claddr_1,
 	    		   cf2as_latbuf_ch1_meta_1,
 	    		   cf2as_latbuf_ch1_data_1 );
-	    as2cf_fifo_ch1_din <= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
-	    as2cf_fifo_ch1_write <= cf2as_latbuf_ch1_valid;
-	    cf2as_latbuf_ch1_read_1 <= 1;
-	    rx0_state <= RxWriteResp;
+	    as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
+	    as2cf_fifo_ch1_write	<= cf2as_latbuf_ch1_valid;
+	    cf2as_latbuf_ch1_read_1	<= 1;
+	    rx0_state			<= RxWriteResp;
 	 end
 	 else begin
-	    cf2as_latbuf_ch1_read_1 <= 0;
-	    as2cf_fifo_ch1_write    <= 0;
-	    rx0_state <= RxIdle;
+	    cf2as_latbuf_ch1_read_1	<= 0;
+	    as2cf_fifo_ch1_write	<= 0;
+	    rx0_state			<= RxIdle;
 	 end
       end
    end
@@ -928,7 +928,7 @@ module cci_emulator();
    always @(posedge clk, any_valid)
      begin
 	if(any_valid) begin
-	   first_transaction_seen <= 1'b1;
+	   first_transaction_seen	<= 1'b1;
 	end
      end
 
@@ -1220,9 +1220,9 @@ module cci_emulator();
 
    // Registers for comparing previous states
    always @(posedge clk) begin
-      lp_initdone_q <= lp_initdone;
-      resetb_q <= resetb;
-      sw_reset_n_q <= sw_reset_n;
+      lp_initdone_q	<= lp_initdone;
+      resetb_q		<= resetb;
+      sw_reset_n_q	<= sw_reset_n;
    end
 
 

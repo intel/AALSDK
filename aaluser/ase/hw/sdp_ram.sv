@@ -54,12 +54,12 @@ module sdp_ram
    
    always @(posedge clk) begin      
       if (we) begin
-	ram[waddr]<=din; // synchronous write the RAM
+	ram[waddr]	<= din; // synchronous write the RAM
       end
    end
 
    always @(*)
-     dout <= ram[raddr];
+     dout	<= ram[raddr];
       
 endmodule
 

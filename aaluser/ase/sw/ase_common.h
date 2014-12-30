@@ -264,12 +264,14 @@ extern "C" {
  * ASE message queue 
  */
 // Buffer exchange messages
-#define APP2DPI_SMQ_PREFIX          "/app2ase_bufping_smq."
-#define DPI2APP_SMQ_PREFIX          "/ase2app_bufpong_smq."
+#define APP2SIM_SMQ_PREFIX          "/app2ase_bufping_smq."
+#define SIM2APP_SMQ_PREFIX          "/ase2app_bufpong_smq."
 // CSR write messages
-#define APP2DPI_CSR_WR_SMQ_PREFIX   "/app2ase_csr_wr_smq."
+#define APP2SIM_CSR_WR_SMQ_PREFIX   "/app2ase_csr_wr_smq."
 // UMSG control messages
-#define APP2DPI_UMSG_SMQ_PREFIX     "/app2ase_umsg_smq."
+#define APP2SIM_UMSG_SMQ_PREFIX     "/app2ase_umsg_smq."
+// Simkill control messages
+
 /* // ASE control and status queue (used by unified flow) */
 /* #define APP2ASE_CTRL_SMQ_PREFIX     "/app2ase_ctrl_smq." */
 /* #define ASE2APP_STAT_SMQ_PREFIX     "/app2ase_stat_smq." */

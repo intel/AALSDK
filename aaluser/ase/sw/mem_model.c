@@ -59,16 +59,16 @@ void ase_mqueue_setup()
 {
   FUNC_CALL_ENTRY;
 
-  mq_unlink(APP2DPI_SMQ_PREFIX);
-  mq_unlink(DPI2APP_SMQ_PREFIX);
-  mq_unlink(APP2DPI_CSR_WR_SMQ_PREFIX);
-  mq_unlink(APP2DPI_UMSG_SMQ_PREFIX);
+  mq_unlink(APP2SIM_SMQ_PREFIX);
+  mq_unlink(SIM2APP_SMQ_PREFIX);
+  mq_unlink(APP2SIM_CSR_WR_SMQ_PREFIX);
+  mq_unlink(APP2SIM_UMSG_SMQ_PREFIX);
 
   // Depending on the calling function, activate the required queues
-  app2ase_rx        = mqueue_create(APP2DPI_SMQ_PREFIX,        O_CREAT|O_RDONLY);
-  ase2app_tx        = mqueue_create(DPI2APP_SMQ_PREFIX,        O_CREAT|O_WRONLY);
-  app2ase_csr_wr_rx = mqueue_create(APP2DPI_CSR_WR_SMQ_PREFIX, O_CREAT|O_RDONLY);
-  app2ase_umsg_rx   = mqueue_create(APP2DPI_UMSG_SMQ_PREFIX,   O_CREAT|O_RDONLY);
+  app2ase_rx        = mqueue_create(APP2SIM_SMQ_PREFIX,        O_CREAT|O_RDONLY);
+  ase2app_tx        = mqueue_create(SIM2APP_SMQ_PREFIX,        O_CREAT|O_WRONLY);
+  app2ase_csr_wr_rx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_CREAT|O_RDONLY);
+  app2ase_umsg_rx   = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,   O_CREAT|O_RDONLY);
 
   FUNC_CALL_EXIT;
 }
@@ -89,10 +89,10 @@ void ase_mqueue_teardown()
   mqueue_close(app2ase_umsg_rx);
 
   // Unlink message queues
-  mqueue_destroy(APP2DPI_SMQ_PREFIX);       
-  mqueue_destroy(DPI2APP_SMQ_PREFIX);       
-  mqueue_destroy(APP2DPI_CSR_WR_SMQ_PREFIX);
-  mqueue_destroy(APP2DPI_UMSG_SMQ_PREFIX);
+  mqueue_destroy(APP2SIM_SMQ_PREFIX);       
+  mqueue_destroy(SIM2APP_SMQ_PREFIX);       
+  mqueue_destroy(APP2SIM_CSR_WR_SMQ_PREFIX);
+  mqueue_destroy(APP2SIM_UMSG_SMQ_PREFIX);
 
   FUNC_CALL_EXIT;
 }
