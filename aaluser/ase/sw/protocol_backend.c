@@ -519,6 +519,22 @@ int ase_listener()
     }
 #endif
 
+  /*
+   * SIMKILL message handler
+   */
+  char ase_simkill_str[ASE_MQ_MSGSIZE];
+  memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
+  if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==1)
+    {
+      // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
+	{
+	  printf("\n");
+	  printf("SIM-C : ASE Session Deinitialization was detected... Simulator will EXIT\n");
+	  run_clocks (100);
+	  start_simkill_countdown();
+	}
+    }
+
   
   FUNC_CALL_EXIT;
   return 0;

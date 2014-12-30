@@ -244,6 +244,9 @@ extern "C" {
 #define HDR_ASE_READY_STAT   0xFACEFEED
 #define HDR_ASE_KILL_CTRL    0xC00CB00C
 
+// Simkill message
+#define ASE_SIMKILL_MSG      0xDEADDEAD
+
 
 /*
  * Enable function call entry/exit

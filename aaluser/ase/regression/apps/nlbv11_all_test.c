@@ -149,6 +149,8 @@ int main(int argc, char *argv[])
     }
   printf("Num CL = %d\n", num_cl);
 
+  session_init();
+
   int wait = 0;
 
   // Buffer Allocation and Initialization
@@ -327,6 +329,7 @@ int main(int argc, char *argv[])
 
   printf("APP: Test done...\n");
 
+  session_deinit();
 
   return 0;
 }

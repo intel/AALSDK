@@ -168,6 +168,11 @@ void session_deinit()
   printf("  [APP]  Deinitializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
+  // Send SIMKILL
+  char ase_simkill_msg[ASE_MQ_MSGSIZE];
+  sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
+  mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
+
   mqueue_close(app2sim_csr_wr_tx);
   mqueue_close(app2sim_tx);
   mqueue_close(sim2app_rx);
