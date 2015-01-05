@@ -185,9 +185,9 @@ void session_deinit()
   printf("  [APP]  Session ended\n");
   END_YELLOW_FONTCOLOR;
 
-#ifdef UNIFIED_FLOW
-  kill (ase_pid, SIGKILL);
-#endif
+/* #ifdef UNIFIED_FLOW */
+/*   kill (ase_pid, SIGKILL); */
+/* #endif */
 
   FUNC_CALL_EXIT;
 }
@@ -290,7 +290,7 @@ void allocate_buffer(struct buffer_t *mem)
   memset(mem->memname, '\0', sizeof(mem->memname));
   if(buffer_index_count == 0)
     {
-      strcpy(mem->memname, "/dsm.");
+      strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
       mem->is_dsm = 1;
     }

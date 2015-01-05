@@ -323,6 +323,7 @@ module cci_emulator();
    endtask
 
 
+
    /*
     * Config data exchange - Supplied by ase.cfg
     */
@@ -391,25 +392,25 @@ module cci_emulator();
    task simkill();
       begin
 	 // CA-PCM deinitialize sequece
-	 if (cfg.enable_capcm) begin
-	    // capcm_deinit();
-	 end
+	 // if (cfg.enable_capcm) begin
+	 //    // capcm_deinit();
+	 // end
 	 $display("SIM-SV: Simulation kill command received...");
-
+	 // Print transactions
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("Transaction counts => ");
+	 $display("\tConfigs    = %d", ase_rx0_cfgvalid_cnt );
+	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt );
+	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt );
+	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
+	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
+	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
+	 $display("");
+	 // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
+	 `END_YELLOW_FONTCOLOR;
+	 
 	 // Valid Count
 	 if (cfg.enable_asedbgdump) begin
-	    // Print transactions
-	    `BEGIN_YELLOW_FONTCOLOR;
-	    $display("Transaction counts => ");
-	    $display("\tConfigs    = %d", ase_rx0_cfgvalid_cnt );
-	    $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt );
-	    $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt );
-	    $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
-	    $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
-	    $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
-	    $display("");
-	    // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
-	    `END_YELLOW_FONTCOLOR;
 	    // Print errors
 	    `BEGIN_RED_FONTCOLOR;
 	    if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
@@ -428,6 +429,7 @@ module cci_emulator();
  `endif
 `endif
 	 end
+	 $fclose(log_fd);	 
 	 $finish;
       end
    endtask

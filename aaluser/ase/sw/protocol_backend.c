@@ -62,9 +62,9 @@ int ase_umsg_cnt  = 0;
 #if 0 
 int csr_write_completed_cnt = 0;
 int csr_write_listener_activecnt = 0;
-#endif
 int umsg_completed_cnt = 0;
 int umsg_listener_activecnt = 0;
+#endif
 
 /*
  * DPI: CSR write data exchange
@@ -218,6 +218,7 @@ void csr_write_completed()
 /*
  * DPI-controlled: UMSG completed
  */
+#if 0
 void umsg_completed()
 {
   FUNC_CALL_ENTRY;
@@ -227,7 +228,7 @@ void umsg_completed()
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 /*
  * CSR_write listener
@@ -432,24 +433,6 @@ int ase_listener()
     
       // *FIXME*: Synchronizer must go here
   
-#if 0
-      // Set csr_write flag
-      glbl_csr_serviced = 0;
-      csr_write_init (1);
-      // Set data
-      glbl_csr_meta = (ASE_RX0_CSR_WRITE << 14) | ( (csr_offset >> 2) & 0x00003FFF);
-      glbl_csr_data = csr_data;
-      while (glbl_csr_serviced != 1)
-	{
-	  run_clocks (1);
-	}
-      
-      // Count 
-      csr_write_listener_activecnt++;
-
-      // Reset csr_write flag
-      csr_write_init (0);
-#endif
     }
 
 
@@ -531,6 +514,8 @@ int ase_listener()
 	  printf("\n");
 	  printf("SIM-C : ASE Session Deinitialization was detected... Simulator will EXIT\n");
 	  run_clocks (100);
+	  // sleep(5);
+	  ase_perror_teardown();
 	  start_simkill_countdown();
 	}
     }
@@ -818,6 +803,7 @@ void ase_umsg_init(uint64_t dsm_base)
 {
   FUNC_CALL_ENTRY;
 
+#if 0
   uint32_t *cirbstat;
 
   printf ("SIM-C : Enabling UMSG subsystem in ASE...\n");
@@ -830,6 +816,7 @@ void ase_umsg_init(uint64_t dsm_base)
   printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
   printf ("        CIRBSTAT addr = %p\n", cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
+#endif 
 
   FUNC_CALL_EXIT;
 }
