@@ -133,7 +133,7 @@ void capcm_init(uint64_t capcm_memsize)
 	  // Set buffer flags
 	  capcm_buf[mem_i].valid = ASE_BUFFER_VALID;
 	  capcm_buf[mem_i].is_privmem = 1;
-	  capcm_buf[mem_i].is_dsm = 0;
+	  capcm_buf[mem_i].is_csrmap = 0;
 	    
 	  // Append buffer to ASE-control
 	  ll_append_buffer( &capcm_buf[mem_i] );

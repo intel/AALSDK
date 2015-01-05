@@ -3,8 +3,8 @@
 gcc -g -o nlb_test \
     nlbv11_all_test.c \
    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c \
-    -lrt -lm -I ../../sw/ \
-    -D UNIFIED_FLOW \
+    -lrt -lm -I ../../sw/ 
+#    -D UNIFIED_FLOW \
 
 # gcc -g -o spl_basic spl_basic.c \
 #    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c \

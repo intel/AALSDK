@@ -118,7 +118,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |   SIM
-  int is_dsm;                     // Flag memory as DSM              |   TBD
+  int is_csrmap;                     // Flag memory as DSM              |   TBD
   struct buffer_t *next;
 };
 

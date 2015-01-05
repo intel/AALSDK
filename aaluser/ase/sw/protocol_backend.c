@@ -387,9 +387,9 @@ int ase_listener()
 	  ase_alloc_action(&ase_buffer);
 	  ase_buffer.is_privmem = 0;
 	  if (ase_buffer.index == 0)
-	    ase_buffer.is_dsm = 1;
+	    ase_buffer.is_csrmap = 1;
 	  else
-	    ase_buffer.is_dsm = 0;
+	    ase_buffer.is_csrmap = 0;
 	}
       // if DEALLOC request is received 
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)

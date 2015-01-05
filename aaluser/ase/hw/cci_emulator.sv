@@ -405,7 +405,6 @@ module cci_emulator();
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
 	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
 	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
-	 $display("");
 	 // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
 	 `END_YELLOW_FONTCOLOR;
 	 
@@ -634,10 +633,10 @@ module cci_emulator();
     *          Replacing with FIFO doesnt seem to change occurance of problem
     *          Restricting write responses to TX1 seems to be a temporary solution
     * 
+    * DIVE:
+    * - Problem seems to be when ch0_write gets dropped, conditions unknown
     */   
-   // tx_to_rx_channel: 0 selects RX0, 1 selects RX1, 7 indicates illegal
    int 	 tx_to_rx_channel;
-   int 	 tx_to_rx_channel_reg;
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
@@ -650,15 +649,9 @@ module cci_emulator();
       else if (cf2as_latbuf_ch1_valid) begin
 	 // tx_to_rx_channel		<= abs_val($random) % 2;
 	 tx_to_rx_channel		<= 1;
-	 // tx_to_rx_channel		<= 1;
+	 // tx_to_rx_channel		<= 0;
       end
-      // else begin
-      // 	 tx_to_rx_channel	<= tx_to_rx_channel_reg;
-      // end
    end
-   
-   // always @(posedge clk)
-   //   tx_to_rx_channel_reg	<= tx_to_rx_channel;
    
 
    /* *******************************************************************
@@ -817,6 +810,7 @@ module cci_emulator();
 	 end
 	 // CSR Write in QLP region
 	 else if (~csrff_empty && (csrff_dout[45:32]	<= CCI_AFU_LOW_OFFSET)) begin
+	    as2cf_fifo_ch0_write			<= 0;	    
 	    if (csrff_dout[45:32]			<= CCI_AFU_LOW_OFFSET) begin
 	       sw_reset_n				<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
 	    end
@@ -825,6 +819,8 @@ module cci_emulator();
 	    cf2as_latbuf_ch1_read_0			<= 0;
 	    cf2as_latbuf_ch0_read			<= 0;
 	 end
+	 // UMSG Hint *FIXME*
+	 // UMSG Data *FIXME*
 	 // Read request
 	 else if (~cf2as_latbuf_ch0_empty) begin
 	    rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
@@ -884,12 +880,12 @@ module cci_emulator();
 	    as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
 	    as2cf_fifo_ch1_write	<= cf2as_latbuf_ch1_valid;
 	    cf2as_latbuf_ch1_read_1	<= 1;
-	    rx0_state			<= RxWriteResp;
+	    rx1_state			<= RxWriteResp;
 	 end
 	 else begin
 	    cf2as_latbuf_ch1_read_1	<= 0;
 	    as2cf_fifo_ch1_write	<= 0;
-	    rx0_state			<= RxIdle;
+	    rx1_state			<= RxIdle;
 	 end
       end
    end

@@ -329,6 +329,9 @@ int main(int argc, char *argv[])
 
   printf("APP: Test done...\n");
 
+  deallocate_buffer(buf1);
+  deallocate_buffer(buf2);
+  deallocate_buffer(dsm);
   session_deinit();
 
   return 0;

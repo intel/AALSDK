@@ -64,6 +64,9 @@ uint32_t umas_exist_status = UMAS_NOT_ESTABLISHED;
 struct buffer_t *spl_pt;
 struct buffer_t *spl_cxt;
 
+// CSR map storage
+struct buffer_t *csr_region;
+
 /*
  * Send SIMKILL
  */
@@ -80,6 +83,9 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
+  /*
+   * Testing remote spawn & startup code
+   */
 #ifdef UNIFIED_FLOW
   // char stat_msg[ASE_MQ_MSGSIZE];
   int wait_iter;
@@ -115,7 +121,6 @@ void session_init()
   // Register SIMKILL/SIGINT
   signal(SIGINT, send_simkill);
   signal(SIGKILL, send_simkill);
-
 #endif
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -129,13 +134,22 @@ void session_init()
   app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
   sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
 
-  BEGIN_YELLOW_FONTCOLOR;
-  printf(" DONE\n");
-  printf("  [APP]  Session started\n");
-  END_YELLOW_FONTCOLOR;
-
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
+  BEGIN_YELLOW_FONTCOLOR;
+
+  // Session start
+  printf(" DONE\n");
+  printf("  [APP]  Session started\n");
+
+  // Creating CSR map 
+  printf("  [APP]  Creating CSR map...");
+  csr_region = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+  csr_region->memsize = CSR_MAP_SIZE;
+  csr_region->is_csrmap = 1;
+  allocate_buffer(csr_region);
+
+  END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
@@ -150,7 +164,9 @@ void ase_remote_start_simulator()
   ret = system("cd $ASE_WORKDIR ; make sim &");
   if (ret == -1)
     {
+      BEGIN_RED_FONTCOLOR;
       printf("APP-C : Problem starting simulator, check if executable exists\n");
+      END_RED_FONTCOLOR;
       exit(1);
     }
 }
@@ -164,14 +180,22 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
+  // Um-mapping CSR region
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Deallocating CSR map\n");
+  END_YELLOW_FONTCOLOR;
+  deallocate_buffer(csr_region);
+
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deinitializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
   // Send SIMKILL
+#ifdef UNIFIED_FLOW
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
+#endif
 
   mqueue_close(app2sim_csr_wr_tx);
   mqueue_close(app2sim_tx);
@@ -184,10 +208,6 @@ void session_deinit()
   printf(" DONE\n");
   printf("  [APP]  Session ended\n");
   END_YELLOW_FONTCOLOR;
-
-/* #ifdef UNIFIED_FLOW */
-/*   kill (ase_pid, SIGKILL); */
-/* #endif */
 
   FUNC_CALL_EXIT;
 }
@@ -288,17 +308,19 @@ void allocate_buffer(struct buffer_t *mem)
   // called "/csr", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
-  if(buffer_index_count == 0)
+  /* if(buffer_index == 0) */
+  if (mem->is_csrmap == 1) 
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
-      mem->is_dsm = 1;
+      /* mem->is_csrmap = 1; */
+      ase_csr_base = (uint32_t*)mem->vbase;
     }
  else
     {
       sprintf(mem->memname, "/buf%d.", buffer_index_count);
       strcat(mem->memname, get_timestamp(0) );
-      mem->is_dsm = 0;
+      /* mem->is_csrmap = 0; */
     }
 
   // Disable private memory flag
@@ -326,8 +348,8 @@ void allocate_buffer(struct buffer_t *mem)
   ftruncate(mem->fd_app, (off_t)mem->memsize);
 
   // Set ase_csr_base
-  if (buffer_index_count == 0)
-    ase_csr_base = (uint32_t*)mem->vbase;
+  //  if (buffer_index_count == 0)
+  // ase_csr_base = (uint32_t*)mem->vbase;
 
   // Autogenerate buffer index
   mem->index = buffer_index_count++;
@@ -349,7 +371,12 @@ void allocate_buffer(struct buffer_t *mem)
 
   // Message queue must be enabled when using DPI (else debug purposes only)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
-    session_init();
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  Session not started --- STARTING now");
+      END_YELLOW_FONTCOLOR;
+      session_init();
+    }
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
