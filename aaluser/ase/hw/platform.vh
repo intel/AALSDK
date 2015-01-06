@@ -43,8 +43,15 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  * LP_INITDONE_READINESS_LATENCY = Amount of time LP takes to be ready after reset is released 
  */
 
-/* QPI Jaketown */
- `ifdef QPI_JKT
+ `define UMSG_HINT2DATA_DELAY          40
+ `define UMSG_NOHINT_DATADELAY         50
+ `define UMSG_DELAY_TIMER_LOG2         6
+ `define UMSG_MAX_MSG_LOG2             5
+ `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
+
+
+/* QPI Ivytown */
+ `ifdef QPI_IVT
   `define INITIAL_SYSTEM_RESET_DURATION         20
   `define CLK_32UI_TIME                         5ns
   `define CLK_16UI_TIME                         2.5ns

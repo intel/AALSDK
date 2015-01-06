@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: Generic protocol backend for keeping IPCs alive,
  * interfacing with DPI-C, messages and SW application
  *
@@ -32,7 +32,7 @@
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
+ *
  */
 
 #include "ase_common.h"
@@ -49,52 +49,6 @@ mqd_t sim2app_intr_tx;      // sim2app message queue in TX mode
 
 
 /*
- * ASE transaction type counts
- * Enabled during ASEDBGDUMP
- */
-#if 0
-int ase_cfg_cnt   = 0;
-int ase_read_cnt  = 0;
-int ase_write_cnt = 0;
-int ase_umsg_cnt  = 0;
-#endif
-
-#if 0 
-int csr_write_completed_cnt = 0;
-int csr_write_listener_activecnt = 0;
-int umsg_completed_cnt = 0;
-int umsg_listener_activecnt = 0;
-#endif
-
-/*
- * DPI: CSR write data exchange
- */
-#if 0
-int glbl_csr_meta;
-int glbl_csr_data;
-int glbl_csr_serviced;
-void csr_write_dex(cci_pkt *csr)
-{
-  FUNC_CALL_ENTRY;
-
-  int i;
-  for (i = 1; i < 8; i++) 
-    csr->qword[i] = 0;
-  csr->meta = glbl_csr_meta;
-  csr->qword[0] = glbl_csr_data;
-  csr->cfgvalid = 1;
-  csr->wrvalid  = 0; 
-  csr->rdvalid  = 0; 
-  csr->intrvalid = 0;
-  csr->umsgvalid = 0;
-
-  ase_cfg_cnt++;
-
-  FUNC_CALL_EXIT;
-}
-#endif
-
-/* 
  * DPI: UMSG Data exchange
  */
 int glbl_umsg_meta;
@@ -110,17 +64,17 @@ void umsg_dex(cci_pkt *umsg)
   int i;
   printf("UMSG_DEX =>\n");
   printf("%08x", (uint32_t)umsg->meta);
-  for (i = 1; i < 8; i++)     
+  for (i = 1; i < 8; i++)
     printf("%016llX ", umsg->qword[i]);
   printf("\n");
 #endif
   umsg->cfgvalid = 0;
-  umsg->wrvalid  = 0; 
-  umsg->rdvalid  = 0; 
+  umsg->wrvalid  = 0;
+  umsg->rdvalid  = 0;
   umsg->intrvalid = 0;
   umsg->umsgvalid = 1;
 
-  // ase_umsg_cnt++;  
+  // ase_umsg_cnt++;
 
   FUNC_CALL_EXIT;
 }
@@ -177,16 +131,16 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 
   // Fake CL address to fake address conversion
   fake_rd_addr = (uint64_t)(*cl_addr) << 6;
-  
+
   // Calculate Virtualized SHIM address (translation table)
   rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)fake_rd_addr);
-  
+
   // Copy data to memory
   memcpy(pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
 
   // Loop around metadata
   pkt->meta = (ASE_RX0_RD_RESP << 14) | (*mdata);
-  
+
   // Valid signals
   pkt->cfgvalid = 0;
   pkt->wrvalid  = 0;
@@ -199,165 +153,6 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
   FUNC_CALL_EXIT;
 }
 
-
-/*
- * DPI-controlled: CSR Write completed
- */
-#if 0
-void csr_write_completed()
-{
-  FUNC_CALL_ENTRY;
-
-  glbl_csr_serviced = 1;
-  csr_write_completed_cnt++;
-
-  FUNC_CALL_EXIT;
-}
-#endif
-
-/*
- * DPI-controlled: UMSG completed
- */
-#if 0
-void umsg_completed()
-{
-  FUNC_CALL_ENTRY;
-
-  glbl_umsg_serviced = 1;
-  umsg_completed_cnt++;
-
-  FUNC_CALL_EXIT;
-}
-#endif
-
-/*
- * CSR_write listener
- */
-#if 0
-// int csr_write_listener()
-{
-   FUNC_CALL_ENTRY;
-  // Message string
-  char csr_wr_str[ASE_MQ_MSGSIZE];
-  char *pch;
-  char ase_msg_data[CL_BYTE_WIDTH];
-  
-  // csr_offset and csr_data
-  uint32_t csr_offset;
-  uint32_t csr_data;
-  
-  // Cleanse receptacle string
-  memset(ase_msg_data, '\0', sizeof(ase_msg_data));
-  
-  // Receive csr_write packet
-  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==1)
-    {
-      // Tokenize message to get CSR offset and data
-      pch = strtok(csr_wr_str, " ");
-      csr_offset = atoi(pch);
-      pch = strtok(NULL, " ");
-      csr_data = atoi(pch);
-      
-      // Set csr_write flag
-      glbl_csr_serviced = 0;
-      csr_write_init (1);
-      // Set data
-      glbl_csr_meta = (ASE_RX0_CSR_WRITE << 14) | ( (csr_offset >> 2) & 0x00003FFF);
-      glbl_csr_data = csr_data;
-      while (glbl_csr_serviced != 1)
-	{
-	  run_clocks (1);
-	}
-      
-      // Count 
-      csr_write_listener_activecnt++;
-
-      // Reset csr_write flag
-      csr_write_init (0);
-    }
-  FUNC_CALL_EXIT;
-  return 0;
-}
-#endif  
-
-
-/*
- * Unordered message (Umsg) listener 
- * Action: Opens message queue and listens for incoming UMsg requests
- *         Writes such messages to DPI-SV side
- */
-#if 0
-// int umsg_listener()
-{
-  FUNC_CALL_ENTRY;
-
-  // Message string
-  char umsg_str[ASE_MQ_MSGSIZE];
-
-  // Umsg parameters
-  uint32_t umsg_id;
-  uint32_t umsg_hint;
-  char umsg_data[CL_BYTE_WIDTH];
-  uint64_t *umas_target_addr;
-  uint64_t umas_target_addrint;
-
-  // Cleanse receptacle string
-  memset (umsg_str, '\0', sizeof(umsg_str));
-
-  // Keep checking message queue
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1) 
-    {
-      // Tokenize messgae to get msg_id & umsg_data
-      sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
-      umas_target_addr = (uint64_t*)umas_target_addrint;
-      memcpy(umsg_data, umas_target_addr, CL_BYTE_WIDTH);
-
-#if 0
-      int ii;
-      BEGIN_RED_FONTCOLOR;
-      printf("Printing data...\n");
-      printf("umsg_hint = %08x\n", umsg_hint);
-      printf("umsg_id   = %08x\n", umsg_id);
-      for (ii = 0; ii < CL_BYTE_WIDTH; ii++)
-	printf("%02d ", umsg_data[ii]);
-      printf("\nDONE\n");
-      END_RED_FONTCOLOR;
-#endif
-
-      // UMSG Hint
-      if (umsg_hint)
-	{
-	  glbl_umsg_serviced = 0;
-	  umsg_init(1);
-	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14) | (umsg_hint << 12);
-	  memset(glbl_umsg_data, '\0', CL_BYTE_WIDTH);
-	  while(glbl_umsg_serviced != 1)
-	    {
-	      run_clocks(1);
-	    }
-	  umsg_listener_activecnt++;
-	  umsg_init(0);
-	}
-      else
-	{
-	  // Send UMSG with data
-	  glbl_umsg_serviced = 0;
-	  umsg_init(1);
-	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14);
-	  memcpy(glbl_umsg_data, umsg_data, CL_BYTE_WIDTH);
-	  while(glbl_umsg_serviced != 1)
-	    {
-	      run_clocks(1);
-	    }
-	  umsg_listener_activecnt++;
-	  umsg_init(0);
-	}
-    }
-  
-  FUNC_CALL_EXIT;
-  return 0;
-}
-#endif
 
 // -----------------------------------------------------------------------
 // vbase/pbase exchange THREAD
@@ -391,12 +186,12 @@ int ase_listener()
 	  else
 	    ase_buffer.is_csrmap = 0;
 	}
-      // if DEALLOC request is received 
+      // if DEALLOC request is received
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
 	{
 	  ase_dealloc_action(&ase_buffer);
 	}
-      
+
     #ifdef ASE_DEBUG
       ase_buffer_info(&ase_buffer);
     #else
@@ -411,14 +206,14 @@ int ase_listener()
   // Message string
   char csr_wr_str[ASE_MQ_MSGSIZE];
   char *pch;
-  char ase_msg_data[CL_BYTE_WIDTH]; 
+  char ase_msg_data[CL_BYTE_WIDTH];
   // csr_offset and csr_data
   uint32_t csr_offset;
   uint32_t csr_data;
-  
+
   // Cleanse receptacle string
   memset(ase_msg_data, '\0', sizeof(ase_msg_data));
-  
+
   // Receive csr_write packet
   if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==1)
     {
@@ -430,9 +225,9 @@ int ase_listener()
 
       // CSRWrite Dispatch
       csr_write_dispatch ( 0, csr_offset, csr_data );
-    
-      // *FIXME*: Synchronizer must go here
-  
+
+      // *FIXME*: Synchronizer must go here... TEST CODE
+      ase_memory_barrier();
     }
 
 
@@ -454,7 +249,7 @@ int ase_listener()
   memset (umsg_str, '\0', sizeof(umsg_str));
 
   // Keep checking message queue
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1) 
+  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1)
     {
       // Tokenize messgae to get msg_id & umsg_data
       sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
@@ -520,7 +315,7 @@ int ase_listener()
 	}
     }
 
-  
+
   FUNC_CALL_EXIT;
   return 0;
 }
@@ -546,7 +341,7 @@ void calc_phys_memory_ranges()
     {
       capcm_size = (uint64_t)( pow(2, cipuctl_21_19 + 1) * 1024 * 1024 * 1024);
       sysmem_size = (uint64_t)( (uint64_t)pow(2, FPGA_ADDR_WIDTH) - capcm_size);
-      
+
       // Place CAPCM based on CIPUCTL[22]
       if (cipuctl_22 == 0)
 	{
@@ -554,7 +349,7 @@ void calc_phys_memory_ranges()
 	  capcm_phys_hi = capcm_size - 1;
 	  sysmem_phys_lo = capcm_size;
 	  sysmem_phys_hi = (uint64_t)pow(2, FPGA_ADDR_WIDTH) - 1;
-	} 
+	}
       else
 	{
 	  capcm_phys_hi = (uint64_t)pow(2,FPGA_ADDR_WIDTH) - 1;
@@ -574,10 +369,10 @@ void calc_phys_memory_ranges()
     }
 
   BEGIN_YELLOW_FONTCOLOR;
-  printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n", 
+  printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n",
 	 sysmem_phys_lo, sysmem_phys_hi, sysmem_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
   if (cfg->enable_capcm)
-    printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n", 
+    printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n",
 	   capcm_phys_lo, capcm_phys_hi, capcm_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(capcm_phys_hi+1)/(uint64_t)pow(1024, 3) );
   END_YELLOW_FONTCOLOR;
 
@@ -688,7 +483,7 @@ void ase_ready()
 
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
-  printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n"); 
+  printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
   tstamp_env = getenv("PWD");
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        If $SHELL is 'bash', run:\n");
@@ -701,8 +496,8 @@ void ase_ready()
   END_GREEN_FONTCOLOR;
 
   // Register SIGINT and listen to it
-  signal(SIGINT, start_simkill_countdown);  
-  signal(SIGKILL, start_simkill_countdown);  
+  signal(SIGINT, start_simkill_countdown);
+  signal(SIGKILL, start_simkill_countdown);
 
   // Get PID
   ase_pid = getpid();
@@ -757,14 +552,14 @@ void start_simkill_countdown()
   final_ipc_cleanup();
 #endif
 
-  // Remove session files  
+  // Remove session files
   printf("SIM-C : Cleaning session files...\n");
   if ( unlink(ASE_READY_FILENAME) == -1 )
     {
       BEGIN_RED_FONTCOLOR;
       printf("Session file %s could not be removed, please remove manually !!\n", ASE_READY_FILENAME);
       END_RED_FONTCOLOR;
-    }  
+    }
 
   // Print location of transactions file
   BEGIN_GREEN_FONTCOLOR;
@@ -796,7 +591,7 @@ void start_simkill_countdown()
 
 /*
  * ase_umsg_init : SIM_SIDE UMSG setup
- *                 Set up CSR addresses to indicate existance 
+ *                 Set up CSR addresses to indicate existance
  *                 and features of the UMSG system
  */
 void ase_umsg_init(uint64_t dsm_base)
@@ -810,13 +605,13 @@ void ase_umsg_init(uint64_t dsm_base)
 
   // Calculate CIRBSTAT address
   cirbstat = (uint32_t*)((uint64_t)(dsm_base + ASE_CIRBSTAT_CSROFF));
-  
+
   // CIRBSTAT setup (completed / ready)
   *cirbstat = cfg->num_umsg_log2 << 4 | 0x1 << 0;
   printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
   printf ("        CIRBSTAT addr = %p\n", cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
-#endif 
+#endif
 
   FUNC_CALL_EXIT;
 }
@@ -888,14 +683,14 @@ void ase_config_parse(char *filename)
   char *parameter;
   int value;
   // int tmp_umsg_log2;
-  
+
   char *ase_cfg_filepath;
-  ase_cfg_filepath = malloc(256);  
+  ase_cfg_filepath = malloc(256);
   ase_cfg_filepath = generate_tstamp_path(filename);
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );
-  if (cfg == NULL) 
+  if (cfg == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
@@ -939,12 +734,12 @@ void ase_config_parse(char *filename)
 	  remove_newline (line);
 	  // Ignore strings begining with '#' OR NULL (compound NOR)
 	  if ( (line[0] != '#') && (line[0] != '\0') )
-	    {	      
+	    {
 	      parameter = strtok(line, "=\n");
 	      value = atoi(strtok(NULL, ""));
 	      if (strcmp (parameter,"ENABLE_TIMEOUT") == 0)
 	      	cfg->enable_timeout = value;
-	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0) 
+	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
 	      else if (strcmp (parameter,"ENABLE_CAPCM") == 0)
 	      	cfg->enable_capcm = value;
@@ -952,7 +747,7 @@ void ase_config_parse(char *filename)
 	      	cfg->memmap_sad_setting = value;
 	      else if (strcmp (parameter,"ENABLE_UMSG") == 0)
 	      	cfg->enable_umsg = value;
-	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0) 
+	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0)
 		cfg->num_umsg_log2 = value;
 	      else if (strcmp (parameter,"ENABLE_INTR") == 0)
 	      	cfg->enable_intr = value;
@@ -970,7 +765,7 @@ void ase_config_parse(char *filename)
 	}
 
       // CAPCM size implementation
-      if (cfg->enable_capcm != 0) 
+      if (cfg->enable_capcm != 0)
 	{
 	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0))
 	    {
@@ -1007,7 +802,7 @@ void ase_config_parse(char *filename)
 	}
 
       // Close file
-      fclose(fp);      
+      fclose(fp);
     }
   else
     {
@@ -1029,10 +824,10 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... ENABLED \n");
   else
     printf("        Reuse simulation seed      ... DISABLED \n");
-  
+
   // UMSG
   if (cfg->enable_umsg != 0)
-    {     
+    {
       printf("        Unordered message          ... ENABLED     | NUM_UMSG_Log2 = %d (%d UMSGs) \n", cfg->num_umsg_log2, (int)pow((float)2, (float)cfg->num_umsg_log2) );
     }
   else
@@ -1073,7 +868,7 @@ void ase_config_parse(char *filename)
   else
     printf("        ASE Transaction view       ... DISABLED\n");
 
-  // ASE Debug 
+  // ASE Debug
   if (cfg->enable_asedbgdump != 0)
     printf("        ASE Internal debug         ... ENABLED (Use for bug-reports only)\n");
   else
@@ -1088,6 +883,3 @@ void ase_config_parse(char *filename)
 
   FUNC_CALL_EXIT;
 }
-
-
-

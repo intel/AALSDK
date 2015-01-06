@@ -98,13 +98,13 @@ module cci_emulator();
       end
    endfunction
 
-   
+
    /*
     * FUNCTION: Return absolute value
-    */ 
+    */
    function automatic int abs_val(int num);
       begin
-	 return (num < 0) ? ~num : num;	 
+	 return (num < 0) ? ~num : num;
       end
    endfunction
 
@@ -227,7 +227,7 @@ module cci_emulator();
    	 resetb <= 1'b1;
       end
    end
-   
+
 
    /*
     * run_clocks : Run 'n' clocks
@@ -315,13 +315,208 @@ module cci_emulator();
     * Umsg infrastructure
     * umsg_dispatch: Single push process triggering UMSG machinery
     */
+   parameter int UMSG_FIFO_WIDTH = `CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
+
+   logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
+   logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
+   logic 		       umsgff_write;
+   logic 		       umsgff_pop;
+   logic 		       umsgff_read;
+   logic 		       umsgff_valid;
+   logic 		       umsgff_full;
+   logic 		       umsgff_empty;
+   logic 		       umsgff_overflow;
+   logic 		       umsgff_underflow;
+
+   int 			       umas_iter;
+
+   umsg_t umsg_array[`UMSG_MAX_MSG];
+   int 			       umsg_data_slot;
+   int 			       umsg_hint_slot;
+
+   logic [0:`UMSG_MAX_MSG-1]   umas_rst;
+   logic [0:`UMSG_MAX_MSG-1]   umas_en;
+   logic [0:`UMSG_MAX_MSG-1]   umas_rdy;
+   logic [`CCI_DATA_WIDTH-1:0] umsg_data_array [0:`UMSG_MAX_MSG-1];
+
+
    // UMSG dispatch function
-   task umsg_dispatch();
+   task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [`CCI_DATA_WIDTH-1:0] umsg_data_in);
       begin
-	 // *FIXME*:
+	 if (init) begin
+	    for (umas_iter = 0; umas_iter < `UMSG_MAX_MSG; umas_iter = umas_iter + 1) begin
+	       umsg_array[ umas_iter ].umsg_enable = 0;
+	       umsg_data_array[ umas_iter ]	<= `CCI_DATA_WIDTH'bx;
+	    end
+	 end
+	 else begin
+	    if (umas_en) begin
+	       if ( umsg_data_in != umsg_data_array[umsg_id]) begin
+		  umsg_data_array[ umsg_id ] = umsg_data_in;
+		  if (hint_en) begin
+		     umsg_array[ umsg_id ].umsg_data   = umsg_data_in;
+		     umsg_array[ umsg_id ].umsg_hint   = 1;
+		     umsg_array[ umsg_id ].umsg_enable = 1;
+		     run_clocks (1);
+		  end
+		  else begin
+		     umsg_array[ umsg_id ].umsg_data   = umsg_data_in;
+		     umsg_array[ umsg_id ].umsg_hint   = 0;
+		     umsg_array[ umsg_id ].umsg_enable = 1;
+		     run_clocks (1);
+		  end
+	       end
+	    end
+	    else begin
+	       umsg_array[ umsg_id ].umsg_enable = 0;
+	    end
+	 end
       end
    endtask
 
+   // UMSG Hint-to-Data time emulator (toaster style)
+   // New Umsg hints to same location are ignored
+   // If Data is same, hints dont get generated
+   genvar umas_i;
+   generate
+      for ( umas_i = 0; umas_i > `UMSG_MAX_MSG; umas_i = umas_i + 1 ) begin
+	 // UMSG state machine
+	 always @(posedge clk) begin
+	      if (~sys_reset_n) begin
+		 umsg_array[umas_i].umsg_state			<= UMsg_Idle;
+	      end
+	      else begin
+		 case (umsg_array[umas_i].umsg_state)
+		   UMsg_Idle:
+		     begin
+			if (umsg_array[umas_i].umsg_enable && umsg_array[umas_i].umsg_hint) begin
+			   umsg_array[umas_i].umsg_timer	<= `UMSG_HINT2DATA_DELAY;
+			   umsg_array[umas_i].umsg_state	<= UMsg_SendHint;
+			end
+			else if (umsg_array[umas_i].umsg_enable && ~umsg_array[umas_i].umsg_hint) begin
+			   umsg_array[umas_i].umsg_timer	<= `UMSG_NOHINT_DATADELAY;
+			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
+			end
+			else begin
+			   umsg_array[umas_i].umsg_timer	<= `UMSG_DELAY_TIMER_LOG2'b0;
+			   umsg_array[umas_i].umsg_state	<= UMsg_Idle;
+			end
+		     end
+
+		   UMsg_SendHint:
+		     begin
+			if (umsg_array[umas_i].umsghint_push) begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
+			end
+			else begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_SendHint;
+			end
+		     end
+
+		   UMsg_H2D_Wait:
+		     begin
+			umsg_array[umas_i].umsg_timer		<= umsg_array[umas_i].umsg_timer - 1;
+			if (umsg_array[umas_i].umsg_timer	<= 1) begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_SendData;
+			end
+			else begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
+			end
+		     end
+
+		   UMsg_SendData:
+		     begin
+			if (umsg_array[umas_i].umsgdata_push) begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_Idle;
+			end
+			else begin
+			   umsg_array[umas_i].umsg_state	<= UMsg_SendData;
+			end
+		     end
+
+		   default:
+		     begin
+			umsg_array[umas_i].umsg_state	<= UMsg_Idle;
+		     end
+		 endcase
+	      end
+	   end
+	end
+   endgenerate
+
+   // Find UMSG Hintable slot
+   function int find_umsg_hint ();
+      int ret_hint_slot;
+      int slot;
+      begin
+	 ret_hint_slot = 255;
+	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
+	    if (umsg_array[slot].umsg_state == UMsg_SendHint) begin
+	       ret_hint_slot = slot;
+	       break;
+	    end
+	 end
+	 return ret_hint_slot;
+      end
+   endfunction
+
+   // Find UMSG Data slot to send
+   function int find_umsg_data();
+      int ret_data_slot;
+      int slot;
+      begin
+	 ret_data_slot = 255;
+	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
+	    if (umsg_array[slot].umsg_state == UMsg_SendData) begin
+	       ret_data_slot = slot;
+	       break;
+	    end
+	 end
+	 return ret_data_slot;
+      end
+   endfunction
+
+   // Calculate slots for UMSGs
+   always @(posedge clk) begin
+      umsg_data_slot = find_umsg_data();
+      umsg_hint_slot = find_umsg_hint();
+   end
+
+   // UMSG latency model to UMSG FIFO glue process
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 umsgff_write	<= 0;
+      end
+      else begin
+      end
+   end
+
+
+   // Unordered message FIFO
+   ase_fifo
+     #(
+       .DATA_WIDTH     ( UMSG_FIFO_WIDTH ),
+       .DEPTH_BASE2    ( 10 ),
+       .ALMFULL_THRESH ( 960 )
+       )
+   umsg_fifo
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( umsgff_write ),
+      .data_in    ( umsgff_din ),
+      .rd_en      ( umsgff_pop ),
+      .data_out   ( umsgff_dout ),
+      .data_out_v ( umsgff_valid ),
+      .alm_full   ( umsgff_full ),
+      .full       (  ),
+      .empty      ( umsgff_empty ),
+      .count      (  ),
+      .overflow   ( umsgff_overflow ),
+      .underflow  ( umsgff_underflow )
+      );
+
+   assign umsgff_pop = ~umsgff_empty && umsgff_read;
 
 
    /*
@@ -407,7 +602,7 @@ module cci_emulator();
 	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
 	 // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
 	 `END_YELLOW_FONTCOLOR;
-	 
+
 	 // Valid Count
 	 if (cfg.enable_asedbgdump) begin
 	    // Print errors
@@ -417,7 +612,7 @@ module cci_emulator();
 	    if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
 	      $display("\tWRITEs : Response counts dont match request count !!");
 	    `END_RED_FONTCOLOR;
-`ifdef ASE_DEBUG 
+`ifdef ASE_DEBUG
  `ifdef ASE_RANDOMIZE_TRANSACTIONS
 	    `BEGIN_YELLOW_FONTCOLOR;
 	    $display("cf2as_latbuf_ch0 dropped =>");
@@ -428,7 +623,7 @@ module cci_emulator();
  `endif
 `endif
 	 end
-	 $fclose(log_fd);	 
+	 $fclose(log_fd);
 	 $finish;
       end
    endtask
@@ -608,8 +803,8 @@ module cci_emulator();
 `endif
 
    // POP CH1 staging
-   assign cf2as_latbuf_ch1_read = cf2as_latbuf_ch1_read_0 ^ cf2as_latbuf_ch1_read_1;   
-   assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;   
+   assign cf2as_latbuf_ch1_read = cf2as_latbuf_ch1_read_0 ^ cf2as_latbuf_ch1_read_1;
+   assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
    always @(posedge clk)
      cf2as_latbuf_ch1_empty_q	<= cf2as_latbuf_ch1_empty;
@@ -632,10 +827,10 @@ module cci_emulator();
     * PROBLEM: MUXing between channels 0 and 1 causes dropped transactions
     *          Replacing with FIFO doesnt seem to change occurance of problem
     *          Restricting write responses to TX1 seems to be a temporary solution
-    * 
+    *
     * DIVE:
     * - Problem seems to be when ch0_write gets dropped, conditions unknown
-    */   
+    */
    int 	 tx_to_rx_channel;
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
@@ -643,16 +838,16 @@ module cci_emulator();
    // always @(posedge clk) begin
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 tx_to_rx_channel		<= 1;
+	 tx_to_rx_channel	<= 1;
       end
       // else if (~cf2as_latbuf_ch1_empty) begin
       else if (cf2as_latbuf_ch1_valid) begin
-	 // tx_to_rx_channel		<= abs_val($random) % 2;
-	 tx_to_rx_channel		<= 1;
-	 // tx_to_rx_channel		<= 0;
+	 // tx_to_rx_channel	<= abs_val($random) % 2;
+	 tx_to_rx_channel	<= 1;
+	 // tx_to_rx_channel	<= 0;
       end
    end
-   
+
 
    /* *******************************************************************
     * Response path management
@@ -810,7 +1005,7 @@ module cci_emulator();
 	 end
 	 // CSR Write in QLP region
 	 else if (~csrff_empty && (csrff_dout[45:32]	<= CCI_AFU_LOW_OFFSET)) begin
-	    as2cf_fifo_ch0_write			<= 0;	    
+	    as2cf_fifo_ch0_write			<= 0;
 	    if (csrff_dout[45:32]			<= CCI_AFU_LOW_OFFSET) begin
 	       sw_reset_n				<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
 	    end
@@ -1026,6 +1221,7 @@ module cci_emulator();
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
       csr_write_dispatch(1, 0, 0);
+      umsg_dispatch(1, 0, 0, 0, 0);
       ase_init();
 
       // Initial signal values *FIXME*

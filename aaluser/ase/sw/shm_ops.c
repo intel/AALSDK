@@ -143,7 +143,7 @@ void session_init()
   printf("  [APP]  Session started\n");
 
   // Creating CSR map 
-  printf("  [APP]  Creating CSR map...");
+  printf("  [APP]  Creating CSR map...\n");
   csr_region = (struct buffer_t *)malloc(sizeof(struct buffer_t));
   csr_region->memsize = CSR_MAP_SIZE;
   csr_region->is_csrmap = 1;
@@ -221,12 +221,17 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   FUNC_CALL_ENTRY;
 
   char csr_wr_str[ASE_MQ_MSGSIZE];
+  uint32_t *csr_vaddr;
   /* uint64_t  *dsm_vaddr; */
 
   if ( csr_offset < CSR_MAP_SIZE )
     {
       csr_map[csr_offset/4] = data;
     }
+
+  // Update CSR Region
+  csr_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + csr_offset);
+  *csr_vaddr = data;
 
   // ---------------------------------------------------
   // Form a csr_write message
