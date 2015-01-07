@@ -6,6 +6,7 @@ shopt -o -s nounset
 declare -r SCRIPT_NAME='create-dist'
 
 declare -r SAMPLES_VERSION='4.2.0'
+declare -r    DOCS_VERSION='4.2.0'
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && exit 20
@@ -33,6 +34,7 @@ set -e
 declare KERNEL_VPATH=''
 declare USER_VPATH=''
 declare SAMPLES_TMPDIR=''
+declare DOCS_TMPDIR=''
 
 on_exit() {
    local -r remove=true
@@ -40,6 +42,7 @@ on_exit() {
       [ -d "${KERNEL_VPATH}" ] && ${RM} -rf "${KERNEL_VPATH}"
       [ -d "${USER_VPATH}" ] && ${RM} -rf "${USER_VPATH}"
       [ -d "${SAMPLES_TMPDIR}" ] && ${RM} -rf "${SAMPLES_TMPDIR}"
+      [ -d "${DOCS_TMPDIR}" ] && ${RM} -rf "${DOCS_TMPDIR}"
    fi
 }
 trap 'on_exit' EXIT
@@ -81,24 +84,7 @@ create_kernel_dist() {
    done
 }
 
-# Make sure that git submodule aaluser/doc is populated.
-pre_create_user_dist() {
-   local -i files=0
-
-   for x in `${FIND} ${PWD}/aaluser/doc -type f` ; do
-      let $(( ++files ))
-   done
-
-   if [ 0 -eq ${files} ]; then
-      # Load the submodule
-      ${GIT} --git-dir="${PWD}/.git" submodule init
-      ${GIT} --git-dir="${PWD}/.git" submodule update aaluser/doc
-   fi
-}
-
 create_user_dist() {
-   pre_create_user_dist   
-
    local -r d="${PWD}/aaluser"
    local -r regex='aalsdk-[[:digit:]]+[.][[:digit:]]+[.][[:digit:]]+'
    local    x
@@ -156,11 +142,56 @@ create_samples_dist() {
    ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" .
 }
 
+# Make sure that git submodule aalreldocs is populated.
+pre_create_docs_dist() {
+   local -r d="${PWD}/aalreldocs"
+   local -i files=0
+
+   if [ -d "$d" ]; then
+      for x in `${FIND} $d -type f` ; do
+         let $(( ++files ))
+      done
+   fi
+
+   if [ 0 -eq ${files} ]; then
+      # Load the submodule
+      ${GIT} --git-dir="${PWD}/.git" submodule init
+      ${GIT} --git-dir="${PWD}/.git" submodule update aalreldocs
+   fi
+}
+
+create_docs_dist() {
+   pre_create_docs_dist
+
+   local -r d="${PWD}/aalreldocs"
+
+   DOCS_TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.d.XXXXXXXXXX"`"
+
+   ${MKDIR} -p "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}"
+
+   for x in 'AAL_Programmers_Guide.pdf' \
+            'AAL_SDK_4-1-0_Release_Notes.pdf' \
+            'AAL_SDK_Utilities_Users_Guide.pdf' \
+            'ASE_UserGuide.pdf' \
+            'Readme.MultiPackage.txt' \
+            'SPL_Functionality_and_Programming_Flow_v070.pdf'
+   do
+      ${CP} "$d/$x" "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}"
+   done
+
+   pushd "${DOCS_TMPDIR}" >/dev/null 2>&1
+   ${TAR} zcf "aaldocs-${DOCS_VERSION}.tar.gz" "aaldocs-${DOCS_VERSION}"
+   popd >/dev/null 2>&1
+
+   ${MV} "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}.tar.gz" .
+}
+
 main() {
    create_kernel_dist
    create_user_dist
    create_samples_dist
-   [ -f "./Readme.MultiPackage.txt" ] || ${CP} "${PWD}/aaluser/doc/Readme.MultiPackage.txt" .
+   create_docs_dist
+   [ -f "./Readme.MultiPackage.txt" ] || ${CP} "${PWD}/aalreldocs/Readme.MultiPackage.txt" .
 }
 main
 

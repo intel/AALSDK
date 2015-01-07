@@ -166,7 +166,7 @@ dnl ############################################################################
 dnl ## Makefile substitutions ##################################################
 dnl ############################################################################
 
-AC_CONFIG_FILES([doc/Doxyfile:build/Doxyfile.in])
+AC_CONFIG_FILES([doc/Doxyfile])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
