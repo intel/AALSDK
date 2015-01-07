@@ -1,4 +1,4 @@
-dnl Copyright (c) 2013-2014, Intel Corporation
+dnl Copyright (c) 2013-2015, Intel Corporation
 dnl
 dnl Redistribution  and  use  in source  and  binary  forms,  with  or  without
 dnl modification, are permitted provided that the following conditions are met:

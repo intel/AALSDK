@@ -838,7 +838,6 @@ declare -ra COPYRIGHT_USER_CHECKED_PREFIXES=(\
 'Doxyfile-'\
 )
 declare -ra COPYRIGHT_USER_CHECKED_SUFFIXES=(\
-'.bash' \
 '.c' \   
 '.cc' \
 '.cp' \  
@@ -846,11 +845,13 @@ declare -ra COPYRIGHT_USER_CHECKED_SUFFIXES=(\
 '.cpp' \    
 '.c++' \       
 '.C' \
+'.csh' \   
 '.h' \
 '.sh'\
 )
 declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'aalclp.l' \
+'aalclp.h.in' \
 'aalsdk.m4' \
 'doxygen.m4' \
 'AASService.h.in' \
@@ -858,6 +859,8 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'AASRegistrarService.h.in' \
 'CCILib.h.in' \
 'configure.ac' \
+'COPYING' \
+'Doxyfile.in' \
 'FAP10Service.h.in' \
 'FAP20Service.h.in' \
 'MAFUTransService.h.in' \
@@ -872,8 +875,7 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'SPLAFUService.h.in' \
 'ASESPLAFUService.h.in' \
 'HWSPLAFUService.h.in' \
-'SWSimSPLAFUService.h.in' \
-'aalclp.h.in'\
+'SWSimSPLAFUService.h.in'\
 )
 declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'aalclp.h' \
@@ -891,7 +893,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'nlb-trput.cpp' \
 'OSALService.h' \
 'Readme.MultiPackage.txt' \
-'README.GPLV2-LICENSE.TXT' \
 'uAIAService.h' \
 'XLRuntimeModule.h' \
 'CCIAFUService.h' \
@@ -902,7 +903,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'ASESPLAFUService.h' \
 'HWSPLAFUService.h' \
 'SWSimSPLAFUService.h' \
-'Doxyfile.in' \
 'aalbus-device.h' \
 'aalbus.h' \
 'aalbus_imonitorconfig.h' \
@@ -970,195 +970,195 @@ declare -ra COPYRIGHT_KERNEL_EXCEPT_NAMES=(\
 
 
 # $1 : full path to file to update
-copyright_user_old_to_new() {
-   local    f="$1"
-   local    can_convert=true
-   local    str
-   local    orig_date
-   local    l
-   local    com=''
-
-   local -r    old_line_one_regex='(##|//|dnl )[*]+'
-   local -r    old_line_two_regex='(##|//|dnl)[[:space:]]+INTEL[[:space:]]+CONFIDENTIAL'
-   local -r  old_line_three_regex='(##|//|dnl)'
-   local -r   old_line_four_regex='(##|//|dnl)[[:space:]]+Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})? Intel Corporation All Rights Reserved'
-
-   local -r old_end_comment_regex='(##|//|dnl )[*]+'
-
-   local -i fd
-   local    line_one
-   local    line_two
-   local    line_three
-   local    line_four
-
-   local -r save_ifs="${IFS}"
-   IFS='
-'
-   exec {fd}<"$f"
-
-   read -r -u ${fd} line_one
-   if [ "${line_one}" = '#!/bin/bash' ] || \
-      [ "${line_one}" = '#!/bin/sh' ]   || \
-      [ "${line_one}" = '%{' ]; then
-      read -r -u ${fd} line_one
-   fi
-
-   str="${line_one}"
-   if [[ $str =~ $old_line_one_regex ]]; then
-      :
-   else
-      can_convert=false
-   fi
-   if [ "${line_one:0:2}" = '##' ]; then
-      com='##'
-   fi
-   if [ "${line_one:0:2}" = '//' ]; then
-      com='//'
-   fi
-   if [ "${line_one:0:3}" = 'dnl' ]; then
-      com='dnl'
-   fi
-
-
-   read -r -u ${fd} line_two
-   str="${line_two}"
-   if [[ $str =~ $old_line_two_regex ]]; then
-      :
-   else
-      can_convert=false
-   fi
-
-   read -r -u ${fd} line_three
-   str="${line_three}"
-   if [[ $str =~ $old_line_three_regex ]]; then
-      :
-   else
-      can_convert=false
-   fi
-
-   read -r -u ${fd} line_four
-   str="${line_four}"
-   orig_date="${line_four}"
-   if [[ $str =~ $old_line_four_regex ]]; then
-      :
-   else
-      can_convert=false
-   fi
-
-   exec {fd}<&-
-
-
-   if ! ${can_convert} ; then
-      die "Malformed old user copyright encountered in '$f'\n"
-   fi
-
-   # Isolate the date.
-   orig_date="${orig_date% Intel Corporation}"
-   orig_date="${orig_date##*Copyright (c) }"
-
-
-   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
-   local -i fd2
-   local -i fdtmp
-   local    found_end=false
-
-   cmd ${CP} "$f" "${tmpfile}"
-
-   exec {fdtmp}<"${tmpfile}"
-   exec {fd2}>"$f"
-
-   # Skip the old comment
-   read -r -u ${fdtmp} line_one
-   if [ "${line_one}" = '#!/bin/bash' ] || \
-      [ "${line_one}" = '#!/bin/sh' ]   || \
-      [ "${line_one}" = '%{' ]; then
-      echo -E "${line_one}" >&${fd2}
-      read -r -u ${fdtmp} line_one
-   fi
-
-   while read -r -u ${fdtmp} l ; do
-      str="$l"
-      if [[ $str =~ $old_end_comment_regex ]]; then
-         found_end=true
-         break
-      fi
-   done
-
-   if ! ${found_end} ; then
-      exec {fd2}>&-
-      exec {fdtmp}<&-
-      cmd ${RM} "${tmpfile}"
-      die "EOF scanning old user comment in '$f'\n"
-   fi
-
-
-   # Is the old date field a range?
-   if [ "${orig_date/-/}" != "${orig_date}" ]; then
-      printf -v l "${com} Copyright (c) ${orig_date%-*}-${THIS_YEAR}, Intel Corporation\n"
-   else
-      printf -v l "${com} Copyright (c) ${THIS_YEAR}, Intel Corporation\n"
-   fi
-   echo -E $l >&${fd2}
-
-   printf -v l "${com}\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} Redistribution  and  use  in source  and  binary  forms,  with  or  without\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} modification, are permitted provided that the following conditions are met:\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} * Redistributions of  source code  must retain the  above copyright notice,\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}   this list of conditions and the following disclaimer.\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} * Redistributions in binary form must reproduce the above copyright notice,\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}   this list of conditions and the following disclaimer in the documentation\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}   and/or other materials provided with the distribution.\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} * Neither the name  of Intel Corporation  nor the names of its contributors\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}   may be used to  endorse or promote  products derived  from this  software\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}   without specific prior written permission.\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com}\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE\n"
-   echo -E $l >&${fd2}
-   printf -v l "${com} POSSIBILITY OF SUCH DAMAGE.\n"
-   echo -E $l >&${fd2}
-
-   while read -r -u ${fdtmp} l ; do
-      echo -E "$l" >&${fd2}
-   done
-
-   exec {fd2}>&-
-   exec {fdtmp}<&-
-   IFS="${save_ifs}"
-
-   cmd ${RM} "${tmpfile}"
-}
+#copyright_user_old_to_new() {
+#   local    f="$1"
+#   local    can_convert=true
+#   local    str
+#   local    orig_date
+#   local    l
+#   local    com=''
+#
+#   local -r    old_line_one_regex='(##|//|dnl )[*]+'
+#   local -r    old_line_two_regex='(##|//|dnl)[[:space:]]+INTEL[[:space:]]+CONFIDENTIAL'
+#   local -r  old_line_three_regex='(##|//|dnl)'
+#   local -r   old_line_four_regex='(##|//|dnl)[[:space:]]+Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})? Intel Corporation All Rights Reserved'
+#
+#   local -r old_end_comment_regex='(##|//|dnl )[*]+'
+#
+#   local -i fd
+#   local    line_one
+#   local    line_two
+#   local    line_three
+#   local    line_four
+#
+#   local -r save_ifs="${IFS}"
+#   IFS='
+#'
+#   exec {fd}<"$f"
+#
+#   read -r -u ${fd} line_one
+#   if [ "${line_one}" = '#!/bin/bash' ] || \
+#      [ "${line_one}" = '#!/bin/sh' ]   || \
+#      [ "${line_one}" = '%{' ]; then
+#      read -r -u ${fd} line_one
+#   fi
+#
+#   str="${line_one}"
+#   if [[ $str =~ $old_line_one_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#   if [ "${line_one:0:2}" = '##' ]; then
+#      com='##'
+#   fi
+#   if [ "${line_one:0:2}" = '//' ]; then
+#      com='//'
+#   fi
+#   if [ "${line_one:0:3}" = 'dnl' ]; then
+#      com='dnl'
+#   fi
+#
+#
+#   read -r -u ${fd} line_two
+#   str="${line_two}"
+#   if [[ $str =~ $old_line_two_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   read -r -u ${fd} line_three
+#   str="${line_three}"
+#   if [[ $str =~ $old_line_three_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   read -r -u ${fd} line_four
+#   str="${line_four}"
+#   orig_date="${line_four}"
+#   if [[ $str =~ $old_line_four_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   exec {fd}<&-
+#
+#
+#   if ! ${can_convert} ; then
+#      die "Malformed old user copyright encountered in '$f'\n"
+#   fi
+#
+#   # Isolate the date.
+#   orig_date="${orig_date% Intel Corporation}"
+#   orig_date="${orig_date##*Copyright (c) }"
+#
+#
+#   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
+#   local -i fd2
+#   local -i fdtmp
+#   local    found_end=false
+#
+#   cmd ${CP} "$f" "${tmpfile}"
+#
+#   exec {fdtmp}<"${tmpfile}"
+#   exec {fd2}>"$f"
+#
+#   # Skip the old comment
+#   read -r -u ${fdtmp} line_one
+#   if [ "${line_one}" = '#!/bin/bash' ] || \
+#      [ "${line_one}" = '#!/bin/sh' ]   || \
+#      [ "${line_one}" = '%{' ]; then
+#      echo -E "${line_one}" >&${fd2}
+#      read -r -u ${fdtmp} line_one
+#   fi
+#
+#   while read -r -u ${fdtmp} l ; do
+#      str="$l"
+#      if [[ $str =~ $old_end_comment_regex ]]; then
+#         found_end=true
+#         break
+#      fi
+#   done
+#
+#   if ! ${found_end} ; then
+#      exec {fd2}>&-
+#      exec {fdtmp}<&-
+#      cmd ${RM} "${tmpfile}"
+#      die "EOF scanning old user comment in '$f'\n"
+#   fi
+#
+#
+#   # Is the old date field a range?
+#   if [ "${orig_date/-/}" != "${orig_date}" ]; then
+#      printf -v l "${com} Copyright (c) ${orig_date%-*}-${THIS_YEAR}, Intel Corporation\n"
+#   else
+#      printf -v l "${com} Copyright (c) ${THIS_YEAR}, Intel Corporation\n"
+#   fi
+#   echo -E $l >&${fd2}
+#
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} Redistribution  and  use  in source  and  binary  forms,  with  or  without\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} modification, are permitted provided that the following conditions are met:\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Redistributions of  source code  must retain the  above copyright notice,\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   this list of conditions and the following disclaimer.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Redistributions in binary form must reproduce the above copyright notice,\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   this list of conditions and the following disclaimer in the documentation\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   and/or other materials provided with the distribution.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Neither the name  of Intel Corporation  nor the names of its contributors\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   may be used to  endorse or promote  products derived  from this  software\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   without specific prior written permission.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} POSSIBILITY OF SUCH DAMAGE.\n"
+#   echo -E $l >&${fd2}
+#
+#   while read -r -u ${fdtmp} l ; do
+#      echo -E "$l" >&${fd2}
+#   done
+#
+#   exec {fd2}>&-
+#   exec {fdtmp}<&-
+#   IFS="${save_ifs}"
+#
+#   cmd ${RM} "${tmpfile}"
+#}
 
 # $1 : full path to file to update
 copyright_user_adjust_date() {
@@ -1187,6 +1187,14 @@ copyright_user_adjust_date() {
       [ "${line_one}" = '#!/bin/sh' ]   || \
       [ "${line_one}" = '%{' ]; then
       echo -E "${line_one}" >&${fd}
+      read -r -u ${tmpfd} line_one
+   elif [ "${line_one:0:10}" = '# Doxyfile' ]; then
+      echo -E "${line_one}" >&${fd}
+
+      # 2nd line is blank
+      read -r -u ${tmpfd} line_one
+      echo -E "${line_one}" >&${fd}
+
       read -r -u ${tmpfd} line_one
    fi
    if [ "${line_one:0:2}" = '##' ]; then
@@ -1253,13 +1261,17 @@ _verify_user_copyright() {
       [ "${line_one}" = '#!/bin/sh' ]   || \
       [ "${line_one}" = '%{' ]; then
       read -r -u ${fd} line_one
+   elif [ "${line_one:0:10}" = '# Doxyfile' ]; then
+      # 2nd line is blank
+      read -r -u ${fd} line_one
+      # 3rd line
+      read -r -u ${fd} line_one
    fi
-
    str="${line_one}"
    if [[ $str =~ $line_one_regex ]]; then
       :
    else
-      copyright_ok=false
+      die "bad user copyright at '$f' line 1.\n"
    fi
 
    read -r -u ${fd} line_two
@@ -1267,7 +1279,7 @@ _verify_user_copyright() {
    if [[ $str =~ $line_two_regex ]]; then
       :
    else
-      copyright_ok=false
+      die "bad user copyright at '$f' line 2.\n"
    fi
 
    read -r -u ${fd} line_three
@@ -1275,7 +1287,7 @@ _verify_user_copyright() {
    if [[ $str =~ $line_three_regex ]]; then
       :
    else
-      copyright_ok=false
+      die "bad user copyright at '$f' line 3.\n"
    fi
 
    read -r -u ${fd} line_four
@@ -1283,25 +1295,20 @@ _verify_user_copyright() {
    if [[ $str =~ $line_four_regex ]]; then
       :
    else
-      copyright_ok=false
+      die "bad user copyright at '$f' line 4.\n"
    fi
 
    exec {fd}<&-
    IFS="${save_ifs}"
 
 
-   if ${copyright_ok} ; then
-      # Extract the current year.
-      str="${line_one%, Intel Corporation}"
-      str="${str##*Copyright (c) }"
-      str="${str##*-}"
+   # Extract the current year.
+   str="${line_one%, Intel Corporation}"
+   str="${str##*Copyright (c) }"
+   str="${str##*-}"
 
-      if [ "${str}" != "${THIS_YEAR}" ]; then
-         copyright_user_adjust_date "$f"
-      fi
-   else
-      # Need to update.
-      copyright_user_old_to_new "$f"
+   if [ "${str}" != "${THIS_YEAR}" ]; then
+      copyright_user_adjust_date "$f"
    fi
 }
 
