@@ -1,4 +1,4 @@
-dnl ****************************************************************************
+dnl*****************************************************************************
 dnl  Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 dnl 
 dnl  This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
@@ -6,7 +6,7 @@ dnl          redistributing this file, you may do so under either license.
 dnl 
 dnl                             GPL LICENSE SUMMARY
 dnl 
-dnl   Copyright(c) 2014, Intel Corporation.
+dnl  Copyright(c) 2014-2015, Intel Corporation.
 dnl 
 dnl   This program  is  free software;  you  can redistribute it  and/or  modify
 dnl   it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@ dnl   77 Reed Rd., Hudson, MA  01749
 dnl 
 dnl                                 BSD LICENSE
 dnl 
-dnl   Copyright(c) 2014, Intel Corporation.
+dnl  Copyright(c) 2014-2015, Intel Corporation.
 dnl 
 dnl   Redistribution and  use  in source  and  binary  forms,  with  or  without
 dnl   modification,  are   permitted  provided  that  the  following  conditions
@@ -53,7 +53,7 @@ dnl   DATA,  OR PROFITS;  OR BUSINESS INTERRUPTION)  HOWEVER  CAUSED  AND ON ANY
 dnl   THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT LIABILITY,  OR TORT
 dnl   (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 dnl   OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
-dnl ****************************************************************************
+dnl*****************************************************************************
 dnl  Intel(R) Accelerator Abstraction Layer Library Software Developer Kit (SDK)
 dnl   Content:
 dnl      Intel(R) Accelerator Abstraction Layer Library
@@ -62,7 +62,7 @@ dnl   Author:
 dnl      Tim Whisonant, Intel Corporation
 dnl   History:
 dnl      08/16/2014    TSW   Initial version
-dnl ****************************************************************************
+dnl*****************************************************************************
 
 dnl # AALSDK_YES_NO(VALUE, VARIABLE-NAME, [ACTION-IF-YES], [ACTION-IF-NO], [ACTION-IF-NEITHER])
 dnl #
