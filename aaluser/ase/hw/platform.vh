@@ -13,6 +13,7 @@
 `define ASE_RANDOMIZE_TRANSACTIONS 
 
 parameter CCI_AFU_LOW_OFFSET  = 14'h1000 / 4;
+parameter AFU_CSR_LO_BOUND   = 16'h1000;
 
 
 /*
@@ -31,7 +32,7 @@ parameter CCI_AFU_LOW_OFFSET  = 14'h1000 / 4;
 /*
  * Relevant CSRs that control CCI or AFU behaviour
  */
-parameter CCI_RESET_CTRL_OFFSET = 12'h280 / 4;
+parameter CCI_RESET_CTRL_OFFSET = 14'h280;
 parameter CCI_RESET_CTRL_BITLOC = 24;
 
 

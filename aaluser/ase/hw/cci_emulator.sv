@@ -54,7 +54,7 @@ module cci_emulator();
     * DPI import/export functions
     */
    // Scope function
-   import "DPI" function void scope_function();      
+   import "DPI" function void scope_function();
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
@@ -79,7 +79,7 @@ module cci_emulator();
    import "DPI-C" context task start_simkill_countdown();
    // Signal to kill simulation
    export "DPI-C" task simkill;
-      
+
    // Data exchange for READ system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
    // Data exchange for WRITE system/CAPCM memory line
@@ -92,7 +92,7 @@ module cci_emulator();
 
    // Scope generator
    initial scope_function();
-   
+
 
    /*
     * FUNCTION: Convert CAPCM_GB_SIZE to NUM_BYTES
@@ -178,7 +178,7 @@ module cci_emulator();
    /*
     * State indicators
     */
-   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsg, RxUmsgHint, RxUmsgData, RxIntrResp}
+   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsg, RxIntrResp}
 				  RxGlue_StateEnum;
    RxGlue_StateEnum rx0_state;
    RxGlue_StateEnum rx1_state;
@@ -215,6 +215,7 @@ module cci_emulator();
 	 end
       end
    end
+
 
    // Reset management
    logic 			  sys_reset_n;
@@ -266,6 +267,10 @@ module cci_emulator();
    logic 		      csrff_overflow;
    logic 		      csrff_underflow;
 
+   logic [15:0] 	      csr_address;
+   logic [13:0] 	      csr_index;
+   logic [31:0] 	      csr_value;
+   
    task csr_write_dispatch(int init, int csr_index, int csr_data);
       begin
 	 if (init) begin
@@ -315,7 +320,10 @@ module cci_emulator();
       );
 
    assign csrff_pop = ~csrff_empty && csrff_read;
-
+   assign csr_address = csrff_dout[47:32];
+   assign csr_index = csr_address[15:2];
+   assign csr_value = csrff_dout[31:0];
+   
    /*
     * Umsg infrastructure
     * umsg_dispatch: Single push process triggering UMSG machinery
@@ -636,6 +644,10 @@ module cci_emulator();
 	    $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
 	    $display("cf2as_latbuf_ch1 dropped =>");
 	    $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	    $display("Read Response checker =>");
+	    $display(read_check_array);
+	    $display("Write Response checker =>");
+	    $display(write_check_array);
 	    `END_YELLOW_FONTCOLOR;
  `endif
 `endif
@@ -646,7 +658,7 @@ module cci_emulator();
       //   endfunction
    endtask
 
-   
+
    /*
     * Unified message watcher daemon
     */
@@ -692,16 +704,16 @@ module cci_emulator();
    logic [13:0] 		 cf2as_latbuf_ch1_meta_0;
    logic [13:0] 		 cf2as_latbuf_ch1_meta_1;
 
-   
+
    // Both streams write back to CH0 at same time
    always @(posedge clk) begin
       if (cf2as_latbuf_ch1_read_0 && cf2as_latbuf_ch1_read_1) begin
-	 `BEGIN_RED_FONTCOLOR;	 
-	 $display ("*** ERROR: Both streams popped at the same time --- data may be lost");	 
+	 `BEGIN_RED_FONTCOLOR;
+	 $display ("*** ERROR: Both streams popped at the same time --- data may be lost");
 	 start_simkill_countdown();
-	 `END_RED_FONTCOLOR;	 
+	 `END_RED_FONTCOLOR;
       end
-   end   
+   end
 
 
    // CAFU->ASE CH0 (TX0)
@@ -1009,81 +1021,153 @@ module cci_emulator();
     */
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 csrff_read					<= 0;
-	 as2cf_fifo_ch0_write				<= 0;
-	 cf2as_latbuf_ch0_read				<= 0;
-	 cf2as_latbuf_ch1_read_0			<= 0;
-	 rx0_state					<= RxIdle;
+   	 csrff_read				<= 0;
+   	 umsgff_read				<= 0;
+   	 as2cf_fifo_ch0_write			<= 0;
+   	 cf2as_latbuf_ch0_read			<= 0;
+   	 cf2as_latbuf_ch1_read_0		<= 0;
+   	 rx0_state				<= RxIdle;
       end
       else begin
-	 csrff_read					<= 0;
-	 umsgff_read <= 0;
-	 as2cf_fifo_ch0_write				<= 0;
-	 cf2as_latbuf_ch0_read				<= 0;
-	 cf2as_latbuf_ch1_read_0			<= 0;
-	 // CSR Write in AFU space
-	 if (~csrff_empty && (csrff_dout[45:32] > CCI_AFU_LOW_OFFSET)) begin
-	    as2cf_fifo_ch0_din				<= { 5'b00001, {`ASE_RX0_CSR_WRITE, csrff_dout[47:34]}, {480'b0, csrff_dout[31:0]}};
-	    as2cf_fifo_ch0_write			<= csrff_valid;
-	    csrff_read					<= 1;
-	    rx0_state					<= RxAFUCSRWrite;
-	    cf2as_latbuf_ch1_read_0			<= 0;
-	    cf2as_latbuf_ch0_read			<= 0;
-	 end
-	 // CSR Write in QLP region
-	 else if (~csrff_empty && (csrff_dout[45:32]	<= CCI_AFU_LOW_OFFSET)) begin
-	    as2cf_fifo_ch0_write			<= 0;
-	    if (csrff_dout[45:32]			<= CCI_AFU_LOW_OFFSET) begin
-	       sw_reset_n				<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
-	    end
-	    csrff_read					<= 1;
-	    rx0_state					<= RxQLPCSRWrite;
-	    cf2as_latbuf_ch1_read_0			<= 0;
-	    cf2as_latbuf_ch0_read			<= 0;
-	 end
-	 // UMSG Hint/Data
-	 else if (~umsgff_empty) begin
-	    as2cf_fifo_ch0_din <= { 5'b01000, umsgff_dout };
-	    as2cf_fifo_ch0_write			<= umsgff_valid;
-	    umsgff_read                    <= 1;
-	    rx0_state                      <= RxUmsg;
-	    cf2as_latbuf_ch1_read_0			<= 0;
-	    cf2as_latbuf_ch0_read			<= 0;
-	 end
-	 // Read request
-	 else if (~cf2as_latbuf_ch0_empty) begin
-	    rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
-	    as2cf_fifo_ch0_din				<= {5'b00010,
-	    			   rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0],
-	    			   unpack_ccipkt_to_vector(rx0_pkt)};
-	    csrff_read					<= 0;
-	    as2cf_fifo_ch0_write			<= cf2as_latbuf_ch0_valid;
-	    cf2as_latbuf_ch0_read			<= 1;
-	    cf2as_latbuf_ch1_read_0			<= 0;
-	    rx0_state					<= RxReadResp;
-	 end
-	 // Write request & RX0 is selected
-	 else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0)) begin
-	    wr_memline_dex(rx0_pkt,
-	    		   cf2as_latbuf_ch1_claddr_0,
-	    		   cf2as_latbuf_ch1_meta_0,
-	    		   cf2as_latbuf_ch1_data_0 );
-	    csrff_read					<= 0;
-	    as2cf_fifo_ch0_din				<= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
-	    as2cf_fifo_ch0_write			<= cf2as_latbuf_ch1_valid;
-	    cf2as_latbuf_ch1_read_0			<= 1;
-	    cf2as_latbuf_ch0_read			<= 0;
-	    rx0_state					<= RxWriteResp;
-	 end
-	 // Else
-	 else begin
-	    sw_reset_n					<= sw_reset_n_q;
-	    csrff_read					<= 0;
-	    as2cf_fifo_ch0_write			<= 0;
-	    cf2as_latbuf_ch0_read			<= 0;
-	    cf2as_latbuf_ch1_read_0			<= 0;
-	    rx0_state					<= RxIdle;
-	 end
+   	 case (rx0_state)
+   	   // Default state
+   	   RxIdle:
+   	     begin
+   		if (~csrff_empty && (csr_address >= AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full) begin
+   		   as2cf_fifo_ch0_din		<= {5'b00001, {`ASE_RX0_CSR_WRITE, csr_index}, {480'b0, csr_value}};
+   		   as2cf_fifo_ch0_write		<= 1;
+   		   csrff_read			<= ~csrff_empty;
+   		   umsgff_read			<= 0;
+   		   cf2as_latbuf_ch0_read	<= 0;
+   		   cf2as_latbuf_ch1_read_0	<= 0;
+   		   rx0_state			<= RxAFUCSRWrite;
+   		end
+   		else if ( ~csrff_empty && (csr_address < AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full ) begin
+   		   if (csrff_dout[45:32]	== CCI_RESET_CTRL_OFFSET) begin
+   		      sw_reset_n		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+   		   end
+   		   csrff_read			<= 1;
+   		   umsgff_read			<= 0;
+   		   as2cf_fifo_ch0_write		<= 0;
+   		   cf2as_latbuf_ch0_read	<= 0;
+   		   cf2as_latbuf_ch1_read_0	<= 0;
+   		   rx0_state			<= RxQLPCSRWrite;
+   		end
+   		else if ( ~umsgff_empty && ~as2cf_fifo_ch0_full ) begin
+   		   as2cf_fifo_ch0_din		<= { 5'b01000, umsgff_dout };
+   		   as2cf_fifo_ch0_write		<= 1;
+   		   umsgff_read			<= ~umsgff_empty;
+   		   csrff_read			<= 0;
+   		   cf2as_latbuf_ch0_read	<= 0;
+   		   cf2as_latbuf_ch1_read_0	<= 0;
+   		   rx0_state			<= RxUmsg;
+   		end
+   		else if (~cf2as_latbuf_ch0_empty && ~as2cf_fifo_ch0_full ) begin
+   		   rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
+   		   as2cf_fifo_ch0_din		<= {5'b00010, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], unpack_ccipkt_to_vector(rx0_pkt)};
+   		   as2cf_fifo_ch0_write		<= 1;
+   		   cf2as_latbuf_ch0_read	<= ~cf2as_latbuf_ch0_empty;
+   		   csrff_read			<= 0;
+   		   umsgff_read			<= 0;
+   		   cf2as_latbuf_ch1_read_0	<= 0;
+   		   rx0_state			<= RxReadResp;
+   		end
+   		else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0) && ~as2cf_fifo_ch0_full ) begin
+   		   wr_memline_dex(rx0_pkt, cf2as_latbuf_ch1_claddr_0, cf2as_latbuf_ch1_meta_0, cf2as_latbuf_ch1_data_0 );
+   		   csrff_read			<= 0;
+   		   as2cf_fifo_ch0_din		<= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
+   		   as2cf_fifo_ch0_write		<= 1;
+   		   cf2as_latbuf_ch1_read_0	<= ~cf2as_latbuf_ch1_empty; // 1;
+   		   cf2as_latbuf_ch0_read	<= 0;
+   		   rx0_state			<= RxWriteResp;
+   		end
+   		else begin
+   		   as2cf_fifo_ch0_din		<= 0;		
+   		   csrff_read			<= 0;
+   		   umsgff_read			<= 0;
+   		   as2cf_fifo_ch0_write		<= 0;
+   		   cf2as_latbuf_ch0_read	<= 0;
+   		   cf2as_latbuf_ch1_read_0	<= 0;
+   		   rx0_state			<= RxIdle;
+   		end
+   	     end
+   	   // CSR Write in AFU space
+   	   RxAFUCSRWrite:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+   	   // CSR Write in QLP region
+   	   RxQLPCSRWrite:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+   	   // Unordered Message
+   	   RxUmsg:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+   	   // Read Response
+   	   RxReadResp:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+	   // Write Response
+   	   RxWriteResp:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+   	   // Interrupt Response
+   	   RxIntrResp:
+   	     begin
+   		as2cf_fifo_ch0_din		<= 0;		
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   	   	rx0_state			<= RxIdle;
+   	     end
+   	   // Lala land
+   	   default:
+   	     begin
+   		csrff_read			<= 0;
+   		umsgff_read			<= 0;
+   		as2cf_fifo_ch0_write		<= 0;
+   		cf2as_latbuf_ch0_read		<= 0;
+   		cf2as_latbuf_ch1_read_0		<= 0;
+   		rx0_state			<= RxIdle;
+   	     end
+   	 endcase
       end
    end
 
@@ -1093,32 +1177,57 @@ module cci_emulator();
     */
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 as2cf_fifo_ch1_write		<= 0;
-	 cf2as_latbuf_ch1_read_1	<= 0;
-	 rx1_state			<= RxIdle;
+   	 as2cf_fifo_ch1_write			<= 0;
+   	 cf2as_latbuf_ch1_read_1		<= 0;
+	 rx1_state				<= RxIdle;	 
       end
       else begin
-	 cf2as_latbuf_ch1_read_1	<= 0;
-	 as2cf_fifo_ch1_write		<= 0;
-	 // If Write Request was received & RX1 is selected
-	 if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1)) begin
-	    wr_memline_dex(rx1_pkt,
-	    		   cf2as_latbuf_ch1_claddr_1,
-	    		   cf2as_latbuf_ch1_meta_1,
-	    		   cf2as_latbuf_ch1_data_1 );
-	    as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
-	    as2cf_fifo_ch1_write	<= cf2as_latbuf_ch1_valid;
-	    cf2as_latbuf_ch1_read_1	<= 1;
-	    rx1_state			<= RxWriteResp;
-	 end
-	 else begin
-	    cf2as_latbuf_ch1_read_1	<= 0;
-	    as2cf_fifo_ch1_write	<= 0;
-	    rx1_state			<= RxIdle;
-	 end
+	 case (rx1_state)
+	   // Default state
+	   RxIdle:
+	     begin
+		if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1) && ~as2cf_fifo_ch1_full ) begin
+   		   wr_memline_dex(rx1_pkt, cf2as_latbuf_ch1_claddr_1, cf2as_latbuf_ch1_meta_1, cf2as_latbuf_ch1_data_1 );
+   		   as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
+   		   as2cf_fifo_ch1_write		<= 1;
+   		   cf2as_latbuf_ch1_read_1	<= ~cf2as_latbuf_ch1_empty;  // 1;
+		   rx1_state			<= RxWriteResp;		   
+		end
+		else begin
+		   as2cf_fifo_ch1_din		<= 0;		   
+   		   as2cf_fifo_ch1_write		<= 0;
+   		   cf2as_latbuf_ch1_read_1	<= 0;
+		   rx1_state			<= RxIdle;		   
+		end
+	     end
+	   // Write Response
+	   RxWriteResp:
+	     begin
+		as2cf_fifo_ch1_din		<= 0;		   
+   		as2cf_fifo_ch1_write		<= 0;
+   		cf2as_latbuf_ch1_read_1		<= 0;
+		rx1_state			<= RxIdle;		
+	     end
+	   // Interrupt response
+	   RxIntrResp:
+	     begin
+		as2cf_fifo_ch1_din		<= 0;		   
+   		as2cf_fifo_ch1_write		<= 0;
+   		cf2as_latbuf_ch1_read_1		<= 0;
+		rx1_state			<= RxIdle;		
+	     end
+	   // Lala land
+	   default:
+	     begin
+		as2cf_fifo_ch1_din		<= 0;		   
+   		as2cf_fifo_ch1_write		<= 0;
+   		cf2as_latbuf_ch1_read_1		<= 0;
+		rx1_state			<= RxIdle;		
+	     end
+	 endcase
       end
    end
-
+   
 
    /* *******************************************************************
     * Inactivity management block
@@ -1366,17 +1475,20 @@ module cci_emulator();
    // Interrupt select (enables
    assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
 
-
    // Call simkill on bad outcome of checker process
+   int prev_xz_simtime;
    task xz_simkill(int sim_time) ;
       begin
-   	 `BEGIN_RED_FONTCOLOR;
-   	 $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
-   	 $display("SIM-SV: Check simulation around time, t = %d", sim_time);
-   	 // $display("SIM-SV: Simulation will end now");
-   	 // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
-   	 `END_RED_FONTCOLOR;
-   	 // start_simkill_countdown();
+	 if (prev_xz_simtime != sim_time) begin
+   	    `BEGIN_RED_FONTCOLOR;
+   	    $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
+   	    $display("SIM-SV: Check simulation around time, t = %d", sim_time);
+   	    // $display("SIM-SV: Simulation will end now");
+   	    // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
+   	    // start_simkill_countdown();
+   	    `END_RED_FONTCOLOR;
+	 end
+	 prev_xz_simtime = sim_time;
       end
    endtask
 
@@ -1388,6 +1500,7 @@ module cci_emulator();
 	 $display("SIM-SV: Check simulation around time, t = %d in Channel %d", sim_time, channel);
    	 $display("SIM-SV: Simulation will end now");
 	 `END_RED_FONTCOLOR;
+	 start_simkill_countdown();
       end
    endtask
 
@@ -1557,5 +1670,34 @@ module cci_emulator();
       end
    end
 
+   // Stream-checker for ASE
+`ifdef ASE_DEBUG
+   // Read response checking
+   int read_check_array[*];
+   always @(posedge clk) begin
+      if (tx_c0_rdvalid) begin
+	 read_check_array[tx_c0_header[`TX_MDATA_BITRANGE]] = tx_c0_header[`TX_CLADDR_BITRANGE];
+      end
+      if (rx_c0_rdvalid) begin
+	 if (read_check_array.exists(rx_c0_header[`TX_MDATA_BITRANGE]))
+	   read_check_array.delete(rx_c0_header[`TX_MDATA_BITRANGE]);
+      end
+   end
+   // Write response checking
+   int write_check_array[*];
+   always @(posedge clk) begin
+      if (tx_c1_wrvalid && (tx_c0_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE)) begin
+	 write_check_array[tx_c1_header[`TX_MDATA_BITRANGE]] = tx_c1_header[`TX_CLADDR_BITRANGE];
+      end
+      if (rx_c1_wrvalid) begin
+	 if (write_check_array.exists(rx_c1_header[`TX_MDATA_BITRANGE]))
+	   write_check_array.delete(rx_c1_header[`TX_MDATA_BITRANGE]);
+      end
+      if (rx_c0_wrvalid) begin
+	 if (write_check_array.exists(rx_c0_header[`TX_MDATA_BITRANGE]))
+	   write_check_array.delete(rx_c0_header[`TX_MDATA_BITRANGE]);
+      end
+   end
+`endif
 
 endmodule // cci_emulator
