@@ -49,6 +49,16 @@ mqd_t sim2app_intr_tx;      // sim2app message queue in TX mode
 
 
 /*
+ * Generate scope data
+ */
+svScope scope;
+void scope_function()
+{
+  scope = svGetScope();
+}
+
+
+/*
  * DPI: UMSG Data exchange
  */
 int glbl_umsg_meta;
@@ -515,6 +525,16 @@ void ase_ready()
 
 
 /*
+ * SW SIMKILL request (a central location for SIMKILL requests from SW
+ * FLOW: SW issue -> sw_simkill_request -> HW calls simkill_countdown -> simkill
+ */
+/* void start_simkill_countdown() */
+/* { */
+/*   sw_simkill_request(); */
+/* } */
+
+
+/*
  * DPI simulation timeout counter
  * - When CTRL-C is pressed, start teardown sequence
  * - TEARDOWN SEQUENCE:
@@ -536,11 +556,6 @@ void start_simkill_countdown()
   printf("SIM-C : Unlinking Shared memory regions.... \n");
   // ase_destroy();
 
-  // Cloe log file, if appropriate
-/* #ifdef ASE_CCI_TRANSACTION_LOGGER */
-/*   fclose(ase_cci_log_fd); */
-/* #endif */
-
   // *FIXME* Remove the ASE timestamp file
   if (unlink(TSTAMP_FILENAME) == -1)
     {
@@ -548,9 +563,7 @@ void start_simkill_countdown()
     }
 
   // Final clean of IPC
-#ifdef SIM_SIDE
   final_ipc_cleanup();
-#endif
 
   // Remove session files
   printf("SIM-C : Cleaning session files...\n");
@@ -563,26 +576,12 @@ void start_simkill_countdown()
 
   // Print location of transactions file
   BEGIN_GREEN_FONTCOLOR;
-  printf("SIM-C : ASE Transactions history file is located at $ASE_WORKDIR/transactions.tsv\n");
+  printf("SIM-C : ASE Transactions file => $ASE_WORKDIR/transactions.tsv\n");
   END_GREEN_FONTCOLOR;
-
-  // Print Debug info
-  /* BEGIN_YELLOW_FONTCOLOR; */
-  /* printf("\nSW Transaction counts =>\n"); */
-  /* printf("\tConfigs = %d\n", ase_cfg_cnt); */
-  /* printf("\tReads   = %d\n", ase_read_cnt); */
-  /* printf("\tWrites  = %d\n", ase_write_cnt); */
-  /* printf("\n"); */
-  /* if (cfg->enable_asedbgdump) */
-  /*   { */
-  /*     printf("\tcsr_write_completed_cnt = %d\n", csr_write_completed_cnt); */
-  /*     printf("\tcsr_write_listener_activecnt = %d\n", csr_write_listener_activecnt); */
-  /*     printf("\n"); */
-  /*   } */
-  /* END_YELLOW_FONTCOLOR;   */
 
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");
+  svSetScope(scope);
   simkill();
 
   FUNC_CALL_EXIT;

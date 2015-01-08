@@ -95,7 +95,9 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
-SNPS_VLOGAN_OPT+= +define+ASE_DEBUG
+SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
+SNPS_VLOGAN_OPT+= +define+SVA_OFF +define+SIMPLE_CLKS
+# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v -v $(QUARTUS_HOME)/eda/sim_lib/220model.v -v $(QUARTUS_HOME)/eda/sim_lib/sgate.v -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v -lca $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v  +incdir+$(QUARTUS_HOME)/eda/sim_lib 
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate
@@ -183,7 +185,7 @@ sw_build:
 	mkdir -p $(WORK)
 	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) ; cd - 
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
-
+	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
 ## VCS build template ##
 vcs_build: 
@@ -242,11 +244,11 @@ endif
 sim: check
 ifeq ($(SIMULATOR), VCS)
 	./$(WORK)/simv -l run.log -ucli -do vcs_run.tcl
-	python scripts/ase_ipc_clean.py
+#	python scripts/ase_ipc_clean.py
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
-	python scripts/ase_ipc_clean.py
+#	python scripts/ase_ipc_clean.py
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"

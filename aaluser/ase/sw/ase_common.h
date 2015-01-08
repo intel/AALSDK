@@ -498,6 +498,7 @@ typedef struct {
  */
 // DPI-C export(C to SV) calls
 extern void simkill();
+extern void sw_simkill_request();
 extern void csr_write_init();
 extern void csr_write_dispatch(int, int, int);
 extern void umsg_init();

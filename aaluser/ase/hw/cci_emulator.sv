@@ -53,6 +53,8 @@ module cci_emulator();
    /*
     * DPI import/export functions
     */
+   // Scope function
+   import "DPI" function void scope_function();      
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
@@ -74,10 +76,14 @@ module cci_emulator();
    // import "DPI-C" context task capcm_deinit();
 
    // Start simulation structures teardown
-   import "DPI-C" context task start_simkill_countdown();
+      import "DPI-C" context task start_simkill_countdown();
+      // import "DPI-C" context function void simkill_countdown();
    // Signal to kill simulation
    export "DPI-C" task simkill;
-
+   // export "DPI-C" function simkill;
+   // SW requested SIMKILL (due to structure failure, CTRL-C, illegal mem-alloc
+   // export "DPI-C" task sw_simkill_request;
+      
    // Data exchange for READ system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
    // Data exchange for WRITE system/CAPCM memory line
@@ -88,6 +94,9 @@ module cci_emulator();
    // Declare packets for each channel
    cci_pkt rx0_pkt, rx1_pkt;
 
+   // Scope generator
+   initial scope_function();
+   
 
    /*
     * FUNCTION: Convert CAPCM_GB_SIZE to NUM_BYTES
@@ -173,7 +182,7 @@ module cci_emulator();
    /*
     * State indicators
     */
-   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsgHint, RxUmsgData, RxIntrResp}
+   typedef enum 		  {RxIdle, RxAFUCSRWrite, RxQLPCSRWrite, RxReadResp, RxWriteResp, RxUmsg, RxUmsgHint, RxUmsgData, RxIntrResp}
 				  RxGlue_StateEnum;
    RxGlue_StateEnum rx0_state;
    RxGlue_StateEnum rx1_state;
@@ -488,9 +497,25 @@ module cci_emulator();
 	 umsgff_write	<= 0;
       end
       else begin
+	 if ((umsg_data_slot != 255) && ~umsgff_full) begin
+	    umsgff_din <= { `ASE_RX0_UMSG, 1'b0,
+			  1'b0, 6'b0,
+			  1'b0, umsg_data_slot[4:0],
+			  umsg_data_array[umsg_data_slot] };
+	    umsgff_write <= 1;
+	 end
+	 else if ((umsg_hint_slot != 255) && ~umsgff_full) begin
+	    umsgff_din <= { `ASE_RX0_UMSG, 1'b0,
+			  1'b1, 6'b0,
+			  1'b0, umsg_hint_slot[4:0],
+			  `CCI_DATA_WIDTH'b0 };
+	    umsgff_write <= 1;
+	 end
+	 else begin
+	    umsgff_write  <= 0;
+	 end
       end
    end
-
 
    // Unordered message FIFO
    ase_fifo
@@ -585,11 +610,8 @@ module cci_emulator();
     * graceful closedown
     */
    task simkill();
+   // function void simkill();
       begin
-	 // CA-PCM deinitialize sequece
-	 // if (cfg.enable_capcm) begin
-	 //    // capcm_deinit();
-	 // end
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
@@ -600,7 +622,6 @@ module cci_emulator();
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
 	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
 	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
-	 // $display("\tcsr_write_enabled_cnt = %d", csr_write_enabled_cnt);
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -626,8 +647,21 @@ module cci_emulator();
 	 $fclose(log_fd);
 	 $finish;
       end
+      //   endfunction
    endtask
 
+   
+   /*
+    * SW requested simkill
+    * A funky fix to DPI-DXCWOS issue (causes loss of internal ASE info)
+    */ 
+   // task sw_simkill_request();
+   //    begin
+   // 	 simkill_countdown();	 
+   //    end
+   // endtask
+   
+   
    /*
     * Unified message watcher daemon
     */
@@ -676,6 +710,17 @@ module cci_emulator();
    logic [13:0] 		 cf2as_latbuf_ch1_meta;
    logic [13:0] 		 cf2as_latbuf_ch1_meta_0;
    logic [13:0] 		 cf2as_latbuf_ch1_meta_1;
+
+   
+   // Both streams write back to CH0 at same time
+   always @(posedge clk) begin
+      if (cf2as_latbuf_ch1_read_0 && cf2as_latbuf_ch1_read_1) begin
+	 `BEGIN_RED_FONTCOLOR;	 
+	 $display ("*** ERROR: Both streams popped at the same time --- data may be lost");	 
+	 start_simkill_countdown();
+	 `END_RED_FONTCOLOR;	 
+      end
+   end   
 
 
    // CAFU->ASE CH0 (TX0)
@@ -991,12 +1036,13 @@ module cci_emulator();
       end
       else begin
 	 csrff_read					<= 0;
+	 umsgff_read <= 0;
 	 as2cf_fifo_ch0_write				<= 0;
 	 cf2as_latbuf_ch0_read				<= 0;
 	 cf2as_latbuf_ch1_read_0			<= 0;
 	 // CSR Write in AFU space
 	 if (~csrff_empty && (csrff_dout[45:32] > CCI_AFU_LOW_OFFSET)) begin
-	    as2cf_fifo_ch0_din				<= { 5'b00001, {`ASE_RX0_CSR_WRITE, 2'b0, csrff_dout[45:34]}, {480'b0, csrff_dout[31:0]}};
+	    as2cf_fifo_ch0_din				<= { 5'b00001, {`ASE_RX0_CSR_WRITE, csrff_dout[47:34]}, {480'b0, csrff_dout[31:0]}};
 	    as2cf_fifo_ch0_write			<= csrff_valid;
 	    csrff_read					<= 1;
 	    rx0_state					<= RxAFUCSRWrite;
@@ -1014,8 +1060,15 @@ module cci_emulator();
 	    cf2as_latbuf_ch1_read_0			<= 0;
 	    cf2as_latbuf_ch0_read			<= 0;
 	 end
-	 // UMSG Hint *FIXME*
-	 // UMSG Data *FIXME*
+	 // UMSG Hint/Data
+	 else if (~umsgff_empty) begin
+	    as2cf_fifo_ch0_din <= { 5'b01000, umsgff_dout };
+	    as2cf_fifo_ch0_write			<= umsgff_valid;
+	    umsgff_read                    <= 1;
+	    rx0_state                      <= RxUmsg;
+	    cf2as_latbuf_ch1_read_0			<= 0;
+	    cf2as_latbuf_ch0_read			<= 0;
+	 end
 	 // Read request
 	 else if (~cf2as_latbuf_ch0_empty) begin
 	    rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
@@ -1339,10 +1392,10 @@ module cci_emulator();
    	 `BEGIN_RED_FONTCOLOR;
    	 $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
    	 $display("SIM-SV: Check simulation around time, t = %d", sim_time);
-   	 $display("SIM-SV: Simulation will end now");
-   	 $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
+   	 // $display("SIM-SV: Simulation will end now");
+   	 // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
    	 `END_RED_FONTCOLOR;
-   	 start_simkill_countdown();
+   	 // start_simkill_countdown();
       end
    endtask
 
@@ -1390,16 +1443,16 @@ module cci_emulator();
    // Watch checker signal
    always @(posedge clk) begin
       if (tx0_rc_error) begin
-	 xz_simkill(tx0_rc_time);
+   	 xz_simkill(tx0_rc_time);
       end
       else if (tx1_rc_error) begin
-	 xz_simkill(tx1_rc_time);
+   	 xz_simkill(tx1_rc_time);
       end
       else if (rx0_rc_error) begin
-	 xz_simkill(rx0_rc_time);
+   	 xz_simkill(rx0_rc_time);
       end
       else if (rx1_rc_error) begin
-	 xz_simkill(rx1_rc_time);
+   	 xz_simkill(rx1_rc_time);
       end
    end
 
@@ -1520,7 +1573,6 @@ module cci_emulator();
 	 end
 	 // Wait till next clock
 	 @(posedge clk);
-
       end
    end
 

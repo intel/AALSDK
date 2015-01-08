@@ -48,7 +48,7 @@
 
 #define TEST_WRTHRU_EN    0
 #define TEST_DELAY_EN     0
-#define TEST_CONT         0 // Suggested by PMM
+#define TEST_CONT         1 // Suggested by PMM
 #define TEST_START_DELAY  5
 #define TEST_CFG          0
 #define TEST_INACT_THRESH 10
@@ -85,13 +85,14 @@ int poll_status(unsigned char *dsm_status_addr)
 	int ii;
           if(TEST_CONT==1)
           {
-                  /* for(iter_min = 0; iter_min < 300; iter_min++) */
-                  /*   { */
-                  /*     printf("Sleep for %d minutes...\n", 5-iter_min); */
-		  /*     csr_write(0xFF0, 0xCAFEBABE); */
-		  /*     csr_write(0xFF4, 0xFEEDFACE); */
-                  /*     sleep(1);       */
-                  /*   } */
+	    // for(iter_min = 0; iter_min < 60*3; iter_min++)
+	    for(iter_min = 0; iter_min < 3; iter_min++)
+	      {
+		printf("Sleep for %d secs...\n", iter_min);
+		/* csr_write(0xFF0, 0xCAFEBABE); */
+		/* csr_write(0xFF4, 0xFEEDFACE); */
+		sleep(1);
+	      }
                 
                   // Stop test
                   printf("APP: NLB test stopping... \n");
