@@ -525,16 +525,6 @@ void ase_ready()
 
 
 /*
- * SW SIMKILL request (a central location for SIMKILL requests from SW
- * FLOW: SW issue -> sw_simkill_request -> HW calls simkill_countdown -> simkill
- */
-/* void start_simkill_countdown() */
-/* { */
-/*   sw_simkill_request(); */
-/* } */
-
-
-/*
  * DPI simulation timeout counter
  * - When CTRL-C is pressed, start teardown sequence
  * - TEARDOWN SEQUENCE:

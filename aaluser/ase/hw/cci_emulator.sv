@@ -76,13 +76,9 @@ module cci_emulator();
    // import "DPI-C" context task capcm_deinit();
 
    // Start simulation structures teardown
-      import "DPI-C" context task start_simkill_countdown();
-      // import "DPI-C" context function void simkill_countdown();
+   import "DPI-C" context task start_simkill_countdown();
    // Signal to kill simulation
    export "DPI-C" task simkill;
-   // export "DPI-C" function simkill;
-   // SW requested SIMKILL (due to structure failure, CTRL-C, illegal mem-alloc
-   // export "DPI-C" task sw_simkill_request;
       
    // Data exchange for READ system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
@@ -652,26 +648,11 @@ module cci_emulator();
 
    
    /*
-    * SW requested simkill
-    * A funky fix to DPI-DXCWOS issue (causes loss of internal ASE info)
-    */ 
-   // task sw_simkill_request();
-   //    begin
-   // 	 simkill_countdown();	 
-   //    end
-   // endtask
-   
-   
-   /*
     * Unified message watcher daemon
     */
    always @(posedge clk) begin : daemon_proc
       if (lp_initdone) begin
-	 // buffer_replicator();
 	 ase_listener();
-	 // csr_write_listener();
-	 // if (cfg.enable_umsg)
-	 //   umsg_listener();
       end
    end
 
