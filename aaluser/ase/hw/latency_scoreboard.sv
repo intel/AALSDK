@@ -186,9 +186,9 @@ module latency_scoreboard
    int 				  jj;
    int 				  ii;
 
-   logic [FIFO_WIDTH-1:0] 	  reg_stg3_din;
-   logic 			  reg_stg3_wen;
-   logic 			  reg_latbuf_pop;
+   // logic [FIFO_WIDTH-1:0] 	  reg_stg3_din;
+   // logic 			  reg_stg3_wen;
+   // logic 			  reg_latbuf_pop;
 
 
    /*
@@ -645,7 +645,7 @@ module latency_scoreboard
 	 stg3_wen	<= 0;
 	 stg3_din	<= {FIFO_WIDTH{1'b0}};	 
       end
-      else if (latbuf_pop_valid) begin
+      else if (latbuf_pop_valid && ~stg3_full) begin
 	 stg3_wen	<= latbuf_pop_valid;
 	 stg3_din	<= latbuf_pop_dout;	 
       end
