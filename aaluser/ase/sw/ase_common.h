@@ -281,8 +281,8 @@ extern "C" {
 
 
 // Message queue parameters
-#define ASE_MQ_MAXMSG     4
-#define ASE_MQ_MSGSIZE    8192
+#define ASE_MQ_MAXMSG     8
+#define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
 
 // ASE filepath length

@@ -44,15 +44,53 @@ mqd_t mqueue_create(char* mq_name_prefix, int perm_flag)
 {
   FUNC_CALL_ENTRY;
   mqd_t mq;
-
   char *mq_name;
-  mq_name = malloc (ASE_MQ_NAME_LEN);
+  struct mq_attr attr;
 
   // Form a unique message queue name
+  mq_name = malloc (ASE_MQ_NAME_LEN);
   memset(mq_name, '\0', ASE_MQ_NAME_LEN); // sizeof(mq_name));
   strcpy(mq_name, mq_name_prefix);
   strcat(mq_name, get_timestamp(0));
 
+  // Form attribute structure
+  attr.mq_flags = 0;
+  attr.mq_maxmsg = ASE_MQ_MAXMSG;
+  attr.mq_msgsize = ASE_MQ_MSGSIZE;
+  attr.mq_curmsgs = 0;
+
+  // Open message queue with modified parameters
+  mq = mq_open (mq_name, perm_flag, 0666, &attr);
+  if(mq == -1)
+    {
+      ase_error_report("mq_open", errno, ASE_OS_MQUEUE_ERR);
+      /* perror("mq_open"); */
+#ifdef SIM_SIDE
+      ase_perror_teardown();
+      start_simkill_countdown();
+#else
+      exit(1);
+#endif
+    }
+  
+  // Print MQ attribute in debug mode
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  struct mq_attr rd_attr;
+  if ( mq_getattr(mq, &rd_attr) != -1 )
+    {
+      printf("MQ parameters => {flags, maxmsg, msgsize, curmsgs} = {%ld, %ld, %ld, %ld}\n", 
+	     rd_attr.mq_flags,
+	     rd_attr.mq_maxmsg,
+	     rd_attr.mq_msgsize,
+	     rd_attr.mq_curmsgs
+	     );
+    }
+  END_YELLOW_FONTCOLOR;
+#endif
+
+
+#if 0
   // Open a queue with default parameters
   mq = mq_open(mq_name, perm_flag, 0666, NULL);
   if(mq == -1)
@@ -79,6 +117,7 @@ mqd_t mqueue_create(char* mq_name_prefix, int perm_flag)
       exit(1); // APP-side exit
 #endif
     }
+#endif
 
   // Update IPC list
 #ifdef SIM_SIDE

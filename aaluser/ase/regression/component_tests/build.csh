@@ -35,3 +35,9 @@ gcc -g -o shuffle \
 #     -lrt -lm 
 
 # gcc -g -o read_file read_file.c
+
+gcc -g -o ase_mq_test ase_mq_test.c \
+    ../../sw/mqueue_ops.c \
+    ../../sw/error_report.c \
+    ../../sw/tstamp_ops.c \
+    -I ../../sw/ -lrt

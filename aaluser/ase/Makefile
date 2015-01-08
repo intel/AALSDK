@@ -62,7 +62,8 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include  -Wall 
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall 
+# CC_OPT+= -D ASE_DEBUG
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
