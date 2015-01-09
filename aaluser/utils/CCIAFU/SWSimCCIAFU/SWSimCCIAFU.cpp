@@ -60,11 +60,19 @@
 #ifdef INFO
 # undef INFO
 #endif // INFO
-#define INFO(x) AAL_INFO(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#if 0
+# define INFO(x) AAL_INFO(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#else
+# define INFO(x)
+#endif
 #ifdef ERR
 # undef ERR
 #endif // ERR
-#define ERR(x) AAL_ERR(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#if 0
+# define ERR(x) AAL_ERR(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#else
+# define ERR(x)
+#endif
 
 BEGIN_NAMESPACE(AAL)
 

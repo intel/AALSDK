@@ -52,19 +52,6 @@
 
 #include "HWCCIAFU.h"
 
-#ifdef INFO
-# undef INFO
-#endif // INFO
-#define INFO(x) AAL_INFO(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
-#ifdef ERR
-# undef ERR
-#endif // ERR
-#define ERR(x) AAL_ERR(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
-#ifdef VERBOSE
-# undef VERBOSE
-#endif // VERBOSE
-#define VERBOSE(x) AAL_VERBOSE(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
-
 BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup HWCCIAFU
