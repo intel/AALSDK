@@ -188,12 +188,12 @@ typedef struct {
    int 	       enable_reuse_seed;
    int 	       enable_capcm;
    int 	       memmap_sad_setting;
-   int 	       enable_umsg;
+   // int 	       enable_umsg;
    int 	       num_umsg_log2;
-   int 	       enable_intr;
+   // int 	       enable_intr;
    int 	       enable_ccirules;
    int 	       enable_bufferinfo;
-   int 	       enable_asedbgdump;
+   // int 	       enable_asedbgdump;
    int 	       enable_cl_view;
 } ase_cfg_t;
 ase_cfg_t cfg;

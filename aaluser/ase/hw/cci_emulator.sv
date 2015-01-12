@@ -161,7 +161,7 @@ module cci_emulator();
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
    logic 			  resetb_q;
-   logic 			  tx_c1_intrvalid_sel;
+   // logic 			  tx_c1_intrvalid_sel;
 
    // Derived clocks
    logic 			  clk_32ui; // Normal 200 Mhz clock
@@ -557,13 +557,13 @@ module cci_emulator();
 	 cfg.enable_reuse_seed  = cfg_in.enable_reuse_seed;
 	 cfg.enable_capcm       = cfg_in.enable_capcm     ;
 	 cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
-	 cfg.enable_umsg        = cfg_in.enable_umsg      ;
+	 // cfg.enable_umsg        = cfg_in.enable_umsg      ;
 	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
-	 cfg.enable_intr        = cfg_in.enable_intr      ;
+	 // cfg.enable_intr        = cfg_in.enable_intr      ;
 	 cfg.enable_ccirules    = cfg_in.enable_ccirules  ;
 	 cfg.enable_bufferinfo  = cfg_in.enable_bufferinfo;
 	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
-	 cfg.enable_asedbgdump  = cfg_in.enable_asedbgdump;
+	 // cfg.enable_asedbgdump  = cfg_in.enable_asedbgdump;
       end
    endtask
 
@@ -629,7 +629,8 @@ module cci_emulator();
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
-	 if (cfg.enable_asedbgdump) begin
+`ifdef ASE_DEBUG
+ `ifdef ASE_RANDOMIZE_TRANSACTIONS
 	    // Print errors
 	    `BEGIN_RED_FONTCOLOR;
 	    if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
@@ -637,8 +638,7 @@ module cci_emulator();
 	    if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
 	      $display("\tWRITEs : Response counts dont match request count !!");
 	    `END_RED_FONTCOLOR;
-`ifdef ASE_DEBUG
- `ifdef ASE_RANDOMIZE_TRANSACTIONS
+	    // Dropped transactions
 	    `BEGIN_YELLOW_FONTCOLOR;
 	    $display("cf2as_latbuf_ch0 dropped =>");
 	    $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
@@ -651,7 +651,6 @@ module cci_emulator();
 	    `END_YELLOW_FONTCOLOR;
  `endif
 `endif
-	 end
 	 $fclose(log_fd);
 	 $finish;
       end
@@ -880,8 +879,8 @@ module cci_emulator();
       end
       // else if (~cf2as_latbuf_ch1_empty) begin
       else if (cf2as_latbuf_ch1_valid) begin
-	 // tx_to_rx_channel	<= abs_val($random) % 2;
-	 tx_to_rx_channel	<= 1;
+	 tx_to_rx_channel	<= abs_val($random) % 2;
+	 // tx_to_rx_channel	<= 1;
 	 // tx_to_rx_channel	<= 0;
       end
    end
@@ -1249,7 +1248,7 @@ module cci_emulator();
 
    // Inactivity management - Sense first transaction
    assign any_valid =    rx_c0_umsgvalid
-			 || tx_c1_intrvalid_sel
+			 || tx_c1_intrvalid
 			 || rx_c0_intrvalid
 			 || rx_c1_intrvalid
 			 || rx_c0_wrvalid
@@ -1453,7 +1452,7 @@ module cci_emulator();
       .tx_c1_header    (tx_c1_header),
       .tx_c1_data      (tx_c1_data),
       .tx_c1_wrvalid   (tx_c1_wrvalid),
-      .tx_c1_intrvalid (tx_c1_intrvalid_sel ),
+      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
       .rx_c0_header    (rx_c0_header),
       .rx_c0_data      (rx_c0_data),
       .rx_c0_rdvalid   (rx_c0_rdvalid),
@@ -1473,7 +1472,7 @@ module cci_emulator();
       );
 
    // Interrupt select (enables
-   assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
+   // assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
 
    // Call simkill on bad outcome of checker process
    int prev_xz_simtime;

@@ -281,8 +281,8 @@ void ase_alloc_action(struct buffer_t *mem)
   if (mem->index == 0)
     {
       // If UMSG is enabled, write information to CSR region
-      if (cfg->enable_umsg)
-        ase_umsg_init(mem->pbase);
+      /* if (cfg->enable_umsg) */
+      ase_umsg_init(mem->pbase);
       // If CAPCM is enabled
 
     }

@@ -61,33 +61,33 @@ void scope_function()
 /*
  * DPI: UMSG Data exchange
  */
-int glbl_umsg_meta;
-char glbl_umsg_data[CL_BYTE_WIDTH];
-int glbl_umsg_serviced;
-void umsg_dex(cci_pkt *umsg)
-{
-  FUNC_CALL_ENTRY;
+/* int glbl_umsg_meta; */
+/* char glbl_umsg_data[CL_BYTE_WIDTH]; */
+/* int glbl_umsg_serviced; */
+/* void umsg_dex(cci_pkt *umsg) */
+/* { */
+/*   FUNC_CALL_ENTRY; */
 
-  umsg->meta = glbl_umsg_meta;
-  memcpy(umsg->qword, glbl_umsg_data, CL_BYTE_WIDTH);
-#ifdef ASE_DEBUG
-  int i;
-  printf("UMSG_DEX =>\n");
-  printf("%08x", (uint32_t)umsg->meta);
-  for (i = 1; i < 8; i++)
-    printf("%016llX ", umsg->qword[i]);
-  printf("\n");
-#endif
-  umsg->cfgvalid = 0;
-  umsg->wrvalid  = 0;
-  umsg->rdvalid  = 0;
-  umsg->intrvalid = 0;
-  umsg->umsgvalid = 1;
+/*   umsg->meta = glbl_umsg_meta; */
+/*   memcpy(umsg->qword, glbl_umsg_data, CL_BYTE_WIDTH); */
+/* #ifdef ASE_DEBUG */
+/*   int i; */
+/*   printf("UMSG_DEX =>\n"); */
+/*   printf("%08x", (uint32_t)umsg->meta); */
+/*   for (i = 1; i < 8; i++) */
+/*     printf("%016llX ", umsg->qword[i]); */
+/*   printf("\n"); */
+/* #endif */
+/*   umsg->cfgvalid = 0; */
+/*   umsg->wrvalid  = 0; */
+/*   umsg->rdvalid  = 0; */
+/*   umsg->intrvalid = 0; */
+/*   umsg->umsgvalid = 1; */
 
-  // ase_umsg_cnt++;
+/*   // ase_umsg_cnt++; */
 
-  FUNC_CALL_EXIT;
-}
+/*   FUNC_CALL_EXIT; */
+/* } */
 
 
 /*
@@ -217,7 +217,6 @@ int ase_listener()
   char csr_wr_str[ASE_MQ_MSGSIZE];
   char *pch;
   char ase_msg_data[CL_BYTE_WIDTH];
-  // csr_offset and csr_data
   uint32_t csr_offset;
   uint32_t csr_data;
 
@@ -506,8 +505,11 @@ void ase_ready()
   END_GREEN_FONTCOLOR;
 
   // Register SIGINT and listen to it
-  signal(SIGINT, start_simkill_countdown);
-  signal(SIGKILL, start_simkill_countdown);
+  signal(SIGTERM, start_simkill_countdown);
+  signal(SIGINT , start_simkill_countdown);
+  signal(SIGQUIT, start_simkill_countdown);
+  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work // 
+  signal(SIGHUP,  start_simkill_countdown);
 
   // Get PID
   ase_pid = getpid();
@@ -698,12 +700,12 @@ void ase_config_parse(char *filename)
   cfg->enable_reuse_seed = 0;
   cfg->enable_capcm = 0;
   cfg->memmap_sad_setting = 0;
-  cfg->enable_umsg = 0;
+  /* cfg->enable_umsg = 0; */
   cfg->num_umsg_log2 = 5;
-  cfg->enable_intr = 0;
+  /* cfg->enable_intr = 0; */
   cfg->enable_ccirules = 1;
   cfg->enable_bufferinfo = 0;
-  cfg->enable_asedbgdump = 0;
+  /* cfg->enable_asedbgdump = 0; */
   cfg->enable_cl_view = 1;
 
   // Find ase.cfg OR not
@@ -734,22 +736,22 @@ void ase_config_parse(char *filename)
 	      	cfg->enable_capcm = value;
 	      else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0)
 	      	cfg->memmap_sad_setting = value;
-	      else if (strcmp (parameter,"ENABLE_UMSG") == 0)
-	      	cfg->enable_umsg = value;
+	      /* else if (strcmp (parameter,"ENABLE_UMSG") == 0) */
+	      /* 	cfg->enable_umsg = value; */
 	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0)
 		cfg->num_umsg_log2 = value;
-	      else if (strcmp (parameter,"ENABLE_INTR") == 0)
-	      	cfg->enable_intr = value;
+	      /* else if (strcmp (parameter,"ENABLE_INTR") == 0) */
+	      /* 	cfg->enable_intr = value; */
 	      else if (strcmp (parameter,"ENABLE_CCI_RULES") == 0)
 	      	cfg->enable_ccirules = value;
 	      else if (strcmp (parameter,"ENABLE_BUFFERINFO") == 0)
 		cfg->enable_bufferinfo = value;
-	      else if (strcmp (parameter,"ENABLE_ASEDBGDUMP") == 0)
-		cfg->enable_asedbgdump = value;
+	      /* else if (strcmp (parameter,"ENABLE_ASEDBGDUMP") == 0) */
+	      /* 	cfg->enable_asedbgdump = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
 	      else
-	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified ... setting unchanged \n", ASE_CONFIG_FILE, parameter);
+	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified ... DEFAULT applied \n", ASE_CONFIG_FILE, parameter);
 	    }
 	}
 
@@ -768,8 +770,8 @@ void ase_config_parse(char *filename)
 	}
 
       // UMSG implementation
-      if (cfg->enable_umsg != 0)
-	{
+      /* if (cfg->enable_umsg != 0) */
+      /* 	{ */
 	  if (cfg->num_umsg_log2 == 0)
 	    {
 	      BEGIN_YELLOW_FONTCOLOR;
@@ -779,16 +781,16 @@ void ase_config_parse(char *filename)
 	      cfg->num_umsg_log2 = 5;
 	      END_YELLOW_FONTCOLOR;
 	    }
-	}
+	/* } */
 
       // If ASE is being debugged, all case debug switches will be ON
-      if (cfg->enable_asedbgdump != 0)
-	{
-	  cfg->enable_ccirules = 1;
-	  cfg->enable_bufferinfo = 1;
-	  cfg->enable_cl_view = 1;
-	  cfg->enable_asedbgdump = 1;
-	}
+      /* if (cfg->enable_asedbgdump != 0) */
+      /* 	{ */
+      /* 	  cfg->enable_ccirules = 1; */
+      /* 	  cfg->enable_bufferinfo = 1; */
+      /* 	  cfg->enable_cl_view = 1; */
+      /* 	  cfg->enable_asedbgdump = 1; */
+      /* 	} */
 
       // Close file
       fclose(fp);
@@ -815,21 +817,22 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... DISABLED \n");
 
   // UMSG
-  if (cfg->enable_umsg != 0)
-    {
-      printf("        Unordered message          ... ENABLED     | NUM_UMSG_Log2 = %d (%d UMSGs) \n", cfg->num_umsg_log2, (int)pow((float)2, (float)cfg->num_umsg_log2) );
-    }
-  else
-    printf("        Unordered message          ... DISABLED\n");
+  // *FIXME*: Check num_umsg_log2, apply default as needed
+  /* if (cfg->enable_umsg != 0) */
+  /*   { */
+  /*     printf("        Unordered message          ... ENABLED     | NUM_UMSG_Log2 = %d (%d UMSGs) \n", cfg->num_umsg_log2, (int)pow((float)2, (float)cfg->num_umsg_log2) ); */
+  /*   } */
+  /* else */
+  /*   printf("        Unordered message          ... DISABLED\n"); */
 
   // INTR
-  if (cfg->enable_intr != 0)
-    {
-      printf("        AFU Interrupts             ... ENABLED | Unsupported, setting to 0\n");
-      cfg->enable_intr = 0;
-    }
-  else
-    printf("        AFU Interrupts             ... DISABLED\n");
+  /* if (cfg->enable_intr != 0) */
+  /*   { */
+  /*     printf("        AFU Interrupts             ... ENABLED | Unsupported, setting to 0\n"); */
+  /*     cfg->enable_intr = 0; */
+  /*   } */
+  /* else */
+  /*   printf("        AFU Interrupts             ... DISABLED\n"); */
 
   // CAPCM
   if (cfg->enable_capcm != 0)
@@ -858,10 +861,10 @@ void ase_config_parse(char *filename)
     printf("        ASE Transaction view       ... DISABLED\n");
 
   // ASE Debug
-  if (cfg->enable_asedbgdump != 0)
-    printf("        ASE Internal debug         ... ENABLED (Use for bug-reports only)\n");
-  else
-    printf("        ASE Internal debug         ... DISABLED\n");
+  /* if (cfg->enable_asedbgdump != 0) */
+  /*   printf("        ASE Internal debug         ... ENABLED (Use for bug-reports only)\n"); */
+  /* else */
+  /*   printf("        ASE Internal debug         ... DISABLED\n"); */
 
   END_YELLOW_FONTCOLOR;
 

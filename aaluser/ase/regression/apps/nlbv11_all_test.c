@@ -48,7 +48,7 @@
 
 #define TEST_WRTHRU_EN    0
 #define TEST_DELAY_EN     0
-#define TEST_CONT         1 // Suggested by PMM
+#define TEST_CONT         1
 #define TEST_START_DELAY  5
 #define TEST_CFG          0
 #define TEST_INACT_THRESH 10
@@ -85,8 +85,8 @@ int poll_status(unsigned char *dsm_status_addr)
 	int ii;
           if(TEST_CONT==1)
           {
-	    // for(iter_min = 0; iter_min < 60*3; iter_min++)
-	    for(iter_min = 0; iter_min < 3; iter_min++)
+	    for(iter_min = 0; iter_min < 1000; iter_min++)
+	      //   for(iter_min = 0; iter_min < 3; iter_min++)
 	      {
 		printf("Sleep for %d secs...\n", iter_min);
 		/* csr_write(0xFF0, 0xCAFEBABE); */
