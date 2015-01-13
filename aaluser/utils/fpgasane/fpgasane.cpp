@@ -476,29 +476,59 @@ int verifycmds(struct CMyCmdLine * );
 END_C_DECLS
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CSR_CIPUCTL              0x280
+#define MAX_NLB_LPBK1_WKSPC       CL(16384)
+#define MAX_NLB_READ_WKSPC        CL(16384)
+#define MAX_NLB_WRITE_WKSPC       CL(16384)
+#define MAX_NLB_TRPUT_WKSPC       CL(16384)
 
-#define CSR_AFU_DSM_BASEL        0x1a00
-#define CSR_AFU_DSM_BASEH        0x1a04
-#define CSR_SRC_ADDR             0x1a20
-#define CSR_DST_ADDR             0x1a24
-#define CSR_NUM_LINES            0x1a28
-#define CSR_CTL                  0x1a2c
-#define CSR_CFG                  0x1a34
+#define NLB_TEST_MODE_LPBK1       0x0
+#define NLB_TEST_MODE_READ        0x4
+#define NLB_TEST_MODE_WRITE       0x8
+#define NLB_TEST_MODE_TRPUT       0xc
 
-#define DSM_STATUS_TEST_COMPLETE 0x40
-#define DSM_STATUS_TEST_ERROR    0x44
-#define DSM_STATUS_MODE_ERROR_0  0x60
+#define NLB_DSM_SIZE              MB(4)
 
-#define DSM_STATUS_ERROR_REGS    8
+#define QLP_NUM_COUNTERS          11
+#define QLP_CSR_ADDR_PERF1C       0x27c
+#define QLP_CSR_ADDR_PERF1        0x28c
 
-#define CSR_OFFSET(x)            ((x) / sizeof(bt32bitCSR))
+#define QLP_PERF_CACHE_RD_HITS    0
+#define QLP_PERF_CACHE_WR_HITS    1
+#define QLP_PERF_CACHE_RD_MISS    2
+#define QLP_PERF_CACHE_WR_MISS    3
+#define QLP_PERF_EVICTIONS        10
+
+#define CSR_CIPUCTL               0x280
+
+#define CSR_AFU_DSM_BASEL         0x1a00
+#define CSR_AFU_DSM_BASEH         0x1a04
+#define CSR_SRC_ADDR              0x1a20
+#define CSR_DST_ADDR              0x1a24
+#define CSR_NUM_LINES             0x1a28
+#define CSR_CTL                   0x1a2c
+#define CSR_CFG                   0x1a34
+
+#define DSM_STATUS_TEST_COMPLETE  0x40
+#define DSM_STATUS_TEST_ERROR     0x44
+#define DSM_STATUS_NUM_CLOCKS     0x48
+#define DSM_STATUS_NUM_READS      0x50
+#define DSM_STATUS_NUM_WRITES     0x54
+#define DSM_STATUS_START_OVERHEAD 0x58
+#define DSM_STATUS_END_OVERHEAD   0x5c
+#define DSM_STATUS_MODE_ERROR_0   0x60
+
+#define DSM_STATUS_ERROR_REGS     8
+
+#define CSR_OFFSET(x)             ((x) / sizeof(bt32bitCSR))
 
 class INLB
 {
 public:
    virtual ~INLB() {}
-   virtual btInt RunTest() = 0;
+   virtual btInt RunTest(btWSSize wssize) = 0;
+
+   std::string ReadBandwidth()  const { return m_RdBw; }
+   std::string WriteBandwidth() const { return m_WrBw; }
 
 protected:
    INLB(CMyApp *pMyApp) :
@@ -507,21 +537,39 @@ protected:
    {
       ASSERT(NULL != m_pMyApp);
       ASSERT(NULL != m_pCCIAFU);
+
+      btInt i;
+      for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
+         m_QLPCounters[i] = 0;
+         m_SavedQLPCounters[i] = 0;
+      }
    }
 
-   CMyApp  *m_pMyApp;
-   ICCIAFU *m_pCCIAFU;
+   btInt ResetHandshake();
+   btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize);
+
+   void       ReadQLPCounters();
+   void       SaveQLPCounters();
+   bt32bitCSR   GetQLPCounter(btUnsignedInt ) const;
+
+   std::string  CalcReadBandwidth();
+   std::string CalcWriteBandwidth();
+
+   CMyApp     *m_pMyApp;
+   ICCIAFU    *m_pCCIAFU;
+   bt32bitCSR  m_QLPCounters[QLP_NUM_COUNTERS];
+   bt32bitCSR  m_SavedQLPCounters[QLP_NUM_COUNTERS];
+   std::string m_RdBw;
+   std::string m_WrBw;
 };
 
-#define LPBK1_DSM_SIZE    MB(4)
-#define LPBK1_BUFFER_SIZE MB(2)
 class CNLBLpbk1 : public INLB
 {
 public:
    CNLBLpbk1(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest();
+   virtual btInt RunTest(btWSSize wssize);
 };
 
 class CNLBRead : public INLB
@@ -530,7 +578,7 @@ public:
    CNLBRead(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest();
+   virtual btInt RunTest(btWSSize wssize);
 };
 
 class CNLBWrite : public INLB
@@ -539,7 +587,7 @@ public:
    CNLBWrite(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest();
+   virtual btInt RunTest(btWSSize wssize);
 };
 
 class CNLBTrput : public INLB
@@ -548,7 +596,7 @@ public:
    CNLBTrput(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest();
+   virtual btInt RunTest(btWSSize wssize);
 };
 
 inline std::ostream & PASS(std::ostream &os)
@@ -594,7 +642,8 @@ int main(int argc, char *argv[])
       return 3;
    }
 
-   cout << "Intel FPGA Installation Test:" << endl;
+   cout << endl
+        << "Intel QuickAssist FPGA Installation Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;
@@ -644,15 +693,13 @@ int main(int argc, char *argv[])
    // Run NLB Lpbk1, which performs sw data verification.
    CNLBLpbk1 nlblpbk1(&myapp);
 
-   cout << "* Data Copy ";
-   res = nlblpbk1.RunTest();
+   cout << " * Data Copy ";
+   res = nlblpbk1.RunTest(MAX_NLB_LPBK1_WKSPC);
    totalres += res;
    if ( 0 == res ) {
-      cout << PASS << "PASSED";
-
+      cout << PASS << "VERIFIED";
    } else {
-      cout << FAIL << "FAILED";
-
+      cout << FAIL << "ERROR";
    }
    cout << NORMAL << endl;
 
@@ -661,16 +708,13 @@ int main(int argc, char *argv[])
    // * report read bandwidth in GiB/s
    CNLBRead nlbread(&myapp);
 
-   cout << "* Read Bandwidth from Memory ";
-   res = nlbread.RunTest();
+   cout << " * Read Bandwidth from Memory ";
+   res = nlbread.RunTest(MAX_NLB_READ_WKSPC);
    totalres += res;
    if ( 0 == res ) {
-
-
+      cout << PASS << nlbread.ReadBandwidth();
    } else {
-      cout << FAIL << "FAILED";
-
-
+      cout << FAIL << "ERROR";
    }
    cout << NORMAL << endl;
 
@@ -679,15 +723,13 @@ int main(int argc, char *argv[])
    // * report write bandwidth in GiB/s
    CNLBWrite nlbwrite(&myapp);
 
-   cout << "* Write Bandwidth to Memory ";
-   res = nlbwrite.RunTest();
+   cout << " * Write Bandwidth to Memory ";
+   res = nlbwrite.RunTest(MAX_NLB_WRITE_WKSPC);
    totalres += res;
    if ( 0 == res ) {
-
-
+      cout << PASS << nlbwrite.WriteBandwidth();
    } else {
-      cout << FAIL << "FAILED";
-
+      cout << FAIL << "ERROR";
    }
    cout << NORMAL << endl;
 
@@ -695,17 +737,16 @@ int main(int argc, char *argv[])
    // * report bandwidth in GiB/s
    CNLBTrput nlbtrput(&myapp);
 
-   cout << "* Simultaneous Read/Write Bandwidth ";
-   res = nlbtrput.RunTest();
+   cout << " * Simultaneous Read/Write Bandwidth ";
+   res = nlbtrput.RunTest(MAX_NLB_TRPUT_WKSPC);
    totalres += res;
    if ( 0 == res ) {
-
-
+      cout << PASS << nlbtrput.ReadBandwidth() << " / " << nlbtrput.WriteBandwidth();
    } else {
-      cout << FAIL << "FAILED";
-
+      cout << FAIL << "ERROR";
    }
-   cout << NORMAL << endl;
+   cout << NORMAL << endl
+        << endl;
 
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
@@ -719,13 +760,252 @@ int main(int argc, char *argv[])
    return totalres;
 }
 
-btInt CNLBLpbk1::RunTest()
+btInt INLB::ResetHandshake()
+{
+   btInt      res = 0;
+   btCSRValue csr;
+
+   volatile btVirtAddr pDSMUsrVirt = m_pMyApp->DSMVirt();
+
+   // zero the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+
+   // Assert CAFU Reset
+   csr = 0;
+   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
+   csr |= 0x01000000;
+   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
+
+   // De-assert CAFU Reset
+   csr = 0;
+   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
+   csr &= ~0x01000000;
+   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
+
+   // Set DSM base, high then low
+   m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+
+   // Poll for AFU ID
+   do
+   {
+      csr = *(volatile bt32bitCSR *)pDSMUsrVirt;
+   }while( 0 == csr );
+
+   btUnsigned32bitInt *AFUID = (btUnsigned32bitInt *)pDSMUsrVirt;
+
+   // c000c9660d8242729aeffe5f84570612
+
+   ASSERT(0x84570612 == AFUID[0]);
+   if ( 0x84570612 != AFUID[0] ) {
+      ++res;
+   }
+
+   ASSERT(0x9aeffe5f == AFUID[1]);
+   if ( 0x9aeffe5f != AFUID[1] ) {
+      ++res;
+   }
+
+   ASSERT(0x0d824272 == AFUID[2]);
+   if ( 0x0d824272 != AFUID[2] ) {
+      ++res;
+   }
+
+   ASSERT(0xc000c966 == AFUID[3]);
+   if ( 0xc000c966 != AFUID[3] ) {
+      ++res;
+   }
+
+   return res;
+}
+
+btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize)
 {
    btInt res = 0;
 
-   m_pCCIAFU->WorkspaceAllocate(LPBK1_DSM_SIZE,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   const btUnsigned32bitInt CoolOffData = 0xc001c001;
+
+   volatile btUnsigned32bitInt *pCoolOff    = (volatile btUnsigned32bitInt *)CoolVirt;
+   volatile btUnsigned32bitInt *pEndCoolOff = (volatile btUnsigned32bitInt *)pCoolOff +
+                                     (CoolSize / sizeof(btUnsigned32bitInt));
+
+   for ( ; pCoolOff < pEndCoolOff ; ++pCoolOff ) {
+      *pCoolOff = CoolOffData;
+   }
+
+   volatile btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   // Assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+   // Clear the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+
+   // De-assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+   // Set input workspace address
+   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(CoolPhys));
+
+   // Set the number of cache lines for the test
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, CoolSize / CL(1));
+
+   // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
+
+   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                    (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   // Start the test
+   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+
+   // Wait for test completion
+   while( 0 == *StatusAddr ) {
+      SleepMicro(100);
+   }
+
+
+   // Check the device status
+   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
+      ++res;
+   }
+
+   // Clean up..
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+   return res;
+}
+
+void INLB::ReadQLPCounters()
+{
+   btCSRValue perf[2];
+   btCSRValue i;
+
+   for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
+      switch ( i ) {
+         case QLP_PERF_CACHE_RD_HITS : // FALL THROUGH
+         case QLP_PERF_CACHE_WR_HITS : // FALL THROUGH
+         case QLP_PERF_CACHE_RD_MISS : // FALL THROUGH
+         case QLP_PERF_CACHE_WR_MISS : // FALL THROUGH
+         case QLP_PERF_EVICTIONS     : {
+
+            perf[0] = 0;
+            perf[1] = 0;
+
+            m_pCCIAFU->CSRWrite(QLP_CSR_ADDR_PERF1C, i);
+            m_pCCIAFU->CSRRead(QLP_CSR_ADDR_PERF1, &perf[0]);
+
+            m_pCCIAFU->CSRWrite(QLP_CSR_ADDR_PERF1C, (btCSRValue)(1 << 31) | i);
+            m_pCCIAFU->CSRRead(QLP_CSR_ADDR_PERF1, &perf[1]);
+
+            m_QLPCounters[i] = perf[0] + perf[1];
+
+         } break;
+
+         default: break;
+      }
+   }
+}
+
+void INLB::SaveQLPCounters()
+{
+   btCSRValue i;
+   for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
+      m_SavedQLPCounters[i] = m_QLPCounters[i];
+   }
+}
+
+bt32bitCSR INLB::GetQLPCounter(btUnsignedInt i) const
+{
+   switch ( i ) {
+      case QLP_PERF_CACHE_RD_HITS : // FALL THROUGH
+      case QLP_PERF_CACHE_WR_HITS : // FALL THROUGH
+      case QLP_PERF_CACHE_RD_MISS : // FALL THROUGH
+      case QLP_PERF_CACHE_WR_MISS : // FALL THROUGH
+      case QLP_PERF_EVICTIONS     : return m_QLPCounters[i] - m_SavedQLPCounters[i];
+
+      default : return 0;
+   }
+}
+
+std::string INLB::CalcReadBandwidth()
+{
+   const btUnsigned32bitInt clockfreq = 200 * 1000000;
+   const double             giga      = 1000.0 * 1000.0 * 1000.0;
+
+   btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   bt64bitCSR rawticks     = * ( (bt64bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_CLOCKS) );
+
+   bt32bitCSR startpenalty = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_START_OVERHEAD) );
+   bt32bitCSR endpenalty   = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_END_OVERHEAD) );
+
+   bt32bitCSR rds          = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_READS) );
+
+   bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+
+   const double Rds   = (double)rds;
+   const double Ticks = (double)ticks;
+   const double Hz    = (double)clockfreq;
+
+   double bw = (Rds * (CL(1) * Hz)) / Ticks;
+
+   bw /= giga;
+
+   std::ostringstream oss;
+
+   oss.precision(3);
+   oss.setf(std::ios::fixed, std::ios::floatfield);
+
+   oss << bw << " GiB/s";
+
+   return oss.str();
+}
+
+std::string INLB::CalcWriteBandwidth()
+{
+   const btUnsigned32bitInt clockfreq = 200 * 1000000;
+   const double             giga      = 1000.0 * 1000.0 * 1000.0;
+
+   btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   bt64bitCSR rawticks     = * ( (bt64bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_CLOCKS) );
+
+   bt32bitCSR startpenalty = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_START_OVERHEAD) );
+   bt32bitCSR endpenalty   = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_END_OVERHEAD) );
+
+   bt32bitCSR wrs          = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_WRITES) );
+
+   bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+
+   const double Wrs   = (double)wrs;
+   const double Ticks = (double)ticks;
+   const double Hz    = (double)clockfreq;
+
+   double bw = (Wrs * (CL(1) * Hz)) / Ticks;
+
+   bw /= giga;
+
+   std::ostringstream oss;
+
+   oss.precision(3);
+   oss.setf(std::ios::fixed, std::ios::floatfield);
+
+   oss << bw << " GiB/s";
+
+   return oss.str();
+}
+
+btInt CNLBLpbk1::RunTest(btWSSize wssize)
+{
+   btInt res = 0;
+
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    m_pMyApp->ClientWait();
@@ -756,48 +1036,15 @@ btInt CNLBLpbk1::RunTest()
 
    volatile btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
 
-   // zero the DSM
-   ::memset((void *)pDSMUsrVirt, 0, m_pMyApp->DSMSize());
-
-   btCSRValue i;
-   btCSRValue csr;
-
-   // Assert CAFU Reset
-   csr = 0;
-   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr |= 0x01000000;
-   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
-
-   // De-assert CAFU Reset
-   csr = 0;
-   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr &= ~0x01000000;
-   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
-
-   // Set DSM base, high then low
-   m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
-
-   // Poll for AFU ID
-   do
-   {
-      csr = *(volatile bt32bitCSR *)pDSMUsrVirt;
-   }while( 0 == csr );
-
-   // Print the AFU ID
-   std::ostringstream oss;
-
-   for ( i = 0 ; i < 4 ; ++i ) {
-      oss << std::setw(8) << std::hex << std::setfill('0')
-          << *(btUnsigned32bitInt *)(pDSMUsrVirt + (3 - i) * sizeof(btUnsigned32bitInt));
+   if ( 0 != ResetHandshake() ) {
+      return 1;
    }
-
-   INFO("AFU ID=" << oss.str());
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
-   // Clear the DSM
-   ::memset((void *)pDSMUsrVirt, 0, m_pMyApp->DSMSize());
+   // Clear the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
 
    // De-assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 1);
@@ -809,10 +1056,10 @@ btInt CNLBLpbk1::RunTest()
    m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the number of cache lines for the test
-   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_LPBK1);
 
 
    volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
@@ -828,13 +1075,13 @@ btInt CNLBLpbk1::RunTest()
    }
 
    // Verify the buffers
-   if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, LPBK1_BUFFER_SIZE) != 0 ) {
-      res = 1;
+   if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, wssize) != 0 ) {
+      ++res;
    }
 
    // Verify the device
    if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
-      res = 1;
+      ++res;
    }
 
    // Clean up..
@@ -858,22 +1105,313 @@ btInt CNLBLpbk1::RunTest()
    return res;
 }
 
-btInt CNLBRead::RunTest()
+btInt CNLBRead::RunTest(btWSSize wssize)
 {
+   btInt res = 0;
 
-   return 1;
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+
+   // Overloading the "output" workspace here to be the buffer we use to cool down the cache.
+   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_READ_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+
+   // Synchronize with the workspace allocation event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace allocation failed");
+      return 1;
+   }
+
+   const btUnsigned32bitInt ReadBufData = 0xc0cac01a;
+
+   volatile btVirtAddr pInputUsrVirt = m_pMyApp->InputVirt();
+
+   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
+   volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
+                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+
+   for ( ; pInput < pEndInput ; ++pInput ) {
+      *pInput = ReadBufData;
+   }
+
+   volatile btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   btVirtAddr pCoolOffUsrVirt = m_pMyApp->OutputVirt();
+
+   if ( 0 != ResetHandshake() ) {
+      return 1;
+   }
+
+   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
+      return 1;
+   }
+
+   if ( 0 != ResetHandshake() ) {
+      return 1;
+   }
+
+   ReadQLPCounters();
+   SaveQLPCounters();
+
+   // Assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+   // Clear the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+
+   // De-assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+   // Set input workspace address
+   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+
+   // Set the number of cache lines for the test
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
+
+   // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
+
+
+   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                    (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   // Start the test
+   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+
+   // Wait for test completion
+   while( 0 == *StatusAddr ) {
+      SleepMicro(100);
+   }
+
+   ReadQLPCounters();
+
+   // Check the device status
+   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
+      ++res;
+   }
+
+   // Clean up..
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+   m_RdBw = CalcReadBandwidth();
+
+
+   // Release the Workspaces
+   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,   TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree(pDSMUsrVirt,     TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+
+   // Synchronize with the workspace free event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace free failed");
+      return 1;
+   }
+
+   return res;
 }
 
-btInt CNLBWrite::RunTest()
+btInt CNLBWrite::RunTest(btWSSize wssize)
 {
+   btInt res = 0;
 
-   return 1;
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+
+   // Overloading the "input" workspace here to be the buffer we use to cool down the cache.
+   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_WRITE_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+
+   // Synchronize with the workspace allocation event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace allocation failed");
+      return 1;
+   }
+
+   volatile btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   btVirtAddr pCoolOffUsrVirt = m_pMyApp->InputVirt();
+   btVirtAddr pOutputUsrVirt  = m_pMyApp->OutputVirt();
+
+   // Zero the dest buffer.
+   ::memset((void*)pOutputUsrVirt, 0, m_pMyApp->OutputSize());
+
+   if ( 0 != ResetHandshake() ) {
+      return 1;
+   }
+
+   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize()) ) {
+      return 1;
+   }
+
+   if ( 0 != ResetHandshake() ) {
+      return 1;
+   }
+
+   ReadQLPCounters();
+   SaveQLPCounters();
+
+   // Assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+   // Clear the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+
+   // De-assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+   // Set output workspace address
+   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+
+   // Set the number of cache lines for the test
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
+
+   // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE);
+
+
+   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                    (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   // Start the test
+   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+
+   // Wait for test completion
+   while( 0 == *StatusAddr ) {
+      SleepMicro(100);
+   }
+
+   ReadQLPCounters();
+
+   // Check the device status
+   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
+      ++res;
+   }
+
+   // Clean up..
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+   m_WrBw = CalcWriteBandwidth();
+
+
+   // Release the Workspaces
+   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree(pDSMUsrVirt,     TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+
+   // Synchronize with the workspace free event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace free failed");
+      return 1;
+   }
+
+   return res;
 }
 
-btInt CNLBTrput::RunTest()
+btInt CNLBTrput::RunTest(btWSSize wssize)
 {
+   btInt res = 0;
 
-   return 1;
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+
+   // Synchronize with the workspace allocation event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace allocation failed");
+      return 1;
+   }
+
+   btVirtAddr pInputUsrVirt  = m_pMyApp->InputVirt();
+   btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
+
+   volatile btVirtAddr pDSMUsrVirt  = m_pMyApp->DSMVirt();
+
+   if ( 0 != ResetHandshake() ) {
+      return 1;
+   }
+
+   ReadQLPCounters();
+   SaveQLPCounters();
+
+   // Assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+   // Clear the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+
+   // De-assert Device Reset
+   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+   // Set input workspace address
+   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+
+   // Set output workspace address
+   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+
+   // Set the number of cache lines for the test
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
+
+   // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_TRPUT);
+
+
+   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                    (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   // Start the test
+   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+
+   // Wait for test completion
+   while( 0 == *StatusAddr ) {
+      SleepMicro(100);
+   }
+
+   ReadQLPCounters();
+
+   // Check the device status
+   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
+      ++res;
+   }
+
+   // Clean up..
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+   m_RdBw = CalcReadBandwidth();
+   m_WrBw = CalcWriteBandwidth();
+
+
+   // Release the Workspaces
+   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree(pDSMUsrVirt,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+
+   // Synchronize with the workspace free event notifications.
+   m_pMyApp->ClientWait();
+
+   if ( !m_pMyApp->ClientOK() ) {
+      ERR("Workspace free failed");
+      return 1;
+   }
+
+   return res;
 }
 
 #if 0

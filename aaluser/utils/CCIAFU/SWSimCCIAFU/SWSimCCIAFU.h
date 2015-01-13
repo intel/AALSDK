@@ -152,7 +152,12 @@ protected:
    typedef csr_map::const_iterator                 csr_const_iter;
 
    btPhysAddr NextPhys();
-   void       Simulator(CSR CurrWrite);
+   void       SimulatorRead(CSR csr);
+   void       SimulatorWrite(CSR csr);
+   void       SimLpbk1();
+   void       SimRead();
+   void       SimWrite();
+   void       SimTrput();
 
    btPhysAddr        m_NextPhys;
 #if defined ( __AAL_WINDOWS__ )
@@ -162,10 +167,11 @@ protected:
    virt_to_alloc_map m_VirtMap;
    phys_to_alloc_map m_PhysMap;
    csr_map           m_CSRMap;
-   CSR               m_LastCSRWrite;
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
+   CSR               m_LastCSRWrite;
+   btCSRValue        m_PerfCounters[11];
 };
 
 inline std::ostream & operator << (std::ostream &os, const SWSimCCIAFU::WkspcAlloc &a)
