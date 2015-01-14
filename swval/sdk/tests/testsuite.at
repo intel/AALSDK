@@ -1,0 +1,19 @@
+# Process this file with autom4te to create testsuite. -*- Autotest -*-
+
+# Test suite for @PACKAGE@.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+# Standalone (no test harness) tests
+m4_include([standalone/standalone.at])
+
+# Harnessed test cases
+m4_include([harnessed/harnessed.at])
+
+# coverage analysis
+#m4_include([coverage/coverage.at])
+
+# profiling
+#m4_include([profile/profile.at])
+
+# memory error detection
+# m4_include([memory/memory.at])

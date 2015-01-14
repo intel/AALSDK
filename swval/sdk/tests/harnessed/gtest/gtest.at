@@ -1,0 +1,36 @@
+# Google Tests -*- Autotest -*-
+
+AT_BANNER([[gtest - Basic Acceptance Tests]])
+
+AT_SETUP([BAT])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes])
+AT_CHECK([bat], [0], [ignore], [ignore])
+AT_CLEANUP
+
+# ################################################################################
+
+AT_BANNER([[gtest - Nightly Test Suite]])
+
+AT_SETUP([Nightly])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_nightly}" != "x:"])
+AT_CHECK([nightly], [0], [ignore], [ignore])
+AT_CLEANUP
+
+# ################################################################################
+
+AT_BANNER([[gtest - Weekly Test Suite]])
+
+AT_SETUP([Weekly])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_weekly}" != "x:"])
+AT_CHECK([weekly], [0], [ignore], [ignore])
+AT_CLEANUP
+
+
+dnl AT_BANNER([[gtest - XL Runtime]])
+
+dnl AT_SETUP([Runtime Start Stress])
+dnl AT_SKIP_IF([test "x${WITH_GTEST}" != xyes])
+dnl AT_SKIP_IF([test "x${at_arg_aal_xlstress_iters}" = 'x0'])
+dnl AT_CHECK([echo 'iters=${at_arg_aal_xlstress_iters}' && bat --gtest_filter="*XLStartup*" --gtest_repeat=${at_arg_aal_xlstress_iters} >/dev/null 2>&1], [0], [ignore], [ignore])
+dnl AT_CLEANUP
+
