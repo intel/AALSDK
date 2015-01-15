@@ -8,26 +8,33 @@ declare -r SCRIPT_NAME='create-dist'
 declare -r SAMPLES_VERSION='4.2.0'
 declare -r    DOCS_VERSION='4.2.0'
 
+die() {
+   printf "%s\n" ${1+"$@"}
+   exit 13
+}
+
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
-[ "x${AUTORECONF}" = x ] && exit 20
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
 declare -r CP="`which cp`" 2>/dev/null
-[ "x${CP}" = x ] && exit 21
+[ "x${CP}" = x ] && die "no cp?"
 declare -r FIND="`which find`" 2>/dev/null
-[ "x${FIND}" = x ] && exit 22
+[ "x${FIND}" = x ] && die "no find?"
 declare -r GIT="`which git`" 2>/dev/null
-[ "x${GIT}" = x ] && exit 23
+[ "x${GIT}" = x ] && die "no git?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
 declare -r MAKE="`which make`" 2>/dev/null
-[ "x${MAKE}" = x ] && exit 24
+[ "x${MAKE}" = x ] && die "no make?"
 declare -r MKDIR="`which mkdir`" 2>/dev/null
-[ "x${MKDIR}" = x ] && exit 25
+[ "x${MKDIR}" = x ] && die "no mkdir?"
 declare -r MKTEMP="`which mktemp`" 2>/dev/null
-[ "x${MKTEMP}" = x ] && exit 26
+[ "x${MKTEMP}" = x ] && die "no mktemp?"
 declare -r MV="`which mv`" 2>/dev/null
-[ "x${MV}" = x ] && exit 27
+[ "x${MV}" = x ] && die "no mv?"
 declare -r RM="`which rm`" 2>/dev/null
-[ "x${RM}" = x ] && exit 28
+[ "x${RM}" = x ] && die "no rm?"
 declare -r TAR="`which tar`" 2>/dev/null
-[ "x${TAR}" = x ] && exit 29
+[ "x${TAR}" = x ] && die "no tar?"
 
 set -e
 
@@ -187,6 +194,30 @@ create_docs_dist() {
 }
 
 main() {
+   local -r d="${PWD}"
+
+   # Are we in the right dir?
+   [ -d "$d/aaluser" ] || die "aaluser not found."
+   [ -d "$d/aalkernel" ] || die "aalkernel not found."
+   [ -d "$d/common_hdrs" ] || die "common_hdrs not found."
+
+   for x in "$d/aaluser" \
+            "$d/aalkernel"
+   do
+
+      # Make sure the symlinks to common_hdrs exist.
+      if [ -e "$x/include/aalsdk/kernel" ]; then
+         if ! [ -L "$x/include/aalsdk/kernel" ]; then
+            die "$x/include/aalsdk/kernel exists, but is not a symbolic link."
+         fi
+      else
+         pushd "$x/include/aalsdk" >/dev/null 2>&1
+         ${LN} -s ../../../common_hdrs kernel
+         popd >/dev/null 2>&1
+      fi
+
+   done
+
    create_kernel_dist
    create_user_dist
    create_samples_dist
