@@ -35,3 +35,6 @@ ylwrap
 # eclipse cdt project files
 .cproject
 .project
+
+# symlinks we must ignore
+kernel
