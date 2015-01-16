@@ -3,6 +3,7 @@
 AT_BANNER([[OSAL_TestSem]])
 
 AT_SETUP([Sem checkout])
+AT_SKIP_IF([test "x${at_arg_standalone}" != "x:"])
 AT_CHECK([OSAL_TestSem], [0], [ignore], [ignore])
 AT_CLEANUP
 

@@ -1,0 +1,112 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+die() {
+   printf "die: %s\n" ${1+"$@"}
+   exit 13
+}
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = x ] && die "no git?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = x ] && die "no make?"
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = x ] && die "no mkdir?"
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" = x ] && die "no mktemp?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = x ] && die "no rm?"
+
+set -e
+
+declare VPATH=''
+
+on_exit() {
+   local -r remove=false
+   if ${remove} ; then
+      [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+declare TS=''
+
+setup() {
+   # This script is located in swval/sdk/scripts
+   local -r srcdir="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   local -r gitdir="${reporoot}/.git"
+
+   TS="${srcdir}/tests/testsuite"
+
+   # Make sure we're being run from the right place.
+   [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
+
+   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+
+   VPATH="${PWD}/testvpath.${git_commit_hash:0:7}"
+   [ -d "${VPATH}" ] || ${MKDIR} -p "${VPATH}"
+
+   if ! [ -f "${TS}" ] || ! [ -f "${VPATH}/Makefile" ]; then
+      # Make sure that the symlinks to common_hdrs exist.
+      for x in "${reporoot}/aaluser/include/aalsdk" \
+               "${reporoot}/aalkernel/include/aalsdk"
+      do
+         if ! [ -L "$x/kernel" ]; then
+            pushd "$x" >/dev/null 2>&1
+            ${LN} -s "../../../common_hdrs" kernel
+            popd >/dev/null 2>&1
+         fi
+      done
+
+      if ! [ -f "${srcdir}/configure" ]; then
+         pushd "${srcdir}" >/dev/null 2>&1
+         ${AUTORECONF} -vi
+         popd >/dev/null 2>&1
+      fi
+
+      pushd "${VPATH}" >/dev/null 2>&1
+
+      ${srcdir}/configure
+      ${MAKE}
+      ${MAKE} check
+
+      popd >/dev/null 2>&1
+
+      [ -f "${TS}" ] || die "Something really bad happended."
+   fi
+
+   printf "\n"
+   printf "%s\n" "${git_commit_hash}"
+}
+setup
+
+run_standalone() {
+   ${TS} -v -C "${VPATH}/tests" --standalone
+   exit $?
+}
+
+run_bat() {
+   ${TS} -v -C "${VPATH}/tests" --bat
+   exit $?
+}
+
+run_nightly() {
+   ${TS} -v -C "${VPATH}/tests" --nightly
+   exit $?
+}
+
+run_weekly() {
+   ${TS} -v -C "${VPATH}/tests" --weekly
+   exit $?
+}
+

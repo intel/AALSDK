@@ -11,11 +11,17 @@ AT_COPYRIGHT([INTEL CONFIDENTIAL - For Intel Internal Use Only])
 dnl AT_ARG_OPTION(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
 dnl AT_ARG_OPTION_ARG(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
 
-AT_ARG_OPTION_ARG([aal-xlstress-iters],
-                  [AS_HELP_STRING([--aal-xlstress-iters], [Iteration count for XL stress tests])],
-                  [],
-                  [at_arg_aal_xlstress_iters=5000])
+AT_ARG_OPTION([standalone],
+              [AS_HELP_STRING([--standalone], [Run standalone tests @<:@default=no@:>@])])
 
+AT_ARG_OPTION([bat],
+              [AS_HELP_STRING([--bat], [Run basic acceptance test suite @<:@default=no@:>@])])
+
+AT_ARG_OPTION([nightly],
+              [AS_HELP_STRING([--nightly], [Run nightly test suite @<:@default=no@:>@])])
+
+AT_ARG_OPTION([weekly],
+              [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
 
 AT_COLOR_TESTS
 
