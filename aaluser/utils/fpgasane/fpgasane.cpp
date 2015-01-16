@@ -452,7 +452,7 @@ struct CMyCmdLine gMyCmdLine =
 {
    0,
    std::string(DEFAULT_TARGET_AFU),
-   LOG_INFO
+   0
 };
 
 int my_on_nix_long_option_only(AALCLP_USER_DEFINED , const char * );
