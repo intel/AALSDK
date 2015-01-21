@@ -116,5 +116,6 @@ run_everything() {
    run_bat        || let $(( ++res ))
    run_nightly    || let $(( ++res ))
    run_weekly     || let $(( ++res ))
+   return ${res}
 }
 
