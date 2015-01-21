@@ -92,21 +92,29 @@ setup
 
 run_standalone() {
    ${TS} -v -C "${VPATH}/tests" --standalone
-   exit $?
+   return $?
 }
 
 run_bat() {
-   ${TS} -v -C "${VPATH}/tests" --bat
-   exit $?
+   ${TS} -v -C "${VPATH}/tests" --bat --gtest-opt=--gtest_color=yes
+   return $?
 }
 
 run_nightly() {
-   ${TS} -v -C "${VPATH}/tests" --nightly
-   exit $?
+   ${TS} -v -C "${VPATH}/tests" --nightly --gtest-opt=--gtest_color=yes
+   return $?
 }
 
 run_weekly() {
-   ${TS} -v -C "${VPATH}/tests" --weekly
-   exit $?
+   ${TS} -v -C "${VPATH}/tests" --weekly --gtest-opt=--gtest_color=yes
+   return $?
+}
+
+run_everything() {
+   local -i res=0
+   run_standalone || let $(( ++res ))
+   run_bat        || let $(( ++res ))
+   run_nightly    || let $(( ++res ))
+   run_weekly     || let $(( ++res ))
 }
 

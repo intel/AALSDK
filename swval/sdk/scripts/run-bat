@@ -8,3 +8,4 @@ declare -r SCRIPT_NAME='run-bat'
 . ./run-common
 
 run_bat
+exit $?

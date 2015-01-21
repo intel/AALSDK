@@ -23,6 +23,11 @@ AT_ARG_OPTION([nightly],
 AT_ARG_OPTION([weekly],
               [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
 
+GTEST_OPTS=
+AT_ARG_OPTION_ARG([gtest-opt],
+                  [AS_HELP_STRING([--gtest-opt], [Pass the given argument when invoking gtest])],
+                  [GTEST_OPTS="${GTEST_OPTS} ${at_arg_gtest_opt}"])
+
 AT_COLOR_TESTS
 
 dnl AT_TESTED([myapp]) dnl list of executables

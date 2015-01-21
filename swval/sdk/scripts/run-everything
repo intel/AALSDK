@@ -3,9 +3,9 @@
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='run-weekly'
+declare -r SCRIPT_NAME='run-everything'
 
 . ./run-common
 
-run_weekly
+run_everything
 exit $?

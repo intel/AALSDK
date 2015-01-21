@@ -8,3 +8,4 @@ declare -r SCRIPT_NAME='run-nightly'
 . ./run-common
 
 run_nightly
+exit $?
