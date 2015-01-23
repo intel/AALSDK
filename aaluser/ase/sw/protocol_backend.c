@@ -321,14 +321,13 @@ int ase_listener()
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
 
       // If in regression mode or SW-simkill mode
-      if ( (cfg->ase_mode == 3) ||
-	   ((cfg->ase_mode == 4) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
+      if (  (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL) ||
+	   ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
 	   )
 	{
 	  printf("\n");
 	  printf("SIM-C : ASE Session Deinitialization was detected... Simulator will EXIT\n");
-	  run_clocks (100);
-	  // sleep(5);
+	  run_clocks (500);
 	  ase_perror_teardown();
 	  start_simkill_countdown();
 	}
@@ -532,7 +531,7 @@ void ase_ready()
   printf("SIM-C : Press CTRL-C to close simulator...\n");
   
   // Run ase_regress.sh here
-  if (cfg->ase_mode == 4) 
+  if (cfg->ase_mode == ASE_MODE_REGRESSION) 
     {
       printf("Starting ase_regress.sh script...\n");
       system("./ase_regress.sh &");  
@@ -710,7 +709,7 @@ void ase_config_parse(char *filename)
   line = malloc(sizeof(char) * 80);
 
   // Default values
-  cfg->ase_mode = 1;
+  cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
@@ -764,41 +763,36 @@ void ase_config_parse(char *filename)
       switch (cfg->ase_mode)
 	{
 	  // Classic Server client mode
-	case 1:
+	case ASE_MODE_DAEMON_NO_SIMKILL:
 	  printf("SIM-C : ASE was started in Mode 1 (Server-Client without SIMKILL)\n");
 	  cfg->ase_timeout = 0;
-	  cfg->enable_sw_simkill = 0;
 	  cfg->ase_num_tests = 0;
 	  break;
 
 	  // Server Client mode with SIMKILL
-	case 2:
+	case ASE_MODE_DAEMON_SIMKILL:
 	  printf("SIM-C : ASE was started in Mode 2 (Server-Client with SIMKILL)\n");
-	  cfg->enable_sw_simkill = 0;
 	  cfg->ase_num_tests = 0;
 	  break;
 
 	  // Long runtime mode (SW kills SIM)
-	case 3:
+	case ASE_MODE_DAEMON_SW_SIMKILL:
 	  printf("SIM-C : ASE was started in Mode 3 (Server-Client with Sw SIMKILL (long runs)\n");
 	  cfg->ase_timeout = 0;
-	  cfg->enable_sw_simkill = 1;
 	  cfg->ase_num_tests = 0;
 	  break;
 
 	  // Regression mode (lets an SH file with
-	case 4:
+	case ASE_MODE_REGRESSION:
 	  printf("SIM-C : ASE was started in Mode 4 (Regression mode)\n");
 	  cfg->ase_timeout = 0;
-	  cfg->enable_sw_simkill = 0;
 	  break;
 
 	  // Illegal modes
 	default:
 	  printf("SIM-C : ASE mode could not be identified, will revert to ASE_MODE = 1 (Server client w/o SIMKILL)\n");
-	  cfg->ase_mode = 1;
+	  cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
 	  cfg->ase_timeout = 0;
-	  cfg->enable_sw_simkill = 0;
 	  cfg->ase_num_tests = 0;
 	}
 
@@ -844,10 +838,10 @@ void ase_config_parse(char *filename)
   printf("        ASE mode                   ... ");
   switch (cfg->ase_mode)
     {
-    case 1: printf("Server-Client mode without SIMKILL\n") ; break ;
-    case 2: printf("Server-Client mode with SIMKILL\n") ; break ;
-    case 3: printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
-    case 4: printf("ASE Regression mode\n") ; break ;
+    case ASE_MODE_DAEMON_NO_SIMKILL : printf("Server-Client mode without SIMKILL\n") ; break ;
+    case ASE_MODE_DAEMON_SIMKILL    : printf("Server-Client mode with SIMKILL\n") ; break ;
+    case ASE_MODE_DAEMON_SW_SIMKILL : printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
+    case ASE_MODE_REGRESSION        : printf("ASE Regression mode\n") ; break ;
     }  
 
   // Inactivity

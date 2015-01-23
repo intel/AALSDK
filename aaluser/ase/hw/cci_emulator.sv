@@ -561,13 +561,10 @@ module cci_emulator();
 	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
 	 cfg.enable_capcm       = cfg_in.enable_capcm     ;
 	 cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
-	 // cfg.enable_ccirules    = cfg_in.enable_ccirules  ;
-	 // cfg.enable_bufferinfo  = cfg_in.enable_bufferinfo;
-	 // cfg.enable_asedbgdump  = cfg_in.enable_asedbgdump;
       end
    endtask
 
-
+   
    /*
     * Count Valid signals
     */

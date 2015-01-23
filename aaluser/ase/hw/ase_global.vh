@@ -187,17 +187,11 @@ typedef struct {
    int         ase_mode;
    int 	       ase_timeout;
    int 	       ase_num_tests;
-   int 	       enable_sw_simkill;
    int 	       enable_reuse_seed;
    int 	       num_umsg_log2;
    int 	       enable_cl_view;
    int 	       enable_capcm;
    int 	       memmap_sad_setting;
-   // int 	       enable_umsg;
-   // int 	       enable_intr;
-   // int 	       enable_ccirules;
-   // int 	       enable_bufferinfo;
-   // int 	       enable_asedbgdump;
 } ase_cfg_t;
 ase_cfg_t cfg;
 

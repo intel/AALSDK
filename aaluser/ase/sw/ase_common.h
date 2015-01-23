@@ -263,6 +263,13 @@ extern "C" {
 #endif
 
 
+/*
+ * ASE Mode macros
+ */
+#define ASE_MODE_DAEMON_NO_SIMKILL   1
+#define ASE_MODE_DAEMON_SIMKILL      2
+#define ASE_MODE_DAEMON_SW_SIMKILL   3
+#define ASE_MODE_REGRESSION          4
 
 /*
  * ASE message queue 
@@ -461,17 +468,11 @@ struct ase_cfg_t
   int ase_mode;
   int ase_timeout;
   int ase_num_tests;
-  int enable_sw_simkill;
   int enable_reuse_seed;
   int num_umsg_log2;
   int enable_cl_view;
   int enable_capcm;
   int memmap_sad_setting;
-  /* int enable_umsg; */
-  /* int enable_intr; */
-  /* int enable_ccirules; */
-  /* int enable_bufferinfo;      // Buffer information */
-  //  int enable_asedbgdump;    // To be used only for USER error reporting (THIS WILL dump a lot of gibberish)
 };
 struct ase_cfg_t *cfg;
 
