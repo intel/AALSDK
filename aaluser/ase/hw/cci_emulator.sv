@@ -54,7 +54,7 @@ module cci_emulator();
     * DPI import/export functions
     */
    // Scope function
-   import "DPI" function void scope_function();
+   import "DPI-C" function void scope_function();
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
@@ -553,16 +553,16 @@ module cci_emulator();
     */
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
-	 cfg.enable_timeout     = cfg_in.enable_timeout   ;
+	 cfg.ase_mode           = cfg_in.ase_mode         ;	 
+	 cfg.ase_timeout        = cfg_in.ase_timeout      ;
+	 cfg.ase_num_tests      = cfg_in.ase_num_tests    ;	 
 	 cfg.enable_reuse_seed  = cfg_in.enable_reuse_seed;
+	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
+	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
 	 cfg.enable_capcm       = cfg_in.enable_capcm     ;
 	 cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
-	 // cfg.enable_umsg        = cfg_in.enable_umsg      ;
-	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
-	 // cfg.enable_intr        = cfg_in.enable_intr      ;
-	 cfg.enable_ccirules    = cfg_in.enable_ccirules  ;
-	 cfg.enable_bufferinfo  = cfg_in.enable_bufferinfo;
-	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
+	 // cfg.enable_ccirules    = cfg_in.enable_ccirules  ;
+	 // cfg.enable_bufferinfo  = cfg_in.enable_bufferinfo;
 	 // cfg.enable_asedbgdump  = cfg_in.enable_asedbgdump;
       end
    endtask
@@ -596,14 +596,18 @@ module cci_emulator();
 	 ase_tx1_wrvalid_cnt = 0;
       end
       else begin
+	 // RX channels
+	 if (rx_c0_cfgvalid)  ase_rx0_cfgvalid_cnt	<= ase_rx0_cfgvalid_cnt + 1;
+	 if (rx_c0_rdvalid)   ase_rx0_rdvalid_cnt	<= ase_rx0_rdvalid_cnt + 1;
+	 if (rx_c0_wrvalid)   ase_rx0_wrvalid_cnt	<= ase_rx0_wrvalid_cnt + 1;
+	 if (rx_c0_umsgvalid) ase_rx0_umsgvalid_cnt     <= ase_rx0_umsgvalid_cnt + 1;
+	 if (rx_c0_intrvalid) ase_rx0_intrvalid_cnt     <= ase_rx0_intrvalid_cnt + 1;	 
+	 if (rx_c1_wrvalid)   ase_rx1_wrvalid_cnt	<= ase_rx1_wrvalid_cnt + 1;
+	 if (rx_c1_intrvalid) ase_rx1_intrvalid_cnt     <= ase_rx1_intrvalid_cnt + 1;	 
 	 // TX channels
-	 if (rx_c0_cfgvalid) ase_rx0_cfgvalid_cnt	<= ase_rx0_cfgvalid_cnt + 1;
-	 if (rx_c0_rdvalid)  ase_rx0_rdvalid_cnt	<= ase_rx0_rdvalid_cnt + 1;
-	 if (rx_c0_wrvalid)  ase_rx0_wrvalid_cnt	<= ase_rx0_wrvalid_cnt + 1;
-	 if (rx_c1_wrvalid)  ase_rx1_wrvalid_cnt	<= ase_rx1_wrvalid_cnt + 1;
-	 // TX channels
-	 if (tx_c0_rdvalid)  ase_tx0_rdvalid_cnt	<= ase_tx0_rdvalid_cnt + 1;
-	 if (tx_c1_wrvalid)  ase_tx1_wrvalid_cnt	<= ase_tx1_wrvalid_cnt + 1;
+	 if (tx_c0_rdvalid)   ase_tx0_rdvalid_cnt	<= ase_tx0_rdvalid_cnt + 1;
+	 if (tx_c1_wrvalid)   ase_tx1_wrvalid_cnt	<= ase_tx1_wrvalid_cnt + 1;
+	 if (tx_c1_intrvalid) ase_tx1_intrvalid_cnt     <= ase_tx1_intrvalid_cnt + 1;	 
       end
    end
 
@@ -1269,7 +1273,7 @@ module cci_emulator();
 
    // Inactivity management - killswitch
    always @(posedge clk) begin
-      if((inactivity_found==1'b1) && (cfg.enable_timeout != 0)) begin
+      if((inactivity_found==1'b1) && (cfg.ase_timeout != 0)) begin
 	 $display("SIM-SV: Inactivity timeout reached !!\n");
 	 start_simkill_countdown();
       end
@@ -1286,7 +1290,7 @@ module cci_emulator();
       .rst          ( first_transaction_seen && any_valid ),
       .cnt_en       (1'b1),
       .load_cnt     (32'b0),
-      .max_cnt      (cfg.enable_timeout),
+      .max_cnt      (cfg.ase_timeout),
       .count_out    (inactivity_counter),
       .terminal_cnt (inactivity_found)
       );
@@ -1426,11 +1430,11 @@ module cci_emulator();
 
 
    // Initial message
-   initial begin
-      if (cfg.enable_ccirules) begin
-	 $display("SIM-SV: CCI Signal rule-checker is watching for 'X' and 'Z'");
-      end
-   end
+   // initial begin
+   //    if (cfg.enable_ccirules) begin
+   // 	 $display("SIM-SV: CCI Signal rule-checker is watching for 'X' and 'Z'");
+   //    end
+   // end
 
    // CCI Rules Checker: Checking CCI for 'X' and 'Z' endorsed by valid signal
    cci_rule_checker
@@ -1442,7 +1446,7 @@ module cci_emulator();
    cci_rule_checker
      (
       // Enable
-      .enable          (cfg.enable_ccirules[0]),
+      .enable          (1'b1),  // (cfg.enable_ccirules[0]),
       // CCI signals
       .clk             (clk),
       .resetb          (sys_reset_n),

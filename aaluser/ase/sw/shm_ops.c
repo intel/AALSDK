@@ -42,9 +42,9 @@ mqd_t app2sim_umsg_tx;      // UMSG MQ in TX mode
 mqd_t sim2app_intr_rx;      // INTR MQ in RX mode
 mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
 
-#ifndef SIM_SIDE
-int ase_pid;
-#endif
+/* #ifndef SIM_SIDE */
+/* int ase_pid; */
+/* #endif */
 
 // CSR Map
 uint32_t csr_map[CSR_MAP_SIZE/4];
@@ -72,11 +72,11 @@ struct buffer_t *csr_region;
  */
 void send_simkill()
 {
-#ifdef UNIFIED_FLOW
+  //#ifdef UNIFIED_FLOW
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
-#endif
+  // #endif
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
@@ -96,7 +96,9 @@ void session_init()
   /*
    * Testing remote spawn & startup code
    */
-#ifdef UNIFIED_FLOW
+
+#if 0
+  // #ifdef UNIFIED_FLOW
   // char stat_msg[ASE_MQ_MSGSIZE];
   int wait_iter;
   char *ready_path;
@@ -129,6 +131,7 @@ void session_init()
   fclose(fp);
 
   printf("  [APP]  Got simulator PID = %d\n", ase_pid);
+#endif
 
   // Register kill signals
   signal(SIGTERM, send_simkill);
@@ -136,7 +139,6 @@ void session_init()
   signal(SIGQUIT, send_simkill);
   signal(SIGKILL, send_simkill); // *FIXME*: This possibly doesnt work // 
   signal(SIGHUP,  send_simkill);
-#endif
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Initializing simulation session ... ");
@@ -206,11 +208,11 @@ void session_deinit()
   END_YELLOW_FONTCOLOR;
 
   // Send SIMKILL
-#ifdef UNIFIED_FLOW
+  // #ifdef UNIFIED_FLOW
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
-#endif
+  // #endif
 
   mqueue_close(app2sim_csr_wr_tx);
   mqueue_close(app2sim_tx);

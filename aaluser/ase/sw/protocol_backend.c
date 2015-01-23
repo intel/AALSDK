@@ -47,6 +47,9 @@ mqd_t app2sim_umsg_rx;      // UMSG    message queue in RX mode
 mqd_t app2sim_simkill_rx;   // app2sim message queue in RX mode
 mqd_t sim2app_intr_tx;      // sim2app message queue in TX mode
 
+// Global test complete counter
+// Keeps tabs of how many session_deinits were received
+int glbl_test_cmplt_cnt;
 
 /*
  * Generate scope data
@@ -314,6 +317,13 @@ int ase_listener()
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==1)
     {
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
+      // Update regression counter
+      glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
+
+      // If in regression mode or SW-simkill mode
+      if ( (cfg->ase_mode == 3) ||
+	   ((cfg->ase_mode == 4) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
+	   )
 	{
 	  printf("\n");
 	  printf("SIM-C : ASE Session Deinitialization was detected... Simulator will EXIT\n");
@@ -474,21 +484,20 @@ void ase_init()
   srand ( ase_addr_seed );
 
   FUNC_CALL_EXIT;
-
-  //  return 0;
 }
 
 
 // -----------------------------------------------------------------------
-// ASE is ready indicator:  Print a message that ASE is ready to go.
-// If CAPCM takes longer to allocate than normal or fails, there can
-// be a case when the software application might start off, and create
-// an unknown state in ASE. This is undesirable.
+// ASE ready indicator:  Print a message that ASE is ready to go.
+// Controls run-modes
 // -----------------------------------------------------------------------
 void ase_ready()
 {
   char *tstamp_env;
   tstamp_env = malloc(80);
+
+  // Set test_cnt to 0
+  glbl_test_cmplt_cnt = 0;
 
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
@@ -508,7 +517,7 @@ void ase_ready()
   signal(SIGTERM, start_simkill_countdown);
   signal(SIGINT , start_simkill_countdown);
   signal(SIGQUIT, start_simkill_countdown);
-  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work // 
+  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
   signal(SIGHUP,  start_simkill_countdown);
 
   // Get PID
@@ -521,8 +530,13 @@ void ase_ready()
   fclose(ase_ready_fd);
 
   printf("SIM-C : Press CTRL-C to close simulator...\n");
-
-  //  return 0;
+  
+  // Run ase_regress.sh here
+  if (cfg->ase_mode == 4) 
+    {
+      printf("Starting ase_regress.sh script...\n");
+      system("./ase_regress.sh &");  
+    }
 }
 
 
@@ -696,16 +710,13 @@ void ase_config_parse(char *filename)
   line = malloc(sizeof(char) * 80);
 
   // Default values
-  cfg->enable_timeout = 500;
+  cfg->ase_mode = 1;
+  cfg->ase_timeout = 500;
+  cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
   cfg->enable_capcm = 0;
   cfg->memmap_sad_setting = 0;
-  /* cfg->enable_umsg = 0; */
   cfg->num_umsg_log2 = 5;
-  /* cfg->enable_intr = 0; */
-  cfg->enable_ccirules = 1;
-  cfg->enable_bufferinfo = 0;
-  /* cfg->enable_asedbgdump = 0; */
   cfg->enable_cl_view = 1;
 
   // Find ase.cfg OR not
@@ -728,32 +739,69 @@ void ase_config_parse(char *filename)
 	    {
 	      parameter = strtok(line, "=\n");
 	      value = atoi(strtok(NULL, ""));
-	      if (strcmp (parameter,"ENABLE_TIMEOUT") == 0)
-	      	cfg->enable_timeout = value;
+	      if (strcmp (parameter,"ASE_MODE") == 0)
+	      	cfg->ase_mode = value;
+	      else if (strcmp (parameter,"ASE_TIMEOUT") == 0)
+	      	cfg->ase_timeout = value;
+	      else if (strcmp (parameter,"ASE_NUM_TESTS") == 0)
+	      	cfg->ase_num_tests = value;
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
 	      else if (strcmp (parameter,"ENABLE_CAPCM") == 0)
 	      	cfg->enable_capcm = value;
 	      else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0)
 	      	cfg->memmap_sad_setting = value;
-	      /* else if (strcmp (parameter,"ENABLE_UMSG") == 0) */
-	      /* 	cfg->enable_umsg = value; */
 	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0)
 		cfg->num_umsg_log2 = value;
-	      /* else if (strcmp (parameter,"ENABLE_INTR") == 0) */
-	      /* 	cfg->enable_intr = value; */
-	      else if (strcmp (parameter,"ENABLE_CCI_RULES") == 0)
-	      	cfg->enable_ccirules = value;
-	      else if (strcmp (parameter,"ENABLE_BUFFERINFO") == 0)
-		cfg->enable_bufferinfo = value;
-	      /* else if (strcmp (parameter,"ENABLE_ASEDBGDUMP") == 0) */
-	      /* 	cfg->enable_asedbgdump = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
 	      else
-	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified ... DEFAULT applied \n", ASE_CONFIG_FILE, parameter);
+	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
 	    }
 	}
+
+      // ASE mode control
+      switch (cfg->ase_mode)
+	{
+	  // Classic Server client mode
+	case 1:
+	  printf("SIM-C : ASE was started in Mode 1 (Server-Client without SIMKILL)\n");
+	  cfg->ase_timeout = 0;
+	  cfg->enable_sw_simkill = 0;
+	  cfg->ase_num_tests = 0;
+	  break;
+
+	  // Server Client mode with SIMKILL
+	case 2:
+	  printf("SIM-C : ASE was started in Mode 2 (Server-Client with SIMKILL)\n");
+	  cfg->enable_sw_simkill = 0;
+	  cfg->ase_num_tests = 0;
+	  break;
+
+	  // Long runtime mode (SW kills SIM)
+	case 3:
+	  printf("SIM-C : ASE was started in Mode 3 (Server-Client with Sw SIMKILL (long runs)\n");
+	  cfg->ase_timeout = 0;
+	  cfg->enable_sw_simkill = 1;
+	  cfg->ase_num_tests = 0;
+	  break;
+
+	  // Regression mode (lets an SH file with
+	case 4:
+	  printf("SIM-C : ASE was started in Mode 4 (Regression mode)\n");
+	  cfg->ase_timeout = 0;
+	  cfg->enable_sw_simkill = 0;
+	  break;
+
+	  // Illegal modes
+	default:
+	  printf("SIM-C : ASE mode could not be identified, will revert to ASE_MODE = 1 (Server client w/o SIMKILL)\n");
+	  cfg->ase_mode = 1;
+	  cfg->ase_timeout = 0;
+	  cfg->enable_sw_simkill = 0;
+	  cfg->ase_num_tests = 0;
+	}
+
 
       // CAPCM size implementation
       if (cfg->enable_capcm != 0)
@@ -770,27 +818,15 @@ void ase_config_parse(char *filename)
 	}
 
       // UMSG implementation
-      /* if (cfg->enable_umsg != 0) */
-      /* 	{ */
-	  if (cfg->num_umsg_log2 == 0)
-	    {
-	      BEGIN_YELLOW_FONTCOLOR;
-	      printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE);
-	      printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2);
-	      printf("        Setting default NUM_UMSG_LOG2 to default 5\n");
-	      cfg->num_umsg_log2 = 5;
-	      END_YELLOW_FONTCOLOR;
-	    }
-	/* } */
-
-      // If ASE is being debugged, all case debug switches will be ON
-      /* if (cfg->enable_asedbgdump != 0) */
-      /* 	{ */
-      /* 	  cfg->enable_ccirules = 1; */
-      /* 	  cfg->enable_bufferinfo = 1; */
-      /* 	  cfg->enable_cl_view = 1; */
-      /* 	  cfg->enable_asedbgdump = 1; */
-      /* 	} */
+      if (cfg->num_umsg_log2 == 0)
+	{
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE);
+	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2);
+	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n");
+	  cfg->num_umsg_log2 = 5;
+	  END_YELLOW_FONTCOLOR;
+	}
 
       // Close file
       fclose(fp);
@@ -804,12 +840,22 @@ void ase_config_parse(char *filename)
   // Print configurations
   BEGIN_YELLOW_FONTCOLOR;
 
+  // ASE mode
+  printf("        ASE mode                   ... ");
+  switch (cfg->ase_mode)
+    {
+    case 1: printf("Server-Client mode without SIMKILL\n") ; break ;
+    case 2: printf("Server-Client mode with SIMKILL\n") ; break ;
+    case 3: printf("Server-Client mode with SW SIMKILL (long runs)\n") ; break ;
+    case 4: printf("ASE Regression mode\n") ; break ;
+    }  
+
   // Inactivity
-  if (cfg->enable_timeout != 0)
-    printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->enable_timeout);
+  if (cfg->ase_timeout != 0)
+    printf("        Inactivity kill-switch     ... ENABLED after %d clocks \n", cfg->ase_timeout);
   else
     printf("        Inactivity kill-switch     ... DISABLED \n");
-
+  
   // Reuse seed
   if (cfg->enable_reuse_seed != 0)
     printf("        Reuse simulation seed      ... ENABLED \n");
@@ -817,22 +863,7 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... DISABLED \n");
 
   // UMSG
-  // *FIXME*: Check num_umsg_log2, apply default as needed
-  /* if (cfg->enable_umsg != 0) */
-  /*   { */
-  /*     printf("        Unordered message          ... ENABLED     | NUM_UMSG_Log2 = %d (%d UMSGs) \n", cfg->num_umsg_log2, (int)pow((float)2, (float)cfg->num_umsg_log2) ); */
-  /*   } */
-  /* else */
-  /*   printf("        Unordered message          ... DISABLED\n"); */
-
-  // INTR
-  /* if (cfg->enable_intr != 0) */
-  /*   { */
-  /*     printf("        AFU Interrupts             ... ENABLED | Unsupported, setting to 0\n"); */
-  /*     cfg->enable_intr = 0; */
-  /*   } */
-  /* else */
-  /*   printf("        AFU Interrupts             ... DISABLED\n"); */
+  printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2);
 
   // CAPCM
   if (cfg->enable_capcm != 0)
@@ -842,29 +873,11 @@ void ase_config_parse(char *filename)
   else
     printf("        CA Private memory          ... DISABLED\n");
 
-  // CCI Rules
-  if (cfg->enable_ccirules != 0)
-    printf("        ASE CCI Rule checking      ... ENABLED\n");
-  else
-    printf("        ASE CCI Rule checking      ... DISABLED\n");
-
-  // Verbose Buffer info
-  if (cfg->enable_bufferinfo != 0)
-    printf("        Verbose Buffer Info        ... ENABLED\n");
-  else
-    printf("        Verbose Buffer Info        ... DISABLED\n");
-
   // CL view
   if (cfg->enable_cl_view != 0)
     printf("        ASE Transaction view       ... ENABLED\n");
   else
     printf("        ASE Transaction view       ... DISABLED\n");
-
-  // ASE Debug
-  /* if (cfg->enable_asedbgdump != 0) */
-  /*   printf("        ASE Internal debug         ... ENABLED (Use for bug-reports only)\n"); */
-  /* else */
-  /*   printf("        ASE Internal debug         ... DISABLED\n"); */
 
   END_YELLOW_FONTCOLOR;
 

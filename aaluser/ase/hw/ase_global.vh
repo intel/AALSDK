@@ -184,17 +184,20 @@ typedef struct {
  * This will reflect ase.cfg
  */
 typedef struct {
-   int 	       enable_timeout;
+   int         ase_mode;
+   int 	       ase_timeout;
+   int 	       ase_num_tests;
+   int 	       enable_sw_simkill;
    int 	       enable_reuse_seed;
+   int 	       num_umsg_log2;
+   int 	       enable_cl_view;
    int 	       enable_capcm;
    int 	       memmap_sad_setting;
    // int 	       enable_umsg;
-   int 	       num_umsg_log2;
    // int 	       enable_intr;
-   int 	       enable_ccirules;
-   int 	       enable_bufferinfo;
+   // int 	       enable_ccirules;
+   // int 	       enable_bufferinfo;
    // int 	       enable_asedbgdump;
-   int 	       enable_cl_view;
 } ase_cfg_t;
 ase_cfg_t cfg;
 
@@ -211,7 +214,7 @@ typedef struct {
    logic [`UMSG_MAX_MSG_LOG2-1:0] umsg_id;
    logic 			  umsg_enable;
    logic 			  umsg_hint;
-   logic [`UMSG_DELAY_TIMER_LOG2-1:0] umsg_timer; 
+   logic [`UMSG_DELAY_TIMER_LOG2-1:0] umsg_timer;
    logic [`CCI_DATA_WIDTH-1:0] 	  umsg_data;
    logic 			  umsghint_push;
    logic 			  umsgdata_push;
