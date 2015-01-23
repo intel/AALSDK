@@ -121,7 +121,8 @@ MENT_VLOG_OPT+= -sv  -timescale 1ns/1ns -l vlog.log
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
-MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
+MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) 
+# -do vsim_run.tcl
 
 
 #########################################################################

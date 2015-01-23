@@ -48,7 +48,7 @@
 
 #define TEST_WRTHRU_EN    0
 #define TEST_DELAY_EN     0
-#define TEST_CONT         1
+#define TEST_CONT         0
 #define TEST_START_DELAY  5
 #define TEST_CFG          0
 #define TEST_INACT_THRESH 10
