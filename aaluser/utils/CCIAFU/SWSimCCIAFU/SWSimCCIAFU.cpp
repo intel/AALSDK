@@ -68,7 +68,7 @@
 #ifdef ERR
 # undef ERR
 #endif // ERR
-#if 0
+#if 1
 # define ERR(x) AAL_ERR(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
 #else
 # define ERR(x)
@@ -77,11 +77,18 @@
 BEGIN_NAMESPACE(AAL)
 
 #define NLB_TEST_MODE_LPBK1       0x0
+#define NLB_TEST_MODE_CONT        0x2
 #define NLB_TEST_MODE_READ        0x4
 #define NLB_TEST_MODE_WRITE       0x8
 #define NLB_TEST_MODE_TRPUT       0xc
 
 #define NLB_TEST_MODE_MASK        0x1c
+
+#define QLP_CSR_CIPUCTL           0x280
+#   define CIPUCTL_RESET_BIT      0x01000000
+
+#define QLP_CSR_CAFU_STATUS       0x284
+#   define CAFU_STATUS_READY_BIT  0x80000000
 
 #define QLP_NUM_COUNTERS          11
 #define QLP_CSR_ADDR_PERF1C       0x27c
@@ -93,7 +100,6 @@ BEGIN_NAMESPACE(AAL)
 #define QLP_PERF_CACHE_WR_MISS    3
 #define QLP_PERF_EVICTIONS        10
 
-#define CSR_CIPUCTL               0x280
 #define CSR_AFU_DSM_BASEL         0x1a00
 #define CSR_AFU_DSM_BASEH         0x1a04
 #define CSR_SRC_ADDR              0x1a20
@@ -127,17 +133,18 @@ void SWSimCCIAFU::init(TransactionID const &TranID)
       m_PerfCounters[i] = 0;
    }
 
+   m_CSRMap.insert(std::make_pair(QLP_CSR_CIPUCTL,     CSR(QLP_CSR_CIPUCTL,     0, true)));
+   m_CSRMap.insert(std::make_pair(QLP_CSR_CAFU_STATUS, CSR(QLP_CSR_CAFU_STATUS, 0, true)));
    m_CSRMap.insert(std::make_pair(QLP_CSR_ADDR_PERF1C, CSR(QLP_CSR_ADDR_PERF1C, 0, false)));
    m_CSRMap.insert(std::make_pair(QLP_CSR_ADDR_PERF1,  CSR(QLP_CSR_ADDR_PERF1,  0, true)));
 
-   m_CSRMap.insert(std::make_pair(CSR_CIPUCTL,       CSR(CSR_CIPUCTL,       0, true)));
-   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEL, CSR(CSR_AFU_DSM_BASEL, 0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEH, CSR(CSR_AFU_DSM_BASEH, 0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_SRC_ADDR,      CSR(CSR_SRC_ADDR,      0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_DST_ADDR,      CSR(CSR_DST_ADDR,      0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_NUM_LINES,     CSR(CSR_NUM_LINES,     0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_CTL,           CSR(CSR_CTL,           0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_CFG,           CSR(CSR_CFG,           0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEL,   CSR(CSR_AFU_DSM_BASEL,   0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEH,   CSR(CSR_AFU_DSM_BASEH,   0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_SRC_ADDR,        CSR(CSR_SRC_ADDR,        0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_DST_ADDR,        CSR(CSR_DST_ADDR,        0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_NUM_LINES,       CSR(CSR_NUM_LINES,       0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_CTL,             CSR(CSR_CTL,             0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_CFG,             CSR(CSR_CFG,             0, false)));
 
    QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
                                                                  Client(),
@@ -340,8 +347,22 @@ void SWSimCCIAFU::SimulatorRead(CSR csr)
 
 void SWSimCCIAFU::SimulatorWrite(CSR csr)
 {
-   if ( (CSR_AFU_DSM_BASEH == m_LastCSRWrite.Offset()) &&
-        (CSR_AFU_DSM_BASEL == csr.Offset()) ) {
+   if ( (QLP_CSR_CIPUCTL == csr.Offset()) ) {
+      csr_iter csriter = m_CSRMap.find(QLP_CSR_CAFU_STATUS);
+
+      if ( flag_is_set(csr.Value(), CIPUCTL_RESET_BIT) ) {
+         // Start of the CAFU Reset sequence.
+         // Software will next poll on the 'Status Ready' bit in CAFU_STATUS.
+
+         (*csriter).second.Value((*csriter).second.Value() | CAFU_STATUS_READY_BIT);
+      } else {
+         // End of the CAFU Reset sequence. We need to reset the 'Status Ready' bit to zero.
+
+         (*csriter).second.Value((*csriter).second.Value() & ~CAFU_STATUS_READY_BIT);
+      }
+
+   } else if ( (CSR_AFU_DSM_BASEH == m_LastCSRWrite.Offset()) &&
+               (CSR_AFU_DSM_BASEL == csr.Offset()) ) {
       // Extract the physical address of the AFU DSM from the CSR's.
       btPhysAddr AFUDSM = (m_LastCSRWrite.Value() << 32) | csr.Value();
 
@@ -376,7 +397,15 @@ void SWSimCCIAFU::SimulatorWrite(CSR csr)
          // Examine CSR_CFG to determine the requested test mode.
          csr_const_iter csriter = m_CSRMap.find(CSR_CFG);
 
-         switch ( (*csriter).second.Value() & NLB_TEST_MODE_MASK ) {
+         btCSRValue val = (*csriter).second.Value();
+         btBool IsContMode = false;
+
+         if ( flag_is_set(val, NLB_TEST_MODE_CONT) ) {
+            flag_clrf(val, NLB_TEST_MODE_CONT);
+            IsContMode = true;
+         }
+
+         switch ( val & NLB_TEST_MODE_MASK ) {
             case NLB_TEST_MODE_LPBK1 : SimLpbk1(); break;
             case NLB_TEST_MODE_READ  : SimRead();  break;
             case NLB_TEST_MODE_WRITE : SimWrite(); break;
@@ -388,20 +417,22 @@ void SWSimCCIAFU::SimulatorWrite(CSR csr)
             break;
          }
 
-         // Write a non-zero value to the 32 bits at AFU DSM offset DSM_STATUS_TEST_COMPLETE.
-         btPhysAddr AFUDSM;
-         csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
-         AFUDSM  = (btPhysAddr)((*csriter).second.Value()) << 32;
+         if ( !IsContMode ) {
+            // Write a non-zero value to the 32 bits at AFU DSM offset DSM_STATUS_TEST_COMPLETE.
+            btPhysAddr AFUDSM;
+            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+            AFUDSM  = (btPhysAddr)((*csriter).second.Value()) << 32;
 
-         csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
-         AFUDSM |= (btPhysAddr)((*csriter).second.Value());
+            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+            AFUDSM |= (btPhysAddr)((*csriter).second.Value());
 
-         phys_to_alloc_const_iter physiter = m_PhysMap.find(AFUDSM);
+            phys_to_alloc_const_iter physiter = m_PhysMap.find(AFUDSM);
 
-         volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                    ((*physiter).second.Virt()  + DSM_STATUS_TEST_COMPLETE);
+            volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                       ((*physiter).second.Virt()  + DSM_STATUS_TEST_COMPLETE);
 
-         *StatusAddr = 1;
+            *StatusAddr = 1;
+         }
 
       } else if ( flag_is_clr(m_LastCSRWrite.Value(), 1) &&
                   flag_is_set(csr.Value(), 1) ) {

@@ -476,17 +476,26 @@ int verifycmds(struct CMyCmdLine * );
 END_C_DECLS
 ////////////////////////////////////////////////////////////////////////////////
 
+#define NANOSEC_PER_MILLI(x)      ((x) * 1000 * 1000)
+
 #define MAX_NLB_LPBK1_WKSPC       CL(16384)
 #define MAX_NLB_READ_WKSPC        CL(16384)
 #define MAX_NLB_WRITE_WKSPC       CL(16384)
 #define MAX_NLB_TRPUT_WKSPC       CL(16384)
 
 #define NLB_TEST_MODE_LPBK1       0x0
+#define NLB_TEST_MODE_CONT        0x2
 #define NLB_TEST_MODE_READ        0x4
 #define NLB_TEST_MODE_WRITE       0x8
 #define NLB_TEST_MODE_TRPUT       0xc
 
 #define NLB_DSM_SIZE              MB(4)
+
+#define QLP_CSR_CIPUCTL           0x280
+#   define CIPUCTL_RESET_BIT      0x01000000
+
+#define QLP_CSR_CAFU_STATUS       0x284
+#   define CAFU_STATUS_READY_BIT  0x80000000
 
 #define QLP_NUM_COUNTERS          11
 #define QLP_CSR_ADDR_PERF1C       0x27c
@@ -497,8 +506,6 @@ END_C_DECLS
 #define QLP_PERF_CACHE_RD_MISS    2
 #define QLP_PERF_CACHE_WR_MISS    3
 #define QLP_PERF_EVICTIONS        10
-
-#define CSR_CIPUCTL               0x280
 
 #define CSR_AFU_DSM_BASEL         0x1a00
 #define CSR_AFU_DSM_BASEH         0x1a04
@@ -693,7 +700,7 @@ int main(int argc, char *argv[])
    // Run NLB Lpbk1, which performs sw data verification.
    CNLBLpbk1 nlblpbk1(&myapp);
 
-   cout << " * Data Copy ";
+   cout << " * Data Copy " << flush;
    res = nlblpbk1.RunTest(MAX_NLB_LPBK1_WKSPC);
    totalres += res;
    if ( 0 == res ) {
@@ -708,7 +715,7 @@ int main(int argc, char *argv[])
    // * report read bandwidth in GiB/s
    CNLBRead nlbread(&myapp);
 
-   cout << " * Read Bandwidth from Memory ";
+   cout << " * Read Bandwidth from Memory " << flush;
    res = nlbread.RunTest(MAX_NLB_READ_WKSPC);
    totalres += res;
    if ( 0 == res ) {
@@ -723,7 +730,7 @@ int main(int argc, char *argv[])
    // * report write bandwidth in GiB/s
    CNLBWrite nlbwrite(&myapp);
 
-   cout << " * Write Bandwidth to Memory ";
+   cout << " * Write Bandwidth to Memory " << flush;
    res = nlbwrite.RunTest(MAX_NLB_WRITE_WKSPC);
    totalres += res;
    if ( 0 == res ) {
@@ -737,7 +744,7 @@ int main(int argc, char *argv[])
    // * report bandwidth in GiB/s
    CNLBTrput nlbtrput(&myapp);
 
-   cout << " * Simultaneous Read/Write Bandwidth ";
+   cout << " * Simultaneous Read/Write Bandwidth " << flush;
    res = nlbtrput.RunTest(MAX_NLB_TRPUT_WKSPC);
    totalres += res;
    if ( 0 == res ) {
@@ -764,23 +771,49 @@ btInt INLB::ResetHandshake()
 {
    btInt      res = 0;
    btCSRValue csr;
+   btCSRValue tmp;
 
    volatile btVirtAddr pDSMUsrVirt = m_pMyApp->DSMVirt();
 
-   // zero the DSM status fields
-   ::memset((void *)pDSMUsrVirt, 0, KB(1));
+   const btInt StatusTimeoutMillis = 250;
+   btInt MaxPoll = NANOSEC_PER_MILLI(StatusTimeoutMillis);
 
    // Assert CAFU Reset
    csr = 0;
-   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr |= 0x01000000;
-   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &csr);
+   flag_setf(csr, CIPUCTL_RESET_BIT);
+   m_pCCIAFU->CSRWrite(QLP_CSR_CIPUCTL, csr);
+
+   // Poll CAFU Status until ready.
+   do
+   {
+      SleepNano(500);
+      MaxPoll -= 500;
+      csr = 0;
+      m_pCCIAFU->CSRRead(QLP_CSR_CAFU_STATUS, &csr);
+   }while( flag_is_clr(csr, CAFU_STATUS_READY_BIT) && (MaxPoll >= 0) );
+
+   if ( MaxPoll < 0 ) {
+      cerr << "The maximum timeout for CAFU_STATUS ready bit was exceeded." << endl;
+      return 1;
+   }
 
    // De-assert CAFU Reset
    csr = 0;
-   m_pCCIAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr &= ~0x01000000;
-   m_pCCIAFU->CSRWrite(CSR_CIPUCTL, csr);
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &csr);
+   flag_clrf(csr, CIPUCTL_RESET_BIT);
+   m_pCCIAFU->CSRWrite(QLP_CSR_CIPUCTL, csr);
+
+   tmp = 0;
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &tmp);
+   ASSERT(csr == tmp);
+
+
+   const btInt AFUIDTimeoutMillis = 250;
+   MaxPoll = NANOSEC_PER_MILLI(AFUIDTimeoutMillis);
+
+   // zero the DSM status fields
+   ::memset((void *)pDSMUsrVirt, 0, KB(1));
 
    // Set DSM base, high then low
    m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
@@ -788,8 +821,16 @@ btInt INLB::ResetHandshake()
    // Poll for AFU ID
    do
    {
+      SleepNano(500);
+      MaxPoll -= 500;
       csr = *(volatile bt32bitCSR *)pDSMUsrVirt;
-   }while( 0 == csr );
+   }while( (0 == csr) && (MaxPoll >= 0) );
+
+   if ( MaxPoll < 0 ) {
+      cerr << "The maximum timeout for AFU ID was exceeded." << endl;
+      return 1;
+   }
+
 
    btUnsigned32bitInt *AFUID = (btUnsigned32bitInt *)pDSMUsrVirt;
 
@@ -865,16 +906,13 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
       SleepMicro(100);
    }
 
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    // Check the device status
    if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
       ++res;
    }
-
-   // Clean up..
-
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    return res;
 }
@@ -945,7 +983,10 @@ std::string INLB::CalcReadBandwidth()
 
    bt32bitCSR rds          = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_READS) );
 
-   bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+
+   // cont mode
+   bt64bitCSR ticks = rawticks - startpenalty;
 
    const double Rds   = (double)rds;
    const double Ticks = (double)ticks;
@@ -960,7 +1001,7 @@ std::string INLB::CalcReadBandwidth()
    oss.precision(3);
    oss.setf(std::ios::fixed, std::ios::floatfield);
 
-   oss << bw << " GiB/s";
+   oss << bw << " GB/s";
 
    return oss.str();
 }
@@ -979,7 +1020,10 @@ std::string INLB::CalcWriteBandwidth()
 
    bt32bitCSR wrs          = * ( (bt32bitCSR *)(pDSMUsrVirt + DSM_STATUS_NUM_WRITES) );
 
-   bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
+
+   // cont mode
+   bt64bitCSR ticks = rawticks - startpenalty;
 
    const double Wrs   = (double)wrs;
    const double Ticks = (double)ticks;
@@ -994,11 +1038,13 @@ std::string INLB::CalcWriteBandwidth()
    oss.precision(3);
    oss.setf(std::ios::fixed, std::ios::floatfield);
 
-   oss << bw << " GiB/s";
+   oss << bw << " GB/s";
 
    return oss.str();
 }
 
+// non-continuous mode.
+// no cache treatment.
 btInt CNLBLpbk1::RunTest(btWSSize wssize)
 {
    btInt res = 0;
@@ -1074,6 +1120,10 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
       SleepMicro(100);
    }
 
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+
    // Verify the buffers
    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, wssize) != 0 ) {
       ++res;
@@ -1084,10 +1134,8 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
       ++res;
    }
 
-   // Clean up..
 
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   // Clean up..
 
    // Release the Workspaces
    m_pCCIAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -1105,6 +1153,8 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
    return res;
 }
 
+// continuous mode for 10 seconds.
+// cool off fpga cache.
 btInt CNLBRead::RunTest(btWSSize wssize)
 {
    btInt res = 0;
@@ -1170,20 +1220,27 @@ btInt CNLBRead::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ|NLB_TEST_MODE_CONT);
 
 
    volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                     (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   btInt TestTimeoutSeconds = 10;
 
    // Start the test
    m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 
    // Wait for test completion
-   while( 0 == *StatusAddr ) {
-      SleepMicro(100);
+   while ( ( 0 == *StatusAddr ) &&
+           ( TestTimeoutSeconds > 0 ) ) {
+      SleepSec(1);
+      --TestTimeoutSeconds;
    }
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    ReadQLPCounters();
 
@@ -1192,13 +1249,9 @@ btInt CNLBRead::RunTest(btWSSize wssize)
       ++res;
    }
 
-   // Clean up..
-
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
    m_RdBw = CalcReadBandwidth();
 
+   // Clean up..
 
    // Release the Workspaces
    m_pCCIAFU->WorkspaceFree(pInputUsrVirt,   TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -1274,20 +1327,27 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE|NLB_TEST_MODE_CONT);
 
 
    volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                     (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   btInt TestTimeoutSeconds = 10;
 
    // Start the test
    m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 
    // Wait for test completion
-   while( 0 == *StatusAddr ) {
-      SleepMicro(100);
+   while( ( 0 == *StatusAddr ) &&
+          ( TestTimeoutSeconds > 0 ) ) {
+      SleepSec(1);
+      --TestTimeoutSeconds;
    }
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    ReadQLPCounters();
 
@@ -1296,13 +1356,9 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
       ++res;
    }
 
-   // Clean up..
-
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
    m_WrBw = CalcWriteBandwidth();
 
+   // Clean up..
 
    // Release the Workspaces
    m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -1367,20 +1423,27 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_TRPUT);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_TRPUT|NLB_TEST_MODE_CONT);
 
 
    volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                     (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
+
+   btInt TestTimeoutSeconds = 10;
 
    // Start the test
    m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 
    // Wait for test completion
-   while( 0 == *StatusAddr ) {
-      SleepMicro(100);
+   while ( ( 0 == *StatusAddr ) &&
+           ( TestTimeoutSeconds > 0 ) ) {
+      SleepSec(1);
+      --TestTimeoutSeconds;
    }
+
+   // Stop the device
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    ReadQLPCounters();
 
@@ -1389,14 +1452,10 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
       ++res;
    }
 
-   // Clean up..
-
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
    m_RdBw = CalcReadBandwidth();
    m_WrBw = CalcWriteBandwidth();
 
+   // Clean up..
 
    // Release the Workspaces
    m_pCCIAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -1413,221 +1472,6 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
 
    return res;
 }
-
-#if 0
-/// @addtogroup cciapp
-/// @{
-
-/// @brief Executes one iteration of a Native Loopback (LPBK1) test on the Service supplied within
-///        the given CMyApp.
-btInt NLBLpbk1(CMyApp *app)
-{
-   btInt res = 0;
-
-   ICCIAFU *pAFU = (ICCIAFU *) *app; // uses type cast operator from ISingleAFUApp.
-   ASSERT(NULL != pAFU);
-
-   // Use the Service to create Workspaces (buffers).
-   // For NLB loopback mode (LPBK1), we need three Workspaces:
-   //
-   // 1.) A workspace to serve as the DSM buffer for AFU -> Host communication.
-   // 2.) A data input buffer.
-   // 3.) A data output buffer.
-
-   pAFU->WorkspaceAllocate(LPBK1_DSM_SIZE,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-
-   // Synchronize with the workspace allocation event notifications.
-   app->ClientWait();
-
-   if ( !app->ClientOK() ) {
-      ERR("Workspace allocation failed");
-      return 1;
-   }
-
-   // We need to initialize the input and output buffers, so we need addresses suitable
-   // for dereferencing in user address space.
-   // volatile, because the FPGA will be updating the buffers, too.
-   volatile btVirtAddr pInputUsrVirt = app->InputVirt();
-
-   const    btUnsigned32bitInt  InputData = 0xdecafbad;
-   volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
-   volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
-                                     (app->InputSize() / sizeof(btUnsigned32bitInt));
-
-   for ( ; pInput < pEndInput ; ++pInput ) {
-      *pInput = InputData;
-   }
-
-   volatile btVirtAddr pOutputUsrVirt = app->OutputVirt();
-
-   // zero the output buffer
-   ::memset((void *)pOutputUsrVirt, 0, app->OutputSize());
-
-   volatile btVirtAddr pDSMUsrVirt  = app->DSMVirt();
-
-   // zero the DSM
-   ::memset((void *)pDSMUsrVirt, 0, app->DSMSize());
-
-   btCSRValue i;
-   btCSRValue csr;
-
-   // Assert CAFU Reset
-   csr = 0;
-   pAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr |= 0x01000000;
-   pAFU->CSRWrite(CSR_CIPUCTL, csr);
-
-   // De-assert CAFU Reset
-   csr = 0;
-   pAFU->CSRRead(CSR_CIPUCTL, &csr);
-   csr &= ~0x01000000;
-   pAFU->CSRWrite(CSR_CIPUCTL, csr);
-
-   // Set DSM base, high then low
-   pAFU->CSRWrite64(CSR_AFU_DSM_BASEL, app->DSMPhys());
-
-   // Poll for AFU ID
-   do
-   {
-      csr = *(volatile bt32bitCSR *)pDSMUsrVirt;
-   }while( 0 == csr );
-
-   // Print the AFU ID
-   std::ostringstream oss;
-
-   for ( i = 0 ; i < 4 ; ++i ) {
-      oss << std::setw(8) << std::hex << std::setfill('0')
-          << *(btUnsigned32bitInt *)(pDSMUsrVirt + (3 - i) * sizeof(btUnsigned32bitInt));
-   }
-
-   INFO("AFU ID=" << oss.str());
-
-   // Assert Device Reset
-   pAFU->CSRWrite(CSR_CTL, 0);
-
-   // Clear the DSM
-   ::memset((void *)pDSMUsrVirt, 0, app->DSMSize());
-
-   // De-assert Device Reset
-   pAFU->CSRWrite(CSR_CTL, 1);
-
-   // Set input workspace address
-   pAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(app->InputPhys()));
-
-   // Set output workspace address
-   pAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(app->OutputPhys()));
-
-   // Set the number of cache lines for the test
-   pAFU->CSRWrite(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
-
-   // Set the test mode
-   pAFU->CSRWrite(CSR_CFG, 0);
-
-
-   volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                    (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
-
-   // Start the test
-   pAFU->CSRWrite(CSR_CTL, 3);
-
-
-   // Wait for test completion
-   while( 0 == *StatusAddr ) {
-      SleepMicro(100);
-   }
-
-
-   // Verify the buffers
-   if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, LPBK1_BUFFER_SIZE) != 0 ) {
-      res = 1;
-
-      pInput = (volatile btUnsigned32bitInt *)pInputUsrVirt;
-      volatile btUnsigned32bitInt *pOutput = (volatile btUnsigned32bitInt *)pOutputUsrVirt;
-
-      btUnsigned32bitInt Byte;
-
-      oss.str(std::string(""));
-
-      ios::fmtflags f = oss.flags();
-      oss.flags(ios_base::right | ios_base::hex);
-      oss.fill('0');
-
-      for ( Byte = 0 ;
-               pInput < pEndInput ;
-                  ++pInput, ++pOutput, Byte += sizeof(btUnsigned32bitInt) ) {
-
-         if ( *pInput != *pOutput ) {
-
-            oss << "Buffer[0x" << setw(2) << Byte << "] Input: 0x"
-                     << *pInput << " != Output: 0x" << *pOutput << std::endl;
-
-         }
-
-      }
-
-      oss.fill(' ');
-      oss.flags(f);
-
-      ERR(oss.str());
-   }
-
-
-   // Verify the device
-   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
-      res = 1;
-
-      oss.str(std::string(""));
-
-      oss << *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE))
-          << " Device Errors" << std::endl;
-
-      ios::fmtflags f = oss.flags();
-      oss.flags(ios_base::right);
-      oss.fill('0');
-
-      for ( i = 0 ; i < DSM_STATUS_ERROR_REGS ; ++i ) {
-         oss << "Error Status[" << std::dec << i << "] = 0x"
-             << std::hex << std::setw(8) <<
-                *(StatusAddr + CSR_OFFSET(DSM_STATUS_MODE_ERROR_0 - DSM_STATUS_TEST_COMPLETE) + i)
-             << std::endl;
-      }
-
-      oss.fill(' ');
-      oss.flags(f);
-
-      ERR(oss.str());
-   }
-
-
-   INFO((0 == res ? "PASS" : "ERROR"));
-
-
-   // Clean up..
-
-   // Stop the device
-   pAFU->CSRWrite(CSR_CTL, 7);
-
-   // Release the Workspaces
-   pAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   pAFU->WorkspaceFree(pOutputUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   pAFU->WorkspaceFree(pDSMUsrVirt,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-
-   // Synchronize with the workspace free event notifications.
-   app->ClientWait();
-
-   if ( !app->ClientOK() ) {
-      ERR("Workspace free failed");
-      return 1;
-   }
-
-   return res;
-}
-
-/// @} group cciapp
-#endif
-
 
 
 #if defined ( __AAL_WINDOWS__ )
