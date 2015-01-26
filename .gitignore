@@ -36,6 +36,5 @@ ylwrap
 .cproject
 .project
 
-# ASE stuff here | RRS
-aaluser/ase/scripts/__pycache__/
-aaluser/ase/work/
+# symlinks we must ignore
+kernel
