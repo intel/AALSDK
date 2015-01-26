@@ -908,6 +908,7 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    // Stop the device
    m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    // Check the device status
    if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
@@ -1122,7 +1123,7 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
 
    // Stop the device
    m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    // Verify the buffers
    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, wssize) != 0 ) {
@@ -1220,6 +1221,7 @@ btInt CNLBRead::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ|NLB_TEST_MODE_CONT);
 
 
@@ -1241,6 +1243,7 @@ btInt CNLBRead::RunTest(btWSSize wssize)
 
    // Stop the device
    m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
 
@@ -1327,6 +1330,7 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE|NLB_TEST_MODE_CONT);
 
 
@@ -1348,6 +1352,7 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
 
    // Stop the device
    m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
 
@@ -1423,6 +1428,7 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_NUM_LINES, wssize / CL(1));
 
    // Set the test mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_TRPUT|NLB_TEST_MODE_CONT);
 
 
@@ -1444,6 +1450,7 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
 
    // Stop the device
    m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
 
