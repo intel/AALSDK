@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Intel Corporation
+// Copyright (c) 2014-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -60,24 +60,61 @@
 #ifdef INFO
 # undef INFO
 #endif // INFO
-#define INFO(x) AAL_INFO(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#if 0
+# define INFO(x) AAL_INFO(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#else
+# define INFO(x)
+#endif
 #ifdef ERR
 # undef ERR
 #endif // ERR
-#define ERR(x) AAL_ERR(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#if 1
+# define ERR(x) AAL_ERR(LM_Any, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#else
+# define ERR(x)
+#endif
 
 BEGIN_NAMESPACE(AAL)
 
-#define CSR_CIPUCTL              0x280
-#define CSR_AFU_DSM_BASEL        0x1a00
-#define CSR_AFU_DSM_BASEH        0x1a04
-#define CSR_SRC_ADDR             0x1a20
-#define CSR_DST_ADDR             0x1a24
-#define CSR_NUM_LINES            0x1a28
-#define CSR_CTL                  0x1a2c
-#define CSR_CFG                  0x1a34
+#define NLB_TEST_MODE_LPBK1       0x0
+#define NLB_TEST_MODE_CONT        0x2
+#define NLB_TEST_MODE_READ        0x4
+#define NLB_TEST_MODE_WRITE       0x8
+#define NLB_TEST_MODE_TRPUT       0xc
 
-#define DSM_STATUS_TEST_COMPLETE 0x40
+#define NLB_TEST_MODE_MASK        0x1c
+
+#define QLP_CSR_CIPUCTL           0x280
+#   define CIPUCTL_RESET_BIT      0x01000000
+
+#define QLP_CSR_CAFU_STATUS       0x284
+#   define CAFU_STATUS_READY_BIT  0x80000000
+
+#define QLP_NUM_COUNTERS          11
+#define QLP_CSR_ADDR_PERF1C       0x27c
+#define QLP_CSR_ADDR_PERF1        0x28c
+
+#define QLP_PERF_CACHE_RD_HITS    0
+#define QLP_PERF_CACHE_WR_HITS    1
+#define QLP_PERF_CACHE_RD_MISS    2
+#define QLP_PERF_CACHE_WR_MISS    3
+#define QLP_PERF_EVICTIONS        10
+
+#define CSR_AFU_DSM_BASEL         0x1a00
+#define CSR_AFU_DSM_BASEH         0x1a04
+#define CSR_SRC_ADDR              0x1a20
+#define CSR_DST_ADDR              0x1a24
+#define CSR_NUM_LINES             0x1a28
+#define CSR_CTL                   0x1a2c
+#define CSR_CFG                   0x1a34
+
+#define DSM_STATUS_TEST_COMPLETE  0x40
+#define DSM_STATUS_NUM_CLOCKS     0x48
+#define DSM_STATUS_NUM_READS      0x50
+#define DSM_STATUS_NUM_WRITES     0x54
+#define DSM_STATUS_START_OVERHEAD 0x58
+#define DSM_STATUS_END_OVERHEAD   0x5c
+
 
 #ifndef LOG2_CL
 # define LOG2_CL 6
@@ -88,16 +125,26 @@ BEGIN_NAMESPACE(AAL)
 
 void SWSimCCIAFU::init(TransactionID const &TranID)
 {
+   btInt i;
+
    m_NextPhys = __PHYS_ADDR_CONST(1) << LOG2_CL;
 
-   m_CSRMap.insert(std::make_pair(CSR_CIPUCTL,       CSR(CSR_CIPUCTL,       0, true)));
-   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEL, CSR(CSR_AFU_DSM_BASEL, 0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEH, CSR(CSR_AFU_DSM_BASEH, 0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_SRC_ADDR,      CSR(CSR_SRC_ADDR,      0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_DST_ADDR,      CSR(CSR_DST_ADDR,      0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_NUM_LINES,     CSR(CSR_NUM_LINES,     0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_CTL,           CSR(CSR_CTL,           0, false)));
-   m_CSRMap.insert(std::make_pair(CSR_CFG,           CSR(CSR_CFG,           0, false)));
+   for ( i = 0 ; i < sizeof(m_PerfCounters) / sizeof(m_PerfCounters[0]) ; ++i ) {
+      m_PerfCounters[i] = 0;
+   }
+
+   m_CSRMap.insert(std::make_pair(QLP_CSR_CIPUCTL,     CSR(QLP_CSR_CIPUCTL,     0, true)));
+   m_CSRMap.insert(std::make_pair(QLP_CSR_CAFU_STATUS, CSR(QLP_CSR_CAFU_STATUS, 0, true)));
+   m_CSRMap.insert(std::make_pair(QLP_CSR_ADDR_PERF1C, CSR(QLP_CSR_ADDR_PERF1C, 0, false)));
+   m_CSRMap.insert(std::make_pair(QLP_CSR_ADDR_PERF1,  CSR(QLP_CSR_ADDR_PERF1,  0, true)));
+
+   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEL,   CSR(CSR_AFU_DSM_BASEL,   0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_BASEH,   CSR(CSR_AFU_DSM_BASEH,   0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_SRC_ADDR,        CSR(CSR_SRC_ADDR,        0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_DST_ADDR,        CSR(CSR_DST_ADDR,        0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_NUM_LINES,       CSR(CSR_NUM_LINES,       0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_CTL,             CSR(CSR_CTL,             0, false)));
+   m_CSRMap.insert(std::make_pair(CSR_CFG,             CSR(CSR_CFG,             0, false)));
 
    QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
                                                                  Client(),
@@ -219,6 +266,7 @@ btBool SWSimCCIAFU::CSRRead(btCSROffset Offset,
       return false;
    }
 
+   SimulatorRead((*iter).second);
    *pValue = csr.Value();
 
    return true;
@@ -239,7 +287,7 @@ btBool SWSimCCIAFU::CSRWrite(btCSROffset Offset,
 
    (*iter).second.Value(Value);
 
-   Simulator((*iter).second);
+   SimulatorWrite((*iter).second);
    m_LastCSRWrite = (*iter).second;
 
    return true;
@@ -254,12 +302,69 @@ btBool SWSimCCIAFU::CSRWrite64(btCSROffset Offset,
    return false;
 }
 
-void SWSimCCIAFU::Simulator(CSR CurrWrite)
+void SWSimCCIAFU::SimulatorRead(CSR csr)
 {
-   if ( (CSR_AFU_DSM_BASEH == m_LastCSRWrite.Offset()) &&
-        (CSR_AFU_DSM_BASEL == CurrWrite.Offset()) ) {
+   if ( QLP_CSR_ADDR_PERF1 == csr.Offset() ) {
+
+      // We need PERF1C in order to determine which counter to retrieve.
+      csr_iter iter = m_CSRMap.find(QLP_CSR_ADDR_PERF1C);
+
+      btUnsigned32bitInt i = (*iter).second.Value();
+      btInt shift = 0;
+
+      if ( flag_is_set(i, 0x80000000) ) {
+         flag_clrf(i, 0x80000000);
+         shift = 32;
+      }
+
+      switch ( i ) {
+         case QLP_PERF_CACHE_RD_HITS : // FALL THROUGH
+         case QLP_PERF_CACHE_WR_HITS : // FALL THROUGH
+         case QLP_PERF_CACHE_RD_MISS : // FALL THROUGH
+         case QLP_PERF_CACHE_WR_MISS : // FALL THROUGH
+         case QLP_PERF_EVICTIONS     : // FALL THROUGH
+            break;
+
+         default :
+            ERR("Invalid QLP performance counter: " << i);
+         return;
+      }
+
+      const btUnsigned32bitInt CounterValue = (btUnsigned32bitInt) ( m_PerfCounters[i] >> shift );
+
+      //if ( 0 == shift ) {
+      //   INFO("QLP perf low [" << i << "] = " << CounterValue);
+      //} else {
+      //   INFO("QLP perf high[" << i << "] = " << CounterValue);
+      //}
+
+      // Set QLP_CSR_ADDR_PERF1 to the performance counter value.
+      iter = m_CSRMap.find(QLP_CSR_ADDR_PERF1);
+
+      (*iter).second.Value(CounterValue);
+   }
+}
+
+void SWSimCCIAFU::SimulatorWrite(CSR csr)
+{
+   if ( (QLP_CSR_CIPUCTL == csr.Offset()) ) {
+      csr_iter csriter = m_CSRMap.find(QLP_CSR_CAFU_STATUS);
+
+      if ( flag_is_set(csr.Value(), CIPUCTL_RESET_BIT) ) {
+         // Start of the CAFU Reset sequence.
+         // Software will next poll on the 'Status Ready' bit in CAFU_STATUS.
+
+         (*csriter).second.Value((*csriter).second.Value() | CAFU_STATUS_READY_BIT);
+      } else {
+         // End of the CAFU Reset sequence. We need to reset the 'Status Ready' bit to zero.
+
+         (*csriter).second.Value((*csriter).second.Value() & ~CAFU_STATUS_READY_BIT);
+      }
+
+   } else if ( (CSR_AFU_DSM_BASEH == m_LastCSRWrite.Offset()) &&
+               (CSR_AFU_DSM_BASEL == csr.Offset()) ) {
       // Extract the physical address of the AFU DSM from the CSR's.
-      btPhysAddr AFUDSM = (m_LastCSRWrite.Value() << 32) | CurrWrite.Value();
+      btPhysAddr AFUDSM = (m_LastCSRWrite.Value() << 32) | csr.Value();
 
       // Look up the virtual address of the AFU DSM by it's physical address.
       phys_to_alloc_const_iter iter = m_PhysMap.find(AFUDSM);
@@ -283,71 +388,298 @@ void SWSimCCIAFU::Simulator(CSR CurrWrite)
       *pu32++ = 0x0d824272;
       *pu32++ = 0xc000c966;
 
-   } else if ( CSR_CTL == CurrWrite.Offset() ) {
+   } else if ( CSR_CTL == csr.Offset() ) {
 
-      if ( flags_are_set(CurrWrite.Value(), 7) ) {
+      if ( flags_are_set(csr.Value(), 7) ) {
          INFO("Forcibly Stopping");
-      } else if ( flags_are_set(CurrWrite.Value(), 3) ) {
-         INFO("Starting Copy");
+      } else if ( flags_are_set(csr.Value(), 3) ) {
 
-         // Determine the Source buffer address from CSR_SRC_ADDR
-         // and use it to look up the virtual address.
-         csr_const_iter csriter = m_CSRMap.find(CSR_SRC_ADDR);
+         // Examine CSR_CFG to determine the requested test mode.
+         csr_const_iter csriter = m_CSRMap.find(CSR_CFG);
 
-         btPhysAddr SrcPhys = (*csriter).second.Value() << LOG2_CL;
+         btCSRValue val = (*csriter).second.Value();
+         btBool IsContMode = false;
 
-         phys_to_alloc_const_iter physiter = m_PhysMap.find(SrcPhys);
+         if ( flag_is_set(val, NLB_TEST_MODE_CONT) ) {
+            flag_clrf(val, NLB_TEST_MODE_CONT);
+            IsContMode = true;
+         }
 
-         btVirtAddr SrcVirt = (*physiter).second.Virt();
+         switch ( val & NLB_TEST_MODE_MASK ) {
+            case NLB_TEST_MODE_LPBK1 : SimLpbk1(); break;
+            case NLB_TEST_MODE_READ  : SimRead();  break;
+            case NLB_TEST_MODE_WRITE : SimWrite(); break;
+            case NLB_TEST_MODE_TRPUT : SimTrput(); break;
 
-         INFO("   src " << (*physiter).second);
+            default :
+               ERR("Unsupported test mode: 0x"
+                      << std::hex << ((*csriter).second.Value() & NLB_TEST_MODE_MASK) << std::dec);
+            break;
+         }
 
-         // Likewise, determine the Destination buffer address from CSR_DST_ADDR
-         // and use it to look up the virtual address.
-         csriter = m_CSRMap.find(CSR_DST_ADDR);
-         btPhysAddr DstPhys = (*csriter).second.Value() << LOG2_CL;
-         physiter = m_PhysMap.find(DstPhys);
-         btVirtAddr DstVirt = (*physiter).second.Virt();
+         if ( !IsContMode ) {
+            // Write a non-zero value to the 32 bits at AFU DSM offset DSM_STATUS_TEST_COMPLETE.
+            btPhysAddr AFUDSM;
+            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+            AFUDSM  = (btPhysAddr)((*csriter).second.Value()) << 32;
 
-         INFO("   dst " << (*physiter).second);
+            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+            AFUDSM |= (btPhysAddr)((*csriter).second.Value());
 
-         // Determine the number of bytes to copy from CSR_NUM_LINES.
-         csriter = m_CSRMap.find(CSR_NUM_LINES);
+            phys_to_alloc_const_iter physiter = m_PhysMap.find(AFUDSM);
 
-         size_t bytes = (size_t)((*csriter).second.Value() * CL(1));
+            volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
+                                       ((*physiter).second.Virt()  + DSM_STATUS_TEST_COMPLETE);
 
-
-         // Do the memory copy.
-         ::memcpy(DstVirt, SrcVirt, bytes);
-
-
-         // Write a non-zero value to the 32 bits at AFU DSM offset DSM_STATUS_TEST_COMPLETE.
-         btPhysAddr AFUDSM;
-         csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
-         AFUDSM  = (btPhysAddr)((*csriter).second.Value()) << 32;
-
-         csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
-         AFUDSM |= (btPhysAddr)((*csriter).second.Value());
-
-         physiter = m_PhysMap.find(AFUDSM);
-
-         volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                    ((*physiter).second.Virt()  + DSM_STATUS_TEST_COMPLETE);
-
-         *StatusAddr = 1;
+            *StatusAddr = 1;
+         }
 
       } else if ( flag_is_clr(m_LastCSRWrite.Value(), 1) &&
-                  flag_is_set(CurrWrite.Value(), 1) ) {
+                  flag_is_set(csr.Value(), 1) ) {
          INFO("Device Reset");
       }
 
-   } else if ( CSR_CFG == CurrWrite.Offset() ) {
+   } else if ( CSR_CFG == csr.Offset() ) {
 
-      if ( 0 != CurrWrite.Value() ) {
-         ERR("The simulator supports Native Loopback mode 0 only.");
+      switch ( csr.Value() & NLB_TEST_MODE_MASK ) {
+         case NLB_TEST_MODE_LPBK1 : // FALL THROUGH
+         case NLB_TEST_MODE_READ  : // FALL THROUGH
+         case NLB_TEST_MODE_WRITE : // FALL THROUGH
+         case NLB_TEST_MODE_TRPUT : // FALL THROUGH
+         break;
+
+         default :
+           ERR("Unsupported test mode: 0x"
+                  << std::hex << (csr.Value() & NLB_TEST_MODE_MASK) << std::dec);
+         break;
       }
 
    }
+}
+
+void SWSimCCIAFU::SimLpbk1()
+{
+   INFO("LPBK1");
+
+   // Determine the Source buffer address from CSR_SRC_ADDR
+   // and use it to look up the virtual address.
+   csr_const_iter csriter = m_CSRMap.find(CSR_SRC_ADDR);
+
+   btPhysAddr SrcPhys = (*csriter).second.Value() << LOG2_CL;
+
+   phys_to_alloc_const_iter physiter = m_PhysMap.find(SrcPhys);
+
+   btVirtAddr SrcVirt = (*physiter).second.Virt();
+
+   INFO("   src " << (*physiter).second);
+
+   // Likewise, determine the Destination buffer address from CSR_DST_ADDR
+   // and use it to look up the virtual address.
+   csriter = m_CSRMap.find(CSR_DST_ADDR);
+   btPhysAddr DstPhys = (*csriter).second.Value() << LOG2_CL;
+   physiter = m_PhysMap.find(DstPhys);
+   btVirtAddr DstVirt = (*physiter).second.Virt();
+
+   INFO("   dst " << (*physiter).second);
+
+   // Determine the number of bytes to copy from CSR_NUM_LINES.
+   csriter = m_CSRMap.find(CSR_NUM_LINES);
+
+   size_t bytes = (size_t)((*csriter).second.Value() * CL(1));
+
+   // Do the memory copy.
+   ::memcpy(DstVirt, SrcVirt, bytes);
+
+   // Update the performance counters. Assume cache misses.
+   m_PerfCounters[QLP_PERF_CACHE_RD_MISS] += bytes >> LOG2_CL;
+   m_PerfCounters[QLP_PERF_CACHE_WR_MISS] += bytes >> LOG2_CL;
+}
+
+void SWSimCCIAFU::SimRead()
+{
+   INFO("READ");
+
+   // Determine the Source buffer address from CSR_SRC_ADDR
+   // and use it to look up the virtual address.
+   csr_const_iter csriter = m_CSRMap.find(CSR_SRC_ADDR);
+
+   btPhysAddr SrcPhys = (*csriter).second.Value() << LOG2_CL;
+
+   phys_to_alloc_const_iter physiter = m_PhysMap.find(SrcPhys);
+
+   btVirtAddr SrcVirt = (*physiter).second.Virt();
+
+   INFO("   src " << (*physiter).second);
+
+   // Determine the workspace size.
+   csriter = m_CSRMap.find(CSR_NUM_LINES);
+
+   size_t bytes = (size_t)((*csriter).second.Value() * CL(1));
+
+
+   btUnsigned32bitInt *pSrc = (btUnsigned32bitInt *)SrcVirt;
+   const btUnsigned32bitInt *pSrcEnd = (const btUnsigned32bitInt *)pSrc +
+                                          (bytes / sizeof(btUnsigned32bitInt));
+   btUnsigned32bitInt sum = 0;
+
+   for ( ; pSrc < pSrcEnd ; ++pSrc ) {
+      sum += *pSrc;
+   }
+
+   // Update the performance counters. Assume cache misses.
+   m_PerfCounters[QLP_PERF_CACHE_RD_MISS] += bytes >> LOG2_CL;
+
+   // Update the DSM.
+
+   // Extract the physical address of the AFU DSM from the CSR's.
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+
+   btPhysAddr AFUDSMPhys = (*csriter).second.Value() << 32;
+
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+
+   AFUDSMPhys |= (*csriter).second.Value();
+
+   physiter = m_PhysMap.find(AFUDSMPhys);
+
+   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+
+   // (No idea whether these numbers are even in the same universe, let alone ballpark, as
+   //  the accurate measurements. We are simulating after all..)
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_READS) )      = bytes / CL(1);
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
+}
+
+void SWSimCCIAFU::SimWrite()
+{
+   INFO("WRITE");
+
+   // Determine the Destination buffer address from CSR_DST_ADDR
+   // and use it to look up the virtual address.
+   csr_const_iter csriter = m_CSRMap.find(CSR_DST_ADDR);
+   btPhysAddr DstPhys = (*csriter).second.Value() << LOG2_CL;
+
+   phys_to_alloc_const_iter physiter = m_PhysMap.find(DstPhys);
+   btVirtAddr DstVirt = (*physiter).second.Virt();
+
+   INFO("   dst " << (*physiter).second);
+
+   // Determine the workspace size.
+   csriter = m_CSRMap.find(CSR_NUM_LINES);
+
+   size_t bytes = (size_t)((*csriter).second.Value() * CL(1));
+
+
+   btUnsigned32bitInt *pDst = (btUnsigned32bitInt *)DstVirt;
+   const btUnsigned32bitInt *pDstEnd = (const btUnsigned32bitInt *)pDst +
+                                          (bytes / sizeof(btUnsigned32bitInt));
+
+   btUnsigned32bitInt data = 0xd0000000;
+
+   for ( ; pDst < pDstEnd ; ++pDst ) {
+      *pDst = data++;
+   }
+
+   // Update the performance counters. Assume cache misses.
+   m_PerfCounters[QLP_PERF_CACHE_WR_MISS] += bytes >> LOG2_CL;
+
+   // Update the DSM.
+
+   // Extract the physical address of the AFU DSM from the CSR's.
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+
+   btPhysAddr AFUDSMPhys = (*csriter).second.Value() << 32;
+
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+
+   AFUDSMPhys |= (*csriter).second.Value();
+
+   physiter = m_PhysMap.find(AFUDSMPhys);
+
+   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+
+   // (No idea whether these numbers are even in the same universe, let alone ballpark, as
+   //  the accurate measurements. We are simulating after all..)
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_WRITES) )     = bytes / CL(1);
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
+}
+
+void SWSimCCIAFU::SimTrput()
+{
+   INFO("TRPUT");
+
+   // Determine the Source buffer address from CSR_SRC_ADDR
+   // and use it to look up the virtual address.
+   csr_const_iter csriter = m_CSRMap.find(CSR_SRC_ADDR);
+
+   btPhysAddr SrcPhys = (*csriter).second.Value() << LOG2_CL;
+
+   phys_to_alloc_const_iter physiter = m_PhysMap.find(SrcPhys);
+
+   btVirtAddr SrcVirt = (*physiter).second.Virt();
+
+   INFO("   src " << (*physiter).second);
+
+   // Likewise, determine the Destination buffer address from CSR_DST_ADDR
+   // and use it to look up the virtual address.
+   csriter = m_CSRMap.find(CSR_DST_ADDR);
+   btPhysAddr DstPhys = (*csriter).second.Value() << LOG2_CL;
+   physiter = m_PhysMap.find(DstPhys);
+   btVirtAddr DstVirt = (*physiter).second.Virt();
+
+   INFO("   dst " << (*physiter).second);
+
+   // Determine the size of the buffers using CSR_NUM_LINES.
+   csriter = m_CSRMap.find(CSR_NUM_LINES);
+
+   size_t bytes = (size_t)((*csriter).second.Value() * CL(1));
+
+   btUnsigned32bitInt *pSrc = (btUnsigned32bitInt *)SrcVirt;
+   const btUnsigned32bitInt *pSrcEnd = (const btUnsigned32bitInt *)pSrc +
+                                          (bytes / sizeof(btUnsigned32bitInt));
+   btUnsigned32bitInt sum = 0;
+
+   btUnsigned32bitInt *pDst = (btUnsigned32bitInt *)DstVirt;
+   const btUnsigned32bitInt *pDstEnd = (const btUnsigned32bitInt *)pDst +
+                                          (bytes / sizeof(btUnsigned32bitInt));
+
+   btUnsigned32bitInt data = 0xd0000000;
+
+   for ( ; pSrc < pSrcEnd ; ++pSrc ) {
+      sum += *pSrc;
+      *pDst = data++;
+   }
+
+   // Update the performance counters. Assume cache misses.
+   m_PerfCounters[QLP_PERF_CACHE_RD_MISS] += bytes >> LOG2_CL;
+   m_PerfCounters[QLP_PERF_CACHE_WR_MISS] += bytes >> LOG2_CL;
+
+   // Update the DSM.
+
+   // Extract the physical address of the AFU DSM from the CSR's.
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+
+   btPhysAddr AFUDSMPhys = (*csriter).second.Value() << 32;
+
+   csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+
+   AFUDSMPhys |= (*csriter).second.Value();
+
+   physiter = m_PhysMap.find(AFUDSMPhys);
+
+   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+
+   // (No idea whether these numbers are even in the same universe, let alone ballpark, as
+   //  the accurate measurements. We are simulating after all..)
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_READS) )      = bytes / CL(1);
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_WRITES) )     = bytes / CL(1);
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
+   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
 }
 
 END_NAMESPACE(AAL)

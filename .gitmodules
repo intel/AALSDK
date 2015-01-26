@@ -1,5 +1,5 @@
-[submodule "aaluser/doc"]
-	path = aaluser/doc
+[submodule "aalreldocs"]
+	path = aalreldocs
    url = ssh://10.23.217.10/pub/git/aalreldocs
    branch = master
    update = merge

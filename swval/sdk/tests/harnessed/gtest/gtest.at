@@ -1,0 +1,27 @@
+# Google Tests -*- Autotest -*-
+
+AT_BANNER([[gtest - Basic Acceptance Tests]])
+
+AT_SETUP([BAT])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_bat}" != "x:"])
+AT_CHECK([bat ${GTEST_OPTS}], [0], [ignore], [ignore])
+AT_CLEANUP
+
+# ################################################################################
+
+AT_BANNER([[gtest - Nightly Test Suite]])
+
+AT_SETUP([Nightly])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_nightly}" != "x:"])
+AT_CHECK([nightly ${GTEST_OPTS}], [0], [ignore], [ignore])
+AT_CLEANUP
+
+# ################################################################################
+
+AT_BANNER([[gtest - Weekly Test Suite]])
+
+AT_SETUP([Weekly])
+AT_SKIP_IF([test "x${WITH_GTEST}" != xyes || test "x${at_arg_weekly}" != "x:"])
+AT_CHECK([weekly ${GTEST_OPTS}], [0], [ignore], [ignore])
+AT_CLEANUP
+

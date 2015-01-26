@@ -1,0 +1,34 @@
+# Process this -*- Autotest -*- file with autom4te.
+
+# Macros for the @PACKAGE@ test suite.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+m4_version_prereq([2.58])
+
+AT_INIT
+AT_COPYRIGHT([INTEL CONFIDENTIAL - For Intel Internal Use Only])
+
+dnl AT_ARG_OPTION(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
+dnl AT_ARG_OPTION_ARG(OPTIONS, HELP-TEXT, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
+
+AT_ARG_OPTION([standalone],
+              [AS_HELP_STRING([--standalone], [Run standalone tests @<:@default=no@:>@])])
+
+AT_ARG_OPTION([bat],
+              [AS_HELP_STRING([--bat], [Run basic acceptance test suite @<:@default=no@:>@])])
+
+AT_ARG_OPTION([nightly],
+              [AS_HELP_STRING([--nightly], [Run nightly test suite @<:@default=no@:>@])])
+
+AT_ARG_OPTION([weekly],
+              [AS_HELP_STRING([--weekly], [Run weekly test suite @<:@default=no@:>@])])
+
+GTEST_OPTS=
+AT_ARG_OPTION_ARG([gtest-opt],
+                  [AS_HELP_STRING([--gtest-opt], [Pass the given argument when invoking gtest])],
+                  [GTEST_OPTS="${GTEST_OPTS} ${at_arg_gtest_opt}"])
+
+AT_COLOR_TESTS
+
+dnl AT_TESTED([myapp]) dnl list of executables
+

@@ -6,33 +6,42 @@ shopt -o -s nounset
 declare -r SCRIPT_NAME='create-dist'
 
 declare -r SAMPLES_VERSION='4.2.0'
+declare -r    DOCS_VERSION='4.2.0'
+
+die() {
+   printf "%s\n" ${1+"$@"}
+   exit 13
+}
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
-[ "x${AUTORECONF}" = x ] && exit 20
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
 declare -r CP="`which cp`" 2>/dev/null
-[ "x${CP}" = x ] && exit 21
+[ "x${CP}" = x ] && die "no cp?"
 declare -r FIND="`which find`" 2>/dev/null
-[ "x${FIND}" = x ] && exit 22
+[ "x${FIND}" = x ] && die "no find?"
 declare -r GIT="`which git`" 2>/dev/null
-[ "x${GIT}" = x ] && exit 23
+[ "x${GIT}" = x ] && die "no git?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
 declare -r MAKE="`which make`" 2>/dev/null
-[ "x${MAKE}" = x ] && exit 24
+[ "x${MAKE}" = x ] && die "no make?"
 declare -r MKDIR="`which mkdir`" 2>/dev/null
-[ "x${MKDIR}" = x ] && exit 25
+[ "x${MKDIR}" = x ] && die "no mkdir?"
 declare -r MKTEMP="`which mktemp`" 2>/dev/null
-[ "x${MKTEMP}" = x ] && exit 26
+[ "x${MKTEMP}" = x ] && die "no mktemp?"
 declare -r MV="`which mv`" 2>/dev/null
-[ "x${MV}" = x ] && exit 27
+[ "x${MV}" = x ] && die "no mv?"
 declare -r RM="`which rm`" 2>/dev/null
-[ "x${RM}" = x ] && exit 28
+[ "x${RM}" = x ] && die "no rm?"
 declare -r TAR="`which tar`" 2>/dev/null
-[ "x${TAR}" = x ] && exit 29
+[ "x${TAR}" = x ] && die "no tar?"
 
 set -e
 
 declare KERNEL_VPATH=''
 declare USER_VPATH=''
 declare SAMPLES_TMPDIR=''
+declare DOCS_TMPDIR=''
 
 on_exit() {
    local -r remove=true
@@ -40,6 +49,7 @@ on_exit() {
       [ -d "${KERNEL_VPATH}" ] && ${RM} -rf "${KERNEL_VPATH}"
       [ -d "${USER_VPATH}" ] && ${RM} -rf "${USER_VPATH}"
       [ -d "${SAMPLES_TMPDIR}" ] && ${RM} -rf "${SAMPLES_TMPDIR}"
+      [ -d "${DOCS_TMPDIR}" ] && ${RM} -rf "${DOCS_TMPDIR}"
    fi
 }
 trap 'on_exit' EXIT
@@ -81,24 +91,7 @@ create_kernel_dist() {
    done
 }
 
-# Make sure that git submodule aaluser/doc is populated.
-pre_create_user_dist() {
-   local -i files=0
-
-   for x in `${FIND} ${PWD}/aaluser/doc -type f` ; do
-      let $(( ++files ))
-   done
-
-   if [ 0 -eq ${files} ]; then
-      # Load the submodule
-      ${GIT} --git-dir="${PWD}/.git" submodule init
-      ${GIT} --git-dir="${PWD}/.git" submodule update aaluser/doc
-   fi
-}
-
 create_user_dist() {
-   pre_create_user_dist   
-
    local -r d="${PWD}/aaluser"
    local -r regex='aalsdk-[[:digit:]]+[.][[:digit:]]+[.][[:digit:]]+'
    local    x
@@ -156,11 +149,80 @@ create_samples_dist() {
    ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" .
 }
 
+# Make sure that git submodule aalreldocs is populated.
+pre_create_docs_dist() {
+   local -r d="${PWD}/aalreldocs"
+   local -i files=0
+
+   if [ -d "$d" ]; then
+      for x in `${FIND} $d -type f` ; do
+         let $(( ++files ))
+      done
+   fi
+
+   if [ 0 -eq ${files} ]; then
+      # Load the submodule
+      ${GIT} --git-dir="${PWD}/.git" submodule init
+      ${GIT} --git-dir="${PWD}/.git" submodule update aalreldocs
+   fi
+}
+
+create_docs_dist() {
+   pre_create_docs_dist
+
+   local -r d="${PWD}/aalreldocs"
+
+   DOCS_TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.d.XXXXXXXXXX"`"
+
+   ${MKDIR} -p "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}"
+
+   for x in 'AAL_Programmers_Guide.pdf' \
+            'AAL_SDK_4-1-0_Release_Notes.pdf' \
+            'AAL_SDK_Utilities_Users_Guide.pdf' \
+            'ASE_UserGuide.pdf' \
+            'Readme.MultiPackage.txt' \
+            'SPL_Functionality_and_Programming_Flow_v070.pdf'
+   do
+      ${CP} "$d/$x" "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}"
+   done
+
+   pushd "${DOCS_TMPDIR}" >/dev/null 2>&1
+   ${TAR} zcf "aaldocs-${DOCS_VERSION}.tar.gz" "aaldocs-${DOCS_VERSION}"
+   popd >/dev/null 2>&1
+
+   ${MV} "${DOCS_TMPDIR}/aaldocs-${DOCS_VERSION}.tar.gz" .
+}
+
 main() {
+   local -r d="${PWD}"
+
+   # Are we in the right dir?
+   [ -d "$d/aaluser" ] || die "aaluser not found."
+   [ -d "$d/aalkernel" ] || die "aalkernel not found."
+   [ -d "$d/common_hdrs" ] || die "common_hdrs not found."
+
+   for x in "$d/aaluser" \
+            "$d/aalkernel"
+   do
+
+      # Make sure the symlinks to common_hdrs exist.
+      if [ -e "$x/include/aalsdk/kernel" ]; then
+         if ! [ -L "$x/include/aalsdk/kernel" ]; then
+            die "$x/include/aalsdk/kernel exists, but is not a symbolic link."
+         fi
+      else
+         pushd "$x/include/aalsdk" >/dev/null 2>&1
+         ${LN} -s ../../../common_hdrs kernel
+         popd >/dev/null 2>&1
+      fi
+
+   done
+
    create_kernel_dist
    create_user_dist
    create_samples_dist
-   [ -f "./Readme.MultiPackage.txt" ] || ${CP} "${PWD}/aaluser/doc/Readme.MultiPackage.txt" .
+   create_docs_dist
+   [ -f "./Readme.MultiPackage.txt" ] || ${CP} "${PWD}/aalreldocs/Readme.MultiPackage.txt" .
 }
 main
 

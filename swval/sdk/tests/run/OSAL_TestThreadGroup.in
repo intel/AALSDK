@@ -1,0 +1,5 @@
+#!@SHELL@
+# @configure_input@              -*- shell-script -*- 
+# Do what it takes to run OSAL_TestThreadGroup as created by 'make check'.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+exec '@abs_top_builddir@/tests/standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup' ${1+"$@"}

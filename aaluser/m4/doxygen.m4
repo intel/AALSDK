@@ -1,4 +1,4 @@
-dnl Copyright (c) 2013-2014, Intel Corporation
+dnl Copyright (c) 2013-2015, Intel Corporation
 dnl
 dnl Redistribution  and  use  in source  and  binary  forms,  with  or  without
 dnl modification, are permitted provided that the following conditions are met:
@@ -64,7 +64,7 @@ AC_DEFUN([AALSDK_PROG_DOXYGEN], [
    AS_IF([test x"$ac_cv_aal_use_doxygen" = xyes], 
          [
           AC_SUBST([ABS_SRCDIR],                [`cd ${srcdir} && pwd`])
-          AC_SUBST([DOX_PROJECT_LOGO],          [`cd ${srcdir} && pwd`/build/intel_rgb_62.png])
+          AC_SUBST([DOX_PROJECT_LOGO],          [`cd ${srcdir} && pwd`/doc/intel_rgb_62.png])
           AC_SUBST([DOX_GENERATETODOLIST],      [NO])
           AC_SUBST([DOX_GENERATETESTLIST],      [NO])
           AC_SUBST([DOX_GENERATEBUGLIST],       [NO])
@@ -83,11 +83,11 @@ AC_DEFUN([AALSDK_PROG_DOXYGEN], [
                               AC_MSG_RESULT([no])
                              ],
                              [ dnl equal
-                              AC_SUBST([DOX_LAYOUT_FILE], [`cd ${srcdir} && pwd`/build/DoxygenLayout.xml])
+                              AC_SUBST([DOX_LAYOUT_FILE], [`cd ${srcdir} && pwd`/doc/DoxygenLayout.xml])
                               AC_MSG_RESULT([yes])
                              ],
                              [ dnl greater
-                              AC_SUBST([DOX_LAYOUT_FILE], [`cd ${srcdir} && pwd`/build/DoxygenLayout.xml])
+                              AC_SUBST([DOX_LAYOUT_FILE], [`cd ${srcdir} && pwd`/doc/DoxygenLayout.xml])
                               AC_MSG_RESULT([yes])
                              ])
 

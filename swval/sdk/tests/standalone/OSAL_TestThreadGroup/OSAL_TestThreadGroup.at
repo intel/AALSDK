@@ -1,0 +1,9 @@
+# OSAL_TestThreadGroup -*- Autotest -*-
+
+AT_BANNER([[OSAL_TestThreadGroup]])
+
+AT_SETUP([Thread Group checkout])
+AT_SKIP_IF([test "x${at_arg_standalone}" != "x:"])
+AT_CHECK([OSAL_TestThreadGroup], [0], [ignore], [ignore])
+AT_CLEANUP
+

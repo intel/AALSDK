@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2014, Intel Corporation
+// Copyright (c) 2012-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file UMsgTest.cpp
-// @brief Native Loopback (SW), one cache line, via CCILib.
 // @ingroup UMsgTest
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
@@ -40,7 +39,8 @@
 // HISTORY:
 // WHEN:          WHO:       WHAT:
 // 02/24/2012     TSW        Original version.
-// 08/29/2014     HM/PM      Conversion from 3.3.2 to 4.x@endverbatim
+// 08/29/2014     HM/PM      Conversion from 3.3.2 to 4.x
+// 12/04/2014     NR         Included timeout feature@endverbatim
 //****************************************************************************
 #include <strings.h> // strcasecmp
 #include <iostream>
@@ -65,24 +65,27 @@ USING_NAMESPACE(CCILib)
 
 #define CACHELINE_ALIGNED_ADDR(p)  ((p) >> LOG2_CL)
 
-#define SW1_BUFFER_SIZE             CL(16)
+#define NUM_LINES       	    	16		//Number of Cache Lines 
+#define	TIMEOUT			    		10		//Timeout duration in seconds
+
+#define SW1_BUFFER_SIZE             CL(NUM_LINES+1)
 #define SW1_DSM_SIZE                MB(4)
 #define NUM_UMSGS                   32
 #define UMSG_BUFFER_SIZE            CL(64*NUM_UMSGS)
 
-#define CSR_CIPUCTL                0x280
+#define CSR_CIPUCTL                0x0280
 
-#define CSR_AFU_DSM_BASEL          0xa00
-#define CSR_AFU_DSM_BASEH          0xa04
-#define CSR_SRC_ADDR               0xa20
-#define CSR_DST_ADDR               0xa24
-#define CSR_NUM_LINES              0xa28
-#define CSR_CTL                    0xa2c
-#define CSR_CFG                    0xa34
-#define CSR_UMSGBASE               0x3F4
-#define CSR_UMSGMODE               0x3F8
-#define CSR_CIRBSTAT               0x278
-#define CSR_SW1NOTICE              0xB00
+#define CSR_AFU_DSM_BASEL          0x1a00
+#define CSR_AFU_DSM_BASEH          0x1a04
+#define CSR_SRC_ADDR               0x1a20
+#define CSR_DST_ADDR               0x1a24
+#define CSR_NUM_LINES              0x1a28
+#define CSR_CTL                    0x1a2c
+#define CSR_CFG                    0x1a34
+#define CSR_UMSGBASE               0x03F4
+#define CSR_UMSGMODE               0x03F8
+#define CSR_CIRBSTAT               0x0278
+#define CSR_SW1NOTICE              0x1B00
 
 #define CSR_OFFSET(x)              ((x) / sizeof(bt32bitCSR))
 
@@ -300,7 +303,7 @@ int main(int argc, char *argv[])
 
 
    // Set the number of cache lines for the test
-   pCCIDevice->SetCSR(CSR_NUM_LINES, SW1_BUFFER_SIZE / CL(1));
+   pCCIDevice->SetCSR(CSR_NUM_LINES, NUM_LINES);
    
    // Set the test mode
    /*   0 - RdLine_S   : Cached in Shared state
@@ -308,11 +311,9 @@ int main(int argc, char *argv[])
     *   2 - RdLine_O   : Cached in Owned State
     */
    btUnsigned32bitInt csr_read_type= 0;
-   if(gUMsgTestCmdLine.read_type==1)
-   {
+   if(gUMsgTestCmdLine.read_type==1) {
       csr_read_type = 1<<9;
-   } else if (gUMsgTestCmdLine.read_type==2)
-   {
+   } else if (gUMsgTestCmdLine.read_type==2) {
       csr_read_type = 2<<9;
    }
    
@@ -324,78 +325,103 @@ int main(int argc, char *argv[])
                                      (pDSMUsrVirt  + DSM_STATUS_TEST_COMPLETE);
 
    // Start the test
-   pCCIDevice->SetCSR(CSR_CTL,      0x3);
-
+   pCCIDevice->SetCSR(CSR_CTL, 0x3);
+   if ( CCI_ASE == gUMsgTestCmdLine.target ) {
+      cout << "\n\n####################################################################";
+      cout << "\nNote:\nTime out feature Disabled in ASE.\nTest terminates only upon successful completion";
+      cout << "\n####################################################################\n\n";
+   } else {
+      cout << "\n\n##################################################";
+      cout << "\nNote:\nTime out feature Enabled.\nTest terminates on timeout/completion";
+      cout << "\n##################################################\n\n";
+   }
+   
    // PM: Test flow
    // 1. CPU Polls on Addr N+1
-   while( (volatile btUnsigned32bitInt *) (pUMsgUsrVirt+SW1_BUFFER_SIZE)==0)
-   {
-      cout<<"SW Polling on Addr"<<(pUMsgUsrVirt+SW1_BUFFER_SIZE);
-      usleep(100);
+   int timeout=0;
+   time_t startTime = time(NULL);
+   while ( *(volatile btUnsigned32bitInt *) (pOutputUsrVirt+ CL(NUM_LINES)) != 0xffffffff ) {
+
+      //cout<<"SW Polling on Addr "<<(btUnsigned32bitInt *)(pOutputUsrVirt+CL(NUM_LINES))<<"\n"; 
+      if ( (time(NULL) - startTime > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) { 
+         timeout++; 
+         break;
+      }
+
    }
    
    // 2.CPU copies from dst to src buffer
    // copy could perturb the latency numbers based on CPU load
-   //memcpy((void *)pOutputUsrVirt, (void *)pInputUsrVirt, SW1_BUFFER_SIZE);
-            
+   memcpy((void *)pInputUsrVirt, (void *)pOutputUsrVirt, CL(NUM_LINES));
+
+   // Fence Operation
+   __sync_synchronize();
+	   
    // 3.CPU-> FPGA message. Select notice type
-   if(gUMsgTestCmdLine.notice_type==0)
-   {
-      *(btUnsigned32bitInt *) (pInputUsrVirt+SW1_BUFFER_SIZE) = 0xffffffff;
-      *(btUnsigned32bitInt *) (pInputUsrVirt+SW1_BUFFER_SIZE+4) = 0xffffffff;
-      *(btUnsigned32bitInt *) (pInputUsrVirt+SW1_BUFFER_SIZE+8) = 0xffffffff;
-   }
-   else if (gUMsgTestCmdLine.notice_type==1)
-   {
+   if(gUMsgTestCmdLine.notice_type==0) {
+      *(btUnsigned32bitInt *) (pInputUsrVirt+CL(NUM_LINES)) = 0xffffffff;
+      *(btUnsigned32bitInt *) (pInputUsrVirt+CL(NUM_LINES)+4) = 0xffffffff;
+      *(btUnsigned32bitInt *) (pInputUsrVirt+CL(NUM_LINES)+8) = 0xffffffff;
+   } else if (gUMsgTestCmdLine.notice_type==1) {
       pCCIDevice->SetCSR(CSR_SW1NOTICE, 0x10101010);
-   }
-   else if(gUMsgTestCmdLine.notice_type==2 || gUMsgTestCmdLine.notice_type==3)
-   {
+   } else if(gUMsgTestCmdLine.notice_type==2 || gUMsgTestCmdLine.notice_type==3) {
       *(volatile btUnsigned32bitInt *) (pUMsgUsrVirt) = 0xffffffff;
    }
+  
+   //CPU polls on test completion
+   cout<<"\nWaiting for Overall Test completion";  
+   cout.flush();
+	
+   time_t startTime1 = time(NULL); 
+   while( 0 == *StatusAddr && 0 == timeout ) {
 
-   // 4. CPU polls on test completion
-   while( 0 == *StatusAddr ) {
-      usleep(100);
-   }
-
-   // Disable UMsgs upon Test completion
-   pCCIDevice->SetCSR(CSR_UMSGBASE, 0x00000000);
-
-   // Verify the test results
-   btBool bPassed = true;
-
-   // Verify the device
-   if ( *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0 ) {
-
-      bPassed = false;
-
-      cout <<
-              *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE))
-           << " Device Errors" << endl;
-
-      ios::fmtflags f = cout.flags();
-      cout.flags(ios_base::right);
-      cout.fill('0');
-
-      for ( i = 0 ; i < DSM_STATUS_ERROR_REGS ; ++i ) {
-         cout << "Error Status[" << dec << i << "] = 0x"
-                  << hex << setw(8) <<
-                  *(StatusAddr + CSR_OFFSET(DSM_STATUS_MODE_ERROR_0 - DSM_STATUS_TEST_COMPLETE) + i)
-                  << endl;
+      if ( ( (time(NULL) - startTime1) > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) {
+         timeout++;
+         break;
       }
 
-      cout.fill(' ');
-      cout.flags(f);
    }
 
+   btBool bPassed = false;	 
+   if ( 0 == timeout ) {   
+      bPassed = true;
+      cout<<"\nReceived Test completion signal\n";     
+   }
+   
+   // Disable UMsgs upon Test completion
+   pCCIDevice->SetCSR(CSR_UMSGBASE, 0x00000000);
+   
+   // Verify the device
+   if ( (*(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE)) != 0) || timeout!=0 ) {
+      bPassed = false;
+	  
+      if ( timeout != 0 ) {
+         cout <<"\nTest Failed to Complete before timeout\n" ;
+      } else {
+         cout << *(StatusAddr + CSR_OFFSET(DSM_STATUS_TEST_ERROR - DSM_STATUS_TEST_COMPLETE))
+              << " Device Errors" << endl;
 
+         ios::fmtflags f = cout.flags();
+         cout.flags(ios_base::right);
+         cout.fill('0');
+
+         for ( i = 0 ; i < DSM_STATUS_ERROR_REGS ; ++i ) {
+            cout << "Error Status[" << dec << i << "] = 0x"
+					  << hex << setw(8) <<
+						 *(StatusAddr + CSR_OFFSET(DSM_STATUS_MODE_ERROR_0 - DSM_STATUS_TEST_COMPLETE) + i)
+					  << endl;
+         }
+
+         cout.fill(' ');
+         cout.flags(f);
+      }
+   }
+   cout << endl;
    cout << (bPassed ? "PASS" : "ERROR") << endl << flush;
 
 
    // PM: Print status information
-   if(bPassed)
-   {
+   if ( bPassed ) {
       
       btUnsigned64bitInt num_ticks = *(StatusAddr + 3);         // high
       num_ticks = (num_ticks << 32) | *(StatusAddr + 2); // high<<32 | low

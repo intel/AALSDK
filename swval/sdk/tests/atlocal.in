@@ -1,0 +1,25 @@
+# @configure_input@              -*- shell-script -*-
+# Configurable variable values for @PACKAGE@ test suite.
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+# Create any variables to capture the required configure substitutions here.
+
+# (The following are specific to @PACKAGE@.)
+# Whether this is a debug build, ./configure --enable-aal-dbg
+ENABLE_DEBUG=@AALSDK_ENABLE_DBG@
+
+# Whether runtime assertions are enabled, ./configure --enable-aal-assert
+ENABLE_ASSERT=@AALSDK_ENABLE_ASSERT@
+
+# Whether a local gtest tarball was found.
+WITH_GTEST=@WITH_GTEST@
+
+# Whether gcov coverage analysis has been requested, ./configure --with-gcov
+WITH_GCOV=@WITH_GCOV@
+
+# Whether code profiling has been requested, ./configure --with-gprof
+WITH_GPROF=@WITH_GPROF@
+
+# Whether a valgrind analysis has been requested, ./configure --with-valgrind
+WITH_VALGRIND=@WITH_VALGRIND@
+

@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2014, Intel Corporation
+## Copyright (c) 2005-2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -105,11 +105,9 @@ ase/sw \
 clp \
 utils/aalscan \
 utils/data_model \
+utils/fpgasane \
 utils/CCIAFU \
-utils/SPLAFU \
-tests/bat \
-tests/OSAL_TestSem \
-tests/OSAL_TestThreadGroup
+utils/SPLAFU
 
 
 aalsdkhdrsdir=$(includedir)/aalsdk
@@ -357,21 +355,13 @@ ase/scripts/ase_functions.py \
 ase/scripts/ase_ipc_clean.py \
 ase/README
 
-BUILD_EXTRA=\
-build/Doxyfile.in \
-build/DoxygenLayout.xml \
-build/intel_rgb_62.png
-
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
 
 DOC_EXTRA=\
-doc/AAL_Programmers_Guide.pdf \
-doc/AAL_SDK_4-1-0_Release_Notes.pdf \
-doc/AAL_SDK_Utilities_Users_Guide.pdf \
-doc/ASE_UserGuide.pdf \
-doc/Readme.MultiPackage.txt \
-doc/SPL_Functionality_and_Programming_Flow_v070.pdf
+doc/Doxyfile.in \
+doc/DoxygenLayout.xml \
+doc/intel_rgb_62.png
 
 FAPTRANS_EXTRA=\
 include/aalsdk/faptrans/FAP10Service.h.in \
@@ -401,7 +391,6 @@ $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
 $(AASREGISTRAR_EXTRA) \
 $(ASE_EXTRA) \
-$(BUILD_EXTRA) \
 $(CLP_EXTRA) \
 $(DOC_EXTRA) \
 $(FAPTRANS_EXTRA) \

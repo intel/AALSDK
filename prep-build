@@ -1,0 +1,52 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+die() {
+   printf "%s\n" ${1+"$@"}
+   exit 13
+}
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" != x ] || die "no autoreconf?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" != x ] || die "no ln?"
+
+set -e
+
+main() {
+   local -r d="${PWD}"
+
+   # Are we in the right dir?
+   [ -d "$d/aaluser" ] || die "aaluser not found."
+   [ -d "$d/aalkernel" ] || die "aalkernel not found."
+   [ -d "$d/common_hdrs" ] || die "common_hdrs not found."
+
+   for x in "$d/aaluser" \
+            "$d/aalkernel"
+   do
+
+      # Make sure the symlinks to common_hdrs exist.
+      if [ -e "$x/include/aalsdk/kernel" ]; then
+         if ! [ -L "$x/include/aalsdk/kernel" ]; then
+            die "$x/include/aalsdk/kernel exists, but is not a symbolic link."
+         fi
+      else
+         pushd "$x/include/aalsdk" >/dev/null 2>&1
+         ${LN} -s ../../../common_hdrs kernel
+         popd >/dev/null 2>&1
+      fi
+
+      # If we don't find a configure script, run autoreconf.
+      if ! [ -e "$x/configure" ]; then
+         pushd "$x" >/dev/null 2>&1
+         ${AUTORECONF} -vi
+         popd >/dev/null 2>&1
+      fi
+
+   done
+}
+main
+
+exit 0

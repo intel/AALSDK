@@ -1,0 +1,8 @@
+# Standalone (no test harness) tests. -*- Autotest -*-
+
+# OSAL_TestSem
+m4_include([standalone/OSAL_TestSem/OSAL_TestSem.at])
+
+# OSAL_TestThreadGroup
+m4_include([standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at])
+

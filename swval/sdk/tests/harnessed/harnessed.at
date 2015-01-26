@@ -1,0 +1,5 @@
+# Harnessed tests. -*- Autotest -*-
+
+# Google Tests
+m4_include([harnessed/gtest/gtest.at])
+

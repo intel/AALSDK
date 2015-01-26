@@ -6,7 +6,7 @@
 ##
 ##                            GPL LICENSE SUMMARY
 ##
-##  Copyright(c) 2012-2014, Intel Corporation.
+##  Copyright(c) 2012-2015, Intel Corporation.
 ##
 ##  This program  is  free software;  you  can redistribute it  and/or  modify
 ##  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 ##
 ##                                BSD LICENSE
 ##
-##  Copyright(c) 2012-2014, Intel Corporation.
+##  Copyright(c) 2012-2015, Intel Corporation.
 ##
 ##  Redistribution and  use  in source  and  binary  forms,  with  or  without
 ##  modification,  are   permitted  provided  that  the  following  conditions
@@ -64,6 +64,18 @@ dist-file-list: dist-all
 clean-local:
 	@$(RM) $(top_builddir)/dist-file-list
 
+if AAL_COND_MAINTAINER
+
+MAINTAINER_CHECK=maintainer-check
+maintainer-check:
+	   @+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
+			--conf='$(abs_top_srcdir)/configure' \
+			--srcdir='$(abs_top_srcdir)' \
+			--distdir='$(distdir)' \
+			--wkspc='$(abs_top_builddir)/maintainer-check''
+
+endif
+.PHONY: $(MAINTAINER_CHECK)
 
 SUBDIRS=\
 aalbus \

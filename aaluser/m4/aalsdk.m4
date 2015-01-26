@@ -1,4 +1,4 @@
-dnl Copyright (c) 2013-2014, Intel Corporation
+dnl Copyright (c) 2013-2015, Intel Corporation
 dnl
 dnl Redistribution  and  use  in source  and  binary  forms,  with  or  without
 dnl modification, are permitted provided that the following conditions are met:
@@ -129,19 +129,19 @@ dnl # Users specify whether they want to see debug print output / enable debuggi
 AC_DEFUN([AALSDK_DEBUG_OUTPUT], [
    _aal_dbg_output="$1"
    AC_ARG_ENABLE([aal-dbg],
-                 [AS_HELP_STRING([--enable-aal-dbg], [AAL Debug output @<:@default=$1@:>@])],
+                 [AS_HELP_STRING([--enable-aal-dbg], [Enable debug facilities @<:@default=$1@:>@])],
                  [AALSDK_YES_NO([${enableval}], [_aal_dbg_output], [], [],
                                 [AC_MSG_ERROR([Invalid value '${enableval}' for --enable-aal-dbg])])])
-   AC_CACHE_CHECK([whether to enable AALSDK debug output], [ac_cv_aal_enable_dbg_output],
+   AC_CACHE_CHECK([whether to create a debug build], [ac_cv_aal_enable_dbg_output],
                   [ac_cv_aal_enable_dbg_output="${_aal_dbg_output}"])
    AC_SUBST([AALSDK_ENABLE_DBG], [${ac_cv_aal_enable_dbg_output}])
    AM_CONDITIONAL([AAL_COND_ENABLE_DBG_OUTPUT], [test "x${ac_cv_aal_enable_dbg_output}" = xyes])
    AM_COND_IF([AAL_COND_ENABLE_DBG_OUTPUT],
               [
+               DEBUG_CPPFLAGS='-DENABLE_DEBUG=1'
                CPPFLAGS+=' -DENABLE_DEBUG=1'
-               AC_SUBST([ENABLE_DEBUG], [1])
-              ],
-              [AC_SUBST([ENABLE_DEBUG], [0])])
+              ])
+   AC_SUBST([DEBUG_CPPFLAGS], [${DEBUG_CPPFLAGS}])
 ]) dnl # AALSDK_DEBUG_OUTPUT
 
 dnl # AALSDK_DEBUG_DYNLOAD(DEF-VAL)
@@ -175,10 +175,10 @@ AC_DEFUN([AALSDK_ASSERT], [
    AM_CONDITIONAL([AAL_COND_ENABLE_ASSERT], [test "x${ac_cv_aal_enable_assert}" = xyes])
    AM_COND_IF([AAL_COND_ENABLE_ASSERT],
               [
+               ASSERT_CPPFLAGS='-DENABLE_ASSERT=1'
                CPPFLAGS+=' -DENABLE_ASSERT=1'
-               AC_SUBST([ENABLE_ASSERT], [1])
-              ],
-              [AC_SUBST([ENABLE_ASSERT], [0])])
+              ])
+   AC_SUBST([ASSERT_CPPFLAGS], [${ASSERT_CPPFLAGS}])
 ]) dnl # AALSDK_ASSERT
 
 
@@ -235,36 +235,4 @@ AC_DEFUN([AALSDK_MAINTAINER], [
          ],
          [AM_CONDITIONAL([AAL_COND_MAINTAINER], [false])])
 ]) dnl # AALSDK_MAINTAINER
-
-dnl gtest
-
-dnl # AALSDK_LOCAL_GTEST(REL-PATH, VERSION)
-dnl # ---
-AC_DEFUN([AALSDK_LOCAL_GTEST], [
-   AS_IF([test -f "${srcdir}/$1/gtest-$2.tar.gz"],
-         [
-          _gtest_defines=
-          AC_CHECK_HEADERS([tr1/tuple], [_gtest_defines='-DGTEST_HAS_TR1_TUPLE=1'],
-                           [AC_MSG_WARN([tr1/tuple not found. Some gtest features will not be available.])])
-          AS_IF([test -d "${srcdir}/$1/gtest-$2"], [],
-                [tar -C "${srcdir}/$1" -zxf "${srcdir}/$1/gtest-$2.tar.gz"])
-          AC_SUBST([WITH_GTEST],           [yes])
-          AM_CONDITIONAL([AAL_COND_GTEST], [true])
-          AC_DEFINE([WITH_LOCAL_GTEST],    [1], [1 if local gtest tarball found])
-          AC_SUBST([GTEST_CPPFLAGS],       ["${_gtest_defines} -I`cd ${srcdir} && pwd`/$1/gtest-$2/include -I`cd ${srcdir} && pwd`/$1/gtest-$2"])
-          AC_SUBST([GTEST_CFLAGS],         ['-g -O2'])
-          AC_SUBST([GTEST_CXXFLAGS],       ['-g -O2'])
-          AC_SUBST([GTEST_LDFLAGS],        ['-avoid-version'])
-          AC_SUBST([GTEST_SRCDIR],         ["`cd ${srcdir} && pwd`/$1/gtest-$2/src"])
-         ],
-         [
-          AC_SUBST([WITH_GTEST],           [no])
-          AM_CONDITIONAL([AAL_COND_GTEST], [false])
-          AC_SUBST([GTEST_CPPFLAGS],       [])
-          AC_SUBST([GTEST_CFLAGS],         [])
-          AC_SUBST([GTEST_CXXFLAGS],       [])
-          AC_SUBST([GTEST_LDFLAGS],        [])
-          AC_SUBST([GTEST_SRCDIR],         [])
-         ])
-]) dnl # AALSDK_LOCAL_GTEST
 
