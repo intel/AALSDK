@@ -142,7 +142,6 @@ AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
 AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
 AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
 
-AC_CONFIG_FILES([tests/lcov-coverage:tests/coverage/lcov/lcov-coverage.in], [chmod 755 tests/lcov-coverage])
 AC_CONFIG_FILES([tests/gprof-bat:tests/profile/gprof/gprof-bat.in], [chmod 755 tests/gprof-bat])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h

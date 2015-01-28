@@ -1,0 +1,23 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='lcov-standalone'
+
+. ./lcov-common
+
+declare -r D='standalone'
+
+setup "$D"
+
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --standalone"
+
+GCDA_DIRS=(\
+"--directory ${VPATH}/aas/OSAL/.libs" \
+"--directory ${VPATH}/tests/standalone/OSAL_TestSem" \
+"--directory ${VPATH}/tests/standalone/OSAL_TestThreadGroup"\
+)
+
+run_lcov "$D"
+exit $?

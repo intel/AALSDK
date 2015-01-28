@@ -1,0 +1,24 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='lcov-bat'
+
+. ./lcov-common
+
+declare -r D='bat'
+
+setup "$D"
+
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes"
+
+GCDA_DIRS=(\
+"--directory ${VPATH}/aas/OSAL/.libs" \
+"--directory ${VPATH}/aas/AASLib/.libs" \
+"--directory ${VPATH}/aas/XLRTLib/.libs" \
+"--directory ${VPATH}/tests/harnessed/gtest"\
+)
+
+run_lcov "$D"
+exit $?

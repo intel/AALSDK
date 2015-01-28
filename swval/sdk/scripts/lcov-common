@@ -1,0 +1,162 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+die() {
+   printf "die: %s\n" ${1+"$@"}
+   exit 13
+}
+
+yesNo() {
+   local ans=''
+   read -p "[y/N] > " ans
+   if [ x"${ans}" = xy ] || [ x"${ans}" = xY ]; then
+      ans='y'
+   else
+      ans='n'
+   fi
+   printf "${ans}"
+}
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r FIND="`which find`" 2>/dev/null
+[ "x${FIND}" = x ] && die "no find?"
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = x ] && die "no git?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = x ] && die "no make?"
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = x ] && die "no mkdir?"
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" = x ] && die "no mktemp?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = x ] && die "no rm?"
+declare -r SED="`which sed`" 2>/dev/null
+[ "x${SED}" = x ] && die "no sed?"
+
+declare    LCOV="`which lcov`" 2>/dev/null
+[ "x${LCOV}" = x ] && die "no lcov?"
+declare    GENHTML="`which genhtml`" 2>/dev/null
+[ "x${GENHTML}" = x ] && die "no genhtml?"
+
+declare -r LCOV_VER=`lcov --version | ${SED} -re 's,.*(([0-9]+[.])+[0-9]+),\1,'`
+declare -r LCOV_VER_MAJOR=`echo ${LCOV_VER} | ${SED} -re 's,([0-9]+)[.].*,\1,'`
+declare -r LCOV_VER_MINOR=`echo ${LCOV_VER} | ${SED} -re 's,(([0-9]+)[.])([0-9]+)[.]?,\3,'`
+
+if [ ${LCOV_VER_MAJOR} -ge 1 ] && [ ${LCOV_VER_MINOR} -ge 10 ]; then
+   # lcov/genhtml 1.10 adds the --rc parameter and disables branch analysis by default.
+   # This turns branch analysis back on, along with some other goodies..
+   LCOV="${LCOV} --rc lcov_branch_coverage=1 --rc geninfo_auto_base=1"
+   GENHTML="${GENHTML} --rc genhtml_branch_coverage=1 --rc genhtml_num_spaces=3 --rc genhtml_legend=1 --rc genhtml_sort=1"
+else
+   GENHTML="${GENHTML} --branch-coverage --function-coverage"
+fi
+
+set -e
+
+declare VPATH=''
+
+on_exit() {
+   local -r remove=false
+   if ${remove} ; then
+      [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+# $1 : name of the application binary for which coverage is to be collected.
+setup() {
+   local -r app="$1"
+
+   # This script is located in swval/sdk/scripts
+   local -r srcdir="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   local -r gitdir="${reporoot}/.git"
+
+   # Make sure we're being run from the right place.
+   [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
+
+   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+
+   VPATH="${PWD}/coverage.${app}.${git_commit_hash:0:7}"
+   [ -d "${VPATH}" ] || ${MKDIR} -p "${VPATH}"
+
+   if ! [ -f "${VPATH}/Makefile" ]; then
+      # Make sure that the symlinks to common_hdrs exist.
+      for x in "${reporoot}/aaluser/include/aalsdk" \
+               "${reporoot}/aalkernel/include/aalsdk"
+      do
+         if ! [ -L "$x/kernel" ]; then
+            pushd "$x" >/dev/null 2>&1
+            ${LN} -s "../../../common_hdrs" kernel
+            popd >/dev/null 2>&1
+         fi
+      done
+
+      if ! [ -f "${srcdir}/configure" ]; then
+         pushd "${srcdir}" >/dev/null 2>&1
+         ${AUTORECONF} -vi
+         popd >/dev/null 2>&1
+      fi
+
+      pushd "${VPATH}" >/dev/null 2>&1
+
+      ${srcdir}/configure --with-gcov
+      ${MAKE}
+      ${MAKE} check
+
+      popd >/dev/null 2>&1
+   else
+      printf "The Autotools project for %s has already been configured.\n" "${app}"
+      printf "We should continue only if the project was configured with --with-gcov,\n"
+      printf "otherwise coverage data cannot be collected.\n"
+      printf "Continue "
+
+      local ans="$(yesNo)"
+      [ "x${ans}" = xy ] || return 1
+   fi
+
+   printf "\n"
+   printf "%s\n" "${git_commit_hash}"
+
+   return 0
+}
+
+declare    WHAT_TO_MEASURE=''
+declare -a GCDA_DIRS=()
+
+run_lcov() {
+   local -r d="$1"
+
+   ${LCOV} --capture \
+           ${GCDA_DIRS[@]} \
+           --output-file "${VPATH}/tests/${d}-base.info" \
+           --initial \
+           --compat-libtool
+
+   ${WHAT_TO_MEASURE}
+
+   ${LCOV} --capture \
+           ${GCDA_DIRS[@]} \
+           --output-file "${VPATH}/tests/${d}-test.info" \
+           --compat-libtool
+
+   ${LCOV} --add-tracefile "${VPATH}/tests/${d}-base.info" \
+           --add-tracefile "${VPATH}/tests/${d}-test.info" \
+           --output-file "${VPATH}/tests/${d}-totals.info"
+
+   [ -d "${VPATH}/tests/${d}-lcov" ] || ${MKDIR} -p "${VPATH}/tests/${d}-lcov"
+
+   ${GENHTML} --output-directory "${VPATH}/tests/${d}-lcov" \
+              "${VPATH}/tests/${d}-totals.info"
+
+   return 0
+}
+

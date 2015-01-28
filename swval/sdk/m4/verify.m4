@@ -59,15 +59,13 @@ AC_DEFUN([SHOW_OPTIONS], [
 AM_COND_IF([COND_WITH_GCOV], [
 echo \
 "
-gcov Coverage Analysis is enabled. Running 'make && make check' will use gcov/lcov
-to gather coverage analysis data for the instrumented applications."
+build flags for generating gcov/lcov coverage analysis are active."
 ])
 
 AM_COND_IF([COND_WITH_GPROF], [
 echo \
 "
-gprof Profiling is enabled. Running 'make && make check' will use gprof
-to gather profiling data for the instrumented applications."
+build flags for generating gprof profiling are active."
 ])
 
 dnl AM_COND_IF([COND_WITH_VALGRIND], [

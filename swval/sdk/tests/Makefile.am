@@ -10,8 +10,6 @@ standalone/OSAL_TestSem/OSAL_TestSem.at \
 standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at \
 harnessed/harnessed.at \
 harnessed/gtest/gtest.at \
-coverage/coverage.at \
-coverage/lcov/lcov.at \
 local.at \
 profile/gprof/gprof.at \
 profile/profile.at \
@@ -22,7 +20,6 @@ $(TESTSUITE_AT) \
 atlocal.in \
 testsuite \
 package.m4 \
-coverage/lcov/lcov-coverage.in \
 run/bat.in \
 run/nightly.in \
 run/weekly.in \
@@ -60,19 +57,13 @@ $(TESTSUITE): package.m4 $(TESTSUITE_AT)
 atconfig: $(top_builddir)/config.status
 	cd $(top_builddir) && ./config.status tests/$@
 
-#check_SCRIPTS=
-#bat 
-#myapp 
-#gprof-bat 
-#gprof-myapp 
-#lcov-coverage
-
 check_SCRIPTS=\
 bat \
+nightly \
+weekly \
 OSAL_TestSem \
 OSAL_TestThreadGroup \
-gprof-bat \
-lcov-coverage
+gprof-bat
 
 clean-local:
 	test ! -f '$(TESTSUITE)' || $(SHELL) '$(TESTSUITE)' --clean

@@ -1,5 +1,0 @@
-# Process this file with autom4te to create testsuite. -*- Autotest -*-
-
-# lcov
-m4_include([coverage/lcov/lcov.at])
-
