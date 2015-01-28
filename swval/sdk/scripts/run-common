@@ -53,7 +53,7 @@ setup() {
 
    local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
-   VPATH="${PWD}/testvpath.${git_commit_hash:0:7}"
+   VPATH="${PWD}/run.${git_commit_hash:0:7}"
    [ -d "${VPATH}" ] || ${MKDIR} -p "${VPATH}"
 
    if ! [ -f "${TS}" ] || ! [ -f "${VPATH}/Makefile" ]; then

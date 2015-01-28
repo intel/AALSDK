@@ -482,13 +482,6 @@ END_C_DECLS
 #define MAX_NLB_READ_WKSPC        CL(16384)
 #define MAX_NLB_WRITE_WKSPC       CL(16384)
 #define MAX_NLB_TRPUT_WKSPC       CL(16384)
-
-#define NLB_TEST_MODE_LPBK1       0x0
-#define NLB_TEST_MODE_CONT        0x2
-#define NLB_TEST_MODE_READ        0x4
-#define NLB_TEST_MODE_WRITE       0x8
-#define NLB_TEST_MODE_TRPUT       0xc
-
 #define NLB_DSM_SIZE              MB(4)
 
 #define QLP_CSR_CIPUCTL           0x280
@@ -500,12 +493,11 @@ END_C_DECLS
 #define QLP_NUM_COUNTERS          11
 #define QLP_CSR_ADDR_PERF1C       0x27c
 #define QLP_CSR_ADDR_PERF1        0x28c
-
-#define QLP_PERF_CACHE_RD_HITS    0
-#define QLP_PERF_CACHE_WR_HITS    1
-#define QLP_PERF_CACHE_RD_MISS    2
-#define QLP_PERF_CACHE_WR_MISS    3
-#define QLP_PERF_EVICTIONS        10
+#   define QLP_PERF_CACHE_RD_HITS 0
+#   define QLP_PERF_CACHE_WR_HITS 1
+#   define QLP_PERF_CACHE_RD_MISS 2
+#   define QLP_PERF_CACHE_WR_MISS 3
+#   define QLP_PERF_EVICTIONS     10
 
 #define CSR_AFU_DSM_BASEL         0x1a00
 #define CSR_AFU_DSM_BASEH         0x1a04
@@ -514,6 +506,29 @@ END_C_DECLS
 #define CSR_NUM_LINES             0x1a28
 #define CSR_CTL                   0x1a2c
 #define CSR_CFG                   0x1a34
+#   define NLB_TEST_MODE_LPBK1    0x0
+#   define NLB_TEST_MODE_CONT     0x2
+#   define NLB_TEST_MODE_READ     0x4
+#   define NLB_TEST_MODE_WRITE    0x8
+#   define NLB_TEST_MODE_TRPUT    0xc
+
+typedef struct _nlb_vafu_dsm
+{
+/* 0x00-0x0f */ btUnsigned32bitInt afuid[4];
+/* 0x10-0x3f */ btUnsigned32bitInt _reserved[12];
+/* -- cache line -- */
+/* 0x40      */ btUnsigned32bitInt test_complete;
+/* 0x44      */ btUnsigned32bitInt test_error;
+/* 0x48      */ btUnsigned64bitInt num_clocks;
+/* 0x50      */ btUnsigned32bitInt num_reads;
+/* 0x54      */ btUnsigned32bitInt num_writes;
+/* 0x58      */ btUnsigned32bitInt start_overhead;
+/* 0x5c      */ btUnsigned32bitInt end_overhead;
+/* 0x60-0x7f */ btUnsigned32bitInt mode_error[8];
+/* -- cache line -- */
+} nlb_vafu_dsm;
+CASSERT(sizeof(nlb_vafu_dsm) == CL(2));
+
 
 #define DSM_STATUS_TEST_COMPLETE  0x40
 #define DSM_STATUS_TEST_ERROR     0x44
