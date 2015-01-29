@@ -15,22 +15,12 @@ AC_DEFUN([VERIFY_OPTIONS], [
                _conf_CXXFLAGS="${GCOV_CXXFLAGS}"
                _conf_LDFLAGS="${GCOV_LDFLAGS}"
                _conf_LIBS="${LIBS} ${GCOV_LIBS}"
-               AM_COND_IF([COND_WITH_GPROF], [AC_MSG_ERROR([only one of gcov or gprof instrumentation may be selected.])])
-              ])
-
-   AM_COND_IF([COND_WITH_GPROF],
-              [ dnl prefer inline functions when using gprof
-               _conf_CPPFLAGS="${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
-               _conf_CFLAGS="${GPROF_CFLAGS}"
-               _conf_CXXFLAGS="${GPROF_CXXFLAGS}"
-               _conf_LDFLAGS="${GPROF_LDFLAGS}"
               ])
 
 dnl   AM_COND_IF([COND_WITH_VALGRIND],
 dnl              [ dnl requires -O0
 dnl               _conf_CFLAGS="${VALGRIND_CFLAGS}"
 dnl               _conf_CXXFLAGS="${VALGRIND_CXXFLAGS}"
-dnl               AM_COND_IF([COND_WITH_GPROF], [AC_MSG_ERROR([only one of valgrind or gprof instrumentation may be selected.])])
 dnl              ])
 
 dnl   AM_COND_IF([COND_HAVE_GDB],
@@ -60,12 +50,6 @@ AM_COND_IF([COND_WITH_GCOV], [
 echo \
 "
 build flags for generating gcov/lcov coverage analysis are active."
-])
-
-AM_COND_IF([COND_WITH_GPROF], [
-echo \
-"
-build flags for generating gprof profiling are active."
 ])
 
 dnl AM_COND_IF([COND_WITH_VALGRIND], [

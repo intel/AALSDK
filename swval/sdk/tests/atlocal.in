@@ -14,9 +14,6 @@ ENABLE_ASSERT=@AALSDK_ENABLE_ASSERT@
 # Whether a local gtest tarball was found.
 WITH_GTEST=@WITH_GTEST@
 
-# Whether code profiling has been requested, ./configure --with-gprof
-WITH_GPROF=@WITH_GPROF@
-
 # Whether a valgrind analysis has been requested, ./configure --with-valgrind
 WITH_VALGRIND=@WITH_VALGRIND@
 

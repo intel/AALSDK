@@ -134,10 +134,13 @@ declare -a GCDA_DIRS=()
 
 run_lcov() {
    local -r d="$1"
+   local -r out="${VPATH}/lcov"
+
+   [ -d "${out}/html" ] || ${MKDIR} -p "${out}/html"
 
    ${LCOV} --capture \
            ${GCDA_DIRS[@]} \
-           --output-file "${VPATH}/tests/${d}-base.info" \
+           --output-file "${out}/${d}-base.info" \
            --initial \
            --compat-libtool
 
@@ -145,17 +148,15 @@ run_lcov() {
 
    ${LCOV} --capture \
            ${GCDA_DIRS[@]} \
-           --output-file "${VPATH}/tests/${d}-test.info" \
+           --output-file "${out}/${d}-test.info" \
            --compat-libtool
 
-   ${LCOV} --add-tracefile "${VPATH}/tests/${d}-base.info" \
-           --add-tracefile "${VPATH}/tests/${d}-test.info" \
-           --output-file "${VPATH}/tests/${d}-totals.info"
+   ${LCOV} --add-tracefile "${out}/${d}-base.info" \
+           --add-tracefile "${out}/${d}-test.info" \
+           --output-file "${out}/${d}-totals.info"
 
-   [ -d "${VPATH}/tests/${d}-lcov" ] || ${MKDIR} -p "${VPATH}/tests/${d}-lcov"
-
-   ${GENHTML} --output-directory "${VPATH}/tests/${d}-lcov" \
-              "${VPATH}/tests/${d}-totals.info"
+   ${GENHTML} --output-directory "${out}/html" \
+              "${out}/${d}-totals.info"
 
    return 0
 }

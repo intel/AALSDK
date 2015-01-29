@@ -11,8 +11,6 @@ standalone/OSAL_TestThreadGroup/OSAL_TestThreadGroup.at \
 harnessed/harnessed.at \
 harnessed/gtest/gtest.at \
 local.at \
-profile/gprof/gprof.at \
-profile/profile.at \
 testsuite.at
 
 EXTRA_DIST=\
@@ -24,8 +22,7 @@ run/bat.in \
 run/nightly.in \
 run/weekly.in \
 run/OSAL_TestSem.in \
-run/OSAL_TestThreadGroup.in \
-profile/gprof/gprof-bat.in
+run/OSAL_TestThreadGroup.in
 
 DISTCLEANFILES=\
 atconfig \
@@ -62,8 +59,7 @@ bat \
 nightly \
 weekly \
 OSAL_TestSem \
-OSAL_TestThreadGroup \
-gprof-bat
+OSAL_TestThreadGroup
 
 clean-local:
 	test ! -f '$(TESTSUITE)' || $(SHELL) '$(TESTSUITE)' --clean
