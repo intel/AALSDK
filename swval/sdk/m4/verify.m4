@@ -8,8 +8,7 @@ AC_DEFUN([VERIFY_OPTIONS], [
    _conf_LIBS="${LIBS}"
 
    AM_COND_IF([COND_WITH_GCOV],
-              [ dnl requires -O0
-                dnl prefer inline function when using gcov
+              [ dnl requires -O0 --coverage
                _conf_CPPFLAGS="${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
                _conf_CFLAGS="${GCOV_CFLAGS}"
                _conf_CXXFLAGS="${GCOV_CXXFLAGS}"
@@ -17,11 +16,12 @@ AC_DEFUN([VERIFY_OPTIONS], [
                _conf_LIBS="${LIBS} ${GCOV_LIBS}"
               ])
 
-dnl   AM_COND_IF([COND_WITH_VALGRIND],
-dnl              [ dnl requires -O0
-dnl               _conf_CFLAGS="${VALGRIND_CFLAGS}"
-dnl               _conf_CXXFLAGS="${VALGRIND_CXXFLAGS}"
-dnl              ])
+   AM_COND_IF([COND_WITH_VALGRIND],
+              [ dnl requires -O0 -fno-inline
+               _conf_CFLAGS="${VALGRIND_CFLAGS}"
+               _conf_CXXFLAGS="${VALGRIND_CXXFLAGS}"
+               AM_COND_IF([COND_WITH_GCOV], [AC_MSG_ERROR([only one of gcov or valgrind instrumentation may be selected.])])
+              ])
 
 dnl   AM_COND_IF([COND_HAVE_GDB],
 dnl              [
@@ -49,15 +49,14 @@ AC_DEFUN([SHOW_OPTIONS], [
 AM_COND_IF([COND_WITH_GCOV], [
 echo \
 "
-build flags for generating gcov/lcov coverage analysis are active."
+code is being instrumented for gcov/lcov analysis."
 ])
 
-dnl AM_COND_IF([COND_WITH_VALGRIND], [
-dnl echo \
-dnl "
-dnl valgrind analysis is enabled. Running 'make && make check'
-dnl will use valgrind to analyze the instrumented applications."
-dnl ])
+AM_COND_IF([COND_WITH_VALGRIND], [
+echo \
+"
+code is being instrumented for valgrind ${WITH_VALGRIND} analysis."
+])
 
 echo \
 "

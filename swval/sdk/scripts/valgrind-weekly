@@ -1,0 +1,11 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='valgrind-weekly'
+
+. ./valgrind-common
+
+run_valgrind_all "tests/harnessed/gtest/.libs/weekly" ${1+"$@"}
+exit $?

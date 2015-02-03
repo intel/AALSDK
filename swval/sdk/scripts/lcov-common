@@ -5,17 +5,6 @@ die() {
    exit 13
 }
 
-yesNo() {
-   local ans=''
-   read -p "[y/N] > " ans
-   if [ x"${ans}" = xy ] || [ x"${ans}" = xY ]; then
-      ans='y'
-   else
-      ans='n'
-   fi
-   printf "${ans}"
-}
-
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && die "no autoreconf?"
 declare -r FIND="`which find`" 2>/dev/null
@@ -56,17 +45,22 @@ fi
 set -e
 
 declare VPATH=''
+declare VPATH_ALREADY_EXISTED=false
+declare KILLED=false
 
 on_exit() {
-   local -r remove=false
-   if ${remove} ; then
-      [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+   if ${KILLED} ; then
+      if ! ${VPATH_ALREADY_EXISTED} ; then
+         # Don't destroy results created by a previous full run.
+         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+      fi
    fi
 }
 trap 'on_exit' EXIT
 
 on_sigint() {
    trap - SIGINT
+   KILLED=true
    exit 99
 }
 trap 'on_sigint' SIGINT
@@ -86,7 +80,11 @@ setup() {
    local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
    VPATH="${PWD}/coverage.${app}.${git_commit_hash:0:7}"
-   [ -d "${VPATH}" ] || ${MKDIR} -p "${VPATH}"
+   if [ -d "${VPATH}" ]; then
+      VPATH_ALREADY_EXISTED=true
+   else
+      ${MKDIR} -p "${VPATH}"
+   fi
 
    if ! [ -f "${VPATH}/Makefile" ]; then
       # Make sure that the symlinks to common_hdrs exist.
@@ -113,14 +111,6 @@ setup() {
       ${MAKE} check
 
       popd >/dev/null 2>&1
-   else
-      printf "The Autotools project for %s has already been configured.\n" "${app}"
-      printf "We should continue only if the project was configured with --with-gcov,\n"
-      printf "otherwise coverage data cannot be collected.\n"
-      printf "Continue "
-
-      local ans="$(yesNo)"
-      [ "x${ans}" = xy ] || return 1
    fi
 
    printf "\n"
@@ -157,6 +147,8 @@ run_lcov() {
 
    ${GENHTML} --output-directory "${out}/html" \
               "${out}/${d}-totals.info"
+
+   printf "firefox %s/html/index.html\n" "${out}"
 
    return 0
 }

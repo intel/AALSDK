@@ -23,17 +23,22 @@ declare -r RM="`which rm`" 2>/dev/null
 set -e
 
 declare VPATH=''
+declare VPATH_ALREADY_EXISTED=false
+declare KILLED=false
 
 on_exit() {
-   local -r remove=false
-   if ${remove} ; then
-      [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+   if ${KILLED} ; then
+      if ! ${VPATH_ALREADY_EXISTED} ; then
+         # Don't destroy results created by a previous full run.
+         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+      fi
    fi
 }
 trap 'on_exit' EXIT
 
 on_sigint() {
    trap - SIGINT
+   KILLED=true
    exit 99
 }
 trap 'on_sigint' SIGINT
@@ -54,7 +59,11 @@ setup() {
    local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
    VPATH="${PWD}/run.${git_commit_hash:0:7}"
-   [ -d "${VPATH}" ] || ${MKDIR} -p "${VPATH}"
+   if [ -d "${VPATH}" ]; then
+      VPATH_ALREADY_EXISTED=true
+   else
+      ${MKDIR} -p "${VPATH}"
+   fi
 
    if ! [ -f "${TS}" ] || ! [ -f "${VPATH}/Makefile" ]; then
       # Make sure that the symlinks to common_hdrs exist.
