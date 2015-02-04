@@ -1,3 +1,5 @@
+dnl INTEL CONFIDENTIAL - For Intel Internal Use Only
+
 dnl # AALSDK_LOCAL_GTEST(REL-PATH, VERSION)
 dnl # ---
 AC_DEFUN([AALSDK_LOCAL_GTEST], [

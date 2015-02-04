@@ -1,0 +1,10 @@
+#! /bin/sh
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+set -e
+mkdir -p ./libstdc++-v3/python/libstdcxx/v6
+cd ./libstdc++-v3/python/libstdcxx
+wget http://gcc.gnu.org/svn/gcc/trunk/libstdc++-v3/python/libstdcxx/__init__.py
+cd v6
+wget http://gcc.gnu.org/svn/gcc/trunk/libstdc++-v3/python/libstdcxx/v6/__init__.py
+wget http://gcc.gnu.org/svn/gcc/trunk/libstdc++-v3/python/libstdcxx/v6/printers.py
+wget http://gcc.gnu.org/svn/gcc/trunk/libstdc++-v3/python/libstdcxx/v6/xmethods.py

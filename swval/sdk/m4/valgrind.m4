@@ -1,3 +1,5 @@
+dnl INTEL CONFIDENTIAL - For Intel Internal Use Only
+
 dnl # AALSDK_PROG_VALGRIND
 dnl # ---
 AC_DEFUN([AALSDK_PROG_VALGRIND], [

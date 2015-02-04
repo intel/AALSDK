@@ -1,0 +1,12 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='gdb-OSAL_TestThreadGroup'
+
+. ./gdb-common
+
+run_gdbtui "${VPATH}/tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup" ${1+"$@"}
+
+exit $?

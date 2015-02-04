@@ -1,3 +1,5 @@
+dnl INTEL CONFIDENTIAL - For Intel Internal Use Only
+
 dnl # VERIFY_OPTIONS
 dnl # ---
 AC_DEFUN([VERIFY_OPTIONS], [
@@ -23,11 +25,11 @@ AC_DEFUN([VERIFY_OPTIONS], [
                AM_COND_IF([COND_WITH_GCOV], [AC_MSG_ERROR([only one of gcov or valgrind instrumentation may be selected.])])
               ])
 
-dnl   AM_COND_IF([COND_HAVE_GDB],
-dnl              [
-dnl               _conf_CFLAGS=`echo ${_conf_CFLAGS} | sed -re "s,-g([[[:space:]]]|$),-ggdb${ac_cv_gdb_dbg_level}\1,"`
-dnl               _conf_CXXFLAGS=`echo ${_conf_CXXFLAGS} | sed -re "s,-g([[[:space:]]]|$),-ggdb${ac_cv_gdb_dbg_level}\1,"`
-dnl              ])
+   AM_COND_IF([COND_WANT_GDB],
+              [
+               _conf_CFLAGS=`echo ${_conf_CFLAGS} | sed -re "s,-g([[[:space:]]]|$),-ggdb${ac_cv_gdb_dbg_level}\1,"`
+               _conf_CXXFLAGS=`echo ${_conf_CXXFLAGS} | sed -re "s,-g([[[:space:]]]|$),-ggdb${ac_cv_gdb_dbg_level}\1,"`
+              ])
 
    AC_SUBST([_conf_CPPFLAGS], ["${_conf_CPPFLAGS}"])
    AC_SUBST([_conf_CFLAGS],   ["${_conf_CFLAGS}"])
@@ -56,6 +58,12 @@ AM_COND_IF([COND_WITH_VALGRIND], [
 echo \
 "
 code is being instrumented for valgrind ${WITH_VALGRIND} analysis."
+])
+
+AM_COND_IF([COND_WANT_GDB], [
+echo \
+"
+gdb was requested."
 ])
 
 echo \

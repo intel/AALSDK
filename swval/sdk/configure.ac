@@ -81,6 +81,7 @@ AM_MISSING_PROG([AUTOM4TE], [autom4te])
 AALSDK_PROG_BASH
 AALSDK_PROG_FLEX
 AALSDK_PROG_GIT
+AALSDK_PROG_GDBTUI
 
 dnl ############################################################################
 dnl ## Checks for libraries ####################################################
@@ -141,6 +142,8 @@ AC_CONFIG_FILES([tests/nightly:tests/run/nightly.in], [chmod 755 tests/nightly])
 AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
 AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
 AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
+
+AC_CONFIG_FILES([gdb/gdbinit])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
