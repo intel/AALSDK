@@ -411,8 +411,8 @@ void batServiceAlloc::PingReceived(AAL::TransactionID const &rTranID)
 TEST_F(batServiceAlloc, SimpleAlloc)
 {
 #if __AAL_LINUX__
-   ASSERT_EQ(0, Require_NOKERNEL_Min_LD_LIBRARY_PATH());
-   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
+//   ASSERT_EQ(0, Require_NOKERNEL_Min_LD_LIBRARY_PATH());
+//   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
 #endif // __AAL_LINUX__
 
    AAL::NamedValueSet args = StartupArgs();
@@ -538,8 +538,8 @@ TEST_F(batServiceAlloc, SimpleAlloc)
 TEST_F(batServiceAlloc, RTStopWithoutServiceRelease)
 {
 #if __AAL_LINUX__
-   ASSERT_EQ(0, Require_NOKERNEL_Min_LD_LIBRARY_PATH());
-   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
+//   ASSERT_EQ(0, Require_NOKERNEL_Min_LD_LIBRARY_PATH());
+//   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
 #endif // __AAL_LINUX__
 
    AAL::NamedValueSet args = StartupArgs();

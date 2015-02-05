@@ -107,11 +107,16 @@ setup() {
       pushd "${VPATH}" >/dev/null 2>&1
 
       ${srcdir}/configure --with-gcov
-      ${MAKE}
-      ${MAKE} check
 
       popd >/dev/null 2>&1
    fi
+
+   pushd "${VPATH}" >/dev/null 2>&1
+
+   ${MAKE}
+   ${MAKE} check
+
+   popd >/dev/null 2>&1
 
    printf "\n"
    printf "%s\n" "${git_commit_hash}"

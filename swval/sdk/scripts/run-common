@@ -86,13 +86,18 @@ setup() {
       pushd "${VPATH}" >/dev/null 2>&1
 
       ${srcdir}/configure
-      ${MAKE}
-      ${MAKE} check
 
       popd >/dev/null 2>&1
-
-      [ -f "${TS}" ] || die "Something really bad happended."
    fi
+
+   pushd "${VPATH}" >/dev/null 2>&1
+
+   ${MAKE}
+   ${MAKE} check
+
+   popd >/dev/null 2>&1
+
+   [ -f "${TS}" ] || die "Something really bad happended."
 
    printf "\n"
    printf "%s\n" "${git_commit_hash}"

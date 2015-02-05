@@ -2,6 +2,7 @@
 
 gtest_cases=\
 cases/gtCommon.cpp \
+cases/gtCritSect.cpp \
 cases/gtSem.cpp \
 cases/gtNVS.cpp \
 cases/gtThreadGroup.cpp \
@@ -24,12 +25,6 @@ libgtest_la_CXXFLAGS=$(GTEST_CXXFLAGS)
 libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
--DOSAL_LIBDIR=\"$(abs_top_builddir)/aas/OSAL/.libs\" \
--DAAS_LIBDIR=\"$(abs_top_builddir)/aas/AASLib/.libs\" \
--DXLRT_LIBDIR=\"$(abs_top_builddir)/aas/XLRTLib/.libs\" \
--DXLRRMBROKER_LIBDIR=\"$(abs_top_builddir)/aas/XLRRMBrokerService/.libs\" \
--DAASEDS_LIBDIR=\"$(abs_top_builddir)/aas/AASEventDeliveryService/.libs\" \
--DUAIA_LIBDIR=\"$(abs_top_builddir)/aas/uAIA/.libs\" \
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
