@@ -498,25 +498,25 @@ module cci_emulator();
    // UMSG latency model to UMSG FIFO glue process
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 umsgff_write	<= 0;
+	 umsgff_write		<= 0;
       end
       else begin
 	 if ((umsg_data_slot != 255) && ~umsgff_full) begin
-	    umsgff_din <= { `ASE_RX0_UMSG, 1'b0,
+	    umsgff_din		<= { `ASE_RX0_UMSG, 1'b0,
 			  1'b0, 6'b0,
 			  1'b0, umsg_data_slot[4:0],
 			  umsg_data_array[umsg_data_slot] };
-	    umsgff_write <= 1;
+	    umsgff_write	<= 1;
 	 end
 	 else if ((umsg_hint_slot != 255) && ~umsgff_full) begin
-	    umsgff_din <= { `ASE_RX0_UMSG, 1'b0,
+	    umsgff_din		<= { `ASE_RX0_UMSG, 1'b0,
 			  1'b1, 6'b0,
 			  1'b0, umsg_hint_slot[4:0],
 			  `CCI_DATA_WIDTH'b0 };
-	    umsgff_write <= 1;
+	    umsgff_write	<= 1;
 	 end
 	 else begin
-	    umsgff_write  <= 0;
+	    umsgff_write	<= 0;
 	 end
       end
    end
@@ -577,9 +577,8 @@ module cci_emulator();
    int ase_rx1_intrvalid_cnt;
    int ase_tx0_rdvalid_cnt;
    int ase_tx1_wrvalid_cnt;
+   int ase_tx1_wrfence_cnt;   
    int ase_tx1_intrvalid_cnt;
-
-   // int csr_write_enabled_cnt;
 
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -591,20 +590,33 @@ module cci_emulator();
 	 ase_rx1_wrvalid_cnt = 0;
 	 ase_tx0_rdvalid_cnt = 0;
 	 ase_tx1_wrvalid_cnt = 0;
+	 ase_tx1_wrfence_cnt = 0;
       end
       else begin
 	 // RX channels
-	 if (rx_c0_cfgvalid)  ase_rx0_cfgvalid_cnt	<= ase_rx0_cfgvalid_cnt + 1;
-	 if (rx_c0_rdvalid)   ase_rx0_rdvalid_cnt	<= ase_rx0_rdvalid_cnt + 1;
-	 if (rx_c0_wrvalid)   ase_rx0_wrvalid_cnt	<= ase_rx0_wrvalid_cnt + 1;
-	 if (rx_c0_umsgvalid) ase_rx0_umsgvalid_cnt     <= ase_rx0_umsgvalid_cnt + 1;
-	 if (rx_c0_intrvalid) ase_rx0_intrvalid_cnt     <= ase_rx0_intrvalid_cnt + 1;	 
-	 if (rx_c1_wrvalid)   ase_rx1_wrvalid_cnt	<= ase_rx1_wrvalid_cnt + 1;
-	 if (rx_c1_intrvalid) ase_rx1_intrvalid_cnt     <= ase_rx1_intrvalid_cnt + 1;	 
+	 if (rx_c0_cfgvalid)  
+	   ase_rx0_cfgvalid_cnt		<= ase_rx0_cfgvalid_cnt + 1;
+	 if (rx_c0_rdvalid)   
+	   ase_rx0_rdvalid_cnt		<= ase_rx0_rdvalid_cnt + 1;
+	 if (rx_c0_wrvalid)   
+	   ase_rx0_wrvalid_cnt		<= ase_rx0_wrvalid_cnt + 1;
+	 if (rx_c0_umsgvalid) 
+	   ase_rx0_umsgvalid_cnt	<= ase_rx0_umsgvalid_cnt + 1;
+	 if (rx_c0_intrvalid) 
+	   ase_rx0_intrvalid_cnt	<= ase_rx0_intrvalid_cnt + 1;	 
+	 if (rx_c1_wrvalid)   
+	   ase_rx1_wrvalid_cnt		<= ase_rx1_wrvalid_cnt + 1;
+	 if (rx_c1_intrvalid) 
+	   ase_rx1_intrvalid_cnt	<= ase_rx1_intrvalid_cnt + 1;	 
 	 // TX channels
-	 if (tx_c0_rdvalid)   ase_tx0_rdvalid_cnt	<= ase_tx0_rdvalid_cnt + 1;
-	 if (tx_c1_wrvalid)   ase_tx1_wrvalid_cnt	<= ase_tx1_wrvalid_cnt + 1;
-	 if (tx_c1_intrvalid) ase_tx1_intrvalid_cnt     <= ase_tx1_intrvalid_cnt + 1;	 
+	 if (tx_c0_rdvalid)   
+	   ase_tx0_rdvalid_cnt		<= ase_tx0_rdvalid_cnt + 1;	 
+ 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE))   
+	   ase_tx1_wrvalid_cnt		<= ase_tx1_wrvalid_cnt + 1;
+ 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE))   
+	   ase_tx1_wrfence_cnt		<= ase_tx1_wrfence_cnt + 1;
+	 if (tx_c1_intrvalid) 
+	   ase_tx1_intrvalid_cnt	<= ase_tx1_intrvalid_cnt + 1;	 
       end
    end
 
@@ -627,6 +639,7 @@ module cci_emulator();
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
 	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
 	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
+	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt ); 
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -1656,8 +1669,8 @@ module cci_emulator();
 		  if (cfg.enable_cl_view) $display("%d\tWrLineReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
 	       end
 	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE) begin
-		  $fwrite(log_fd, "%d\tWrFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
-		  if (cfg.enable_cl_view) $display("%d\tWrFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
+		  $fwrite(log_fd, "%d\tWriteFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
+		  if (cfg.enable_cl_view) $display("%d\tWriteFence\t1\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
 	       end
 	       else begin
 		  $fwrite(log_fd, "WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
@@ -1673,7 +1686,7 @@ module cci_emulator();
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
    // Read response checking
-   int read_check_array[*];
+   int unsigned read_check_array[*];
    always @(posedge clk) begin
       if (tx_c0_rdvalid) begin
 	 read_check_array[tx_c0_header[`TX_MDATA_BITRANGE]] = tx_c0_header[`TX_CLADDR_BITRANGE];
@@ -1683,10 +1696,11 @@ module cci_emulator();
 	   read_check_array.delete(rx_c0_header[`TX_MDATA_BITRANGE]);
       end
    end
+   
    // Write response checking
-   int write_check_array[*];
+   int unsigned write_check_array[*];
    always @(posedge clk) begin
-      if (tx_c1_wrvalid && (tx_c0_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE)) begin
+      if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE)) begin
 	 write_check_array[tx_c1_header[`TX_MDATA_BITRANGE]] = tx_c1_header[`TX_CLADDR_BITRANGE];
       end
       if (rx_c1_wrvalid) begin

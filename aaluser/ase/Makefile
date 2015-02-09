@@ -99,6 +99,7 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 SNPS_VLOGAN_OPT+= +define+SVA_OFF +define+SIMPLE_CLKS
 # SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v -v $(QUARTUS_HOME)/eda/sim_lib/220model.v -v $(QUARTUS_HOME)/eda/sim_lib/sgate.v -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v -lca $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v  +incdir+$(QUARTUS_HOME)/eda/sim_lib 
+SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate

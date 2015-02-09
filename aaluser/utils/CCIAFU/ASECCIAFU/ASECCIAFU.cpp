@@ -67,6 +67,7 @@ CriticalSection ASECCIAFU::sm_ASEMtx;
 
 void ASECCIAFU::init(TransactionID const &TranID)
 {
+  session_init();
    QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
                                                                  Client(),
                                                                  dynamic_cast<IBase *>(this),
@@ -75,11 +76,13 @@ void ASECCIAFU::init(TransactionID const &TranID)
 
 btBool ASECCIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
+  session_deinit();
    return ServiceBase::Release(TranID, timeout);
 }
 
 btBool ASECCIAFU::Release(btTime timeout)
 {
+  session_deinit();
    return ServiceBase::Release(timeout);
 }
 
