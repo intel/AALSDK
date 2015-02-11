@@ -234,10 +234,10 @@ protected:
 #define VERBOSE(x) AAL_VERBOSE(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
 
 template <TTASK_MODE mode>
-class HWAFUWkspcDelegate : public AAL::AAS::DeviceServiceBase
+class HWAFUWkspcDelegate : public DeviceServiceBase
 {
 public:
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWAFUWkspcDelegate, AAL::AAS::DeviceServiceBase) {}
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWAFUWkspcDelegate, DeviceServiceBase) {}
 
 protected:
    void WkspcAlloc(btWSSize ,
@@ -259,7 +259,7 @@ void HWAFUWkspcDelegate<mode>::WkspcAlloc(btWSSize             Length,
                      true);
 
    // Create the Transaction
-   AAL::AAS::AIA::FAP_10::WkSp_Single_Allocate_AFUTransaction AFUTran(Length, mode);
+   WkSp_Single_Allocate_AFUTransaction AFUTran(Length, mode);
 
    // Check the parameters
    if ( AFUTran.IsOK() ) {
@@ -268,11 +268,11 @@ void HWAFUWkspcDelegate<mode>::WkspcAlloc(btWSSize             Length,
       AFUDev().SendTransaction(&AFUTran, tid);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "AFUTran validity check failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "AFUTran validity check failed");
       SendMsg(
          new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                             pExcept)
@@ -294,18 +294,18 @@ void HWAFUWkspcDelegate<mode>::WkspcFree(btVirtAddr           Address,
                      HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler,
                      true);
 
-   AAL::AAS::AIA::FAP_10::WkSp_Single_Free_AFUTransaction AFUTran(&AFUDev(), Address);
+   WkSp_Single_Free_AFUTransaction AFUTran(&AFUDev(), Address);
 
    if ( AFUTran.IsOK() ) {
 
       AFUDev().SendTransaction(&AFUTran, tid);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errMemory,
-                                                                               reasUnknown,
-                                                                               "AFUTran validity check failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasUnknown,
+                                                                     "AFUTran validity check failed");
       SendMsg(
          new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                         pExcept)
@@ -320,10 +320,10 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    HWAFUWkspcDelegate<mode> *This = static_cast<HWAFUWkspcDelegate<mode> *>(theEvent.Object().Context());
 
    // Recover the original wrapped TransactionID
-   TransactionID OrigTranID = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent);
+   TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   AAL::AAS::AIA::IUIDriverClientEvent &revt = subclass_ref<AAL::AAS::AIA::IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
@@ -385,11 +385,11 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
-                                                                            OrigTranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
+                                                                  OrigTranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    This->SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
                                                                      pExcept) );
 }
@@ -401,10 +401,10 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    HWAFUWkspcDelegate<mode> *This = static_cast<HWAFUWkspcDelegate<mode> *>(theEvent.Object().Context());
 
    // Recover the original wrapped TransactionID
-   TransactionID OrigTranID = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent);
+   TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   AAL::AAS::AIA::IUIDriverClientEvent &revt = subclass_ref<AAL::AAS::AIA::IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
@@ -463,11 +463,11 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
-                                                                            OrigTranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
+                                                                  OrigTranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    This->SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
                                                                  pExcept) );
 }

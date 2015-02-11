@@ -75,10 +75,11 @@
 #define __AALSDK_KERNEL_AALRM_CLIENT_H__
 #include <aalsdk/kernel/aalrm.h>
 
-#define RESMGR_DEV_NAME "aalresmgr"
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
+#define RESMGR_DEV_NAME "aalresmgr"
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,4 +154,7 @@ struct req_reldev
 
 END_C_DECLS
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AALRM_CLIENT_H__
+

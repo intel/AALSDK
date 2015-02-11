@@ -61,8 +61,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 //=============================================================================
@@ -172,8 +170,6 @@ public:
 
 };
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_UAIA_AIA_H__

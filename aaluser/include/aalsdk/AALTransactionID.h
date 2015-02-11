@@ -67,7 +67,6 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 
-
 #ifdef __cplusplus
 
 BEGIN_NAMESPACE(AAL)
@@ -160,7 +159,7 @@ public:
    /// @param MsgHandler
    /// @param Filter
    TransactionID(btApplicationContext         ID,
-                 AAL::AAS::IMessageHandler   *MsgHandler,
+                 IMessageHandler             *MsgHandler,
                  btBool                       Filter = true);
 
    /// @brief Application specified ID and Handler
@@ -168,7 +167,7 @@ public:
    /// @param MsgHandler
    /// @param Filter
    TransactionID(bt32bitInt                   intID,
-                 AAL::AAS::IMessageHandler   *MsgHandler,
+                 IMessageHandler             *MsgHandler,
                  btBool                       Filter=true);
 
    /// @brief Application specified ID, Context, Handler, Filter
@@ -178,13 +177,13 @@ public:
    /// @param Filter
    TransactionID(bt32bitInt                   intID,
                  btApplicationContext         ID,
-                 AAL::AAS::IMessageHandler   *MsgHandler,
+                 IMessageHandler             *MsgHandler,
                  btBool                       Filter=true);
 
    /// @brief System assigned ID application provided Handler.
    /// @param MsgHandler
    /// @param Filter
-   TransactionID(AAL::AAS::IMessageHandler   *MsgHandler,
+   TransactionID(IMessageHandler             *MsgHandler,
                  btBool                       Filter=true);
 
    /// TransactionID Destructor.
@@ -193,14 +192,14 @@ public:
    //Accessors
    btApplicationContext        Context() const;
    btEventHandler              Handler() const;
-   AAL::AAS::IMessageHandler  *MsgHandler() const;
+   IMessageHandler            *MsgHandler() const;
    btBool                      Filter()  const;
    bt32bitInt                  ID()      const;
 
    // Mutators
    void Context(btApplicationContext Context)             { m_tid.m_ID = Context;                }
    void Handler(btEventHandler Handler)                   { m_tid.m_Handler = Handler;           }
-   void MsgHandler(AAL::AAS::IMessageHandler *MsgHandler) { m_tid.m_MessageHandler = MsgHandler; }
+   void MsgHandler(IMessageHandler *MsgHandler)           { m_tid.m_MessageHandler = MsgHandler; }
    void Filter(btBool Filter)                             { m_tid.m_Filter = Filter;             }
    void ID(bt32bitInt intID)                              { m_tid.m_intID = intID;               }
 

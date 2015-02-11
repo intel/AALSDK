@@ -47,12 +47,7 @@
 #include "ServiceBroker.h"
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< AAL::ServiceBroker >
-
-#define RRMBROKER_VERSION_CURRENT  0
-#define RRMBROKER_VERSION_REVISION 0
-#define RRMBROKER_VERSION_AGE      0
-#define RRMBROKER_VERSION          "0.0.0"
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ServiceBroker >
 
 #if defined ( __AAL_WINDOWS__ )                                               
 # pragma warning(push)
@@ -69,7 +64,6 @@ AAL_END_SVC_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-USING_NAMESPACE(XL)
 
 
 //=============================================================================
@@ -89,9 +83,9 @@ void ServiceBroker::init(TransactionID const &rtid)
    //  using a ServiceHost allows us to specifically plug in the built-in
    //  implementation. NOTE: This is  the way the default runtime services
    //  are bootstrapped.
-   m_pRMSvcHost = new XL::RT::ServiceHost(AAL_BUILTIN_SVC_MOD_ENTRY_POINT(librrm),
-                                          getRuntime(),
-                                          getRuntimeServiceProvider());
+   m_pRMSvcHost = new ServiceHost(AAL_BUILTIN_SVC_MOD_ENTRY_POINT(librrm),
+                                  getRuntime(),
+                                  getRuntimeServiceProvider());
 
    //Allocate the service.
 
@@ -100,16 +94,16 @@ void ServiceBroker::init(TransactionID const &rtid)
 
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
-   if(false == m_pRMSvcHost->allocService( dynamic_cast<AAL::IBase*>(this), NamedValueSet(), tid, AAL::XL::RT::IRuntime::NoRuntimeClientNotification ) ){
+   if ( !m_pRMSvcHost->allocService( dynamic_cast<IBase*>(this), NamedValueSet(), tid, IRuntime::NoRuntimeClientNotification ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                               Client(),
-                                                               this,
-                                                               rtid,
-                                                               errServiceNotFound,
-                                                               reasUnknown,
-                                                               "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    rtid,
+                                                    errServiceNotFound,
+                                                    reasUnknown,
+                                                    "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
   }
 }
 
@@ -128,8 +122,8 @@ void ServiceBroker::init(TransactionID const &rtid)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void ServiceBroker::serviceAllocated( AAL::IBase          *pServiceBase,
-                                      TransactionID const &rTranID)
+void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
+                                     TransactionID const &rTranID)
 {
    AutoLock(this);
 
@@ -137,23 +131,25 @@ void ServiceBroker::serviceAllocated( AAL::IBase          *pServiceBase,
    m_Transactions.erase(rTranID);
 
    m_ResMgrBase = pServiceBase;
-   m_ResMgr     = subclass_ptr<AAL::IResourceManager>(pServiceBase);
-   if(NULL == m_ResMgr){
+   m_ResMgr     = subclass_ptr<IResourceManager>(pServiceBase);
+   if ( NULL == m_ResMgr ) {
 
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                               Client(),
-                                                               this,
-                                                               origTid,
-                                                               errMethodNotImplemented,
-                                                               reasNotImplemented,
-                                                               "Service does not support IResourceManager") );
+      QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                     Client(),
+                                                     this,
+                                                     origTid,
+                                                     errMethodNotImplemented,
+                                                     reasNotImplemented,
+                                                     "Service does not support IResourceManager") );
       return;
    }
+
    m_bIsOK = true;
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   origTid));
+
+   QueueAASEvent( new ObjectCreatedEvent(getRuntimeClient(),
+                                         Client(),
+                                         dynamic_cast<IBase *>(this),
+                                         origTid) );
 }
 
 //=============================================================================
@@ -167,18 +163,18 @@ void ServiceBroker::serviceAllocated( AAL::IBase          *pServiceBase,
 //=============================================================================
 void ServiceBroker::serviceAllocateFailed(const IEvent        &rEvent)
 {
-   AAL::TransactionID TranID = AAL::dynamic_ref<ITransactionEvent>(iidTranEvent,rEvent).TranID();
+   TransactionID TranID = dynamic_ref<ITransactionEvent>(iidTranEvent,rEvent).TranID();
    TransactionID origTid = m_Transactions[TranID];
    m_Transactions.erase(TranID);
 
    // If we were unable to load the ResourceManager then we cannot load.
-   QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                            Client(),
-                                                            this,
-                                                            origTid,
-                                                            errServiceNotFound,
-                                                            reasInvalidService,
-                                                            strInvalidService)  );
+   QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                  Client(),
+                                                  this,
+                                                  origTid,
+                                                  errServiceNotFound,
+                                                  reasInvalidService,
+                                                  strInvalidService) );
 
 }
 
@@ -195,10 +191,10 @@ void ServiceBroker::serviceFreed(TransactionID const &rTranID)
 {
    AutoLock(this);
    // If we were unable to load the ResourceManager then we cannot load.
-   SendMsg(new AAL::XL::RT::ServiceClientMessage(Client(),
-                                    this,
-                                    AAL::XL::RT::ServiceClientMessage::Freed,
-                                    rTranID) );
+   SendMsg( new ServiceClientMessage(Client(),
+                                     this,
+                                     ServiceClientMessage::Freed,
+                                     rTranID) );
 }
 
 //=============================================================================
@@ -208,10 +204,10 @@ void ServiceBroker::serviceFreed(TransactionID const &rTranID)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void ServiceBroker::allocService(AAL::IBase                          *pServiceBase,
-                                 const NamedValueSet                 &rManifest,
-                                 TransactionID const                 &rTranID,
-                                 AAL::XL::RT::IRuntime::eAllocatemode mode)
+void ServiceBroker::allocService(IBase                   *pServiceBase,
+                                 const NamedValueSet     &rManifest,
+                                 TransactionID const     &rTranID,
+                                 IRuntime::eAllocatemode  mode)
 {
    // Process the manifest
    btcString            sName = NULL;
@@ -224,10 +220,11 @@ void ServiceBroker::allocService(AAL::IBase                          *pServiceBa
    if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
       return;
    }
-   // If this Service is not pure software then use Resource Manager
-   if( !ConfigRecord->Has(AAL_FACTORY_CREATE_SOFTWARE_SERVICE)){
 
-      if(NULL != m_ResMgr ) {
+   // If this Service is not pure software then use Resource Manager
+   if ( !ConfigRecord->Has(AAL_FACTORY_CREATE_SOFTWARE_SERVICE) ) {
+
+      if ( NULL != m_ResMgr ) {
 
          // Need to save the pServiceClient to be able to generate the final event
          TransactionID tid;
@@ -237,36 +234,36 @@ void ServiceBroker::allocService(AAL::IBase                          *pServiceBa
 
          m_ResMgr->RequestResource(rManifest, tid );
 
-      }else{
-         // Throw error
+      } else {
+         // TODO Throw error
       }
       return;
-   }else{
-      XL::RT::ServiceHost *SvcHost = NULL;
+   } else {
+      ServiceHost *SvcHost = NULL;
       if ( NULL == (SvcHost = findServiceHost(sName)) ) {
          // Instantiate the core facilities
-         SvcHost = new XL::RT::ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
+         SvcHost = new ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
       }
 
       if ( !SvcHost->IsOK() ) {
-         QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                                 Client(),
-                                                                 NULL,
-                                                                 rTranID,
-                                                                 errCreationFailure,
-                                                                 reasInternalError,
-                                                                 "Failed to load Service"));
+         QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                        Client(),
+                                                        NULL,
+                                                        rTranID,
+                                                        errCreationFailure,
+                                                        reasInternalError,
+                                                        "Failed to load Service") );
       }
 
       // Allocate the service
       if ( !SvcHost->allocService(pServiceBase, rManifest, rTranID, mode) ) {
-         QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 NULL,
-                                                                 rTranID,
-                                                                 errCreationFailure,
-                                                                 reasInternalError,
-                                                                 "Failed to construct Service"));
+         QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                        Client(),
+                                                        NULL,
+                                                        rTranID,
+                                                        errCreationFailure,
+                                                        reasInternalError,
+                                                        "Failed to construct Service") );
       } else {
          // Save the ServiceHost
          m_ServiceMap[std::string(sName)] = SvcHost;
@@ -281,10 +278,10 @@ void ServiceBroker::allocService(AAL::IBase                          *pServiceBa
 // Interface: public
 // Comments:
 //=============================================================================
-XL::RT::ServiceHost *ServiceBroker::findServiceHost(std::string const &sName)
+ServiceHost * ServiceBroker::findServiceHost(std::string const &sName)
 {
    Servicemap_itr itr = m_ServiceMap.find(sName);
-   if ( itr == m_ServiceMap.end() ) {
+   if ( m_ServiceMap.end() == itr ) {
       return NULL;
    }
    return itr->second;
@@ -457,12 +454,12 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
    //------------------------------------------
    if ( m_servicecount ) {
       // Timed out - Shutdown did not succeed
-      QueueAASEvent(new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                             exttranevtServiceShutdown,
-                                                             rTranID,
-                                                             errSystemTimeout,
-                                                             reasSystemTimeout,
-                                                             const_cast<btString>(strSystemTimeout)));
+      QueueAASEvent( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                    exttranevtServiceShutdown,
+                                                    rTranID,
+                                                    errSystemTimeout,
+                                                    reasSystemTimeout,
+                                                    const_cast<btString>(strSystemTimeout)) );
       Unlock();
    } else {
 #if 0
@@ -474,7 +471,7 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                           );
 #endif
 
-      QueueAASEvent(new AAL::AAS::CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL));
+      QueueAASEvent( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
 
       // Clear the map now
       m_ServiceMap.clear();
@@ -507,7 +504,7 @@ void ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
 void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 {
    // get second ptr
-   AAL::AAS::IServiceModule *pProvider = (*itr).second->getProvider();
+   IServiceModule *pProvider = (*itr).second->getProvider();
 
    pProvider->Destroy();
 
@@ -565,15 +562,15 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
  void ServiceBroker::resourceAllocated( NamedValueSet const &nvsInstancerecord,
                                         TransactionID const &tid )
  {
-    // Process the manifest
-     btcString            sName = NULL;
+     // Process the manifest
+     btcString sName = NULL;
 
      // Get the original Tid and ServiceBase from the cache
      TransactionID origTid = m_Transactions[tid];
      m_Transactions.erase(tid);
 
-     AAL::IBase *pClientBase = m_ServiceClientMap[tid].ServiceBase;
-     AAL::btBool NoRuntimeEvent = m_ServiceClientMap[tid].NoRuntimeEvent;
+     IBase *pClientBase    = m_ServiceClientMap[tid].ServiceBase;
+     btBool NoRuntimeEvent = m_ServiceClientMap[tid].NoRuntimeEvent;
      m_ServiceClientMap.erase(tid);
 
      NamedValueSet const *ConfigRecord;
@@ -584,31 +581,32 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
         return;
      }
-     XL::RT::ServiceHost *SvcHost = NULL;
+
+     ServiceHost *SvcHost = NULL;
      if ( NULL == (SvcHost = findServiceHost(sName)) ) {
         // Instantiate the core facilities
-        SvcHost = new XL::RT::ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
+        SvcHost = new ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
      }
 
      if ( !SvcHost->IsOK() ) {
-        QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
-                                                                NULL,
-                                                                origTid,
-                                                                errCreationFailure,
-                                                                reasInternalError,
-                                                                "Failed to load Service"));
+        QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                       dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
+                                                       NULL,
+                                                       origTid,
+                                                       errCreationFailure,
+                                                       reasInternalError,
+                                                       "Failed to load Service") );
      }
 
      // Allocate the service
      if ( !SvcHost->allocService(pClientBase, nvsInstancerecord, origTid) ) {
-        QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
-                                                                NULL,
-                                                                origTid,
-                                                                errCreationFailure,
-                                                                reasInternalError,
-                                                                "Failed to construct Service"));
+        QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                       dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
+                                                       NULL,
+                                                       origTid,
+                                                       errCreationFailure,
+                                                       reasInternalError,
+                                                       "Failed to construct Service") );
      } else {
         // Save the ServiceHost
         m_ServiceMap[std::string(sName)] = SvcHost;
@@ -634,15 +632,15 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
     TransactionID origTid = m_Transactions[tid];
     m_Transactions.erase(tid);
 
-    AAL::IBase *pClientBase = m_ServiceClientMap[tid].ServiceBase;
+    IBase *pClientBase = m_ServiceClientMap[tid].ServiceBase;
     m_ServiceClientMap.erase(tid);
-    QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                            dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase),
-                                                            NULL,
-                                                            origTid,
-                                                            errCreationFailure,
-                                                            reasResourcesNotAvailable,
-                                                            strNoResourceDescr));
+    QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                   dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase),
+                                                   NULL,
+                                                   origTid,
+                                                   errCreationFailure,
+                                                   reasResourcesNotAvailable,
+                                                   strNoResourceDescr) );
  }
 
  //=============================================================================
@@ -659,3 +657,5 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
 
 END_NAMESPACE(AAL)
+
+

@@ -60,12 +60,12 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// ASESPLAFU is selected by passing the Named Value pair (SPLAFU_NVS_KEY_TARGET, SPLAFU_NVS_VAL_TARGET_ASE)
 /// in the arguments to IRuntime::allocService when requesting an SPLAFU.
-class ASESPLAFU_API ASESPLAFU : public AAL::AAS::ServiceBase,
+class ASESPLAFU_API ASESPLAFU : public ServiceBase,
                                 public ISPLAFU
 {
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASESPLAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASESPLAFU, ServiceBase),
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {

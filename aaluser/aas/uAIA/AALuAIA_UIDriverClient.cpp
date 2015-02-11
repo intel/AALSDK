@@ -56,8 +56,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 IUIDriverClientEvent::~IUIDriverClientEvent() {}
 IUIDriverClientEventExceptionEvent::~IUIDriverClientEventExceptionEvent() {}
@@ -501,11 +499,11 @@ FAILED: // If got here then DeviceIoControl failed.
       }
 
       Unlock();
-      AAL_VERBOSE(LM_UAIA, "UIDriverClient::GetMessage: About to wait" << endl);
+      AAL_VERBOSE(LM_UAIA, "UIDriverClient::GetMessage: About to wait" << std::endl);
 
       ret = poll(pollfds, 1, -1);
       if ( ret != 1 ) {   // expect a 1 here, generally
-         AAL_DEBUG(LM_UAIA, "UIDriverClient::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << endl);
+         AAL_DEBUG(LM_UAIA, "UIDriverClient::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << std::endl);
       }
 
    // TODO: HM 20090605 Joe and I both think this logic is buggy. Revisit.
@@ -639,7 +637,7 @@ UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
       ioctlCMD = AALUID_IOCTL_SENDMSG;
       break;
     default:
-      cerr<< "UIDRV: Unknown command class" <<endl;
+      std::cerr << "UIDRV: Unknown command class" << std::endl;
       rThis.IsOK(false);    //ERROR
       break;
    }
@@ -651,7 +649,5 @@ UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
 END_C_DECLS
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

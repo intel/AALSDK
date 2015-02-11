@@ -45,12 +45,8 @@
 #define __AALSDK_UTILS_CSYNCCLIENT_H__
 
 #include <aalsdk/AAL.h>
-using namespace AAL;
-using namespace AAS;
-
 #include <aalsdk/xlRuntime.h>
-using namespace XL;
-using namespace RT;
+using namespace AAL;
 
 
 // Convenience macros for printing messages and errors.
@@ -75,8 +71,8 @@ using namespace RT;
 ///    specific I<specificService>Client.
 
 class CSyncClient: public CAASBase,
-                   public AAL::XL::RT::IRuntimeClient,
-                   public AAL::AAS::IServiceClient
+                   public IRuntimeClient,
+                   public IServiceClient
 {
 public:
    /// Default Constructor just gets memory initialized and registers interfaces
@@ -87,8 +83,8 @@ public:
          m_pCurrentService(NULL),
          m_pAALService(NULL)
    { // Publish our interface
-      SetInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
-      SetInterface(iidServiceClient, dynamic_cast<AAL::AAS::IServiceClient*>(this));
+      SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient*>(this));
       m_Sem.Create(0, INT_MAX);
       m_bIsOK = true;
    }
@@ -137,7 +133,7 @@ public:
    { /* Ignored */
    }
    /// CSyncClient implementation of IRuntimeClient::runtimeAllocateServiceSucceeded
-   void runtimeAllocateServiceSucceeded(AAL::IBase *pClient,
+   void runtimeAllocateServiceSucceeded(IBase *pClient,
          TransactionID const &rTranID)
    { /* Ignored */
    }
@@ -176,7 +172,7 @@ public:
    // <begin IServiceClient interface>
 
    /// CSyncClient implementation of IServiceClient::serviceAllocated
-   void serviceAllocated( AAL::IBase *pServiceBase, TransactionID const &rTranID)
+   void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID)
    {
       // pServiceBase should be valid, because if the call to allocService() failed
       //    it would come back in serviceAllocateFailed.
@@ -232,7 +228,7 @@ public:
    ///    set m_pCurrentService and m_pAALService, and then Post(),
    ///    which wakes up here in the Wait().
    /// @param[in] rManifest defines the Service to be Allocated
-   AAL::IBase *syncAllocService(const NamedValueSet &rManifest)
+   IBase *syncAllocService(const NamedValueSet &rManifest)
    {
       m_runTime.allocService(this, rManifest);
       Wait();                                // Posted and Set in serviceAllocated
@@ -249,13 +245,13 @@ public:
 
 protected:
    btBool               m_bIsOK;             ///< Tracks status of this object
-   AAL::XL::RT::Runtime m_runTime;           ///< XL framework
+   Runtime              m_runTime;           ///< XL framework
    CSemaphore           m_Sem;               ///< For synchronizing with the AAL runtime.
    bool                 m_bRunningStatus;    ///< tracks if the runtime is up and running
-   AAL::IBase          *m_pCurrentService;   ///< Cached value from AllocateService. Pointer
+   IBase               *m_pCurrentService;   ///< Cached value from AllocateService. Pointer
                                              //    base object containing the Service.
                                              //    Should not normally be needed.
-   AAL::IAALService    *m_pAALService;       ///< The generic AAL Service interface for the AFU,
+   IAALService         *m_pAALService;       ///< The generic AAL Service interface for the AFU,
                                              //    used for Release.
 }; // CSyncClient
 

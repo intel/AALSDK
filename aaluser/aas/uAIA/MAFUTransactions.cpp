@@ -62,8 +62,6 @@ MAFUTRANS_END_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 //=============================================================================
@@ -223,8 +221,6 @@ btBool         Destroy_AFUTransaction::IsOK()          { return m_bIsOK;        
 std::string    Destroy_AFUTransaction::GetError()      { return m_ErrorString;     }
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

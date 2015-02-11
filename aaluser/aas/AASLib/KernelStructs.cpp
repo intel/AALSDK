@@ -56,6 +56,8 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include "aalsdk/AALDefs.h"
+
 #include "aalsdk/kernel/KernelStructs.h"
 #include "aalsdk/utils/ResMgrUtilities.h"   // for GUIDStructFromU64, GUIDStringFromStruct
 
@@ -67,11 +69,15 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // Name:        std::ostream& operator << of btVirtAddr
 // Description: btVirtAddr is a char* but needs to print as a void*
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const AAL::btVirtAddr &pVirt)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const btVirtAddr &pVirt)
 {
    // remember flag and fill state
    // std::ios::fmtflags defaultFlags = s.flags();
@@ -97,7 +103,8 @@ std::ostream & operator << (std::ostream &s, const AAL::btVirtAddr &pVirt)
 // Name:        std::ostream& operator << of LogLevel_t
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const AAL::LogLevel_t &loglevel)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const LogLevel_t &loglevel)
 {
 #define LogLevel_t_CASE(x, msg) case x : s << msg << static_cast<int>(loglevel); break
 
@@ -145,7 +152,8 @@ std::ostream & operator << (std::ostream &s, const AAL::LogLevel_t &loglevel)
 // Name:        std::ostream& operator << of stTransactionID_t
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const AAL::stTransactionID_t& tranid)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const stTransactionID_t &tranid)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -169,7 +177,8 @@ std::ostream& operator << (std::ostream& s, const AAL::stTransactionID_t& tranid
 // Name:        std::ostream& operator << of aal_bus_types_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aal_bus_types_e& bustype)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aal_bus_types_e &bustype)
 {
 #define aal_bus_types_e_CASE(x, msg) case x : s << msg; break
 
@@ -206,7 +215,8 @@ std::ostream& operator << (std::ostream& s, const aal_bus_types_e& bustype)
 // Name:        std::ostream& operator << of aal_device_type_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aal_device_type_e& devtype)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aal_device_type_e &devtype)
 {
 #define aal_device_type_e_CASE(x, msg) case x : s << msg; break
 
@@ -239,7 +249,8 @@ std::ostream& operator << (std::ostream& s, const aal_device_type_e& devtype)
 // Name:        std::ostream& operator << of aal_device_addr
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aal_device_addr& devaddr)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aal_device_addr &devaddr)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -262,7 +273,8 @@ std::ostream& operator << (std::ostream& s, const aal_device_addr& devaddr)
 // Name:        std::ostream& operator << of aal_device_id
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aal_device_id& devid)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aal_device_id &devid)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -275,8 +287,8 @@ std::ostream& operator << (std::ostream& s, const aal_device_id& devid)
                  "pipGUID:     " << devid.m_pipGUID << "\n\t"
                  "ahmGUID:     " << devid.m_ahmGUID << "\n\t"
                  "afuGUID:     " << devid.m_afuGUIDh << " " << devid.m_afuGUIDl <<
-                 "\t"            << AAL::AAS::GUIDStringFromStruct(AAL::AAS::GUIDStructFrom2xU64(devid.m_afuGUIDh, devid.m_afuGUIDl)) <<
-//                 "\t"            << AAL::AAS::GUIDStringFromStruct(AAL::AAS::GUIDStructFromU64(devid.m_afuGUID)) <<
+                 "\t"            << GUIDStringFromStruct(GUIDStructFrom2xU64(devid.m_afuGUIDh, devid.m_afuGUIDl)) <<
+//                 "\t"            << GUIDStringFromStruct(GUIDStructFromU64(devid.m_afuGUID)) <<
          "\n" << devid.m_devaddr;
 
    // reset flag and fill state
@@ -289,7 +301,8 @@ std::ostream& operator << (std::ostream& s, const aal_device_id& devid)
 // Name:        std::ostream& operator << of device_attrib
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const device_attrib& devattr)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const device_attrib &devattr)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -318,7 +331,8 @@ std::ostream& operator << (std::ostream& s, const device_attrib& devattr)
 // Name:        std::ostream& operator << of krms_cfgUpDate_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const krms_cfgUpDate_e& update)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const krms_cfgUpDate_e &update)
 {
 #define krms_cfgUpDate_e_CASE(x, msg) case x : s << msg; break
 
@@ -354,7 +368,8 @@ std::ostream& operator << (std::ostream& s, const krms_cfgUpDate_e& update)
 // Name:        std::ostream& operator << of aalrms_configUpDateEvent
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aalrms_configUpDateEvent& event)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aalrms_configUpDateEvent &event)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -377,7 +392,8 @@ std::ostream& operator << (std::ostream& s, const aalrms_configUpDateEvent& even
 // Name:        std::ostream& operator << of rms_msgIDs_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const rms_msgIDs_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const rms_msgIDs_e &enumeration)
 {
 #define rms_msgIDs_e_CASE(x, msg) case x : s << #x ": " msg; break
 
@@ -418,7 +434,8 @@ std::ostream& operator << (std::ostream& s, const rms_msgIDs_e& enumeration)
 // Name:        std::ostream& operator << of rms_result_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const rms_result_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const rms_result_e &enumeration)
 {
 #define rms_result_e_CASE(x) case x : s << #x " "; break
 
@@ -457,7 +474,8 @@ std::ostream& operator << (std::ostream& s, const rms_result_e& enumeration)
 // Name:        std::ostream& operator << of aalrms_requestdevice
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const aalrms_requestdevice& reqdev)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aalrms_requestdevice &reqdev)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -468,7 +486,7 @@ std::ostream& operator << (std::ostream& s, const aalrms_requestdevice& reqdev)
          "\n\tPID:          " << reqdev.pid << " " << std::dec << reqdev.pid << std::hex <<
          "\n\tSize:         " << reqdev.size <<
          "\n\tManifest at   " << reqdev.manifest <<
-         "\n\tManifest data:\n" << *(static_cast<NamedValueSet*>(reqdev.manifest)) <<
+         "\n\tManifest data:\n" << *(static_cast<NamedValueSet *>(reqdev.manifest)) <<
          std::endl;
 
    // reset flag and fill state
@@ -481,7 +499,8 @@ std::ostream& operator << (std::ostream& s, const aalrms_requestdevice& reqdev)
 // Name:        std::ostream& operator << of aalrm_ioctlreq
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << ( std::ostream& s, const aalrm_ioctlreq& reqdev )
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const aalrm_ioctlreq &reqdev)
 {
    // remember flag and fill state
    std::ios::fmtflags defaultFlags = s.flags();
@@ -519,7 +538,8 @@ std::ostream& operator << ( std::ostream& s, const aalrm_ioctlreq& reqdev )
 // Name:        std::ostream& operator << of uid_msgIDs_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const uid_msgIDs_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const uid_msgIDs_e &enumeration)
 {
 #define uid_msgIDs_e_CASE(x, msg) case x : s << #x ": " msg; break
 
@@ -567,7 +587,8 @@ std::ostream& operator << (std::ostream& s, const uid_msgIDs_e& enumeration)
 // Name:        print_uid_errnum_e
 // Description: worker for operator << for uid_errnum_e
 //=============================================================================
-std::ostream& print_uid_errnum_e (std::ostream& s, const uid_errnum_e& enumeration)
+static
+std::ostream & print_uid_errnum_e(std::ostream &s, const uid_errnum_e &enumeration)
 {
 #define uid_errnum_e_CASE(x, msg) case x : s << #x " (" << ((int)x) << "): " msg; break
 
@@ -623,9 +644,10 @@ std::ostream& print_uid_errnum_e (std::ostream& s, const uid_errnum_e& enumerati
 // Name:        std::ostream& operator << of uid_errnum_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const uid_errnum_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const uid_errnum_e &enumeration)
 {
-   return print_uid_errnum_e( s, enumeration);
+   return print_uid_errnum_e(s, enumeration);
 } // std::ostream& operator << of uid_errnum_e
 
 #if 0
@@ -633,10 +655,10 @@ std::ostream& operator << (std::ostream& s, const uid_errnum_e& enumeration)
 // Name:        std::ostream& operator << of uid_errnum_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& AAL::operator << (std::ostream& s, const uid_errnum_e& enumeration)
+std::ostream& operator << (std::ostream& s, const uid_errnum_e& enumeration)
 {
    return print_uid_errnum_e( s, enumeration);
-} // std::ostream& AAL::operator << of uid_errnum_e
+} // std::ostream& operator << of uid_errnum_e
 #endif
 
 
@@ -644,7 +666,8 @@ std::ostream& AAL::operator << (std::ostream& s, const uid_errnum_e& enumeration
 // Name:        std::ostream& operator << of fappip_afuCmdID_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const fappip_afuCmdID_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const fappip_afuCmdID_e &enumeration)
 {
 #define fappip_afuCmdID_e_CASE(x) case x : s << #x ": "; break
 
@@ -686,7 +709,8 @@ std::ostream& operator << (std::ostream& s, const fappip_afuCmdID_e& enumeration
 // Name:        std::ostream& operator << of uid_mgtAfuCmdID_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const uid_mgtAfuCmdID_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const uid_mgtAfuCmdID_e &enumeration)
 {
 #define uid_mgtAfuCmdID_e_CASE(x) case x : s << #x ": "; break
 
@@ -721,7 +745,8 @@ std::ostream& operator << (std::ostream& s, const uid_mgtAfuCmdID_e& enumeration
 // Name:        std::ostream& operator << of uid_afurespID_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const uid_afurespID_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const uid_afurespID_e &enumeration)
 {
 #define uid_afurespID_e_CASE(x) case x : s << #x ": "; break
 
@@ -765,7 +790,8 @@ std::ostream& operator << (std::ostream& s, const uid_afurespID_e& enumeration)
 // Name:        std::ostream& operator << of uid_wseventID_e
 // Description: writes a description of the object to the ostream
 //=============================================================================
-std::ostream& operator << (std::ostream& s, const uid_wseventID_e& enumeration)
+AASLIB_API
+std::ostream & operator << (std::ostream &s, const uid_wseventID_e &enumeration)
 {
 #define uid_wseventID_e_CASE(x) case x : s << #x ": "; break
 
@@ -803,14 +829,11 @@ std::ostream& operator << (std::ostream& s, const uid_wseventID_e& enumeration)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-
-BEGIN_NAMESPACE(AAL)
-
-
 //=============================================================================
 // Name:        std::ostream& operator << of TTASK_MODE
 // Description: writes a description of the object to the ostream
 //=============================================================================
+AASLIB_API
 std::ostream & operator << (std::ostream &s, const TTASK_MODE &taskmode)
 {
 #define TTASK_MODE_CASE(x, msg) case x : s << msg; break
@@ -842,6 +865,7 @@ std::ostream & operator << (std::ostream &s, const TTASK_MODE &taskmode)
 // Name:        std::ostream& operator << of TDESC_TYPE
 // Description: writes a description of the object to the ostream
 //=============================================================================
+AASLIB_API
 std::ostream & operator << (std::ostream &s, const TDESC_TYPE &enumeration)
 {
 #define TDESC_TYPE_CASE(x, msg) case x : s << msg; break
@@ -872,6 +896,7 @@ std::ostream & operator << (std::ostream &s, const TDESC_TYPE &enumeration)
 // Name:        std::ostream& operator << of TDESC_POSITION
 // Description: writes a description of the object to the ostream
 //=============================================================================
+AASLIB_API
 std::ostream & operator << (std::ostream &s, const TDESC_POSITION &enumeration)
 {
 #define TDESC_POSITION_CASE(x, msg) case x : s << msg; break
@@ -901,7 +926,30 @@ std::ostream & operator << (std::ostream &s, const TDESC_POSITION &enumeration)
    return s;
 } // std::ostream& operator << of TDESC_POSITION
 
-
 END_NAMESPACE(AAL)
 
+
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::btVirtAddr &x)               { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::LogLevel_t &x)               { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::stTransactionID_t &x)        { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aal_bus_types_e &x)          { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aal_device_type_e &x)        { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aal_device_addr &x)          { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aal_device_id &x)            { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::device_attrib &x)            { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::krms_cfgUpDate_e &x)         { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aalrms_configUpDateEvent &x) { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::rms_msgIDs_e &x)             { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::rms_result_e &x)             { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aalrms_requestdevice &x)     { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aalrm_ioctlreq &x)           { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::fappip_afuCmdID_e &x)        { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_msgIDs_e &x)             { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_errnum_e &x)             { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_mgtAfuCmdID_e &x)        { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_afurespID_e &x)          { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_wseventID_e &x)          { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::TTASK_MODE &x)               { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::TDESC_TYPE &x)               { return AAL::operator << (s, x); }
+AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::TDESC_POSITION &x)           { return AAL::operator << (s, x); }
 

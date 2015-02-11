@@ -473,17 +473,17 @@ BEGIN_NAMESPACE(AAL)
 #endif
 
    AASLIB_API                                // Serialize NVS from stream
-      ENamedValues NVSReadNVS (std::istream& is,
-                               NamedValueSet* nvsToRead);
+      ENamedValues NVSReadNVS (std::istream  &is,
+                               NamedValueSet *nvsToRead);
 
    AASLIB_API                                // Serialize NVS to file
-      ENamedValues NVSWriteNVS (std::ostream& os,
-                                NamedValueSet const& nvsToWrite,
-                                unsigned level);
+      ENamedValues NVSWriteNVS (std::ostream        &os,
+                                NamedValueSet const &nvsToWrite,
+                                unsigned             level);
    AASLIB_API                                // Serialize NVS with ending
-      ENamedValues NVSWriteOneNVSToFile (std::ostream& os,    //    demarcation
-                                         NamedValueSet const& nvsToWrite,
-                                         unsigned level);
+      ENamedValues NVSWriteOneNVSToFile (std::ostream        &os,    //    demarcation
+                                         NamedValueSet const &nvsToWrite,
+                                         unsigned             level);
 
    //=============================================================================
    // Name:        operator << on NamedValueSet
@@ -495,7 +495,7 @@ BEGIN_NAMESPACE(AAL)
    //                 ostringstream, fstream, stringstream
    //=============================================================================
    AASLIB_API
-      std::ostream& operator << (std::ostream& s, const AAL::NamedValueSet& nvs);
+      std::ostream & operator << (std::ostream &s, const NamedValueSet &nvs);
 
 
    //=============================================================================
@@ -529,7 +529,7 @@ BEGIN_NAMESPACE(AAL)
    //                 ostringstream, fstream, stringstream
    //=============================================================================
    AASLIB_API
-      std::ostream & operator << (std::ostream &s, const AAL::FormattedNVS &fnvs);
+      std::ostream & operator << (std::ostream &s, const FormattedNVS &fnvs);
 
    //=============================================================================
    // Name: operator >> on NamedValueSet
@@ -543,10 +543,10 @@ BEGIN_NAMESPACE(AAL)
    //           information already, that will simply be added to.
    //=============================================================================
    AASLIB_API
-      std::istream& operator >> (std::istream& s, AAL::NamedValueSet& rnvs);
+      std::istream& operator >> (std::istream& s, NamedValueSet &rnvs);
 
    //=============================================================================
-   // Name:        AAL::NamedValueSetFromStdString
+   // Name:        NamedValueSetFromStdString
    // Description: Convert a std::string length into an NVS
    // Interface:   public
    // Inputs:      std::string containing the serialized representation of the
@@ -554,10 +554,10 @@ BEGIN_NAMESPACE(AAL)
    // Outputs:     nvs is a non-const reference to the returned NamedValueSet
    //=============================================================================
    AASLIB_API
-      void NamedValueSetFromStdString (const std::string& s, AAL::NamedValueSet& nvs);
+      void NamedValueSetFromStdString (const std::string &s, NamedValueSet &nvs);
 
    //=============================================================================
-   // Name:        AAL::NamedValueSetFromCharString
+   // Name:        NamedValueSetFromCharString
    // Description: Convert a char* + length into an NVS
    // Interface:   public
    // Inputs:      char*, length of char* including a final terminating null.
@@ -567,24 +567,24 @@ BEGIN_NAMESPACE(AAL)
    // Outputs:     nvs is a non-const reference to the returned NamedValueSet
    //=============================================================================
    AASLIB_API
-      void NamedValueSetFromCharString(void* pv, btWSSize len, AAL::NamedValueSet& nvs);
+      void NamedValueSetFromCharString(void* pv, btWSSize len, NamedValueSet &nvs);
 
 
    //=============================================================================
-   // Name:        AAL::StdStringFromNamedValueSet
+   // Name:        StdStringFromNamedValueSet
    // Description: Return a std::string containing the serialized NamedValueSet
    // Interface:   public
    // Inputs:      const NamedValueSet& nvs
    // Returns:     As in description. Note that the returned string.length() is
    //              the correct length to allocate for a buffer in which to store
    //              the buffer.
-   // NOTE:        See AAL::CharFromString for important usage note
+   // NOTE:        See CharFromString for important usage note
    //=============================================================================
    AASLIB_API
-      std::string StdStringFromNamedValueSet (const AAL::NamedValueSet& nvs);
+      std::string StdStringFromNamedValueSet (const NamedValueSet &nvs);
 
    //=============================================================================
-   // Name:        AAL::BufFromString
+   // Name:        BufFromString
    // Description: Copy the contents of a std::string into a char[]. Note that
    //              embedded NULLs are properly handled (that is, they are ignored).
    // Interface:   public
@@ -612,7 +612,7 @@ BEGIN_NAMESPACE(AAL)
       void BufFromString (void* pBuf, std::string const &s);
 
    //=============================================================================
-   // Name:          AAL::NVSMerge
+   // Name:          NVSMerge
    // Description:   Merge one NamedValueSet into another
    // Interface:     public
    // Inputs:        nvsInput and nvsOutput will be merged together

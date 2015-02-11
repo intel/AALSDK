@@ -57,48 +57,36 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-
-
-//=============================================================================
-// Name: RegistrarCmdResp_Destroy
-// Description: Dtor for struct RegistrarCmdResp_t
-//=============================================================================
-pRegistrarCmdResp_t RegistrarCmdResp_Destroy(pRegistrarCmdResp_t pRC)
-{
-   delete [] reinterpret_cast<char*>(pRC);
-   return NULL;
-}  // End of RegistrarCmdResp_Destroy
 
 //=============================================================================
 // Name: operator << on RegistrarCmdResp_t
 // Description: Prints a RegistrarCmdResp_t
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const RegistrarCmdResp_t &rc)
+std::ostream & operator << (std::ostream &s, const RegistrarCmdResp &rc)
 {
-   if (!strcmp(rc.szSignature, RegistrarCmdCommandSignature)) {  // If it is a valid RegistrarCommand
+   if ( !strcmp(rc.szSignature, RegistrarCmdCommandSignature) ) {  // If it is a valid RegistrarCommand
       s << std::uppercase << std::hex << std::showbase <<
            "RegistrarCommand @ " << reinterpret_cast<const void*>(&rc) <<
            "\n\tCommand: " << rc.Command << std::endl;
-   }
-   else if (!strcmp(rc.szSignature, RegistrarCmdResponseSignature)) {
+   } else if ( !strcmp(rc.szSignature, RegistrarCmdResponseSignature) ) {
       s << std::uppercase << std::hex << std::showbase <<
            "RegistrarResponse @ " << reinterpret_cast<const void*>(&rc) <<
            "\n\tCommand: " << rc.Command <<
            "\n\tReturned Value: " << rc.Response << std::endl;
-   }
-   else {
+   } else {
       s << "Is not a valid RegistrarCmdResp!\n";
       return s;
    }
+
    s << std::uppercase << std::hex << std::showbase <<
-      "\t" << rc.TranID <<
+      "\t"                   << rc.TranID         <<
       "\tpFunc:            " << rc.pFunc          <<
       "\tLength of NVS:    " << rc.LengthOfNVS    <<
       "\tLength of Struct: " << rc.LengthOfStruct <<
       "\tPrimaryKey:       " << rc.Key            <<
       "\tLock:             " << rc.Lock           << std::endl;
-   if( rc.LengthOfNVS ){
+
+   if( rc.LengthOfNVS ) {
       s << "\tNVS:\n" << rc.szNVS;
    } else {
       s << "\tNo NVS in structure.\n";
@@ -114,8 +102,8 @@ std::ostream & operator << (std::ostream &s, const RegistrarCmdResp_t &rc)
 std::ostream & operator << (std::ostream &s, const eReg &Error)
 {
    struct eRetToString {
-      eReg           eCode;
-      std::string    sCode;
+      eReg        eCode;
+      std::string sCode;
    };
    const struct eRetToString eRetToStringMap[] = {
       {eRegOK,                   " Operation succeeded. "},
@@ -139,10 +127,9 @@ std::ostream & operator << (std::ostream &s, const eReg &Error)
       {eRegEndNoComma,           ""}
    };
 
-   if (Error >= eRegOK && Error < eRegEndNoComma) {
+   if ( ( Error >= eRegOK ) && ( Error < eRegEndNoComma ) ) {
       s << eRetToStringMap[Error].sCode;
-   }
-   else {
+   } else {
       s << " eReg Error code is " << static_cast<unsigned>(Error) << ", but eReg operator << is out of date or the field is invalid. ";
    }
 
@@ -156,8 +143,8 @@ std::ostream & operator << (std::ostream &s, const eReg &Error)
 std::ostream & operator << (std::ostream &s, const eCmd &Command)
 {
    struct eCmdToString {
-      eCmd           eCode;
-      std::string    sCode;
+      eCmd        eCode;
+      std::string sCode;
    };
    const struct eCmdToString eCmdToStringMap[] = {
       {eCmdNoOp,                 " No Op "},
@@ -177,10 +164,9 @@ std::ostream & operator << (std::ostream &s, const eCmd &Command)
       {eCmdEndNoComma,           ""}
    };
 
-   if (Command >= eCmdNoOp && Command < eCmdEndNoComma) {
+   if ( ( Command >= eCmdNoOp ) && ( Command < eCmdEndNoComma ) ) {
       s << eCmdToStringMap[Command].sCode;
-   }
-   else {
+   } else {
       s << " eCmd Command code is " << static_cast<unsigned>(Command) << ", but not found. ";
    }
 
@@ -188,12 +174,22 @@ std::ostream & operator << (std::ostream &s, const eCmd &Command)
 }
 
 //=============================================================================
+// Name: RegistrarCmdResp_Destroy
+// Description: Dtor for struct RegistrarCmdResp_t
+//=============================================================================
+pRegistrarCmdResp_t RegistrarCmdResp_Destroy(pRegistrarCmdResp_t pRC)
+{
+   delete [] reinterpret_cast<char*>(pRC);
+   return NULL;
+}  // End of RegistrarCmdResp_Destroy
+
+//=============================================================================
 // Name: read_nvs_from_RCP
 // Description: read an NVS from a RegistrarCmdResp
 // Use like this:
 //    NamedValueSet nvs;
 //    pRegistrarCmdResp_t p;
-//    AAL::AAS::read_nvs_from_RCP (p, &nvs)
+//    read_nvs_from_RCP (p, &nvs)
 //=============================================================================
 void read_nvs_from_RCP(const pRegistrarCmdResp_t pRCR, NamedValueSet *pnvs)
 {
@@ -206,8 +202,10 @@ void read_nvs_from_RCP(const pRegistrarCmdResp_t pRCR, NamedValueSet *pnvs)
    }
 }
 
-
-   END_NAMESPACE(AAS) 
 END_NAMESPACE(AAL) 
+
+std::ostream & operator << (std::ostream &s, const AAL::eCmd &x)             { return AAL::operator <<(s, x); }
+std::ostream & operator << (std::ostream &s, const AAL::eReg &x)             { return AAL::operator <<(s, x); }
+std::ostream & operator << (std::ostream &s, const AAL::RegistrarCmdResp &x) { return AAL::operator <<(s, x); }
 
 

@@ -81,11 +81,9 @@
 /// @todo Document uAIA and related.
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 class DeviceServiceBase;
 
-      BEGIN_NAMESPACE(AIA)
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -234,8 +232,6 @@ private :
 };
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_UAIA_UAIA_H__

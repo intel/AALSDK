@@ -76,6 +76,9 @@
 #define __AALSDK_KERNEL_CCIDEFS_H__
 #include <aalsdk/kernel/aaltypes.h>
 
+BEGIN_NAMESPACE(AAL)
+
+
 /*
  * CCI-specific constants based on QLP2 implementation
  *
@@ -158,4 +161,7 @@ struct CCIAFU_DSM {
    };
 };
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_CCIDEFS_H__
+

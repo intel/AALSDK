@@ -52,6 +52,8 @@
 
 #include <aalsdk/utils/SingleAFUApp.h>
 
+using namespace AAL;
+
 #ifdef INFO
 # undef INFO
 #endif // INFO
@@ -283,20 +285,20 @@ public:
    CMyApp();
 
    // <ISingleAFUApp>
-   virtual void OnRuntimeStarted(AAL::XL::RT::IRuntime *,
-                                 const AAL::NamedValueSet &);
-   virtual void OnRuntimeStopped(AAL::XL::RT::IRuntime *);
-   virtual void OnRuntimeStartFailed(const AAL::IEvent &);
+   virtual void OnRuntimeStarted(IRuntime *,
+                                 const NamedValueSet &);
+   virtual void OnRuntimeStopped(IRuntime *);
+   virtual void OnRuntimeStartFailed(const IEvent &);
    virtual void OnRuntimeAllocateServiceFailed(IEvent const &);
-   virtual void OnRuntimeAllocateServiceSucceeded(AAL::IBase * ,
+   virtual void OnRuntimeAllocateServiceSucceeded(IBase * ,
                                                   TransactionID const &);
-   virtual void OnRuntimeEvent(const AAL::IEvent &);
+   virtual void OnRuntimeEvent(const IEvent &);
 
-   virtual void OnServiceAllocated(AAL::IBase *,
-                                   AAL::TransactionID const &);
-   virtual void OnServiceAllocateFailed(const AAL::IEvent &);
-   virtual void OnServiceFreed(AAL::TransactionID const &);
-   virtual void OnServiceEvent(const AAL::IEvent &);
+   virtual void OnServiceAllocated(IBase *,
+                                   TransactionID const &);
+   virtual void OnServiceAllocateFailed(const IEvent &);
+   virtual void OnServiceFreed(TransactionID const &);
+   virtual void OnServiceEvent(const IEvent &);
    // </ISingleAFUApp>
 
    /// @brief Mutator for setting the NVS value that selects the AFU Delegate.
@@ -332,8 +334,8 @@ CMyApp::CMyApp() :
    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(&m_CCIClient));
 }
 
-void CMyApp::OnRuntimeStarted(AAL::XL::RT::IRuntime    *pRT,
-                              const AAL::NamedValueSet &Args)
+void CMyApp::OnRuntimeStarted(IRuntime            *pRT,
+                              const NamedValueSet &Args)
 {
    btcString AFUName = "CCIAFU";
 
@@ -354,12 +356,12 @@ void CMyApp::OnRuntimeStarted(AAL::XL::RT::IRuntime    *pRT,
    pRT->allocService(dynamic_cast<IBase *>(this), Manifest);
 }
 
-void CMyApp::OnRuntimeStopped(AAL::XL::RT::IRuntime *pRT)
+void CMyApp::OnRuntimeStopped(IRuntime *pRT)
 {
    INFO("Runtime Stopped");
 }
 
-void CMyApp::OnRuntimeStartFailed(const AAL::IEvent &e)
+void CMyApp::OnRuntimeStartFailed(const IEvent &e)
 {
    m_bIsOK = false;
    INFO("Runtime Start Failed");
@@ -371,13 +373,13 @@ void CMyApp::OnRuntimeAllocateServiceFailed(IEvent const &e)
    ERR("Service Allocate Failed (rt)");
 }
 
-void CMyApp::OnRuntimeAllocateServiceSucceeded(AAL::IBase          *pServiceBase,
+void CMyApp::OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
                                                TransactionID const &tid)
 {
    INFO("Service Allocated (rt)");
 }
 
-void CMyApp::OnRuntimeEvent(const AAL::IEvent &e)
+void CMyApp::OnRuntimeEvent(const IEvent &e)
 {
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
@@ -390,24 +392,24 @@ void CMyApp::OnRuntimeEvent(const AAL::IEvent &e)
    Post();
 }
 
-void CMyApp::OnServiceAllocated(AAL::IBase               *pServiceBase,
-                                AAL::TransactionID const &tid)
+void CMyApp::OnServiceAllocated(IBase               *pServiceBase,
+                                TransactionID const &tid)
 {
    INFO("Service Allocated");
 }
 
-void CMyApp::OnServiceAllocateFailed(const AAL::IEvent &e)
+void CMyApp::OnServiceAllocateFailed(const IEvent &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed");
 }
 
-void CMyApp::OnServiceFreed(AAL::TransactionID const &tid)
+void CMyApp::OnServiceFreed(TransactionID const &tid)
 {
    INFO("Service Freed");
 }
 
-void CMyApp::OnServiceEvent(const AAL::IEvent &e)
+void CMyApp::OnServiceEvent(const IEvent &e)
 {
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
@@ -783,7 +785,7 @@ btInt NLBLpbk1(CMyApp *app)
 
 btInt RunTest(CMyApp *p)
 {
-   ASSERT(NULL != (AAL::IAALService *) *p);
+   ASSERT(NULL != (IAALService *) *p);
    return NLBLpbk1(p);
 }
 

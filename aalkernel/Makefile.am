@@ -106,7 +106,6 @@ include/aalsdk/kernel/aalrm.h \
 include/aalsdk/kernel/aalrm_server.h \
 include/aalsdk/kernel/aalrm_server-services.h \
 include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/aalsession.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \

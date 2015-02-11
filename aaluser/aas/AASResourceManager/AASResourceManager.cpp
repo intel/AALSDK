@@ -89,14 +89,13 @@
 //#include <aas/AALRMUser.h>              // Definitions for user mode RM users
 //#include <aas/CAALObjectFactory.h>      // for AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED - TEST CODE
 
-int AAL::AAS::globalRMFileDescriptor = -1;// declared here, only touched by CResMgr in its file descriptor code
+int AAL::globalRMFileDescriptor = -1;     // declared here, only touched by CResMgr in its file descriptor code
                                           //    used by signal handler
 const unsigned maxErrors =  10;           // abort (or in the future reset, perhaps) after this many errors have been seen
                                           //    The value 0 means do not test
 
 USING_NAMESPACE(std)
 USING_NAMESPACE(AAL)
-USING_NAMESPACE(AAS)
 
 /*
  * Forward declarations for test hooks for various things that are convenient

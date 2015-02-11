@@ -50,7 +50,7 @@
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/IDispatchable.h>
 
-BEGIN_NAMESPACE(AAL)
+using namespace AAL;
 
 
 //=============================================================================
@@ -59,7 +59,7 @@ BEGIN_NAMESPACE(AAL)
 // Interface: ISampleAFUPing
 // Comments:
 //=============================================================================
-class PingAFU : public AAL::AAS::ServiceBase, public ISampleAFUPing
+class PingAFU : public ServiceBase, public ISampleAFUPing
 {
 public:
 
@@ -78,7 +78,7 @@ public:
    //  interface is ISampleAFUPing.  ServiceBase provides an init() method that
    //  can be used where more sophisticated initialization is required. The
    //  init() method is called by the factory AFTER construction but before use.
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(PingAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(PingAFU, ServiceBase),
       m_pSvcClient(NULL),
       m_pPingClient(NULL),
       m_pThread(NULL),
@@ -106,26 +106,25 @@ public:
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
 protected:
-   AAL::AAS::IServiceClient  *m_pSvcClient;
-   AAL::ISampleAFUPingClient *m_pPingClient;
-   OSLThread                 *m_pThread;
-   OSLThread                **m_ppThreads;
-   TransactionID              m_CurrTranID;
+   IServiceClient        *m_pSvcClient;
+   ISampleAFUPingClient  *m_pPingClient;
+   OSLThread             *m_pThread;
+   OSLThread            **m_ppThreads;
+   TransactionID          m_CurrTranID;
 };
 
 // XL - aware event for generating the Ping response.
 class SampleAFUPingFunctor : public IDispatchable
 {
 public:
-   SampleAFUPingFunctor(AAL::ISampleAFUPingClient *pSvcClient, IBase *pPingAFU, TransactionID const &rTranID);
+   SampleAFUPingFunctor(ISampleAFUPingClient *pSvcClient, IBase *pPingAFU, TransactionID const &rTranID);
    virtual void operator() ();
 
 protected:
-   AAL::ISampleAFUPingClient *m_pSvcClient;
-   IBase                     *m_pPingAFU;
-   TransactionID const       &m_TranID;
+   ISampleAFUPingClient *m_pSvcClient;
+   IBase                *m_pPingAFU;
+   TransactionID const  &m_TranID;
 };
 
-END_NAMESPACE(AAL)
-
 #endif //__SAMPLEAFU1SERVICE_INT_H__
+

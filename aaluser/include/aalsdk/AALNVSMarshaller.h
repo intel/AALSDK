@@ -48,7 +48,6 @@
 using namespace std;
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -202,7 +201,6 @@ protected:
 };
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_AALNVSMARSHALLER_H__

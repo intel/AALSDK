@@ -51,12 +51,8 @@
  */
 
 
-// Name Space
 BEGIN_NAMESPACE(AAL)
-BEGIN_NAMESPACE(XL)
-BEGIN_NAMESPACE(RT)
 
-// Forward reference
 class  IRuntime;
 
 #define XLRUNTIME_CONFIG_RECORD "XLRUNTIME_CONFIG_RECORD"
@@ -131,7 +127,7 @@ public:
    /// @return    void
    ///
    /// @code
-   /// void runtimeAllocateServiceSucceeded( AAL::IBase *pServiceBase,
+   /// void runtimeAllocateServiceSucceeded( IBase *pServiceBase,
    ///                                       TransactionID const &rTranID) {
    ///    ASSERT( pServiceBase );        // if false, then Service threw a bad pointer
    ///
@@ -144,7 +140,7 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void runtimeAllocateServiceSucceeded( AAL::IBase *pServiceBase,
+   virtual void runtimeAllocateServiceSucceeded( IBase               *pServiceBase,
                                                  TransactionID const &rTranID) = 0;
 
    /// @brief     Called by a Runtime object to pass exceptions and other
@@ -169,18 +165,18 @@ public:
 class XLRT_API IRuntime
 {
 public:
-   virtual AAL::btBool  start( AAL::IBase *pClient,
-                               const NamedValueSet &rconfigParms) = 0;
+   virtual btBool  start(IBase               *pClient,
+                         const NamedValueSet &rconfigParms) = 0;
    virtual void stop() = 0;
 
    enum eAllocatemode{
       NotifyAll =0,
       NoRuntimeClientNotification
    };
-   virtual void allocService(AAL::IBase           *pClient,
+   virtual void allocService(IBase                *pClient,
                              NamedValueSet const  &rManifest = NamedValueSet(),
                              TransactionID const  &rTranID   = TransactionID(),
-                             eAllocatemode         mode = NotifyAll) = 0;
+                             eAllocatemode         mode      = NotifyAll) = 0;
 
    virtual void schedDispatchable(IDispatchable *pdispatchable) = 0;
 
@@ -202,14 +198,14 @@ class XLRT_API Runtime : private CUnCopyable, public IRuntime
 public:
    Runtime();
 
-   virtual AAL::btBool start( AAL::IBase *pClient,
-                              const NamedValueSet &rconfigParms);
+   virtual btBool start( IBase               *pClient,
+                         const NamedValueSet &rconfigParms);
    virtual void stop();
 
-   virtual void allocService(AAL::IBase *pClient,
-                              const NamedValueSet      &rManifest = NamedValueSet(),
-                              TransactionID const      &rTranID   = TransactionID(),
-                              enum eAllocatemode        mode = NotifyAll);
+   virtual void allocService( IBase               *pClient,
+                              const NamedValueSet &rManifest = NamedValueSet(),
+                              TransactionID const &rTranID   = TransactionID(),
+                              enum eAllocatemode   mode      = NotifyAll);
 
    virtual void schedDispatchable(IDispatchable *pdispatchable);
 
@@ -223,9 +219,6 @@ private:
 };
 
 
-
-END_NAMESPACE(RT)
-END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
 /// @} group XLRuntime

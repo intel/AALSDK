@@ -76,9 +76,9 @@ BEGIN_NAMESPACE(AAL)
 /// </ul>
 ///
 /// See @ref splapp for more details.
-class SPLAFU_API SPLAFU : public AAL::AAS::ServiceBase,
+class SPLAFU_API SPLAFU : public ServiceBase,
                           public ISPLAFU,
-                          public AAL::AAS::IServiceClient,
+                          public IServiceClient,
                           public ISPLClient
 {
 #if defined ( __AAL_WINDOWS__ )
@@ -86,14 +86,14 @@ class SPLAFU_API SPLAFU : public AAL::AAS::ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SPLAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SPLAFU, ServiceBase),
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
       SetSubClassInterface(iidSPLAFU, dynamic_cast<ISPLAFU *>(this));
       SetInterface(iidCCIClient,      dynamic_cast<ICCIClient *>(this));
       SetInterface(iidSPLClient,      dynamic_cast<ISPLClient *>(this));
-      SetInterface(iidServiceClient,  dynamic_cast<AAL::AAS::IServiceClient *>(this));
+      SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
    }
 
    virtual void init(TransactionID const &TranID);

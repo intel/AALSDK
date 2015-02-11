@@ -58,7 +58,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -121,7 +120,6 @@ void  write_CRegDB_to_RCP(pRegistrarCmdResp_t pRCR, const CRegDB *pitr);
 void read_CRegDB_from_RCP(const pRegistrarCmdResp_t pRCR, CRegDB *pitr);
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_RM_REGDBSKELETON_H__

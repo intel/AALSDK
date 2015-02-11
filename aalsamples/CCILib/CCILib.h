@@ -321,7 +321,7 @@ public:
    /// void MyObject::ParseCmdLine()
    /// {
    ///    // The application decides it needs to use AAL.
-   ///    AAL::ILogger *pLogger = pAALLogger();
+   ///    ILogger *pLogger = pAALLogger();
    ///
    ///    // (initialize pLogger here)
    ///
@@ -343,7 +343,7 @@ public:
    ///    pCCIDevice->SetSynchronizer(m_pSync);
    /// @endcode
    ///
-   /// @param[in]  pLogger  Pointer to an AAL::ILogger interface, if required.
+   /// @param[in]  pLogger  Pointer to an ILogger interface, if required.
    ///
    /// @retval  NULL  On error.
    virtual IOutputSynchronizer * GetSynchronizer() throw() = 0;

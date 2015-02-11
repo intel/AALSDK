@@ -181,12 +181,11 @@ public:
 };
 
 /// Print information in Exception and ExceptionTransaction Events.
-AASLIB_API void PrintExceptionDescription(AAL::IEvent const &theEvent);
+AASLIB_API void PrintExceptionDescription(IEvent const &theEvent);
 
 #endif //__cplusplus
 
 /// @} group Events
-
 
 
 END_NAMESPACE(AAL)

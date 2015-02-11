@@ -51,8 +51,6 @@
 #include "aalsdk/INTCDefs.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 
 BEGIN_C_DECLS
@@ -163,8 +161,8 @@ void _xlruntime::stop()
 // Outputs: none.
 // Comments:
 //=============================================================================
-AAL::btBool _xlruntime::start( AAL::IBase      *pclient,
-                               const NamedValueSet &rConfigParms)
+btBool _xlruntime::start(IBase               *pclient,
+                         const NamedValueSet &rConfigParms)
 {
 
    if( Started == m_state  ){
@@ -173,12 +171,12 @@ AAL::btBool _xlruntime::start( AAL::IBase      *pclient,
                                  this,
                                  rConfigParms,
                                  RuntimeMessage::StartFailed,
-                                 new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                          exttranevtSystemStart,
-                                                                          TransactionID(),
-                                                                          errSysSystemStarted,
-                                                                          reasSystemAlreadyStarted,
-                                                                          strSystemAlreadyStarted)),
+                                 new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                exttranevtSystemStart,
+                                                                TransactionID(),
+                                                                errSysSystemStarted,
+                                                                reasSystemAlreadyStarted,
+                                                                strSystemAlreadyStarted)),
                                  NULL);
       return false;
    }
@@ -209,12 +207,12 @@ AAL::btBool _xlruntime::start( AAL::IBase      *pclient,
                                  this,
                                  rConfigParms,
                                  RuntimeMessage::StartFailed,
-                                 new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                          exttranevtSystemStart,
-                                                                          TransactionID(),
-                                                                          errSystemTimeout,
-                                                                          reasSystemTimeout,
-                                                                          "XL Runtime Failed to start - Rest of event is bogus")),
+                                 new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                exttranevtSystemStart,
+                                                                TransactionID(),
+                                                                errSystemTimeout,
+                                                                reasSystemTimeout,
+                                                                "XL Runtime Failed to start - Rest of event is bogus")),
                                  NULL);
       return false;
    }
@@ -233,7 +231,7 @@ btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
    NamedValueSet const *pConfigRecord;
    btcString            sName  = NULL;
-   AAL::Environment     env;
+   Environment          env;
 
    //
    // First check environment
@@ -251,12 +249,12 @@ btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
                                        this,
                                        rConfigParms,
                                        RuntimeMessage::StartFailed,
-                                       new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                                exttranevtServiceShutdown,
-                                                                                TransactionID(),
-                                                                                errSystemTimeout,
-                                                                                reasSystemTimeout,
-                                                                                "XL Runtime Failed to start - No Broker - Rest of event is bogus")),
+                                       new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                      exttranevtServiceShutdown,
+                                                                      TransactionID(),
+                                                                      errSystemTimeout,
+                                                                      reasSystemTimeout,
+                                                                      "XL Runtime Failed to start - No Broker - Rest of event is bogus")),
                                        NULL);
             return false;
          }
@@ -290,10 +288,10 @@ btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _xlruntime::allocService(AAL::IBase *pClient,
-                              NamedValueSet const      &rManifest,
-                              TransactionID const      &rTranID,
-                              AAL::XL::RT::IRuntime::eAllocatemode mode)
+void _xlruntime::allocService(IBase                  *pClient,
+                              NamedValueSet const    &rManifest,
+                              TransactionID const    &rTranID,
+                              IRuntime::eAllocatemode mode)
 {
    AutoLock(this);
    if ( IsOK() ) {
@@ -331,7 +329,7 @@ void _xlruntime::schedDispatchable(IDispatchable *pdispatchable)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _xlruntime::serviceAllocated(AAL::IBase          *pServiceBase,
+void _xlruntime::serviceAllocated(IBase               *pServiceBase,
                                   TransactionID const &rTranID )
 {
    AutoLock(this);
@@ -339,7 +337,7 @@ void _xlruntime::serviceAllocated(AAL::IBase          *pServiceBase,
    switch ( rTranID.ID() ) {
       case MDS : {
          m_pMDSbase = pServiceBase;
-         m_pMDS     = subclass_ptr<AAL::AAS::IEventDeliveryService>(pServiceBase);
+         m_pMDS     = subclass_ptr<IEventDeliveryService>(pServiceBase);
          m_sem.Post(1);
       } break;
 
@@ -437,7 +435,7 @@ void _xlruntime::serviceEvent(const IEvent &rEvent)
 // Interface: public
 // Comments:
 //=============================================================================
-AAL::IBase *_xlruntime::getMessageDeliveryService()
+IBase *_xlruntime::getMessageDeliveryService()
 {
    AutoLock(this);
    return m_pMDSbase;
@@ -451,7 +449,7 @@ AAL::IBase *_xlruntime::getMessageDeliveryService()
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _xlruntime::setMessageDeliveryService(AAL::IBase *pMDSbase)
+void _xlruntime::setMessageDeliveryService(IBase *pMDSbase)
 {
    AutoLock(this);
    m_pMDSbase = pMDSbase;
@@ -472,7 +470,7 @@ btBool _xlruntime::SendMsg(IDispatchable *pobject, btObjectType parm)
    if ( NULL == m_pMDSbase ) {
       return false;
    }
-   subclass_ref<AAL::AAS::IEventDeliveryService>(m_pMDSbase).QueueEvent(parm, pobject);
+   subclass_ref<IEventDeliveryService>(m_pMDSbase).QueueEvent(parm, pobject);
    return true;         // TODO cleanup IEventdeliveryService
 }
 
@@ -516,6 +514,5 @@ _xlruntime::~_xlruntime()
 }
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
+

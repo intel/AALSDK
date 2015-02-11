@@ -64,14 +64,11 @@
 /// 10/06/2014    HM       Compression into single runtime and service client@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-using namespace AAS;
-
 #include <aalsdk/xlRuntime.h>
-using namespace XL;
-using namespace RT;
-
 #include <aalsdk/utils/CSyncClient.h>
 #include <aalsdk/AALLoggerExtern.h>   // Logger
+
+using namespace AAL;
 
 #include "SampleAFU1Service.h"        // AFU package specific definitions
 
@@ -107,7 +104,7 @@ public:
    MyPingClient()
    { // Publish our interface
       SetInterface(iidSampleAFUPingClient,
-            dynamic_cast<AAL::ISampleAFUPingClient*>(this));
+            dynamic_cast<ISampleAFUPingClient *>(this));
    }
    /// Destructor with empty implementation
    ~MyPingClient(){}
@@ -116,7 +113,7 @@ public:
    // <begin ISampleAFUPingClient interface>
 
    /// Implement ISampleAFUPingClient::PingReceived
-   void PingReceived(AAL::TransactionID const &rTranID)
+   void PingReceived(TransactionID const &rTranID)
    {
       Post();
    }
@@ -150,7 +147,7 @@ int main(int argc, char *argv[])
    bool                    bRuntimeGood;     // Tracks if the runtime is initialized
    MyPingClient            pingClient;       // Specific Ping Client Object. Note that
                                              //    it IS_A CSyncClient Object, as well.
-   AAL::IBase             *pServiceBase;     // Pointer to Service containing Ping
+   IBase                  *pServiceBase;     // Pointer to Service containing Ping
    ISampleAFUPing         *pPingAFU;         // Specific Pointer to Ping Service
 
    cout << "=====================================" << endl;

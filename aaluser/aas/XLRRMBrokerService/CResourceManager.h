@@ -82,17 +82,16 @@ AAL_DECLARE_BUILTIN_SVC_MOD(librrm, XLRESOURCEMANAGER_API)
 // Description: Concrete definition of the Remote Resource Manager
 //=============================================================================
 class XLRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
-                                               public AAL::AAS::ServiceBase,
-                                               public IResourceManager
+                                               public  ServiceBase,
+                                               public  IResourceManager
 
 {
 public:
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(CResourceManager, AAL::AAS::ServiceBase),
-         m_pResMgrClient(NULL),
-         m_RMProxy(),
-         m_pProxyPoll(NULL)
-
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(CResourceManager, ServiceBase),
+      m_pResMgrClient(NULL),
+      m_RMProxy(),
+      m_pProxyPoll(NULL)
    {
       SetSubClassInterface( iidResMgr,
                             dynamic_cast<IResourceManager *>(this));

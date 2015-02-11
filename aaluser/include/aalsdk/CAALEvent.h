@@ -91,7 +91,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /// @addtogroup Events
 /// @{
@@ -129,10 +128,10 @@ public:
    virtual IBase *              pObject()                  const { return m_pObject;  }
    virtual btBool               IsOK()                     const { return m_bIsOK; }
    virtual btApplicationContext Context()                  const { return m_Context; } // Re-enabled HM 20090225, see file header comments
-   virtual void                 setHandler(IMessageHandler *pHandler){m_pServiceClient = NULL; m_pRuntimeClient = NULL; m_pMessageHandler = pHandler; m_pEventHandler=NULL;}
-   virtual void                 setHandler(IServiceClient  *pHandler){m_pServiceClient = pHandler; m_pRuntimeClient = NULL; m_pEventHandler = NULL; m_pMessageHandler=NULL;}
-   virtual void                 setHandler(XL::RT::IRuntimeClient  *pHandler){m_pServiceClient = NULL; m_pRuntimeClient = pHandler; m_pEventHandler = NULL; m_pMessageHandler=NULL;}
-   virtual void                 setHandler(btEventHandler   pHandler){m_pServiceClient = NULL; m_pRuntimeClient = NULL;m_pEventHandler = pHandler; m_pMessageHandler=NULL;}
+   virtual void                 setHandler(IServiceClient  *pHandler) { m_pServiceClient = pHandler; m_pRuntimeClient = NULL;     m_pEventHandler = NULL;     m_pMessageHandler = NULL;     }
+   virtual void                 setHandler(IRuntimeClient  *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = pHandler; m_pEventHandler = NULL;     m_pMessageHandler = NULL;     }
+   virtual void                 setHandler(btEventHandler   pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = pHandler; m_pMessageHandler = NULL;     }
+   virtual void                 setHandler(IMessageHandler *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = NULL;     m_pMessageHandler = pHandler; }
    virtual btApplicationContext SetContext(btApplicationContext Ctx)
    {
       btApplicationContext res = m_Context;
@@ -182,7 +181,7 @@ protected:
    btApplicationContext     m_Context;
    IMessageHandler         *m_pMessageHandler;
    IServiceClient          *m_pServiceClient;
-   XL::RT::IRuntimeClient  *m_pRuntimeClient;
+   IRuntimeClient          *m_pRuntimeClient;
    btEventHandler           m_pEventHandler;
    TransactionID            m_TranID;  // Only accessible outside from TransactionEvents
 
@@ -410,11 +409,11 @@ public:
    /// @param[in]  pObject  The Service requested by the IFactory::Create call.
    /// @param[in]  TranID   The original TransactionID from IFactory::Create.
    /// @param[in]  OptArgs  The NamedValueSet from the IFactory::Create call.
-   ObjectCreatedEvent(AAL::XL::RT::IRuntimeClient  *prtClient,
-                      AAS::IServiceClient          *pClient,
-                      IBase                        *pObject,
-                      TransactionID                 TranID,
-                      const NamedValueSet          &OptArgs = NamedValueSet());
+   ObjectCreatedEvent(IRuntimeClient       *prtClient,
+                      IServiceClient       *pClient,
+                      IBase                *pObject,
+                      TransactionID         TranID,
+                      const NamedValueSet  &OptArgs = NamedValueSet());
 
    void operator()();
 
@@ -427,9 +426,10 @@ public:
 
 protected:
    ObjectCreatedEvent();
-   AAL::XL::RT::IRuntimeClient   *m_prtClient;
-   AAS::IServiceClient           *m_pClient;
-   NamedValueSet                  m_OptArgs;
+
+   IRuntimeClient  *m_prtClient;
+   IServiceClient  *m_pClient;
+   NamedValueSet    m_OptArgs;
 };
 
 /// Created in response to a failed IFactory::Create.
@@ -438,13 +438,13 @@ class AASLIB_API ObjectCreatedExceptionEvent : public CExceptionTransactionEvent
 public:
 
    /// ObjectCreatedExceptionEvent Constructor.
-   ObjectCreatedExceptionEvent(AAL::XL::RT::IRuntimeClient  *prtClient,
-                               AAL::AAS::IServiceClient     *pClient,
-                               IBase                        *pObject,
-                               TransactionID                 TranID,
-                               btUnsigned64bitInt            ExceptionNumber,
-                               btUnsigned64bitInt            Reason,
-                               btcString                     Description);
+   ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
+                               IServiceClient     *pClient,
+                               IBase              *pObject,
+                               TransactionID       TranID,
+                               btUnsigned64bitInt  ExceptionNumber,
+                               btUnsigned64bitInt  Reason,
+                               btcString           Description);
 
    void operator()();
 
@@ -453,8 +453,9 @@ public:
 
 protected:
    ObjectCreatedExceptionEvent();
-   AAL::XL::RT::IRuntimeClient   *m_prtClient;
-   AAS::IServiceClient           *m_pClient;
+
+   IRuntimeClient  *m_prtClient;
+   IServiceClient  *m_pClient;
 };
 
 /// Created in response to IAALService::Release.
@@ -463,10 +464,10 @@ class AASLIB_API CObjectDestroyedTransactionEvent : public CTransactionEvent
 public:
 
    /// CObjectDestroyedTransactionEvent Constructor.
-   CObjectDestroyedTransactionEvent(AAL::AAS::IServiceClient      *pClient,
-                                    IBase                         *pObject,
-                                    TransactionID const           &TransID,
-                                    btApplicationContext           Context);
+   CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
+                                    IBase                *pObject,
+                                    TransactionID const  &TransID,
+                                    btApplicationContext  Context);
 
    void operator()();
 
@@ -478,9 +479,9 @@ public:
 
 protected:
    CObjectDestroyedTransactionEvent();
-   AAL::AAS::IServiceClient      *m_pClient;
-   AAL::XL::RT::IRuntimeClient   *m_prtClient;
 
+   IServiceClient *m_pClient;
+   IRuntimeClient *m_prtClient;
 };
 
 
@@ -522,7 +523,6 @@ protected:
 
 /// @} group Events
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */

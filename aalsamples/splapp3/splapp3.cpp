@@ -57,6 +57,8 @@
 #include <aalsdk/aalclp/aalclp.h>         // Command-line processor
 #include <aalsdk/service/SPLAFUService.h> // Service Manifest and #defines
 
+using namespace AAL;
+
 #ifdef INFO
 # undef INFO
 #endif // INFO
@@ -313,8 +315,8 @@ protected:
    }
 
    // Member variables
-   AAL::ISPLAFU        *m_pISPLAFU;       ///< Points to the actual AFU, stored here for convenience
-   AAL::IBase          *m_pServiceBase;   ///< Pointer to Service containing SPL AFU
+   ISPLAFU             *m_pISPLAFU;       ///< Points to the actual AFU, stored here for convenience
+   IBase               *m_pServiceBase;   ///< Pointer to Service containing SPL AFU
 
    btVirtAddr           m_OneLargeWorkspaceVirt; ///< Points to Virtual workspace
    btWSSize             m_OneLargeWorkspaceSize; ///< Length in bytes of Virtual workspace

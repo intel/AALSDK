@@ -61,13 +61,13 @@
 
 #include "aalsdk/CAALEvent.h"
 #include "aalsdk/registrar/CAASRegistrar.h"  // <aas/RegDBStub.h>
+#include "aalsdk/registrar/RegDBProxy.h"
 #include "aalsdk/eds/AASEventDeliveryService.h"
 
 #include "aalsdk/kernel/aalrm.h"             // kernel transport services
 
 #include "aalsdk/AALLoggerExtern.h"          // Logger
 
-USING_NAMESPACE(std)
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)
@@ -93,7 +93,7 @@ USING_NAMESPACE(std)
 // Outputs: Pointer to factory.
 // Comments:
 //=============================================================================
-AASREGISTRAR_API AAL::AAS::CRegistrar *
+AASREGISTRAR_API AAL::CRegistrar *
 CreateRegistrarService(AAL::btcString            DatabasePath,
                        AAL::btEventHandler       theEventHandler,
                        AAL::btApplicationContext Context,
@@ -105,23 +105,23 @@ CreateRegistrarService(AAL::btcString            DatabasePath,
    // If the Registrar fails to start for some reason an event will be posted
    // with the details
 
-   const AAL::TransactionID *tranID = reinterpret_cast<const TransactionID *>(_tranID);
+   const AAL::TransactionID *tranID = reinterpret_cast<const AAL::TransactionID *>(_tranID);
    ASSERT(NULL != tranID);
    if ( NULL == tranID ) {
       return NULL;
    }
 
-   const AAL::NamedValueSet *optArgs = reinterpret_cast<const NamedValueSet *>(_optArgs);
+   const AAL::NamedValueSet *optArgs = reinterpret_cast<const AAL::NamedValueSet *>(_optArgs);
    ASSERT(NULL != optArgs);
    if ( NULL == optArgs ) {
       return NULL;
    }
 
-   AAL::AAS::CRegistrar *pRegistrar = new AAL::AAS::CRegistrar(std::string(DatabasePath),
-                                                               theEventHandler,
-                                                               Context,
-                                                               *tranID,
-                                                               *optArgs);
+   AAL::CRegistrar *pRegistrar = new AAL::CRegistrar(std::string(DatabasePath),
+                                                     theEventHandler,
+                                                     Context,
+                                                     *tranID,
+                                                     *optArgs);
    if ( ( NULL != pRegistrar ) &&
         !pRegistrar->IsOK() ) {
       //Destroy the pRegistrar
@@ -134,7 +134,6 @@ CreateRegistrarService(AAL::btcString            DatabasePath,
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -215,7 +214,7 @@ AASREGISTRAR_API CRegistrar::~CRegistrar()
       DEBUG_CERR("~CRegistrar: Service Shutdown Request failed. Reason code "
                  << pAALLogger()->GetErrorString(errno) << endl);
       AAL_ERR(LM_Registrar, "~CRegistrar: Service Shutdown Request failed. Reason code "
-            << pAALLogger()->GetErrorString(errno) << endl);
+            << pAALLogger()->GetErrorString(errno) << std::endl);
    }
 
    m_bIsOK = false;
@@ -245,9 +244,9 @@ AASREGISTRAR_API CRegistrar::~CRegistrar()
       int ret = close( m_fdRMClient );
       if(ret != 0) {
          DEBUG_CERR("~CRegistrar: shutting down RM Client file failed. Reason code "
-                    << pAALLogger()->GetErrorString(errno) << endl);
+                    << pAALLogger()->GetErrorString(errno) << std::endl);
          AAL_ERR(LM_Shutdown, "~CRegistrar: shutting down RM Client file failed. Reason code "
-               << pAALLogger()->GetErrorString(errno) << endl);
+               << pAALLogger()->GetErrorString(errno) << std::endl);
       }
       m_fdRMClient = -1;
    }
@@ -274,7 +273,7 @@ void CRegistrar::Open(const NamedValueSet& rnvsOptArgs,
    pRegistrarCmdResp_t pRC = MarshalCommand( eCmdOpen, rTransID, &CRegistrar::Open_ret, &rnvsOptArgs);
 
    if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Open Call, Command Block is:\n" << *pRC << endl);
+      AAL_DEBUG(LM_Registrar, "Open Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -331,7 +330,7 @@ void CRegistrar::Close(const TransactionID& rTransID)
    pRegistrarCmdResp_t pRC = MarshalCommand( eCmdClose, rTransID, &CRegistrar::Close_ret);
 
    if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Close Call, Command Block is:\n" << *pRC << endl);
+      AAL_DEBUG(LM_Registrar,"Close Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -381,8 +380,8 @@ void CRegistrar::Register(NamedValueSet const& rRecord,
    pRegistrarCmdResp_t pRC = MarshalCommand( eCmdRegister, rTransID,
                                              &CRegistrar::Register_ret,
                                              &rRecord);
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Register Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar, "Register Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -456,8 +455,8 @@ void CRegistrar::Find(const NamedValueSet& rPattern,
                                              rTransID,
                                              &CRegistrar::Find_ret,
                                              &rPattern);
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Find Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar,"Find Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -487,8 +486,8 @@ void CRegistrar::FindNext(const NamedValueSet& rPattern,
                                              &CRegistrar::Find_ret,  // exactly the same return
                                              &rPattern,
                                              &dynamic_cast<const CFindResult&>(rFindResult).itr());
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"FindNext Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar, "FindNext Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -546,8 +545,8 @@ void CRegistrar::Get(const NamedValueSet& rPattern,
                                              rTransID,
                                              &CRegistrar::Get_ret,
                                              &rPattern);
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Get_By_Pattern Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar, "Get_By_Pattern Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -577,8 +576,8 @@ void CRegistrar::Get(const IFindResult& rFindResult,
                                              &CRegistrar::Get_ret,
                                              NULL,                   // no pattern
                                              &dynamic_cast<const CFindResult&>(rFindResult).itr());
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"GetFindResult Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar,"GetFindResult Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -640,8 +639,8 @@ void CRegistrar::Commit(const IDBRecord& rRecord,
                                              &CRegistrar::Commit_ret,
                                              &cdbr.constNVS(),
                                              &cdbr.itr());
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"Commit Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar,"Commit Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -701,8 +700,8 @@ void CRegistrar::DeRegister(const IDBRecord& rRecord,
                                              &CRegistrar::DeRegister_ret,
                                              NULL,
                                              &dynamic_cast<const CDBRecord&>(rRecord).itr());
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"DeRegister Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar,"DeRegister Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
@@ -783,15 +782,14 @@ void CRegistrar::DumpDatabase() const
    pRegistrarCmdResp_t pRC = MarshalCommand( eCmdDumpDatabase,
                                              tid,
                                              NULL);
-   if( pRC ){
-      AAL_DEBUG(LM_Registrar,"DumpDatabase Call, Command Block is:\n" << *pRC << endl);
+   if ( pRC ) {
+      AAL_DEBUG(LM_Registrar, "DumpDatabase Call, Command Block is:\n" << pRC << std::endl);
       RegSendMsg (pRC);
       RegistrarCmdResp_Destroy (pRC);
    }
 }
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

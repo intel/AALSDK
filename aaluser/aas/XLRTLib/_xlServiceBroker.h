@@ -51,21 +51,19 @@ AAL_DECLARE_SVC_MOD(localServiceBroker, XLRT_API)
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 
-class _xlServiceBroker : public  AAL::AAS::ServiceBase,
+class _xlServiceBroker : public  ServiceBase,
                          private CUnCopyable,
-                         public  AAL::XL::RT::IServiceBroker
+                         public  IServiceBroker
 {
 public:
-   typedef std::map<std::string, AAL::XL::RT::ServiceHost *> ServiceMap;
-   typedef ServiceMap::iterator                         Servicemap_itr;
+   typedef std::map<std::string, ServiceHost *> ServiceMap;
+   typedef ServiceMap::iterator                 Servicemap_itr;
 
 
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlServiceBroker, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlServiceBroker, ServiceBase),
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
@@ -83,10 +81,10 @@ public:
    // Quiet Release. Used when Service is unloaded.
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(AAL::IBase *pClient,
+   void allocService(IBase                    *pClient,
                      const NamedValueSet      &rManifest,
                      TransactionID const      &rTranID,
-                     AAL::XL::RT::IRuntime::eAllocatemode  = AAL::XL::RT::IRuntime::NotifyAll);
+                     IRuntime::eAllocatemode = IRuntime::NotifyAll);
 
 
    ~_xlServiceBroker();
@@ -108,8 +106,6 @@ protected:
 };
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
 

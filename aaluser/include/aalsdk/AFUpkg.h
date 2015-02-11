@@ -52,7 +52,6 @@
 #include <aalsdk/CAALEvent.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
    class CAASServiceContainer;
 
@@ -315,10 +314,9 @@ public:
                         btApplicationContext AppContext = NULL) = 0;
 
    //Mutator for setting the Service Container
-   virtual void ServiceContainer(AAS::CAASServiceContainer *pServiceContainer) = 0;
+   virtual void ServiceContainer(CAASServiceContainer *pServiceContainer) = 0;
 };
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_AFUPKG_H__

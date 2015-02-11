@@ -250,6 +250,8 @@ development.
 #include <aalsdk/AAL.h>
 #include <aalsdk/osal/OSServiceModule.h>
 
+using namespace AAL;
+
 const std::string strConfigRecord("9 20 ConfigRecordIncluded\n \
       \t10\n \
           \t\t9 17 ServiceExecutable\n \
@@ -292,8 +294,6 @@ const std::string strConfigRecord("9 20 ConfigRecordIncluded\n \
 AAL_DECLARE_SVC_MOD(libsampleafu1, SAMPLEAFU1_API)
 
 
-BEGIN_NAMESPACE(AAL)
-
 /// @addtogroup sample_afu1
 /// @{
 
@@ -312,7 +312,7 @@ public:
    ///
    /// Called by the Service when asked to so by the client of the Service.
    /// @param[in]  rTranID   For messages sent back to the caller.
-   virtual void PingReceived(AAL::TransactionID const &rTranID) = 0;
+   virtual void PingReceived(TransactionID const &rTranID) = 0;
 };
 
 /// ISampleAFUPing interface ID.
@@ -329,8 +329,8 @@ public:
    ///
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  rTranID   For messages sent back to the caller.
-   virtual void Ping(AAL::btcString            sMessage,
-                     AAL::TransactionID const &rTranID) = 0;
+   virtual void Ping(btcString            sMessage,
+                     TransactionID const &rTranID) = 0;
 
    /// @brief An illustration of an AFU custom interface.
    ///
@@ -338,8 +338,8 @@ public:
    ///
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  rTranID   For messages sent back to the caller.
-   virtual void PingOne(AAL::btcString      sMessage,
-                        AAL::TransactionID &rTranID) = 0;
+   virtual void PingOne(btcString      sMessage,
+                        TransactionID &rTranID) = 0;
 
    /// @brief An illustration of an AFU custom interface.
    ///
@@ -347,7 +347,7 @@ public:
    ///
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  n         The number of messages to send.
-   virtual void PingSingleThread(AAL::btcString sMessage, unsigned int n) = 0;
+   virtual void PingSingleThread(btcString sMessage, unsigned int n) = 0;
 
    /// @brief An illustration of an AFU custom interface.
    ///
@@ -358,7 +358,7 @@ public:
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  n         The number of messages to send.
    /// @param[in]  wait      Whether or not to wait for messages to be sent.
-   virtual void PingMultiThread(AAL::btcString sMessage, unsigned int n, btBool wait=false) = 0;
+   virtual void PingMultiThread(btcString sMessage, unsigned int n, btBool wait=false) = 0;
 
    /// @brief Releases the Service, allowing the framework to destroy it.
    ///
@@ -379,8 +379,6 @@ public:
 #ifndef ERR
 # define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 #endif // ERR
-
-END_NAMESPACE(AAL)
 
 #endif // __AALSDK_SERVICE_SAMPLEAFU1SERVICE_H__
 

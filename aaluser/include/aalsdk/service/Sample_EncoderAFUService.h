@@ -64,7 +64,7 @@ AAL_DECLARE_MOD(libSampleEncoderAFUService, SAMPLEENC_API)
 BEGIN_NAMESPACE(AAL)
 
 #define iidEncode __INTC_IID(INTC_sysSampleAFU,0x0005)
-class IEncode : public AAL::AAS::IWorkspace
+class IEncode : public IWorkspace
 {
 public:
 
@@ -83,7 +83,7 @@ public:
 // Interface: IEncode
 // Comments:
 //=============================================================================
-class SampleEncoder : public AAL::AAS::DeviceServiceBase, public IEncode
+class SampleEncoder : public DeviceServiceBase, public IEncode
 {
 public:
 
@@ -102,7 +102,7 @@ public:
    //  interface is IEncode.  DeviceServiceBase provides an init() method that
    //  can be used where more sophisticated initialization is required. The
    //  init() method is called by the factory AFTER construction but before use.
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SampleEncoder, AAL::AAS::DeviceServiceBase)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SampleEncoder, DeviceServiceBase)
    ,m_datap(NULL) //NOTE to initialize members use , not :
    {
       SetSubClassInterface(iidEncode, dynamic_cast<IEncode*>(this));
@@ -134,7 +134,7 @@ public:
 
    void init( TransactionID const&rtid )
    {
-      QueueAASEvent(new AAL::AAS::ObjectCreatedEvent(dynamic_cast<IBase*>(this),rtid));
+      QueueAASEvent(new ObjectCreatedEvent(dynamic_cast<IBase*>(this),rtid));
       return;
    }
 

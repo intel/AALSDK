@@ -70,6 +70,8 @@
 #define __AALSDK_KERNEL_ENCODER_SAMPLE_KBAE_ENCODER_KBAE_PUBLIC_H__
 #include <aalsdk/kernel/aaltypes.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //====================================
 // Shared structure for Encoder Sample
 //====================================
@@ -83,4 +85,7 @@ struct encoder_data
 };
 //=====================================
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_ENCODER_SAMPLE_KBAE_ENCODER_KBAE_PUBLIC_H__
+

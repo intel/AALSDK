@@ -42,8 +42,6 @@
 #include <aalsdk/xlRuntime.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 
 //=============================================================================
@@ -53,9 +51,9 @@ BEGIN_NAMESPACE(AAL)
 // Inputs: root_name - Name of the Service to load.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost( AAL::btcString                     root_name,
-                          AAL::XL::RT::IRuntime             *pxlRuntime,
-                          AAL::XL::RT::IXLRuntimeServices   *pxlRuntimeServices) :
+ServiceHost::ServiceHost(btcString             root_name,
+                         IRuntime             *pxlRuntime,
+                         IXLRuntimeServices   *pxlRuntimeServices) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
@@ -106,9 +104,9 @@ ERR:
 // Inputs: EntryPoint - Entry point of loaded Service Module.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost( AALSvcEntryPoint                 EntryPoint,
-                          AAL::XL::RT::IRuntime           *pxlRuntime,
-                          AAL::XL::RT::IXLRuntimeServices *pxlRuntimeServices) :
+ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint,
+                          IRuntime           *pxlRuntime,
+                          IXLRuntimeServices *pxlRuntimeServices) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
@@ -144,10 +142,10 @@ ServiceHost::ServiceHost( AALSvcEntryPoint                 EntryPoint,
 //         rTranID - Optional Transaction ID
 // Comments:
 //=============================================================================
-btBool ServiceHost::allocService(AAL::IBase *pClient,
-                                 NamedValueSet const      &rManifest,
-                                 TransactionID const      &rTranID,
-                                 AAL::btBool               NoRuntimeEvent)
+btBool ServiceHost::allocService(IBase               *pClient,
+                                 NamedValueSet const &rManifest,
+                                 TransactionID const &rTranID,
+                                 btBool               NoRuntimeEvent)
 {
    if ( IsOK() && ( NULL != m_pProvider ) ) {
       m_base = m_pProvider->Construct(pClient, rTranID, rManifest, NoRuntimeEvent);
@@ -157,7 +155,5 @@ btBool ServiceHost::allocService(AAL::IBase *pClient,
    return false;
 }
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 

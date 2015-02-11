@@ -56,8 +56,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 //=============================================================================
@@ -161,7 +159,7 @@ public:
    //              cannot be sent to the end application until
    //              the Initialize operation has completed.
    //--------------------------------------------------------------
-   static void MessageHandler(AAL::IEvent const &theEvent);
+   static void MessageHandler(IEvent const &theEvent);
 
    ServiceBase  &AALService() const { return *m_pServiceBase; }
 
@@ -182,8 +180,6 @@ protected:
 };
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

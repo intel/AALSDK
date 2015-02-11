@@ -66,10 +66,6 @@ FAPTRANS2_END_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
-         BEGIN_NAMESPACE(FAP_20)
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,7 +102,7 @@ SPL2_Start_AFUTransaction::SPL2_Start_AFUTransaction(IAFUDev             *pIAFUD
 
          // Address found inside a block, not at the beginning
          if ( WorkSpaceMapper::FOUND_INCLUDED == eRet ) {
-            ostringstream oss;
+            std::ostringstream oss;
             oss << "Workspace Address " << static_cast<void*>(Address) <<
                    " is not the beginning of its workspace. Did you mean to pass " <<
                       static_cast<void*>(pWkSp->m_ptr) << "?";
@@ -151,12 +147,12 @@ btWSSize        SPL2_Start_AFUTransaction::GetSize()        { return static_cast
 TransactionID * SPL2_Start_AFUTransaction::GetTranIDPtr()   { return &m_tidEmbedded;     }
 uid_msgIDs_e    SPL2_Start_AFUTransaction::GetCommand()     { return reqid_UID_SendAFU;  }
 
-void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(AAL::IEvent const &theEvent)
+void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
 {
    //////////////////////////////////////////////////////////////////////////////////////
    // Get the original transactionID and CAFUDev.
    //
-   // See how it was wrapped up in the TranIDWrapper in AAL::AAS::SendAFUTransaction()
+   // See how it was wrapped up in the TranIDWrapper in SendAFUTransaction()
    //
    // Do this first to prevent memory leaks if errors found later on
    //////////////////////////////////////////////////////////////////////////////////////
@@ -190,7 +186,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(AAL::IEvent const &theEvent
    ASSERT(pAIA);
 
    // Get the Event Dispatcher
-   AAL::XL::RT::IXLRuntimeServices  *pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
    ASSERT(pEventDispatcher);
 
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.
@@ -199,12 +195,12 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(AAL::IEvent const &theEvent
    // Note that pIBaseAFU will be different from pAFU
 #if AAL_LOG_LEVEL >= LOG_VERBOSE
    IBase *pIBaseAFU = static_cast<IBase *>(theEvent.Object().Context());
-   AAL_VERBOSE(LM_UAIA, __AAL_FUNC__ << "() pAFU = " << static_cast<void*> (pIBaseAFU) << endl);
+   AAL_VERBOSE(LM_UAIA, __AAL_FUNC__ << "() pAFU = " << static_cast<void*> (pIBaseAFU) << std::endl);
 #endif
 
    // DEBUG CODE, should never happen
    if ( !pEventDispatcher ) {
-      AAL_ERR(LM_UAIA, __AAL_FUNC__ << "() pEventHandler is NULL. A message has been lost." << endl);
+      AAL_ERR(LM_UAIA, __AAL_FUNC__ << "() pEventHandler is NULL. A message has been lost." << std::endl);
       return;
    }
 
@@ -237,7 +233,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(AAL::IEvent const &theEvent
                      "\n\twsid    " << std::hex << pWSParms->wsid <<
                      "\n\tsize    " << std::dec << pWSParms->size <<
                      "\n\tphysptr " << std::hex << pWSParms->physptr <<
-                     endl);
+                     std::endl);
 
          // MMAP the workspace id in order to get the pointer
          btBool fRet;
@@ -273,7 +269,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(AAL::IEvent const &theEvent
                      "\n\twsid    " << std::hex << pWSParms->wsid <<
                      "\n\tsize    " << std::dec << pWSParms->size <<
                      "\n\tphysptr " << std::hex << pWSParms->physptr <<
-                     endl);
+                     std::endl);
 
 
          // Iterate over the workspace mappings until we find the magic xsid.
@@ -377,7 +373,7 @@ SPL2_SetContextWorkspace_AFUTransaction::SPL2_SetContextWorkspace_AFUTransaction
 
       // Address found inside a block, not at the beginning
       if ( WorkSpaceMapper::FOUND_INCLUDED == eRet ) {
-         ostringstream oss;
+         std::ostringstream oss;
          oss << "Workspace Address " << static_cast<void*>(Address) <<
                 " is not the beginning of its workspace. Did you mean to pass " <<
                 static_cast<void*>(pWkSp->m_ptr) << "?";
@@ -413,8 +409,5 @@ TransactionID * SPL2_SetContextWorkspace_AFUTransaction::GetTranIDPtr()   { retu
 uid_msgIDs_e    SPL2_SetContextWorkspace_AFUTransaction::GetCommand()     { return reqid_UID_SendAFU;  }
 
 
-         END_NAMESPACE(FAP_20)
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

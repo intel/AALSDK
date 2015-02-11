@@ -40,23 +40,20 @@
 #include <aalsdk/osal/IDispatchable.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-     BEGIN_NAMESPACE(RT)
 
 class XLRT_API IXLRuntimeServices
 {
 public:
 
-   virtual AAL::IBase *getMessageDeliveryService()                               =0;
-   virtual void setMessageDeliveryService(AAL::IBase *pMDSbase)                  =0;
-   virtual btBool SendMsg(IDispatchable *pobject, btObjectType parm=NULL)        =0;
-   virtual IRuntimeClient *getRuntimeClient()                                    =0;
+   virtual IBase *getMessageDeliveryService()                             = 0;
+   virtual void setMessageDeliveryService(IBase *pMDSbase)                = 0;
+   virtual btBool SendMsg(IDispatchable *pobject, btObjectType parm=NULL) = 0;
+   virtual IRuntimeClient *getRuntimeClient()                             = 0;
 
-   virtual ~IXLRuntimeServices(){}
+   virtual ~IXLRuntimeServices() {}
 };
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
 #endif /* XLRUNTIMESERVICES_H_ */
+

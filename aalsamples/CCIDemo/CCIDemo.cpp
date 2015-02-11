@@ -43,11 +43,12 @@
 #include <aalsdk/aalclp/aalclp.h>
 #include <strings.h> // strcasecmp
 
-#include "CCILib.h"
+using namespace std;
 
-USING_NAMESPACE(std)
-USING_NAMESPACE(AAL)
-USING_NAMESPACE(CCILib)
+#include "CCILib.h"
+using namespace AAL;
+using namespace CCILib;
+
 
 #ifndef CL
 # define CL(x)                     ((x) * 64)

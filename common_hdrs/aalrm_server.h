@@ -74,10 +74,11 @@
 #include <aalsdk/kernel/aalrm.h>
 #include <aalsdk/kernel/aaldevice.h>
 
-#define RMS_DEV_NAME "aalrms"
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
+#define RMS_DEV_NAME "aalrms"
 
 //=============================================================================
 //=============================================================================
@@ -218,6 +219,8 @@ struct aalrms_requestdevice
 //none
 
 END_C_DECLS
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALRM_SERVER_H__
 

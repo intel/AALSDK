@@ -46,7 +46,6 @@
 #include <aalsdk/osal/IDispatchable.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /// @addtogroup MDS
 /// @{
@@ -119,12 +118,11 @@ public:
                               IDispatchable *)       = 0;
 
    /// Retrieve the IEventDispatcher interface.
-   virtual IEventDispatcher *GetEventDispatcher(AAL::AAS::EDSDispatchClass = EDS_dispatcherNormal) = 0;
+   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
 };
 
 /// @} group EDS
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_EDS_AASEVENTDELIVERYSERVICE_H__

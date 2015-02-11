@@ -52,7 +52,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
    //=============================================================================
    // Name: ServiceBase
@@ -189,11 +188,11 @@ IBase * ServiceBase::_init(btEventHandler       eventHandler,
 
 
 
-IBase * ServiceBase::_init(AAL::IBase               *pclient,
-                           TransactionID const      &rtid,
-                           NamedValueSet const      &optArgs,
-                           CAALEvent                *pcmpltEvent,
-                           AAL::btBool               NoRuntimeEvent)
+IBase * ServiceBase::_init(IBase               *pclient,
+                           TransactionID const &rtid,
+                           NamedValueSet const &optArgs,
+                           CAALEvent           *pcmpltEvent,
+                           btBool               NoRuntimeEvent)
 {
    if(NULL == pclient){
       return NULL;
@@ -304,10 +303,10 @@ void ServiceBase::MessageDeliveryThread()
    }
 }
 
-void ServiceBase::allocService(AAL::IBase          *pClient,
-                               NamedValueSet const &rManifest,
-                               TransactionID const &rTranID,
-                               AAL::XL::RT::IRuntime::eAllocatemode mode)
+void ServiceBase::allocService(IBase                  *pClient,
+                               NamedValueSet const    &rManifest,
+                               TransactionID const    &rTranID,
+                               IRuntime::eAllocatemode mode)
 {
    getRuntime()->allocService(pClient, rManifest, rTranID, mode);
 }
@@ -413,7 +412,7 @@ IBase * ServiceProxyBase::_init(btEventHandler       eventHandler,
 }
 
 
-IBase * ServiceProxyBase::_init(AAL::IBase  *pclient,
+IBase * ServiceProxyBase::_init(IBase               *pclient,
                                 TransactionID const &rtid,
                                 NamedValueSet const &optArgs,
                                 CAALEvent           *pcmpltEvent)
@@ -524,10 +523,10 @@ IBase * ServiceStubBase::_init(btEventHandler       eventHandler,
    return this;
 }
 
-IBase * ServiceStubBase::_init(AAL::IBase *pclient,
-                               TransactionID const      &rtid,
-                               NamedValueSet const      &optArgs,
-                               CAALEvent                *pcmpltEvent)
+IBase * ServiceStubBase::_init(IBase               *pclient,
+                               TransactionID const &rtid,
+                               NamedValueSet const &optArgs,
+                               CAALEvent           *pcmpltEvent)
 {
    // Check to see if this is the direct super class of the most derived class
    if ( NULL != pclient ) {
@@ -580,6 +579,5 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    }
 }
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

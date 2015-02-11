@@ -62,7 +62,6 @@
 #include <aalsdk/IServiceClient.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -178,11 +177,11 @@ public:
       return this;
    }
 
-   virtual IBase * _init(AAL::IBase   *pclient,
+   virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL,
-                         AAL::btBool          NoRuntimeEvent = false)
+                         btBool               NoRuntimeEvent = false)
    {
       // Check to see if this is the direct super class of the most derived class
       if ( NULL != pcmpltEvent ) {
@@ -208,7 +207,7 @@ public:
 
    // Convenience function to return the AFUdev
    btBool                IsAFUDevOK()   { return NULL != m_pAFUDev; }
-   AAL::AAS::AIA::IAFUDev  & AFUDev()       { return *m_pAFUDev;        }
+   IAFUDev &             AFUDev()       { return *m_pAFUDev;        }
    NamedValueSet const & ConfigRecord() { return *m_ConfigRecord;   }
 
 private:
@@ -236,7 +235,7 @@ private:
    public:
       ServiceClient( DeviceServiceBase *pdsb): m_pdsb(pdsb)
    {
-      SetSubClassInterface(iidServiceClient, dynamic_cast<AAL::AAS::IServiceClient*>(m_pdsb));
+      SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(m_pdsb));
    }
 
    private:
@@ -291,7 +290,7 @@ private:
          // Allocate the AIA. The last parameter means do not send notification to RuntimeClient
          //   Pass the m_scContainer as the IBase containing the IServiceClient.  The ServiceClient
          //   actually publishes our private IServiceClient for us. (See note at top of class).
-         allocService(&m_scContainer, nvsManifest, tidLoadAIA, AAL::XL::RT::IRuntime::NoRuntimeClientNotification);
+         allocService(&m_scContainer, nvsManifest, tidLoadAIA, IRuntime::NoRuntimeClientNotification);
       }
       return;
 
@@ -307,10 +306,10 @@ private:
    }
   
 
-   void serviceAllocated(AAL::IBase *pServiceBase, TransactionID const &rTranID)
+   void serviceAllocated(IBase *pServiceBase, TransactionID const &rTranID)
    {
       // TODO check for NULL
-      m_pAIA = dynamic_ptr<AAL::AAS::AIA::CAIA>(iidAIA, pServiceBase);
+      m_pAIA = dynamic_ptr<CAIA>(iidAIA, pServiceBase);
 
       // Add the context used much later in the protocol
       m_pAIA->SetContext(this);
@@ -362,7 +361,7 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
-   static void _EventCallbackHandler(AAL::IEvent const &theEvent)
+   static void _EventCallbackHandler(IEvent const &theEvent)
    {
       // Get this pointer from the object's context which was provided when we created it.
       DeviceServiceBase *This = reinterpret_cast<DeviceServiceBase *>(theEvent.Object().Context());
@@ -377,7 +376,7 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
-   void EventCallbackHandler(AAL::IEvent const &theEvent)
+   void EventCallbackHandler(IEvent const &theEvent)
    {
       if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
          //Print the description string.
@@ -397,7 +396,7 @@ private:
       }
 
       // TODO check for NULL
-      m_pAIA = dynamic_ptr<AAL::AAS::AIA::CAIA>(iidAIA, theEvent.Object());
+      m_pAIA = dynamic_ptr<CAIA>(iidAIA, theEvent.Object());
 
       //---------------------------------------------------
       // Create a session with the AIA which serves as a
@@ -428,7 +427,7 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
-   static void _DefaultAIAHandler(AAL::IEvent const &theEvent)
+   static void _DefaultAIAHandler(IEvent const &theEvent)
    {
       // The object that generated the event (AIAProxy) has our this as its context
       DeviceServiceBase *This = static_cast<DeviceServiceBase *>(theEvent.Object().Context());
@@ -443,7 +442,7 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
-   void DefaultAIAHandler(AAL::IEvent const &theEvent)
+   void DefaultAIAHandler(IEvent const &theEvent)
    {
       // Check for exception
       if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
@@ -457,7 +456,7 @@ private:
          // Device has been bound to this process. The kernel device (PIP) is
          // is abstsacted via the CAFUdev class
          case tranevtBindAFUDevEvent : {
-            AAL::AAS::AIA::IBindAFUDevEvent &revt = subclass_ref<AAL::AAS::AIA::IBindAFUDevEvent>(theEvent);
+            IBindAFUDevEvent &revt = subclass_ref<IBindAFUDevEvent>(theEvent);
 
             // Obtain the AFUDev, which represents the device handle, and which will be used subsequently
             //    for communication with the device and its workspace.
@@ -533,20 +532,19 @@ private:
 
 protected:
 
-   AAL::AAS::AIA::CAIA        *m_pAIA;         // AIA service
-   AAL::AAS::AIA::uAIASession *m_pSession;     // AIA Session
-   btObjectType                m_devHandle;    // low-level device handle
-   AAL::AAS::AIA::IAFUDev     *m_pAFUDev;      // AFU device
-   NamedValueSet const        *m_ConfigRecord; // Config Record
-   btBool                      m_quietRelease; // Used for quiet release
-   ServiceClient               m_scContainer;  // IBase container for presenting ServiceClient
+   CAIA                 *m_pAIA;         // AIA service
+   uAIASession          *m_pSession;     // AIA Session
+   btObjectType          m_devHandle;    // low-level device handle
+   IAFUDev              *m_pAFUDev;      // AFU device
+   NamedValueSet const  *m_ConfigRecord; // Config Record
+   btBool                m_quietRelease; // Used for quiet release
+   ServiceClient         m_scContainer;  // IBase container for presenting ServiceClient
 };
 
 
 /// @} group UserModeSDK
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

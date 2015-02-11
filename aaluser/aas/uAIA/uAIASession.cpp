@@ -46,8 +46,6 @@
 #include "aalsdk/uaia/uAIA.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 IuAIASession::~IuAIASession() {}
 
@@ -91,7 +89,7 @@ void uAIASession::Bind(btObjectType         Handle,
                        TransactionID const &tid)
 {
    m_ruAIA.SendMessage(
-                        AAL::AAS::AIA::BindDevice(m_AIAMarshaller,
+                        BindDevice(m_AIAMarshaller,
                                                   Handle,
                                                   nvsOptions,
                                                   tid,
@@ -103,7 +101,7 @@ void uAIASession::UnBind(btObjectType         Handle,
                          TransactionID const &tid)
 {
    m_ruAIA.SendMessage( 
-                        AAL::AAS::AIA::UnBindDevice(m_AIAMarshaller,
+                        UnBindDevice(m_AIAMarshaller,
                                                     Handle,
                                                     tid,
                                                     &m_returnAddress)
@@ -115,7 +113,7 @@ void uAIASession::ReBind(IAFUDev             *DevObject,
                          TransactionID const &tid)
 { /* TODO */ }
 
-void uAIASession::MessageHandler(AAL::IEvent const &theEvent)
+void uAIASession::MessageHandler(IEvent const &theEvent)
 {
    class EventWrapper
    {
@@ -243,9 +241,6 @@ void uAIASession::QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent)
 }
 
 
-
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

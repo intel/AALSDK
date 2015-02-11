@@ -98,7 +98,7 @@
 // load and bind operation
 //========================================
 
-#define SERVICE_FACTORY AAL::AAS::InProcSingletonSvcsFact< AAL::AAS::AIA::uAIA >
+#define SERVICE_FACTORY AAL::InProcSingletonSvcsFact< AAL::uAIA >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
@@ -115,8 +115,6 @@ AASUAIA_END_SVC_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 BEGIN_C_DECLS
@@ -278,7 +276,7 @@ void uAIA::init( TransactionID const& rtid )
 //=============================================================================
 uAIA::~uAIA(void)
 {
-   cout<<"AIA Gone"<<endl;
+   std::cout << "AIA Gone" << std::endl;
    Destroy();
 }
 
@@ -429,7 +427,7 @@ uAIA::Process_Event()
       AAL_DEBUG(LM_UAIA, "uAIA::Process_Event: GetMessage Returned\n");
       if (pMessage->result_code() != uid_errnumOK) {
          AAL_WARNING(LM_UAIA, "uAIA::Process_Event: pMessage->result_code() is not uid_errnumOK, but is " <<
-                  pMessage->result_code() << endl);
+                  pMessage->result_code() << std::endl);
       }
 
       if (rspid_UID_Shutdown == pMessage->id()) { // Are we done?
@@ -438,7 +436,7 @@ uAIA::Process_Event()
          AAL_INFO(LM_UAIA, "uAIA::Process_Event: Shutdown Seen\n");
          //Shutdown complete
          if(NULL == m_pShutdownThread) {
-            cerr<<"NULL THREAD"<<endl;
+            std::cerr << "NULL THREAD" << std::endl;
          }else{
             m_pShutdownThread->Join();
          }
@@ -666,7 +664,7 @@ btBool uAIA::Release(TransactionID const &rTranID,
                                      OSLThread::THREADPRIORITY_NORMAL,
                                      pParms);
    if ( NULL == m_pShutdownThread ) {
-      cout <<"youch null threa"<<endl;
+      std::cout << "youch null threa" << std::endl;
    }
    Unlock();
 
@@ -708,7 +706,5 @@ void CAIA::DestroyAIASession(uAIASession *pSess)
 }
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

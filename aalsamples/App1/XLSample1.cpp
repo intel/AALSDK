@@ -62,15 +62,12 @@
 /// 06/18/2014     TSW      Ported to XL.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-using namespace AAL;
-using namespace AAS;
-
 #include <aalsdk/xlRuntime.h>
-using namespace XL;
-using namespace RT;
+#include <aalsdk/AALLoggerExtern.h> // Logger
+
+using namespace AAL;
 
 #include "SampleAFU1Service.h"      // AFU package specific definitions
-#include <aalsdk/AALLoggerExtern.h> // Logger
 
 // Convenience macros for printing messages and errors.
 #ifndef MSG
@@ -95,7 +92,7 @@ class MyRuntimeClient;  ///< Forward reference
 /// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
 ///
 /// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
-class MyServiceClient : public CAASBase, public AAL::AAS::IServiceClient, public AAL::ISampleAFUPingClient
+class MyServiceClient : public CAASBase, public IServiceClient, public ISampleAFUPingClient
 {
 public:
    MyServiceClient();
@@ -103,21 +100,21 @@ public:
    void start(MyRuntimeClient *p_Runtime);
 
    // <begin IServiceClient interface>
-   void serviceAllocated(AAL::IBase          *pServiceBase,
+   void serviceAllocated(IBase               *pServiceBase,
                          TransactionID const &rTranID);
 
    void serviceAllocateFailed(const IEvent        &rEvent);
 
    void serviceFreed(TransactionID const &rTranID);
 
-   void PingReceived(AAL::TransactionID const &rTranID);
+   void PingReceived(TransactionID const &rTranID);
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
 
 protected:
-   AAL::IAALService *m_pAALService;    // The generic AAL Service interface for the AFU.
-   ISampleAFUPing   *m_pPingAFU;       // The AFU-specific interface.
-   MyRuntimeClient  *m_pRuntime;
+   IAALService     *m_pAALService;    // The generic AAL Service interface for the AFU.
+   ISampleAFUPing  *m_pPingAFU;       // The AFU-specific interface.
+   MyRuntimeClient *m_pRuntime;
 };
 
 /// @brief   Define our Runtime client class so that we can receive the runtime started/stopped notifications.
@@ -125,7 +122,7 @@ protected:
 /// We implement a Service client within, to handle AAL Service allocation/free.
 /// We also implement a Semaphore for synchronization with the AAL runtime.
 class MyRuntimeClient : public CAASBase,
-                        public AAL::XL::RT::IRuntimeClient
+                        public IRuntimeClient
 {
 public:
    MyRuntimeClient();
@@ -144,19 +141,19 @@ public:
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
-   void runtimeAllocateServiceSucceeded( AAL::IBase *pClient,
-                                         TransactionID const &rTranID);
+   void runtimeAllocateServiceSucceeded(IBase               *pClient,
+                                        TransactionID const &rTranID);
 
    void runtimeEvent(const IEvent &rEvent);
    
-   AAL::XL::RT::IRuntime* getRuntime();
+   IRuntime* getRuntime();
    // <end IRuntimeClient interface>
 
 protected:
-   MyServiceClient        m_SvcClient; // To acquire an AFU from the AAL runtime.
-   AAL::XL::RT::IRuntime *m_pRuntime;  // Our AAL XL runtime instance.
-   CSemaphore             m_Sem;       // For synchronizing with the AAL runtime.
-   AAL::XL::RT::Runtime   m_Runtime; 
+   MyServiceClient  m_SvcClient; // To acquire an AFU from the AAL runtime.
+   IRuntime        *m_pRuntime;  // Our AAL XL runtime instance.
+   CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
+   Runtime          m_Runtime; 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,7 +169,7 @@ MyRuntimeClient::MyRuntimeClient() :
    NamedValueSet configArgs;
 
    // Publish our interface
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
+   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
 #if CONFIGURE_RUNTIME
    NamedValueSet configRecord;
@@ -222,8 +219,8 @@ MyRuntimeClient::~MyRuntimeClient()
     MSG("Runtime AllocateService failed");
  }
 
- void MyRuntimeClient::runtimeAllocateServiceSucceeded( AAL::IBase *pClient,
-                                                        TransactionID const &rTranID)
+ void MyRuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
+                                                       TransactionID const &rTranID)
  {
     MSG("Runtime Allocate Service Succeeded");
  }
@@ -233,7 +230,7 @@ MyRuntimeClient::~MyRuntimeClient()
     MSG("Generic message handler (runtime)");
  }
 
- AAL::XL::RT::IRuntime* MyRuntimeClient::getRuntime()
+ IRuntime * MyRuntimeClient::getRuntime()
  {
     return m_pRuntime;
  }
@@ -248,8 +245,8 @@ MyServiceClient::MyServiceClient():
     m_pAALService(NULL),
     m_pPingAFU(NULL)
  {
-    SetSubClassInterface(iidServiceClient, dynamic_cast<AAL::AAS::IServiceClient*>(this));
-    SetInterface(iidSampleAFUPingClient, dynamic_cast<AAL::ISampleAFUPingClient*>(this));
+    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+    SetInterface(iidSampleAFUPingClient, dynamic_cast<ISampleAFUPingClient *>(this));
  }
 
 
@@ -271,13 +268,13 @@ void MyServiceClient::start(MyRuntimeClient *p_Runtime)
          cout << Manifest << endl;
    #endif // DBG_HOOK
 
-   m_pRuntime->getRuntime()->allocService(dynamic_cast<AAL::IBase*>(this), Manifest);
+   m_pRuntime->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
 }
 
  // We must implement the IServiceClient interface (IServiceClient.h):
 
  // <begin IServiceClient interface>
- void MyServiceClient::serviceAllocated(AAL::IBase          *pServiceBase,
+ void MyServiceClient::serviceAllocated(IBase               *pServiceBase,
                                         TransactionID const &rTranID)
  {
     m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
@@ -307,7 +304,7 @@ void MyServiceClient::start(MyRuntimeClient *p_Runtime)
     m_pRuntime->getRuntime()->stop();
  }
 
- void MyServiceClient::PingReceived(AAL::TransactionID const &rTranID)
+ void MyServiceClient::PingReceived(TransactionID const &rTranID)
  {
     static int count = 0;
     // The Ping was received. This example shows how to extract the value of the TransactionID context

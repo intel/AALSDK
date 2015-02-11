@@ -76,10 +76,10 @@ void ASESPLAFU::init(TransactionID const &TranID)
   spl_driver_dsm_setup(m_dsm);
   spl_driver_afu_setup(m_dsm);
 
-  QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-								Client(),
-								dynamic_cast<IBase *>(this),
-								TranID) );
+  QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                      Client(),
+                                                      dynamic_cast<IBase *>(this),
+                                                      TranID) );
 }
 
 btBool ASESPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -146,11 +146,11 @@ void ASESPLAFU::WorkspaceAllocate(btWSSize             Length,
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                            TranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                  TranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                                pExcept) );
 }
@@ -191,11 +191,11 @@ void ASESPLAFU::WorkspaceFree(btVirtAddr           Address,
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                            TranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                  TranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                            pExcept) );
 }
@@ -340,7 +340,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< ASESPLAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ASESPLAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

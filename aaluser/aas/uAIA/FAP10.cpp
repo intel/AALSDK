@@ -137,9 +137,6 @@ FAPTRANS1_END_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
-         BEGIN_NAMESPACE(FAP_10)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,7 +268,7 @@ btVirtAddr SubmitTask_Serial_AFUTransaction::GetPayloadPtr()
 //=============================================================================
 btWSSize SubmitTask_Serial_AFUTransaction::GetSize()
 {
-   AAL_VERBOSE(LM_UAIA, "SubmitTask_Serial_AFUTransaction::GetSize seen"  << endl );
+   AAL_VERBOSE(LM_UAIA, "SubmitTask_Serial_AFUTransaction::GetSize seen"  << std::endl );
    if (!m_bRendered) Render();
    if (IsOK()) {
       return m_size;
@@ -297,7 +294,7 @@ void SubmitTask_Serial_AFUTransaction::AddBuffer(btBool       fOutput,    // Is 
                                                  btBool       fRsp)       // Notify?
 {
    if (m_bRendered) ClearRender();
-   AAL_VERBOSE(LM_UAIA, "Context=" << std::hex << Context << endl );
+   AAL_VERBOSE(LM_UAIA, "Context=" << std::hex << Context << std::endl );
 
    if (fOutput) {                               // add to input descriptor list
       m_voBufDesc.push_back( BufferDescriptor_t( Address, Length, Context, fRsp));
@@ -402,7 +399,7 @@ void SubmitTask_Serial_AFUTransaction::Render() {
    pBig->afuMsg.pipver  = GetPIPVer();
    AAL_VERBOSE(LM_UAIA, "afuMsg.payload:" <<
          std::hex << pBig->afuMsg.payload <<
-         "\n\tm_payload="<<static_cast<void*>(m_payload)<< endl
+         "\n\tm_payload="<<static_cast<void*>(m_payload)<< std::endl
    );
 
    // Load the submit_descriptors structure
@@ -438,7 +435,7 @@ void SubmitTask_Serial_AFUTransaction::Render() {
       pSubmit->m_arrDescInfo[index].m_wsid = pWkSp->m_wsid; /* In: the workspace id */
       pSubmit->m_arrDescInfo[index].m_vwsid = pWkSp->m_wsid; /* In: the workspace id: TO BE DEPRECATED*/
 
-      AAL_VERBOSE(LM_UAIA, "Input Context=" << std::hex << pSubmit->m_arrDescInfo[index].m_context << endl );
+      AAL_VERBOSE(LM_UAIA, "Input Context=" << std::hex << pSubmit->m_arrDescInfo[index].m_context << std::endl );
    }
 
    // Initialize input descriptors, which come immediately after output descriptors
@@ -466,7 +463,7 @@ void SubmitTask_Serial_AFUTransaction::Render() {
       }
       pSubmit->m_arrDescInfo[index].m_wsid = pWkSp->m_wsid; /* In: the workspace id */
       pSubmit->m_arrDescInfo[index].m_vwsid = pWkSp->m_wsid; /* In: the workspace id: TO BE DEPRECATED*/
-      AAL_VERBOSE(LM_UAIA, "Output Context=" << std::hex << pSubmit->m_arrDescInfo[index].m_context << endl );
+      AAL_VERBOSE(LM_UAIA, "Output Context=" << std::hex << pSubmit->m_arrDescInfo[index].m_context << std::endl );
    }
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -598,7 +595,7 @@ SubmitTask_PMaster_AFUTransaction::ConstructWorker(
    pBig->afuMsg.pipver  = GetPIPVer();
    AAL_VERBOSE(LM_UAIA, "afuMsg.payload:" <<
             std::hex << pBig->afuMsg.payload <<
-            "\n\tm_payload="<<static_cast<void*>(m_payload)<< endl
+            "\n\tm_payload="<<static_cast<void*>(m_payload)<< std::endl
    );
 
    // Load the submit_descriptors structure
@@ -707,7 +704,7 @@ std::string    SubmitTask_PMaster_AFUTransaction::GetError()     { return m_Erro
 // Comments:      TODO: Can be made cleaner once Multi-Submit capability is
 //                  enabled
 //=============================================================================
-AAL::AAS::AIA::FAP_10::SubmitTask_VMaster_AFUTransaction::
+SubmitTask_VMaster_AFUTransaction::
 SubmitTask_VMaster_AFUTransaction (
       btVirtAddr           inAddress,   // User mode virtual pointer to input SLAVE MODE buffer
       btWSSize             inLength,    // Length of the input buffer
@@ -775,7 +772,7 @@ SubmitTask_VMaster_AFUTransaction (
    pBig->afuMsg.pipver  = GetPIPVer();
    AAL_VERBOSE(LM_UAIA, "afuMsg.payload:" <<
             std::hex << pBig->afuMsg.payload <<
-            "\n\tm_payload="<<static_cast<void*>(m_payload)<< endl
+            "\n\tm_payload="<<static_cast<void*>(m_payload)<< std::endl
    );
 
    // Load the submit_descriptors structure
@@ -965,7 +962,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
    //////////////////////////////////////////////////////////////////////////////////////
    // Get the original transactionID and CAFUDev.
    //
-   // See how it was wrapped up in the TranIDWrapper in AAL::AAS::SendAFUTransaction()
+   // See how it was wrapped up in the TranIDWrapper in SendAFUTransaction()
    //
    // Do this first to prevent memory leaks if errors found later on
    //////////////////////////////////////////////////////////////////////////////////////
@@ -984,7 +981,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
    // Get the This pointer. It is in the event's context
    WkSp_Allocate_Mapping_EventHandlerObject *This =
             static_cast <WkSp_Allocate_Mapping_EventHandlerObject*> (pWrapper->Context);
-   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler This = " << static_cast<void*> (This) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler This = " << static_cast<void*> (This) << std::endl);
 
    // Delete the TranID Wrapper. It was allocated in SendAFUTransaction
    delete pWrapper;
@@ -998,13 +995,13 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
 
    uAIA *pAIA = static_cast <uAIA*> (theEvent.pObject());
 
-   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler AIA = " << static_cast<void*> (pAIA) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler AIA = " << static_cast<void*> (pAIA) << std::endl);
 
    // Get the Event Dispatcher -  TODO JG - Not event dispatcher any more.
-   AAL::XL::RT::IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler pEventDispatcher = "
-            << static_cast<void*> (pEventDispatcher) << endl);
+            << static_cast<void*> (pEventDispatcher) << std::endl);
 
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.
    //    Need it only for the 'this' pointer in event delivery, and there it is an IBase, so just get it that way.
@@ -1012,7 +1009,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
    // Note that pIBaseAFU will be different from pAFU
 #if AAL_LOG_LEVEL >= LOG_VERBOSE
    IBase* pIBaseAFU = static_cast <IBase*> (theEvent.Object().Context());
-   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler pAFU = " << static_cast<void*> (pIBaseAFU) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler pAFU = " << static_cast<void*> (pIBaseAFU) << std::endl);
 #endif
 
    // DEBUG CODE, should never happen
@@ -1065,7 +1062,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
                "\n\twsid    " << std::hex << pResult->wsParms.wsid <<
                "\n\tptr     " << std::hex << pResult->wsParms.ptr <<
                "\n\tphysptr " << std::hex << pResult->wsParms.physptr <<
-               endl);
+               std::endl);
 
       pResult->wsParms.type = This->m_task_mode; // Store the task mode into the parms so it can be read in the next handler
 
@@ -1138,7 +1135,7 @@ WkSp_Single_Free_AFUTransaction::WkSp_Single_Free_AFUTransaction(IAFUDev   *pIAF
 
    // Address found inside a block, not at the beginning
    if ( WorkSpaceMapper::FOUND_INCLUDED == eRet ) {
-      ostringstream oss;
+      std::ostringstream oss;
       oss << "Workspace Address " << static_cast<void*>(Address) <<
              " is not the beginning of its workspace. Did you mean to pass " <<
              static_cast<void*>(pWkSp->m_ptr) << "?";
@@ -1213,7 +1210,7 @@ btEventHandler WkSp_Free_Mapping_EventHandlerObject::Get_Free_Mapping_EventHandl
 // Description:   Encapsulates the WkSp_Single_Allocate_AFUTransaction callback
 //                   function that must mmap the wsid to get the pointer
 //=============================================================================
-void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::IEvent const& theEvent)
+void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(IEvent const &theEvent)
 {
    //////////////////////////////////////////////////////////////////////////////////////
    // Get objects and pointers required to send the final event
@@ -1222,14 +1219,14 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
    // get the AIA object that sent this Event. Use it to get to the EDS and AFU
    uAIA *pAIA = static_cast<uAIA*>(theEvent.pObject());
 
-   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler AIA = " << static_cast<void*> (pAIA) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler AIA = " << static_cast<void*> (pAIA) << std::endl);
 
 
    // Get the Event Dispatcher  TODO JG - Not event dispatcher any more.
-   AAL::XL::RT::IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler pEventDispatcher = "
-            << static_cast<void*> (pEventDispatcher) << endl);
+            << static_cast<void*> (pEventDispatcher) << std::endl);
 
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.
    //    Need it only for the 'this' pointer in event delivery, and there it is an IBase, so just get it that way.
@@ -1237,13 +1234,13 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
    // Note that pIBaseAFU will be different from pAFU
 #if AAL_LOG_LEVEL >= LOG_VERBOSE
    IBase* pIBaseAFU = static_cast<IBase*>(theEvent.Object().Context());
-   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler pAFU = " << static_cast<void*> (pIBaseAFU) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler pAFU = " << static_cast<void*> (pIBaseAFU) << std::endl);
 #endif
 
    //////////////////////////////////////////////////////////////////////////////////////
    // Get the original transactionID and CAFUDev.
    //
-   // See how it was wrapped up in the TranIDWrapper in AAL::AAS::SendAFUTransaction()
+   // See how it was wrapped up in the TranIDWrapper in SendAFUTransaction()
    //////////////////////////////////////////////////////////////////////////////////////
 
    // Get the TransactionID
@@ -1259,7 +1256,7 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
    // Get the This pointer. It is in the event's context
    WkSp_Free_Mapping_EventHandlerObject *This =
          static_cast<WkSp_Free_Mapping_EventHandlerObject*>(pWrapper->Context);
-   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler This = " << static_cast<void*> (This) << endl);
+   AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler This = " << static_cast<void*> (This) << std::endl);
 
    // Delete the TranID Wrapper. It was allocated in SendAFUTransaction
    delete pWrapper;
@@ -1302,7 +1299,7 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
                         "\n\tsize " << std::dec << pResult->wsParms.size <<
                         "\n\twsid " << std::hex << pResult->wsParms.wsid <<
                         "\n\tptr  " << std::hex << (void *)pResult->wsParms.ptr <<
-                        endl);
+                        std::endl);
 
    ReThrow( &theEvent.Object(),  // Pointer to AIA as IBase*
             theEvent,
@@ -1769,12 +1766,12 @@ Sig_MapCSRSpace_EventHandlerObject::~Sig_MapCSRSpace_EventHandlerObject() {/*emp
 // Name:        Sig_MapCSRSpace_EventHandlerObject::EventHandler
 // Description:
 //=============================================================================
-void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(AAL::IEvent const &theEvent)
+void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(IEvent const &theEvent)
 {
    ////////////////////////////////////////////////////////////////////////
    // Get the original transactionID and CAFUDev.
    //
-   // Wrapped up in the TranIDWrapper in AAL::AAS::SendAFUTransaction()
+   // Wrapped up in the TranIDWrapper in SendAFUTransaction()
    //
    // Get the data out of the wrapper and delete the wrapper ASAP to
    //   avoid possible memory leaks.
@@ -1803,7 +1800,7 @@ void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(AAL::IEvent co
    // Get the This pointer. It is in the wrapper's context
    Sig_MapCSRSpace_EventHandlerObject *This =
             static_cast <Sig_MapCSRSpace_EventHandlerObject*> (pWrapper->Context);
-   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject This = " << static_cast<void*> (This) << endl);
+   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject This = " << static_cast<void*> (This) << std::endl);
 
    // Delete the TranID Wrapper. It was allocated in SendAFUTransaction
    delete pWrapper;
@@ -1816,13 +1813,13 @@ void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(AAL::IEvent co
    // Get the AIA object that sent this Event. Use it to get to the EDS and AFU
    uAIA *pAIA =static_cast <uAIA*> (theEvent.pObject());
 
-   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject AIA = " << static_cast<void*> (pAIA) << endl);
+   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject AIA = " << static_cast<void*> (pAIA) << std::endl);
 
    // Get the Event Dispatcher  TODO JG - Not event dispatcher any more.
-   AAL::XL::RT::IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject pEventDispatcher = "
-            << static_cast<void*> (pEventDispatcher) << endl);
+            << static_cast<void*> (pEventDispatcher) << std::endl);
 
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.
    //    Need it only for the 'this' pointer in event delivery, and there it is an IBase, so just get it that way.
@@ -1830,7 +1827,7 @@ void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(AAL::IEvent co
    // Note that pIBaseAFU will be different from pAFU
 #if AAL_LOG_LEVEL >= LOG_VERBOSE
    IBase* pIBaseAFU = static_cast <IBase*> (theEvent.Object().Context());
-   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject pAFU = " << static_cast<void*> (pIBaseAFU) << endl);
+   AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject pAFU = " << static_cast<void*> (pIBaseAFU) << std::endl);
 #endif
 
    // DEBUG CODE, should never happen
@@ -2010,7 +2007,7 @@ btEventHandler WkSp_Free_Mapping_EventHandlerObject::Get_Free_Mapping_EventHandl
 // Description:   Encapsulates the WkSp_Single_Allocate_AFUTransaction callback
 //                   function that must mmap the wsid to get the pointer
 //=============================================================================
-void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::IEvent const& theEvent)
+void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(IEvent const &theEvent)
 {
    //////////////////////////////////////////////////////////////////////////////////////
    // Get objects and pointers required to send the final event
@@ -2041,7 +2038,7 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
    //////////////////////////////////////////////////////////////////////////////////////
    // Get the original transactionID and CAFUDev.
    //
-   // See how it was wrapped up in the TranIDWrapper in AAL::AAS::SendAFUTransaction()
+   // See how it was wrapped up in the TranIDWrapper in SendAFUTransaction()
    //////////////////////////////////////////////////////////////////////////////////////
 
    // Get the TransactionID
@@ -2115,9 +2112,5 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(AAL::I
 
 #endif
 
-
-         END_NAMESPACE(FAP_10)
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

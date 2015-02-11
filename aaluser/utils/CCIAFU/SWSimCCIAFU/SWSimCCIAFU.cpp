@@ -108,10 +108,10 @@ void SWSimCCIAFU::init(TransactionID const &TranID)
    m_CSRMap.insert(std::make_pair(CSR_CTL,             CSR(CSR_CTL,             0, false)));
    m_CSRMap.insert(std::make_pair(CSR_CFG,             CSR(CSR_CFG,             0, false)));
 
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
 }
 
 btBool SWSimCCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -141,11 +141,11 @@ void SWSimCCIAFU::WorkspaceAllocate(btWSSize             Length,
    btVirtAddr v = (btVirtAddr) new(std::nothrow) btByte[Length];
 
    if ( NULL == v ) {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "new failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "new failed");
       SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                                   pExcept) );
       return;
@@ -180,11 +180,11 @@ void SWSimCCIAFU::WorkspaceFree(btVirtAddr           Address,
 
    if ( m_VirtMap.end() == viter ) {
       // No such allocation found.
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "no such allocation");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "no such allocation");
       SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                               pExcept) );
       return;
@@ -675,7 +675,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< SWSimCCIAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::SWSimCCIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

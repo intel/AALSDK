@@ -84,7 +84,6 @@
 # include <unistd.h>                    // for getcwd()
 #endif // __AAL_LINUX__
 
-USING_NAMESPACE(std)
 
 // Declarations for Internal functions
 // NOTE: declaring the functions in here, and defining them later, causes the GNU compiler to
@@ -112,56 +111,24 @@ namespace {
 }  // end of unnamed namespace
 
 
-
-BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-
-DBRec::DBRec() :
-   m_Lock(Unlocked),
-   m_bModified(false)
-{}
-
-DBRec::~DBRec() {}
-
 //=============================================================================
 // Name: operator << on DBRec
 // Description: prints a DBRec to a stream
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const DBRec &dbr)
-{
-   s << "DBRec    " << &dbr << std::endl;
-   s << "Lock     " << dbr.m_Lock << std::endl;
-   s << "Modified " << dbr.m_bModified << std::endl;
-   s << "NVS \n"    << dbr.m_nvs ;
-   return s;
-}
-
-CRegDB::CRegDB() :
-   m_PrimaryKey(NoKey),
-   m_LockKey(Unlocked),
-   m_fValid(false)
-{}
-
-CRegDB::~CRegDB() {}
+//std::ostream & operator << (std::ostream &s, const AAL::DBRec &dbr)  { return dbr.Print(s); }
 
 //=============================================================================
 // Name: operator << on CRegDB
 // Description: prints a CRegDB to a stream
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const CRegDB &dbr)
-{
-   s << "CDBReg      " << &dbr << std::endl;
-   s << "Primary Key " << dbr.m_PrimaryKey << std::endl;
-   s << "Lock        " << dbr.m_LockKey << std::endl;
-   s << "Valid Flag  " << dbr.m_fValid << std::endl;
-   return s;
-}
+//std::ostream & operator << (std::ostream &s, const AAL::CRegDB &dbr) { return dbr.Print(s); }
+
 #if 0
 //=============================================================================
 // Name: operator << on CRegDB, with an indent value
 // Description: prints a CRegDB to a stream
 //=============================================================================
-std::ostream& AAL::AAS::operator << (std::ostream& s, const AAL::AAS::CRegDB& dbr, int indent) {
+std::ostream & operator << (std::ostream &s, const CRegDB &dbr, int indent) {
    std::string tabs;
    while (indent--) tabs += "\t";
 
@@ -173,6 +140,50 @@ std::ostream& AAL::AAS::operator << (std::ostream& s, const AAL::AAS::CRegDB& db
 }
 #endif // 0
 
+//=============================================================================
+// operator << on CRegistrarDatabase, not a member function
+//=============================================================================
+//std::ostream & operator << (std::ostream &s, const AAL::CRegistrarDatabase &theDatabase)
+//{
+//   return theDatabase.DumpDatabase(s);
+//}
+
+
+BEGIN_NAMESPACE(AAL)
+
+DBRec::DBRec() :
+   m_Lock(Unlocked),
+   m_bModified(false)
+{}
+
+DBRec::~DBRec() {}
+
+std::ostream & DBRec::Print(std::ostream &s) const
+{
+   s << "DBRec    " << this        << std::endl;
+   s << "Lock     " << m_Lock      << std::endl;
+   s << "Modified " << m_bModified << std::endl;
+   s << "NVS \n"    << m_nvs;
+   return s;
+}
+
+
+CRegDB::CRegDB() :
+   m_PrimaryKey(NoKey),
+   m_LockKey(Unlocked),
+   m_fValid(false)
+{}
+
+CRegDB::~CRegDB() {}
+
+std::ostream & CRegDB::Print(std::ostream &s) const
+{
+   s << "CDBReg      " << this         << std::endl;
+   s << "Primary Key " << m_PrimaryKey << std::endl;
+   s << "Lock        " << m_LockKey    << std::endl;
+   s << "Valid Flag  " << m_fValid     << std::endl;
+   return s;
+}
 
 CRegistrarDatabase::CRegistrarDatabase(const CRegistrarDatabase & ) {/*empty*/}
 CRegistrarDatabase & CRegistrarDatabase::operator=(const CRegistrarDatabase & ) { return *this; }
@@ -247,16 +258,16 @@ void CRegistrarDatabase::DumpDatabase() const
    AutoLock(this);
 
    // Dump the database path
-   cout << "DUMP DATABASE: " << m_DatabasePath << endl;
+   std::cout << "DUMP DATABASE: " << m_DatabasePath << std::endl;
 
    // Is there already a database loaded?
    if (!m_pdbrMap) {                    // Is there no database loaded?
-      cerr << "No database loaded\n";
+      std::cerr << "No database loaded\n";
       return;
    }
 
    for (dbrMap_itr_t itr = m_pdbrMap->begin(); itr != m_pdbrMap->end(); ++itr) {
-      cout << "Key: " << (*itr).first << "\n" << (*itr).second << endl;    // (*itr).second is a DBRec
+      std::cout << "Key: " << ((*itr).first) << "\n" << ((*itr).second) << std::endl;
    }
 }  // End of CRegistrarDatabase::DumpDatabase
 
@@ -268,26 +279,17 @@ std::ostream & CRegistrarDatabase::DumpDatabase(std::ostream &ross) const
    AutoLock(this);
 
    // Dump the database path
-   ross << "DUMP DATABASE: " << m_DatabasePath << endl;
+   ross << "DUMP DATABASE: " << m_DatabasePath << std::endl;
 
    // Is there already a database loaded?
    if (!m_pdbrMap) {                    // Is there no database loaded?
       ross << "No database loaded\n";
-   }
-   else {
+   } else {
       for (dbrMap_itr_t itr = m_pdbrMap->begin(); itr != m_pdbrMap->end(); ++itr) {
-         ross << "Key: " << (*itr).first << "\n" << (*itr).second << endl;    // (*itr).second is a DBRec
+         ross << "Key: " << (*itr).first << "\n" << (*itr).second << std::endl; // (*itr).second is a DBRec
       }
    }
    return ross;
-}
-
-//=============================================================================
-// operator << on CRegistrarDatabase, not a member function
-//=============================================================================
-std::ostream & operator << (std::ostream &s, const CRegistrarDatabase &theDatabase)
-{
-   return theDatabase.DumpDatabase(s);
 }
 
 //=============================================================================
@@ -319,9 +321,9 @@ std::string CRegistrarDatabase::FullFilePathFromDBKey(DatabaseKey_t dbKey)
 //=============================================================================
 eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
 {
-   fstream instream;                         // single .nvs file
-   pair <dbrMap_itr_t, btBool> insertRetVal; // for call to insert
-   DatabaseKey_t dbKey;                      // the key for the call to insert
+   std::fstream instream;                         // single .nvs file
+   std::pair <dbrMap_itr_t, btBool> insertRetVal; // for call to insert
+   DatabaseKey_t dbKey;                           // the key for the call to insert
    const std::string fName("LoadFromDisk");
    eReg eRetVal(eRegOK);
 
@@ -332,12 +334,12 @@ eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
    while(nNameList--) {                      // iterate through the files. Backwards works as well as forwards.
 
       // open the file in pNameList[nNameList]
-      string FullFileName = m_DatabasePath + pNameList[nNameList]->d_name;
+      std::string FullFileName = m_DatabasePath + pNameList[nNameList]->d_name;
 
-      AAL_DEBUG(LM_Database, "CRegistrarDatabase::LoadFromDisk - Processing file: " << FullFileName << endl);
+      AAL_DEBUG(LM_Database, "CRegistrarDatabase::LoadFromDisk - Processing file: " << FullFileName << std::endl);
 
       // Open file
-      instream.open( FullFileName.c_str(), ios_base::binary | ios_base::in);
+      instream.open( FullFileName.c_str(), std::ios_base::binary | std::ios_base::in);
       if (!instream) {
          eRetVal = LogReturnCode(eRegOpenBadFile, fName + " - file '" + FullFileName + "'", LOG_WARNING);
          free(pNameList[nNameList]);
@@ -348,10 +350,10 @@ eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
          // TODO: Error check: 0 is a bad return, means 0.nvs cannot be the magic one. Also, check format
          //       in scandir callback
 
-         AAL_DEBUG(LM_Database, "CRegistrarDatabase::LoadFromDisk - Key is " << dbKey << endl);
+         AAL_DEBUG(LM_Database, "CRegistrarDatabase::LoadFromDisk - Key is " << dbKey << std::endl);
 
          // Read the nvs into the DBRec
-         insertRetVal = m_pdbrMap->insert(pair<DatabaseKey_t, DBRec>(dbKey, DBRecNil));
+         insertRetVal = m_pdbrMap->insert( std::pair<DatabaseKey_t, DBRec>(dbKey, DBRecNil) );
 
          if (insertRetVal.second) {
             ENamedValues eretval = NVSReadNVS (instream, &(*insertRetVal.first).second.m_nvs); // read the NVS
@@ -361,7 +363,7 @@ eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
             }
          }
          else {
-            ostringstream oss;
+            std::ostringstream oss;
             oss << dbKey;
             LogReturnCode(eRegNoInsertAtKey, fName + " - " + oss.str(), LOG_WARNING);
          }
@@ -375,15 +377,15 @@ eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
    }  // End while(nNameList--)
    return eRetVal;
 #if 0       /* keep around for useful reference when decoding map and iterator references */
-   cout << "Insertion result is " << insertRetVal.second << endl;
+   cout << "Insertion result is " << insertRetVal.second << std::endl;
                  dbrMap_itr_t itr = insertRetVal.first;
                  DatabaseKey_t dbKey = (*itr).first;                   // Useful reference
             //DatabaseKey_t dbKey = (*insertRetVal.first).first;  // Useful reference
-                 cout << "Inserted Key is " << dbKey << endl;
+                 cout << "Inserted Key is " << dbKey << std::endl;
                  DBRec dbrTemp = (*itr).second;                        // Useful reference
             //DBRec dbrTemp = (*insertRetVal.first).second;     // Useful reference
-                 cout << "Inserted DBRec is " << dbrTemp << endl;
-                 cout << "Inserted NVS is " << dbrTemp.m_nvs << endl;
+                 cout << "Inserted DBRec is " << dbrTemp << std::endl;
+                 cout << "Inserted NVS is " << dbrTemp.m_nvs << std::endl;
 #endif
 }  // End of LoadFromDisk
 
@@ -509,8 +511,8 @@ eReg CRegistrarDatabase::Open(const NamedValueSet &rnvsOptArgs)
 //=============================================================================
 eReg CRegistrarDatabase::FlushRecordToDisk(const dbrMap_itr_t &itr)
 {
-   fstream outstream;                        // single .nvs file
-   std::string FullFileName;                 // The database path is in m_DatabasePath
+   std::fstream outstream;                   // single .nvs file
+   std::string  FullFileName;                // The database path is in m_DatabasePath
    eReg eRetVal(eRegOK);                     // Return value
 
    // Retrieve the record
@@ -518,9 +520,9 @@ eReg CRegistrarDatabase::FlushRecordToDisk(const dbrMap_itr_t &itr)
       DatabaseKey_t dbKey = (*itr).first;
       FullFileName = FullFilePathFromDBKey (dbKey);
 
-      AAL_DEBUG(LM_Database,"CRegistrarDatabase::FlushRecordToDisk - Writing to Filename " << FullFileName << endl);
+      AAL_DEBUG(LM_Database,"CRegistrarDatabase::FlushRecordToDisk - Writing to Filename " << FullFileName << std::endl);
 
-      outstream.open( FullFileName.c_str(), ios_base::binary | ios_base::out | ios_base::trunc);
+      outstream.open( FullFileName.c_str(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
       if (outstream) {
          ENamedValues eNVRetVal = NVSWriteOneNVSToFile (outstream, (*itr).second.m_nvs, 0);   // write the nvs
          if (!outstream || (ENamedValuesOK != eNVRetVal)) {
@@ -553,8 +555,8 @@ eReg CRegistrarDatabase::FlushRecordToDisk(const dbrMap_itr_t &itr)
 //=============================================================================
 eReg CRegistrarDatabase::FlushDatabaseToDisk()
 {
-   fstream outstream;                        // single .nvs file
-   std::string FullFileName;                 // The database path is in m_DatabasePath
+   std::fstream outstream;                   // single .nvs file
+   std::string  FullFileName;                // The database path is in m_DatabasePath
    dbrMap_itr_t itr;                         // iterator across list
    eReg eRetVal(eRegOK);                     // Return value
 
@@ -627,11 +629,12 @@ eReg CRegistrarDatabase::Find(NamedValueSet const &rPattern,
       rRegDBRet.SetInvalid();
       return LogReturnCode( eRegDBNotLoaded, "Find", LOG_ERR );
    }
+
    AAL_DEBUG(LM_Database,
               "CRegistrarDatabase::Find: rPattern     = \n" << rPattern
          <<   "CRegistrarDatabase::Find: rRegDBRet    = \n" << rRegDBRet
-         <<   "CRegistrarDatabase::Find: fSubset      = " << fSubset
-         << "\nCRegistrarDatabase::Find: fBegin       = " << fBegin
+         <<   "CRegistrarDatabase::Find: fSubset      = "   << fSubset
+         << "\nCRegistrarDatabase::Find: fBegin       = "   << fBegin
          << "\nCRegistrarDatabase::Find: DumpDatabase = \n" << *this
          );
 
@@ -744,11 +747,11 @@ eReg CRegistrarDatabase::GetByPattern(NamedValueSet const &rPattern, CRegDB &rRe
 eReg CRegistrarDatabase::InsertByKey(NamedValueSet const &rNew, CRegDB &rRegDBRet)
 {
    AutoLock(this);
-   pair <dbrMap_itr_t, btBool> insertRetVal; // for call to insert()
+   std::pair <dbrMap_itr_t, btBool> insertRetVal; // for call to insert()
    DBRec DBRecNil;                           // empty DBRec to hold the record
                                              //    constructor sets Lock & Modified to Unlocked,false
    // Insert record
-   insertRetVal = m_pdbrMap->insert(pair<DatabaseKey_t, DBRec>(rRegDBRet.m_PrimaryKey, DBRecNil));
+   insertRetVal = m_pdbrMap->insert(std::pair<DatabaseKey_t, DBRec>(rRegDBRet.m_PrimaryKey, DBRecNil));
 
    // Load record with information if insertion worked
    if ( insertRetVal.second ) {
@@ -762,7 +765,7 @@ eReg CRegistrarDatabase::InsertByKey(NamedValueSet const &rNew, CRegDB &rRegDBRe
    } else {
       rRegDBRet.m_itr = m_pdbrMap->end();    // Bad insertion
       rRegDBRet.SetInvalid();
-      ostringstream oss;
+      std::ostringstream oss;
       oss << rRegDBRet.m_PrimaryKey;
       return LogReturnCode(eRegNoInsertAtKey, "InsertByKey - " + oss.str(), LOG_WARNING);
    }
@@ -884,7 +887,7 @@ eReg CRegistrarDatabase::CheckLock(LockKey_t lockToCheck, LockKey_t lockOnRecord
    // the locks did not match - it might be a security violation or a logic error
 
    const char fName[] = "CheckLock";
-   ostringstream oss;
+   std::ostringstream oss;
 
    // if the record was not locked, then a lock was passed in to delete an already unlocked record.
    if ( Unlocked == lockOnRecord ) {
@@ -940,7 +943,7 @@ eReg CRegistrarDatabase::Delete(CRegDB &rRegDBRet)
       return eRetVal;                              // Locks did not match, record the problem and get out
    } else {
       // did not find it at all
-      ostringstream oss;
+      std::ostringstream oss;
       oss << " - Key: " << rRegDBRet.m_PrimaryKey;
       rRegDBRet.SetInvalid();
       return LogReturnCode( eRegNoFindByKey, fName + oss.str(), LOG_WARNING);
@@ -1035,12 +1038,17 @@ btBool CRegistrarDatabase::UpdateStateRecord()
 //=============================================================================
 eReg CRegistrarDatabase::LogReturnCode(eReg Error, std::string sComment, unsigned Level)
 {
-   AAL_LOG(Level,LM_Database,"CRegistrarDatabase::" << sComment << Error << endl);
+   AAL_LOG(Level,LM_Database,"CRegistrarDatabase::" << sComment << Error << std::endl);
    return Error;
 } // End of CRegistrarDatabase::LogReturnCode
 
+std::ostream & operator << (std::ostream &s, const DBRec &dbr)  { return dbr.Print(s); }
+std::ostream & operator << (std::ostream &s, const CRegDB &dbr) { return dbr.Print(s); }
+std::ostream & operator << (std::ostream &s, const CRegistrarDatabase &db) { return db.DumpDatabase(s); }
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
+std::ostream & operator << (std::ostream &s, const AAL::DBRec &x)              { return AAL::operator << (s, x); }
+std::ostream & operator << (std::ostream &s, const AAL::CRegDB &x)             { return AAL::operator << (s, x); }
+//std::ostream & operator << (std::ostream &s, const AAL::CRegistrarDatabase &x) { return AAL::operator << (s, x); }
 

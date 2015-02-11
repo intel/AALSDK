@@ -81,9 +81,10 @@
 
 #ifdef __AAL_USER__
 # include <aalsdk/AALTypes.h>
-USING_NAMESPACE(AAL)
 # define __user
 #endif
+
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
@@ -303,6 +304,8 @@ struct aalrms_configUpDateEvent {
 
 
 END_C_DECLS
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALDEVICE_H__
 

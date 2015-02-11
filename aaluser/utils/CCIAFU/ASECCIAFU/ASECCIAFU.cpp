@@ -67,10 +67,10 @@ CriticalSection ASECCIAFU::sm_ASEMtx;
 
 void ASECCIAFU::init(TransactionID const &TranID)
 {
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
 }
 
 btBool ASECCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -124,11 +124,11 @@ void ASECCIAFU::WorkspaceAllocate(btWSSize             Length,
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                            TranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                  TranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                                pExcept));
 }
@@ -167,11 +167,11 @@ void ASECCIAFU::WorkspaceFree(btVirtAddr           Address,
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                            TranID,
-                                                                            errAFUWorkSpace,
-                                                                            reasAFUNoMemory,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                  TranID,
+                                                                  errAFUWorkSpace,
+                                                                  reasAFUNoMemory,
+                                                                  descr);
    SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                            pExcept));
 }
@@ -244,7 +244,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< ASECCIAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ASECCIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

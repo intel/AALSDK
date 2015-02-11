@@ -46,8 +46,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 /******************************************************************************
@@ -117,8 +115,6 @@ struct aia_msg {
 #define extranevtFSBV1AIA                      __FSBV1AIA_ExTranEvt(0x0001)
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

@@ -63,6 +63,7 @@
 
 
 BEGIN_NAMESPACE(AAL)
+
 typedef enum
 {
    eLogLevel_Emergency =      LOG_EMERG,     // system is unusable
@@ -75,52 +76,10 @@ typedef enum
    eLogLevel_Debug =          LOG_DEBUG,     // debug-level messages
    eLogLevel_Verbose =        LOG_VERBOSE    // NOT a LINUX level. AAL for really verbose output
 } LogLevel_t;
-END_NAMESPACE(AAL)
 
-
-
-//--------------------------   A A L T Y P E S   ------------------------
-
-AASLIB_API std::ostream& operator << (std::ostream &s, const AAL::btVirtAddr &pVirt);
-
-//-----------------------------  L I N U X   ----------------------------
-
-AASLIB_API std::ostream& operator << (std::ostream &s, const AAL::LogLevel_t &loglevel);
-
-//-------------------------------   R M   -------------------------------
-
-AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::stTransactionID_t   &tranid);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aal_bus_types_e          &bustype);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aal_device_type_e        &devtype);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aal_device_addr          &devaddr);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aal_device_id            &devid);
-AASLIB_API std::ostream & operator << (std::ostream &s, const device_attrib            &devattr);
-AASLIB_API std::ostream & operator << (std::ostream &s, const krms_cfgUpDate_e         &update);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aalrms_configUpDateEvent &event);
-AASLIB_API std::ostream & operator << (std::ostream &s, const rms_msgIDs_e             &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const rms_result_e             &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aalrms_requestdevice     &reqdev);
-AASLIB_API std::ostream & operator << (std::ostream &s, const aalrm_ioctlreq           &reqdev);
-
-
-//-------------------------------   FAP   --------------------------------
-AASLIB_API std::ostream & operator << (std::ostream &s, const fappip_afuCmdID_e  &enumeration);
-
-//-------------------------------   U I   --------------------------------
-
-AASLIB_API std::ostream & operator << (std::ostream &s, const uid_msgIDs_e       &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const uid_errnum_e       &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const uid_mgtAfuCmdID_e  &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const uid_afurespID_e    &enumeration);
-AASLIB_API std::ostream & operator << (std::ostream &s, const uid_wseventID_e    &enumeration);
-
-//-------------------------------   W S  --------------------------------
-//std::ostream& operator << (std::ostream& s, const AAL::TTASK_MODE& taskmode);
-//std::ostream& operator << (std::ostream& s, const AAL::TDESC_TYPE& taskmode);
-//std::ostream& operator << (std::ostream& s, const AAL::TDESC_POSITION& taskmode);
-BEGIN_NAMESPACE(AAL)
    /*
-    * Apparently, this is needed because this operator is called from within
+    * Apparently, this (definition of operator << in both global and AAL:: namespaces) is needed
+    * because this operator is called from within
     * another AAL::operator<<, and it does not resolve unless there is an
     * AAL::operator<<(TTASK_MODE). I am not sure if this is correct, but empirically
     * it appears to be occurring. If this function is removed, TTASK_MODE printed from
@@ -129,10 +88,79 @@ BEGIN_NAMESPACE(AAL)
     * if it were an integer. Specifically, that reference will NOT find the version
     * that is in global scope, above.
     */
-   AASLIB_API std::ostream & operator << (std::ostream &s, const TTASK_MODE     &taskmode);
-   AASLIB_API std::ostream & operator << (std::ostream &s, const TDESC_TYPE     &taskmode);
-   AASLIB_API std::ostream & operator << (std::ostream &s, const TDESC_POSITION &taskmode);
+
+//--------------------------   A A L T Y P E S   ------------------------
+
+AASLIB_API std::ostream & operator << (std::ostream & , const btVirtAddr & );
+
+//-----------------------------  L I N U X   ----------------------------
+
+AASLIB_API std::ostream & operator << (std::ostream & , const LogLevel_t & );
+
+//-------------------------------   R M   -------------------------------
+
+AASLIB_API std::ostream & operator << (std::ostream & , const stTransactionID_t        & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aal_bus_types_e          & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aal_device_type_e        & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aal_device_addr          & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aal_device_id            & );
+AASLIB_API std::ostream & operator << (std::ostream & , const device_attrib            & );
+AASLIB_API std::ostream & operator << (std::ostream & , const krms_cfgUpDate_e         & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aalrms_configUpDateEvent & );
+AASLIB_API std::ostream & operator << (std::ostream & , const rms_msgIDs_e             & );
+AASLIB_API std::ostream & operator << (std::ostream & , const rms_result_e             & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aalrms_requestdevice     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const aalrm_ioctlreq           & );
+
+
+//-------------------------------   FAP   --------------------------------
+AASLIB_API std::ostream & operator << (std::ostream & , const fappip_afuCmdID_e  & );
+
+//-------------------------------   U I   --------------------------------
+
+AASLIB_API std::ostream & operator << (std::ostream & , const uid_msgIDs_e       & );
+AASLIB_API std::ostream & operator << (std::ostream & , const uid_errnum_e       & );
+AASLIB_API std::ostream & operator << (std::ostream & , const uid_mgtAfuCmdID_e  & );
+AASLIB_API std::ostream & operator << (std::ostream & , const uid_afurespID_e    & );
+AASLIB_API std::ostream & operator << (std::ostream & , const uid_wseventID_e    & );
+
+//-------------------------------   W S  --------------------------------
+AASLIB_API std::ostream & operator << (std::ostream & , const TTASK_MODE     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const TDESC_TYPE     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const TDESC_POSITION & );
+
 END_NAMESPACE(AAL)
 
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::btVirtAddr & );
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::LogLevel_t & );
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::stTransactionID_t        & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aal_bus_types_e          & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aal_device_type_e        & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aal_device_addr          & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aal_device_id            & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::device_attrib            & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::krms_cfgUpDate_e         & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aalrms_configUpDateEvent & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::rms_msgIDs_e             & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::rms_result_e             & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aalrms_requestdevice     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aalrm_ioctlreq           & );
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::fappip_afuCmdID_e  & );
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_msgIDs_e       & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_errnum_e       & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_mgtAfuCmdID_e  & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_afurespID_e    & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_wseventID_e    & );
+
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::TTASK_MODE     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::TDESC_TYPE     & );
+AASLIB_API std::ostream & operator << (std::ostream & , const AAL::TDESC_POSITION & );
+
 #endif // __AALSDK_KERNEL_KERNELSTRUCTS_H__
+
 

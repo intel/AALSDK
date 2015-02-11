@@ -74,7 +74,7 @@ public:
    ResourceManagerClientMessage( IResourceManagerClient *po,
                                  NamedValueSet nvs,
                                  enum ResourceManagerClientMessageType type,
-                                 AAL::TransactionID const &rTranID=TransactionID())
+                                 TransactionID const &rTranID = TransactionID())
    : m_pobject(po),
      m_nvs(nvs),
      m_type(type),

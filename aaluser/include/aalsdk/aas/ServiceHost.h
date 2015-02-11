@@ -43,8 +43,6 @@
 #include "aalsdk/aas/_xlRuntimeServices.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 //=============================================================================
 // Name: ServiceHost
@@ -55,40 +53,39 @@ BEGIN_NAMESPACE(AAL)
 class XLRT_API ServiceHost : private CUnCopyable
 {
 public:
-   ServiceHost( btcString root_name, 
-                AAL::XL::RT::IRuntime *,
-                AAL::XL::RT::IXLRuntimeServices  *);
+   ServiceHost( btcString root_name ,
+                IRuntime * ,
+                IXLRuntimeServices * );
    ServiceHost( AALSvcEntryPoint EP, 
-                AAL::XL::RT::IRuntime *,
-                AAL::XL::RT::IXLRuntimeServices  *);
+                IRuntime * ,
+                IXLRuntimeServices * );
 
    btBool IsOK() const {return m_bIsOK;}
    ~ServiceHost(){}
 
-   btBool allocService( AAL::IBase *pClient,
+   btBool allocService( IBase               *pClient,
                         NamedValueSet const &rManifest = NamedValueSet(),
                         TransactionID const &rTranID = TransactionID(),
-                        AAL::btBool          NoRuntimeEvent = false);
+                        btBool               NoRuntimeEvent = false);
 
-   std::string const &getName() const                 { return m_name; }
-   AAL::IBase * getIBase()const                       { return m_base; };
-   operator AAL::IBase *()const                       { return m_base; }
-   AAL::AAS::IServiceModule *getProvider()const       { return m_pProvider; }
+   std::string const &getName() const   { return m_name;      }
+   IBase *  getIBase()const             { return m_base;      }
+   operator IBase * ()const             { return m_base;      }
+   IServiceModule * getProvider()const  { return m_pProvider; }
 
 private:
-   btBool                         m_bIsOK;
-   DynLinkLibrary                *m_pDynLinkLib;
-   AAL::AAS::IServiceModule      *m_pProvider;
-   AAL::IBase                    *m_base;
-   OSServiceModule                m_modparms;
-   std::string                    m_name;
-   ServiceHost(){};
+   ServiceHost() {}
+
+   btBool            m_bIsOK;
+   DynLinkLibrary   *m_pDynLinkLib;
+   IServiceModule   *m_pProvider;
+   IBase            *m_base;
+   OSServiceModule   m_modparms;
+   std::string       m_name;
 };
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
-
 #endif // __SERVICEHOST_H__
+

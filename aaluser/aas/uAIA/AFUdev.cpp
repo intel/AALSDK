@@ -56,8 +56,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 //=============================================================================
@@ -130,12 +128,12 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
        // Need to keep track of number of CSR map transactions to wait for.
        unsigned int *pnumEvents = NULL;
 
-       AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI " << m_extBindParms.m_mappableAPI << endl);
+       AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI " << m_extBindParms.m_mappableAPI << std::endl);
 
        // Create the Transaction
        // Send both transactions in parallel
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_CSRREAD ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Read" << endl);
+          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Read" << std::endl);
 
           pnumEvents  = new unsigned;
           *pnumEvents = 1;
@@ -143,12 +141,12 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
           struct CAFUDev::wrapper *preadwrap = new CAFUDev::wrapper(this, WSID_CSRMAP_READAREA, rtid, pnumEvents);
           TransactionID rdtid(static_cast<btApplicationContext>(preadwrap), _CSRMapHandler, true );
 
-          FAP_10::Sig_MapCSRSpace_AFUTransaction MapReadTran( WSID_CSRMAP_READAREA );
+          Sig_MapCSRSpace_AFUTransaction MapReadTran( WSID_CSRMAP_READAREA );
           SendTransaction(&MapReadTran, rdtid);
        }
 
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_CSRWRITE ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Write" << endl);
+          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Write" << std::endl);
 
           if ( NULL == pnumEvents ) {
              pnumEvents = new unsigned;
@@ -160,7 +158,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
           struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_CSRMAP_WRITEAREA,rtid, pnumEvents);
           TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
 
-          FAP_10::Sig_MapCSRSpace_AFUTransaction MapWriteTran( WSID_CSRMAP_WRITEAREA );
+          Sig_MapCSRSpace_AFUTransaction MapWriteTran( WSID_CSRMAP_WRITEAREA );
           SendTransaction(&MapWriteTran, wrtid);
        }
 
@@ -183,7 +181,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 // Outputs: none
 // Comments: calls CAFUDev method
 //=============================================================================
-void CAFUDev::_CSRMapHandler(AAL::IEvent const &theEvent)
+void CAFUDev::_CSRMapHandler(IEvent const &theEvent)
 {
    // Check for exception
    if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
@@ -207,7 +205,7 @@ void CAFUDev::_CSRMapHandler(AAL::IEvent const &theEvent)
 // Comments:
 //=============================================================================
 void
-CAFUDev::CSRMapHandler(AAL::IEvent const   &theEvent,
+CAFUDev::CSRMapHandler(IEvent const        &theEvent,
                        btWSID               id,
                        TransactionID const &rtid,
                        btUnsignedInt       *pnumEvents )
@@ -255,12 +253,12 @@ CAFUDev::CSRMapHandler(AAL::IEvent const   &theEvent,
 
       // QPI/PCIe/CCI
       if ((4 == pResult->wsParms.itemsize) && (4 == pResult->wsParms.itemspacing)) {
-         _atomicSetCSR = &AAL::AAS::AIA::CAFUDev::atomicSetCSR_32x4B;
+         _atomicSetCSR = &CAFUDev::atomicSetCSR_32x4B;
          m_csrwritemap = pResult->wsParms.ptr;
       }
       // FSB
       else if ((8 == pResult->wsParms.itemsize) && (128 == pResult->wsParms.itemspacing)) {
-         _atomicSetCSR = &AAL::AAS::AIA::CAFUDev::atomicSetCSR_64x128B;
+         _atomicSetCSR = &CAFUDev::atomicSetCSR_64x128B;
          m_csrwritemap = pResult->wsParms.ptr;
       }
       else {
@@ -270,7 +268,7 @@ CAFUDev::CSRMapHandler(AAL::IEvent const   &theEvent,
       m_csrwritesize       = (btUnsigned32bitInt)pResult->wsParms.size;
       m_csrwrite_item_size = (btUnsigned32bitInt)pResult->wsParms.itemsize;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_WRITEAREA initialized" << endl);
+      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_WRITEAREA initialized" << std::endl);
 
    }  // if (id == WSID_CSRMAP_WRITEAREA)
 
@@ -278,12 +276,12 @@ CAFUDev::CSRMapHandler(AAL::IEvent const   &theEvent,
 
       // CCI
       if ((4 == pResult->wsParms.itemsize) && (4 == pResult->wsParms.itemspacing)) {
-         _atomicGetCSR = &AAL::AAS::AIA::CAFUDev::atomicGetCSR_32x4B;
+         _atomicGetCSR = &CAFUDev::atomicGetCSR_32x4B;
          m_csrreadmap  = pResult->wsParms.ptr;
       }
       // FSB/QPI/PCIe
       else if ((8 == pResult->wsParms.itemsize) && (128 == pResult->wsParms.itemspacing)) {
-         _atomicGetCSR = &AAL::AAS::AIA::CAFUDev::atomicGetCSR_64x128B;
+         _atomicGetCSR = &CAFUDev::atomicGetCSR_64x128B;
          m_csrreadmap  = pResult->wsParms.ptr;
       }
       else {
@@ -293,7 +291,7 @@ CAFUDev::CSRMapHandler(AAL::IEvent const   &theEvent,
       m_csrreadsize       = (btUnsigned32bitInt)pResult->wsParms.size;
       m_csrread_item_size = (btUnsigned32bitInt)pResult->wsParms.itemsize;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_READAREA initialized" << endl);
+      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_READAREA initialized" << std::endl);
 
    }  // if (id == WSID_CSRMAP_READAREA)
 
@@ -368,7 +366,7 @@ CAFUDev::atomicSetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt Value )
    if ((m_csrwritemap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)) {
       AAL_WARNING(LM_AFU, "CAFUDev::atomicSetCSR_64x128B Abort: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR << ", Value " << Value <<
-                  showbase << hex << " " <<Value << endl);
+                  std::showbase << std::hex << " " << Value << std::endl);
       return false;
    }
    else {
@@ -376,7 +374,7 @@ CAFUDev::atomicSetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt Value )
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<7) <<
                   ", Value " << Value <<
-                  showbase << hex << " " <<Value << endl);
+                  std::showbase << std::hex << " " << Value << std::endl);
       *(reinterpret_cast <btUnsigned64bitInt*> (m_csrwritemap + (CSR << 7))) = Value;
       return true;
    }
@@ -396,7 +394,7 @@ CAFUDev::atomicGetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 {
    if ((m_csrreadmap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)) {
       AAL_WARNING(LM_AFU, "CAFUDev::atomicGetCSR_64x128B Abort: Base Address " << (void*)m_csrreadmap <<
-                  ", CSR Index " << CSR << endl);
+                  ", CSR Index " << CSR << std::endl);
       return false;
    }
    else {
@@ -405,7 +403,7 @@ CAFUDev::atomicGetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<7) <<
                   ", Value " << *pValue <<
-                  showbase << hex << " " << *pValue << endl);
+                  std::showbase << std::hex << " " << *pValue << std::endl);
       return true;
    }
 
@@ -427,7 +425,7 @@ btBool CAFUDev::atomicSetCSR_32x4B(btUnsignedInt CSR, btUnsigned64bitInt Value)
    if( m_csrwritemap == NULL ) {
       AAL_WARNING(LM_AFU, "CAFUDev::atomicSetCSR_32x4B Abort: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR << ", Value " << Value <<
-                  showbase << hex << " " <<Value << endl);
+                  std::showbase << std::hex << " " << Value << std::endl);
 //      cout << "Map "<<m_csrwritemap << "CSR index " <<"CSR" <<endl;
       return false;
    }
@@ -436,7 +434,7 @@ btBool CAFUDev::atomicSetCSR_32x4B(btUnsignedInt CSR, btUnsigned64bitInt Value)
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<2) <<
                   ", Value " << Value <<
-                  showbase << hex << " " <<Value << endl);
+                  std::showbase << std::hex << " " << Value << std::endl);
       *(reinterpret_cast<btUnsigned32bitInt*>(m_csrwritemap+(CSR<<2))) = (btUnsigned32bitInt)Value;
       return true;
    }
@@ -458,7 +456,7 @@ CAFUDev::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 // disabling check for AHMPIP_MAX_AFU_CSR_INDEX for now to enable CCI devices.
    if ( m_csrreadmap == NULL ) {
       AAL_WARNING(LM_AFU, "CAFUDev::atomicGetCSR_32x4B Abort: Base Address " << (void*)m_csrreadmap <<
-                  ", CSR Index " << CSR << endl);
+                  ", CSR Index " << CSR << std::endl);
       return false;
    } else {
       btUnsigned32bitInt tmp;
@@ -469,7 +467,7 @@ CAFUDev::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<2) <<
                   ", Value " << *pValue <<
-                  showbase << hex << " " << *pValue << endl);
+                  std::showbase << std::hex << " " << *pValue << std::endl);
       return true;
    }
 
@@ -567,8 +565,6 @@ void * CAFUDev::Handle()
 }
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

@@ -70,24 +70,23 @@
 
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< AAL::CResourceManager >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::CResourceManager >
+
+#if defined ( __AAL_WINDOWS__ )
+# pragma warning(push)
+# pragma warning(disable : 4996) // destination of copy is unsafe
+#endif // __AAL_WINDOWS__
 
 #define RRM_VERSION_CURRENT  0
 #define RRM_VERSION_REVISION 0
 #define RRM_VERSION_AGE      0
 #define RRM_VERSION          "0.0.0"
 
-#if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)
-# pragma warning(disable : 4996) // destination of copy is unsafe
-#endif // __AAL_WINDOWS__
-#
 AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, XLRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
    // Only default service commands for now.
 AAL_END_SVC_MOD()
 
 BEGIN_NAMESPACE(AAL)
-USING_NAMESPACE(AAS)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,26 +119,26 @@ void CResourceManager::init(TransactionID const &rtid)
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ClientBase());
    if( NULL == m_pResMgrClient ){
       // Sends a Service Client serviceAllocated callback
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              Client(),
-                                                              NULL,
-                                                              rtid,
-                                                              errBadParameter,
-                                                              reasInvalidParameter,
-                                                              strInvalidParameter));
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    NULL,
+                                                    rtid,
+                                                    errBadParameter,
+                                                    reasInvalidParameter,
+                                                    strInvalidParameter));
 
    }
 
    // Create an open channel to the remote resource manager
-   if(false == m_RMProxy.Open()){
+   if ( !m_RMProxy.Open() ) {
       // Sends a Service Client serviceAllocated callback
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              Client(),
-                                                              NULL,
-                                                              rtid,
-                                                              errDevice,
-                                                              reasNoDevice,
-                                                              strNoDevice));
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    NULL,
+                                                    rtid,
+                                                    errDevice,
+                                                    reasNoDevice,
+                                                    strNoDevice));
       return;
    }
 
@@ -149,19 +148,19 @@ void CResourceManager::init(TransactionID const &rtid)
                                  this);
    if(NULL == m_pProxyPoll){
       m_RMProxy.Close();
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              Client(),
-                                                              NULL,
-                                                              rtid,
-                                                              errInternal,
-                                                              reasCauseUnknown,
-                                                              "Could not create RM Proxy Poll thread."));
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    NULL,
+                                                    rtid,
+                                                    errInternal,
+                                                    reasCauseUnknown,
+                                                    "Could not create RM Proxy Poll thread."));
    }
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   rtid));
+   QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
+                                        Client(),
+                                        dynamic_cast<IBase*>(this),
+                                        rtid));
 }
 
 //=============================================================================

@@ -61,12 +61,12 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// ASECCIAFU is selected by passing the Named Value pair (CCIAFU_NVS_KEY_TARGET, CCIAFU_NVS_VAL_TARGET_ASE)
 /// in the arguments to IRuntime::allocService when requesting a CCIAFU.
-class ASECCIAFU_API ASECCIAFU : public AAL::AAS::ServiceBase,
+class ASECCIAFU_API ASECCIAFU : public ServiceBase,
                                 public ICCIAFU
 {
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASECCIAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASECCIAFU, ServiceBase),
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {

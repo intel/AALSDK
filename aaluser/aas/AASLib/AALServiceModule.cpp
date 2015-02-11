@@ -45,7 +45,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 IAALTransport::~IAALTransport() {}
@@ -89,10 +88,10 @@ IBase *AALServiceModule::Construct(btEventHandler       Listener,
    return m_pBase;
 }
 
-IBase *AALServiceModule::Construct(AAL::IBase *Client,
+IBase *AALServiceModule::Construct(IBase               *Client,
                                    TransactionID const &tranID,
                                    NamedValueSet const &optArgs,
-                                   AAL::btBool          NoRuntimeEvent)
+                                   btBool               NoRuntimeEvent)
 {
    // Add this one to the list of objects this container holds.
    //  It's up to the factory to enforce singletons.
@@ -209,7 +208,6 @@ void AALServiceModule::SendReleaseToAll()
 }
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

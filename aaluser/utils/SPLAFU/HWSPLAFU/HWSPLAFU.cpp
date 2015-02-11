@@ -61,10 +61,10 @@ BEGIN_NAMESPACE(AAL)
 
 void HWSPLAFU::init(TransactionID const &TranID)
 {
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
 }
 
 btBool HWSPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -118,13 +118,13 @@ void HWSPLAFU::StartTransactionContext(TransactionID const &TranID,
 {
    AutoLock(this);
 
-   TransactionID tid = AAL::AAS::WrapTransactionID(TranID);
+   TransactionID tid = WrapTransactionID(TranID);
    tid.Handler(HWSPLAFU::TransactionHandler);
 
-   AAL::AAS::AIA::FAP_20::SPL2_Start_AFUTransaction AFUTran(&AFUDev(),
-                                                            TranID,
-                                                            Address,
-                                                            Pollrate);
+   SPL2_Start_AFUTransaction AFUTran(&AFUDev(),
+                                     TranID,
+                                     Address,
+                                     Pollrate);
 
    // Check the parameters
    if ( AFUTran.IsOK() ) {
@@ -132,11 +132,11 @@ void HWSPLAFU::StartTransactionContext(TransactionID const &TranID,
       AFUDev().SendTransaction(&AFUTran, tid);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errMemory,
-                                                                               reasUnknown,
-                                                                               "AFUTran validity check failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasUnknown,
+                                                                     "AFUTran validity check failed");
       SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                             pExcept) );
    }
@@ -146,11 +146,10 @@ void HWSPLAFU::StopTransactionContext(TransactionID const &TranID)
 {
    AutoLock(this);
 
-   TransactionID tid = AAL::AAS::WrapTransactionID(TranID);
+   TransactionID tid = WrapTransactionID(TranID);
    tid.Handler(HWSPLAFU::TransactionHandler);
 
-   AAL::AAS::AIA::FAP_20::SPL2_Stop_AFUTransaction AFUTran(&AFUDev(),
-                                                            TranID);
+   SPL2_Stop_AFUTransaction AFUTran(&AFUDev(), TranID);
 
    // Check the parameters
    if ( AFUTran.IsOK() ) {
@@ -158,11 +157,11 @@ void HWSPLAFU::StopTransactionContext(TransactionID const &TranID)
       AFUDev().SendTransaction(&AFUTran, tid);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errMemory,
-                                                                               reasUnknown,
-                                                                               "AFUTran validity check failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasUnknown,
+                                                                     "AFUTran validity check failed");
       SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                             pExcept) );
    }
@@ -177,13 +176,10 @@ void HWSPLAFU::SetContextWorkspace(TransactionID const &TranID,
 
    AutoLock(this);
 
-   TransactionID tid = AAL::AAS::WrapTransactionID(TranID);
+   TransactionID tid = WrapTransactionID(TranID);
    tid.Handler(HWSPLAFU::TransactionHandler);
 
-   AAL::AAS::AIA::FAP_20::SPL2_SetContextWorkspace_AFUTransaction AFUTran(&AFUDev(),
-                                                                          TranID,
-                                                                          Address,
-                                                                          Pollrate);
+   SPL2_SetContextWorkspace_AFUTransaction AFUTran(&AFUDev(), TranID, Address, Pollrate);
 
    // Check the parameters
    if ( AFUTran.IsOK() ) {
@@ -191,11 +187,11 @@ void HWSPLAFU::SetContextWorkspace(TransactionID const &TranID,
       AFUDev().SendTransaction(&AFUTran, tid);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errMemory,
-                                                                               reasUnknown,
-                                                                               "AFUTran validity check failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasUnknown,
+                                                                     "AFUTran validity check failed");
       SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                             pExcept) );
    }
@@ -207,7 +203,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
    HWSPLAFU *This = static_cast<HWSPLAFU *>(theEvent.Object().Context());
 
    // Need the event in order to get its payload
-   AAL::AAS::AIA::IUIDriverClientEvent &revt = subclass_ref<AAL::AAS::AIA::IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
 
    // Since MessageID is rspid_AFU_Response, Payload is struct aalui_AFUResponse, defined in aalui.h
    struct aalui_AFUResponse *pResponse =
@@ -256,7 +252,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
             // Get the original TransactionID, but don't delete the wrapper copy and don't
             //  remove it from theEvent.TranID().Context()
-            TransactionID OrigTid = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, false);
+            TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
             This->SendMsg( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
                                                                          OrigTid,
@@ -264,7 +260,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
                                                                          pWSParms->size) );
             } else {
                // Delete the wrapper.
-               (void) AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, true);
+               (void) UnWrapTransactionIDFromEvent(theEvent, true);
 
                descr = "bad ResultCode()";
                tid = revt.msgTranID();
@@ -280,13 +276,13 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
             // Get the original TransactionID, but don't delete the wrapper copy and don't
             //  remove it from theEvent.TranID().Context()
-            TransactionID OrigTid = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, false);
+            TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
             This->SendMsg( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
                                                                          OrigTid) );
             } else {
                // Delete the wrapper.
-               (void) AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, true);
+               (void) UnWrapTransactionIDFromEvent(theEvent, true);
 
                descr = "bad ResultCode()";
                tid = revt.msgTranID();
@@ -299,14 +295,14 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
             // Get the original TransactionID, but don't delete the wrapper copy and don't
             //  remove it from theEvent.TranID().Context()
-            TransactionID OrigTid = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, false);
+            TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
             This->SendMsg( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
                                                                           OrigTid) );
 
             } else {
                // Delete the wrapper.
-               (void) AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, true);
+               (void) UnWrapTransactionIDFromEvent(theEvent, true);
 
                descr = "bad ResultCode()";
                tid = revt.msgTranID();
@@ -316,7 +312,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
       case uid_afurespTaskComplete : {
          // Unwrap and delete wrapper.
-         TransactionID OrigTranID = AAL::AAS::UnWrapTransactionIDFromEvent(theEvent, true);
+         TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent, true);
 
          if ( uid_errnumOK == revt.ResultCode() ) {
 
@@ -342,11 +338,11 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
    return;
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast <IBase *>(This),
-                                                                            tid,
-                                                                            errInternal,
-                                                                            reasCauseUnknown,
-                                                                            descr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast <IBase *>(This),
+                                                                  tid,
+                                                                  errInternal,
+                                                                  reasCauseUnknown,
+                                                                  descr);
    This->SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
                                                                pExcept) );
 }
@@ -378,7 +374,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< HWSPLAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::HWSPLAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

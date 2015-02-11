@@ -62,7 +62,6 @@ struct dirent;                      // Forward reference for use of scandir() pa
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 // Definition of NVS containing stored Database State information
@@ -80,11 +79,12 @@ virtual ~DBRec();
    NamedValueSet  m_nvs;                  // NamedValueSet constituting the record
    LockKey_t      m_Lock;                 // Unlocked means not locked, otherwise a nonce
    btBool         m_bModified;            // True if the record has been modified
+
+   std::ostream & Print(std::ostream & ) const;
 };
-std::ostream & operator << (std::ostream &s, const DBRec &dbr);
 
 typedef std::map<DatabaseKey_t, DBRec> dbrMap_t;           // Map [primary key, NVS Database record]
-typedef dbrMap_t::iterator dbrMap_itr_t;
+typedef dbrMap_t::iterator             dbrMap_itr_t;
 
 // Encapsulation of arguments to and return value from RegistrarDatabase functions.
 // This is exposed to the clients of the database, and so they should not need to know
@@ -110,6 +110,9 @@ public:
                                        // Constructor
          CRegDB();
 virtual ~CRegDB();
+
+   std::ostream & Print(std::ostream & ) const;
+
                                        // Determine if the pointer is valid, call only after setting m_itr
    void SetFlag(dbrMap_t *pdbrMap) { m_fValid = (m_itr != pdbrMap->end()); }
                                        // Force the flag to be invalid without involving the pdbrMap, e.g. if pdbrMap==NULL
@@ -117,7 +120,7 @@ virtual ~CRegDB();
                                        // Get a pointer to the NVS in the dbrMap
    const NamedValueSet * NVS() { return m_fValid ? &(*m_itr).second.m_nvs : NULL; }
 };
-std::ostream & operator << (std::ostream &s, const CRegDB &dbr);
+
 //      std::ostream& operator << (std::ostream& s, const CRegDB& dbr, int indent);
 
 //=============================================================================
@@ -190,11 +193,16 @@ public:
    void DumpDatabase() const;                                              // Print database to cout
    std::ostream & DumpDatabase(std::ostream &ross) const;                  // Print database to stream
 }; // class CRegistrarDatabase
-                                                                           // Hook DumpDatabase into operator<<
-std::ostream & operator << (std::ostream &s, const CRegistrarDatabase &theDatabase);
 
-   END_NAMESPACE(AAS)
+std::ostream & operator << (std::ostream & , const DBRec & );
+std::ostream & operator << (std::ostream & , const CRegDB & );
+std::ostream & operator << (std::ostream & , const CRegistrarDatabase & );
+
 END_NAMESPACE(AAL)
+
+std::ostream & operator << (std::ostream & , const AAL::DBRec & );
+std::ostream & operator << (std::ostream & , const AAL::CRegDB & );
+//std::ostream & operator << (std::ostream & , const AAL::CRegistrarDatabase & );
 
 #endif // __AALSDK_RM_CREGISTRARDATABASE_H__
 

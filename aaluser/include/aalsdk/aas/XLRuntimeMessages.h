@@ -39,8 +39,6 @@
 #include <aalsdk/IServiceClient.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-     BEGIN_NAMESPACE(RT)
 
 //=============================================================================
 // Name: ServiceClientMessage
@@ -55,19 +53,19 @@ public:
       Freed,
       Event
    };
-   ServiceClientMessage( AAL::AAS::IServiceClient *po,
-                         AAL::IBase *pServiceBase,
+   ServiceClientMessage( IServiceClient               *po,
+                         IBase                        *pServiceBase,
                          enum ServiceClientMessageType type,
-                         const IEvent *pEvent)
+                         const IEvent                 *pEvent)
    : m_pobject(po),
      m_pServiceBase(pServiceBase),
      m_type(type),
      m_pEvent(pEvent){}
 
-   ServiceClientMessage( AAL::AAS::IServiceClient *po,
-                         AAL::IBase *pServiceBase,
+   ServiceClientMessage( IServiceClient               *po,
+                         IBase                        *pServiceBase,
                          enum ServiceClientMessageType type,
-                         AAL::TransactionID const &rTranID=TransactionID())
+                         TransactionID const          &rTranID = TransactionID() )
    : m_pobject(po),
      m_pServiceBase(pServiceBase),
      m_type(type),
@@ -101,17 +99,15 @@ public:
 virtual ~ServiceClientMessage(){}
 
 protected:
-   AAL::AAS::IServiceClient      *m_pobject;
-   AAL::IBase                    *m_pServiceBase;
+   IServiceClient                *m_pobject;
+   IBase                         *m_pServiceBase;
    enum ServiceClientMessageType  m_type;
    TransactionID const            m_rTranID;
    IEvent const                  *m_pEvent;
 };
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
-
 #endif /* XLRUNTIMEMESSAGES_H_ */
+

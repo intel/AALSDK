@@ -54,8 +54,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-     BEGIN_NAMESPACE(RT)
 
 
 //=============================================================================
@@ -148,21 +146,21 @@ protected:
 // Description: Class implements the internal XL runtime system.
 // Comments:
 //=============================================================================
-class _xlruntime : public CAASBase,
+class _xlruntime : public  CAASBase,
                    private CUnCopyable,
-                   private AAL::AAS::IServiceClient,
-                   public IXLRuntimeServices,
-                   public IRuntime
+                   private IServiceClient,
+                   public  IXLRuntimeServices,
+                   public  IRuntime
 {
 public:
    _xlruntime();
    ~_xlruntime();
 
    // Start: Start the runtime
-   //    Input: pclient - Pointer to an AAL:XL:RT:IRuntimeClient callback.
+   //    Input: pclient - Pointer to an IRuntimeClient callback.
    //           rconfigParms - Reference to configuration parameters.
-   AAL::btBool start( AAL::IBase *pClient,
-                      const NamedValueSet &rconfigParms);
+   btBool start(IBase               *pClient,
+                const NamedValueSet &rconfigParms);
 
    // Stop: Stop the runtime
    void stop();
@@ -174,19 +172,19 @@ public:
    // IXLRuntimeServices
 
    //  allocService: Allocates a Service to the client
-   //    Input: pClient - Pointer to an IBase containing and AAL::AAS::IServiceClient interface.
+   //    Input: pClient - Pointer to an IBase containing and IServiceClient interface.
    //           rManifest - Reference to manifest containing Service
    //                       description and any configuration parameters.
-   void allocService( AAL::IBase *pClient,
-                      NamedValueSet const      &rManifest = NamedValueSet(),
-                      TransactionID const      &rTranID   = TransactionID(),
-                      AAL::XL::RT::IRuntime::eAllocatemode mode = NotifyAll);
+   void allocService( IBase                   *pClient,
+                      NamedValueSet const     &rManifest = NamedValueSet(),
+                      TransactionID const     &rTranID   = TransactionID(),
+                      IRuntime::eAllocatemode  mode = NotifyAll);
 
    void schedDispatchable(IDispatchable *pdispatchable);
 
    // IXLRuntimeServices
-   AAL::IBase *getMessageDeliveryService();
-   void        setMessageDeliveryService(AAL::IBase *pMDSbase);
+   IBase      *getMessageDeliveryService();
+   void        setMessageDeliveryService(IBase *pMDSbase);
    btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
    IRuntimeClient *getRuntimeClient();
 
@@ -194,7 +192,7 @@ protected:
    //
    // IServiceClient Interface
    //-------------------------
-   void      serviceAllocated(AAL::IBase          *pServiceBase,
+   void      serviceAllocated(IBase               *pServiceBase,
                               TransactionID const &rTranID = TransactionID());
    void          serviceFreed(TransactionID const &rTranID = TransactionID());
    void serviceAllocateFailed(const IEvent &rEvent);
@@ -218,7 +216,7 @@ private:
    };
 
    btBool                          m_status;
-   AAL::XL::RT::IRuntimeClient    *m_pclient;
+   IRuntimeClient                 *m_pclient;
    enum State                      m_state;
 
    // Core Facilities: Implemented as built-in plug-in Services
@@ -231,17 +229,15 @@ private:
    ServiceHost                     *m_pBrokerSvcHost;
 
    // Active core services
-   AAL::AAS::IEventDeliveryService *m_pMDS;
-   AAL::IBase                      *m_pMDSbase;
+   IEventDeliveryService           *m_pMDS;
+   IBase                           *m_pMDSbase;
 
-   AAL::XL::RT::IServiceBroker     *m_pBroker;
-   AAL::IBase                      *m_pBrokerbase;
+   IServiceBroker                  *m_pBroker;
+   IBase                           *m_pBrokerbase;
 
    CSemaphore                       m_sem;
 };
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
 

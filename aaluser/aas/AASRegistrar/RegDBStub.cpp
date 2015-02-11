@@ -61,11 +61,8 @@
 #include "aalsdk/registrar/CAASRegistrar.h"
 #include "aalsdk/kernel/aalrm.h"          // kernel transport services
 
-USING_NAMESPACE(std)
-
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -98,8 +95,8 @@ pRegistrarCmdResp_t MarshalCommand(eCmd          Command,
                                    const         NamedValueSet* pnvs,
                                    const         ITR_t*         pitr)
 {
-   size_t lenszNVS;
-   ostringstream oss;
+   size_t             lenszNVS;
+   std::ostringstream oss;
 
    if (pnvs) {
       oss << *pnvs;
@@ -132,7 +129,7 @@ pRegistrarCmdResp_t MarshalCommand(eCmd          Command,
 // Use like this:
 //    ITR_t itr;              // initially CRegDB, RegKey later
 //    pRegistrarCmdResp_t p;
-//    AAL::AAS::write_itr_to_RCP (p, &itr)
+//    write_itr_to_RCP (p, &itr)
 //=============================================================================
 void write_itr_to_RCP(pRegistrarCmdResp_t pRCR, const ITR_t* pitr)
 {
@@ -147,7 +144,7 @@ void write_itr_to_RCP(pRegistrarCmdResp_t pRCR, const ITR_t* pitr)
 // Use like this:
 //    ITR_t itr;              // initially CRegDB, RegKey later
 //    pRegistrarCmdResp_t p;
-//    AAL::AAS::read_itr_from_RCP (p, &itr)
+//    read_itr_from_RCP (p, &itr)
 //=============================================================================
 void read_itr_from_RCP(const pRegistrarCmdResp_t pRCR, pITR_t pitr)
 {
@@ -175,7 +172,7 @@ btBool CRegistrar::InitClientFileDescriptor()
          return true;
       } else {
          m_fdRMClient = -1;
-         cerr << "CRegistrar::InitClientFileDescriptor open of " << m_sResMgrClientDevName << " failed with error code " << errno << "\n\tReason string is: ";
+         std::cerr << "CRegistrar::InitClientFileDescriptor open of " << m_sResMgrClientDevName << " failed with error code " << errno << "\n\tReason string is: ";
          perror(NULL);
 //         char* pBuf = strerror_r ( saverr, m_pErrBuf, m_lenErrBuf);
 //         if (pBuf) cerr << pBuf << endl;
@@ -227,14 +224,14 @@ void CRegistrar::RegRcvMsg(OSLThread *pThread, void *pContext)
       }
 
       if((ret == -1) || (ret == 0)){
-         cerr << "CRegistrar::RegRcvMsg Poll returned unexpected value: " << ret << ". Retrying.\n";
+         std::cerr << "CRegistrar::RegRcvMsg Poll returned unexpected value: " << ret << ". Retrying.\n";
          continue;
       }
 
       // Get the message description
       ret = ioctl (This->m_fdRMClient, AALRM_IOCTL_GETMSG_DESC, &req);
       if (-1 == ret){
-         cerr << "CRegistrar::RegRcvMsg AALRM_IOCTL_GETMSG_DESC failed with return code " << ret << ". Retrying.\n";
+         std::cerr << "CRegistrar::RegRcvMsg AALRM_IOCTL_GETMSG_DESC failed with return code " << ret << ". Retrying.\n";
          perror ("CRegistrar::RegRcvMsg AALRM_IOCTL_GETMSG_DESC");
          continue;
       }
@@ -291,7 +288,7 @@ void CRegistrar::RegRcvMsg(OSLThread *pThread, void *pContext)
          if (req.payload) delete [] static_cast<unsigned char*>(req.payload);
       }
       else {
-         cerr << "CRegistrar::RegRcvMsg received response id: " << req.id << ", which is not for Registrar. Discard and Retrying.\n";
+         std::cerr << "CRegistrar::RegRcvMsg received response id: " << req.id << ", which is not for Registrar. Discard and Retrying.\n";
       }
    }  // while
 }  // RegRcvMsg
@@ -350,10 +347,10 @@ void CRegistrar::RegSendMsg(pRegistrarCmdResp_t pBlockToSend) const
 
    // EXTREMELY UNLIKELY - could use an ASSERT that m_fdRMClient is != -1
    if (-1 == m_fdRMClient) {           // oops, need to initialize
-      cerr << "CRegistrar::RegSendMsg having to initialize file. LOGIC ERROR.\n";
+      std::cerr << "CRegistrar::RegSendMsg having to initialize file. LOGIC ERROR.\n";
       btBool ret = const_cast<CRegistrar*>(this)->InitClientFileDescriptor();
       if (!ret) {
-         cerr << "CRegistrar::RegSendMsg could not initialize file. Aborting.\n";
+         std::cerr << "CRegistrar::RegSendMsg could not initialize file. Aborting.\n";
          return;
       }
    }
@@ -364,7 +361,7 @@ void CRegistrar::RegSendMsg(pRegistrarCmdResp_t pBlockToSend) const
    req.tranID = (stTransactionID_t &)TransactionID(123456);
    req.context = (void*)67890;
 
-   DPOUT(cout << "CRegistrar::RegSendMsg: Sending Registrar Request:\n" << *pBlockToSend << endl;)
+   DPOUT(std::cout << "CRegistrar::RegSendMsg: Sending Registrar Request:\n" << *pBlockToSend << std::endl;)
 
    if (ioctl (m_fdRMClient, AALRM_IOCTL_SENDMSG, &req) == -1){
       perror ("CRegistrar::RegSendMsg");
@@ -382,18 +379,18 @@ void CRegistrar::RegSendMsg(pRegistrarCmdResp_t pBlockToSend) const
 void CRegistrar::ParseResponse( pRegistrarCmdResp_t p )
 {
 #ifdef DEBUG_REGISTRAR
-   cout << "CRegistrar::ParseResponse seen\n";
+   std::cout << "CRegistrar::ParseResponse seen\n";
 #endif
 
    // check signature; not equal means different, therefore error
    if ( memcmp ( p->szSignature, RegistrarCmdResponseSignature, lenRegistrarCmdRespSignature ) ) {
-      cerr << "CRegistrar::ParseResponse szSignature not Response signature, aborting\n";
+      std::cerr << "CRegistrar::ParseResponse szSignature not Response signature, aborting\n";
       // TODO: call global exception handler with EXCEPTION - not clear how to do this with the correct transaction ID
       return;
    }
 
 #ifdef DEBUG_REGISTRAR
-   cout << "RegistrarCmdResp is:" << *p;
+   std::cout << "RegistrarCmdResp is:" << *p;
 #endif
 
    if( p->pFunc ){                     // if have valid function pointer, call it. NULL should be handled in the skeleton
@@ -407,7 +404,6 @@ void CRegistrar::ParseResponse( pRegistrarCmdResp_t p )
 } // end of ParseResponse
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
  

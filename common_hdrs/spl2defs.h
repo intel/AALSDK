@@ -78,6 +78,8 @@
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/ccidefs.h> // struct CCIAFU_DSM
 
+BEGIN_NAMESPACE(AAL)
+
 /*
  * CCI-specific constants based on QLP2 implementation
  *
@@ -296,6 +298,8 @@ static const int SPL3_AFU2_CSR_OFFSET=0xA000;
 static const int SPL3_AFU3_CSR_OFFSET=0xB000;
 
 static const int SPL3_CSR_SPACE_SIZE=0x1000;
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_SPL2DEFS_H__
 

@@ -55,7 +55,6 @@
 #include <aalsdk/AALNamedValueSet.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 const char RegistrarRecordName[] = "__RecordName";          // Internal use, to be deprecated
 const char RegistrarPathKeyName[] = "RegistrarPathKeyName"; // Pass in optArgs of Open() to change the registry path
@@ -201,7 +200,6 @@ public:
 }; // class IRegistrar
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_REGISTRAR_AASREGISTRAR_H__

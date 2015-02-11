@@ -49,7 +49,6 @@
 #include <aalsdk/registrar/RegDBProxy.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
       //=============================================================================
       // RegKey I/O routines for RegistrarCmdResp
@@ -87,12 +86,10 @@ BEGIN_NAMESPACE(AAL)
          LockKey_t      m_LockKey;
          RegKey(): m_PrimaryKey(NoKey), m_LockKey(Unlocked) {};
       };
-      std::ostream& operator << (std::ostream &s, const RegKey &dbr);
+//      std::ostream& operator << (std::ostream &s, const RegKey &dbr);
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
-
 
 #endif // __AALSDK_REGISTRAR_REGDBSTUB_H__
 

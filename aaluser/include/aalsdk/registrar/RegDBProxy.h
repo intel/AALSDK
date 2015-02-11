@@ -54,7 +54,6 @@
 #include <aalsdk/AALNamedValueSet.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
       const char RegistrarCmdCommandSignature[]  = "RegCmd\n";     // These two must be the same length, and fit into
       const char RegistrarCmdResponseSignature[] = "RegRsp\n";     // the RegistrarCmdResp::szSignature[]
@@ -88,7 +87,6 @@ BEGIN_NAMESPACE(AAL)
          eCmdIsOK,
          eCmdEndNoComma             // INSERT BEFORE THIS to handle the trailing non-comma
       } eCmd;
-      std::ostream& operator << (std::ostream& s, const eCmd& Command);  // printout of an eCmd
 
       // Return codes from various RegistrarDatabase routines. Logged in LogReturnCode.
       typedef enum eReg {
@@ -112,7 +110,6 @@ BEGIN_NAMESPACE(AAL)
          eRegCannotWriteOpenFile,   // File is open, but could not write to it
          eRegEndNoComma             // INSERT BEFORE THIS to handle the trailing non-comma
       } eReg;
-      std::ostream& operator << (std::ostream& s, const eReg& Error);     // printout of an eReg
 
 
       //=============================================================================
@@ -128,11 +125,13 @@ BEGIN_NAMESPACE(AAL)
       //    after szSignature, those routines would break. Similarly if the ordering
       //    of szSignature as the first item and TranID as the second were changed.
       //=============================================================================
-      typedef struct RegistrarCmdResp* pRegistrarCmdResp_t;          // forward reference
-      class CRegistrar;                                              // forward reference
-      typedef void (CRegistrar::* pRegRetFunc)(pRegistrarCmdResp_t); // pointer to member function
+      class  CRegistrar;                                             // forward references
+      struct RegistrarCmdResp;
 
-      typedef struct RegistrarCmdResp {
+      typedef void (CRegistrar::* pRegRetFunc)(RegistrarCmdResp * ); // pointer to member function
+
+      typedef struct RegistrarCmdResp
+      {
          char           szSignature[lenRegistrarCmdRespSignature];   // 8, Identification, human readable
          TransactionID  TranID;                                      // A true (binary) AAL TransactionID
          pRegRetFunc    pFunc;                                       // Pointer to Function to call upon return
@@ -156,19 +155,24 @@ BEGIN_NAMESPACE(AAL)
 # pragma warning( pop )
 #endif // _MSC_VER
 
-      } RegistrarCmdResp_t/*, *pRegistrarCmdResp_t*/;
-      pRegistrarCmdResp_t    RegistrarCmdResp_Destroy   (pRegistrarCmdResp_t pRC);   // dtor for a struct RegistrarCmdResp. always returns NULL
-      std::ostream&          operator << (std::ostream& s, const RegistrarCmdResp_t& dbr);     // printout of a RegistrarCmdResp
+      } RegistrarCmdResp_t, *pRegistrarCmdResp_t;
+
+      pRegistrarCmdResp_t RegistrarCmdResp_Destroy(pRegistrarCmdResp_t pRC);   // dtor for a struct RegistrarCmdResp. always returns NULL
 
       //=============================================================================
       // NamedValueSet I/O routines for RegistrarCmdResp
       //=============================================================================
-      void read_nvs_from_RCP (const pRegistrarCmdResp_t pRCR, NamedValueSet* pnvs);
+      void read_nvs_from_RCP(const pRegistrarCmdResp_t pRCR, NamedValueSet *pnvs);
 
+std::ostream & operator << (std::ostream & , const eCmd             & );
+std::ostream & operator << (std::ostream & , const eReg             & );
+std::ostream & operator << (std::ostream & , const RegistrarCmdResp & );
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
+std::ostream & operator << (std::ostream & , const AAL::eCmd             & );
+std::ostream & operator << (std::ostream & , const AAL::eReg             & );
+std::ostream & operator << (std::ostream & , const AAL::RegistrarCmdResp & );
 
 #endif // __AALSDK_REGISTRAR_REGDBPROXY_H__
 

@@ -120,6 +120,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
+BEGIN_NAMESPACE(AAL)
 
 
 struct ahm_device;
@@ -839,6 +840,7 @@ extern int                   acpm_session_destroy(struct acpm_session *);
 extern struct acpm_session * acpm_session_create(struct aaldev_ownerSession *);
 
 
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AHMPIP_H__
 

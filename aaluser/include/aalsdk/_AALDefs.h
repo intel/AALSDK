@@ -288,6 +288,11 @@
 # else
 #    define MAFUTRANS_API                __declspec(dllimport)
 # endif // MAFUTRANS_EXPORTS
+# ifdef RRMBROKER_EXPORTS
+#    define RRMBROKER_API                __declspec(dllexport)
+# else
+#    define RRMBROKER_API                __declspec(dllimport)
+# endif // RRMBROKER_EXPORTS
 #else
 # define __declspec(x)
 // OSAL
@@ -313,6 +318,7 @@
 # define FAPTRANS2_API                   __declspec(0)
 // libMAFUTrans
 # define MAFUTRANS_API                   __declspec(0)
+# define RRMBROKER_API                   __declspec(0)
 #endif // OS
 
 

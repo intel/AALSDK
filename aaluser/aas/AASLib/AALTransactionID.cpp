@@ -220,10 +220,10 @@ TransactionID::TransactionID(btEventHandler evtHandler,
 // Description: Constructor for Application specified ID, Context, Handler,
 //              and filter flag
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt                   intID,
-                             btApplicationContext         Ctxt,
-                             AAL::AAS::IMessageHandler   *msgHandler,
-                             btBool                       Filter)
+TransactionID::TransactionID(bt32bitInt              intID,
+                             btApplicationContext    Ctxt,
+                             IMessageHandler        *msgHandler,
+                             btBool                  Filter)
 {
    m_tid.m_ID              = Ctxt;
    m_tid.m_Handler         = NULL;
@@ -237,9 +237,9 @@ TransactionID::TransactionID(bt32bitInt                   intID,
 // Description: Constructor for Application specified ID
 //              and Handler (if provided)
 //=============================================================================
-TransactionID::TransactionID(btApplicationContext               Ctxt,
-                             AAL::AAS::IMessageHandler         *msgHandler,
-                             btBool                             Filter)
+TransactionID::TransactionID(btApplicationContext          Ctxt,
+                             IMessageHandler              *msgHandler,
+                             btBool                        Filter)
 {
    m_tid.m_ID              = Ctxt;
    m_tid.m_Handler         = NULL;
@@ -253,9 +253,9 @@ TransactionID::TransactionID(btApplicationContext               Ctxt,
 // Name: TransactionID
 // Description: Constructor for Application specified ID and Handler
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt                   intID,
-                             AAL::AAS::IMessageHandler   *msgHandler,
-                             btBool                       Filter)
+TransactionID::TransactionID(bt32bitInt              intID,
+                             IMessageHandler        *msgHandler,
+                             btBool                  Filter)
 {
    m_tid.m_ID              = NULL;
    m_tid.m_Handler         = NULL;
@@ -269,8 +269,8 @@ TransactionID::TransactionID(bt32bitInt                   intID,
 // Description: Constructor for system assigned ID application provided
 //              Handler.
 //=============================================================================
-TransactionID::TransactionID(AAL::AAS::IMessageHandler   *msgHandler,
-                             btBool                       Filter)
+TransactionID::TransactionID(IMessageHandler   *msgHandler,
+                             btBool             Filter)
 {
    //Assign an internal value
    m_tid.m_ID              = NULL;
@@ -314,7 +314,7 @@ btEventHandler TransactionID::Handler() const
 // Name: MsgHandler
 // Description: Returns Message Handler
 //=============================================================================
- AAL::AAS::IMessageHandler  *TransactionID::MsgHandler() const
+IMessageHandler * TransactionID::MsgHandler() const
 {
    //Return handler
    return m_tid.m_MessageHandler;

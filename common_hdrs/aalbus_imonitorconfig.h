@@ -66,11 +66,6 @@
 #ifndef __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
 #define __AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
 
-
-#define NTDEVICE_MONITORCONFIG_NAME_STRING      L"\\Device\\AAL_IMonitorConfig"
-#define SYMBOLIC_MONITORCONFIG_NAME_STRING      L"\\DosDevices\\AAL_IMonitorConfig"
-
-
 //
 // Define an Interface Guid for toaster device class.
 // This GUID is used to register (IoRegisterDeviceInterface)
@@ -81,6 +76,10 @@
 DEFINE_GUID(GUID_DEVINTERFACE_AALBUS_CONFIG_STATE_MONITOR,
    0x701d4f32, 0x26cb, 0x4a87, 0xbb, 0xc4, 0xd1, 0xeb, 0xa, 0x3b, 0x51, 0xd2);
 
+BEGIN_NAMESPACE(AAL)
+
+#define NTDEVICE_MONITORCONFIG_NAME_STRING      L"\\Device\\AAL_IMonitorConfig"
+#define SYMBOLIC_MONITORCONFIG_NAME_STRING      L"\\DosDevices\\AAL_IMonitorConfig"
 
 #define FILE_DEVICE_BUSENUM         FILE_DEVICE_BUS_EXTENDER
 
@@ -101,6 +100,7 @@ typedef struct _AAL_BUS_MONITORCONFIG_CONTEXT {
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( AAL_BUS_MONITORCONFIG_CONTEXT,
                                     MonitorConfigGetContext)
 
+END_NAMESPACE(AAL)
 
 #endif //__AALSDK_KERNEL_BUS_IMONITOR_CONFIG_H__
 

@@ -52,9 +52,6 @@ AAL_DECLARE_MOD(libFAPTrans2, FAPTRANS2_API)
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
-         BEGIN_NAMESPACE(FAP_20)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,7 +123,7 @@ private:
    SPL2_Start_AFUTransaction(const SPL2_Start_AFUTransaction & );
    SPL2_Start_AFUTransaction & operator = (const SPL2_Start_AFUTransaction & );
 
-   static void AFUDSMMappingHandler(AAL::IEvent const &theEvent);
+   static void AFUDSMMappingHandler(IEvent const &theEvent);
 }; // class SPL2_Start_AFUTransaction
 
 //=============================================================================
@@ -240,9 +237,6 @@ private:
    SPL2_Stop_AFUTransaction & operator = (const SPL2_Stop_AFUTransaction & );
 }; // class SPL2_Stop_AFUTransaction
 
-         END_NAMESPACE(FAP_20)
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_FAPTRANS_FAP20_H__

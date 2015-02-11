@@ -80,6 +80,8 @@
 #define __AALSDK_KERNEL_AALWSSERVICE_H__
 #include <aalsdk/kernel/kosal.h>
 
+BEGIN_NAMESPACE(AAL)
+
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 // API IIDs TODO should come from aal ids
@@ -96,10 +98,10 @@
 #define AAL_WKSP_MAX_SUPERPAGES_NUM         (1 << AAL_WKSP_MAX_SUPERPAGES_NUM_BITS)    /* 1K, Defined in HW SPEC. */
 #define AAL_WKSP_MAX_SUPERPAGE_SIZE_BITS    (23)
 #define AAL_WKSP_MAX_SUPERPAGE_SIZE         (1 << AAL_WKSP_MAX_SUPERPAGE_SIZE_BITS )   /* 8M, Defined in HW SPEC. */
-#define AAL_WKSP_MAX_SIZE                   ((uint64_t)AAL_WKSP_MAX_SUPERPAGE_SIZE * (uint64_t)AAL_WKSP_MAX_SUPERPAGES_NUM) /* we support 8G per WS */
+#define AAL_WKSP_MAX_SIZE                   ((btUnsigned64bitInt)AAL_WKSP_MAX_SUPERPAGE_SIZE * (btUnsigned64bitInt)AAL_WKSP_MAX_SUPERPAGES_NUM) /* we support 8G per WS */
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define AAL_CHECK_WORKSPACE( pws )          ( NULL != pws && (unsigned long)pws->m_superpage[0] == pws->m_id )
+#define AAL_CHECK_WORKSPACE( pws )          ( NULL != pws && (btUnsigned32bitInt)pws->m_superpage[0] == pws->m_id )
 
 //=============================================================================
 // Name: aal_wsid
@@ -199,6 +201,9 @@ struct aal_wsservice
                                 const btVirtAddr              uvptr,
                                 btWSSize *const               size );
 };
+
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALWSSERVICE_H__
 

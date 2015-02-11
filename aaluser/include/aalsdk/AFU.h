@@ -49,7 +49,6 @@
 #include <aalsdk/AALTransactionID.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /// @addtogroup SysEvents
 /// @{
@@ -100,7 +99,6 @@ public:
 };
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_AFU_H__

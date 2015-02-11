@@ -54,7 +54,6 @@
 #include "aalsdk/AALLogger.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 //=============================================================================
 // Name:          WrapTransactionID
@@ -95,10 +94,10 @@ TransactionID WrapTransactionID(const TransactionID &rTranID)
 //                   where rTranID is the original TranID, and tid is what is
 //                   passed in the event
 //=============================================================================
-void UnWrapAndReThrow(IBase            *This,
-                      const IEvent     &theEvent,
-                      AAL::XL::RT::IXLRuntimeServices    *pDispatcher,
-                      btEventHandler    Handler)
+void UnWrapAndReThrow(IBase              *This,
+                      const IEvent       &theEvent,
+                      IXLRuntimeServices *pDispatcher,
+                      btEventHandler      Handler)
 {
    ITransactionEvent &rTransEvt   = dynamic_ref<ITransactionEvent>(iidTranEvent, theEvent);
    TransactionID     *pOrigTranID = reinterpret_cast<TransactionID *>(rTransEvt.TranID().Context());
@@ -176,15 +175,15 @@ TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, btBool bDelet
 //=============================================================================
 void ReThrow(IBase               *This,
              const IEvent        &theEvent,
-             AAL::XL::RT::IXLRuntimeServices  *pDispatcher,
+             IXLRuntimeServices  *pDispatcher,
              btEventHandler       Handler,
              const TransactionID *pTranID)
 {
    // Get theEvent as a CAALEvent so can increment the reference count and change the object to the AFU (This)
-   CAALEvent& rCEvent = dynamic_ref<CAALEvent>(iidCEvent, (const_cast<AAL::IEvent&>(theEvent)));
+   CAALEvent& rCEvent = dynamic_ref<CAALEvent>(iidCEvent, (const_cast<IEvent &>(theEvent)));
 
    // DEBUG CODE
-   //         IEvent* pIEvent = const_cast<AAL::IEvent*>(&theEvent);
+   //         IEvent* pIEvent = const_cast<IEvent *>(&theEvent);
    //         AAL_VERBOSE(LM_AFU, "IEvent being rethrown is " << pIEvent << endl);
 
    // increment the event because we are going to rethrow it
@@ -203,7 +202,6 @@ void ReThrow(IBase               *This,
                         reinterpret_cast<btObjectType>(Handler));
 }
 
-   END_NAMESPACE(AAS)
 
 //=============================================================================
 // Name:          PrintExceptionDescription

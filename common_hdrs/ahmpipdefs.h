@@ -84,6 +84,8 @@
 #include <aalsdk/kernel/aaltypes.h>
 #endif // __AAL_USER__
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // PIP Memory map
 //=============================================================================
@@ -570,8 +572,8 @@ unsigned char * ahmpip_desc_forward( unsigned char *base, unsigned char *ptr, in
 //  ahmpip_desc - Descriptor structure
 //==================================
 struct ahm_input_desc_header {
-   uint16_t  m_size;             // Descriptor size in CL
-   uint16_t  m_ctrl;             // Control Bits
+   btUnsigned16bitInt  m_size;             // Descriptor size in CL
+   btUnsigned16bitInt  m_ctrl;             // Control Bits
 #define AHM_IN_DESC_MASTER         1
 #define AHM_IN_DESC_DMA            (1<<1)
 #define AHM_IN_DESC_VIRT           (1<<2)
@@ -580,46 +582,46 @@ struct ahm_input_desc_header {
 #define AHM_IN_DESC_SOT            (1<<5)
 #define AHM_IN_DESC_MOT            (1<<6)
 #define AHM_IN_DESC_EOT            (1<<7)
-   uint8_t   m_pgsize;             // VMM Super-Page size in CL
-   uint64_t  m_pgtbl;              // VMM Page table Physical Address
-   uint16_t  m_pgtblsize;          // VMM Page Table size, 1=64 entries
-   uint8_t   m_rsvd8_1;            // reserved
-   uint64_t  m_input;              // Physical Byte Address of Input Buffer
-   uint64_t  m_isize:18;           // Input buffer size in CL
-   uint64_t  m_rsv6:6;           
-   uint64_t  m_status:16;          // Status
+   btByte              m_pgsize;             // VMM Super-Page size in CL
+   btUnsigned64bitInt  m_pgtbl;              // VMM Page table Physical Address
+   btUnsigned16bitInt  m_pgtblsize;          // VMM Page Table size, 1=64 entries
+   btByte              m_rsvd8_1;            // reserved
+   btUnsigned64bitInt  m_input;              // Physical Byte Address of Input Buffer
+   btUnsigned64bitInt  m_isize:18;           // Input buffer size in CL
+   btUnsigned64bitInt  m_rsv6:6;           
+   btUnsigned64bitInt  m_status:16;          // Status
 #define AHM_IN_DESC_COMPLETE(s)  ( (s) & 1 )
 #define AHM_IN_DESC_PENDING(s)   ( !(AHM_IN_DESC_COMPLETE(s)) )
 #define AHM_IN_DESC_ERROR(s)     ( (s) & (1<<1) )
 #define AHM_IN_DESC_SUCCESS(s)   ( !( AHM_IN_DESC_ERROR(s) ))
-   uint64_t  m_func_id:4;          // Function ID
-   uint64_t  m_tid:16;             // Task ID
-   uint64_t  m_rsvd4:4;            // Reserved
+   btUnsigned64bitInt  m_func_id:4;          // Function ID
+   btUnsigned64bitInt  m_tid:16;             // Task ID
+   btUnsigned64bitInt  m_rsvd4:4;            // Reserved
 } __attribute__ ((packed));
 
 
 
 struct ahm_output_desc_header {
-   uint64_t  m_dsize:18;            // Number of CL's written to this buffer
-   uint64_t  m_rsv6_1:6;            
-   uint64_t  m_ctrl:16;             // Control Bits
+   btUnsigned64bitInt  m_dsize:18;            // Number of CL's written to this buffer
+   btUnsigned64bitInt  m_rsv6_1:6;            
+   btUnsigned64bitInt  m_ctrl:16;             // Control Bits
 #define AHM_OUT_DESC_COMP_INTR_EN   (1<<4)  /* Completion Interrupt Enable */
 #define AHM_OUT_DESC_SOT            (1<<5)
 #define AHM_OUT_DESC_MOT            (1<<6)
 #define AHM_OUT_DESC_EOT            (1<<7)
-   uint64_t  m_rsvd24:24;           // reserved
-   uint64_t  m_rsvd64_1;         // reserved
-   uint64_t  m_output;           // Physical Byte Address of Output Buffer
-   uint64_t  m_osize:18;              // Output Buffer size in CL
-   uint64_t  m_rsv6_2:6;            
-   uint64_t  m_status:16;           // Status
+   btUnsigned64bitInt  m_rsvd24:24;           // reserved
+   btUnsigned64bitInt  m_rsvd64_1;         // reserved
+   btUnsigned64bitInt  m_output;           // Physical Byte Address of Output Buffer
+   btUnsigned64bitInt  m_osize:18;              // Output Buffer size in CL
+   btUnsigned64bitInt  m_rsv6_2:6;            
+   btUnsigned64bitInt  m_status:16;           // Status
 #define AHM_OUT_DESC_COMPLETE(s) ( (s) & 1 )
 #define AHM_OUT_DESC_PENDING(s)  ( !(AHM_IN_DESC_COMPLETE(s)) )
 #define AHM_OUT_DESC_ERROR(s)    ( (s) & (1<<1) )
 #define AHM_OUT_DESC_SUCCESS(s)  ( !( AHM_IN_DESC_ERROR(s) ))
-   uint64_t  m_func_id:4;         // Function ID
-   uint64_t  m_tid:16;           // Task ID
-   uint64_t  m_rsvd4:4;          // Reserved
+   btUnsigned64bitInt  m_func_id:4;         // Function ID
+   btUnsigned64bitInt  m_tid:16;           // Task ID
+   btUnsigned64bitInt  m_rsvd4:4;          // Reserved
 } __attribute__ ((packed));
 
 #define AHM_OUT_AFU_STATUS(p)    (unsigned char*)p+sizeof(struct ahm_output_desc_header)
@@ -627,4 +629,8 @@ struct ahm_output_desc_header {
 
 #define AHMPIP_MAX_BUFFER_SIZE               ( ((1<<16) - 1) * AHMPIP_AHM_CL_SIZE )
 
+
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AHMPIPDEFS_H__
+

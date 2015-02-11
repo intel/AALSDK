@@ -45,7 +45,6 @@
 #include <aalsdk/kernel/aaldevice.h> // aal_device_addr
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /// @addtogroup RMUtils
 /// @{
@@ -161,7 +160,6 @@ AASLIB_API int                  UCharFromHex               (unsigned char upperN
 
 /// @} group RMUtils
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_UTILS_RESMGRUTILITIES_H__

@@ -59,10 +59,10 @@ BEGIN_NAMESPACE(AAL)
 
 void HWCCIAFU::init(TransactionID const &TranID)
 {
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
 }
 
 btBool HWCCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -139,7 +139,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< HWCCIAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::HWCCIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

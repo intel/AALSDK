@@ -46,12 +46,13 @@
 #include <iostream>
 #include <iomanip>
 
+using namespace std;
+
 #include "CCILib.h"
 #include <aalsdk/aalclp/aalclp.h>
 
-USING_NAMESPACE(std)
-USING_NAMESPACE(AAL)
-USING_NAMESPACE(CCILib)
+using namespace AAL;
+using namespace CCILib;
 
 #ifndef CL
 # define CL(x)                     ((x) * 64)

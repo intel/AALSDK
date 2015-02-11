@@ -68,7 +68,7 @@
 // Define the factory to use for this service. In this example the service
 //  will be implemented in-process.  There are other implementations available for
 //  services implemented remotely, for example via TCP/IP.
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< PingAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< PingAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
@@ -83,9 +83,6 @@ AAL_END_SVC_MOD()
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 
-
-
-BEGIN_NAMESPACE(AAL)
 
 /////////////////////////////////////////////////////////////////////////////
 //////                                                                ///////
@@ -106,10 +103,10 @@ void PingAFU::init(TransactionID const &TranID)
 {
    m_pPingClient = dynamic_ptr<ISampleAFUPingClient>(iidSampleAFUPingClient, ClientBase());
    ASSERT( NULL != m_pPingClient ); //QUEUE object failed
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   TranID));
+   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
+                                         Client(),
+                                         dynamic_cast<IBase *>(this),
+                                         TranID) );
 }
 
 
@@ -137,9 +134,9 @@ void PingAFU::WorkerThread(OSLThread *pThread,
 
       if ( NULL == pThis->Client() ) {
          // No IServiceClient - process the event the old way.
-         pThis->QueueAASEvent(new AAL::AAS::CTransactionEvent((IBase *)pThis,
-                                                              tranevtSampleAFUPing,
-                                                              pThis->m_CurrTranID));
+         pThis->QueueAASEvent(new CTransactionEvent( (IBase *)pThis,
+                                                     tranevtSampleAFUPing,
+                                                     pThis->m_CurrTranID) );
       } else {
          pThis->SendMsg(new SampleAFUPingFunctor(pThis->m_pPingClient, (IBase *)pThis, pThis->m_CurrTranID));
       }
@@ -217,9 +214,9 @@ void PingAFU::PingOne(btcString sMessage, TransactionID &rTranID)
    //   unsigned int evID = (unsigned int)rTranID.Context();
    btUnsigned64bitInt evID = ( btUnsigned64bitInt ) rTranID.Context();
    try {
-      QueueAASEvent(new AAL::AAS::CTransactionEvent((IBase *)this,
-                                                    tranevtSampleAFUPing,
-                                                    rTranID));
+      QueueAASEvent( new CTransactionEvent((IBase *)this,
+                                           tranevtSampleAFUPing,
+                                           rTranID) );
    } catch( ... ) {
       cerr <<"BOOOM" <<endl;
    }
@@ -242,9 +239,9 @@ void PingAFU::PingSingleThread(btcString sMessage, unsigned int n)
    btUnsigned64bitInt i;
    for ( i = 0; ( i < (btUnsigned64bitInt)n ) && this->IsOK() ; i++ ) {
       TransactionID tid(reinterpret_cast<btApplicationContext>(i + 1));
-      QueueAASEvent(new AAL::AAS::CTransactionEvent((IBase *)this,
-                                                    tranevtSampleAFUPing,
-                                                    tid));
+      QueueAASEvent(new CTransactionEvent((IBase *)this,
+                                               tranevtSampleAFUPing,
+                                               tid));
 
       cerr << "AFU sends Event #" << i + 1 << endl;
    }
@@ -302,9 +299,9 @@ btBool PingAFU::Release(btTime timeout)
 }
 
 
-SampleAFUPingFunctor::SampleAFUPingFunctor(AAL::ISampleAFUPingClient *pPingClient,
-                                           IBase                     *pPingAFU,
-                                           TransactionID const       &rTranID) :
+SampleAFUPingFunctor::SampleAFUPingFunctor(ISampleAFUPingClient *pPingClient,
+                                           IBase                *pPingAFU,
+                                           TransactionID const  &rTranID) :
    m_pSvcClient(pPingClient),
    m_pPingAFU(pPingAFU),
    m_TranID(rTranID)
@@ -316,4 +313,3 @@ void SampleAFUPingFunctor::operator() ()
    delete this;
 }
 
-END_NAMESPACE(AAL)

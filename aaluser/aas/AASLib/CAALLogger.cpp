@@ -81,13 +81,12 @@
 #include "aalsdk/utils/Utilities.h"    // NUM_ELEMENTS()
 #include "aalsdk/OSAL.h"               // GetThreadID(), FindLowestBitSet64()
 
-USING_NAMESPACE(std)
 
 BEGIN_NAMESPACE(AAL)
 
 
 //=============================================================================
-// Name:          AAL::ILoggerFactory
+// Name:          ILoggerFactory
 // Description:   Create and return an instance of an object that implements
 //                   an ILogger
 //=============================================================================
@@ -578,13 +577,18 @@ void CLogger::Log(int errLevel, std::ostringstream& ross)
 
       case SYSLOG : {
 #ifdef __AAL_LINUX__
-         syslog( min( errLevel, LOG_DEBUG), "%s", ross.str().c_str());
+         syslog( std::min( errLevel, LOG_DEBUG), "%s", ross.str().c_str());
 #endif // __AAL_LINUX__
       } break;
    }
 
    ross.str("");
 } // CLogger::Log (int errlevel, std::ostringstream& oss)
+
+void CLogger::Log(int errlevel, std::basic_ostream<char, std::char_traits<char> > &rbos)
+{
+   Log(errlevel, static_cast<std::ostringstream &>(rbos));
+}
 
 //=============================================================================
 // Name:          CLogger::SetDestination

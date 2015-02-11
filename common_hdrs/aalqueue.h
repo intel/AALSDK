@@ -81,6 +81,8 @@
 #include <aalsdk/kernel/kosal.h>
 
 
+BEGIN_NAMESPACE(AAL)
+
 //-----------------------------------------------------------------------------
 //                         Queue Primitives
 //-----------------------------------------------------------------------------
@@ -422,6 +424,8 @@ static inline struct aal_q_item * _aal_q_doForEachItem(aal_queue_t        *pqueu
    kosal_sem_put(&pqueue->m_sem);
    return NULL;
 }
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALQUEUE_H__
 

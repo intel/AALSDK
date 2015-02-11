@@ -47,7 +47,6 @@
 #include "aalsdk/rm/InstanceRecord.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -146,22 +145,6 @@ btBool InstRec::ReplaceStruct(const aalrms_configUpDateEvent *pConfigUpdate)
    return false;
 }  // InstRec::ReplaceStruct()
 
-//=============================================================================
-// Name:        std::ostream& operator << of instRec
-// Description: writes a description of the object to the ostream
-//=============================================================================
-std::ostream & operator << (std::ostream &s, const InstRec &instRec)
-{
-   s << std::hex << std::uppercase << std::showbase <<
-      "InstRec  at    "   << reinterpret_cast<const void*>(&instRec) <<
-      "\nInstanceIndex: " << instRec.InstanceIndex() <<
-      "\nNumAllocated:  " << instRec.NumAllocations() <<
-      "\nMaxAllowed:    " << instRec.MaxAllocations() <<
-      "\nUnlimited:     " << instRec.fUnlimitedAllocations() <<
-      "\n"                << instRec.ConfigStruct();
-   return s;
-}
-
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -239,8 +222,23 @@ void InstRecMap::Delete(btNumberKey key)
    }
 }  // InstRecMap::Delete
 
+//=============================================================================
+// Name:        std::ostream& operator << of instRec
+// Description: writes a description of the object to the ostream
+//=============================================================================
+std::ostream & operator << (std::ostream &s, const InstRec &instRec)
+{
+   s << std::hex << std::uppercase << std::showbase <<
+      "InstRec  at    "   << reinterpret_cast<const void *>(&instRec) <<
+      "\nInstanceIndex: " << instRec.InstanceIndex() <<
+      "\nNumAllocated:  " << instRec.NumAllocations() <<
+      "\nMaxAllowed:    " << instRec.MaxAllocations() <<
+      "\nUnlimited:     " << instRec.fUnlimitedAllocations() <<
+      "\n"                << instRec.ConfigStruct();
+   return s;
+}
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
+std::ostream & operator << (std::ostream &s, const AAL::InstRec &x) { return AAL::operator <<(s, x); }
 
