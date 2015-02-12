@@ -18,8 +18,15 @@ declare -r LN="`which ln`" 2>/dev/null
 declare -r RM="`which rm`" 2>/dev/null
 [ "x${RM}" = x ] && die "no rm?"
 
-declare -r GDBTUI="`which gdbtui`" 2>/dev/null
-[ "x${GDBTUI}" = x ] && die "no gdbtui?"
+declare GDBTUI="`which gdbtui`" 2>/dev/null
+if [ "x${GDBTUI}" = x ]; then
+   GDBTUI="`which gdb`" 2>/dev/null
+   if echo q | ${GDBTUI} -tui ; then
+      GDBTUI="${GDBTUI} -tui"
+   else
+      die "no gdbtui?"
+   fi
+fi
 
 set -e
 
