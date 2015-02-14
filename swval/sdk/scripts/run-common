@@ -105,22 +105,22 @@ setup() {
 setup
 
 run_standalone() {
-   ${TS} -v -C "${VPATH}/tests" --standalone
+   ${TS} -v -C "${VPATH}/tests" --standalone ${1+"$@"}
    return $?
 }
 
 run_bat() {
-   ${TS} -v -C "${VPATH}/tests" --bat --gtest-opt=--gtest_color=yes
+   ${TS} -v -C "${VPATH}/tests" --bat --gtest-opt=--gtest_color=yes ${1+"$@"}
    return $?
 }
 
 run_nightly() {
-   ${TS} -v -C "${VPATH}/tests" --nightly --gtest-opt=--gtest_color=yes
+   ${TS} -v -C "${VPATH}/tests" --nightly --gtest-opt=--gtest_color=yes ${1+"$@"}
    return $?
 }
 
 run_weekly() {
-   ${TS} -v -C "${VPATH}/tests" --weekly --gtest-opt=--gtest_color=yes
+   ${TS} -v -C "${VPATH}/tests" --weekly --gtest-opt=--gtest_color=yes ${1+"$@"}
    return $?
 }
 

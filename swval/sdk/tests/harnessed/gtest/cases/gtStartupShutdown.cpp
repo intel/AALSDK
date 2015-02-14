@@ -7,32 +7,32 @@
 #endif // MSG
 
 // Simple test fixture
-class XLStartup : public AAL::CAASBase,
+class XLStartup : public CAASBase,
                   public ::testing::Test,
-                  public AAL::XL::RT::IRuntimeClient
+                  public IRuntimeClient
 {
 public:
    // <begin IRuntimeClient interface>
-   void runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
-                       const AAL::NamedValueSet &rConfigParms);
+   void runtimeStarted(IRuntime    *pRuntime,
+                       const NamedValueSet &rConfigParms);
 
-   void runtimeStopped(AAL::XL::RT::IRuntime *pRuntime);
+   void runtimeStopped(IRuntime *pRuntime);
 
-   void runtimeStartFailed(const AAL::IEvent &rEvent);
+   void runtimeStartFailed(const IEvent &rEvent);
    void runtimeAllocateServiceFailed(IEvent const &rEvent) {}
 
-   void runtimeAllocateServiceSucceeded(AAL::IBase *pClient,
+   void runtimeAllocateServiceSucceeded(IBase *pClient,
                                         TransactionID const &rTranID) {}
-   void runtimeEvent(const AAL::IEvent &rEvent);
+   void runtimeEvent(const IEvent &rEvent);
    // <end IRuntimeClient interface>
 
 protected:
    XLStartup() :
-      AAL::CAASBase(),
+      CAASBase(),
       m_RTStartFailed(0),
       m_RTMsgs(0)
    {
-      SetSubClassInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
+      SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
    }
 
    virtual void SetUp()
@@ -47,9 +47,9 @@ protected:
    void WaitSem() { m_Sem.Wait();  }
    void PostSem() { m_Sem.Post(1); }
 
-   AAL::NamedValueSet StartupArgs() const
+   NamedValueSet StartupArgs() const
    {
-      AAL::NamedValueSet args;
+      NamedValueSet args;
 
       const ::testing::TestInfo * const pInfo =
          ::testing::UnitTest::GetInstance()->current_test_info();
@@ -60,11 +60,11 @@ protected:
       return args;
    }
 
-   typedef std::list<AAL::XL::RT::IRuntime *> irt_q;
-   typedef std::list<AAL::NamedValueSet>      nvs_q;
+   typedef std::list<IRuntime *> irt_q;
+   typedef std::list<NamedValueSet>      nvs_q;
 
-   AAL::btInt      m_RTStartFailed;
-   AAL::btInt      m_RTMsgs;
+   btInt      m_RTStartFailed;
+   btInt      m_RTMsgs;
 
    CSemaphore      m_Sem;
    CriticalSection m_CS;
@@ -81,8 +81,8 @@ protected:
 # define MSG(x)
 #endif
 
-void XLStartup::runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
-                               const AAL::NamedValueSet &rConfigParms)
+void XLStartup::runtimeStarted(IRuntime    *pRuntime,
+                               const NamedValueSet &rConfigParms)
 {
    AutoLock(&m_CS);
 
@@ -92,7 +92,7 @@ void XLStartup::runtimeStarted(AAL::XL::RT::IRuntime    *pRuntime,
    PostSem();
 }
 
-void XLStartup::runtimeStopped(AAL::XL::RT::IRuntime *pRuntime)
+void XLStartup::runtimeStopped(IRuntime *pRuntime)
 {
    AutoLock(&m_CS);
 
@@ -101,22 +101,22 @@ void XLStartup::runtimeStopped(AAL::XL::RT::IRuntime *pRuntime)
    PostSem();
 }
 
-void XLStartup::runtimeStartFailed(const AAL::IEvent &rEvent)
+void XLStartup::runtimeStartFailed(const IEvent &rEvent)
 {
    AutoLock(&m_CS);
 
    ++m_RTStartFailed;
-   AAL::PrintExceptionDescription(rEvent);
+   PrintExceptionDescription(rEvent);
 
    PostSem();
 }
 
-void XLStartup::runtimeEvent(const AAL::IEvent &rEvent)
+void XLStartup::runtimeEvent(const IEvent &rEvent)
 {
    AutoLock(&m_CS);
 
    ++m_RTMsgs;
-   AAL::PrintExceptionDescription(rEvent);
+   PrintExceptionDescription(rEvent);
 
    PostSem();
 }
@@ -124,10 +124,10 @@ void XLStartup::runtimeEvent(const AAL::IEvent &rEvent)
 // Tests normal AAL runtime start/stop.
 TEST_F(XLStartup, StartThenCleanStop)
 {
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
-   AAL::NamedValueSet args = StartupArgs();
+   NamedValueSet args = StartupArgs();
 
    pRT->start(this, args);
    WaitSem(); // for runtimeStarted()
@@ -141,14 +141,14 @@ TEST_F(XLStartup, StartThenCleanStop)
 
    std::string    Test;
    std::string    TestCase;
-   AAL::btcString val;
+   btcString val;
 
    TestCaseName(Test, TestCase);
 
    EXPECT_TRUE(m_NVSFromStarted.front().Has("Test"));
    if ( m_NVSFromStarted.front().Has("Test") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, Test.c_str());
    }
@@ -156,7 +156,7 @@ TEST_F(XLStartup, StartThenCleanStop)
    EXPECT_TRUE(m_NVSFromStarted.front().Has("TestCase"));
    if ( m_NVSFromStarted.front().Has("TestCase") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, TestCase.c_str());
    }
@@ -189,11 +189,11 @@ TEST_F(XLStartup, StartThenCleanStop)
 // Tests two starts without an intervening stop.
 TEST_F(batStartup, TwoStarts)
 {
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
-   AAL::NamedValueSet nvs0;
-   AAL::NamedValueSet nvs1;
+   NamedValueSet nvs0;
+   NamedValueSet nvs1;
 
    pRT->start(this, nvs0);
    WaitSem(); // for runtimeStarted()
@@ -254,10 +254,10 @@ TEST_F(batStartup, TwoStarts)
 // Tests two stops without an intervening start.
 TEST_F(batStartup, TwoStops)
 {
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
-   AAL::NamedValueSet nvs;
+   NamedValueSet nvs;
    pRT->start(this, nvs);
    WaitSem(); // for runtimeStarted()
 
@@ -321,30 +321,30 @@ TEST_F(batStartup, TwoStops)
 
 // Simple test fixture
 class batServiceAlloc : public batStartup,
-                        public AAL::AAS::IServiceClient, public AAL::ISampleAFUPingClient
+                        public IServiceClient, public ISampleAFUPingClient
 {
 public:
    // <begin IServiceClient interface>
-   void      serviceAllocated(AAL::IBase          *pServiceBase,
-                              AAL::TransactionID const &rTranID = AAL::TransactionID());
-   void serviceAllocateFailed(const AAL::IEvent &rEvent);
-   void          serviceFreed(AAL::TransactionID const &rTranID = AAL::TransactionID());
-   void serviceEvent(const AAL::IEvent & );
+   void      serviceAllocated(IBase          *pServiceBase,
+                              TransactionID const &rTranID = TransactionID());
+   void serviceAllocateFailed(const IEvent &rEvent);
+   void          serviceFreed(TransactionID const &rTranID = TransactionID());
+   void serviceEvent(const IEvent & );
    // <end IServiceClient interface>
 
    // <begin  ISampleAFUPingClient>
-   void PingReceived(AAL::TransactionID const &rTranID);
+   void PingReceived(TransactionID const &rTranID);
    // <end  ISampleAFUPingClient>
 
 protected:
 batServiceAlloc()
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<AAL::AAS::IServiceClient *>(this));
-   SetInterface(iidSampleAFUPingClient, dynamic_cast<AAL::ISampleAFUPingClient *>(this));
+   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidSampleAFUPingClient, dynamic_cast<ISampleAFUPingClient *>(this));
 }
 
-   typedef std::list<AAL::IAALService * > service_q_t;
-   typedef std::list<AAL::TransactionID > tranid_q_t;
+   typedef std::list<IAALService * > service_q_t;
+   typedef std::list<TransactionID > tranid_q_t;
 
    service_q_t m_ServiceQ;
    tranid_q_t  m_serviceAllocatedTranIDs;
@@ -359,8 +359,8 @@ batServiceAlloc()
 # define MSG(x)
 #endif
 
-void batServiceAlloc::serviceAllocated(AAL::IBase               *pServiceBase,
-                                       AAL::TransactionID const &rTranID)
+void batServiceAlloc::serviceAllocated(IBase               *pServiceBase,
+                                       TransactionID const &rTranID)
 {
    AutoLock(&m_CS);
 
@@ -370,17 +370,17 @@ void batServiceAlloc::serviceAllocated(AAL::IBase               *pServiceBase,
    PostSem();
 }
 
-void batServiceAlloc::serviceAllocateFailed(const AAL::IEvent        &rEvent)
+void batServiceAlloc::serviceAllocateFailed(const IEvent        &rEvent)
 {
    AutoLock(&m_CS);
 
    MSG("serviceAllocateFailed")
-   AAL::TransactionID TranID = dynamic_ref<ITransactionEvent>(iidTranEvent,rEvent).TranID();
+   TransactionID TranID = dynamic_ref<ITransactionEvent>(iidTranEvent,rEvent).TranID();
    m_serviceAllocateFailedTranIDs.push_back(&TranID);
    PostSem();
 }
 
-void batServiceAlloc::serviceFreed(AAL::TransactionID const &rTranID)
+void batServiceAlloc::serviceFreed(TransactionID const &rTranID)
 {
    AutoLock(&m_CS);
 
@@ -389,17 +389,17 @@ void batServiceAlloc::serviceFreed(AAL::TransactionID const &rTranID)
    PostSem();
 }
 
-void batServiceAlloc::serviceEvent(const AAL::IEvent &rEvent)
+void batServiceAlloc::serviceEvent(const IEvent &rEvent)
 {
    AutoLock(&m_CS);
 
    ++m_RTMsgs;
-   AAL::PrintExceptionDescription(rEvent);
+   PrintExceptionDescription(rEvent);
 
    PostSem();
 }
 
-void batServiceAlloc::PingReceived(AAL::TransactionID const &rTranID)
+void batServiceAlloc::PingReceived(TransactionID const &rTranID)
 {
    AutoLock(&m_CS);
 
@@ -415,11 +415,11 @@ TEST_F(batServiceAlloc, SimpleAlloc)
 //   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
 #endif // __AAL_LINUX__
 
-   AAL::NamedValueSet args = StartupArgs();
+   NamedValueSet args = StartupArgs();
 
    args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
 
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
    pRT->start(this, args);
@@ -440,14 +440,14 @@ TEST_F(batServiceAlloc, SimpleAlloc)
 
    std::string    Test;
    std::string    TestCase;
-   AAL::btcString val;
+   btcString val;
 
    TestCaseName(Test, TestCase);
 
    EXPECT_TRUE(m_NVSFromStarted.front().Has("Test"));
    if ( m_NVSFromStarted.front().Has("Test") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, Test.c_str());
    }
@@ -455,7 +455,7 @@ TEST_F(batServiceAlloc, SimpleAlloc)
    EXPECT_TRUE(m_NVSFromStarted.front().Has("TestCase"));
    if ( m_NVSFromStarted.front().Has("TestCase") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, TestCase.c_str());
    }
@@ -464,9 +464,9 @@ TEST_F(batServiceAlloc, SimpleAlloc)
    NamedValueSet Manifest(SampleAFU1ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AFU 1");
 
-   AAL::TransactionID tid((AAL::bt32bitInt)7);
+   TransactionID tid((bt32bitInt)7);
 
-   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<AAL::IBase *>(this), Manifest, tid);
+   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<IBase *>(this), Manifest, tid);
    WaitSem(); // for serviceAllocated()
 
    ASSERT_EQ(1, m_IRuntimesFromStarted.size());
@@ -483,7 +483,7 @@ TEST_F(batServiceAlloc, SimpleAlloc)
    EXPECT_EQ(0, m_serviceAllocateFailedTranIDs.size());
    EXPECT_EQ(0, m_serviceFreedTranIDs.size());
 
-   AAL::TransactionID releasetid((AAL::bt32bitInt)13);
+   TransactionID releasetid((bt32bitInt)13);
 
    EXPECT_TRUE(m_ServiceQ.front()->Release(releasetid));
    WaitSem(); // for freed
@@ -542,11 +542,11 @@ TEST_F(batServiceAlloc, RTStopWithoutServiceRelease)
 //   ASSERT_EQ(0, RequireLD_LIBRARY_PATH(SAMPLE_AFU1_LIBDIR));
 #endif // __AAL_LINUX__
 
-   AAL::NamedValueSet args = StartupArgs();
+   NamedValueSet args = StartupArgs();
 
    args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
 
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
    pRT->start(this, args);
@@ -567,14 +567,14 @@ TEST_F(batServiceAlloc, RTStopWithoutServiceRelease)
 
    std::string    Test;
    std::string    TestCase;
-   AAL::btcString val;
+   btcString val;
 
    TestCaseName(Test, TestCase);
 
    EXPECT_TRUE(m_NVSFromStarted.front().Has("Test"));
    if ( m_NVSFromStarted.front().Has("Test") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("Test", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, Test.c_str());
    }
@@ -582,7 +582,7 @@ TEST_F(batServiceAlloc, RTStopWithoutServiceRelease)
    EXPECT_TRUE(m_NVSFromStarted.front().Has("TestCase"));
    if ( m_NVSFromStarted.front().Has("TestCase") ) {
       val = NULL;
-      EXPECT_EQ(AAL::ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
+      EXPECT_EQ(ENamedValuesOK, m_NVSFromStarted.front().Get("TestCase", &val));
       ASSERT_NONNULL(val);
       EXPECT_STREQ(val, TestCase.c_str());
    }
@@ -591,9 +591,9 @@ TEST_F(batServiceAlloc, RTStopWithoutServiceRelease)
    NamedValueSet Manifest(SampleAFU1ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AFU 1");
 
-   AAL::TransactionID tid((AAL::bt32bitInt)7);
+   TransactionID tid((bt32bitInt)7);
 
-   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<AAL::IBase *>(this), Manifest, tid);
+   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<IBase *>(this), Manifest, tid);
    WaitSem(); // for serviceAllocated()
 
    ASSERT_EQ(1, m_IRuntimesFromStarted.size());

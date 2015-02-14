@@ -179,6 +179,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
+                 utils/fpgasane/Makefile
                  utils/CCIAFU/Makefile
                  utils/CCIAFU/HWCCIAFU/Makefile
                  utils/CCIAFU/ASECCIAFU/Makefile

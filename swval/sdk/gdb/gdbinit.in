@@ -119,6 +119,7 @@ define gdb_setup
    else
       set print thread-events off
    end
+   set auto-load safe-path /
    set libthread-db-search-path $pdir:$sdir
    enter_allstop_mode
 end

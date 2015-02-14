@@ -3,14 +3,14 @@
 // Define structure that will be initialized per eBasicType
 struct eBasicType_Data
 {
-   eBasicType_Data(AAL::eBasicTypes   EBT               =btUnknownType_t,
-                   AAL::btBool        FISARRAY          =false,
-                   AAL::btBool        FISVALID          =false,
-                   AAL::btcString     SNAMEOFEBASICTYPE ="",
-                   AAL::btcString     SNAMEOFNV         ="",
-                   AAL::btUnsignedInt INAMEOFNV         =0,
+   eBasicType_Data(eBasicTypes   EBT               =btUnknownType_t,
+                   btBool        FISARRAY          =false,
+                   btBool        FISVALID          =false,
+                   btcString     SNAMEOFEBASICTYPE ="",
+                   btcString     SNAMEOFNV         ="",
+                   btUnsignedInt INAMEOFNV         =0,
                    void              *PDATA             =NULL,
-                   AAL::btUnsignedInt UARRAYELEMENTS    =0) :
+                   btUnsignedInt UARRAYELEMENTS    =0) :
       ebt(EBT),
       fIsArray(FISARRAY),
       fIsValid(FISVALID),
@@ -21,17 +21,17 @@ struct eBasicType_Data
       uArrayElements(UARRAYELEMENTS)
    {}
 
-   AAL::btBool SanityCheck() const { return fIsValid; }
+   btBool SanityCheck() const { return fIsValid; }
 
 
-   AAL::eBasicTypes   ebt;                 // Redundant, but potentially makes tracking everything easier
-   AAL::btBool        fIsArray;            // True if this is an array type, Implies uArrayElements is valid
-   AAL::btBool        fIsValid;            // There are types that are not valid for inclusion in an NVS. This is TRUE if this one is.
-   AAL::btcString     sNameOfeBasicType;   // Human-readable name of the eBasicType
-   AAL::btStringKey   sNameOfNV;           // "NONAME" is reserved to mean no name
-   AAL::btNumberKey   iNameOfNV;           // uNX is reserved to mean NO integer name, leaving 0 open for testing
-   void              *pData;               // Pointer to data, if there is any
-   AAL::btUnsignedInt uArrayElements;      // number of array elements, if there are any, 0 is valid
+   eBasicTypes   ebt;                 // Redundant, but potentially makes tracking everything easier
+   btBool        fIsArray;            // True if this is an array type, Implies uArrayElements is valid
+   btBool        fIsValid;            // There are types that are not valid for inclusion in an NVS. This is TRUE if this one is.
+   btcString     sNameOfeBasicType;   // Human-readable name of the eBasicType
+   btStringKey   sNameOfNV;           // "NONAME" is reserved to mean no name
+   btNumberKey   iNameOfNV;           // uNX is reserved to mean NO integer name, leaving 0 open for testing
+   void         *pData;               // Pointer to data, if there is any
+   btUnsignedInt uArrayElements;      // number of array elements, if there are any, 0 is valid
 };
 
 // Simple test fixture
@@ -43,10 +43,10 @@ NVSSimple() :
    m_u8Test(0x20), // 'X'
    m_i32Test(-1),
    m_iTest(-1),
-   m_u32Test((AAL::btUnsigned32bitInt)-1),
-   m_uTest((AAL::btUnsignedInt)-1),
+   m_u32Test((btUnsigned32bitInt)-1),
+   m_uTest((btUnsignedInt)-1),
    m_i64Test(-1),
-   m_u64Test((AAL::btUnsigned64bitInt)-1),
+   m_u64Test((btUnsigned64bitInt)-1),
    m_fTest(3.14159f),
    m_sTest("Single String Data Value"),
    m_sDataForEmbeddedNewLine("Single String Data Value\nwith\nembedded and terminating newlines\n"),
@@ -73,25 +73,25 @@ NVSSimple() :
    m_rgszTestE(NULL),
    m_nvsTestDeleted(false)
 {
-   m_rgb8TestTemp   = new(std::nothrow) AAL::btByte[10];
+   m_rgb8TestTemp   = new(std::nothrow) btByte[10];
    m_rgb8Test       = m_rgb8TestTemp;
 
-   m_rgi32TestTemp  = new(std::nothrow) AAL::bt32bitInt[5];
+   m_rgi32TestTemp  = new(std::nothrow) bt32bitInt[5];
    m_rgi32Test      = m_rgi32TestTemp;
 
-   m_rgu32TestTemp  = new(std::nothrow) AAL::btUnsigned32bitInt[5];
+   m_rgu32TestTemp  = new(std::nothrow) btUnsigned32bitInt[5];
    m_rgu32Test      = m_rgu32TestTemp;
 
-   m_rgi64TestTemp  = new(std::nothrow) AAL::bt64bitInt[5];
+   m_rgi64TestTemp  = new(std::nothrow) bt64bitInt[5];
    m_rgi64Test      = m_rgi64TestTemp;
 
-   m_rgu64TestTemp  = new(std::nothrow) AAL::btUnsigned64bitInt[5];
+   m_rgu64TestTemp  = new(std::nothrow) btUnsigned64bitInt[5];
    m_rgu64Test      = m_rgu64TestTemp;
 
-   m_rgfTestTemp    = new(std::nothrow) AAL::btFloat[5];
+   m_rgfTestTemp    = new(std::nothrow) btFloat[5];
    m_rgfTest        = m_rgfTestTemp;
 
-   m_rgi64TestTempE = new(std::nothrow) AAL::bt64bitInt[3];
+   m_rgi64TestTempE = new(std::nothrow) bt64bitInt[3];
    m_rgi64TestE     = m_rgi64TestTempE;
 
    m_rgszTestE      = m_rgszTestTempE;
@@ -170,35 +170,35 @@ virtual void SetUp()
    ASSERT_EQ(m_rgb8Test, m_rgb8TestTemp);
 
    ASSERT_NONNULL(m_rgi32TestTemp);
-   m_rgi32TestTemp[0] = (AAL::bt32bitInt)0x80000000;
-   m_rgi32TestTemp[1] = (AAL::bt32bitInt)-1;
+   m_rgi32TestTemp[0] = (bt32bitInt)0x80000000;
+   m_rgi32TestTemp[1] = (bt32bitInt)-1;
    m_rgi32TestTemp[2] = 0;
    m_rgi32TestTemp[3] = 1;
-   m_rgi32TestTemp[4] = (AAL::bt32bitInt)0x7FFFFFFF;
+   m_rgi32TestTemp[4] = (bt32bitInt)0x7FFFFFFF;
    ASSERT_EQ(m_rgi32Test, m_rgi32TestTemp);
 
    ASSERT_NONNULL(m_rgu32TestTemp);
-   m_rgu32TestTemp[0] = (AAL::btUnsigned32bitInt)0x80000000;
-   m_rgu32TestTemp[1] = (AAL::btUnsigned32bitInt)-1;
+   m_rgu32TestTemp[0] = (btUnsigned32bitInt)0x80000000;
+   m_rgu32TestTemp[1] = (btUnsigned32bitInt)-1;
    m_rgu32TestTemp[2] = 0;
    m_rgu32TestTemp[3] = 1;
-   m_rgu32TestTemp[4] = (AAL::btUnsigned32bitInt)0x7FFFFFFF;
+   m_rgu32TestTemp[4] = (btUnsigned32bitInt)0x7FFFFFFF;
    ASSERT_EQ(m_rgu32Test, m_rgu32TestTemp);
 
    ASSERT_NONNULL(m_rgi64TestTemp);
-   m_rgi64TestTemp[0] = (AAL::bt64bitInt)0x8000000000000000LL;
+   m_rgi64TestTemp[0] = (bt64bitInt)0x8000000000000000LL;
    m_rgi64TestTemp[1] = -1;
    m_rgi64TestTemp[2] = 0;
    m_rgi64TestTemp[3] = 1;
-   m_rgi64TestTemp[4] = (AAL::bt64bitInt)0x7FFFFFFFFFFFFFFFLL;
+   m_rgi64TestTemp[4] = (bt64bitInt)0x7FFFFFFFFFFFFFFFLL;
    ASSERT_EQ(m_rgi64Test, m_rgi64TestTemp);
 
    ASSERT_NONNULL(m_rgu64TestTemp);
-   m_rgu64TestTemp[0] = (AAL::btUnsigned64bitInt)0x8000000000000000LL;
-   m_rgu64TestTemp[1] = (AAL::btUnsigned64bitInt)-1;
+   m_rgu64TestTemp[0] = (btUnsigned64bitInt)0x8000000000000000LL;
+   m_rgu64TestTemp[1] = (btUnsigned64bitInt)-1;
    m_rgu64TestTemp[2] = 0;
    m_rgu64TestTemp[3] = 1;
-   m_rgu64TestTemp[4] = (AAL::btUnsigned64bitInt)0x7FFFFFFFFFFFFFFFLL;
+   m_rgu64TestTemp[4] = (btUnsigned64bitInt)0x7FFFFFFFFFFFFFFFLL;
    ASSERT_EQ(m_rgu64Test, m_rgu64TestTemp);
 
    ASSERT_NONNULL(m_rgfTestTemp);
@@ -216,9 +216,9 @@ virtual void SetUp()
    m_rgszTestTemp[4] = "Fifth and last data string";
    ASSERT_EQ(m_rgszTest, m_rgszTestTemp);
 
-   m_rgpTemp[0] = reinterpret_cast<AAL::btObjectType>(0L);
-   m_rgpTemp[1] = reinterpret_cast<AAL::btObjectType>(4L);
-   m_rgpTemp[2] = reinterpret_cast<AAL::btObjectType>(-1L);
+   m_rgpTemp[0] = reinterpret_cast<btObjectType>(0L);
+   m_rgpTemp[1] = reinterpret_cast<btObjectType>(4L);
+   m_rgpTemp[2] = reinterpret_cast<btObjectType>(-1L);
    ASSERT_EQ(m_rgp, m_rgpTemp);
 
    ASSERT_NONNULL(m_rgi64TestTempE);
@@ -276,76 +276,76 @@ virtual void TearDown()
 }
 
 #define ADD_NAME_AND_SINGLE_TYPE_TO_NVS(__type)                                                     \
-AAL::btBool AddNameAndSingleTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                      AAL::btStringKey name, __type data)                           \
+btBool AddNameAndSingleTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                      btStringKey name, __type data)                           \
 {                                                                                                   \
-   AAL::ENamedValues e = pnvs->Add(name, data);                                                     \
-   EXPECT_EQ(AAL::ENamedValuesOK, e)  <<                                                            \
+   ENamedValues e = pnvs->Add(name, data);                                                     \
+   EXPECT_EQ(ENamedValuesOK, e)  <<                                                            \
       "Error on ADD of type\t" << pebt->sNameOfeBasicType <<                                        \
       "\tName\t" << name <<                                                                         \
       "\tReturn Value\t" << m_sMapRetToName[e] <<                                                   \
       "\tData\t" << data << "\n";                                                                   \
-   return AAL::ENamedValuesOK == e;                                                                 \
+   return ENamedValuesOK == e;                                                                 \
 }                                                                                                   \
-AAL::btBool AddNameAndSingleTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                      AAL::btNumberKey name, __type data)                           \
+btBool AddNameAndSingleTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                      btNumberKey name, __type data)                           \
 {                                                                                                   \
-   AAL::ENamedValues e = pnvs->Add(name, data);                                                     \
-   EXPECT_EQ(AAL::ENamedValuesOK, e)  <<                                                            \
+   ENamedValues e = pnvs->Add(name, data);                                                     \
+   EXPECT_EQ(ENamedValuesOK, e)  <<                                                            \
       "Error on ADD of type\t" << pebt->sNameOfeBasicType <<                                        \
       "\tName\t" << name <<                                                                         \
       "\tReturn Value\t" << m_sMapRetToName[e] <<                                                   \
       "\tData\t" << data << "\n";                                                                   \
-   return AAL::ENamedValuesOK == e;                                                                 \
+   return ENamedValuesOK == e;                                                                 \
 }
 
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btBool)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btByte)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::bt32bitInt)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btUnsigned32bitInt)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::bt64bitInt)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btUnsigned64bitInt)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btFloat)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btcString)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::NamedValueSet)
-ADD_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btObjectType)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btBool)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btByte)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(bt32bitInt)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btUnsigned32bitInt)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(bt64bitInt)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btUnsigned64bitInt)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btFloat)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btcString)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(NamedValueSet)
+ADD_NAME_AND_SINGLE_TYPE_TO_NVS(btObjectType)
 
 #define ADD_NAME_AND_ARRAY_TYPE_TO_NVS(__type)                                                     \
-AAL::btBool AddNameAndArrayTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                     AAL::btStringKey name, __type data)                           \
+btBool AddNameAndArrayTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                     btStringKey name, __type data)                           \
 {                                                                                                  \
-   AAL::ENamedValues e = pnvs->Add(name, data, pebt->uArrayElements);                              \
-   EXPECT_EQ(AAL::ENamedValuesOK, e) <<                                                            \
+   ENamedValues e = pnvs->Add(name, data, pebt->uArrayElements);                              \
+   EXPECT_EQ(ENamedValuesOK, e) <<                                                            \
       "Error on ADD of type\t" << pebt->sNameOfeBasicType <<                                       \
       "\tName\t" << name <<                                                                        \
       "\tReturn Value\t" << m_sMapRetToName[e] <<                                                  \
       "\tNumber of elements\t" << pebt->uArrayElements << "\n";                                    \
-   return AAL::ENamedValuesOK == e;                                                                \
+   return ENamedValuesOK == e;                                                                \
 }                                                                                                  \
-AAL::btBool AddNameAndArrayTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                     AAL::btNumberKey name, __type data)                           \
+btBool AddNameAndArrayTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                     btNumberKey name, __type data)                           \
 {                                                                                                  \
-   AAL::ENamedValues e = pnvs->Add(name, data, pebt->uArrayElements);                              \
-   EXPECT_EQ(AAL::ENamedValuesOK, e) <<                                                            \
+   ENamedValues e = pnvs->Add(name, data, pebt->uArrayElements);                              \
+   EXPECT_EQ(ENamedValuesOK, e) <<                                                            \
       "Error on ADD of type\t" << pebt->sNameOfeBasicType <<                                       \
       "\tName\t" << name <<                                                                        \
       "\tReturn Value\t" << m_sMapRetToName[e] <<                                                  \
       "\tNumber of elements\t" << pebt->uArrayElements << "\n";                                    \
-   return AAL::ENamedValuesOK == e;                                                                \
+   return ENamedValuesOK == e;                                                                \
 }
 
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::bt32bitIntArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btUnsigned32bitIntArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::bt64bitIntArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btUnsigned64bitIntArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btFloatArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btStringArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btObjectArray)
-ADD_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btByteArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(bt32bitIntArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btUnsigned32bitIntArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(bt64bitIntArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btUnsigned64bitIntArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btFloatArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btStringArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btObjectArray)
+ADD_NAME_AND_ARRAY_TYPE_TO_NVS(btByteArray)
 
 // Instantiate one for every SINGLE data type
 #define ADD_SINGLE_TYPE_TO_NVS(__type)                                                             \
-void AddSingleTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
+void AddSingleTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
 {  ASSERT_TRUE(pebt->SanityCheck());                                                               \
    if ( pebt->SanityCheck() ) { /* Sanity error check */                                           \
       if ( NVSSimple::sm_uNX != pebt->iNameOfNV ) { /* Do not use this particular number */        \
@@ -355,21 +355,21 @@ void AddSingleTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *
    }                                                                                               \
 }
 
-ADD_SINGLE_TYPE_TO_NVS(AAL::btBool)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btByte)
-ADD_SINGLE_TYPE_TO_NVS(AAL::bt32bitInt)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btUnsigned32bitInt)
-ADD_SINGLE_TYPE_TO_NVS(AAL::bt64bitInt)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btUnsigned64bitInt)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btFloat)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btcString)
-ADD_SINGLE_TYPE_TO_NVS(AAL::NamedValueSet)
-ADD_SINGLE_TYPE_TO_NVS(AAL::btObjectType)
+ADD_SINGLE_TYPE_TO_NVS(btBool)
+ADD_SINGLE_TYPE_TO_NVS(btByte)
+ADD_SINGLE_TYPE_TO_NVS(bt32bitInt)
+ADD_SINGLE_TYPE_TO_NVS(btUnsigned32bitInt)
+ADD_SINGLE_TYPE_TO_NVS(bt64bitInt)
+ADD_SINGLE_TYPE_TO_NVS(btUnsigned64bitInt)
+ADD_SINGLE_TYPE_TO_NVS(btFloat)
+ADD_SINGLE_TYPE_TO_NVS(btcString)
+ADD_SINGLE_TYPE_TO_NVS(NamedValueSet)
+ADD_SINGLE_TYPE_TO_NVS(btObjectType)
 
 
 // Instantiate one for every ARRAY data type
 #define ADD_ARRAY_TYPE_TO_NVS(__type)                                                              \
-void AddArrayTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data)  \
+void AddArrayTypeToNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data)  \
 {  ASSERT_TRUE(pebt->SanityCheck());                                                               \
    if ( pebt->SanityCheck() ) { /* Sanity error check */                                           \
       if ( NVSSimple::sm_uNX != pebt->iNameOfNV ) { /* Do not use this particular number */        \
@@ -379,18 +379,18 @@ void AddArrayTypeToNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *p
    }                                                                                               \
 }
 
-ADD_ARRAY_TYPE_TO_NVS(AAL::bt32bitIntArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btUnsigned32bitIntArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::bt64bitIntArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btUnsigned64bitIntArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btFloatArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btStringArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btObjectArray)
-ADD_ARRAY_TYPE_TO_NVS(AAL::btByteArray)
+ADD_ARRAY_TYPE_TO_NVS(bt32bitIntArray)
+ADD_ARRAY_TYPE_TO_NVS(btUnsigned32bitIntArray)
+ADD_ARRAY_TYPE_TO_NVS(bt64bitIntArray)
+ADD_ARRAY_TYPE_TO_NVS(btUnsigned64bitIntArray)
+ADD_ARRAY_TYPE_TO_NVS(btFloatArray)
+ADD_ARRAY_TYPE_TO_NVS(btStringArray)
+ADD_ARRAY_TYPE_TO_NVS(btObjectArray)
+ADD_ARRAY_TYPE_TO_NVS(btByteArray)
 
 
 #define DELETE_NAME_AND_TYPE_FROM_NVS(__type)                                                                                   \
-void DeleteNameAndTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, AAL::btStringKey name, __type data) \
+void DeleteNameAndTypeFromNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, btStringKey name, __type data) \
 {                                                                                                                               \
    ASSERT_TRUE(pnvs->Has(name)) << "Error on DELETE of type\t" << pebt->sNameOfeBasicType <<                                    \
                "\tName\t" << name <<  "Not found\n";                                                                            \
@@ -398,7 +398,7 @@ void DeleteNameAndTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_
    ASSERT_EQ(ENamedValuesOK, e) <<  "Error on DELETE of type\t" << pebt->sNameOfeBasicType <<                                   \
                "\tName\t" << name << "\tReturn Value\t" << m_sMapRetToName[e] << "\n";                                          \
 }                                                                                                                               \
-void DeleteNameAndTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, AAL::btNumberKey name, __type data) \
+void DeleteNameAndTypeFromNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, btNumberKey name, __type data) \
 {                                                                                                                               \
    ASSERT_TRUE(pnvs->Has(name)) << "Error on DELETE of type\t" << pebt->sNameOfeBasicType <<                                    \
                "\tName\t" << name <<  "Not found\n";                                                                            \
@@ -407,20 +407,20 @@ void DeleteNameAndTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_
                "\tName\t" << name << "\tReturn Value\t" << m_sMapRetToName[e] << "\n";                                          \
 }
 
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btBool)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btByte)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::bt32bitInt)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btUnsigned32bitInt)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::bt64bitInt)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btUnsigned64bitInt)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btFloat)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btcString)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::NamedValueSet)
-DELETE_NAME_AND_TYPE_FROM_NVS(AAL::btObjectType)
+DELETE_NAME_AND_TYPE_FROM_NVS(btBool)
+DELETE_NAME_AND_TYPE_FROM_NVS(btByte)
+DELETE_NAME_AND_TYPE_FROM_NVS(bt32bitInt)
+DELETE_NAME_AND_TYPE_FROM_NVS(btUnsigned32bitInt)
+DELETE_NAME_AND_TYPE_FROM_NVS(bt64bitInt)
+DELETE_NAME_AND_TYPE_FROM_NVS(btUnsigned64bitInt)
+DELETE_NAME_AND_TYPE_FROM_NVS(btFloat)
+DELETE_NAME_AND_TYPE_FROM_NVS(btcString)
+DELETE_NAME_AND_TYPE_FROM_NVS(NamedValueSet)
+DELETE_NAME_AND_TYPE_FROM_NVS(btObjectType)
 
 
 #define DELETE_TYPE_FROM_NVS(__type)                                                              \
-void DeleteTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
+void DeleteTypeFromNVS(NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
 {                                                                                                 \
    ASSERT_TRUE(pebt->SanityCheck());                                                              \
    if ( pebt->SanityCheck() ) {                                                                   \
@@ -431,20 +431,20 @@ void DeleteTypeFromNVS(AAL::NamedValueSet *pnvs, const struct eBasicType_Data *p
    }                                                                                              \
 }
 
-DELETE_TYPE_FROM_NVS(AAL::btBool)
-DELETE_TYPE_FROM_NVS(AAL::btByte)
-DELETE_TYPE_FROM_NVS(AAL::bt32bitInt)
-DELETE_TYPE_FROM_NVS(AAL::btUnsigned32bitInt)
-DELETE_TYPE_FROM_NVS(AAL::bt64bitInt)
-DELETE_TYPE_FROM_NVS(AAL::btUnsigned64bitInt)
-DELETE_TYPE_FROM_NVS(AAL::btFloat)
-DELETE_TYPE_FROM_NVS(AAL::btcString)
-DELETE_TYPE_FROM_NVS(AAL::NamedValueSet)
-DELETE_TYPE_FROM_NVS(AAL::btObjectType)
+DELETE_TYPE_FROM_NVS(btBool)
+DELETE_TYPE_FROM_NVS(btByte)
+DELETE_TYPE_FROM_NVS(bt32bitInt)
+DELETE_TYPE_FROM_NVS(btUnsigned32bitInt)
+DELETE_TYPE_FROM_NVS(bt64bitInt)
+DELETE_TYPE_FROM_NVS(btUnsigned64bitInt)
+DELETE_TYPE_FROM_NVS(btFloat)
+DELETE_TYPE_FROM_NVS(btcString)
+DELETE_TYPE_FROM_NVS(NamedValueSet)
+DELETE_TYPE_FROM_NVS(btObjectType)
 
 #define COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(__type)                                                    \
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                   AAL::btStringKey name, __type data)                                 \
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                   btStringKey name, __type data)                                 \
 {                                                                                                      \
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<          \
                "\tName\t" << name <<  "Not found\n";                                                   \
@@ -460,8 +460,8 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
                ". Name \t" << name << "\tOriginal Data ='" << data <<                                  \
                "'\tNVS Data='" << dataNVS << "'\n";                                                    \
 }                                                                                                      \
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                   AAL::btNumberKey name, __type data)                                 \
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                   btNumberKey name, __type data)                                 \
 {                                                                                                      \
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<          \
                "\tName\t" << name <<  "Not found\n";                                                   \
@@ -478,20 +478,20 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
                "'\tNVS Data='" << dataNVS << "'\n";                                                    \
 }
 
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btBool)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btByte)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::bt32bitInt)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btUnsigned32bitInt)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::bt64bitInt)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btUnsigned64bitInt)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btFloat)
-//COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btcString)
-//COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::NamedValueSet)
-COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(AAL::btObjectType)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btBool)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btByte)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(bt32bitInt)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btUnsigned32bitInt)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(bt64bitInt)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btUnsigned64bitInt)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btFloat)
+//COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btcString)
+//COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(NamedValueSet)
+COMPARE_NAME_AND_SINGLE_TYPE_TO_NVS(btObjectType)
 
 // special case for btcString
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                   AAL::btStringKey name, AAL::btcString data)
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                   btStringKey name, btcString data)
 {
    ASSERT_TRUE(pnvs->Has(name)) <<  "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -508,8 +508,8 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
                ". Name \t" << name << "\tOriginal Data ='" << data <<
                "'\tNVS Data='" << dataNVS << "'\n";
 }
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                   AAL::btNumberKey name, AAL::btcString data)
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                   btNumberKey name, btcString data)
 {
    ASSERT_TRUE(pnvs->Has(name)) <<  "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -528,8 +528,8 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
 }
 
 // NamedValueSet-specific version, assumes copy constructor works correctly
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                   AAL::btStringKey name, AAL::NamedValueSet NVSData)
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                   btStringKey name, NamedValueSet NVSData)
 {
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -559,8 +559,8 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
    }
 */
 }
-void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                   AAL::btNumberKey name, AAL::NamedValueSet NVSData)
+void CompareNameAndSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                   btNumberKey name, NamedValueSet NVSData)
 {
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -577,8 +577,8 @@ void CompareNameAndSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct 
 
 
 #define COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(__type)                                                    \
-void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                  AAL::btStringKey name, __type data)                                 \
+void CompareNameAndArrayTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                  btStringKey name, __type data)                                 \
 {                                                                                                     \
    ASSERT_TRUE(pnvs->Has(name)) <<  "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<        \
                "\tName\t" << name <<  "Not found\n";                                                  \
@@ -591,15 +591,15 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
                "\tData\t" << data << "\n";                                                            \
                                                                                                       \
    /* Now compare the values */                                                                       \
-   AAL::btUnsignedInt u;                                                                              \
+   btUnsignedInt u;                                                                              \
    for ( u = 0 ; u < pebt->uArrayElements ; ++u ) {                                                   \
       EXPECT_EQ(dataNVS[u], data[u]) << "Error in COMPARE type\t" << pebt->sNameOfeBasicType <<       \
                   ". Name \t" << name << "\tOriginal Data Element[" << u << "] ='" << data <<         \
                   "'\tNVS Data='" << dataNVS << "'\n";                                                \
    }                                                                                                  \
 }                                                                                                     \
-void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
-                                  AAL::btNumberKey name, __type data)                                 \
+void CompareNameAndArrayTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, \
+                                  btNumberKey name, __type data)                                 \
 {                                                                                                     \
    ASSERT_TRUE(pnvs->Has(name)) <<  "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<        \
                "\tName\t" << name <<  "Not found\n";                                                  \
@@ -612,7 +612,7 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
                "\tData\t" << data << "\n";                                                            \
                                                                                                       \
    /* Now compare the values */                                                                       \
-   AAL::btUnsignedInt u;                                                                              \
+   btUnsignedInt u;                                                                              \
    for ( u = 0 ; u < pebt->uArrayElements ; ++u ) {                                                   \
       EXPECT_EQ(dataNVS[u], data[u]) << "Error in COMPARE type\t" << pebt->sNameOfeBasicType <<       \
                   ". Name \t" << name << "\tOriginal Data Element[" << u << "] ='" << data <<         \
@@ -620,18 +620,18 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
    }                                                                                                  \
 }
 
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::bt32bitIntArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btUnsigned32bitIntArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::bt64bitIntArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btUnsigned64bitIntArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btFloatArray)
-//COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btStringArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btObjectArray)
-COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(AAL::btByteArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(bt32bitIntArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btUnsigned32bitIntArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(bt64bitIntArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btUnsigned64bitIntArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btFloatArray)
+//COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btStringArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btObjectArray)
+COMPARE_NAME_AND_ARRAY_TYPE_TO_NVS(btByteArray)
 
 // btStringArray-specific version
-void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                  AAL::btStringKey name, AAL::btStringArray data)
+void CompareNameAndArrayTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                  btStringKey name, btStringArray data)
 {
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -644,15 +644,15 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
                "\tData\t" << data << "\n";
 
    // Now compare the values
-   AAL::btUnsignedInt u;
+   btUnsignedInt u;
    for ( u = 0 ; u < pebt->uArrayElements ; ++u ) {
       EXPECT_EQ(0, strcmp(dataNVS[u], data[u])) << "Error in COMPARE type\t" << pebt->sNameOfeBasicType <<
                   ". Name \t" << name << "\tOriginal Data Element[" << u << "] ='" << data <<
                   "'\tNVS Data='" << dataNVS << "'\n";
    }
 }
-void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
-                                  AAL::btNumberKey name, AAL::btStringArray data)
+void CompareNameAndArrayTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt,
+                                  btNumberKey name, btStringArray data)
 {
    ASSERT_TRUE(pnvs->Has(name)) << "Error in COMPARE of type\t" << pebt->sNameOfeBasicType <<
                "\tName\t" << name <<  "Not found\n";
@@ -665,7 +665,7 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
                "\tData\t" << data << "\n";
 
    // Now compare the values
-   AAL::btUnsignedInt u;
+   btUnsignedInt u;
    for ( u = 0 ; u < pebt->uArrayElements ; ++u ) {
       EXPECT_EQ(0, strcmp(dataNVS[u], data[u])) << "Error in COMPARE type\t" << pebt->sNameOfeBasicType <<
                   ". Name \t" << name << "\tOriginal Data Element[" << u << "] ='" << data <<
@@ -675,7 +675,7 @@ void CompareNameAndArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct e
 
 
 #define COMPARE_SINGLE_TYPE_TO_NVS(__type)                                                                   \
-void CompareSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
+void CompareSingleTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
 {                                                                                                            \
    ASSERT_TRUE(pebt->SanityCheck());                                                                         \
    if ( pebt->SanityCheck() ) { /* Sanity error check */                                                     \
@@ -686,20 +686,20 @@ void CompareSingleTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicT
    }                                                                                                         \
 }
 
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btBool)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btByte)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::bt32bitInt)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btUnsigned32bitInt)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::bt64bitInt)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btUnsigned64bitInt)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btFloat)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btcString)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::NamedValueSet)
-COMPARE_SINGLE_TYPE_TO_NVS(AAL::btObjectType)
+COMPARE_SINGLE_TYPE_TO_NVS(btBool)
+COMPARE_SINGLE_TYPE_TO_NVS(btByte)
+COMPARE_SINGLE_TYPE_TO_NVS(bt32bitInt)
+COMPARE_SINGLE_TYPE_TO_NVS(btUnsigned32bitInt)
+COMPARE_SINGLE_TYPE_TO_NVS(bt64bitInt)
+COMPARE_SINGLE_TYPE_TO_NVS(btUnsigned64bitInt)
+COMPARE_SINGLE_TYPE_TO_NVS(btFloat)
+COMPARE_SINGLE_TYPE_TO_NVS(btcString)
+COMPARE_SINGLE_TYPE_TO_NVS(NamedValueSet)
+COMPARE_SINGLE_TYPE_TO_NVS(btObjectType)
 
 
 #define COMPARE_ARRAY_TYPE_TO_NVS(__type)                                                                   \
-void CompareArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
+void CompareArrayTypeToNVS(const NamedValueSet *pnvs, const struct eBasicType_Data *pebt, __type data) \
 {                                                                                                           \
    ASSERT_TRUE(pebt->SanityCheck());                                                                        \
    if ( pebt->SanityCheck() ) { /* Sanity error check */                                                    \
@@ -710,17 +710,17 @@ void CompareArrayTypeToNVS(const AAL::NamedValueSet *pnvs, const struct eBasicTy
    }                                                                                                        \
 }
 
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::bt32bitIntArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btUnsigned32bitIntArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::bt64bitIntArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btUnsigned64bitIntArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btFloatArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btStringArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btObjectArray)
-COMPARE_ARRAY_TYPE_TO_NVS(AAL::btByteArray)
+COMPARE_ARRAY_TYPE_TO_NVS(bt32bitIntArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btUnsigned32bitIntArray)
+COMPARE_ARRAY_TYPE_TO_NVS(bt64bitIntArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btUnsigned64bitIntArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btFloatArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btStringArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btObjectArray)
+COMPARE_ARRAY_TYPE_TO_NVS(btByteArray)
 
 
-void CompareEmbeddedNVS(const AAL::NamedValueSet *pnvs)
+void CompareEmbeddedNVS(const NamedValueSet *pnvs)
 {
    // Before comparing, ensure that the number of elements match
    ASSERT_TRUE(CompareValidNames(pnvs, m_mapEmbedNVS1, sizeof(m_mapEmbedNVS1) / sizeof(m_mapEmbedNVS1[0]), "mapEmbedNVS1"));
@@ -739,21 +739,21 @@ void CompareEmbeddedNVS(const AAL::NamedValueSet *pnvs)
 
 
 // Utility routine to return the number of valid entries in an array of eBasicType_Data
-AAL::btUnsignedInt GetNumValidNames(const struct eBasicType_Data *pebt,
-                                    AAL::btUnsignedInt            uNumElements);
+btUnsignedInt GetNumValidNames(const struct eBasicType_Data *pebt,
+                                    btUnsignedInt            uNumElements);
 
 // Utility routine to compare the number of NVs defined by a table with the number
 //    actually instantiated in the NVS created from that table
-AAL::btBool CompareValidNames(const AAL::NamedValueSet     *pnvs,
+btBool CompareValidNames(const NamedValueSet     *pnvs,
                               const struct eBasicType_Data *pebt,
-                              AAL::btUnsignedInt            uNumElements,
+                              btUnsignedInt            uNumElements,
                               std::string                   sTableName);
 
-void CreateSmallNVS(AAL::NamedValueSet *pnvs);
+void CreateSmallNVS(NamedValueSet *pnvs);
 
-void   CreateBigNVS(AAL::NamedValueSet *pnvs);
-void   DeleteBigNVS(AAL::NamedValueSet *pnvs);
-void  CompareBigNVS(const AAL::NamedValueSet *pnvs);
+void   CreateBigNVS(NamedValueSet *pnvs);
+void   DeleteBigNVS(NamedValueSet *pnvs);
+void  CompareBigNVS(const NamedValueSet *pnvs);
 
 FILE * F_OPEN_FOR_READ(const char *file)
 {
@@ -763,17 +763,17 @@ FILE * F_OPEN_FOR_WRITE(const char *file)
 {
    return fopen(file, "w+b");
 }
-AAL::btBool F_CLOSE(FILE *fp)
+btBool F_CLOSE(FILE *fp)
 {
    return 0 == fclose(fp);
 }
 
-AAL::btBool S_OPEN_FOR_READ(std::fstream &fs, const char *file)
+btBool S_OPEN_FOR_READ(std::fstream &fs, const char *file)
 {
    fs.open(file, ios_base::binary | ios_base::in);
    return fs.good();
 }
-AAL::btBool S_OPEN_FOR_WRITE(std::fstream &fs, const char *file)
+btBool S_OPEN_FOR_WRITE(std::fstream &fs, const char *file)
 {
    fs.open(file, ios_base::binary | ios_base::out);
    return fs.good();
@@ -784,48 +784,48 @@ void S_CLOSE(std::fstream &fs)
    fs.close();
 }
 
-   AAL::btBool                   m_bTest;
-   AAL::btByte                   m_u8Test;
-   AAL::bt32bitInt               m_i32Test;
-   AAL::btInt                    m_iTest;
-   AAL::btUnsigned32bitInt       m_u32Test;
-   AAL::btUnsignedInt            m_uTest;
-   AAL::bt64bitInt               m_i64Test;
-   AAL::btUnsigned64bitInt       m_u64Test;
-   AAL::btFloat                  m_fTest;
-   AAL::btcString                m_sTest;
-   AAL::btcString                m_sDataForEmbeddedNewLine;
-   AAL::btcString                m_sNameForNewLineInName;
-   AAL::btcString                m_sDataForNewLineInName;
+   btBool                   m_bTest;
+   btByte                   m_u8Test;
+   bt32bitInt               m_i32Test;
+   btInt                    m_iTest;
+   btUnsigned32bitInt       m_u32Test;
+   btUnsignedInt            m_uTest;
+   bt64bitInt               m_i64Test;
+   btUnsigned64bitInt       m_u64Test;
+   btFloat                  m_fTest;
+   btcString                m_sTest;
+   btcString                m_sDataForEmbeddedNewLine;
+   btcString                m_sNameForNewLineInName;
+   btcString                m_sDataForNewLineInName;
 
-   AAL::btByte                  *m_rgb8TestTemp;
-   AAL::btByteArray              m_rgb8Test;
-   AAL::bt32bitInt              *m_rgi32TestTemp;
-   AAL::bt32bitIntArray          m_rgi32Test;
-   AAL::btUnsigned32bitInt      *m_rgu32TestTemp;
-   AAL::btUnsigned32bitIntArray  m_rgu32Test;
-   AAL::bt64bitInt              *m_rgi64TestTemp;
-   AAL::bt64bitIntArray          m_rgi64Test;
-   AAL::btUnsigned64bitInt      *m_rgu64TestTemp;
-   AAL::btUnsigned64bitIntArray  m_rgu64Test;
-   AAL::btObjectType             m_pTest;
-   AAL::btFloat                 *m_rgfTestTemp;
-   AAL::btFloatArray             m_rgfTest;
-   AAL::btcStringArray           m_rgszTest;
-   AAL::btObjectArray            m_rgp;
+   btByte                  *m_rgb8TestTemp;
+   btByteArray              m_rgb8Test;
+   bt32bitInt              *m_rgi32TestTemp;
+   bt32bitIntArray          m_rgi32Test;
+   btUnsigned32bitInt      *m_rgu32TestTemp;
+   btUnsigned32bitIntArray  m_rgu32Test;
+   bt64bitInt              *m_rgi64TestTemp;
+   bt64bitIntArray          m_rgi64Test;
+   btUnsigned64bitInt      *m_rgu64TestTemp;
+   btUnsigned64bitIntArray  m_rgu64Test;
+   btObjectType             m_pTest;
+   btFloat                 *m_rgfTestTemp;
+   btFloatArray             m_rgfTest;
+   btcStringArray           m_rgszTest;
+   btObjectArray            m_rgp;
 
    // for Embedded NVS tests..
-   AAL::btByte                   m_u8TestE;
-   AAL::bt64bitInt              *m_rgi64TestTempE;
-   AAL::bt64bitIntArray          m_rgi64TestE;
-   AAL::btcStringArray           m_rgszTestE;
+   btByte                   m_u8TestE;
+   bt64bitInt              *m_rgi64TestTempE;
+   bt64bitIntArray          m_rgi64TestE;
+   btcStringArray           m_rgszTestE;
 
-   AAL::btBool                   m_nvsTestDeleted;
-   AAL::NamedValueSet            m_nvsEmbed;
-   AAL::NamedValueSet            m_nvsTest;
-   AAL::btcString                m_rgszTestTemp[5];
-   AAL::btObjectType             m_rgpTemp[3];
-   AAL::btcString                m_rgszTestTempE[2];
+   btBool                   m_nvsTestDeleted;
+   NamedValueSet            m_nvsEmbed;
+   NamedValueSet            m_nvsTest;
+   btcString                m_rgszTestTemp[5];
+   btObjectType             m_rgpTemp[3];
+   btcString                m_rgszTestTempE[2];
 
    struct eBasicType_Data        m_mapEBT[24];
    struct eBasicType_Data        m_mapEmbedNVS1[3];
@@ -837,16 +837,16 @@ void S_CLOSE(std::fstream &fs)
 
 
    // Flag value indicating the iNameOfNV is not to be used
-   static const AAL::btUnsignedInt sm_uNX;
+   static const btUnsignedInt sm_uNX;
 };
 
-const AAL::btUnsignedInt NVSSimple::sm_uNX = 314159;
+const btUnsignedInt NVSSimple::sm_uNX = 314159;
 
-AAL::btUnsignedInt NVSSimple::GetNumValidNames(const struct eBasicType_Data *pebt,
-                                               AAL::btUnsignedInt            uNumElements)
+btUnsignedInt NVSSimple::GetNumValidNames(const struct eBasicType_Data *pebt,
+                                               btUnsignedInt            uNumElements)
 {
-   AAL::btUnsignedInt uNumValid = 0;
-   AAL::btUnsignedInt u;
+   btUnsignedInt uNumValid = 0;
+   btUnsignedInt u;
 
    for ( u = 0 ; u < uNumElements ; ++u ) {
       if ( pebt[u].fIsValid ) {
@@ -859,22 +859,22 @@ AAL::btUnsignedInt NVSSimple::GetNumValidNames(const struct eBasicType_Data *peb
    return uNumValid;
 }
 
-AAL::btBool NVSSimple::CompareValidNames(const AAL::NamedValueSet     *pnvs,
+btBool NVSSimple::CompareValidNames(const NamedValueSet     *pnvs,
                                          const struct eBasicType_Data *pebt,
-                                         AAL::btUnsignedInt            uNumElements,
+                                         btUnsignedInt            uNumElements,
                                          std::string                   /*sTableName*/)
 {
    // Number of valid names in the defining table
-   AAL::btUnsignedInt uNumNVs = GetNumValidNames(pebt, uNumElements);
+   btUnsignedInt uNumNVs = GetNumValidNames(pebt, uNumElements);
    // Number of NVs in the NVS at this level
-   AAL::btUnsignedInt uNumNames = 0;
+   btUnsignedInt uNumNames = 0;
    pnvs->GetNumNames(&uNumNames);
 
    EXPECT_EQ(uNumNVs, uNumNames);
    return uNumNVs == uNumNames;
 }
 
-void NVSSimple::CreateSmallNVS(AAL::NamedValueSet *pnvs)
+void NVSSimple::CreateSmallNVS(NamedValueSet *pnvs)
 {
    //----------------------------------------------------------------------------
    //WARNING: Be sure to keep CompareEmbeddedNVS() up to date with this function
@@ -895,23 +895,23 @@ void NVSSimple::CreateSmallNVS(AAL::NamedValueSet *pnvs)
 // Create an NVS that contains every defined type of element
 // The ordering comes from the eBasicTypes enum in AALTypes.h (from AAL.h)
 //=============================================================================
-void NVSSimple::CreateBigNVS(AAL::NamedValueSet *pnvs)
+void NVSSimple::CreateBigNVS(NamedValueSet *pnvs)
 {
    // btBool
    AddSingleTypeToNVS(pnvs, &m_Map_eBasicType_toData[btBool_t],
-                      *reinterpret_cast<AAL::btBool *>(m_Map_eBasicType_toData[btBool_t].pData));
+                      *reinterpret_cast<btBool *>(m_Map_eBasicType_toData[btBool_t].pData));
 
    // btByte
    AddSingleTypeToNVS(pnvs, &m_Map_eBasicType_toData[btByte_t],
-                      *reinterpret_cast<AAL::btByte *>(m_Map_eBasicType_toData[btByte_t].pData));
+                      *reinterpret_cast<btByte *>(m_Map_eBasicType_toData[btByte_t].pData));
 
    // bt32bitInt
    AddSingleTypeToNVS(pnvs, &m_Map_eBasicType_toData[bt32bitInt_t],
-                      *reinterpret_cast<AAL::bt32bitInt *>(m_Map_eBasicType_toData[bt32bitInt_t].pData));
+                      *reinterpret_cast<bt32bitInt *>(m_Map_eBasicType_toData[bt32bitInt_t].pData));
 
    // btInt
    AddSingleTypeToNVS(pnvs, &m_Map_eBasicType_toData[btInt_t],
-                      *reinterpret_cast<AAL::btInt *>(m_Map_eBasicType_toData[btInt_t].pData));
+                      *reinterpret_cast<btInt *>(m_Map_eBasicType_toData[btInt_t].pData));
 
    // btUnsigned32bitInt
    AddSingleTypeToNVS(pnvs, &m_Map_eBasicType_toData[btUnsigned32bitInt_t],
@@ -996,7 +996,7 @@ void NVSSimple::CreateBigNVS(AAL::NamedValueSet *pnvs)
 // Delete each item in the passed in NVS (assuming it exactly matches the definition
 // Checking for errors along the way
 //=============================================================================
-void NVSSimple::DeleteBigNVS(AAL::NamedValueSet *pnvs)
+void NVSSimple::DeleteBigNVS(NamedValueSet *pnvs)
 {
    if ( m_nvsTestDeleted ) {
       return;
@@ -1102,7 +1102,7 @@ void NVSSimple::DeleteBigNVS(AAL::NamedValueSet *pnvs)
 // Compare each item in the passed in NVS (assuming it exactly matches the definition)
 // Checking for errors along the way
 //=============================================================================
-void NVSSimple::CompareBigNVS(const AAL::NamedValueSet *pnvs)
+void NVSSimple::CompareBigNVS(const NamedValueSet *pnvs)
 {
    // Before comparing, ensure that the number of elements match
    ASSERT_TRUE(CompareValidNames(pnvs, m_mapEBT, sizeof(m_mapEBT) / sizeof(m_mapEBT[0]), "mapEBT"));
@@ -1221,7 +1221,7 @@ TEST_F(NVSSimple, DISABLED_NonEmptyToFromFILE)
    fp = F_OPEN_FOR_READ("file1");
    ASSERT_NONNULL(fp) << "ERROR: Could not open file1 for input";
 
-   AAL::NamedValueSet nvs;
+   NamedValueSet nvs;
 
    e = NVSReadNVS(fp, &nvs);  // Read in the full test version
    EXPECT_EQ(ENamedValuesOK, e) << "ERROR: NVSReadNVS returned error " << m_sMapRetToName[e] << "\n";
@@ -1263,7 +1263,7 @@ TEST_F(NVSSimple, EmptyToFromFILE)
 {
    DeleteBigNVS(&m_nvsTest); // Clear each item
 
-   AAL::btUnsignedInt uNumNames = 0xdeadbeef;
+   btUnsignedInt uNumNames = 0xdeadbeef;
    EXPECT_EQ(ENamedValuesOK, m_nvsTest.GetNumNames(&uNumNames));
    EXPECT_EQ(0, uNumNames) << "ERROR: Test NVS contained " << uNumNames <<
             " elements after expected complete removal\n";
@@ -1280,7 +1280,7 @@ TEST_F(NVSSimple, EmptyToFromFILE)
    fp = F_OPEN_FOR_READ("file2");
    ASSERT_NONNULL(fp) << "ERROR: Could not open file2 for input\n";
 
-   AAL::NamedValueSet empty;
+   NamedValueSet empty;
    e = NVSReadNVS(fp, &empty); // Read in the empty test
    ASSERT_EQ(ENamedValuesEndOfFile, e) << "ERROR: NVSReadNVS returned error " << m_sMapRetToName[e] << "\n";
 
@@ -1297,7 +1297,7 @@ TEST_F(NVSSimple, EmptyToFromfstream)
 {
    DeleteBigNVS(&m_nvsTest); // Clear each item
 
-   AAL::btUnsignedInt uNumNames = 0xdeadbeef;
+   btUnsignedInt uNumNames = 0xdeadbeef;
    EXPECT_EQ(ENamedValuesOK, m_nvsTest.GetNumNames(&uNumNames));
    EXPECT_EQ(0, uNumNames) << "ERROR: Test NVS contained " << uNumNames <<
             " elements after expected complete removal\n";
@@ -1314,7 +1314,7 @@ TEST_F(NVSSimple, EmptyToFromfstream)
 
    ASSERT_TRUE(S_OPEN_FOR_READ(f, "file5")) << "Could not open file5 for input";
 
-   AAL::NamedValueSet empty;
+   NamedValueSet empty;
    e = NVSReadNVS(f, &empty); // Read in the empty test
    ASSERT_EQ(ENamedValuesEndOfFile, e) << "ERROR: NVSReadNVS returned error " << m_sMapRetToName[e] << "\n";
 
@@ -1331,32 +1331,32 @@ TEST_F(NVSSimple, Empty)
    EXPECT_EQ(ENamedValuesOK, e) << "error during Empty()";
    m_nvsTestDeleted = true;
 
-   AAL::btUnsignedInt uNumNames = 0xdeadbeef;
+   btUnsignedInt uNumNames = 0xdeadbeef;
    EXPECT_EQ(ENamedValuesOK, m_nvsTest.GetNumNames(&uNumNames));
    EXPECT_EQ(0, uNumNames) << "names remain after Empty()";
 }
 
 TEST_F(NVSSimple, CopyConstructor)
 {
-   AAL::NamedValueSet copy(m_nvsTest);
+   NamedValueSet copy(m_nvsTest);
    CompareBigNVS(&copy);
    ASSERT_TRUE(copy == m_nvsTest) << "equality operator\n";
 }
 
 TEST_F(NVSSimple, AssignmentOperator)
 {
-   AAL::NamedValueSet empty;
+   NamedValueSet empty;
 
    empty = m_nvsTest;
    CompareBigNVS(&empty);
    ASSERT_TRUE(empty == m_nvsTest) << "equality operator\n";
 
-   AAL::NamedValueSet nonempty;
+   NamedValueSet nonempty;
 
-   EXPECT_EQ(ENamedValuesOK, nonempty.Add("Name", (AAL::btUnsigned32bitInt)3));
+   EXPECT_EQ(ENamedValuesOK, nonempty.Add("Name", (btUnsigned32bitInt)3));
    EXPECT_TRUE(nonempty.Has("Name"));
 
-   AAL::btUnsigned32bitInt val = 0xdeadbeef;
+   btUnsigned32bitInt val = 0xdeadbeef;
    EXPECT_EQ(ENamedValuesOK, nonempty.Get("Name", &val));
    EXPECT_EQ(3, val);
 
@@ -1364,8 +1364,8 @@ TEST_F(NVSSimple, AssignmentOperator)
    CompareBigNVS(&nonempty);
    ASSERT_TRUE(nonempty == m_nvsTest) << "equality operator\n";
 
-   AAL::btUnsignedInt n1 = 0xdeadbeef;
-   AAL::btUnsignedInt n2 = 0xdeadbeef;
+   btUnsignedInt n1 = 0xdeadbeef;
+   btUnsignedInt n2 = 0xdeadbeef;
 
    EXPECT_EQ(ENamedValuesOK, m_nvsTest.GetNumNames(&n1));
    EXPECT_EQ(ENamedValuesOK, nonempty.GetNumNames(&n2));
@@ -1374,14 +1374,14 @@ TEST_F(NVSSimple, AssignmentOperator)
 
 TEST_F(NVSSimple, Subset)
 {
-   AAL::NamedValueSet copy(m_nvsTest);
+   NamedValueSet copy(m_nvsTest);
    ASSERT_TRUE(copy == m_nvsTest);
 
    ASSERT_TRUE(m_nvsTest.Subset(copy)) << "failed to detect improper subset\n";
 
 
    // Create an enhanced embedded NVS with which to modify nvsCopy
-   AAL::NamedValueSet nvsEmbedModified(m_nvsEmbed);
+   NamedValueSet nvsEmbedModified(m_nvsEmbed);
    // modify the copy
    nvsEmbedModified.Add("ADDED STRING NAME", "ADDED STRING VALUE");
    // modify copy to use the modified embedded NVS
@@ -1402,7 +1402,7 @@ TEST_F(NVSSimple, Subset)
 
 TEST_F(NVSSimple, SubsetArrays)
 {
-   AAL::NamedValueSet copy(m_nvsTest);
+   NamedValueSet copy(m_nvsTest);
    ASSERT_TRUE(copy == m_nvsTest);
 
    // Map_eBasicType_toData[btUnsigned64bitIntArray_t].pData is a pointer to an array of 64-bit unsigned ints
@@ -1456,7 +1456,7 @@ TEST_F(NVSSimple, SubsetArrays)
 
 TEST_F(NVSSimple, SubsetStringArrays)
 {
-   AAL::NamedValueSet copy(m_nvsTest);
+   NamedValueSet copy(m_nvsTest);
    ASSERT_TRUE(copy == m_nvsTest);
 
    // Map_eBasicType_toData[btStringArray_t].pData is a pointer to an array of strings
@@ -1469,7 +1469,7 @@ TEST_F(NVSSimple, SubsetStringArrays)
    ASSERT_EQ(5, m_Map_eBasicType_toData[btStringArray_t].uArrayElements);
 
    // Create the new array, really char**, which btStringArray_t
-   AAL::btcStringArray rgszNew = new(std::nothrow) AAL::btcString[12];
+   btcStringArray rgszNew = new(std::nothrow) btcString[12];
    ASSERT_NONNULL(rgszNew);
 
    rgszNew[ 0] = m_rgszTestTemp[0];   // A
@@ -1490,7 +1490,7 @@ TEST_F(NVSSimple, SubsetStringArrays)
 
    // Add the new array in its place
    ASSERT_EQ(ENamedValuesOK, copy.Add(m_Map_eBasicType_toData[btStringArray_t].sNameOfNV,
-                                      const_cast<AAL::btStringArray>(rgszNew), 12));
+                                      const_cast<btStringArray>(rgszNew), 12));
 
    delete[] rgszNew;
 

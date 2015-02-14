@@ -26,6 +26,12 @@ declare -r SED="`which sed`" 2>/dev/null
 
 declare -r VALGRIND="`which valgrind`" 2>/dev/null
 [ "x${VALGRIND}" = x ] && die "no valgrind?"
+
+declare -r VALGRIND_VER=`${VALGRIND} --version | ${SED} -re 's,.*(([0-9]+[.])+[0-9]+),\1,'`
+declare -r VALGRIND_VER_MAJOR=`echo ${VALGRIND_VER} | ${SED} -re 's,([0-9]+)[.].*,\1,'`
+declare -r VALGRIND_VER_MINOR=`echo ${VALGRIND_VER} | ${SED} -re 's,(([0-9]+)[.])([0-9]+)[.]?,\3,'`
+printf "valgrind ver = %d.%d\n" ${VALGRIND_VER_MAJOR} ${VALGRIND_VER_MINOR}
+
 declare -r CG_ANNOTATE="`which cg_annotate`" 2>/dev/null
 [ "x${CG_ANNOTATE}" = x ] && die "no cg_annotate?"
 declare -r CALLGRIND_ANNOTATE="`which callgrind_annotate`" 2>/dev/null

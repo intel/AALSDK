@@ -11,7 +11,7 @@ declare -r D='bat'
 
 setup "$D"
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes"
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes $*"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \

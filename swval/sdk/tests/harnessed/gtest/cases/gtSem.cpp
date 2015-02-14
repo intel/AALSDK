@@ -21,7 +21,7 @@ TEST_F(SemBasic, DestroyBeforeCreate)
    EXPECT_TRUE(m_Sem.Destroy()) << "Destroy before Create";
    EXPECT_FALSE(m_Sem.Reset(1)) << "Reset before Create";
 
-   AAL::btInt cur = 0, max = 0;
+   btInt cur = 0, max = 0;
    EXPECT_FALSE(m_Sem.CurrCounts(cur, max));
    EXPECT_EQ(0, cur);
    EXPECT_EQ(0, max);
@@ -34,7 +34,7 @@ TEST_F(SemBasic, DestroyBeforeCreate)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Value-parameterized test fixture
-class SemWait : public ::testing::TestWithParam< AAL::btInt >
+class SemWait : public ::testing::TestWithParam< btInt >
 {
 protected:
 SemWait() {}
@@ -59,15 +59,15 @@ static void ThrOnce(OSLThread * , void * );
 
    CSemaphore m_Sem;
    OSLThread *m_pThr;
-   AAL::btInt m_Count;
+   btInt m_Count;
 };
 
 void SemWait::ThrLoop(OSLThread * /* unused */, void *arg)
 {
    SemWait *pFixture = reinterpret_cast<SemWait *>(arg);
 
-   AAL::btInt       i;
-   const AAL::btInt count = pFixture->m_Count;
+   btInt       i;
+   const btInt count = pFixture->m_Count;
 
    pFixture->m_Count = 0;
    for ( i = 0 ; i < count ; ++i ) {
@@ -88,8 +88,8 @@ TEST_P(SemWait, InfiniteWait)
 {
    EXPECT_TRUE(m_Sem.Create(0, INT_MAX));
 
-   AAL::btInt       i;
-   const AAL::btInt count = GetParam();
+   btInt       i;
+   const btInt count = GetParam();
 
    m_Count = count;
    m_pThr = new OSLThread(SemWait::ThrLoop,
@@ -129,7 +129,7 @@ TEST_P(SemWait, InfiniteWait)
 
 TEST_P(SemWait, CountUp)
 {
-   const AAL::btInt count = GetParam();
+   const btInt count = GetParam();
 
    EXPECT_TRUE(m_Sem.Create(-count, INT_MAX));
 

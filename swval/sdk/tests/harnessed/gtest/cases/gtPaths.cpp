@@ -47,10 +47,10 @@ TEST_F(batPathsStartup, NOKERNEL_Minimum_LD_LIBRARY_PATH)
    ASSERT_EQ(0, Require_NOKERNEL_Min_LD_LIBRARY_PATH());
    MSG("LD_LIBRARY_PATH = " << LD_LIBRARY_PATH)
 
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
-   AAL::NamedValueSet args;
+   NamedValueSet args;
    args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
 
    pRT->start(this, args);
@@ -140,10 +140,10 @@ TEST_F(batPathsServiceAlloc, NOKERNEL_Minimum_LD_LIBRARY_PATH)
 
    MSG("LD_LIBRARY_PATH = " << LD_LIBRARY_PATH)
 
-   AAL::XL::RT::Runtime *pRT = new(std::nothrow) AAL::XL::RT::Runtime();
+   Runtime *pRT = new(std::nothrow) Runtime();
    ASSERT_NONNULL(pRT);
 
-   AAL::NamedValueSet args;
+   NamedValueSet args;
    args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
 
    pRT->start(this, args);
@@ -166,9 +166,9 @@ TEST_F(batPathsServiceAlloc, NOKERNEL_Minimum_LD_LIBRARY_PATH)
    NamedValueSet Manifest(SampleAFU1ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AFU 1");
 
-   AAL::TransactionID tid((AAL::bt32bitInt)7);
+   TransactionID tid((bt32bitInt)7);
 
-   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<AAL::IBase *>(this), Manifest, tid);
+   m_IRuntimesFromStarted.front()->allocService(dynamic_cast<IBase *>(this), Manifest, tid);
    WaitSem(); // for serviceAllocated()
 
    ASSERT_EQ(1, m_IRuntimesFromStarted.size());
@@ -185,7 +185,7 @@ TEST_F(batPathsServiceAlloc, NOKERNEL_Minimum_LD_LIBRARY_PATH)
    EXPECT_EQ(0, m_serviceAllocateFailedTranIDs.size());
    EXPECT_EQ(0, m_serviceFreedTranIDs.size());
 
-   AAL::TransactionID releasetid((AAL::bt32bitInt)13);
+   TransactionID releasetid((bt32bitInt)13);
 
    EXPECT_TRUE(m_ServiceQ.front()->Release(releasetid));
    WaitSem(); // for freed

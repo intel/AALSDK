@@ -7,5 +7,5 @@ declare -r SCRIPT_NAME='run-nightly'
 
 . ./run-common
 
-run_nightly
+run_nightly ${1+"$@"}
 exit $?
