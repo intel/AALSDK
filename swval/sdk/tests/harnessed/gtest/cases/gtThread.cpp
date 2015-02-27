@@ -147,7 +147,7 @@ void OSAL_Thread_vp_bool::Thr0(OSLThread *pThread, void *pContext)
    ASSERT_NONNULL(pTC);
 
    EXPECT_NONNULL(pThread);
-   EXPECT_EQ(pThread, pTC->m_pThrs[0]);
+   /* EXPECT_EQ(pThread, pTC->m_pThrs[0]); Not a valid check - the assignment may not have completed. */
 
    ++(pTC->m_Scratch[0]);
 }
