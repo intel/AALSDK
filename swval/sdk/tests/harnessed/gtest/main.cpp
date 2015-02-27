@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <string>
 #include <fstream>
+#include <list>
 
 #include <aalsdk/AAL.h>
 #include <aalsdk/xlRuntime.h>

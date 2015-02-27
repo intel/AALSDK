@@ -5,6 +5,7 @@ cases/gtCommon.cpp \
 cases/gtCritSect.cpp \
 cases/gtSem.cpp \
 cases/gtNVS.cpp \
+cases/gtThread.cpp \
 cases/gtThreadGroup.cpp \
 cases/gtPaths.cpp \
 cases/gtStartupShutdown.cpp
