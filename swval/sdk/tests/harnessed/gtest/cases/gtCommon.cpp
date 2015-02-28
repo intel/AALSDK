@@ -107,3 +107,9 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 
 #endif // __AAL_LINUX__
 
+#if   defined( __AAL_WINDOWS__ )
+# define cpu_yield() ::Sleep(0)
+#elif defined( __AAL_LINUX__ )
+# define cpu_yield() usleep(0)
+#endif // OS
+
