@@ -6,4 +6,4 @@
 #include "cases/gtThreadGroup.cpp"
 #include "cases/gtStartupShutdown.cpp"
 #include "cases/gtPaths.cpp"
-
+#include "cases/gtEnvVar.cpp"

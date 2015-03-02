@@ -8,7 +8,8 @@ cases/gtNVS.cpp \
 cases/gtThread.cpp \
 cases/gtThreadGroup.cpp \
 cases/gtPaths.cpp \
-cases/gtStartupShutdown.cpp
+cases/gtStartupShutdown.cpp \
+cases/gtEnvVar.cpp
 
 EXTRA_DIST=$(gtest_cases)
 
