@@ -2,9 +2,10 @@
 
 #ifdef __AAL_LINUX__
 # include <time.h>       // struct timespec, nanosleep()
-# include <unistd.h>     // usleep
-# include <signal.h>
 # include <errno.h>
+# include <unistd.h>
+# include <sys/types.h>
+# include <signal.h>
 #endif // __AAL_LINUX__
 
 
@@ -219,6 +220,7 @@ protected:
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          m_pThrs[i] = NULL;
+         m_TIDs[i]  = 0;
       }
 
       for ( i = 0 ; i < sizeof(m_Scratch) / sizeof(m_Scratch[0]) ; ++i ) {
@@ -226,21 +228,32 @@ protected:
       }
    }
 
-   OSLThread *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[5];
+   OSLThread          *m_pThrs[3];
+   btTID               m_TIDs[3];
+   volatile btUIntPtr  m_Scratch[10];
 
    static void Thr0(OSLThread * , void * );
 
    static void Thr1(OSLThread * , void * );
 #if defined( __AAL_LINUX__ )
+   static long tgkill(int tgid, int tid, int sig);
+
    static int RegisterOneShotSIGIOHandler(void (*h)(int , siginfo_t * , void * ));
    static void EmptySIGIOHandler(int , siginfo_t * , void * );
+
+   static int RegisterPersistentSigHandler(int signum,
+                                           void (*h)(int , siginfo_t * , void * ),
+                                           struct sigaction *pold);
+   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
 #endif // OS
 
    static void Thr2(OSLThread * , void * );
 
    static void Thr3(OSLThread * , void * );
    static void Thr4(OSLThread * , void * );
+
+   static void Thr5(OSLThread * , void * );
+   static void Thr6(OSLThread * , void * );
 };
 
 #if defined( __AAL_LINUX__ )
@@ -259,6 +272,27 @@ void OSAL_Thread_f::EmptySIGIOHandler(int sig, siginfo_t *info, void * /* unused
 {
    EXPECT_EQ(SIGIO,    sig);
    EXPECT_EQ(SIGIO,    info->si_signo);
+   EXPECT_EQ(SI_TKILL, info->si_code);
+}
+
+int OSAL_Thread_f::RegisterPersistentSigHandler(int signum,
+                                                void (*h)(int , siginfo_t * , void * ),
+                                                struct sigaction *pold)
+{
+   struct sigaction act;
+   memset(&act, 0, sizeof(act));
+
+   //act.sa_flags     = SA_SIGINFO|SA_RESETHAND;
+   act.sa_flags     = SA_SIGINFO;
+   act.sa_sigaction = h;
+
+   return sigaction(signum, &act, pold);
+}
+
+void OSAL_Thread_f::EmptySIGUSR1Handler(int sig, siginfo_t *info, void * /* unused */)
+{
+   EXPECT_EQ(SIGUSR1,  sig);
+   EXPECT_EQ(SIGUSR1,  info->si_signo);
    EXPECT_EQ(SI_TKILL, info->si_code);
 }
 #endif // OS
@@ -511,4 +545,114 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0012)
    delete m_pThrs[0];
    delete m_pThrs[1];
 }
+
+void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+   ASSERT_NONNULL(pThread);
+
+   pTC->m_TIDs[0] = GetThreadID();
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+
+   // Register a persistent signal handler for SIGUSR1 so that the process is not
+   // reaped as a result of having received an un-handled signal.
+   struct sigaction orig;
+   ASSERT_EQ(0, OSAL_Thread_f::RegisterPersistentSigHandler(SIGUSR1, OSAL_Thread_f::EmptySIGUSR1Handler, &orig));
+
+#endif // OS
+
+   pTC->m_Scratch[0] = 1; // signal that we're ready.
+
+   // wait for our sibling to be active before we try to wait for it.
+   while ( 0 == pTC->m_Scratch[1] ) {
+      cpu_yield();
+   }
+
+   pTC->m_Scratch[5] = 1;
+
+   do
+   {
+      pTC->m_pThrs[1]->Wait();
+      ++pTC->m_Scratch[4];
+   }while( 0 == pTC->m_Scratch[3] );
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+   // Restore the default SIGUSR1 handler.
+   ASSERT_EQ(0, sigaction(SIGUSR1, &orig, NULL));
+#endif // OS
+}
+
+void OSAL_Thread_f::Thr6(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+   ASSERT_NONNULL(pThread);
+
+   pTC->m_Scratch[1] = 1; // signal that we're ready.
+
+   // keep this thread alive until it's time to stop the test.
+   while ( 0 == pTC->m_Scratch[2] ) {
+      cpu_yield();
+   }
+
+   pTC->m_Scratch[3] = 1; // signal that we're done.
+}
+
+TEST_F(OSAL_Thread_f, aal0013)
+{
+   // OSLThread::Wait(void) is an infinite wait, even in the presence of signals.
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr5,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   ASSERT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[1] = new OSLThread(OSAL_Thread_f::Thr6,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   ASSERT_TRUE(m_pThrs[1]->IsOK());
+
+   // Wait for the threads to become ready.
+   while ( 0 == m_Scratch[5] ) {
+      cpu_yield();
+   }
+
+   // A is blocked in Wait() for B - send A signals to try to wake it.
+   unsigned i;
+   for ( i = 0 ; i < 100 ; ++i ) {
+#if   defined( __AAL_WINDOWS__ )
+      FAIL() << "implement for windows";
+#elif defined( __AAL_LINUX__ )
+
+      EXPECT_EQ(0, pthread_kill(m_TIDs[0], SIGUSR1));
+      ASSERT_EQ(0, m_Scratch[4]);
+
+#endif // OS
+   }
+
+   m_Scratch[2] = 1; // tell B to stop and wait for it to exit.
+   while ( 0 == m_Scratch[3] ) {
+      cpu_yield();
+   }
+
+   m_pThrs[1]->Signal(); // Wake A. Seeing that B has stopped, A will exit.
+
+   m_pThrs[0]->Join();
+   delete m_pThrs[0];
+   m_pThrs[1]->Join();
+   delete m_pThrs[1];
+
+   ASSERT_EQ(1, m_Scratch[4]); // A should have woken only once.
+}
+
 
