@@ -164,7 +164,6 @@ char* get_timestamp(int dont_kill)
   FILE *fp;
 
   unsigned long long readback;
-  size_t count;
 
   char *tstamp_str;
   tstamp_str = malloc(20);
@@ -195,7 +194,7 @@ char* get_timestamp(int dont_kill)
 	}
     }
   
-  count = fread(&readback, sizeof(unsigned long long), 1, fp);
+  fread(&readback, sizeof(unsigned long long), 1, fp);
   fclose(fp);
   
   sprintf(tstamp_str, "%lld", readback);

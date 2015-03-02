@@ -25,7 +25,7 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
-rm -rf ase_sources.mk ase_files.files synopsys_sim.setup vlog_files.list ucli.key vcs_run.tcl
-rm -rf scripts/*.pyc
-rm -rf DVEfiles/
+rm -rf ase_sources.mk ase_files.files synopsys_sim.setup vlog_files.list ucli.key
+rm -rf scripts/*.pyc vcs_run.tcl vsim_run.tcl
+rm -rf DVEfiles/ ase_seed.txt
 

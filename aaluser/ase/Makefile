@@ -43,6 +43,9 @@
 
 include ase_sources.mk
 
+## ASE Version
+ASE_VERSION = 4.2
+
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -59,7 +62,8 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include  -Wall 
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall 
+# CC_OPT+= -D ASE_DEBUG
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
@@ -92,11 +96,16 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
+SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
+SNPS_VLOGAN_OPT+= +define+SVA_OFF +define+SIMPLE_CLKS
+# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v -v $(QUARTUS_HOME)/eda/sim_lib/220model.v -v $(QUARTUS_HOME)/eda/sim_lib/sgate.v -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v -lca $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v  +incdir+$(QUARTUS_HOME)/eda/sim_lib 
+SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
-SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/simv 
+SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/simv
+SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
 
@@ -148,7 +157,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel QuickAsisst AFU Simulation Environment w/ AAL 4.1  #"
+	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)    #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -156,11 +165,19 @@ header:
 # Help information
 help: header
 	@echo "#                                                          #"
-	@echo "# USAGE: make SIMULATOR={VCS|QUESTA}                       #"
-	@echo "#                                                          #"
-	@echo "#             SIMULATOR: RTL Simulation tool               #"
-	@echo "#               VCS    = Synopsys VCS                      #"
-	@echo "#               QUESTA = MentorGraphics Modelsim/Questasim #"
+	@echo "#  COMMAND       |   DESCRIPTION                           #"
+	@echo "# -------------------------------------------------------- #"
+	@echo "# make build     | Build the HW Model using RTL supplied   #"
+	@echo "#                |                                         #"
+	@echo "# make sim       | Run simulator (if in PERSISTENT mode)   #"
+	@echo "#                | Command is unused in ONESHOT mode       #"
+	@echo "#                |                                         #"
+	@echo "# make wave      | Open the waveform (f created)           #"
+	@echo "#                | To be run after simulation completes    #"
+	@echo "#                |                                         #"
+	@echo "# make clean     | Clean simulation files                  #"
+	@echo "#                |                                         #"
+	@echo "# make distclean | Clean ASE sub-distribution              #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -170,7 +187,7 @@ sw_build:
 	mkdir -p $(WORK)
 	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) ; cd - 
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
-
+	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
 ## VCS build template ##
 vcs_build: 
@@ -229,11 +246,11 @@ endif
 sim: check
 ifeq ($(SIMULATOR), VCS)
 	./$(WORK)/simv -l run.log -ucli -do vcs_run.tcl
-	python scripts/ase_ipc_clean.py
+#	python scripts/ase_ipc_clean.py
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
-	python scripts/ase_ipc_clean.py
+#	python scripts/ase_ipc_clean.py
   else
 	@echo "############################################################"
 	@echo "#         SIMULATOR=$(SIMULATOR) not supported             #"
@@ -247,6 +264,7 @@ ifeq ($(SIMULATOR), VCS)
 	dve -vpd inter.vpd || dve -vpd inter.vpd -full64
 else
   ifeq ($(SIMULATOR), QUESTA)
+	vsim -view vsim.wlf
   endif
 endif
 #########################################################################
@@ -256,7 +274,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/
 	rm -rf simv* csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf .ase_* *.o 
+	rm -rf .ase_* *.o ase_seed.txt
 
 distclean: header clean
 	./distclean.sh

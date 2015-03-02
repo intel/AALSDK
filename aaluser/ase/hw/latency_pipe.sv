@@ -50,9 +50,9 @@ module register
    // DFF behaviour
    always @( posedge clk or posedge rst ) begin
       if (rst)
-	q <= 0;
+	q	<= 0;
       else
-	q <= d;
+	q	<= d;
    end
 
 endmodule
