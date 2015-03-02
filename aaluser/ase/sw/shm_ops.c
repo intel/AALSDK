@@ -42,6 +42,9 @@ mqd_t app2sim_umsg_tx;      // UMSG MQ in TX mode
 mqd_t sim2app_intr_rx;      // INTR MQ in RX mode
 mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
 
+// Lock
+pthread_mutex_t lock;
+
 /* #ifndef SIM_SIDE */
 /* int ase_pid; */
 /* #endif */
@@ -132,6 +135,13 @@ void session_init()
 
   printf("  [APP]  Got simulator PID = %d\n", ase_pid);
 #endif
+
+  // Initialize lock
+  if ( pthread_mutex_init(&lock, NULL) != 0)
+    {
+      printf("  [APP]  Lock initialization failed, EXIT\n");
+      exit (1);
+    }
 
   // Register kill signals
   signal(SIGTERM, send_simkill);
@@ -226,6 +236,9 @@ void session_deinit()
   printf("  [APP]  Session ended\n");
   END_YELLOW_FONTCOLOR;
 
+  // Lock deinit
+  pthread_mutex_destroy(&lock);
+
   FUNC_CALL_EXIT;
 }
 
@@ -306,6 +319,8 @@ uint32_t csr_read(uint32_t csr_offset)
 void allocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&lock);
 
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
   int static buffer_index_count = 0;
@@ -395,7 +410,7 @@ void allocate_buffer(struct buffer_t *mem)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     {
       BEGIN_YELLOW_FONTCOLOR;
-      printf("  [APP]  Session not started --- STARTING now");
+      printf("  [APP]  Session not started --- STARTING now\n");
       END_YELLOW_FONTCOLOR;
       session_init();
     }
@@ -412,6 +427,8 @@ void allocate_buffer(struct buffer_t *mem)
 #ifdef ASE_BUFFER_VIEW
   ase_buffer_info(mem);
 #endif
+
+  pthread_mutex_unlock(&lock);
 
   FUNC_CALL_EXIT;
 }
