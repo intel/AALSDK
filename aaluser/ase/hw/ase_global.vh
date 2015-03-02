@@ -26,15 +26,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * **************************************************************************
- * 
+ *
  * Module Info:
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
- * ASE generics (SystemVerilog header file) 
- * 
+ *
+ * ASE generics (SystemVerilog header file)
+ *
  * Description:
  * This file contains definitions and parameters for the DPI
  * module. The intent of this file is that the user should not modify
@@ -46,12 +46,18 @@
 `ifndef _ASE_GLOBAL_VH_
  `define _ASE_GLOBAL_VH_
 
+ // Include platform.vh if not already
+ `ifndef _PLATFORM_VH_
+  `include "platform.vh"
+ `endif
+
+
  `define GRAM_AUTO "no_rw_check"                         // defaults to auto
  `define GRAM_STYLE RAM_STYLE
  `define SYNC_RESET_POLARITY 0
 
 /*
- * CCI Transactions 
+ * CCI Transactions
  */
 // TX0 channel
  `define ASE_TX0_RDLINE       4'h4  // To be deprecated
@@ -61,14 +67,14 @@
 // TX1 channel
  `define ASE_TX1_WRTHRU       4'h1
  `define ASE_TX1_WRLINE       4'h2
- `define ASE_TX1_WRFENCE      4'h5  
+ `define ASE_TX1_WRFENCE      4'h5
  `define ASE_TX1_INTRVALID    4'h8  // Implemented as hidden feature
 // RX0 channel
  `define ASE_RX0_CSR_WRITE    4'h0
  `define ASE_RX0_WR_RESP      4'h1
  `define ASE_RX0_RD_RESP      4'h4
  `define ASE_RX0_INTR_CMPLT   4'h8  // Implemented as hidden feature
- `define ASE_RX0_UMSG         4'hF  
+ `define ASE_RX0_UMSG         4'hF
 // RX1 channel
  `define ASE_RX1_WR_RESP      4'h1
  `define ASE_RX1_INTR_CMPLT   4'h8  // Implemented as hidden feature
@@ -97,17 +103,17 @@
  * TX header deconstruction
  */
 // SPL (CCI-extended additions)
- `define TX_HDR_NUMCL_BITRANGE      98:93             
- `define TX_HDR_CLADDR_BITRANGE     92:67         
+ `define TX_HDR_NUMCL_BITRANGE      98:93
+ `define TX_HDR_CLADDR_BITRANGE     92:67
  `define TX_HDR_PV_BIT              66
 // CCI only
- `define TX_META_TYPERANGE          55:52   
+ `define TX_META_TYPERANGE          55:52
  `define TX_MDATA_BITRANGE          13:0
  `define TX_CLADDR_BITRANGE         45:14
 
 /*
  * RX header deconstruction
- */ 
+ */
 // RX header (SPL/CCI common response)
  `define RX_META_TYPERANGE          17:14
  `define RX_MDATA_BITRANGE          13:0
@@ -140,7 +146,7 @@
 // ASE_fifo full threshold inside latency scoreboard
 `define LATBUF_FULL_THRESHOLD       (`LATBUF_NUM_TRANSACTIONS - 5)
 // Radix of ASE_fifo (subcomponent in latency scoreboard)
-`define LATBUF_DEPTH_BASE2          3  
+`define LATBUF_DEPTH_BASE2          $clog2(`LATBUF_NUM_TRANSACTIONS)
 
 
 /*
@@ -155,7 +161,7 @@
 `define END_GREEN_FONTCOLOR   $display("\033[0m");
 
 // Warnings/ASEDBGDUMP in YELLOW color
-`define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m"); // "\[\033[0;33m\]"
+`define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m");
 `define END_YELLOW_FONTCOLOR   $display("\033[0m");
 
 
@@ -169,31 +175,49 @@ typedef struct {
    int 	       wrvalid;
    int 	       rdvalid;
    int 	       intrvalid;
-   int 	       umsgvalid; 	       
+   int 	       umsgvalid;
    } cci_pkt;
-		 
+
 
 /*
  * ASE config structure
  * This will reflect ase.cfg
  */
 typedef struct {
-   int 	       enable_timeout;
+   int         ase_mode;
+   int 	       ase_timeout;
+   int 	       ase_num_tests;
+   int 	       enable_reuse_seed;
+   int 	       num_umsg_log2;
+   int 	       enable_cl_view;
    int 	       enable_capcm;
    int 	       memmap_sad_setting;
-   int 	       enable_umsg;
-   int 	       num_umsg_log2;
-   int 	       enable_intr;
-   int 	       enable_ccirules;
-   int 	       enable_bufferinfo;
-   int 	       enable_asedbgdump;
-   int 	       enable_cl_view;
 } ase_cfg_t;
 ase_cfg_t cfg;
 
 
 /*
- * FUNCTION: Unpack qwords[0:7] to data vector
+ * UMSG Hint/Data state machine
+ */
+// UMSG control states
+typedef enum {UMsg_Idle, UMsg_SendHint, UMsg_H2D_Wait, UMsg_SendData}
+	     UMsg_StateEnum;
+
+// UMSG control structure
+typedef struct {
+   logic [`UMSG_MAX_MSG_LOG2-1:0] umsg_id;
+   logic 			  umsg_enable;
+   logic 			  umsg_hint;
+   logic [`UMSG_DELAY_TIMER_LOG2-1:0] umsg_timer;
+   logic [`CCI_DATA_WIDTH-1:0] 	  umsg_data;
+   logic 			  umsghint_push;
+   logic 			  umsgdata_push;
+   UMsg_StateEnum umsg_state;
+} umsg_t;
+
+
+/*
+ * FUNCTION: Unpack qwords[0:7]       to data vector
  */
 function logic [`CCI_DATA_WIDTH-1:0] unpack_ccipkt_to_vector (input cci_pkt pkt);
    logic [`CCI_DATA_WIDTH-1:0] ret;
@@ -229,4 +253,3 @@ endfunction
 
 
 `endif //  `ifndef _ASE_GLOBAL_VH_
-

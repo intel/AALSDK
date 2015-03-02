@@ -66,6 +66,8 @@ CriticalSection ASESPLAFU::sm_ASEMtx;
 
 void ASESPLAFU::init(TransactionID const &TranID)
 {
+  session_init();
+
   // RRS: *FIXME* Test allocate_dsm here
   m_dsm = (struct buffer_t *) malloc (sizeof(struct buffer_t));
   m_dsm->memsize = 64*1024;
@@ -89,6 +91,7 @@ btBool ASESPLAFU::Release(TransactionID const &TranID, btTime timeout)
   // deallocate_buffer (m_spl_cxt);
   deallocate_buffer (m_dsm);
   ASESPLAFU::sm_ASEMtx.Unlock();
+  session_deinit();
   return ServiceBase::Release(TranID, timeout);
 }
 
@@ -99,6 +102,7 @@ btBool ASESPLAFU::Release(btTime timeout)
   // deallocate_buffer (m_spl_cxt);
   deallocate_buffer (m_dsm);
   ASESPLAFU::sm_ASEMtx.Unlock();
+  session_deinit();
   return ServiceBase::Release(timeout);
 }
 

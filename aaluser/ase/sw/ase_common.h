@@ -118,7 +118,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |   SIM
-  int is_dsm;                     // Flag memory as DSM              |   TBD
+  int is_csrmap;                     // Flag memory as DSM              |   TBD
   struct buffer_t *next;
 };
 
@@ -141,7 +141,7 @@ void ll_remove_buffer(struct buffer_t *);
 struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
 
-// DPI functions
+// Mem-ops functions
 void ase_mqueue_setup();
 void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
@@ -153,6 +153,9 @@ void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);
 uint64_t get_range_checked_physaddr(uint32_t);
+void ase_write_seed(uint64_t);
+uint64_t ase_read_seed();
+void ase_memory_barrier();
 
 // ASE operations
 void ase_buffer_info(struct buffer_t *);
@@ -192,6 +195,8 @@ void create_ipc_listfile();
 extern "C" {
 #endif // __cplusplus
   // Shared memory alloc/dealloc operations
+  void session_init();
+  void session_deinit();
   void allocate_buffer(struct buffer_t *);
   void deallocate_buffer(struct buffer_t *);
   void csr_write(uint32_t, uint32_t);
@@ -242,6 +247,9 @@ extern "C" {
 #define HDR_ASE_READY_STAT   0xFACEFEED
 #define HDR_ASE_KILL_CTRL    0xC00CB00C
 
+// Simkill message
+#define ASE_SIMKILL_MSG      0xDEADDEAD
+
 
 /*
  * Enable function call entry/exit
@@ -257,24 +265,33 @@ extern "C" {
 #endif
 
 
+/*
+ * ASE Mode macros
+ */
+#define ASE_MODE_DAEMON_NO_SIMKILL   1
+#define ASE_MODE_DAEMON_SIMKILL      2
+#define ASE_MODE_DAEMON_SW_SIMKILL   3
+#define ASE_MODE_REGRESSION          4
 
 /*
  * ASE message queue 
  */
 // Buffer exchange messages
-#define APP2DPI_SMQ_PREFIX          "/app2ase_bufping_smq."
-#define DPI2APP_SMQ_PREFIX          "/ase2app_bufpong_smq."
+#define APP2SIM_SMQ_PREFIX          "/app2sim_bufping_smq."
+#define SIM2APP_SMQ_PREFIX          "/sim2app_bufpong_smq."
 // CSR write messages
-#define APP2DPI_CSR_WR_SMQ_PREFIX   "/app2ase_csr_wr_smq."
-// UMSG control messages
-#define APP2DPI_UMSG_SMQ_PREFIX     "/app2ase_umsg_smq."
-/* // ASE control and status queue (used by unified flow) */
-/* #define APP2ASE_CTRL_SMQ_PREFIX     "/app2ase_ctrl_smq." */
-/* #define ASE2APP_STAT_SMQ_PREFIX     "/app2ase_stat_smq." */
+#define APP2SIM_CSR_WR_SMQ_PREFIX   "/app2sim_csr_wr_smq."
+// UMSG control messages from APP to SIM
+#define APP2SIM_UMSG_SMQ_PREFIX     "/app2sim_umsg_smq."
+// Interrupt message from SIM to APP
+#define SIM2APP_INTR_SMQ_PREFIX     "/sim2app_intr_smq."
+// Simkill control messages
+#define APP2SIM_SIMKILL_SMQ_PREFIX  "/app2sim_simkill_smq."
 
 
-#define ASE_MQ_MAXMSG     4
-#define ASE_MQ_MSGSIZE    8192
+// Message queue parameters
+#define ASE_MQ_MAXMSG     8
+#define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
 
 // ASE filepath length
@@ -450,22 +467,22 @@ extern uint64_t fake_off_low_bound;
  */
 struct ase_cfg_t
 {
-  int enable_timeout;
+  int ase_mode;
+  int ase_timeout;
+  int ase_num_tests;
+  int enable_reuse_seed;
+  int num_umsg_log2;
+  int enable_cl_view;
   int enable_capcm;
   int memmap_sad_setting;
-  int enable_umsg;
-  int num_umsg_log2;
-  int enable_intr;
-  int enable_ccirules;
-  int enable_bufferinfo;      // Buffer information
-  int enable_asedbgdump;      // To be used only for USER error reporting (THIS WILL dump a lot of gibberish)
-  int enable_cl_view;         // Transaction printing control
 };
 struct ase_cfg_t *cfg;
 
 // ASE config file
 #define ASE_CONFIG_FILE "ase.cfg"
 
+// ASE seed file
+#define ASE_SEED_FILE  "ase_seed.txt"
 
 /* 
  * Data-exchange functions and structures
@@ -487,15 +504,18 @@ typedef struct {
  */
 // DPI-C export(C to SV) calls
 extern void simkill();
+extern void sw_simkill_request();
 extern void csr_write_init();
+extern void csr_write_dispatch(int, int, int);
 extern void umsg_init();
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
 void ase_init();
 void ase_ready();
-int csr_write_listener();
-int buffer_replicator();
+/* int csr_write_listener(); */
+// int buffer_replicator();
+int ase_listener();
 void ase_config_parse(char*);
 
 // Simulation control function
@@ -517,7 +537,7 @@ extern void capcm_init();
 
 // UMSG functions
 void ase_umsg_init();
-int umsg_listener();
+/* int umsg_listener(); */
 void ase_umsg_init();
 
 
@@ -548,6 +568,8 @@ void ase_umsg_init();
 FILE *ase_ready_fd;
 #define ASE_READY_FILENAME ".ase_ready"
 
+// ASE seed 
+uint64_t ase_addr_seed;
 
 
 /*

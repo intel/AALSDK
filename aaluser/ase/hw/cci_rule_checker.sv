@@ -85,9 +85,9 @@ module cci_rule_checker
    logic 			       internal_en;
    always @(*) begin
       if ( (resetb == 1'b1) && (lp_initdone == 1'b1) && (enable == 1'b1) )
-	internal_en <= 1'b1;
+	internal_en	<= 1'b1;
       else
-	internal_en <= 1'b0;
+	internal_en	<= 1'b0;
    end
 
    /*
@@ -108,10 +108,10 @@ module cci_rule_checker
     */
    always @(posedge clk) begin
       if (internal_en == 1'b0) begin
-	 tx_ch0_error <= 1'b0;
-	 tx_ch1_error <= 1'b0;
-	 rx_ch0_error <= 1'b0;
-	 rx_ch1_error <= 1'b0;
+	 tx_ch0_error		<= 1'b0;
+	 tx_ch1_error		<= 1'b0;
+	 rx_ch0_error		<= 1'b0;
+	 rx_ch1_error		<= 1'b0;
       end
       else begin
 	 // TX0
@@ -120,12 +120,12 @@ module cci_rule_checker
 	      `VLOG_HIIMP: // 1'bz:
 		begin
 		   tx_ch0_error <= 1'b1;
-		   tx_ch0_time <= $time;
+		   tx_ch0_time	<= $time;
 		end
 	      `VLOG_UNDEF: // 1'bx:
 		begin
 		   tx_ch0_error <= 1'b1;
-		   tx_ch0_time <= $time;
+		   tx_ch0_time	<= $time;
 		end
 	    endcase // case (tx0_flag)
 	 end
@@ -135,12 +135,12 @@ module cci_rule_checker
 	      `VLOG_HIIMP: // 1'bz:
 		begin
 		   tx_ch1_error <= 1'b1;
-		   tx_ch1_time <= $time;
+		   tx_ch1_time	<= $time;
 		end
 	      `VLOG_UNDEF: // 1'bx:
 		begin
 		   tx_ch1_error <= 1'b1;
-		   tx_ch1_time <= $time;
+		   tx_ch1_time	<= $time;
 		end
 	    endcase // case (tx1_flag)
 	 end
@@ -150,12 +150,12 @@ module cci_rule_checker
 	      `VLOG_HIIMP: // 1'bz:
 		begin
 		   rx_ch0_error <= 1'b1;
-		   rx_ch0_time <= $time;
+		   rx_ch0_time	<= $time;
 		end
 	      `VLOG_UNDEF: // 1'bx:
 		begin
 		   rx_ch0_error <= 1'b1;
-		   rx_ch0_time <= $time;
+		   rx_ch0_time	<= $time;
 		end
 	    endcase // case (tx0_flag)
 	 end
@@ -165,12 +165,12 @@ module cci_rule_checker
 	      `VLOG_HIIMP: // 1'bz:
 		begin
 		   rx_ch1_error <= 1'b1;
-		   rx_ch1_time <= $time;
+		   rx_ch1_time	<= $time;
 		end
 	      `VLOG_UNDEF: // 1'bx:
 		begin
 		   rx_ch1_error <= 1'b1;
-		   rx_ch1_time <= $time;
+		   rx_ch1_time	<= $time;
 		end
 	    endcase // case (tx1_flag)
 	 end 	 

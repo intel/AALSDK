@@ -53,7 +53,7 @@ void ll_print_info(struct buffer_t *print_ptr)
   printf("%p  ", (uint32_t*)print_ptr->pbase);
   printf("%p  ", (uint32_t*)print_ptr->fake_paddr);
   printf("%x  ", print_ptr->memsize);
-  printf("%d  ", print_ptr->is_dsm);
+  printf("%d  ", print_ptr->is_csrmap);
   printf("%d  ", print_ptr->is_privmem);
   printf("\n");
 

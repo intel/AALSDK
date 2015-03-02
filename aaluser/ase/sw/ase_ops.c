@@ -102,7 +102,7 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n", (uint32_t*)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n", (uint32_t*)mem->fake_paddr_hi);
-  printf("\tIsDSM       = %d\n", mem->is_dsm); 
+  printf("\tIsDSM       = %d\n", mem->is_csrmap); 
   printf("\tIsPrivMem   = %d\n", mem->is_privmem); 
   BEGIN_YELLOW_FONTCOLOR;
 
@@ -127,7 +127,7 @@ void ase_buffer_oneline(struct buffer_t *mem)
   printf("%p  ", (uint32_t*)mem->pbase);
   printf("%p  ", (uint32_t*)mem->fake_paddr);
   printf("%x  ", mem->memsize);
-  printf("%d  ", mem->is_dsm);
+  printf("%d  ", mem->is_csrmap);
   printf("%d  ", mem->is_privmem);
   printf("\n");
 
@@ -218,77 +218,11 @@ void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
 }
 
 
-// ---------------------------------------------------------------------
-// ase_cci_logger : If enabled, this fumps all transactions as a
-// tab-separated list into a log file. This file should show up as
-// column-separated in Excel/OpenOffice/LibreOffice.
-// NOTE: The timestamp is to be used as an indication of event
-// arrival, and not for measure time betwen transactions. This is NOT
-// a CYCLE ACCURATE SIMULATOR.
-// ---------------------------------------------------------------------
-/* void ase_cci_logger(char* transact_name, int mdata, int channel, uint32_t cl_addr, uint64_t vaddr, unsigned char* cl_data) */
-/* { */
-/*   // Time structure values */
-/*   struct timeval event; */
-/*   long int event_time; */
-/*   int iter; */
-/*   //unsigned char cline[CL_BYTE_WIDTH]; */
-
-/*   // Print log number, followed by TAB */
-/*   fprintf(ase_cci_log_fd, "%12ld\t", ase_cci_transact_count); */
-
-/*   // Print timestamp differential, then a TAB */
-/*   gettimeofday(&event, NULL); */
-/*   event_time = event.tv_sec*1000000 + event.tv_usec; */
-/*   fprintf(ase_cci_log_fd, "%9ld\t", (long int)(event_time - ref_anchor_time)); */
-
-/*   // Print channel number, then a TAB */
-/*   fprintf(ase_cci_log_fd, "%7d\t", channel); */
-
-/*   // Print transaction name */
-/*   fprintf(ase_cci_log_fd, "%11s\t", transact_name); */
-  
-/*   // Print address if appropriate */
-/*   if(cl_addr != 0) */
-/*     fprintf(ase_cci_log_fd, "%10x", cl_addr); */
-/*   fprintf(ase_cci_log_fd, "\t"); */
-
-/*   // Print Vaddr */
-/*   fprintf(ase_cci_log_fd, "%013lx\t", vaddr); */
-
-/*   // Print metadata, then TAB */
-/*   fprintf(ase_cci_log_fd, "%05x\t", mdata); */
-
-/*   // Print exchanged data, then TAB */
-/*   //  fprintf(ase_cci_log_fd, "%128x\t", cl_data); */
-/*   //  memcpy(cline, cl_data, CL_BYTE_WIDTH); */
-/*   int data_size = 64-1; */
-/*   if (strcmp(transact_name,"CSR_Write")==0) { */
-/*     data_size = 4-1; */
-/*   } */
-  
-/*   if (cl_data != NULL) { */
-/*     for(iter = data_size; iter >= 0; iter--) { */
-/*       fprintf(ase_cci_log_fd, "%02x", (unsigned char)cl_data[iter]);  */
-/*     } */
-/*   } */
-/*   fprintf(ase_cci_log_fd, "\t");  */
-
-/*   // Print next line */
-/*   fprintf(ase_cci_log_fd, "\n"); */
-
-/*   // Increment event counter */
-/*   ase_cci_transact_count++; */
-/* } */
-
-
 /*
- * Generate 64-bit random number
+ * ASE memory barrier
  */
-uint64_t ase_rand64()
+void ase_memory_barrier()
 {
-  uint64_t random;
-  random = rand();
-  random = (random << 32) | rand();
-  return random;
+  // asm volatile("" ::: "memory");
+  __asm__ __volatile__ ("" ::: "memory");
 }

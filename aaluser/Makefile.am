@@ -347,12 +347,11 @@ ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
 ase/hw/cci_rule_checker.sv \
-ase/scripts/run_ase_automated.py \
-ase/scripts/gen_afu_env.py \
+ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_ipc_clean.py \
+ase/scripts/ipc_clean.py \
 ase/README
 
 CLP_EXTRA=\
