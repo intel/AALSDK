@@ -416,7 +416,7 @@ AAL::btTID OSLThread::tid()
 // Outputs: none.
 // Comments:
 //=============================================================================
-OSAL_API void SetThreadPriority(AAL::btInt nPriority)
+OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 {
    if ( ( nPriority >= 0 ) &&
         ( (AAL::btUnsignedInt)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
