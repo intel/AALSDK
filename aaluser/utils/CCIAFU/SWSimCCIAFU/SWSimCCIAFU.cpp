@@ -57,6 +57,8 @@
 #include <aalsdk/service/ICCIClient.h>
 #include "SWSimCCIAFU.h"
 
+#include <aalsdk/kernel/NLBVAFU.h>
+
 #ifdef INFO
 # undef INFO
 #endif // INFO
@@ -75,46 +77,6 @@
 #endif
 
 BEGIN_NAMESPACE(AAL)
-
-#define NLB_TEST_MODE_LPBK1       0x0
-#define NLB_TEST_MODE_CONT        0x2
-#define NLB_TEST_MODE_READ        0x4
-#define NLB_TEST_MODE_WRITE       0x8
-#define NLB_TEST_MODE_TRPUT       0xc
-
-#define NLB_TEST_MODE_MASK        0x1c
-
-#define QLP_CSR_CIPUCTL           0x280
-#   define CIPUCTL_RESET_BIT      0x01000000
-
-#define QLP_CSR_CAFU_STATUS       0x284
-#   define CAFU_STATUS_READY_BIT  0x80000000
-
-#define QLP_NUM_COUNTERS          11
-#define QLP_CSR_ADDR_PERF1C       0x27c
-#define QLP_CSR_ADDR_PERF1        0x28c
-
-#define QLP_PERF_CACHE_RD_HITS    0
-#define QLP_PERF_CACHE_WR_HITS    1
-#define QLP_PERF_CACHE_RD_MISS    2
-#define QLP_PERF_CACHE_WR_MISS    3
-#define QLP_PERF_EVICTIONS        10
-
-#define CSR_AFU_DSM_BASEL         0x1a00
-#define CSR_AFU_DSM_BASEH         0x1a04
-#define CSR_SRC_ADDR              0x1a20
-#define CSR_DST_ADDR              0x1a24
-#define CSR_NUM_LINES             0x1a28
-#define CSR_CTL                   0x1a2c
-#define CSR_CFG                   0x1a34
-
-#define DSM_STATUS_TEST_COMPLETE  0x40
-#define DSM_STATUS_NUM_CLOCKS     0x48
-#define DSM_STATUS_NUM_READS      0x50
-#define DSM_STATUS_NUM_WRITES     0x54
-#define DSM_STATUS_START_OVERHEAD 0x58
-#define DSM_STATUS_END_OVERHEAD   0x5c
-
 
 #ifndef LOG2_CL
 # define LOG2_CL 6
@@ -146,10 +108,10 @@ void SWSimCCIAFU::init(TransactionID const &TranID)
    m_CSRMap.insert(std::make_pair(CSR_CTL,             CSR(CSR_CTL,             0, false)));
    m_CSRMap.insert(std::make_pair(CSR_CFG,             CSR(CSR_CFG,             0, false)));
 
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
 }
 
 btBool SWSimCCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -179,11 +141,11 @@ void SWSimCCIAFU::WorkspaceAllocate(btWSSize             Length,
    btVirtAddr v = (btVirtAddr) new(std::nothrow) btByte[Length];
 
    if ( NULL == v ) {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "new failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "new failed");
       SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                                   pExcept) );
       return;
@@ -218,11 +180,11 @@ void SWSimCCIAFU::WorkspaceFree(btVirtAddr           Address,
 
    if ( m_VirtMap.end() == viter ) {
       // No such allocation found.
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "no such allocation");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "no such allocation");
       SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                               pExcept) );
       return;
@@ -390,20 +352,37 @@ void SWSimCCIAFU::SimulatorWrite(CSR csr)
 
    } else if ( CSR_CTL == csr.Offset() ) {
 
+      // Examine CSR_CFG to determine the requested test mode.
+      csr_const_iter csriter = m_CSRMap.find(CSR_CFG);
+
+      btCSRValue val = (*csriter).second.Value();
+      btBool IsContMode = false;
+
+      if ( flag_is_set(val, NLB_TEST_MODE_CONT) ) {
+         flag_clrf(val, NLB_TEST_MODE_CONT);
+         IsContMode = true;
+      }
+
+      btPhysAddr AFUDSMPhys;
+      csriter     = m_CSRMap.find(CSR_AFU_DSM_BASEH);
+      AFUDSMPhys  = (btPhysAddr)((*csriter).second.Value()) << 32;
+
+      csriter     = m_CSRMap.find(CSR_AFU_DSM_BASEL);
+      AFUDSMPhys |= (btPhysAddr)((*csriter).second.Value());
+
+      phys_to_alloc_const_iter physiter = m_PhysMap.find(AFUDSMPhys);
+
+      nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)(*physiter).second.Virt();
+
       if ( flags_are_set(csr.Value(), 7) ) {
          INFO("Forcibly Stopping");
-      } else if ( flags_are_set(csr.Value(), 3) ) {
 
-         // Examine CSR_CFG to determine the requested test mode.
-         csr_const_iter csriter = m_CSRMap.find(CSR_CFG);
-
-         btCSRValue val = (*csriter).second.Value();
-         btBool IsContMode = false;
-
-         if ( flag_is_set(val, NLB_TEST_MODE_CONT) ) {
-            flag_clrf(val, NLB_TEST_MODE_CONT);
-            IsContMode = true;
+         if ( IsContMode ) {
+            // Signal completion for the continuous mode test.
+            pAFUDSM->test_complete = 1;
          }
+
+      } else if ( flags_are_set(csr.Value(), 3) ) {
 
          switch ( val & NLB_TEST_MODE_MASK ) {
             case NLB_TEST_MODE_LPBK1 : SimLpbk1(); break;
@@ -418,20 +397,8 @@ void SWSimCCIAFU::SimulatorWrite(CSR csr)
          }
 
          if ( !IsContMode ) {
-            // Write a non-zero value to the 32 bits at AFU DSM offset DSM_STATUS_TEST_COMPLETE.
-            btPhysAddr AFUDSM;
-            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEH);
-            AFUDSM  = (btPhysAddr)((*csriter).second.Value()) << 32;
-
-            csriter = m_CSRMap.find(CSR_AFU_DSM_BASEL);
-            AFUDSM |= (btPhysAddr)((*csriter).second.Value());
-
-            phys_to_alloc_const_iter physiter = m_PhysMap.find(AFUDSM);
-
-            volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                       ((*physiter).second.Virt()  + DSM_STATUS_TEST_COMPLETE);
-
-            *StatusAddr = 1;
+            // Signal completion for the non-continuous mode test.
+            pAFUDSM->test_complete = 1;
          }
 
       } else if ( flag_is_clr(m_LastCSRWrite.Value(), 1) &&
@@ -542,14 +509,14 @@ void SWSimCCIAFU::SimRead()
 
    physiter = m_PhysMap.find(AFUDSMPhys);
 
-   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+   nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)(*physiter).second.Virt();
 
    // (No idea whether these numbers are even in the same universe, let alone ballpark, as
    //  the accurate measurements. We are simulating after all..)
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_READS) )      = bytes / CL(1);
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
+   pAFUDSM->num_clocks     = 5 * (bytes / CL(1));
+   pAFUDSM->num_reads      = bytes / CL(1);
+   pAFUDSM->start_overhead = 2;
+   pAFUDSM->end_overhead   = 1;
 }
 
 void SWSimCCIAFU::SimWrite()
@@ -598,14 +565,15 @@ void SWSimCCIAFU::SimWrite()
 
    physiter = m_PhysMap.find(AFUDSMPhys);
 
-   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+   nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)(*physiter).second.Virt();
 
    // (No idea whether these numbers are even in the same universe, let alone ballpark, as
    //  the accurate measurements. We are simulating after all..)
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_WRITES) )     = bytes / CL(1);
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
+
+   pAFUDSM->num_clocks     = 5 * (bytes / CL(1));
+   pAFUDSM->num_writes     = bytes / CL(1);
+   pAFUDSM->start_overhead = 2;
+   pAFUDSM->end_overhead   = 1;
 }
 
 void SWSimCCIAFU::SimTrput()
@@ -671,15 +639,15 @@ void SWSimCCIAFU::SimTrput()
 
    physiter = m_PhysMap.find(AFUDSMPhys);
 
-   btVirtAddr AFUDSMVirt = (*physiter).second.Virt();
+   nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)(*physiter).second.Virt();
 
    // (No idea whether these numbers are even in the same universe, let alone ballpark, as
    //  the accurate measurements. We are simulating after all..)
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_CLOCKS) )     = 5 * (bytes / CL(1));
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_READS) )      = bytes / CL(1);
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_NUM_WRITES) )     = bytes / CL(1);
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_START_OVERHEAD) ) = 2;
-   * ( (bt32bitCSR *)(AFUDSMVirt + DSM_STATUS_END_OVERHEAD) )   = 1;
+   pAFUDSM->num_clocks     = 5 * (bytes / CL(1));
+   pAFUDSM->num_reads      = bytes / CL(1);
+   pAFUDSM->num_writes     = bytes / CL(1);
+   pAFUDSM->start_overhead = 2;
+   pAFUDSM->end_overhead   = 1;
 }
 
 END_NAMESPACE(AAL)
@@ -707,7 +675,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< SWSimCCIAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::SWSimCCIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

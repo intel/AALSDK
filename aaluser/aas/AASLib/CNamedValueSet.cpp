@@ -102,7 +102,6 @@
 #define NVSFileIO          /* for the time being, leave it in */
 #include "aalsdk/AALCNamedValueSet.h"
 
-USING_NAMESPACE(std)
 
 #define MAX_VALID_NVS_ARRAY_ENTRIES (1024 * 1024)
 
@@ -1912,7 +1911,7 @@ std::istream & operator >> (std::istream &s, NamedValueSet &rnvs)
 //=============================================================================
 void NamedValueSetFromStdString(const std::string &s, NamedValueSet &nvs)
 {
-   istringstream iss(s);      // put the string inside an istringstream
+   std::istringstream iss(s);      // put the string inside an istringstream
    iss >> nvs;                // use operator >> to get it out
 }
 
@@ -1944,7 +1943,7 @@ void NamedValueSetFromCharString(void *pv, btWSSize len, NamedValueSet &nvs)
 //=============================================================================
 std::string StdStringFromNamedValueSet(const NamedValueSet &nvs)
 {
-   ostringstream oss;
+   std::ostringstream oss;
    oss << nvs << '\0';  // add a final, ensuring, terminating null
    return oss.str();
 }
@@ -2913,7 +2912,7 @@ case __type##Array_t : {                                                        
 //=============================================================================
 // Name: NVSWriteLevel - write tabs so that entries will be nicely indented
 //=============================================================================
-void NVSWriteLevel (ostream& os, unsigned level) {
+void NVSWriteLevel (std::ostream &os, unsigned level) {
    while (level--) {
       os << "\t";
    }
@@ -2922,7 +2921,7 @@ void NVSWriteLevel (ostream& os, unsigned level) {
 //=============================================================================
 // Name: NVSWriteUnsigned - write a single unsigned, at the level passed in, followed by a space
 //=============================================================================
-void NVSWriteUnsigned (ostream& os, unsigned u, unsigned level) {
+void NVSWriteUnsigned (std::ostream &os, unsigned u, unsigned level) {
    NVSWriteLevel(os, level);
    os << u << " ";
 }
@@ -2931,7 +2930,7 @@ void NVSWriteUnsigned (ostream& os, unsigned u, unsigned level) {
 // Name: NVSReadUnsigned - read a single unsigned integer, ignoring preceeding whitespace
 //       Returns EOF on error, or other values - just check for EOF
 //=============================================================================
-btBool NVSReadUnsigned (istream& is, btUnsignedInt* pu) {
+btBool NVSReadUnsigned (std::istream &is, btUnsignedInt* pu) {
    is >> *pu;
    return is.good();    // true implies good health on the stream
 }
@@ -2940,7 +2939,7 @@ btBool NVSReadUnsigned (istream& is, btUnsignedInt* pu) {
 // Name: NVSReadNumberKey - read a number that is supposed to represent a number key
 //       Returns EOF on error, or other values - just check for EOF
 //=============================================================================
-btBool NVSReadNumberKey (istream& is, btNumberKey* pu) {
+btBool NVSReadNumberKey (std::istream &is, btNumberKey* pu) {
    is >> *pu;
    return is.good();    // true implies good health on the stream
 }
@@ -2951,7 +2950,7 @@ btBool NVSReadNumberKey (istream& is, btNumberKey* pu) {
 //       not expecting errors here
 //       level preceeds string with an appropriate number of tabs
 //=============================================================================
-void NVSWriteString (ostream& os, btcString sz, unsigned level) {
+void NVSWriteString (std::ostream &os, btcString sz, unsigned level) {
    NVSWriteLevel( os, level);
    os << (unsigned)strlen(sz) << " " << sz << "\n";
 }
@@ -2963,7 +2962,7 @@ void NVSWriteString (ostream& os, btcString sz, unsigned level) {
 //       Input is open file
 //       Returns pointer to malloc'd buffer if successful, NULL if not
 //=============================================================================
-char* NVSReadString (istream& is) {
+char* NVSReadString (std::istream &is) {
    unsigned szlen = 0;
 
    if ( !NVSReadUnsigned(is, &szlen) ) {
@@ -2974,7 +2973,7 @@ char* NVSReadString (istream& is) {
    }
 
    if ( szlen > 256 ) {
-      clog << "WARNING: NVSReadString: input length " << szlen << "greater than 256" << endl;
+      std::clog << "WARNING: NVSReadString: input length " << szlen << "greater than 256" << std::endl;
    }
 
    btString psz = new btByte[szlen + 1]; // get an input buffer, exception if NULL
@@ -2985,7 +2984,7 @@ char* NVSReadString (istream& is) {
       is.read(psz, szlen+1);
       psz[szlen] = 0;                    // overwrite terminating \n
    } else {                              // should have thrown an exception
-      cerr << "ERROR: NVSReadString: out of memory\n" << endl;
+      std::cerr << "ERROR: NVSReadString: out of memory\n" << std::endl;
       // leave null psz for return
    }
 
@@ -2995,7 +2994,7 @@ char* NVSReadString (istream& is) {
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName (ostream& os, eNameTypes typeName, btStringKey pszName, unsigned level) {
+void NVSWriteName (std::ostream &os, eNameTypes typeName, btStringKey pszName, unsigned level) {
    NVSWriteLevel(os, level);                       // tab in
    os << static_cast<unsigned>(typeName) << " ";   // type of name (string)
    NVSWriteString(os, pszName, 0);                 // write the name
@@ -3004,7 +3003,7 @@ void NVSWriteName (ostream& os, eNameTypes typeName, btStringKey pszName, unsign
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName (ostream& os, eNameTypes typeName, btNumberKey uName, unsigned level) {
+void NVSWriteName (std::ostream &os, eNameTypes typeName, btNumberKey uName, unsigned level) {
    NVSWriteLevel(os, level);                       // tab in
    os << static_cast<unsigned>(typeName) << " ";   // type of name (int)
    os << uName << "\n";                            // write the name
@@ -3016,7 +3015,7 @@ void NVSWriteName (ostream& os, eNameTypes typeName, btNumberKey uName, unsigned
 //       Name is hardcoded and fake - will never actually be read or used, can
 //          something already in the NVS without problem
 //=============================================================================
-void NVSWriteEndOfNVS (ostream& os, unsigned level) {
+void NVSWriteEndOfNVS (std::ostream &os, unsigned level) {
    NVSWriteName(os, btStringKey_t, "---- End of NVS ----", level);
    NVSWriteUnsigned( os, btEndOfNVS_t, level+1); // This is the real end marker
    os << "\n";
@@ -3027,13 +3026,13 @@ void NVSWriteEndOfNVS (ostream& os, unsigned level) {
 //       Templatized code for writing a data type that has only one value
 //=============================================================================
 template <typename dataT>
-void NVSWriteSingleValue (ostream&       os,
-                          NamedValueSet  const& nvsToWrite,
-                          unsigned       level,
-                          eNameTypes     typeName,
-                          eBasicTypes    typeData,
-                          btNumberKey    iName,
-                          btStringKey    sName)
+void NVSWriteSingleValue (std::ostream         &os,
+                          NamedValueSet  const &nvsToWrite,
+                          unsigned              level,
+                          eNameTypes            typeName,
+                          eBasicTypes           typeData,
+                          btNumberKey           iName,
+                          btStringKey           sName)
 {
    dataT val;
    if ( btStringKey_t == typeName ) {
@@ -3050,13 +3049,13 @@ void NVSWriteSingleValue (ostream&       os,
 //       Templatized code for writing an array data type to a stream
 //=============================================================================
 template <typename dataT>
-void NVSWriteArrayValue (ostream&       os,
-                         NamedValueSet  const& nvsToWrite,
-                         unsigned       level,
-                         eNameTypes     typeName,
-                         eBasicTypes    typeData,
-                         btNumberKey    iName,
-                         btStringKey    sName)
+void NVSWriteArrayValue (std::ostream         &os,
+                         NamedValueSet  const &nvsToWrite,
+                         unsigned              level,
+                         eNameTypes            typeName,
+                         eBasicTypes           typeData,
+                         btNumberKey           iName,
+                         btStringKey           sName)
 {
    dataT   *val;
    btWSSize Num = 0;
@@ -3099,9 +3098,9 @@ void NVSWriteArrayValue (ostream&       os,
 //                or "\t20 2\n\t7 foo bar\n\t 9 foo2 bar2\n" is
 //                   special because it is an array of strings, which are separated by newlines instead of spaces
 //=============================================================================
-ENamedValues NVSWriteNVS (ostream& os,
-                          NamedValueSet const& nvsToWrite,
-                          unsigned level)
+ENamedValues NVSWriteNVS (std::ostream        &os,
+                          NamedValueSet const &nvsToWrite,
+                          unsigned             level)
 {
    btUnsignedInt uElements = 0;              // number of elements in the NVS
    btUnsignedInt irg;                        // index for each element in the NVS
@@ -3129,7 +3128,7 @@ ENamedValues NVSWriteNVS (ostream& os,
          } break;
 
          default : {
-            cerr << "ERROR: NVSWriteNVS: name type " << static_cast<unsigned>(typeName) << "unsupported. Aborting." << endl;
+            std::cerr << "ERROR: NVSWriteNVS: name type " << static_cast<unsigned>(typeName) << "unsupported. Aborting." << std::endl;
             return ENamedValuesInternalError_InvalidNameFormat;
          }
       }
@@ -3274,7 +3273,7 @@ ENamedValues NVSWriteNVS (ostream& os,
 // Name: NVSWriteOneNVSToFile
 //       Write an NVS + an EndofNVS marker to an open file
 //=============================================================================
-ENamedValues NVSWriteOneNVSToFile(ostream             &os,
+ENamedValues NVSWriteOneNVSToFile(std::ostream        &os,
                                   NamedValueSet const &nvsToWrite,
                                   unsigned             level)
 {
@@ -3298,7 +3297,7 @@ ENamedValues NVSReadNVSError(btmStringKey sName, ENamedValues error) {
 //       Templatized code for writing a data type that has only one value
 //=============================================================================
 template <typename dataT>
-ENamedValues NVSReadSingleValue (istream       &is,
+ENamedValues NVSReadSingleValue (std::istream  &is,
                                  NamedValueSet *nvsToRead,
                                  eNameTypes     typeName,
                                  btNumberKey    iName,
@@ -3373,7 +3372,7 @@ ENamedValues NVSReadArrayValue (istream&       is,
 //          EOF, implying finished with an NVS
 //          reading btUnknownType_t, implying finished reading an EMBEDDED NVS
 //=============================================================================
-ENamedValues NVSReadNVS(istream &is, NamedValueSet *nvsToRead)
+ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
 {
    btUnsignedInt irg;                        // index for each element in the NVS
    eNameTypes    typeName;                   // to hold the type of the name

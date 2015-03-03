@@ -75,9 +75,9 @@ BEGIN_NAMESPACE(AAL)
 /// </ul>
 ///
 /// See @ref cciapp for more details.
-class CCIAFU_API CCIAFU : public AAL::AAS::ServiceBase,
+class CCIAFU_API CCIAFU : public ServiceBase,
                           public ICCIAFU,
-                          public AAL::AAS::IServiceClient,
+                          public IServiceClient,
                           public ICCIClient
 {
 #if defined ( __AAL_WINDOWS__ )
@@ -85,13 +85,13 @@ class CCIAFU_API CCIAFU : public AAL::AAS::ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(CCIAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(CCIAFU, ServiceBase),
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
       SetSubClassInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this));
       SetInterface(iidCCIClient,      dynamic_cast<ICCIClient *>(this));
-      SetInterface(iidServiceClient,  dynamic_cast<AAL::AAS::IServiceClient *>(this));
+      SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
    }
 
    virtual void init(TransactionID const &TranID);

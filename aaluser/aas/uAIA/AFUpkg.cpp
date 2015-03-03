@@ -46,7 +46,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 IAFUAllocateWorkSpaceTransactionEvent::~IAFUAllocateWorkSpaceTransactionEvent() {}
@@ -133,7 +132,6 @@ CAFUProcessMessageTransactionExceptionEvent::CAFUProcessMessageTransactionExcept
 IAFUFactory::~IAFUFactory() {}
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

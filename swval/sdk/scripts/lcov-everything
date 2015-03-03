@@ -1,0 +1,26 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='lcov-everything'
+
+. ./lcov-common
+
+declare -r D='everything'
+
+setup "$D"
+
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes --nightly --weekly --standalone"
+
+GCDA_DIRS=(\
+"--directory ${VPATH}/aas/OSAL/.libs" \
+"--directory ${VPATH}/aas/AASLib/.libs" \
+"--directory ${VPATH}/aas/XLRTLib/.libs" \
+"--directory ${VPATH}/tests/harnessed/gtest" \
+"--directory ${VPATH}/tests/standalone/OSAL_TestSem" \
+"--directory ${VPATH}/tests/standalone/OSAL_TestThreadGroup"\
+)
+
+run_lcov "$D"
+exit $?

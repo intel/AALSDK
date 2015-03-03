@@ -49,7 +49,7 @@
 #include "aalsdk/aas/XLRuntimeModule.h"
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< AAL::XL::RT::_xlServiceBroker >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_xlServiceBroker >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
@@ -66,8 +66,6 @@ AAL_END_SVC_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 
 //=============================================================================
@@ -83,10 +81,10 @@ BEGIN_NAMESPACE(AAL)
 void _xlServiceBroker::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   rtid));
+   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
+                                         Client(),
+                                         dynamic_cast<IBase*>(this),
+                                         rtid));
 }
 
 //=============================================================================
@@ -96,24 +94,24 @@ void _xlServiceBroker::init(TransactionID const &rtid)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void _xlServiceBroker::allocService(AAL::IBase *pClient,
-                                    const NamedValueSet                 &rManifest,
-                                    TransactionID const                 &rTranID,
-                                    AAL::XL::RT::IRuntime::eAllocatemode  mode)
+void _xlServiceBroker::allocService(IBase                   *pClient,
+                                    const NamedValueSet     &rManifest,
+                                    TransactionID const     &rTranID,
+                                    IRuntime::eAllocatemode  mode)
 {
    // Process the manifest
    btcString            sName  = NULL;
    NamedValueSet const *ConfigRecord;
 
-   AAL::AAS::IServiceClient      *pServiceClient = dynamic_ptr<AAL::AAS::IServiceClient>(iidServiceClient, pClient);
-   if(NULL == pServiceClient){
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              NULL,
-                                                              NULL,
-                                                              rTranID,
-                                                              errAllocationFailure,
-                                                              reasMissingInterface,
-                                                              strMissingInterface));
+   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pClient);
+   if ( NULL == pServiceClient ) {
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    NULL,
+                                                    NULL,
+                                                    rTranID,
+                                                    errAllocationFailure,
+                                                    reasMissingInterface,
+                                                    strMissingInterface));
    }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
@@ -131,25 +129,25 @@ void _xlServiceBroker::allocService(AAL::IBase *pClient,
    }
 
    if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              pServiceClient,
-                                                              NULL,
-                                                              rTranID,
-                                                              errCreationFailure,
-                                                              reasInternalError,
-                                                              "Failed to load Service"));
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    pServiceClient,
+                                                    NULL,
+                                                    rTranID,
+                                                    errCreationFailure,
+                                                    reasInternalError,
+                                                    "Failed to load Service"));
       return;
    }
 
    // Allocate the service
    if ( !SvcHost->allocService(pClient, rManifest, rTranID, mode) ) {
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              pServiceClient,
-                                                              NULL,
-                                                              rTranID,
-                                                              errCreationFailure,
-                                                              reasInternalError,
-                                                              "Failed to construct Service"));
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    pServiceClient,
+                                                    NULL,
+                                                    rTranID,
+                                                    errCreationFailure,
+                                                    reasInternalError,
+                                                    "Failed to construct Service"));
       return;
    }
 
@@ -343,12 +341,12 @@ btBool _xlServiceBroker::DoShutdown(TransactionID const &rTranID,
    //------------------------------------------
    if ( m_servicecount > 0 ) {
       // Timed out - Shutdown did not succeed
-      QueueAASEvent(new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                             exttranevtServiceShutdown,
-                                                             rTranID,
-                                                             errSystemTimeout,
-                                                             reasSystemTimeout,
-                                                             const_cast<btString>(strSystemTimeout)));
+      QueueAASEvent(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                   exttranevtServiceShutdown,
+                                                   rTranID,
+                                                   errSystemTimeout,
+                                                   reasSystemTimeout,
+                                                   const_cast<btString>(strSystemTimeout)));
       Unlock();
    } else {
       // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
@@ -389,7 +387,7 @@ void _xlServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
 void _xlServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
 {
    // get second ptr
-   AAL::AAS::IServiceModule *pProvider = pSvcHost->getProvider();
+   IServiceModule *pProvider = pSvcHost->getProvider();
 
    pProvider->Destroy();
 
@@ -424,7 +422,5 @@ void _xlServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
  }
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 

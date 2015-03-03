@@ -76,6 +76,8 @@
 #include <aalsdk/kernel/AALTransactionID_s.h>
 #include <aalsdk/kernel/aalinterface.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //-----------------------------------------------------------------------------
 // Public Interface
 //-----------------------------------------------------------------------------
@@ -100,7 +102,7 @@
 // Description:
 //=============================================================================
 struct aalrms_req_tranID{
-   void                             *m_context;
+   void *m_context;
 };
 
 
@@ -186,6 +188,8 @@ struct aalrm_server_service{
 #define rms_regdev(i) ((struct aalrm_server_service*)((struct aal_interface *)i)->m_iptr)->registrar_request
 #define rms_reldev(i) ((struct aalrm_server_service*)((struct aal_interface *)i)->m_iptr)->release_device
 #define rms_cancelreqs(i) ((struct aalrm_server_service*)((struct aal_interface *)i)->m_iptr)->cancel_all_requests
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALRM_SERVER_SERVICES_H__
 

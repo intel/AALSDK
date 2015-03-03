@@ -45,11 +45,8 @@
 #include <aalsdk/AALBase.h>      // IBase
 #include <aalsdk/kernel/aalui.h> // uid_msgIDs_e, uid_errnum_e
 
-USING_NAMESPACE(std)
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 class UAIA_API uidrvMessageRoute
@@ -115,8 +112,7 @@ private:
    uidrvMessage & operator = (const uidrvMessage & );
 }; // end of class uidrvMessage
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
+
 END_NAMESPACE(AAL)
 
 

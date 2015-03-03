@@ -81,8 +81,6 @@
 #ifndef __AALSDK_KERNEL_KOSAL_H__
 #define __AALSDK_KERNEL_KOSAL_H__
 
-USING_NAMESPACE(AAL)
-
 #ifdef __AAL_UNKNOWN_OS__
 # error Update kosal for unknown OS.
 #endif // __AAL_UNKNOWN_OS__
@@ -117,78 +115,108 @@ typedef void * kosal_ownermodule;
 #endif
 
 
+#ifdef __cplusplus
+# define KOSAL_INT       AAL::btInt
+# define KOSAL_UINT      AAL::btUnsignedInt
+# define KOSAL_U32       AAL::btUnsigned32bitInt
+# define KOSAL_PID       AAL::btPID
+# define KOSAL_TID       AAL::btTID
+# define KOSAL_BYTEARRAY AAL::btByteArray
+# define KOSAL_ANY       AAL::btAny
+# define KOSAL_TIME      AAL::btTime
+# define KOSAL_BOOL      AAL::btBool
+# define KOSAL_VIRT      AAL::btVirtAddr
+# define KOSAL_PHYS      AAL::btPhysAddr
+# define KOSAL_WSSIZE    AAL::btWSSize
+#else
+// C doesn't comprehend C++ namespaces.
+# define KOSAL_INT       btInt
+# define KOSAL_UINT      btUnsignedInt
+# define KOSAL_U32       btUnsigned32bitInt
+# define KOSAL_PID       btPID
+# define KOSAL_TID       btTID
+# define KOSAL_BYTEARRAY btByteArray
+# define KOSAL_ANY       btAny
+# define KOSAL_TIME      btTime
+# define KOSAL_BOOL      btBool
+# define KOSAL_VIRT      btVirtAddr
+# define KOSAL_PHYS      btPhysAddr
+# define KOSAL_WSSIZE    btWSSize
+#endif // __cplusplus
+
+
 //
 // Debug printing
 //
-#define KOSAL_DBG_MOD      ((btUnsignedInt)1 <<  0)
+#define KOSAL_DBG_MOD      ((KOSAL_UINT)1 <<  0)
 
-#define AALBUS_DBG_MOD     ((btUnsignedInt)1 <<  0)
-#define AALBUS_DBG_FILE    ((btUnsignedInt)1 <<  1)
-#define AALBUS_DBG_MMAP    ((btUnsignedInt)1 <<  2)
-#define AALBUS_DBG_IOCTL   ((btUnsignedInt)1 <<  3)
+#define AALBUS_DBG_MOD     ((KOSAL_UINT)1 <<  0)
+#define AALBUS_DBG_FILE    ((KOSAL_UINT)1 <<  1)
+#define AALBUS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
+#define AALBUS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
 
-#define AALRMC_DBG_MOD     ((btUnsignedInt)1 <<  0)
-#define AALRMC_DBG_FILE    ((btUnsignedInt)1 <<  1)
-#define AALRMC_DBG_MMAP    ((btUnsignedInt)1 <<  2)
-#define AALRMC_DBG_IOCTL   ((btUnsignedInt)1 <<  3)
+#define AALRMC_DBG_MOD     ((KOSAL_UINT)1 <<  0)
+#define AALRMC_DBG_FILE    ((KOSAL_UINT)1 <<  1)
+#define AALRMC_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
+#define AALRMC_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
 
-#define AALRMS_DBG_MOD     ((btUnsignedInt)1 <<  0)
-#define AALRMS_DBG_FILE    ((btUnsignedInt)1 <<  1)
-#define AALRMS_DBG_MMAP    ((btUnsignedInt)1 <<  2)
-#define AALRMS_DBG_IOCTL   ((btUnsignedInt)1 <<  3)
+#define AALRMS_DBG_MOD     ((KOSAL_UINT)1 <<  0)
+#define AALRMS_DBG_FILE    ((KOSAL_UINT)1 <<  1)
+#define AALRMS_DBG_MMAP    ((KOSAL_UINT)1 <<  2)
+#define AALRMS_DBG_IOCTL   ((KOSAL_UINT)1 <<  3)
 
-#define AALWSMGR_DBG_MOD   ((btUnsignedInt)1 <<  0)
-#define AALWSMGR_DBG_FILE  ((btUnsignedInt)1 <<  1)
-#define AALWSMGR_DBG_MMAP  ((btUnsignedInt)1 <<  2)
-#define AALWSMGR_DBG_IOCTL ((btUnsignedInt)1 <<  3)
+#define AALWSMGR_DBG_MOD   ((KOSAL_UINT)1 <<  0)
+#define AALWSMGR_DBG_FILE  ((KOSAL_UINT)1 <<  1)
+#define AALWSMGR_DBG_MMAP  ((KOSAL_UINT)1 <<  2)
+#define AALWSMGR_DBG_IOCTL ((KOSAL_UINT)1 <<  3)
 
-#define AALWKSP_DBG_MOD    ((btUnsignedInt)1 <<  4)
+#define AALWKSP_DBG_MOD    ((KOSAL_UINT)1 <<  4)
 
-#define AHMPIP_DBG_MOD     ((btUnsignedInt)1 <<  0)
-#define AHMPIP_DBG_FILE    ((btUnsignedInt)1 <<  1)
-#define AHMPIP_DBG_IOCTL   ((btUnsignedInt)1 <<  2)
-#define AHMPIP_DBG_HWTASK  ((btUnsignedInt)1 <<  3)
-#define AHMPIP_DBG_MEM     ((btUnsignedInt)1 <<  4)
-#define AHMPIP_DBG_SESS    ((btUnsignedInt)1 <<  5)
-#define AHMPIP_DBG_DEV     ((btUnsignedInt)1 <<  6)
-#define AHMPIP_DBG_AUTOD   ((btUnsignedInt)1 <<  7)
-#define AHMPIP_DBG_TIMEOUT ((btUnsignedInt)1 <<  8)
-#define AHMPIP_DBG_MSGHDLR ((btUnsignedInt)1 <<  9)
-#define AHMPIP_DBG_MMAP    ((btUnsignedInt)1 << 10)
+#define AHMPIP_DBG_MOD     ((KOSAL_UINT)1 <<  0)
+#define AHMPIP_DBG_FILE    ((KOSAL_UINT)1 <<  1)
+#define AHMPIP_DBG_IOCTL   ((KOSAL_UINT)1 <<  2)
+#define AHMPIP_DBG_HWTASK  ((KOSAL_UINT)1 <<  3)
+#define AHMPIP_DBG_MEM     ((KOSAL_UINT)1 <<  4)
+#define AHMPIP_DBG_SESS    ((KOSAL_UINT)1 <<  5)
+#define AHMPIP_DBG_DEV     ((KOSAL_UINT)1 <<  6)
+#define AHMPIP_DBG_AUTOD   ((KOSAL_UINT)1 <<  7)
+#define AHMPIP_DBG_TIMEOUT ((KOSAL_UINT)1 <<  8)
+#define AHMPIP_DBG_MSGHDLR ((KOSAL_UINT)1 <<  9)
+#define AHMPIP_DBG_MMAP    ((KOSAL_UINT)1 << 10)
 
-#define UIDRV_DBG_MOD      ((btUnsignedInt)1 <<  0)
-#define UIDRV_DBG_FILE     ((btUnsignedInt)1 <<  1)
-#define UIDRV_DBG_MMAP     ((btUnsignedInt)1 <<  2)
-#define UIDRV_DBG_IOCTL    ((btUnsignedInt)1 <<  3)
+#define UIDRV_DBG_MOD      ((KOSAL_UINT)1 <<  0)
+#define UIDRV_DBG_FILE     ((KOSAL_UINT)1 <<  1)
+#define UIDRV_DBG_MMAP     ((KOSAL_UINT)1 <<  2)
+#define UIDRV_DBG_IOCTL    ((KOSAL_UINT)1 <<  3)
 
-#define ENCODER_DBG_MOD    ((btUnsignedInt)1 <<  0)
-#define ENCODER_DBG_AFU    ((btUnsignedInt)1 <<  1)
-#define ENCODER_DBG_MMAP   ((btUnsignedInt)1 <<  2)
+#define ENCODER_DBG_MOD    ((KOSAL_UINT)1 <<  0)
+#define ENCODER_DBG_AFU    ((KOSAL_UINT)1 <<  1)
+#define ENCODER_DBG_MMAP   ((KOSAL_UINT)1 <<  2)
 
-#define HBAFU_DBG_MOD      ((btUnsignedInt)1 <<  0)
-#define HBAFU_DBG_AFU      ((btUnsignedInt)1 <<  1)
-#define HBAFU_DBG_MAFU     ((btUnsignedInt)1 <<  2)
+#define HBAFU_DBG_MOD      ((KOSAL_UINT)1 <<  0)
+#define HBAFU_DBG_AFU      ((KOSAL_UINT)1 <<  1)
+#define HBAFU_DBG_MAFU     ((KOSAL_UINT)1 <<  2)
 
-#define QPIDKSM_DBG_MOD    ((btUnsignedInt)1 <<  0)
-#define QPIDKSM_DBG_MMAP   ((btUnsignedInt)1 <<  1)
-#define QPIDKSM_DBG_DEV    ((btUnsignedInt)1 <<  2)
-#define QPIDKSM_DBG_AFU    ((btUnsignedInt)1 <<  3)
-#define QPIDKSM_DBG_MAFU   ((btUnsignedInt)1 <<  4)
-#define QPIDKSM_DBG_CMD    ((btUnsignedInt)1 <<  5)
+#define QPIDKSM_DBG_MOD    ((KOSAL_UINT)1 <<  0)
+#define QPIDKSM_DBG_MMAP   ((KOSAL_UINT)1 <<  1)
+#define QPIDKSM_DBG_DEV    ((KOSAL_UINT)1 <<  2)
+#define QPIDKSM_DBG_AFU    ((KOSAL_UINT)1 <<  3)
+#define QPIDKSM_DBG_MAFU   ((KOSAL_UINT)1 <<  4)
+#define QPIDKSM_DBG_CMD    ((KOSAL_UINT)1 <<  5)
 
-#define SPL2_DBG_MOD       ((btUnsignedInt)1 <<  0)
-#define SPL2_DBG_DEV       ((btUnsignedInt)1 <<  1)
-#define SPL2_DBG_AFU       ((btUnsignedInt)1 <<  2)
-#define SPL2_DBG_MAFU      ((btUnsignedInt)1 <<  3)
-#define SPL2_DBG_MMAP      ((btUnsignedInt)1 <<  4)
-#define SPL2_DBG_CMD       ((btUnsignedInt)1 <<  5)
-#define SPL2_DBG_CFG       ((btUnsignedInt)1 <<  6)
+#define SPL2_DBG_MOD       ((KOSAL_UINT)1 <<  0)
+#define SPL2_DBG_DEV       ((KOSAL_UINT)1 <<  1)
+#define SPL2_DBG_AFU       ((KOSAL_UINT)1 <<  2)
+#define SPL2_DBG_MAFU      ((KOSAL_UINT)1 <<  3)
+#define SPL2_DBG_MMAP      ((KOSAL_UINT)1 <<  4)
+#define SPL2_DBG_CMD       ((KOSAL_UINT)1 <<  5)
+#define SPL2_DBG_CFG       ((KOSAL_UINT)1 <<  6)
 
-#define FAPDIAG_DBG_MOD    ((btUnsignedInt)1 <<  0)
+#define FAPDIAG_DBG_MOD    ((KOSAL_UINT)1 <<  0)
 
 
 #if (1 == ENABLE_DEBUG)
-extern btUnsignedInt debug; // Bit mask defined by module, DRV_NAME similarly
+extern KOSAL_UINT debug; // Bit mask defined by module, DRV_NAME similarly
 #endif // ENABLE_DEBUG
 
 #define KOSAL_PRINTK_DRV_NAME_FMT "10s"
@@ -313,22 +341,22 @@ unsigned debug = 0
 //=============================================================================
 //=============================================================================
                                  // Disabling KERN_DEBUG in syslog also disables VERBOSE and TRACE
-#define PTRACE_FLAG     ((btUnsignedInt)1 << 31)  // Add this to the debug flags if you want PTRACING
+#define PTRACE_FLAG     ((KOSAL_UINT)1 << 31)  // Add this to the debug flags if you want PTRACING
                                  //    0x8000_0000
-#define PVERBOSE_FLAG   ((btUnsignedInt)1 << 30)  // Add this to the debug flags if you want VERBOSE debugging
+#define PVERBOSE_FLAG   ((KOSAL_UINT)1 << 30)  // Add this to the debug flags if you want VERBOSE debugging
                                  //    0x4000_0000
-#define PDEBUG_FLAG     ((btUnsignedInt)1 << 29)  // Add this to the debug flags if you want DEBUG debugging
+#define PDEBUG_FLAG     ((KOSAL_UINT)1 << 29)  // Add this to the debug flags if you want DEBUG debugging
                                  //    0x2000_0000
-#define PINFO_FLAG      ((btUnsignedInt)1 << 28)  // Add this to the debug flags if you want INFO debugging
+#define PINFO_FLAG      ((KOSAL_UINT)1 << 28)  // Add this to the debug flags if you want INFO debugging
                                  //    0x1000_0000
-#define PNOTICE_FLAG    ((btUnsignedInt)1 << 27)  // Add this to the debug flags if you want NOTICE debugging
+#define PNOTICE_FLAG    ((KOSAL_UINT)1 << 27)  // Add this to the debug flags if you want NOTICE debugging
                                  //    0x0800_0000
 
-#define PMEMORY_FLAG    ((btUnsignedInt)1 << 26)  // Add this to the debug flags if you want memory alloc/free debugging
+#define PMEMORY_FLAG    ((KOSAL_UINT)1 << 26)  // Add this to the debug flags if you want memory alloc/free debugging
                                  //    0x0400_0000
-#define PPCI_FLAG       ((btUnsignedInt)1 << 25)  // Add this to the debug flags if you want PCI(e) OS calls debugging
+#define PPCI_FLAG       ((KOSAL_UINT)1 << 25)  // Add this to the debug flags if you want PCI(e) OS calls debugging
                                  //    0x0200_0000
-#define PPOLLING_FLAG   ((btUnsignedInt)1 << 24)  // Add this to the debug flags if you want poll/spin calls debugging
+#define PPOLLING_FLAG   ((KOSAL_UINT)1 << 24)  // Add this to the debug flags if you want poll/spin calls debugging
                                  //    0x0100_0000
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -608,15 +636,15 @@ unsigned debug = 0
 # include <linux/errno.h>
 # include <linux/compiler.h>  // likely(), unlikely(), etc.
 # include <linux/sched.h>
-# define kosal_get_pid() (btPID)( current->tgid )
-# define kosal_get_tid() (btTID)( current->pid  )
+# define kosal_get_pid() (KOSAL_PID)( current->tgid )
+# define kosal_get_tid() (KOSAL_TID)( current->pid  )
 
 typedef struct bus_type kosal_bus_type, *pkosal_bus_type;
 
 #elif defined( __AAL_WINDOWS__ )
 # include <stddef.h>
 # define kosal_offsetof(_type, _memb) offsetof(_type, _memb)
-# define kosal_container_of(_ptr, _type, _memb) ( (_type *)( (btByteArray)(_ptr) - kosal_offsetof(_type, _memb) ) )
+# define kosal_container_of(_ptr, _type, _memb) ( (_type *)( (KOSAL_BYTEARRAY)(_ptr) - kosal_offsetof(_type, _memb) ) )
 # include <crt/errno.h>
 # ifndef likely
 #    define likely(x) x
@@ -625,24 +653,22 @@ typedef struct bus_type kosal_bus_type, *pkosal_bus_type;
 #    define unlikely(x) x
 # endif // unlikely
 # include <ntddk.h>
-//# define kosal_get_pid() (btPID)PsGetCurrentProcessId()
-// HACK TO GET AROUND WINDOWS CLEANUP ISSUE
-# define kosal_get_pid() ((btPID)0)  
-# define kosal_get_tid() (btTID)PsGetCurrentThreadId()
+# define kosal_get_pid() (KOSAL_PID)PsGetCurrentProcessId()
+# define kosal_get_tid() (KOSAL_TID)PsGetCurrentThreadId()
 
-typedef btAny           kosal_bus_type, *pkosal_bus_type;
+typedef KOSAL_ANY           kosal_bus_type, *pkosal_bus_type;
 
 #endif // OS
 
 #define kosal_get_object_containing(_ptr, _type, _memb) kosal_container_of(_ptr, _type, _memb)
 
-btInt _kosal_mdelay(__ASSERT_HERE_PROTO btTime );
+KOSAL_INT _kosal_mdelay(__ASSERT_HERE_PROTO KOSAL_TIME );
 #ifdef kosal_mdelay
 # undef kosal_mdelay
 #endif // kosal_mdelay
 #define kosal_mdelay(__delay) _kosal_mdelay(__ASSERT_HERE_ARGS __delay)
 
-btInt _kosal_udelay(__ASSERT_HERE_PROTO btTime );
+KOSAL_INT _kosal_udelay(__ASSERT_HERE_PROTO KOSAL_TIME );
 #ifdef kosal_udelay
 # undef kosal_udelay
 #endif // kosal_udelay
@@ -658,10 +684,10 @@ btInt _kosal_udelay(__ASSERT_HERE_PROTO btTime );
 #elif defined( __AAL_WINDOWS__ )
 # include <wdm.h>
   typedef BUS_INTERFACE_STANDARD kosal_pci_dev, *pkosal_pci_dev;
-  typedef btAny                  kosal_os_dev,  *pkosal_os_dev;
+  typedef KOSAL_ANY              kosal_os_dev,  *pkosal_os_dev;
 #endif // OS
 
-btInt _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO pkosal_pci_dev , btUnsigned32bitInt , btUnsigned32bitInt * );
+KOSAL_INT _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO pkosal_pci_dev , KOSAL_U32 , KOSAL_U32 * );
 #ifdef kosal_pci_read_config_dword
 # undef kosal_pci_read_config_dword
 #endif // kosal_pci_read_config_dword
@@ -686,14 +712,14 @@ btInt _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO pkosal_pci_dev , btUnsign
 
 // Alertable wait. When thread is servicing a user process and running in the user process context.
 // returns true if interrupted.
-# define kosal_sem_get_user_alertable(sptr) (btBool)down_interruptible(sptr)
+# define kosal_sem_get_user_alertable(sptr) (KOSAL_BOOL)down_interruptible(sptr)
 
 // Non-alertable, infinite wait. When thread is not servicing a user process.
 # define kosal_sem_get_krnl(sptr) down(sptr)
 
 // Alertable wait. When thread is not servicing a user process.
 // returns true if interrupted.
-# define kosal_sem_get_krnl_alertable(sptr) (btBool)down_interruptible(sptr)
+# define kosal_sem_get_krnl_alertable(sptr) (KOSAL_BOOL)down_interruptible(sptr)
 
 // Release one count of the semaphore.
 # define kosal_sem_put(sptr)      up(sptr)
@@ -719,7 +745,7 @@ void kosal_sem_get_user(pkosal_semaphore sptr) {
 // Alertable wait. When thread is servicing a user process and running in the user process context.
 // returns true if alerted/abandoned.
 static inline
-btBool kosal_sem_get_user_alertable(pkosal_semaphore sptr) {
+KOSAL_BOOL kosal_sem_get_user_alertable(pkosal_semaphore sptr) {
    NTSTATUS __s;
    do
    {
@@ -741,7 +767,7 @@ void kosal_sem_get_krnl(pkosal_semaphore sptr) {
 // Alertable wait. When thread is not servicing a user process.
 // returns true if alerted/abandoned.
 static inline
-btBool kosal_sem_get_krnl_alertable(pkosal_semaphore sptr) {
+KOSAL_BOOL kosal_sem_get_krnl_alertable(pkosal_semaphore sptr) {
    NTSTATUS __s;
    do
    {
@@ -860,37 +886,37 @@ do                                                \
 # include <ntddk.h>
 #endif // OS
 
-btVirtAddr _kosal_kmalloc(__ASSERT_HERE_PROTO btWSSize );
+KOSAL_VIRT _kosal_kmalloc(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
 #ifdef kosal_kmalloc
 # undef kosal_kmalloc
 #endif // kosal_kmalloc
 #define kosal_kmalloc(__size) _kosal_kmalloc(__ASSERT_HERE_ARGS __size)
 
-void _kosal_kfree(__ASSERT_HERE_PROTO btAny , btWSSize );
+void _kosal_kfree(__ASSERT_HERE_PROTO KOSAL_ANY , KOSAL_WSSIZE );
 #ifdef kosal_kfree
 # undef kosal_kfree
 #endif // kosal_kfree
 #define kosal_kfree(__ptr, __size) _kosal_kfree(__ASSERT_HERE_ARGS __ptr, __size)
 
-btPhysAddr kosal_virt_to_phys(btAny );
+KOSAL_PHYS kosal_virt_to_phys(KOSAL_ANY );
 
-btVirtAddr _kosal_alloc_contiguous_mem_nocache(__ASSERT_HERE_PROTO btWSSize );
+KOSAL_VIRT _kosal_alloc_contiguous_mem_nocache(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
 #ifdef kosal_alloc_contiguous_mem_nocache
 # undef kosal_alloc_contiguous_mem_nocache
 #endif // kosal_alloc_contiguous_mem_nocache
 #define kosal_alloc_contiguous_mem_nocache(__size) _kosal_alloc_contiguous_mem_nocache(__ASSERT_HERE_ARGS __size)
 
-void _kosal_free_contiguous_mem(__ASSERT_HERE_PROTO btAny , btWSSize );
+void _kosal_free_contiguous_mem(__ASSERT_HERE_PROTO KOSAL_ANY , KOSAL_WSSIZE );
 # ifdef kosal_free_contiguous_mem
 #    undef kosal_free_contiguous_mem
 # endif // kosal_free_contiguous_mem
 # define kosal_free_contiguous_mem(__ptr, __size) _kosal_free_contiguous_mem(__ASSERT_HERE_ARGS __ptr, __size)
 
 static inline
-btWSSize kosal_round_up_to_page_size(btWSSize s) {
-   btWSSize m = ((btWSSize)1 << PAGE_SHIFT) - 1;
-   btWSSize r = s & m;
-   return (s & ~m) + (((btWSSize)0 == r) ? 0 : PAGE_SIZE);
+KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
+   KOSAL_WSSIZE m = ((KOSAL_WSSIZE)1 << PAGE_SHIFT) - 1;
+   KOSAL_WSSIZE r = s & m;
+   return (s & ~m) + (((KOSAL_WSSIZE)0 == r) ? 0 : PAGE_SIZE);
 }
 
 
@@ -952,7 +978,7 @@ typedef void(*kosal_work_handler)(pwork_object);
 typedef struct {
    void *               context;
    osfunc               callback;
-   btTime               msec_delay;
+   KOSAL_TIME           msec_delay;
    kosal_work_handler   fnct;
 }work_object;
 
@@ -967,10 +993,10 @@ typedef struct {
 typedef work_object *pwork_object;
 
 void WorkItemCallback(IN PDEVICE_OBJECT pdevObject, IN PVOID Context);
-void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo,btTime msec);
+void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec);
 #if 0
 static void
-   kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo,btTime msec)
+   kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec)
 {
    pwo->msec_delay = msec;
    IoQueueWorkItem(wq, WorkItemCallback, DelayedWorkQueue, pwo);

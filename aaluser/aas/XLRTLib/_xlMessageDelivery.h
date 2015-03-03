@@ -65,8 +65,6 @@ AAL_DECLARE_SVC_MOD(localMDS, XLRT_API)
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 class _xlMessageDelivery;
 
@@ -77,18 +75,18 @@ class _xlMessageDelivery;
 // Comments:  This object is operational and meets its minimum functional
 //            requirements pior to init()
 //=============================================================================
-class _xlMessageDelivery : public AAL::AAS::ServiceBase,
-                           public AAL::AAS::IEventDeliveryService
+class _xlMessageDelivery : public ServiceBase,
+                           public IEventDeliveryService
 {
 public:
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlMessageDelivery, AAL::AAS::ServiceBase)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlMessageDelivery, ServiceBase)
    {
       // Default is a simple single threaded scheduler.
       m_Dispatcher = new OSLThreadGroup;
       SetSubClassInterface(iidEventDeliveryService,
-                           dynamic_cast<AAL::AAS::IEventDeliveryService *>(this));
-      m_pcontainer->getRuntimeServiceProvider()->setMessageDeliveryService(dynamic_cast<AAL::IBase *>(this));
+                           dynamic_cast<IEventDeliveryService *>(this));
+      m_pcontainer->getRuntimeServiceProvider()->setMessageDeliveryService(dynamic_cast<IBase *>(this));
    }
 
    // Initialize the object including any configuration changes based on
@@ -107,7 +105,7 @@ public:
 
    //
    // IEventDeliverService
-   AAL::AAS::EDS_Status Schedule();
+   EDS_Status Schedule();
    // Nop for now
    void Unblock() { ASSERT(false); }
 
@@ -115,16 +113,16 @@ public:
    void StopEventDelivery();
 
    btBool QueueEvent(btEventHandler ,
-                     AAL::AAS::CAALEvent * );
+                     CAALEvent * );
 
    btBool QueueEvent(btObjectType ,
-                     AAL::AAS::CAALEvent * );
+                     CAALEvent * );
 
    btBool QueueEvent(btObjectType ,
                      IDispatchable *);
 
    /// Retrieve the IEventDispatcher interface.
-   AAL::AAS::IEventDispatcher *GetEventDispatcher(AAL::AAS::EDSDispatchClass = AAL::AAS::EDS_dispatcherNormal);
+   IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal);
 
    ~_xlMessageDelivery();
 
@@ -133,8 +131,6 @@ protected:
 };
 
 
-      END_NAMESPACE(XL)
-   END_NAMESPACE(RT)
 END_NAMESPACE(AAL)
 
 /// @} group MDS

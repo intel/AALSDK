@@ -47,8 +47,7 @@
 /// @{
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
+
 
 //=============================================================================
 /// Default Constructor of Runtime class
@@ -84,8 +83,8 @@ btBool Runtime::IsOK()
 ///                  typically start() results in a call back to IRuntimeClient
 ///                  runtimeStarted() or runtimeStartFailed().
 //=============================================================================
-AAL::btBool  Runtime::start( AAL::IBase *pClient,
-                             const NamedValueSet &rConfigParms)
+btBool  Runtime::start(IBase               *pClient,
+                       const NamedValueSet &rConfigParms)
 {
    // Try and start the system
    if ( IsOK() ) {
@@ -116,10 +115,10 @@ void Runtime::stop()
 /// @return       void
 //=============================================================================
 void Runtime::allocService(
-      AAL::IBase                            *pClient,
-      NamedValueSet const                   &rManifest,
-      TransactionID const                   &rTranID,
-      AAL::XL::RT::IRuntime::eAllocatemode   mode)
+      IBase                  *pClient,
+      NamedValueSet const    &rManifest,
+      TransactionID const    &rTranID,
+      IRuntime::eAllocatemode mode)
 {
    if ( IsOK() ) {
       m_pImplementation->allocService(pClient, rManifest, rTranID, mode);
@@ -146,8 +145,6 @@ void Runtime::schedDispatchable(IDispatchable *pdispatchable)
 Runtime::~Runtime() {/*empty*/}
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 
 /// @} group XLRuntime

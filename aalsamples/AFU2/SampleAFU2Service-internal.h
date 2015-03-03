@@ -42,17 +42,16 @@
 //****************************************************************************
 #ifndef __SAMPLEAFU2SERVICE_INT_H__
 #define __SAMPLEAFU2SERVICE_INT_H__
-
 #include "SampleAFU2Service.h" // Public AFU device interface
 #include <aalsdk/aas/AALService.h>
 
-BEGIN_NAMESPACE(AAL)
+using namespace AAL;
 
 //=============================================================================
 // Name: SampleAFU2
 // Description: Procuder/Consumer Sample AFU
 //=============================================================================
-class SampleAFU2 : public AAL::AAS::ServiceBase,
+class SampleAFU2 : public ServiceBase,
                    public ISampleAFU2Producer,
                    public ISampleAFU2Consumer
 
@@ -83,7 +82,7 @@ public:
    //  interface is IEncode.  DeviceServiceBase provides an init() method that
    //  can be used where more sophisticated initialization is required. The
    //  init() method is called by the factory AFTER construction but before use.
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SampleAFU2, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SampleAFU2, ServiceBase),
       m_pConsumerTransactionID(NULL),
       m_CryptKey(0),
       m_WSSize(constDefaultBufferSize),
@@ -172,65 +171,63 @@ private:
 class SampleAFU2ExceptionFunctor : public IDispatchable
 {
 public:
-   SampleAFU2ExceptionFunctor(AAL::AAS::IServiceClient *pSvcClient, // recipient
-                              IBase                    *pAFU,       // sender
-                              btID                      SubclassID, // event subclass ID
-                              TransactionID const      &TranID,     // orig tid
-                              btID                      ExID,       // exception ID
-                              btID                      Reason,     // reason code
-                              btcString                 Descr       // error description
+   SampleAFU2ExceptionFunctor(IServiceClient      *pSvcClient, // recipient
+                              IBase               *pAFU,       // sender
+                              btID                 SubclassID, // event subclass ID
+                              TransactionID const &TranID,     // orig tid
+                              btID                 ExID,       // exception ID
+                              btID                 Reason,     // reason code
+                              btcString            Descr       // error description
                              );
    virtual void operator() ();
 
 protected:
-   AAL::AAS::IServiceClient *m_pSvcClient;
-   IBase                    *m_pAFU;
-   btID                      m_SubclassID;
-   TransactionID const      &m_TranID;
-   btID                      m_ExID;
-   btID                      m_Reason;
-   btcString                 m_Descr;
+   IServiceClient      *m_pSvcClient;
+   IBase               *m_pAFU;
+   btID                 m_SubclassID;
+   TransactionID const &m_TranID;
+   btID                 m_ExID;
+   btID                 m_Reason;
+   btcString            m_Descr;
 };
 
 class SampleAFU2BufferFunctor : public IDispatchable
 {
 public:
-   SampleAFU2BufferFunctor(AAL::AAS::IServiceClient *pSvcClient, // recipient
-                           IBase                    *pAFU,       // sender
-                           btID                      SubclassID, // event subclass ID
-                           TransactionID const      &TranID,     // orig tid
-                           btVirtAddr                pBuf,       // buffer address
-                           btWSSize                  Bytes       // buffer size
+   SampleAFU2BufferFunctor(IServiceClient      *pSvcClient, // recipient
+                           IBase               *pAFU,       // sender
+                           btID                 SubclassID, // event subclass ID
+                           TransactionID const &TranID,     // orig tid
+                           btVirtAddr           pBuf,       // buffer address
+                           btWSSize             Bytes       // buffer size
                           );
    virtual void operator() ();
 
 protected:
-   AAL::AAS::IServiceClient *m_pSvcClient;
-   IBase                    *m_pAFU;
-   btID                      m_SubclassID;
-   TransactionID const      &m_TranID;
-   btVirtAddr                m_pBuf;
-   btWSSize                  m_Bytes;
+   IServiceClient      *m_pSvcClient;
+   IBase               *m_pAFU;
+   btID                 m_SubclassID;
+   TransactionID const &m_TranID;
+   btVirtAddr           m_pBuf;
+   btWSSize             m_Bytes;
 };
 
 class SampleAFU2TransactionFunctor : public IDispatchable
 {
 public:
-   SampleAFU2TransactionFunctor(AAL::AAS::IServiceClient *pSvcClient, // recipient
-                                IBase                    *pAFU,       // sender
-                                btID                      SubclassID, // event subclass ID
-                                TransactionID const      &TranID      // orig tid
+   SampleAFU2TransactionFunctor(IServiceClient      *pSvcClient, // recipient
+                                IBase               *pAFU,       // sender
+                                btID                 SubclassID, // event subclass ID
+                                TransactionID const &TranID      // orig tid
                                );
    virtual void operator() ();
 
 protected:
-   AAL::AAS::IServiceClient *m_pSvcClient;
-   IBase                    *m_pAFU;
-   btID                      m_SubclassID;
-   TransactionID const      &m_TranID;
+   IServiceClient      *m_pSvcClient;
+   IBase               *m_pAFU;
+   btID                 m_SubclassID;
+   TransactionID const &m_TranID;
 };
-
-END_NAMESPACE(AAL)
 
 #endif // __SAMPLEAFU2SERVICE_INT_H__
 

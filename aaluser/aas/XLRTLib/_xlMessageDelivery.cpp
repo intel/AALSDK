@@ -60,7 +60,7 @@
 //   well known name is generated.
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< AAL::XL::RT::_xlMessageDelivery >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_xlMessageDelivery >
 
 
 #if defined ( __AAL_WINDOWS__ )
@@ -78,8 +78,6 @@ AAL_END_SVC_MOD()
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
 
 /// @addtogroup MDS
 /// @{
@@ -95,10 +93,10 @@ BEGIN_NAMESPACE(AAL)
 void _xlMessageDelivery::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   rtid));
+   QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
+                                        Client(),
+                                        dynamic_cast<IBase*>(this),
+                                        rtid));
 }
 
 //=============================================================================
@@ -137,9 +135,9 @@ btBool _xlMessageDelivery::Release(btTime timeout)
 // Interface: public
 // Comments: Unsupported
 //=============================================================================
-AAL::AAS::EDS_Status _xlMessageDelivery::Schedule()
+EDS_Status _xlMessageDelivery::Schedule()
 {
-   return AAL::AAS::EDS_statusUnsupportedModel;
+   return EDS_statusUnsupportedModel;
 }
 
 //=============================================================================
@@ -191,8 +189,8 @@ btBool _xlMessageDelivery::SetParms(NamedValueSet const &rparms)
 //           2 - for functors wrapped as events (deprecated)
 //           3 - for proper dispatchable functors.
 //=============================================================================
-btBool _xlMessageDelivery::QueueEvent(btEventHandler       handler,
-                                      AAL::AAS::CAALEvent *pevent )
+btBool _xlMessageDelivery::QueueEvent(btEventHandler handler,
+                                      CAALEvent     *pevent )
 {
    AutoLock(this);
    if ( NULL == m_Dispatcher ) {
@@ -203,8 +201,8 @@ btBool _xlMessageDelivery::QueueEvent(btEventHandler       handler,
    return true;
 }
 
-btBool _xlMessageDelivery::QueueEvent(btObjectType         parm,
-                                      AAL::AAS::CAALEvent *pevent )
+btBool _xlMessageDelivery::QueueEvent(btObjectType  parm,
+                                      CAALEvent    *pevent )
 {
    AutoLock(this);
    if ( NULL == m_Dispatcher ) {
@@ -232,7 +230,7 @@ btBool _xlMessageDelivery::QueueEvent(btObjectType   parm,
 // Interface: public
 // Comments: Unsupported
 //=============================================================================
-AAL::AAS::IEventDispatcher *_xlMessageDelivery::GetEventDispatcher(AAL::AAS::EDSDispatchClass disclass)
+IEventDispatcher *_xlMessageDelivery::GetEventDispatcher(EDSDispatchClass disclass)
 {
    return NULL;
 }
@@ -251,7 +249,5 @@ _xlMessageDelivery::~_xlMessageDelivery()
 /// @} group MDS
 
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
 END_NAMESPACE(AAL)
 

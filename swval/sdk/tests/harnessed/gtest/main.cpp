@@ -7,9 +7,11 @@
 #include <cstdio>
 #include <string>
 #include <fstream>
+#include <list>
 
 #include <aalsdk/AAL.h>
 #include <aalsdk/xlRuntime.h>
+using namespace AAL;
 
 #include "gtest/gtest.h"
 #include "cases/gtCommon.cpp"

@@ -45,8 +45,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 //=============================================================================
@@ -125,10 +123,7 @@ protected:
 };
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
-
 
 #endif // __AALSDK_MAFUTRANSACTIONS_H__
 

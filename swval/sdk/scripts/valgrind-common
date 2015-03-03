@@ -1,0 +1,370 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+die() {
+   printf "die: %s\n" ${1+"$@"}
+   exit 13
+}
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r FIND="`which find`" 2>/dev/null
+[ "x${FIND}" = x ] && die "no find?"
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = x ] && die "no git?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = x ] && die "no make?"
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = x ] && die "no mkdir?"
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" = x ] && die "no mktemp?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = x ] && die "no rm?"
+declare -r SED="`which sed`" 2>/dev/null
+[ "x${SED}" = x ] && die "no sed?"
+
+declare -r VALGRIND="`which valgrind`" 2>/dev/null
+[ "x${VALGRIND}" = x ] && die "no valgrind?"
+
+declare -r VALGRIND_VER=`${VALGRIND} --version | ${SED} -re 's,.*(([0-9]+[.])+[0-9]+),\1,'`
+declare -r VALGRIND_VER_MAJOR=`echo ${VALGRIND_VER} | ${SED} -re 's,([0-9]+)[.].*,\1,'`
+declare -r VALGRIND_VER_MINOR=`echo ${VALGRIND_VER} | ${SED} -re 's,(([0-9]+)[.])([0-9]+)[.]?,\3,'`
+printf "valgrind ver = %d.%d\n" ${VALGRIND_VER_MAJOR} ${VALGRIND_VER_MINOR}
+
+declare -r CG_ANNOTATE="`which cg_annotate`" 2>/dev/null
+[ "x${CG_ANNOTATE}" = x ] && die "no cg_annotate?"
+declare -r CALLGRIND_ANNOTATE="`which callgrind_annotate`" 2>/dev/null
+[ "x${CALLGRIND_ANNOTATE}" = x ] && die "no callgrind_annotate?"
+declare -r MS_PRINT="`which ms_print`" 2>/dev/null
+[ "x${MS_PRINT}" = x ] && die "no ms_print?"
+
+set -e
+
+declare VPATH=''
+declare VPATH_ALREADY_EXISTED=false
+declare KILLED=false
+
+on_exit() {
+   if ${KILLED} ; then
+      if ! ${VPATH_ALREADY_EXISTED} ; then
+         # Don't destroy results created by a previous full run.
+         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+      fi
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   KILLED=true
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+# $1 : name of the application binary to be analyzed.
+# $2 : the valgrind analysis requested.
+setup() {
+   local -r app="$1"
+   local -r analysis="$2"
+
+   # This script is located in swval/sdk/scripts
+   local -r srcdir="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   local -r gitdir="${reporoot}/.git"
+
+   # Make sure we're being run from the right place.
+   [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
+
+   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+
+   VPATH="${PWD}/valgrind.${app}.${git_commit_hash:0:7}"
+   if [ -d "${VPATH}/${analysis}" ]; then
+      VPATH_ALREADY_EXISTED=true
+   else
+      ${MKDIR} -p "${VPATH}/${analysis}"
+   fi
+
+   if ! [ -f "${VPATH}/${analysis}/Makefile" ]; then
+      # Make sure that the symlinks to common_hdrs exist.
+      for x in "${reporoot}/aaluser/include/aalsdk" \
+               "${reporoot}/aalkernel/include/aalsdk"
+      do
+         if ! [ -L "$x/kernel" ]; then
+            pushd "$x" >/dev/null 2>&1
+            ${LN} -s "../../../common_hdrs" kernel
+            popd >/dev/null 2>&1
+         fi
+      done
+
+      if ! [ -f "${srcdir}/configure" ]; then
+         pushd "${srcdir}" >/dev/null 2>&1
+         ${AUTORECONF} -vi
+         popd >/dev/null 2>&1
+      fi
+
+      pushd "${VPATH}/${analysis}" >/dev/null 2>&1
+
+      ${srcdir}/configure --with-valgrind="${analysis}"
+      ${MAKE}
+      ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" install
+      ${MAKE} check
+
+      popd >/dev/null 2>&1
+   fi
+
+   printf "\n"
+   printf "%s\n" "${git_commit_hash}"
+
+   return 0
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/mc-manual.html
+# Memcheck is a memory error detector.
+run_valgrind_memcheck() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='memcheck'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}.log" \
+               --tool="${tool}" \
+               --leak-check=full \
+               --undef-value-errors=yes \
+               --track-origins=yes \
+               --show-leak-kinds=all \
+               --leak-check-heuristics=all \
+               --malloc-fill=0xa1 \
+               --free-fill=0xfe \
+               ${exe} ${1+"$@"}
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/cg-manual.html
+# Cachegrind simulates how your program interacts with a machine's
+# cache hierarchy and (optionally) branch predictor.
+run_valgrind_cachegrind() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='cachegrind'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}/${tool}.log" \
+               --tool="${tool}" \
+               --cachegrind-out-file="${out}/${tool}/${tool}.out" \
+               ${exe} ${1+"$@"}
+
+   ${CG_ANNOTATE} --auto=yes "${out}/${tool}/${tool}.out" >"${out}/${tool}.out.annotated"
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/cl-manual.html
+# Callgrind is a profiling tool that records the call history
+# among functions in a program's run as a call-graph.
+run_valgrind_callgrind() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='callgrind'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}/${tool}.log" \
+               --tool="${tool}" \
+               --callgrind-out-file="${out}/${tool}/${tool}.out" \
+               ${exe} ${1+"$@"}
+
+   ${CALLGRIND_ANNOTATE} --auto=yes --tree=both "${out}/${tool}/${tool}.out" >"${out}/${tool}.out.annotated"
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/hg-manual.html
+# Helgrind is a Valgrind tool for detecting synchronisation errors in
+# C, C++ and Fortran programs that use the POSIX pthreads threading primitives.
+run_valgrind_helgrind() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='helgrind'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}.log" \
+               --tool="${tool}" \
+               ${exe} ${1+"$@"}
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/drd-manual.html
+# DRD is a Valgrind tool for detecting errors in multithreaded C and C++ programs.
+# The tool works for any program that uses the POSIX threading primitives or that
+# uses threading concepts built on top of the POSIX threading primitives. 
+run_valgrind_drd() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='drd'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}.log" \
+               --tool="${tool}" \
+               ${exe} ${1+"$@"}
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/ms-manual.html
+# Massif is a heap profiler. It measures how much heap memory your program uses.
+run_valgrind_massif() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='massif'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}/${tool}.log" \
+               --tool="${tool}" \
+               --massif-out-file="${out}/${tool}/${tool}.out" \
+               --time-unit=B \
+               ${exe} ${1+"$@"}
+
+   ${MS_PRINT} "${out}/${tool}/${tool}.out" >"${out}/${tool}.out.ms_print"
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/dh-manual.html
+# (experimental) DHAT is a tool for examining how programs use their heap allocations.
+run_valgrind_dhat() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='dhat'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}.log" \
+               --tool="exp-dhat" \
+               ${exe} ${1+"$@"}
+}
+
+# $1 : app to analyze
+# ... app arguments
+#
+# http://valgrind.org/docs/manual/sg-manual.html
+# (experimental) SGCheck is a tool for finding overruns of stack and global arrays.
+# It works by using a heuristic approach derived from an observation about the likely
+# forms of stack and global array accesses. 
+run_valgrind_sgcheck() {
+   local -r exe="$1"
+   shift
+
+   local -r out="${VPATH}"
+   local -r tool='sgcheck'
+
+   [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   ${VALGRIND} -v \
+               --trace-children=yes \
+               --log-file="${out}/${tool}.log" \
+               --tool="exp-sgcheck" \
+               ${exe} ${1+"$@"}
+}
+
+# $1 : app to analyze
+# ... app arguments
+run_valgrind_all() {
+   local -r exe="$1"
+   shift
+
+   local tool
+
+   tool='memcheck'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_memcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='cachegrind'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='callgrind'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='helgrind'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_helgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='drd'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_drd "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='massif'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='dhat'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_dhat "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='sgcheck'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_sgcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+}
+

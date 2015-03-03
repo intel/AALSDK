@@ -88,9 +88,6 @@ AAL_DECLARE_MOD(libFAPTrans1, FAPTRANS1_API)
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
-         BEGIN_NAMESPACE(FAP_10)
 
    //=============================================================================
    // Name:          TDESC_POSITION_from_delim()
@@ -891,8 +888,8 @@ BEGIN_NAMESPACE(AAL)
 
    class WkSp_Free_Mapping_EventHandlerObject {
    public:
-      WkSp_Free_Mapping_EventHandlerObject(  const WorkSpaceMapper::WkSp& rParms);
-      static void WkSp_Free_Mapping_EventHandler(AAL::IEvent const& theEvent);
+      WkSp_Free_Mapping_EventHandlerObject(const WorkSpaceMapper::WkSp &rParms);
+      static void WkSp_Free_Mapping_EventHandler(IEvent const &theEvent);
       virtual btEventHandler Get_Free_Mapping_EventHandler();
       virtual ~WkSp_Free_Mapping_EventHandlerObject(){};
    private:
@@ -935,9 +932,7 @@ BEGIN_NAMESPACE(AAL)
 
 #endif // DEPRECATED
 
-         END_NAMESPACE(FAP_10)
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
+
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_FAPTRANS_FAP10_H__

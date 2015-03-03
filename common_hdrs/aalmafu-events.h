@@ -72,6 +72,8 @@
 #include <aalsdk/kernel/aalui-events.h>
 #include <aalsdk/kernel/aalmafu.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // Name: uidrv_event_mafu_ConfigureAFU
 // Description: Constructor
@@ -279,6 +281,8 @@ static inline struct uidrv_event_afu_response_event *
    kosal_list_init(&AALQ_QUEUE(This));
    return This;
 }
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALMAFU_EVENTS_H__
 

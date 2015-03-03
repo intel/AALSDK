@@ -82,11 +82,10 @@
 
 
 BEGIN_NAMESPACE(AAL)
+
 #ifdef __cplusplus
-   BEGIN_NAMESPACE(AAS)
-      class IMessageHandler;
-   END_NAMESPACE(AAS)
-# define IMSGHNDLR AAL::AAS::IMessageHandler
+   class IMessageHandler;
+# define IMSGHNDLR IMessageHandler
 #else
    struct IMessageHandler;
 # define IMSGHNDLR struct IMessageHandler
@@ -113,7 +112,6 @@ typedef struct stTransactionID_t
 #else
 #  error Add stTransactionID_t size check for unknown address size.
 #endif // sizeof_void_ptr
-
 
 END_NAMESPACE(AAL)
 

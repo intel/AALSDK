@@ -128,7 +128,7 @@ INSTANTIATE_TEST_CASE_P(MyThrGr, ThrGrSingle,
 class Multi : public IDispatchable
 {
 public:
-   Multi(CriticalSection &cs, volatile AAL::btUnsignedInt &counter) :
+   Multi(CriticalSection &cs, volatile btUnsignedInt &counter) :
       m_CS(cs),
       m_Counter(counter)
    {}
@@ -142,12 +142,12 @@ public:
    }
 
 protected:
-   CriticalSection             &m_CS;
-   volatile AAL::btUnsignedInt &m_Counter;
+   CriticalSection        &m_CS;
+   volatile btUnsignedInt &m_Counter;
 };
 
 // Value-parameterized test fixture
-class ThrGrMulti : public ::testing::TestWithParam< AAL::btUnsignedInt >
+class ThrGrMulti : public ::testing::TestWithParam< btUnsignedInt >
 {
 protected:
 ThrGrMulti() :
@@ -168,16 +168,16 @@ virtual void TearDown()
 
 TEST_P(ThrGrMulti, SharedMemory)
 {
-   AAL::btUnsignedInt thrds = GetParam();
+   btUnsignedInt thrds = GetParam();
 
    m_pThrGrp = new(std::nothrow) OSLThreadGroup(thrds);
    ASSERT_NONNULL(m_pThrGrp);
 
-   CriticalSection             cs;         // to synchronize accesses to counter
-   volatile AAL::btUnsignedInt counter = 0;
+   CriticalSection        cs;         // to synchronize accesses to counter
+   volatile btUnsignedInt counter = 0;
 
-   const AAL::btUnsignedInt loops = 1000;
-   AAL::btUnsignedInt       i;
+   const btUnsignedInt loops = 1000;
+   btUnsignedInt       i;
    for ( i = 0 ; i < loops ; ++i ) {
       ASSERT_TRUE( m_pThrGrp->Add( new(std::nothrow) Multi(cs, counter) ) );
    }
@@ -196,5 +196,5 @@ TEST_P(ThrGrMulti, SharedMemory)
 // ::testing::ValuesIn(STL container), ::testing::ValuesIn(STL iter begin, STL iter end)
 // ::testing::Bool()
 INSTANTIATE_TEST_CASE_P(MyThrGr, ThrGrMulti,
-                        ::testing::Range<AAL::btUnsignedInt>(2, 10));
+                        ::testing::Range<btUnsignedInt>(2, 10));
 

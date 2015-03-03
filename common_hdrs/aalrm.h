@@ -75,7 +75,7 @@
 #include <aalsdk/kernel/AALTransactionID_s.h>
 #include <aalsdk/kernel/aaldevice.h>
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
@@ -207,4 +207,7 @@ struct aalrm_ioctlreq {
 
 END_C_DECLS
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AALRM_H__
+

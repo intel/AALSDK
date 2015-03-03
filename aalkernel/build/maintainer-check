@@ -1,1 +1,2125 @@
-../../aaluser/build/maintainer-check
+#!/bin/bash
+##**************************************************
+## INTEL CONFIDENTIAL - for Intel internal use only
+##**************************************************
+shopt -o -s nounset
+#shopt -s nocasematch
+
+declare -r SCRIPT="${0##*/}"
+declare -r SCRIPT_ARGS="$*"
+declare -r SCRIPT_NONE='_n_'
+declare    HELP=false
+declare    VERBOSE=true
+
+################################################################################
+
+declare    CONFIGURE="${SCRIPT_NONE}"
+declare    SRCDIR="${SCRIPT_NONE}"
+declare    DISTDIR="${SCRIPT_NONE}"
+
+declare -r DEF_WKSPC='maintainer-check'
+declare    WKSPC="${SCRIPT_NONE}"
+
+declare -r CONFIGURE_OPTS='--disable-dependency-tracking'
+declare -r MAKE_OPTS='-j 8 V=0'
+
+################################################################################
+
+declare -r LOG_FILE_NAME='LOG'
+declare    LOG_FILE=''
+declare -i LOG_FD=0
+
+# $1 : full path
+open_log() {
+   [ $# -eq 1 ]        || return 1
+   [ ${LOG_FD} -eq 0 ] || return 2
+   [ -d "$1" ]         || return 3
+
+   LOG_FILE="$1/${LOG_FILE_NAME}"
+
+   if [ -f "${LOG_FILE}" ]; then
+      # file exists - don't overwrite it.
+
+      local -i rev
+      local -i max=-1
+      local    f
+      local    tmp 
+      local    regex
+
+      for f in `${FIND} $1 -maxdepth 1 -type f` ; do
+         tmp="$f"
+         regex="${LOG_FILE_NAME}.[[:digit:]]+"
+
+         if [[ $tmp =~ $regex ]]; then
+            rev="${f##*.}"
+            [ ${rev} -gt ${max} ] && max=${rev}
+         fi
+      done
+
+      max=$(( max + 1 ))
+
+      cmd ${MV} "$1/${LOG_FILE_NAME}" "$1/${LOG_FILE_NAME}.${max}"
+   fi
+
+   local -i fd
+   local -i res
+
+   exec {fd}>"${LOG_FILE}"
+   res=$?
+
+   [ 0 -eq ${res} ] && LOG_FD=${fd}
+
+   return ${res}
+}
+
+close_log() {
+   [ ${LOG_FD} != 0 ] && return 1
+
+   local -i fd=${LOG_FD}
+
+   LOG_FD=0
+   LOG_FILE=''
+
+   exec {fd}>&-
+
+   return 0
+}
+
+log() {
+   if ${VERBOSE} ; then
+      printf "$*"
+   fi
+#   [ 0 -ne ${LOG_FD} ] && echo -nE "$*" >&${LOG_FD}
+   [ 0 -ne ${LOG_FD} ] && printf "$*" >&${LOG_FD}
+}
+
+die() {
+   log "die: $@"
+   exit 1
+}
+
+declare -r CHOWN="`which chown`" 2>/dev/null
+[ "x${CHOWN}" = "x" ] && die "No chown?"
+declare -r CP="`which cp`" 2>/dev/null
+[ "x${CP}" = "x" ] && die "No cp?"
+declare -r DATE="`which date`" 2>/dev/null
+[ "x${DATE}" = "x" ] && die "No date?"
+declare -r EGREP="`which egrep`" 2>/dev/null
+[ "x${EGREP}" = "x" ] && die "No egrep?"
+declare -r FIND="`which find`" 2>/dev/null
+[ "x${FIND}" = "x" ] && die "No find?"
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = "x" ] && die "No git?"
+declare -r HEAD="`which head`" 2>/dev/null
+[ "x${HEAD}" = "x" ] && die "No head?"
+declare -r KILL="`which kill`" 2>/dev/null
+[ "x${KILL}" = "x" ] && die "No kill?"
+declare -r LS="`which ls`" 2>/dev/null
+[ "x${LS}" = "x" ] && die "No ls?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = "x" ] && die "No make?"
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = "x" ] && die "No mkdir?"
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" = "x" ] && die "No mktemp?"
+declare -r MV="`which mv`" 2>/dev/null
+[ "x${MV}" = "x" ] && die "No mv?"
+declare -r PS="`which ps`" 2>/dev/null
+[ "x${PS}" = "x" ] && die "No ps?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = "x" ] && die "No rm?"
+declare -r SED="`which sed`" 2>/dev/null
+[ "x${SED}" = "x" ] && die "No sed?"
+declare -r SLEEP="`which sleep`" 2>/dev/null
+[ "x${SLEEP}" = "x" ] && die "No sleep?"
+declare -r SUDO="`which sudo`" 2>/dev/null
+[ "x${SUDO}" = "x" ] && die "No sudo?"
+declare -r TAR="`which tar`" 2>/dev/null
+[ "x${TAR}" = "x" ] && die "No tar?"
+declare -r UNAME="`which uname`" 2>/dev/null
+[ "x${UNAME}" = "x" ] && die "No uname?"
+
+declare -r THIS_YEAR="`${DATE} +%Y`"
+
+declare -r CMD_OUTFILE="`${MKTEMP} --tmpdir "${SCRIPT}.out.XXXXXXXXXX"`"
+declare -r CMD_ERRFILE="`${MKTEMP} --tmpdir "${SCRIPT}.err.XXXXXXXXXX"`"
+
+declare -i  MY_COPROC_STDIN_FD=0
+declare -i MY_COPROC_STDOUT_FD=0
+declare -i MY_COPROC_STDERR_FD=0
+declare -i       MY_COPROC_PID=0
+
+on_exit() {
+   if [ -f "${CMD_OUTFILE}" ]; then
+      ${RM} -f "${CMD_OUTFILE}"
+   fi
+   if [ -f "${CMD_ERRFILE}" ]; then
+      ${RM} -f "${CMD_ERRFILE}"
+   fi
+   if [ ${MY_COPROC_PID} -ne 0 ]; then
+      if ${PS} -p ${MY_COPROC_PID} &>/dev/null ; then
+         ${KILL} -SIGKILL ${MY_COPROC_PID} &>/dev/null
+      fi
+   fi
+   close_log
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit -2
+}
+trap 'on_sigint' SIGINT
+
+# $1    : stdout filename
+# $2    : stderr filename
+# $3..N : command to execute
+start_coproc() {
+   local -r stdout_file="$1"
+   shift
+   local -r stderr_file="$1"
+   shift
+   local -r cp_cmd="$*"
+
+   local -i  res
+   local -i  coproc_stdin_fd
+   local -i  coproc_stdout_fd
+   local -i  coproc_stderr_fd
+   local -i  coproc_pid
+
+   MY_COPROC_STDIN_FD=0
+   MY_COPROC_STDOUT_FD=0
+   MY_COPROC_STDERR_FD=0
+   MY_COPROC_PID=0
+
+   coproc ${cp_cmd} >"${stdout_file}" 2>"${stderr_file}"
+
+   exec {coproc_stderr_fd}<"${stderr_file}"
+   MY_COPROC_STDERR_FD=${coproc_stderr_fd}
+
+   # Yes, stdin is in ${COPROC[1]}
+   coproc_stdin_fd=${COPROC[1]}
+   MY_COPROC_STDIN_FD=${coproc_stdin_fd}
+
+   # Yes, stdout is in ${COPROC[0]}
+   coproc_stdout_fd=${COPROC[0]}
+   MY_COPROC_STDOUT_FD=${coproc_stdout_fd}
+
+   # save the PID
+   coproc_pid=${COPROC_PID}
+   MY_COPROC_PID=${coproc_pid}
+
+   return 0
+}
+
+join_coproc() {
+   local -i res
+   local -i coproc_stdin_fd=${MY_COPROC_STDIN_FD}
+   local -i coproc_stdout_fd=${MY_COPROC_STDOUT_FD}
+   local -i coproc_stderr_fd=${MY_COPROC_STDERR_FD}
+
+   wait ${MY_COPROC_PID}
+   res=$?
+
+   [ ${coproc_stdin_fd}  -eq 0 ] || exec {coproc_stdin_fd}>&-
+   [ ${coproc_stdout_fd} -eq 0 ] || exec {coproc_stdout_fd}<&-
+   [ ${coproc_stdout_fd} -eq 0 ] || exec {coproc_stderr_fd}<&-
+
+   MY_COPROC_STDIN_FD=0
+   MY_COPROC_STDOUT_FD=0
+   MY_COPROC_STDERR_FD=0
+   MY_COPROC_PID=0
+
+   return ${res}
+}
+
+cmd() {
+   local -i res
+
+   log "$* # "
+
+   eval "$@" >"${CMD_OUTFILE}" 2>"${CMD_ERRFILE}"
+   res=$?
+
+   if [ ${res} -ne 0 ]; then
+      log "[FAIL]\n"
+
+      local line
+      local -i out_fd
+      local -i err_fd
+
+      exec {out_fd}<"${CMD_OUTFILE}"
+      while read -u ${out_fd} line ; do
+         log "${line}\n"
+      done
+      exec {out_fd}<&-
+
+      exec {err_fd}<"${CMD_ERRFILE}"
+      while read -u ${err_fd} line ; do
+         log "${line}\n"
+      done
+      exec {err_fd}<&-
+
+      res=1
+   else
+      log "[ OK ]\n"
+   fi
+
+   if [ ${res} -ne 0 ]; then
+      die "$* # [FAILED]\n"
+   fi
+   return ${res}
+}
+
+declare -i _visual_seconds=0
+declare    _visual_show_mins=false
+declare    _visual_mins
+declare    _visual_mins_i
+visual() {
+   ${VERBOSE} || return
+
+   local -r ch='.'
+   local -i mins
+
+   if [ ${_visual_seconds} -gt 0 ] && [ 0 -eq $(( _visual_seconds % 60 )) ]; then
+      _visual_show_mins=true
+      mins=$(( _visual_seconds / 60 ))
+      printf -v _visual_mins " %d minute" ${mins}
+      [ 1 -eq ${mins} ] || _visual_mins="${_visual_mins}s"
+      _visual_mins="${_visual_mins} "
+      _visual_mins_i=0
+   fi
+
+   if ${_visual_show_mins}; then
+      echo -nE "${_visual_mins:${_visual_mins_i}:1}"
+      let $(( ++_visual_mins_i ))
+      if [ ${_visual_mins_i} -ge ${#_visual_mins} ]; then
+         _visual_show_mins=false
+      fi
+   else
+      echo -nE "${ch}"
+   fi
+
+   ${SLEEP} 1
+   let $(( ++_visual_seconds ))
+}
+
+_cmd_as_coproc_callback() {
+   visual
+}
+
+# $* : cmd to execute
+cmd_as_coproc() {
+   local -i res=0
+   local -r save_IFS="${IFS}"
+
+   log "$* # "
+
+   start_coproc "${CMD_OUTFILE}" "${CMD_ERRFILE}" "$*"
+
+   local -i cp_pid=${MY_COPROC_STDOUT_FD}
+
+   while true; do
+      _cmd_as_coproc_callback
+      ${PS} -p ${MY_COPROC_PID} &>/dev/null || break
+   done
+   _visual_seconds=0
+
+   join_coproc 
+   res=$?
+
+   if [ 0 -ne ${res} ]; then
+      log "[FAIL]\n"
+
+      local line
+      local -i out_fd
+      local -i err_fd
+
+      IFS='
+'
+
+      exec {out_fd}<"${CMD_OUTFILE}"
+      while read -u ${out_fd} line ; do
+         echo -E "${line}"
+      done
+      exec {out_fd}<&-
+
+      exec {err_fd}<"${CMD_ERRFILE}"
+      while read -u ${err_fd} line ; do
+         echo -E "${line}"
+      done
+      exec {err_fd}<&-
+
+      IFS="${save_IFS}"
+   else
+      log "[ OK ]\n"
+   fi
+
+   if [ ${res} -ne 0 ]; then
+      die "$* # [FAILED]\n"
+   fi
+   return ${res}
+}
+
+process_args() {
+   local -a args=(${SCRIPT_ARGS})
+   local arg
+   local val
+   local -i i
+
+   for (( i = 0 ; i < ${#args[@]} ; ++i )); do
+      arg="${args[$i]}"
+
+      if [ "${arg:0:2}" == '--' ]; then
+         if [ "${arg}" == '--' ]; then
+            arg="${SCRIPT_NONE}"  # -- is not valid
+            val="${SCRIPT_NONE}"
+         else
+            if [ "${arg/=/}" != "${arg}" ]; then
+               val="${arg#*=}"
+               arg="${arg%%=*}"
+               if [ "x${val}" == "x" ]; then
+                  arg="${SCRIPT_NONE}" # --arg=<nothing> is not valid
+                  val="${SCRIPT_NONE}"
+               fi
+            else
+               # got --arg
+               if [ $(( i + 1 )) -lt ${#args[@]} ]; then
+                  if [ "${args[$(( i + 1 ))]:0:1}" != '-' ]; then
+                     val="${args[$(( i + 1 ))]}"
+                     let $(( ++i ))
+                  else
+                     val="${SCRIPT_NONE}"
+                  fi
+               else
+                  val="${SCRIPT_NONE}"
+               fi
+            fi
+         fi
+      elif [ "${arg:0:1}" == "-" ]; then
+         arg="${SCRIPT_NONE}" # -arg* is not valid
+         val="${SCRIPT_NONE}"
+      else
+         # Got something not prefixed by - or --
+         val="${arg}"
+      fi
+
+      case "${arg}" in
+         "--help")
+            HELP=true
+            #printf "got --help\n"
+         ;;
+
+         "--quiet")
+            VERBOSE=false
+            #printf "got --quiet\n"
+         ;;
+
+         "--conf")
+            if [ "${val}" != "${SCRIPT_NONE}" ]; then
+               CONFIGURE="${val}"
+               #printf "got --conf\n"
+            fi
+         ;;
+
+         "--wkspc")
+            if [ "${val}" != "${SCRIPT_NONE}" ]; then
+               WKSPC="${val}"
+               #printf "got --wkspc\n"
+            fi
+         ;;
+
+         "--srcdir")
+            if [ "${val}" != "${SCRIPT_NONE}" ]; then
+               SRCDIR="${val}"
+               #printf "got --srcdir\n"
+            fi
+         ;;
+
+         "--distdir")
+            if [ "${val}" != "${SCRIPT_NONE}" ]; then
+               DISTDIR="${val}"
+               #printf "got --distdir\n"
+            fi
+         ;;
+
+      esac
+
+  done
+
+}
+
+show_help() {
+   cat <<END
+Usage: ${SCRIPT} --conf=CONF --srcdir=SRCDIR --distdir=DISTDIR [--wkspc=WORKSPACE]
+
+          CONF      : full path to configure corresponding to srcdir
+          SRCDIR    : full path to source built by make as a result of configure
+          DISTDIR   : distribution tarball prefix
+          WORKSPACE : full path where output files from this script will be stored  [default=\$PWD/${DEF_WKSPC}
+
+END
+
+   [ "${CONFIGURE}" != "${SCRIPT_NONE}" ] && printf "CONF=%s\n" "${CONFIGURE}"
+   [ "${SRCDIR}"    != "${SCRIPT_NONE}" ] && printf "SRCDIR=%s\n"    "${SRCDIR}"
+   [ "${DISTDIR}"   != "${SCRIPT_NONE}" ] && printf "DISTDIR=%s\n"   "${DISTDIR}"
+
+   printf "WORKSPACE="
+   if [ "${WKSPC}" = "${SCRIPT_NONE}" ]; then
+      printf "%s/%s\n" "${PWD}" "${DEF_WKSPC}"
+   else
+      printf "%s\n" "${WKSPC}"
+   fi
+
+   if ! ${VERBOSE} ; then
+      printf "%squiet\n" '--'
+   fi
+}
+
+process_args
+
+if ${HELP} ; then
+   show_help
+   exit 2
+fi
+
+declare tmp
+
+if [ "${CONFIGURE}" = "${SCRIPT_NONE}" ]; then
+   printf "Error: --conf=CONF is required.\n\n"
+   show_help
+   exit 2
+fi
+tmp="${CONFIGURE##*/}"
+CONFIGURE="${CONFIGURE%/*}"
+[ x"${CONFIGURE}" != x ] && CONFIGURE="`cd ${CONFIGURE} && pwd`"
+CONFIGURE="${CONFIGURE}/${tmp}"
+
+[ -f "${CONFIGURE}" ] || die "configure script not found: ${CONFIGURE}\n"
+
+if [ "${SRCDIR}" = "${SCRIPT_NONE}" ]; then
+   printf "Error: --srcdir=SRCDIR is required.\n\n"
+   show_help
+   exit 3
+fi
+SRCDIR="`cd ${SRCDIR} && pwd`"
+
+[ -d "${SRCDIR}" ] || die "--srcdir not found: ${SRCDIR}\n"
+
+[ "${WKSPC}" = "${SCRIPT_NONE}" ] && WKSPC="${PWD}/${DEF_WKSPC}"
+
+unset tmp
+
+################################################################################
+
+#     $1 : srcdir
+# ref $2 : name of workspace variable (WKSPC)
+setup() {
+   local -r srcdir="$1"
+   local -r wkspc_var="$2"
+   local    val
+
+   eval "val=\$${wkspc_var}"
+
+   local    gitdir="${srcdir}/.git"
+   local    tmp
+   local    copy
+
+   local    usehash=false
+   local -i files=0
+
+   if [ -d "${gitdir}" ] && [ -f "${gitdir}/config" ]; then
+      usehash=true
+   elif [ -f "${gitdir}" ]; then
+      # .git is a file when inside a submodule.
+      usehash=true
+   fi
+
+   if ! ${usehash} ; then
+      gitdir="${srcdir}/../.git"
+      if [ -d "${gitdir}" ] && [ -f "${gitdir}/config" ]; then
+         usehash=true
+         gitdir="`cd "${gitdir}" && pwd`"
+      elif [ -f "${gitdir}" ]; then
+         # .git is a file when inside a submodule.
+         usehash=true
+         gitdir="`cd "${gitdir%/*}" && pwd`/.git"
+      fi
+   fi
+
+   if ${usehash} ; then
+      # use abbreviated commit hash
+      tmp="`${GIT} --git-dir=${gitdir} log -1 --format='%h'`"
+      val="${val}/${tmp}"
+   else
+      #printf ".git not found\n"
+      val="${val}/unknown"
+   fi
+
+   eval "${wkspc_var}=\"${val}\""
+
+   if false; then
+      printf "srcdir=${srcdir}\n"
+      eval "printf \"wkspc=\$${wkspc_var}\\\n\""
+   fi
+
+   [ -d "${val}" ] || cmd ${MKDIR} -p "${val}"
+
+   return 0
+}
+
+################################################################################
+
+# $1 : full path to create checkpoint in
+# $2 : id/name of checkpoint
+checkpoint() {
+   if [ -f "$1/$2" ]; then
+      log "# Passing checkpoint -> $2\n"
+      return 0
+   fi
+   return 1
+}
+
+# $1 : full path to create checkpoint in
+# $2 : id/name of checkpoint
+pass_checkpoint() {
+   [ -f "$1/$2" ] || echo passed_checkpoint >"$1/$2"
+}
+
+################################################################################
+
+# $1 : message
+print_title() {
+#   local -r  top_border='                                                                                '
+   local -r  top_border='################################################################################'
+#    local -r  top_border='01234567890123456789012345678901234567890123456789012345678901234567890123456789'
+   local -r side_border='##'
+   local -i w0
+   local -i w1
+   local -i i
+   local    buf
+
+   w0=$(( ( ${#top_border} / 2 ) - ( ${#1} / 2 )  ))
+   w1=${w0}
+
+   [ 0 -eq $(( ${#1} % 2 )) ] || let $(( --w1 ))
+
+   eval "printf -v buf "%-${w0}s%s%${w1}s" \"${side_border}\" \"\$1\" \"${side_border}\""
+
+   log "${top_border}\n"
+   log "${buf}\n"
+   log "${top_border}\n"
+}
+
+# $1 : full path the configure script
+# $2 : vpath for build (could be location of configure, ie in-tree. Created if doesn't exist.)
+# $3 : additional options for configure
+run_configure() {
+   [ $# -ge 2 ] || return 1
+
+   local -r cfg="$1"
+   local -r vpath="$2"
+
+   local    cfg_opts=''
+   [ $# -ge 3 ] && cfg_opts="$3"
+
+   [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
+
+   pushd "${vpath}" &>/dev/null
+
+   cmd_as_coproc ${cfg} ${CONFIGURE_OPTS} ${cfg_opts}
+
+   popd &>/dev/null
+
+   return 0
+}
+
+# $1 : vpath for build (could be location of configure, ie in-tree.)
+# $2 : make target
+# $3 : additional options for make
+run_make() {
+   [ $# -ge 2 ] || return 1
+
+   local -r vpath="$1"
+   local -r target="$2"
+
+   local    mk_opts=''
+   [ $# -ge 3 ] && mk_opts="$3"
+
+   pushd "${vpath}" &>/dev/null
+
+   cmd_as_coproc ${MAKE} ${MAKE_OPTS} ${mk_opts} ${target}
+
+   popd &>/dev/null
+
+   return 0
+}
+
+sudo_run_make() {
+   [ $# -ge 2 ] || return 1
+
+   local -r vpath="$1"
+   local -r target="$2"
+
+   local    mk_opts=''
+   [ $# -ge 3 ] && mk_opts="$3"
+
+   pushd "${vpath}" &>/dev/null
+
+   cmd_as_coproc ${SUDO} ${MAKE} ${MAKE_OPTS} ${mk_opts} ${target}
+
+   popd &>/dev/null
+
+   return 0
+}
+
+# $1 : msg
+# $2 : full VPATH -or- SRCDIR for in-tree build.
+# $3 : path to checkpoint workspace
+verify_all_build_targets() {
+   local -r msg="$1"
+   local -r vpath="$2"
+   local -r cpath="$3"
+   local    chkpt
+   local    tgt
+
+   tgt='all'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='install'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}" "DESTDIR=${vpath}/DESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='uninstall'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}" "DESTDIR=${vpath}/DESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='clean'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   if [ -f "${WKSPC}/../../doc/Doxyfile" ]; then
+      tgt='docs'
+      chkpt="make_${tgt}"
+      print_title     "${msg} : make ${tgt}"
+      checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+      pass_checkpoint "${cpath}" "${chkpt}"
+
+      tgt='docsclean'
+      chkpt="make_${tgt}"
+      print_title     "${msg} : make ${tgt}"
+      checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+      pass_checkpoint "${cpath}" "${chkpt}"
+   else
+      log "#\n"
+      log "# ** Skipping doc-related targets because \n"
+      log "# ** ${WKSPC}/../../doc/Doxyfile doesn't exist.\n"
+      log "#\n"
+   fi
+
+   tgt='dist-file-list'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='dist'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='distcheck'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}" "DESTDIR=${vpath}/DESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='distclean'
+   chkpt="make_${tgt}"
+   print_title     "${msg} : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${vpath}" "${tgt}" "DESTDIR=${vpath}/DESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+}
+
+################################################################################
+# Build / packaging
+
+build_working_tree_in_tree() {
+   local -r cpath="${WKSPC}/in_working_tree"
+   [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
+
+   print_title     "in working tree : configure"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}"
+   pass_checkpoint "${cpath}" 'cfg'
+
+   verify_all_build_targets 'in working tree' "${SRCDIR}" "${cpath}"
+
+   [ -d "${SRCDIR}/DESTDIR" ] && cmd ${RM} -rf "${SRCDIR}/DESTDIR"
+   [ -f "${SRCDIR}/${DISTDIR}.tar.gz" ] && cmd ${MV} "${SRCDIR}/${DISTDIR}.tar.gz" "${WKSPC}"
+}
+
+build_working_tree_vpath() {
+   local -r cpath="${WKSPC}/working_tree_vpath"
+   local -r vpath="${cpath}/vpath"
+   [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
+
+   print_title     "working tree VPATH : configure"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${CONFIGURE}" "${vpath}"
+   pass_checkpoint "${cpath}" 'cfg'
+
+   verify_all_build_targets 'working tree VPATH' "${vpath}" "${cpath}"
+}
+
+build_tarball_in_tree() {
+   local -r cpath="${WKSPC}/tarball_in_tree"
+   [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
+
+   checkpoint "${cpath}" 'tarball' || {
+      pushd "${cpath}" >/dev/null 2>&1
+      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      popd >/dev/null 2>&1
+   }
+   pass_checkpoint "${cpath}" 'tarball'
+
+   print_title     "tarball in tree : configure"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}"
+   pass_checkpoint "${cpath}" 'cfg'
+
+   verify_all_build_targets 'tarball in tree' "${cpath}/${DISTDIR}" "${cpath}"
+}
+
+build_tarball_vpath() {
+   local -r cpath="${WKSPC}/tarball_vpath"
+   local -r vpath="${cpath}/vpath"
+   [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
+
+   checkpoint "${cpath}" 'tarball' || {
+      pushd "${cpath}" >/dev/null 2>&1
+      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      popd >/dev/null 2>&1
+   }
+   pass_checkpoint "${cpath}" 'tarball'
+
+   print_title     "tarball VPATH : configure"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${cpath}/${DISTDIR}/configure" "${vpath}"
+   pass_checkpoint "${cpath}" 'cfg'
+
+   verify_all_build_targets 'tarball VPATH' "${vpath}" "${cpath}"
+}
+
+# Build / packaging
+################################################################################
+# Copyrights
+
+declare -ra COPYRIGHT_USER_CHECKED_PREFIXES=(\
+'Doxyfile-'\
+)
+declare -ra COPYRIGHT_USER_CHECKED_SUFFIXES=(\
+'.c' \   
+'.cc' \
+'.cp' \  
+'.cxx' \ 
+'.cpp' \    
+'.c++' \       
+'.C' \
+'.csh' \   
+'.h' \
+'.sh'\
+)
+declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
+'aalclp.l' \
+'aalclp.h.in' \
+'aalsdk.m4' \
+'doxygen.m4' \
+'AASService.h.in' \
+'AASEDSService.h.in' \
+'AASRegistrarService.h.in' \
+'CCILib.h.in' \
+'configure.ac' \
+'COPYING' \
+'Doxyfile.in' \
+'FAP10Service.h.in' \
+'FAP20Service.h.in' \
+'MAFUTransService.h.in' \
+'Makefile.am' \
+'OSALService.h.in' \
+'uAIAService.h.in' \
+'XLRuntimeModule.h.in' \
+'CCIAFUService.h.in' \
+'ASECCIAFUService.h.in' \
+'HWCCIAFUService.h.in' \
+'SWSimCCIAFUService.h.in' \
+'SPLAFUService.h.in' \
+'ASESPLAFUService.h.in' \
+'HWSPLAFUService.h.in' \
+'SWSimSPLAFUService.h.in'\
+)
+declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
+'aalclp.h' \
+'aalclp.c' \
+'AASService.h' \
+'AASEDSService.h' \
+'AASRegistrarService.h' \
+'FAP10Service.h' \
+'FAP20Service.h' \
+'ltmain.sh' \
+'MAFUTransService.h' \
+'nlb-lpbk1.cpp' \
+'nlb-read.cpp' \
+'nlb-write.cpp' \
+'nlb-trput.cpp' \
+'OSALService.h' \
+'Readme.MultiPackage.txt' \
+'uAIAService.h' \
+'XLRuntimeModule.h' \
+'CCIAFUService.h' \
+'ASECCIAFUService.h' \
+'HWCCIAFUService.h' \
+'SWSimCCIAFUService.h' \
+'SPLAFUService.h' \
+'ASESPLAFUService.h' \
+'HWSPLAFUService.h' \
+'SWSimSPLAFUService.h' \
+'aalbus-device.h' \
+'aalbus.h' \
+'aalbus_imonitorconfig.h' \
+'aalbus-ipip.h' \
+'aalbus_iupdate_config.h' \
+'aaldefs.h' \
+'aaldevice.h' \
+'aalids.h' \
+'aalinterface.h' \
+'aalmafu-events.h' \
+'aalmafu.h' \
+'aalqueue.h' \
+'aalrm_client.h' \
+'aalrm.h' \
+'aalrm_server.h' \
+'aalrm_server-services.h' \
+'aalrm-services.h' \
+'aalsession.h' \
+'AALTransactionID_s.h' \
+'aaltypes.h' \
+'aalui-events.h' \
+'aalui.h' \
+'AALWorkspace.h' \
+'aalwsservice.h' \
+'ahmpipdefs.h' \
+'ahmpip.h' \
+'ccidefs.h' \
+'encoder_sample_kbae' \
+'fappip.h' \
+'kosal.h' \
+'NLBVAFU.h' \
+'README.REPO' \
+'spl2defs.h' \
+'splpip.h' \
+'vafu2defs.h' \
+'encoder_kbae-public.h'\
+)
+
+declare -ra COPYRIGHT_KERNEL_CHECKED_PREFIXES=(\
+'Doxyfile-'\
+)
+declare -ra COPYRIGHT_KERNEL_CHECKED_SUFFIXES=(\
+'.c' \   
+'.cc' \
+'.cp' \  
+'.cxx' \ 
+'.cpp' \    
+'.c++' \       
+'.C' \
+'.h'\
+)
+declare -ra COPYRIGHT_KERNEL_CHECKED_NAMES=(\
+'aalkernel.m4' \
+'configure.ac' \
+'COPYING' \
+'Makefile.am' \
+'Doxyfile' \
+'insdrv.in' \
+'Kbuild.in' \
+'rmdrv.in'\
+)
+declare -ra COPYRIGHT_KERNEL_EXCEPT_NAMES=(\
+'README.GPLV2-LICENSE.TXT' \
+'KernelStructs.h'\
+)
+
+
+# $1 : full path to file to update
+#copyright_user_old_to_new() {
+#   local    f="$1"
+#   local    can_convert=true
+#   local    str
+#   local    orig_date
+#   local    l
+#   local    com=''
+#
+#   local -r    old_line_one_regex='(##|//|dnl )[*]+'
+#   local -r    old_line_two_regex='(##|//|dnl)[[:space:]]+INTEL[[:space:]]+CONFIDENTIAL'
+#   local -r  old_line_three_regex='(##|//|dnl)'
+#   local -r   old_line_four_regex='(##|//|dnl)[[:space:]]+Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})? Intel Corporation All Rights Reserved'
+#
+#   local -r old_end_comment_regex='(##|//|dnl )[*]+'
+#
+#   local -i fd
+#   local    line_one
+#   local    line_two
+#   local    line_three
+#   local    line_four
+#
+#   local -r save_ifs="${IFS}"
+#   IFS='
+#'
+#   exec {fd}<"$f"
+#
+#   read -r -u ${fd} line_one
+#   if [ "${line_one}" = '#!/bin/bash' ] || \
+#      [ "${line_one}" = '#!/bin/sh' ]   || \
+#      [ "${line_one}" = '%{' ]; then
+#      read -r -u ${fd} line_one
+#   fi
+#
+#   str="${line_one}"
+#   if [[ $str =~ $old_line_one_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#   if [ "${line_one:0:2}" = '##' ]; then
+#      com='##'
+#   fi
+#   if [ "${line_one:0:2}" = '//' ]; then
+#      com='//'
+#   fi
+#   if [ "${line_one:0:3}" = 'dnl' ]; then
+#      com='dnl'
+#   fi
+#
+#
+#   read -r -u ${fd} line_two
+#   str="${line_two}"
+#   if [[ $str =~ $old_line_two_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   read -r -u ${fd} line_three
+#   str="${line_three}"
+#   if [[ $str =~ $old_line_three_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   read -r -u ${fd} line_four
+#   str="${line_four}"
+#   orig_date="${line_four}"
+#   if [[ $str =~ $old_line_four_regex ]]; then
+#      :
+#   else
+#      can_convert=false
+#   fi
+#
+#   exec {fd}<&-
+#
+#
+#   if ! ${can_convert} ; then
+#      die "Malformed old user copyright encountered in '$f'\n"
+#   fi
+#
+#   # Isolate the date.
+#   orig_date="${orig_date% Intel Corporation}"
+#   orig_date="${orig_date##*Copyright (c) }"
+#
+#
+#   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
+#   local -i fd2
+#   local -i fdtmp
+#   local    found_end=false
+#
+#   cmd ${CP} "$f" "${tmpfile}"
+#
+#   exec {fdtmp}<"${tmpfile}"
+#   exec {fd2}>"$f"
+#
+#   # Skip the old comment
+#   read -r -u ${fdtmp} line_one
+#   if [ "${line_one}" = '#!/bin/bash' ] || \
+#      [ "${line_one}" = '#!/bin/sh' ]   || \
+#      [ "${line_one}" = '%{' ]; then
+#      echo -E "${line_one}" >&${fd2}
+#      read -r -u ${fdtmp} line_one
+#   fi
+#
+#   while read -r -u ${fdtmp} l ; do
+#      str="$l"
+#      if [[ $str =~ $old_end_comment_regex ]]; then
+#         found_end=true
+#         break
+#      fi
+#   done
+#
+#   if ! ${found_end} ; then
+#      exec {fd2}>&-
+#      exec {fdtmp}<&-
+#      cmd ${RM} "${tmpfile}"
+#      die "EOF scanning old user comment in '$f'\n"
+#   fi
+#
+#
+#   # Is the old date field a range?
+#   if [ "${orig_date/-/}" != "${orig_date}" ]; then
+#      printf -v l "${com} Copyright (c) ${orig_date%-*}-${THIS_YEAR}, Intel Corporation\n"
+#   else
+#      printf -v l "${com} Copyright (c) ${THIS_YEAR}, Intel Corporation\n"
+#   fi
+#   echo -E $l >&${fd2}
+#
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} Redistribution  and  use  in source  and  binary  forms,  with  or  without\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} modification, are permitted provided that the following conditions are met:\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Redistributions of  source code  must retain the  above copyright notice,\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   this list of conditions and the following disclaimer.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Redistributions in binary form must reproduce the above copyright notice,\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   this list of conditions and the following disclaimer in the documentation\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   and/or other materials provided with the distribution.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} * Neither the name  of Intel Corporation  nor the names of its contributors\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   may be used to  endorse or promote  products derived  from this  software\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}   without specific prior written permission.\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com}\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE\n"
+#   echo -E $l >&${fd2}
+#   printf -v l "${com} POSSIBILITY OF SUCH DAMAGE.\n"
+#   echo -E $l >&${fd2}
+#
+#   while read -r -u ${fdtmp} l ; do
+#      echo -E "$l" >&${fd2}
+#   done
+#
+#   exec {fd2}>&-
+#   exec {fdtmp}<&-
+#   IFS="${save_ifs}"
+#
+#   cmd ${RM} "${tmpfile}"
+#}
+
+# $1 : full path to file to update
+copyright_user_adjust_date() {
+   local    f="$1"
+   local -i fd
+   local    str
+
+   local    com=''
+   local    line_one=''
+   local -r line_one_regex='(##|//|dnl) Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
+
+   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
+   local -i tmpfd
+
+   local -r save_ifs="${IFS}"
+
+   cmd ${CP} "$f" "${tmpfile}"
+
+   IFS='
+'
+   exec {tmpfd}<"${tmpfile}"
+   exec {fd}>"$f"
+
+   read -r -u ${tmpfd} line_one
+   if [ "${line_one}" = '#!/bin/bash' ] || \
+      [ "${line_one}" = '#!/bin/sh' ]   || \
+      [ "${line_one}" = '%{' ]; then
+      echo -E "${line_one}" >&${fd}
+      read -r -u ${tmpfd} line_one
+   elif [ "${line_one:0:10}" = '# Doxyfile' ]; then
+      echo -E "${line_one}" >&${fd}
+
+      # 2nd line is blank
+      read -r -u ${tmpfd} line_one
+      echo -E "${line_one}" >&${fd}
+
+      read -r -u ${tmpfd} line_one
+   fi
+   if [ "${line_one:0:2}" = '##' ]; then
+      com='##'
+   fi
+   if [ "${line_one:0:2}" = '//' ]; then
+      com='//'
+   fi
+   if [ "${line_one:0:3}" = 'dnl' ]; then
+      com='dnl'
+   fi
+
+   # Extract the current year.
+   str="${line_one%, Intel Corporation}"
+   str="${str##*Copyright (c) }"
+
+   if [ "${str//-/}" != "${str}" ]; then
+      # The date is already a range.
+
+      # Chop off the old end of the range.
+      str="${str%-*}"
+   fi
+
+   str="${com} Copyright (c) ${str}-${THIS_YEAR}, Intel Corporation"
+
+   echo -E "${str}" >&${fd}
+
+   while read -r -u ${tmpfd} str ; do
+      echo -E "${str}" >&${fd}
+   done
+
+   exec {tmpfd}<&-
+   exec {fd}>&-
+
+   IFS="${save_ifs}"
+
+   cmd ${RM} "${tmpfile}"
+}
+
+# $1 : full path to file to search for copyright
+_verify_user_copyright() {
+   local    f="$1"
+   local    copyright_ok=true
+   local    str
+
+   local -i fd
+   local    line_one
+   local    line_two
+   local    line_three
+   local    line_four
+
+   local -r   line_one_regex='(##|//|dnl) Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
+   local -r   line_two_regex='(##|//|dnl)'
+   local -r line_three_regex='(##|//|dnl) Redistribution  and  use  in source  and  binary  forms,  with  or  without'
+   local -r  line_four_regex='(##|//|dnl) modification, are permitted provided that the following conditions are met:'
+
+   local -r save_ifs="${IFS}"
+   IFS='
+'
+   exec {fd}<"$f"
+
+   read -r -u ${fd} line_one
+   if [ "${line_one}" = '#!/bin/bash' ] || \
+      [ "${line_one}" = '#!/bin/sh' ]   || \
+      [ "${line_one}" = '%{' ]; then
+      read -r -u ${fd} line_one
+   elif [ "${line_one:0:10}" = '# Doxyfile' ]; then
+      # 2nd line is blank
+      read -r -u ${fd} line_one
+      # 3rd line
+      read -r -u ${fd} line_one
+   fi
+   str="${line_one}"
+   if [[ $str =~ $line_one_regex ]]; then
+      :
+   else
+      die "bad user copyright at '$f' line 1.\n"
+   fi
+
+   read -r -u ${fd} line_two
+   str="${line_two}"
+   if [[ $str =~ $line_two_regex ]]; then
+      :
+   else
+      die "bad user copyright at '$f' line 2.\n"
+   fi
+
+   read -r -u ${fd} line_three
+   str="${line_three}"
+   if [[ $str =~ $line_three_regex ]]; then
+      :
+   else
+      die "bad user copyright at '$f' line 3.\n"
+   fi
+
+   read -r -u ${fd} line_four
+   str="${line_four}"
+   if [[ $str =~ $line_four_regex ]]; then
+      :
+   else
+      die "bad user copyright at '$f' line 4.\n"
+   fi
+
+   exec {fd}<&-
+   IFS="${save_ifs}"
+
+
+   # Extract the current year.
+   str="${line_one%, Intel Corporation}"
+   str="${str##*Copyright (c) }"
+   str="${str##*-}"
+
+   if [ "${str}" != "${THIS_YEAR}" ]; then
+      copyright_user_adjust_date "$f"
+   fi
+}
+
+# $1 : full path to file to search for copyright
+_skip_copyright_verification() {
+   str="  (c) [skip] $1"
+   log "${str}\n"
+}
+
+# $1 : name of fn to call to do the update
+# $2 : name of fn to call when skipping update
+# $3 : src root
+# $4 : path to list of user files to check
+copyrights_check_user() {
+   local -r src_root="$3"
+   local -r files_list="$4"
+
+   local -i fd
+   local    l
+   local    str
+   local    pattern
+
+   # Only check for Copyright statement in files which we care about.
+   local    need_to_iterate
+
+   local -r save_ifs="${IFS}"
+   IFS='
+'
+
+   exec {fd}<"${files_list}"
+
+   while read -r -u ${fd} l ; do
+
+      need_to_iterate=false
+
+      for pattern in ${COPYRIGHT_USER_CHECKED_PREFIXES[@]} ; do
+         str="${l/.\/${pattern}/}"
+         if [ "${str}" != "$l" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      for pattern in ${COPYRIGHT_USER_CHECKED_SUFFIXES[@]} ; do
+         str="${l%*${pattern}}"
+         if [ "${str}" != "$l" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      str="${l##*/}"
+      for pattern in ${COPYRIGHT_USER_CHECKED_NAMES[@]} ; do
+         if [ "${pattern}" == "${str}" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      for pattern in ${COPYRIGHT_USER_EXCEPT_NAMES[@]} ; do
+         if [ "${pattern}" == "${str}" ]; then
+            need_to_iterate=false
+            break
+         fi
+      done
+
+      if ${need_to_iterate} ; then
+         eval "$1" "${src_root}/$l"
+      else
+         # skipping file
+         eval "$2" "${src_root}/$l"
+      fi
+
+   done
+
+   exec {fd}<&-
+
+   IFS="${save_ifs}"
+}
+
+#  1 //******************************************************************************
+#  2 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+#  3 //
+#  4 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
+#  5 //         redistributing this file, you may do so under either license.
+#  6 //
+#  7 //                            GPL LICENSE SUMMARY
+#  8 //
+#  9 //  Copyright(c) 2008-2014 Intel Corporation.
+# 10 //
+# 11 //  This program  is  free software;  you  can redistribute it  and/or  modify
+# 12 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
+# 13 //  published by the Free Software Foundation.
+# 14 //
+# 15 //  This  program  is distributed  in the  hope that it  will  be useful,  but
+# 16 //  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of
+# 17 //  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU
+# 18 //  General Public License for more details.
+# 19 //
+# 23 //  The  full  GNU  General Public License is  included in  this  distribution
+# 24 //  in the file called README.GPLV2-LICENSE.TXT.
+# 25 //
+# 26 //  Contact Information:
+# 27 //  Henry Mitchel, henry.mitchel at intel.com
+# 28 //  77 Reed Rd., Hudson, MA  01749
+# 29 //
+# 30 //                                BSD LICENSE
+# 31 //
+# 32 //  Copyright(c) 2008-2014 Intel Corporation.
+
+# $1 : full path to file to update
+#copyright_kernel_old_to_new() {
+#   local    f="$1"
+#   local    str
+#   local    l
+#   local    tmp
+#   local    com=''
+#
+#   local -i bars_found=0
+#   local -r line_bar_regex='(##|//|dnl )[*]+'
+#
+#   local    date_one=''
+#   local    date_two=''
+#   local -r date_isolation_regex='(##|//|dnl)[[:space:]]+Copyright([[:space:]])?[(]c[)][[:space:]]+(20[[:digit:]]{2})(-20[[:digit:]]{2})?[.,]?[[:space:]]+Intel[[:space:]]+Corporation[.]?'
+#   # first half of date in ${BASH_REMATCH[3]}, second half (if any) in ${BASH_REMATCH[4]}.
+#
+#   local -r line_file_regex='(##|//|dnl)[[:space:]]+(FILE:|@file)'
+#
+#   local -i fd
+#
+#   local -r save_ifs="${IFS}"
+#   IFS='
+#'
+#   exec {fd}<"$f"
+#
+#   read -r -u ${fd} str
+#   if [ "${str}" = '#!/bin/bash' ] || \
+#      [ "${str}" = '#!/bin/sh' ]   || \
+#      [ "${str}" = '%{' ]; then
+#      read -r -u ${fd} str
+#   fi
+#
+#   tmp="${str}"
+#   if [[ $tmp =~ $line_bar_regex ]]; then
+#      :
+#   else
+#      die "Can't convert kernel copyright in '$f' : missing first line bar\n"
+#   fi
+#   if [ "${str:0:2}" = '##' ]; then
+#      com='##'
+#   fi
+#   if [ "${str:0:2}" = '//' ]; then
+#      com='//'
+#   fi
+#   if [ "${str:0:3}" = 'dnl' ]; then
+#      com='dnl'
+#   fi
+#
+#   let $(( ++bars_found ))
+#
+#   while read -r -u ${fd} str ; do
+#
+#      tmp="${str}"
+#      if [[ $tmp =~ $date_isolation_regex ]]; then
+#         tmp="${BASH_REMATCH[4]}"
+#         if [ x"${tmp}" != x ]; then
+#            # already a date range
+#            tmp="${BASH_REMATCH[3]}-${THIS_YEAR}"
+#         else
+#            if [ "${BASH_REMATCH[3]}" != "${THIS_YEAR}" ]; then
+#               tmp="${BASH_REMATCH[3]}-${THIS_YEAR}"
+#            else
+#               tmp="${THIS_YEAR}"
+#            fi
+#         fi
+#
+#         if [ x"${date_one}" = x ]; then
+#            date_one="${tmp}"
+#         else
+#            date_two="${tmp}"
+#         fi
+#      else
+#         tmp="${str}"
+#         if [[ $tmp =~ $line_bar_regex ]]; then
+#            let $(( ++bars_found ))
+#            break
+#         fi
+#      fi
+#
+#   done
+#   if [ ${bars_found} -ne 2 ]; then
+#      die "Can't convert kernel copyright in '$f' : missing second line bar\n"
+#   fi
+#
+#
+#   while read -r -u ${fd} str ; do
+#      tmp="${str}"
+#      if [[ $tmp =~ $line_bar_regex ]]; then
+#         let $(( ++bars_found ))
+#         break
+#      fi
+#   done
+#   if [ ${bars_found} -ne 3 ]; then
+#      die "Can't convert kernel copyright in '$f' : missing third line bar\n"
+#   fi
+#
+#   read -r -u ${fd} str
+#   tmp="${str}"
+#
+#   if [[ $tmp =~ $line_file_regex ]]; then
+#      :
+#   else
+#      die "Can't convert kernel copyright in '$f' : file line not found after 3rd line bar\n"
+#   fi
+#
+#
+#   while read -r -u ${fd} str ; do
+#      tmp="${str}"
+#      if [[ $tmp =~ $line_bar_regex ]]; then
+#         let $(( ++bars_found ))
+#         break
+#      fi
+#   done
+#   if [ ${bars_found} -ne 4 ]; then
+#      die "Can't convert kernel copyright in '$f' : missing fourth line bar\n"
+#   fi
+#
+#   exec {fd}<&-
+#
+#
+#   # Do the conversion.
+#
+#   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
+#   local -i fd2
+#   local -i fdtmp
+#   local    found_end=false
+#
+#   cmd ${CP} "$f" "${tmpfile}"
+#
+#   exec {fdtmp}<"${tmpfile}"
+#   exec {fd2}>"$f"
+#
+#   # Skip the old comment
+#
+#   read -r -u ${fdtmp} str
+#   if [ "${str}" = '#!/bin/bash' ] || \
+#      [ "${str}" = '#!/bin/sh' ]   || \
+#      [ "${str}" = '%{' ]; then
+#      echo -E "${str}" >&${fd2}
+#
+#      while read -r -u ${fdtmp} str ; do
+#         tmp="${str}"
+#         if [[ $tmp =~ $line_bar_regex ]]; then
+#            break
+#         fi
+#      done
+#
+#   fi
+#
+#   while read -r -u ${fdtmp} str ; do
+#      tmp="${str}"
+#      if [[ $tmp =~ $line_bar_regex ]]; then
+#         break
+#      fi
+#   done
+# 
+#   # Add the new comment
+#
+#   printf -v l "${com}"
+#   echo -nE "$l" >&${fd2}
+#   printf -v l '******************************************************************************'
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com} Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com} This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}         redistributing this file, you may do so under either license."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}                            GPL LICENSE SUMMARY"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  Copyright(c) ${date_one}, Intel Corporation."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  This program  is  free software;  you  can redistribute it  and/or  modify"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  it  under  the  terms of  version 2 of  the GNU General Public License  as"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  published by the Free Software Foundation."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  This  program  is distributed  in the  hope that it  will  be useful,  but"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  General Public License for more details."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  The  full  GNU  General Public License is  included in  this  distribution"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  in the file called README.GPLV2-LICENSE.TXT."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  Contact Information:"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  Henry Mitchel, henry.mitchel at intel.com"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  77 Reed Rd., Hudson, MA  01749"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}                                BSD LICENSE"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  Copyright(c) ${date_two}, Intel Corporation."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  Redistribution and  use  in source  and  binary  forms,  with  or  without"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  modification,  are   permitted  provided  that  the  following  conditions"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  are met:"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}    * Redistributions  of  source  code  must  retain  the  above  copyright"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      notice, this list of conditions and the following disclaimer."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}    * Redistributions in  binary form  must  reproduce  the  above copyright"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      notice,  this  list of  conditions  and  the  following disclaimer  in"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      the   documentation   and/or   other   materials   provided  with  the"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      distribution."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}    * Neither   the  name   of  Intel  Corporation  nor  the  names  of  its"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      contributors  may  be  used  to  endorse  or promote  products derived"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}      from this software without specific prior written permission."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  THIS  SOFTWARE  IS  PROVIDED  BY  THE  COPYRIGHT HOLDERS  AND CONTRIBUTORS"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  \"AS IS\"  AND  ANY  EXPRESS  OR  IMPLIED  WARRANTIES,  INCLUDING,  BUT  NOT"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  LIMITED  TO, THE  IMPLIED WARRANTIES OF  MERCHANTABILITY  AND FITNESS  FOR"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  A  PARTICULAR  PURPOSE  ARE  DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  OWNER OR CONTRIBUTORS BE LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL   DAMAGES  (INCLUDING,   BUT   NOT"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  LIMITED  TO,  PROCUREMENT  OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF USE,"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  DATA,  OR PROFITS;  OR BUSINESS INTERRUPTION)  HOWEVER  CAUSED  AND ON ANY"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT LIABILITY,  OR TORT"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE"
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE."
+#   echo -E "$l" >&${fd2}
+#   printf -v l "${com}"
+#   echo -nE "$l" >&${fd2}
+#   printf -v l '******************************************************************************'
+#   echo -E "$l" >&${fd2}
+#
+#   while read -r -u ${fdtmp} l ; do
+#      echo -E "$l" >&${fd2}
+#   done
+#
+#   exec {fd2}>&-
+#   exec {fdtmp}<&-
+#   IFS="${save_ifs}"
+#
+#   cmd ${RM} "${tmpfile}"
+#}
+
+# $1 : full path to file to update
+copyright_kernel_adjust_date() {
+   local    f="$1"
+   local -i fd
+   local    str
+   local    tmpstr
+
+   local -i dates_done=0
+
+   local    com=''
+   local -r date_isolation_regex='(##|//|dnl)[[:space:]]+Copyright([[:space:]])?[(]c[)][[:space:]]+(20[[:digit:]]{2})(-20[[:digit:]]{2})?[,][[:space:]]+Intel[[:space:]]+Corporation[.]?'
+   # first half of date in ${BASH_REMATCH[3]}, second half in ${BASH_REMATCH[4]}.
+
+   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
+   local -i tmpfd
+
+   local -r save_ifs="${IFS}"
+
+   cmd ${CP} "$f" "${tmpfile}"
+
+   IFS='
+'
+   exec {tmpfd}<"${tmpfile}"
+   exec {fd}>"$f"
+
+   read -r -u ${tmpfd} str
+   if [ "${str}" = '#!/bin/bash' ] || \
+      [ "${str}" = '#!/bin/sh' ]   || \
+      [ "${str}" = '%{' ]; then
+      echo -E "${str}" >&${fd}
+      read -r -u ${tmpfd} str
+   fi
+
+   if [ "${str:0:2}" = '##' ]; then
+      com='##'
+   fi
+   if [ "${str:0:2}" = '//' ]; then
+      com='//'
+   fi
+   if [ "${str:0:3}" = 'dnl' ]; then
+      com='dnl'
+   fi
+
+   echo -E "${str}" >&${fd}
+
+   # Continue copying lines until we encounter the first date line.
+   while read -r -u ${tmpfd} str ; do
+
+      tmpstr="${str}"
+      if [[ $tmpstr =~ $date_isolation_regex ]]; then
+
+         tmpstr="${BASH_REMATCH[4]}"
+         if [ x"${tmpstr}" != x ]; then
+            # already a date range
+            str="${com}  Copyright(c) ${BASH_REMATCH[3]}-${THIS_YEAR}, Intel Corporation."
+         else
+            if [ "${BASH_REMATCH[3]}" != "${THIS_YEAR}" ]; then
+               str="${com}  Copyright(c) ${BASH_REMATCH[3]}-${THIS_YEAR}, Intel Corporation."
+            else
+               str="${com}  Copyright(c) ${THIS_YEAR}, Intel Corporation."
+            fi
+         fi
+
+         echo -E "${str}" >&${fd}
+
+         let $(( ++dates_done ))
+         break
+      fi
+
+      # non-date line
+      echo -E "${str}" >&${fd}
+
+   done
+
+   [ ${dates_done} -eq 1 ] || die "EOF scanning for kernel copyright date 1 in '$f'\n"
+
+
+   # Continue copying lines until we encounter the second date line.
+   while read -r -u ${tmpfd} str ; do
+
+      tmpstr="${str}"
+      if [[ $tmpstr =~ $date_isolation_regex ]]; then
+
+         tmpstr="${BASH_REMATCH[4]}"
+         if [ x"${tmpstr}" != x ]; then
+            # already a date range
+            str="${com}  Copyright(c) ${BASH_REMATCH[3]}-${THIS_YEAR}, Intel Corporation."
+         else
+            if [ "${BASH_REMATCH[3]}" != "${THIS_YEAR}" ]; then
+               str="${com}  Copyright(c) ${BASH_REMATCH[3]}-${THIS_YEAR}, Intel Corporation."
+            else
+               str="${com}  Copyright(c) ${THIS_YEAR}, Intel Corporation."
+            fi
+         fi
+
+         echo -E "${str}" >&${fd}
+
+         let $(( ++dates_done ))
+         break
+      fi
+
+      # non-date line
+      echo -E "${str}" >&${fd}
+
+   done
+
+   [ ${dates_done} -eq 2 ] || die "EOF scanning for kernel copyright date 2 in '$f'\n"
+
+
+   # Copy the remainder of the file.
+   while read -r -u ${tmpfd} str ; do
+      echo -E "${str}" >&${fd}
+   done
+
+   exec {tmpfd}<&-
+   exec {fd}>&-
+
+   IFS="${save_ifs}"
+
+   cmd ${RM} "${tmpfile}"
+}
+
+# $1 : full path to file to search for copyright
+_verify_kernel_copyright() {
+   local    f="$1"
+   local    str
+   local    date1
+   local    date2
+
+   local -i i
+   local -i fd
+   local    line_one
+   local    line_two
+   local    line_three
+   local    line_four
+   local    line_five
+   local    line_six
+   local    line_seven
+   local    line_eight
+   local    line_nine
+
+#  1 //******************************************************************************
+#  2 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+#  3 //
+#  4 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
+#  5 //         redistributing this file, you may do so under either license.
+#  6 //
+#  7 //                            GPL LICENSE SUMMARY
+#  8 //
+#  9 //  Copyright(c) 2008-2014 Intel Corporation.
+# 10 //
+# 11 //  This program  is  free software;  you  can redistribute it  and/or  modify
+# 12 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
+# 13 //  published by the Free Software Foundation.
+# 14 //
+# 15 //  This  program  is distributed  in the  hope that it  will  be useful,  but
+# 16 //  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of
+# 17 //  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU
+# 18 //  General Public License for more details.
+# 19 //
+# 20 //  The  full  GNU  General Public License is  included in  this  distribution
+# 21 //  in the file called README.GPLV2-LICENSE.TXT.
+# 22 //
+# 23 //  Contact Information:
+# 24 //  Henry Mitchel, henry.mitchel at intel.com
+# 25 //  77 Reed Rd., Hudson, MA  01749
+# 26 //
+# 27 //                                BSD LICENSE
+# 28 //
+# 29 //  Copyright(c) 2008-2014 Intel Corporation.
+
+   local -r line_blank_regex='(##|//|dnl)'
+
+   local -r   line_one_regex='(##|//|dnl)[*#]+'
+   local -r   line_two_regex='(##|//|dnl)[[:space:]]+Part[[:space:]]+of[[:space:]]+the[[:space:]]+Intel[(]R[)][[:space:]]+QuickAssist[[:space:]]+Technology[[:space:]]+Accelerator[[:space:]]+Abstraction[[:space:]]+Layer'
+
+   local -r  line_four_regex='(##|//|dnl)[[:space:]]+This[[:space:]]+file[[:space:]]+is[[:space:]]+provided[[:space:]]+under[[:space:]]+a[[:space:]]+dual[[:space:]]+BSD/GPLv2[[:space:]]+license[.][[:space:]]+When[[:space:]]+using[[:space:]]+or'
+   local -r  line_five_regex='(##|//|dnl)[[:space:]]+redistributing[[:space:]]+this[[:space:]]+file[,][[:space:]]+you[[:space:]]+may[[:space:]]+do[[:space:]]+so[[:space:]]+under[[:space:]]+either[[:space:]]+license[.]'
+
+   local -r line_seven_regex='(##|//|dnl)[[:space:]]+GPL[[:space:]]+LICENSE[[:space:]]+SUMMARY'
+
+   local -r date_isolation_regex='(##|//|dnl)[[:space:]]+Copyright([[:space:]])?[(]c[)][[:space:]]+(20[[:digit:]]{2})(-20[[:digit:]]{2})?[,][[:space:]]+Intel[[:space:]]+Corporation[.]?'
+   # first half of date in ${BASH_REMATCH[3]}, second half (if any) in ${BASH_REMATCH[4]}.
+
+   local -r save_ifs="${IFS}"
+   IFS='
+'
+   exec {fd}<"$f"
+
+   read -r -u ${fd} line_one
+   if [ "${line_one}" = '#!/bin/bash' ] || \
+      [ "${line_one}" = '#!/bin/sh' ]   || \
+      [ "${line_one}" = '%{' ]; then
+      read -r -u ${fd} line_one
+   fi
+
+   str="${line_one}"
+   if [[ $str =~ $line_one_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 1.\n"
+   fi
+
+   read -r -u ${fd} line_two
+   str="${line_two}"
+   if [[ $str =~ $line_two_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 2.\n"
+   fi
+
+   read -r -u ${fd} line_three
+   str="${line_three}"
+   if [[ $str =~ $line_blank_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 3.\n"
+   fi
+
+   read -r -u ${fd} line_four
+   str="${line_four}"
+   if [[ $str =~ $line_four_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 4.\n"
+   fi
+
+   read -r -u ${fd} line_five
+   str="${line_five}"
+   if [[ $str =~ $line_five_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 5.\n"
+   fi
+
+   read -r -u ${fd} line_six
+   str="${line_six}"
+   if [[ $str =~ $line_blank_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 6.\n"
+   fi
+
+   read -r -u ${fd} line_seven
+   str="${line_seven}"
+   if [[ $str =~ $line_seven_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 7.\n"
+   fi
+
+   read -r -u ${fd} line_eight
+   str="${line_eight}"
+   if [[ $str =~ $line_blank_regex ]]; then
+      :
+   else
+      die "bad kernel copyright at '$f' line 8.\n"
+   fi
+
+   read -r -u ${fd} line_nine
+   str="${line_nine}"
+   if [[ $str =~ $date_isolation_regex ]]; then
+      str="${BASH_REMATCH[4]}"
+      if [ x"${str}" != x ]; then
+         # omit the leading -
+         date1="${str:1}"
+      else
+         date1="${BASH_REMATCH[3]}"
+      fi
+   else
+      die "bad kernel copyright at '$f' line 9.\n"
+   fi
+
+   # Read and discard lines 10-28, leaving line 29 in str (2nd date).
+   for (( i = 10 ; i <= 29 ; ++i )); do
+      read -r -u ${fd} str
+   done
+
+   exec {fd}<&-
+   IFS="${save_ifs}"
+
+   if [[ $str =~ $date_isolation_regex ]]; then
+      str="${BASH_REMATCH[4]}"
+      if [ x"${str}" != x ]; then
+         # omit the leading -
+         date2="${str:1}"
+      else
+         date2="${BASH_REMATCH[3]}"
+      fi
+   else
+      die "bad kernel copyright at '$f' line 29.\n"
+   fi
+
+   if [ "${date1}" != "${THIS_YEAR}" ] || [ "${date2}" != "${THIS_YEAR}" ]; then
+      copyright_kernel_adjust_date "$f"
+   fi
+}
+
+# $1 : name of fn to call to do the update
+# $2 : name of fn to call when skipping update
+# $3 : src root
+# $4 : path to list of kernel files to check
+copyrights_check_kernel() {
+   local -r src_root="$3"
+   local -r files_list="$4"
+
+   local -i fd
+   local    l
+   local    str
+   local    pattern
+
+   # Only check for Copyright statement in files which we care about.
+   local    need_to_iterate
+
+   local -r save_ifs="${IFS}"
+   IFS='
+'
+
+   exec {fd}<"${files_list}"
+
+   while read -r -u ${fd} l ; do
+
+      need_to_iterate=false
+
+      for pattern in ${COPYRIGHT_KERNEL_CHECKED_PREFIXES[@]} ; do
+         str="${l/.\/${pattern}/}"
+         if [ "${str}" != "$l" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      for pattern in ${COPYRIGHT_KERNEL_CHECKED_SUFFIXES[@]} ; do
+         str="${l%*${pattern}}"
+         if [ "${str}" != "$l" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      str="${l##*/}"
+      for pattern in ${COPYRIGHT_KERNEL_CHECKED_NAMES[@]} ; do
+         if [ "${pattern}" == "${str}" ]; then
+            need_to_iterate=true
+            break
+         fi
+      done
+
+      for pattern in ${COPYRIGHT_KERNEL_EXCEPT_NAMES[@]} ; do
+         if [ "${pattern}" == "${str}" ]; then
+            need_to_iterate=false
+            break
+         fi
+      done
+
+      if ${need_to_iterate} ; then
+         eval "$1" "${src_root}/$l"
+      else
+         # skipping file
+         eval "$2" "${src_root}/$l"
+      fi
+
+   done
+
+   exec {fd}<&-
+
+   IFS="${save_ifs}"
+}
+
+verify_copyrights() {
+   local -r cpath="${WKSPC}/copyrights"
+   local    tgt
+   local    chkpt
+
+   [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
+
+   checkpoint "${cpath}" 'tarball' || {
+      pushd "${cpath}" >/dev/null 2>&1
+      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      popd >/dev/null 2>&1
+   }
+   pass_checkpoint "${cpath}" 'tarball'
+
+   print_title     "copyrights : configure"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}"
+   pass_checkpoint "${cpath}" 'cfg'
+
+   tgt='dist-file-list'
+   chkpt="make_${tgt}"
+   print_title     "copyrights : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${cpath}/${DISTDIR}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   chkpt="copyrights_verify"
+   print_title "copyrights : verify"
+   if [ "${SRCDIR##*/}" = aaluser ]; then
+      checkpoint "${cpath}" "${chkpt}" || copyrights_check_user _verify_user_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
+      pass_checkpoint "${cpath}" "${chkpt}"
+   else
+      checkpoint "${cpath}" "${chkpt}" || copyrights_check_kernel _verify_kernel_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
+      pass_checkpoint "${cpath}" "${chkpt}"
+   fi
+}
+
+# Copyrights
+################################################################################
+
+main() {
+   setup "${SRCDIR}" WKSPC
+
+   open_log "${WKSPC}"
+
+   build_working_tree_in_tree
+   build_working_tree_vpath
+   build_tarball_in_tree
+   build_tarball_vpath
+
+   verify_copyrights
+
+   return 0
+}
+
+declare -i res
+
+main
+res=$?
+
+( [ 0 -eq ${res} ] && log "PASS\n" ) || log "FAIL\n"
+exit ${res}
+

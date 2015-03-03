@@ -154,8 +154,8 @@ int main(int argc, char* argv[])
       return 1;
    }
 
-   AAL::XL::RT::Runtime runtime;
-   NamedValueSet        runtimeargs;
+   Runtime       runtime;
+   NamedValueSet runtimeargs;
 
    runtime.start(&TheAppContext, runtimeargs);
 

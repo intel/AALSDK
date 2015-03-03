@@ -33,14 +33,11 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-#ifndef __IMESSAGEHANDLER_H__
-#define __IMESSAGEHANDLER_H__
+#ifndef __AALSDK_IMESSAGEHANDLER_H__
+#define __AALSDK_IMESSAGEHANDLER_H__
 #include <aalsdk/AALEvent.h>
 
-
-// Forward reference
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 class IMessageHandler
 {
@@ -48,12 +45,12 @@ public:
    // Message Handler
    //   Input: rEvent - Event contains message/event.  Typically used for
    //          exceptions or events for which no standard callback is defined.
-   virtual void messageHandler(const IEvent &rEvent) =0;  
-   virtual ~IMessageHandler(){}
+   virtual void messageHandler(const IEvent &rEvent) = 0;  
+   virtual ~IMessageHandler() {}
 
 };
 
-
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
-#endif /* IMESSAGEHANDLER_H_ */
+
+#endif // __AALSDK_IMESSAGEHANDLER_H__
+

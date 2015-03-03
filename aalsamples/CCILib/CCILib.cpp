@@ -166,7 +166,7 @@ protected:
    size_t           m_CerrBufSize;
    int              m_LogLvl;
    int              m_TraceLvl;
-   AAL::ILogger    *m_pLogger;
+   ILogger         *m_pLogger;
    CriticalSection  m_MtxCout;
    CriticalSection  m_MtxCerr;
 
@@ -566,20 +566,20 @@ protected:
    Runtime     m_AALRuntime;
    dev_list    m_DevList;
 
-   void OnRuntimeStarted(AAL::XL::RT::IRuntime    *pRT,
-                         const AAL::NamedValueSet &Args);
-   void OnRuntimeStopped(AAL::XL::RT::IRuntime *pRT);
-   void OnRuntimeStartFailed(const AAL::IEvent &e);
+   void OnRuntimeStarted(IRuntime    *pRT,
+                         const NamedValueSet &Args);
+   void OnRuntimeStopped(IRuntime *pRT);
+   void OnRuntimeStartFailed(const IEvent &e);
    void OnRuntimeAllocateServiceFailed(IEvent const &e);
-   void OnRuntimeAllocateServiceSucceeded(AAL::IBase          *pServiceBase,
+   void OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
                                           TransactionID const &tid);
-   void OnRuntimeEvent(const AAL::IEvent &e);
+   void OnRuntimeEvent(const IEvent &e);
 
-   void OnServiceAllocated(AAL::IBase               *pServiceBase,
-                           AAL::TransactionID const &tid);
-   void OnServiceAllocateFailed(const AAL::IEvent &e);
-   void OnServiceFreed(AAL::TransactionID const &tid);
-   void OnServiceEvent(const AAL::IEvent &e);
+   void OnServiceAllocated(IBase               *pServiceBase,
+                           TransactionID const &tid);
+   void OnServiceAllocateFailed(const IEvent &e);
+   void OnServiceFreed(TransactionID const &tid);
+   void OnServiceEvent(const IEvent &e);
 
    void      OnWorkspaceAllocated(TransactionID const &TranID,
                                   btVirtAddr           WkspcVirt,
@@ -590,19 +590,19 @@ protected:
    void     OnWorkspaceFreeFailed(const IEvent &Event);
 };
 
-void CCCIDeviceFactory::OnRuntimeStarted(AAL::XL::RT::IRuntime    *pRT,
-                                         const AAL::NamedValueSet &Args)
+void CCCIDeviceFactory::OnRuntimeStarted(IRuntime            *pRT,
+                                         const NamedValueSet &Args)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Runtime Started\n");
    Post();
 }
 
-void CCCIDeviceFactory::OnRuntimeStopped(AAL::XL::RT::IRuntime *pRT)
+void CCCIDeviceFactory::OnRuntimeStopped(IRuntime *pRT)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Runtime Stopped\n");
 }
 
-void CCCIDeviceFactory::OnRuntimeStartFailed(const AAL::IEvent &e)
+void CCCIDeviceFactory::OnRuntimeStartFailed(const IEvent &e)
 {
    m_bIsOK = false;
    LOG(GetSynchronizer(), LOG_ERR, "Runtime Start Failed\n");
@@ -614,13 +614,13 @@ void CCCIDeviceFactory::OnRuntimeAllocateServiceFailed(IEvent const &e)
    LOG(GetSynchronizer(), LOG_ERR, "Service Allocate Failed (rt)\n");
 }
 
-void CCCIDeviceFactory::OnRuntimeAllocateServiceSucceeded(AAL::IBase          *pServiceBase,
+void CCCIDeviceFactory::OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
                                                           TransactionID const &tid)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Service Allocated (rt)\n");
 }
 
-void CCCIDeviceFactory::OnRuntimeEvent(const AAL::IEvent &e)
+void CCCIDeviceFactory::OnRuntimeEvent(const IEvent &e)
 {
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
@@ -634,24 +634,24 @@ void CCCIDeviceFactory::OnRuntimeEvent(const AAL::IEvent &e)
    Post();
 }
 
-void CCCIDeviceFactory::OnServiceAllocated(AAL::IBase               *pServiceBase,
-                                           AAL::TransactionID const &tid)
+void CCCIDeviceFactory::OnServiceAllocated(IBase               *pServiceBase,
+                                           TransactionID const &tid)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Service Allocated\n");
 }
 
-void CCCIDeviceFactory::OnServiceAllocateFailed(const AAL::IEvent &e)
+void CCCIDeviceFactory::OnServiceAllocateFailed(const IEvent &e)
 {
    m_bIsOK = false;
    LOG(GetSynchronizer(), LOG_ERR, "Service Allocate Failed\n");
 }
 
-void CCCIDeviceFactory::OnServiceFreed(AAL::TransactionID const &tid)
+void CCCIDeviceFactory::OnServiceFreed(TransactionID const &tid)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Service Freed\n");
 }
 
-void CCCIDeviceFactory::OnServiceEvent(const AAL::IEvent &e)
+void CCCIDeviceFactory::OnServiceEvent(const IEvent &e)
 {
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);

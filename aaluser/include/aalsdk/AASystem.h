@@ -49,7 +49,6 @@
 // Global functions and definitions for the Intel(R) QuickAssist Technology AAS
 //=============================================================================
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -134,7 +133,6 @@ SystemStop(TransactionID const &tranID);
 #endif // DEPRECATED
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_AASYSTEM_H__

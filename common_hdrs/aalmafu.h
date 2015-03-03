@@ -71,7 +71,7 @@
 #include <aalsdk/kernel/aaldevice.h>
 #include <aalsdk/kernel/aalui.h>
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
@@ -189,6 +189,8 @@ struct mafu_request {
 
 
 END_C_DECLS
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALMAFU_H__
 

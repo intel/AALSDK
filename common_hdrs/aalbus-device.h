@@ -98,6 +98,8 @@
 #include <aalsdk/kernel/aalbus-ipip.h>
 
 
+BEGIN_NAMESPACE(AAL)
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //                               AAL Device
@@ -595,6 +597,9 @@ aaldev_udateOwner(struct aal_device * ,
                   btPID ,
                   struct aaldev_ownerSession * ,
                   pkosal_list_head );
+
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALBUS_DEVICE_H__
 

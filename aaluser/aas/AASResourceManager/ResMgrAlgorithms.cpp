@@ -70,11 +70,7 @@
 #include "aalsdk/INTCDefs.h"               // for AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED
 
 
-USING_NAMESPACE(std)
-
-
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 /*
@@ -163,7 +159,7 @@ BEGIN_NAMESPACE(AAL)
 //   }
 //
 //   return true;
-//}  // end of AAL::AAS::CResMgr::IsBackdoorRecordGood
+//}  // end of CResMgr::IsBackdoorRecordGood
 
 //=============================================================================
 // Name:          CResMgr::ComputeBackdoorGoalRecords
@@ -317,7 +313,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
 //         if ( rInstRec.NumAllocations() >= rInstRec.MaxAllocations()) {
          if ( ! rInstRec.IsAvailable() ) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered NumAlloc " << rInstRec.NumAllocations() <<
-                  " >= MaxAlloc " << rInstRec.MaxAllocations() << endl);
+                  " >= MaxAlloc " << rInstRec.MaxAllocations() << std::endl);
             continue;
          }
 
@@ -329,7 +325,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testAFU_ID ) &&
               ( sAFU_ID != AFU_IDNameFromConfigStruct( rInstRec.ConfigStruct()))) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered AFU_ID is " <<
-                  AFU_IDNameFromConfigStruct( rInstRec.ConfigStruct()) << " but desired AFU_ID is " << sAFU_ID << endl);
+                  AFU_IDNameFromConfigStruct( rInstRec.ConfigStruct()) << " but desired AFU_ID is " << sAFU_ID << std::endl);
             continue;
          }
 
@@ -337,7 +333,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testAHM_ID ) &&
               ( AHM_ID != rInstRec.ConfigStruct().devattrs.devid.m_ahmGUID)) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered AHM_ID is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_ahmGUID << " but desired AHM_ID is " << AHM_ID << endl);
+                  rInstRec.ConfigStruct().devattrs.devid.m_ahmGUID << " but desired AHM_ID is " << AHM_ID << std::endl);
             continue;
          }
 
@@ -345,7 +341,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testBusType ) &&
               ( BusType != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_bustype)) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered BusType is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_bustype << " but desired BusType is " << BusType << endl);
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_bustype << " but desired BusType is " << BusType << std::endl);
             continue;
          }
 
@@ -353,7 +349,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testBusNumber ) &&
               ( BusNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_busnum)) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered BusNumber is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_busnum << " but desired BusNumber is " << BusNumber << endl);
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_busnum << " but desired BusNumber is " << BusNumber << std::endl);
             continue;
          }
 
@@ -361,7 +357,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testDeviceNumber ) &&
               ( DeviceNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_devicenum)) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered DeviceNumber is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_devicenum << " but desired DeviceNumber is " << DeviceNumber << endl);
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_devicenum << " but desired DeviceNumber is " << DeviceNumber << std::endl);
             continue;
          }
 
@@ -369,7 +365,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          if ( ( testChannelNumber ) &&
               ( ChannelNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum)) {
             AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered ChannelNumber is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired ChannelNumber is " << ChannelNumber << endl);
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired ChannelNumber is " << ChannelNumber << std::endl);
             continue;
          }
 
@@ -409,7 +405,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
 
    return true;
 
-}  // end of AAL::AAS::CResMgr::ComputeBackdoorGoalRecords
+}  // end of CResMgr::ComputeBackdoorGoalRecords
 
 
 //=============================================================================
@@ -433,7 +429,7 @@ btBool CResMgr::ComputeGoalRecords(const NamedValueSet& nvsManifest, nvsList& li
       AAL_ERR(LM_ResMgr, "CResMgr::ComputeGoalRecords: No backdoor found, regular algorithm not yet implemented, failed\n");
       return false;
    }
-}  // AAL::AAS::ComputeGoalRecords
+}  // CResMgr::ComputeGoalRecords
 
 //=============================================================================
 // Name:          CResMgr::AddNullHandleRecToList
@@ -499,10 +495,10 @@ btBool CResMgr::ComputeBackdoorPolicy(const nvsList& listGoal, NamedValueSet& nv
 #endif
 
    return false;                          // something weird happened, no list
-}  // end of AAL::AAS::CResMgr::ComputeBackdoorPolicy
+}  // end of CResMgr::ComputeBackdoorPolicy
 
 //=============================================================================
-// Name:          AAL::AAS::CResMgr::GetPolicyResults
+// Name:          CResMgr::GetPolicyResults
 // Description:   Test routine for Policy Manager
 // Interface:     private
 // Inputs:        nvsList listGoal containing all of the discovered Goal Records
@@ -533,10 +529,10 @@ btBool CResMgr::GetPolicyResults(const nvsList& listGoal, NamedValueSet& nvsGoal
       AAL_ERR(LM_ResMgr, "CResMgr::GetPolicyResults: no Goal Records passed in, failure.\n");
       return false;
    }
-}  // AAL::AAS::CResMgr::GetPolicyResults
+}  // CResMgr::GetPolicyResults
 
 //=============================================================================
-// Name:          AAL::AAS::CResMgr::IncrementNumAllocated
+// Name:          CResMgr::IncrementNumAllocated
 // Description:   When a Goal Record has been selected, the "keyRegNumAllocated"
 //                   field of its associated Instance Record must be incremented
 // Interface:     Public
@@ -555,7 +551,7 @@ btBool CResMgr::GetPolicyResults(const nvsList& listGoal, NamedValueSet& nvsGoal
 //   eNVRet = nvsGoal.Get( keyRegRecordNum, &RegDB.m_PrimaryKey);
 //
 //   if (ENamedValuesOK != eNVRet) {
-//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated Get keyRegRecordNum failure code: " << eNVRet << endl);
+//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated Get keyRegRecordNum failure code: " << eNVRet << std::endl);
 //      return false;
 //   }
 //
@@ -565,7 +561,7 @@ btBool CResMgr::GetPolicyResults(const nvsList& listGoal, NamedValueSet& nvsGoal
 //   ++NumAllocated;
 //
 //   if (ENamedValuesOK != eNVRet) {
-//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated Get keyRegNumAllocated failure code: " << eNVRet << endl);
+//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated Get keyRegNumAllocated failure code: " << eNVRet << std::endl);
 //      return false;
 //   }
 //
@@ -574,7 +570,7 @@ btBool CResMgr::GetPolicyResults(const nvsList& listGoal, NamedValueSet& nvsGoal
 //   RegRet = m_pRegDBSkeleton->Database()->GetByKey( RegDB);
 //
 //   if (eRegOK != RegRet) {       // Got it for modification
-//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated GetByKey() failure code: " << RegRet << endl);
+//      AAL_ERR(LM_ResMgr, "CResMgr::IncrementNumAllocated GetByKey() failure code: " << RegRet << std::endl);
 //      return false;
 //   }
 //
@@ -599,11 +595,10 @@ btBool CResMgr::GetPolicyResults(const nvsList& listGoal, NamedValueSet& nvsGoal
 //
 //   return true;
 //
-//}  // AAL::AAS::CResMgr::IncrementNumAllocated
+//}  // CResMgr::IncrementNumAllocated
 //#endif
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

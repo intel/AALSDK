@@ -68,6 +68,8 @@
 #define __AALSDK_KERNEL_SPLPIP_H__
 #include <aalsdk/kernel/aalbus-device.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //Interface Identifier
 #define  AALAHM_DEV_SERVICES       (0xfb00000000001000)
 
@@ -257,7 +259,7 @@ inline static struct spl_boardParms_s *
             name,
             size-offsetof(struct spl_boardParms_s,name));
    return pparms;
-};
+}
 
 //=============================================================================
 // Name: delete_splBoardparms
@@ -293,4 +295,7 @@ struct spl_pip_dev_services {
    void *(*get_context)(splpip_handle_t hndl);
 };
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_SPLPIP_H__
+

@@ -48,7 +48,6 @@
 #include "aalsdk/utils/ResMgrUtilities.h"
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /*=============================================================================
 ===============================================================================
@@ -292,8 +291,8 @@ std::string AFU_IDNameFromConfigStruct( const aalrms_configUpDateEvent& cfgUpdat
 #ifdef USING_64_BIT_GUID   /* the cfgUpdate.devattrs.devid.m_afuGUID field is 64-bit ulong */
    return GUIDStringFromStruct( GUIDStructFromU64( cfgUpdate.devattrs.devid.m_afuGUID)).c_str();
 #else
-   return AAL::AAS::GUIDStringFromStruct(
-                AAL::AAS::GUIDStructFrom2xU64(
+   return GUIDStringFromStruct(
+                GUIDStructFrom2xU64(
                       cfgUpdate.devattrs.devid.m_afuGUIDh,
                       cfgUpdate.devattrs.devid.m_afuGUIDl));
 //   return GUIDStringFromStruct( cfgUpdate.devattrs.devid.m_afuGUID).c_str();
@@ -466,6 +465,5 @@ std::string StringNameFromString(const std::string &sPrefix, const std::string &
 }  // StringNameFromString
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

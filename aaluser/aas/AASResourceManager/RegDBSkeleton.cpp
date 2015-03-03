@@ -62,11 +62,7 @@
 #include "aalsdk/rm/RegDBSkeleton.h"
 #include "aalsdk/AALLoggerExtern.h"
 
-USING_NAMESPACE(std)
-
-
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 //=============================================================================
@@ -142,8 +138,8 @@ pRegistrarCmdResp_t RegDBSkeleton::MarshalResponse ( const pRegistrarCmdResp_t  
                                                      const CRegDB*              prdb,
                                                      const NamedValueSet*       pnvs)
 {
-   size_t lenszNVS;
-   ostringstream oss;
+   size_t             lenszNVS;
+   std::ostringstream oss;
 
    if ( pnvs ) {
       oss << *pnvs;
@@ -188,7 +184,7 @@ void RegDBSkeleton::DBSendMsg (pRegistrarCmdResp_t pBlockToSend)
 
    }
    else {
-      cerr << "RegDBSkeleton::DBSendMsg sees iContext!=1. Doing nothing.\n";
+      std::cerr << "RegDBSkeleton::DBSendMsg sees iContext!=1. Doing nothing.\n";
    }
 }
 // use ioctl to place pBlock to send on the kernel's queue
@@ -205,12 +201,12 @@ pRegistrarCmdResp_t RegDBSkeleton::ParseCommand (pRegistrarCmdResp_t p)
 
    // check signature; not equal means different, therefore error
    if ( memcmp ( p->szSignature, RegistrarCmdCommandSignature, lenRegistrarCmdRespSignature ) ) {
-      cerr << "RegDBSkeleton::ParseCommand szSignature not Command signature, aborting\n";
+      std::cerr << "RegDBSkeleton::ParseCommand szSignature not Command signature, aborting\n";
       // TODO: call global exception handler with EXCEPTION - not clear how to do this with the correct transaction ID
       return NULL;
    }
 
-   AAL_DEBUG(LM_Database,"RegistrarCmdResp_t is:" << *p);
+   AAL_DEBUG(LM_Database, "RegistrarCmdResp_t is:" << p);
 
    switch ( p->Command ) {
       case eCmdOpen: {
@@ -253,7 +249,7 @@ pRegistrarCmdResp_t RegDBSkeleton::ParseCommand (pRegistrarCmdResp_t p)
          return IsOK_Skeleton ( p );
       }
       default: {
-         cerr << "RegDBSkeleton::ParseCommand: Unknown or unimplemented command \n";
+         std::cerr << "RegDBSkeleton::ParseCommand: Unknown or unimplemented command \n";
          return NULL;
       }
    }  // End switch (p->Command)
@@ -408,7 +404,7 @@ pRegistrarCmdResp_t RegDBSkeleton::Commit_Skeleton ( pRegistrarCmdResp_t p )
 //=============================================================================
 pRegistrarCmdResp_t RegDBSkeleton::FindExactBegin_Skeleton ( pRegistrarCmdResp_t p )
 {
-   cout << "FindExactBegin_Skeleton not yet implemented\n" ;
+   std::cout << "FindExactBegin_Skeleton not yet implemented\n" ;
    return NULL;
 }
 
@@ -422,7 +418,7 @@ pRegistrarCmdResp_t RegDBSkeleton::FindExactBegin_Skeleton ( pRegistrarCmdResp_t
 //=============================================================================
 pRegistrarCmdResp_t RegDBSkeleton::FindExactNext_Skeleton ( pRegistrarCmdResp_t p )
 {
-   cout << "FindExactNext_Skeleton not yet implemented\n" ;
+   std::cout << "FindExactNext_Skeleton not yet implemented\n" ;
    return NULL;
 }
 
@@ -490,7 +486,7 @@ pRegistrarCmdResp_t RegDBSkeleton::DumpDatabase_Skeleton( pRegistrarCmdResp_t p 
 //=============================================================================
 pRegistrarCmdResp_t RegDBSkeleton::IsOK_Skeleton ( pRegistrarCmdResp_t p )
 {
-   cout << "IsOK_Skeleton not yet implemented\n" ;
+   std::cout << "IsOK_Skeleton not yet implemented\n" ;
    return NULL;
 }
 
@@ -505,7 +501,7 @@ RegDBSkeleton & RegDBSkeleton::operator=(const RegDBSkeleton & ) { return *this;
 // Use like this:
 //    CRegDB itr;
 //    pRegistrarCmdResp_t p;
-//    AAL::AAS::write_CRegDB_to_RCP (p, &itr)
+//    write_CRegDB_to_RCP (p, &itr)
 // Comments: Note similar code in RegDBStub.cpp
 //=============================================================================
 void write_CRegDB_to_RCP(pRegistrarCmdResp_t pRCR, const CRegDB *pitr)
@@ -521,7 +517,7 @@ void write_CRegDB_to_RCP(pRegistrarCmdResp_t pRCR, const CRegDB *pitr)
 // Use like this:
 //    CRegDB itr;
 //    pRegistrarCmdResp_t p;
-//    AAL::AAS::read_CRegDB_from_RCP (p, &itr)
+//    read_CRegDB_from_RCP (p, &itr)
 // Comments: Note similar code in RegDBStub.cpp
 //=============================================================================
 void read_CRegDB_from_RCP(const pRegistrarCmdResp_t pRCR, CRegDB *pitr)
@@ -531,6 +527,6 @@ void read_CRegDB_from_RCP(const pRegistrarCmdResp_t pRCR, CRegDB *pitr)
 }
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
+
 

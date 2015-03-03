@@ -49,8 +49,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-      BEGIN_NAMESPACE(AIA)
 
 
 IAFUTransaction::~IAFUTransaction() {}
@@ -125,8 +123,6 @@ TranIDWrapper::TranIDWrapper(btObjectType argContext, const TransactionID &rTran
 {}
 
 
-      END_NAMESPACE(AIA)
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

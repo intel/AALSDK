@@ -78,7 +78,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-AASREGISTRAR_API AAL::AAS::CRegistrar *
+AASREGISTRAR_API AAL::CRegistrar *
 CreateRegistrarService(AAL::btcString            DatabasePath,
                        AAL::btEventHandler       theEventHandler,
                        AAL::btApplicationContext Context,

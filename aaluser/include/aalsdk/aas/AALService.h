@@ -77,7 +77,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
+
 /// @addtogroup ServiceBase
 /// @{
 /// @brief Base class for all AAL Service objects
@@ -144,13 +144,13 @@ public:
 ///
 /// @param[in]  C  The name of the class being constructed.
 /// @param[in]  P  The name of the parent class being implemented, ie ServiceBase, DeviceServiceBase, etc.
-#define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AAS::AALServiceModule *container,                          \
-                                                AAL::AAS::IAALTransport    *ptransport   = NULL,                \
-                                                AAL::AAS::IAALMarshaller   *marshaller   = NULL,                \
-                                                AAL::AAS::IAALUnMarshaller *unmarshaller = NULL) : P(container, \
-                                                                                           ptransport,          \
-                                                                                           marshaller,          \
-                                                                                           unmarshaller)
+#define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AALServiceModule *container,                             \
+                                                AAL::IAALTransport    *ptransport   = NULL,                   \
+                                                AAL::IAALMarshaller   *marshaller   = NULL,                   \
+                                                AAL::IAALUnMarshaller *unmarshaller = NULL) : P(container,    \
+                                                                                                ptransport,   \
+                                                                                                marshaller,   \
+                                                                                                unmarshaller)
 
    /// @brief     Constructor called by Service Broker
    /// @param[in] container Pointer to the Service Module
@@ -216,11 +216,11 @@ public:
    //  traverse the inheritance hierarchy during initialization.
    //
    //  Client is using callback interface method of signaling
-   virtual IBase * _init(AAL::IBase               *pclient,
-                         TransactionID const      &rtid,
-                         NamedValueSet const      &optArgs,
-                         CAALEvent                *pcmpltEvent = NULL,
-                         AAL::btBool               NoRuntimeEvent = false);
+   virtual IBase * _init(IBase               *pclient,
+                         TransactionID const &rtid,
+                         NamedValueSet const &optArgs,
+                         CAALEvent           *pcmpltEvent = NULL,
+                         btBool               NoRuntimeEvent = false);
 
    /// Hook for derived classes to perform any post-creation initialization.
    ///
@@ -310,31 +310,31 @@ public:
    btEventHandler              Handler()     { return m_eventHandler;   }
 
    /// Accessor to pointer to the Service's Client's Interface
-   AAL::AAS::IServiceClient   *Client()      { return m_pclient;        }
+   IServiceClient * Client()      { return m_pclient;        }
 
    /// Accessor to pointer to the Service's Client's IBase Interface
-   AAL::IBase                 *ClientBase()  { return m_pclientbase;    }
+   IBase *          ClientBase()  { return m_pclientbase;    }
 
    /// Accessor to pointer to the Runtime Services
-   AAL::XL::RT::IXLRuntimeServices  *getRuntimeServiceProvider() { return pAALServiceModule()->getRuntimeServiceProvider(); }
+   IXLRuntimeServices * getRuntimeServiceProvider() { return pAALServiceModule()->getRuntimeServiceProvider(); }
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
    ///   Use getRuntimeServiceProvider to get a usable Runtime pointer
-   AAL::XL::RT::IRuntime  *getRuntime() { return pAALServiceModule()->getRuntime(); }
+   IRuntime * getRuntime() { return pAALServiceModule()->getRuntime(); }
 
    /// Accessor to pointer to the Runtime Client
-   AAL::XL::RT::IRuntimeClient *getRuntimeClient(){return m_RuntimeClient;}
+   IRuntimeClient * getRuntimeClient() { return m_RuntimeClient; }
 
    //---------------------------------
    //  Accessors to utility functions
    //---------------------------------
 
    /// Enable service to allocate another Service. NOTE: default is the RuntimeClient is NOT notified
-   void allocService(AAL::IBase *pClient,
-                     NamedValueSet const      &rManifest = NamedValueSet(),
-                     TransactionID const      &rTranID   = TransactionID(),
-                     AAL::XL::RT::IRuntime::eAllocatemode mode = AAL::XL::RT::IRuntime::NoRuntimeClientNotification);
+   void allocService(IBase                  *pClient,
+                     NamedValueSet const    &rManifest = NamedValueSet(),
+                     TransactionID const    &rTranID   = TransactionID(),
+                     IRuntime::eAllocatemode mode      = IRuntime::NoRuntimeClientNotification);
 
    /// Send a Dispatchable
    /// @param[in]  pMessage  Pointer to IDispatchable.
@@ -367,10 +367,10 @@ protected:
    void initComplete(TransactionID const &rtid);
 
    NamedValueSet                     m_optArgs;
-   AAL::XL::RT::IRuntimeClient      *m_RuntimeClient;
+   IRuntimeClient                   *m_RuntimeClient;
    btEventHandler                    m_eventHandler;
-   AAL::AAS::IServiceClient         *m_pclient;
-   AAL::IBase                       *m_pclientbase;
+   IServiceClient                   *m_pclient;
+   IBase                            *m_pclientbase;
    AALServiceModule                 *m_pcontainer;
    IAALTransport                    *m_ptransport;
    IAALMarshaller                   *m_pmarshaller;
@@ -429,7 +429,7 @@ public:
                           NamedValueSet const &optArgs,
                           CAALEvent           *pcmpltEvent = NULL);
 
-    virtual IBase * _init(AAL::IBase *pclient,
+    virtual IBase * _init(IBase                   *pclient,
                           TransactionID const      &rtid,
                           NamedValueSet const      &optArgs,
                           CAALEvent                *pcmpltEvent = NULL);
@@ -474,10 +474,10 @@ public:
                          CAALEvent           *pcmpltEvent = NULL);
 
 
-   virtual IBase * _init(AAL::IBase *pclient,
-                         TransactionID const      &rtid,
-                         NamedValueSet const      &optArgs,
-                         CAALEvent                *pcmpltEvent = NULL);
+   virtual IBase * _init(IBase               *pclient,
+                         TransactionID const &rtid,
+                         NamedValueSet const &optArgs,
+                         CAALEvent           *pcmpltEvent = NULL);
 
 private:
    //=============================================================================
@@ -492,9 +492,7 @@ private:
 
 /// @} group Services
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
-
 
 #endif // __AALSDK_AAS_AALSERVICE_H__
 

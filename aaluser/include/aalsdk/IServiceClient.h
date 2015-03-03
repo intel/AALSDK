@@ -42,7 +42,6 @@
 /// @{
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 //=============================================================================
 /// @class        IServiceClient
@@ -77,7 +76,7 @@ public:
    /// @return    void
    ///
    /// @code
-   /// void serviceAllocated( AAL::IBase *pServiceBase, TransactionID const &rTranID) {
+   /// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
    ///    ASSERT( pServiceBase );        // if false, then Service threw a bad pointer
    ///
    ///    ISampleAFUPing *m_pAALService; // used to call Release on the Service
@@ -89,7 +88,7 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void      serviceAllocated(AAL::IBase *pServiceBase,
+   virtual void      serviceAllocated(IBase               *pServiceBase,
                                       TransactionID const &rTranID = TransactionID()) = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
@@ -119,7 +118,6 @@ public:
 };
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_ISERVICECLIENT_H__

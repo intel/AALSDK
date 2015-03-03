@@ -150,7 +150,7 @@ private:
 class _AutoLock
 {
 public:
-   CriticalSection *m_p;
+
    /// _AutoLock Construct with CriticalSection *.
    ///
    /// Typical usage is:
@@ -184,10 +184,14 @@ public:
    void Unlock()
    {
       if ( NULL != m_p ) {
-         m_p->Unlock();
+         CriticalSection *p = m_p;
          m_p = NULL;
+         p->Unlock();
       }
    }
+
+protected:
+   CriticalSection *m_p;
 };
 
 

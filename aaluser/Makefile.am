@@ -211,7 +211,6 @@ include/aalsdk/kernel/aalrm.h \
 include/aalsdk/kernel/aalrm_server.h \
 include/aalsdk/kernel/aalrm_server-services.h \
 include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/aalsession.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
@@ -224,6 +223,7 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
@@ -347,12 +347,11 @@ ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
 ase/hw/cci_rule_checker.sv \
-ase/scripts/run_ase_automated.py \
-ase/scripts/gen_afu_env.py \
+ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_ipc_clean.py \
+ase/scripts/ipc_clean.py \
 ase/README
 
 CLP_EXTRA=\

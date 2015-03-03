@@ -45,7 +45,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,10 +123,10 @@ public:
 
 
    IBase * CreateServiceObject(AALServiceModule    *container,
-                               AAL::IBase          *pclient,
+                               IBase               *pclient,
                                TransactionID const &rtid,
                                NamedValueSet const &optArgs,
-                               AAL::btBool          NoRuntimeEvent)
+                               btBool               NoRuntimeEvent)
    {
       m_pService = new I(container);
       if ( NULL == m_pService ) {
@@ -191,10 +190,10 @@ public:
    }
 
    IBase * CreateServiceObject(AALServiceModule    *container,
-                                AAL::IBase         *pclient,
-                                TransactionID const &rtid,
-                                NamedValueSet const &optArgs,
-                                AAL::btBool          NoRuntimeEvent)
+                               IBase               *pclient,
+                               TransactionID const &rtid,
+                               NamedValueSet const &optArgs,
+                               btBool               NoRuntimeEvent)
 
     {
        // Only crate the new instance if one does not exist
@@ -226,8 +225,6 @@ protected:
 
 /// @} group InProcFactory
 
-
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

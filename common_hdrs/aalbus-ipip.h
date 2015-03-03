@@ -74,6 +74,7 @@
 #include <aalsdk/kernel/aalwsservice.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 
+BEGIN_NAMESPACE(AAL)
 
 struct aal_device;
 struct aaldev_ownerSession;
@@ -172,6 +173,8 @@ aalpip_init(struct aal_ipip *ppip)
 {
    memset(ppip, 0, sizeof(struct aal_ipip));
 }
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALBUS_IPIP_H__
 

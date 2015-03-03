@@ -73,6 +73,8 @@
 #define __AALSDK_KERNEL_AALINTERFACE_H__
 #include <aalsdk/kernel/kosal.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //                            AAL Interface
@@ -213,4 +215,7 @@ aal_interface_del(kosal_list_head      *list,
    return 0;
 }
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AALINTERFACE_H__
+

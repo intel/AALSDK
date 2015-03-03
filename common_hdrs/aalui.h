@@ -101,7 +101,7 @@
 #include <aalsdk/kernel/AALWorkspace.h>
 #include <aalsdk/kernel/aaldevice.h>
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
@@ -470,4 +470,7 @@ struct aalui_ioctlreq
 
 END_C_DECLS
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AALUI_H__
+

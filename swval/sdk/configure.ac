@@ -53,7 +53,7 @@ dnl ############################################################################
 dnl ## Optional Packages #######################################################
 dnl ############################################################################
 WITH_GCOV_ANALYSIS
-WITH_GPROF_PROFILING
+WITH_VALGRIND_ANALYSIS
 
 dnl ############################################################################
 dnl ## Optional Features #######################################################
@@ -81,6 +81,7 @@ AM_MISSING_PROG([AUTOM4TE], [autom4te])
 AALSDK_PROG_BASH
 AALSDK_PROG_FLEX
 AALSDK_PROG_GIT
+AALSDK_PROG_GDBTUI
 
 dnl ############################################################################
 dnl ## Checks for libraries ####################################################
@@ -142,8 +143,7 @@ AC_CONFIG_FILES([tests/weekly:tests/run/weekly.in],   [chmod 755 tests/weekly])
 AC_CONFIG_FILES([tests/OSAL_TestSem:tests/run/OSAL_TestSem.in], [chmod 755 tests/OSAL_TestSem])
 AC_CONFIG_FILES([tests/OSAL_TestThreadGroup:tests/run/OSAL_TestThreadGroup.in], [chmod 755 tests/OSAL_TestThreadGroup])
 
-AC_CONFIG_FILES([tests/lcov-coverage:tests/coverage/lcov/lcov-coverage.in], [chmod 755 tests/lcov-coverage])
-AC_CONFIG_FILES([tests/gprof-bat:tests/profile/gprof/gprof-bat.in], [chmod 755 tests/gprof-bat])
+AC_CONFIG_FILES([gdb/gdbinit])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
@@ -179,6 +179,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
+                 utils/fpgasane/Makefile
                  utils/CCIAFU/Makefile
                  utils/CCIAFU/HWCCIAFU/Makefile
                  utils/CCIAFU/ASECCIAFU/Makefile

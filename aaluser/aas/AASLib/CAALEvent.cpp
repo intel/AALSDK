@@ -87,7 +87,6 @@ IExceptionEvent::~IExceptionEvent() {}
 IApplicationEvent::~IApplicationEvent() {}
 IApplicationExceptionEvent::~IApplicationExceptionEvent() {}
 
-   BEGIN_NAMESPACE(AAS)
 
 //=============================================================================
 // Name: CAALEvent
@@ -760,11 +759,11 @@ CExceptionTransactionEvent & CExceptionTransactionEvent::operator=(const CExcept
 // Name: ObjectCreatedEvent
 // Description: XL Runtime Event
 //=============================================================================
-ObjectCreatedEvent::ObjectCreatedEvent( AAL::XL::RT::IRuntimeClient  *prtClient,
-                                        AAL::AAS::IServiceClient     *pClient,
-                                        IBase                        *pObject,
-                                        TransactionID                 TranID,
-                                        const NamedValueSet          &OptArgs) :
+ObjectCreatedEvent::ObjectCreatedEvent( IRuntimeClient       *prtClient,
+                                        IServiceClient       *pClient,
+                                        IBase                *pObject,
+                                        TransactionID         TranID,
+                                        const NamedValueSet  &OptArgs) :
    m_prtClient(prtClient),
    m_pClient(pClient),
    CTransactionEvent(pObject, TranID),
@@ -796,13 +795,13 @@ void ObjectCreatedEvent::operator()()
 ObjectCreatedEvent::~ObjectCreatedEvent() {/*empty*/}
 ObjectCreatedEvent::ObjectCreatedEvent()  {/*empty*/}
 
-ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(AAL::XL::RT::IRuntimeClient   *prtClient,
-                                                         AAL::AAS::IServiceClient      *pClient,
-                                                         IBase                         *pObject,
-                                                         TransactionID                  TranID,
-                                                         btUnsigned64bitInt             ExceptionNumber,
-                                                         btUnsigned64bitInt             Reason,
-                                                         btcString                      Description) :
+ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
+                                                         IServiceClient     *pClient,
+                                                         IBase              *pObject,
+                                                         TransactionID       TranID,
+                                                         btUnsigned64bitInt  ExceptionNumber,
+                                                         btUnsigned64bitInt  Reason,
+                                                         btcString           Description) :
    CExceptionTransactionEvent(pObject,
                               TranID,
                               ExceptionNumber,
@@ -835,10 +834,10 @@ void ObjectCreatedExceptionEvent::operator()()
 ObjectCreatedExceptionEvent::~ObjectCreatedExceptionEvent() {/*empty*/}
 ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent()  {/*empty*/}
 
-CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(AAL::AAS::IServiceClient        *pClient,
-                                                                   IBase                           *pObject,
-                                                                   TransactionID const             &TransID,
-                                                                   btApplicationContext             Context) :
+CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
+                                                                   IBase                *pObject,
+                                                                   TransactionID const  &TransID,
+                                                                   btApplicationContext  Context) :
    m_pClient(pClient),
    CTransactionEvent(pObject, TransID)
 {
@@ -972,7 +971,6 @@ CApplicationEvent::~CApplicationEvent() {
 CApplicationEvent::CApplicationEvent() {/*empty*/}
 CApplicationEvent & CApplicationEvent::operator=(const CApplicationEvent & ) { return *this; }
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

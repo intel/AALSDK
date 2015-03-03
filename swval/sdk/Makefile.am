@@ -22,6 +22,7 @@ ase/sw \
 clp \
 utils/aalscan \
 utils/data_model \
+utils/fpgasane \
 utils/CCIAFU \
 utils/SPLAFU \
 tests
@@ -128,7 +129,6 @@ include/aalsdk/kernel/aalrm.h \
 include/aalsdk/kernel/aalrm_server.h \
 include/aalsdk/kernel/aalrm_server-services.h \
 include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/aalsession.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
@@ -275,14 +275,6 @@ ase/README
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
 
-DOC_EXTRA=\
-doc/AAL_Programmers_Guide.pdf \
-doc/AAL_SDK_4-1-0_Release_Notes.pdf \
-doc/AAL_SDK_Utilities_Users_Guide.pdf \
-doc/ASE_UserGuide.pdf \
-doc/Readme.MultiPackage.txt \
-doc/SPL_Functionality_and_Programming_Flow_v070.pdf
-
 FAPTRANS_EXTRA=\
 include/aalsdk/faptrans/FAP10Service.h.in \
 include/aalsdk/faptrans/FAP20Service.h.in \
@@ -312,7 +304,6 @@ $(AASEDS_EXTRA) \
 $(AASREGISTRAR_EXTRA) \
 $(ASE_EXTRA) \
 $(CLP_EXTRA) \
-$(DOC_EXTRA) \
 $(FAPTRANS_EXTRA) \
 $(OSAL_EXTRA) \
 $(SERVICE_EXTRA) \

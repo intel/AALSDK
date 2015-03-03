@@ -106,7 +106,6 @@ include/aalsdk/kernel/aalrm.h \
 include/aalsdk/kernel/aalrm_server.h \
 include/aalsdk/kernel/aalrm_server-services.h \
 include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/aalsession.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
@@ -119,6 +118,7 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h

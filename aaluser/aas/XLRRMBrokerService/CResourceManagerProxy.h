@@ -46,8 +46,6 @@
 
 #include "aalsdk/kernel/aalrm.h"             // kernel transport services
 
-USING_NAMESPACE(std)
-
 BEGIN_NAMESPACE(AAL)
 
 //==========================================================================
@@ -88,7 +86,7 @@ protected:
 // Description: The ResourceManagerClient is a wrapper object around the
 //              low level driver interface to the Remote Resource Manager.
 //==========================================================================
-class CResourceManagerProxy : public IResourceManagerProxy,
+class CResourceManagerProxy : public  IResourceManagerProxy,
                               private CriticalSection,
                               private CUnCopyable
 {

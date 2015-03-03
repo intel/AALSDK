@@ -86,9 +86,9 @@
 #include <aalsdk/kernel/aalui.h>
 #include <aalsdk/kernel/AALWorkspace.h>
 
-BEGIN_C_DECLS
+BEGIN_NAMESPACE(AAL)
 
-USING_NAMESPACE(AAL)
+BEGIN_C_DECLS
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -222,6 +222,8 @@ typedef struct submit_descriptors_req
 
 
 END_C_DECLS
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_FAPPIP_H__
 

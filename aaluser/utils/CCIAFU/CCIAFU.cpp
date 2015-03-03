@@ -80,7 +80,7 @@ void CCIAFU::init(TransactionID const &TranID)
 
    // TODO Use wrap/unwrap utils.
    m_TranIDFrominit = TranID;
-   allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID(), AAL::XL::RT::IRuntime::NoRuntimeClientNotification);
+   allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID(), IRuntime::NoRuntimeClientNotification);
 }
 
 btBool CCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -126,23 +126,23 @@ void CCIAFU::serviceAllocated(IBase               *pServiceBase,
       SetInterface(iidHWCCIAFU, dynamic_ptr<ICCIAFU>(iidHWCCIAFU, pServiceBase));
    }
 
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 m_TranIDFrominit) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       m_TranIDFrominit) );
 }
 
 void CCIAFU::serviceAllocateFailed(const IEvent        &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                          Client(),
-                                                                          NULL,
-                                                                          m_TranIDFrominit,
-                                                                          errInternal,
-                                                                          reasCauseUnknown,
-                                                                          "Unknown"));
+   QueueAASEvent( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                Client(),
+                                                                NULL,
+                                                                m_TranIDFrominit,
+                                                                errInternal,
+                                                                reasCauseUnknown,
+                                                                "Unknown"));
 }
 
 void CCIAFU::serviceFreed(TransactionID const &TranID)
@@ -154,10 +154,10 @@ void CCIAFU::serviceFreed(TransactionID const &TranID)
 void CCIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   SendMsg( new(std::nothrow) AAL::XL::RT::ServiceClientMessage(Client(),
-                                                                dynamic_cast<IBase *>(this),
-                                                                AAL::XL::RT::ServiceClientMessage::Event,
-                                                                &Event) );
+   SendMsg( new(std::nothrow) ServiceClientMessage(Client(),
+                                                   dynamic_cast<IBase *>(this),
+                                                   ServiceClientMessage::Event,
+                                                   &Event) );
 }
 
 
@@ -259,7 +259,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< CCIAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::CCIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

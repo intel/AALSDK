@@ -136,20 +136,20 @@ void SWSimSPLAFU::init(TransactionID const &TranID)
    // Set the AFU DSM (aalkernel/spl2_pip_dksm/spl2_primitives.c:spl2_device_init())
    Driver_SetAFUDSM();
 
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedEvent(getRuntimeClient(),
-                                                                 Client(),
-                                                                 dynamic_cast<IBase *>(this),
-                                                                 TranID) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                       Client(),
+                                                       dynamic_cast<IBase *>(this),
+                                                       TranID) );
    return;
 
 INIT_FAILED:
-   QueueAASEvent( new(std::nothrow) AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                          Client(),
-                                                                          dynamic_cast<IBase *>(this),
-                                                                          TranID,
-                                                                          ExceptionNumber,
-                                                                          Reason,
-                                                                          Description) );
+   QueueAASEvent( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                Client(),
+                                                                dynamic_cast<IBase *>(this),
+                                                                TranID,
+                                                                ExceptionNumber,
+                                                                Reason,
+                                                                Description) );
    if ( NULL != m_SPLDSM.Virt() ) {
       InternalWkspcFree(m_SPLDSM.Virt(), m_SPLDSM);
       m_SPLDSM = WkspcAlloc();
@@ -244,11 +244,11 @@ void SWSimSPLAFU::WorkspaceAllocate(btWSSize             Length,
    WkspcAlloc a;
 
    if ( !InternalWkspcAlloc(Length, a) ) {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "InternalWkspcAlloc failed");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "InternalWkspcAlloc failed");
       SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                                   pExcept) );
       return;
@@ -302,11 +302,11 @@ void SWSimSPLAFU::WorkspaceFree(btVirtAddr           Address,
 
    if ( !InternalWkspcFree(Address, a) ) {
       // No such allocation found.
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasAFUNoMemory,
-                                                                               "no such allocation");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasAFUNoMemory,
+                                                                     "no such allocation");
       SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                               pExcept) );
       return;
@@ -413,11 +413,11 @@ void SWSimSPLAFU::StartTransactionContext(TransactionID const &TranID,
                                                              m_AFUDSM.Virt(),
                                                              m_AFUDSM.Size()) );
    } else {
-      IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                               TranID,
-                                                                               errAFUWorkSpace,
-                                                                               reasParameterValueInvalid,
-                                                                               "Invalid AFU context workspace");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errAFUWorkSpace,
+                                                                     reasParameterValueInvalid,
+                                                                     "Invalid AFU context workspace");
       SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                             pExcept) );
    }
@@ -456,11 +456,11 @@ void SWSimSPLAFU::SetContextWorkspace(TransactionID const &TranID,
    }
 
 _SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                            TranID,
-                                                                            exNum,
-                                                                            exReas,
-                                                                            exDescr);
+   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                  TranID,
+                                                                  exNum,
+                                                                  exReas,
+                                                                  exDescr);
    SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                          pExcept) );
 }
@@ -671,7 +671,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< SWSimSPLAFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::SWSimSPLAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)

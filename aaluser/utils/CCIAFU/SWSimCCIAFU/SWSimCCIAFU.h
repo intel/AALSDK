@@ -64,7 +64,7 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// SWSimCCIAFU is selected by passing the Named Value pair (CCIAFU_NVS_KEY_TARGET, CCIAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting a CCIAFU.
-class SWSIMCCIAFU_API SWSimCCIAFU : public AAL::AAS::ServiceBase,
+class SWSIMCCIAFU_API SWSimCCIAFU : public ServiceBase,
                                     public ICCIAFU
 {
 #if defined ( __AAL_WINDOWS__ )
@@ -72,7 +72,7 @@ class SWSIMCCIAFU_API SWSimCCIAFU : public AAL::AAS::ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimCCIAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimCCIAFU, ServiceBase),
       m_NextPhys(0)
    {
       SetInterface(        iidCCIAFU,      dynamic_cast<ICCIAFU *>(this));

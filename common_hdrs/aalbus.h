@@ -96,6 +96,8 @@ DEFINE_GUID(GUID_DEVCLASS_AAL_DEVICE,
 #endif
 
 
+BEGIN_NAMESPACE(AAL)
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //                            Exports
@@ -827,6 +829,9 @@ btObjectType aaldevp_to_devhandle(struct aal_device *dev_p)
 #define ibus_to_aal_bus(bus) (container_of( bus, struct aal_bus_type, m_ibus ) )
 
 //#define base_to_aal_dev(dev) (container_of( dev, struct aal_device, m_dev ) )
+
+
+END_NAMESPACE(AAL)
 
 #endif // __AALSDK_KERNEL_AALBUS_H__
 

@@ -920,6 +920,7 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'encoder_sample_kbae' \
 'fappip.h' \
 'kosal.h' \
+'NLBVAFU.h' \
 'README.REPO' \
 'spl2defs.h' \
 'splpip.h' \

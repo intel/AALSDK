@@ -46,12 +46,9 @@
 #ifndef __AALSAMPLE2_H__
 #define __AALSAMPLE2_H__
 #include <aalsdk/AAL.h>
-using namespace AAL;
-using namespace AAS;
-
 #include <aalsdk/xlRuntime.h>
-using namespace XL;
-using namespace RT;
+
+using namespace AAL;
 
 // Change DBG_HOOK to 1 if you want an opportunity to attach the debugger.
 // After attaching, set gWaitForDebuggerAttach to 0 via the debugger to unblock the app.
@@ -99,8 +96,8 @@ typedef enum enumStreaming {
 //           stress the importance of thread safety.
 // ============================================================================
 class AppContext : public CAASBase,
-                   public AAL::XL::RT::IRuntimeClient,
-                   public AAL::AAS::IServiceClient
+                   public IRuntimeClient,
+                   public IServiceClient
 {
 public:
    AppContext() :
@@ -115,8 +112,8 @@ public:
    {
       AutoLock(this);
 
-      SetInterface(iidRuntimeClient, dynamic_cast<AAL::XL::RT::IRuntimeClient*>(this));
-      SetInterface(iidServiceClient, dynamic_cast<AAL::AAS::IServiceClient*>(this));
+      SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 
       m_Sem.Create(0, 1);
       // Initialize the queues
@@ -132,11 +129,11 @@ public:
    void Wait() { m_Sem.Wait(); }
    void Post() { m_Sem.Post(1); }
 
-   AAL::XL::RT::IRuntime * Runtime() const
+   IRuntime * Runtime() const
    {
       return m_pRuntime;
    }
-   void Runtime(AAL::XL::RT::IRuntime *pRT)
+   void Runtime(IRuntime *pRT)
    {
       AutoLock(this);
       m_pRuntime = pRT;
@@ -244,8 +241,8 @@ public:
       MSG("Runtime AllocateService failed");
    }
 
-   void runtimeAllocateServiceSucceeded( AAL::IBase *pClient,
-                                                          TransactionID const &rTranID)
+   void runtimeAllocateServiceSucceeded(IBase               *pClient,
+                                        TransactionID const &rTranID)
    {
       MSG("Runtime Allocate Service Succeeded");
    }
@@ -358,7 +355,7 @@ public:
    // <end IRuntimeClient interface>
 
    // <begin IServiceClient interface>
-   virtual void serviceAllocated(AAL::IBase          *pServiceBase,
+   virtual void serviceAllocated(IBase               *pServiceBase,
                                  TransactionID const &rTranID)
    {
       // Get the IAALService
@@ -392,8 +389,8 @@ public:
    }
 
 private:
-   AAL::XL::RT::IRuntime *m_pRuntime;    // Locally-cached pointer to our XL runtime instance.
-   AAL::IAALService      *m_pAALService; // The generic AAL Service interface for the AFU.
+   IRuntime              *m_pRuntime;    // Locally-cached pointer to our XL runtime instance.
+   IAALService           *m_pAALService; // The generic AAL Service interface for the AFU.
    enumStreaming          m_StreamState;
    btBool                 m_bIsOK;
    IAALService           *m_pService;

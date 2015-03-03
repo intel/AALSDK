@@ -37,14 +37,11 @@
 //****************************************************************************///
 #ifndef __ISERVICEBROKER_H__
 #define __ISERVICEBROKER_H__
-
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/xlRuntime.h>
 #include <aalsdk/IServiceClient.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-     BEGIN_NAMESPACE(RT)
 
 /// @ingroup ServiceBroker
 /// @{
@@ -64,16 +61,17 @@ public:
    ///@param[in] rManifest Manifest describing the Service to allocate
    ///@param[in] rTranID Trasnaction ID
    ///@param[in] eAllocatemode Allocation mode. NoRuntimeClientNotification will squelch the notification to the Runtime.
-   virtual void allocService( AAL::IBase *pClient,
-                              const NamedValueSet &rManifest,
-                              TransactionID const &rTranID,
-                              AAL::XL::RT::IRuntime::eAllocatemode  ) =0;
+   virtual void allocService( IBase                  *pClient,
+                              const NamedValueSet    &rManifest,
+                              TransactionID const    &rTranID,
+                              IRuntime::eAllocatemode mode ) =0;
 
    virtual ~IServiceBroker(){}
 };
 
 ///@} group ServiceBroker
-     END_NAMESPACE(RT)
-  END_NAMESPACE(XL)
+
 END_NAMESPACE(AAL)
+
 #endif /* ISERVICEBROKER_H_ */
+

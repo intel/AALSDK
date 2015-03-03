@@ -57,7 +57,7 @@ BEGIN_C_DECLS
 struct EDSCreateParms
 {
    AAL::btObjectType           pServiceContainer; // CAASServiceContainer *
-   AAL::AAS::EnumCallbackModel CallBackModel;
+   AAL::EnumCallbackModel      CallBackModel;
    AAL::btEventHandler         theEventHandler;
    AAL::btApplicationContext   Context;
    AAL::btcObjectType          tranID;            // const TransactionID *

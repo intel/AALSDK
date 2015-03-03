@@ -42,7 +42,7 @@
 #include "ServiceBroker.h"
 
 
-#define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< AAL::XL::RT::ServiceBroker >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ServiceBroker >
 
 #define SAMPLEBROKER_VERSION_CURRENT  0
 #define SAMPLEBROKER_VERSION_REVISION 0
@@ -62,11 +62,7 @@ AAL_END_SVC_MOD()
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 
-
-BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-      BEGIN_NAMESPACE(RT)
-
+namespace AAL {
 
 //=============================================================================
 // Name: init
@@ -81,10 +77,10 @@ BEGIN_NAMESPACE(AAL)
 void ServiceBroker::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new AAL::AAS::ObjectCreatedEvent( getRuntimeClient(),
-                                                   Client(),
-                                                   dynamic_cast<IBase*>(this),
-                                                   rtid));
+   QueueAASEvent( new ObjectCreatedEvent(getRuntimeClient(),
+                                         Client(),
+                                         dynamic_cast<IBase*>(this),
+                                         rtid) );
 
 }
 
@@ -95,10 +91,10 @@ void ServiceBroker::init(TransactionID const &rtid)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void ServiceBroker::allocService(AAL::IBase *pServiceClient,
-                                 const NamedValueSet                    &rManifest,
-                                 TransactionID const                    &rTranID,
-                                 AAL::XL::RT::IRuntime::eAllocatemode    mode)
+void ServiceBroker::allocService(IBase                   *pServiceClient,
+                                 const NamedValueSet     &rManifest,
+                                 TransactionID const     &rTranID,
+                                 IRuntime::eAllocatemode  mode)
 {
    // Process the manifest
    btcString            sName = NULL;
@@ -119,24 +115,24 @@ void ServiceBroker::allocService(AAL::IBase *pServiceClient,
    }
 
    if ( !SvcHost->IsOK() ) {
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              Client(),
-                                                              NULL,
-                                                              rTranID,
-                                                              errCreationFailure,
-                                                              reasInternalError,
-                                                              "Failed to load Service"));
+      QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                     Client(),
+                                                     NULL,
+                                                     rTranID,
+                                                     errCreationFailure,
+                                                     reasInternalError,
+                                                     "Failed to load Service") );
    }
 
    // Allocate the service
    if ( !SvcHost->allocService(pServiceClient, rManifest, rTranID) ) {
-      QueueAASEvent(new AAL::AAS::ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                              Client(),
-                                                              NULL,
-                                                              rTranID,
-                                                              errCreationFailure,
-                                                              reasInternalError,
-                                                              "Failed to construct Service"));
+      QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                     Client(),
+                                                     NULL,
+                                                     rTranID,
+                                                     errCreationFailure,
+                                                     reasInternalError,
+                                                     "Failed to construct Service") );
    } else {
       // Save the ServiceHost
       m_ServiceMap[std::string(sName)] = SvcHost;
@@ -326,12 +322,12 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
    //------------------------------------------
    if ( m_servicecount ) {
       // Timed out - Shutdown did not succeed
-      QueueAASEvent(new AAL::AAS::CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                             exttranevtServiceShutdown,
-                                                             rTranID,
-                                                             errSystemTimeout,
-                                                             reasSystemTimeout,
-                                                             const_cast<btString>(strSystemTimeout)));
+      QueueAASEvent( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                    exttranevtServiceShutdown,
+                                                    rTranID,
+                                                    errSystemTimeout,
+                                                    reasSystemTimeout,
+                                                    const_cast<btString>(strSystemTimeout)) );
       Unlock();
    } else {
 #if 0
@@ -343,7 +339,7 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                           );
 #endif
 
-      QueueAASEvent(new AAL::AAS::CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL));
+      QueueAASEvent( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
 
       // Clear the map now
       m_ServiceMap.clear();
@@ -376,7 +372,7 @@ void ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
 void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 {
    // get second ptr
-   AAL::AAS::IServiceModule *pProvider = (*itr).second->getProvider();
+   IServiceModule *pProvider = (*itr).second->getProvider();
 
    pProvider->Destroy();
 
@@ -392,13 +388,11 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
    Unlock();
 }
 
- // Quiet Release. Used when Service is unloaded.
- btBool ServiceBroker::Release(btTime timeout)
- {
-    return ServiceBase::Release(timeout);
- }
+// Quiet Release. Used when Service is unloaded.
+btBool ServiceBroker::Release(btTime timeout)
+{
+   return ServiceBase::Release(timeout);
+}
 
+}
 
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
-END_NAMESPACE(AAL)

@@ -64,7 +64,7 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// SWSimSPLAFU is selected by passing the Named Value pair (SPLAFU_NVS_KEY_TARGET, SPLAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting an SPLAFU.
-class SWSIMSPLAFU_API SWSimSPLAFU : public AAL::AAS::ServiceBase,
+class SWSIMSPLAFU_API SWSimSPLAFU : public ServiceBase,
                                     public ISPLAFU
 {
 #if defined ( __AAL_WINDOWS__ )
@@ -72,7 +72,7 @@ class SWSIMSPLAFU_API SWSimSPLAFU : public AAL::AAS::ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimSPLAFU, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimSPLAFU, ServiceBase),
       m_NextPhys(0)
    {
       SetInterface(        iidSPLAFU,      dynamic_cast<ISPLAFU *>(this));

@@ -75,6 +75,8 @@
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/spl2defs.h> // SPL2AFU_DSM
 
+BEGIN_NAMESPACE(AAL)
+
 /// @addtogroup AALCore
 /// @{
 
@@ -174,4 +176,7 @@ struct VAFU2_CNTXT {
 
 /// @} group AALCore
 
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_VAFU2DEFS_H__
+

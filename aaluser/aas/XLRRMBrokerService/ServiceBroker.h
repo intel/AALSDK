@@ -48,19 +48,6 @@
 #include <CResourceManager.h>
 
 
-
-
-#if defined ( __AAL_WINDOWS__ )
-# ifdef RRMBROKER_EXPORTS
-#    define RRMBROKER_API __declspec(dllexport)
-# else
-#    define RRMBROKER_API __declspec(dllimport)
-# endif // RRMBROKER_EXPORTS
-#else
-# define RRMBROKER_API    __declspec(0)
-#endif // __AAL_WINDOWS__
-
-
 //=============================================================================
 // Name: AAL_DECLARE_SVC_MOD
 // Description: Declares a module entry point.
@@ -71,15 +58,15 @@ AAL_DECLARE_SVC_MOD(librrmbroker, RRMBROKER_API)
 
 BEGIN_NAMESPACE(AAL)
 
-class ServiceBroker : public  AAL::AAS::ServiceBase,
-                      public  AAL::XL::RT::IServiceBroker,
+class ServiceBroker : public  ServiceBase,
+                      public  IServiceBroker,
                       private CUnCopyable,
-                      private AAL::AAS::IServiceClient,
+                      private IServiceClient,
                       private IResourceManagerClient
 {
 public:
-   typedef map<std::string, AAL::XL::RT::ServiceHost *> ServiceMap;
-   typedef ServiceMap::iterator                         Servicemap_itr;
+   typedef std::map<std::string, ServiceHost *> ServiceMap;
+   typedef ServiceMap::iterator                 Servicemap_itr;
 
    // Map to relate internal transactions to the client transaction.
 
@@ -89,19 +76,19 @@ public:
       bool operator() (const TransactionID &lhs, const TransactionID &rhs)const {return lhs.ID() < rhs.ID();}
    };
 
-   typedef map< TransactionID, TransactionID, tidcompare > TransactionMap;
-   typedef TransactionMap::iterator                TransactionMap_itr;
+   typedef std::map< TransactionID, TransactionID, tidcompare > TransactionMap;
+   typedef TransactionMap::iterator                             TransactionMap_itr;
 
    // Map to hold clients of outstanding transactions
    struct ServiceDesc{
-      AAL::IBase                             *ServiceBase;
-      AAL::XL::RT::IRuntime::eAllocatemode    NoRuntimeEvent;
+      IBase                  *ServiceBase;
+      IRuntime::eAllocatemode NoRuntimeEvent;
    };
 
-   typedef map<TransactionID, struct ServiceDesc, tidcompare> ServiceClientMap;
-   typedef ServiceMap::iterator           ServiceClientMap_itr;
+   typedef std::map<TransactionID, struct ServiceDesc, tidcompare> ServiceClientMap;
+   typedef ServiceMap::iterator                                    ServiceClientMap_itr;
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(ServiceBroker, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ServiceBroker, ServiceBase),
       m_pRMSvcHost(NULL),
       m_ResMgr(NULL),
       m_ResMgrBase(NULL),
@@ -112,32 +99,32 @@ public:
       SetSubClassInterface(iidServiceBroker,
                            dynamic_cast<IServiceBroker *>(this));
       SetInterface(iidServiceClient,
-                           dynamic_cast<AAL::AAS::IServiceClient *>(this));
+                           dynamic_cast<IServiceClient *>(this));
       SetInterface(iidResMgrClient,
-                           dynamic_cast<AAL::IResourceManagerClient *>(this));
+                           dynamic_cast<IResourceManagerClient *>(this));
 
    }
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   void init(AAL::TransactionID const &rtid);
+   void init(TransactionID const &rtid);
 
    // Called when the service is released
-   btBool Release(AAL::TransactionID const &rTranID, AAL::btTime timeout=AAL_INFINITE_WAIT);
+   btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
    // Quiet Release. Used when Service is unloaded.
-   btBool Release(AAL::btTime timeout=AAL_INFINITE_WAIT);
+   btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(AAL::IBase                             *pClient,
-                     const AAL::NamedValueSet               &rManifest,
-                     AAL::TransactionID const               &rTranID,
-                     AAL::XL::RT::IRuntime::eAllocatemode    mode =  AAL::XL::RT::IRuntime::NotifyAll);
+   void allocService(IBase                  *pClient,
+                     const NamedValueSet    &rManifest,
+                     TransactionID const    &rTranID,
+                     IRuntime::eAllocatemode mode = IRuntime::NotifyAll);
 protected:
-   XL::RT::ServiceHost *findServiceHost(std::string const &sName);
+   ServiceHost *findServiceHost(std::string const &sName);
 
    // Internal IServiceClient used to allocate Resource Manager
-   void serviceAllocated( AAL::IBase *pServiceBase,
-                          TransactionID const &rTranID = TransactionID());
+   void serviceAllocated(IBase *pServiceBase,
+                         TransactionID const &rTranID = TransactionID());
    void serviceAllocateFailed( const IEvent &rEvent);
    void serviceFreed( TransactionID const &rTranID = TransactionID());
    void serviceEvent(const IEvent &rEvent);
@@ -151,19 +138,19 @@ protected:
 
    // Used by Release
    static void        ShutdownThread(OSLThread *pThread, void *pContext);
-   btBool                 DoShutdown(AAL::TransactionID const &rTranID, AAL::btTime timeout);
+   btBool                 DoShutdown(TransactionID const &rTranID, btTime timeout);
    static void ShutdownHandlerThread(OSLThread *pThread, void *pContext);
    void              ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt);
 
 protected:
-   XL::RT::ServiceHost    *m_pRMSvcHost;
-   IResourceManager       *m_ResMgr;
-   AAL::IBase             *m_ResMgrBase;
-   ServiceMap              m_ServiceMap;
-   OSLThread              *m_pShutdownThread;
-   AAL::btUnsigned32bitInt m_servicecount;
-   TransactionMap          m_Transactions;
-   ServiceClientMap        m_ServiceClientMap;
+   ServiceHost        *m_pRMSvcHost;
+   IResourceManager   *m_ResMgr;
+   IBase              *m_ResMgrBase;
+   ServiceMap          m_ServiceMap;
+   OSLThread          *m_pShutdownThread;
+   btUnsigned32bitInt  m_servicecount;
+   TransactionMap      m_Transactions;
+   ServiceClientMap    m_ServiceClientMap;
 };
 
 

@@ -94,11 +94,7 @@
 #include "aalsdk/utils/ResMgrUtilities.h"  // string, name, and GUID inter-conversion operators
 
 
-USING_NAMESPACE(std)
-
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
-
 
 CResMgr::CResMgr(const CResMgr & ) {/*empty*/}
 CResMgr & CResMgr::operator=(const CResMgr & ) { return *this; }
@@ -113,7 +109,7 @@ CResMgr & CResMgr::operator=(const CResMgr & ) { return *this; }
 // Outputs:       none
 // Comments:
 //=============================================================================
-CResMgr::CResMgr(NamedValueSet *pOptArgs, const string& sDevName)
+CResMgr::CResMgr(NamedValueSet *pOptArgs, const std::string &sDevName)
    :  m_sResMgrDevName  (sDevName),
       m_pRegDBSkeleton  (NULL),
       m_pIoctlReq       (NULL),
@@ -132,18 +128,18 @@ CResMgr::CResMgr(NamedValueSet *pOptArgs, const string& sDevName)
    }
 
    // Have a path, get the database up
-   m_pRegDBSkeleton = new(nothrow) RegDBSkeleton(m_pOptArgs);
+   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
    if (m_pRegDBSkeleton) {
-      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << endl);
+      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << std::endl);
    } else {
       AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
       goto getout_1;
    }
 
    // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
-   m_pIoctlReq = new(nothrow) struct aalrm_ioctlreq;
+   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
    if( m_pIoctlReq ){
-      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << endl);
+      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << std::endl);
    } else {
       AAL_ERR(LM_ResMgr,"CResMgr could not create an aalrm_ioctlreq\n");
       goto getout_2;
@@ -151,11 +147,11 @@ CResMgr::CResMgr(NamedValueSet *pOptArgs, const string& sDevName)
 
    globalRMFileDescriptor = m_fdServer = open (m_sResMgrDevName.c_str(), O_RDWR);
    if (m_fdServer >= 0){                                      // success
-      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << endl);
+      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << std::endl);
    } else {
       int saverr = errno;
       AAL_ERR(LM_ResMgr,"CResMgr open of " << m_sResMgrDevName << " failed with error code " << saverr
-                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << endl);
+                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
       goto getout_3;
    }
 
@@ -249,12 +245,12 @@ int CResMgr::Get_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       //       errno == anything but EAGAIN means there really was an error, return it
 
       if (0 == iRetIoctl) {               // iRetIoctl = 0 means there is a message waiting, get it
-         AAL_DEBUG(LM_ResMgr, "Get_AALRMS_Msg: AALRM_IOCTL_GETMSG_DESC succeeded:\n\tType = " << showbase <<
-                              pIoctlReq->id << "\n\tPayload length = " << hex << pIoctlReq->size <<
-                              " " << dec << pIoctlReq->size <<endl);
+         AAL_DEBUG(LM_ResMgr, "Get_AALRMS_Msg: AALRM_IOCTL_GETMSG_DESC succeeded:\n\tType = " << std::showbase <<
+                              pIoctlReq->id << "\n\tPayload length = " << std::hex << pIoctlReq->size <<
+                              " " << std::dec << pIoctlReq->size << std::endl);
          // Get a payload buffer if required
          if (pIoctlReq->size) {                                   // do we need a buffer?
-            pBuf = reinterpret_cast<btVirtAddr>(new(nothrow) btByte[pIoctlReq->size]); // yes we do, get a buffer
+            pBuf = reinterpret_cast<btVirtAddr>(new(std::nothrow) btByte[pIoctlReq->size]); // yes we do, get a buffer
             if (!pBuf) {
                return ENOMEM;
             }
@@ -266,7 +262,7 @@ int CResMgr::Get_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
          // Get the message, in its entirety, from the queue. This has to be called even if the
          //    buffer is null, because this call actually removes the message from the queue
          if (ioctl (fdServer, AALRM_IOCTL_GETMSG, pIoctlReq) == 0) {
-            AAL_DEBUG(LM_ResMgr, "Get_AALRMS_Msg:[" << ctMessages++ << "] " << *pIoctlReq << endl);
+            AAL_DEBUG(LM_ResMgr, "Get_AALRMS_Msg:[" << ctMessages++ << "] " << *pIoctlReq << std::endl);
             return 0;                                             // Success! NORMAL TERMINATION
          }
          else {                                                   // ioctl failed
@@ -296,7 +292,7 @@ int CResMgr::Get_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 
             AAL_INFO(LM_ResMgr,"Get_AALRMS_Msg::GetMsg polling for a message\n");
             int iRetPoll          = poll( pollfds, numHandles, -1 /* infinite timeout */);
-            AAL_INFO(LM_ResMgr,"Get_AALRMS_Msg::GetMsg poll returned with code " << iRetPoll << endl);
+            AAL_INFO(LM_ResMgr,"Get_AALRMS_Msg::GetMsg poll returned with code " << iRetPoll << std::endl);
 
             // 4 cases here:
             //    iRetPoll == 1 means the poll returned on the file, need to get the message
@@ -369,7 +365,7 @@ int CResMgr::Parse_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 
       default: {
          AAL_ERR(LM_ResMgr, "CResMgr::Parse_AALRMS_Msg: unknown pIoctlReq->id "
-               << pIoctlReq->id << endl);
+               << pIoctlReq->id << std::endl);
          Retval = EINVAL; // Invalid argument
          break;
       }
@@ -538,7 +534,7 @@ int CResMgr::DoRequestDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       // Null payload response debug
       AAL_DEBUG(LM_ResMgr,"CResMgr::DoRequestDevice: No payload, no Goal Record being returned." <<
             "\nres_handle:  " << pIoctlReq->res_handle <<
-            "\nresult_code: " << pIoctlReq->result_code << endl);
+            "\nresult_code: " << pIoctlReq->result_code << std::endl);
 
    } // else if (pIoctlReq->size)
 
@@ -580,7 +576,7 @@ int CResMgr::DoReleaseDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
          << "\tResponse Handle: " << pIoctlReq->req_handle
          << "\tDevice Handle:   " << pIoctlReq->res_handle
          << "\tResult Code:     " << pIoctlReq->result_code
-         << endl);
+         << std::endl);
 
    // Respond
    return Send_AALRMS_Msg(fdServer, pIoctlReq);
@@ -607,7 +603,7 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       // extract the RegistrarCmdResp_t
       pRegistrarCmdResp_t pRCR =
             reinterpret_cast<pRegistrarCmdResp_t> (pIoctlReq->payload);
-      AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RECEIVED RegistrarCmdResp is:\n" << *pRCR << endl);
+      AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RECEIVED RegistrarCmdResp is:\n" << *pRCR << std::endl);
 
       // execute the database command, collect the response in pResp
       // TODO: use auto_ptr here, see how it affects other calls using the pointer type
@@ -615,7 +611,7 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       if (NULL == pResp) {
          AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RESPONSE RegistrarCmdResp is NULL\n");
       } else {
-         AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RESPONSE RegistrarCmdResp is:\n" << *pResp << endl);
+         AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RESPONSE RegistrarCmdResp is:\n" << *pResp << std::endl);
       }
 
       // Done with the input payload, free it
@@ -720,7 +716,7 @@ int CResMgr::DoConfigUpdate(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       krms_cfgUpDate_e     id     = pcfgUpDate->id;
 
       AAL_DEBUG(LM_ResMgr,"CResMgr::DoConfigUpdate: Event Type: " << id <<
-            "\n\tPID:         " << pcfgUpDate->pid << "\n" << pcfgUpDate->devattrs << endl);
+            "\n\tPID:         " << pcfgUpDate->pid << "\n" << pcfgUpDate->devattrs << std::endl);
 
       // Record the device handle - used for BackDoor 0, which just records a handle and
       // returns it if there is no Request Device Manifest at all
@@ -909,6 +905,5 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
 }  // end of CResMgr::NVSFromConfigUpdate
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 

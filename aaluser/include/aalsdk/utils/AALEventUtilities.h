@@ -46,7 +46,6 @@
 #include <aalsdk/aas/_xlRuntimeServices.h>
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /// @addtogroup EventUtils
 /// @{
@@ -102,7 +101,7 @@ AASLIB_API TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, bt
 /// @param[in]  pTranID      Pointer to the TransactionID to be copied into the Event.
 AASLIB_API void ReThrow(IBase               *This,
                         const IEvent        &theEvent,
-                        AAL::XL::RT::IXLRuntimeServices    *pDispatcher,
+                        IXLRuntimeServices  *pDispatcher,
                         btEventHandler       Handler,
                         const TransactionID *pTranID);
 
@@ -123,14 +122,13 @@ AASLIB_API void ReThrow(IBase               *This,
 /// @param[in]  theEvent     The Event to be rethrown.
 /// @param[in]  pDispatcher  Pointer to Event Dispatcher interface.
 /// @param[in]  Handler      Event handler pointer.
-AASLIB_API void UnWrapAndReThrow(IBase            *This,
-                                 const IEvent     &theEvent,
-                                 AAL::XL::RT::IXLRuntimeServices    *pDispatcher,
-                                 btEventHandler    Handler);
+AASLIB_API void UnWrapAndReThrow(IBase              *This,
+                                 const IEvent       &theEvent,
+                                 IXLRuntimeServices *pDispatcher,
+                                 btEventHandler      Handler);
 
 /// @} group EventUtils
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_UTILS_AALEVENTUTILITIES_H__

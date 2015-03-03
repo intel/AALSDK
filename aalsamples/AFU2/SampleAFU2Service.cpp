@@ -55,9 +55,6 @@
 
 #include "SampleAFU2Service-internal.h"
 
-USING_NAMESPACE(AAL)
-USING_NAMESPACE(AAS)
-
 //=============================================================================
 // Typedefs and Constants
 //=============================================================================
@@ -92,8 +89,6 @@ AAL_END_SVC_MOD()
 //////                                                                ///////
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-
-BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 // Name: CBufferFullTransactionEvent
@@ -452,8 +447,8 @@ void SampleAFU2::Consumer()
 //           In this sample we allow the application to register an event
 //           handler used specifically for being sent buffer events.
 //=============================================================================
-void SampleAFU2::RegisterConsumer(AAL::TransactionID const &rConsumerID,
-                                  AAL::TransactionID const &rTranID)
+void SampleAFU2::RegisterConsumer(TransactionID const &rConsumerID,
+                                  TransactionID const &rTranID)
 {
    AutoLock(this);
 
@@ -470,7 +465,7 @@ void SampleAFU2::RegisterConsumer(AAL::TransactionID const &rConsumerID,
       return;
    }
 
-   m_pConsumerTransactionID = new AAL::TransactionID(rConsumerID);
+   m_pConsumerTransactionID = new TransactionID(rConsumerID);
 
    SendMsg( new SampleAFU2TransactionFunctor(Client(),
                                              static_cast<IBase *>(this),
@@ -487,7 +482,7 @@ void SampleAFU2::RegisterConsumer(AAL::TransactionID const &rConsumerID,
 // Outputs: none.
 // Comments:
 //=============================================================================
-void SampleAFU2::UnRegisterConsumer(AAL::TransactionID const &rTranID)
+void SampleAFU2::UnRegisterConsumer(TransactionID const &rTranID)
 {
    AutoLock(this);
 
@@ -564,7 +559,7 @@ void SampleAFU2::FreeBuffer(WSBufDesc WSBuffer)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void SampleAFU2::Start(AAL::TransactionID const &rTranID, btByte CryptKey)
+void SampleAFU2::Start(TransactionID const &rTranID, btByte CryptKey)
 {
    AutoLock(this);   // Prevent re-entrance until started
 
@@ -628,7 +623,7 @@ void SampleAFU2::Start(AAL::TransactionID const &rTranID, btByte CryptKey)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void SampleAFU2::Stop(AAL::TransactionID const &rTranID)
+void SampleAFU2::Stop(TransactionID const &rTranID)
 {
    AutoLock(this);
    //
@@ -676,13 +671,13 @@ void SampleAFU2::PutBuffer(WSBufDesc WSBuffer)
 
 
 
-SampleAFU2ExceptionFunctor::SampleAFU2ExceptionFunctor(AAL::AAS::IServiceClient *pSvcClient,
-                                                       IBase                    *pAFU,
-                                                       btID                      SubclassID,
-                                                       TransactionID const      &TranID,
-                                                       btID                      ExID,
-                                                       btID                      Reason,
-                                                       btcString                 Descr) :
+SampleAFU2ExceptionFunctor::SampleAFU2ExceptionFunctor(IServiceClient      *pSvcClient,
+                                                       IBase               *pAFU,
+                                                       btID                 SubclassID,
+                                                       TransactionID const &TranID,
+                                                       btID                 ExID,
+                                                       btID                 Reason,
+                                                       btcString            Descr) :
    m_pSvcClient(pSvcClient),
    m_pAFU(pAFU),
    m_SubclassID(SubclassID),
@@ -703,12 +698,12 @@ void SampleAFU2ExceptionFunctor::operator() ()
    delete this;
 }
 
-SampleAFU2BufferFunctor::SampleAFU2BufferFunctor(AAL::AAS::IServiceClient *pSvcClient,
-                                                 IBase                    *pAFU,
-                                                 btID                      SubclassID,
-                                                 TransactionID const      &TranID,
-                                                 btVirtAddr                pBuf,
-                                                 btWSSize                  Bytes) :
+SampleAFU2BufferFunctor::SampleAFU2BufferFunctor(IServiceClient      *pSvcClient,
+                                                 IBase               *pAFU,
+                                                 btID                 SubclassID,
+                                                 TransactionID const &TranID,
+                                                 btVirtAddr           pBuf,
+                                                 btWSSize             Bytes) :
    m_pSvcClient(pSvcClient),
    m_pAFU(pAFU),
    m_SubclassID(SubclassID),
@@ -727,10 +722,10 @@ void SampleAFU2BufferFunctor::operator() ()
    delete this;
 }
 
-SampleAFU2TransactionFunctor::SampleAFU2TransactionFunctor(AAL::AAS::IServiceClient *pSvcClient,
-                                                           IBase                    *pAFU,
-                                                           btID                      SubclassID,
-                                                           TransactionID const      &TranID) :
+SampleAFU2TransactionFunctor::SampleAFU2TransactionFunctor(IServiceClient      *pSvcClient,
+                                                           IBase               *pAFU,
+                                                           btID                 SubclassID,
+                                                           TransactionID const &TranID) :
    m_pSvcClient(pSvcClient),
    m_pAFU(pAFU),
    m_SubclassID(SubclassID),
@@ -743,5 +738,4 @@ void SampleAFU2TransactionFunctor::operator() ()
    delete this;
 }
 
-END_NAMESPACE(AAL)
 

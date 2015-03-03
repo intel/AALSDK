@@ -85,7 +85,6 @@
 
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
       class CRegistrar;
       class CRegistrarDatabase;
@@ -527,7 +526,6 @@ END_C_DECLS
       };
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 #endif // __AALSDK_REGISTRAR_CAASREGISTRAR_H__

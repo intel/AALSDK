@@ -68,7 +68,6 @@
 /// @{
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 typedef enum eservice_connection_types
 {
@@ -283,10 +282,10 @@ public:
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       AAL::IBase *Client,
+                                       IBase               *Client,
                                        TransactionID const &rtid,
                                        NamedValueSet const &optArgs,
-                                       AAL::btBool          NoRuntimeEvent) = 0;
+                                       btBool               NoRuntimeEvent) = 0;
 };
 
 
@@ -325,10 +324,10 @@ public:
     ///
     /// @retval  IBase *  On success.
     /// @retval  NULL     On failure.
-    virtual IBase *Construct(AAL::IBase   *Client,
+    virtual IBase *Construct(IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet(),
-                             AAL::btBool          NoRuntimeEvent = false) = 0;
+                             btBool               NoRuntimeEvent = false) = 0;
 
    /// Forcefully destroy the Service objects created by this module.
    ///
@@ -338,11 +337,11 @@ public:
    virtual void   Destroy() = 0;
 
    // AAL 4.0 Service Interface (DEPRECATE) - Used for Event Queuing
-   virtual void setRuntimeServiceProvider(AAL::XL::RT::IXLRuntimeServices *pRuntimeServices) = 0;
-   virtual AAL::XL::RT::IXLRuntimeServices  *getRuntimeServiceProvider() = 0;
+   virtual void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices) = 0;
+   virtual IXLRuntimeServices  *getRuntimeServiceProvider() = 0;
 
-   virtual void setRuntime(AAL::XL::RT::IRuntime *pRuntime) = 0;
-   virtual AAL::XL::RT::IRuntime  *getRuntime() = 0;
+   virtual void setRuntime(IRuntime *pRuntime) = 0;
+   virtual IRuntime  *getRuntime() = 0;
 };
 
 
@@ -384,10 +383,10 @@ public:
                             TransactionID const &tranID,
                             btApplicationContext context,
                             NamedValueSet const &optArgs = NamedValueSet());
-    virtual IBase *Construct(AAL::IBase   *Client,
+    virtual IBase *Construct(IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet(),
-                             AAL::btBool          NoRuntimeEvent = false);
+                             btBool               NoRuntimeEvent = false);
    virtual void Destroy();
 
    // </IServiceModule>
@@ -399,39 +398,39 @@ public:
    // </IServiceModuleCallback>
 
    // AAL 4.0 Service Interface
-   void setRuntimeServiceProvider(AAL::XL::RT::IXLRuntimeServices *pRuntimeServices)
+   void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices)
    {
       // Lock
       m_RuntimeServices = pRuntimeServices;
    }
 
    // AAL 4.0 Service Interface
-   AAL::XL::RT::IXLRuntimeServices  *getRuntimeServiceProvider()
+   IXLRuntimeServices  *getRuntimeServiceProvider()
    {
       // Lock
       return m_RuntimeServices;
    }
 
-   void setRuntime(AAL::XL::RT::IRuntime *pRuntime)
+   void setRuntime(IRuntime *pRuntime)
    {
       // Lock
       m_Runtime = pRuntime;
    }
 
    // AAL 4.0 Service Interface
-   AAL::XL::RT::IRuntime  *getRuntime()
+   IRuntime *getRuntime()
    {
       // Lock
       return m_Runtime;
    }
 
-   AAL::XL::RT::IRuntimeClient  *getRuntimeClient()
+   IRuntimeClient *getRuntimeClient()
    {
       // Lock
       return m_RuntimeClient;
    }
 
-   void setRuntimeClient(AAL::XL::RT::IRuntimeClient  *pRTC)
+   void setRuntimeClient(IRuntimeClient *pRTC)
    {
       // Lock
       m_RuntimeClient = pRTC;
@@ -495,15 +494,14 @@ protected:
    IAALService                            *m_pService;
    btUnsignedInt                           m_refcount; // TODO use CCountedObject
 
-   AAL::XL::RT::IXLRuntimeServices        *m_RuntimeServices;
-   AAL::XL::RT::IRuntime                  *m_Runtime;
-   AAL::XL::RT::IRuntimeClient            *m_RuntimeClient;
+   IXLRuntimeServices                     *m_RuntimeServices;
+   IRuntime                               *m_Runtime;
+   IRuntimeClient                         *m_RuntimeClient;
    ISvcsFact                              &m_SvcsFact;
    CSemaphore                              m_srvcCount;
 };
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 
@@ -528,12 +526,12 @@ END_NAMESPACE(AAL)
 #define DECLARE_SERVICE_PROVIDER_ACCESSOR "_ServiceModule"
 
 #define DEFINE_SERVICE_PROVIDER_ACCESSOR(_CLASSNAME_) extern "C" {                                            \
-__declspec(dllexport) AAL::AAS::IServiceModule * _ServiceModule(AAL::btEventHandler         eventHandler,     \
-                                                                AAL::TransactionID const   &tranID,           \
-                                                                AAL::btApplicationContext   context,          \
-                                                                AAL::CAASServiceContainer  *ServiceContainer, \
-                                                                AAL::IBase                **ppService,        \
-                                                                AAL::NamedValueSet const   &optArgs)          \
+__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::btEventHandler         eventHandler,          \
+                                                           AAL::TransactionID const   &tranID,                \
+                                                           AAL::btApplicationContext   context,               \
+                                                           AAL::CAASServiceContainer  *ServiceContainer,      \
+                                                           AAL::IBase                **ppService,             \
+                                                           AAL::NamedValueSet const   &optArgs)               \
 {                                                                                                             \
    static _CLASSNAME_ theServiceProvider;                                                                     \
    theServiceProvider.Construct(eventHandler, tranID, context);                                               \
@@ -542,7 +540,7 @@ __declspec(dllexport) AAL::AAS::IServiceModule * _ServiceModule(AAL::btEventHand
    }                                                                                                          \
    theServiceProvider.ServiceContainer(ServiceContainer);                                                     \
    *ppService = dynamic_cast<IBase *>(&theServiceProvider);                                                   \
-   return dynamic_ptr<AAL::AAS::IServiceModule>(iidServiceProvider, *ppService);                              \
+   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, *ppService);                                   \
 }                                                                                                             \
                                                                                                               \
 __declspec(dllexport) unsigned long _GetServiceProviderVersion()                                              \
@@ -557,17 +555,17 @@ __declspec(dllexport) unsigned long _GetServiceProviderVersion()                
 ///
 /// @param[in]  N  The type of Service factory used by the module. N must be a type derived from
 ///   ISvcsFact.
-#define DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR(N) extern "C" {                                                         \
-static N ServiceFactory;                                                                                             \
-__declspec(dllexport) AAL::AAS::IServiceModule * _ServiceModule(AAL::AAS::CAASServiceContainer *AASServiceContainer) \
-{                                                                                                                    \
-   static AAL::AAS::AALServiceModule theServiceProvider(ServiceFactory);                                             \
-   if ( !theServiceProvider.IsOK() ) {                                                                               \
-      return NULL;                                                                                                   \
-   }                                                                                                                 \
-   theServiceProvider.ServiceContainer(AASServiceContainer);                                                         \
-   return dynamic_ptr<AAL::AAS::IServiceModule>(iidServiceProvider, &theServiceProvider);                            \
-}                                                                                                                    \
+#define DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR(N) extern "C" {                                                  \
+static N ServiceFactory;                                                                                      \
+__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::CAASServiceContainer *AASServiceContainer)    \
+{                                                                                                             \
+   static AAL::AALServiceModule theServiceProvider(ServiceFactory);                                           \
+   if ( !theServiceProvider.IsOK() ) {                                                                        \
+      return NULL;                                                                                            \
+   }                                                                                                          \
+   theServiceProvider.ServiceContainer(AASServiceContainer);                                                  \
+   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, &theServiceProvider);                          \
+}                                                                                                             \
 }
 
 

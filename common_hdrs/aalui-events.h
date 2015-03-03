@@ -87,6 +87,8 @@
 #include <aalsdk/kernel/aalqueue.h>
 #include <aalsdk/kernel/aalui.h>
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 //=============================================================================
 // Name: uidrv_event_shutdown_event
@@ -664,4 +666,8 @@ uidrv_event_afucwsevent_destroy(struct uidrv_event_afu_workspace_event *This)
    kosal_kfree(This, sizeof(struct uidrv_event_afu_workspace_event));
 }
 
+
+END_NAMESPACE(AAL)
+
 #endif // __AALSDK_KERNEL_AALUI_EVENTS_H__
+

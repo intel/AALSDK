@@ -1,0 +1,12 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='valgrind-standalone'
+
+. ./valgrind-common
+
+run_valgrind_all "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem" ${1+"$@"}
+run_valgrind_all "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup" ${1+"$@"}
+exit $?

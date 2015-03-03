@@ -45,6 +45,8 @@
 #define __AALSDK_SERVICE_SAMPLEAFU2SERVICE_H__
 #include <aalsdk/AAL.h>
 
+using namespace AAL;
+
 const std::string strConfigRecord("9 20 ConfigRecordIncluded\n \
       \t10\n \
           \t\t9 17 ServiceExecutable\n \
@@ -86,8 +88,6 @@ const std::string strConfigRecord("9 20 ConfigRecordIncluded\n \
 
 AAL_DECLARE_MOD(libsampleafu2, SAMPLEAFU2_API)
 
-
-BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup sample_afu2
 /// @{
@@ -192,15 +192,15 @@ public:
    ///
    /// @param[in]  rTranID   For outbound events.
    /// @param[in]  CryptKey  Key for buffer cipher.
-   virtual  void Start(AAL::TransactionID const &rTranID,
-                       btByte                    CryptKey) = 0;
+   virtual  void Start(TransactionID const &rTranID,
+                       btByte               CryptKey) = 0;
 
    /// @brief Stop requesting data
    ///
    /// Sends tranevtSampleAFU2Stop when stopped.
    ///
    /// @param[in]  rTranID   For outbound events.
-   virtual void Stop(AAL::TransactionID const &rTranID) = 0;
+   virtual void Stop(TransactionID const &rTranID) = 0;
 
    /// @brief Put a filled workspace buffer for consumption.
    ///
@@ -227,8 +227,8 @@ public:
    ///
    /// @param[in]  rConsumerID   The TransactionID to register.
    /// @param[in]  rTranID       For outbound events.
-   virtual void RegisterConsumer(AAL::TransactionID const &rConsumerID,
-                                 AAL::TransactionID const &rTranID) = 0;
+   virtual void RegisterConsumer(TransactionID const &rConsumerID,
+                                 TransactionID const &rTranID) = 0;
 
 
    /// Unregisters any previous consumer TransactionID.
@@ -236,7 +236,7 @@ public:
    /// Sends tranevtSampleAFU2UnRegister when unregistered.
    ///
    /// @param[in]  rTranID       For outbound events.
-   virtual void UnRegisterConsumer(AAL::TransactionID const &rTranID) = 0;
+   virtual void UnRegisterConsumer(TransactionID const &rTranID) = 0;
 
    /// Free a workspace buffer.
    ///
@@ -306,8 +306,6 @@ public:
 #define extranevtSampleAFU2PutFree     __INTC_ExTranEvt(INTC_sysSampleAFU, 0x0009)
 
 /// @} group sample_afu2
-
-END_NAMESPACE(AAL)
 
 #endif // __AALSDK_SERVICE_SAMPLEAFU2SERVICE_H__
 

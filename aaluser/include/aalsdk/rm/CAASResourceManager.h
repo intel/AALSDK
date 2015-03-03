@@ -65,7 +65,6 @@
 /// @todo Document CResMgr and related.
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 /*
 * Global Resource Manager Server file descriptor, used only for the signal handler, always
@@ -198,7 +197,6 @@ inline aalrm_ioctlreq * DestroyRMIoctlReq(aalrm_ioctlreq *pIoctlReq)
 }
 
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
 
 

@@ -50,9 +50,7 @@
 
 
 /// @todo Document InstRec, InstRecMap, and related.
-
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 class InstRec
@@ -84,8 +82,6 @@ public:
 private:
    InstRec(); // Disallow default constructor
 }; // InstRec
- 
-std::ostream & operator << (std::ostream &s, const InstRec &instRec);
 
 typedef InstRec                       *pInstRec_t;
 typedef InstRec const                 *pcInstRec_t;
@@ -108,9 +104,11 @@ virtual ~InstRecMap();
    void Delete(btNumberKey );
 };
 
+std::ostream & operator << (std::ostream & , const InstRec & );
 
-   END_NAMESPACE(AAS)
 END_NAMESPACE(AAL)
+
+std::ostream & operator << (std::ostream & , const AAL::InstRec & );
 
 #endif // __AALSDK_RM_INSTANCERECORD_H__
 

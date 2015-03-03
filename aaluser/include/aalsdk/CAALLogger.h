@@ -290,8 +290,7 @@ public:
    // Log a string
    void        Log                  (int errlevel, const char* psz);
    void        Log                  (int errlevel, std::ostringstream& ros);
-   void        Log                  (int errlevel, std::basic_ostream<char, std::char_traits<char> >& rbos)
-                                          {Log(errlevel,static_cast<std::ostringstream&>(rbos));};
+   void        Log                  (int errlevel, std::basic_ostream<char, std::char_traits<char> > &rbos);
 
    // if eDest is FILE, there better be a filename
    void        SetDestination       (eLogTo eDest=COUT, std::string sFile="");

@@ -62,8 +62,6 @@
 # include <ltdl.h>
 #endif // __AAL_LINUX__
 
-USING_NAMESPACE(AAL)
-
 /// @addtogroup ServiceModule
 /// @{
 
@@ -267,14 +265,14 @@ case AAL_SVC_CMD_GET_PROVIDER : {                                               
       }                                                                                       \
    }                                                                                          \
    if ( NULL == pServiceProvider ) {                                                          \
-      pServiceProvider = new AAL::AAS::AALServiceModule(*pServiceFactory);                    \
+      pServiceProvider = new AAL::AALServiceModule(*pServiceFactory);                         \
       if ( NULL == pServiceProvider ) {                                                       \
          cs.Unlock();                                                                         \
          return 2;                                                                            \
       }                                                                                       \
    }                                                                                          \
-   *((AAL::AAS::IServiceModule **)(arg)) =                                                    \
-      dynamic_ptr<AAL::AAS::IServiceModule>(iidServiceProvider, pServiceProvider);            \
+   *((AAL::IServiceModule **)(arg)) =                                                         \
+      AAL::dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, pServiceProvider);            \
    cs.Unlock();                                                                               \
 } return 0;                                                                                   \
 case AAL_SVC_CMD_FREE_PROVIDER : {                                                            \
@@ -333,7 +331,7 @@ case AAL_SVC_CMD_FREE_PROVIDER : {                                              
 /// @param[in]  __cmd  Command identifier constant.
 ///
 /// Ex.@code
-/// #define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< MyService >
+/// #define SERVICE_FACTORY AAL::InProcSvcsFact< MyService >
 ///
 /// #define MY_AAL_SVC_CMD_A (AAL_SVC_USER_CMD_BASE + 2)
 /// #define MY_AAL_SVC_CMD_B (AAL_SVC_USER_CMD_BASE + 3)
@@ -442,7 +440,7 @@ __storagecls bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUnsigned32bitInt 
 /// @param[in]  __verage      the Age component of the C:R:A. (u32)
 ///
 /// Ex.@code
-/// #define SERVICE_FACTORY AAL::AAS::InProcSvcsFact< MyService >
+/// #define SERVICE_FACTORY AAL::InProcSvcsFact< MyService >
 ///
 /// AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libMyService, MYSERVICE_API, "1.0.0", 1, 0, 0)
 ///
@@ -452,10 +450,10 @@ extern "C" {                                                                    
 __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt cmd,              \
                                                                   AAL::btAny              arg)              \
 {                                                                                                           \
-   static __svcfactory               *pServiceFactory  = NULL;                                              \
-   static AAL::AAS::AALServiceModule *pServiceProvider = NULL;                                              \
-   static CriticalSection             cs;                                                                   \
-   AAL::bt32bitInt                    res = 0;                                                              \
+   static __svcfactory          *pServiceFactory  = NULL;                                                   \
+   static AAL::AALServiceModule *pServiceProvider = NULL;                                                   \
+   static CriticalSection        cs;                                                                        \
+   AAL::bt32bitInt               res = 0;                                                                   \
    switch( cmd ) {                                                                                          \
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
 
@@ -484,7 +482,7 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
 #ifdef __cplusplus
 
 # define AAL_DECLARE_BUILTIN_MOD(__rtnamesym, __storagecls)                                                              \
-extern "C" {                                                                                                     \
+extern "C" {                                                                                                             \
 extern __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt , AAL::btAny ); \
 }
 
@@ -515,12 +513,12 @@ extern __storagecls bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUn
 # define AAL_BEGIN_BUILTIN_SVC_MOD(__svcfactory, __rtnamesym, __storagecls, __verstr, __vercur, __verrev, __verage) \
 extern "C" {                                                                                                \
 __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt cmd,              \
-                                                                  AAL::btAny              arg)              \
+                                                                          AAL::btAny              arg)              \
 {                                                                                                           \
-   static __svcfactory               *pServiceFactory  = NULL;                                              \
-   static AAL::AAS::AALServiceModule *pServiceProvider = NULL;                                              \
-   static CriticalSection             cs;                                                                   \
-   AAL::bt32bitInt                    res = 0;                                                              \
+   static __svcfactory          *pServiceFactory  = NULL;                                              \
+   static AAL::AALServiceModule *pServiceProvider = NULL;                                              \
+   static CriticalSection        cs;                                                                   \
+   AAL::bt32bitInt               res = 0;                                                              \
    switch( cmd ) {                                                                                          \
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
 

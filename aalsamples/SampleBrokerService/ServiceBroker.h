@@ -63,22 +63,18 @@
 //=============================================================================
 AAL_DECLARE_SVC_MOD(libsamplebroker, SAMPLEBROKER_API)
 
+namespace AAL {
 
-BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(XL)
-     BEGIN_NAMESPACE(RT)
-
-
-class ServiceBroker : public  AAL::AAS::ServiceBase,
+class ServiceBroker : public  ServiceBase,
                       private CUnCopyable,
-                      public  AAL::XL::RT::IServiceBroker
+                      public  IServiceBroker
 {
 public:
-   typedef std::map<std::string, AAL::XL::RT::ServiceHost *> ServiceMap;
-   typedef ServiceMap::iterator                              Servicemap_itr;
+   typedef std::map<std::string, ServiceHost *> ServiceMap;
+   typedef ServiceMap::iterator                 Servicemap_itr;
 
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(ServiceBroker, AAL::AAS::ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ServiceBroker, ServiceBase),
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
@@ -88,36 +84,34 @@ public:
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   void init(AAL::TransactionID const &rtid);
+   void init(TransactionID const &rtid);
 
    // Called when the service is released
-   btBool Release(AAL::TransactionID const &rTranID, AAL::btTime timeout=AAL_INFINITE_WAIT);
+   btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
    // Quiet Release. Used when Service is unloaded.
-   btBool Release(AAL::btTime timeout=AAL_INFINITE_WAIT);
+   btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(AAL::IBase *pClient,
-                     const AAL::NamedValueSet &rManifest,
-                     AAL::TransactionID const &rTranID,
-                     AAL::XL::RT::IRuntime::eAllocatemode        mode = AAL::XL::RT::IRuntime::NotifyAll);
+   void allocService(IBase                  *pClient,
+                     const NamedValueSet    &rManifest,
+                     TransactionID const    &rTranID,
+                     IRuntime::eAllocatemode mode = IRuntime::NotifyAll);
 protected:
    ServiceHost *findServiceHost(std::string const &sName);
 
    // Used by Release
    static void        ShutdownThread(OSLThread *pThread, void *pContext);
-   btBool                 DoShutdown(AAL::TransactionID const &rTranID, AAL::btTime timeout);
+   btBool                 DoShutdown(TransactionID const &rTranID, btTime timeout);
    static void ShutdownHandlerThread(OSLThread *pThread, void *pContext);
    void              ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt);
 
 protected:
-   ServiceMap              m_ServiceMap;
-   OSLThread              *m_pShutdownThread;
-   AAL::btUnsigned32bitInt m_servicecount;
+   ServiceMap         m_ServiceMap;
+   OSLThread         *m_pShutdownThread;
+   btUnsigned32bitInt m_servicecount;
 };
 
-
-      END_NAMESPACE(RT)
-   END_NAMESPACE(XL)
-END_NAMESPACE(AAL)
+}
 
 #endif // __SERVICEBROKER_H__
+

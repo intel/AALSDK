@@ -1,0 +1,15 @@
+#!/bin/bash
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='valgrind-everything'
+
+. ./valgrind-common
+
+run_valgrind_all "tests/harnessed/gtest/.libs/bat"
+run_valgrind_all "tests/harnessed/gtest/.libs/nightly"
+run_valgrind_all "tests/harnessed/gtest/.libs/weekly"
+run_valgrind_all "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem"
+run_valgrind_all "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup"
+exit $?

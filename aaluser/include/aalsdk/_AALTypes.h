@@ -601,9 +601,6 @@ typedef btUnsigned64bitInt btTime;       ///< Generic time value.
 class IEvent;
 /// @brief btEventHandler is a user-provided callback routine used for dispatching events from the
 ///   Event Delivery Service.
-///
-/// A default event handler is set during system initialization (AAL::SystemInit).  Event-specific
-/// handlers may also be set.
 typedef void (*btEventHandler)(IEvent const &TheEvent);
 #else
 typedef void (*btEventHandler)(void *TheEvent);

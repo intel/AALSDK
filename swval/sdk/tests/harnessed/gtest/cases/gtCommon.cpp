@@ -14,6 +14,8 @@ const std::string SampleAFU1ConfigRecord("9 20 ConfigRecordIncluded\n \
    9 29 ---- End of embedded NVS ----\n \
       9999\n");
 
+// Retrieve the current test and test case name from gtest.
+// Must be called within the context of a test case/fixture.
 void TestCaseName(std::string &Test, std::string &TestCase)
 {
    const ::testing::TestInfo * const pInfo =
@@ -23,8 +25,10 @@ void TestCaseName(std::string &Test, std::string &TestCase)
    TestCase = std::string(pInfo->test_case_name());
 }
 
-#if __AAL_LINUX__
+#if defined( __AAL_LINUX__ )
 
+// Make sure that the given path appears in LD_LIBRARY_PATH, preventing duplication.
+// Return non-zero on error.
 int RequireLD_LIBRARY_PATH(const char *path)
 {
    int   res  = 1;
@@ -87,29 +91,9 @@ _DONE:
    return res;
 }
 
-int Require_NOKERNEL_Min_LD_LIBRARY_PATH()
-{
-   const char *minpaths[] =
-   {
-      OSAL_LIBDIR,
-      AAS_LIBDIR,
-      AASEDS_LIBDIR,
-      XLRT_LIBDIR
-   };
-
-   int res;
-   int i;
-
-   for ( i = 0 ; i < sizeof(minpaths) / sizeof(minpaths[0]) ; ++i ) {
-      res = RequireLD_LIBRARY_PATH(minpaths[i]);
-      if ( 0 != res ) {
-         return res;
-      }
-   }
-
-   return res;
-}
-
+// Print streamer for LD_LIBRARY_PATH.
+// Ex.
+//   cout << LD_LIBRARY_PATH << endl;
 std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 {
    char *pvar = getenv("LD_LIBRARY_PATH");
@@ -122,4 +106,10 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 }
 
 #endif // __AAL_LINUX__
+
+#if   defined( __AAL_WINDOWS__ )
+# define cpu_yield() ::Sleep(0)
+#elif defined( __AAL_LINUX__ )
+# define cpu_yield() usleep(0)
+#endif // OS
 

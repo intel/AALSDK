@@ -93,7 +93,6 @@
 //-----------------------------------------------------------------------------
 
 BEGIN_NAMESPACE(AAL)
-   BEGIN_NAMESPACE(AAS)
 
 
 #define AAL_SERVICE_NAME                        "AAL_SERVICE_NAME"
@@ -601,8 +600,7 @@ public:
 };
 
 /// @} group InProcFactory
-///
-   END_NAMESPACE(AAS)
+
 END_NAMESPACE(AAL)
 
 
