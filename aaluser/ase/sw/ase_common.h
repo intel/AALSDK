@@ -195,6 +195,8 @@ void create_ipc_listfile();
 extern "C" {
 #endif // __cplusplus
   // Shared memory alloc/dealloc operations
+  void session_init();
+  void session_deinit();
   void allocate_buffer(struct buffer_t *);
   void deallocate_buffer(struct buffer_t *);
   void csr_write(uint32_t, uint32_t);

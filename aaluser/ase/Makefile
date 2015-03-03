@@ -46,6 +46,9 @@ include ase_sources.mk
 ## ASE Version
 ASE_VERSION = 4.2
 
+# ASE Debug
+ASE_DEBUG = 0
+
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -63,7 +66,9 @@ endif
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall 
-# CC_OPT+= -D ASE_DEBUG
+ifeq ($(ASE_DEBUG), 1)
+CC_OPT+= -D ASE_DEBUG
+endif
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
@@ -84,7 +89,6 @@ WORK = work
 # -message queues and pthreads
 ASE_LD_SWITCHES= -lrt -lpthread -lstdc++
 
-
 #########################################################################
 #                          VCS Build Switches                           #
 #########################################################################
@@ -96,10 +100,10 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
+ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
-SNPS_VLOGAN_OPT+= +define+SVA_OFF +define+SIMPLE_CLKS
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v -v $(QUARTUS_HOME)/eda/sim_lib/220model.v -v $(QUARTUS_HOME)/eda/sim_lib/sgate.v -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v -lca $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v -lca -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v  +incdir+$(QUARTUS_HOME)/eda/sim_lib 
-SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+endif
+# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate
