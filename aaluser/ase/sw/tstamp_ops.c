@@ -194,7 +194,9 @@ char* get_timestamp(int dont_kill)
 	}
     }
   
-  fread(&readback, sizeof(unsigned long long), 1, fp);
+  if ( fread(&readback, sizeof(unsigned long long), 1, fp) != 1 ) {
+     // TODO handle error
+  }
   fclose(fp);
   
   sprintf(tstamp_str, "%lld", readback);

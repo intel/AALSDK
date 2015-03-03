@@ -342,7 +342,9 @@ void allocate_buffer(struct buffer_t *mem)
     }
 
   // Extend memory to required size
-  ftruncate(mem->fd_app, (off_t)mem->memsize);
+  if ( ftruncate(mem->fd_app, (off_t)mem->memsize) ) {
+     // TODO handle error
+  }
 
   // Set ase_csr_base
   //  if (buffer_index_count == 0)
