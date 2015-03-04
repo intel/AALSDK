@@ -235,7 +235,7 @@ btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 
    //
    // First check environment
-   if( NULL == (sName = env.getVal(XLRUNTIME_CONFIG_BROKER_SERVICE)) ){
+   if( NULL == (sName = env.Get(XLRUNTIME_CONFIG_BROKER_SERVICE)) ){
 
       if ( ENamedValuesOK != rConfigParms.Get(XLRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
          // Check to see if default services are running

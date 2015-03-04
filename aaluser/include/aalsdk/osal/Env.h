@@ -42,78 +42,97 @@
 #define __AALSDK_OSAL_ENV_H__
 #include <aalsdk/AALDefs.h>
 
-#if   defined( __AAL_LINUX__ )
-# include <cstdlib>
-#elif defined( __AAL_WINDOWS__ )
-# include <Windows.h>  //Processenv.h on Windows 8 and Windows Server 2012
-#endif
-
 BEGIN_NAMESPACE(AAL)
-
-BEGIN_C_DECLS
-
-END_C_DECLS
 
 //=============================================================================
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
 //=============================================================================
-class Environment{
+class Environment
+{
 public:
-   Environment():m_buf(NULL){}
-   ~Environment()
+   Environment() :
+      m_buf(NULL)
+   {}
+
+   virtual ~Environment()
    {
-      if(NULL != m_buf ){
+      if ( NULL != m_buf ) {
           delete m_buf;
           m_buf = NULL;
       }
    }
 
    //=============================================================================
-   /// getVal
+   /// Get
    /// Get the value of a variable
    /// @param[in] var - variable to query
    ///  @returns pointer to value or NULL if not set.
    /// Comments:
    //=============================================================================
-   const char *getVal(const char* var) const{
 
+   // TODO Test case: Environment::Get() behaves robustly when var is NULL.
+   // TODO Test case: thread safety for Environment::Get().
+   btcString Get(btcString var)
+   {
 #if defined( __AAL_LINUX__ )
+
       return  std::getenv(var);
 
-   #elif defined( __AAL_WINDOWS__ )
-      DWORD bufsize = GetEnvironmentVariable(var, NULL,0);
-      if(0=bufsize){
+#elif defined( __AAL_WINDOWS__ )
+
+      DWORD bufsize = GetEnvironmentVariable(var, NULL, 0);
+      if ( 0 == bufsize ) {
+         // variable doesn't exist.
          return NULL;
       }
-      if(NULL != m_buf ){
+
+      // TODO this isn't thread safe.
+
+      if ( NULL != m_buf ) {
          delete m_buf;
       }
-      m_buf = new btString[bufsize];
-      GetEnvironmentVariable(var, m_buf,bufsize);
-      }
-      return m_buf;
 
+      m_buf = new btByte[bufsize];
+
+      // TODO NULL check for above new?
+
+      GetEnvironmentVariable(var, m_buf,bufsize);
+
+      // TODO check return code.
+
+      return m_buf;
 #endif
    }
 
 //=============================================================================
-///  setEnv
+///  Set
 ///  Set the value of a variable
 /// @param[in] var - variable to query
 /// @param[in] val - value to set it to
 /// @param[in] overwrite - what to do if it already exists
 /// @returns true - success
 //=============================================================================
-   btBool setEnv(btcString var, btcString val, btBool overwrite=true)
+
+   // TODO Test case: Environment::Set() behaves robustly when var is NULL.
+   // TODO Test case: Environment::Set() behaves robustly when val is NULL.
+   // TODO Test case: thread safety for Environment::Set().
+
+   btBool Set(btcString var, btcString val, btBool overwrite=true)
    {
 #if defined( __AAL_LINUX__ )
-      int ret = setenv(var, val, overwrite==true ? 1 : 0);
-      return ret == 0 ? true : false;
+
+      int ret = setenv(var, val, overwrite ? 1 : 0);
+      return 0 == ret;
 
 #elif defined( __AAL_WINDOWS__ )
-      if(true != overwite{
-         if( NULL!= getVal() );
+
+      if ( !overwite ) {
+
+         // TODO This is inefficient - when getting the same var twice, we will
+         // delete / new m_buf each time.
+
+         if ( NULL!= getVal() );
          // Already exists
          return false;
       }
@@ -122,7 +141,7 @@ public:
    }
 
 private:
-   btString       *m_buf;
+   btString m_buf;
 };
 
 END_NAMESPACE(AAL)
