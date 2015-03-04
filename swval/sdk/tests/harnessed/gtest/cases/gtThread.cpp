@@ -340,7 +340,33 @@ void OSAL_Thread_vp_bool::Thr3(OSLThread *pThread, void *pContext)
 
 }
 
-TEST_P(OSAL_Thread_vp_bool, aal0020) {
+#if defined( __AAL_LINUX__ )
+TEST(LinuxPthreads, DISABLED_SetPriority) {
+
+   struct sched_param sp;
+   int                policy;
+   int                pri;
+
+   memset(&sp, 0, sizeof(struct sched_param));
+   policy = 0;
+
+   EXPECT_EQ(0, pthread_getschedparam(pthread_self(), &policy, &sp));
+   pri = sp.sched_priority;
+
+   policy = SCHED_RR;
+
+   int i;
+   for ( i = 5 ; i >= 0 ; --i ) {
+      sp.sched_priority = 5;
+
+      EXPECT_EQ(0, pthread_setschedparam(pthread_self(), policy, &sp)) <<
+               "failed to set new priority to " << i << " (previous was " << pri <<
+               " previous policy was " << policy <<  " error: " << strerror(errno);
+   }
+}
+#endif // __AAL_LINUX__
+
+TEST_P(OSAL_Thread_vp_bool, DISABLED_aal0020) {
    // SetThreadPriority() adjusts the priority of the current thread.
    AAL::btBool ThisThread = GetParam();
 
