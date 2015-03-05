@@ -2,10 +2,6 @@
 
 #ifdef __AAL_LINUX__
 # include <time.h>       // struct timespec, nanosleep()
-# include <errno.h>
-# include <unistd.h>
-# include <sys/types.h>
-# include <signal.h>
 #endif // __AAL_LINUX__
 
 
@@ -429,15 +425,6 @@ protected:
    static void Thr0(OSLThread * , void * );
 
    static void Thr1(OSLThread * , void * );
-#if defined( __AAL_LINUX__ )
-   static int RegisterOneShotSIGIOHandler(void (*h)(int , siginfo_t * , void * ));
-   static void EmptySIGIOHandler(int , siginfo_t * , void * );
-
-   static int RegisterPersistentSigHandler(int signum,
-                                           void (*h)(int , siginfo_t * , void * ),
-                                           struct sigaction *pold);
-   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
-#endif // OS
 
    static void Thr2(OSLThread * , void * );
 
@@ -452,47 +439,6 @@ protected:
 
    static void Thr9(OSLThread * , void * );
 };
-
-#if defined( __AAL_LINUX__ )
-int OSAL_Thread_f::RegisterOneShotSIGIOHandler(void (*h)(int , siginfo_t * , void * ))
-{
-   struct sigaction act;
-   memset(&act, 0, sizeof(act));
-
-   act.sa_flags     = SA_SIGINFO|SA_RESETHAND;
-   act.sa_sigaction = h;
-
-   return sigaction(SIGIO, &act, NULL);
-}
-
-void OSAL_Thread_f::EmptySIGIOHandler(int sig, siginfo_t *info, void * /* unused */)
-{
-   EXPECT_EQ(SIGIO,    sig);
-   EXPECT_EQ(SIGIO,    info->si_signo);
-   EXPECT_EQ(SI_TKILL, info->si_code);
-}
-
-int OSAL_Thread_f::RegisterPersistentSigHandler(int signum,
-                                                void (*h)(int , siginfo_t * , void * ),
-                                                struct sigaction *pold)
-{
-   struct sigaction act;
-   memset(&act, 0, sizeof(act));
-
-   //act.sa_flags     = SA_SIGINFO|SA_RESETHAND;
-   act.sa_flags     = SA_SIGINFO;
-   act.sa_sigaction = h;
-
-   return sigaction(signum, &act, pold);
-}
-
-void OSAL_Thread_f::EmptySIGUSR1Handler(int sig, siginfo_t *info, void * /* unused */)
-{
-   EXPECT_EQ(SIGUSR1,  sig);
-   EXPECT_EQ(SIGUSR1,  info->si_signo);
-   EXPECT_EQ(SI_TKILL, info->si_code);
-}
-#endif // OS
 
 void OSAL_Thread_f::Thr0(OSLThread *pThread, void *pContext)
 {
@@ -544,19 +490,17 @@ void OSAL_Thread_f::Thr1(OSLThread *pThread, void *pContext)
 
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
-
 #elif defined( __AAL_LINUX__ )
    // Register a one-shot signal handler for SIGIO so that the process is not
    // reaped as a result of having received an un-handled signal.
-   ASSERT_EQ(0, OSAL_Thread_f::RegisterOneShotSIGIOHandler(OSAL_Thread_f::EmptySIGIOHandler));
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, true));
 #endif // OS
 
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
 
 #if   defined( __AAL_WINDOWS__ )
-
    FAIL() << "need to implement for windows";
-
 #elif defined( __AAL_LINUX__ )
 
    struct timespec ts;
@@ -754,12 +698,10 @@ void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-
    // Register a persistent signal handler for SIGUSR1 so that the process is not
    // reaped as a result of having received an un-handled signal.
-   struct sigaction orig;
-   ASSERT_EQ(0, OSAL_Thread_f::RegisterPersistentSigHandler(SIGUSR1, OSAL_Thread_f::EmptySIGUSR1Handler, &orig));
-
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGUSR1, SignalHelper::EmptySIGUSR1Handler));
 #endif // OS
 
    pTC->m_Scratch[0] = 1; // signal that we're ready.
@@ -776,13 +718,6 @@ void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)
       pTC->m_pThrs[1]->Wait();
       ++pTC->m_Scratch[4];
    }while( 0 == pTC->m_Scratch[3] );
-
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   // Restore the default SIGUSR1 handler.
-   ASSERT_EQ(0, sigaction(SIGUSR1, &orig, NULL));
-#endif // OS
 }
 
 void OSAL_Thread_f::Thr6(OSLThread *pThread, void *pContext)
@@ -891,12 +826,10 @@ void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-
    // Register a persistent signal handler for SIGUSR1 so that the process is not
    // reaped as a result of having received an un-handled signal.
-   struct sigaction orig;
-   ASSERT_EQ(0, OSAL_Thread_f::RegisterPersistentSigHandler(SIGUSR1, OSAL_Thread_f::EmptySIGUSR1Handler, &orig));
-
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGUSR1, SignalHelper::EmptySIGUSR1Handler));
 #endif // OS
 
    pTC->m_Scratch[0] = 1; // signal that we're ready.
@@ -913,13 +846,6 @@ void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
       pTC->m_pThrs[1]->Wait(1000);
       ++pTC->m_Scratch[4];
    }while( 0 == pTC->m_Scratch[3] );
-
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   // Restore the default SIGUSR1 handler.
-   ASSERT_EQ(0, sigaction(SIGUSR1, &orig, NULL));
-#endif // OS
 }
 
 void OSAL_Thread_f::Thr8(OSLThread *pThread, void *pContext)

@@ -113,3 +113,98 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 # define cpu_yield() usleep(0)
 #endif // OS
 
+
+#if   defined( __AAL_WINDOWS__ )
+# error TODO implement SignalHelper class for windows.
+#elif defined( __AAL_LINUX__ )
+# include <errno.h>
+# include <unistd.h>
+# include <sys/types.h>
+# include <signal.h>
+
+class SignalHelper
+{
+public:
+   SignalHelper() {}
+   virtual ~SignalHelper();
+
+   typedef void (*handler)(int , siginfo_t * , void * );
+
+   // Does not allow hooking the same signum multiple times.
+   // non-zero on error.
+   int Install(int signum, handler h, bool oneshot=false);
+
+   static void   EmptySIGIOHandler(int , siginfo_t * , void * );
+   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
+   static void EmptySIGUSR2Handler(int , siginfo_t * , void * );
+
+protected:
+   typedef std::map<int, struct sigaction> sigmap;
+   typedef sigmap::iterator                sigiter;
+   typedef sigmap::const_iterator          const_sigiter;
+
+   sigmap m_sigmap;
+};
+
+SignalHelper::~SignalHelper()
+{
+   // re-map each signal to its original handler.
+   const_sigiter iter;
+   for ( iter = m_sigmap.begin() ; m_sigmap.end() != iter ; ++iter ) {
+      ::sigaction(iter->first, &iter->second, NULL);
+   }
+
+}
+
+int SignalHelper::Install(int signum, handler h, bool oneshot)
+{
+   if ( NULL == h ) {
+      return -1;
+   }
+
+   struct sigaction act;
+   memset(&act, 0, sizeof(act));
+
+   act.sa_flags     = SA_SIGINFO;
+   if ( oneshot ) {
+      act.sa_flags |= SA_RESETHAND;
+   }
+   act.sa_sigaction = h;
+
+   struct sigaction orig;
+   memset(&orig, 0, sizeof(orig));
+
+   int res = ::sigaction(signum, &act, &orig);
+
+   if ( 0 != res ) {
+      return res;
+   }
+
+   std::pair<sigiter, bool> ins = m_sigmap.insert(std::make_pair(signum, orig));
+
+   return ins.second ? res : -2;
+}
+
+void SignalHelper::EmptySIGIOHandler(int sig, siginfo_t *info, void * /* unused */)
+{
+   EXPECT_EQ(SIGIO,    sig);
+   EXPECT_EQ(SIGIO,    info->si_signo);
+   EXPECT_EQ(SI_TKILL, info->si_code);
+}
+
+void SignalHelper::EmptySIGUSR1Handler(int sig, siginfo_t *info, void * /* unused */)
+{
+   EXPECT_EQ(SIGUSR1,  sig);
+   EXPECT_EQ(SIGUSR1,  info->si_signo);
+   EXPECT_EQ(SI_TKILL, info->si_code);
+}
+
+void SignalHelper::EmptySIGUSR2Handler(int sig, siginfo_t *info, void * /* unused */)
+{
+   EXPECT_EQ(SIGUSR2,  sig);
+   EXPECT_EQ(SIGUSR2,  info->si_signo);
+   EXPECT_EQ(SI_TKILL, info->si_code);
+}
+
+#endif // OS
+

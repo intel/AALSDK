@@ -8,6 +8,7 @@
 #include <string>
 #include <fstream>
 #include <list>
+#include <map>
 
 #include <aalsdk/AAL.h>
 #include <aalsdk/xlRuntime.h>
