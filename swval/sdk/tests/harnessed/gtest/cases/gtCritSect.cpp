@@ -35,6 +35,7 @@ protected:
    static void Thr2(OSLThread * , void * );
    static void Thr3(OSLThread * , void * );
    static void Thr4(OSLThread * , void * );
+   static void Thr5(OSLThread * , void * );
 };
 
 void OSAL_CritSect_f::Thr0(OSLThread *pThread, void *pContext)
@@ -180,6 +181,70 @@ After N verifications that A is still blocked, this thread unlocks the critical 
    }
 
    m_CS.Unlock(); // This will allow A to unblock and exit.
+
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(1, m_Scratch[1]);
+}
+
+void OSAL_CritSect_f::Thr5(OSLThread *pThread, void *pContext)
+{
+   OSAL_CritSect_f *pTC = static_cast<OSAL_CritSect_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+   pTC->m_CS.Lock();
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_CritSect_f, aal0027)
+{
+   // When a CriticalSection is unlocked, calling Unlock() on it does not cause
+   // the counter to decrement past 0.
+
+/*
+Critical sections are created in the unlocked state.
+Unlock() the critical section again. This should have no affect on the counter.
+Lock() the critical section. The critical section should be locked by this thread.
+
+Spawn a new thread A(Thr5), and wait for it to become ready via scratch[0].
+
+Thread A starts, sets scratch[0], and attempts to lock the critical section, but blocks, because
+ it is already locked.
+
+This thread enters a polling loop for N counts, verifying that scratch[1] remains clear, yielding
+ the cpu for each iteration. This is to give A a chance to lock the critical section, set scratch[1],
+ and exit, in the case that the critical section counter was allowed to go below 0.
+
+Verifying that A has not exited, this thread unlocks the critical section and waits for A to exit.
+*/
+
+   // The critical section was created unlocked. Unlock it again.
+   m_CS.Unlock();
+
+   // Now, lock it. We should now hold the critical section, because the counter should not
+   // be decremented past 0.
+   m_CS.Lock();
+
+   m_pThrs[0] = new OSLThread(OSAL_CritSect_f::Thr5,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   while ( 0 == m_Scratch[0] ) {
+      cpu_yield();
+   }
+
+   const unsigned count = 100;
+   unsigned       i;
+
+   for ( i = 0 ; i < count ; ++i ) {
+      EXPECT_EQ(0, m_Scratch[1]);
+      cpu_yield();
+   }
+
+   m_CS.Unlock(); // This will wake A and allow it to exit.
 
    m_pThrs[0]->Join();
 

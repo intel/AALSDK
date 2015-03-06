@@ -1,5 +1,57 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+#if   defined( __AAL_WINDOWS__ )
+# define cpu_yield() ::Sleep(0)
+#elif defined( __AAL_LINUX__ )
+# define cpu_yield() ::usleep(0)
+#endif // OS
+
+class GlobalTestConfig
+{
+public:
+   GlobalTestConfig() {}
+
+   // Certain thread tests require entering a tight loop, yielding the cpu in order
+   // to allow other threads to reach some state. Defines the max number of polls
+   // for such loops.
+   AAL::btUIntPtr MaxCPUYieldPolls() const { return 100; }
+
+} Config;
+
+// Enter a tight loop, yielding the cpu so long as __predicate evaluates to true.
+#define YIELD_WHILE(__predicate) \
+do                               \
+{                                \
+   while ( __predicate ) {       \
+      cpu_yield();               \
+   }                             \
+}while(0)
+
+// Yield the cpu Config.MaxCPUYieldPolls() times.
+#define YIELD_N()                                        \
+do                                                       \
+{                                                        \
+   AAL::btUIntPtr       __i;                             \
+   const AAL::btUIntPtr __N = Config.MaxCPUYieldPolls(); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {                 \
+      cpu_yield();                                       \
+   }                                                     \
+}while(0)
+
+// Yield the cpu Config.MaxCPUYieldPolls() times, executing __expr after each yield.
+#define YIELD_N_FOREACH(__expr)                          \
+do                                                       \
+{                                                        \
+   AAL::btUIntPtr       __i;                             \
+   const AAL::btUIntPtr __N = Config.MaxCPUYieldPolls(); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {                 \
+      cpu_yield();                                       \
+      __expr ;                                           \
+   }                                                     \
+}while(0)
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
 #define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
 #define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
@@ -106,12 +158,6 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 }
 
 #endif // __AAL_LINUX__
-
-#if   defined( __AAL_WINDOWS__ )
-# define cpu_yield() ::Sleep(0)
-#elif defined( __AAL_LINUX__ )
-# define cpu_yield() usleep(0)
-#endif // OS
 
 
 #if   defined( __AAL_WINDOWS__ )
