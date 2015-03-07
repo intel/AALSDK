@@ -140,8 +140,7 @@ public:
    /// @param[pit]  rMaxCount    Maximum value.
    ///
    /// @retval The count.
-   AAL::btBool CurrCounts(AAL::btInt & rCurCount, AAL::btInt &rMaxCount);
-
+   AAL::btBool CurrCounts(AAL::btInt &rCurCount, AAL::btInt &rMaxCount);
 
    /// If the current count + nCount is less than or equal to the max count, then increment by nCount.
    ///

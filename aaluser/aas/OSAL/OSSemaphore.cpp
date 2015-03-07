@@ -222,8 +222,9 @@ AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
    Lock();
 
    if ( m_bInitialized ) {
+
       // Do not reset while someone is waiting.
-      if(m_WaitCount){
+      if ( m_WaitCount ) {
          Unlock();
          return false;
       }
