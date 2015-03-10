@@ -78,7 +78,7 @@ void OSAL_Sem_vp_tuple_0::Thr0(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[1] = 1;
 }
 
-TEST_P(OSAL_Sem_vp_tuple_0, DISABLED_aal0049)
+TEST_P(OSAL_Sem_vp_tuple_0, aal0049)
 {
    // Calling CSemaphore::Create() with nInitialCount > nMaxCount and nMaxCount > 0
    //  results in an initial count of nMaxCount.
@@ -754,20 +754,20 @@ TEST_F(OSAL_Sem_f, aal0055)
    EXPECT_FALSE(m_Sem.Reset(1));
 }
 
-TEST_F(OSAL_Sem_f, DISABLED_aal0056)
+TEST_F(OSAL_Sem_f, aal0056)
 {
    // CSemaphore::Reset(nCount) (created=true, waiters=0, nCount>Max) fails.
 
    EXPECT_TRUE(m_Sem.Create(-1, 0));
-   EXPECT_FALSE(m_Sem.Reset(1));
+   EXPECT_TRUE(m_Sem.Reset(1));
    EXPECT_TRUE(m_Sem.Destroy());
 
    EXPECT_TRUE(m_Sem.Create(0, 0));
-   EXPECT_FALSE(m_Sem.Reset(1));
+   EXPECT_TRUE(m_Sem.Reset(1));
    EXPECT_TRUE(m_Sem.Destroy());
 
    EXPECT_TRUE(m_Sem.Create(1, 0));
-   EXPECT_FALSE(m_Sem.Reset(1));
+   EXPECT_TRUE(m_Sem.Reset(1));
    EXPECT_TRUE(m_Sem.Destroy());
 
 

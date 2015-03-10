@@ -145,23 +145,34 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
 
    PTHREAD_COUNT_LOCK
    m_bUnBlocking = false;
-   m_CurCount = nInitialCount;
-   // Increment the current count if it is negative
-   //  so that nInitialCount Posts will make count == 1 (not zero)
-   //  So if CurCount is -2 making it -1 will result in 2 Posts() bring the semaphore to
-   //  a positive 1 and unblocking as we would expect.
-   if ( m_CurCount < 0 ) {
-      m_CurCount++;
-   }
 
-   // If the MaxCount is default (0) it is at least 1
-   //  or InitialCount if positive.
-   if ( 0 == nMaxCount ) {
+   if ( nInitialCount < 0 ) {
+      // count up sem
 
-      m_MaxCount = ( nInitialCount <= 0 ) ? 1 : nInitialCount;
+      // Increment the current count if it is negative
+      //  so that nInitialCount Posts will make count == 1 (not zero)
+      //  So if CurCount is -2 making it -1 will result in 2 Posts() bring the semaphore to
+      //  a positive 1 and unblocking as we would expect.
+      m_CurCount = nInitialCount + 1;
+
+      if ( 0 == nMaxCount ) {
+         m_MaxCount = 1;
+      } else {
+         m_MaxCount = (AAL::btInt) nMaxCount;
+      }
 
    } else {
-      m_MaxCount = nMaxCount;
+      // count down sem
+
+      if ( 0 == nMaxCount ) {
+         m_MaxCount = (0 == nInitialCount) ? 1 : nInitialCount;
+         m_CurCount = nInitialCount;
+      } else {
+         m_MaxCount = (AAL::btInt) nMaxCount;
+         // Cap the initial count at the max.
+         m_CurCount = (nInitialCount > (AAL::btInt) nMaxCount) ? (AAL::btInt) nMaxCount : nInitialCount;
+      }
+
    }
 
    PTHREAD_COUNT_UNLOCK
