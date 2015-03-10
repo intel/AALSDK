@@ -607,7 +607,7 @@ void OSAL_Thread_f::Thr4(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[1] = 1; // B is done.
 }
 
-TEST_F(OSAL_Thread_f, DISABLED_aal0012)
+TEST_F(OSAL_Thread_f, aal0012)
 {
    // OSLThread::Signal() posts a single count to the recipient's internal synchronization object.
 
@@ -675,16 +675,16 @@ TEST_F(OSAL_Thread_f, DISABLED_aal0012)
       cpu_yield();
    }
 
-   // B exiting will post its count again, causing A to exit.
+   m_pThrs[1]->Join();
+   delete m_pThrs[1];
+
+   // Destructing B will Post its internal sem, causing A to wake and exit.
    while ( 0 == m_Scratch[4] ) {
       cpu_yield();
    }
 
-   m_pThrs[1]->Join();
    m_pThrs[0]->Join();
-
    delete m_pThrs[0];
-   delete m_pThrs[1];
 }
 
 void OSAL_Thread_f::Thr5(OSLThread *pThread, void *pContext)

@@ -137,7 +137,7 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_Semaphore.Create(0, 1) ) {
+   if ( !m_Semaphore.Create(0, INT_MAX) ) {
       return;
    }
 
@@ -246,6 +246,13 @@ OSLThread::~OSLThread()
    CloseHandle(m_hEvent);
 
 #elif defined( __AAL_LINUX__ )
+
+   // The thread is exiting. Post to the internal semaphore so that all waiters can wake (Wait() / Signal()).
+   AAL::btInt CurrentCount = 0;
+   AAL::btInt MaxCount     = 0;
+
+   m_Semaphore.CurrCounts(CurrentCount, MaxCount);
+   m_Semaphore.Post(INT_MAX - CurrentCount);
 
    if ( !m_LocalThread && !m_Joined ) {
       // Mark the thread for termination
