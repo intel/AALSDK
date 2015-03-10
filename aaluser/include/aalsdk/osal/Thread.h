@@ -169,13 +169,15 @@ private:
    static void * StartThread(void * );
 #endif // OS
 
-   friend OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
+/*   friend OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority); */
 };
 
+/*
 /// Set the thread priority of the current thread.
 ///
 /// @param[in]  nPriority  Must be one of ThreadPriority values. If not, then no action is taken.
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
+*/
 
 /// @} group OSAL
 

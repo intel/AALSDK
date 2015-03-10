@@ -199,7 +199,7 @@ void * OSLThread::StartThread(void *p)
 
 #if   defined( __AAL_WINDOWS__ )
 
-      SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
+      ::SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -414,6 +414,7 @@ AAL::btTID OSLThread::tid()
    return m_tid;
 }
 
+/*
 //=============================================================================
 // Name: SetThreadPriority
 // Description:
@@ -431,7 +432,7 @@ OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 
 #if   defined( __AAL_WINDOWS__ )
 
-      SetThreadPriority(GetCurrentThread(), pri);
+      ::SetThreadPriority(GetCurrentThread(), pri);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -445,6 +446,7 @@ OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 
    }
 }
+*/
 
 //=============================================================================
 // Name: GetProcessID

@@ -237,6 +237,8 @@ TEST_P(OSAL_Thread_vp_bool, aal0018)
 #endif // OS
 }
 
+#if 0
+SetThreadPriority() was defeatured.
 void OSAL_Thread_vp_bool::Thr2(OSLThread *pThread, void *pContext)
 {
    OSAL_Thread_vp_bool *pTC = static_cast<OSAL_Thread_vp_bool *>(pContext);
@@ -298,7 +300,10 @@ TEST_P(OSAL_Thread_vp_bool, aal0019) {
    EXPECT_EQ(m_Scratch[0], m_Scratch[1]);
    EXPECT_EQ(m_Scratch[0], m_Scratch[2]);
 }
+#endif
 
+#if 0
+SetThreadPriority() was defeatured.
 void OSAL_Thread_vp_bool::Thr3(OSLThread *pThread, void *pContext)
 {
    OSAL_Thread_vp_bool *pTC = static_cast<OSAL_Thread_vp_bool *>(pContext);
@@ -336,32 +341,6 @@ void OSAL_Thread_vp_bool::Thr3(OSLThread *pThread, void *pContext)
 
 }
 
-#if defined( __AAL_LINUX__ )
-TEST(LinuxPthreads, DISABLED_SetPriority) {
-
-   struct sched_param sp;
-   int                policy;
-   int                pri;
-
-   memset(&sp, 0, sizeof(struct sched_param));
-   policy = 0;
-
-   EXPECT_EQ(0, pthread_getschedparam(pthread_self(), &policy, &sp));
-   pri = sp.sched_priority;
-
-   policy = SCHED_RR;
-
-   int i;
-   for ( i = 5 ; i >= 0 ; --i ) {
-      sp.sched_priority = 5;
-
-      EXPECT_EQ(0, pthread_setschedparam(pthread_self(), policy, &sp)) <<
-               "failed to set new priority to " << i << " (previous was " << pri <<
-               " previous policy was " << policy <<  " error: " << strerror(errno);
-   }
-}
-#endif // __AAL_LINUX__
-
 TEST_P(OSAL_Thread_vp_bool, DISABLED_aal0020) {
    // SetThreadPriority() adjusts the priority of the current thread.
    AAL::btBool ThisThread = GetParam();
@@ -390,6 +369,48 @@ TEST_P(OSAL_Thread_vp_bool, DISABLED_aal0020) {
 
    }
 }
+#endif
+
+#if defined( __AAL_LINUX__ )
+TEST(LinuxPthreads, DISABLED_SetPriority) {
+
+   pthread_attr_t attr;
+   int            policy = 0;
+
+   EXPECT_EQ(0, pthread_attr_init(&attr));
+   EXPECT_EQ(0, pthread_attr_getschedpolicy(&attr, &policy));
+   EXPECT_EQ(0, pthread_attr_destroy(&attr));
+
+   int max_priority = sched_get_priority_max(policy);
+
+   EXPECT_EQ(0, pthread_setschedprio(pthread_self(), max_priority));
+
+   // EXPECT_TRUE(false) << "max priority was " << max_priority;
+
+#if 0
+   struct sched_param sp;
+   int                policy;
+   int                pri;
+
+   memset(&sp, 0, sizeof(struct sched_param));
+   policy = 0;
+
+   EXPECT_EQ(0, pthread_getschedparam(pthread_self(), &policy, &sp));
+   pri = sp.sched_priority;
+
+   policy = SCHED_RR;
+
+   int i;
+   for ( i = 5 ; i >= 0 ; --i ) {
+      sp.sched_priority = 5;
+
+      EXPECT_EQ(0, pthread_setschedparam(pthread_self(), policy, &sp)) <<
+               "failed to set new priority to " << i << " (previous was " << pri <<
+               " previous policy was " << policy <<  " error: " << strerror(errno);
+   }
+#endif
+}
+#endif // __AAL_LINUX__
 
 // ::testing::Range(begin, end [, step])
 // ::testing::Values(v1, v2, v3)
