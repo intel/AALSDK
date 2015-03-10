@@ -214,7 +214,7 @@ void OSAL_Thread_vp_bool::Thr1(OSLThread *pThread, void *pContext)
 
 }
 
-TEST_P(OSAL_Thread_vp_bool, DISABLED_aal0018)
+TEST_P(OSAL_Thread_vp_bool, aal0018)
 {
    // OSLThread::tid() returns the recipient thread's tid.
    AAL::btBool ThisThread = GetParam();

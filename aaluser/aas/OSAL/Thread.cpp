@@ -200,7 +200,6 @@ void * OSLThread::StartThread(void *p)
 #if   defined( __AAL_WINDOWS__ )
 
       SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
-     // pThread->m_tid = GetCurrentThreadId();
 
 #elif defined( __AAL_LINUX__ )
 
@@ -211,11 +210,11 @@ void * OSLThread::StartThread(void *p)
       sp.sched_priority = pThread->m_nPriority;
       pthread_setschedparam(pthread_self(), SCHED_RR, &sp);
 
-  //    pThread->m_tid = pthread_self();
-
 #endif // OS
-      pThread->m_tid = CurrentThreadID();
+
    }
+
+   pThread->m_tid = CurrentThreadID();
 
    ThreadProc fn = pThread->m_pProc;
 
