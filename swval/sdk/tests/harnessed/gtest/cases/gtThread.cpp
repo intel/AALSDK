@@ -122,6 +122,12 @@ TEST(OSAL_Thread, aal0007) {
    ASSERT_EQ(tid, thrid.operator AAL::btTID());
 }
 
+TEST(OSAL_Thread, aal0008)
+{
+   // OSLThread::OSLThread() gracefully handles a NULL pProc.
+   OSLThread t(NULL, OSLThread::THREADPRIORITY_NORMAL, NULL);
+   EXPECT_FALSE(t.IsOK());
+}
 
 // Value-parameterized test fixture
 class OSAL_Thread_vp_bool : public ::testing::TestWithParam< AAL::btBool >
@@ -442,6 +448,7 @@ protected:
    OSLThread          *m_pThrs[3];
    btTID               m_TIDs[3];
    volatile btUIntPtr  m_Scratch[10];
+   CSemaphore          m_Semaphore;
 
    static void Thr0(OSLThread * , void * );
 
@@ -459,6 +466,10 @@ protected:
    static void Thr8(OSLThread * , void * );
 
    static void Thr9(OSLThread * , void * );
+
+   static void Thr10(OSLThread * , void * );
+
+   static void Thr11(OSLThread * , void * );
 };
 
 void OSAL_Thread_f::Thr0(OSLThread *pThread, void *pContext)
@@ -534,9 +545,9 @@ void OSAL_Thread_f::Thr1(OSLThread *pThread, void *pContext)
    EXPECT_EQ(-1, res);
    EXPECT_EQ(EINTR, errno);
 
-   pTC->m_Scratch[1] = 1; // set the 2nd scratch space to 1 to signify that we're exiting.
-
 #endif // OS
+
+   pTC->m_Scratch[1] = 1; // set the 2nd scratch space to 1 to signify that we're exiting.
 }
 
 TEST_F(OSAL_Thread_f, aal0011)
@@ -668,22 +679,19 @@ TEST_F(OSAL_Thread_f, aal0012)
 
    ASSERT_TRUE(m_pThrs[0]->IsOK());
 
-   //
-   while ( ( 0 == m_Scratch[0] ) || ( 0 == m_Scratch[1] ) ) {
-      cpu_yield();
-   }
-
+   YIELD_WHILE((0 == m_Scratch[0]) || (0 == m_Scratch[1]));
    m_Scratch[0] = m_Scratch[1] = 0;
+
+   // Give A plenty of time to have set m_Scratch[3].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3]));
 
    // Post one count to B. A will wake and consume the count.
    m_pThrs[1]->Signal();
 
    // Wait for A to wake.
-   while ( 0 == m_Scratch[3] ) {
-      cpu_yield();
-   }
+   YIELD_WHILE(0 == m_Scratch[3]);
 
-   ASSERT_EQ(0, m_Scratch[4]); // A should again immediately block again on B's count.
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[4]));
 
    ASSERT_EQ(0, m_Scratch[2]); // We haven't told B to exit.
    ASSERT_EQ(0, m_Scratch[1]); // B should not have exited.
@@ -692,17 +700,13 @@ TEST_F(OSAL_Thread_f, aal0012)
    m_Scratch[2] = 1;
 
    // Wait for B to exit.
-   while ( 0 == m_Scratch[1] ) {
-      cpu_yield();
-   }
+   YIELD_WHILE(0 == m_Scratch[1]);
 
    m_pThrs[1]->Join();
    delete m_pThrs[1];
 
    // Destructing B will Post its internal sem, causing A to wake and exit.
-   while ( 0 == m_Scratch[4] ) {
-      cpu_yield();
-   }
+   YIELD_WHILE(0 == m_Scratch[4]);
 
    m_pThrs[0]->Join();
    delete m_pThrs[0];
@@ -1004,6 +1008,95 @@ TEST_F(OSAL_Thread_f, aal0015)
 
    // We should not see m_Scratch[2] set until after the Join().
    EXPECT_EQ(1, m_Scratch[2]);
+   delete m_pThrs[0];
+}
+
+void OSAL_Thread_f::Thr10(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+   // Register a one-shot signal handler for SIGIO so that the process is not
+   // reaped as a result of having received an un-handled signal.
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, true));
+#endif // OS
+
+   pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
+
+   pTC->m_Semaphore.Wait();
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, DISABLED_aal0016)
+{
+   // OSLThread::Join() - what is expected behavior of Join() when the target thread is OSLThread::Unblock()'ed?
+
+   ASSERT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr10,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // wait for Thr10 to begin.
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   // reap the child thread.
+   m_pThrs[0]->Unblock();
+
+   // wait for Thr1 to return.
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+   m_pThrs[0]->Join();
+   delete m_pThrs[0];
+}
+
+void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+   // Register a one-shot signal handler for SIGIO so that the process is not
+   // reaped as a result of having received an un-handled signal.
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, true));
+#endif // OS
+
+   pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
+
+   pTC->m_Semaphore.Wait();
+}
+
+TEST_F(OSAL_Thread_f, aal0017)
+{
+   // OSLThread::Join() - what is expected behavior of Join() when the target thread is OSLThread::Unblock()'ed?
+
+   ASSERT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr11,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // wait for Thr10 to begin.
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   // cancel the child thread.
+   m_pThrs[0]->Cancel();
+
+   m_pThrs[0]->Join();
    delete m_pThrs[0];
 }
 

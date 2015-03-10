@@ -119,6 +119,11 @@ OSLThread::OSLThread(ThreadProc                     pProc,
    m_IsOK(false),
    m_Joined(false)
 {
+   ASSERT(NULL != pProc);
+   if ( NULL == pProc ) {
+      return;
+   }
+
    if ( ( nPriority >= 0 ) &&
         ( (unsigned)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
       m_nPriority = OSLThread::sm_PriorityTranslationTable[(AAL::btInt)nPriority];
@@ -519,6 +524,7 @@ OSAL_API AAL::btInt GetNumProcessors()
 
 OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage)
 {
+   ASSERT(NULL != storage);
 #if   defined( __AAL_WINDOWS__ )
    unsigned int seed = (unsigned int)*storage;
    rand_s(&seed);
