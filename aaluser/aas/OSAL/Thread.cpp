@@ -490,6 +490,7 @@ AAL::btTID GetThreadID()
 #endif // OS
 }
 
+/*
 //=============================================================================
 // Name: GetNumProcessors
 // Description:
@@ -514,6 +515,7 @@ OSAL_API AAL::btInt GetNumProcessors()
 
 #endif // OS
 }
+*/
 
 OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage)
 {

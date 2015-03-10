@@ -66,10 +66,12 @@ OSAL_API AAL::btPID GetProcessID();
 /// Retrieve the OS thread id of the current thread.
 OSAL_API AAL::btTID GetThreadID();
 
+/*
 /// Retrieve the number of CPUs.
 ///
 /// @note This function is not currently implemented.
 OSAL_API AAL::btInt GetNumProcessors();
+*/
 
 /// Retrieve a 32-bit random number in a thread-safe manner.
 ///

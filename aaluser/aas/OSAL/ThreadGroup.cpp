@@ -80,9 +80,11 @@ OSLThreadGroup::OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads,
 	// If Min Threads is zero then determine a good number based on
 	//  configuration
 	if ( 0 == uiMinThreads ) {
-      m_nNumThreads = GetNumProcessors();
+	   // TODO Use GetNumProcessors(), eventually.
+       // m_nNumThreads = GetNumProcessors();
+       m_nNumThreads = 1;
 	} else {
-      m_nNumThreads = uiMinThreads;
+       m_nNumThreads = uiMinThreads;
 	}
 
 //TODO implement MaxThreads and dynamic sizing

@@ -157,8 +157,6 @@ public:
    /// Returns the current number of waiters.
    /// NOTE: This is a snapshot and may change by the time the
    ///       caller examines the value
-   /// @retval  true   All waiters unblocked and return false.
-   /// @retval  false  Semaphore not initialized.
    AAL::btUnsignedInt NumWaiters();
 
    /// Wait for the Semaphore count to become greater than 0 or until the supplied timeout occurs.
