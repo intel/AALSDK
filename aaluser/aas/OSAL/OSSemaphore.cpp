@@ -205,7 +205,7 @@ AAL::btBool CSemaphore::Destroy()
    }
 
    Unlock();
-   return true;
+   return false;
 }
 
 

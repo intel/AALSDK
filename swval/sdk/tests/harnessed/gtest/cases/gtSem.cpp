@@ -7,7 +7,7 @@ TEST(OSAL_Sem, aal0031)
    delete pSem;
 }
 
-TEST(OSAL_Sem, DISABLED_aal0032)
+TEST(OSAL_Sem, aal0032)
 {
    // CSemaphore::Destroy() should behave robustly when no call to CSemaphore::Create() was made.
    CSemaphore *pSem = new CSemaphore();
@@ -1020,7 +1020,7 @@ TEST_F(SemBasic, TwoCreates)
 
 TEST_F(SemBasic, DestroyBeforeCreate)
 {
-   EXPECT_TRUE(m_Sem.Destroy()) << "Destroy before Create";
+   EXPECT_FALSE(m_Sem.Destroy()) << "Destroy before Create";
    EXPECT_FALSE(m_Sem.Reset(1)) << "Reset before Create";
 
    btInt cur = 0, max = 0;
