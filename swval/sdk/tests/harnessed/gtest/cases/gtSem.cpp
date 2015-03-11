@@ -15,6 +15,53 @@ TEST(OSAL_Sem, aal0032)
    delete pSem;
 }
 
+TEST(OSAL_Sem, aal0036)
+{
+   // CSemaphore::Reset(nCount) (created=true, waiters=0, nCount<=Max) is successful.
+
+   CSemaphore *pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(-1, 0));
+   EXPECT_TRUE(pSem->Reset(1));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+
+   pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(0, 0));
+   EXPECT_TRUE(pSem->Reset(1));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+
+   pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(1, 0));
+   EXPECT_TRUE(pSem->Reset(1));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+
+
+   pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(-1, 2));
+   EXPECT_TRUE(pSem->Reset(2));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+
+   pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(0, 2));
+   EXPECT_TRUE(pSem->Reset(2));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+
+   pSem = new CSemaphore();
+   EXPECT_TRUE(pSem->Create(1, 2));
+   EXPECT_TRUE(pSem->Reset(2));
+   EXPECT_TRUE(pSem->Reset(-1));
+   EXPECT_TRUE(pSem->Reset(0));
+   delete pSem;
+}
 
 #if GTEST_HAS_TR1_TUPLE
 
@@ -244,11 +291,13 @@ TEST_P(OSAL_Sem_vp_tuple_1, aal0054)
    YIELD_WHILE(0 == m_Scratch[0]);
 
    // We should be required to Post() abs(m_nInitialCount) times before unblocking A.
-   for ( i = 0 ; i < N ; ++i ) {
-      // Give A plenty of opportunity to have set scratch[1]
-      YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+   for ( i = 0 ; i < N - 1 ; ++i ) {
       EXPECT_TRUE(m_Sem.Post(1));
    }
+   // Give A plenty of opportunity to have set scratch[1]
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+
+   EXPECT_TRUE(m_Sem.Post(1));
 
    YIELD_WHILE(0 == m_Scratch[2]);
 
@@ -264,11 +313,13 @@ TEST_P(OSAL_Sem_vp_tuple_1, aal0054)
    YIELD_WHILE(0 == m_Scratch[4]);
 
    // We should be required to Post() abs(m_nInitialCount) times before unblocking A.
-   for ( i = 0 ; i < N ; ++i ) {
-      // Give A plenty of opportunity to have set scratch[5]
-      YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[5]));
+   for ( i = 0 ; i < N - 1 ; ++i ) {
       EXPECT_TRUE(m_Sem.Post(1));
    }
+   // Give A plenty of opportunity to have set scratch[5]
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[5]));
+
+   EXPECT_TRUE(m_Sem.Post(1));
 
    m_pThrs[0]->Join();
 
@@ -417,9 +468,9 @@ TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
 
    // We need to Post() the sem N times before any waiters will unblock.
    for ( i = 0 ; i < N - 1 ; ++i ) {
-      YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[0] + m_Scratch[1] + m_Scratch[2]));
       EXPECT_TRUE(m_Sem.Post(1));
    }
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[0] + m_Scratch[1] + m_Scratch[2]));
 
    // Now, this should wake at least one thread.
    EXPECT_TRUE(m_Sem.Post(NumToPost));
@@ -609,8 +660,110 @@ TEST_P(OSAL_Sem_vp_int_0, aal0050)
 // ::testing::Values(v1, v2, v3)
 // ::testing::ValuesIn(STL container), ::testing::ValuesIn(STL iter begin, STL iter end)
 // ::testing::Bool()
-INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_int_0, ::testing::Values(1, 10, 100, 1000));
+INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_int_0, ::testing::Values(1, 10, 100, 250));
 
+
+class OSAL_Sem_vp_int_1 : public OSAL_Sem_vp< AAL::btInt >
+{
+protected:
+   static void Thr0(OSLThread * , void * );
+};
+
+void OSAL_Sem_vp_int_1::Thr0(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_vp_int_1 *pTC = static_cast<OSAL_Sem_vp_int_1 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   const AAL::btInt         nInitialCount = pTC->m_nInitialCount;
+   const AAL::btUnsignedInt nMaxCount     = pTC->m_nMaxCount;
+   CSemaphore              &sem           = pTC->m_Sem;
+
+   AAL::btInt               i;
+   AAL::btUnsignedInt       u;
+
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(sem.Wait());
+   pTC->m_Scratch[1] = 1;
+
+   EXPECT_TRUE(sem.Post(1)); // (1 == count) at max.
+   EXPECT_FALSE(sem.Post(1));
+
+   pTC->m_Scratch[2] = 1;
+
+   // Reset and repeat the test.
+   EXPECT_TRUE(sem.Reset(nInitialCount));
+
+   EXPECT_TRUE(sem.Wait());
+   pTC->m_Scratch[3] = 1;
+
+   EXPECT_TRUE(sem.Post(1)); // (1 == count) at max.
+   EXPECT_FALSE(sem.Post(1));
+
+   pTC->m_Scratch[4] = 1;
+}
+
+TEST_P(OSAL_Sem_vp_int_1, aal0052)
+{
+   // Calling CSemaphore::Create() with nInitialCount < 0 and nMaxCount = 0 results in
+   //  nInitialCount = nInitialCount + 1 and nMaxCount = 1.
+
+   m_nInitialCount = GetParam();
+   m_nMaxCount     = 0;
+
+   ASSERT_TRUE(m_Sem.Create(m_nInitialCount, m_nMaxCount));
+
+   AAL::btInt i = 0;
+   AAL::btInt m = 0;
+
+   EXPECT_TRUE(m_Sem.CurrCounts(i, m));
+   EXPECT_EQ(i, m_nInitialCount + 1);
+   EXPECT_EQ(1, m);
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_vp_int_1::Thr0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   // Give A plenty of time to have set m_Scratch[1].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+
+   // We should be able to Post() the semaphore abs(m_nInitialCount) times before waking A.
+   m = -m_nInitialCount;
+   for ( i = 0 ; i < m - 1 ; ++i ) {
+      EXPECT_TRUE(m_Sem.Post(1));
+   }
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+
+   EXPECT_TRUE(m_Sem.Post(1)); // This should wake A.
+
+   YIELD_WHILE(0 == m_Scratch[2]);
+
+   // Give A plenty of time to have set m_Scratch[3].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3]));
+
+   // We should be able to Post() the semaphore abs(m_nInitialCount) times before waking A.
+   m = -m_nInitialCount;
+   for ( i = 0 ; i < m - 1 ; ++i ) {
+      EXPECT_TRUE(m_Sem.Post(1));
+   }
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3]));
+
+   EXPECT_TRUE(m_Sem.Post(1)); // This should wake A.
+
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(1, m_Scratch[4]);
+}
+
+// ::testing::Range(begin, end [, step])
+// ::testing::Values(v1, v2, v3)
+// ::testing::ValuesIn(STL container), ::testing::ValuesIn(STL iter begin, STL iter end)
+// ::testing::Bool()
+INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_int_1, ::testing::Values(-1, -10, -100, -250));
 
 
 class OSAL_Sem_vp_uint_0 : public OSAL_Sem_vp< AAL::btUnsignedInt >
@@ -698,7 +851,7 @@ TEST_P(OSAL_Sem_vp_uint_0, aal0053)
 // ::testing::Values(v1, v2, v3)
 // ::testing::ValuesIn(STL container), ::testing::ValuesIn(STL iter begin, STL iter end)
 // ::testing::Bool()
-INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_uint_0, ::testing::Values(1, 10, 100, 1000));
+INSTANTIATE_TEST_CASE_P(My, OSAL_Sem_vp_uint_0, ::testing::Values(1, 10, 100, 250));
 
 
 // Simple test fixture
@@ -736,7 +889,79 @@ protected:
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
+   static void Thr2(OSLThread * , void * );
 };
+
+void OSAL_Sem_f::Thr2(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   AAL::btInt i = 0;
+   AAL::btInt m = 0;
+
+   CSemaphore &sem = pTC->m_Sem;
+
+   EXPECT_TRUE(sem.CurrCounts(i, m));
+   ASSERT_EQ(0, i);
+   ASSERT_EQ(1, m);
+
+   pTC->m_Scratch[0] = 1;
+
+   ASSERT_TRUE(sem.Wait());  // (0 == count) should block.
+   pTC->m_Scratch[1] = 1;
+
+   EXPECT_TRUE(sem.Post(1)); // (1 == count) at max.
+   EXPECT_FALSE(sem.Post(1));
+
+   EXPECT_TRUE(sem.Reset(0));
+
+   pTC->m_Scratch[2] = 1;
+   ASSERT_TRUE(sem.Wait());  // (0 == count) should block.
+
+   pTC->m_Scratch[3] = 1;
+
+   EXPECT_TRUE(sem.Post(1)); // (1 == count) at max.
+   EXPECT_FALSE(sem.Post(1));
+
+   pTC->m_Scratch[4] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0051)
+{
+   // Calling CSemaphore::Create() with nInitialCount = 0 and nMaxCount = 0 results in nInitialCount = 0 and nMaxCount = 1.
+
+   m_nInitialCount = 0;
+   m_nMaxCount     = 0;
+
+   ASSERT_TRUE(m_Sem.Create(m_nInitialCount, m_nMaxCount));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr2,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   // Give A plenty of opportunity to have set m_Scratch[1].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
+
+   EXPECT_TRUE(m_Sem.Post(1));
+
+   YIELD_WHILE(0 == m_Scratch[2]);
+
+   // Give A plenty of opportunity to have set m_Scratch[3].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3]));
+
+   EXPECT_TRUE(m_Sem.Post(1));
+
+   YIELD_WHILE(0 == m_Scratch[3]);
+
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(1, m_Scratch[4]);
+}
 
 TEST_F(OSAL_Sem_f, aal0055)
 {
@@ -760,29 +985,18 @@ TEST_F(OSAL_Sem_f, aal0056)
 
    EXPECT_TRUE(m_Sem.Create(-1, 0));
    EXPECT_TRUE(m_Sem.Reset(1));
-   EXPECT_TRUE(m_Sem.Destroy());
-
-   EXPECT_TRUE(m_Sem.Create(0, 0));
-   EXPECT_TRUE(m_Sem.Reset(1));
-   EXPECT_TRUE(m_Sem.Destroy());
-
-   EXPECT_TRUE(m_Sem.Create(1, 0));
-   EXPECT_TRUE(m_Sem.Reset(1));
-   EXPECT_TRUE(m_Sem.Destroy());
-
-
-   EXPECT_TRUE(m_Sem.Create(-1, 0));
    EXPECT_FALSE(m_Sem.Reset(2));
    EXPECT_TRUE(m_Sem.Destroy());
 
    EXPECT_TRUE(m_Sem.Create(0, 0));
+   EXPECT_TRUE(m_Sem.Reset(1));
    EXPECT_FALSE(m_Sem.Reset(2));
    EXPECT_TRUE(m_Sem.Destroy());
 
    EXPECT_TRUE(m_Sem.Create(1, 0));
+   EXPECT_TRUE(m_Sem.Reset(1));
    EXPECT_FALSE(m_Sem.Reset(2));
    EXPECT_TRUE(m_Sem.Destroy());
-
 
    EXPECT_TRUE(m_Sem.Create(-1, 1));
    EXPECT_FALSE(m_Sem.Reset(2));
@@ -823,7 +1037,7 @@ void OSAL_Sem_f::Thr1(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[3] = 1;
 }
 
-TEST_F(OSAL_Sem_f, DISABLED_aal0057)
+TEST_F(OSAL_Sem_f, aal0057)
 {
    // CSemaphore::Reset(nCount) (created=true, waiters>0, nCount<=Max) fails.
 
@@ -892,11 +1106,9 @@ TEST_F(OSAL_Sem_f, DISABLED_aal0057)
 
    m_pThrs[t]->Join();
    EXPECT_EQ(1, m_Scratch[t + 2]);
-
-
 }
 
-TEST_F(OSAL_Sem_f, DISABLED_aal0038)
+TEST_F(OSAL_Sem_f, aal0038)
 {
    // CSemaphore::CurrCounts() retrieves the values of the current and max counters,
    //  when the sem has been created.
@@ -911,24 +1123,24 @@ TEST_F(OSAL_Sem_f, DISABLED_aal0038)
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i + 1);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
-   i = 0; m = 0; j = 0; n = 0;
+   i = 0; m = 0; j = 1; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
    i = 1; m = 0; j = 0; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, i);
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
 
@@ -936,49 +1148,49 @@ TEST_F(OSAL_Sem_f, DISABLED_aal0038)
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i + 1);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
-   i = 0; m = 1; j = 0; n = 0;
+   i = 0; m = 1; j = 1; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
    i = 1; m = 1; j = 0; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
 
-   i = -1; m = 2; j = 0; n = 0;
+   i = -1; m = 2; j = 1; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i + 1);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(2, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
-   i = 0; m = 2; j = 0; n = 0;
+   i = 0; m = 2; j = 1; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(2, n);
    EXPECT_TRUE(m_Sem.Destroy());
 
    i = 1; m = 2; j = 0; n = 0;
 
    EXPECT_TRUE(m_Sem.Create(i, m));
    EXPECT_TRUE(m_Sem.CurrCounts(j, n));
-   EXPECT_EQ(j, i);
-   EXPECT_EQ(n, (AAL::btInt)m);
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(2, n);
    EXPECT_TRUE(m_Sem.Destroy());
 }
 
@@ -995,10 +1207,6 @@ TEST_F(OSAL_Sem_f, aal0058)
    // CSemaphore::Post() returns false when sem not initialized.
    EXPECT_FALSE(m_Sem.Post(1));
 }
-
-
-
-
 
 
 /////////////////////////////

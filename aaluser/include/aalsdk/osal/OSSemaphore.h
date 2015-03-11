@@ -174,29 +174,7 @@ public:
    /// @retval  false  Semaphore not initialized.
    AAL::btBool Wait();
 
-
 private:
-   class AutoWaiting
-   {
-   public:
-      AutoWaiting(CSemaphore *This)
-      : m_This(This)
-      {
-         This->m_WaitCount++;
-      }
-      ~AutoWaiting(){
-         m_This->m_WaitCount--;
-         // If Semaphore is being unblocked then reset
-         //  Unblocking flag when there are no more waiters
-         if((0==m_This->m_WaitCount) &&
-               (true == m_This->m_bUnBlocking)){
-            m_This->m_bUnBlocking = false;
-         }
-      }
-   private:
-      CSemaphore *m_This;
-   };
-
    AAL::btBool          m_bInitialized;
    AAL::btInt           m_MaxCount;
    AAL::btInt           m_CurCount;

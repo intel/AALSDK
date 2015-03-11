@@ -601,8 +601,12 @@ typedef btUnsigned64bitInt bt64bitCSR;   ///< 64-bit Configuration & Status Regi
 
 typedef btUnsigned64bitInt btTime;       ///< Generic time value.
 #ifndef AAL_INFINITE_WAIT
+# ifdef __cplusplus
 /// Signifies that a call which accepts a timeout value is to become a blocking call.
-# define AAL_INFINITE_WAIT ( (btTime)-1 )
+#    define AAL_INFINITE_WAIT ( (AAL::btTime)-1 )
+# else
+#    define AAL_INFINITE_WAIT ( (btTime)-1 )
+# endif // __cplusplus
 #endif // AAL_INFINITE_WAIT
 
 #ifdef __cplusplus
