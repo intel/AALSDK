@@ -120,9 +120,6 @@ OSLThread::OSLThread(ThreadProc                     pProc,
    m_Joined(false)
 {
    ASSERT(NULL != pProc);
-   if ( NULL == pProc ) {
-      return;
-   }
 
    if ( ( nPriority >= 0 ) &&
         ( (unsigned)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
@@ -147,6 +144,10 @@ OSLThread::OSLThread(ThreadProc                     pProc,
    }
 
 #endif // OS
+
+   if ( NULL == pProc ) { // (Without setting m_IsOK to true.)
+      return;
+   }
 
    if ( m_LocalThread ) {
       // Run the thread function locally in this thread.
@@ -259,7 +260,8 @@ OSLThread::~OSLThread()
    m_Semaphore.CurrCounts(CurrentCount, MaxCount);
    m_Semaphore.Post(INT_MAX - CurrentCount);
 
-   if ( !m_LocalThread && !m_Joined ) {
+   // The pthread_create() in the constructor is guarded by m_IsOK.
+   if ( m_IsOK && !m_LocalThread && !m_Joined ) {
       // Mark the thread for termination
       pthread_cancel(m_Thread);
 
@@ -287,7 +289,8 @@ void OSLThread::Unblock()
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_LocalThread ) {
+   // The pthread_create() in the constructor is guarded by m_IsOK.
+   if ( m_IsOK && !m_LocalThread ) {
       // Mark the thread for termination
       pthread_kill(m_Thread, SIGIO);
    }
@@ -374,8 +377,11 @@ void OSLThread::Join()
 
 #elif defined( __AAL_LINUX__ )
 
-   void *ret;
-   pthread_join(m_Thread, &ret);
+   // The pthread_create() in the constructor is guarded by m_IsOK.
+   if ( m_IsOK ) {
+      void *ret;
+      pthread_join(m_Thread, &ret);
+   }
 
 #endif // OS
 
@@ -398,7 +404,8 @@ void OSLThread::Cancel()
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_LocalThread && !m_Joined ) {
+   // The pthread_create() in the constructor is guarded by m_IsOK.
+   if ( m_IsOK && !m_LocalThread && !m_Joined ) {
       // Mark the thread for termination
       pthread_cancel(m_Thread);
    }
