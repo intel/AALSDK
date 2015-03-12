@@ -378,7 +378,8 @@ void OSLThread::Join()
 #elif defined( __AAL_LINUX__ )
 
    // The pthread_create() in the constructor is guarded by m_IsOK.
-   if ( m_IsOK ) {
+   // Don't try to Join() ourself.
+   if ( m_IsOK && !m_LocalThread ) {
       void *ret;
       pthread_join(m_Thread, &ret);
    }
