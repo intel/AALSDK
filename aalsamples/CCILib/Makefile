@@ -49,14 +49,14 @@ endif
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
 CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib
+LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
 prefix = /usr/local
 endif
 CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
 all: libCCI.so libCCI.so.0
