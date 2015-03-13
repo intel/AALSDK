@@ -23,6 +23,7 @@ lt~obsolete.m4
 missing
 test-driver
 ylwrap
+testsuite
 
 # klocwork cache directories
 .kwlp/
