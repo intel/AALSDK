@@ -450,8 +450,7 @@ AAL::btUnsignedInt CSemaphore::NumWaiters()
 do                                              \
 {                                               \
    --m_WaitCount;                               \
-   if ( (m_WaitCount <= 0) && m_bUnBlocking ) { \
-      m_WaitCount   = 0;                        \
+   if ( (m_WaitCount == 0) && m_bUnBlocking ) { \
       m_bUnBlocking = false;                    \
    }                                            \
 }while(0)

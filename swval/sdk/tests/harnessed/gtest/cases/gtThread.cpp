@@ -470,6 +470,8 @@ protected:
    static void Thr10(OSLThread * , void * );
 
    static void Thr11(OSLThread * , void * );
+
+   static void Thr12(OSLThread * , void * );
 };
 
 void OSAL_Thread_f::Thr0(OSLThread *pThread, void *pContext)
@@ -1098,5 +1100,29 @@ TEST_F(OSAL_Thread_f, aal0017)
 
    m_pThrs[0]->Join();
    delete m_pThrs[0];
+}
+
+void OSAL_Thread_f::Thr12(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0065)
+{
+   // OSLThread::Join() behaves robustly when true == ThisThread.
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr12,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              true);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Join();
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
 }
 

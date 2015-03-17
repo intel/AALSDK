@@ -1,9 +1,14 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+#define MINUTES_IN_TERMS_OF_MILLIS(__x) ( ((AAL::btTime)__x) * ((AAL::btTime)60000) )
+#define HOURS_IN_TERMS_OF_MILLIS(__x)   ( ((AAL::btTime)__x) * ((AAL::btTime)60000) * ((AAL::btTime)60) )
+
 #if   defined( __AAL_WINDOWS__ )
-# define cpu_yield() ::Sleep(0)
+# define cpu_yield()       ::Sleep(0)
+# define sleep_millis(__x) ::Sleep(__x)
 #elif defined( __AAL_LINUX__ )
-# define cpu_yield() ::usleep(0)
+# define cpu_yield()       ::usleep(0)
+# define sleep_millis(__x) ::usleep((__x) * 1000)
 #endif // OS
 
 class GlobalTestConfig

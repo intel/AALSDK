@@ -421,7 +421,7 @@ void OSAL_Sem_vp_tuple_2::Thr2(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[5] = 1;
 }
 
-TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
+TEST_P(OSAL_Sem_vp_tuple_2, aal0059)
 {
    // For a created sem, CSemaphore::Post() allows at least one blocking thread
    //  to wake when the semaphore count becomes greater than 0.
@@ -430,7 +430,7 @@ TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
 
    std::tr1::tie(m_nInitialCount, NumToPost) = GetParam();
 
-   m_nMaxCount = 1;
+   m_nMaxCount = 100;
 
    ASSERT_TRUE(m_Sem.Create(m_nInitialCount, m_nMaxCount));
 
@@ -470,12 +470,12 @@ TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
    for ( i = 0 ; i < N - 1 ; ++i ) {
       EXPECT_TRUE(m_Sem.Post(1));
    }
-   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[0] + m_Scratch[1] + m_Scratch[2]));
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3] + m_Scratch[4] + m_Scratch[5]));
 
    // Now, this should wake at least one thread.
    EXPECT_TRUE(m_Sem.Post(NumToPost));
 
-   YIELD_WHILE(0 == m_Scratch[0] + m_Scratch[1] + m_Scratch[2]);
+   YIELD_WHILE(0 == m_Scratch[3] + m_Scratch[4] + m_Scratch[5]);
 
    // Give all child threads an opportunity to wake before we continue.
    YIELD_N();
@@ -484,7 +484,7 @@ TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
 
    // Join() the threads that woke.
    for ( i = 0 ; i < 3 ; ++i ) {
-      if ( 1 == m_Scratch[i] ) {
+      if ( 1 == m_Scratch[3 + i] ) {
          m_pThrs[i]->Join();
          ++m_Scratch[3 + i]; // increment to 2.
          ++woke;
@@ -502,7 +502,7 @@ TEST_P(OSAL_Sem_vp_tuple_2, DISABLED_aal0059)
       YIELD_N();
 
       for ( i = 0 ; i < 3 ; ++i ) {
-         if ( 1 == m_Scratch[i] ) {
+         if ( 1 == m_Scratch[3 + i] ) {
             m_pThrs[i]->Join();
             ++m_Scratch[3 + i]; // increment to 2.
             ++woke;
@@ -890,6 +890,20 @@ protected:
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
    static void Thr2(OSLThread * , void * );
+
+   static void Thr3(OSLThread * , void * );
+   static void Thr4(OSLThread * , void * );
+   static void Thr5(OSLThread * , void * );
+
+   static void Thr6(OSLThread * , void * );
+   static void Thr7(OSLThread * , void * );
+   static void Thr8(OSLThread * , void * );
+
+   static void Thr9(OSLThread * , void * );
+   static void Thr10(OSLThread * , void * );
+   static void Thr11(OSLThread * , void * );
+
+   static void Thr12(OSLThread * , void * );
 };
 
 void OSAL_Sem_f::Thr2(OSLThread *pThread, void *pContext)
@@ -1207,6 +1221,439 @@ TEST_F(OSAL_Sem_f, aal0058)
    // CSemaphore::Post() returns false when sem not initialized.
    EXPECT_FALSE(m_Sem.Post(1));
 }
+
+TEST_F(OSAL_Sem_f, aal0065)
+{
+   // CSemaphore::Post() does not affect the current count and
+   // returns false when (current + postval) > maxcount.
+
+   AAL::btInt         i;
+   AAL::btUnsignedInt m;
+
+   AAL::btInt         j;
+   AAL::btInt         n;
+
+   i = -1; m = 0; j = 0; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+
+   i = 0; m = 0; j = 1; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+
+   i = 1; m = 0; j = 0; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+
+
+   i = -1; m = 1; j = 0; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+
+   i = 0; m = 1; j = 1; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(0, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+
+   i = 1; m = 1; j = 0; n = 0;
+
+   EXPECT_TRUE(m_Sem.Create(i, m));
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
+   EXPECT_FALSE(m_Sem.Post(2));
+   j = n = -1;
+   EXPECT_TRUE(m_Sem.CurrCounts(j, n));
+   EXPECT_EQ(1, j);
+   EXPECT_EQ(1, n);
+   EXPECT_TRUE(m_Sem.Destroy());
+}
+
+TEST_F(OSAL_Sem_f, aal0061)
+{
+   // CSemaphore::UnblockAll() returns false when sem not initialized.
+   EXPECT_FALSE(m_Sem.UnblockAll());
+}
+
+void OSAL_Sem_f::Thr3(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait()); // (0 == count) this will block.
+   pTC->m_Scratch[3] = 1;
+}
+
+void OSAL_Sem_f::Thr4(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[1] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait(AAL_INFINITE_WAIT)); // (0 == count) this will block.
+   pTC->m_Scratch[4] = 1;
+}
+
+void OSAL_Sem_f::Thr5(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[2] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait(HOURS_IN_TERMS_OF_MILLIS(1))); // (0 == count) this will block.
+   pTC->m_Scratch[5] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0062)
+{
+   // When the sem has been initialized, CSemaphore::UnblockAll() causes all
+   // threads currently blocked in Wait() calls for the sem to wake, returning
+   // false from CSemaphore::Wait(). The CSemaphore::UnblockAll() call itself returns true.
+
+   ASSERT_TRUE(m_Sem.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr3,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+
+   m_pThrs[1] = new OSLThread(OSAL_Sem_f::Thr4,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[1]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+
+   m_pThrs[2] = new OSLThread(OSAL_Sem_f::Thr5,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[2]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[2]);
+
+   EXPECT_TRUE(m_Sem.UnblockAll());
+
+   m_pThrs[0]->Join();
+   m_pThrs[1]->Join();
+   m_pThrs[2]->Join();
+
+   EXPECT_EQ(1, m_Scratch[3]);
+   EXPECT_EQ(1, m_Scratch[4]);
+   EXPECT_EQ(1, m_Scratch[5]);
+}
+
+void OSAL_Sem_f::Thr6(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait()); // (0 == count) this will block.
+   pTC->m_Scratch[3] = 1;
+}
+
+void OSAL_Sem_f::Thr7(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[1] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait(AAL_INFINITE_WAIT)); // (0 == count) this will block.
+   pTC->m_Scratch[4] = 1;
+}
+
+void OSAL_Sem_f::Thr8(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[2] = 1;
+   EXPECT_TRUE(pTC->m_Sem.Wait(HOURS_IN_TERMS_OF_MILLIS(1))); // (0 == count) this will block.
+   pTC->m_Scratch[5] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0066)
+{
+   // Once all of the threads that were blocked on a CSemaphore::Wait() call have woken
+   // and returned false from Wait(), the next call to CSemaphore::Wait() blocks,
+   // because the CSemaphore is no longer unblocking. When the CSemaphore is next Post()'ed,
+   // the Wait() call returns true.
+
+   ASSERT_TRUE(m_Sem.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr6,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+
+   m_pThrs[1] = new OSLThread(OSAL_Sem_f::Thr7,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[1]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+
+   EXPECT_TRUE(m_Sem.UnblockAll());
+
+   m_pThrs[0]->Join();
+   m_pThrs[1]->Join();
+   EXPECT_EQ(1, m_Scratch[3]);
+   EXPECT_EQ(1, m_Scratch[4]);
+
+
+   m_pThrs[2] = new OSLThread(OSAL_Sem_f::Thr8,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[2]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[2]);
+
+   // Give the thread plenty of opportunity to have set m_Scratch[5].
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[5]));
+
+   EXPECT_TRUE(m_Sem.Post(1)); // will wake the thread, allowing it to exit.
+
+   m_pThrs[2]->Join();
+
+   EXPECT_EQ(1, m_Scratch[5]);
+}
+
+void OSAL_Sem_f::Thr9(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_TRUE(pTC->m_Sem.Wait());
+   pTC->m_Scratch[3] = 1;
+}
+
+void OSAL_Sem_f::Thr10(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[1] = 1;
+   EXPECT_TRUE(pTC->m_Sem.Wait(AAL_INFINITE_WAIT));
+   pTC->m_Scratch[4] = 1;
+}
+
+void OSAL_Sem_f::Thr11(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[2] = 1;
+   EXPECT_TRUE(pTC->m_Sem.Wait(HOURS_IN_TERMS_OF_MILLIS(1)));
+   pTC->m_Scratch[5] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0063)
+{
+   // CSemaphore::NumWaiters() returns the number of threads currently blocked in CSemaphore::Wait() calls.
+
+   ASSERT_TRUE(m_Sem.Create(0, 3));
+   EXPECT_EQ(0, m_Sem.NumWaiters());
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr9,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   // Give the thread plenty of time to have blocked.
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3]));
+   EXPECT_EQ(1, m_Sem.NumWaiters());
+
+
+   m_pThrs[1] = new OSLThread(OSAL_Sem_f::Thr10,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[1]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+   // Give the thread plenty of time to have blocked.
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[4]));
+   EXPECT_EQ(2, m_Sem.NumWaiters());
+
+
+   m_pThrs[2] = new OSLThread(OSAL_Sem_f::Thr11,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[2]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[2]);
+
+   // Give the thread plenty of time to have blocked.
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[5]));
+   EXPECT_EQ(3, m_Sem.NumWaiters());
+
+   AAL::btInt i;
+   AAL::btInt j;
+
+   m_Scratch[0] = 0;
+   m_Scratch[1] = 0;
+   m_Scratch[2] = 0;
+
+   for ( i = 0 ; i < 3 ; ++i ) {
+      EXPECT_TRUE(m_Sem.Post(1));
+      YIELD_WHILE(i == m_Scratch[3] + m_Scratch[4] + m_Scratch[5]);
+
+      EXPECT_EQ(3 - (i + 1), m_Sem.NumWaiters()) << " i=" << i;
+
+      for ( j = 0 ; j < 3 ; ++j ) {
+         if ( ( 0 == m_Scratch[j] ) && ( 1 == m_Scratch[3 + j] ) ) {
+            m_Scratch[j] = 1;
+            m_pThrs[j]->Join();
+         }
+      }
+   }
+
+   EXPECT_EQ(1, m_Scratch[3]);
+   EXPECT_EQ(1, m_Scratch[4]);
+   EXPECT_EQ(1, m_Scratch[5]);
+}
+
+TEST_F(OSAL_Sem_f, aal0064)
+{
+   // CSemaphore::Wait(btTime ) returns false when the sem is not initialized.
+   EXPECT_FALSE(m_Sem.Wait(1000));
+}
+
+TEST_F(OSAL_Sem_f, aal0067)
+{
+   // When the sem is initialized and the time duration given to CSemaphore::Wait(btTime )
+   // expires, Wait() returns false.
+
+   EXPECT_TRUE(m_Sem.Create(0, 1));
+   EXPECT_FALSE(m_Sem.Wait(1));
+}
+
+void OSAL_Sem_f::Thr12(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+   // Register a signal handler for SIGIO so that the process is not
+   // reaped as a result of having received an un-handled signal.
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+#endif // OS
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait(pTC->m_Scratch[2]));
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0068)
+{
+   // When the sem is initialized and a thread blocks in CSemaphore::Wait(btTime X),
+   // given that no call to CSemaphore::Post() nor CSemaphore::UnblockAll() is made by
+   // another thread, the blocked thread waits at least X milliseconds before resuming,
+   // even in the presence of signals.
+
+   m_Scratch[2] = 1000; // timeout (millis) for the Wait() call in m_Scratch[2].
+
+   btTime       slept     = 0;
+   const btTime sleepeach = 25;
+   const btTime thresh    = m_Scratch[2] - ( m_Scratch[2] / 20 ); // within 5%
+
+   EXPECT_TRUE(m_Sem.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr12,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   while ( slept < m_Scratch[2] ) {
+      sleep_millis(sleepeach);
+      slept += sleepeach;
+      if ( slept < thresh ) {
+         // we still expect the thread to be blocked.
+         EXPECT_EQ(0, m_Scratch[1]);
+
+#if   defined( __AAL_WINDOWS__ )
+         FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+         EXPECT_EQ(0, pthread_kill(m_pThrs[0]->tid(), SIGIO));
+#endif // OS
+      }
+   }
+
+   m_pThrs[0]->Join();
+   EXPECT_EQ(1, m_Scratch[1]);
+}
+
 
 
 /////////////////////////////
