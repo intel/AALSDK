@@ -904,6 +904,12 @@ protected:
    static void Thr11(OSLThread * , void * );
 
    static void Thr12(OSLThread * , void * );
+
+   static void Thr13(OSLThread * , void * );
+
+   static void Thr14(OSLThread * , void * );
+   static void Thr15(OSLThread * , void * );
+   static void Thr16(OSLThread * , void * );
 };
 
 void OSAL_Sem_f::Thr2(OSLThread *pThread, void *pContext)
@@ -1654,7 +1660,136 @@ TEST_F(OSAL_Sem_f, aal0068)
    EXPECT_EQ(1, m_Scratch[1]);
 }
 
+TEST_F(OSAL_Sem_f, aal0069)
+{
+   // CSemaphore::Wait(void) returns false when the sem is not initialized.
+   EXPECT_FALSE(m_Sem.Wait());
+}
 
+void OSAL_Sem_f::Thr13(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+#if   defined( __AAL_WINDOWS__ )
+   FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+   // Register a signal handler for SIGIO so that the process is not
+   // reaped as a result of having received an un-handled signal.
+   SignalHelper sig;
+   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+#endif // OS
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_TRUE(pTC->m_Sem.Wait());
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Sem_f, aal0070)
+{
+   // When the sem is initialized and a thread blocks in CSemaphore::Wait(void),
+   // given that no call to CSemaphore::Post() nor CSemaphore::UnblockAll() is made
+   // by another thread, the blocked thread waits infinitely, even in the presence of signals.
+
+   EXPECT_TRUE(m_Sem.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr13,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   int          i;
+   const int    count     = 100;
+   const btTime sleepeach = 25;
+
+   for ( i = 0 ; i < count ; ++i ) {
+      sleep_millis(sleepeach);
+      EXPECT_EQ(0, m_Scratch[1]);
+
+#if   defined( __AAL_WINDOWS__ )
+      FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+      EXPECT_EQ(0, pthread_kill(m_pThrs[0]->tid(), SIGIO));
+#endif // OS
+   }
+
+   EXPECT_TRUE(m_Sem.Post(1));
+
+   m_pThrs[0]->Join();
+   EXPECT_EQ(1, m_Scratch[1]);
+}
+
+void OSAL_Sem_f::Thr14(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait());
+   pTC->m_Scratch[3] = 1;
+}
+
+void OSAL_Sem_f::Thr15(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[1] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait());
+   pTC->m_Scratch[4] = 1;
+}
+
+void OSAL_Sem_f::Thr16(OSLThread *pThread, void *pContext)
+{
+   OSAL_Sem_f *pTC = static_cast<OSAL_Sem_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[2] = 1;
+   EXPECT_FALSE(pTC->m_Sem.Wait());
+   pTC->m_Scratch[5] = 1;
+}
+
+TEST_F(OSAL_Sem_f, DISABLED_aal0071)
+{
+   // CSemaphore::Destroy() should unblock all current waiters and prevent new waiters from blocking.
+
+   EXPECT_TRUE(m_Sem.Create(0, 3));
+
+   m_pThrs[0] = new OSLThread(OSAL_Sem_f::Thr14,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[1] = new OSLThread(OSAL_Sem_f::Thr15,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[1]->IsOK());
+
+   m_pThrs[2] = new OSLThread(OSAL_Sem_f::Thr16,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+
+   EXPECT_TRUE(m_pThrs[2]->IsOK());
+
+   YIELD_WHILE((0 == m_Scratch[0]) || (0 == m_Scratch[1]) || (0 == m_Scratch[2]));
+
+   YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[3] + m_Scratch[4] + m_Scratch[5]));
+
+   EXPECT_TRUE(m_Sem.Destroy());
+
+   m_pThrs[0]->Join();
+   m_pThrs[1]->Join();
+   m_pThrs[2]->Join();
+
+   EXPECT_EQ(1, m_Scratch[3]);
+   EXPECT_EQ(1, m_Scratch[4]);
+   EXPECT_EQ(1, m_Scratch[5]);
+}
 
 /////////////////////////////
 

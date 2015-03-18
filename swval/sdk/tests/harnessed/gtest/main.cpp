@@ -19,13 +19,13 @@ using namespace AAL;
 
 #if defined( TEST_SUITE_BAT )
 # include "BAT-TEST-LIST.h"
-void Version() { cout << "bat 1.1.1" << endl; }
+void Version() { std::cout << "bat 1.1.1"     << std::endl; }
 #elif defined( TEST_SUITE_NIGHTLY )
 # include "NIGHTLY-TEST-LIST.h"
-void Version() { cout << "nightly 1.1.1" << endl; }
+void Version() { std::cout << "nightly 1.1.1" << std::endl; }
 #elif defined( TEST_SUITE_WEEKLY )
 # include "WEEKLY-TEST-LIST.h"
-void Version() { cout << "weekly 1.1.1" << endl; }
+void Version() { std::cout << "weekly 1.1.1"  << std::endl; }
 #endif // test suite
 
 int main(int argc, char *argv[])
