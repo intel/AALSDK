@@ -32,24 +32,24 @@ set -e
 
 declare VPATH=''
 declare VPATH_ALREADY_EXISTED=false
-declare KILLED=false
+#declare KILLED=false
 
-on_exit() {
-   if ${KILLED} ; then
-      if ! ${VPATH_ALREADY_EXISTED} ; then
-         # Don't destroy results created by a previous full run.
-         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
-      fi
-   fi
-}
-trap 'on_exit' EXIT
+#on_exit() {
+#   if ${KILLED} ; then
+#      if ! ${VPATH_ALREADY_EXISTED} ; then
+#         # Don't destroy results created by a previous full run.
+#         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
+#      fi
+#   fi
+#}
+#trap 'on_exit' EXIT
 
-on_sigint() {
-   trap - SIGINT
-   KILLED=true
-   exit 99
-}
-trap 'on_sigint' SIGINT
+#on_sigint() {
+#   trap - SIGINT
+#   KILLED=true
+#   exit 99
+#}
+#trap 'on_sigint' SIGINT
 
 declare SRCDIR=''
 

@@ -52,7 +52,7 @@
 // Interface: public
 // Comments: 
 //=============================================================================
-class OSAL_API OSLThreadGroup : private CriticalSection
+class OSAL_API OSLThreadGroup
 {
    enum eState {
       Running = 0,
@@ -82,10 +82,10 @@ private:
    typedef std::vector<OSLThread    *> VeOSLThreads_t;
    typedef std::queue<IDispatchable *> work_queue_t;
    //
-   // Object that holds state and semiphores for the
+   // Object that holds state and semaphores for the
    //  thread group. This object "lives" outside the
    //  ThreadGroup object so that Threads may continue to
-   //  clean-up even if teh ThreadGroup proper has been destroyed.
+   //  clean-up even if the ThreadGroup proper has been destroyed.
    struct ThrGrpState
    {
       // Object is initialized with the number of threads in the

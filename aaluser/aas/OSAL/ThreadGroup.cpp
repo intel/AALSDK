@@ -166,8 +166,6 @@ OSLThreadGroup::~OSLThreadGroup()
    }
 }
 
-#include <stdio.h>
-#include <iostream>
 //=============================================================================
 // Name: IsCurThreadInGroup
 // Description: Tells whether the calling thread is a member of the
@@ -178,24 +176,29 @@ OSLThreadGroup::~OSLThreadGroup()
 AAL::btBool OSLThreadGroup::IsCurThreadInGroup()
 {
    m_pState->m_CritSect.Lock();
+
    AAL::btBool ret = false;
    // Get my current Thread ID and determine
    //  if we are in one of the worker threads
    AAL::btTID curTid = CurrentThreadID();
 
+   AAL::btInt i;
+
    // If we are in one of our own worker threads
    //  we cannot wait until all threads die (we are one).
-   for (int n=0; n < m_nNumThreads; n++){
-     OSLThread *pThread = m_pState->m_Threads[n];
-     if(NULL== pThread){
-        std::cerr << "Thread already dead " << n << std::endl;
-     }
-     if(pThread->tid() == curTid){
+   for ( i = 0 ; i < m_nNumThreads ; ++i ) {
+     OSLThread *pThread = m_pState->m_Threads[i];
+
+     ASSERT(NULL != pThread);
+
+     if ( pThread->tid() == curTid ) {
         ret = true;
         break;
      }
    }
+
    m_pState->m_CritSect.Unlock();
+
    return ret;
 }
 
