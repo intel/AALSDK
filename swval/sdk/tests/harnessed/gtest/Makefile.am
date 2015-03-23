@@ -1,5 +1,8 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+SUBDIRS=\
+pthreads_hooks
+
 gtest_cases=\
 cases/gtCommon.cpp \
 cases/gtCritSect.cpp \
@@ -28,13 +31,16 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(srcdir)/pthreads_hooks/bridge \
+-I$(srcdir)/pthreads_hooks/hooks \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
 COMMON_LDADD=\
 $(check_LTLIBRARIES) \
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la
+$(top_builddir)/aas/XLRTLib/libxlrt.la \
+$(builddir)/pthreads_hooks/bridge/libapphooksbridge.la
 
 check_PROGRAMS=\
 bat \

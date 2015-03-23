@@ -110,17 +110,26 @@ run_standalone() {
 }
 
 run_bat() {
-   ${TS} -v -C "${VPATH}/tests" --bat --gtest-opt=--gtest_color=yes ${1+"$@"}
+   local auto_color=''
+   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
+
+   ${TS} -v -C "${VPATH}/tests" --bat ${auto_color} ${1+"$@"}
    return $?
 }
 
 run_nightly() {
-   ${TS} -v -C "${VPATH}/tests" --nightly --gtest-opt=--gtest_color=yes ${1+"$@"}
+   local auto_color=''
+   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
+
+   ${TS} -v -C "${VPATH}/tests" --nightly ${auto_color} ${1+"$@"}
    return $?
 }
 
 run_weekly() {
-   ${TS} -v -C "${VPATH}/tests" --weekly --gtest-opt=--gtest_color=yes ${1+"$@"}
+   local auto_color=''
+   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
+
+   ${TS} -v -C "${VPATH}/tests" --weekly ${auto_color} ${1+"$@"}
    return $?
 }
 

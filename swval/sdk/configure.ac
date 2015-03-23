@@ -191,6 +191,9 @@ AC_CONFIG_FILES([ase/sw/Makefile
 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
+                 tests/harnessed/gtest/pthreads_hooks/Makefile
+                 tests/harnessed/gtest/pthreads_hooks/hooks/Makefile
+                 tests/harnessed/gtest/pthreads_hooks/bridge/Makefile
                  tests/harnessed/gtest/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile

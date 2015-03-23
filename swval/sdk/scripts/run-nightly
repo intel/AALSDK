@@ -1,11 +1,26 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+declare ARGS=''
+while [ "x$1" != x ]; do
+
+   case $1 in
+      --gtest_*)
+         ARGS="${ARGS} --gtest-opt=$1"
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+
+   shift
+done
+
 shopt -o -s nounset
 
 declare -r SCRIPT_NAME='run-nightly'
 
 . ./run-common
 
-run_nightly ${1+"$@"}
+run_nightly ${ARGS}
 exit $?

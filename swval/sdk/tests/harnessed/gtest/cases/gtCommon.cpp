@@ -21,6 +21,11 @@ public:
    // for such loops.
    AAL::btUIntPtr MaxCPUYieldPolls() const { return 100; }
 
+   // Determine the number of pthread's used in Value-Parameterized test fixtures.
+   // Yeah, this is hokey, but ::testing::internal::GetThreadCount() only works for MAC OS.
+   AAL::btUnsignedInt   PThreadsUsedInFixtures() const { return 0; }
+   AAL::btUnsignedInt PThreadsUsedInVPFixtures() const { return 2; }
+
 } Config;
 
 // Enter a tight loop, yielding the cpu so long as __predicate evaluates to true.
@@ -256,6 +261,122 @@ void SignalHelper::EmptySIGUSR2Handler(int sig, siginfo_t *info, void * /* unuse
    EXPECT_EQ(SIGUSR2,  info->si_signo);
    EXPECT_EQ(SI_TKILL, info->si_code);
 }
+
+#endif // OS
+
+#if   defined( __AAL_WINDOWS__ )
+# error TODO implement thread hooks for windows.
+#elif defined( __AAL_LINUX__ )
+# include "hooksbridge.h"
+
+class PThreadsHooks
+{
+public:
+   PThreadsHooks() {}
+   virtual ~PThreadsHooks() {}
+
+   AAL::btUnsignedInt CurrentThreads() const
+   {
+      // Google Test creates pthread's, too. We need to subtract off the Google Test number of threads here.
+      return PThreadsHooks::sm_CurrThreads;
+   }
+
+   static PThreadsHooks * Get();
+   static void        Release();
+
+protected:
+
+   static pthread_mutex_t sm_Lock;
+   static void   Lock();
+   static void Unlock();
+
+   static PThreadsHooks  *sm_Obj;
+
+//   static void pre_pthread_create(pthread_t            *pthr,
+//                                  const pthread_attr_t *pattr,
+//                                  void * (*startfn)(void * ),
+//                                  void                 *arg);
+   static void post_pthread_create(int                   res,
+                                   pthread_t            *pthr,
+                                   const pthread_attr_t *pattr,
+                                   void * (*startfn)(void * ),
+                                   void                 *arg);
+//   static void pre_pthread_join(pthread_t thr, void **prtn);
+   static void post_pthread_join(int res, pthread_t thr, void **prtn);
+
+   static AAL::btUnsignedInt sm_CurrThreads;
+};
+
+pthread_mutex_t PThreadsHooks::sm_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+void PThreadsHooks::Lock()   { pthread_mutex_lock(&PThreadsHooks::sm_Lock);   }
+void PThreadsHooks::Unlock() { pthread_mutex_unlock(&PThreadsHooks::sm_Lock); }
+
+PThreadsHooks * PThreadsHooks::sm_Obj  = NULL;
+
+PThreadsHooks * PThreadsHooks::Get()
+{
+   PThreadsHooks::Lock();
+
+   if ( NULL == PThreadsHooks::sm_Obj ) {
+      PThreadsHooks::sm_Obj = new (std::nothrow) PThreadsHooks();
+      if ( NULL != PThreadsHooks::sm_Obj ) {
+         install_post_pthread_create_hook((pthread_create_post_hook) PThreadsHooks::post_pthread_create, true);
+         install_post_pthread_join_hook(  (pthread_join_post_hook)   PThreadsHooks::post_pthread_join,   true);
+      }
+   }
+
+   PThreadsHooks::Unlock();
+
+   return PThreadsHooks::sm_Obj;
+}
+
+void PThreadsHooks::Release()
+{
+   PThreadsHooks::Lock();
+
+   if ( NULL != PThreadsHooks::sm_Obj ) {
+
+      install_post_pthread_create_hook((pthread_create_post_hook) PThreadsHooks::post_pthread_create, false);
+      install_post_pthread_join_hook(  (pthread_join_post_hook)   PThreadsHooks::post_pthread_join,   false);
+
+      delete PThreadsHooks::sm_Obj;
+      PThreadsHooks::sm_Obj = NULL;
+   }
+
+   PThreadsHooks::Unlock();
+}
+
+void PThreadsHooks::post_pthread_create(int                   res,
+                                        pthread_t            *pthr,
+                                        const pthread_attr_t *pattr,
+                                        void * (*startfn)(void * ),
+                                        void                 *arg)
+{
+   ASSERT(0 == res);
+
+   if ( 0 == res ) {
+      PThreadsHooks::Lock();
+
+      ++PThreadsHooks::sm_CurrThreads;
+
+      PThreadsHooks::Unlock();
+   }
+}
+
+void PThreadsHooks::post_pthread_join(int res, pthread_t thr, void **prtn)
+{
+   ASSERT(0 == res);
+
+   if ( 0 == res ) {
+      PThreadsHooks::Lock();
+
+      --PThreadsHooks::sm_CurrThreads;
+
+      PThreadsHooks::Unlock();
+   }
+}
+
+AAL::btUnsignedInt PThreadsHooks::sm_CurrThreads = 0;
 
 #endif // OS
 

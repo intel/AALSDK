@@ -10,6 +10,8 @@ AC_DEFUN([AALSDK_LOCAL_GTEST], [
           _gtest_defines=
           AC_CHECK_HEADERS([tr1/tuple], [_gtest_defines='-DGTEST_HAS_TR1_TUPLE=1'],
                            [AC_MSG_WARN([tr1/tuple not found. Some gtest features will not be available.])])
+          AC_CHECK_HEADERS([pthread.h], [_gtest_defines="${_gtest_defines} -DGTEST_HAS_PTHREAD=1"],
+                           [AC_MSG_WARN([pthread.h not found. Running gtest in thread unsafe mode.])])
           AS_IF([test -d "${srcdir}/$1/gtest-$2"], [],
                 [tar -C "${srcdir}/$1" -zxf "${srcdir}/$1/gtest-$2.tar.gz"])
           AC_SUBST([WITH_GTEST],           [yes])

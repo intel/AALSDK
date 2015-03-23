@@ -36,7 +36,17 @@ int main(int argc, char *argv[])
       return 0;
    }
 
+#if defined( __AAL_LINUX__ )
+   (void) PThreadsHooks::Get();
+#endif // __AAL_LINUX__
+ 
    ::testing::InitGoogleTest(&argc, argv);
-   return RUN_ALL_TESTS();
+   int res = RUN_ALL_TESTS();
+
+#if defined( __AAL_LINUX__ )
+   PThreadsHooks::Release();
+#endif // __AAL_LINUX__
+
+   return res;
 }
 
