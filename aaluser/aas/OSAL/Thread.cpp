@@ -115,9 +115,7 @@ OSLThread::OSLThread(ThreadProc                     pProc,
    m_pProc(pProc),
    m_nPriority(THREADPRIORITY_INVALID),
    m_pContext(pContext),
-   m_LocalThread(ThisThread),
-   m_IsOK(false),
-   m_Joined(false)
+   m_State(0)
 {
    ASSERT(NULL != pProc);
 
@@ -139,37 +137,39 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_Semaphore.Create(0, INT_MAX) ) {
+   if ( !m_Semaphore.Create(0, INT_MAX) ) { // (Without setting THR_ST_OK.)
       return;
    }
 
 #endif // OS
 
-   if ( NULL == pProc ) { // (Without setting m_IsOK to true.)
+   if ( NULL == pProc ) { // (Without setting THR_ST_OK.)
       return;
    }
 
-   if ( m_LocalThread ) {
+   if ( ThisThread ) {
       // Run the thread function locally in this thread.
 
-      m_IsOK = true;
+      flag_setf(m_State, THR_ST_OK|THR_ST_LOCAL);
       OSLThread::StartThread(this);
 
    } else {
+
+      flag_setf(m_State, THR_ST_OK);
 
 #if   defined( __AAL_WINDOWS__ )
       // Create a new thread to run the thread function.
 
       uintptr_t res = _beginthread(OSLThread::StartThread, 0, this);
-      if ( -1L != res ) {
-         m_IsOK = true;
+      if ( -1L == res ) {
+         flag_clrf(m_State, THR_ST_OK);
       }
 
 #elif defined( __AAL_LINUX__ )
 
       int res = pthread_create(&m_Thread, NULL, OSLThread::StartThread, this);
-      if ( 0 == res ) {
-         m_IsOK = true;
+      if ( 0 != res ) {
+         flag_clrf(m_State, THR_ST_OK);
       }
 
 #endif // OS
@@ -260,16 +260,19 @@ OSLThread::~OSLThread()
    m_Semaphore.CurrCounts(CurrentCount, MaxCount);
    m_Semaphore.Post(INT_MAX - CurrentCount);
 
-   // The pthread_create() in the constructor is guarded by m_IsOK.
-   if ( m_IsOK && !m_LocalThread && !m_Joined ) {
-      // Mark the thread for termination
-      pthread_cancel(m_Thread);
+#endif // OS
 
-      // Detach it to free resources in case not joined
-      pthread_detach(m_Thread);
+   Lock();
+
+   if ( flag_is_set(m_State, THR_ST_OK) &&
+        flags_are_clr(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+
+      Detach(); // Detach it to free resources - we won't be Join()'ed.
+      Cancel(); // Mark the thread for termination.
+
    }
 
-#endif // OS
+   Unlock();
 }
 
 //=============================================================================
@@ -282,6 +285,24 @@ OSLThread::~OSLThread()
 //=============================================================================
 void OSLThread::Unblock()
 {
+   Lock();
+
+   // We can only manipulate m_Thread when OK and !Local.
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_UNBLOCKED);
+      }
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_UNBLOCKED);
+
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    //TODO
@@ -289,11 +310,8 @@ void OSLThread::Unblock()
 
 #elif defined( __AAL_LINUX__ )
 
-   // The pthread_create() in the constructor is guarded by m_IsOK.
-   if ( m_IsOK && !m_LocalThread ) {
-      // Mark the thread for termination
-      pthread_kill(m_Thread, SIGIO);
-   }
+   // Mark the thread for termination
+   pthread_kill(m_Thread, SIGIO);
 
 #endif // OS
 }
@@ -371,22 +389,78 @@ void OSLThread::Wait()
 //=============================================================================
 void OSLThread::Join()
 {
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_JOINED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
+         ASSERT(OSLThread_attempt_to_Join_when_already_Joined_or_Detached);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_JOINED);
+
+   // Don't join while locked.
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    WaitForSingleObject(m_hJoinEvent, INFINITE);
 
 #elif defined( __AAL_LINUX__ )
 
-   // The pthread_create() in the constructor is guarded by m_IsOK.
-   // Don't try to Join() ourself.
-   if ( m_IsOK && !m_LocalThread ) {
-      void *ret;
-      pthread_join(m_Thread, &ret);
-   }
+   void *ret;
+   pthread_join(m_Thread, &ret);
 
 #endif // OS
+}
 
-   m_Joined = true;
+// The underlying thread resource will never be join()'ed.
+void OSLThread::Detach()
+{
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_DETACHED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
+         ASSERT(OSLThread_attempt_to_Detach_when_already_Joined_or_Detached);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_DETACHED);
+
+   Unlock();
+
+#if   defined( __AAL_WINDOWS__ )
+
+#elif defined( __AAL_LINUX__ )
+
+   // Detach it to free resources.
+   pthread_detach(m_Thread);
+
+#endif // OS
 }
 
 //=============================================================================
@@ -399,17 +473,38 @@ void OSLThread::Join()
 //=============================================================================
 void OSLThread::Cancel()
 {
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_CANCELED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
+         ASSERT(OSLThread_attempt_to_Cancel_when_already_Joined);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_CANCELED);
+
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    // TODO OSLThread::Cancel for Windows
 
 #elif defined( __AAL_LINUX__ )
 
-   // The pthread_create() in the constructor is guarded by m_IsOK.
-   if ( m_IsOK && !m_LocalThread && !m_Joined ) {
-      // Mark the thread for termination
-      pthread_cancel(m_Thread);
-   }
+   // Mark the thread for termination
+   pthread_cancel(m_Thread);
 
 #endif // OS
 }

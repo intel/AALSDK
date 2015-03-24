@@ -96,8 +96,15 @@ private:
 
 
 /// OS Abstraction interface for Threads.
-class OSAL_API OSLThread
+class OSAL_API OSLThread : public CriticalSection
 {
+// flags for m_State
+#define THR_ST_OK        0x00000001
+#define THR_ST_LOCAL     0x00000002
+#define THR_ST_JOINED    0x00000004
+#define THR_ST_DETACHED  0x00000008
+#define THR_ST_CANCELED  0x00000010
+#define THR_ST_UNBLOCKED 0x00000020
 public:
    /// Identifies thread priority.
    enum ThreadPriority {
@@ -125,7 +132,7 @@ public:
    /// OSLThread Destructor.
 	virtual ~OSLThread();
 	/// Internal state check.
-   AAL::btBool IsOK() { return m_IsOK; }
+   AAL::btBool IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
    /// Send a kill signal to a thread to unblock a system call.
    void Unblock();
    /// Post one count to the thread's local synchronization object.
@@ -136,6 +143,8 @@ public:
    void Wait();
    /// Wait for the thread to exit.
    void Join();
+   /// The underlying thread resource will never be join()'ed.
+   void Detach();
    /// The non-Windows implementation of this member function issues a pthread_cancel to the thread.
    ///
    /// @note There is currently no Windows implementation.
@@ -148,20 +157,18 @@ public:
 
 private:
 #if   defined( __AAL_WINDOWS__ )
-   HANDLE       m_hEvent;
-   HANDLE       m_hJoinEvent;
+   HANDLE             m_hEvent;
+   HANDLE             m_hJoinEvent;
 #elif defined( __AAL_LINUX__ )
-   pthread_t    m_Thread;
-   CSemaphore   m_Semaphore;
+   pthread_t          m_Thread;
+   CSemaphore         m_Semaphore;
 #endif // OS
 
-   AAL::btTID   m_tid;
-   ThreadProc   m_pProc;
-   AAL::btInt   m_nPriority;
-   void        *m_pContext;
-   AAL::btBool  m_LocalThread;
-   AAL::btBool  m_IsOK;
-   AAL::btBool  m_Joined;   // True if the thread has been joined
+   AAL::btTID         m_tid;
+   ThreadProc         m_pProc;
+   AAL::btInt         m_nPriority;
+   void              *m_pContext;
+   AAL::btUnsignedInt m_State;
 
 #if   defined( __AAL_WINDOWS__ )
    // _beginthread() takes this signature.
