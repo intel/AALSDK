@@ -50,6 +50,7 @@ class IThreadGroup
 public:
    virtual ~IThreadGroup() {}
 
+   // Basic status check.
    virtual AAL::btBool IsOK() const = 0;
 
    // Retrieve a snapshot of the current number of threads, which may be less than that originally
@@ -67,8 +68,19 @@ public:
    // Wait for all worker threads to exit.
    virtual AAL::btBool Join(AAL::btTime ) = 0;
 
+   // Halt the dispatching of all queued work items and prevent new work items from being added.
+   // Any work items residing in the queue at the time of the call are removed and deleted, without
+   // being executed.
    virtual void         Stop() = 0;
+
+   // Resume a Stopped thread group.
+   // returns false if the thread group could not be resumed; otherwise true.
    virtual AAL::btBool Start() = 0;
+
+   // Execute all of the work items currently in the work queue, waiting until they are all
+   // complete before returning. Prevent new work items from being added to the thread group
+   // while draining.
+   // return false if the queue could not be drained; otherwise true.
    virtual AAL::btBool Drain() = 0;
 
 protected:
@@ -77,7 +89,7 @@ protected:
       Stopped,
       Draining,
       Joining,
-      Destruct
+      Detached
    };
    // Accessor/Mutator for the thread group state.
    virtual eState State() const  = 0;
@@ -86,6 +98,13 @@ protected:
    virtual AAL::btBool AddWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * ) = 0;
    // returns the number of threads remaining.
    virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread * ) = 0;
+
+   // Increase / Decrease the level of nested calls to Drain() by 1 count.
+   virtual AAL::btUnsignedInt   DrainNestingUp() = 0;
+   virtual AAL::btUnsignedInt DrainNestingDown() = 0;
+
+   // When the OSLThreadGroup is being destroyed and is not joining the workers.
+   virtual void Detach() = 0;
 
    virtual CSemaphore & ThrStartSem() = 0;
    virtual CSemaphore & ThrExitSem()  = 0;
@@ -115,7 +134,7 @@ public:
    virtual AAL::btUnsignedInt GetNumThreads()   const { return m_pState->GetNumThreads();   }
    virtual AAL::btUnsignedInt GetNumWorkItems() const { return m_pState->GetNumWorkItems(); }
    virtual AAL::btBool Add(IDispatchable *pDisp)      { return m_pState->Add(pDisp);        }
-   virtual AAL::btBool Join(AAL::btTime timeout);
+   virtual AAL::btBool Join(AAL::btTime timeout)      { return m_pState->Join(timeout);     }
    virtual AAL::btBool Drain()                        { return m_pState->Drain();           }
    virtual void Stop()                                { m_pState->Stop();                   }
    virtual AAL::btBool Start()                        { return m_pState->Start();           }
@@ -130,6 +149,11 @@ protected:
 
    virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread *pThread)
    { return m_pState->RemoveWorkerThread(pThread); }
+
+   virtual AAL::btUnsignedInt   DrainNestingUp() { return m_pState->DrainNestingUp();   }
+   virtual AAL::btUnsignedInt DrainNestingDown() { return m_pState->DrainNestingDown(); }
+
+   virtual void Detach() { m_pState->Detach(); }
 
    virtual CSemaphore & ThrStartSem() { return m_pState->ThrStartSem(); }
    virtual CSemaphore & ThrExitSem()  { return m_pState->ThrExitSem();  }
@@ -165,6 +189,7 @@ private:
 
       enum IThreadGroup::eState m_eState;
       AAL::btBool               m_IsOK;
+      AAL::btUnsignedInt        m_DrainNestLevel;
       CSemaphore                m_ThrStartSem;
       CSemaphore                m_ThrExitSem;
       CSemaphore                m_WorkSem;
@@ -186,6 +211,20 @@ private:
       virtual AAL::btBool AddWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
       virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread * );
 
+      virtual AAL::btUnsignedInt DrainNestingUp()
+      {  // Not protected by lock - be sure to elsewhere.
+         ++m_DrainNestLevel;
+         return m_DrainNestLevel;
+      }
+      virtual AAL::btUnsignedInt DrainNestingDown()
+      {  // Not protected by lock - be sure to elsewhere.
+         ASSERT(m_DrainNestLevel > 0);
+         --m_DrainNestLevel;
+         return m_DrainNestLevel;
+      }
+
+      virtual void Detach();
+
       virtual CSemaphore & ThrStartSem() { return m_ThrStartSem; }
       virtual CSemaphore & ThrExitSem()  { return m_ThrExitSem;  }
       // </IThreadGroup>
@@ -200,7 +239,6 @@ private:
 
    AAL::btBool  m_bAutoJoin;
    AAL::btTime  m_JoinTimeout;
-   AAL::btBool  m_bDeleteState;
    ThrGrpState *m_pState;
 };
 

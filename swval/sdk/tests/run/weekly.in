@@ -2,5 +2,4 @@
 # @configure_input@              -*- shell-script -*- 
 # Do what it takes to run the weekly binary as created by 'make check'.
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
-LD_PRELOAD=@abs_top_builddir@/tests/harnessed/gtest/pthreads_hooks/hooks/.libs/libmypthreadhooks.so \
 exec '@abs_top_builddir@/tests/harnessed/gtest/weekly' ${1+"$@"}

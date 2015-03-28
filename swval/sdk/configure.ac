@@ -25,7 +25,6 @@ LT_INIT([dlopen])
 LT_LANG([C++])
 
 AALSDK_COPYRIGHT_NOTICE([INTEL CONFIDENTIAL - For Intel Internal Use Only])
-AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
 dnl ############################################################################
@@ -191,9 +190,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
-                 tests/harnessed/gtest/pthreads_hooks/Makefile
-                 tests/harnessed/gtest/pthreads_hooks/hooks/Makefile
-                 tests/harnessed/gtest/pthreads_hooks/bridge/Makefile
                  tests/harnessed/gtest/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile

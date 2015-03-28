@@ -113,6 +113,10 @@ define gdb_setup
    set stop-on-solib-events 0
    set breakpoint pending on
 
+   # Signals
+   handle SIGUSR1 nostop
+   handle SIGUSR2 nostop
+
    # Threading
    if $print_thread_events != 0
       set print thread-events on
