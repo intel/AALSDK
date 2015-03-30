@@ -186,19 +186,9 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 // Comments:
 //=============================================================================
 
-#if defined( __AAL_LINUX__ ) && defined( DBG_OSLTHREAD_COUNT )
-static volatile AAL::btUIntPtr gOSLThreadCount = 0;
-AAL::btUIntPtr DbgOSLThreadCount() { return gOSLThreadCount; }
-static CriticalSection gOSLThreadCountLock;
-static void pthread_OSLThreadCount_cleanup(void *arg)
-{
-   // Executes when the thread is canceled or if the thread terminates by calling pthread_exit().
-   // Does not execute when the thread returns normally.
-   gOSLThreadCountLock.Lock();
-   --gOSLThreadCount;
-   gOSLThreadCountLock.Unlock();
-}
-#endif // __AAL_LINUX__ && DBG_OSLTHREAD_COUNT
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_0.cpp"
+#endif // DBG_OSLTHREAD
 
 #if   defined( __AAL_WINDOWS__ )
 void   OSLThread::StartThread(void *p)
@@ -240,21 +230,15 @@ void * OSLThread::StartThread(void *p)
    ThreadProc fn = pThread->m_pProc;
 
    if ( NULL != fn ) {
-#if defined( __AAL_LINUX__ ) && defined( DBG_OSLTHREAD_COUNT )
-      gOSLThreadCountLock.Lock();
-      ++gOSLThreadCount;
-      gOSLThreadCountLock.Unlock();
-      pthread_cleanup_push(pthread_OSLThreadCount_cleanup, pThread);
-#endif // __AAL_LINUX__ && DBG_OSLTHREAD_COUNT
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_1.cpp"
+#endif // DBG_OSLTHREAD
 
       fn(pThread, pThread->m_pContext);
 
-#if defined( __AAL_LINUX__ ) && defined( DBG_OSLTHREAD_COUNT )
-      pthread_cleanup_pop(0);
-      gOSLThreadCountLock.Lock();
-      --gOSLThreadCount;
-      gOSLThreadCountLock.Unlock();
-#endif // __AAL_LINUX__ && DBG_OSLTHREAD_COUNT
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_2.cpp"
+#endif // DBG_OSLTHREAD
    }
 
 #if   defined( __AAL_WINDOWS__ )
