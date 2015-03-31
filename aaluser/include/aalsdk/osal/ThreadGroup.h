@@ -88,8 +88,7 @@ protected:
       Running = 0,
       Stopped,
       Draining,
-      Joining,
-      Detached
+      Joining
    };
    // Accessor/Mutator for the thread group state.
    virtual eState State() const  = 0;
@@ -102,9 +101,6 @@ protected:
    // Increase / Decrease the level of nested calls to Drain() by 1 count.
    virtual AAL::btUnsignedInt   DrainNestingUp() = 0;
    virtual AAL::btUnsignedInt DrainNestingDown() = 0;
-
-   // When the OSLThreadGroup is being destroyed and is not joining the workers.
-   virtual void Detach() = 0;
 
    virtual CSemaphore & ThrStartSem() = 0;
    virtual CSemaphore & ThrExitSem()  = 0;
@@ -124,7 +120,6 @@ public:
    OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads=0,
                   AAL::btUnsignedInt        uiMaxThreads=0,
                   OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
-                  AAL::btBool               bAutoJoin=true,
                   AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
 
    virtual ~OSLThreadGroup();
@@ -152,8 +147,6 @@ protected:
 
    virtual AAL::btUnsignedInt   DrainNestingUp() { return m_pState->DrainNestingUp();   }
    virtual AAL::btUnsignedInt DrainNestingDown() { return m_pState->DrainNestingDown(); }
-
-   virtual void Detach() { m_pState->Detach(); }
 
    virtual CSemaphore & ThrStartSem() { return m_pState->ThrStartSem(); }
    virtual CSemaphore & ThrExitSem()  { return m_pState->ThrExitSem();  }
@@ -222,8 +215,6 @@ private:
          --m_DrainNestLevel;
          return m_DrainNestLevel;
       }
-
-      virtual void Detach();
 
       virtual CSemaphore & ThrStartSem() { return m_ThrStartSem; }
       virtual CSemaphore & ThrExitSem()  { return m_ThrExitSem;  }

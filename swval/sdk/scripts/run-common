@@ -19,8 +19,7 @@ declare -r LN="`which ln`" 2>/dev/null
 [ "x${LN}" = x ] && die "no ln?"
 declare -r RM="`which rm`" 2>/dev/null
 [ "x${RM}" = x ] && die "no rm?"
-
-set -e
+declare -r TIME="`which time`" 2>/dev/null
 
 declare VPATH=''
 declare VPATH_ALREADY_EXISTED=false
@@ -105,32 +104,68 @@ setup() {
 setup
 
 run_standalone() {
-   ${TS} -v -C "${VPATH}/tests" --standalone ${1+"$@"}
-   return $?
+   local -r cmd="${TS} -v -C ${VPATH}/tests --standalone ${1+"$@"}"
+   local -i res=1
+
+   printf "%s\n" "${cmd}"
+
+   ${TIME} ${cmd}
+   res=$?
+
+   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+
+   return ${res}
 }
 
 run_bat() {
    local auto_color=''
    [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
 
-   ${TS} -v -C "${VPATH}/tests" --bat ${auto_color} ${1+"$@"}
-   return $?
+   local -r cmd="${TS} -v -C ${VPATH}/tests --bat ${auto_color} ${1+"$@"}"
+   local -i res=1
+
+   printf "%s\n" "${cmd}"
+
+   ${TIME} ${cmd}
+   res=$?
+
+   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+
+   return ${res}
 }
 
 run_nightly() {
    local auto_color=''
    [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
 
-   ${TS} -v -C "${VPATH}/tests" --nightly ${auto_color} ${1+"$@"}
-   return $?
+   local -r cmd="${TS} -v -C ${VPATH}/tests --nightly ${auto_color} ${1+"$@"}"
+   local -i res=1
+
+   printf "%s\n" "${cmd}"
+
+   ${TIME} ${cmd}
+   res=$?
+
+   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+
+   return ${res}
 }
 
 run_weekly() {
    local auto_color=''
    [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
 
-   ${TS} -v -C "${VPATH}/tests" --weekly ${auto_color} ${1+"$@"}
-   return $?
+   local -r cmd="${TS} -v -C ${VPATH}/tests --weekly ${auto_color} ${1+"$@"}"
+   local -i res=1
+
+   printf "%s\n" "${cmd}"
+
+   ${TIME} ${cmd}
+   res=$?
+
+   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+
+   return ${res}
 }
 
 run_everything() {

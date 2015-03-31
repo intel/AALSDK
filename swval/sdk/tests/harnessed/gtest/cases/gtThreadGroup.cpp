@@ -284,7 +284,6 @@ protected:
       m_MinThreads(0),
       m_MaxThreads(0),
       m_ThrPriority(OSLThread::THREADPRIORITY_NORMAL),
-      m_bAutoJoin(true),
       m_JoinTimeout(AAL_INFINITE_WAIT)
    {}
    virtual ~OSAL_ThreadGroup_f() {}
@@ -294,17 +293,15 @@ protected:
       Destroy();
    }
    OSLThreadGroup * Create(AAL::btUnsignedInt        MinThrs,
-                           AAL::btUnsignedInt        MaxThrs=0,
-                           OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
-                           AAL::btBool               bAutoJoin=true,
-                           AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT)
+                           AAL::btUnsignedInt        MaxThrs/*=0*/,
+                           OSLThread::ThreadPriority nPriority/*=OSLThread::THREADPRIORITY_NORMAL*/,
+                           AAL::btTime               JoinTimeout/*=AAL_INFINITE_WAIT*/)
    {
       m_MinThreads    = MinThrs;
       m_MaxThreads    = MaxThrs;
       m_ThrPriority   = nPriority;
-      m_bAutoJoin     = bAutoJoin;
       m_JoinTimeout   = JoinTimeout;
-      return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_bAutoJoin, m_JoinTimeout);
+      return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_JoinTimeout);
    }
    AAL::btBool Destroy()
    {
@@ -321,7 +318,6 @@ protected:
    AAL::btUnsignedInt        m_MinThreads;
    AAL::btUnsignedInt        m_MaxThreads;
    OSLThread::ThreadPriority m_ThrPriority;
-   AAL::btBool               m_bAutoJoin;
    AAL::btTime               m_JoinTimeout;
    CSemaphore                m_Sems[4];
 };
@@ -332,7 +328,10 @@ TEST_F(OSAL_ThreadGroup_f, aal0072)
 
    EXPECT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create(0, 0);
+   OSLThreadGroup *g = Create(0,
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
 
    EXPECT_EQ(1, CurrentThreads());
 
@@ -353,7 +352,10 @@ TEST_F(OSAL_ThreadGroup_f, aal0075)
 
    EXPECT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create(1);
+   OSLThreadGroup *g = Create(1,
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -372,7 +374,10 @@ TEST_F(OSAL_ThreadGroup_f, aal0076)
 
    EXPECT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create(1);
+   OSLThreadGroup *g = Create(1,
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -394,7 +399,6 @@ protected:
       m_MinThreads(0),
       m_MaxThreads(0),
       m_ThrPriority(OSLThread::THREADPRIORITY_NORMAL),
-      m_bAutoJoin(true),
       m_JoinTimeout(AAL_INFINITE_WAIT)
    {}
    virtual ~OSAL_ThreadGroup_vp() {}
@@ -416,17 +420,15 @@ protected:
       }
    }
    OSLThreadGroup * Create(AAL::btUnsignedInt        MinThrs,
-                           AAL::btUnsignedInt        MaxThrs=0,
-                           OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
-                           AAL::btBool               bAutoJoin=true,
-                           AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT)
+                           AAL::btUnsignedInt        MaxThrs/*=0*/,
+                           OSLThread::ThreadPriority nPriority/*=OSLThread::THREADPRIORITY_NORMAL*/,
+                           AAL::btTime               JoinTimeout/*=AAL_INFINITE_WAIT*/)
    {
       m_MinThreads    = MinThrs;
       m_MaxThreads    = MaxThrs;
       m_ThrPriority   = nPriority;
-      m_bAutoJoin     = bAutoJoin;
       m_JoinTimeout   = JoinTimeout;
-      return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_bAutoJoin, m_JoinTimeout);
+      return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_JoinTimeout);
    }
    AAL::btBool Destroy()
    {
@@ -443,7 +445,6 @@ protected:
    AAL::btUnsignedInt        m_MinThreads;
    AAL::btUnsignedInt        m_MaxThreads;
    OSLThread::ThreadPriority m_ThrPriority;
-   AAL::btBool               m_bAutoJoin;
    AAL::btTime               m_JoinTimeout;
    OSLThread                *m_pThrs[5];
    CSemaphore                m_Sems[4];
@@ -464,7 +465,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0074)
 
    EXPECT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -507,7 +511,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0079)
    ASSERT_TRUE(m_Sems[0].Create(0, 1));
    ASSERT_TRUE(m_Sems[1].Create(0, 1));
 
-   OSLThreadGroup *g = Create(1);
+   OSLThreadGroup *g = Create(1,
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -556,7 +563,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0080)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -591,7 +601,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0081)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -622,6 +635,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0081)
    ASSERT_EQ(0, CurrentThreads());
 }
 
+#if DEPRECATED
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0082)
 {
    // When constructed with bAutoJoin=false and no explicit call to OSLThreadGroup::Join(),
@@ -675,7 +689,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0082)
    // All workers have executed the work items, but may not have exited just yet.
    YIELD_WHILE(CurrentThreads() > 0);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0083)
 {
    // When constructed with bAutoJoin=false and an explicit call to OSLThreadGroup::Join()
@@ -716,6 +732,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0083)
    EXPECT_TRUE(Destroy());
    ASSERT_EQ(0, CurrentThreads());
 }
+#endif // DEPRECATED
 
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0084)
 {
@@ -724,7 +741,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0084)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -763,7 +783,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0085)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -832,7 +855,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0086)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -901,7 +927,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0087)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -953,7 +982,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0088)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -997,7 +1029,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0089)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -1030,7 +1065,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0090)
 
    ASSERT_EQ(0, CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -1058,6 +1096,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0090)
    EXPECT_TRUE(Destroy());
 }
 
+#if DEPRECATED
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0091)
 {
    // When constructed with bAutoJoin=false and when the thread group is Stopped,
@@ -1095,6 +1134,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0091)
    // Not joining, so need to wait for the detached threads to exit.
    YIELD_WHILE(CurrentThreads() > 0);
 }
+#endif // DEPRECATED
 
 void OSAL_ThreadGroup_vp_uint_0::Thr0(OSLThread *pThread, void *pContext)
 {
@@ -1139,7 +1179,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
    ASSERT_TRUE(m_Sems[2].Wait());
    ASSERT_EQ(ThrCount, (AAL::btInt)CurrentThreads());
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -1298,7 +1341,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
 
    // Thr1 is blocked waiting for m_Sems[3]
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -1394,7 +1440,10 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
 
    // Thr2 is blocked waiting for m_Sems[3]
 
-   OSLThreadGroup *g = Create( GetParam() );
+   OSLThreadGroup *g = Create(GetParam(),
+                              0,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
    ASSERT_NONNULL(g);
    ASSERT_TRUE(g->IsOK());
 
@@ -1450,6 +1499,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
    ASSERT_EQ(0, CurrentThreads());
 }
 
+#if DEPRECATED
 void OSAL_ThreadGroup_vp_uint_0::Thr3(OSLThread *pThread, void *pContext)
 {
    OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
@@ -1547,7 +1597,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, DISABLED_aal0095)
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(1, x);
 }
-
+#endif // DEPRECATED
 
 // ::testing::Range(begin, end [, step])
 // ::testing::Values(v1, v2, v3)
