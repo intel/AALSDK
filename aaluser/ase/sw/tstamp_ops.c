@@ -70,6 +70,7 @@ char* generate_tstamp_path(char* filename)
   if ( fp_pwd != NULL ) 
     {
       strcpy(tstamp_filepath, pot_pwd_filepath);
+      fclose(fp_pwd); // checking
     }
   else if ( getenv("ASE_WORKDIR") != NULL ) 
     {
@@ -77,6 +78,7 @@ char* generate_tstamp_path(char* filename)
       if (fp_asewd != NULL)
 	{
 	  strcpy(tstamp_filepath, pot_asewd_filepath); 
+	  fclose(fp_asewd); // checking
 	}
       else
 	{
@@ -88,6 +90,7 @@ char* generate_tstamp_path(char* filename)
 	  BEGIN_GREEN_FONTCOLOR;
 	  printf("GREEN\n");
 	  END_GREEN_FONTCOLOR;
+	  fclose(fp_asewd); // checking
 	  exit(1);
 	}
     }
