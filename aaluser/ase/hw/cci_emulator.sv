@@ -136,7 +136,7 @@ module cci_emulator();
     * ***************************************************************************/
 
    logic                          clk   ;                  // out
-   logic 			  resetb ;                 // out
+   // logic 			  resetb ;                 // out
    logic 			  lp_initdone ;            // out
    logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
    logic 			  tx_c0_rdvalid;           // in
@@ -160,7 +160,7 @@ module cci_emulator();
 
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
-   logic 			  resetb_q;
+   // logic 			  resetb_q;
    // logic 			  tx_c1_intrvalid_sel;
 
    // Derived clocks
@@ -187,22 +187,12 @@ module cci_emulator();
    /*
     * Clock process: Operates the CAFU clock
     */
-   // 200 Mhz clock
-   initial begin : clk32ui_proc
-      begin
-	 clk_32ui = 0;
-	 forever begin
-	    #`CLK_32UI_TIME;
-	    clk_32ui = 1'b0;
-	    #`CLK_32UI_TIME;
-	    clk_32ui = 1'b1;
-	 end
-      end
-   end
-
+   logic [1:0] 			  ase_clk_rollover = 2'b0;   
+   
    // ASE clock
    assign clk = clk_32ui;
-
+   assign clk_32ui = ase_clk_rollover[0];   
+   
    // 400 Mhz clock
    initial begin : clk16ui_proc
       begin
@@ -216,23 +206,48 @@ module cci_emulator();
       end
    end
 
+   // 200 Mhz clock
+   always @(posedge clk_16ui) begin
+      ase_clk_rollover <= ase_clk_rollover + 1;      
+   end
+   
+   // initial begin : clk32ui_proc
+   //    begin
+   // 	 clk_32ui = 0;
+   // 	 forever begin
+   // 	    #`CLK_32UI_TIME;
+   // 	    clk_32ui = 1'b0;
+   // 	    #`CLK_32UI_TIME;
+   // 	    clk_32ui = 1'b1;
+   // 	 end
+   //    end
+   // end
+
 
    // Reset management
-   logic 			  sys_reset_n;
+   logic 			  sys_reset_n;   
+   logic 			  sys_reset_n_q;
+   logic 			  sw_reset_trig;
    logic 			  sw_reset_n;
    logic 			  sw_reset_n_q;
 
    /*
     * AFU reset - software & system resets
     */
-   always @(posedge clk) begin
-      if ((sys_reset_n == 1'b0) || (sw_reset_n == 1'b0)) begin
-   	 resetb <= 1'b0;
-      end
-      else begin
-   	 resetb <= 1'b1;
-      end
-   end
+   //       0        |     0               0     | Initial reset
+   //       0        |     0               1     | 
+   //       0        |     1               0     |
+   //       1        |     1               1     |
+   assign sw_reset_n = sys_reset_n && sw_reset_trig;
+   
+   // always @(posedge clk) begin
+   //    if ((sys_reset_n == 1'b0) || (sw_reset_n == 1'b0)) begin
+   // 	 resetb <= 1'b0;
+   //    end
+   //    else begin
+   // 	 resetb <= 1'b1;
+   //    end
+   // end
 
 
    /*
@@ -1039,6 +1054,7 @@ module cci_emulator();
    	 as2cf_fifo_ch0_write			<= 0;
    	 cf2as_latbuf_ch0_read			<= 0;
    	 cf2as_latbuf_ch1_read_0		<= 0;
+	 sw_reset_trig                          <= 1;	 
    	 rx0_state				<= RxIdle;
       end
       else begin
@@ -1057,7 +1073,8 @@ module cci_emulator();
    		end
    		else if ( ~csrff_empty && (csr_address < AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full ) begin
    		   if (csrff_dout[45:32]	== CCI_RESET_CTRL_OFFSET) begin
-   		      sw_reset_n		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+   		      // sw_reset_n		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+   		      sw_reset_trig		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
    		   end
    		   csrff_read			<= 1;
    		   umsgff_read			<= 0;
@@ -1575,8 +1592,9 @@ module cci_emulator();
    // Registers for comparing previous states
    always @(posedge clk) begin
       lp_initdone_q	<= lp_initdone;
-      resetb_q		<= resetb;
+      // resetb_q		<= resetb;
       sw_reset_n_q	<= sw_reset_n;
+      sys_reset_n_q     <= sys_reset_n;      
    end
 
 
@@ -1604,9 +1622,12 @@ module cci_emulator();
 	    $fwrite(log_fd, "%d\tSoftware reset toggled from %b to %b\n", $time, sw_reset_n_q, sw_reset_n);
 	 end
 	 // If reset toggled, log the event
-	 if (resetb_q != resetb) begin
-	    $fwrite(log_fd, "%d\tResetb toggled from %b to %b\n", $time, resetb_q, resetb);
+	 if (sys_reset_n_q != sys_reset_n) begin
+	    $fwrite(log_fd, "%d\tSystem reset toggled from %b to %b\n", $time, sys_reset_n_q, sys_reset_n);
 	 end
+	 // if (resetb_q != resetb) begin
+	 //    $fwrite(log_fd, "%d\tResetb toggled from %b to %b\n", $time, resetb_q, resetb);
+	 // end
 	 // Watch CCI for valid transactions
 	 if (lp_initdone) begin
 	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
