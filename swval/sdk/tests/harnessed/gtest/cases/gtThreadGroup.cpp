@@ -457,6 +457,14 @@ protected:
    static void Thr1(OSLThread * , void * );
    static void Thr2(OSLThread * , void * );
    static void Thr3(OSLThread * , void * );
+   static void Thr4(OSLThread * , void * );
+   static void Thr5(OSLThread * , void * );
+   static void Thr6(OSLThread * , void * );
+   static void Thr7(OSLThread * , void * );
+   static void Thr8(OSLThread * , void * );
+   static void Thr9(OSLThread * , void * );
+   static void Thr10(OSLThread * , void * );
+   static void Thr11(OSLThread * , void * );
 };
 
 TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0074)
@@ -1536,7 +1544,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, DISABLED_aal0095)
                               this);
    EXPECT_TRUE(m_pThrs[0]->IsOK());
 
-   // Wait until Thr2 is ready.
+   // Wait until Thr3 is ready.
    ASSERT_TRUE(m_Sems[2].Wait());
    ASSERT_EQ(1, CurrentThreads());
 
@@ -1598,6 +1606,759 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, DISABLED_aal0095)
    EXPECT_EQ(1, x);
 }
 #endif // DEPRECATED
+
+void OSAL_ThreadGroup_vp_uint_0::Thr4(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Start());
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0096)
+{
+   // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
+   // attempts to Start() return false to indicate failure. The thread group remains
+   // in the Joining state.
+
+   // Use Thr4 to attempt the Start(), this thread to do the delete.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr4 is ready.
+   // m_Sems[3] - Thr4 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr4,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr4 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr4 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Wakes Thr4 to attempt the Start().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // The single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr4 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr4 to sleep then attempt the Start().
+   // Meanwhile, this thread will be in the destructor, doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   // Delete the thread group, invoking Join().
+   EXPECT_TRUE(Destroy());
+
+   // Join Thr4.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr5(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Start());
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0097)
+{
+   // When an explicit call to Join() has transitioned a thread group to the Joining state,
+   // attempts to Start() return false to indicate failure. The thread group remains in
+   // the Joining state.
+
+   // Use Thr5 to attempt the Start(), this thread to do the Join().
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr5 is ready.
+   // m_Sems[3] - Thr5 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr5,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr5 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr5 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr5 to attempt the Start().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr5 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr5 to sleep then attempt the Start().
+   // Meanwhile, this thread will be doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
+
+   // Join Thr5.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+
+   // Delete the thread group.
+   EXPECT_TRUE(Destroy());
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr6(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   pTC->m_pGroup->Stop();
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0098)
+{
+   // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
+   // attempts to Stop() fail. The thread group remains in the Joining state.
+
+   // Use Thr6 to attempt the Stop(), this thread to do the delete.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr6 is ready.
+   // m_Sems[3] - Thr6 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr6,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr6 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr6 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr6 to attempt the Stop().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr6 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr6 to sleep then attempt the Start().
+   // Meanwhile, this thread will be in the destructor, doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   // Delete the thread group, invoking Join().
+   EXPECT_TRUE(Destroy());
+
+   // Join Thr6.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr7(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   pTC->m_pGroup->Stop();
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0099)
+{
+   // When an explicit call to Join() has transitioned a thread group to the Joining state,
+   // attempts to Stop() fail. The thread group remains in the Joining state.
+
+   // Use Thr7 to attempt the Stop(), this thread to do the Join().
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr7 is ready.
+   // m_Sems[3] - Thr7 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr7,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr7 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr7 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr7 to attempt the Stop().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr7 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr7 to sleep then attempt the Stop().
+   // Meanwhile, this thread will be doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
+
+   // Join Thr7.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+
+   // Delete the thread group.
+   EXPECT_TRUE(Destroy());
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr8(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Drain());
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
+{
+   // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
+   // attempts to Drain() return false to indicate failure. The thread group remains
+   // in the Joining state.
+
+   // Use Thr8 to attempt the Drain(), this thread to do the delete.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr8 is ready.
+   // m_Sems[3] - Thr8 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr8,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr8 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr8 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr8 to attempt the Drain().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr8 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr8 to sleep then attempt the Drain().
+   // Meanwhile, this thread will be in the destructor, doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   // Delete the thread group, invoking Join().
+   EXPECT_TRUE(Destroy());
+
+   // Join Thr8.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr9(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Drain());
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
+{
+   // When an explicit call to Join() has transitioned a thread group to the Joining state,
+   // attempts to Drain() return false to indicate failure. The thread group remains in
+   // the Joining state.
+
+   // Use Thr9 to attempt the Drain(), this thread to do the Join().
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr9 is ready.
+   // m_Sems[3] - Thr9 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr9,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr9 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr9 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr9 to attempt the Drain().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr9 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr9 to sleep then attempt the Drain().
+   // Meanwhile, this thread will be doing the Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
+
+   // Join Thr9.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+
+   // Delete the thread group.
+   EXPECT_TRUE(Destroy());
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr10(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Join(AAL_INFINITE_WAIT));
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0102)
+{
+   // When ~OSLThreadGroup() has transitioned a thread group to the Joining state,
+   // attempts to Join() return false to indicate failure for the second Join().
+   // The first Join() is allowed to complete successfully.
+
+   // Use Thr10 to attempt the 2nd Join(), this thread to do the delete.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr10 is ready.
+   // m_Sems[3] - Thr10 waits for a signal to do the Join().
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr10,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr10 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr10 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr10 to attempt the 2nd Join().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr10 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr10 to sleep then attempt the 2nd Join().
+   // Meanwhile, this thread will be in the destructor, doing the 1st Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   // Delete the thread group, invoking Join().
+   EXPECT_TRUE(Destroy());
+
+   // Join Thr10.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+}
+
+void OSAL_ThreadGroup_vp_uint_0::Thr11(OSLThread *pThread, void *pContext)
+{
+   OSAL_ThreadGroup_vp_uint_0 *pTC = static_cast<OSAL_ThreadGroup_vp_uint_0 *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   // signal that we're ready.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+
+   // wait for the "go" signal.
+   EXPECT_TRUE(pTC->m_Sems[3].Wait());
+
+   ASSERT_NONNULL(pTC->m_pGroup);
+
+   EXPECT_FALSE(pTC->m_pGroup->Join(AAL_INFINITE_WAIT));
+
+   // signal that we're done.
+   EXPECT_TRUE(pTC->m_Sems[2].Post(1));
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
+{
+   // When an explicit call to Join() has transitioned a thread group to the Joining state,
+   // attempts to Join() return false to indicate failure for the second Join().
+   // The first Join() is allowed to complete successfully.
+
+   // Use Thr11 to attempt the 2nd Join(), this thread to do the 1st Join().
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   // m_Sems[2] - Thr11 is ready.
+   // m_Sems[3] - Thr11 waits for a signal to do the drain.
+   EXPECT_TRUE(m_Sems[2].Create(0, 1));
+   EXPECT_TRUE(m_Sems[3].Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_ThreadGroup_vp_uint_0::Thr11,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this);
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   // Wait until Thr11 is ready.
+   ASSERT_TRUE(m_Sems[2].Wait());
+   ASSERT_EQ(1, CurrentThreads());
+
+   // Thr11 is blocked waiting for m_Sems[3]
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(1 + m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr11 to attempt the 2nd Join().
+   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
+   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr11 to exit.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(4, g->GetNumWorkItems());
+
+   // Wake the first worker, which will wake Thr11 to sleep then attempt the 2nd Join().
+   // Meanwhile, this thread will be doing the 1st Join().
+   EXPECT_TRUE(m_Sems[1].Post(1));
+
+   EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
+
+   // Join Thr11.
+   m_pThrs[0]->Join();
+
+   EXPECT_EQ(0, CurrentThreads());
+   EXPECT_EQ(1, x);
+
+   // Delete the thread group.
+   EXPECT_TRUE(Destroy());
+}
+
+
+
 
 // ::testing::Range(begin, end [, step])
 // ::testing::Values(v1, v2, v3)

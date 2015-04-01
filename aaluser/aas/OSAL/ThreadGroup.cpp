@@ -166,6 +166,12 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime timeout)
 
    Lock();
 
+   if ( IThreadGroup::Joining == State() ) {
+      // Prevent nested Join().
+      Unlock();
+      return false;
+   }
+
    if ( IThreadGroup::Joining != State(IThreadGroup::Joining) ) {
       // State conflict. Can't Join().
       ASSERT(false);
