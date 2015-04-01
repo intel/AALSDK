@@ -418,9 +418,9 @@ void deallocate_buffer(struct buffer_t *mem)
   mem->metadata = HDR_MEM_DEALLOC_REQ;
 
   // Open message queue
-  strcpy(mq_name, APP2SIM_SMQ_PREFIX);
-  strcat(mq_name, get_timestamp(1));
-  app2sim_tx = mq_open(mq_name, O_WRONLY);
+  /* strcpy(mq_name, APP2SIM_SMQ_PREFIX); */
+  /* strcat(mq_name, get_timestamp(1)); */
+  /* app2sim_tx = mq_open(mq_name, O_WRONLY); */
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
