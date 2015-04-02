@@ -80,7 +80,8 @@ protected:
 OSLThreadGroup::ThrGrpState::ThrGrpState(AAL::btUnsignedInt NumThreads) :
    m_eState(IThreadGroup::Running),
    m_IsOK(true),
-   m_DrainNestLevel(0)
+   m_DrainNestLevel(0),
+   m_WorkSemTimeout(AAL_INFINITE_WAIT)
 {
    AAL::btInt SemInitCount = (AAL::btInt)NumThreads;
    SemInitCount = -SemInitCount;
@@ -160,6 +161,17 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Add(IDispatchable *pDisp)
    return true;
 }
 
+AAL::btBool OSLThreadGroup::ThrGrpState::ThreadInThisGroup(AAL::btTID tid) const
+{
+   const_thr_list_iter iter;
+   for ( iter = m_Threads.begin() ; m_Threads.end() != iter ; ++iter ) {
+      if ( (*iter)->IsThisThread(tid) ) {
+         return true;
+      }
+   }
+   return false;
+}
+
 AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime timeout)
 {
    AAL::btBool res = false;
@@ -179,7 +191,22 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime timeout)
       return false;
    }
 
-   AAL::btInt thrs = (AAL::btInt) m_Threads.size();
+   // If the current thread is a member of this, don't count it in thrs nor
+   // in the ThrExitSem() wait, else we'll deadlock.
+   const AAL::btTID  me       = GetThreadID();
+   const AAL::btBool SelfJoin = ThreadInThisGroup(me);
+   const AAL::btInt  thrs     = (AAL::btInt) m_Threads.size();
+
+   if ( SelfJoin && ( 1 == thrs ) ) {
+      thr_list_iter iter = m_Threads.begin();
+      (*iter)->Detach(); // this thread won't be joined.
+      delete *iter;
+
+      m_WorkSemTimeout = 100;
+      // Nothing to Join().
+      Unlock();
+      return true;
+   }
 
    if ( 0 == thrs ) {
       // Nothing to Join().
@@ -187,15 +214,38 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime timeout)
       return true;
    }
 
+   if ( SelfJoin ) {
+      // We can't wait on ThrExitSem() for the current thread to exit, or else we'll deadlock;
+      // because this thread is executing in OSLThreadGroup::ExecProc() and does not pulse
+      // ThrExitSem() until it's returning from that call.
+
+      // Preemptively post a count to ThrExitSem() to prevent waiting for this thread below.
+      ThrExitSem().Post(1);
+   }
+
+   AAL::btInt c = 0;
+   AAL::btInt m = 0;
+   m_WorkSem.CurrCounts(c, m);
+
+   // We've set the state to Joining above. Don't require workers to block infinitely on work
+   // items. Give them a chance to wake periodically and see that the thread group is being joined.
+   m_WorkSemTimeout = 100;
+
    Unlock();
 
+   // Wake any threads that happen to be waiting infinitely.
    m_WorkSem.Post(thrs);
 
    if ( ThrExitSem().Wait(timeout) ) {
       // All workers are done - Join() and delete them.
       thr_list_iter iter;
       for ( iter = m_Threads.begin() ; m_Threads.end() != iter ; ++iter ) {
-         (*iter)->Join();
+         if ( (*iter)->IsThisThread(me) ) {
+            // Detach this thread, because we will never be joining it.
+            (*iter)->Detach();
+         } else {
+            (*iter)->Join();
+         }
          delete *iter;
       } 
       m_Threads.clear();
@@ -449,8 +499,8 @@ AAL::btUnsignedInt OSLThreadGroup::ThrGrpState::RemoveWorkerThread(OSLThread *pT
 //=============================================================================
 IThreadGroup::eState OSLThreadGroup::ThrGrpState::GetWorkItem(IDispatchable * &pWork)
 {
-   // for work item
-   m_WorkSem.Wait();
+   // Wait for work item
+   m_WorkSem.Wait(m_WorkSemTimeout);
 
    // Lock until flag and queue have been processed
    Lock();

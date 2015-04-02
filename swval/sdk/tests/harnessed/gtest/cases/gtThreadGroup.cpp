@@ -2357,9 +2357,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
    EXPECT_TRUE(Destroy());
 }
 
-
-
-
 // ::testing::Range(begin, end [, step])
 // ::testing::Values(v1, v2, v3)
 // ::testing::ValuesIn(STL container), ::testing::ValuesIn(STL iter begin, STL iter end)
@@ -2367,7 +2364,262 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0103)
 INSTANTIATE_TEST_CASE_P(My, OSAL_ThreadGroup_vp_uint_0, ::testing::Values(1, 5, 10, 25, 50));
 
 
+// Self-referential test cases.
 
+class JoinThreadGroupD : public IDispatchable
+{
+public:
+   JoinThreadGroupD(OSLThreadGroup *pTG,
+                    AAL::btTime     Timeout=AAL_INFINITE_WAIT,
+                    AAL::btBool     bExpectedResult=true) :
+      m_pTG(pTG),
+      m_Timeout(Timeout),
+      m_bExpectedResult(bExpectedResult)
+   {}
+
+   virtual void operator() ()
+   {
+      EXPECT_EQ(m_bExpectedResult, m_pTG->Join(m_Timeout));
+      delete this;
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+   AAL::btTime     m_Timeout;
+   AAL::btBool     m_bExpectedResult;
+};
+
+class StopThreadGroupD : public IDispatchable
+{
+public:
+   StopThreadGroupD(OSLThreadGroup *pTG) :
+      m_pTG(pTG)
+   {}
+
+   virtual void operator() ()
+   {
+      m_pTG->Stop();
+      delete this;
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+};
+
+class DrainThreadGroupD : public IDispatchable
+{
+public:
+   DrainThreadGroupD(OSLThreadGroup *pTG,
+                     AAL::btBool     bExpectedResult=true) :
+      m_pTG(pTG),
+      m_bExpectedResult(bExpectedResult)
+   {}
+
+   virtual void operator() ()
+   {
+      EXPECT_EQ(m_bExpectedResult, m_pTG->Drain());
+      delete this;
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+   AAL::btBool     m_bExpectedResult;
+};
+
+class OSAL_ThreadGroup_vp_uint_1 : public OSAL_ThreadGroup_vp< AAL::btUnsignedInt >
+{
+protected:
+   static void Thr0(OSLThread * , void * );
+};
+
+TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0104)
+{
+   // When an OSLThreadGroup in the Running state (worker threads >= 2) executes a work item
+   // that calls OSLThreadGroup::Join() for the same thread group, the Join() completes successfully.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   for ( i = 0 ; i < 499 ; ++i ) {
+      if ( 100 == i ) {
+         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+      } else {
+         EXPECT_TRUE(g->Add( new YieldD() ));
+      }
+   }
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_EQ(500, g->GetNumWorkItems());
+
+   // Wake all of the workers.
+   EXPECT_TRUE(m_Sems[1].Post(w));
+
+   // We can't Join() the thread group from this thread, because it's being Join()'ed
+   // by the work item. The best we can do is wait for the number of items to equal zero.
+   YIELD_WHILE(g->GetNumWorkItems() > 0);
+
+   // Delete the thread group.
+   EXPECT_TRUE(Destroy());
+
+   // Because we have detached one thread.
+   YIELD_WHILE(CurrentThreads() > 0);
+   EXPECT_EQ(1, x);
+}
+
+INSTANTIATE_TEST_CASE_P(My, OSAL_ThreadGroup_vp_uint_1, ::testing::Values(2, 5, 10, 25, 50));
+
+class OSAL_ThreadGroup_vp_uint_2 : public OSAL_ThreadGroup_vp< AAL::btUnsignedInt >
+{
+protected:
+   static void Thr0(OSLThread * , void * );
+};
+
+TEST_P(OSAL_ThreadGroup_vp_uint_2, DISABLED_aal0106)
+{
+   // When an OSLThreadGroup in the Running state executes a work item that calls
+   // OSLThreadGroup::Stop() for the same thread group, the Stop() completes successfully.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   for ( i = 0 ; i < 500 ; ++i ) {
+      if ( 100 == i ) {
+         EXPECT_TRUE(g->Add( new StopThreadGroupD(g) ));
+      } else {
+         EXPECT_TRUE(g->Add( new YieldD() ));
+      }
+   }
+
+   EXPECT_EQ(500, g->GetNumWorkItems());
+
+   // Wake all of the workers.
+   EXPECT_TRUE(m_Sems[1].Post(w));
+
+   // The Stop() will drain the queue. Hang out here until the queue becomes empty.
+   YIELD_WHILE(g->GetNumWorkItems() > 0);
+
+   // Now re-start the thread group.
+   EXPECT_TRUE(g->Start());
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_TRUE(Destroy());
+
+   EXPECT_EQ(1, x);
+   ASSERT_EQ(0, CurrentThreads());
+}
+
+TEST_P(OSAL_ThreadGroup_vp_uint_2, DISABLED_aal0107)
+{
+   // When an OSLThreadGroup in the Running state executes a work item that calls
+   // OSLThreadGroup::Drain() for the same thread group, the Drain() completes successfully.
+
+   ASSERT_EQ(0, CurrentThreads());
+
+   OSLThreadGroup *g = Create(GetParam(),
+                              1,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              AAL_INFINITE_WAIT);
+   ASSERT_NONNULL(g);
+   ASSERT_TRUE(g->IsOK());
+
+   AAL::btInt w = (AAL::btInt)m_MinThreads;
+
+   ASSERT_EQ(m_MinThreads, CurrentThreads());
+
+   // m_Sems[0] - count up sem, Post()'ed by each worker thread.
+   ASSERT_TRUE(m_Sems[0].Create(-w, 1));
+   ASSERT_TRUE(m_Sems[1].Create(0, INT_MAX));
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < m_MinThreads ; ++i ) {
+      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+   }
+
+   // Block until w counts have been Post()'ed to WorkerCount.
+   EXPECT_TRUE(m_Sems[0].Wait());
+
+   // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
+
+   for ( i = 0 ; i < 500 ; ++i ) {
+      if ( 100 == i ) {
+         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+      } else {
+         EXPECT_TRUE(g->Add( new YieldD() ));
+      }
+   }
+
+   EXPECT_EQ(500, g->GetNumWorkItems());
+
+   // Wake all of the workers.
+   EXPECT_TRUE(m_Sems[1].Post(w));
+
+   // The Stop() will drain the queue. Hang out here until the queue becomes empty.
+   YIELD_WHILE(g->GetNumWorkItems() > 0);
+
+   // The thread group should still be in the Running state.
+
+   AAL::btInt x = 0;
+   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+
+   EXPECT_TRUE(Destroy());
+
+   EXPECT_EQ(1, x);
+   ASSERT_EQ(0, CurrentThreads());
+}
+
+INSTANTIATE_TEST_CASE_P(My, OSAL_ThreadGroup_vp_uint_2, ::testing::Values(1, 5, 10, 25, 50));
 
 
 

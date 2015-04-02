@@ -522,6 +522,15 @@ void OSLThread::Cancel()
 #endif // OS
 }
 
+AAL::btBool OSLThread::IsThisThread(AAL::btID id) const
+{
+#if   defined( __AAL_WINDOWS__ )
+   return id == m_tid;
+#elif defined( __AAL_LINUX__ )
+   return 0 != pthread_equal(id, m_tid);
+#endif // OS
+}
+
 //=============================================================================
 // Name: tid
 // Description: return the OS threadID

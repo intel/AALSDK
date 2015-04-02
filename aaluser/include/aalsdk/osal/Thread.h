@@ -149,8 +149,11 @@ public:
    ///
    /// @note There is currently no Windows implementation.
    void Cancel();
-   ///
+   /// Compare this thread's identifier with id.
+   AAL::btBool IsThisThread(AAL::btID id) const;
+   /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
    AAL::btTID tid();
+
 
    static const AAL::btInt sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORITY_COUNT];
    static const AAL::btInt sm_DefaultPriority;

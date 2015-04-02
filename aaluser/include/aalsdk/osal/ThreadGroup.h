@@ -183,6 +183,7 @@ private:
       enum IThreadGroup::eState m_eState;
       AAL::btBool               m_IsOK;
       AAL::btUnsignedInt        m_DrainNestLevel;
+      AAL::btTime               m_WorkSemTimeout;
       CSemaphore                m_ThrStartSem;
       CSemaphore                m_ThrExitSem;
       CSemaphore                m_WorkSem;
@@ -221,6 +222,8 @@ private:
       // </IThreadGroup>
 
       IThreadGroup::eState GetWorkItem(IDispatchable * &pWork);
+      // Not protected by lock - be sure to elsewhere.
+      AAL::btBool ThreadInThisGroup(AAL::btTID tid) const;
 
       friend class OSLThreadGroup;
    };
