@@ -4,27 +4,28 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
-#include <cstdio>
-#include <string>
-#include <fstream>
-#include <list>
-#include <map>
+//#include <cstdio>
+//#include <string>
+//#include <fstream>
+//#include <list>
+//#include <map>
 
-#include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
-using namespace AAL;
+//#include <aalsdk/AAL.h>
+//#include <aalsdk/xlRuntime.h>
+//using namespace AAL;
 
-#include "gtest/gtest.h"
-#include "cases/gtCommon.cpp"
+//#include "gtest/gtest.h"
+#include "gtCommon.h"
+//#include "cases/gtCommon.cpp"
 
 #if defined( TEST_SUITE_BAT )
-# include "BAT-TEST-LIST.h"
+//# include "BAT-TEST-LIST.h"
 void Version() { std::cout << "bat 1.1.1"     << std::endl; }
 #elif defined( TEST_SUITE_NIGHTLY )
-# include "NIGHTLY-TEST-LIST.h"
+//# include "NIGHTLY-TEST-LIST.h"
 void Version() { std::cout << "nightly 1.1.1" << std::endl; }
 #elif defined( TEST_SUITE_WEEKLY )
-# include "WEEKLY-TEST-LIST.h"
+//# include "WEEKLY-TEST-LIST.h"
 void Version() { std::cout << "weekly 1.1.1"  << std::endl; }
 #endif // test suite
 

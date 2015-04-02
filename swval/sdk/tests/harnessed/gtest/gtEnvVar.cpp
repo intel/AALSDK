@@ -4,6 +4,11 @@
  *  Created on: Feb 25, 2015
  *      Author: sadrutac
  */
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+#include "gtCommon.h"
+
 #include "aalsdk/osal/Env.h"
 
 class EnvVarBasic : public ::testing::Test

@@ -1,4 +1,8 @@
 // INTEL CONFIDENTIAL - For Intel Internal Use Only
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+#include "gtCommon.h"
 
 // Simple test fixture
 class OSAL_CritSect_f : public ::testing::Test
