@@ -164,6 +164,24 @@ void SignalHelper::EmptySIGUSR2Handler(int sig, siginfo_t *info, void * /* unuse
    EXPECT_EQ(SI_TKILL, info->si_code);
 }
 
+volatile AAL::btBool gWaitHereOnSegv = true;
+void SignalHelper::StopOnSIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
+{
+   while ( gWaitHereOnSegv ) {
+      SleepMilli(250);
+   }
+}
+
+SignalHelper gSignalHelper;
+
 #endif // OS
 
+void StopOnSegv()
+{
+#if   defined( __AAL_WINDOWS__ )
+# error TODO implement SignalHelper class for windows.
+#elif defined( __AAL_LINUX__ )
+   gSignalHelper.Install(SIGSEGV, SignalHelper::StopOnSIGSEGVHandler);
+#endif // OS
+}
 

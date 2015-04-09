@@ -22,7 +22,7 @@ declare -r SCRIPT_NAME='run-nightly'
 
 . ./run-common
 
-declare -r RANDOMIZE="--gtest-opt=--gtest_shuffle --gtest-opt=--gtest_random_seed=${RANDOM} --gtest-opt=--gtest_repeat=4500"
+declare -r RANDOMIZE="--gtest-opt=--gtest_shuffle --gtest-opt=--gtest_random_seed=${RANDOM} --gtest-opt=--gtest_repeat=200"
 
 run_nightly ${ARGS} ${RANDOMIZE}
 exit $?

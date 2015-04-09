@@ -135,9 +135,10 @@ public:
    // non-zero on error.
    int Install(int signum, handler h, bool oneshot=false);
 
-   static void   EmptySIGIOHandler(int , siginfo_t * , void * );
-   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
-   static void EmptySIGUSR2Handler(int , siginfo_t * , void * );
+   static void    EmptySIGIOHandler(int , siginfo_t * , void * );
+   static void  EmptySIGUSR1Handler(int , siginfo_t * , void * );
+   static void  EmptySIGUSR2Handler(int , siginfo_t * , void * );
+   static void StopOnSIGSEGVHandler(int , siginfo_t * , void * );
 
 protected:
    typedef std::map<int, struct sigaction> sigmap;
@@ -147,7 +148,11 @@ protected:
    sigmap m_sigmap;
 };
 
+extern SignalHelper gSignalHelper;
+
 #endif // OS
+
+void StopOnSegv();
 
 #endif // __GTCOMMON_H__
 

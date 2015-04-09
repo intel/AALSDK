@@ -132,17 +132,4 @@ gdb_setup
 ################################################################################
 # Breakpoints ##################################################################
 ################################################################################
-
-#break dlopen
-#break pthread_create
-#break __cxa_pure_virtual
-
-break main
-commands
-silent
-   breakpoint_mutex_lock
-      thread name main
-   breakpoint_mutex_unlock
-#continue
-end
-
+source -v @abs_top_srcdir@/gdb/breakpoints

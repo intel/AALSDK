@@ -243,9 +243,16 @@ void * OSLThread::StartThread(void *p)
 
 #if   defined( __AAL_WINDOWS__ )
    SetEvent(pThread->m_hJoinEvent);
-#elif defined( __AAL_LINUX__ )
+#endif // __AAL_WINDOWS__
+
+   if ( flag_is_set(pThread->m_State, THR_ST_DETACHED) ) {
+      // Detached threads are responsible for cleaning up after themselves.
+      delete pThread;
+   }
+
+#if defined( __AAL_LINUX__ )
    return NULL;
-#endif // OS
+#endif // __AAL_LINUX__
 }
 
 //=============================================================================
@@ -280,12 +287,28 @@ OSLThread::~OSLThread()
    if ( flag_is_set(m_State, THR_ST_OK) &&
         flags_are_clr(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
 
-      Detach(); // Detach it to free resources - we won't be Join()'ed.
-      Cancel(); // Mark the thread for termination.
+      Detach();  // Detach it to free resources - this thread won't be Join()'ed.
 
+      Unlock();
+
+      if ( IsThisThread( GetThreadID() ) ) {
+         // self-destruct
+         ExitCurrentThread(0);
+      } else {
+
+         Cancel();  // Mark the thread for termination at the next cancellation point.
+                    // TODO: refer to man pthread_setcanceltype
+                    //       the default cancellation type for threads is PTHREAD_CANCEL_DEFERRED,
+                    //       which means that cancellation requests are deferred until the target
+                    //       thread next calls a cancellation point.
+                    //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
+                    //       a thread asap.
+      }
+
+   } else {
+      Unlock();
    }
 
-   Unlock();
 }
 
 //=============================================================================
@@ -616,6 +639,19 @@ AAL::btTID GetThreadID()
 #elif defined( __AAL_LINUX__ )
 
    return (AAL::btTID) pthread_self();
+
+#endif // OS
+}
+
+void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   ExitThread((DWORD)ExitStatus);
+
+#elif defined( __AAL_LINUX__ )
+
+   pthread_exit((void *)ExitStatus);
 
 #endif // OS
 }
