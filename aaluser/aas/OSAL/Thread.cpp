@@ -284,31 +284,31 @@ OSLThread::~OSLThread()
 
    Lock();
 
-   if ( flag_is_set(m_State, THR_ST_OK) &&
-        flags_are_clr(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
-
-      Detach();  // Detach it to free resources - this thread won't be Join()'ed.
-
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+      // If we didn't construct successfully, or if we're a "local" thread, or if we've already
+      //  been Join()'ed, then there's nothing left to do.
       Unlock();
-
-      if ( IsThisThread( GetThreadID() ) ) {
-         // self-destruct
-         ExitCurrentThread(0);
-      } else {
-
-         Cancel();  // Mark the thread for termination at the next cancellation point.
-                    // TODO: refer to man pthread_setcanceltype
-                    //       the default cancellation type for threads is PTHREAD_CANCEL_DEFERRED,
-                    //       which means that cancellation requests are deferred until the target
-                    //       thread next calls a cancellation point.
-                    //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
-                    //       a thread asap.
-      }
-
-   } else {
-      Unlock();
+      return;
    }
 
+   Detach();  // Detach it to free resources - this thread won't be Join()'ed.
+
+   Unlock();
+
+   if ( IsThisThread( GetThreadID() ) ) {
+      // self-destruct
+      ExitCurrentThread(0);
+   } else {
+
+      Cancel();  // Mark the thread for termination at the next cancellation point.
+                 // TODO: refer to man pthread_setcanceltype
+                 //       the default cancellation type for threads is PTHREAD_CANCEL_DEFERRED,
+                 //       which means that cancellation requests are deferred until the target
+                 //       thread next calls a cancellation point.
+                 //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
+                 //       a thread asap.
+   }
 }
 
 //=============================================================================

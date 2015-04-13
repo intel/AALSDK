@@ -35,7 +35,9 @@ gtCommon.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
 gtThread.cpp \
-gtThreadGroup.cpp
+gtThreadGroup.h \
+gtThreadGroup.cpp \
+gtThreadGroupSR.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -51,7 +53,10 @@ gtCritSect.cpp \
 gtSem.cpp \
 gtNVS.cpp \
 gtThread.cpp \
-gtThreadGroup.cpp
+gtThreadGroup.h \
+gtThreadGroup.cpp \
+gtThreadGroupSR.cpp
+
 
 
 nightly_CPPFLAGS=\
@@ -83,7 +88,9 @@ gtCritSect.cpp \
 gtSem.cpp \
 gtNVS.cpp \
 gtThread.cpp \
+gtThreadGroup.h \
 gtThreadGroup.cpp \
+gtThreadGroupSR.cpp \
 gtPaths.cpp \
 gtStartupShutdown.cpp \
 gtEnvVar.cpp

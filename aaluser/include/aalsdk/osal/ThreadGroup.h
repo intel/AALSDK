@@ -97,10 +97,6 @@ protected:
    virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * ) = 0;
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime ) = 0;
 
-   // Increase / Decrease the level of nested calls to Drain() by 1 count.
-   virtual AAL::btUnsignedInt   DrainNestingUp() = 0;
-   virtual AAL::btUnsignedInt DrainNestingDown() = 0;
-
    virtual AAL::btBool Destroy(AAL::btTime ) = 0;
 };
 
@@ -143,9 +139,6 @@ protected:
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout)
    { return m_pState->WaitForAllWorkersToStart(Timeout); }
 
-   virtual AAL::btUnsignedInt   DrainNestingUp() { return m_pState->DrainNestingUp();   }
-   virtual AAL::btUnsignedInt DrainNestingDown() { return m_pState->DrainNestingDown(); }
-
    virtual AAL::btBool Destroy(AAL::btTime Timeout)
    { return m_pState->Destroy(Timeout); }
 
@@ -158,10 +151,10 @@ private:
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
-#define THRGRPSTATE_FLAG_OK             0x00000001
-#define THRGRPSTATE_FLAG_JOINED         0x00000002
-#define THRGRPSTATE_LAST_WORKER_SIGNALS 0x00000004
-#define THRGRPSTATE_LAST_WORKER_DELETES 0x00000008
+#define THRGRPSTATE_FLAG_OK        0x00000001
+#define THRGRPSTATE_FLAG_DRAINED   0x00000002
+#define THRGRPSTATE_FLAG_SELF_JOIN 0x00000004
+#define THRGRPSTATE_FLAG_JOINED    0x00000008
    public:
       ThrGrpState(AAL::btUnsignedInt NumThreads);
 
@@ -186,6 +179,7 @@ private:
       AAL::btUnsignedInt        m_Flags;
       AAL::btUnsignedInt        m_DrainNestLevel;
       AAL::btTime               m_WorkSemTimeout;
+      AAL::btTID                m_SelfJoiner;
       CSemaphore                m_ThrStartSem;
       CSemaphore                m_ThrExitSem;
       CSemaphore                m_WorkSem;
@@ -201,7 +195,7 @@ private:
 # pragma warning(pop)
 #endif // _MSC_VER
 
-      static const AAL::btTime sm_PollInterval = 50;
+      AAL::btTime PollingInterval() const { return 50; }
 
       // <IThreadGroup>
       virtual IThreadGroup::eState State() const { return m_eState; }
@@ -210,35 +204,36 @@ private:
       virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
       virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
 
-      virtual AAL::btUnsignedInt DrainNestingUp()
+      virtual AAL::btBool Destroy(AAL::btTime );
+
+      // </IThreadGroup>
+
+      AAL::btBool DestroyWhileDraining(AAL::btTime );
+      AAL::btBool  DestroyWhileJoining(AAL::btTime );
+
+      AAL::btUnsignedInt DrainNestingUp()
       {  // Not protected by lock - be sure to elsewhere.
          ++m_DrainNestLevel;
          return m_DrainNestLevel;
       }
-      virtual AAL::btUnsignedInt DrainNestingDown()
+      AAL::btUnsignedInt DrainNestingDown()
       {  // Not protected by lock - be sure to elsewhere.
          ASSERT(m_DrainNestLevel > 0);
          --m_DrainNestLevel;
          return m_DrainNestLevel;
       }
 
-      virtual AAL::btBool Destroy(AAL::btTime );
-
-      // </IThreadGroup>
-
       AAL::btBool WaitForAllWorkersToExit(AAL::btTime Timeout);
       AAL::btBool PollForAllWorkersToJoin(AAL::btTime Timeout);
-      AAL::btBool PollForAllWorkersToExit(AAL::btTime Timeout);
       AAL::btBool  PollForDrainCompletion(AAL::btTime Timeout);
 
-      void WorkerHasStarted(OSLThread * );
-      void  WorkerHasExited(OSLThread * );
-      void  RunningToExited(OSLThread * );
-      OSLThread * RunningToExited(AAL::btTID );
+      void  WorkerHasStarted(OSLThread * );
+      void   WorkerHasExited(OSLThread * );
+      void   RunningToExited(OSLThread * );
+      void RemoveFromRunning(OSLThread * );
 
-      // Not protected by lock - be sure to elsewhere.
       // returns NULL if tid not in group.
-      OSLThread * ThreadInThisGroup(AAL::btTID tid) const;
+      OSLThread * ThreadRunningInThisGroup(AAL::btTID tid) const;
 
       IThreadGroup::eState GetWorkItem(IDispatchable * &pWork);
 
@@ -248,7 +243,6 @@ private:
    // lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
-   AAL::btBool  m_bAutoJoin;
    AAL::btTime  m_JoinTimeout;
    ThrGrpState *m_pState;
 };

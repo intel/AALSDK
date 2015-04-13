@@ -82,7 +82,8 @@ OSLThreadGroup::ThrGrpState::ThrGrpState(AAL::btUnsignedInt NumThreads) :
    m_eState(IThreadGroup::Running),
    m_Flags(THRGRPSTATE_FLAG_OK),
    m_DrainNestLevel(0),
-   m_WorkSemTimeout(AAL_INFINITE_WAIT)
+   m_WorkSemTimeout(AAL_INFINITE_WAIT),
+   m_SelfJoiner(0)
 {
    AAL::btInt SemInitCount = (AAL::btInt)NumThreads;
    SemInitCount = -SemInitCount;
@@ -162,7 +163,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Add(IDispatchable *pDisp)
    return true;
 }
 
-OSLThread * OSLThreadGroup::ThrGrpState::ThreadInThisGroup(AAL::btTID tid) const
+OSLThread * OSLThreadGroup::ThrGrpState::ThreadRunningInThisGroup(AAL::btTID tid) const
 {
    AutoLock(this);
 
@@ -191,32 +192,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToStart(AAL::btTime Ti
 
 void OSLThreadGroup::ThrGrpState::WorkerHasExited(OSLThread *pThread)
 {
-   Lock();
-
    RunningToExited(pThread);
-
-   AAL::btUnsignedInt Running    = m_RunningThreads.size();
-   const AAL::btBool  SignalJoin = ( 0 == Running ) && flag_is_set(m_Flags, THRGRPSTATE_LAST_WORKER_SIGNALS);
-   const AAL::btBool  Delete     = ( 0 == Running ) && flag_is_set(m_Flags, THRGRPSTATE_LAST_WORKER_DELETES);
-
-   thr_list_iter iter;
-
-   if ( SignalJoin ) {
-      Unlock();
-      m_ThrExitSem.Post(1);
-      flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
-      return;
-   }
-
-   if ( Delete ) {
-      Unlock();
-      m_ThrExitSem.Post(1);
-      delete this;
-      return;
-   }
-
-   Unlock();
-
    m_ThrExitSem.Post(1);
 }
 
@@ -236,22 +212,20 @@ void OSLThreadGroup::ThrGrpState::RunningToExited(OSLThread *pThread)
    }
 }
 
-OSLThread * OSLThreadGroup::ThrGrpState::RunningToExited(AAL::btTID tid)
+void OSLThreadGroup::ThrGrpState::RemoveFromRunning(OSLThread *pThread)
 {
    AutoLock(this);
 
    thr_list_iter iter;
 
-   // Move the worker from Running to Exited.
+   // Remove the worker from Running.
    for ( iter = m_RunningThreads.begin() ; m_RunningThreads.end() != iter ; ++iter ) {
-      if ( (*iter)->IsThisThread(tid) ) {
-         OSLThread *pThread = *iter;
+      if ( (*iter) == pThread ) {
          m_RunningThreads.erase(iter);
-         m_ExitedThreads.push_back(pThread);
-         return pThread;
+         break;
       }
    }
-   return NULL;
+
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToExit(AAL::btTime Timeout)
@@ -259,48 +233,9 @@ AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToExit(AAL::btTime Tim
    return m_ThrExitSem.Wait(Timeout);
 }
 
-AAL::btBool OSLThreadGroup::ThrGrpState::PollForAllWorkersToExit(AAL::btTime Timeout)
-{
-   const AAL::btTime Interval = OSLThreadGroup::ThrGrpState::sm_PollInterval;
-
-   Lock();
-
-   const AAL::btUnsignedInt Workers = (AAL::btUnsignedInt) (m_RunningThreads.size() + m_ExitedThreads.size() );
-   AAL::btUnsignedInt        Exited = (AAL::btUnsignedInt) m_ExitedThreads.size();
-
-   if ( AAL_INFINITE_WAIT == Timeout ) {
-
-      while ( Exited < Workers ) {
-         Unlock();
-         AAL::SleepMilli(Interval);
-         Lock();
-         Exited = (AAL::btUnsignedInt) m_ExitedThreads.size();
-      }
-
-   } else {
-      AAL::btTime Subtract;
-
-      while ( Exited < Workers ) {
-         Unlock();
-         Subtract = std::min(Timeout, Interval);
-         AAL::SleepMilli(Subtract);
-         Timeout -= Subtract;
-         if ( 0 == Timeout ) {
-            return false;
-         }
-         Lock();
-         Exited = (AAL::btUnsignedInt) m_ExitedThreads.size();
-      }
-   }
-
-   Unlock();
-
-   return true;
-}
-
 AAL::btBool OSLThreadGroup::ThrGrpState::PollForAllWorkersToJoin(AAL::btTime Timeout)
 {
-   const AAL::btTime Interval = OSLThreadGroup::ThrGrpState::sm_PollInterval;
+   const AAL::btTime Interval = PollingInterval();
 
    Lock();
 
@@ -334,14 +269,13 @@ AAL::btBool OSLThreadGroup::ThrGrpState::PollForAllWorkersToJoin(AAL::btTime Tim
 
 AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Timeout)
 {
-   const AAL::btTime Interval = OSLThreadGroup::ThrGrpState::sm_PollInterval;
+   const AAL::btTime Interval = PollingInterval();
 
    Lock();
 
    if ( AAL_INFINITE_WAIT == Timeout ) {
 
-      while ( ( IThreadGroup::Draining == State() ) ||
-              ( m_DrainNestLevel > 0 ) ) {
+      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_DRAINED) ) {
          Unlock();
          AAL::SleepMilli(Interval);
          Lock();
@@ -350,8 +284,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Time
    } else {
       AAL::btTime Subtract;
 
-      while ( ( IThreadGroup::Draining == State() ) ||
-              ( m_DrainNestLevel > 0 ) ) {
+      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_DRAINED) ) {
          Unlock();
          Subtract = std::min(Timeout, Interval);
          AAL::SleepMilli(Subtract);
@@ -371,6 +304,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Time
 AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
 {
    thr_list_iter iter;
+   AAL::btBool   res;
 
    Lock();
 
@@ -382,94 +316,91 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
       return false;
    }
 
-   const AAL::btInt Running = (AAL::btInt) m_RunningThreads.size();
-
-   if ( 0 == Running ) {
-      // All workers have already exited.
-
-      State(IThreadGroup::Joining);
-
-      for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
-         (*iter)->Join();
-         delete *iter;
-      }
-
-      Unlock();
-      flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
-
-      return true;
-   }
-
    const AAL::btTID MyThrID = GetThreadID();
-   AAL::btBool  SelfRefJoin = false;
+   OSLThread       *pThread = ThreadRunningInThisGroup(MyThrID);
+   IDispatchable   *pWork;
 
-   OSLThread *pThread = ThreadInThisGroup(MyThrID);
-
-   if ( NULL != pThread ) {
-      SelfRefJoin = true;
-      RunningToExited(pThread);
-      pThread->Detach(); // This thread will not be Join()'ed.
-      // This worker thread has now "exited."
-      // So that we don't wait for ourself below.
-      m_ThrExitSem.Post(1);
-      flag_setf(m_Flags, THRGRPSTATE_LAST_WORKER_SIGNALS);
-   }
+   // We are now Joining.
+   State(IThreadGroup::Joining);
 
    // Workers are no longer required to block infinitely on work items. Give them a
    // chance to wake periodically and see that the thread group is being joined.
-   m_WorkSemTimeout = 100;
-
-   State(IThreadGroup::Joining);
-
-   Unlock();
+   m_WorkSemTimeout = PollingInterval();
 
    // Wake any threads that happen to be blocked infinitely.
-   m_WorkSem.Post(Running);
+   m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
 
-   if ( SelfRefJoin ) {
-      // When doing a self-referential Join(), we cannot set THRGRPSTATE_FLAG_JOINED here,
-      // because another thread may be polling for that flag in ~OSLThreadGroup. In this case,
-      // we need the last worker thread to set the flag when it exits.
+   if ( NULL != pThread ) {
+      // self-referential Join()
+      m_SelfJoiner = MyThrID;
+      flag_setf(m_Flags, THRGRPSTATE_FLAG_SELF_JOIN);
 
-      if ( 1 == Running ) {
-         // This thread is the last Running worker - we have to Dispatch any remaining work here.
-         IDispatchable *pWork;
-         while ( m_workqueue.size() > 0 ) {
-            pWork = m_workqueue.front();
-            m_workqueue.pop();
-            pWork->operator() ();
-         }
+      // We need to continue to execute work.
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
+         Unlock();
+
+         pWork->operator() ();
+
+         Lock();
       }
 
-      if ( !m_ThrExitSem.Wait(Timeout) ) {
+      // Remove this thread from the Running list of workers. This is to make sure that we're
+      //  not moved into the Exited list, so that we don't attempt to Join() ourself below.
+      RemoveFromRunning(pThread);
+
+      // Post()'s m_ThrExitSem so that we don't block on ourself below.
+      WorkerHasExited(pThread);
+
+      Unlock();
+
+      res = WaitForAllWorkersToExit(Timeout);
+      if ( !res ) {
          return false;
       }
 
+      // Join() all workers other than this thread.
       for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
-         if ( (*iter)->IsThisThread(MyThrID) ) {
-            continue; // Don't Join() self. We are detached.
+         if ( NULL == *iter ) {
+            continue;
          }
          (*iter)->Join();
          delete *iter;
          *iter = NULL;
       }
 
-   } else {
-      // Not a self-referential Join().
-
-      // Wait for all workers to exit.
-      if ( !m_ThrExitSem.Wait(Timeout) ) {
-         return false;
-      }
-
-      for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
-         (*iter)->Join();
-         delete *iter;
-      }
-
       flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
+
+      // self-destruct. This thread terminates.
+      delete pThread;
+
+      // We must not return from this call.
+
+      ASSERT(false);
+      return false;
    }
 
+   // Not a self-referential Join().
+
+   Unlock();
+
+   // Wait for all workers to exit.
+   res = WaitForAllWorkersToExit(Timeout);
+   if ( !res ) {
+      return false;
+   }
+
+   for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+      if ( NULL == *iter ) {
+         continue;
+      }
+      (*iter)->Join();
+      delete *iter;
+      *iter = NULL;
+   }
+
+   flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
    return true;
 }
 
@@ -516,9 +447,35 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       return false;
    }
 
-   DrainNestingUp();
+   nesting = DrainNestingUp();
 
-   CSemaphore DrainSem;
+   if ( 1 == nesting ) {
+      // New Drain() call.
+      flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
+   }
+
+   const AAL::btTID MyThrID = GetThreadID();
+   const OSLThread *pThread = ThreadRunningInThisGroup(MyThrID);
+
+   IDispatchable *pWork;
+   CSemaphore     DrainSem;
+   work_queue_t   tmpq;
+
+   if ( NULL != pThread ) {
+      // Self-referential Drain() - we need to continue to execute work.
+
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
+         Unlock();
+
+         pWork->operator() ();
+
+         Lock();
+      }
+
+      goto DONE;
+   }
 
    if ( !DrainSem.Create(-items, 1) ) {
       nesting = DrainNestingDown();
@@ -527,8 +484,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       Unlock();
       return false;
    }
-
-   work_queue_t tmpq;
 
    // Pull each item from the work queue, and wrap it in a OSLThreadGroupNestedSemPostD() object.
    while ( m_workqueue.size() > 0 ) {
@@ -551,6 +506,8 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
    Lock();
    // Protect Drain() nesting level.
 
+DONE:
+
    nesting = DrainNestingDown();
 
    IThreadGroup::eState st = State();
@@ -560,6 +517,12 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       // state to Running or Draining below would be denied. We want the success indicator here,
       // however, to reflect that the thread group was drained of items, hence this check.
       Unlock();
+
+      if ( 0 == nesting ) {
+         // Drain() is complete.
+         flag_setf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
+      }
+
       return true;
    }
 
@@ -568,6 +531,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
    AAL::btBool res = (State(st) == st);
 
    Unlock();
+
+   if ( 0 == nesting ) {
+      // Drain() is complete.
+      flag_setf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
+   }
 
    return res;
 }
@@ -691,159 +659,64 @@ AAL::btBool OSLThreadGroup::ThrGrpState::CreateWorkerThread(ThreadProc          
 
 AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
 {
-   AAL::btBool    res = false;
-   thr_list_iter  iter;
-   IDispatchable *pWork;
-
    Lock();
 
    const IThreadGroup::eState st = State();
-   const AAL::btTID      MyThrID = GetThreadID();
-   const AAL::btInt      Running = (AAL::btInt) m_RunningThreads.size();
-   AAL::btBool    SelfRefDestroy = false;
 
-   if ( ( IThreadGroup::Joining == st ) || ( IThreadGroup::Draining == st ) ) {
-      // Destroy while another thread may be Drain()'ing / Join()'ing.
-      // We must wait for the Drain() / Join() to complete.
+   if ( IThreadGroup::Draining == st ) {
+      return DestroyWhileDraining(Timeout);
+   }
 
-      OSLThread *pThread = ThreadInThisGroup(MyThrID);
+   if ( IThreadGroup::Joining == st ) {
+      return DestroyWhileJoining(Timeout);
+   }
 
-      if ( NULL != pThread ) {
-         // self-referential Destroy() during Drain() / Join().
+   // We're not Drain()'ing and we haven't Join()'ed workers, yet.
 
-         // We need to leave this thread in m_RunningThreads, because we don't want the
-         // OSLThreadGroup::Join() call to attempt to OSLThread::Join() us.
+   AAL::btBool    res;
+   thr_list_iter  iter;
+   IDispatchable *pWork;
+   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
 
-         // Workers are no longer required to block infinitely on work items. Give them a chance
-         // to wake periodically and see that the thread group is being joined.
-         m_WorkSemTimeout = 100;
+   // Workers are no longer required to block infinitely on work items. Give them a chance
+   // to wake periodically and see that the thread group is being joined.
+   m_WorkSemTimeout = PollingInterval();
 
-         State(IThreadGroup::Joining);
+   State(IThreadGroup::Joining);
+
+   // Wake any threads that happen to be blocked infinitely.
+   m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
+
+   if ( NULL != pThread ) {
+      // Self-referential Destroy().
+
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
          Unlock();
 
-         // Wake any threads that happen to be blocked infinitely.
-         m_WorkSem.Post(Running);
+         pWork->operator() ();
 
-         if ( 1 == Running ) {
-            // This thread is the last Running worker - we have to Dispatch any remaining work here.
-            while ( m_workqueue.size() > 0 ) {
-               pWork = m_workqueue.front();
-               m_workqueue.pop();
-               pWork->operator() ();
-            }
-
-            flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
-         }
-
-         // This thread has now "Exited".
-         m_ThrExitSem.Post(1);
-
-         if ( IThreadGroup::Draining == st ) {
-            res = PollForDrainCompletion(Timeout);
-         } else {
-            res = PollForAllWorkersToJoin(Timeout);
-         }
-
-         if ( !res ) {
-            return false;
-         }
-
-         // We are now the last worker.
-
-         delete this;
-
-         // Self-destruct
-         delete pThread;
-
-         // We must not return from this call.
-         ASSERT(false);
-         return true;
+         Lock();
       }
 
-      // Non-self-referential Destroy() during Drain() / Join().
+      // Remove this thread from the Running list of workers. This is to make sure that we're
+      //  not moved into the Exited list, so that we don't attempt to Join() ourself below.
+      RemoveFromRunning(pThread);
 
-      // Workers are no longer required to block infinitely on work items. Give them a chance
-      // to wake periodically and see that the thread group is being joined.
-      m_WorkSemTimeout = 100;
+      // Post()'s m_ThrExitSem so that we don't block ourself below.
+      WorkerHasExited(pThread);
 
-      State(IThreadGroup::Joining);
       Unlock();
 
-      // Wake any threads that happen to be blocked infinitely.
-      m_WorkSem.Post(Running);
-
-      if ( IThreadGroup::Draining == st ) {
-         res = PollForDrainCompletion(Timeout);
-      } else {
-         res = PollForAllWorkersToJoin(Timeout);
-      }
-
+      // Wait for all workers to Exit.
+      res = WaitForAllWorkersToExit(Timeout);
       if ( !res ) {
          return false;
       }
 
-      delete this;
-      return true;
-   }
-
-   // We haven't Join()'ed workers, yet.
-
-   if ( 0 == Running ) {
-      // All the workers have already exited.
-
-      State(IThreadGroup::Joining);
-
-      Unlock();
-
       for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
-         (*iter)->Join();
-         delete *iter;
-      }
-
-      delete this;
-      return true;
-   }
-
-   // Some thread(s) are still running.
-
-   OSLThread *pThread = ThreadInThisGroup(MyThrID);
-
-   if ( NULL != pThread ) {
-      // Is this a self-referential destroy?
-      SelfRefDestroy = true;
-      RunningToExited(pThread);
-   }
-
-   // Workers are no longer required to block infinitely on work items. Give them a chance
-   // to wake periodically and see that the thread group is being joined.
-   m_WorkSemTimeout = 100;
-
-   State(IThreadGroup::Joining);
-
-   Unlock();
-
-   // Wake any threads that happen to be blocked infinitely.
-   m_WorkSem.Post(Running);
-
-   if ( SelfRefDestroy ) {
-      // This is a self-referential Destroy().
-
-      if ( 1 == Running ) {
-         // This thread is the last Running worker - we have to Dispatch any remaining work here.
-         while ( m_workqueue.size() > 0 ) {
-            pWork = m_workqueue.front();
-            m_workqueue.pop();
-            pWork->operator() ();
-         }
-      }
-
-      // Wait for all workers to Exit.
-      if ( !PollForAllWorkersToExit(Timeout) ) {
-         return false;
-      }
-
-      for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
-         if ( (*iter)->IsThisThread(MyThrID) ) { // Don't Join() ourself.
+         if ( NULL == *iter ) {
             continue;
          }
          (*iter)->Join();
@@ -851,28 +724,237 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
          (*iter) = NULL;
       }
 
-      // Last thread - we're done.
       delete this;
-      // self-destruct
+
+      // self-destruct - this thread will terminate.
       delete pThread;
 
+      // We must not return from this fn.
       ASSERT(false);
+      return true;
+   }
 
-   } else {
-      // Not a self-referential Destroy(). First time Join()'ing.
+   // Not a self-referential Destroy(). First time Join()'ing.
 
-      if ( !m_ThrExitSem.Wait(Timeout) ) {
+   Unlock();
+
+   res = WaitForAllWorkersToExit(Timeout);
+   if ( !res ) {
+      return false;
+   }
+
+   for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+      if ( NULL == *iter ) {
+         continue;
+      }
+      (*iter)->Join();
+      delete *iter;
+      *iter = NULL;
+   }
+
+   delete this;
+   return true;
+}
+
+AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeout)
+{
+   // ** We are still Lock()'ed from the initial call to Destroy().
+
+   // Destroy while another thread is actively Drain()'ing.
+   // We must wait for the Drain() to complete.
+
+   // We know that a Drain() is actively in progress, because Drain() will transition the
+   //  state back to Running or Joining when all Drain()'ers are finished.
+
+   thr_list_iter  iter;
+   IDispatchable *pWork;
+   AAL::btBool    res;
+   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
+
+   // Workers are no longer required to block infinitely on work items. Give them a chance
+   // to wake periodically and see that the thread group is being joined.
+   m_WorkSemTimeout = PollingInterval();
+
+   // Transition the state to Joining here. This is to prevent another thread from beginning
+   //  a Join() once we unlock the critical section. Destroy() is essentially a Join(),
+   //  and we don't allow Join()'s to nest.
+   State(IThreadGroup::Joining);
+
+   // Wake any threads that happen to be blocked infinitely.
+   m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
+
+   if ( NULL != pThread ) {
+      // self-referential Destroy() during Drain().
+
+      // continue to execute work on behalf of the Drain().
+
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
+         Unlock();
+
+         pWork->operator() ();
+
+         Lock();
+      }
+
+      // Remove this thread from the Running list of workers. This is to make sure that we're
+      //  not moved into the Exited list, so that we don't attempt to Join() ourself below.
+      RemoveFromRunning(pThread);
+
+      // Post()'s m_ThrExitSem so that we don't block on ourself below.
+      WorkerHasExited(pThread);
+
+      Unlock();
+
+      res = PollForDrainCompletion(Timeout);
+      if ( !res ) {
          return false;
       }
 
+      res = WaitForAllWorkersToExit(Timeout);
+      if ( !res ) {
+         return false;
+      }
+
+      // Join() all workers other than this thread.
       for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+         if ( NULL == *iter ) {
+            continue;
+         }
          (*iter)->Join();
          delete *iter;
+         *iter = NULL;
       }
 
       delete this;
+
+      // Self-destruct - this thread will terminate.
+      delete pThread;
+
+      // We must not return from this call.
+      ASSERT(false);
+      return true;
    }
 
+   Unlock();
+
+   // non-self-referential Destroy() during Drain().
+
+   res = PollForDrainCompletion(Timeout);
+   if ( !res ) {
+      return false;
+   }
+
+   res = WaitForAllWorkersToExit(Timeout);
+   if ( !res ) {
+      return false;
+   }
+
+   // Join all workers.
+   for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+      if ( NULL == *iter ) {
+         continue;
+      }
+      (*iter)->Join();
+      delete *iter;
+      *iter = NULL;
+   }
+
+   delete this;
+   return true;
+}
+
+AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout)
+{
+   // ** We are still Lock()'ed from the initial call to Destroy().
+
+   // Destroy while another thread may be actively Join()'ing.
+   // We must wait for the Join() to complete.
+
+   thr_list_iter  iter;
+   IDispatchable *pWork;
+   AAL::btBool    res;
+   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
+
+   // Workers are no longer required to block infinitely on work items. Give them a chance
+   // to wake periodically and see that the thread group is being joined.
+   m_WorkSemTimeout = PollingInterval();
+
+   // Wake any threads that happen to be blocked infinitely.
+   m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
+
+   if ( NULL != pThread ) {
+
+      // Continue to dispatch work on behalf of the Join().
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
+         Unlock();
+
+         pWork->operator() ();
+
+         Lock();
+      }
+
+      // Remove this thread from the Running list of workers. This is to make sure that we're
+      //  not moved into the Exited list, so that the Join()'er doesn't attempt to Join() us.
+      RemoveFromRunning(pThread);
+
+      // Post()'s m_ThrExitSem so that the Join()'er doesn't attempt to Join() us.
+      WorkerHasExited(pThread);
+
+      Unlock();
+
+      if ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_SELF_JOIN) &&
+           pThread->IsThisThread(m_SelfJoiner) ) {
+         // We executed an OSLThreadGroup::Join() call for this thread group earlier.
+         // Now, we just do the Join() here, before we self-destruct below.
+
+         res = WaitForAllWorkersToExit(Timeout);
+         if ( !res ) {
+            return false;
+         }
+
+         for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+            if ( NULL == *iter ) {
+               continue;
+            }
+            (*iter)->Join();
+            delete *iter;
+            *iter = NULL;
+         }
+
+      } else {
+
+         // Wait for the Join() to complete.
+         res = PollForAllWorkersToJoin(Timeout);
+         if ( !res ) {
+            return false;
+         }
+
+      }
+
+      delete this;
+
+      // Self-destruct - this thread will terminate.
+      delete pThread;
+
+      // We must not return from this call.
+      ASSERT(false);
+      return true;
+   }
+
+   // non-self-referential Destroy() during Join().
+
+   Unlock();
+
+   res = PollForAllWorkersToJoin(Timeout);
+   if ( !res ) {
+      return false;
+   }
+
+   delete this;
    return true;
 }
 
