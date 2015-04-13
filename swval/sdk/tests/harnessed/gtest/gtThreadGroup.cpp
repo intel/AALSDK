@@ -534,20 +534,21 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0086)
    // All workers are dispatching and are currently blocked or will block on m_Sems[1].
 
    // Add a few more work items. They will hang out in the queue.
-   AAL::btInt x[4] = { 0, 0, 0, 0 };
+   AAL::btInt x = 0;
 
    EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-   EXPECT_TRUE(g->Add( new   UnsafeCountUpD(x[0]) ));
-   EXPECT_TRUE(g->Add( new AddNopToThreadGroupD(g, 1, false) ));
-   EXPECT_TRUE(g->Add( new UnsafeCountDownD(x[1]) ));
-   EXPECT_TRUE(g->Add( new AddNopToThreadGroupD(g, 1, false) ));
-   EXPECT_TRUE(g->Add( new   UnsafeCountUpD(x[2]) ));
-   EXPECT_TRUE(g->Add( new AddNopToThreadGroupD(g, 1, false) ));
-   EXPECT_TRUE(g->Add( new UnsafeCountDownD(x[3]) ));
-   EXPECT_TRUE(g->Add( new AddNopToThreadGroupD(g, 1, false) ));
-   EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
 
-   EXPECT_EQ(10, g->GetNumWorkItems());
+   for ( i = 0 ; i < 249 ; ++i ) {
+      if ( 0 == i % 25 ) {
+         EXPECT_TRUE(g->Add( new AddNopToThreadGroupD(g, 1, false) ));
+      } else if ( 248 == i ) {
+         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+      } else {
+         EXPECT_TRUE(g->Add( new YieldD() ));
+      }
+   }
+
+   EXPECT_EQ(250, g->GetNumWorkItems());
 
    // Unblock one worker. That worker will sleep briefly, giving us a chance to call Drain.
    // We will go to sleep on Drain() below. When the first worker wakes, he will wake the rest of
@@ -556,10 +557,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0086)
 
    // Wait for the Drain to complete.
    EXPECT_TRUE(g->Drain());
-   EXPECT_EQ(1,  x[0]);
-   EXPECT_EQ(-1, x[1]);
-   EXPECT_EQ(1,  x[2]);
-   EXPECT_EQ(-1, x[3]);
+
+   EXPECT_EQ(1, x);
    EXPECT_EQ(0, g->GetNumWorkItems());
 
    // The thread group should remain in the Running state, able to accept work.
@@ -1643,7 +1642,6 @@ void OSAL_ThreadGroup_vp_uint_0::Thr8(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
-
    EXPECT_FALSE(pTC->m_pGroup->Drain());
 
    // signal that we're done.
@@ -1701,17 +1699,29 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
 
    // All workers will be blocking on m_Sems[1]. Any new work items will queue up.
 
-   EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[3]) )); // Single worker wakes Thr8 to attempt the Drain().
-   EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w - 1)) );        // Single worker wakes the remaining workers.
-   EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) ));               // Some worker waits for Thr8 to exit.
-
    AAL::btInt x = 0;
-   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
 
-   EXPECT_EQ(4, g->GetNumWorkItems());
+   for ( i = 0 ; i < 500 ; ++i ) {
+      if ( 0 == i ) {
+         EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
+      } else if ( 100 == i ) {
+         EXPECT_TRUE(g->Add( new PostD(m_Sems[3]) )); // Some worker wakes Thr8.
+      } else if ( 498 == i ) {
+         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+      } else if ( 499 == i ) {
+         EXPECT_TRUE(g->Add( new WaitD(m_Sems[2]) )); // Some worker waits for Thr8 to exit.
+      } else {
+         EXPECT_TRUE(g->Add( new YieldD() ));
+      }
+   }
 
-   // Wake the first worker, which will wake Thr8 to sleep then attempt the Drain().
+   EXPECT_EQ(500, g->GetNumWorkItems());
+
+   // Wake the first worker, which will sleep then wake the remaining workers.
    // Meanwhile, this thread will be in the destructor, doing the Join().
+   // Some worker will wake Thr8 to attempt a Drain(), which should fail.
+   // Some worker waits for Thr8 to complete, so that Thr8 doesn't de-reference the
+   //  thread group pointer after it has been deleted.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    // Delete the thread group, invoking Join().
