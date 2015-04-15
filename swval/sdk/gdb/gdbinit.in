@@ -113,6 +113,10 @@ define gdb_setup
    set stop-on-solib-events 0
    set breakpoint pending on
 
+   # Signals
+   handle SIGUSR1 nostop
+   handle SIGUSR2 nostop
+
    # Threading
    if $print_thread_events != 0
       set print thread-events on
@@ -128,17 +132,4 @@ gdb_setup
 ################################################################################
 # Breakpoints ##################################################################
 ################################################################################
-
-#break dlopen
-#break pthread_create
-#break __cxa_pure_virtual
-
-break main
-commands
-silent
-   breakpoint_mutex_lock
-      thread name main
-   breakpoint_mutex_unlock
-#continue
-end
-
+source -v @abs_top_srcdir@/gdb/breakpoints

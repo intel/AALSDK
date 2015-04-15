@@ -1,21 +1,5 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-SUBDIRS=\
-pthreads_hooks
-
-gtest_cases=\
-cases/gtCommon.cpp \
-cases/gtCritSect.cpp \
-cases/gtSem.cpp \
-cases/gtNVS.cpp \
-cases/gtThread.cpp \
-cases/gtThreadGroup.cpp \
-cases/gtPaths.cpp \
-cases/gtStartupShutdown.cpp \
-cases/gtEnvVar.cpp
-
-EXTRA_DIST=$(gtest_cases)
-
 if AAL_COND_GTEST
 
 check_LTLIBRARIES=libgtest.la
@@ -31,16 +15,13 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
--I$(srcdir)/pthreads_hooks/bridge \
--I$(srcdir)/pthreads_hooks/hooks \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
 COMMON_LDADD=\
 $(check_LTLIBRARIES) \
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la \
-$(builddir)/pthreads_hooks/bridge/libapphooksbridge.la
+$(top_builddir)/aas/XLRTLib/libxlrt.la
 
 check_PROGRAMS=\
 bat \
@@ -49,48 +30,70 @@ weekly
 
 bat_SOURCES=\
 main.cpp \
-BAT-TEST-LIST.h
+gtCommon.h \
+gtCommon.cpp \
+gtCritSect.cpp \
+gtSem.cpp \
+gtThread.cpp \
+gtThreadGroup.h \
+gtThreadGroup.cpp \
+gtThreadGroupSR.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
 
 bat_LDADD=$(COMMON_LDADD)
 
-$(bat_SOURCES): $(gtest_cases)
-
 
 nightly_SOURCES=\
 main.cpp \
-NIGHTLY-TEST-LIST.h
+gtCommon.h \
+gtCommon.cpp \
+gtCritSect.cpp \
+gtSem.cpp \
+gtNVS.cpp \
+gtThread.cpp \
+gtThreadGroup.h \
+gtThreadGroup.cpp \
+gtThreadGroupSR.cpp
+
+
 
 nightly_CPPFLAGS=\
 -DTEST_SUITE_NIGHTLY=1 $(COMMON_CPPFLAGS)
 
 nightly_LDADD=$(COMMON_LDADD)
 
-$(nightly_SOURCES): $(gtest_cases)
-
 
 weekly_SOURCES=\
 main.cpp \
-WEEKLY-TEST-LIST.h
+gtCommon.h \
+gtCommon.cpp \
+gtNVS.cpp
 
 weekly_CPPFLAGS=\
 -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
 
 weekly_LDADD=$(COMMON_LDADD)
 
-$(weekly_SOURCES): $(gtest_cases)
-
 CLEANFILES=gtest-all.cc
 
 else
 
-EXTRA_DIST+=\
+EXTRA_DIST=\
 main.cpp \
-BAT-TEST-LIST.h \
-NIGHTLY-TEST-LIST.h \
-WEEKLY-TEST-LIST.h
+gtCommon.h \
+gtCommon.cpp \
+gtCritSect.cpp \
+gtSem.cpp \
+gtNVS.cpp \
+gtThread.cpp \
+gtThreadGroup.h \
+gtThreadGroup.cpp \
+gtThreadGroupSR.cpp \
+gtPaths.cpp \
+gtStartupShutdown.cpp \
+gtEnvVar.cpp
 
 endif
 

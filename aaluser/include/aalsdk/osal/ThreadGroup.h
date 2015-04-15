@@ -50,6 +50,7 @@ class IThreadGroup
 public:
    virtual ~IThreadGroup() {}
 
+   // Basic status check.
    virtual AAL::btBool IsOK() const = 0;
 
    // Retrieve a snapshot of the current number of threads, which may be less than that originally
@@ -67,8 +68,19 @@ public:
    // Wait for all worker threads to exit.
    virtual AAL::btBool Join(AAL::btTime ) = 0;
 
+   // Halt the dispatching of all queued work items and prevent new work items from being added.
+   // Any work items residing in the queue at the time of the call are removed and deleted, without
+   // being executed.
    virtual void         Stop() = 0;
+
+   // Resume a Stopped thread group.
+   // returns false if the thread group could not be resumed; otherwise true.
    virtual AAL::btBool Start() = 0;
+
+   // Execute all of the work items currently in the work queue, waiting until they are all
+   // complete before returning. Prevent new work items from being added to the thread group
+   // while draining.
+   // return false if the queue could not be drained; otherwise true.
    virtual AAL::btBool Drain() = 0;
 
 protected:
@@ -76,19 +88,16 @@ protected:
       Running = 0,
       Stopped,
       Draining,
-      Joining,
-      Destruct
+      Joining
    };
    // Accessor/Mutator for the thread group state.
    virtual eState State() const  = 0;
    virtual eState State(eState ) = 0;
 
-   virtual AAL::btBool AddWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * ) = 0;
-   // returns the number of threads remaining.
-   virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread * ) = 0;
+   virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * ) = 0;
+   virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime ) = 0;
 
-   virtual CSemaphore & ThrStartSem() = 0;
-   virtual CSemaphore & ThrExitSem()  = 0;
+   virtual AAL::btBool Destroy(AAL::btTime ) = 0;
 };
 
 
@@ -105,7 +114,6 @@ public:
    OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads=0,
                   AAL::btUnsignedInt        uiMaxThreads=0,
                   OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
-                  AAL::btBool               bAutoJoin=true,
                   AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
 
    virtual ~OSLThreadGroup();
@@ -115,7 +123,7 @@ public:
    virtual AAL::btUnsignedInt GetNumThreads()   const { return m_pState->GetNumThreads();   }
    virtual AAL::btUnsignedInt GetNumWorkItems() const { return m_pState->GetNumWorkItems(); }
    virtual AAL::btBool Add(IDispatchable *pDisp)      { return m_pState->Add(pDisp);        }
-   virtual AAL::btBool Join(AAL::btTime timeout);
+   virtual AAL::btBool Join(AAL::btTime timeout)      { return m_pState->Join(timeout);     }
    virtual AAL::btBool Drain()                        { return m_pState->Drain();           }
    virtual void Stop()                                { m_pState->Stop();                   }
    virtual AAL::btBool Start()                        { return m_pState->Start();           }
@@ -125,14 +133,14 @@ protected:
    virtual IThreadGroup::eState State() const                  { return m_pState->State();   }
    virtual IThreadGroup::eState State(IThreadGroup::eState st) { return m_pState->State(st); }
 
-   virtual AAL::btBool AddWorkerThread(ThreadProc fn, OSLThread::ThreadPriority pri, void *context)
-   { return m_pState->AddWorkerThread(fn, pri, context); }
+   virtual AAL::btBool CreateWorkerThread(ThreadProc fn, OSLThread::ThreadPriority pri, void *context)
+   { return m_pState->CreateWorkerThread(fn, pri, context); }
 
-   virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread *pThread)
-   { return m_pState->RemoveWorkerThread(pThread); }
+   virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout)
+   { return m_pState->WaitForAllWorkersToStart(Timeout); }
 
-   virtual CSemaphore & ThrStartSem() { return m_pState->ThrStartSem(); }
-   virtual CSemaphore & ThrExitSem()  { return m_pState->ThrExitSem();  }
+   virtual AAL::btBool Destroy(AAL::btTime Timeout)
+   { return m_pState->Destroy(Timeout); }
 
 private:
    //
@@ -143,11 +151,15 @@ private:
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
+#define THRGRPSTATE_FLAG_OK        0x00000001
+#define THRGRPSTATE_FLAG_DRAINED   0x00000002
+#define THRGRPSTATE_FLAG_SELF_JOIN 0x00000004
+#define THRGRPSTATE_FLAG_JOINED    0x00000008
    public:
       ThrGrpState(AAL::btUnsignedInt NumThreads);
 
       // <IThreadGroup>
-      virtual AAL::btBool IsOK() const { return m_IsOK; }
+      virtual AAL::btBool IsOK() const { return flag_is_set(m_Flags, THRGRPSTATE_FLAG_OK); }
       virtual AAL::btUnsignedInt GetNumThreads()   const;
       virtual AAL::btUnsignedInt GetNumWorkItems() const;
       virtual AAL::btBool Add(IDispatchable * );
@@ -164,7 +176,10 @@ private:
       typedef thr_list_t::const_iterator  const_thr_list_iter;
 
       enum IThreadGroup::eState m_eState;
-      AAL::btBool               m_IsOK;
+      AAL::btUnsignedInt        m_Flags;
+      AAL::btUnsignedInt        m_DrainNestLevel;
+      AAL::btTime               m_WorkSemTimeout;
+      AAL::btTID                m_SelfJoiner;
       CSemaphore                m_ThrStartSem;
       CSemaphore                m_ThrExitSem;
       CSemaphore                m_WorkSem;
@@ -174,21 +189,51 @@ private:
 # pragma warning(disable:4251)
 #endif // _MSC_VER
       work_queue_t              m_workqueue;
-      thr_list_t                m_Threads;
+      thr_list_t                m_RunningThreads;
+      thr_list_t                m_ExitedThreads;
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
+
+      AAL::btTime PollingInterval() const { return 50; }
 
       // <IThreadGroup>
       virtual IThreadGroup::eState State() const { return m_eState; }
       virtual IThreadGroup::eState State(IThreadGroup::eState );
 
-      virtual AAL::btBool AddWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
-      virtual AAL::btUnsignedInt RemoveWorkerThread(OSLThread * );
+      virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
+      virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
 
-      virtual CSemaphore & ThrStartSem() { return m_ThrStartSem; }
-      virtual CSemaphore & ThrExitSem()  { return m_ThrExitSem;  }
+      virtual AAL::btBool Destroy(AAL::btTime );
+
       // </IThreadGroup>
+
+      AAL::btBool DestroyWhileDraining(AAL::btTime );
+      AAL::btBool  DestroyWhileJoining(AAL::btTime );
+
+      AAL::btUnsignedInt DrainNestingUp()
+      {  // Not protected by lock - be sure to elsewhere.
+         ++m_DrainNestLevel;
+         return m_DrainNestLevel;
+      }
+      AAL::btUnsignedInt DrainNestingDown()
+      {  // Not protected by lock - be sure to elsewhere.
+         ASSERT(m_DrainNestLevel > 0);
+         --m_DrainNestLevel;
+         return m_DrainNestLevel;
+      }
+
+      AAL::btBool WaitForAllWorkersToExit(AAL::btTime Timeout);
+      AAL::btBool PollForAllWorkersToJoin(AAL::btTime Timeout);
+      AAL::btBool  PollForDrainCompletion(AAL::btTime Timeout);
+
+      void  WorkerHasStarted(OSLThread * );
+      void   WorkerHasExited(OSLThread * );
+      void   RunningToExited(OSLThread * );
+      void RemoveFromRunning(OSLThread * );
+
+      // returns NULL if tid not in group.
+      OSLThread * ThreadRunningInThisGroup(AAL::btTID tid) const;
 
       IThreadGroup::eState GetWorkItem(IDispatchable * &pWork);
 
@@ -198,9 +243,7 @@ private:
    // lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
-   AAL::btBool  m_bAutoJoin;
    AAL::btTime  m_JoinTimeout;
-   AAL::btBool  m_bDeleteState;
    ThrGrpState *m_pState;
 };
 

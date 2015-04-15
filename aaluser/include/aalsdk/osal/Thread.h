@@ -66,6 +66,9 @@ OSAL_API AAL::btPID GetProcessID();
 /// Retrieve the OS thread id of the current thread.
 OSAL_API AAL::btTID GetThreadID();
 
+/// Cause the calling thread to exit immediately, passing ExitStatus back to the OS.
+OSAL_API void ExitCurrentThread(AAL::btUIntPtr ExitStatus);
+
 /*
 /// Retrieve the number of CPUs.
 ///
@@ -145,12 +148,16 @@ public:
    void Join();
    /// The underlying thread resource will never be join()'ed.
    void Detach();
+   AAL::btBool IsDetached() const { return flag_is_set(m_State, THR_ST_DETACHED); }
    /// The non-Windows implementation of this member function issues a pthread_cancel to the thread.
    ///
    /// @note There is currently no Windows implementation.
    void Cancel();
-   ///
+   /// Compare this thread's identifier with id.
+   AAL::btBool IsThisThread(AAL::btID id) const;
+   /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
    AAL::btTID tid();
+
 
    static const AAL::btInt sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORITY_COUNT];
    static const AAL::btInt sm_DefaultPriority;

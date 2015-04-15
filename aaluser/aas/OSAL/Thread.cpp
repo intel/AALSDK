@@ -185,6 +185,11 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 // Outputs: none.
 // Comments:
 //=============================================================================
+
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_0.cpp"
+#endif // DBG_OSLTHREAD
+
 #if   defined( __AAL_WINDOWS__ )
 void   OSLThread::StartThread(void *p)
 #elif defined( __AAL_LINUX__ )
@@ -225,14 +230,29 @@ void * OSLThread::StartThread(void *p)
    ThreadProc fn = pThread->m_pProc;
 
    if ( NULL != fn ) {
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_1.cpp"
+#endif // DBG_OSLTHREAD
+
       fn(pThread, pThread->m_pContext);
+
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_2.cpp"
+#endif // DBG_OSLTHREAD
    }
 
 #if   defined( __AAL_WINDOWS__ )
    SetEvent(pThread->m_hJoinEvent);
-#elif defined( __AAL_LINUX__ )
+#endif // __AAL_WINDOWS__
+
+   if ( flag_is_set(pThread->m_State, THR_ST_DETACHED) ) {
+      // Detached threads are responsible for cleaning up after themselves.
+      delete pThread;
+   }
+
+#if defined( __AAL_LINUX__ )
    return NULL;
-#endif // OS
+#endif // __AAL_LINUX__
 }
 
 //=============================================================================
@@ -264,15 +284,31 @@ OSLThread::~OSLThread()
 
    Lock();
 
-   if ( flag_is_set(m_State, THR_ST_OK) &&
-        flags_are_clr(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
-
-      Detach(); // Detach it to free resources - we won't be Join()'ed.
-      Cancel(); // Mark the thread for termination.
-
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+      // If we didn't construct successfully, or if we're a "local" thread, or if we've already
+      //  been Join()'ed, then there's nothing left to do.
+      Unlock();
+      return;
    }
 
+   Detach();  // Detach it to free resources - this thread won't be Join()'ed.
+
    Unlock();
+
+   if ( IsThisThread( GetThreadID() ) ) {
+      // self-destruct
+      ExitCurrentThread(0);
+   } else {
+
+      Cancel();  // Mark the thread for termination at the next cancellation point.
+                 // TODO: refer to man pthread_setcanceltype
+                 //       the default cancellation type for threads is PTHREAD_CANCEL_DEFERRED,
+                 //       which means that cancellation requests are deferred until the target
+                 //       thread next calls a cancellation point.
+                 //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
+                 //       a thread asap.
+   }
 }
 
 //=============================================================================
@@ -509,6 +545,15 @@ void OSLThread::Cancel()
 #endif // OS
 }
 
+AAL::btBool OSLThread::IsThisThread(AAL::btID id) const
+{
+#if   defined( __AAL_WINDOWS__ )
+   return id == m_tid;
+#elif defined( __AAL_LINUX__ )
+   return 0 != pthread_equal(id, m_tid);
+#endif // OS
+}
+
 //=============================================================================
 // Name: tid
 // Description: return the OS threadID
@@ -594,6 +639,19 @@ AAL::btTID GetThreadID()
 #elif defined( __AAL_LINUX__ )
 
    return (AAL::btTID) pthread_self();
+
+#endif // OS
+}
+
+void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   ExitThread((DWORD)ExitStatus);
+
+#elif defined( __AAL_LINUX__ )
+
+   pthread_exit((void *)ExitStatus);
 
 #endif // OS
 }
