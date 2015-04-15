@@ -369,7 +369,6 @@ BEGIN_NAMESPACE(AAL)
    const LogMask_t LM_ManagementAFU = (LogMask_t)1 << AAL_sysManagementAFU;
    const LogMask_t LM_UAIA          = (LogMask_t)1 << AAL_sysUAIA;
    const LogMask_t LM_Shutdown      = (LogMask_t)1 << AAL_sysShutdown;
-   const LogMask_t LM_ASM      		= (LogMask_t)1 << AAL_sysASM;
 
    //=============================================================================
    // Name: ILogger

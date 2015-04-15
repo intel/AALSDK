@@ -46,7 +46,10 @@ splapp \
 splapp2 \
 splapp3 \
 SyncApp1 \
-UMsgTest
+UMsgTest \
+Hello_AAL_Service \
+Hello_AAL
+
 
 MFLAGS  =
 ifneq (,$(ndebug))
