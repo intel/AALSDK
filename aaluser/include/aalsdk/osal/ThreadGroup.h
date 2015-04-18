@@ -151,10 +151,10 @@ private:
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
-#define THRGRPSTATE_FLAG_OK        0x00000001
-#define THRGRPSTATE_FLAG_DRAINED   0x00000002
-#define THRGRPSTATE_FLAG_SELF_JOIN 0x00000004
-#define THRGRPSTATE_FLAG_JOINED    0x00000008
+#define THRGRPSTATE_FLAG_OK         0x00000001
+#define THRGRPSTATE_FLAG_DRAINING   0x00000002
+#define THRGRPSTATE_FLAG_SELF_JOIN  0x00000004
+#define THRGRPSTATE_FLAG_JOINED     0x00000008
    public:
       ThrGrpState(AAL::btUnsignedInt NumThreads);
 
@@ -170,14 +170,13 @@ private:
       // </IThreadGroup>
 
    protected:
-      typedef std::queue<IDispatchable *> work_queue_t;
-      typedef std::list<OSLThread      *> thr_list_t;
-      typedef thr_list_t::iterator        thr_list_iter;
-      typedef thr_list_t::const_iterator  const_thr_list_iter;
+      typedef std::queue<IDispatchable *>  work_queue_t;
+      typedef std::list<OSLThread      *>  thr_list_t;
+      typedef thr_list_t::iterator         thr_list_iter;
+      typedef thr_list_t::const_iterator   const_thr_list_iter;
 
       enum IThreadGroup::eState m_eState;
       AAL::btUnsignedInt        m_Flags;
-      AAL::btUnsignedInt        m_DrainNestLevel;
       AAL::btTime               m_WorkSemTimeout;
       AAL::btTID                m_SelfJoiner;
       CSemaphore                m_ThrStartSem;
@@ -195,7 +194,180 @@ private:
 # pragma warning(pop)
 #endif // _MSC_VER
 
-      AAL::btTime PollingInterval() const { return 50; }
+      class DrainManager
+      {
+      protected:
+         typedef std::list<AAL::btTID>       self_drain_list_t;
+         typedef self_drain_list_t::iterator self_drain_list_iter;
+
+         class ExternalDrainer
+         {
+         public:
+            ExternalDrainer() :
+               m_tid(0),
+               m_pSem(NULL)
+            {}
+            ExternalDrainer(AAL::btTID tid, CSemaphore *pSem) :
+               m_tid(tid),
+               m_pSem(pSem)
+            {}
+            virtual ~ExternalDrainer() {}
+
+            void DrainComplete()
+            {
+               if ( NULL != m_pSem ) {
+                  AAL::btInt c = 0;
+                  AAL::btInt m = 0;
+                  m_pSem->CurrCounts(c, m);
+                  m_pSem->Post(1 - c);
+               }
+            }
+
+            void Destroy()
+            {
+               if ( NULL != m_pSem ) {
+                  delete m_pSem;
+                  m_pSem = NULL;
+               }
+            }
+
+            AAL::btBool operator == (const ExternalDrainer &right) const
+            { return ThreadIDEqual(m_tid, right.m_tid); }
+
+            AAL::btTID  m_tid;
+            CSemaphore *m_pSem;
+         };
+
+         typedef std::list<ExternalDrainer> ext_drain_list_t;
+         typedef ext_drain_list_t::iterator ext_drain_list_iter;
+
+      public:
+         DrainManager(ThrGrpState *pTGS) :
+            m_pTGS(pTGS),
+            m_DrainNestLevel(0)
+         {}
+         virtual ~DrainManager()
+         {
+            ASSERT(0 == m_DrainNestLevel);
+            ASSERT(0 == m_SelfDrainers.size());
+            ASSERT(0 == m_ExternalDrainers.size());
+         }
+
+         CSemaphore * Begin(AAL::btTID tid, AAL::btInt items)
+         {
+            // non-NULL means self-referential Drain().
+            OSLThread *pThread = m_pTGS->ThreadRunningInThisGroup(tid);
+
+            ++m_DrainNestLevel;
+
+            if ( 1 == m_DrainNestLevel ) {
+               // Beginning a new series of Drain() call(s).
+               flag_setf(m_pTGS->m_Flags, THRGRPSTATE_FLAG_DRAINING);
+            }
+
+            if ( NULL != pThread ) {
+               // Add tid to the list of self-drainers, allowing duplicates.
+               m_SelfDrainers.push_back(tid);
+
+               // No sem used for self-drainers.
+               return NULL;
+            }
+
+            CSemaphore *pDrainSem = new(std::nothrow) CSemaphore();
+
+            pDrainSem->Create(-items, 1);
+
+            m_ExternalDrainers.push_back(ExternalDrainer(tid, pDrainSem));
+
+            return pDrainSem;
+         }
+
+         // This version of the call is made from Drain(), where pDrainSem is known (or NULL),
+         //  after we have woken from sleep on pDrainSem.
+         AAL::btUnsignedInt End(AAL::btTID tid, CSemaphore *pDrainSem)
+         {
+            if ( NULL == pDrainSem ) {
+               // self-referential Drain(). Remove one instance of tid from m_SelfDrainers.
+               self_drain_list_iter siter;
+
+               for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ++siter ) {
+                  if ( ThreadIDEqual(tid, *siter) ) {
+                     m_SelfDrainers.erase(siter);
+                     --m_DrainNestLevel;
+                     break;
+                  }
+               }
+
+            } else {
+               // external Drain().
+               ext_drain_list_iter eiter = std::find(m_ExternalDrainers.begin(),
+                                                     m_ExternalDrainers.end(),
+                                                     ExternalDrainer(tid, pDrainSem));
+
+               if ( m_ExternalDrainers.end() != eiter ) {
+                  ASSERT((*eiter).m_pSem == pDrainSem);
+                  (*eiter).Destroy();
+                  m_ExternalDrainers.erase(eiter);
+                  --m_DrainNestLevel;
+               }
+            }
+
+            return m_DrainNestLevel;
+         }
+
+         // In the case of self-referential Join() and self-referential Destroy(), a worker may
+         //  be required to terminate before returning up the call stack to complete a previous
+         //  self-referential Drain(). Use this to forcibly complete such Drain()'s.
+         void WorkerHasExited(AAL::btTID tid)
+         {
+            self_drain_list_iter siter;
+
+            // Process all instances of tid found in m_SelfDrainers.
+            for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ++siter ) {
+               if ( ThreadIDEqual(tid, *siter) ) {
+                  break;
+               }
+            }
+
+            while ( m_SelfDrainers.end() != siter ) {
+               --m_DrainNestLevel;
+               if ( 0 == m_DrainNestLevel ) {
+                  // This series of Drain() calls(s) is complete.
+                  flag_clrf(m_pTGS->m_Flags, THRGRPSTATE_FLAG_DRAINING);
+               }
+
+               m_SelfDrainers.erase(siter);
+
+               for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ++siter ) {
+                  if ( ThreadIDEqual(tid, *siter) ) {
+                     break;
+                  }
+               }
+            }
+         }
+
+         // External Drain()'ers block on a semaphore to wait for Drain() completion.
+         // In the case of self-referential Join() and self-referential Destroy(), a worker is
+         //  forced to terminate before it can Post() the semaphore. We Post() all external
+         //  Drain()'ers here so that they can complete.
+         void ReleaseExternalDrainers()
+         {
+            ext_drain_list_iter eiter;
+            for ( eiter = m_ExternalDrainers.begin() ; m_ExternalDrainers.end() != eiter ; ++eiter ) {
+               (*eiter).DrainComplete();
+            }
+         }
+
+      protected:
+         ThrGrpState       *m_pTGS;
+         AAL::btUnsignedInt m_DrainNestLevel;
+         self_drain_list_t  m_SelfDrainers;
+         ext_drain_list_t   m_ExternalDrainers;
+      };
+
+      DrainManager              m_DrainManager;
+
+      AAL::btTime PollingInterval() const { return 50; /* millis */ }
 
       // <IThreadGroup>
       virtual IThreadGroup::eState State() const { return m_eState; }
@@ -210,18 +382,6 @@ private:
 
       AAL::btBool DestroyWhileDraining(AAL::btTime );
       AAL::btBool  DestroyWhileJoining(AAL::btTime );
-
-      AAL::btUnsignedInt DrainNestingUp()
-      {  // Not protected by lock - be sure to elsewhere.
-         ++m_DrainNestLevel;
-         return m_DrainNestLevel;
-      }
-      AAL::btUnsignedInt DrainNestingDown()
-      {  // Not protected by lock - be sure to elsewhere.
-         ASSERT(m_DrainNestLevel > 0);
-         --m_DrainNestLevel;
-         return m_DrainNestLevel;
-      }
 
       AAL::btBool WaitForAllWorkersToExit(AAL::btTime Timeout);
       AAL::btBool PollForAllWorkersToJoin(AAL::btTime Timeout);

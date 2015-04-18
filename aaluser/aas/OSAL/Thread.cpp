@@ -643,6 +643,19 @@ AAL::btTID GetThreadID()
 #endif // OS
 }
 
+AAL::btBool ThreadIDEqual(AAL::btTID x, AAL::btTID y)
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   return x == y;
+
+#elif defined( __AAL_LINUX__ )
+
+   return 0 != pthread_equal(x, y);
+
+#endif // OS
+}
+
 void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
 {
 #if   defined( __AAL_WINDOWS__ )

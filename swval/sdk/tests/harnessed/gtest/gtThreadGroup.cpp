@@ -960,9 +960,6 @@ void OSAL_ThreadGroup_vp_uint_0::Thr1(OSLThread *pThread, void *pContext)
    // wait for the "go" signal.
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
-   // wake the main thread.
-   EXPECT_TRUE(pTC->m_Sems[0].Post(1));
-
    ASSERT_NONNULL(pTC->m_pGroup);
    EXPECT_TRUE(pTC->m_pGroup->Drain());
 }
@@ -1022,7 +1019,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 500 ; ++i ) {
-      if ( 250 == i ) {
+      if ( 0 == i ) {
+         EXPECT_TRUE(g->Add( new PostD(m_Sems[3]) ));
+      } else if ( 60 == i ) {
+         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+      } else if ( 70 == i ) {
+         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 250 == i ) {
          EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(g->Add( new YieldD() ));
@@ -1031,19 +1034,16 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
 
    EXPECT_EQ(500, g->GetNumWorkItems());
 
-   // Wake Thr1, then block on m_Sems[0].
-   // Thr1 Post()'s m_Sems[0]. If Thr1 is preempted after Post()'ing m_Sems[0], but before
-   //  invoking the Drain(), this thread yield's the cpu back to Thr1.
-   // Thr1 invokes the Drain().
-   // This thread wakes and resumes all of the thread group workers by Post()'ing m_Sems[1].
-   // This thread then calls Destroy() to invoke ~OSLThreadGroup().
-   EXPECT_TRUE(m_Sems[3].Post(1));
-
+   // Wake one worker, then block on m_Sems[0].
+   // The first worker wakes Thr1, then yields the cpu to Thr1.
+   // Thr1 begins the Drain().
+   // The first worker wakes this thread, then yields the cpu to this thread.
+   // This thread calls Destroy(), and begins to wait for the Drain() to complete.
+   // The first worker wakes the remaining workers. All workers process the work queue.
+   // The queue becomes empty, and the Drain() completes successfully.
+   // Seeing the Drain() completion, the Destroy() proceeds.
+   EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
-   cpu_yield();
-
-   // Wake all workers. The Drain() progresses.
-   EXPECT_TRUE(m_Sems[1].Post(w));
 
    // Delete the thread group - destruct during Drain().
    EXPECT_TRUE(Destroy());

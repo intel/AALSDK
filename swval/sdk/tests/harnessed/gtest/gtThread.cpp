@@ -874,7 +874,7 @@ void OSAL_Thread_f::Thr7(OSLThread *pThread, void *pContext)
 
    do
    {
-      pTC->m_pThrs[1]->Wait(1000);
+      pTC->m_pThrs[1]->Wait(250);
       ++pTC->m_Scratch[4];
    }while( 0 == pTC->m_Scratch[3] );
 }

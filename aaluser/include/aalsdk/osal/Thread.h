@@ -66,6 +66,9 @@ OSAL_API AAL::btPID GetProcessID();
 /// Retrieve the OS thread id of the current thread.
 OSAL_API AAL::btTID GetThreadID();
 
+/// Compare the two OS thread id's, returning true if they identify the same thread.
+OSAL_API AAL::btBool ThreadIDEqual(AAL::btTID , AAL::btTID );
+
 /// Cause the calling thread to exit immediately, passing ExitStatus back to the OS.
 OSAL_API void ExitCurrentThread(AAL::btUIntPtr ExitStatus);
 

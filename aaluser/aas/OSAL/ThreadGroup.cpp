@@ -81,9 +81,15 @@ protected:
 OSLThreadGroup::ThrGrpState::ThrGrpState(AAL::btUnsignedInt NumThreads) :
    m_eState(IThreadGroup::Running),
    m_Flags(THRGRPSTATE_FLAG_OK),
-   m_DrainNestLevel(0),
    m_WorkSemTimeout(AAL_INFINITE_WAIT),
-   m_SelfJoiner(0)
+   m_SelfJoiner(0),
+   m_ThrStartSem(),
+   m_ThrExitSem(),
+   m_WorkSem(),
+   m_workqueue(),
+   m_RunningThreads(),
+   m_ExitedThreads(),
+   m_DrainManager(this)
 {
    AAL::btInt SemInitCount = (AAL::btInt)NumThreads;
    SemInitCount = -SemInitCount;
@@ -200,15 +206,12 @@ void OSLThreadGroup::ThrGrpState::RunningToExited(OSLThread *pThread)
 {
    AutoLock(this);
 
-   thr_list_iter iter;
-
    // Move the worker from Running to Exited.
-   for ( iter = m_RunningThreads.begin() ; m_RunningThreads.end() != iter ; ++iter ) {
-      if ( (*iter) == pThread ) {
-         m_RunningThreads.erase(iter);
-         m_ExitedThreads.push_back(pThread);
-         break;
-      }
+   thr_list_iter iter = std::find(m_RunningThreads.begin(), m_RunningThreads.end(), pThread);
+
+   if ( m_RunningThreads.end() != iter ) {
+      m_RunningThreads.erase(iter);
+      m_ExitedThreads.push_back(pThread);
    }
 }
 
@@ -216,16 +219,12 @@ void OSLThreadGroup::ThrGrpState::RemoveFromRunning(OSLThread *pThread)
 {
    AutoLock(this);
 
-   thr_list_iter iter;
-
    // Remove the worker from Running.
-   for ( iter = m_RunningThreads.begin() ; m_RunningThreads.end() != iter ; ++iter ) {
-      if ( (*iter) == pThread ) {
-         m_RunningThreads.erase(iter);
-         break;
-      }
-   }
+   thr_list_iter iter = std::find(m_RunningThreads.begin(), m_RunningThreads.end(), pThread);
 
+   if ( m_RunningThreads.end() != iter ) {
+      m_RunningThreads.erase(iter);
+   }
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToExit(AAL::btTime Timeout)
@@ -275,7 +274,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Time
 
    if ( AAL_INFINITE_WAIT == Timeout ) {
 
-      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_DRAINED) ) {
+      while ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_DRAINING) ) {
          Unlock();
          AAL::SleepMilli(Interval);
          Lock();
@@ -284,7 +283,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Time
    } else {
       AAL::btTime Subtract;
 
-      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_DRAINED) ) {
+      while ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_DRAINING) ) {
          Unlock();
          Subtract = std::min(Timeout, Interval);
          AAL::SleepMilli(Subtract);
@@ -318,7 +317,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
 
    const AAL::btTID MyThrID = GetThreadID();
    OSLThread       *pThread = ThreadRunningInThisGroup(MyThrID);
-   IDispatchable   *pWork;
 
    // We are now Joining.
    State(IThreadGroup::Joining);
@@ -336,6 +334,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
       flag_setf(m_Flags, THRGRPSTATE_FLAG_SELF_JOIN);
 
       // We need to continue to execute work.
+      IDispatchable *pWork;
       while ( m_workqueue.size() > 0 ) {
          pWork = m_workqueue.front();
          m_workqueue.pop();
@@ -352,6 +351,10 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
 
       // Post()'s m_ThrExitSem so that we don't block on ourself below.
       WorkerHasExited(pThread);
+
+      // This worker is terminating below.. Prior to this self-Join(), did we happen to
+      //  execute a self-Drain()? If so, we need to forcibly complete the Drain() now.
+      m_DrainManager.WorkerHasExited(MyThrID);
 
       Unlock();
 
@@ -370,6 +373,18 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
          *iter = NULL;
       }
 
+      Lock();
+      // Are any external Drain()'ers blocked on our work item? If so, we need
+      //  to signal completion of the Drain() here, then wait for all external Drain()'ers
+      //  to exit the Drain() call(s) before deleting this.
+      m_DrainManager.ReleaseExternalDrainers();
+      Unlock();
+
+      res = PollForDrainCompletion(Timeout);
+      if ( !res ) {
+         return false;
+      }
+
       flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
 
       // self-destruct. This thread terminates.
@@ -384,6 +399,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
    // Not a self-referential Join().
 
    Unlock();
+
+   res = PollForDrainCompletion(Timeout);
+   if ( !res ) {
+      return false;
+   }
 
    // Wait for all workers to exit.
    res = WaitForAllWorkersToExit(Timeout);
@@ -430,8 +450,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
 
    Lock();
 
-   AAL::btInt         items = (AAL::btInt) m_workqueue.size();
-   AAL::btUnsignedInt nesting;
+   AAL::btInt items = (AAL::btInt) m_workqueue.size();
 
    // No need to drain if already empty.
    if ( 0 == items ) {
@@ -442,28 +461,18 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
    // Check for other state conflicts.
    if ( IThreadGroup::Draining != State(IThreadGroup::Draining) ) {
       // Can't drain now - state conflict.
-      ASSERT(false);
       Unlock();
       return false;
    }
 
-   nesting = DrainNestingUp();
-
-   if ( 1 == nesting ) {
-      // New Drain() call.
-      flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
-   }
-
-   const AAL::btTID MyThrID = GetThreadID();
-   const OSLThread *pThread = ThreadRunningInThisGroup(MyThrID);
-
+   AAL::btTID     MyThrID   = GetThreadID();
+   CSemaphore    *pDrainSem = m_DrainManager.Begin(MyThrID, items);
    IDispatchable *pWork;
-   CSemaphore     DrainSem;
-   work_queue_t   tmpq;
 
-   if ( NULL != pThread ) {
-      // Self-referential Drain() - we need to continue to execute work.
+   if ( NULL == pDrainSem ) {
+      // Self-referential Drain().
 
+      // We need to continue to execute work.
       while ( m_workqueue.size() > 0 ) {
          pWork = m_workqueue.front();
          m_workqueue.pop();
@@ -474,41 +483,33 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
          Lock();
       }
 
-      goto DONE;
-   }
+   } else {
+      // not a self-referential Drain().
 
-   if ( !DrainSem.Create(-items, 1) ) {
-      nesting = DrainNestingDown();
-      State((0 == nesting) ? IThreadGroup::Running : IThreadGroup::Draining);
-      ASSERT(false);
+      work_queue_t tmpq;
+
+      // Pull each item from the work queue, and wrap it in a OSLThreadGroupNestedSemPostD() object.
+      while ( m_workqueue.size() > 0 ) {
+         pWork = m_workqueue.front();
+         m_workqueue.pop();
+         tmpq.push( new(std::nothrow) OSLThreadGroupNestedSemPostD(pWork, *pDrainSem) );
+      }
+
+      // Re-populate the work queue.
+      while ( tmpq.size() > 0 ) {
+         m_workqueue.push(tmpq.front());
+         tmpq.pop();
+      }
+
       Unlock();
-      return false;
+
+      // Wait for the work items to complete. Don't wait while locked.
+      pDrainSem->Wait();
+
+      Lock();
    }
 
-   // Pull each item from the work queue, and wrap it in a OSLThreadGroupNestedSemPostD() object.
-   while ( m_workqueue.size() > 0 ) {
-      IDispatchable *pContained = m_workqueue.front();
-      m_workqueue.pop();
-      tmpq.push( new(std::nothrow) OSLThreadGroupNestedSemPostD(pContained, DrainSem) );
-   }
-
-   // Re-populate the work queue.
-   while ( tmpq.size() > 0 ) {
-      m_workqueue.push(tmpq.front());
-      tmpq.pop();
-   }
-
-   Unlock();
-
-   // Wait for the work items to complete. Don't wait while locked.
-   DrainSem.Wait();
-
-   Lock();
-   // Protect Drain() nesting level.
-
-DONE:
-
-   nesting = DrainNestingDown();
+   AAL::btUnsignedInt nesting = m_DrainManager.End(MyThrID, pDrainSem);
 
    IThreadGroup::eState st = State();
 
@@ -519,8 +520,8 @@ DONE:
       Unlock();
 
       if ( 0 == nesting ) {
-         // Drain() is complete.
-         flag_setf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
+         // This series of Drain() calls(s) is complete.
+         flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINING);
       }
 
       return true;
@@ -533,8 +534,8 @@ DONE:
    Unlock();
 
    if ( 0 == nesting ) {
-      // Drain() is complete.
-      flag_setf(m_Flags, THRGRPSTATE_FLAG_DRAINED);
+      // This series of Drain() calls(s) is complete.
+      flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINING);
    }
 
    return res;
@@ -554,7 +555,6 @@ void OSLThreadGroup::ThrGrpState::Stop()
 
    if ( IThreadGroup::Stopped != State(IThreadGroup::Stopped) ) {
       // State conflict, can't stop right now.
-      ASSERT(false);
       return;
    }
 
@@ -596,7 +596,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Start()
       return m_WorkSem.Post(s - c);
    }
 
-   ASSERT(false);
    return false;
 }
 
@@ -673,10 +672,9 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
 
    // We're not Drain()'ing and we haven't Join()'ed workers, yet.
 
-   AAL::btBool    res;
-   thr_list_iter  iter;
-   IDispatchable *pWork;
-   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
+   AAL::btBool   res;
+   thr_list_iter iter;
+   OSLThread    *pThread = ThreadRunningInThisGroup( GetThreadID() );
 
    // Workers are no longer required to block infinitely on work items. Give them a chance
    // to wake periodically and see that the thread group is being joined.
@@ -690,6 +688,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
    if ( NULL != pThread ) {
       // Self-referential Destroy().
 
+      IDispatchable *pWork;
       while ( m_workqueue.size() > 0 ) {
          pWork = m_workqueue.front();
          m_workqueue.pop();
@@ -734,7 +733,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
       return true;
    }
 
-   // Not a self-referential Destroy(). First time Join()'ing.
+   // Not a self-referential Destroy(), not Drain()'ing, first time Join()'ing.
 
    Unlock();
 
@@ -766,10 +765,10 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
    // We know that a Drain() is actively in progress, because Drain() will transition the
    //  state back to Running or Joining when all Drain()'ers are finished.
 
-   thr_list_iter  iter;
-   IDispatchable *pWork;
-   AAL::btBool    res;
-   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
+   AAL::btBool      res;
+   thr_list_iter    iter;
+   const AAL::btTID MyThrID = GetThreadID();
+   OSLThread       *pThread = ThreadRunningInThisGroup(MyThrID);
 
    // Workers are no longer required to block infinitely on work items. Give them a chance
    // to wake periodically and see that the thread group is being joined.
@@ -787,7 +786,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
       // self-referential Destroy() during Drain().
 
       // continue to execute work on behalf of the Drain().
-
+      IDispatchable *pWork;
       while ( m_workqueue.size() > 0 ) {
          pWork = m_workqueue.front();
          m_workqueue.pop();
@@ -805,12 +804,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
       // Post()'s m_ThrExitSem so that we don't block on ourself below.
       WorkerHasExited(pThread);
 
-      Unlock();
+      // This worker is terminating below.. Prior to this self-Destroy(), did we happen to
+      //  execute a self-Drain()? If so, we need to forcibly complete the Drain() now.
+      m_DrainManager.WorkerHasExited(MyThrID);
 
-      res = PollForDrainCompletion(Timeout);
-      if ( !res ) {
-         return false;
-      }
+      Unlock();
 
       res = WaitForAllWorkersToExit(Timeout);
       if ( !res ) {
@@ -827,6 +825,18 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
          *iter = NULL;
       }
 
+      // Are any external Drain()'ers blocked on our work item? If so, we need
+      //  to signal completion of the Drain() here, then wait for all external Drain()'ers
+      //  to exit the Drain() call(s) before deleting this.
+      Lock();
+      m_DrainManager.ReleaseExternalDrainers();
+      Unlock();
+
+      res = PollForDrainCompletion(Timeout);
+      if ( !res ) {
+         return false;
+      }
+
       delete this;
 
       // Self-destruct - this thread will terminate.
@@ -841,6 +851,8 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
 
    // non-self-referential Destroy() during Drain().
 
+   // In the case of external Drain(), we must make sure that all Drain()'ers are hands-off this
+   //  before we delete this.
    res = PollForDrainCompletion(Timeout);
    if ( !res ) {
       return false;
@@ -872,10 +884,10 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
    // Destroy while another thread may be actively Join()'ing.
    // We must wait for the Join() to complete.
 
-   thr_list_iter  iter;
-   IDispatchable *pWork;
-   AAL::btBool    res;
-   OSLThread     *pThread = ThreadRunningInThisGroup( GetThreadID() );
+   AAL::btBool        res;
+   thr_list_iter      iter;
+   const AAL::btTID   MyThrID = GetThreadID();
+   OSLThread         *pThread = ThreadRunningInThisGroup(MyThrID);
 
    // Workers are no longer required to block infinitely on work items. Give them a chance
    // to wake periodically and see that the thread group is being joined.
@@ -885,8 +897,10 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
    m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
 
    if ( NULL != pThread ) {
+      // Self-referential Destroy() during Join().
 
       // Continue to dispatch work on behalf of the Join().
+      IDispatchable *pWork;
       while ( m_workqueue.size() > 0 ) {
          pWork = m_workqueue.front();
          m_workqueue.pop();
@@ -903,6 +917,10 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
 
       // Post()'s m_ThrExitSem so that the Join()'er doesn't attempt to Join() us.
       WorkerHasExited(pThread);
+
+      // This worker is terminating below.. Prior to this self-Destroy(), did we happen to
+      //  execute a self-Drain()? If so, we need to forcibly complete the Drain() now.
+      m_DrainManager.WorkerHasExited(MyThrID);
 
       Unlock();
 
@@ -935,6 +953,18 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
 
       }
 
+      // Are any external Drain()'ers blocked on our work item? If so, we need
+      //  to signal completion of the Drain() here, then wait for all external Drain()'ers
+      //  to exit the Drain() call(s) before deleting this.
+      Lock();
+      m_DrainManager.ReleaseExternalDrainers();
+      Unlock();
+
+      res = PollForDrainCompletion(Timeout);
+      if ( !res ) {
+         return false;
+      }
+
       delete this;
 
       // Self-destruct - this thread will terminate.
@@ -948,6 +978,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
    // non-self-referential Destroy() during Join().
 
    Unlock();
+
+   res = PollForDrainCompletion(Timeout);
+   if ( !res ) {
+      return false;
+   }
 
    res = PollForAllWorkersToJoin(Timeout);
    if ( !res ) {

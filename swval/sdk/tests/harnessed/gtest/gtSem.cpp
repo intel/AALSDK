@@ -1629,10 +1629,10 @@ TEST_F(OSAL_Sem_f, aal0068)
    // another thread, the blocked thread waits at least X milliseconds before resuming,
    // even in the presence of signals.
 
-   m_Scratch[2] = 1000; // timeout (millis) for the Wait() call in m_Scratch[2].
+   m_Scratch[2] = 250; // timeout (millis) for the Wait() call in m_Scratch[2].
 
    btTime       slept     = 0;
-   const btTime sleepeach = 25;
+   const btTime sleepeach = 5;
    const btTime thresh    = m_Scratch[2] - ( m_Scratch[2] / 20 ); // within 5%
 
    EXPECT_TRUE(m_Sem.Create(0, 1));
@@ -1706,8 +1706,8 @@ TEST_F(OSAL_Sem_f, aal0070)
    YIELD_WHILE(0 == m_Scratch[0]);
 
    int          i;
-   const int    count     = 100;
-   const btTime sleepeach = 25;
+   const int    count     = 50;
+   const btTime sleepeach = 5;
 
    for ( i = 0 ; i < count ; ++i ) {
       sleep_millis(sleepeach);
