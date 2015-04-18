@@ -181,7 +181,7 @@
 #define AAL_sysShutdown                (0x000f) // not a true sub-system, but useful for logging
                                                 //    May wish to disable this and set DEBUG_BEYOND_LOGGER
                                                 //    in AALLoggerExtern.h, instead
-#define AAL_sysASM                	   (0x0010) // ASM
+#define AAL_sysResConf                 (0x0010) // Resource Configuration Service
 
 /* Reserved for AAL to 0x0FF */
 #define AAL_sysBase                    (0x0100) // Start from sysBase to define your own
@@ -469,6 +469,10 @@
 #endif // DEPRECATED
 
 #define iidManagementAFU             __AAL_IID(AAL_sysManagementAFU, 0x0001)
+
+/// @ingroup IResConf
+#define iidResConfClient             __INTC_IID(AAL_sysResConf, 0x0001)
+#define iidResConfService            __INTC_IID(AAL_sysResConf, 0x0002)
 
 #define iidAFUDev                    __AAL_IID(AAL_sysUAIA, 0x0001)
 

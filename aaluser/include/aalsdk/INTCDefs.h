@@ -101,9 +101,6 @@
 #define  INTC_sysFSBV1AIA              INTC_sysBase(0x0004)    // FSB Version 1.0 AIA
 
 #define  INTC_sysSampleAFU             INTC_sysBase(0x0005)    // Sample AFU
-#define  INTC_sysHEALAFU               INTC_sysBase(0x0006)    // HEAL AFU
-#define  INTC_sysHEALAPPS              INTC_sysBase(0x0007)    // HEAL AFU
-#define  INTC_sysHBAFUConfigService    INTC_sysBase(0x0008)
 
 #define  INTC_sysNext                  0x0009
 

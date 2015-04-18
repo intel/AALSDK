@@ -161,7 +161,8 @@ include/aalsdk/xlrtlib.h \
 include/aalsdk/xlRuntime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h 
+include/aalsdk/IMessageHandler.h \
+include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
 include/aalsdk/aas/AALDeviceService.h \

@@ -27,60 +27,53 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     samples/Hello_AAL_Service/Makefile
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     04/10/2015    JG   Initial version based on canonical Service makefile
 ##******************************************************************************
-SUBDIRS=\
-AFU1 \
-AFU2 \
-App1 \
-App2 \
-cciapp \
-CCILib \
-CCIDemo \
-SampleBrokerService \
-splapp \
-splapp2 \
-splapp3 \
-SyncApp1 \
-UMsgTest \
-Hello_AAL_Service \
-Hello_AAL
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-
-MFLAGS  =
 ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+else
+CPPFLAGS += -DENABLE_DEBUG=1
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+all: libhelloaalservice.so libhelloaalservice.so.0
 
-.PHONY:all clean
+libhelloaalservice.so: libhelloaalservice.so.0.0.0
+	ln -sf libhelloaalservice.so.0.0.0 libhelloaalservice.so
 
-doc docs: docclean
-	doxygen doc/Doxyfile
+libhelloaalservice.so.0: libhelloaalservice.so.0.0.0
+	ln -sf libhelloaalservice.so.0.0.0 libhelloaalservice.so.0
 
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
+libhelloaalservice.so.0.0.0: libhelloaalservice.o
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libhelloaalservice.so.0 libhelloaalservice.o $(LDFLAGS) -lOSAL -lAAS -lxlrt -o libhelloaalservice.so.0.0.0
 
-.PHONY:doc docs docclean docsclean
+libhelloaalservice.o: HelloAALService.cpp HelloAALService-internal.h HelloAALService.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libhelloaalservice.o HelloAALService.cpp
+
+clean:
+	$(RM) libhelloaalservice.so libhelloaalservice.so.0 libhelloaalservice.so.0.0.0 libhelloaalservice.o
+
+.PHONY: all clean
