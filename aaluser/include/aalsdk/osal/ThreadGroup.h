@@ -151,12 +151,14 @@ private:
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
-#define THRGRPSTATE_FLAG_OK         0x00000001
-#define THRGRPSTATE_FLAG_DRAINING   0x00000002
-#define THRGRPSTATE_FLAG_SELF_JOIN  0x00000004
-#define THRGRPSTATE_FLAG_JOINED     0x00000008
+#define THRGRPSTATE_FLAG_OK        0x00000001
+#define THRGRPSTATE_FLAG_DRAINING  0x00000002
+#define THRGRPSTATE_FLAG_SELF_JOIN 0x00000004
+#define THRGRPSTATE_FLAG_JOINED    0x00000008
+#define THRGRPSTATE_FLAG_JOINING   0x00000010
    public:
       ThrGrpState(AAL::btUnsignedInt NumThreads);
+      virtual ~ThrGrpState();
 
       // <IThreadGroup>
       virtual AAL::btBool IsOK() const { return flag_is_set(m_Flags, THRGRPSTATE_FLAG_OK); }
@@ -178,7 +180,7 @@ private:
       enum IThreadGroup::eState m_eState;
       AAL::btUnsignedInt        m_Flags;
       AAL::btTime               m_WorkSemTimeout;
-      AAL::btTID                m_SelfJoiner;
+      AAL::btTID                m_Joiner;
       CSemaphore                m_ThrStartSem;
       CSemaphore                m_ThrExitSem;
       CSemaphore                m_WorkSem;
@@ -255,6 +257,8 @@ private:
 
          CSemaphore * Begin(AAL::btTID tid, AAL::btInt items)
          {
+            AutoLock(m_pTGS);
+
             // non-NULL means self-referential Drain().
             OSLThread *pThread = m_pTGS->ThreadRunningInThisGroup(tid);
 
@@ -286,6 +290,8 @@ private:
          //  after we have woken from sleep on pDrainSem.
          AAL::btUnsignedInt End(AAL::btTID tid, CSemaphore *pDrainSem)
          {
+            AutoLock(m_pTGS);
+
             if ( NULL == pDrainSem ) {
                // self-referential Drain(). Remove one instance of tid from m_SelfDrainers.
                self_drain_list_iter siter;
@@ -320,29 +326,27 @@ private:
          //  self-referential Drain(). Use this to forcibly complete such Drain()'s.
          void WorkerHasExited(AAL::btTID tid)
          {
+            AutoLock(m_pTGS);
+
             self_drain_list_iter siter;
 
             // Process all instances of tid found in m_SelfDrainers.
-            for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ++siter ) {
+            for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ) {
+
                if ( ThreadIDEqual(tid, *siter) ) {
-                  break;
-               }
-            }
+                  self_drain_list_iter trash(siter);
+                  ++siter;
+                  m_SelfDrainers.erase(trash);
 
-            while ( m_SelfDrainers.end() != siter ) {
-               --m_DrainNestLevel;
-               if ( 0 == m_DrainNestLevel ) {
-                  // This series of Drain() calls(s) is complete.
-                  flag_clrf(m_pTGS->m_Flags, THRGRPSTATE_FLAG_DRAINING);
-               }
-
-               m_SelfDrainers.erase(siter);
-
-               for ( siter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != siter ; ++siter ) {
-                  if ( ThreadIDEqual(tid, *siter) ) {
-                     break;
+                  --m_DrainNestLevel;
+                  if ( 0 == m_DrainNestLevel ) {
+                     // This series of Drain() calls(s) is complete.
+                     flag_clrf(m_pTGS->m_Flags, THRGRPSTATE_FLAG_DRAINING);
                   }
+               } else {
+                  ++siter;
                }
+
             }
          }
 
@@ -352,6 +356,8 @@ private:
          //  Drain()'ers here so that they can complete.
          void ReleaseExternalDrainers()
          {
+            AutoLock(m_pTGS);
+
             ext_drain_list_iter eiter;
             for ( eiter = m_ExternalDrainers.begin() ; m_ExternalDrainers.end() != eiter ; ++eiter ) {
                (*eiter).DrainComplete();
@@ -380,12 +386,17 @@ private:
 
       // </IThreadGroup>
 
-      AAL::btBool DestroyWhileDraining(AAL::btTime );
-      AAL::btBool  DestroyWhileJoining(AAL::btTime );
+      AAL::btBool    DestroyWhileDraining(AAL::btTime );
+      AAL::btBool     DestroyWhileJoining(AAL::btTime );
 
-      AAL::btBool WaitForAllWorkersToExit(AAL::btTime Timeout);
-      AAL::btBool PollForAllWorkersToJoin(AAL::btTime Timeout);
-      AAL::btBool  PollForDrainCompletion(AAL::btTime Timeout);
+      AAL::btBool WaitForAllWorkersToExit(AAL::btTime );
+      AAL::btBool PollForAllWorkersToJoin(AAL::btTime );
+      AAL::btBool  PollForDrainCompletion(AAL::btTime );
+
+      AAL::btBool       JoinExitedWorkers(AAL::btTime );
+
+      AAL::btBool Quiesce(AAL::btTime );
+
 
       void  WorkerHasStarted(OSLThread * );
       void   WorkerHasExited(OSLThread * );
