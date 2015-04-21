@@ -139,7 +139,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 }
 
 // Attribute accessors for debug
-DRIVER_ATTR(debug,S_IRUGO|S_IWUGO, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
+DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
 
 
 
