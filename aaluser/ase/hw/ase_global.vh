@@ -56,6 +56,11 @@
  `define GRAM_STYLE RAM_STYLE
  `define SYNC_RESET_POLARITY 0
 
+
+// Address widths
+ `define PHYSADDR_WIDTH       38
+ `define PHYSCLADDR_WIDTH     32
+
 /*
  * CCI Transactions
  */

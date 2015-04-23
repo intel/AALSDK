@@ -102,8 +102,8 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n", (uint32_t*)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n", (uint32_t*)mem->fake_paddr_hi);
-  printf("\tIsDSM       = %d\n", mem->is_csrmap); 
-  printf("\tIsPrivMem   = %d\n", mem->is_privmem); 
+  /* printf("\tIsDSM       = %d\n", mem->is_csrmap);  */
+  /* printf("\tIsPrivMem   = %d\n", mem->is_privmem);  */
   BEGIN_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -127,8 +127,8 @@ void ase_buffer_oneline(struct buffer_t *mem)
   printf("%p  ", (uint32_t*)mem->pbase);
   printf("%p  ", (uint32_t*)mem->fake_paddr);
   printf("%x  ", mem->memsize);
-  printf("%d  ", mem->is_csrmap);
-  printf("%d  ", mem->is_privmem);
+  /* printf("%d  ", mem->is_csrmap); */
+  /* printf("%d  ", mem->is_privmem); */
   printf("\n");
 
   END_YELLOW_FONTCOLOR;

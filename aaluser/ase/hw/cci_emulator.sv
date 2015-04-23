@@ -166,6 +166,7 @@ module cci_emulator();
    // Derived clocks
    logic 			  clk_32ui; // Normal 200 Mhz clock
    logic 			  clk_16ui; // Faster 400 Mhz clock
+   logic 			  clk_8ui;  // Internal 800 Mhz clock (for creating synchronized clocks)
 
    /*
     * Overflow/underflow signal checks
@@ -187,42 +188,30 @@ module cci_emulator();
    /*
     * Clock process: Operates the CAFU clock
     */
-   logic [1:0] 			  ase_clk_rollover = 2'b0;   
+   logic [1:0] 			  ase_clk_rollover = 2'b11;   
    
    // ASE clock
    assign clk = clk_32ui;
-   assign clk_32ui = ase_clk_rollover[0];   
+   assign clk_16ui = ase_clk_rollover[0];   
+   assign clk_32ui = ase_clk_rollover[1];   
    
-   // 400 Mhz clock
-   initial begin : clk16ui_proc
+   // 800 Mhz internal reference clock
+   initial begin : clk8ui_proc
       begin
-	 clk_16ui = 0;
-	 forever begin
-	    #`CLK_16UI_TIME;
-	    clk_16ui = 1'b0;
-	    #`CLK_16UI_TIME;
-	    clk_16ui = 1'b1;
-	 end
+   	 clk_8ui = 0;
+   	 forever begin
+   	    #`CLK_8UI_TIME;
+   	    clk_8ui = 1'b0;
+   	    #`CLK_8UI_TIME;
+   	    clk_8ui = 1'b1;
+   	 end
       end
    end
-
-   // 200 Mhz clock
-   always @(posedge clk_16ui) begin
-      ase_clk_rollover <= ase_clk_rollover + 1;      
-   end
    
-   // initial begin : clk32ui_proc
-   //    begin
-   // 	 clk_32ui = 0;
-   // 	 forever begin
-   // 	    #`CLK_32UI_TIME;
-   // 	    clk_32ui = 1'b0;
-   // 	    #`CLK_32UI_TIME;
-   // 	    clk_32ui = 1'b1;
-   // 	 end
-   //    end
-   // end
-
+   // 200 Mhz clock
+   always @(posedge clk_8ui) begin
+      ase_clk_rollover <= ase_clk_rollover - 1;      
+   end
 
    // Reset management
    logic 			  sys_reset_n;   
@@ -240,15 +229,6 @@ module cci_emulator();
    //       1        |     1               1     |
    assign sw_reset_n = sys_reset_n && sw_reset_trig;
    
-   // always @(posedge clk) begin
-   //    if ((sys_reset_n == 1'b0) || (sw_reset_n == 1'b0)) begin
-   // 	 resetb <= 1'b0;
-   //    end
-   //    else begin
-   // 	 resetb <= 1'b1;
-   //    end
-   // end
-
 
    /*
     * run_clocks : Run 'n' clocks
@@ -1464,63 +1444,63 @@ module cci_emulator();
    // end
 
    // CCI Rules Checker: Checking CCI for 'X' and 'Z' endorsed by valid signal
-   cci_rule_checker
-     #(
-       .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
-       .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
-       .DATA_WIDTH   (`CCI_DATA_WIDTH)
-       )
-   cci_rule_checker
-     (
-      // Enable
-      .enable          (1'b1),  // (cfg.enable_ccirules[0]),
-      // CCI signals
-      .clk             (clk),
-      .resetb          (sys_reset_n),
-      .lp_initdone     (lp_initdone),
-      .tx_c0_header    (tx_c0_header),
-      .tx_c0_rdvalid   (tx_c0_rdvalid),
-      .tx_c1_header    (tx_c1_header),
-      .tx_c1_data      (tx_c1_data),
-      .tx_c1_wrvalid   (tx_c1_wrvalid),
-      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
-      .rx_c0_header    (rx_c0_header),
-      .rx_c0_data      (rx_c0_data),
-      .rx_c0_rdvalid   (rx_c0_rdvalid),
-      .rx_c0_wrvalid   (rx_c0_wrvalid),
-      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
-      .rx_c1_header    (rx_c1_header),
-      .rx_c1_wrvalid   (rx_c1_wrvalid),
-      // Error signals
-      .tx_ch0_error    (tx0_rc_error),
-      .tx_ch1_error    (tx1_rc_error),
-      .rx_ch0_error    (rx0_rc_error),
-      .rx_ch1_error    (rx1_rc_error),
-      .tx_ch0_time     (tx0_rc_time),
-      .tx_ch1_time     (tx1_rc_time),
-      .rx_ch0_time     (rx0_rc_time),
-      .rx_ch1_time     (rx1_rc_time)
-      );
+   // cci_rule_checker
+   //   #(
+   //     .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
+   //     .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
+   //     .DATA_WIDTH   (`CCI_DATA_WIDTH)
+   //     )
+   // cci_rule_checker
+   //   (
+   //    // Enable
+   //    .enable          (1'b1),  // (cfg.enable_ccirules[0]),
+   //    // CCI signals
+   //    .clk             (clk),
+   //    .resetb          (sys_reset_n),
+   //    .lp_initdone     (lp_initdone),
+   //    .tx_c0_header    (tx_c0_header),
+   //    .tx_c0_rdvalid   (tx_c0_rdvalid),
+   //    .tx_c1_header    (tx_c1_header),
+   //    .tx_c1_data      (tx_c1_data),
+   //    .tx_c1_wrvalid   (tx_c1_wrvalid),
+   //    .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
+   //    .rx_c0_header    (rx_c0_header),
+   //    .rx_c0_data      (rx_c0_data),
+   //    .rx_c0_rdvalid   (rx_c0_rdvalid),
+   //    .rx_c0_wrvalid   (rx_c0_wrvalid),
+   //    .rx_c0_cfgvalid  (rx_c0_cfgvalid),
+   //    .rx_c1_header    (rx_c1_header),
+   //    .rx_c1_wrvalid   (rx_c1_wrvalid),
+   //    // Error signals
+   //    .tx_ch0_error    (tx0_rc_error),
+   //    .tx_ch1_error    (tx1_rc_error),
+   //    .rx_ch0_error    (rx0_rc_error),
+   //    .rx_ch1_error    (rx1_rc_error),
+   //    .tx_ch0_time     (tx0_rc_time),
+   //    .tx_ch1_time     (tx1_rc_time),
+   //    .rx_ch0_time     (rx0_rc_time),
+   //    .rx_ch1_time     (rx1_rc_time)
+   //    );
 
    // Interrupt select (enables
    // assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
 
    // Call simkill on bad outcome of checker process
-   int prev_xz_simtime;
-   task xz_simkill(int sim_time) ;
-      begin
-	 if (prev_xz_simtime != sim_time) begin
-   	    `BEGIN_RED_FONTCOLOR;
-   	    $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
-   	    $display("SIM-SV: Check simulation around time, t = %d", sim_time);
-   	    // $display("SIM-SV: Simulation will end now");
-   	    // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
-   	    // start_simkill_countdown();
-   	    `END_RED_FONTCOLOR;
-	 end
-	 prev_xz_simtime = sim_time;
-      end
-   endtask
+   // int prev_xz_simtime;
+   // task xz_simkill(int sim_time) ;
+   //    begin
+   // 	 if (prev_xz_simtime != sim_time) begin
+   // 	    `BEGIN_RED_FONTCOLOR;
+   // 	    $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
+   // 	    $display("SIM-SV: Check simulation around time, t = %d", sim_time);
+   // 	    // $display("SIM-SV: Simulation will end now");
+   // 	    // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
+   // 	    // start_simkill_countdown();
+   // 	    `END_RED_FONTCOLOR;
+   // 	 end
+   // 	 prev_xz_simtime = sim_time;
+   //    end
+   // endtask
 
    // Flow simkill
    task flowerror_simkill(int sim_time, int channel) ;
@@ -1565,21 +1545,54 @@ module cci_emulator();
    end
 
    // Watch checker signal
-   always @(posedge clk) begin
-      if (tx0_rc_error) begin
-   	 xz_simkill(tx0_rc_time);
-      end
-      else if (tx1_rc_error) begin
-   	 xz_simkill(tx1_rc_time);
-      end
-      else if (rx0_rc_error) begin
-   	 xz_simkill(rx0_rc_time);
-      end
-      else if (rx1_rc_error) begin
-   	 xz_simkill(rx1_rc_time);
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (tx0_rc_error) begin
+   // 	 xz_simkill(tx0_rc_time);
+   //    end
+   //    else if (tx1_rc_error) begin
+   // 	 xz_simkill(tx1_rc_time);
+   //    end
+   //    else if (rx0_rc_error) begin
+   // 	 xz_simkill(rx0_rc_time);
+   //    end
+   //    else if (rx1_rc_error) begin
+   // 	 xz_simkill(rx1_rc_time);
+   //    end
+   // end
 
+   /*
+    * CCI Sniffer
+    * Aggregate point for all ASE checkers
+    * - XZ checker
+    * - Data hazard warning
+    */
+   cci_sniffer
+     #(
+       .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
+       .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
+       .DATA_WIDTH   (`CCI_DATA_WIDTH)
+       )
+   cci_sniffer
+     (
+      // CCI signals
+      .clk             (clk),
+      .resetb          (sys_reset_n),
+      .lp_initdone     (lp_initdone),
+      .tx_c0_header    (tx_c0_header),
+      .tx_c0_rdvalid   (tx_c0_rdvalid),
+      .tx_c1_header    (tx_c1_header),
+      .tx_c1_data      (tx_c1_data),
+      .tx_c1_wrvalid   (tx_c1_wrvalid),
+      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
+      .rx_c0_header    (rx_c0_header),
+      .rx_c0_data      (rx_c0_data),
+      .rx_c0_rdvalid   (rx_c0_rdvalid),
+      .rx_c0_wrvalid   (rx_c0_wrvalid),
+      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
+      .rx_c1_header    (rx_c1_header),
+      .rx_c1_wrvalid   (rx_c1_wrvalid)
+      );
+     
 
    /*
     * ASE Hardware Interface (CCI) logger

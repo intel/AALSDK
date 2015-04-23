@@ -99,7 +99,7 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 ## Verilog compile
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
-SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ns/10ns
+SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ps/10ps
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
@@ -278,7 +278,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/
 	rm -rf simv* csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf .ase_* *.o ase_seed.txt
+	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean
 	./distclean.sh
