@@ -42,6 +42,7 @@ CriticalSection.cpp \
 DynLinkLibrary.cpp \
 OSLib.cpp \
 OSSemaphore.cpp \
+Barrier.cpp \
 OSServiceModule.c \
 Sleep.cpp \
 Thread.cpp \

@@ -34,6 +34,7 @@ gtCommon.h \
 gtCommon.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
+gtBarrier.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \

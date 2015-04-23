@@ -238,6 +238,7 @@ include/aalsdk/osal/DynLinkLibrary.h \
 include/aalsdk/osal/Env.h \
 include/aalsdk/osal/OSALService.h \
 include/aalsdk/osal/OSSemaphore.h \
+include/aalsdk/osal/Barrier.h \
 include/aalsdk/osal/OSServiceModule.h \
 include/aalsdk/osal/Sleep.h \
 include/aalsdk/osal/ThreadGroup.h \
