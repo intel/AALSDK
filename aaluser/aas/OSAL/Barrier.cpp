@@ -56,10 +56,10 @@ Barrier::Barrier() :
    m_Flags(0),
    m_UnlockCount(0),
    m_CurCount(0),
-   m_NumWaiters(0)
-#if   defined( __AAL_WINDOWS__ )
+   m_AutoResetManager(this)
+#if defined( __AAL_WINDOWS__ )
    , m_hEvent(NULL)
-#endif // OS
+#endif // __AAL_WINDOWS__
 {}
 
 //=============================================================================
@@ -73,43 +73,60 @@ Barrier::~Barrier()
    Destroy();
 }
 
-#if   defined( __AAL_LINUX__ )
+#if defined( __AAL_LINUX__ )
 # include <errno.h>
 # include <sys/time.h>
+#endif // __AAL_LINUX__
 
 // Acquire the lock that protects m_Flags.
-# define INIT_LOCK()               this->Lock()
+void Barrier::StateLock()   { this->Lock();   }
 // Release the lock that protects m_Flags.
-# define INIT_UNLOCK()             this->Unlock()
+void Barrier::StateUnlock() { this->Unlock(); }
 // Release the lock that protects m_Flags.
 // Acquire the lock that protects the counters.
-# define INIT_UNLOCK_COUNT_LOCK()  \
-do                                 \
-{                                  \
-   this->Unlock();                 \
-   ::pthread_mutex_lock(&m_mutex); \
-}while(0)
+void Barrier::StateUnlockCountLock()
+{
+#if   defined( __AAL_LINUX__ )
+   int res;
+
+   this->Unlock();
+   res = pthread_mutex_lock(&m_mutex);
+   ASSERT(0 == res);
+
+#elif defined( __AAL_WINDOWS__ )
+   // No action here for Windows - use the same lock for both.
+#endif // OS
+}
 // Acquire the lock that protects the counters.
-# define COUNT_LOCK()              ::pthread_mutex_lock(&m_mutex);
-// Release the lock that protects the counters.
-# define COUNT_UNLOCK()            ::pthread_mutex_unlock(&m_mutex);
+void Barrier::CountLock()
+{
+#if   defined( __AAL_LINUX__ )
+   int res;
+
+   res = pthread_mutex_lock(&m_mutex);
+   ASSERT(0 == res);
 
 #elif defined( __AAL_WINDOWS__ )
 
-// Acquire the lock that protects m_Flags.
-# define INIT_LOCK()    this->Lock()
-// Release the lock that protects m_Flags.
-# define INIT_UNLOCK()  this->Unlock()
-// noop for Windows - there is only one lock.
-# define INIT_UNLOCK_COUNT_LOCK()
-// Acquire the lock that protects the counters.
-# define COUNT_LOCK()   this->Lock()
-// Release the lock that protects the counters.
-# define COUNT_UNLOCK() this->Unlock()
+   this->Lock();
 
 #endif // OS
+}
+// Release the lock that protects the counters.
+void Barrier::CountUnlock()
+{
+#if   defined( __AAL_LINUX__ )
+   int res;
 
+   res = pthread_mutex_unlock(&m_mutex);
+   ASSERT(0 == res);
 
+#elif defined( __AAL_WINDOWS__ )
+
+   this->Unlock();
+
+#endif // OS
+}
 
 //=============================================================================
 // Name: Create
@@ -123,11 +140,11 @@ do                                 \
 //=============================================================================
 AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoReset)
 {
-   INIT_LOCK();
+   StateLock();
    
    if ( flag_is_set(m_Flags, BARRIER_FLAG_INIT) ) {
       // Already initialized
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
 
@@ -138,7 +155,6 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
                           FALSE,  // not signaled
                           NULL);  // no name
    if ( NULL == m_hEvent ) {
-      COUNT_UNLOCK();
       INIT_UNLOCK();
       return false;
    }
@@ -148,32 +164,32 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
    pthread_mutexattr_t attr;
    
    if ( 0 != pthread_mutexattr_init(&attr) ) {
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
    
    if ( 0 != pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) ) {
       pthread_mutexattr_destroy(&attr);
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
    
    if ( 0 != pthread_mutex_init(&m_mutex, &attr) ) {
       pthread_mutexattr_destroy(&attr);
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
    
    pthread_mutexattr_destroy(&attr);
    
    if ( 0 != pthread_cond_init(&m_condition, NULL) ) {
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
    
 #endif // OS
 
-   COUNT_LOCK(); // yes, both locks.
+   CountLock(); // yes, both locks.
 
    m_Flags = 0;
 
@@ -182,17 +198,14 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
    m_CurCount    = 0;
    m_UnlockCount = std::max((AAL::btUnsignedInt)1, UnlockCount);
 
-   // No waiters.
-   m_NumWaiters = 0;
-
    if ( bAutoReset ) {
       flag_setf(m_Flags, BARRIER_FLAG_AUTO_RESET);
    }
 
    flag_setf(m_Flags, BARRIER_FLAG_INIT);
    
-   COUNT_UNLOCK();
-   INIT_UNLOCK();
+   CountUnlock();
+   StateUnlock();
    
    return true;
 }
@@ -208,13 +221,19 @@ AAL::btBool Barrier::Destroy()
 {
    AAL::btBool res = true;
    
-   INIT_LOCK();
+   StateLock();
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
+
+   flag_setf(m_Flags, BARRIER_FLAG_DESTROYING);
+
+   StateUnlock();
+
+   UnblockAll();
 
 #if   defined( __AAL_WINDOWS__ )
    
@@ -232,9 +251,7 @@ AAL::btBool Barrier::Destroy()
    
 #endif // OS
 
-   flag_clrf(m_Flags, BARRIER_FLAG_INIT);
-
-   INIT_UNLOCK();
+   flag_clrf(m_Flags, BARRIER_FLAG_INIT|BARRIER_FLAG_DESTROYING);
    
    return res;
 }
@@ -250,17 +267,19 @@ AAL::btBool Barrier::Destroy()
 //=============================================================================
 AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
 {
-   INIT_LOCK();
+   StateLock();
    
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      INIT_UNLOCK();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Auto-reset is enabled, we're unblocking, we're destroying.
+      StateUnlock();
       return false;
    }
 
    AAL::btBool res = true;
    
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
 
 #if defined( __AAL_WINDOWS__ )
 
@@ -271,20 +290,16 @@ AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
    
 #endif // __AAL_WINDOWS__
    
-   // We're resetting things, so..
-   // * we're no longer unblocking, if we were before this call.
-   // * the current count is back to zero.
-   flag_clrf(m_Flags, BARRIER_FLAG_UNBLOCKING);
    m_CurCount = 0;
    
    // Note that this treatment of 0 == UnlockCount is different than that of Create().
    // Here, if UnlockCount is zero, we don't change m_UnlockCount. This allows resetting
-   //  the barrier, without having to know the unlock value given to Create().
+   //  the Barrier, without having to know the unlock value given to Create().
    if ( UnlockCount > 0 ) {
       m_UnlockCount = UnlockCount;
    }
 
-   COUNT_UNLOCK();
+   CountUnlock();
    
    return res;
 }
@@ -300,22 +315,21 @@ AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
 //=============================================================================
 AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedInt &rUnlockCount)
 {
-   INIT_LOCK();
+   StateLock();
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
 
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
    rCurCount    = m_CurCount;
    rUnlockCount = m_UnlockCount;
-   COUNT_UNLOCK();
+   CountUnlock();
    
    return true;
 }
-
 
 //=============================================================================
 // Name: Post
@@ -328,44 +342,53 @@ AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedIn
 //=============================================================================
 AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 {
-   INIT_LOCK();
+   StateLock();
    
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      INIT_UNLOCK();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Unblocking or Destroying.
+      StateUnlock();
       return false;
    }
 
    AAL::btBool res = true;
 
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
    
-   // We let m_CurCount meet, but never exceed m_UnlockCount.
+   const AAL::btBool bWasLocked = (m_CurCount < m_UnlockCount);
+
+   // We let m_CurCount meet, but never exceed, m_UnlockCount.
    AAL::btUnsignedInt c = std::min(nCount, m_UnlockCount - m_CurCount);
    
    m_CurCount += c;
 
    if ( m_CurCount >= m_UnlockCount ) {
 
-#if defined( __AAL_LINUX__ )
+      if ( bWasLocked && flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET) ) {
+         // Begin a new auto-reset.
+         m_AutoResetManager.AutoResetBegin();
+      }
+
+#if   defined( __AAL_LINUX__ )
 
       // Broadcast the condition to all.
       if ( 0 != pthread_cond_broadcast(&m_condition) ) {
          res = false;
       }
 
-#elif  defined( __AAL_WINDOWS__ )
+#elif defined( __AAL_WINDOWS__ )
       
       // Set the event state to signaled, waking all.
       if ( !SetEvent(m_hEvent) ) {
          res = false;
       }
       
-#endif
+#endif // OS
 
    }
 
-   COUNT_UNLOCK();
+   CountUnlock();
    
    return res;
 }
@@ -384,62 +407,268 @@ AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 //=============================================================================
 AAL::btBool Barrier::UnblockAll()
 {
-   INIT_LOCK();
+   StateLock();
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
-      INIT_UNLOCK();
+      StateUnlock();
       return false;
    }
 
    AAL::btBool res = true;
 
-   INIT_UNLOCK_COUNT_LOCK();
-   
+   StateUnlockCountLock();
+
    flag_setf(m_Flags, BARRIER_FLAG_UNBLOCKING);
+
    m_CurCount = m_UnlockCount;
 
-#if defined( __AAL_LINUX__ )
+#if   defined( __AAL_LINUX__ )
    
    // Broadcast the condition to all.
    if ( 0 != pthread_cond_broadcast(&m_condition) ) {
       res = false;
    }
       
-#elif  defined( __AAL_WINDOWS__ )
+#elif defined( __AAL_WINDOWS__ )
       
    // Set the event state to signaled, waking all.
    if ( !SetEvent(m_hEvent) ) {
       res = false;
    }
       
-#endif
+#endif // OS
 
-   COUNT_UNLOCK();
+   m_AutoResetManager.UnblockAll();
+
+   CountUnlock();
    
    return res;
 }
 
 AAL::btUnsignedInt Barrier::NumWaiters() const
 {
-   return m_NumWaiters;
+   AutoLock(this);
+   return m_AutoResetManager.NumWaiters();
 }
 
-#define ADD_WAITER() ++m_NumWaiters
+
+Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
+   m_pBarrier(pBarrier),
+   m_NumWaiters(0),
+   m_NumPreWaiters(0)
+#if defined( __AAL_WINDOWS__ )
+   , m_hREvent(NULL)
+#endif // __AAL_WINDOWS__
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   m_hREvent = CreateEvent(NULL,   // no inheritance
+                           TRUE,   // manual reset event
+                           FALSE,  // not signaled
+                           NULL);  // no name
+   ASSERT(NULL != m_hREvent);
+
+#elif defined( __AAL_LINUX__ )
+
+   int res;
+   pthread_mutexattr_t attr;
+
+   res = pthread_mutexattr_init(&attr);
+   ASSERT(0 == res);
+
+   res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+   ASSERT(0 == res);
+
+   res = pthread_mutex_init(&m_Rmutex, &attr);
+   ASSERT(0 == res);
+
+   res = pthread_mutexattr_destroy(&attr);
+   ASSERT(0 == res);
+
+   res = pthread_cond_init(&m_Rcondition, NULL);
+   ASSERT(0 == res);
+
+#endif // OS
+}
+
+Barrier::AutoResetManager::~AutoResetManager()
+{
+   int res;
+
+   ASSERT(0 == m_NumWaiters);
+
+#if   defined( __AAL_WINDOWS__ )
+
+   res = CloseHandle(m_hREvent) ? 0 : 1;
+   ASSERT(0 == res);
+
+#elif defined( __AAL_LINUX__ )
+
+   res = pthread_cond_destroy(&m_Rcondition);
+   ASSERT(0 == res);
+
+   res = pthread_mutex_destroy(&m_Rmutex);
+   ASSERT(0 == res);
+
+#endif // OS
+}
+
+void Barrier::AutoResetManager::UnblockAll()
+{
+   if ( 0 == NumWaiters() ) {
+      // There is no waiter to unblock - we're done.
+      flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_UNBLOCKING);
+
+      if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET) ) {
+
+         m_pBarrier->m_CurCount = 0;
+
+#if defined( __AAL_WINDOWS__ )
+         ResetEvent(m_pBarrier->m_hEvent); // reset the manual-reset event to non-signaled.
+#endif // __AAL_WINDOWS__
+
+      }
+   }
+
+   AutoResetEnd();
+}
+
+void Barrier::AutoResetManager::AddWaiter()
+{
+   // When doing auto-reset, we cannot increment m_NumWaiters until we have decremented
+   //  m_NumWaiters to 0 and reset the Barrier to the locked state. This is to prevent
+   //  the case where a thread was unblocked from Wait(), but then called Wait() again,
+   //  before m_NumWaiters was decremented to 0. Without this protection, a low-latency
+   //  thread executing in a tight loop could "float" m_NumWaiters indefinitely, rendering
+   //  the Barrier ineffective.
+   // This treatment enforces the hard contract that the Barrier is automatically reset
+   //  for each volley of Wait() calls.
+
+   if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+
+      ++m_NumPreWaiters;
+
+WAITLOOP:
+      CountUnlock(); // Don't sleep while the outer object is locked.
 
 #if defined( __AAL_LINUX__ )
+      pthread_mutex_lock(&m_Rmutex);
+#endif // __AAL_LINUX__
 
-# define DEL_WAITER()                                        \
-do                                                           \
-{                                                            \
-   --m_NumWaiters;                                           \
-   if ( 0 == m_NumWaiters ) {                                \
-      flag_clrf(m_Flags, BARRIER_FLAG_UNBLOCKING);           \
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET) ) { \
-         m_CurCount = 0;                                     \
-      }                                                      \
-   }                                                         \
-}while(0)
+      while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+         // We must hang out here until the Barrier is fully reset.
+
+#if   defined( __AAL_LINUX__ )
+
+         pthread_cond_wait(&m_Rcondition, &m_Rmutex);
+
+#elif defined( __AAL_WINDOWS__ )
+
+         WaitForSingleObject(m_hREvent, INFINITE);
+
+#endif // OS
+
+      }
+
+#if defined( __AAL_LINUX__ )
+      pthread_mutex_unlock(&m_Rmutex);
+#endif // __AAL_LINUX__
+
+      CountLock(); // We must grab the outer object's count lock and check again.
+
+      // This check is required because we're crossing lock domains.
+      if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+         goto WAITLOOP;
+      }
+
+      --m_NumPreWaiters;
+   }
+
+   // ASSERT: we hold the outer object's count lock, and auto-reset is complete.
+
+   ++m_NumWaiters;
+}
+
+void Barrier::AutoResetManager::RemoveWaiter()
+{
+   if ( 0 == m_NumWaiters ) {
+      // Nothing to do.
+      return;
+   }
+
+   --m_NumWaiters;
+
+   if ( 0 == m_NumWaiters ) {
+
+      // If we were unblocking, we no longer are.
+      flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_UNBLOCKING);
+
+      if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET) ) {
+         // The auto-reset is now complete.
+
+         m_pBarrier->m_CurCount = 0;
+
+#if defined( __AAL_WINDOWS__ )
+         ResetEvent(m_pBarrier->m_hEvent); // reset the manual-reset event to non-signaled.
+#endif // __AAL_WINDOWS__
+
+         AutoResetEnd();
+
+      }
+   }
+}
+
+AAL::btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
+{
+   AutoLock(m_pBarrier);
+   return m_NumWaiters + m_NumPreWaiters;
+}
+
+void Barrier::AutoResetManager::AutoResetBegin()
+{
+   if ( 0 == m_NumWaiters ) {
+      // No waiters means there is no one to block from re-entering Wait() prior to resetting.
+      // In this case, we just perform the auto-reset actions here.
+
+      // If we were unblocking, we no longer are.
+      flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_UNBLOCKING);
+
+      m_pBarrier->m_CurCount = 0;
+
+#if defined( __AAL_WINDOWS__ )
+      ResetEvent(m_pBarrier->m_hEvent); // reset the manual-reset event to non-signaled.
+#endif // __AAL_WINDOWS__
+
+      AutoResetEnd();
+
+   } else {
+      // We have waiters to block from entering new Wait() calls.
+
+      flag_setf(m_pBarrier->m_Flags, BARRIER_FLAG_RESETTING);
+#if defined( __AAL_WINDOWS__ )
+      ResetEvent(m_hREvent); // change manual-reset event state to non-signaled.
+#endif // __AAL_WINDOWS__
+
+   }
+}
+
+void Barrier::AutoResetManager::AutoResetEnd()
+{
+   // Wake all threads blocked in AddWaiter().
+   flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_RESETTING);
+
+#if   defined( __AAL_WINDOWS__ )
+   SetEvent(m_hREvent); // change manual-reset event state to signaled, waking all.
+#elif defined( __AAL_LINUX__ )
+   pthread_cond_broadcast(&m_Rcondition); // wake all
+#endif // OS
+}
+
+void Barrier::AutoResetManager::CountLock()   { m_pBarrier->CountLock();   }
+void Barrier::AutoResetManager::CountUnlock() { m_pBarrier->CountUnlock(); }
+
+#if defined( __AAL_LINUX__ )
 
 //=============================================================================
 // Name: Wait
@@ -451,34 +680,41 @@ do                                                           \
 //=============================================================================
 AAL::btBool Barrier::Wait()
 {
-   INIT_LOCK();
+   StateLock();
    
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      INIT_UNLOCK();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Unblocking or Destroying.
+      StateUnlock();
       return false;
    }
    
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
+
+   AAL::btBool res = true;
    
-   ADD_WAITER();
+   m_AutoResetManager.AddWaiter();
    
    while ( m_CurCount < m_UnlockCount ) {
 
-      pthread_cond_wait(&m_condition, &m_mutex);
-
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING) ) {
-         DEL_WAITER();
-         COUNT_UNLOCK();
-         return false;
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+         res = false;
+         break;
       }
       
+      pthread_cond_wait(&m_condition, &m_mutex);
+
    }
 
-   DEL_WAITER();
-   COUNT_UNLOCK();
+   if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      res = false;
+   }
+
+   m_AutoResetManager.RemoveWaiter();
+   CountUnlock();
    
-   return true;
+   return res;
 }
 
 //=============================================================================
@@ -496,14 +732,17 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   INIT_LOCK();
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      INIT_UNLOCK();
+   StateLock();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Unblocking or Destroying.
+      StateUnlock();
       return false;
    }
 
-   // Allow other waits and posts
-   INIT_UNLOCK();
+   // Allow Post()'s and Wait()'s during gettimeofday().
+   StateUnlock();
 
    struct timeval tv;
    gettimeofday(&tv, NULL);
@@ -516,12 +755,20 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
    ts.tv_sec  += ts.tv_nsec / 1000000000;
    ts.tv_nsec %= 1000000000;
 
-   // Protect the predicate check (locks the mutex used in wait)
-   COUNT_LOCK();
+   AAL::btBool res = true;
 
-   ADD_WAITER();
+   CountLock();
+
+   m_AutoResetManager.AddWaiter();
 
    while ( m_CurCount < m_UnlockCount ) {
+
+      // If we're being unblocked then immediately return false.
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+         res = false;
+         break;
+      }
+
       // The pthread cond wait API's work as follows:
       // * the mutex object guarding the counter predicate must be locked prior to the call.
       // * when the wait call puts the caller to sleep, it releases the lock prior to doing so.
@@ -531,40 +778,23 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       if ( ETIMEDOUT == pthread_cond_timedwait(&m_condition,
                                                &m_mutex,
                                                &ts) ) {
-         DEL_WAITER();
-         COUNT_UNLOCK();
-         return false;
+         res = false;
+         break;
       }
 
-      // If we're being unblocked then immediately return false.
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING) ) {
-         DEL_WAITER();
-         COUNT_UNLOCK();
-         return false;
-      }
    }
 
-   DEL_WAITER();
-   
-   COUNT_UNLOCK();
+   if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      res = false;
+   }
 
-   return true;
+   m_AutoResetManager.RemoveWaiter();
+   CountUnlock();
+
+   return res;
 }
 
 #elif defined( __AAL_WINDOWS__ )
-
-# define DEL_WAITER()                                        \
-do                                                           \
-{                                                            \
-   --m_NumWaiters;                                           \
-   if ( 0 == m_NumWaiters ) {                                \
-      flag_clrf(m_Flags, BARRIER_FLAG_UNBLOCKING);           \
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET) ) { \
-         m_CurCount = 0;                                     \
-         ResetEvent(m_hEvent); /* manual-reset event */      \
-      }                                                      \
-   }                                                         \
-}while(0)
 
 //=============================================================================
 // Name: Wait
@@ -578,42 +808,53 @@ AAL::btBool Barrier::Wait()
 {
    DWORD dwWaitResult;
 
-   INIT_LOCK();
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      INIT_UNLOCK();
+   StateLock();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Unblocking or Destroying.
+      StateUnlock();
       return false;
    }
 
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
 
-   ADD_WAITER();
+   m_AutoResetManager.AddWaiter();
 
 WAITLOOP:
+
+   // When un-blocking, don't allow threads to loop and potentially block again.
+   if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      m_AutoResetManager.RemoveWaiter();
+      CountUnlock();
+      return false;
+   }
+
    while ( m_CurCount < m_UnlockCount ) {
 
-      COUNT_UNLOCK();
+      // If we're being unblocked then immediately return false.
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+         m_AutoResetManager.RemoveWaiter();
+         CountUnlock();
+         return false;
+      }
+
+      CountUnlock();
 
       // ASSERT: we are unlocked - don't wait while locked!
       dwWaitResult = WaitForSingleObject(m_hEvent, INFINITE);
 
-      COUNT_LOCK();
+      CountLock();
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            DEL_WAITER();
-            COUNT_UNLOCK();
+            m_AutoResetManager.RemoveWaiter();
+            CountUnlock();
             return false;     // error (using INFINITE above)
          }
       }
 
-      // If we're being unblocked then immediately return false.
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING) ) {
-         DEL_WAITER();
-         COUNT_UNLOCK();
-         return false;
-      }
    }
 
    // We must guard both the wake signal and the check of m_CurCount as the atomic operation.
@@ -624,9 +865,8 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   DEL_WAITER();
-   
-   COUNT_UNLOCK();
+   m_AutoResetManager.RemoveWaiter();
+   CountUnlock();
    
    return true;
 }
@@ -648,41 +888,51 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   INIT_LOCK();
-   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      INIT_UNLOCK();
+   StateLock();
+   if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
+        flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      // Not initialized -or-
+      // Unblocking or Destroying.
+      StateUnlock();
       return false;
    }
 
-   INIT_UNLOCK_COUNT_LOCK();
+   StateUnlockCountLock();
 
-   ADD_WAITER();
+   m_AutoResetManager.AddWaiter();
 
 WAITLOOP:
+
+   // When un-blocking, don't allow threads to loop and potentially block again.
+   if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+      m_AutoResetManager.RemoveWaiter();
+      CountUnlock();
+      return false;
+   }
+
    while ( m_CurCount < m_UnlockCount ) {
 
-      COUNT_UNLOCK();
+      // If we're being unblocked then immediately return false.
+      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
+         m_AutoResetManager.RemoveWaiter();
+         CountUnlock();
+         return false;
+      }
+
+      CountUnlock();
 
       // ASSERT: we are unlocked - don't wait while locked!
       dwWaitResult = WaitForSingleObject(m_hEvent, (DWORD)Timeout);
 
-      COUNT_LOCK();
+      CountLock();
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            DEL_WAITER();
-            COUNT_UNLOCK();
+            m_AutoResetManager.RemoveWaiter();
+            CountUnlock();
             return false;     // timeout or error
          }
-      }
-
-      // If we're being unblocked then immediately return false.
-      if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING) ) {
-         DEL_WAITER();
-         COUNT_UNLOCK();
-         return false;
       }
 
    }
@@ -695,9 +945,9 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   DEL_WAITER();
+   m_AutoResetManager.RemoveWaiter();
    
-   COUNT_UNLOCK();
+   CountUnlock();
    
    return true;
 }

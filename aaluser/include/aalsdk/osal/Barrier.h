@@ -78,7 +78,7 @@ public:
    /// @retval  false  Barrier not initialized or an error occurred during destruction.
    AAL::btBool Destroy();
 
-   /// Reset the Barrier to locked.
+   /// Reset the Barrier to locked (manual-reset Barrier, only).
    ///
    /// The current count is set to zero. The unlock count is modified only if UnlockCount != 0.
    ///
@@ -135,10 +135,45 @@ private:
    AAL::btUnsignedInt m_Flags;
 #define BARRIER_FLAG_INIT       0x00000001
 #define BARRIER_FLAG_AUTO_RESET 0x00000002
-#define BARRIER_FLAG_UNBLOCKING 0x00000004
+#define BARRIER_FLAG_RESETTING  0x00000004
+#define BARRIER_FLAG_UNBLOCKING 0x00000008
+#define BARRIER_FLAG_DESTROYING 0x00000010
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btUnsignedInt m_CurCount;
-   AAL::btUnsignedInt m_NumWaiters;
+
+   // We always reference m_AutoResetManager within the context of the Barrier
+   //  locks, so there is no need to be concerned with locking within AutoResetManager.
+   class AutoResetManager
+   {
+   public:
+      AutoResetManager(Barrier *pBarrier);
+      virtual ~AutoResetManager();
+
+      void UnblockAll();
+      void AddWaiter();
+      void RemoveWaiter();
+
+      AAL::btUnsignedInt NumWaiters() const;
+
+      void AutoResetBegin();
+      void AutoResetEnd();
+
+   protected:
+      Barrier           *m_pBarrier;
+      AAL::btUnsignedInt m_NumWaiters;    // number of threads blocked in Wait() calls on a locked Barrier.
+      AAL::btUnsignedInt m_NumPreWaiters; // number of threads blocked in Wait() by an auto-reset.
+#if   defined( __AAL_WINDOWS__ )
+      HANDLE             m_hREvent;
+#elif defined( __AAL_LINUX__ )
+      pthread_mutex_t    m_Rmutex;
+      pthread_cond_t     m_Rcondition;
+#endif // OS
+
+      void CountLock();
+      void CountUnlock();
+   };
+
+   AutoResetManager   m_AutoResetManager;
 
 #if   defined( __AAL_WINDOWS__ )
    HANDLE             m_hEvent;
@@ -146,6 +181,14 @@ private:
    pthread_mutex_t    m_mutex;
    pthread_cond_t     m_condition;
 #endif // OS
+
+   friend class AutoResetManager;
+
+   void StateLock();
+   void StateUnlock();
+   void StateUnlockCountLock();
+   void CountLock();
+   void CountUnlock();
 };
 
 /// @} group OSAL
