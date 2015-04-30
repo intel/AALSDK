@@ -601,20 +601,22 @@ void Barrier::AutoResetManager::RemoveWaiter()
 
    if ( 0 == m_NumWaiters ) {
 
-      // If we were unblocking, we no longer are.
-      flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_UNBLOCKING);
+      if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_RESETTING|BARRIER_FLAG_UNBLOCKING) ) {
 
-      if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET) ) {
-         // The auto-reset is now complete.
+         if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET) ) {
+            // The auto-reset is now complete.
 
-         m_pBarrier->m_CurCount = 0;
+            m_pBarrier->m_CurCount = 0;
 
 #if defined( __AAL_WINDOWS__ )
-         ResetEvent(m_pBarrier->m_hEvent); // reset the manual-reset event to non-signaled.
+            ResetEvent(m_pBarrier->m_hEvent); // reset the manual-reset event to non-signaled.
 #endif // __AAL_WINDOWS__
 
-         AutoResetEnd();
+            AutoResetEnd();
 
+         }
+
+         flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_RESETTING|BARRIER_FLAG_UNBLOCKING);
       }
    }
 }
