@@ -31,10 +31,15 @@ declare AUTO_COLOR=''
 
 WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat ${AUTO_COLOR} ${ARGS}"
 
+# GCDA_DIRS=(
+# "--directory ${VPATH}/aas/OSAL/.libs" 
+# "--directory ${VPATH}/aas/AASLib/.libs" 
+# "--directory ${VPATH}/aas/XLRTLib/.libs" 
+# "--directory ${VPATH}/tests/harnessed/gtest"
+# )
+
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
-"--directory ${VPATH}/aas/AASLib/.libs" \
-"--directory ${VPATH}/aas/XLRTLib/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest"\
 )
 

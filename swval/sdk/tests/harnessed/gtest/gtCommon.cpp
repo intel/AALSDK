@@ -4,7 +4,7 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-GlobalTestConfig config;
+GlobalTestConfig Config;
 
 // Retrieve the current test and test case name from gtest.
 // Must be called within the context of a test case/fixture.
