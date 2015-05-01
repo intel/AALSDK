@@ -89,4 +89,50 @@ nlb_lpbk nlb_lpbk(
   .ci2cf_InitDn                      (ffs_vl_LP32ui_lp2sy_InitDnForSys)
 );
 
+`define SNIFFER
+`ifdef SNIFFER
+   logic cci_hazard_flag;
+   logic cci_hazard_flag_q;
+      
+   // Hazard sniffer
+   cci_data_hazard_sniffer
+     #(
+       .ADDR_WIDTH        (32),
+       .META_WIDTH        (14),
+       .NUM_WORDS_RADIX  (7),
+       .SLOT_DEPTH_RADIX (6)
+       )
+   cci_data_hazard_sniffer
+     (
+      .clk        (vl_clk_LPdomain_32ui),
+      .rst        (~ffs_vl_LP32ui_lp2sy_SystemReset_n),
+      .tx0_addr    (ffs_vl61_LP32ui_sy2lp_C0TxHdr[45:14]),
+      .tx0_meta    (ffs_vl61_LP32ui_sy2lp_C0TxHdr[13:0]),
+      .tx0_rdvalid    (ffs_vl_LP32ui_sy2lp_C0TxRdValid),
+      .tx1_addr    (ffs_vl61_LP32ui_sy2lp_C1TxHdr[45:14]),
+      .tx1_meta    (ffs_vl61_LP32ui_sy2lp_C0TxHdr[13:0]),
+      .tx1_wrvalid    (ffs_vl_LP32ui_sy2lp_C1TxWrValid),     
+      .rx0_meta    (ffs_vl18_LP32ui_lp2sy_C0RxHdr[13:0]),
+      .rx0_rdvalid    (ffs_vl_LP32ui_lp2sy_C0RxRdValid),
+      .rx0_wrvalid    (ffs_vl_LP32ui_lp2sy_C0RxWrValid),
+      .rx1_meta    (ffs_vl18_LP32ui_lp2sy_C1RxHdr[13:0]),
+      .rx1_wrvalid    (ffs_vl_LP32ui_lp2sy_C1RxWrValid),     
+      .read_slot_unavailable    (),
+      .write_slot_unavailable    (),
+      .slots_full    (),
+      .slots_empty    (),     
+      .hazard_warning (cci_hazard_flag)
+      );
+
+   // synthesis translate_off
+   always @(posedge vl_clk_LPdomain_32ui) begin
+      cci_hazard_flag_q <= cci_hazard_flag;
+      if (cci_hazard_flag && ~cci_hazard_flag_q)
+	$display("*** CCI HAZARD FOUND ***");      
+   end   
+   // synthesis translate_on
+   
+`endif
+
+   
 endmodule
