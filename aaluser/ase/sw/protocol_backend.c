@@ -204,11 +204,25 @@ int ase_listener()
 	{
 	  ase_dealloc_action(&ase_buffer);
 	}
-
+      
+      // Standard oneline message ---> Hides internal info
+      ase_buffer_oneline(&ase_buffer);
+      
+      // Write buffer information to file
+      if (!ase_buffer.is_csrmap || !ase_buffer.is_privmem) 
+	{
+	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
+	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (uint64_t*)ase_buffer.vbase);
+	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (uint64_t*)ase_buffer.fake_paddr);
+	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (uint32_t*)(ase_buffer.fake_paddr >> 6));
+	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  fprintf(fp_workspace_log, "\n");
+	  
+	}
+      
+      // Debug only
     #ifdef ASE_DEBUG
       ase_buffer_info(&ase_buffer);
-    #else
-      ase_buffer_oneline(&ase_buffer);
     #endif
     }
 
@@ -246,14 +260,27 @@ int ase_listener()
   /*
    * UMSG listener
    */
-#if 0
   // Message string
   char umsg_str[ASE_MQ_MSGSIZE];
-
-  // Umsg parameters
   uint32_t umsg_id;
   uint32_t umsg_hint;
   char umsg_data[CL_BYTE_WIDTH];
+
+  // Cleanse receptacle string
+  memset (umsg_str, '\0', sizeof(umsg_str));
+  memset (umsg_data, '\0', sizeof(umsg_data));
+  
+  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1)
+    {
+      // Tokenize messgae to get msg_id & umsg_data
+      sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
+     
+      // UMSG dispatch
+      umsg_dispatch(0, 1, umsg_hint, umsg_id, umsg_data);
+    }
+      
+#if 0
+  // Umsg parameters
   uint64_t *umas_target_addr;
   uint64_t umas_target_addrint;
 
@@ -308,6 +335,7 @@ int ase_listener()
 	}
     }
 #endif
+
 
   /*
    * SIMKILL message handler
@@ -445,7 +473,7 @@ void ase_init()
   put_timestamp();
 
   // Print timestamp
-  printf("SIM-C : Timestamp => %s\n", get_timestamp(0) );
+  printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
 
   // Define a null string
   memset(null_str, 64, '\0');
@@ -456,9 +484,6 @@ void ase_init()
 #ifdef SIM_SIDE
   create_ipc_listfile();
 #endif
-
-  // Set CSR write to '0', i.e. no CSR write has occured
-  // csr_write_init (0);
 
   // Set up message queues
 #ifdef SIM_SIDE
@@ -481,6 +506,17 @@ void ase_init()
       ase_write_seed ( ase_addr_seed );
     }
   srand ( ase_addr_seed );
+
+  // Open Buffer info log
+  fp_workspace_log = fopen("workspace_info.log", "wb");
+  if (fp_workspace_log == NULL) 
+    {
+      ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+    }
+  else
+    {
+      printf("SIM-C : Information about opened workspaces => workspace_info.log \n");
+    }
 
   FUNC_CALL_EXIT;
 }
@@ -570,6 +606,9 @@ void start_simkill_countdown()
   // Final clean of IPC
   final_ipc_cleanup();
 
+  // Close workspace log
+  fclose(fp_workspace_log);
+
   // Remove session files
   printf("SIM-C : Cleaning session files...\n");
   if ( unlink(ASE_READY_FILENAME) == -1 )
@@ -602,7 +641,6 @@ void ase_umsg_init(uint64_t dsm_base)
 {
   FUNC_CALL_ENTRY;
 
-#if 0
   uint32_t *cirbstat;
 
   printf ("SIM-C : Enabling UMSG subsystem in ASE...\n");
@@ -615,7 +653,6 @@ void ase_umsg_init(uint64_t dsm_base)
   printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
   printf ("        CIRBSTAT addr = %p\n", cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
-#endif
 
   FUNC_CALL_EXIT;
 }

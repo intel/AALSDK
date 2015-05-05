@@ -44,7 +44,7 @@ char null_str[CL_BYTE_WIDTH];
 
 unsigned long int ase_cci_transact_count;
 
-FILE *ase_cci_log_fd;
+/* FILE *ase_cci_log_fd; */
 
 struct timeval start;
 long int ref_anchor_time;
@@ -122,10 +122,10 @@ void ase_buffer_oneline(struct buffer_t *mem)
     printf("ADDED   ");
   else
     printf("REMOVED ");
-  printf("%5s \t", mem->memname);
+  /* printf("%5s \t", mem->memname); */
   printf("%p  ", (uint32_t*)mem->vbase);
-  printf("%p  ", (uint32_t*)mem->pbase);
-  printf("%p  ", (uint32_t*)mem->fake_paddr);
+  /* printf("%p  ", (uint32_t*)mem->pbase); */
+  printf("%p (%08x) ", (uint32_t*)mem->fake_paddr, (uint32_t)(mem->fake_paddr >> 6) );
   printf("%x  ", mem->memsize);
   /* printf("%d  ", mem->is_csrmap); */
   /* printf("%d  ", mem->is_privmem); */

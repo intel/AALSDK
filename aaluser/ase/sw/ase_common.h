@@ -117,8 +117,9 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t pbase;                 // SIM virtual address             |   SIM
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
-  int is_privmem;                 // Flag memory as a private memory |   SIM
-  int is_csrmap;                     // Flag memory as DSM              |   TBD
+  int is_privmem;                 // Flag memory as a private memory |    
+  int is_csrmap;                  // Flag memory as DSM              |   
+  int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
 
@@ -202,20 +203,22 @@ extern "C" {
   void csr_write(uint32_t, uint32_t);
   uint32_t csr_read(uint32_t);
   // Remote starter
-  void ase_remote_start_simulator();
+  //  void ase_remote_start_simulator();
   // SPL bridge functions *FIXME*
   void setup_spl_cxt_pte(struct buffer_t *, struct buffer_t *);
   void spl_driver_dsm_setup(struct buffer_t *);
   void spl_driver_reset(struct buffer_t *);
   void spl_driver_afu_setup(struct buffer_t *);
-  // void spl_driver_start(struct buffer_t *, struct buffer_t *);
   void spl_driver_start(uint64_t *);
   void spl_driver_stop();
   // UMSG subsystem
-  void init_umsg_system(struct buffer_t *, struct buffer_t *);
-  void set_umsg_mode(uint32_t);
-  void send_umsg(struct buffer_t *, uint32_t, char*);
-  void deinit_umsg_system(struct buffer_t *);
+  void umas_init(uint32_t umsg_mode);
+  void umsg_send(int umas_id, char *umsg_data);
+  void umas_deinit();
+  /* void init_umsg(struct buffer_t *, struct buffer_t *); */
+  /* /\* void set_umsg_mode(uint32_t); *\/ */
+  /* void send_umsg(struct buffer_t *, uint32_t, char*); */
+  /* void deinit_umsg(struct buffer_t *); */
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -314,8 +317,8 @@ extern "C" {
 
 // Width of a cache line in bytes
 #define CL_BYTE_WIDTH        64
+#define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
-#define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 4)
 
 // ----------------------------------------------------------------
 // Write responses can arrive on any random channel, this option
@@ -347,7 +350,7 @@ extern char null_str[CL_BYTE_WIDTH];
 // Transaction count
 extern unsigned long int ase_cci_transact_count;
 // ASE log file descriptor
-extern FILE *ase_cci_log_fd;
+/* extern FILE *ase_cci_log_fd; */
 // Timestamp reference time
 extern struct timeval start;
 extern long int ref_anchor_time;
@@ -507,7 +510,8 @@ extern void simkill();
 extern void sw_simkill_request();
 extern void csr_write_init();
 extern void csr_write_dispatch(int, int, int);
-extern void umsg_init();
+/* extern void umsg_init(); */
+extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
@@ -591,17 +595,6 @@ uint64_t ase_addr_seed;
 uint64_t capcm_num_buffers;
 
 // CAPCM buffer chain info (each buffer holds 1 GB)
-/* struct capcm_bufchain_t */
-/* { */
-/*   int index;                      // Index of array */
-/*   int fd;                         // File descriptor */
-/*   char memname[ASE_SHM_NAME_LEN]; // SHM name */
-/*   uint64_t byte_offset_lo;        // Byte address low */
-/*   uint64_t byte_offset_hi;        // Byte address high */
-/*   uint64_t *vmem_lo;              // Virtual memory low address */
-/*   uint64_t *vmem_hi;              // Virtual memory high address */
-/* }; */
-// struct capcm_bufchain_t *capcm_buf;
 struct buffer_t *capcm_buf;
 
 
@@ -626,6 +619,9 @@ uint64_t capcm_phys_hi;
 
 // ASE PID
 int ase_pid;
+
+// Workspace information log (information dump of 
+FILE *fp_workspace_log;
 
 #endif
 #endif

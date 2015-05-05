@@ -210,7 +210,7 @@ module cci_emulator();
    
    // 200 Mhz clock
    always @(posedge clk_8ui) begin
-      ase_clk_rollover <= ase_clk_rollover - 1;      
+      ase_clk_rollover	<= ase_clk_rollover - 1;      
    end
 
    // Reset management
@@ -1053,7 +1053,6 @@ module cci_emulator();
    		end
    		else if ( ~csrff_empty && (csr_address < AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full ) begin
    		   if (csrff_dout[45:32]	== CCI_RESET_CTRL_OFFSET) begin
-   		      // sw_reset_n		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
    		      sw_reset_trig		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
    		   end
    		   csrff_read			<= 1;
@@ -1420,88 +1419,8 @@ module cci_emulator();
 
 
    /*
-    * CCI rule-checker function
-    * This block of code exists for checking incoming signals for 'X' & 'Z'
-    * Warning messages will be flashed, and simulation exited, when enabled
-    */
-   // Used for rule-checking meta-only transactions
-   logic [`CCI_DATA_WIDTH-1:0] 		  zero_data = `CCI_DATA_WIDTH'b0;
-   logic 				  tx0_rc_error;
-   logic 				  tx1_rc_error;
-   logic 				  rx0_rc_error;
-   logic 				  rx1_rc_error;
-   int 					  tx0_rc_time;
-   int 					  tx1_rc_time;
-   int 					  rx0_rc_time;
-   int 					  rx1_rc_time;
-
-
-   // Initial message
-   // initial begin
-   //    if (cfg.enable_ccirules) begin
-   // 	 $display("SIM-SV: CCI Signal rule-checker is watching for 'X' and 'Z'");
-   //    end
-   // end
-
-   // CCI Rules Checker: Checking CCI for 'X' and 'Z' endorsed by valid signal
-   // cci_rule_checker
-   //   #(
-   //     .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
-   //     .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
-   //     .DATA_WIDTH   (`CCI_DATA_WIDTH)
-   //     )
-   // cci_rule_checker
-   //   (
-   //    // Enable
-   //    .enable          (1'b1),  // (cfg.enable_ccirules[0]),
-   //    // CCI signals
-   //    .clk             (clk),
-   //    .resetb          (sys_reset_n),
-   //    .lp_initdone     (lp_initdone),
-   //    .tx_c0_header    (tx_c0_header),
-   //    .tx_c0_rdvalid   (tx_c0_rdvalid),
-   //    .tx_c1_header    (tx_c1_header),
-   //    .tx_c1_data      (tx_c1_data),
-   //    .tx_c1_wrvalid   (tx_c1_wrvalid),
-   //    .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
-   //    .rx_c0_header    (rx_c0_header),
-   //    .rx_c0_data      (rx_c0_data),
-   //    .rx_c0_rdvalid   (rx_c0_rdvalid),
-   //    .rx_c0_wrvalid   (rx_c0_wrvalid),
-   //    .rx_c0_cfgvalid  (rx_c0_cfgvalid),
-   //    .rx_c1_header    (rx_c1_header),
-   //    .rx_c1_wrvalid   (rx_c1_wrvalid),
-   //    // Error signals
-   //    .tx_ch0_error    (tx0_rc_error),
-   //    .tx_ch1_error    (tx1_rc_error),
-   //    .rx_ch0_error    (rx0_rc_error),
-   //    .rx_ch1_error    (rx1_rc_error),
-   //    .tx_ch0_time     (tx0_rc_time),
-   //    .tx_ch1_time     (tx1_rc_time),
-   //    .rx_ch0_time     (rx0_rc_time),
-   //    .rx_ch1_time     (rx1_rc_time)
-   //    );
-
-   // Interrupt select (enables
-   // assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
-
-   // Call simkill on bad outcome of checker process
-   // int prev_xz_simtime;
-   // task xz_simkill(int sim_time) ;
-   //    begin
-   // 	 if (prev_xz_simtime != sim_time) begin
-   // 	    `BEGIN_RED_FONTCOLOR;
-   // 	    $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
-   // 	    $display("SIM-SV: Check simulation around time, t = %d", sim_time);
-   // 	    // $display("SIM-SV: Simulation will end now");
-   // 	    // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
-   // 	    // start_simkill_countdown();
-   // 	    `END_RED_FONTCOLOR;
-   // 	 end
-   // 	 prev_xz_simtime = sim_time;
-   //    end
-   // endtask
-
+    * ASE Flow control error monitoring
+    */ 
    // Flow simkill
    task flowerror_simkill(int sim_time, int channel) ;
       begin
@@ -1544,21 +1463,6 @@ module cci_emulator();
       end
    end
 
-   // Watch checker signal
-   // always @(posedge clk) begin
-   //    if (tx0_rc_error) begin
-   // 	 xz_simkill(tx0_rc_time);
-   //    end
-   //    else if (tx1_rc_error) begin
-   // 	 xz_simkill(tx1_rc_time);
-   //    end
-   //    else if (rx0_rc_error) begin
-   // 	 xz_simkill(rx0_rc_time);
-   //    end
-   //    else if (rx1_rc_error) begin
-   // 	 xz_simkill(rx1_rc_time);
-   //    end
-   // end
 
    /*
     * CCI Sniffer
@@ -1605,7 +1509,7 @@ module cci_emulator();
    // Registers for comparing previous states
    always @(posedge clk) begin
       lp_initdone_q	<= lp_initdone;
-      // resetb_q		<= resetb;
+      // resetb_q	<= resetb;
       sw_reset_n_q	<= sw_reset_n;
       sys_reset_n_q     <= sys_reset_n;      
    end

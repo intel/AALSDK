@@ -45,7 +45,7 @@
  * In the strictest sense, if there are multiple transactions to a
  * certain cache line
  *
- * All warnings are logged in warnings.txt
+ * All warnings are logged in warnings.log
  */
 
 
@@ -118,7 +118,7 @@ module cci_sniffer
     */
    initial begin
       // log_started = 0;      
-      fd_sniffer = $fopen("warnings.txt", "w");
+      fd_sniffer = $fopen("warnings.log", "w");
       forever begin
 	 // XZ messages
 	 if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
