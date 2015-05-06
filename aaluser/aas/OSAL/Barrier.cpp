@@ -202,6 +202,8 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
       flag_setf(m_Flags, BARRIER_FLAG_AUTO_RESET);
    }
 
+   m_AutoResetManager.Create();
+
    flag_setf(m_Flags, BARRIER_FLAG_INIT);
    
    CountUnlock();
@@ -234,6 +236,8 @@ AAL::btBool Barrier::Destroy()
    StateUnlock();
 
    UnblockAll();
+
+   m_AutoResetManager.WaitForAllWaitersToExit();
 
 #if   defined( __AAL_WINDOWS__ )
    
@@ -458,7 +462,8 @@ Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
    m_NumWaiters(0),
    m_NumPreWaiters(0)
 #if defined( __AAL_WINDOWS__ )
-   , m_hREvent(NULL)
+   , m_hREvent(NULL),
+     m_hZEvent(NULL)
 #endif // __AAL_WINDOWS__
 {
 #if   defined( __AAL_WINDOWS__ )
@@ -468,6 +473,12 @@ Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
                            FALSE,  // not signaled
                            NULL);  // no name
    ASSERT(NULL != m_hREvent);
+
+   m_hZEvent = CreateEvent(NULL,   // no inheritance
+                           TRUE,   // manual reset event
+                           FALSE,  // not signaled
+                           NULL);  // no name
+   ASSERT(NULL != m_hZEvent);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -483,10 +494,16 @@ Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
    res = pthread_mutex_init(&m_Rmutex, &attr);
    ASSERT(0 == res);
 
+   res = pthread_mutex_init(&m_Zmutex, &attr);
+   ASSERT(0 == res);
+
    res = pthread_mutexattr_destroy(&attr);
    ASSERT(0 == res);
 
    res = pthread_cond_init(&m_Rcondition, NULL);
+   ASSERT(0 == res);
+
+   res = pthread_cond_init(&m_Zcondition, NULL);
    ASSERT(0 == res);
 
 #endif // OS
@@ -496,11 +513,14 @@ Barrier::AutoResetManager::~AutoResetManager()
 {
    int res;
 
-   ASSERT(0 == m_NumWaiters);
+   ASSERT(0 == m_NumWaiters + m_NumPreWaiters);
 
 #if   defined( __AAL_WINDOWS__ )
 
    res = CloseHandle(m_hREvent) ? 0 : 1;
+   ASSERT(0 == res);
+
+   res += CloseHandle(m_hZEvent) ? 0 : 1;
    ASSERT(0 == res);
 
 #elif defined( __AAL_LINUX__ )
@@ -508,10 +528,23 @@ Barrier::AutoResetManager::~AutoResetManager()
    res = pthread_cond_destroy(&m_Rcondition);
    ASSERT(0 == res);
 
-   res = pthread_mutex_destroy(&m_Rmutex);
+   res += pthread_mutex_destroy(&m_Rmutex);
+   ASSERT(0 == res);
+
+   res += pthread_cond_destroy(&m_Zcondition);
+   ASSERT(0 == res);
+
+   res += pthread_mutex_destroy(&m_Zmutex);
    ASSERT(0 == res);
 
 #endif // OS
+}
+
+void Barrier::AutoResetManager::Create()
+{
+#if defined( __AAL_WINDOWS__ )
+   ResetEvent(m_hZEvent); // reset the manual-reset event to non-signaled.
+#endif // __AAL_WINDOWS__
 }
 
 void Barrier::AutoResetManager::UnblockAll()
@@ -618,6 +651,14 @@ void Barrier::AutoResetManager::RemoveWaiter()
 
          flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_RESETTING|BARRIER_FLAG_UNBLOCKING);
       }
+
+      if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_DESTROYING) ) {
+#if   defined( __AAL_WINDOWS__ )
+         SetEvent(m_hZEvent); // change manual-reset event state to signaled, waking all.
+#elif defined( __AAL_LINUX__ )
+         pthread_cond_broadcast(&m_Zcondition); // wake all
+#endif // OS
+      }
    }
 }
 
@@ -665,6 +706,32 @@ void Barrier::AutoResetManager::AutoResetEnd()
 #elif defined( __AAL_LINUX__ )
    pthread_cond_broadcast(&m_Rcondition); // wake all
 #endif // OS
+}
+
+void Barrier::AutoResetManager::WaitForAllWaitersToExit()
+{
+#if defined( __AAL_LINUX__ )
+   pthread_mutex_lock(&m_Zmutex);
+#endif // __AAL_LINUX__
+
+   while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
+      // Wait for the last waiter to call RemoveWaiter().
+
+#if   defined( __AAL_LINUX__ )
+
+      pthread_cond_wait(&m_Zcondition, &m_Zmutex);
+
+#elif defined( __AAL_WINDOWS__ )
+
+      WaitForSingleObject(m_hZEvent, INFINITE);
+
+#endif // OS
+
+   }
+
+#if defined( __AAL_LINUX__ )
+   pthread_mutex_unlock(&m_Zmutex);
+#endif // __AAL_LINUX__
 }
 
 void Barrier::AutoResetManager::CountLock()   { m_pBarrier->CountLock();   }

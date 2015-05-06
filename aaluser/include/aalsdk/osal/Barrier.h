@@ -149,6 +149,8 @@ private:
       AutoResetManager(Barrier *pBarrier);
       virtual ~AutoResetManager();
 
+      void Create();
+
       void UnblockAll();
       void AddWaiter();
       void RemoveWaiter();
@@ -158,15 +160,20 @@ private:
       void AutoResetBegin();
       void AutoResetEnd();
 
+      void WaitForAllWaitersToExit();
+
    protected:
       Barrier           *m_pBarrier;
       AAL::btUnsignedInt m_NumWaiters;    // number of threads blocked in Wait() calls on a locked Barrier.
       AAL::btUnsignedInt m_NumPreWaiters; // number of threads blocked in Wait() by an auto-reset.
 #if   defined( __AAL_WINDOWS__ )
-      HANDLE             m_hREvent;
+      HANDLE             m_hREvent;       // manual-reset event for auto-reset done.
+      HANDLE             m_hZEvent;       // manual-reset event for zero waiters.
 #elif defined( __AAL_LINUX__ )
       pthread_mutex_t    m_Rmutex;
       pthread_cond_t     m_Rcondition;
+      pthread_mutex_t    m_Zmutex;
+      pthread_cond_t     m_Zcondition;
 #endif // OS
 
       void CountLock();

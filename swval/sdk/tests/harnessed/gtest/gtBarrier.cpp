@@ -886,6 +886,275 @@ TEST_F(OSAL_Barrier_f, aal0194)
    EXPECT_EQ(0, CurrentThreads());
 }
 
+
+class OSAL_Barrier_Destroy_f : public ::testing::Test
+{
+protected:
+   OSAL_Barrier_Destroy_f() :
+      m_pBarrier(NULL),
+      m_UnlockCount(0),
+      m_bAutoReset(false)
+   {}
+   virtual ~OSAL_Barrier_Destroy_f() {}
+
+   virtual void SetUp()
+   {
+      unsigned i;
+      for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
+         m_pThrs[i] = NULL;
+      }
+      for ( i = 0 ; i < sizeof(m_Scratch) / sizeof(m_Scratch[0]) ; ++i ) {
+         m_Scratch[i] = 0;
+      }
+   }
+   virtual void TearDown()
+   {
+      unsigned i;
+      for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
+         if ( NULL != m_pThrs[i] ) {
+            delete m_pThrs[i];
+         }
+      }
+      Destroy();
+   }
+
+   AAL::btBool Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoReset)
+   {
+      if ( NULL == m_pBarrier ) {
+         m_UnlockCount = UnlockCount;
+         m_bAutoReset  = bAutoReset;
+         m_pBarrier    = new(std::nothrow) Barrier();
+      }
+      return m_pBarrier->Create(m_UnlockCount, m_bAutoReset);
+   }
+   AAL::btBool Destroy()
+   {
+      if ( NULL != m_pBarrier ) {
+         delete m_pBarrier;
+         m_pBarrier = NULL;
+         return true;
+      }
+      return false;
+   }
+
+   AAL::btBool Reset(AAL::btUnsignedInt UnlockCount)
+   { return m_pBarrier->Reset(UnlockCount); }
+
+   AAL::btBool CurrCounts(AAL::btUnsignedInt &Cur, AAL::btUnsignedInt &Unl)
+   { return m_pBarrier->CurrCounts(Cur, Unl); }
+
+   AAL::btBool Post(AAL::btUnsignedInt c) { return m_pBarrier->Post(c); }
+
+   AAL::btBool UnblockAll() { return m_pBarrier->UnblockAll(); }
+
+   AAL::btUnsignedInt NumWaiters() const { return m_pBarrier->NumWaiters(); }
+
+   AAL::btBool Wait() { return m_pBarrier->Wait(); }
+   AAL::btBool Wait(AAL::btTime Timeout) { return m_pBarrier->Wait(Timeout); }
+
+   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+
+   Barrier           *m_pBarrier;
+   AAL::btUnsignedInt m_UnlockCount;
+   AAL::btBool        m_bAutoReset;
+   OSLThread         *m_pThrs[5];
+   AAL::btUnsignedInt m_Scratch[5];
+   CSemaphore         m_Sems[2];
+
+   static void Thr0(OSLThread * , void * );
+   static void Thr1(OSLThread * , void * );
+
+   static void Thr2(OSLThread * , void * );
+   static void Thr3(OSLThread * , void * );
+};
+
+TEST_F(OSAL_Barrier_Destroy_f, aal0197)
+{
+   // Calling Barrier::Destroy() on a Create()'ed Barrier with no waiters completes successfully.
+
+   EXPECT_TRUE(Create(2, true)); // auto-reset Barrier.
+
+   AAL::btUnsignedInt c = 0;
+   AAL::btUnsignedInt u = 0;
+
+   EXPECT_TRUE(Post(1));
+
+   EXPECT_TRUE(CurrCounts(c, u));
+   EXPECT_EQ(1, c);
+   EXPECT_EQ(2, u);
+
+   EXPECT_EQ(0, NumWaiters());
+   EXPECT_TRUE(Destroy());
+
+
+   EXPECT_TRUE(Create(2, false)); // manual-reset Barrier.
+
+   EXPECT_TRUE(Post(1));
+
+   c = u = 99;
+   EXPECT_TRUE(CurrCounts(c, u));
+   EXPECT_EQ(1, c);
+   EXPECT_EQ(2, u);
+
+   EXPECT_EQ(0, NumWaiters());
+   EXPECT_TRUE(Destroy());
+}
+
+void OSAL_Barrier_Destroy_f::Thr0(OSLThread *pThread, void *pArg)
+{
+   OSAL_Barrier_Destroy_f *f = reinterpret_cast<OSAL_Barrier_Destroy_f *>(pArg);
+   ASSERT_NONNULL(f);
+
+   const AAL::btUnsignedInt t = f->m_Scratch[0]; // my unique thread index.
+   EXPECT_TRUE(f->m_Sems[0].Post(1));
+
+   EXPECT_FALSE(f->Wait());
+   f->m_Scratch[t] = 1;
+}
+
+void OSAL_Barrier_Destroy_f::Thr1(OSLThread *pThread, void *pArg)
+{
+   OSAL_Barrier_Destroy_f *f = reinterpret_cast<OSAL_Barrier_Destroy_f *>(pArg);
+   ASSERT_NONNULL(f);
+
+   const AAL::btUnsignedInt t       = f->m_Scratch[0]; // my unique thread index.
+   const AAL::btTime        Timeout = f->m_Scratch[1]; // Wait() timeout.
+   EXPECT_TRUE(f->m_Sems[0].Post(1));
+
+   EXPECT_FALSE(f->Wait(Timeout));
+   f->m_Scratch[t] = 1;
+}
+
+TEST_F(OSAL_Barrier_Destroy_f, aal0198)
+{
+   // When calling Barrier::Destroy() on a Create()'ed auto-reset Barrier with waiters, all waiters are
+   // unblocked and return false from their Wait() calls. The Barrier::Destroy() waits for all
+   // waiters to return from Wait() calls before destroying the Barrier.
+
+   EXPECT_TRUE(Create(2, true)); // auto-reset Barrier.
+
+   EXPECT_TRUE(m_Sems[0].Create(0, 1));
+
+   AAL::btUnsignedInt c = 99;
+   AAL::btUnsignedInt u = 0;
+
+   const AAL::btUnsignedInt T = sizeof(m_pThrs) / sizeof(m_pThrs[0]);
+         AAL::btUnsignedInt t;
+
+   m_Scratch[1] = 1000; // Timeout for Thr1's.
+
+   for ( t = 0 ; t < T ; ++t ) {
+      m_Scratch[0] = t; // unique thread index in m_Scratch[0]
+
+      if ( 0 == ( t % 2) ) {
+         m_pThrs[t] = new OSLThread(OSAL_Barrier_Destroy_f::Thr0,
+                                    OSLThread::THREADPRIORITY_NORMAL,
+                                    this);
+      } else {
+         m_pThrs[t] = new OSLThread(OSAL_Barrier_Destroy_f::Thr1,
+                                    OSLThread::THREADPRIORITY_NORMAL,
+                                    this);
+      }
+      EXPECT_TRUE(m_pThrs[t]->IsOK());
+      EXPECT_TRUE(m_Sems[0].Wait());
+   }
+   m_Scratch[0] = m_Scratch[1] = 0;
+
+   // Give threads plenty of time to be asleep in Barrier::Wait() calls.
+   YIELD_N();
+
+   EXPECT_TRUE(CurrCounts(c, u));
+   EXPECT_EQ(0, c);
+   EXPECT_EQ(2, u);
+
+   EXPECT_EQ(T, NumWaiters());
+
+   EXPECT_TRUE(Destroy());
+
+   for ( t = 0 ; t < T ; ++t ) {
+      m_pThrs[t]->Join();
+      EXPECT_EQ(1, m_Scratch[t]);
+   }
+}
+
+void OSAL_Barrier_Destroy_f::Thr2(OSLThread *pThread, void *pArg)
+{
+   OSAL_Barrier_Destroy_f *f = reinterpret_cast<OSAL_Barrier_Destroy_f *>(pArg);
+   ASSERT_NONNULL(f);
+
+   const AAL::btUnsignedInt t = f->m_Scratch[0]; // my unique thread index.
+   EXPECT_TRUE(f->m_Sems[0].Post(1));
+
+   EXPECT_FALSE(f->Wait());
+   f->m_Scratch[t] = 1;
+}
+
+void OSAL_Barrier_Destroy_f::Thr3(OSLThread *pThread, void *pArg)
+{
+   OSAL_Barrier_Destroy_f *f = reinterpret_cast<OSAL_Barrier_Destroy_f *>(pArg);
+   ASSERT_NONNULL(f);
+
+   const AAL::btUnsignedInt t       = f->m_Scratch[0]; // my unique thread index.
+   const AAL::btTime        Timeout = f->m_Scratch[1]; // Wait() timeout.
+   EXPECT_TRUE(f->m_Sems[0].Post(1));
+
+   EXPECT_FALSE(f->Wait(Timeout));
+   f->m_Scratch[t] = 1;
+}
+
+TEST_F(OSAL_Barrier_Destroy_f, aal0199)
+{
+   // When calling Barrier::Destroy() on a Create()'ed manual-reset Barrier with waiters,
+   // all waiters are unblocked and return false from their Wait() calls. The Barrier::Destroy()
+   // waits for all waiters to return from Wait() calls before destroying the Barrier.
+
+   EXPECT_TRUE(Create(2, false)); // manual-reset Barrier.
+
+   EXPECT_TRUE(m_Sems[0].Create(0, 1));
+
+   AAL::btUnsignedInt c = 99;
+   AAL::btUnsignedInt u = 0;
+
+   const AAL::btUnsignedInt T = sizeof(m_pThrs) / sizeof(m_pThrs[0]);
+         AAL::btUnsignedInt t;
+
+   m_Scratch[1] = 1000; // Timeout for Thr3's.
+
+   for ( t = 0 ; t < T ; ++t ) {
+      m_Scratch[0] = t; // unique thread index in m_Scratch[0]
+
+      if ( 0 == ( t % 2) ) {
+         m_pThrs[t] = new OSLThread(OSAL_Barrier_Destroy_f::Thr2,
+                                    OSLThread::THREADPRIORITY_NORMAL,
+                                    this);
+      } else {
+         m_pThrs[t] = new OSLThread(OSAL_Barrier_Destroy_f::Thr3,
+                                    OSLThread::THREADPRIORITY_NORMAL,
+                                    this);
+      }
+      EXPECT_TRUE(m_pThrs[t]->IsOK());
+      EXPECT_TRUE(m_Sems[0].Wait());
+   }
+   m_Scratch[0] = m_Scratch[1] = 0;
+
+   // Give threads plenty of time to be asleep in Barrier::Wait() calls.
+   YIELD_N();
+
+   EXPECT_TRUE(CurrCounts(c, u));
+   EXPECT_EQ(0, c);
+   EXPECT_EQ(2, u);
+
+   EXPECT_EQ(T, NumWaiters());
+
+   EXPECT_TRUE(Destroy());
+
+   for ( t = 0 ; t < T ; ++t ) {
+      m_pThrs[t]->Join();
+      EXPECT_EQ(1, m_Scratch[t]);
+   }
+}
+
+
 // Value-parameterized test fixture
 template <typename T>
 class OSAL_Barrier_vp : public ::testing::TestWithParam<T>
