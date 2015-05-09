@@ -15,6 +15,7 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(top_srcdir)/tests/swvalmod \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
 COMMON_LDADD=\
@@ -38,7 +39,8 @@ gtBarrier.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
-gtThreadGroupSR.cpp
+gtThreadGroupSR.cpp \
+gtOSServiceModule.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -56,7 +58,8 @@ gtNVS.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
-gtThreadGroupSR.cpp
+gtThreadGroupSR.cpp \
+gtOSServiceModule.cpp
 
 
 
@@ -94,7 +97,8 @@ gtThreadGroup.cpp \
 gtThreadGroupSR.cpp \
 gtPaths.cpp \
 gtStartupShutdown.cpp \
-gtEnvVar.cpp
+gtEnvVar.cpp \
+gtOSServiceModule.cpp
 
 endif
 

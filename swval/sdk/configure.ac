@@ -48,6 +48,9 @@ AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
 
+AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],     [3],[2],[1])
+AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  [6],[5],[4])
+
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
 dnl ############################################################################
@@ -193,7 +196,8 @@ AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/gtest/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile
-                 tests/standalone/OSAL_TestThreadGroup/Makefile])
+                 tests/standalone/OSAL_TestThreadGroup/Makefile
+                 tests/swvalmod/Makefile])
 
 AC_OUTPUT
 

@@ -151,7 +151,6 @@ public:
    void Join();
    /// The underlying thread resource will never be join()'ed.
    void Detach();
-   AAL::btBool IsDetached() const { return flag_is_set(m_State, THR_ST_DETACHED); }
    /// The non-Windows implementation of this member function issues a pthread_cancel to the thread.
    ///
    /// @note There is currently no Windows implementation.

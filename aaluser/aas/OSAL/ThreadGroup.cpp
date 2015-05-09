@@ -32,14 +32,16 @@
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation
+///          Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 12/16/2007     JG       Changed include path to expose aas/
 /// 05/08/2008     HM       Cleaned up windows includes
 /// 05/08/2008     HM       Comments & License
-/// 01/04/2009     HM       Updated Copyright@endverbatim
-/// 03/06/2014     JG       Complete rewrite.
+/// 01/04/2009     HM       Updated Copyright
+/// 03/06/2014     JG       Complete rewrite
+/// 05/07/2015     TSW      Complete rewrite@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -388,6 +390,13 @@ OSLThreadGroup::OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads,
       return;
    }
 
+   ASSERT(m_pState->IsOK());
+   if ( !m_pState->IsOK() ) {
+      delete m_pState;
+      m_pState = NULL;
+      return;
+   }
+
    // Create the workers.
 
    AAL::btUnsignedInt i;
@@ -543,8 +552,6 @@ void OSLThreadGroup::ThrGrpState::WorkerHasExited(OSLThread *pThread)
       m_RunningThreads.erase(iter);
       m_ExitedThreads.push_back(pThread);
    }
-
-   m_DrainManager.WorkerHasExited(pThread->tid());
 
    Unlock();
 
@@ -702,32 +709,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::End(AAL::btTID tid, Barri
    }
 
    return bFound;
-}
-
-void OSLThreadGroup::ThrGrpState::DrainManager::WorkerHasExited(AAL::btTID tid)
-{
-   AutoLock(m_pTGS);
-
-   drainer_list_iter iter;
-
-   // Process all instances of tid found in m_SelfDrainers.
-   for ( iter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != iter ; ) {
-
-      if ( ThreadIDEqual(tid, *iter) ) {
-         drainer_list_iter trash(iter);
-         ++iter;
-         m_SelfDrainers.erase(trash);
-
-         if ( m_DrainNestLevel > 0 ) {
-            --m_DrainNestLevel;
-         }
-
-      } else {
-         ++iter;
-      }
-
-   }
-
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::ReleaseAllDrainers()

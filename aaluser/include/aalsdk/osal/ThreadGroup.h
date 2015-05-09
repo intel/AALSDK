@@ -32,12 +32,14 @@
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation
+///          Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 05/08/2008     HM       Comments & License
-/// 01/04/2009     HM       Updated Copyright@endverbatim
-/// 03/06/2014     JG       Complete rewrite.
+/// 01/04/2009     HM       Updated Copyright
+/// 03/06/2014     JG       Complete rewrite
+/// 05/07/2015     TSW      Complete rewrite@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_OSAL_THREADGROUP_H__
 #define __AALSDK_OSAL_THREADGROUP_H__
@@ -129,7 +131,12 @@ protected:
    { return m_pState->WaitForAllWorkersToStart(Timeout); }
 
    virtual AAL::btBool Destroy(AAL::btTime Timeout)
-   { return m_pState->Destroy(Timeout); }
+   {
+      if ( NULL == m_pState ) {
+         return true;
+      }
+      return m_pState->Destroy(Timeout);
+   }
 
 private:
    //
@@ -210,10 +217,6 @@ private:
          //
          // return true if tid found to be a Drain()'er.
          AAL::btBool End(AAL::btTID tid, Barrier *pDrainBarrier);
-
-         // Called when a thread group worker exits in the usual way. Removes all instances
-         //  of tid from the self-drainers list, and adjusts m_DrainNestLevel.
-         void WorkerHasExited(AAL::btTID tid);
 
          // External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
          // In the case of self-referential Join() and self-referential Destroy(), a worker is
