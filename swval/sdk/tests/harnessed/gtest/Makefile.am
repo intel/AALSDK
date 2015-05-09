@@ -54,7 +54,6 @@ gtCommon.h \
 gtCommon.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
-gtNVS.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
