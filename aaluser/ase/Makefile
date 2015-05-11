@@ -108,7 +108,7 @@ endif
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
-SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/simv
+SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/ase_simv
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 
@@ -249,7 +249,7 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	./$(WORK)/simv -l run.log -ucli -do vcs_run.tcl
+	./$(WORK)/ase_simv -l run.log -ucli -do vcs_run.tcl
 #	python scripts/ase_ipc_clean.py
 else
   ifeq ($(SIMULATOR), QUESTA)
@@ -276,7 +276,7 @@ endif
 #########################################################################
 clean: header
 	rm -rf work/ *.log *.tsv AN.DB/
-	rm -rf simv* csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
+	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 

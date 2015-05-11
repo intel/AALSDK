@@ -62,38 +62,6 @@ void scope_function()
 
 
 /*
- * DPI: UMSG Data exchange
- */
-/* int glbl_umsg_meta; */
-/* char glbl_umsg_data[CL_BYTE_WIDTH]; */
-/* int glbl_umsg_serviced; */
-/* void umsg_dex(cci_pkt *umsg) */
-/* { */
-/*   FUNC_CALL_ENTRY; */
-
-/*   umsg->meta = glbl_umsg_meta; */
-/*   memcpy(umsg->qword, glbl_umsg_data, CL_BYTE_WIDTH); */
-/* #ifdef ASE_DEBUG */
-/*   int i; */
-/*   printf("UMSG_DEX =>\n"); */
-/*   printf("%08x", (uint32_t)umsg->meta); */
-/*   for (i = 1; i < 8; i++) */
-/*     printf("%016llX ", umsg->qword[i]); */
-/*   printf("\n"); */
-/* #endif */
-/*   umsg->cfgvalid = 0; */
-/*   umsg->wrvalid  = 0; */
-/*   umsg->rdvalid  = 0; */
-/*   umsg->intrvalid = 0; */
-/*   umsg->umsgvalid = 1; */
-
-/*   // ase_umsg_cnt++; */
-
-/*   FUNC_CALL_EXIT; */
-/* } */
-
-
-/*
  * DPI: WriteLine Data exchange
  */
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )

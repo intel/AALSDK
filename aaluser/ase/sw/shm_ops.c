@@ -330,7 +330,11 @@ void allocate_buffer(struct buffer_t *mem)
   mem->is_privmem = 0;
 
   // Obtain a file descriptor for the shared memory region
-  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
+  // Tue May  5 19:24:21 PDT 2015
+  // https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
+  // S_IREAD | S_IWRITE are obselete
+  // mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
+  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_app < 0)
     {
       /* ase_error_report("shm_open", errno, ASE_OS_SHM_ERR); */
@@ -483,7 +487,7 @@ void shm_dbg_memtest(struct buffer_t *mem)
 void umas_init(uint32_t umsg_mode) 
 {
   uint32_t csr_umsgbase;
-  
+
   if (umas_exist_status == UMAS_ESTABLISHED)
     {
       BEGIN_YELLOW_FONTCOLOR;
@@ -493,9 +497,9 @@ void umas_init(uint32_t umsg_mode)
   else
     {
       // Initialize 
+      umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
       umas->memsize = 32 * 1024;
       umas->is_umas = 1;
-      umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
       allocate_buffer (umas);
 
       // UMSGmode

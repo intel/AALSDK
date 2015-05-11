@@ -212,13 +212,9 @@ extern "C" {
   void spl_driver_start(uint64_t *);
   void spl_driver_stop();
   // UMSG subsystem
-  void umas_init(uint32_t umsg_mode);
-  void umsg_send(int umas_id, char *umsg_data);
+  void umas_init(uint32_t);
+  void umsg_send(int, char *);
   void umas_deinit();
-  /* void init_umsg(struct buffer_t *, struct buffer_t *); */
-  /* /\* void set_umsg_mode(uint32_t); *\/ */
-  /* void send_umsg(struct buffer_t *, uint32_t, char*); */
-  /* void deinit_umsg(struct buffer_t *); */
 #ifdef __cplusplus
 }
 #endif // __cplusplus
