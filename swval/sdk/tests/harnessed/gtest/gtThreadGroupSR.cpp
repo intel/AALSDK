@@ -2740,11 +2740,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
          EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
-      } else if ( 1 == i ) {
+      } else if ( 3 == i ) {
          EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 5 == i ) {
+         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 7 == i ) {
          EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));

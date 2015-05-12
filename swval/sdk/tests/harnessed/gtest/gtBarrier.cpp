@@ -1864,7 +1864,7 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0185)
 
    // Pass the number of Wait() calls in m_Scratch[1]
    m_Scratch[1] = W;
-   m_Scratch[2] = 1000; // Timeout for Thr3's.
+   m_Scratch[2] = 3000; // Timeout for Thr3's.
 
    AAL::btUnsignedInt t;
    for ( t = 0 ; t < T ; ++t ) {
@@ -2142,7 +2142,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
    btTime       slept     = 0;
    const btTime sleepeach = 5;
-   const btTime thresh    = Timeout - ( Timeout / 20 ); // within 5%
+   const btTime thresh    = Timeout - ( Timeout / 10 ); // within 10%
 
    // Wake all threads, allowing them to block on the Barrier.
    EXPECT_TRUE(m_Sems[1].Post(NumThreads));
