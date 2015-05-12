@@ -40,7 +40,8 @@ gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
 gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -58,7 +59,8 @@ gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
 gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp
 
 
 
@@ -97,7 +99,8 @@ gtThreadGroupSR.cpp \
 gtPaths.cpp \
 gtStartupShutdown.cpp \
 gtEnvVar.cpp \
-gtOSServiceModule.cpp
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp
 
 endif
 
