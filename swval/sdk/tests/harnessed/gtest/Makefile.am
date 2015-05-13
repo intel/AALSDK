@@ -33,9 +33,6 @@ bat_SOURCES=\
 main.cpp \
 gtCommon.h \
 gtCommon.cpp \
-gtTimer.cpp \
-gtSleep.cpp \
-gtEnvVar.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
 gtBarrier.cpp \

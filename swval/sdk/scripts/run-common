@@ -37,7 +37,7 @@ trap 'on_exit' EXIT
 
 on_sigint() {
    trap - SIGINT
-  # KILLED=true
+   KILLED=true
    exit 99
 }
 trap 'on_sigint' SIGINT
