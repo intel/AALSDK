@@ -230,8 +230,8 @@ int ase_listener()
    */
   // Message string
   char umsg_str[ASE_MQ_MSGSIZE];
-  uint32_t umsg_id;
-  uint32_t umsg_hint;
+  uint32_t umsg_id = 0;
+  uint32_t umsg_hint = 0;
   char umsg_data[CL_BYTE_WIDTH];
 
   // Cleanse receptacle string
@@ -241,68 +241,21 @@ int ase_listener()
   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1)
     {
       // Tokenize messgae to get msg_id & umsg_data
-      sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
+      // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
+      pch = strtok(umsg_str, " ");
+      umsg_id = atoi(pch);
+      pch = strtok(NULL, " ");
+      umsg_hint = atoi(pch);
+      pch = strtok(NULL, " ");
+      strcpy(umsg_str, pch);
+
+      printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", umsg_id, umsg_hint);
      
       // UMSG dispatch
       umsg_dispatch(0, 1, umsg_hint, umsg_id, umsg_data);
+
+      while(1);
     }
-      
-#if 0
-  // Umsg parameters
-  uint64_t *umas_target_addr;
-  uint64_t umas_target_addrint;
-
-  // Cleanse receptacle string
-  memset (umsg_str, '\0', sizeof(umsg_str));
-
-  // Keep checking message queue
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1)
-    {
-      // Tokenize messgae to get msg_id & umsg_data
-      sscanf (umsg_str, "%u %u %lu", &umsg_id, &umsg_hint, &umas_target_addrint );
-      umas_target_addr = (uint64_t*)umas_target_addrint;
-      memcpy(umsg_data, umas_target_addr, CL_BYTE_WIDTH);
-
-      int ii;
-      BEGIN_RED_FONTCOLOR;
-      printf("Printing data...\n");
-      printf("umsg_hint = %08x\n", umsg_hint);
-      printf("umsg_id   = %08x\n", umsg_id);
-      for (ii = 0; ii < CL_BYTE_WIDTH; ii++)
-	printf("%02d ", umsg_data[ii]);
-      printf("\nDONE\n");
-      END_RED_FONTCOLOR;
-
-      // UMSG Hint
-      if (umsg_hint)
-	{
-	  glbl_umsg_serviced = 0;
-	  umsg_init(1);
-	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14) | (umsg_hint << 12);
-	  memset(glbl_umsg_data, '\0', CL_BYTE_WIDTH);
-	  while(glbl_umsg_serviced != 1)
-	    {
-	      run_clocks(1);
-	    }
-	  umsg_listener_activecnt++;
-	  umsg_init(0);
-	}
-      else
-	{
-	  // Send UMSG with data
-	  glbl_umsg_serviced = 0;
-	  umsg_init(1);
-	  glbl_umsg_meta = (ASE_RX0_UMSG  << 14);
-	  memcpy(glbl_umsg_data, umsg_data, CL_BYTE_WIDTH);
-	  while(glbl_umsg_serviced != 1)
-	    {
-	      run_clocks(1);
-	    }
-	  umsg_listener_activecnt++;
-	  umsg_init(0);
-	}
-    }
-#endif
 
 
   /*
@@ -449,15 +402,15 @@ void ase_init()
   fake_off_low_bound = 0;
 
   // Create IPC cleanup setup
-#ifdef SIM_SIDE
+  // #ifdef SIM_SIDE
   create_ipc_listfile();
-#endif
+  // #endif
 
   // Set up message queues
-#ifdef SIM_SIDE
+  // #ifdef SIM_SIDE
   printf("SIM-C : Set up ASE message queues...\n");
   ase_mqueue_setup();
-#endif
+  // #endif
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");

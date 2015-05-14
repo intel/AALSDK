@@ -116,15 +116,16 @@ void final_ipc_cleanup()
 	  printf("        Removing MQ  %s ... ", ipc_name);
 	  if ( mq_unlink(ipc_name) == -1 )
 	    {
-	      BEGIN_YELLOW_FONTCOLOR;
-	      printf("Removed already !!\n");
-	      END_YELLOW_FONTCOLOR;
+	      /* BEGIN_YELLOW_FONTCOLOR; */
+	      /* printf("Removed already !!\n"); */
+	      /* END_YELLOW_FONTCOLOR; */
+	      printf("\n");
 	    }
 	  else
 	    {
-	      BEGIN_YELLOW_FONTCOLOR;
+	      /* BEGIN_YELLOW_FONTCOLOR; */
 	      printf("DONE\n");
-	      END_YELLOW_FONTCOLOR;
+	      /* END_YELLOW_FONTCOLOR; */
 	    }
 	}	 
       else if (strcmp (ipc_type, "SHM") == 0)
@@ -132,15 +133,15 @@ void final_ipc_cleanup()
 	  printf("        Removing SHM %s ... ", ipc_name);
 	  if ( shm_unlink(ipc_name) == -1 )
 	    {
-	      BEGIN_YELLOW_FONTCOLOR;	    
-	      printf("Already removed !!\n");
-	      END_YELLOW_FONTCOLOR;
+	      /* BEGIN_YELLOW_FONTCOLOR;	     */
+	      /* printf("Already removed !!\n"); */
+	      /* END_YELLOW_FONTCOLOR; */
 	    }
 	  else
 	    {
-	      BEGIN_YELLOW_FONTCOLOR;	    
+	      /* BEGIN_YELLOW_FONTCOLOR;	     */
 	      printf("DONE\n");
-	      END_YELLOW_FONTCOLOR;
+	      /* END_YELLOW_FONTCOLOR; */
 	    }
 	}	 	
     }

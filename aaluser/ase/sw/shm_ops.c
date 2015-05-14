@@ -46,7 +46,7 @@ mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
 pthread_mutex_t lock;
 
 // CSR Map
-uint32_t csr_map[CSR_MAP_SIZE/4];
+/* uint32_t csr_map[CSR_MAP_SIZE/4]; */
 uint32_t csr_write_cnt = 0;
 uint32_t *ase_csr_base;
 
@@ -218,12 +218,6 @@ void csr_write(uint32_t csr_offset, uint32_t data)
 
   char csr_wr_str[ASE_MQ_MSGSIZE];
   uint32_t *csr_vaddr;
-  /* uint64_t  *dsm_vaddr; */
-
-  if ( csr_offset < CSR_MAP_SIZE )
-    {
-      csr_map[csr_offset/4] = data;
-    }
 
   // Update CSR Region
   csr_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + csr_offset);
@@ -235,10 +229,6 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   // CSR_write message:  | offset | data |
   //                     -----------------
   // ---------------------------------------------------
-  // #ifdef ASE_MQ_ENABLE
-  // Open message queue
-  // app2sim_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
-
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
@@ -246,19 +236,14 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   sprintf(csr_wr_str, "%u %u", csr_offset, data);
   mqueue_send(app2sim_csr_wr_tx, csr_wr_str);
 
-  // Close message queue
-  /* mqueue_close(app2sim_csr_wr_tx); */
-  // #endif
+  // Display
   csr_write_cnt++;
-  // RRS: Write inside DSM
-  /* dsm_vaddr = (uint64_t*)((uint64_t)head->vbase + csr_offset); */
-  /* *dsm_vaddr = data; */
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  CSR_write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
+  printf("  [APP]  CSR Write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
   END_YELLOW_FONTCOLOR;
-
+  
   usleep(100);
-
+  
   FUNC_CALL_EXIT;
 }
 
@@ -271,9 +256,19 @@ uint32_t csr_read(uint32_t csr_offset)
 {
   FUNC_CALL_ENTRY;
 
+  uint32_t csr_data;
+  uint32_t *csr_vaddr; 
+
+  csr_vaddr = (uint32_t*)((uint64_t)ase_csr_base + csr_offset); 
+  csr_data = *csr_vaddr;
+  
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  CSR Read\t: offset = 0x%x, data = 0x%08x\n", csr_offset, csr_data);
+  END_YELLOW_FONTCOLOR;
+
   FUNC_CALL_EXIT;
 
-  return csr_map[csr_offset/4];
+  return csr_data;
 }
 
 
@@ -311,15 +306,14 @@ void allocate_buffer(struct buffer_t *mem)
   // called "/csr", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
-  /* if(buffer_index == 0) */
-  if (mem->is_csrmap == 1) 
+  if(buffer_index_count == 0)
+    /* if (mem->is_csrmap == 1)  */
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
       /* mem->is_csrmap = 1; */
-      ase_csr_base = (uint32_t*)mem->vbase;
     }
- else
+  else
     {
       sprintf(mem->memname, "/buf%d.", buffer_index_count);
       strcat(mem->memname, get_timestamp(0) );
@@ -350,6 +344,13 @@ void allocate_buffer(struct buffer_t *mem)
       /* ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR); */
       exit(1);
     }
+
+// Pin ASE CSR base, so CSR Writes can be managed
+if (buffer_index_count == 0)
+  {
+      ase_csr_base = (uint32_t*)mem->vbase;
+      //      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
+  }
 
   // Extend memory to required size
   ftruncate(mem->fd_app, (off_t)mem->memsize);
@@ -535,7 +536,7 @@ void umsg_send(int umas_id, char *umsg_data)
 {
 
   uint64_t *umas_target_addr;
-  char umsg_str[ASE_MQ_MSGSIZE];
+  char umsg_str[ASE_MQ_MSGSIZE] = { 0, };
   uint32_t umsg_hint;
 
   // If requested umas_id is illegal 
@@ -549,21 +550,24 @@ void umsg_send(int umas_id, char *umsg_data)
 
   // Write data to UMAS + umas_id*64
   umas_target_addr = (uint64_t*)((uint64_t)umas->vbase + (umas_id*CL_BYTE_WIDTH));
-  memcpy(umsg_data, umas_target_addr, CL_BYTE_WIDTH);
+  memcpy(umas_target_addr, umsg_data, CL_BYTE_WIDTH);
 
   // Calculate hint
   umsg_hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
 
+  printf("UMSG hint = %d, id = %d\n", umsg_hint, umas_id);
+
   // MQ Send to SIM
-  memset (umsg_str, '\0', sizeof(umsg_str));
-  sprintf(umsg_str, "%d %d %s", umas_id, umsg_hint, umsg_data);
+  // memset (umsg_str, '\0', sizeof(umsg_str));
+  sprintf(umsg_str, "%u %u %s", umas_id, umsg_hint, umsg_data);
+
   mqueue_send(app2sim_tx, umsg_str);
 }
 
 
 /*
- * deinit_umsg_system : Deinitialize UMAS region
- *                      Deallocate region and unlink
+ * umas_deinit : Deinitialize UMAS region
+ *               Deallocate region and unlink
  */
 void umas_deinit()
 {

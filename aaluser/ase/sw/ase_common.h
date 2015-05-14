@@ -316,6 +316,17 @@ extern "C" {
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
 
+/*
+ * UMSG instance
+ */
+/* struct umsg_t */
+/* { */
+/*   uint32_t id; */
+/*   uint32_t hint; */
+/*   char data[CL_BYTE_WIDTH]; */
+/* }; */
+
+
 // ----------------------------------------------------------------
 // Write responses can arrive on any random channel, this option
 // enables responses on random channel (CH0, CH1)

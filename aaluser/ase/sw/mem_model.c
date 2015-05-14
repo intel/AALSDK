@@ -146,22 +146,21 @@ int ase_recv_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
- // Temporary buffer
   char tmp_msg[ASE_MQ_MSGSIZE];
 
   // Receive a message on mqueue
   if(mqueue_recv(app2sim_rx, tmp_msg)==1)
-  {
-          // Convert the string to buffer_t
-          ase_str_to_buffer_t(tmp_msg, mem);
-          FUNC_CALL_EXIT;
-          return 1;
-  }
+    {
+      // Convert the string to buffer_t
+      ase_str_to_buffer_t(tmp_msg, mem);
+      FUNC_CALL_EXIT;
+      return 1;
+    }
   else
-  {
-          FUNC_CALL_EXIT;
-          return 0;
-  }
+    {
+      FUNC_CALL_EXIT;
+      return 0;
+    }
 }
 
 

@@ -3,6 +3,8 @@
 
 int main()
 {
+  session_init();
+  
   struct buffer_t *dsm, *umas;
   unsigned char *dsm_status_addr;
   uint32_t *dsm_afuid_addr;
@@ -19,8 +21,7 @@ int main()
   dsm->memsize  = 4*1024;
   allocate_buffer(dsm);
 
-  init_umsg_system(umas, dsm);
-  set_umsg_mode(0xFFFFFFFF);
+  umas_init(0xFFFFFFFF);
 
   // Calc register values and set them
   dsm_base_addr = (uint64_t)dsm->fake_paddr;
@@ -62,11 +63,14 @@ int main()
   for(ii = 0; ii < 64; ii++)
     umsg_data[ii] = ii;
 
-  send_umsg(umas, 6, umsg_data);
+  printf("Sendign UMSG\n");
+  umsg_send(7, umsg_data);
 
   // Deallocate
-  deinit_umsg_system(umas);
+  umas_deinit();
   deallocate_buffer(dsm);
+
+  session_deinit();
 
   return 0;
 }

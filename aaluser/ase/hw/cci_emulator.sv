@@ -351,6 +351,7 @@ module cci_emulator();
    // UMSG dispatch function
    task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [`CCI_DATA_WIDTH-1:0] umsg_data_in);
       begin
+	 $display("SIM-SV: UMSG Dispatch called");	 
 	 if (init) begin
 	    for (umas_iter = 0; umas_iter < `UMSG_MAX_MSG; umas_iter = umas_iter + 1) begin
 	       umsg_array[ umas_iter ].umsg_enable = 0;

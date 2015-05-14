@@ -39,11 +39,11 @@ LDFLAGS  ?=
 
 ifneq (,$(ndebug))
 else
-CPPFLAGS += -DENABLE_DEBUG=1
+CPPFLAGS += -DENABLE_DEBUG=1 -DASE_DEBUG=1
 endif
 ifneq (,$(nassert))
 else
-CPPFLAGS += -DENABLE_ASSERT=1
+CPPFLAGS += -DENABLE_ASSERT=1 -DASE_DEBUG=1
 endif
 
 ifeq (,$(DESTDIR))
@@ -69,6 +69,7 @@ UMsgTest: UMsgTest.o
 	gcc -c -std=c99 -o ase_ops.o      ../../aaluser/ase/sw/ase_ops.c -I ../../aaluser/ase/sw/ -lrt
 	g++ -o UMsgTest UMsgTest.o ase_ops.o error_report.o mqueue_ops.o shm_ops.o tstamp_ops.o ../../myinst/usr/local/lib/libAAS.so ../../myinst/usr/local/lib/libAASRegistrar.so ../../myinst/usr/local/lib/libAASUAIA.so ../../myinst/usr/local/lib/libASE.so ../../myinst/usr/local/lib/libASECCIAFU.so ../../myinst/usr/local/lib/libASESPLAFU.so ../../myinst/usr/local/lib/libCCIAFU.so ../../myinst/usr/local/lib/libHWCCIAFU.so ../../myinst/usr/local/lib/libHWSPLAFU.so ../../myinst/usr/local/lib/libOSAL.so ../../myinst/usr/local/lib/libSPLAFU.so ../../myinst/usr/local/lib/libSWSimCCIAFU.so ../../myinst/usr/local/lib/libSWSimSPLAFU.so ../../myinst/usr/local/lib/libaalclp.so ../../myinst/usr/local/lib/librrmbroker.so ../../myinst/usr/local/lib/libxlrt.so ../CCILib/CCILib.o -lrt
 
+	objdump -D -S UMsgTest > UMsgTest.objdump.log
 
 #	$(CXX) -g -O2 -o UMsgTest UMsgTest.o `ls *.o` $(LDFLAGS) -L../CCILib -lCCI -laalclp -lrt
 

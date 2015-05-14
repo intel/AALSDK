@@ -89,36 +89,6 @@ mqd_t mqueue_create(char* mq_name_prefix, int perm_flag)
   END_YELLOW_FONTCOLOR;
 #endif
 
-
-#if 0
-  // Open a queue with default parameters
-  mq = mq_open(mq_name, perm_flag, 0666, NULL);
-  if(mq == -1)
-    {
-      ase_error_report("mq_open", errno, ASE_OS_MQUEUE_ERR);
-      /* perror("mq_open"); */
-#ifdef SIM_SIDE
-      ase_perror_teardown();
-      start_simkill_countdown();
-#else
-      exit(1); // APP-side exit
-#endif
-    }
-
-  // Get the attributes of MQ
-  if(mq_getattr(mq, &attr) == -1)
-    {
-      ase_error_report("mq_getattr", errno, ASE_OS_MQUEUE_ERR);
-      /* perror("mq_getattr"); */
-#ifdef SIM_SIDE
-      ase_perror_teardown();
-      start_simkill_countdown();
-#else
-      exit(1); // APP-side exit
-#endif
-    }
-#endif
-
   // Update IPC list
 #ifdef SIM_SIDE
   add_to_ipc_list("MQ", mq_name);
@@ -195,11 +165,11 @@ void mqueue_send(mqd_t mq, char* str)
   FUNC_CALL_ENTRY;
 
   // Print message if enabled
-#ifdef ASE_MSG_VIEW
+  // #ifdef ASE_MSG_VIEW
   BEGIN_YELLOW_FONTCOLOR;
   printf("ASEmsg TX => %s\n", str);
   END_YELLOW_FONTCOLOR;
-#endif
+  //#endif
 
   // Send message
   if(mq_send(mq, str, ASE_MQ_MSGSIZE, 0) == -1)
@@ -243,28 +213,28 @@ int mqueue_recv(mqd_t mq, char* str)
 
 
 //  printf("M Q current msgs= %d",stat_attr.mq_curmsgs);
-  if(stat_attr.mq_curmsgs>0)
-  {
-          // Message receive
-          if(mq_receive(mq, str, ASE_MQ_MSGSIZE, 0) == -1)
-            {
-	      ase_error_report("mq_receive", errno, ASE_OS_MQTXRX_ERR);
-              /* perror("mq_receive"); */
-        #ifdef SIM_SIDE
-              ase_perror_teardown();
-	      start_simkill_countdown();
-        #else
-              exit(1);  // APP-side exit
-        #endif
-            }
-
-          // Print message if enabled
-#ifdef ASE_MSG_VIEW
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("ASEmsg RX => %s\n", str);
-	  END_YELLOW_FONTCOLOR;
+   if(stat_attr.mq_curmsgs>0)
+     {
+       // Message receive
+       if(mq_receive(mq, str, ASE_MQ_MSGSIZE, 0) == -1)
+	 {
+	   ase_error_report("mq_receive", errno, ASE_OS_MQTXRX_ERR);
+	   /* perror("mq_receive"); */
+#ifdef SIM_SIDE
+	   ase_perror_teardown();
+	   start_simkill_countdown();
+#else
+	   exit(1);  // APP-side exit
 #endif
-	  //#endif
+	 }
+
+       // Print message if enabled
+#ifdef ASE_MSG_VIEW
+       BEGIN_YELLOW_FONTCOLOR;
+       printf("ASEmsg RX => %s\n", str);
+       END_YELLOW_FONTCOLOR;
+#endif
+
         FUNC_CALL_EXIT;
         return 1;
    }

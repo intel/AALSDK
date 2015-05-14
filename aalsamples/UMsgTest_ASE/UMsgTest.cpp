@@ -120,6 +120,7 @@ struct UMsgTestCmdLine
    int                     read_type;
 };
 
+// Sri/RRS: This has to be set up correctly
 struct UMsgTestCmdLine gUMsgTestCmdLine =
 {
    0,
@@ -217,8 +218,7 @@ int main(int argc, char *argv[])
       *pInput = InputData;
    }
 
-   volatile btVirtAddr pOutputUsrVirt = pOutputWorkspace->GetUserVirtualAddress();
-   
+   volatile btVirtAddr pOutputUsrVirt = pOutputWorkspace->GetUserVirtualAddress();   
    memset((void *)pOutputUsrVirt, 0, pOutputWorkspace->GetSizeInBytes());
 
 #ifndef ASE_ENABLING
@@ -312,8 +312,16 @@ int main(int argc, char *argv[])
          pCCIDevice->GetCSR(CSR_CIRBSTAT, &umsg_status);
       }
       while((umsg_status & 0x1) == 0);
-      cout<<"\nUMsg Init Done";
+      cout<<"\nUMsg Init Done\n";
    }
+#else
+      uint32_t umsg_status = 0;
+      do
+      {
+	pCCIDevice->GetCSR(CSR_CIRBSTAT, &umsg_status);
+      }
+      while((umsg_status & 0x1) == 0);
+      cout<<"\nUMsg Init Done\n";
 #endif
 
    // Set the number of cache lines for the test
@@ -340,6 +348,7 @@ int main(int argc, char *argv[])
 
    // Start the test
    pCCIDevice->SetCSR(CSR_CTL, 0x3);
+#if 0
    if ( CCI_ASE == gUMsgTestCmdLine.target ) {
       cout << "\n\n####################################################################";
       cout << "\nNote:\nTime out feature Disabled in ASE.\nTest terminates only upon successful completion";
@@ -349,28 +358,39 @@ int main(int argc, char *argv[])
       cout << "\nNote:\nTime out feature Enabled.\nTest terminates on timeout/completion";
       cout << "\n##################################################\n\n";
    }
-   
+#endif
+
    // PM: Test flow
    // 1. CPU Polls on Addr N+1
    int timeout=0;
    time_t startTime = time(NULL);
+#if 0
+   cout << "pOutputUsrVirt = " << pOutputUsrVirt;
    while ( *(volatile btUnsigned32bitInt *) (pOutputUsrVirt+ CL(NUM_LINES)) != 0xffffffff ) {
 
       //cout<<"SW Polling on Addr "<<(btUnsigned32bitInt *)(pOutputUsrVirt+CL(NUM_LINES))<<"\n"; 
-      if ( (time(NULL) - startTime > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) { 
-         timeout++; 
-         break;
+     // if ( (time(NULL) - startTime > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) { 
+      if (time(NULL) - startTime > TIMEOUT)  { 
+	timeout++; 
+	break;
       }
-
+      
    }
    
    // 2.CPU copies from dst to src buffer
    // copy could perturb the latency numbers based on CPU load
    memcpy((void *)pInputUsrVirt, (void *)pOutputUsrVirt, CL(NUM_LINES));
+#endif
 
    // Fence Operation
    __sync_synchronize();
 	   
+   btUnsigned32bitInt umsg_testdata[16];
+   char *umsg_testdata_chr;
+   umsg_testdata_chr = (char*)malloc(CL_BYTE_WIDTH);
+   umsg_testdata[0] = 0xFFFFFFFF;
+   umsg_testdata_chr = (char*) umsg_testdata;
+
    // 3.CPU-> FPGA message. Select notice type
    if(gUMsgTestCmdLine.notice_type==0) {
       *(btUnsigned32bitInt *) (pInputUsrVirt+CL(NUM_LINES)) = 0xffffffff;
@@ -381,7 +401,7 @@ int main(int argc, char *argv[])
    } else if(gUMsgTestCmdLine.notice_type==2 || gUMsgTestCmdLine.notice_type==3) 
      {
        //*(volatile btUnsigned32bitInt *) (pUMsgUsrVirt) = 0xffffffff;
-       umsg_send (0, (char*)0xFFFFFFFF);
+       umsg_send (0, umsg_testdata_chr);
      }
   
    //CPU polls on test completion
@@ -390,11 +410,11 @@ int main(int argc, char *argv[])
 	
    time_t startTime1 = time(NULL); 
    while( 0 == *StatusAddr && 0 == timeout ) {
-
-      if ( ( (time(NULL) - startTime1) > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) {
-         timeout++;
-         break;
-      }
+     // if ( ( (time(NULL) - startTime1) > TIMEOUT) && ( CCI_ASE != gUMsgTestCmdLine.target ) ) {
+     if ( (time(NULL) - startTime1) > TIMEOUT)  {
+       timeout++;
+       break;
+     }
 
    }
 
