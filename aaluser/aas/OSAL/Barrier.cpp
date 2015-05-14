@@ -549,7 +549,7 @@ void Barrier::AutoResetManager::Create()
 
 void Barrier::AutoResetManager::UnblockAll()
 {
-   if ( 0 == NumWaiters() ) {
+   if ( 0 == m_NumWaiters + m_NumPreWaiters ) {
       // There is no waiter to unblock - we're done.
       flag_clrf(m_pBarrier->m_Flags, BARRIER_FLAG_UNBLOCKING);
 
@@ -664,8 +664,7 @@ void Barrier::AutoResetManager::RemoveWaiter()
 
 AAL::btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
 {
-   AutoLock(m_pBarrier);
-   return m_NumWaiters + m_NumPreWaiters;
+   return m_NumWaiters;
 }
 
 void Barrier::AutoResetManager::AutoResetBegin()
