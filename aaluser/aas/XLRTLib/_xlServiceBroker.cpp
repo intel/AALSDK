@@ -42,7 +42,7 @@
 
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/aas/XLRuntimeMessages.h"
+#include "aalsdk/Dispatchables.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
 #include "_xlServiceBroker.h"
@@ -350,10 +350,10 @@ btBool _xlServiceBroker::DoShutdown(TransactionID const &rTranID,
       Unlock();
    } else {
       // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
-      SendMsg(new ServiceClientMessage(Client(),
-                                       this,
-                                       ServiceClientMessage::Freed,
-                                       rTranID));
+      SendMsg(new ServiceClientCallback(ServiceClientCallback::Released,
+                                        Client(),
+                                        this,
+                                        rTranID));
 
       // Clear the map now
       m_ServiceMap.clear();

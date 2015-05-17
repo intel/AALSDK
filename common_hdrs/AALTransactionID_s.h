@@ -68,7 +68,7 @@
 /// WHEN:          WHO:     WHAT:
 /// 11/17/2008     JG       Initial version
 /// 01/04/2009     HM       Updated Copyright
-/// 04/25/2014     JG       Added Support for IMessageHandler@endverbatim
+/// 05/15/2015     JG       Added Support for IBase@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_KERNEL_AALTRANSACTIONID_S_H__
 #define __AALSDK_KERNEL_AALTRANSACTIONID_S_H__
@@ -84,11 +84,9 @@
 BEGIN_NAMESPACE(AAL)
 
 #ifdef __cplusplus
-   class IMessageHandler;
-# define IMSGHNDLR IMessageHandler
+   class IBase;
 #else
-   struct IMessageHandler;
-# define IMSGHNDLR struct IMessageHandler
+   struct IBase;
 #endif // __cplusplus
 
 /// User/Kernel shared Transaction ID structure.
@@ -97,7 +95,7 @@ typedef struct stTransactionID_t
 {
    btApplicationContext m_ID;
    btEventHandler       m_Handler;
-   IMSGHNDLR           *m_MessageHandler;
+   IBase               *m_IBase;
    btBool               m_Filter;
    bt32bitInt           m_intID;
 } stTransactionID_t;

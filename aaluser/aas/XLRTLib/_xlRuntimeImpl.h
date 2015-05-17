@@ -65,81 +65,6 @@ BEGIN_C_DECLS
 IRuntime *_getnewXLRuntimeInstance();
 END_C_DECLS
 
-///////////////////////////////////////////////////////////////////////////////
-///
-/// FUNCTORS
-///
-///////////////////////////////////////////////////////////////////////////////
-
-class RuntimeMessage : public IDispatchable
-{
-public:
-   enum RuntimeMessageType{
-      Started,
-      StartFailed,
-      Stopped,
-      Event
-   };
-
-RuntimeMessage(IRuntimeClient         *po,
-               IRuntime               *prt,
-               const NamedValueSet    &rConfigParms,
-               enum RuntimeMessageType type,
-               const IEvent           *rEvent=NULL) :
-   m_pobject(po),
-   m_prt(prt),
-   m_rConfigParms(rConfigParms),
-   m_type(type),
-   m_pEvent(rEvent)
-{}
-
-RuntimeMessage( IRuntimeClient          *po,
-                IRuntime                *prt,
-                enum RuntimeMessageType  type) :
-   m_pobject(po),
-   m_prt(prt),
-   m_rConfigParms(NamedValueSet()),
-   m_type(type),
-   m_pEvent(NULL)
-{}
-
-
-void operator() ()
-{
-   switch ( m_type ) {
-      case Started : {
-         m_pobject->runtimeStarted(m_prt, m_rConfigParms);
-      } break;
-      case StartFailed : {
-         m_pobject->runtimeStartFailed(*m_pEvent);
-      } break;
-      case Stopped : {
-         m_pobject->runtimeStopped(m_prt);
-      } break;
-      case Event : {
-         m_pobject->runtimeEvent(*m_pEvent);
-         // Delete the event object as it didn't render itself
-         delete m_pEvent;
-      } break;
-      default:
-         ASSERT(false);
-      break;
-   }
-   delete this;
-}
-
-virtual ~RuntimeMessage() {}
-
-protected:
-   IRuntimeClient          *m_pobject;
-   IRuntime                *m_prt;
-   const NamedValueSet     &m_rConfigParms;
-   enum RuntimeMessageType  m_type;
-   TransactionID const      m_rTranID;
-   IEvent const            *m_pEvent;
-};
-
-
 
 //=============================================================================
 // Name: _xlruntime
@@ -192,10 +117,11 @@ protected:
    //
    // IServiceClient Interface
    //-------------------------
-   void      serviceAllocated(IBase               *pServiceBase,
+   void  serviceAllocated(IBase               *pServiceBase,
                               TransactionID const &rTranID = TransactionID());
-   void          serviceFreed(TransactionID const &rTranID = TransactionID());
-   void serviceAllocateFailed(const IEvent &rEvent);
+   void  serviceReleased(TransactionID const &rTranID = TransactionID());
+   void  serviceReleaseFailed(const IEvent &rEvent);
+   void  serviceAllocateFailed(const IEvent &rEvent);
    // Message Handler
    //   Input: rEvent - Event contains message/event.  Typically used for
    //          exceptions or events for which no standard callback is defined.

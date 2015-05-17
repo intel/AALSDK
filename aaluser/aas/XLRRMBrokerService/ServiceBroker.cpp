@@ -39,7 +39,7 @@
 
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/aas/XLRuntimeMessages.h"
+#include "aalsdk/Dispatchables.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/CAALEvent.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
@@ -161,7 +161,7 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
 // Outputs: none.
 // Comments:
 //=============================================================================
-void ServiceBroker::serviceAllocateFailed(const IEvent        &rEvent)
+void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
 {
    TransactionID TranID = dynamic_ref<ITransactionEvent>(iidTranEvent,rEvent).TranID();
    TransactionID origTid = m_Transactions[TranID];
@@ -179,22 +179,52 @@ void ServiceBroker::serviceAllocateFailed(const IEvent        &rEvent)
 }
 
 //=============================================================================
-// Name: serviceFreed
-// Description: Service has been freed
+// Name: serviceReleased
+// Description: Service has been Released
 // Interface: public
-// Inputs: pServiceBase - Service that was freed
+// Inputs: pServiceBase - Service that was released
 //         rTranID - Optional TransactionID
 // Outputs: none.
 // Comments:
 //=============================================================================
-void ServiceBroker::serviceFreed(TransactionID const &rTranID)
+void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 {
    AutoLock(this);
    // If we were unable to load the ResourceManager then we cannot load.
-   SendMsg( new ServiceClientMessage(Client(),
-                                     this,
-                                     ServiceClientMessage::Freed,
-                                     rTranID) );
+   SendMsg( new ServiceClientCallback(ServiceClientCallback::Released,
+                                      Client(),
+                                      this,
+                                      rTranID) );
+}
+
+//=============================================================================
+// Name: serviceReleaseFailed
+// Description: Service has been Released
+// Interface: public
+// Inputs: pServiceBase - Service that was released
+//         rTranID - Optional TransactionID
+// Outputs: none.
+// Comments:
+//=============================================================================
+void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
+{
+   AutoLock(this);
+
+   // Copy the exception event as the original will be destroyed when we return
+   IExceptionTransactionEvent *pExevent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+
+   CExceptionTransactionEvent *pcopyEvent = new CExceptionTransactionEvent(this,
+                                                                           pExevent->TranID(),
+                                                                           pExevent->ExceptionNumber(),
+                                                                           pExevent->Reason(),
+                                                                           pExevent->Description());
+
+
+   // Notify the client
+   SendMsg( new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
+                                      Client(),
+                                      this,
+                                      pcopyEvent) );
 }
 
 //=============================================================================

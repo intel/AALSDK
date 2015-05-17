@@ -40,8 +40,6 @@
 
 #include "aalsdk/AALDefs.h"
 #include "aalsdk/aas/XLRuntimeModule.h"
-#include "aalsdk/xlrtlib.h"
-
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)

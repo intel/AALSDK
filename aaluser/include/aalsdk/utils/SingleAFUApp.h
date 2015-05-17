@@ -87,7 +87,8 @@ public:
    virtual void      serviceAllocated(IBase *,
                                       TransactionID const & = TransactionID());
    virtual void serviceAllocateFailed(const IEvent &);
-   virtual void          serviceFreed(TransactionID const & = TransactionID());
+   virtual void          serviceReleased(TransactionID const & = TransactionID());
+   virtual void          serviceReleaseFailed(const IEvent &);
    virtual void          serviceEvent(const IEvent &);
    // </IServiceClient>
 
@@ -140,7 +141,13 @@ public:
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
-   virtual void OnServiceFreed(TransactionID const &)          = 0;
+   virtual void OnServiceReleased(TransactionID const &)          = 0;
+   /// @brief Called in response to IServiceClient::serviceReleaseFailed notification.
+   /// @note Subclasses must override to implement application-specific behavior.
+   ///
+   /// ISingleAFUApp's internal semaphore is posted after this call.
+   /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   virtual void OnServiceReleaseFailed(const IEvent &)        = 0;
    /// @brief Called in response to IServiceClient::serviceEvent notification.
    /// @note Subclasses must override to implement application-specific behavior.
    virtual void OnServiceEvent(const IEvent &)                 = 0;
@@ -294,10 +301,20 @@ void ISingleAFUApp<Proprietary>::serviceAllocateFailed(const IEvent &e)
 }
 
 template <typename Proprietary>
-void ISingleAFUApp<Proprietary>::serviceFreed(TransactionID const &tid)
+void ISingleAFUApp<Proprietary>::serviceReleased(TransactionID const &tid)
 {
-   OnServiceFreed(tid);
+   OnServiceReleased(tid);
    Post();
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::serviceReleaseFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnServiceReleaseFailed(e);
+   m_bIsOK = false;
 }
 
 template <typename Proprietary>

@@ -43,7 +43,7 @@
 // AAL Runtime definitions
 #include "aalsdk/AALTypes.h"
 
-#include <aalsdk/aas/XLRuntimeMessages.h>
+#include <aalsdk/Dispatchables.h>
 
 #include "CResourceManager.h"
 #include <aalsdk/aas/AALInProcServiceFactory.h>  // Defines InProc Service Factory

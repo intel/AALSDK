@@ -60,7 +60,7 @@
 /// 01/04/2009     HM       Updated Copyright
 /// 08/12/2010     HM       Added new CTOR: Application specified ID and Handler
 /// 10/21/2011     JG       Changes for Windows compatibility
-/// 04/25/2014     JG       Added Support for IMessageHandler@endverbatim
+/// 05/15/2015     JG       Added Support for IBase@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AALTRANSACTIONID_H__
 #define __AALSDK_AALTRANSACTIONID_H__
@@ -156,34 +156,34 @@ public:
 
   /// @brief Application specified Context and Handler
    /// @param ID
-   /// @param MsgHandler
+   /// @param iBase
    /// @param Filter
    TransactionID(btApplicationContext         ID,
-                 IMessageHandler             *MsgHandler,
+                 IBase                       *pIBase,
                  btBool                       Filter = true);
 
    /// @brief Application specified ID and Handler
    /// @param intID
-   /// @param MsgHandler
+   /// @param iBase
    /// @param Filter
    TransactionID(bt32bitInt                   intID,
-                 IMessageHandler             *MsgHandler,
+                 IBase                       *pIBase,
                  btBool                       Filter=true);
 
    /// @brief Application specified ID, Context, Handler, Filter
    /// @param intID
    /// @param ID
-   /// @param MsgHandler
+   /// @param iBase
    /// @param Filter
    TransactionID(bt32bitInt                   intID,
                  btApplicationContext         ID,
-                 IMessageHandler             *MsgHandler,
+                 IBase                       *pIBase,
                  btBool                       Filter=true);
 
    /// @brief System assigned ID application provided Handler.
-   /// @param MsgHandler
+   /// @param iBase
    /// @param Filter
-   TransactionID(IMessageHandler             *MsgHandler,
+   TransactionID(IBase                       *pIBase,
                  btBool                       Filter=true);
 
    /// TransactionID Destructor.
@@ -192,14 +192,14 @@ public:
    //Accessors
    btApplicationContext        Context() const;
    btEventHandler              Handler() const;
-   IMessageHandler            *MsgHandler() const;
+   IBase                      *Ibase() const;
    btBool                      Filter()  const;
    bt32bitInt                  ID()      const;
 
    // Mutators
    void Context(btApplicationContext Context)             { m_tid.m_ID = Context;                }
    void Handler(btEventHandler Handler)                   { m_tid.m_Handler = Handler;           }
-   void MsgHandler(IMessageHandler *MsgHandler)           { m_tid.m_MessageHandler = MsgHandler; }
+   void Ibase(IBase *pIBase)                              { m_tid.m_IBase = pIBase;              }
    void Filter(btBool Filter)                             { m_tid.m_Filter = Filter;             }
    void ID(bt32bitInt intID)                              { m_tid.m_intID = intID;               }
 

@@ -371,11 +371,6 @@ btBool CAALEvent::ProcessEventTranID()
       ret =  m_TranID.Filter();
       // If an IMessageHandler has been assigned
    }
-   if (  NULL != m_TranID.MsgHandler() ) {
-      // Call it
-      m_TranID.MsgHandler()->messageHandler(*this);
-      ret = m_TranID.Filter();
-   }
    // Return filter value or false if no override at all
    return ret;
 }
@@ -855,7 +850,7 @@ CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(const CObject
 void CObjectDestroyedTransactionEvent::operator()()
 {
    if(NULL != m_pClient){
-      m_pClient->serviceFreed(m_TranID);;
+      m_pClient->serviceReleased(m_TranID);;
       delete this;
    }else if(NULL != m_pMessageHandler){
       m_pMessageHandler->messageHandler(*this);

@@ -312,7 +312,8 @@ public:
    virtual void OnServiceAllocated(IBase *,
                                    TransactionID const &);
    virtual void OnServiceAllocateFailed(const IEvent &);
-   virtual void OnServiceFreed(TransactionID const &);
+   virtual void OnServiceRelease(TransactionID const &);
+   virtual void OnServiceReleaseFailed(const IEvent &);
    virtual void OnServiceEvent(const IEvent &);
    // </ISingleAFUApp>
 
@@ -419,9 +420,15 @@ void CMyApp::OnServiceAllocateFailed(const IEvent &e)
    ERR("Service Allocate Failed");
 }
 
-void CMyApp::OnServiceFreed(TransactionID const &tid)
+void CMyApp::OnServiceReleased(TransactionID const &tid)
 {
    INFO("Service Freed");
+}
+
+void CMyApp::OnServiceReleaseFailed(const IEvent &e)
+{
+   m_bIsOK = false;
+   ERR("Service Release Failed");
 }
 
 void CMyApp::OnServiceEvent(const IEvent &e)

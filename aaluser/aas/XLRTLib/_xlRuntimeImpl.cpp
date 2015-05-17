@@ -40,6 +40,7 @@
 // XL Runtime definitions
 #include "aalsdk/AALTypes.h"
 #include "aalsdk/aas/ServiceHost.h"
+#include "aalsdk/Dispatchables.h"
 
 #include "_xlRuntimeImpl.h"
 #include "_xlMessageDelivery.h"
@@ -49,6 +50,7 @@
 #include "aalsdk/osal/Env.h"
 
 #include "aalsdk/INTCDefs.h"
+#include "aalsdk/CAALEvent.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -132,7 +134,7 @@ void _xlruntime::stop()
       m_status = false;
       Unlock();
 
-      // Prepare our sem. We will wait for notification from serviceFreed() before continuing.
+      // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
       m_sem.Reset(0);
 
       // Release the Service Broker.
@@ -140,9 +142,9 @@ void _xlruntime::stop()
    } else {
       // Dispatch the event ourselves, because MDS is no more.
       OSLThreadGroup oneShot;
-      RuntimeMessage *pRuntimeStopped = new RuntimeMessage(m_pclient,
-                                            this,
-                                            RuntimeMessage::Stopped);
+      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
+                                                             m_pclient,
+                                                             this);
 
        // Fire the final event
       oneShot.Add(pRuntimeStopped);
@@ -167,17 +169,17 @@ btBool _xlruntime::start(IBase               *pclient,
 
    if( Started == m_state  ){
       // Runtime Failed to start because it already is
-      SendMsg(new RuntimeMessage(m_pclient,
-                                 this,
-                                 rConfigParms,
-                                 RuntimeMessage::StartFailed,
-                                 new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                exttranevtSystemStart,
-                                                                TransactionID(),
-                                                                errSysSystemStarted,
-                                                                reasSystemAlreadyStarted,
-                                                                strSystemAlreadyStarted)),
-                                 NULL);
+      SendMsg(new RuntimeCallback(RuntimeCallback::StartFailed,
+                                  m_pclient,
+                                  this,
+                                  rConfigParms,
+                                  new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                 exttranevtSystemStart,
+                                                                 TransactionID(),
+                                                                 errSysSystemStarted,
+                                                                 reasSystemAlreadyStarted,
+                                                                 strSystemAlreadyStarted)),
+                                  NULL);
       return false;
    }
 
@@ -196,24 +198,24 @@ btBool _xlruntime::start(IBase               *pclient,
 
    if ( IsOK() ) {
       m_state = Started;
-      SendMsg(new RuntimeMessage(m_pclient,
-                                 this,
-                                 rConfigParms,
-                                 RuntimeMessage::Started), NULL);
+      SendMsg(new RuntimeCallback(RuntimeCallback::Started,
+                                  m_pclient,
+                                  this,
+                                  rConfigParms), NULL);
       return true;
    } else {
       // Runtime Failed to start
-      SendMsg(new RuntimeMessage(m_pclient,
-                                 this,
-                                 rConfigParms,
-                                 RuntimeMessage::StartFailed,
-                                 new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                exttranevtSystemStart,
-                                                                TransactionID(),
-                                                                errSystemTimeout,
-                                                                reasSystemTimeout,
-                                                                "XL Runtime Failed to start - Rest of event is bogus")),
-                                 NULL);
+      SendMsg(new RuntimeCallback(RuntimeCallback::StartFailed,
+                                  m_pclient,
+                                  this,
+                                  rConfigParms,
+                                  new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                 exttranevtSystemStart,
+                                                                 TransactionID(),
+                                                                 errSystemTimeout,
+                                                                 reasSystemTimeout,
+                                                                 "XL Runtime Failed to start - Rest of event is bogus")),
+                                  NULL);
       return false;
    }
 }
@@ -245,17 +247,17 @@ btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
       if ( ENamedValuesOK == pConfigRecord->Get(XLRUNTIME_CONFIG_BROKER_SERVICE, &sName) ) {
          if ( NULL == m_pBrokerbase ) {
             // Runtime Failed to start
-            SendMsg(new RuntimeMessage(m_pclient,
-                                       this,
-                                       rConfigParms,
-                                       RuntimeMessage::StartFailed,
-                                       new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                                      exttranevtServiceShutdown,
-                                                                      TransactionID(),
-                                                                      errSystemTimeout,
-                                                                      reasSystemTimeout,
-                                                                      "XL Runtime Failed to start - No Broker - Rest of event is bogus")),
-                                       NULL);
+            SendMsg(new RuntimeCallback(RuntimeCallback::StartFailed,
+                                        m_pclient,
+                                        this,
+                                        rConfigParms,
+                                        new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
+                                                                       exttranevtServiceShutdown,
+                                                                       TransactionID(),
+                                                                       errSystemTimeout,
+                                                                       reasSystemTimeout,
+                                                                       "XL Runtime Failed to start - No Broker - Rest of event is bogus")),
+                                        NULL);
             return false;
          }
       }
@@ -370,15 +372,15 @@ void _xlruntime::serviceAllocateFailed(const IEvent        &rEvent)
 }
 
 //=============================================================================
-// Name: serviceFreed
-// Description: Service has been freed
+// Name: serviceReleased
+// Description: Service has been Released
 // Interface: public
 // Inputs: pServiceBase - Service that was freed
 //         rTranID - Optional TransactionID
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _xlruntime::serviceFreed(TransactionID const &rTranID)
+void _xlruntime::serviceReleased(TransactionID const &rTranID)
 {
    AutoLock(this);
 
@@ -393,9 +395,9 @@ void _xlruntime::serviceFreed(TransactionID const &rTranID)
 
          // Dispatch the event ourselves, because MDS is no more.
          OSLThreadGroup oneShot;
-         RuntimeMessage *pRuntimeStopped = new RuntimeMessage(m_pclient,
- 															  this,
-															  RuntimeMessage::Stopped);
+         RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
+                                                                m_pclient,
+                                                                this);
 
           // Fire the final event
          oneShot.Add(pRuntimeStopped);
@@ -406,6 +408,50 @@ void _xlruntime::serviceFreed(TransactionID const &rTranID)
          ASSERT(false);
       break;
    }
+}
+
+//=============================================================================
+// Name: serviceReleasedfailed
+// Description: Service Release failed
+// Interface: public
+// Inputs: rEvent - Event detailing failure
+// Outputs: none.
+// Comments: Not much to do but forward
+//=============================================================================
+void _xlruntime::serviceReleaseFailed(const IEvent &rEvent)
+{
+   AutoLock(this);
+
+   m_pBroker     = NULL;
+   m_pBrokerbase = NULL;
+
+   m_pMDS->StopEventDelivery();
+   m_state = Stopped;
+
+   // Copy the exception event as the original will be destroyed when we return
+   IExceptionTransactionEvent *pExevent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+
+   CExceptionTransactionEvent *pcopyEvent = new CExceptionTransactionEvent(this,
+                                                                           pExevent->TranID(),
+                                                                           pExevent->ExceptionNumber(),
+                                                                           pExevent->Reason(),
+                                                                           pExevent->Description());
+
+   // Dispatch the event ourselves, because MDS is no more.
+   OSLThreadGroup oneShot(1,1);  // Make sure we use a single thread to serialize the events
+   RuntimeCallback *pRuntimeException = new RuntimeCallback(RuntimeCallback::Event,
+                                                            m_pclient,
+                                                            pcopyEvent);
+
+
+   RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
+                                                          m_pclient,
+                                                          this);
+   // Fire the final events
+   oneShot.Add(pRuntimeException);
+   oneShot.Add(pRuntimeStopped);
+
+   oneShot.Drain();  // Wait for it to be dispatched
 }
 
 

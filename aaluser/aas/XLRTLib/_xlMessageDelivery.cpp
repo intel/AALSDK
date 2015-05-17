@@ -45,7 +45,7 @@
 #include "aalsdk/aas/XLRuntimeModule.h"
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/aas/XLRuntimeMessages.h"
+#include "aalsdk/Dispatchables.h"
 #include "_xlMessageDelivery.h"
 
 

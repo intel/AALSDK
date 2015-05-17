@@ -126,7 +126,8 @@ protected:
    void serviceAllocated(IBase *pServiceBase,
                          TransactionID const &rTranID = TransactionID());
    void serviceAllocateFailed( const IEvent &rEvent);
-   void serviceFreed( TransactionID const &rTranID = TransactionID());
+   void serviceReleased( TransactionID const &rTranID = TransactionID());
+   void serviceReleaseFailed( const IEvent &rEvent);
    void serviceEvent(const IEvent &rEvent);
 
    // Internal IResourceManagerClient used to allocate Resources
