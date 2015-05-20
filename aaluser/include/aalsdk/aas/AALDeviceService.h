@@ -342,9 +342,14 @@ private:
    }
    
    
-   void serviceFreed(TransactionID const &rTranID = TransactionID())
+   void serviceReleased(TransactionID const &rTranID = TransactionID())
    {
       cerr << "TODO FREED\n";
+   }
+
+   void serviceReleaseFailed(const IEvent &rEvent)
+   {
+      cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
    }
 
 

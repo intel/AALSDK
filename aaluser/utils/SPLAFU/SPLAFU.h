@@ -109,7 +109,9 @@ public:
 
    virtual void serviceAllocateFailed(const IEvent        &Event);
 
-   virtual void          serviceFreed(TransactionID const &TranID);
+   virtual void          serviceReleased(TransactionID const &TranID);
+
+   virtual void serviceReleaseFailed(const IEvent        &Event);
 
    virtual void          serviceEvent(const IEvent        &Event);
    // </IServiceClient>

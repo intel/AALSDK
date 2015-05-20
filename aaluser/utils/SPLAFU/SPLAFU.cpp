@@ -54,7 +54,7 @@
 #include <aalsdk/AALBase.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/aas/XLRuntimeMessages.h>
+#include <aalsdk/Dispatchables.h>
 #include <aalsdk/service/HWSPLAFUService.h>
 #include <aalsdk/service/ASESPLAFUService.h>
 #include <aalsdk/service/SWSimSPLAFUService.h>
@@ -148,22 +148,35 @@ void SPLAFU::serviceAllocateFailed(const IEvent &Event)
                                                                  m_TranIDFrominit,
                                                                  errInternal,
                                                                  reasCauseUnknown,
-                                                                 "Unknown") );
+                                                                 "Release Failed") );
 }
 
-void SPLAFU::serviceFreed(TransactionID const &TranID)
+void SPLAFU::serviceReleased(TransactionID const &TranID)
 {
    m_pDelegate = NULL;
    ServiceBase::Release(m_TranIDFromRelease, m_TimeoutFromRelease);
 }
 
+void SPLAFU::serviceReleaseFailed(const IEvent &Event)
+{
+   // Reflect the error to the outer client.
+   // TODO extract the Exception info and put in this event
+   QueueAASEvent( new (std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                 Client(),
+                                                                 dynamic_cast<IBase *>(this),
+                                                                 m_TranIDFrominit,
+                                                                 errInternal,
+                                                                 reasCauseUnknown,
+                                                                 "Release Failed") );
+}
+
 void SPLAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   SendMsg( new(std::nothrow) ServiceClientMessage(Client(),
-                                                   dynamic_cast<IBase *>(this),
-                                                   ServiceClientMessage::Event,
-                                                   &Event) );
+   SendMsg( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
+		   	   	   	   	   	   	   	   	   	   	   	Client(),
+                                                    dynamic_cast<IBase *>(this),
+                                                    &Event) );
 }
 
 

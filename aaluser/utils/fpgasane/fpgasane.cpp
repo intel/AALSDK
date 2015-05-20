@@ -281,6 +281,7 @@ void CMyCCIClient::OnWorkspaceFreeFailed(const IEvent & /*unused*/)
    ClientPost();
 }
 
+
 void CMyCCIClient::ClientWait() { m_Sem.Wait();  }
 
 void CMyCCIClient::ClientPost() { m_Sem.Post(1); }
@@ -312,7 +313,7 @@ public:
    virtual void OnServiceAllocated(IBase *,
                                    TransactionID const &);
    virtual void OnServiceAllocateFailed(const IEvent &);
-   virtual void OnServiceRelease(TransactionID const &);
+   virtual void OnServiceReleased(TransactionID const &);
    virtual void OnServiceReleaseFailed(const IEvent &);
    virtual void OnServiceEvent(const IEvent &);
    // </ISingleAFUApp>

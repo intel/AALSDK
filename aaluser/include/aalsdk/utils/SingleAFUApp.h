@@ -86,10 +86,10 @@ public:
    // <IServiceClient>
    virtual void      serviceAllocated(IBase *,
                                       TransactionID const & = TransactionID());
-   virtual void serviceAllocateFailed(const IEvent &);
-   virtual void          serviceReleased(TransactionID const & = TransactionID());
-   virtual void          serviceReleaseFailed(const IEvent &);
-   virtual void          serviceEvent(const IEvent &);
+   virtual void		 serviceAllocateFailed(const IEvent &);
+   virtual void      serviceReleased(TransactionID const & = TransactionID());
+   virtual void      serviceReleaseFailed(const IEvent &);
+   virtual void      serviceEvent(const IEvent &);
    // </IServiceClient>
 
    /// @brief Called in response to IRuntimeClient::runtimeStarted notification.
