@@ -385,32 +385,32 @@ void ase_init()
 {
   FUNC_CALL_ENTRY;
 
+  // Register SIGINT and listen to it
+  signal(SIGTERM, start_simkill_countdown);
+  signal(SIGINT , start_simkill_countdown);
+  signal(SIGQUIT, start_simkill_countdown);
+  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
+  signal(SIGHUP,  start_simkill_countdown);
+
+  // Get PID
+  ase_pid = getpid();
+  printf("SIM-C : PID of simulator is %d\n", ase_pid);
+
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
-  // RRS: Wed Oct 16 17:35:23 PDT 2013
-  // RRS: Environment variable instructions
-  // Generate timstamp
+  // Generate timstamp (used as session ID)
   put_timestamp();
 
   // Print timestamp
   printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
 
-  // Define a null string
-  memset(null_str, 64, '\0');
-  shim_called = 0;
-  fake_off_low_bound = 0;
-
   // Create IPC cleanup setup
-  // #ifdef SIM_SIDE
   create_ipc_listfile();
-  // #endif
 
   // Set up message queues
-  // #ifdef SIM_SIDE
-  printf("SIM-C : Set up ASE message queues...\n");
+  printf("SIM-C : Set up Messaging IPCs...\n");
   ase_mqueue_setup();
-  // #endif
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -468,17 +468,6 @@ void ase_ready()
   printf("\n");
   printf("SIM-C : Ready for simulation...\n");
   END_GREEN_FONTCOLOR;
-
-  // Register SIGINT and listen to it
-  signal(SIGTERM, start_simkill_countdown);
-  signal(SIGINT , start_simkill_countdown);
-  signal(SIGQUIT, start_simkill_countdown);
-  signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
-  signal(SIGHUP,  start_simkill_countdown);
-
-  // Get PID
-  ase_pid = getpid();
-  printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Indicate readiness with .ase_ready file
   ase_ready_fd = fopen(ASE_READY_FILENAME, "w");

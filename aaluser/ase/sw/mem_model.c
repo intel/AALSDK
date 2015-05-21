@@ -44,7 +44,9 @@ mqd_t sim2app_tx;           // sim2app mesaage queue in TX mode
 mqd_t app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
 mqd_t app2sim_umsg_rx;      // UMsg listener MQ in RX mode
 mqd_t app2sim_simkill_rx;   // Simkill listener in RX mode
+#if 0
 mqd_t sim2app_intr_tx;      // INTR message queue in TX mode
+#endif
 
 // '1' indicates that teardown is in progress
 int self_destruct_in_progress = 0;
@@ -71,7 +73,9 @@ void ase_mqueue_setup()
   sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
   app2sim_csr_wr_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
   app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
+#if 0
   sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
+#endif
   app2sim_simkill_rx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_CREAT|O_RDONLY );
 
   FUNC_CALL_EXIT;
@@ -91,7 +95,9 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_tx);       
   mqueue_close(app2sim_csr_wr_rx);
   mqueue_close(app2sim_umsg_rx);
+#if 0
   mqueue_close(sim2app_intr_tx);       
+#endif
   mqueue_close(app2sim_simkill_rx);
 
   // Unlink message queues
@@ -99,7 +105,9 @@ void ase_mqueue_teardown()
   mqueue_destroy(SIM2APP_SMQ_PREFIX);       
   mqueue_destroy(APP2SIM_CSR_WR_SMQ_PREFIX);
   mqueue_destroy(APP2SIM_UMSG_SMQ_PREFIX);
+#if 0 
   mqueue_destroy(SIM2APP_INTR_SMQ_PREFIX);
+#endif
   mqueue_destroy(APP2SIM_SIMKILL_SMQ_PREFIX);
 
   FUNC_CALL_EXIT;

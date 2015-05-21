@@ -40,17 +40,16 @@ struct buffer_t *end;
 
 uint64_t csr_fake_pin;
 
-char null_str[CL_BYTE_WIDTH];
+/* char null_str[CL_BYTE_WIDTH]; */
 
-unsigned long int ase_cci_transact_count;
+/* unsigned long int ase_cci_transact_count; */
 
 /* FILE *ase_cci_log_fd; */
 
 struct timeval start;
-long int ref_anchor_time;
-uint32_t shim_called;
-
-uint64_t fake_off_low_bound;
+/* long int ref_anchor_time; */
+/* uint32_t shim_called; */
+/* uint64_t fake_off_low_bound; */
 
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file

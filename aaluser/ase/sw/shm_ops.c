@@ -39,7 +39,9 @@ mqd_t app2sim_tx;           // app2sim mesaage queue in TX mode
 mqd_t sim2app_rx;           // sim2app mesaage queue in RX mode
 mqd_t app2sim_csr_wr_tx;    // CSR Write MQ in TX mode
 mqd_t app2sim_umsg_tx;      // UMSG MQ in TX mode
+#if 0
 mqd_t sim2app_intr_rx;      // INTR MQ in RX mode
+#endif
 mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
 
 // Lock
@@ -117,7 +119,9 @@ void session_init()
   sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
   app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
   app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
+#if 0
   sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
+#endif
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
@@ -194,7 +198,9 @@ void session_deinit()
   mqueue_close(app2sim_tx);
   mqueue_close(sim2app_rx);
   mqueue_close(app2sim_umsg_tx);
+#if 0
   mqueue_close(sim2app_intr_rx);
+#endif
   mqueue_close(app2sim_simkill_tx);
 
   BEGIN_YELLOW_FONTCOLOR;
