@@ -7,5 +7,12 @@ declare -r SCRIPT_NAME='valgrind-weekly'
 
 . ./valgrind-common
 
+if [ $# -gt 0 ]; then
+   if [ "$1" = 'clean' ]; then
+      clean_valgrind_all "tests/harnessed/gtest/.libs/weekly"
+      exit 0
+   fi
+fi
+
 run_valgrind_all "tests/harnessed/gtest/.libs/weekly" ${1+"$@"}
 exit $?

@@ -150,10 +150,13 @@ private:
       virtual ~AutoResetManager();
 
       void Create();
+      void Destroy();
 
       void UnblockAll();
       void AddWaiter();
-      void RemoveWaiter();
+      // true if the caller is to unlock the count mutex (CountUnlock()).
+      // false if the count mutex was already unlocked.
+      AAL::btBool RemoveWaiter();
 
       AAL::btUnsignedInt NumWaiters() const;
 

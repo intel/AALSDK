@@ -86,12 +86,13 @@ public:
    // return false if the queue could not be drained; otherwise true.
    virtual AAL::btBool                  Drain()                = 0;
 
+   virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
+
 protected:
    virtual AAL::btBool       CreateWorkerThread(ThreadProc ,
                                                 OSLThread::ThreadPriority ,
                                                 void * )       = 0;
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime )  = 0;
-   virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
 };
 
 
@@ -101,7 +102,8 @@ protected:
 // Interface: public
 // Comments: 
 //=============================================================================
-class OSAL_API OSLThreadGroup : public IThreadGroup
+class OSAL_API OSLThreadGroup : public IThreadGroup,
+                                public CriticalSection
 {
 public:
    // Default Min thread is to let the TG decide. Max < min then Max == Min
@@ -121,6 +123,7 @@ public:
    virtual AAL::btBool                  Drain()                     { return m_pState->Drain();           }
    virtual void                          Stop()                     { m_pState->Stop();                   }
    virtual AAL::btBool                  Start()                     { return m_pState->Start();           }
+   virtual AAL::btBool                Destroy(AAL::btTime Timeout);
    // </IThreadGroup>
 
 protected:
@@ -129,14 +132,6 @@ protected:
 
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout)
    { return m_pState->WaitForAllWorkersToStart(Timeout); }
-
-   virtual AAL::btBool Destroy(AAL::btTime Timeout)
-   {
-      if ( NULL == m_pState ) {
-         return true;
-      }
-      return m_pState->Destroy(Timeout);
-   }
 
 private:
    //
@@ -163,6 +158,7 @@ private:
       virtual AAL::btBool                  Drain();
       virtual void                          Stop();
       virtual AAL::btBool                  Start();
+      virtual AAL::btBool                Destroy(AAL::btTime );
       // </IThreadGroup>
 
    protected:
@@ -236,13 +232,44 @@ private:
          AAL::btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
 
       protected:
-         typedef std::list<AAL::btTID>    drainer_list_t;
-         typedef drainer_list_t::iterator drainer_list_iter;
+
+         // Functor that signals completion of a call to OSLThreadGroup::Drain().
+         class NestedBarrierPostD : public IDispatchable
+         {
+         public:
+            NestedBarrierPostD(IDispatchable *pContained,
+                               DrainManager  *pDrainMgr) :
+               m_pContained(pContained),
+               m_pDrainMgr(pDrainMgr)
+            {}
+
+            void operator() ()
+            {
+               (*m_pContained) ();                        // Execute the contained work item.
+               m_pDrainMgr->CompleteNestedWorkItem(this); // signal its completion.
+            }
+
+         protected:
+            IDispatchable *m_pContained;
+            DrainManager  *m_pDrainMgr;
+         };
+
+         typedef std::list<AAL::btTID>           drainer_list_t;
+         typedef drainer_list_t::iterator        drainer_list_iter;
+
+         typedef std::list<NestedBarrierPostD *> nested_list_t;
+         typedef nested_list_t::iterator         nested_list_iter;
+
+         void CompleteNestedWorkItem(NestedBarrierPostD *);
+         void DestructMembers();
 
          ThrGrpState       *m_pTGS;
          AAL::btUnsignedInt m_DrainNestLevel;
          Barrier            m_DrainBarrier;
          drainer_list_t     m_SelfDrainers;
+         nested_list_t      m_NestedWorkItems;
+
+         friend class ThrGrpState;
       };
 
       DrainManager       m_DrainManager;
@@ -252,13 +279,13 @@ private:
       // <IThreadGroup>
       virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
       virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
-      virtual AAL::btBool Destroy(AAL::btTime );
       // </IThreadGroup>
 
       AAL::btBool     DestroyWhileDraining(AAL::btTime );
       AAL::btBool      DestroyWhileJoining(AAL::btTime );
 
       AAL::btBool                  Quiesce(AAL::btTime);
+      void                 DestructMembers();
 
       void                WorkerHasStarted(OSLThread * );
       void                 WorkerHasExited(OSLThread * );
@@ -277,6 +304,7 @@ private:
    // lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
+   AAL::btBool  m_bDestroyed;
    AAL::btTime  m_JoinTimeout;
    ThrGrpState *m_pState;
 };

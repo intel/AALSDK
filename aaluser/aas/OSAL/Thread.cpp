@@ -245,11 +245,6 @@ void * OSLThread::StartThread(void *p)
    SetEvent(pThread->m_hJoinEvent);
 #endif // __AAL_WINDOWS__
 
-   if ( flag_is_set(pThread->m_State, THR_ST_DETACHED) ) {
-      // Detached threads are responsible for cleaning up after themselves.
-      delete pThread;
-   }
-
 #if defined( __AAL_LINUX__ )
    return NULL;
 #endif // __AAL_LINUX__

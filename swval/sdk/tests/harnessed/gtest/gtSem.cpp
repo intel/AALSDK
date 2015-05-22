@@ -1903,6 +1903,8 @@ TEST_P(SemWait, InfiniteWait)
 
 
    EXPECT_TRUE(m_Sem.Destroy());
+   delete m_pThr;
+   m_pThr = NULL;
 
 
    EXPECT_TRUE(m_Sem.Create(0, INT_MAX));
@@ -1921,6 +1923,8 @@ TEST_P(SemWait, InfiniteWait)
    EXPECT_FALSE(m_Sem.Wait(10)) << "Should time out";
 
    m_pThr->Join();
+   delete m_pThr;
+   m_pThr = NULL;
 }
 
 TEST_P(SemWait, CountUp)
@@ -1942,8 +1946,9 @@ TEST_P(SemWait, CountUp)
 
    m_pThr->Join();
 
-
    EXPECT_TRUE(m_Sem.Destroy());
+   delete m_pThr;
+   m_pThr = NULL;
 
 
    EXPECT_TRUE(m_Sem.Create(-count, INT_MAX));
@@ -1960,6 +1965,8 @@ TEST_P(SemWait, CountUp)
    EXPECT_FALSE(m_Sem.Wait(10)) << "Should time out";
 
    m_pThr->Join();
+   delete m_pThr;
+   m_pThr = NULL;
 }
 
 // ::testing::Range(begin, end [, step])

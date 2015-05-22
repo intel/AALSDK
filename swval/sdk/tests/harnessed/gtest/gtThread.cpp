@@ -1073,23 +1073,14 @@ void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   // Register a one-shot signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, true));
-#endif // OS
-
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
-
    pTC->m_Semaphore.Wait();
 }
 
 TEST_F(OSAL_Thread_f, aal0017)
 {
-   // OSLThread::Join() - what is expected behavior of Join() when the target thread is OSLThread::Unblock()'ed?
+   // After calling OSLThread::Cancel() for a thread other than the current thread, the current
+   // thread should be able to immediately OSLThread::Join() the canceled thread.
 
    ASSERT_TRUE(m_Semaphore.Create(0, 1));
 
@@ -1105,6 +1096,8 @@ TEST_F(OSAL_Thread_f, aal0017)
 
    // cancel the child thread.
    m_pThrs[0]->Cancel();
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
 
    m_pThrs[0]->Join();
    delete m_pThrs[0];
@@ -1199,6 +1192,7 @@ TEST_F(OSAL_Thread_f, aal0165)
    EXPECT_EQ(1, m_Scratch[1]);
 
    YIELD_WHILE(CurrentThreads() > 0);
+   delete m_pThrs[0];
 }
 
 void OSAL_Thread_f::Thr15(OSLThread *pThread, void *pContext)
@@ -1267,6 +1261,7 @@ TEST_F(OSAL_Thread_f, aal0167)
    EXPECT_EQ(1, m_Scratch[1]);
 
    YIELD_WHILE(CurrentThreads() > 0);
+   delete m_pThrs[0];
 }
 
 void OSAL_Thread_f::Thr17(OSLThread *pThread, void *pContext)

@@ -238,6 +238,7 @@ AAL::btBool Barrier::Destroy()
    UnblockAll();
 
    m_AutoResetManager.WaitForAllWaitersToExit();
+   m_AutoResetManager.Destroy();
 
 #if   defined( __AAL_WINDOWS__ )
    
@@ -456,7 +457,6 @@ AAL::btUnsignedInt Barrier::NumWaiters() const
    return m_AutoResetManager.NumWaiters();
 }
 
-
 Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
    m_pBarrier(pBarrier),
    m_NumWaiters(0),
@@ -465,6 +465,14 @@ Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
    , m_hREvent(NULL),
      m_hZEvent(NULL)
 #endif // __AAL_WINDOWS__
+{}
+
+Barrier::AutoResetManager::~AutoResetManager()
+{
+   ASSERT(0 == m_NumWaiters + m_NumPreWaiters);
+}
+
+void Barrier::AutoResetManager::Create()
 {
 #if   defined( __AAL_WINDOWS__ )
 
@@ -509,12 +517,9 @@ Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
 #endif // OS
 }
 
-Barrier::AutoResetManager::~AutoResetManager()
+void Barrier::AutoResetManager::Destroy()
 {
    int res;
-
-   ASSERT(0 == m_NumWaiters + m_NumPreWaiters);
-
 #if   defined( __AAL_WINDOWS__ )
 
    res = CloseHandle(m_hREvent) ? 0 : 1;
@@ -538,13 +543,6 @@ Barrier::AutoResetManager::~AutoResetManager()
    ASSERT(0 == res);
 
 #endif // OS
-}
-
-void Barrier::AutoResetManager::Create()
-{
-#if defined( __AAL_WINDOWS__ )
-   ResetEvent(m_hZEvent); // reset the manual-reset event to non-signaled.
-#endif // __AAL_WINDOWS__
 }
 
 void Barrier::AutoResetManager::UnblockAll()
@@ -623,11 +621,11 @@ WAITLOOP:
    ++m_NumWaiters;
 }
 
-void Barrier::AutoResetManager::RemoveWaiter()
+AAL::btBool Barrier::AutoResetManager::RemoveWaiter()
 {
    if ( 0 == m_NumWaiters ) {
       // Nothing to do.
-      return;
+      return true;
    }
 
    --m_NumWaiters;
@@ -653,13 +651,17 @@ void Barrier::AutoResetManager::RemoveWaiter()
       }
 
       if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_DESTROYING) ) {
+         CountUnlock();
 #if   defined( __AAL_WINDOWS__ )
          SetEvent(m_hZEvent); // change manual-reset event state to signaled, waking all.
 #elif defined( __AAL_LINUX__ )
          pthread_cond_broadcast(&m_Zcondition); // wake all
 #endif // OS
+         return false;
       }
    }
+
+   return true;
 }
 
 AAL::btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
@@ -779,8 +781,9 @@ AAL::btBool Barrier::Wait()
       res = false;
    }
 
-   m_AutoResetManager.RemoveWaiter();
-   CountUnlock();
+   if ( m_AutoResetManager.RemoveWaiter() ) {
+      CountUnlock();
+   }
    
    return res;
 }
@@ -856,8 +859,9 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       res = false;
    }
 
-   m_AutoResetManager.RemoveWaiter();
-   CountUnlock();
+   if ( m_AutoResetManager.RemoveWaiter() ) {
+      CountUnlock();
+   }
 
    return res;
 }
@@ -893,8 +897,9 @@ WAITLOOP:
 
    // When un-blocking, don't allow threads to loop and potentially block again.
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-      m_AutoResetManager.RemoveWaiter();
-      CountUnlock();
+      if ( m_AutoResetManager.RemoveWaiter() ) {
+         CountUnlock();
+      }
       return false;
    }
 
@@ -902,8 +907,9 @@ WAITLOOP:
 
       // If we're being unblocked then immediately return false.
       if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         m_AutoResetManager.RemoveWaiter();
-         CountUnlock();
+         if ( m_AutoResetManager.RemoveWaiter() ) {
+            CountUnlock();
+         }
          return false;
       }
 
@@ -917,8 +923,9 @@ WAITLOOP:
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            m_AutoResetManager.RemoveWaiter();
-            CountUnlock();
+            if ( m_AutoResetManager.RemoveWaiter() ) {
+               CountUnlock();
+            }
             return false;     // error (using INFINITE above)
          }
       }
@@ -933,8 +940,9 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   m_AutoResetManager.RemoveWaiter();
-   CountUnlock();
+   if ( m_AutoResetManager.RemoveWaiter() ) {
+      CountUnlock();
+   }
    
    return true;
 }
@@ -973,8 +981,9 @@ WAITLOOP:
 
    // When un-blocking, don't allow threads to loop and potentially block again.
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-      m_AutoResetManager.RemoveWaiter();
-      CountUnlock();
+      if ( m_AutoResetManager.RemoveWaiter() ) {
+         CountUnlock();
+      }
       return false;
    }
 
@@ -982,8 +991,9 @@ WAITLOOP:
 
       // If we're being unblocked then immediately return false.
       if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         m_AutoResetManager.RemoveWaiter();
-         CountUnlock();
+         if ( m_AutoResetManager.RemoveWaiter() ) {
+            CountUnlock();
+         }
          return false;
       }
 
@@ -997,8 +1007,9 @@ WAITLOOP:
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            m_AutoResetManager.RemoveWaiter();
-            CountUnlock();
+            if ( m_AutoResetManager.RemoveWaiter() ) {
+               CountUnlock();
+            }
             return false;     // timeout or error
          }
       }
@@ -1013,9 +1024,9 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   m_AutoResetManager.RemoveWaiter();
-   
-   CountUnlock();
+   if ( m_AutoResetManager.RemoveWaiter() ) {
+      CountUnlock();
+   }
    
    return true;
 }

@@ -1286,6 +1286,8 @@ TEST_F(NVSSimple, EmptyToFromFILE)
 
    NamedValueSet empty;
    e = NVSReadNVS(fp, &empty); // Read in the empty test
+
+   EXPECT_TRUE(F_CLOSE(fp));
    ASSERT_EQ(ENamedValuesEndOfFile, e) << "ERROR: NVSReadNVS returned error " << m_sMapRetToName[e] << "\n";
 
    ASSERT_EQ(m_nvsTest, empty);

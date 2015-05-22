@@ -3,6 +3,9 @@
 #define __GTTHREADGROUP_H__
 #include "gtCommon.h"
 
+// Note: we don't 'delete this' in any of the operator()'s here, because the work items
+//       are all tracked within each test fixture to ensure none are lost.
+
 class PostThenWaitD : public IDispatchable
 {
 public:
@@ -19,12 +22,12 @@ public:
       m_ExpPostRes(ExpPostRes),
       m_ExpWaitRes(ExpWaitRes)
    {}
+   virtual ~PostThenWaitD() {}
 
    virtual void operator() ()
    {
       EXPECT_EQ(m_ExpPostRes, m_ToPost.Post(m_PostCount));
       EXPECT_EQ(m_ExpWaitRes, m_ToWait.Wait(m_WaitTimeout));
-      delete this;
    }
 
 protected:
@@ -40,17 +43,18 @@ class NopD : public IDispatchable
 {
 public:
    NopD() {}
-   virtual void operator() () { delete this; }
+   virtual ~NopD() {}
+   virtual void operator() () { ; }
 };
 
 class YieldD : public IDispatchable
 {
 public:
    YieldD() {}
+   virtual ~YieldD() {}
    virtual void operator() ()
    {
       cpu_yield();
-      delete this;
    }
 };
 
@@ -64,6 +68,7 @@ public:
       m_NumToAdd(NumToAdd),
       m_bExpectedResult(bExpectedResult)
    {}
+   virtual ~AddNopToThreadGroupD() {}
 
    virtual void operator() ()
    {
@@ -78,7 +83,6 @@ public:
             delete nop;
          }
       }
-      delete this;
    }
 
 protected:
@@ -97,11 +101,11 @@ public:
       m_PostCount(PostCount),
       m_ExpPostRes(ExpPostRes)
    {}
+   virtual ~PostD() {}
 
    virtual void operator() ()
    {
       EXPECT_EQ(m_ExpPostRes, m_ToPost.Post(m_PostCount));
-      delete this;
    }
 
 protected:
@@ -122,12 +126,12 @@ public:
       m_PostCount(PostCount),
       m_ExpPostRes(ExpPostRes)
    {}
+   virtual ~SleepThenPostD() {}
 
    virtual void operator() ()
    {
       SleepMilli(m_MillisToSleep);
       EXPECT_EQ(m_ExpPostRes, m_ToPost.Post(m_PostCount));
-      delete this;
    }
 
 protected:
@@ -147,11 +151,11 @@ public:
       m_WaitTimeout(WaitTimeout),
       m_ExpWaitRes(ExpWaitRes)
    {}
+   virtual ~WaitD() {}
 
    virtual void operator() ()
    {
       EXPECT_EQ(m_ExpWaitRes, m_ToWait.Wait(m_WaitTimeout));
-      delete this;
    }
 
 protected:
@@ -182,13 +186,13 @@ public:
       m_PostCount1(PostCount1),
       m_ExpPostRes1(ExpPostRes1)
    {}
+   virtual ~PostThenWaitThenPostD() {}
 
    virtual void operator() ()
    {
       EXPECT_EQ(m_ExpPostRes0, m_ToPost0.Post(m_PostCount0));
       EXPECT_EQ(m_ExpWaitRes0, m_ToWait0.Wait(m_WaitTimeout0));
       EXPECT_EQ(m_ExpPostRes1, m_ToPost1.Post(m_PostCount1));
-      delete this;
    }
 
 protected:
@@ -211,6 +215,26 @@ public:
       m_i(i),
       m_incr(incr)
    {}
+   virtual ~UnsafeCountUpD() {}
+   virtual void operator() ()
+   {
+      m_i += m_incr;
+   }
+
+protected:
+   AAL::btInt &m_i;
+   AAL::btInt  m_incr;
+};
+
+class DelUnsafeCountUpD : public IDispatchable
+{
+public:
+   DelUnsafeCountUpD(AAL::btInt &i,
+                     AAL::btInt incr=1) :
+      m_i(i),
+      m_incr(incr)
+   {}
+   virtual ~DelUnsafeCountUpD() {}
    virtual void operator() ()
    {
       m_i += m_incr;
@@ -230,201 +254,15 @@ public:
       m_i(i),
       m_decr(decr)
    {}
+   virtual ~UnsafeCountDownD() {}
    virtual void operator() ()
    {
       m_i -= m_decr;
-      delete this;
    }
 
 protected:
    AAL::btInt &m_i;
    AAL::btInt  m_decr;
-};
-
-class JoinThreadGroupD : public IDispatchable
-{
-public:
-   JoinThreadGroupD(OSLThreadGroup *pTG,
-                    AAL::btTime     Timeout=AAL_INFINITE_WAIT,
-                    AAL::btBool     bExpectedResult=true) :
-      m_pTG(pTG),
-      m_Timeout(Timeout),
-      m_bExpectedResult(bExpectedResult)
-   {}
-
-   virtual void operator() ()
-   {
-      EXPECT_EQ(m_bExpectedResult, m_pTG->Join(m_Timeout));
-      delete this;
-   }
-
-protected:
-   OSLThreadGroup *m_pTG;
-   AAL::btTime     m_Timeout;
-   AAL::btBool     m_bExpectedResult;
-};
-
-class PostThenJoinThreadGroupD : public IDispatchable
-{
-public:
-   PostThenJoinThreadGroupD(CSemaphore     &ToPost,
-                            AAL::btInt      ValueToPost,
-                            OSLThreadGroup *pTG,
-                            AAL::btBool     bExpectPostRes=true,
-                            AAL::btTime     JoinTimeout=AAL_INFINITE_WAIT,
-                            AAL::btBool     bExpectJoinRes=true) :
-      m_ToPost(ToPost),
-      m_ValueToPost(ValueToPost),
-      m_pTG(pTG),
-      m_bExpectPostRes(bExpectPostRes),
-      m_JoinTimeout(JoinTimeout),
-      m_bExpectJoinRes(bExpectJoinRes)
-   {}
-
-   virtual void operator() ()
-   {
-      EXPECT_EQ(m_bExpectPostRes, m_ToPost.Post(m_ValueToPost));
-      EXPECT_EQ(m_bExpectJoinRes, m_pTG->Join(m_JoinTimeout));
-      delete this;
-   }
-
-protected:
-   CSemaphore     &m_ToPost;
-   AAL::btInt      m_ValueToPost;
-   OSLThreadGroup *m_pTG;
-   AAL::btBool     m_bExpectPostRes;
-   AAL::btTime     m_JoinTimeout;
-   AAL::btBool     m_bExpectJoinRes;
-};
-
-class SleepThenPostThenJoinThreadGroupD : public IDispatchable
-{
-public:
-   SleepThenPostThenJoinThreadGroupD(AAL::btTime     SleepMillis,
-                                     CSemaphore     &ToPost,
-                                     AAL::btInt      ValueToPost,
-                                     OSLThreadGroup *pTG,
-                                     AAL::btBool     bExpectPostRes=true,
-                                     AAL::btTime     JoinTimeout=AAL_INFINITE_WAIT,
-                                     AAL::btBool     bExpectJoinRes=true) :
-      m_SleepMillis(SleepMillis),
-      m_ToPost(ToPost),
-      m_ValueToPost(ValueToPost),
-      m_pTG(pTG),
-      m_bExpectPostRes(bExpectPostRes),
-      m_JoinTimeout(JoinTimeout),
-      m_bExpectJoinRes(bExpectJoinRes)
-   {}
-
-   virtual void operator() ()
-   {
-      SleepMilli(m_SleepMillis);
-      EXPECT_EQ(m_bExpectPostRes, m_ToPost.Post(m_ValueToPost));
-      EXPECT_EQ(m_bExpectJoinRes, m_pTG->Join(m_JoinTimeout));
-      delete this;
-   }
-
-protected:
-   AAL::btTime     m_SleepMillis;
-   CSemaphore     &m_ToPost;
-   AAL::btInt      m_ValueToPost;
-   OSLThreadGroup *m_pTG;
-   AAL::btBool     m_bExpectPostRes;
-   AAL::btTime     m_JoinTimeout;
-   AAL::btBool     m_bExpectJoinRes;
-};
-
-class SleepThenPostThenDeleteThreadGroupD : public IDispatchable
-{
-public:
-   SleepThenPostThenDeleteThreadGroupD(AAL::btTime     SleepMillis,
-                                       CSemaphore     &ToPost,
-                                       AAL::btInt      ValueToPost,
-                                       OSLThreadGroup *pTG,
-                                       AAL::btBool     bExpectPostRes=true) :
-      m_SleepMillis(SleepMillis),
-      m_ToPost(ToPost),
-      m_ValueToPost(ValueToPost),
-      m_pTG(pTG),
-      m_bExpectPostRes(bExpectPostRes)
-   {}
-
-   virtual void operator() ()
-   {
-      SleepMilli(m_SleepMillis);
-      EXPECT_EQ(m_bExpectPostRes, m_ToPost.Post(m_ValueToPost));
-      delete m_pTG;
-      delete this;
-   }
-
-protected:
-   AAL::btTime     m_SleepMillis;
-   CSemaphore     &m_ToPost;
-   AAL::btInt      m_ValueToPost;
-   OSLThreadGroup *m_pTG;
-   AAL::btBool     m_bExpectPostRes;
-};
-
-class PostThenDeleteThreadGroupD : public IDispatchable
-{
-public:
-   PostThenDeleteThreadGroupD(CSemaphore     &ToPost,
-                              AAL::btInt      ValueToPost,
-                              OSLThreadGroup *pTG,
-                              AAL::btBool     bExpectPostRes=true) :
-      m_ToPost(ToPost),
-      m_ValueToPost(ValueToPost),
-      m_pTG(pTG),
-      m_bExpectPostRes(bExpectPostRes)
-   {}
-
-   virtual void operator() ()
-   {
-      EXPECT_EQ(m_bExpectPostRes, m_ToPost.Post(m_ValueToPost));
-      delete m_pTG;
-      delete this;
-   }
-
-protected:
-   CSemaphore     &m_ToPost;
-   AAL::btInt      m_ValueToPost;
-   OSLThreadGroup *m_pTG;
-   AAL::btBool     m_bExpectPostRes;
-};
-
-class DeleteThreadGroupD : public IDispatchable
-{
-public:
-   DeleteThreadGroupD(OSLThreadGroup *pTG) :
-      m_pTG(pTG)
-   {}
-
-   virtual void operator() ()
-   {
-      delete m_pTG;
-      delete this;
-   }
-
-protected:
-   OSLThreadGroup *m_pTG;
-};
-
-
-class SetThreadGroupPtrToNULLD : public IDispatchable
-{
-public:
-   SetThreadGroupPtrToNULLD(OSLThreadGroup * & pTG) :
-      m_pTG(pTG)
-   {}
-
-   virtual void operator() ()
-   {
-      m_pTG = NULL;
-      delete this;
-   }
-
-protected:
-   OSLThreadGroup * & m_pTG;
 };
 
 class StopThreadGroupD : public IDispatchable
@@ -433,11 +271,10 @@ public:
    StopThreadGroupD(OSLThreadGroup *pTG) :
       m_pTG(pTG)
    {}
-
+   virtual ~StopThreadGroupD() {}
    virtual void operator() ()
    {
       m_pTG->Stop();
-      delete this;
    }
 
 protected:
@@ -452,17 +289,78 @@ public:
       m_pTG(pTG),
       m_bExpectedResult(bExpectedResult)
    {}
-
+   virtual ~DrainThreadGroupD() {}
    virtual void operator() ()
    {
       EXPECT_EQ(m_bExpectedResult, m_pTG->Drain());
-      delete this;
    }
 
 protected:
    OSLThreadGroup *m_pTG;
    AAL::btBool     m_bExpectedResult;
 };
+
+class JoinThreadGroupD : public IDispatchable
+{
+public:
+   JoinThreadGroupD(OSLThreadGroup *pTG,
+                    AAL::btTime     Timeout=AAL_INFINITE_WAIT,
+                    AAL::btBool     bExpectedResult=true) :
+      m_pTG(pTG),
+      m_Timeout(Timeout),
+      m_bExpectedResult(bExpectedResult)
+   {}
+   virtual ~JoinThreadGroupD() {}
+   virtual void operator() ()
+   {
+      EXPECT_EQ(m_bExpectedResult, m_pTG->Join(m_Timeout));
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+   AAL::btTime     m_Timeout;
+   AAL::btBool     m_bExpectedResult;
+};
+
+class DestroyThreadGroupD : public IDispatchable
+{
+public:
+   DestroyThreadGroupD(OSLThreadGroup *pTG,
+                       AAL::btTime     Timeout=AAL_INFINITE_WAIT,
+                       AAL::btBool     bExpectedResult=true) :
+      m_pTG(pTG),
+      m_Timeout(Timeout),
+      m_bExpectedResult(bExpectedResult)
+   {}
+   virtual ~DestroyThreadGroupD() {}
+   virtual void operator() ()
+   {
+      EXPECT_EQ(m_bExpectedResult, m_pTG->Destroy(m_Timeout));
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+   AAL::btTime     m_Timeout;
+   AAL::btBool     m_bExpectedResult;
+};
+
+#if 0
+class SetThreadGroupPtrToNULLD : public IDispatchable
+{
+public:
+   SetThreadGroupPtrToNULLD(OSLThreadGroup * & pTG) :
+      m_pTG(pTG)
+   {}
+   virtual ~SetThreadGroupPtrToNULLD() {}
+   virtual void operator() ()
+   {
+      m_pTG = NULL;
+   }
+
+protected:
+   OSLThreadGroup * & m_pTG;
+};
+#endif
 
 #endif // __GTTHREADGROUP_H__
 
