@@ -44,7 +44,12 @@ void create_ipc_listfile()
 {
   FUNC_CALL_ENTRY;
 
-  local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "w");
+  ipclist_filepath = malloc(ASE_FILEPATH_LEN);
+  strcpy(ipclist_filepath, ase_workdir_path);
+  strcat(ipclist_filepath, IPC_LOCAL_FILENAME);
+  
+  // local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "w");
+  local_ipc_fp = fopen(ipclist_filepath, "w");
   if (local_ipc_fp == NULL) 
     {
       ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
@@ -96,7 +101,7 @@ void final_ipc_cleanup()
   fclose(local_ipc_fp);
 
   // Reopen local IPC listfile
-  local_ipc_fp = fopen(IPC_LOCAL_FILENAME, "r");
+  local_ipc_fp = fopen(ipclist_filepath, "r");
   if (local_ipc_fp == NULL) 
     {
       ase_error_report("fopen", errno, ASE_IPCKILL_CATERR);

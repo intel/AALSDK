@@ -51,12 +51,12 @@
 #include <sys/stat.h>
 #include <time.h>       
 #include <ctype.h>         
-#include <mqueue.h>        // Message queue setup
-#include <errno.h>         // Error management
-#include <signal.h>        // Used to kill simulation             
-#include <pthread.h>       // DPI uses a csr_write listener thread
-#include <sys/resource.h>  // Used to get/set resource limit
-#include <sys/time.h>      // Timestamp generation
+#include <mqueue.h>        
+#include <errno.h>         
+#include <signal.h>        
+#include <pthread.h>       
+#include <sys/resource.h>  
+#include <sys/time.h>      
 #include <math.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -132,8 +132,21 @@
 // ASE filepath length
 #define ASE_FILEPATH_LEN  256
 
+// work Directory location
+char *ase_workdir_path;
+
+// Run location
+char *ase_run_path;
+
 // Timestamp IPC file
 #define TSTAMP_FILENAME ".ase_timestamp"
+char *tstamp_filepath;
+
+// IPC control list
+char *ipclist_filepath;
+
+// Ready filepath
+char *ase_ready_filepath;
 
 // ASE Mode macros
 #define ASE_MODE_DAEMON_NO_SIMKILL   1
@@ -270,13 +283,14 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
+char* ase_eval_session_directory();
 
 // Message queue operations
-mqd_t mqueue_create(char*, int);
-void mqueue_close(mqd_t);
+int mqueue_create(char*, int);
+void mqueue_close(int);
 void mqueue_destroy(char*);
-void mqueue_send(mqd_t, char*);
-int mqueue_recv(mqd_t, char*);
+void mqueue_send(int, char*);
+int mqueue_recv(int, char*);
 
 // Debug interface
 void shm_dbg_memtest(struct buffer_t *);

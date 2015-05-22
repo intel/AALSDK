@@ -40,12 +40,12 @@
 // ---------------------------------------------------------------
 // Message queues descriptors
 // ---------------------------------------------------------------
-mqd_t app2sim_rx;           // app2sim mesaage queue in RX mode
-mqd_t sim2app_tx;           // sim2app mesaage queue in TX mode
-mqd_t app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
-mqd_t app2sim_umsg_rx;      // UMSG    message queue in RX mode
-mqd_t app2sim_simkill_rx;   // app2sim message queue in RX mode
-mqd_t sim2app_intr_tx;      // sim2app message queue in TX mode
+int app2sim_rx;           // app2sim mesaage queue in RX mode
+int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
+int app2sim_umsg_rx;      // UMSG    message queue in RX mode
+int app2sim_simkill_rx;   // app2sim message queue in RX mode
+int sim2app_intr_tx;      // sim2app message queue in TX mode
 
 // Global test complete counter
 // Keeps tabs of how many session_deinits were received
@@ -141,7 +141,6 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 // linked list. The reply consists of the pbase, fakeaddr and fd_ase.
 // When a deallocate message is received, the buffer is invalidated.
 // -----------------------------------------------------------------------
-//int buffer_replicator()
 int ase_listener()
 {
    FUNC_CALL_ENTRY;
@@ -396,11 +395,31 @@ void ase_init()
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
+  // Evaluate PWD
+  ase_run_path = malloc(ASE_FILEPATH_LEN);
+  ase_run_path = getenv("PWD");
+#ifdef ASE_DEBUG
+  printf("SIM-C : ASE Run path =>\n");
+  printf("        %s\n", ase_run_path);
+#endif
+
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
+  // Evaluate Session directory
+  ase_workdir_path = malloc(ASE_FILEPATH_LEN);
+  /* ase_workdir_path = ase_eval_session_directory();   */
+  sprintf(ase_workdir_path, "%s/work/", ase_run_path);
+  printf("SIM-C : ASE Session Directory located at =>\n");
+  printf("        %s\n", ase_workdir_path);
+  printf("SIM-C : ASE Run path =>\n");
+  printf("        %s\n", ase_run_path);
+
   // Generate timstamp (used as session ID)
   put_timestamp();
+  tstamp_filepath = malloc(ASE_FILEPATH_LEN);
+  strcpy(tstamp_filepath, ase_workdir_path);
+  strcat(tstamp_filepath, TSTAMP_FILENAME);
 
   // Print timestamp
   printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
@@ -449,30 +468,28 @@ void ase_init()
 // -----------------------------------------------------------------------
 void ase_ready()
 {
-  char *tstamp_env;
-  tstamp_env = malloc(80);
-
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
+
+  // Indicate readiness with .ase_ready file
+  ase_ready_filepath = malloc (ASE_FILEPATH_LEN);
+  sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
+  ase_ready_fd = fopen( ase_ready_filepath, "w");
+  fprintf(ase_ready_fd, "%d", ase_pid);
+  fclose(ase_ready_fd);
 
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
-  tstamp_env = getenv("PWD");
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        If $SHELL is 'bash', run:\n");
-  printf("                                export ASE_WORKDIR=%s\n", tstamp_env);
+  printf("                                export ASE_WORKDIR=%s\n", ase_run_path);
   printf("        If $SHELL is 'tcsh' or 'csh', run: \n");
-  printf("                                setenv ASE_WORKDIR %s\n", tstamp_env);
+  printf("                                setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
   printf("\n");
   printf("SIM-C : Ready for simulation...\n");
   END_GREEN_FONTCOLOR;
-
-  // Indicate readiness with .ase_ready file
-  ase_ready_fd = fopen(ASE_READY_FILENAME, "w");
-  fprintf(ase_ready_fd, "%d", ase_pid);
-  fclose(ase_ready_fd);
 
   printf("SIM-C : Press CTRL-C to close simulator...\n");
   
@@ -508,7 +525,8 @@ void start_simkill_countdown()
   // ase_destroy();
 
   // *FIXME* Remove the ASE timestamp file
-  if (unlink(TSTAMP_FILENAME) == -1)
+  // if (unlink(TSTAMP_FILENAME) == -1)
+  if (unlink(tstamp_filepath) == -1)
     {
       printf("SIM-C : %s could not be deleted, please delete manually... \n", TSTAMP_FILENAME);
     }
@@ -637,7 +655,8 @@ void ase_config_parse(char *filename)
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = malloc(256);
-  ase_cfg_filepath = generate_tstamp_path(filename);
+  // ase_cfg_filepath = generate_tstamp_path(filename);
+  strcpy(ase_cfg_filepath, ase_run_path);
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );

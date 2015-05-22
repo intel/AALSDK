@@ -40,10 +40,10 @@ struct mq_attr attr;
 // ----------------------------------------------------------------
 // mqueue_create: Create a simplex mesaage queue by passing a name
 // ----------------------------------------------------------------
-mqd_t mqueue_create(char* mq_name_prefix, int perm_flag)
+int mqueue_create(char* mq_name_prefix, int perm_flag)
 {
   FUNC_CALL_ENTRY;
-  mqd_t mq;
+  int mq;
   char *mq_name;
   struct mq_attr attr;
 
@@ -104,12 +104,12 @@ mqd_t mqueue_create(char* mq_name_prefix, int perm_flag)
 // mqueue_open : Added to accomodate timestamps when deallocate_buffer
 // is called
 // ----------------------------------------------------------------------
-// TBD
+
 
 // -------------------------------------------------------
-// mqueue_close(mqd_t): close MQ by descriptor
+// mqueue_close(int): close MQ by descriptor
 // -------------------------------------------------------
-void mqueue_close(mqd_t mq)
+void mqueue_close(int mq)
 {
   FUNC_CALL_ENTRY;
   if(mq_close(mq) == -1)
@@ -160,7 +160,7 @@ void mqueue_destroy(char* mq_name_prefix)
 // mqueue_send(): Easy send function
 // - Typecast any message as a character array and ram it in.
 // ------------------------------------------------------------
-void mqueue_send(mqd_t mq, char* str)
+void mqueue_send(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
 
@@ -193,7 +193,7 @@ void mqueue_send(mqd_t mq, char* str)
 // - Typecast message back to a required type
 // ------------------------------------------------------------------
 
-int mqueue_recv(mqd_t mq, char* str)
+int mqueue_recv(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
 
