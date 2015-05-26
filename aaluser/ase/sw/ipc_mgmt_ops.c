@@ -119,7 +119,8 @@ void final_ipc_cleanup()
       if (strcmp (ipc_type, "MQ") == 0)
 	{
 	  printf("        Removing MQ  %s ... ", ipc_name);
-	  if ( mq_unlink(ipc_name) == -1 )
+	  // if ( mq_unlink(ipc_name) == -1 )
+	  if ( unlink(ipc_name) == -1 )
 	    {
 	      /* BEGIN_YELLOW_FONTCOLOR; */
 	      /* printf("Removed already !!\n"); */

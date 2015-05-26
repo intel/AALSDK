@@ -286,7 +286,9 @@ uint64_t ase_rand64();
 char* ase_eval_session_directory();
 
 // Message queue operations
-int mqueue_create(char*, int);
+void ipc_init();
+void mqueue_create(char*);
+int mqueue_open(char*, int);
 void mqueue_close(int);
 void mqueue_destroy(char*);
 void mqueue_send(int, char*);
@@ -343,18 +345,18 @@ extern "C" {
  *
  * ********************************************************************/
 // Buffer exchange messages
-#define APP2SIM_SMQ_PREFIX          "/app2sim_bufping_smq."
-#define SIM2APP_SMQ_PREFIX          "/sim2app_bufpong_smq."
-// CSR write messages
-#define APP2SIM_CSR_WR_SMQ_PREFIX   "/app2sim_csr_wr_smq."
-// UMSG control messages from APP to SIM
-#define APP2SIM_UMSG_SMQ_PREFIX     "/app2sim_umsg_smq."
-// Interrupt message from SIM to APP
-#if 0
-#define SIM2APP_INTR_SMQ_PREFIX     "/sim2app_intr_smq."
-#endif
-// Simkill control messages
-#define APP2SIM_SIMKILL_SMQ_PREFIX  "/app2sim_simkill_smq."
+/* #define APP2SIM_SMQ_PREFIX          "app2sim_bufping_smq." */
+/* #define SIM2APP_SMQ_PREFIX          "sim2app_bufpong_smq." */
+/* // CSR write messages */
+/* #define APP2SIM_CSR_WR_SMQ_PREFIX   "app2sim_csr_wr_smq." */
+/* // UMSG control messages from APP to SIM */
+/* #define APP2SIM_UMSG_SMQ_PREFIX     "app2sim_umsg_smq." */
+/* // Interrupt message from SIM to APP */
+/* #if 0 */
+/* #define SIM2APP_INTR_SMQ_PREFIX     "sim2app_intr_smq." */
+/* #endif */
+/* // Simkill control messages */
+/* #define APP2SIM_SIMKILL_SMQ_PREFIX  "app2sim_simkill_smq." */
 
 // Message Queue establishment status
 #define MQ_NOT_ESTABLISHED 0x0
@@ -364,6 +366,20 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
+#define ASE_MQ_INSTANCES  5
+
+// Message presence setting
+#define ASE_MSG_PRESENT 0xD33D
+#define ASE_MSG_ABSENT  0xDEAD
+
+// Message queue controls
+struct ipc_t
+{
+  char name[ASE_MQ_NAME_LEN];
+  char path[ASE_FILEPATH_LEN];
+  int  perm_flag;
+};
+struct ipc_t mq_array[ASE_MQ_INSTANCES];
 
 
 /* ********************************************************************

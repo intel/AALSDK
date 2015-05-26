@@ -88,6 +88,7 @@ void send_simkill()
   /* kill (ase_pid, SIGKILL); */
 }
 
+
 /*
  * Session Initialize
  * Open the message queues to ASE simulator
@@ -95,6 +96,8 @@ void send_simkill()
 void session_init()
 {
   FUNC_CALL_ENTRY;
+
+  ipc_init();
 
   // Initialize lock
   if ( pthread_mutex_init(&lock, NULL) != 0)
@@ -121,14 +124,21 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
+#if 0
   app2sim_csr_wr_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
   app2sim_tx         = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
   sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
   app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
   app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
-#if 0
+  //#if 0
   sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
 #endif
+
+  app2sim_tx         = mqueue_open(mq_array[0].name, mq_array[0].perm_flag);
+  app2sim_csr_wr_tx  = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
+  app2sim_umsg_tx    = mqueue_open(mq_array[2].name, mq_array[2].perm_flag);
+  app2sim_simkill_tx = mqueue_open(mq_array[3].name, mq_array[3].perm_flag);
+  sim2app_rx         = mqueue_open(mq_array[4].name, mq_array[4].perm_flag);
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;

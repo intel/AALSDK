@@ -35,75 +35,147 @@
 #include "ase_common.h"
 
 // Message queue attribute (optional use)
-struct mq_attr attr;
+// struct mq_attr attr;
 
-// ----------------------------------------------------------------
-// mqueue_create: Create a simplex mesaage queue by passing a name
-// ----------------------------------------------------------------
-int mqueue_create(char* mq_name_prefix, int perm_flag)
+/*
+ * ipc_init: Initialize IPC messaging structure
+ *           DOES not create or open the IPC, simply initializes the structures
+ */
+void ipc_init()
 {
   FUNC_CALL_ENTRY;
-  int mq;
-  char *mq_name;
-  struct mq_attr attr;
 
-  // Form a unique message queue name
-  mq_name = malloc (ASE_MQ_NAME_LEN);
-  memset(mq_name, '\0', ASE_MQ_NAME_LEN); // sizeof(mq_name));
-  strcpy(mq_name, mq_name_prefix);
-  strcat(mq_name, get_timestamp(0));
+  int ipc_iter;
 
-  // Form attribute structure
-  attr.mq_flags = 0;
-  attr.mq_maxmsg = ASE_MQ_MAXMSG;
-  attr.mq_msgsize = ASE_MQ_MSGSIZE;
-  attr.mq_curmsgs = 0;
+  strcpy(mq_array[0].name, "app2sim_bufping_smq");
+  strcpy(mq_array[1].name, "app2sim_csr_wr_smq");
+  strcpy(mq_array[2].name, "app2sim_umsg_smq");
+  strcpy(mq_array[3].name, "app2sim_simkill_smq");
+  strcpy(mq_array[4].name, "sim2app_bufpong_smq");
+  
+  // Calculate path 
+  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
+    sprintf(mq_array[ipc_iter].path, "%s/%s", ase_workdir_path, mq_array[ipc_iter].name);
 
-  // Open message queue with modified parameters
-  mq = mq_open (mq_name, perm_flag, 0666, &attr);
-  if(mq == -1)
-    {
-      ase_error_report("mq_open", errno, ASE_OS_MQUEUE_ERR);
-      /* perror("mq_open"); */
 #ifdef SIM_SIDE
-      ase_perror_teardown();
+  mq_array[0].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[1].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[3].perm_flag = O_RDONLY|O_NONBLOCK;
+  mq_array[4].perm_flag = O_WRONLY;
+#else
+  mq_array[0].perm_flag = O_WRONLY;
+  mq_array[1].perm_flag = O_WRONLY;
+  mq_array[2].perm_flag = O_WRONLY;
+  mq_array[3].perm_flag = O_WRONLY;
+  mq_array[4].perm_flag = O_RDONLY;  
+#endif 
+
+  // Remove IPCs if already there
+#ifdef SIM_SIDE
+  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
+    unlink(mq_array[ipc_iter].path);
+#endif
+
+  FUNC_CALL_EXIT;
+}
+
+
+/*
+ * mqueue_create: Create a simplex mesaage queue by passing a name
+ */
+void mqueue_create(char* mq_name_suffix)
+{
+  FUNC_CALL_ENTRY;
+
+  char *mq_path;
+  int ret;
+  
+  mq_path = malloc (ASE_FILEPATH_LEN);
+  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
+
+#ifdef ASE_DEBUG
+  printf("mq_path = %s\n", mq_path);
+#endif
+
+  // ret = mkfifo(mq_path, 0666);
+  ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
+  if (ret == -1)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("Error creating IPC\n");
+      END_RED_FONTCOLOR;
+    }
+
+  // Add IPC to list
+#ifdef SIM_SIDE
+  add_to_ipc_list("MQ", mq_path);
+#endif
+
+  FUNC_CALL_EXIT;
+}
+
+
+/*
+ * mqueue_open : Open IPC messaging device
+ *
+ * NOTES:
+ * - Named pipes require reader to be ready for non-blocking open to
+ *   proceed. This may not be possible in an ASE environment.       
+ * - This may be solved by having a dummy reader the WRONLY fifo, then
+ *   close it after ASE's real fd is created successfully. 
+ *
+ */
+int mqueue_open(char *mq_name, int perm_flag)
+{
+  FUNC_CALL_ENTRY;
+
+  int mq;
+  char *mq_path;
+
+  mq_path = malloc (ASE_FILEPATH_LEN);
+  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
+  
+#ifdef ASE_DEBUG
+  printf("mq_path = %s\n", mq_path);
+#endif
+
+  // Dummy function to open WRITE only MQs
+  // Named pipe requires non-blocking write-only move on from here
+  // only when reader is ready.
+#ifdef SIM_SIDE
+  int dummy_fd;
+  if (perm_flag == O_WRONLY)
+    {
+      printf("Opening IPC in write-only mode with dummy fd\n");
+      dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
+    }
+#endif
+
+  mq = open(mq_path, perm_flag);
+  if (mq == -1) 
+    {
+      printf("Error opening IPC\n");
+#ifdef SIM_SIDE
+      ase_error_report("open", errno, ASE_OS_FOPEN_ERR);
       start_simkill_countdown();
 #else
+      perror("open");
       exit(1);
 #endif
     }
   
-  // Print MQ attribute in debug mode
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  struct mq_attr rd_attr;
-  if ( mq_getattr(mq, &rd_attr) != -1 )
-    {
-      printf("MQ parameters => {flags, maxmsg, msgsize, curmsgs} = {%ld, %ld, %ld, %ld}\n", 
-	     rd_attr.mq_flags,
-	     rd_attr.mq_maxmsg,
-	     rd_attr.mq_msgsize,
-	     rd_attr.mq_curmsgs
-	     );
-    }
-  END_YELLOW_FONTCOLOR;
-#endif
-
-  // Update IPC list
 #ifdef SIM_SIDE
-  add_to_ipc_list("MQ", mq_name);
+  if (perm_flag == O_WRONLY)
+    {
+      close(dummy_fd);
+    }
 #endif
 
-  //  printf("Created MQ: %s\n", mq_name);
   FUNC_CALL_EXIT;
+  
   return mq;
 }
-
-
-// ---------------------------------------------------------------------
-// mqueue_open : Added to accomodate timestamps when deallocate_buffer
-// is called
-// ----------------------------------------------------------------------
 
 
 // -------------------------------------------------------
@@ -112,17 +184,14 @@ int mqueue_create(char* mq_name_prefix, int perm_flag)
 void mqueue_close(int mq)
 {
   FUNC_CALL_ENTRY;
-  if(mq_close(mq) == -1)
+
+  int ret;
+  ret = close (mq);
+  if (ret == -1) 
     {
-      ase_error_report("mq_close", errno, ASE_OS_MQUEUE_ERR);
-#ifdef SIM_SIDE
-      ase_perror_teardown();
-      start_simkill_countdown();
-#else
-      exit(1); // APP-side exit
-#endif
-      /* perror("mq_close"); */
+      printf("Error closing IPC\n");
     }
+
   FUNC_CALL_EXIT;
 }
 
@@ -130,28 +199,22 @@ void mqueue_close(int mq)
 // -----------------------------------------------------------
 // mqueue_destroy(): Unlink message queue, must be called from API
 // -----------------------------------------------------------
-void mqueue_destroy(char* mq_name_prefix)
+void mqueue_destroy(char* mq_name_suffix)
 {
   FUNC_CALL_ENTRY;
-  char *mq_name;
-  mq_name = malloc (ASE_MQ_NAME_LEN);
 
-  // Form a unique message queue name
-  memset(mq_name, '\0', ASE_MQ_NAME_LEN); // sizeof(mq_name));
-  strcpy(mq_name, mq_name_prefix);
-  strcat(mq_name, get_timestamp(0));
+  char *mq_path;
+  int ret;
 
-  if(mq_unlink(mq_name) == -1)
+  mq_path = malloc (ASE_FILEPATH_LEN);
+  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
+  
+  ret = unlink ( mq_path );
+  if (ret == -1) 
     {
-      ase_error_report("mq_unlink", errno, ASE_OS_MQUEUE_ERR);
-      /* perror("mq_unlink"); */
-#ifdef SIM_SIDE
-      ase_perror_teardown();
-      start_simkill_countdown();
-#else
-      exit(1);  // APP-side exit
-#endif
+      printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
     }
+  
   FUNC_CALL_EXIT;
 }
 
@@ -163,27 +226,12 @@ void mqueue_destroy(char* mq_name_prefix)
 void mqueue_send(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
-
-  // Print message if enabled
-  // #ifdef ASE_MSG_VIEW
-  BEGIN_YELLOW_FONTCOLOR;
+  
+  write(mq, str, ASE_MQ_MSGSIZE);  
+#ifdef ASE_MSG_VIEW
   printf("ASEmsg TX => %s\n", str);
-  END_YELLOW_FONTCOLOR;
-  //#endif
-
-  // Send message
-  if(mq_send(mq, str, ASE_MQ_MSGSIZE, 0) == -1)
-    {
-      ase_error_report("mq_send", errno, ASE_OS_MQTXRX_ERR);
-      /* perror("mq_send"); */
-#ifdef SIM_SIDE
-      ase_perror_teardown();
-      start_simkill_countdown();
-#else
-      exit(1); // APP-side exit
 #endif
-    }
-
+  
   FUNC_CALL_EXIT;
 }
 
@@ -196,51 +244,17 @@ void mqueue_send(int mq, char* str)
 int mqueue_recv(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
+  
+  int ret;
 
-   struct mq_attr stat_attr;
-
-   if(mq_getattr(mq, &stat_attr) == -1)
-   {
-        /* perror("mq_getattr"); */
-     ase_error_report("mq_getattr", errno, ASE_OS_MQUEUE_ERR);
-#ifdef SIM_SIDE
-     ase_perror_teardown();
-     start_simkill_countdown();
-#else
-     exit(1); // APP-side exit
-#endif
-   }
-
-
-//  printf("M Q current msgs= %d",stat_attr.mq_curmsgs);
-   if(stat_attr.mq_curmsgs>0)
-     {
-       // Message receive
-       if(mq_receive(mq, str, ASE_MQ_MSGSIZE, 0) == -1)
-	 {
-	   ase_error_report("mq_receive", errno, ASE_OS_MQTXRX_ERR);
-	   /* perror("mq_receive"); */
-#ifdef SIM_SIDE
-	   ase_perror_teardown();
-	   start_simkill_countdown();
-#else
-	   exit(1);  // APP-side exit
-#endif
-	 }
-
-       // Print message if enabled
-#ifdef ASE_MSG_VIEW
-       BEGIN_YELLOW_FONTCOLOR;
-       printf("ASEmsg RX => %s\n", str);
-       END_YELLOW_FONTCOLOR;
-#endif
-
-        FUNC_CALL_EXIT;
-        return 1;
-   }
-   else
-   {
-        FUNC_CALL_EXIT;
-        return 0;
-   }
+  ret = read(mq, str, ASE_MQ_MSGSIZE);
+  FUNC_CALL_EXIT;
+  if (ret > 0)
+    {
+       return ASE_MSG_PRESENT;       
+    }
+  else
+    {
+      return ASE_MSG_ABSENT;
+    }   
 }

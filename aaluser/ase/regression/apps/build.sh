@@ -22,17 +22,16 @@ gcc -g -o nlb_test \
 
 # gcc -g -o umsg_test umsg_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt -lm  -I ../../sw/ 
 
-# gcc -g -o mq_test mq_test.c ../ase_debug_stub.c \
-    # -D SIM_SIDE=1 -I $VCS_HOME/include/ -lrt -I ../../sw/ -lm -D ASE_DEBUG=1 \
-    # ../../sw/mqueue_ops.c \
-    # ../../sw/mem_model.c \
-    # ../../sw/linked_list_ops.c \
-    # ../../sw/ase_ops.c \
-    # ../../sw/ipc_mgmt_ops.c \
-    # ../../sw/error_report.c \
-    # ../../sw/randomness_control.c \
-    # ../../sw/tstamp_ops.c \
-    # ../../sw/protocol_backend.c \
+gcc -g -o mq_test mq_test.c ../ase_debug_stub.c \
+    -D SIM_SIDE=1 -I $VCS_HOME/include/ -lrt -I ../../sw/ -lm -D ASE_DEBUG=1 \
+    ../../sw/mqueue_ops.c \
+    ../../sw/mem_model.c \
+    ../../sw/linked_list_ops.c \
+    ../../sw/ase_ops.c \
+    ../../sw/ipc_mgmt_ops.c \
+    ../../sw/error_report.c \
+    ../../sw/randomness_control.c \
+    ../../sw/tstamp_ops.c \
 
-gcc -g -o myserver myserver.c -I ../../sw/
+# gcc -g -o myserver myserver.c -I ../../sw/
 

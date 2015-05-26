@@ -143,7 +143,7 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 // -----------------------------------------------------------------------
 int ase_listener()
 {
-   FUNC_CALL_ENTRY;
+  //   FUNC_CALL_ENTRY;
 
    /*
     * Buffer Replicator
@@ -154,7 +154,7 @@ int ase_listener()
   // Prepare an empty buffer
   ase_empty_buffer(&ase_buffer);
   // Receive a DPI message and get information from replicated buffer
-  if (ase_recv_msg(&ase_buffer)==1)
+  if (ase_recv_msg(&ase_buffer)==ASE_MSG_PRESENT)
     {
       // ALLOC request received
       if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
@@ -208,7 +208,7 @@ int ase_listener()
   memset(ase_msg_data, '\0', sizeof(ase_msg_data));
 
   // Receive csr_write packet
-  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==1)
+  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==ASE_MSG_PRESENT)
     {
       // Tokenize message to get CSR offset and data
       pch = strtok(csr_wr_str, " ");
@@ -237,7 +237,7 @@ int ase_listener()
   memset (umsg_str, '\0', sizeof(umsg_str));
   memset (umsg_data, '\0', sizeof(umsg_data));
   
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == 1)
+  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
     {
       // Tokenize messgae to get msg_id & umsg_data
       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
@@ -262,7 +262,7 @@ int ase_listener()
    */
   char ase_simkill_str[ASE_MQ_MSGSIZE];
   memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
-  if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==1)
+  if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==ASE_MSG_PRESENT)
     {
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter
@@ -281,8 +281,7 @@ int ase_listener()
 	}
     }
 
-
-  FUNC_CALL_EXIT;
+  //  FUNC_CALL_EXIT;
   return 0;
 }
 
@@ -415,6 +414,9 @@ void ase_init()
   printf("SIM-C : ASE Run path =>\n");
   printf("        %s\n", ase_run_path);
 
+  // Evaluate IPCs
+  ipc_init();
+
   // Generate timstamp (used as session ID)
   put_timestamp();
   tstamp_filepath = malloc(ASE_FILEPATH_LEN);
@@ -428,8 +430,18 @@ void ase_init()
   create_ipc_listfile();
 
   // Set up message queues
-  printf("SIM-C : Set up Messaging IPCs...\n");
-  ase_mqueue_setup();
+  printf("SIM-C : Creating Messaging IPCs...\n");
+  int ipc_iter;
+  for( ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
+    mqueue_create( mq_array[ipc_iter].name );
+  // ase_mqueue_setup();
+
+  // Open message queues
+  app2sim_rx         = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
+  app2sim_csr_wr_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
+  app2sim_umsg_rx    = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
+  app2sim_simkill_rx = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
+  sim2app_tx         = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -499,6 +511,11 @@ void ase_ready()
       printf("Starting ase_regress.sh script...\n");
       system("./ase_regress.sh &");  
     }
+
+  int ipc_iter;
+  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES ; ipc_iter++)
+    mqueue_open(mq_array[ipc_iter].name, mq_array[ipc_iter].perm_flag);
+
 }
 
 

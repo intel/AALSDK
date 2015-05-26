@@ -623,7 +623,6 @@ module cci_emulator();
     * graceful closedown
     */
    task simkill();
-   // function void simkill();
       begin
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
@@ -664,7 +663,6 @@ module cci_emulator();
 	 $fclose(log_fd);
 	 $finish;
       end
-      //   endfunction
    endtask
 
 
