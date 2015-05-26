@@ -651,12 +651,13 @@ AAL::btBool Barrier::AutoResetManager::RemoveWaiter()
       }
 
       if ( flag_is_set(m_pBarrier->m_Flags, BARRIER_FLAG_DESTROYING) ) {
-         CountUnlock();
 #if   defined( __AAL_WINDOWS__ )
          SetEvent(m_hZEvent); // change manual-reset event state to signaled, waking all.
 #elif defined( __AAL_LINUX__ )
          pthread_cond_broadcast(&m_Zcondition); // wake all
 #endif // OS
+
+         CountUnlock();
          return false;
       }
    }

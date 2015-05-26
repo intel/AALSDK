@@ -2142,7 +2142,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
    btTime       slept     = 0;
    const btTime sleepeach = 5;
-   const btTime thresh    = Timeout - ( Timeout / 10 ); // within 10%
+   const btTime thresh    = Timeout - ( Timeout / 5 ); // within 20%
 
    // Wake all threads, allowing them to block on the Barrier.
    EXPECT_TRUE(m_Sems[1].Post(NumThreads));

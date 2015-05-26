@@ -1987,11 +1987,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
+      if ( Externals == i ) {
          EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( 1 == i ) {
+      } else if ( Externals + 1 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
-      } else if ( 3 == i ) {
+      } else if ( Externals + 2 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -2015,6 +2015,10 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
    // This thread resumes and does the Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
+
+   for ( i = 0 ; i < Externals ; ++i ) {
+      cpu_yield();
+   }
 
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
@@ -2409,7 +2413,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
          EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( 2 == i ) {
+      } else if ( Externals + 2 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -2438,6 +2442,10 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
+
+   for ( i = 0 ; i < Externals ; ++i ) {
+      cpu_yield();
+   }
 
    // This thread calls Destroy()
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));

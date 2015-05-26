@@ -1,12 +1,20 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='run-weekly'
+
+. ./run-common
+
+shopt -o -u nounset
+
 declare ARGS=''
 while [ "x$1" != x ]; do
 
    case $1 in
       --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
+         ARGS="${ARGS} ${GTEST_OPT}$1"
       ;;
       *)
          ARGS="${ARGS} $1"
@@ -18,11 +26,8 @@ done
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='run-weekly'
-
-. ./run-common
-
-declare -r RANDOMIZE="--gtest-opt=--gtest_shuffle --gtest-opt=--gtest_random_seed=${RANDOM} --gtest-opt=--gtest_repeat=400"
+declare -ri REPEAT=400
+declare -r  RANDOMIZE="${GTEST_OPT}--gtest_shuffle ${GTEST_OPT}--gtest_random_seed=${RANDOM} ${GTEST_OPT}--gtest_repeat=${REPEAT}"
 
 run_weekly ${ARGS} ${RANDOMIZE}
 exit $?

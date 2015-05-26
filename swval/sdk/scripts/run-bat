@@ -1,12 +1,20 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='run-bat'
+
+. ./run-common
+
+shopt -o -u nounset
+
 declare ARGS=''
 while [ "x$1" != x ]; do
 
    case $1 in
       --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
+         ARGS="${ARGS} ${GTEST_OPT}$1"
       ;;
       *)
          ARGS="${ARGS} $1"
@@ -18,9 +26,7 @@ done
 
 shopt -o -s nounset
 
-declare -r SCRIPT_NAME='run-bat'
+declare -r RANDOMIZE="${GTEST_OPT}--gtest_shuffle ${GTEST_OPT}--gtest_random_seed=${RANDOM}"
 
-. ./run-common
-
-run_bat ${ARGS}
+run_bat ${ARGS} ${RANDOMIZE}
 exit $?

@@ -36,7 +36,10 @@ on_sigint() {
 }
 trap 'on_sigint' SIGINT
 
-declare TS=''
+declare    TESTSUITE=''
+declare -r USE_TESTSUITE=false
+declare    GTEST_OPT=''
+${USE_TESTSUITE} && GTEST_OPT='--gtest-opt='
 
 setup() {
    # This script is located in swval/sdk/scripts
@@ -44,7 +47,9 @@ setup() {
    local -r reporoot="`cd ${srcdir}/../.. && pwd`"
    local -r gitdir="${reporoot}/.git"
 
-   TS="${srcdir}/tests/testsuite"
+   local    do_config=false
+
+   TESTSUITE="${srcdir}/tests/testsuite"
 
    # Make sure we're being run from the right place.
    [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
@@ -56,7 +61,25 @@ setup() {
       ${MKDIR} -p "${VPATH}"
    fi
 
-   if ! [ -f "${TS}" ] || ! [ -f "${VPATH}/Makefile" ]; then
+   if ! [ -f "${VPATH}/Makefile" ]; then
+      do_config=true
+   fi
+
+   if ${USE_TESTSUITE} ; then
+      if ! [ -f "${TESTSUITE}" ]; then
+         do_config=true
+      fi
+   else
+      if ! [ -f "${VPATH}/tests/bat"                  ] || \
+         ! [ -f "${VPATH}/tests/nightly"              ] || \
+         ! [ -f "${VPATH}/tests/weekly"               ] || \
+         ! [ -f "${VPATH}/tests/OSAL_TestSem"         ] || \
+         ! [ -f "${VPATH}/tests/OSAL_TestThreadGroup" ]; then
+         do_config=true
+      fi
+   fi
+
+   if ${do_config} ; then
       # Make sure that the symlinks to common_hdrs exist.
       for x in "${reporoot}/aaluser/include/aalsdk" \
                "${reporoot}/aalkernel/include/aalsdk"
@@ -88,33 +111,62 @@ setup() {
 
    popd >/dev/null 2>&1
 
-   [ -f "${TS}" ] || die "Something really bad happended."
-
    printf "\n"
    printf "%s\n" "${git_commit_hash}"
 }
 setup
 
 run_standalone() {
-   local -r cmd="${TS} -v -C ${VPATH}/tests --standalone ${1+"$@"}"
    local -i res=1
+   local    cmd
 
-   printf "%s\n" "${cmd}"
+   if ${USE_TESTSUITE}; then
+      cmd="${TESTSUITE} -v -C ${VPATH}/tests --standalone ${1+"$@"}"
 
-   ${TIME} ${cmd}
-   res=$?
+      printf "%s\n" "${cmd}"
 
-   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+      ${TIME} ${cmd}
+      res=$?
+
+      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+   else
+      cmd="${VPATH}/tests/OSAL_TestSem ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${TIME} ${cmd}
+      res=$?
+
+      if [ ${res} -ne 0 ]; then
+         printf "%s\n" "${cmd}"
+         return ${res}
+      fi
+
+      cmd="${VPATH}/tests/OSAL_TestThreadGroup ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${TIME} ${cmd}
+      res=$?
+
+      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+   fi
 
    return ${res}
 }
 
 run_bat() {
-   local auto_color=''
-   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
-
-   local -r cmd="${TS} -v -C ${VPATH}/tests --bat ${auto_color} ${1+"$@"}"
    local -i res=1
+   local    auto_color=''
+   local    cmd
+
+   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+
+   if ${USE_TESTSUITE}; then
+      cmd="${TESTSUITE} -v -C ${VPATH}/tests --bat ${auto_color} ${1+"$@"}"
+   else
+      cmd="${VPATH}/tests/bat ${auto_color} ${1+"$@"}"
+   fi
 
    printf "%s\n" "${cmd}"
 
@@ -127,11 +179,17 @@ run_bat() {
 }
 
 run_nightly() {
-   local auto_color=''
-   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
-
-   local -r cmd="${TS} -v -C ${VPATH}/tests --nightly ${auto_color} ${1+"$@"}"
    local -i res=1
+   local    auto_color=''
+   local    cmd
+
+   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+
+   if ${USE_TESTSUITE}; then
+      cmd="${TESTSUITE} -v -C ${VPATH}/tests --nightly ${auto_color} ${1+"$@"}"
+   else
+      cmd="${VPATH}/tests/nightly ${auto_color} ${1+"$@"}"
+   fi
 
    printf "%s\n" "${cmd}"
 
@@ -144,11 +202,17 @@ run_nightly() {
 }
 
 run_weekly() {
-   local auto_color=''
-   [ -t 1 ] && auto_color='--gtest-opt=--gtest_color=yes'
-
-   local -r cmd="${TS} -v -C ${VPATH}/tests --weekly ${auto_color} ${1+"$@"}"
    local -i res=1
+   local    auto_color=''
+   local    cmd
+
+   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+
+   if ${USE_TESTSUITE}; then
+      cmd="${TESTSUITE} -v -C ${VPATH}/tests --weekly ${auto_color} ${1+"$@"}"
+   else
+      cmd="${VPATH}/tests/weekly ${auto_color} ${1+"$@"}"
+   fi
 
    printf "%s\n" "${cmd}"
 
