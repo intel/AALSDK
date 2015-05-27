@@ -94,9 +94,9 @@ void mqueue_create(char* mq_name_suffix)
   mq_path = malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
-#ifdef ASE_DEBUG
-  printf("mq_path = %s\n", mq_path);
-#endif
+/* #ifdef ASE_DEBUG */
+/*   printf("mq_path = %s\n", mq_path); */
+/* #endif */
 
   // ret = mkfifo(mq_path, 0666);
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
@@ -110,6 +110,7 @@ void mqueue_create(char* mq_name_suffix)
   // Add IPC to list
 #ifdef SIM_SIDE
   add_to_ipc_list("MQ", mq_path);
+  fflush(local_ipc_fp);
 #endif
 
   FUNC_CALL_EXIT;
@@ -136,9 +137,9 @@ int mqueue_open(char *mq_name, int perm_flag)
   mq_path = malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
   
-#ifdef ASE_DEBUG
-  printf("mq_path = %s\n", mq_path);
-#endif
+/* #ifdef ASE_DEBUG */
+/*   printf("mq_path = %s\n", mq_path); */
+/* #endif */
 
   // Dummy function to open WRITE only MQs
   // Named pipe requires non-blocking write-only move on from here
@@ -147,7 +148,7 @@ int mqueue_open(char *mq_name, int perm_flag)
   int dummy_fd;
   if (perm_flag == O_WRONLY)
     {
-      printf("Opening IPC in write-only mode with dummy fd\n");
+      // printf("Opening IPC in write-only mode with dummy fd\n");
       dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
     }
 #endif

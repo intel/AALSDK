@@ -512,9 +512,9 @@ void ase_ready()
       system("./ase_regress.sh &");  
     }
 
-  int ipc_iter;
-  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES ; ipc_iter++)
-    mqueue_open(mq_array[ipc_iter].name, mq_array[ipc_iter].perm_flag);
+  /* int ipc_iter; */
+  /* for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES ; ipc_iter++) */
+  /*   mqueue_open(mq_array[ipc_iter].name, mq_array[ipc_iter].perm_flag); */
 
 }
 
@@ -542,7 +542,6 @@ void start_simkill_countdown()
   // ase_destroy();
 
   // *FIXME* Remove the ASE timestamp file
-  // if (unlink(TSTAMP_FILENAME) == -1)
   if (unlink(tstamp_filepath) == -1)
     {
       printf("SIM-C : %s could not be deleted, please delete manually... \n", TSTAMP_FILENAME);
@@ -556,16 +555,20 @@ void start_simkill_countdown()
 
   // Remove session files
   printf("SIM-C : Cleaning session files...\n");
-  if ( unlink(ASE_READY_FILENAME) == -1 )
+  if ( unlink(ase_ready_filepath) == -1 )
     {
       BEGIN_RED_FONTCOLOR;
       printf("Session file %s could not be removed, please remove manually !!\n", ASE_READY_FILENAME);
       END_RED_FONTCOLOR;
     }
 
-  // Print location of transactions file
+  // Print location of log files
   BEGIN_GREEN_FONTCOLOR;
-  printf("SIM-C : ASE Transactions file => $ASE_WORKDIR/transactions.tsv\n");
+  printf("SIM-C : Simulation generated log files\n");
+  printf("        Transactions file   | $ASE_WORKDIR/transactions.tsv\n");
+  printf("        Workspaces info     | $ASE_WORKDIR/workspace_info.log\n");
+  printf("        Protocol Warnings   | $ASE_WORKDIR/warnings.txt\n");
+  printf("        ASE seed            | $ASE_WORKDIR/ase_seed.txt\n");
   END_GREEN_FONTCOLOR;
 
   // Send a simulation kill command
@@ -672,8 +675,7 @@ void ase_config_parse(char *filename)
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = malloc(256);
-  // ase_cfg_filepath = generate_tstamp_path(filename);
-  strcpy(ase_cfg_filepath, ase_run_path);
+  sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );

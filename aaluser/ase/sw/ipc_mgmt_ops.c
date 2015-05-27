@@ -95,7 +95,7 @@ void final_ipc_cleanup()
 {
   FUNC_CALL_ENTRY;
   char ipc_type[4];
-  char ipc_name[40];
+  char ipc_name[ASE_FILEPATH_LEN];
 
   // Close global/local files
   fclose(local_ipc_fp);
@@ -109,47 +109,36 @@ void final_ipc_cleanup()
     }
   
   // Parse through list
-  //  while(!feof(local_ipc_fp))
   while(1)
     {
       fscanf(local_ipc_fp, "%s\t%s", ipc_type, ipc_name);
+
       if (feof(local_ipc_fp))
-	break;
+      	break;
 
       if (strcmp (ipc_type, "MQ") == 0)
-	{
-	  printf("        Removing MQ  %s ... ", ipc_name);
-	  // if ( mq_unlink(ipc_name) == -1 )
-	  if ( unlink(ipc_name) == -1 )
-	    {
-	      /* BEGIN_YELLOW_FONTCOLOR; */
-	      /* printf("Removed already !!\n"); */
-	      /* END_YELLOW_FONTCOLOR; */
-	      printf("\n");
-	    }
-	  else
-	    {
-	      /* BEGIN_YELLOW_FONTCOLOR; */
-	      printf("DONE\n");
-	      /* END_YELLOW_FONTCOLOR; */
-	    }
-	}	 
+      	{
+      	  printf("        Removing MQ  %s ... ", ipc_name);
+      	  if ( unlink(ipc_name) == -1 )
+      	    {
+      	      printf("\n");
+      	    }
+      	  else
+      	    {
+      	      printf("DONE\n");
+      	    }
+      	}
       else if (strcmp (ipc_type, "SHM") == 0)
-	{
-	  printf("        Removing SHM %s ... ", ipc_name);
-	  if ( shm_unlink(ipc_name) == -1 )
-	    {
-	      /* BEGIN_YELLOW_FONTCOLOR;	     */
-	      /* printf("Already removed !!\n"); */
-	      /* END_YELLOW_FONTCOLOR; */
-	    }
-	  else
-	    {
-	      /* BEGIN_YELLOW_FONTCOLOR;	     */
-	      printf("DONE\n");
-	      /* END_YELLOW_FONTCOLOR; */
-	    }
-	}	 	
+      	{
+      	  printf("        Removing SHM %s ... ", ipc_name);
+      	  if ( shm_unlink(ipc_name) == -1 )
+      	    {
+      	    }
+      	  else
+      	    {
+      	      printf("DONE\n");
+      	    }
+      	}
     }
   
   

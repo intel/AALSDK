@@ -388,7 +388,7 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
  *
  * ********************************************************************/
 // Enable function call entry/exit
-// Heidiously noisy debug feature to watch function entry/exit
+// Extremely noisy debug feature to watch function entry/exit
 // #define ENABLE_ENTRY_EXIT_WATCH
 #ifdef  ENABLE_ENTRY_EXIT_WATCH
 #define FUNC_CALL_ENTRY printf("--- ENTER: %s ---\n", __FUNCTION__);
