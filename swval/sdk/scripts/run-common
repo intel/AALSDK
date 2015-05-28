@@ -164,16 +164,21 @@ run_bat() {
 
    if ${USE_TESTSUITE}; then
       cmd="${TESTSUITE} -v -C ${VPATH}/tests --bat ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${cmd} >/dev/null 2>&1
+      res=$?
    else
       cmd="${VPATH}/tests/bat ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${TIME} ${cmd}
+      res=$?
+
+      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
    fi
-
-   printf "%s\n" "${cmd}"
-
-   ${TIME} ${cmd}
-   res=$?
-
-   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
 
    return ${res}
 }
@@ -187,16 +192,21 @@ run_nightly() {
 
    if ${USE_TESTSUITE}; then
       cmd="${TESTSUITE} -v -C ${VPATH}/tests --nightly ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${cmd} >/dev/null 2>&1
+      res=$?
    else
       cmd="${VPATH}/tests/nightly ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${TIME} ${cmd}
+      res=$?
+
+      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
    fi
-
-   printf "%s\n" "${cmd}"
-
-   ${TIME} ${cmd}
-   res=$?
-
-   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
 
    return ${res}
 }
@@ -210,16 +220,21 @@ run_weekly() {
 
    if ${USE_TESTSUITE}; then
       cmd="${TESTSUITE} -v -C ${VPATH}/tests --weekly ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${cmd} >/dev/null 2>&1
+      res=$?
    else
       cmd="${VPATH}/tests/weekly ${auto_color} ${1+"$@"}"
+
+      printf "%s\n" "${cmd}"
+
+      ${TIME} ${cmd}
+      res=$?
+
+      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
    fi
-
-   printf "%s\n" "${cmd}"
-
-   ${TIME} ${cmd}
-   res=$?
-
-   [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
 
    return ${res}
 }
