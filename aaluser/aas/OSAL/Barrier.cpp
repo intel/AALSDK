@@ -460,7 +460,8 @@ AAL::btUnsignedInt Barrier::NumWaiters() const
 Barrier::AutoResetManager::AutoResetManager(Barrier *pBarrier) :
    m_pBarrier(pBarrier),
    m_NumWaiters(0),
-   m_NumPreWaiters(0)
+   m_NumPreWaiters(0),
+   m_WaitTimeout(AAL_INFINITE_WAIT)
 #if defined( __AAL_WINDOWS__ )
    , m_hREvent(NULL),
      m_hZEvent(NULL)
@@ -515,6 +516,8 @@ void Barrier::AutoResetManager::Create()
    ASSERT(0 == res);
 
 #endif // OS
+
+   m_WaitTimeout = AAL_INFINITE_WAIT;
 }
 
 void Barrier::AutoResetManager::Destroy()
@@ -562,27 +565,13 @@ void Barrier::AutoResetManager::UnblockAll()
       }
    }
 
+   m_WaitTimeout = 100;
+
    AutoResetEnd();
 }
 
-void Barrier::AutoResetManager::AddWaiter()
+void Barrier::AutoResetManager::WaitForAutoResetCompletion()
 {
-   // When doing auto-reset, we cannot increment m_NumWaiters until we have decremented
-   //  m_NumWaiters to 0 and reset the Barrier to the locked state. This is to prevent
-   //  the case where a thread was unblocked from Wait(), but then called Wait() again,
-   //  before m_NumWaiters was decremented to 0. Without this protection, a low-latency
-   //  thread executing in a tight loop could "float" m_NumWaiters indefinitely, rendering
-   //  the Barrier ineffective.
-   // This treatment enforces the hard contract that the Barrier is automatically reset
-   //  for each volley of Wait() calls.
-
-   if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
-
-      ++m_NumPreWaiters;
-
-WAITLOOP:
-      CountUnlock(); // Don't sleep while the outer object is locked.
-
 #if defined( __AAL_LINUX__ )
       pthread_mutex_lock(&m_Rmutex);
 #endif // __AAL_LINUX__
@@ -605,6 +594,68 @@ WAITLOOP:
 #if defined( __AAL_LINUX__ )
       pthread_mutex_unlock(&m_Rmutex);
 #endif // __AAL_LINUX__
+}
+
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(AAL::btTime Timeout)
+{
+   if ( AAL_INFINITE_WAIT == Timeout ) {
+      WaitForAutoResetCompletion();
+      return;
+   }
+
+#if defined( __AAL_LINUX__ )
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+
+   struct timespec ts;
+
+   ts.tv_sec  = tv.tv_sec;
+   ts.tv_nsec = (tv.tv_usec * 1000) + (Timeout * 1000000);
+
+   ts.tv_sec  += ts.tv_nsec / 1000000000;
+   ts.tv_nsec %= 1000000000;
+
+   pthread_mutex_lock(&m_Rmutex);
+
+   while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+      // We must hang out here until the Barrier is fully reset.
+
+      if ( ETIMEDOUT == pthread_cond_timedwait(&m_Rcondition,
+                                               &m_Rmutex,
+                                               &ts) ) {
+         break;
+      }
+
+   }
+
+   pthread_mutex_unlock(&m_Rmutex);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   WaitForSingleObject(m_hREvent, (DWORD)Timeout);
+
+#endif // OS
+}
+
+void Barrier::AutoResetManager::AddWaiter()
+{
+   // When doing auto-reset, we cannot increment m_NumWaiters until we have decremented
+   //  m_NumWaiters to 0 and reset the Barrier to the locked state. This is to prevent
+   //  the case where a thread was unblocked from Wait(), but then called Wait() again,
+   //  before m_NumWaiters was decremented to 0. Without this protection, a low-latency
+   //  thread executing in a tight loop could "float" m_NumWaiters indefinitely, rendering
+   //  the Barrier ineffective.
+   // This treatment enforces the hard contract that the Barrier is automatically reset
+   //  for each volley of Wait() calls.
+
+   if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+
+      ++m_NumPreWaiters;
+
+WAITLOOP:
+      CountUnlock(); // Don't sleep while the outer object is locked.
+
+      WaitForAutoResetCompletion(m_WaitTimeout);
 
       CountLock(); // We must grab the outer object's count lock and check again.
 
@@ -712,28 +763,43 @@ void Barrier::AutoResetManager::AutoResetEnd()
 
 void Barrier::AutoResetManager::WaitForAllWaitersToExit()
 {
+   const AAL::btTime Timeout = 100;
+
 #if defined( __AAL_LINUX__ )
+   struct timeval  tv;
+   struct timespec ts;
+
    pthread_mutex_lock(&m_Zmutex);
-#endif // __AAL_LINUX__
 
    while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
       // Wait for the last waiter to call RemoveWaiter().
 
-#if   defined( __AAL_LINUX__ )
+      gettimeofday(&tv, NULL);
 
-      pthread_cond_wait(&m_Zcondition, &m_Zmutex);
+      ts.tv_sec  = tv.tv_sec;
+      ts.tv_nsec = (tv.tv_usec * 1000) + (Timeout * 1000000);
 
-#elif defined( __AAL_WINDOWS__ )
+      ts.tv_sec  += ts.tv_nsec / 1000000000;
+      ts.tv_nsec %= 1000000000;
 
-      WaitForSingleObject(m_hZEvent, INFINITE);
-
-#endif // OS
+      pthread_cond_timedwait(&m_Zcondition,
+                             &m_Zmutex,
+                             &ts);
 
    }
 
-#if defined( __AAL_LINUX__ )
    pthread_mutex_unlock(&m_Zmutex);
-#endif // __AAL_LINUX__
+
+#elif defined( __AAL_WINDOWS__ )
+
+   while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
+      // Wait for the last waiter to call RemoveWaiter().
+
+      WaitForSingleObject(m_hZEvent, (DWORD)Timeout);
+
+   }
+
+#endif // OS
 }
 
 void Barrier::AutoResetManager::CountLock()   { m_pBarrier->CountLock();   }

@@ -58,6 +58,17 @@ do                               \
    }                             \
 }while(0)
 
+// Yield the cpu the given number of times.
+#define YIELD_X(__x)                                 \
+do                                                   \
+{                                                    \
+   AAL::btUIntPtr       __i;                         \
+   const AAL::btUIntPtr __N = (AAL::btUIntPtr)(__x); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {             \
+      cpu_yield();                                   \
+   }                                                 \
+}while(0)
+
 // Yield the cpu Config.MaxCPUYieldPolls() times.
 #define YIELD_N()                                        \
 do                                                       \

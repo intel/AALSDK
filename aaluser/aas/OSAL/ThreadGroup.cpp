@@ -619,6 +619,8 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Quiesce(AAL::btTime Timeout)
 
    // Workers are joined.
 
+   m_DrainManager.WaitForAllDrainersDone();
+
    return true;
 }
 
@@ -632,8 +634,11 @@ void OSLThreadGroup::ThrGrpState::DestructMembers()
 
 OSLThreadGroup::ThrGrpState::DrainManager::DrainManager(ThrGrpState *pTGS) :
    m_pTGS(pTGS),
-   m_DrainNestLevel(0)
-{}
+   m_DrainNestLevel(0),
+   m_WaitTimeout(AAL_INFINITE_WAIT)
+{
+   m_DrainerDoneBarrier.Create(1);
+}
 
 OSLThreadGroup::ThrGrpState::DrainManager::~DrainManager()
 {
@@ -652,6 +657,8 @@ Barrier * OSLThreadGroup::ThrGrpState::DrainManager::Begin(AAL::btTID tid, AAL::
       // Beginning a new series of (possibly nested) Drain() calls.
       ASSERT((AAL::btUnsignedInt) m_pTGS->m_workqueue.size() == items);
       ASSERT(0 == m_NestedWorkItems.size());
+
+      m_DrainerDoneBarrier.Reset();
 
       m_DrainBarrier.Destroy();
       m_DrainBarrier.Create(items);
@@ -747,7 +754,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::ReleaseAllDrainers()
       delete *iter;
    }
    m_NestedWorkItems.clear();
-   m_DrainNestLevel = 0;
+   m_WaitTimeout = 100;
    return m_DrainBarrier.UnblockAll();
 }
 
@@ -756,9 +763,22 @@ void OSLThreadGroup::ThrGrpState::DrainManager::ForciblyCompleteWorkItem()
    m_DrainBarrier.Post(1);
 }
 
+void OSLThreadGroup::ThrGrpState::DrainManager::AllDrainersAreDone()
+{
+   m_DrainerDoneBarrier.Post(1);
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::WaitForAllDrainersDone()
+{
+   while ( m_DrainNestLevel > 0 ) {
+      m_DrainerDoneBarrier.Wait(m_WaitTimeout);
+   }
+}
+
 void OSLThreadGroup::ThrGrpState::DrainManager::DestructMembers()
 {
    m_DrainBarrier.Destroy();
+   m_DrainerDoneBarrier.Destroy();
 }
 
 //=============================================================================
@@ -826,33 +846,38 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       Unlock();
 
       // Wait for the work items to complete. Don't wait while locked.
-
-      if ( !pDrainBarrier->Wait() ) {
-         // If we wake as a result of UnblockAll(), then the thread group is being
-         // destroyed. Don't touch any of the pointers, just get out now.
-         return true;
-      }
+      pDrainBarrier->Wait();
 
       Lock();
    }
 
    m_DrainManager.End(MyThrID, pDrainBarrier);
 
-   eState st = State();
+   const AAL::btUnsignedInt level = m_DrainManager.DrainNestLevel();
+         eState             st    = State();
 
    if ( Joining == st ) {
       // Join() during Drain() is allowed. In this case, an attempt to set the
       // state to Running or Draining below would be denied. We want the success indicator here,
       // however, to reflect that the thread group was drained of items, hence this check.
       Unlock();
+
+      if ( 0 == level ) {
+         m_DrainManager.AllDrainersAreDone();
+      }
+
       return true;
    }
 
-   st = (0 == m_DrainManager.DrainNestLevel()) ? Running : Draining;
+   st = (0 == level) ? Running : Draining;
 
    AAL::btBool res = (State(st) == st);
 
    Unlock();
+
+   if ( 0 == level ) {
+      m_DrainManager.AllDrainersAreDone();
+   }
 
    return res;
 }

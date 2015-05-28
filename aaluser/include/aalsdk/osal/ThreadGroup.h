@@ -217,8 +217,8 @@ private:
          // External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
          // In the case of self-referential Join() and self-referential Destroy(), a worker is
          //  forced to self-terminate before it can Post() the Barrier object stored within
-         //  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier (and zero
-         //  m_DrainNestLevel) here so that external drainers can resume.
+         //  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier here so that external
+         //  drainers can resume.
          AAL::btBool ReleaseAllDrainers();
 
          // A thread group worker may execute a self-referential Drain(), and go on to execute
@@ -230,6 +230,12 @@ private:
 
          // Query the current Drain() nesting level (number of overlapping Drain() calls).
          AAL::btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
+
+         // Signal that the last participant in the current Drain() is hands-off the thread group.
+         void AllDrainersAreDone();
+
+         // Wait for all threads involved in Drain() to be hands-off the object.
+         void WaitForAllDrainersDone();
 
       protected:
 
@@ -265,7 +271,9 @@ private:
 
          ThrGrpState       *m_pTGS;
          AAL::btUnsignedInt m_DrainNestLevel;
-         Barrier            m_DrainBarrier;
+         AAL::btTime        m_WaitTimeout;
+         Barrier            m_DrainBarrier;       // follows the # of work items involved in the Drain().
+         Barrier            m_DrainerDoneBarrier; // becomes signaled when the last nested Drain()'er is hands-off.
          drainer_list_t     m_SelfDrainers;
          nested_list_t      m_NestedWorkItems;
 

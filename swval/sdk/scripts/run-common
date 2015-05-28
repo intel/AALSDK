@@ -37,7 +37,7 @@ on_sigint() {
 trap 'on_sigint' SIGINT
 
 declare    TESTSUITE=''
-declare -r USE_TESTSUITE=false
+declare -r USE_TESTSUITE=true
 declare    GTEST_OPT=''
 ${USE_TESTSUITE} && GTEST_OPT='--gtest-opt='
 
