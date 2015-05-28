@@ -52,13 +52,40 @@
 #include "aalsdk/INTCDefs.h"
 #include "aalsdk/CAALEvent.h"
 
+using namespace std;
+
 BEGIN_NAMESPACE(AAL)
 
 
 BEGIN_C_DECLS
-IRuntime *_getnewXLRuntimeInstance()
+//=============================================================================
+// Name: _getnewRuntimeInstance
+// Description: Factory for the singleton Runtime Implementation
+// Interface: private
+// Inputs: pRuntimeProxy - Pointer to the Runtime Container (Proxy)
+//         pClient - Pointer to the client for this instance.
+// Outputs: pointer to Runtim implementation.
+// Comments: The Runtime implementation keeps a map of Proxy to Clients
+//           so that multiple Proxy's can point to the same Runtime and
+//           messages are routed appropriately.
+//=============================================================================
+IRuntime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
+                                  IRuntimeClient *pClient)
 {
-   _xlruntime *pruntime = new _xlruntime;
+   static _xlruntime *pruntime = NULL;
+
+   if((NULL == pClient) || (NULL == pRuntimeProxy) ){
+      return NULL;2
+   }
+
+   if(NULL == pruntime){
+      pruntime = new _xlruntime;
+   }
+
+   if(pruntime->IsOK()){
+      pruntime->addProxy(pRuntimeProxy, pClient);
+   }
+
    return pruntime->IsOK() == true ? pruntime : NULL;
 }
 END_C_DECLS
@@ -218,6 +245,22 @@ btBool _xlruntime::start(IBase               *pclient,
                                   NULL);
       return false;
    }
+}
+
+//=============================================================================
+// Name: addProxy
+// Description: Adds a Client to the Runtime instance by recording the Proxy
+//              and client.
+// Interface: public
+// Inputs: pRuntimeProxy - Pointer to Proxy Runtime
+//         pClient - Client for the proxy
+// Outputs: none.
+// Comments:
+//=============================================================================
+btBool _xlruntime::addProxy( Runtime *pRuntimeProxy,
+                             IRuntimeClient *pClient)
+{
+
 }
 
 

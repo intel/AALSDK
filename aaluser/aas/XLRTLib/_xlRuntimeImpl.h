@@ -52,17 +52,20 @@
 #include <aalsdk/eds/AASEventDeliveryService.h>
 #include <aalsdk/aas/XLRuntimeModule.h>
 
+#include <map>
+
 
 BEGIN_NAMESPACE(AAL)
 
 
 //=============================================================================
-// Name: _getnewXLRuntimeInstance
+// Name: _getnewRuntimeInstance
 // Description: XL runtime system factory.
 // Comments:
 //=============================================================================
 BEGIN_C_DECLS
-IRuntime *_getnewXLRuntimeInstance();
+_getnewRuntimeInstance( Runtime *pRuntimeProxy,
+                        IRuntimeClient *pClient);
 END_C_DECLS
 
 
@@ -78,23 +81,22 @@ class _xlruntime : public  CAASBase,
                    public  IRuntime
 {
 public:
+   typedef std::map<Runtime *, IRuntimeClient *> ClientMap;
+   typedef ClientMap::iterator                 ClientMap_itr;
+
    _xlruntime();
    ~_xlruntime();
 
    // Start: Start the runtime
-   //    Input: pclient - Pointer to an IRuntimeClient callback.
+   //    Input: pProxy - Pointer to Proxy for the IRuntimeClient callback.
    //           rconfigParms - Reference to configuration parameters.
-   btBool start(IBase               *pClient,
-                const NamedValueSet &rconfigParms);
+   btBool start( Runtime *pProxy,
+                 const NamedValueSet &rconfigParms );
 
    // Stop: Stop the runtime
    void stop();
 
- 
-
    btBool IsOK();
-
-   // IXLRuntimeServices
 
    //  allocService: Allocates a Service to the client
    //    Input: pClient - Pointer to an IBase containing and IServiceClient interface.
@@ -106,6 +108,9 @@ public:
                       IRuntime::eAllocatemode  mode = NotifyAll);
 
    void schedDispatchable(IDispatchable *pdispatchable);
+
+   void addProxy(Runtime *pRuntimeProxy,
+                 IRuntimeClient *pClient);
 
    // IXLRuntimeServices
    IBase      *getMessageDeliveryService();
@@ -144,6 +149,9 @@ private:
    btBool                          m_status;
    IRuntimeClient                 *m_pclient;
    enum State                      m_state;
+
+   ClientMap                       m_clientMap;
+
 
    // Core Facilities: Implemented as built-in plug-in Services
    //  each will have an Entry Point (module commands handler), IServiceModule (Factory)

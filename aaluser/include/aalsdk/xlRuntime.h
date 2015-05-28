@@ -165,8 +165,7 @@ public:
 class XLRT_API IRuntime
 {
 public:
-   virtual btBool  start(IBase               *pClient,
-                         const NamedValueSet &rconfigParms) = 0;
+   virtual btBool  start(const NamedValueSet &rconfigParms) = 0;
    virtual void stop() = 0;
 
    enum eAllocatemode{
@@ -196,10 +195,9 @@ public:
 class XLRT_API Runtime : private CUnCopyable, public IRuntime
 {
 public:
-   Runtime();
+   Runtime(IRuntimeClient *pClient);
 
-   virtual btBool start( IBase               *pClient,
-                         const NamedValueSet &rconfigParms);
+   virtual btBool start(const NamedValueSet &rconfigParms);
    virtual void stop();
 
    virtual void allocService( IBase               *pClient,
@@ -213,7 +211,11 @@ public:
 
    virtual ~Runtime();
 
+   // Special copy is permitted
+   Runtime(IRuntimeClient *pClient, const Runtime& rOther);
+
 private:
+
    IRuntime *m_pImplementation;  // Implementation of runtime
    btBool    m_status;           // OK or not
 };
