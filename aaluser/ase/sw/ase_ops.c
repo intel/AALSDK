@@ -111,11 +111,11 @@ void ase_buffer_oneline(struct buffer_t *mem)
     printf("ADDED   ");
   else
     printf("REMOVED ");
-  /* printf("%5s \t", mem->memname); */
-  printf("%p  ", (uint32_t*)mem->vbase);
+  printf("%5s \t", mem->memname);
+  /* printf("%p  ", (uint32_t*)mem->vbase); */
   /* printf("%p  ", (uint32_t*)mem->pbase); */
-  printf("%p (%08x) ", (uint32_t*)mem->fake_paddr, (uint32_t)(mem->fake_paddr >> 6) );
-  printf("%x  ", mem->memsize);
+  /* printf("%p (%08x) ", (uint32_t*)mem->fake_paddr, (uint32_t)(mem->fake_paddr >> 6) ); */
+  /* printf("%x  ", mem->memsize); */
   /* printf("%d  ", mem->is_csrmap); */
   /* printf("%d  ", mem->is_privmem); */
   printf("\n");

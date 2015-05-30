@@ -178,6 +178,7 @@ int ase_listener()
       // Write buffer information to file
       if (!ase_buffer.is_csrmap || !ase_buffer.is_privmem) 
 	{
+	  // Write Workspace info to workspace log file
 	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
 	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (uint64_t*)ase_buffer.vbase);
 	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (uint64_t*)ase_buffer.fake_paddr);
@@ -185,6 +186,8 @@ int ase_listener()
 	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
 	  fprintf(fp_workspace_log, "\n");
 	  
+	  // Flush info to file
+	  fflush(fp_workspace_log);
 	}
       
       // Debug only
@@ -228,32 +231,33 @@ int ase_listener()
    * UMSG listener
    */
   // Message string
-  char umsg_str[ASE_MQ_MSGSIZE];
-  uint32_t umsg_id = 0;
-  uint32_t umsg_hint = 0;
-  char umsg_data[CL_BYTE_WIDTH];
+  char umsg_str[SIZEOF_UMSG_PACK_T];
+  int ii;
+  umsg_pack_t inst;
 
   // Cleanse receptacle string
-  memset (umsg_str, '\0', sizeof(umsg_str));
-  memset (umsg_data, '\0', sizeof(umsg_data));
+  /* umsg_data = malloc(CL_BYTE_WIDTH); */
+  memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T );
+  /* memset (umsg_data, '\0', CL_BYTE_WIDTH ); */
   
   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
     {
+#ifdef ASE_DEBUG
+      printf("ASERxMsg => UMSG Received \n");      
+#endif
       // Tokenize messgae to get msg_id & umsg_data
       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
-      pch = strtok(umsg_str, " ");
-      umsg_id = atoi(pch);
-      pch = strtok(NULL, " ");
-      umsg_hint = atoi(pch);
-      pch = strtok(NULL, " ");
-      strcpy(umsg_str, pch);
-
-      printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", umsg_id, umsg_hint);
-     
+      memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T);
+      
+#ifdef ASE_DEBUG
+      printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint);
+      for(ii = 0 ; ii < 64; ii++)
+	printf("%02X", (int)inst.data[ii]);
+      printf("\n");
+#endif
+      
       // UMSG dispatch
-      umsg_dispatch(0, 1, umsg_hint, umsg_id, umsg_data);
-
-      while(1);
+      umsg_dispatch(0, 1, inst.hint, inst.id, inst.data);
     }
 
 
@@ -397,10 +401,6 @@ void ase_init()
   // Evaluate PWD
   ase_run_path = malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
-#ifdef ASE_DEBUG
-  printf("SIM-C : ASE Run path =>\n");
-  printf("        %s\n", ase_run_path);
-#endif
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
@@ -494,16 +494,13 @@ void ase_ready()
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
-  printf("        If $SHELL is 'bash', run:\n");
-  printf("                                export ASE_WORKDIR=%s\n", ase_run_path);
-  printf("        If $SHELL is 'tcsh' or 'csh', run: \n");
-  printf("                                setenv ASE_WORKDIR %s\n", ase_run_path);
+  printf("        $SHELL   | Run:\n");
+  printf("        ---------+-----------------------------------------\n");
+  printf("        bash     | export ASE_WORKDIR=%s\n", ase_run_path);
+  printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
   printf("\n");
-  printf("SIM-C : Ready for simulation...\n");
   END_GREEN_FONTCOLOR;
-
-  printf("SIM-C : Press CTRL-C to close simulator...\n");
   
   // Run ase_regress.sh here
   if (cfg->ase_mode == ASE_MODE_REGRESSION) 
@@ -511,11 +508,13 @@ void ase_ready()
       printf("Starting ase_regress.sh script...\n");
       system("./ase_regress.sh &");  
     }
-
-  /* int ipc_iter; */
-  /* for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES ; ipc_iter++) */
-  /*   mqueue_open(mq_array[ipc_iter].name, mq_array[ipc_iter].perm_flag); */
-
+  else
+    {
+      BEGIN_GREEN_FONTCOLOR;
+      printf("SIM-C : Ready for simulation...\n");
+      printf("SIM-C : Press CTRL-C to close simulator...\n");
+      END_GREEN_FONTCOLOR;
+    }
 }
 
 

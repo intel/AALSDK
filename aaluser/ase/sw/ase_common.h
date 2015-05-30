@@ -246,6 +246,16 @@ extern struct timeval start;
 #define HDR_MEM_ALLOC_REPLY  0xFF
 #define HDR_MEM_DEALLOC_REQ  0x0F
 
+// UMSG info structure
+typedef struct {
+  int id;
+  int hint;
+  char data[CL_BYTE_WIDTH];
+} umsg_pack_t;
+
+// Size map
+#define SIZEOF_UMSG_PACK_T    sizeof(umsg_pack_t)
+
 
 /* ********************************************************************
  *

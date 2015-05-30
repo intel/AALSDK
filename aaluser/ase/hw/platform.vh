@@ -46,7 +46,7 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
 
  `define UMSG_HINT2DATA_DELAY          40
  `define UMSG_NOHINT_DATADELAY         50
- `define UMSG_DELAY_TIMER_LOG2         6
+ `define UMSG_DELAY_TIMER_LOG2         8
  `define UMSG_MAX_MSG_LOG2             5
  `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
 
@@ -83,13 +83,15 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define CSR_WR_LATRANGE 5,10
+`define CSR_WRITE_LATRANGE         145 // 730 ns
 `define RDLINE_LATRANGE 8,16
 `define WRLINE_LATRANGE 4,7
 `define WRTHRU_LATRANGE 4,7
-`define UMSG_LATRANGE   6,12
+`define UMSG_START2HINT_LATRANGE   39,41   // 200 ns
+`define UMSG_HINT2DATA_LATRANGE    41,45   // 220 ns
+`define UMSG_START2DATA_LATRANGE   82,85   // 420 ns
 `define INTR_LATRANGE   10,15
 
-`define LAT_UNDEFINED   5
+`define LAT_UNDEFINED              50
 
 `endif

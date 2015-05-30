@@ -559,8 +559,10 @@ void umsg_send(int umas_id, char *umsg_data)
 {
 
   uint64_t *umas_target_addr;
-  char umsg_str[ASE_MQ_MSGSIZE] = { 0, };
-  uint32_t umsg_hint;
+  char umsg_str[SIZEOF_UMSG_PACK_T];
+  /* uint32_t umsg_hint; */
+  umsg_pack_t inst;
+  int ii;
 
   // If requested umas_id is illegal 
   if (umas_id >= 32)
@@ -576,15 +578,20 @@ void umsg_send(int umas_id, char *umsg_data)
   memcpy(umas_target_addr, umsg_data, CL_BYTE_WIDTH);
 
   // Calculate hint
-  umsg_hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
-
-  printf("UMSG hint = %d, id = %d\n", umsg_hint, umas_id);
+  // umsg_hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
+  inst.id = umas_id;
+  inst.hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
+  memcpy(inst.data, umsg_data, CL_BYTE_WIDTH);
 
   // MQ Send to SIM
-  // memset (umsg_str, '\0', sizeof(umsg_str));
-  sprintf(umsg_str, "%u %u %s", umas_id, umsg_hint, umsg_data);
+  // memset(umsg_str, '\0',ASE_MQ_MSGSIZE );
+  memcpy(umsg_str, &inst, SIZEOF_UMSG_PACK_T);
+  printf("umsg_str =>\n");
+  for(ii = 0 ; ii < SIZEOF_UMSG_PACK_T; ii++)
+    printf("%02X", (int)umsg_str[ii]);
+  printf("\n");
 
-  mqueue_send(app2sim_tx, umsg_str);
+  mqueue_send(app2sim_umsg_tx, umsg_str);
 }
 
 
