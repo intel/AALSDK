@@ -64,7 +64,16 @@ int main()
     umsg_data[ii] = ii;
 
   printf("Sendign UMSG\n");
-  umsg_send(7, umsg_data);
+  umsg_send(0, umsg_data);
+  sleep(1);
+  umsg_send(0, umsg_data);
+  /* umsg_send(1, umsg_data); */
+  /* umsg_send(2, umsg_data); */
+  /* umsg_send(3, umsg_data); */
+  /* umsg_send(4, umsg_data); */
+  /* umsg_send(5, umsg_data); */
+  /* umsg_send(6, umsg_data); */
+  /* umsg_send(7, umsg_data); */
 
   // Deallocate
   umas_deinit();
