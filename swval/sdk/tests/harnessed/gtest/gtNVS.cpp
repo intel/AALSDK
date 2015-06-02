@@ -4,6 +4,8 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
+#include "aalsdk/AALCNamedValueSet.h"
+
 // Define structure that will be initialized per eBasicType
 struct eBasicType_Data
 {
@@ -1507,5 +1509,92 @@ TEST_F(NVSSimple, RecursiveAddSafeguard)
 {
    ENamedValues e = m_nvsTest.Add("Recursive NVS", m_nvsTest);
    EXPECT_EQ(ENamedValuesRecursiveAdd, e);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Simple test fixture
+class AAS_CValue_f : public ::testing::Test
+{
+protected:
+   AAS_CValue_f() {}
+   virtual void SetUp()
+   {
+
+   }
+   virtual void TearDown()
+   {
+   }
+
+   CValue m_Val[4]; // AALCNamedValueSet.h
+};
+
+TEST_F(AAS_CValue_f, aal0215)
+{
+   // The CValue assignment operator leaks no memory (btByteArray_t).
+
+   btBool b[2] = { true, false };
+   btBool c;
+   m_Val[0].Put(b[0]);
+   m_Val[1].Put(b[1]);
+
+   EXPECT_EQ(btBool_t, m_Val[0].Type());
+   EXPECT_EQ(1,        m_Val[0].Size());
+   c = false;
+   EXPECT_EQ(ENamedValuesOK, m_Val[0].Get(&c));
+   EXPECT_TRUE(c);
+
+   EXPECT_EQ(btBool_t, m_Val[1].Type());
+   EXPECT_EQ(1,        m_Val[1].Size());
+   c = true;
+   EXPECT_EQ(ENamedValuesOK, m_Val[1].Get(&c));
+   EXPECT_FALSE(c);
+
+
+   btByte      A[4] = { 'a', 'a', 'a', 0 };
+   btByte      B[4] = { 'b', 'b', 'b', 0 };
+   btByteArray C;
+
+   m_Val[2].Put(A, 4);
+   m_Val[3].Put(B, 4);
+
+   EXPECT_EQ(btByteArray_t, m_Val[2].Type());
+   EXPECT_EQ(4,             m_Val[2].Size());
+   C = NULL;
+   EXPECT_EQ(ENamedValuesOK, m_Val[2].Get(&C));
+   EXPECT_EQ(0, memcmp(C, A, 4 * sizeof(btByte)));
+
+   EXPECT_EQ(btByteArray_t, m_Val[3].Type());
+   EXPECT_EQ(4,             m_Val[3].Size());
+   C = NULL;
+   EXPECT_EQ(ENamedValuesOK, m_Val[3].Get(&C));
+   EXPECT_EQ(0, memcmp(C, B, 4 * sizeof(btByte)));
+
+
+   m_Val[0] = m_Val[2]; // scalar      -> btByteArray
+   m_Val[2] = m_Val[1]; // btByteArray -> scalar
+   m_Val[3] = m_Val[0]; // btByteArray -> btByteArray
+
+
+   EXPECT_EQ(btByteArray_t, m_Val[0].Type());
+   EXPECT_EQ(4,             m_Val[0].Size());
+   C = NULL;
+   EXPECT_EQ(ENamedValuesOK, m_Val[0].Get(&C));
+   EXPECT_EQ(0, memcmp(C, A, 4 * sizeof(btByte)));
+
+   EXPECT_EQ(btBool_t,      m_Val[1].Type());
+   EXPECT_EQ(1,             m_Val[1].Size());
+
+   EXPECT_EQ(btBool_t,      m_Val[2].Type());
+   EXPECT_EQ(1,             m_Val[2].Size());
+   c = true;
+   EXPECT_EQ(ENamedValuesOK, m_Val[2].Get(&c));
+   EXPECT_FALSE(c);
+
+   EXPECT_EQ(btByteArray_t, m_Val[3].Type());
+   EXPECT_EQ(4,             m_Val[3].Size());
+   C = NULL;
+   EXPECT_EQ(ENamedValuesOK, m_Val[3].Get(&C));
+   EXPECT_EQ(0, memcmp(C, A, 4 * sizeof(btByte)));
 }
 

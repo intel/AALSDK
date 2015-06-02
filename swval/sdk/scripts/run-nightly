@@ -7,27 +7,9 @@ declare -r SCRIPT_NAME='run-nightly'
 
 . ./run-common
 
-shopt -o -u nounset
-
-declare ARGS=''
-while [ "x$1" != x ]; do
-
-   case $1 in
-      --gtest_*)
-         ARGS="${ARGS} ${GTEST_OPT}$1"
-      ;;
-      *)
-         ARGS="${ARGS} $1"
-      ;;
-   esac
-
-   shift
-done
-
-shopt -o -s nounset
-
 declare -ri REPEAT=200
-declare -r  RANDOMIZE="${GTEST_OPT}--gtest_shuffle ${GTEST_OPT}--gtest_random_seed=${RANDOM} ${GTEST_OPT}--gtest_repeat=${REPEAT}"
+declare -r  ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
 
-run_nightly ${ARGS} ${RANDOMIZE}
+setup
+run_nightly ${ARGS} ${1+"$@"}
 exit $?

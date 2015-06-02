@@ -1372,7 +1372,6 @@ TEST_F(OSAL_Sem_f, aal0062)
                               this);
 
    EXPECT_TRUE(m_pThrs[0]->IsOK());
-
    YIELD_WHILE(0 == m_Scratch[0]);
 
 
@@ -1381,7 +1380,6 @@ TEST_F(OSAL_Sem_f, aal0062)
                               this);
 
    EXPECT_TRUE(m_pThrs[1]->IsOK());
-
    YIELD_WHILE(0 == m_Scratch[1]);
 
 
@@ -1390,8 +1388,9 @@ TEST_F(OSAL_Sem_f, aal0062)
                               this);
 
    EXPECT_TRUE(m_pThrs[2]->IsOK());
-
    YIELD_WHILE(0 == m_Scratch[2]);
+
+   YIELD_X(10);
 
    EXPECT_TRUE(m_Sem.UnblockAll());
 

@@ -73,7 +73,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -952,7 +952,7 @@ protected:
    AAL::btBool Wait() { return m_pBarrier->Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_pBarrier->Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    Barrier           *m_pBarrier;
    AAL::btUnsignedInt m_UnlockCount;
@@ -1210,7 +1210,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -1780,7 +1780,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;

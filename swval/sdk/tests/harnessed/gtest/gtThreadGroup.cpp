@@ -60,7 +60,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -140,7 +140,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;

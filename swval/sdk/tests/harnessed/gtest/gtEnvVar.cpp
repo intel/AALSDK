@@ -15,9 +15,12 @@
 class EnvVarBasic : public ::testing::Test
 {
 protected:
-	EnvVarBasic(){}
+	EnvVarBasic() {}
 // virtual void SetUp() { }
-// virtual void TearDown() { }
+   virtual void TearDown()
+   {
+      Environment::ReleaseObj();
+   }
 };
 
 #if defined( __AAL_WINDOWS__ )

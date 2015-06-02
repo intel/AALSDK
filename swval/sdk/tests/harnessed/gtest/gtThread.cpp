@@ -449,7 +449,7 @@ protected:
       }
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThread          *m_pThrs[3];
    btTID               m_TIDs[3];
@@ -1093,6 +1093,7 @@ TEST_F(OSAL_Thread_f, aal0017)
 
    // wait for Thr10 to begin.
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(5);
 
    // cancel the child thread.
    m_pThrs[0]->Cancel();
@@ -1377,6 +1378,7 @@ TEST_F(OSAL_Thread_f, aal0171)
    EXPECT_TRUE(m_pThrs[0]->IsOK());
 
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(5);
 
    m_pThrs[0]->Cancel();
 

@@ -76,7 +76,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -1675,7 +1675,7 @@ protected:
       return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -1923,6 +1923,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0149)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
+   YIELD_X(3);
 
    // Wake Thr3 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
@@ -2858,7 +2859,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    // Wake Thr14 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(5);
+   YIELD_X(10);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));

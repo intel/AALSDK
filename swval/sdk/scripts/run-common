@@ -7,6 +7,8 @@ die() {
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r CAT="`which cat`" 2>/dev/null
+[ "x${CAT}" = x ] && die "no cat?"
 declare -r GIT="`which git`" 2>/dev/null
 [ "x${GIT}" = x ] && die "no git?"
 declare -r MAKE="`which make`" 2>/dev/null
@@ -19,10 +21,12 @@ declare -r LN="`which ln`" 2>/dev/null
 [ "x${LN}" = x ] && die "no ln?"
 declare -r RM="`which rm`" 2>/dev/null
 [ "x${RM}" = x ] && die "no rm?"
-declare -r TIME="`which time`" 2>/dev/null
 
 declare VPATH=''
+declare LOGFILE=''
 declare KILLED=false
+
+declare GIT_COMMIT_HASH=''
 
 on_exit() {
    ${KILLED} && printf "=[\n"
@@ -36,10 +40,41 @@ on_sigint() {
 }
 trap 'on_sigint' SIGINT
 
-declare    TESTSUITE=''
-declare -r USE_TESTSUITE=true
-declare    GTEST_OPT=''
-${USE_TESTSUITE} && GTEST_OPT='--gtest-opt='
+PASS() {
+   [ -t 1 ] && printf "\x1b[1;32m"
+   ${CAT} <<END
+PASS   ___         ___           ___           ___
+      /\\  \\       /\\  \\         /\\__\\         /\\__\\
+     /::\\  \\     /::\\  \\       /:/ _/_       /:/ _/
+    /:/\\:\\__\\   /:/\\:\\  \\     /:/ /\\  \\     /:/ /\\  \\
+   /:/ /:/  /  /:/ /::\\  \\   /:/ /::\\  \\   /:/ /::\\  \\
+  /:/_/:/  /  /:/_/:/\\:\\__\\ /:/_/:/\\:\\__\\ /:/_/:/\\:\\__\\
+  \\:\\/:/  /   \\:\\/:/  \\/__/ \\:\\/:/ /:/  / \\:\\/:/ /:/  /
+   \\::/__/     \\::/__/       \\::/ /:/  /   \\::/ /:/  /
+    \\:\\  \\      \\:\\  \\        \\/_/:/  /     \\/_/:/  /
+     \\:\\__\\      \\:\\__\\         /:/  /        /:/  /
+      \\/__/       \\/__/         \\/__/         \\/__/
+END
+   [ -t 1 ] && printf "\x1b[0m"
+}
+
+FAIL() {
+   [ -t 1 ] && printf "\x1b[1;31m"
+   ${CAT} <<END
+FAIL   ___           ___                       ___
+      /\\  \\         /\\  \\          ___        /\\__\\
+     /::\\  \\       /::\\  \\        /\\  \\      /:/  /
+    /:/\\:\\  \\     /:/\\:\\  \\       \\:\\  \\    /:/  /
+   /::\\~\\:\\  \\   /::\\~\\:\\  \\      /::\\__\\  /:/  /
+  /:/\\:\\ \\:\\__\\ /:/\\:\\ \\:\\__\\  __/:/\\/__/ /:/__/
+  \\/__\\:\\ \\/__/ \\/__\\:\\/:/  / /\\/:/  /    \\:\\  \\
+       \\:\\__\\        \\::/  /  \\::/__/      \\:\\  \\
+        \\/__/        /:/  /    \\:\\__\\       \\:\\  \\
+                    /:/  /      \\/__/        \\:\\__\\
+                    \\/__/                     \\/__/
+END
+   [ -t 1 ] && printf "\x1b[0m"
+}
 
 setup() {
    # This script is located in swval/sdk/scripts
@@ -49,34 +84,28 @@ setup() {
 
    local    do_config=false
 
-   TESTSUITE="${srcdir}/tests/testsuite"
-
    # Make sure we're being run from the right place.
    [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
 
-   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+   GIT_COMMIT_HASH="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
-   VPATH="${PWD}/run.${git_commit_hash:0:7}"
+   VPATH="${PWD}/run.${GIT_COMMIT_HASH:0:7}"
    if ! [ -d "${VPATH}" ]; then
       ${MKDIR} -p "${VPATH}"
    fi
+
+   LOGFILE="${VPATH}/tests/testsuite.log"
 
    if ! [ -f "${VPATH}/Makefile" ]; then
       do_config=true
    fi
 
-   if ${USE_TESTSUITE} ; then
-      if ! [ -f "${TESTSUITE}" ]; then
-         do_config=true
-      fi
-   else
-      if ! [ -f "${VPATH}/tests/bat"                  ] || \
-         ! [ -f "${VPATH}/tests/nightly"              ] || \
-         ! [ -f "${VPATH}/tests/weekly"               ] || \
-         ! [ -f "${VPATH}/tests/OSAL_TestSem"         ] || \
-         ! [ -f "${VPATH}/tests/OSAL_TestThreadGroup" ]; then
-         do_config=true
-      fi
+   if ! [ -f "${VPATH}/tests/bat"                  ] || \
+      ! [ -f "${VPATH}/tests/nightly"              ] || \
+      ! [ -f "${VPATH}/tests/weekly"               ] || \
+      ! [ -f "${VPATH}/tests/OSAL_TestSem"         ] || \
+      ! [ -f "${VPATH}/tests/OSAL_TestThreadGroup" ]; then
+      do_config=true
    fi
 
    if ${do_config} ; then
@@ -110,141 +139,125 @@ setup() {
    ${MAKE} check
 
    popd >/dev/null 2>&1
-
-   printf "\n"
-   printf "%s\n" "${git_commit_hash}"
 }
-setup
 
 run_standalone() {
    local -i res=1
    local    cmd
 
-   if ${USE_TESTSUITE}; then
-      cmd="${TESTSUITE} -v -C ${VPATH}/tests --standalone ${1+"$@"}"
+   cmd="${VPATH}/tests/OSAL_TestSem ${1+"$@"}"
 
+   printf "%s\n" "${cmd}"
+
+   ${cmd}
+   res=$?
+
+   if [ ${res} -ne 0 ]; then
       printf "%s\n" "${cmd}"
+      FAIL
+      return ${res}
+   fi
 
-      ${TIME} ${cmd}
-      res=$?
+   cmd="${VPATH}/tests/OSAL_TestThreadGroup ${1+"$@"}"
 
-      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
-   else
-      cmd="${VPATH}/tests/OSAL_TestSem ${1+"$@"}"
+   printf "%s\n" "${cmd}"
 
+   ${cmd}
+   res=$?
+
+   if [ 0 -ne ${res} ]; then
       printf "%s\n" "${cmd}"
-
-      ${TIME} ${cmd}
-      res=$?
-
-      if [ ${res} -ne 0 ]; then
-         printf "%s\n" "${cmd}"
-         return ${res}
-      fi
-
-      cmd="${VPATH}/tests/OSAL_TestThreadGroup ${1+"$@"}"
-
-      printf "%s\n" "${cmd}"
-
-      ${TIME} ${cmd}
-      res=$?
-
-      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
+      FAIL
    fi
 
    return ${res}
 }
 
 run_bat() {
-   local -i res=1
-   local    auto_color=''
-   local    cmd
+   local cmd
 
-   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+   cmd="${VPATH}/tests/bat ${1+"$@"}"
 
-   if ${USE_TESTSUITE}; then
-      cmd="${TESTSUITE} -v -C ${VPATH}/tests --bat ${auto_color} ${1+"$@"}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
 
-      printf "%s\n" "${cmd}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
 
-      ${cmd} >/dev/null 2>&1
-      res=$?
-   else
-      cmd="${VPATH}/tests/bat ${auto_color} ${1+"$@"}"
-
-      printf "%s\n" "${cmd}"
-
-      ${TIME} ${cmd}
-      res=$?
-
-      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
-   fi
-
-   return ${res}
+   exec ${cmd} >>"${LOGFILE}"
+   return $?
 }
 
 run_nightly() {
-   local -i res=1
-   local    auto_color=''
-   local    cmd
+   local cmd
 
-   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+   cmd="${VPATH}/tests/nightly ${1+"$@"}"
 
-   if ${USE_TESTSUITE}; then
-      cmd="${TESTSUITE} -v -C ${VPATH}/tests --nightly ${auto_color} ${1+"$@"}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
 
-      printf "%s\n" "${cmd}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
 
-      ${cmd} >/dev/null 2>&1
-      res=$?
-   else
-      cmd="${VPATH}/tests/nightly ${auto_color} ${1+"$@"}"
-
-      printf "%s\n" "${cmd}"
-
-      ${TIME} ${cmd}
-      res=$?
-
-      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
-   fi
-
-   return ${res}
+   exec ${cmd} >>"${LOGFILE}"
+   return $?
 }
 
 run_weekly() {
-   local -i res=1
-   local    auto_color=''
-   local    cmd
+   local cmd
 
-   [ -t 1 ] && auto_color="${GTEST_OPT}--gtest_color=yes"
+   cmd="${VPATH}/tests/weekly ${1+"$@"}"
 
-   if ${USE_TESTSUITE}; then
-      cmd="${TESTSUITE} -v -C ${VPATH}/tests --weekly ${auto_color} ${1+"$@"}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
 
-      printf "%s\n" "${cmd}"
+   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
 
-      ${cmd} >/dev/null 2>&1
-      res=$?
-   else
-      cmd="${VPATH}/tests/weekly ${auto_color} ${1+"$@"}"
-
-      printf "%s\n" "${cmd}"
-
-      ${TIME} ${cmd}
-      res=$?
-
-      [ 0 -eq ${res} ] || printf "%s\n" "${cmd}"
-   fi
-
-   return ${res}
+   exec ${cmd} >>"${LOGFILE}"
+   return $?
 }
 
 run_everything() {
-   local -i res=0
-   run_standalone || let $(( ++res ))
-   run_bat        || let $(( ++res ))
-   run_nightly    || let $(( ++res ))
-   run_weekly     || let $(( ++res ))
-   return ${res}
+   local -i res
+   local -i ret=0
+   local    cmd
+
+   run_standalone
+
+   cmd="${VPATH}/tests/bat ${1+"$@"}"
+
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
+
+   ${cmd}
+   res=$?
+   [ ${res} -ne 0 ] && ret=${res}
+
+   cmd="${VPATH}/tests/nightly ${1+"$@"}"
+
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
+
+   ${cmd}
+   res=$?
+   [ ${res} -ne 0 ] && ret=${res}
+
+   cmd="${VPATH}/tests/weekly ${1+"$@"}"
+
+   printf "\n%s\n" "${GIT_COMMIT_HASH}"
+   printf "%s\n\n" "${cmd}"
+
+   ${cmd}
+   res=$?
+   [ ${res} -ne 0 ] && ret=${res}
+
+   if [ 0 -eq ${ret} ]; then
+      PASS
+   else
+      FAIL
+   fi
+
+   return ${ret}
 }
 

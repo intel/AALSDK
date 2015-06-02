@@ -48,10 +48,128 @@
 
 BEGIN_NAMESPACE(AAL)
 
-Environment* Environment::sm_EnvObj = NULL;
+Environment * Environment::GetObj()
+{
+   Environment::sm_Lock.Lock();
+
+   if ( NULL == Environment::sm_EnvObj ) {
+      Environment::sm_EnvObj = new(std::nothrow) Environment();
+   }
+
+   Environment::sm_Lock.Unlock();
+
+   return Environment::sm_EnvObj;
+}
+
+void Environment::ReleaseObj()
+{
+   Environment::sm_Lock.Lock();
+
+   if ( NULL != Environment::sm_EnvObj ) {
+      delete Environment::sm_EnvObj;
+      Environment::sm_EnvObj = NULL;
+   }
+
+   Environment::sm_Lock.Unlock();
+}
+
+btBool Environment::Get(std::string var, std::string &val)
+{
+#if   defined( __AAL_LINUX__ )
+
+   Environment::sm_Lock.Lock();
+
+   const char* temp_var =  var.c_str();
+   char* temp_val = std::getenv(temp_var);
+
+   if ( NULL != temp_val ) {
+      val.assign(temp_val);
+   }
+
+   Environment::sm_Lock.Unlock();
+
+   return NULL != temp_val;
+
+#elif defined( __AAL_WINDOWS__ )
+
+   Environment::sm_Lock.Lock();
+
+   char* temp_val = NULL;
+   const char* temp_var;
+
+   temp_var = var.c_str();
+
+   DWORD bufsize = GetEnvironmentVariable(temp_var, NULL, 0);
+
+   if (( 0 == bufsize ) && ( ERROR_ENVVAR_NOT_FOUND == GetLastError())) {
+      // variable doesn't exist.
+      Environment::sm_Lock.Unlock();
+      return false;
+   }
+
+   if ( 0 == bufsize ) {
+      val.assign("");
+      Environment::sm_Lock.Unlock();
+      return true;
+   }
+
+   temp_val = new char[bufsize];
+
+   if ( NULL == temp_val ) {
+      Environment::sm_Lock.Unlock();
+      return false;
+   }
+   GetEnvironmentVariable(temp_var, temp_val, bufsize);
+
+   val.assign(temp_val);
+
+   delete temp_val;
+
+   Environment::sm_Lock.Unlock();
+
+   return true;
+#endif // OS
+}
+
+btBool Environment::Set(std::string var, std::string val, btBool overwrite)
+{
+#if   defined( __AAL_LINUX__ )
+
+   Environment::sm_Lock.Lock();
+
+   const char* temp_var = var.c_str();
+   const char* temp_val = val.c_str();
+
+   int ret = setenv(temp_var, temp_val, overwrite ? 1 : 0);
+
+   Environment::sm_Lock.Unlock();
+
+   return 0 == ret;
+
+#elif defined( __AAL_WINDOWS__ )
+
+   if ( !overwite ) {
+      if ( Environment::Get(var, val) ) {
+         // Already exists
+         return false;
+      }
+   }
+
+   Environment::sm_Lock.Lock();
+
+   btBool ret = SetEnvironmentVariable(var,val);
+
+   Environment::sm_Lock.Unlock();
+
+   return ret;
+#endif // OS
+}
+
+Environment::Environment() {}
+Environment::Environment(Environment const & ) {}
+Environment & Environment::operator = (Environment const & ) { return *this; }
+
+Environment *   Environment::sm_EnvObj = NULL;
 CriticalSection Environment::sm_Lock;
 
 END_NAMESPACE(AAL)
-
-
-
