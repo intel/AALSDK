@@ -49,6 +49,9 @@ ASE_VERSION = 4.2
 # ASE Debug
 ASE_DEBUG = 1
 
+# Timescale
+TIMESCALE = 1ns/1ns
+
 #########################################################################
 #                          Default options                              #
 #########################################################################
@@ -100,7 +103,7 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 ## Verilog compile
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
-SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=10ps/10ps
+SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
@@ -109,7 +112,7 @@ endif
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
-SNPS_VCS_OPT+= -override_timescale=1ns/1ns -o $(WORK)/ase_simv
+SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
@@ -133,7 +136,7 @@ MENT_VCOM_OPT = -nologo -work $(WORK)
 ## VLOG compile
 MENT_VLOG_OPT = -64 -novopt -nologo +librescan -work $(WORK) 
 MENT_VLOG_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR) 
-MENT_VLOG_OPT+= -sv  -timescale 1ns/1ns -l vlog.log
+MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
@@ -182,12 +185,16 @@ help: header
 	@echo "#                                                          #"
 	@echo "#  COMMAND       |   DESCRIPTION                           #"
 	@echo "# -------------------------------------------------------- #"
-	@echo "# make build     | Build the HW Model using RTL supplied   #"
+	@echo "# make           | Build the HW Model using RTL supplied   #"
 	@echo "#                |                                         #"
-	@echo "# make sim       | Run simulator (if in PERSISTENT mode)   #"
-	@echo "#                | Command is unused in ONESHOT mode       #"
+	@echo "# make sim       | Run simulator                           #"
+	@echo "#                | - ASE can be run in one of 4 modes set  #"
+	@echo "#                |   in ase.cfg                            #"
+	@echo "#                | - A regression mode can be enabled by   #"
+	@echo "#                |   writing ASE_MODE = 4 in ase.cfg and   #"
+	@echo "#                |   supplying an ase_regress.sh script    #"
 	@echo "#                |                                         #"
-	@echo "# make wave      | Open the waveform (f created)           #"
+	@echo "# make wave      | Open the waveform (if created)          #"
 	@echo "#                | To be run after simulation completes    #"
 	@echo "#                |                                         #"
 	@echo "# make clean     | Clean simulation files                  #"

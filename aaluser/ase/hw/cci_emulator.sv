@@ -47,6 +47,8 @@
 `include "ase_global.vh"
 `include "platform.vh"
 
+`timescale 1ns/1ns
+
 // CCI to Memory translator module
 module cci_emulator();
 
@@ -207,7 +209,7 @@ module cci_emulator();
    end
 
    // 200 Mhz clock
-   always @(posedge clk_8ui) begin
+   always @(posedge clk_8ui) begin : clk_rollover_ctr
       ase_clk_rollover	<= ase_clk_rollover - 1;
    end
 
@@ -395,7 +397,7 @@ module cci_emulator();
       for ( ii = 0; ii < `UMSG_MAX_MSG; ii = ii + 1 ) begin : gen_umsg_engine_inst
 
 	 // UMsg Write array unit
-	 always @(*) begin
+	 always @(*) begin : comb_umsgff_write_arrunit
 	    if (umsg_array[ii].hint_ready) begin
 	       umsgff_write_array[ii] <= umsg_array[ii].hint_pop;
 	    end
@@ -408,12 +410,12 @@ module cci_emulator();
 	 end
 
 	 // Data register process
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsgdata_reg_proc
 	    umsg_array[ii].data_q <= umsg_array[ii].data;
 	 end
 
 	 // Change detection
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsg_change_detect
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].change	<= 0;
 	    end
@@ -428,7 +430,7 @@ module cci_emulator();
 	 end
 
 	 // Hint timer down counter & hint ready generator
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsg_c2h_latency
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].hint_timer		<= 0;
 	       umsg_array[ii].hint_timer_started	<= 0;
@@ -448,7 +450,7 @@ module cci_emulator();
 	 end
 
 	 // Data timer down counter & Data ready generator
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsg_data_latency
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].data_timer		<= 0;
 	       umsg_array[ii].data_timer_started	<= 0;
@@ -468,7 +470,7 @@ module cci_emulator();
 	 end
 
 	 // Hint ready indicator
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsghint_rdy_indicator
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].hint_ready	<= 0;
 	    end
@@ -481,7 +483,7 @@ module cci_emulator();
 	 end
 
 	 // Data ready indicator
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsgdata_rdy_indicator
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].data_ready	<= 0;
 	    end
@@ -496,7 +498,7 @@ module cci_emulator();
 
 	 /////////////////////////////////////////////////////////////////////////////////
 	 // State machine
-	 always @(posedge clk) begin
+	 always @(posedge clk) begin : umsg_event_fsm
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].state <= UMsg_Idle;
 	    end
@@ -1427,15 +1429,14 @@ module cci_emulator();
 
 
    // Check for first transaction
-   always @(posedge clk, any_valid)
-     begin
-	if(any_valid) begin
-	   first_transaction_seen	<= 1'b1;
-	end
-     end
+   always @(posedge clk, any_valid) begin : first_transaction_watcher
+      if(any_valid) begin
+	 first_transaction_seen	<= 1'b1;
+      end
+   end
 
    // Inactivity management - killswitch
-   always @(posedge clk) begin
+   always @(posedge clk) begin : call_simkill_countdown
       if((inactivity_found==1'b1) && (cfg.ase_timeout != 0)) begin
 	 $display("SIM-SV: Inactivity timeout reached !!\n");
 	 start_simkill_countdown();
@@ -1605,7 +1606,7 @@ module cci_emulator();
    // end
 
    // Flow error messages
-   always @(posedge clk) begin
+   always @(posedge clk) begin : overflow_error
       if (tx0_overflow) begin
 	 flowerror_simkill($time, 0);
       end
@@ -1779,7 +1780,7 @@ module cci_emulator();
 `ifdef ASE_DEBUG
    // Read response checking
    int unsigned read_check_array[*];
-   always @(posedge clk) begin
+   always @(posedge clk) begin : read_array_checkproc
       if (tx_c0_rdvalid) begin
 	 read_check_array[tx_c0_header[`TX_MDATA_BITRANGE]] = tx_c0_header[`TX_CLADDR_BITRANGE];
       end
@@ -1791,7 +1792,7 @@ module cci_emulator();
 
    // Write response checking
    int unsigned write_check_array[*];
-   always @(posedge clk) begin
+   always @(posedge clk) begin : write_array_checkproc
       if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE)) begin
 	 write_check_array[tx_c1_header[`TX_MDATA_BITRANGE]] = tx_c1_header[`TX_CLADDR_BITRANGE];
       end

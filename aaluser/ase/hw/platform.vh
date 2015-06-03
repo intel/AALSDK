@@ -1,11 +1,6 @@
 `ifndef _PLATFORM_VH_
  `define _PLATFORM_VH_
 
-/*
- * Simulation Timescale 
- */ 
- `timescale 10ns/10ns
-
 
 /*
  * ASE Channel randomization features

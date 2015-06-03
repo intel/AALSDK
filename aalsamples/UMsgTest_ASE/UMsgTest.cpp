@@ -287,33 +287,33 @@ int main(int argc, char *argv[])
    //PM: UMsg Base
 #ifndef ASE_ENABLING
    if(gUMsgTestCmdLine.notice_type==2 || gUMsgTestCmdLine.notice_type==3)
-   {
-      cout<<"\nConfiguring UMsg CSRs";
-      btUnsigned32bitInt umsg_base_cl = CACHELINE_ALIGNED_ADDR(pUMsgWorkspace->GetPhysicalAddress()) & 0xfffffffc;
-      btUnsigned32bitInt umsgbase_csr_val = umsg_base_cl | 0x1;
-      pCCIDevice->SetCSR(CSR_UMSGBASE, umsgbase_csr_val);
-      cout<<"\numsg base csr "<<umsgbase_csr_val;
-      btUnsigned32bitInt umsgmode_csr_val;
-      if(gUMsgTestCmdLine.notice_type==3)
-      {
-         umsgmode_csr_val = 0xffffffff;
-      }
-      else
-      {
-         umsgmode_csr_val = 0;
-      }
-      pCCIDevice->SetCSR(CSR_UMSGMODE, umsgmode_csr_val);
-      cout<<"\numsg mode csr "<<umsgmode_csr_val<<endl<<flush;
+     {
+       cout<<"\nConfiguring UMsg CSRs";
+       btUnsigned32bitInt umsg_base_cl = CACHELINE_ALIGNED_ADDR(pUMsgWorkspace->GetPhysicalAddress()) & 0xfffffffc;
+       btUnsigned32bitInt umsgbase_csr_val = umsg_base_cl | 0x1;
+       pCCIDevice->SetCSR(CSR_UMSGBASE, umsgbase_csr_val);
+       cout<<"\numsg base csr "<<umsgbase_csr_val;
+       btUnsigned32bitInt umsgmode_csr_val;
+       if(gUMsgTestCmdLine.notice_type==3)
+	 {
+	   umsgmode_csr_val = 0xffffffff;
+	 }
+       else
+	 {
+	   umsgmode_csr_val = 0;
+	 }
+       pCCIDevice->SetCSR(CSR_UMSGMODE, umsgmode_csr_val);
+       cout<<"\numsg mode csr "<<umsgmode_csr_val<<endl<<flush;
 
-      // Check if UMsg has completed Initialization 
-      uint32_t umsg_status = 0;
-      do
-      {
-         pCCIDevice->GetCSR(CSR_CIRBSTAT, &umsg_status);
-      }
-      while((umsg_status & 0x1) == 0);
-      cout<<"\nUMsg Init Done\n";
-   }
+       // Check if UMsg has completed Initialization 
+       uint32_t umsg_status = 0;
+       do
+	 {
+	   pCCIDevice->GetCSR(CSR_CIRBSTAT, &umsg_status);
+	 }
+       while((umsg_status & 0x1) == 0);
+       cout<<"\nUMsg Init Done\n";
+     }
 #else
       uint32_t umsg_status = 0;
       do

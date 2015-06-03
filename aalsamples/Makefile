@@ -48,6 +48,7 @@ splapp2 \
 splapp3 \
 SyncApp1 \
 UMsgTest \
+Histogram \
 UMsgTest_ASE
 
 MFLAGS  =

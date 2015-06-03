@@ -586,10 +586,10 @@ void umsg_send(int umas_id, char *umsg_data)
   // MQ Send to SIM
   // memset(umsg_str, '\0',ASE_MQ_MSGSIZE );
   memcpy(umsg_str, &inst, SIZEOF_UMSG_PACK_T);
-  printf("umsg_str =>\n");
-  for(ii = 0 ; ii < SIZEOF_UMSG_PACK_T; ii++)
-    printf("%02X", (int)umsg_str[ii]);
-  printf("\n");
+  /* printf("umsg_str =>\n"); */
+  /* for(ii = 0 ; ii < SIZEOF_UMSG_PACK_T; ii++) */
+  /*   printf("%02X", (int)umsg_str[ii]); */
+  /* printf("\n"); */
 
   mqueue_send(app2sim_umsg_tx, umsg_str);
 }
