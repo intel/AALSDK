@@ -242,19 +242,19 @@ int ase_listener()
   
   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
     {
-#ifdef ASE_DEBUG
-      printf("ASERxMsg => UMSG Received \n");      
-#endif
+/* #ifdef ASE_DEBUG */
+/*       printf("ASERxMsg => UMSG Received \n");       */
+/* #endif */
       // Tokenize messgae to get msg_id & umsg_data
       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
       memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T);
       
-#ifdef ASE_DEBUG
-      printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint);
-      for(ii = 0 ; ii < 64; ii++)
-	printf("%02X", (int)inst.data[ii]);
-      printf("\n");
-#endif
+/* #ifdef ASE_DEBUG */
+/*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); */
+/*       for(ii = 0 ; ii < 64; ii++) */
+/* 	printf("%02X", (int)inst.data[ii]); */
+/*       printf("\n"); */
+/* #endif */
       
       // UMSG dispatch
       umsg_dispatch(0, 1, inst.hint, inst.id, inst.data);

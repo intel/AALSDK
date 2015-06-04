@@ -280,12 +280,6 @@ module cci_emulator();
 	 end
 	 else begin
 	    cwlp_valid = 0;
-	    // while (csrff_full) begin
-	    //    `BEGIN_RED_FONTCOLOR;
-	    //    $display("SIM-SV: WARNING => CSR FIFO is almost full, waiting to clear up");
-	    //    `END_RED_FONTCOLOR;
-	    //    run_clocks(1);
-	    // end
 	    run_clocks(1);
 	    {cwlp_address, cwlp_data} = {csr_addr_in[15:0], csr_data_in};
 	    cwlp_valid = 1;
@@ -364,8 +358,10 @@ module cci_emulator();
 
    int 			       umsg_data_slot;
    int 			       umsg_hint_slot;
-   int 			       umsg_data_slot_reg;
-   int 			       umsg_hint_slot_reg;
+   int 			       umsg_data_slot_old = 255;
+   int 			       umsg_hint_slot_old = 255;
+   // int 			       umsg_data_slot_reg;
+   // int 			       umsg_hint_slot_reg;
    umsg_t                      umsg_array[`UMSG_MAX_MSG];
 
    logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
@@ -408,7 +404,7 @@ module cci_emulator();
 	       umsgff_write_array[ii] <= 0;
 	    end
 	 end
-
+	 
 	 // Data register process
 	 always @(posedge clk) begin : umsgdata_reg_proc
 	    umsg_array[ii].data_q <= umsg_array[ii].data;
@@ -443,7 +439,7 @@ module cci_emulator();
 	       else if (umsg_array[ii].hint_timer > 0) begin
 		  umsg_array[ii].hint_timer		<= umsg_array[ii].hint_timer - 1;
 	       end
-	       else if (umsg_array[ii].hint_pop) begin
+	       else if (umsg_array[ii].hint_pop||umsg_array[ii].data_pop) begin
 		  umsg_array[ii].hint_timer_started <= 0;
 	       end
 	    end
@@ -456,7 +452,7 @@ module cci_emulator();
 	       umsg_array[ii].data_timer_started	<= 0;
 	    end
 	    else begin
-	       if (umsg_array[ii].change) begin
+	       if (umsg_array[ii].change && ~umsg_array[ii].data_timer_started) begin
 		  umsg_array[ii].data_timer		<= $urandom_range(`UMSG_START2DATA_LATRANGE);
 		  umsg_array[ii].data_timer_started	<= 1;
 	       end
@@ -474,7 +470,7 @@ module cci_emulator();
 	    if (~sys_reset_n) begin
 	       umsg_array[ii].hint_ready	<= 0;
 	    end
-	    else if (umsg_array[ii].hint_ready && umsg_array[ii].hint_pop) begin
+	    else if (umsg_array[ii].hint_ready && (umsg_array[ii].hint_pop||umsg_array[ii].data_pop)) begin
 	       umsg_array[ii].hint_ready	<= 0;
 	    end
 	    else if (umsg_array[ii].hint_timer_started && (umsg_array[ii].hint_timer == 0)) begin
@@ -490,7 +486,7 @@ module cci_emulator();
 	    else if (umsg_array[ii].data_ready && umsg_array[ii].data_pop) begin
 	       umsg_array[ii].data_ready	<= 0;
 	    end
-	    else if (umsg_array[ii].data_timer_started && (umsg_array[ii].data_timer == 0)) begin
+	    else if (umsg_array[ii].data_timer_started && (umsg_array[ii].data_timer == 0) && ~umsg_array[ii].hint_ready) begin
 	       umsg_array[ii].data_ready	<= 1;
 	    end
 	 end
@@ -505,33 +501,33 @@ module cci_emulator();
 	    else begin
 	       case (umsg_array[ii].state)
 		 // IDLE - If a change was seen, enable the UMSG FSM
-		 UMsg_Idle:
-		   begin
-		      umsg_array[ii].hint_pop <= 0;
-		      umsg_array[ii].data_pop <= 0;
-		      if (umsg_array[ii].change) begin
-			 umsg_array[ii].state <= UMsg_ChangeOccured;
-		      end
-		      else begin
-			 umsg_array[ii].state <= UMsg_Idle;
-		      end
-		   end
+		 // UMsg_Idle:
+		 //   begin
+		 //      umsg_array[ii].hint_pop <= 0;
+		 //      umsg_array[ii].data_pop <= 0;
+		 //      if (umsg_array[ii].change) begin
+		 // 	 umsg_array[ii].state <= UMsg_ChangeOccured;
+		 //      end
+		 //      else begin
+		 // 	 umsg_array[ii].state <= UMsg_Idle;
+		 //      end
+		 //   end
 
 		 // CHANGE
 		 // - Hint  : If hint is enabled and hint_ready, move to SendHint
 		 // - NoHint: If hint is disabled, move to Waiting
-		 UMsg_ChangeOccured:
+		 UMsg_Idle:
 		   begin
-		      umsg_array[ii].hint_pop <= 0;
-		      umsg_array[ii].data_pop <= 0;
-		      if (umsg_array[ii].hint_ready && umsg_array[ii].hint_enable) begin
+		      // umsg_array[ii].hint_pop <= 0;
+		      // umsg_array[ii].data_pop <= 0;
+		      if (umsg_array[ii].change && umsg_array[ii].hint_enable) begin
 			 umsg_array[ii].state <= UMsg_SendHint;
 		      end
-		      else if (~umsg_array[ii].hint_enable) begin
+		      else if (umsg_array[ii].change && ~umsg_array[ii].hint_enable) begin
 			 umsg_array[ii].state <= UMsg_Waiting;
 		      end
 		      else begin
-			 umsg_array[ii].state <= UMsg_ChangeOccured;
+			 umsg_array[ii].state <= UMsg_Idle;
 		      end
 		   end
 
@@ -539,13 +535,14 @@ module cci_emulator();
 		 // UMSGFF write end POPs this
 		 UMsg_SendHint:
 		   begin
-		      umsg_array[ii].data_pop <= 0;
-		      if ((ii != umsg_data_slot) && (ii == umsg_hint_slot) && ~umsgff_full) begin
-			 umsg_array[ii].hint_pop <= 1;
+		      // umsg_array[ii].data_pop <= 0;
+		      // if ((ii == umsg_hint_slot) && ~umsgff_full) begin
+		      if (umsg_array[ii].hint_pop) begin
+			 // umsg_array[ii].hint_pop <= 1;
 			 umsg_array[ii].state <= UMsg_Waiting;
 		      end
 		      else begin
-			 umsg_array[ii].hint_pop <= 0;
+			 // umsg_array[ii].hint_pop <= 0;
 			 umsg_array[ii].state <= UMsg_SendHint;
 		      end
 		   end
@@ -555,14 +552,14 @@ module cci_emulator();
 		 // else wait until a change occurs and a hint cycle begins
 		 UMsg_Waiting:
 		   begin
-		      umsg_array[ii].hint_pop <= 0;
-		      umsg_array[ii].data_pop <= 0;
+		      // umsg_array[ii].hint_pop <= 0;
+		      // umsg_array[ii].data_pop <= 0;
 		      if (umsg_array[ii].data_ready) begin
 			 umsg_array[ii].state <= UMsg_SendData;
 		      end
-		      else if (umsg_array[ii].change) begin
-			 umsg_array[ii].state <= UMsg_ChangeOccured;
-		      end
+		      // else if (umsg_array[ii].change) begin
+		      // 	 umsg_array[ii].state <= UMsg_ChangeOccured;
+		      // end
 		      else begin
 			 umsg_array[ii].state <= UMsg_Waiting;
 		      end
@@ -572,13 +569,13 @@ module cci_emulator();
 		 // Wait until pop signal is seen, go back do IDLE
 		 UMsg_SendData:
 		   begin
-		      umsg_array[ii].hint_pop <= 0;
-		      if ((ii == umsg_data_slot) && ~umsgff_full) begin
-			 umsg_array[ii].data_pop <= 1;
+		      // umsg_array[ii].hint_pop <= 0;
+		      if (umsg_array[ii].data_pop) begin
+			 // umsg_array[ii].data_pop <= 1;
 			 umsg_array[ii].state <= UMsg_Idle;
 		      end
 		      else begin
-			 umsg_array[ii].data_pop <= 0;
+			 // umsg_array[ii].data_pop <= 0;
 			 umsg_array[ii].state <= UMsg_SendData;
 		      end
 		   end
@@ -586,8 +583,8 @@ module cci_emulator();
 		 // Default
 		 default:
 		   begin
-		      umsg_array[ii].hint_pop <= 0;
-		      umsg_array[ii].data_pop <= 0;
+		      // umsg_array[ii].hint_pop <= 0;
+		      // umsg_array[ii].data_pop <= 0;
 		      umsg_array[ii].state <= UMsg_Idle;
 		   end
 
@@ -604,11 +601,16 @@ module cci_emulator();
    function int find_umsg_hint ();
       int ret_hint_slot;
       int slot;
+      int start_iter;
+      int end_iter;
       begin
+	 start_iter = 0;
+	 end_iter   = start_iter + `UMSG_MAX_MSG;
    	 ret_hint_slot = 255;
-   	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].hint_ready && ~umsg_array[slot].data_ready) begin
    	       ret_hint_slot = slot;
+	       umsg_hint_slot_old = ret_hint_slot;	       
    	       break;
    	    end
    	 end
@@ -620,11 +622,16 @@ module cci_emulator();
    function int find_umsg_data();
       int ret_data_slot;
       int slot;
+      int start_iter;
+      int end_iter;
       begin
+	 start_iter = 0;
+	 end_iter   = end_iter + `UMSG_MAX_MSG;
    	 ret_data_slot = 255;
-   	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].data_ready) begin
-   	       ret_data_slot = slot;
+   	       ret_data_slot = slot;	       
+	       umsg_data_slot_old = ret_data_slot;	       
    	       break;
    	    end
    	 end
@@ -639,34 +646,73 @@ module cci_emulator();
    end
 
    // Slot registering
-   always @(posedge clk) begin : slot_finder_regproc
-      umsg_hint_slot_reg <= umsg_hint_slot;
-      umsg_data_slot_reg <= umsg_data_slot;
-   end
+   // always @(posedge clk) begin : slot_finder_regproc
+   //    umsg_hint_slot_reg <= umsg_hint_slot;
+   //    umsg_data_slot_reg <= umsg_data_slot;
+   // end
 
    // UMsgFIFO write process
    int popiter;
-   always @(posedge clk) begin : umsgff_write_proc
+
+   typedef enum {UMsgToFifo_Idle, UMsgToFifo_Pop} UmsgToFifo_StateEnum;
+   UmsgToFifo_StateEnum umsgpop_state;
+
+   always @(posedge clk) begin
       if (~sys_reset_n) begin
-   	 umsgff_din					<= {UMSG_FIFO_WIDTH{1'b0}};
-   	 umsgff_write					<= 0;
+	 umsgpop_state				<= UMsgToFifo_Idle;	 
+   	 umsgff_write				<= 0;
+   	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
+   	    umsg_array[popiter].hint_pop	<= 0;
+   	    umsg_array[popiter].data_pop	<= 0;	    
+   	 end
       end
       else begin
-   	 // Write conditions
-   	 if (umsg_data_slot != 255) begin
-   	    umsgff_din					<= { {`ASE_RX0_UMSG, 1'b0, 1'b0, 6'b0, umsg_data_slot[5:0]} , umsg_array[umsg_data_slot].data};
-   	    umsgff_write				<= |umsgff_write_array;
+   	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
+   	    umsg_array[popiter].hint_pop	<= 0;
+   	    umsg_array[popiter].data_pop	<= 0;	    
    	 end
-   	 else if (umsg_hint_slot != 255) begin
-   	    umsgff_din					<= { {`ASE_RX0_UMSG, 1'b0, 1'b1, 6'b0, umsg_hint_slot[5:0]} , `CCI_DATA_WIDTH'b0};
-   	    umsgff_write				<= |umsgff_write_array;
-   	 end
-   	 else begin
-   	    umsgff_din					<= {UMSG_FIFO_WIDTH{1'b0}};
-   	    umsgff_write				<= 0;
-   	 end
+	 case (umsgpop_state)
+	   // IDLE
+	   UMsgToFifo_Idle:
+	     begin
+		umsgff_write			<= 0;
+		if (((umsg_hint_slot != 255)||(umsg_data_slot != 255)) && ~umsgff_full) begin
+		   umsgpop_state		<= UMsgToFifo_Pop;		   
+		end
+		else begin
+		   umsgpop_state		<= UMsgToFifo_Idle;		   
+		end		   
+	     end
+
+	   // POP
+	   UMsgToFifo_Pop:
+	     begin
+		if (umsg_hint_slot != 255) begin
+   		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b1, 6'b0, umsg_hint_slot[5:0]} , `CCI_DATA_WIDTH'b0};
+		   umsgff_write				<= 1;
+   		   umsg_array[umsg_hint_slot].hint_pop  <= 1;	    
+		end
+		else if (umsg_data_slot != 255) begin
+   		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b0, 6'b0, umsg_data_slot[5:0]} , umsg_array[umsg_data_slot].data};
+		   umsgff_write				<= 1;
+   		   umsg_array[umsg_data_slot].data_pop  <= 1;	    
+		end
+		else begin
+		   umsgff_write				<= 0;
+		end
+		umsgpop_state		<= UMsgToFifo_Idle;		   
+	     end
+
+	   // Default
+	   default:
+	     begin
+		umsgff_write	<= 0;
+		umsgpop_state	<= UMsgToFifo_Idle;		   
+	     end
+	 endcase
       end
    end
+      
 
 
    // Unordered message FIFO
@@ -1720,11 +1766,11 @@ module cci_emulator();
 	    ////////////////////////////// RX0 umsgvalid ////////////////////////////////
 	    if (rx_c0_umsgvalid) begin
 	       if (rx_c0_header[`CCI_UMSG_BITINDEX]) begin              // Umsg Hint
-		  $fwrite(log_fd, "%d\tUmsgHint\t\t0\t%x\n", $time, rx_c0_header[5:0] );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t\t0\t%x\n", $time, rx_c0_header[5:0] );
+		  $fwrite(log_fd, "%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
+		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
 	       end
 	       else begin                                               // Umsg with data
-		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
+		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\t%x\n", $time, rx_c0_header[5:0], rx_c0_data );
 		  if (cfg.enable_cl_view) $display("%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
 	       end
 	    end

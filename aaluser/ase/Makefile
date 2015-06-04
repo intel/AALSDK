@@ -291,7 +291,7 @@ endif
 #                            Clean all                                  #
 #########################################################################
 clean: header
-	rm -rf work/ *.log *.tsv AN.DB/
+	rm -rf work/ *.log *.tsv AN.DB/ | echo "Never mind"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt

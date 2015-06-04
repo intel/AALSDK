@@ -52,10 +52,10 @@ int main()
         return 1;
   }
   
-  csr_write(NLB_CTL_OFF, 0x00000000);
-  // Sending reset
-  printf("Sending a reset... \n");
-  csr_write(NLB_CTL_OFF, 0x00000001);
+  /* csr_write(NLB_CTL_OFF, 0x00000000); */
+  /* // Sending reset */
+  /* printf("Sending a reset... \n"); */
+  /* csr_write(NLB_CTL_OFF, 0x00000001); */
 
 
   /* char umsg_data0[64]; */
@@ -87,17 +87,27 @@ int main()
   /* umsg_send(5, umsg_data); */
   /* umsg_send(6, umsg_data); */
   /* umsg_send(7, umsg_data); */
+
+  // sleep(2);
   
-  int slot;
+  int slot = 0 ;
+  int count = 0 ;
   int data[16];
   int ii;
-  char umsg_data[64];
-  for(slot = 0; slot < 32; slot++)
+  char *umsg_data;
+  umsg_data = malloc(64);
+  
+  for(count = 0; count < 10; count++)
     {
-      for(ii = 0 ; ii < 16 ; ii++)
-	data[ii] = ii; 
-      strcpy(umsg_data, (char*)&data);
-      umsg_send (slot, umsg_data);
+      for(slot = 0; slot < 32; slot++)
+      	{
+	  for(ii = 0 ; ii < 16 ; ii++)
+	    data[ii] = 0 ;
+	  data[0] = (slot+1)*(count+1);
+	  printf("%d -> %08x\n", count, data[0]);
+	  // umsg_data = (char*)&data;
+	  umsg_send (slot, (char*) &data);
+	}
     }
 
 
