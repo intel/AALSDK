@@ -17,7 +17,21 @@ GlobalTestConfig::~GlobalTestConfig() {}
 
 const char TestStatus::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
 const char TestStatus::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
+const char TestStatus::sm_Blue[]  = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
 const char TestStatus::sm_Reset[] = { 0x1b, '[', '0', 'm', 0 };
+
+bool       TestStatus::sm_HaltOnSegFault         = false;
+bool       TestStatus::sm_HaltOnKeepaliveTimeout = false;
+
+void TestStatus::HaltOnSegFault(bool b)
+{
+   TestStatus::sm_HaltOnSegFault = b;
+}
+
+void TestStatus::HaltOnKeepaliveTimeout(bool b)
+{
+   TestStatus::sm_HaltOnKeepaliveTimeout = b;
+}
 
 void TestStatus::Report(TestStatus::Status st)
 {
@@ -90,6 +104,11 @@ void TestStatus::OnFail()
 
 void TestStatus::OnSegFault()
 {
+   std::string testcase;
+   std::string test;
+
+   TestCaseName(testcase, test);
+
    if ( ::isatty(1) ) {
       std::cout << TestStatus::sm_Red;
    }
@@ -97,8 +116,8 @@ void TestStatus::OnSegFault()
       std::cerr << TestStatus::sm_Red;
    }
 
-   std::cout << "\nSegmentation Fault\n";
-   std::cerr << "\nSegmentation Fault\n";
+   std::cout << "\nSegmentation Fault during " << testcase << "." << test << std::endl;
+   std::cerr << "\nSegmentation Fault during " << testcase << "." << test << std::endl;
 
    if ( ::isatty(1) ) {
       std::cout << TestStatus::sm_Reset;
@@ -108,6 +127,30 @@ void TestStatus::OnSegFault()
    }
 
    std::cout << std::flush;
+
+   if ( TestStatus::sm_HaltOnSegFault ) {
+
+      KeepAliveTimerEnv::GetInstance()->StopThread();
+
+      bool &halt(TestStatus::sm_HaltOnSegFault);
+      int   i = 0;
+      while ( halt ) {
+         if ( 0 == (i % (5 * 60)) ) {
+            if ( ::isatty(2) ) {
+               std::cerr << TestStatus::sm_Blue;
+            }
+            std::cerr << "Halted for debugger attach.\n";
+            if ( ::isatty(2) ) {
+               std::cerr << TestStatus::sm_Reset;
+            }
+
+            i = 0;
+         }
+         ::sleep(1);
+         ++i;
+      }
+
+   }
 
    ::exit(97);
 }
@@ -138,6 +181,11 @@ void TestStatus::OnTerminated()
 
 void TestStatus::OnKeepaliveTimeout()
 {
+   std::string testcase;
+   std::string test;
+
+   TestCaseName(testcase, test);
+
    if ( ::isatty(1) ) {
       std::cout << TestStatus::sm_Red;
    }
@@ -145,8 +193,8 @@ void TestStatus::OnKeepaliveTimeout()
       std::cerr << TestStatus::sm_Red;
    }
 
-   std::cout << "\nKeep-alive Timer Expired\n";
-   std::cerr << "\nKeep-alive Timer Expired\n";
+   std::cout << "\nKeep-alive Timer Expired during " << testcase << "." << test << std::endl;
+   std::cerr << "\nKeep-alive Timer Expired during " << testcase << "." << test << std::endl;
 
    if ( ::isatty(1) ) {
       std::cout << TestStatus::sm_Reset;
@@ -157,6 +205,24 @@ void TestStatus::OnKeepaliveTimeout()
 
    std::cout << std::flush;
 
+   bool &halt(TestStatus::sm_HaltOnKeepaliveTimeout);
+   int   i = 0;
+   while ( halt ) {
+      if ( 0 == (i % (5 * 60)) ) {
+         if ( ::isatty(2) ) {
+            std::cerr << TestStatus::sm_Blue;
+         }
+         std::cerr << "Halted for debugger attach.\n";
+         if ( ::isatty(2) ) {
+            std::cerr << TestStatus::sm_Reset;
+         }
+
+         i = 0;
+      }
+      ::sleep(1);
+      ++i;
+   }
+
    ::exit(99);
 }
 
@@ -164,13 +230,13 @@ void TestStatus::OnKeepaliveTimeout()
 
 // Retrieve the current test and test case name from gtest.
 // Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &Test, std::string &TestCase)
+void TestCaseName(std::string &TestCase, std::string &Test)
 {
    const ::testing::TestInfo * const pInfo =
       ::testing::UnitTest::GetInstance()->current_test_info();
 
-   Test     = std::string(pInfo->name());
    TestCase = std::string(pInfo->test_case_name());
+   Test     = std::string(pInfo->name());
 }
 
 #if defined( __AAL_LINUX__ )
@@ -256,77 +322,178 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 #endif // __AAL_LINUX__
 
 
+ThreadRegistry::ThreadRegistry()
+{
+   RegistryReset();
+}
+
+btUnsignedInt ThreadRegistry::ThreadRegister(btTID tid)
+{
+   AutoLock(this);
+   btUnsignedInt i = m_NextThread;
+   ++m_NextThread;
+   m_RegisteredThreads[i] = tid;
+   return i;
+}
+
+btUnsignedInt ThreadRegistry::ThreadLookup(btTID tid)
+{
+   btUnsignedInt i;
+   for ( i = 0 ; i < sizeof(m_RegisteredThreads) / sizeof(m_RegisteredThreads[0]) ; ++i ) {
+      if ( tid == m_RegisteredThreads[i] ) {
+         return i;
+      }
+   }
+   return (btUnsignedInt)-1;
+}
+
+void ThreadRegistry::RegistryReset()
+{
+   AutoLock(this);
+   m_NextThread = 0;
+   memset(&m_RegisteredThreads, 0, sizeof(m_RegisteredThreads));
+}
+
 #if   defined( __AAL_WINDOWS__ )
 # error TODO implement SignalHelper class for windows.
 #elif defined( __AAL_LINUX__ )
 
-SignalHelper SignalHelper::sm_GlobalInstance;
-
-SignalHelper & SignalHelper::GlobalInstance()
+SignalHelper SignalHelper::sm_Instance;
+SignalHelper & SignalHelper::GetInstance()
 {
-   return SignalHelper::sm_GlobalInstance;
+   return SignalHelper::sm_Instance;
 }
 
-SignalHelper::SignalHelper() {}
-
-SignalHelper::~SignalHelper()
+int SignalHelper::Install(SignalHelper::SigIndex i)
 {
-   // re-map each signal to its original handler.
-   const_sigiter iter;
-   for ( iter = m_sigmap.begin() ; m_sigmap.end() != iter ; ++iter ) {
-      ::sigaction(iter->first, &iter->second, NULL);
+   if ( (i < IDX_FIRST) || (i >= IDX_COUNT) ) {
+      // Invalid SigIndex.
+      return -1;
    }
 
-}
-
-int SignalHelper::Install(int signum, handler h, bool oneshot)
-{
-   if ( NULL == h ) {
-      return -1;
+   if ( m_Tracker[i].installed ) {
+      // attempt to double install.
+      return -2;
    }
 
    struct sigaction act;
    memset(&act, 0, sizeof(act));
 
    act.sa_flags     = SA_SIGINFO;
-   if ( oneshot ) {
+   act.sa_sigaction = m_Tracker[i].h;
+   if ( ( IDX_SIGSEGV == i ) || ( IDX_SIGINT == i ) ) {
       act.sa_flags |= SA_RESETHAND;
    }
-   act.sa_sigaction = h;
 
-   struct sigaction orig;
-   memset(&orig, 0, sizeof(orig));
-
-   int res = ::sigaction(signum, &act, &orig);
+   int res = ::sigaction(m_Tracker[i].signum, &act, &m_Tracker[i].orig);
 
    if ( 0 != res ) {
       return res;
    }
 
-   std::pair<sigiter, bool> ins = m_sigmap.insert(std::make_pair(signum, orig));
+   m_Tracker[i].installed = true;
+   memset(&m_Tracker[i].Counts, 0, sizeof(m_Tracker[0].Counts));
 
-   return ins.second ? res : -2;
+   return 0;
 }
 
-void SignalHelper::EmptySIGIOHandler(int sig, siginfo_t *info, void * /* unused */)
+int SignalHelper::Uninstall(SignalHelper::SigIndex i)
+{
+   if ( (i < IDX_FIRST) || (i >= IDX_COUNT) ) {
+      // Invalid SigIndex.
+      return -1;
+   }
+
+   if ( !m_Tracker[i].installed ) {
+      // Not hooked.
+      return -2;
+   }
+
+   int res = ::sigaction(m_Tracker[i].signum, &m_Tracker[i].orig, NULL);
+
+   m_Tracker[i].installed = false;
+
+   return res;
+}
+
+btUIntPtr SignalHelper::GetCount(SigIndex i, btUnsignedInt thr)
+{
+   return m_Tracker[i].Counts[thr];
+}
+
+void SignalHelper::PutCount(SigIndex i, btUnsignedInt thr)
+{
+   ++m_Tracker[i].Counts[thr];
+}
+
+SignalHelper::SignalHelper()
+{
+   memset(&m_Tracker, 0, sizeof(m_Tracker));
+
+   m_Tracker[IDX_SIGINT].signum  = SIGINT;
+   m_Tracker[IDX_SIGINT].h       = SignalHelper::SIGINTHandler;
+
+   m_Tracker[IDX_SIGSEGV].signum = SIGSEGV;
+   m_Tracker[IDX_SIGSEGV].h      = SignalHelper::SIGSEGVHandler;
+
+   m_Tracker[IDX_SIGIO].signum   = SIGIO;
+   m_Tracker[IDX_SIGIO].h        = SignalHelper::SIGIOHandler;
+
+   m_Tracker[IDX_SIGUSR1].signum = SIGUSR1;
+   m_Tracker[IDX_SIGUSR1].h      = SignalHelper::SIGUSR1Handler;
+
+   m_Tracker[IDX_SIGUSR2].signum = SIGUSR2;
+   m_Tracker[IDX_SIGUSR2].h      = SignalHelper::SIGUSR2Handler;
+}
+
+SignalHelper::~SignalHelper()
+{
+   int i;
+   for ( i = (int)IDX_FIRST ; i < (int)IDX_COUNT ; ++i ) {
+      Uninstall((SigIndex)i);
+   }
+}
+
+void SignalHelper::SIGIOHandler(int sig, siginfo_t *info, void * /* unused */)
 {
    EXPECT_EQ(SIGIO,    sig);
    EXPECT_EQ(SIGIO,    info->si_signo);
    EXPECT_EQ(SI_TKILL, info->si_code);
+
+   btUnsignedInt i = SignalHelper::GetInstance().ThreadLookup(GetThreadID());
+
+   EXPECT_NE((btUnsignedInt)-1, i);
+   if ( (btUnsignedInt)-1 != i ) {
+      SignalHelper::GetInstance().PutCount(IDX_SIGIO, i);
+   }
 }
 
-void SignalHelper::EmptySIGUSR1Handler(int sig, siginfo_t *info, void * /* unused */)
+void SignalHelper::SIGUSR1Handler(int sig, siginfo_t *info, void * /* unused */)
 {
    EXPECT_EQ(SIGUSR1,  sig);
    EXPECT_EQ(SIGUSR1,  info->si_signo);
    EXPECT_EQ(SI_TKILL, info->si_code);
+
+   btUnsignedInt i = SignalHelper::GetInstance().ThreadLookup(GetThreadID());
+
+   EXPECT_NE((btUnsignedInt)-1, i);
+   if ( (btUnsignedInt)-1 != i ) {
+      SignalHelper::GetInstance().PutCount(IDX_SIGUSR1, i);
+   }
 }
 
-void SignalHelper::EmptySIGUSR2Handler(int sig, siginfo_t *info, void * /* unused */)
+void SignalHelper::SIGUSR2Handler(int sig, siginfo_t *info, void * /* unused */)
 {
    EXPECT_EQ(SIGUSR2,  sig);
    EXPECT_EQ(SIGUSR2,  info->si_signo);
    EXPECT_EQ(SI_TKILL, info->si_code);
+
+   btUnsignedInt i = SignalHelper::GetInstance().ThreadLookup(GetThreadID());
+
+   EXPECT_NE((btUnsignedInt)-1, i);
+   if ( (btUnsignedInt)-1 != i ) {
+      SignalHelper::GetInstance().PutCount(IDX_SIGUSR2, i);
+   }
 }
 
 void SignalHelper::SIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
@@ -362,6 +529,24 @@ KeepAliveTimerEnv::KeepAliveTimerEnv() :
 #endif // __AAL_WINDOWS__
 {}
 
+void KeepAliveTimerEnv::StopThread()
+{
+   KeepAliveTimerEnv::sm_KeepAliveFreqMillis = 100;
+   m_KeepAliveRunning = false;
+
+#if   defined( __AAL_LINUX__ )
+
+   pthread_cancel(m_thread);
+   pthread_cond_signal(&m_condition);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   SetEvent(m_hEvent);
+   WaitForSingleObject(m_hJoinEvent, INFINITE);
+
+#endif // OS
+}
+
 void KeepAliveTimerEnv::SetUp()
 {
    m_KeepAliveRunning  = true;
@@ -370,15 +555,22 @@ void KeepAliveTimerEnv::SetUp()
    KeepAliveTimerEnv::sm_KeepAliveFreqMillis = MINUTES_IN_TERMS_OF_MILLIS(1);
 
 #if   defined( __AAL_LINUX__ )
-   pthread_mutexattr_t attr;
+   pthread_mutexattr_t mattr;
 
-   pthread_mutexattr_init(&attr);
-   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-   pthread_mutex_init(&m_mutex, &attr);
-   pthread_mutexattr_destroy(&attr);
+   pthread_mutexattr_init(&mattr);
+   pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_RECURSIVE);
+   pthread_mutex_init(&m_mutex, &mattr);
+   pthread_mutexattr_destroy(&mattr);
    pthread_cond_init(&m_condition, NULL);
 
-   pthread_create(&m_thread, NULL, KeepAliveTimerEnv::KeepAliveThread, this);
+   pthread_attr_t tattr;
+
+   pthread_attr_init(&tattr);
+   pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+
+   pthread_create(&m_thread, &tattr, KeepAliveTimerEnv::KeepAliveThread, this);
+
+   pthread_attr_destroy(&tattr);
 
 #elif defined( __AAL_WINDOWS__ )
 
@@ -399,21 +591,14 @@ void KeepAliveTimerEnv::SetUp()
 
 void KeepAliveTimerEnv::TearDown()
 {
-   KeepAliveTimerEnv::sm_KeepAliveFreqMillis = 100;
-   m_KeepAliveRunning = false;
+   StopThread();
 
 #if   defined( __AAL_LINUX__ )
-
-   pthread_cond_signal(&m_condition);
-   pthread_join(m_thread, NULL);
 
    pthread_cond_destroy(&m_condition);
    pthread_mutex_destroy(&m_mutex);
 
 #elif defined( __AAL_WINDOWS__ )
-
-   SetEvent(m_hEvent);
-   WaitForSingleObject(m_hJoinEvent, INFINITE);
 
    CloseHandle(m_hEvent);
    CloseHandle(m_hJoinEvent);
@@ -459,17 +644,22 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
       ts.tv_sec  += ts.tv_nsec / 1000000000;
       ts.tv_nsec %= 1000000000;
 
+      pthread_testcancel();
       pthread_mutex_lock(&e->m_mutex);
 
+      pthread_testcancel();
       if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
                                                &e->m_mutex,
                                                &ts) ) {
+         pthread_testcancel();
+
          if ( !e->m_KeepAliveRunning ) {
             pthread_mutex_unlock(&e->m_mutex);
             break;
          }
       }
 
+      pthread_testcancel();
       pthread_mutex_unlock(&e->m_mutex);
 
 #elif defined( __AAL_WINDOWS__ )
@@ -482,6 +672,7 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 
 #endif // OS
 
+      pthread_testcancel();
       if ( e->m_KeepAliveCounter == LastKeepAliveCounter ) {
          // keep-alive not updated before timer expired.
          ++e->m_KeepAliveTimeouts;

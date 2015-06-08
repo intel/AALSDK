@@ -102,6 +102,8 @@ protected:
          m_pGroup = NULL;
       }
 
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
@@ -919,11 +921,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[3]) ));
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
-      } else if ( 10 == i ) {
+      if ( 20 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -942,8 +940,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    // The first worker wakes the remaining workers. All workers process the work queue.
    // The queue becomes empty, and the Drain() completes successfully.
    // Seeing the Drain() completion, the Destroy() proceeds.
+
+   EXPECT_TRUE(m_Sems[3].Post(1));
+   YIELD_X(3);
+
    EXPECT_TRUE(m_Sems[1].Post(1));
-   EXPECT_TRUE(m_Sems[0].Wait());
 
    // Delete the thread group - destruct during Drain().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -968,6 +969,7 @@ void OSAL_ThreadGroup_vp_uint_0::Thr2(OSLThread *pThread, void *pContext)
 
    ASSERT_NONNULL(pTC->m_pGroup);
 
+   EXPECT_TRUE(pTC->m_Sems[0].Post(1));
    EXPECT_TRUE(pTC->m_pGroup->Drain());
 }
 
@@ -1027,8 +1029,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Wakes Thr2 to invoke the Drain().
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[0]) )); // Wakes this thread to do the Join().
       } else if ( 10 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w - 1)) );
       } else if ( 49 == i ) {
@@ -1044,6 +1044,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0094)
    // Join(), then wake the remaining workers to drain the queue.
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
+
+   YIELD_X(5);
 
    // Join the thread group.
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
@@ -1475,6 +1477,8 @@ void OSAL_ThreadGroup_vp_uint_0::Thr8(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
+
+   YIELD_X(5);
    EXPECT_FALSE(pTC->m_pGroup->Drain());
 
    // signal that we're done.
@@ -1535,10 +1539,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
+      if ( 30 == i ) {
          EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Some worker wakes Thr8.
       } else if ( 48 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else if ( 49 == i ) {
@@ -1556,6 +1558,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0100)
    // Some worker waits for Thr8 to complete, so that Thr8 doesn't de-reference the
    //  thread group pointer after it has been deleted.
    EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(m_Sems[3].Post(1));
 
    // Delete the thread group, invoking Join().
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1579,6 +1582,8 @@ void OSAL_ThreadGroup_vp_uint_0::Thr9(OSLThread *pThread, void *pContext)
    EXPECT_TRUE(pTC->m_Sems[3].Wait());
 
    ASSERT_NONNULL(pTC->m_pGroup);
+
+   YIELD_X(5);
    EXPECT_FALSE(pTC->m_pGroup->Drain());
 }
 
@@ -1636,10 +1641,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
+      if ( 20 == i ) {
          EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(Add( new PostD(m_Sems[3]) )); // Some worker wakes Thr9.
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
@@ -1653,6 +1656,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0101)
    // Meanwhile, this thread will be in Join().
    // Some worker will wake Thr9 to attempt a Drain(), which should fail.
    EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(m_Sems[3].Post(1));
 
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
@@ -1988,11 +1992,15 @@ protected:
    {
       Destroy();
 
+      YIELD_WHILE(CurrentThreads() > 0);
+
       disp_list_iter iter;
       for ( iter = m_WorkList.begin() ; iter != m_WorkList.end() ; ++iter ) {
          delete *iter;
       }
       m_WorkList.clear();
+
+      m_Sem.Destroy();
    }
 
    OSLThreadGroup * Create(AAL::btUnsignedInt        MinThrs,
@@ -2024,6 +2032,8 @@ protected:
       }
       return m_pGroup->Add(pDisp);
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -2101,6 +2111,8 @@ protected:
    {
       Destroy();
 
+      YIELD_WHILE(CurrentThreads() > 0);
+
       disp_list_iter iter;
       for ( iter = m_WorkList.begin() ; iter != m_WorkList.end() ; ++iter ) {
          delete *iter;
@@ -2137,6 +2149,8 @@ protected:
       }
       return m_pGroup->Add(pDisp);
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;

@@ -598,6 +598,8 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Quiesce(AAL::btTime Timeout)
       // self-terminating. Otherwise, the external Drain()'ers will become deadlocked.
       m_DrainManager.ReleaseAllDrainers();
 
+      m_DrainManager.WaitForAllDrainersDone();
+
       res = m_ThrJoinBarrier.Post(1);
       ASSERT(res);
       if ( !res ) {
@@ -616,10 +618,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Quiesce(AAL::btTime Timeout)
       }
 
    }
-
-   // Workers are joined.
-
-   m_DrainManager.WaitForAllDrainersDone();
 
    return true;
 }
@@ -715,11 +713,12 @@ void OSLThreadGroup::ThrGrpState::DrainManager::CompleteNestedWorkItem(OSLThread
    m_DrainBarrier.Post(1);
 }
 
-AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::End(AAL::btTID tid, Barrier *pDrainBarrier)
+AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::End(AAL::btTID  tid,
+                                                           Barrier    *pDrainBarrier)
 {
-   AutoLock(m_pTGS);
+   AAL::btBool res = false;
 
-   AAL::btBool bFound = false;
+   AutoLock(m_pTGS);
 
    if ( NULL == pDrainBarrier ) {
       // self-referential Drain(). Remove one instance of tid from m_SelfDrainers.
@@ -727,24 +726,24 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::End(AAL::btTID tid, Barri
       drainer_list_iter iter;
       for ( iter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != iter ; ++iter ) {
          if ( ThreadIDEqual(tid, *iter) ) {
-            bFound = true;
             m_SelfDrainers.erase(iter);
             if ( m_DrainNestLevel > 0 ) {
                --m_DrainNestLevel;
             }
+            res = true;
             break;
          }
       }
 
    } else {
       // external Drain().
-      bFound = true;
+      res = true;
       if ( m_DrainNestLevel > 0 ) {
          --m_DrainNestLevel;
       }
    }
 
-   return bFound;
+   return res;
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::ReleaseAllDrainers()
@@ -770,9 +769,15 @@ void OSLThreadGroup::ThrGrpState::DrainManager::AllDrainersAreDone()
 
 void OSLThreadGroup::ThrGrpState::DrainManager::WaitForAllDrainersDone()
 {
+   m_pTGS->Lock();
+
    while ( m_DrainNestLevel > 0 ) {
+      m_pTGS->Unlock();
       m_DrainerDoneBarrier.Wait(m_WaitTimeout);
+      m_pTGS->Lock();
    }
+
+   m_pTGS->Unlock();
 }
 
 void OSLThreadGroup::ThrGrpState::DrainManager::DestructMembers()
@@ -851,21 +856,21 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       Lock();
    }
 
-   m_DrainManager.End(MyThrID, pDrainBarrier);
+   eState st = State();
 
-   const AAL::btUnsignedInt level = m_DrainManager.DrainNestLevel();
-         eState             st    = State();
+   // DrainManager::End() will unlock the critical section.
+   m_DrainManager.End(MyThrID, pDrainBarrier);
+   AAL::btUnsignedInt level = m_DrainManager.DrainNestLevel();
+
+   if ( 0 == level ) {
+      m_DrainManager.AllDrainersAreDone();
+   }
 
    if ( Joining == st ) {
       // Join() during Drain() is allowed. In this case, an attempt to set the
       // state to Running or Draining below would be denied. We want the success indicator here,
       // however, to reflect that the thread group was drained of items, hence this check.
       Unlock();
-
-      if ( 0 == level ) {
-         m_DrainManager.AllDrainersAreDone();
-      }
-
       return true;
    }
 
@@ -874,10 +879,6 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
    AAL::btBool res = (State(st) == st);
 
    Unlock();
-
-   if ( 0 == level ) {
-      m_DrainManager.AllDrainersAreDone();
-   }
 
    return res;
 }
