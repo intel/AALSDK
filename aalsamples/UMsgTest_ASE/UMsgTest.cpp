@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
    char *umsg_testdata_chr;
    umsg_testdata_chr = (char*)malloc(CL_BYTE_WIDTH);
    umsg_testdata[0] = 0xFFFFFFFF;
-   umsg_testdata_chr = (char*) umsg_testdata;
+   umsg_testdata_chr = (char*) &umsg_testdata;
 
    // 3.CPU-> FPGA message. Select notice type
    if(gUMsgTestCmdLine.notice_type==0) {

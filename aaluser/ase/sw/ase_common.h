@@ -348,6 +348,8 @@ extern "C" {
 }
 #endif // __cplusplus
 
+#define DUMPSTRVAR(varname) fprintf(fp_workspace_log, "%s", #varname);
+
 
 /* ********************************************************************
  *

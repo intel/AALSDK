@@ -49,9 +49,9 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
 /* QPI Ivytown */
  `ifdef QPI_IVT
   `define INITIAL_SYSTEM_RESET_DURATION         20
-  `define CLK_32UI_TIME                         5ns
-  `define CLK_16UI_TIME                         2.5ns
-  `define CLK_8UI_TIME                          1.25ns
+  `define CLK_32UI_TIME                         5000ps
+  `define CLK_16UI_TIME                         2500ps
+  `define CLK_8UI_TIME                          1250ps
   `define LP_INITDONE_READINESS_LATENCY         5
 
 /* Generic, non-realistic, functional only simulation */ 

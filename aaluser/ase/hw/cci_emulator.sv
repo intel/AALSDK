@@ -138,7 +138,6 @@ module cci_emulator();
     * ***************************************************************************/
 
    logic                          clk   ;                  // out
-   // logic 			  resetb ;                 // out
    logic 			  lp_initdone ;            // out
    logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
    logic 			  tx_c0_rdvalid;           // in
@@ -158,7 +157,6 @@ module cci_emulator();
    logic 			  tx_c1_intrvalid;         // in
    logic 			  rx_c0_intrvalid;         // out
    logic 			  rx_c1_intrvalid;         // out
-
 
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
@@ -360,8 +358,6 @@ module cci_emulator();
    int 			       umsg_hint_slot;
    int 			       umsg_data_slot_old = 255;
    int 			       umsg_hint_slot_old = 255;
-   // int 			       umsg_data_slot_reg;
-   // int 			       umsg_hint_slot_reg;
    umsg_t                      umsg_array[`UMSG_MAX_MSG];
 
    logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
@@ -500,26 +496,11 @@ module cci_emulator();
 	    end
 	    else begin
 	       case (umsg_array[ii].state)
-		 // IDLE - If a change was seen, enable the UMSG FSM
-		 // UMsg_Idle:
-		 //   begin
-		 //      umsg_array[ii].hint_pop <= 0;
-		 //      umsg_array[ii].data_pop <= 0;
-		 //      if (umsg_array[ii].change) begin
-		 // 	 umsg_array[ii].state <= UMsg_ChangeOccured;
-		 //      end
-		 //      else begin
-		 // 	 umsg_array[ii].state <= UMsg_Idle;
-		 //      end
-		 //   end
-
-		 // CHANGE
+		 // CHANGE from IDLE
 		 // - Hint  : If hint is enabled and hint_ready, move to SendHint
 		 // - NoHint: If hint is disabled, move to Waiting
 		 UMsg_Idle:
 		   begin
-		      // umsg_array[ii].hint_pop <= 0;
-		      // umsg_array[ii].data_pop <= 0;
 		      if (umsg_array[ii].change && umsg_array[ii].hint_enable) begin
 			 umsg_array[ii].state <= UMsg_SendHint;
 		      end
@@ -535,14 +516,10 @@ module cci_emulator();
 		 // UMSGFF write end POPs this
 		 UMsg_SendHint:
 		   begin
-		      // umsg_array[ii].data_pop <= 0;
-		      // if ((ii == umsg_hint_slot) && ~umsgff_full) begin
 		      if (umsg_array[ii].hint_pop) begin
-			 // umsg_array[ii].hint_pop <= 1;
 			 umsg_array[ii].state <= UMsg_Waiting;
 		      end
 		      else begin
-			 // umsg_array[ii].hint_pop <= 0;
 			 umsg_array[ii].state <= UMsg_SendHint;
 		      end
 		   end
@@ -552,14 +529,9 @@ module cci_emulator();
 		 // else wait until a change occurs and a hint cycle begins
 		 UMsg_Waiting:
 		   begin
-		      // umsg_array[ii].hint_pop <= 0;
-		      // umsg_array[ii].data_pop <= 0;
 		      if (umsg_array[ii].data_ready) begin
 			 umsg_array[ii].state <= UMsg_SendData;
 		      end
-		      // else if (umsg_array[ii].change) begin
-		      // 	 umsg_array[ii].state <= UMsg_ChangeOccured;
-		      // end
 		      else begin
 			 umsg_array[ii].state <= UMsg_Waiting;
 		      end
@@ -569,13 +541,10 @@ module cci_emulator();
 		 // Wait until pop signal is seen, go back do IDLE
 		 UMsg_SendData:
 		   begin
-		      // umsg_array[ii].hint_pop <= 0;
 		      if (umsg_array[ii].data_pop) begin
-			 // umsg_array[ii].data_pop <= 1;
 			 umsg_array[ii].state <= UMsg_Idle;
 		      end
 		      else begin
-			 // umsg_array[ii].data_pop <= 0;
 			 umsg_array[ii].state <= UMsg_SendData;
 		      end
 		   end
@@ -583,8 +552,6 @@ module cci_emulator();
 		 // Default
 		 default:
 		   begin
-		      // umsg_array[ii].hint_pop <= 0;
-		      // umsg_array[ii].data_pop <= 0;
 		      umsg_array[ii].state <= UMsg_Idle;
 		   end
 
@@ -644,12 +611,6 @@ module cci_emulator();
       umsg_data_slot = find_umsg_data();
       umsg_hint_slot = find_umsg_hint();
    end
-
-   // Slot registering
-   // always @(posedge clk) begin : slot_finder_regproc
-   //    umsg_hint_slot_reg <= umsg_hint_slot;
-   //    umsg_data_slot_reg <= umsg_data_slot;
-   // end
 
    // UMsgFIFO write process
    int popiter;
@@ -1702,6 +1663,14 @@ module cci_emulator();
       );
 
 
+   // Registers for comparing previous states
+   always @(posedge clk) begin
+      lp_initdone_q	<= lp_initdone;
+      sw_reset_n_q	<= sw_reset_n;
+      sys_reset_n_q     <= sys_reset_n;
+   end
+
+   
    /*
     * ASE Hardware Interface (CCI) logger
     * - Logs CCI transaction into a transactions.tsv file
@@ -1709,15 +1678,6 @@ module cci_emulator();
     */
    // Log file descriptor
    int log_fd;
-
-   // Registers for comparing previous states
-   always @(posedge clk) begin
-      lp_initdone_q	<= lp_initdone;
-      // resetb_q	<= resetb;
-      sw_reset_n_q	<= sw_reset_n;
-      sys_reset_n_q     <= sys_reset_n;
-   end
-
 
    /*
     * Watcher process

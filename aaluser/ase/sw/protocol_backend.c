@@ -176,7 +176,7 @@ int ase_listener()
       ase_buffer_oneline(&ase_buffer);
       
       // Write buffer information to file
-      if (!ase_buffer.is_csrmap || !ase_buffer.is_privmem) 
+      if ( (ase_buffer.is_csrmap == 0) || (ase_buffer.is_privmem == 0) )
 	{
 	  // Write Workspace info to workspace log file
 	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
