@@ -93,6 +93,11 @@ def print_instructions():
 
 ######################## Script begins here #################################
 ### Argument checking ###
+print("#############################################################################")
+print("#                                                                           #")
+print("#            Intel QuickAssist AFU Simulation Environment 4.2               #")
+print("#                                                                           #")
+print("#############################################################################")
 if len(sys.argv) == 1:
     show_help()
     sys.exit(0)
@@ -102,7 +107,7 @@ else:
     tolowarg_list = []
     for arg in arg_list:
         tolowarg_list.append( str(arg).lower() )
-    print ("ARGUMENTS : ", tolowarg_list )
+    # print ("ARGUMENTS : ", tolowarg_list )
     # If help was requested
     if "-h" in tolowarg_list:
         show_help()
@@ -125,7 +130,7 @@ else:
         TOOL_BRAND = "VCS"
     else:
         TOOL_BRAND = tool_type
-    print("Tool Brand : ", TOOL_BRAND)
+    print("\nTool Brand : ", TOOL_BRAND)
     #######################################################################
     # Prepare list of candidate directories
     print ("Valid directories supplied => "); 
@@ -205,6 +210,7 @@ if len(ase_hw_files_str) == 0:
     ase_functions.end_red_fontcolor()
     sys.exit(0)
 ase_hw_files_str = ase_hw_files_str.replace("\n", " \\\n\t")
+ase_hw_files_str = ase_hw_files_str[:-1]
 fd.write("ASEHW_FILE_LIST = ")
 fd.write(ase_hw_files_str)
 fd.write("\n\n")
@@ -221,6 +227,7 @@ if len(str) != 0:
 # Find ASE SW files
 ase_sw_files_str = commands_getoutput ("find " + pwd + "/sw/ -name *.c")
 ase_sw_files_str = ase_sw_files_str.replace("\n", " \\\n\t")
+ase_sw_files_str = ase_sw_files_str[:-1]
 fd.write("ASESW_FILE_LIST = ")
 fd.write(ase_sw_files_str)
 fd.write("\n\n")
