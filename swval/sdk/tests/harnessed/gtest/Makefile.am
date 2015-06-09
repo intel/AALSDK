@@ -15,6 +15,7 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(top_srcdir)/tests/swvalmod \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
 COMMON_LDADD=\
@@ -38,7 +39,12 @@ gtBarrier.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
-gtThreadGroupSR.cpp
+gtThreadGroupSR.cpp \
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp \
+gtEnvVar.cpp \
+gtTimer.cpp \
+gtSleep.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -52,11 +58,12 @@ gtCommon.h \
 gtCommon.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
-gtNVS.cpp \
 gtThread.cpp \
 gtThreadGroup.h \
 gtThreadGroup.cpp \
-gtThreadGroupSR.cpp
+gtThreadGroupSR.cpp \
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp
 
 
 
@@ -94,7 +101,12 @@ gtThreadGroup.cpp \
 gtThreadGroupSR.cpp \
 gtPaths.cpp \
 gtStartupShutdown.cpp \
-gtEnvVar.cpp
+gtEnvVar.cpp \
+gtOSServiceModule.cpp \
+gtDynLinkLibrary.cpp \
+gtEnvVar.cpp \
+gtTimer.cpp \
+gtSleep.cpp
 
 endif
 

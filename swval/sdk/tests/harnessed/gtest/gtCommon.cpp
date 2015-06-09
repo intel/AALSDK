@@ -4,7 +4,163 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-GlobalTestConfig Config;
+GlobalTestConfig GlobalTestConfig::sm_Instance;
+const GlobalTestConfig & GlobalTestConfig::GetInstance()
+{
+   return GlobalTestConfig::sm_Instance;
+}
+
+GlobalTestConfig::GlobalTestConfig() {}
+GlobalTestConfig::~GlobalTestConfig() {}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char TestStatus::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
+const char TestStatus::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
+const char TestStatus::sm_Reset[] = { 0x1b, '[', '0', 'm', 0 };
+
+void TestStatus::Report(TestStatus::Status st)
+{
+   switch ( st ) {
+      case STATUS_PASS :
+         TestStatus::OnPass();
+      break;
+
+      case STATUS_FAIL :
+         TestStatus::OnFail();
+      break;
+
+      case STATUS_SEGFAULT :
+         TestStatus::OnSegFault();
+      break;
+
+      case TestStatus::STATUS_TERMINATED :
+         TestStatus::OnTerminated();
+      break;
+
+      case STATUS_KEEPALIVE_TIMEOUT :
+         TestStatus::OnKeepaliveTimeout();
+      break;
+   }
+}
+
+void TestStatus::OnPass()
+{
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Green;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Green;
+   }
+
+   std::cout << "\nPASS\n";
+   std::cerr << "\nPASS\n";
+
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Reset;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Reset;
+   }
+
+   std::cout << std::flush;
+}
+
+void TestStatus::OnFail()
+{
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Red;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Red;
+   }
+
+   std::cout << "\nFAIL\n";
+   std::cerr << "\nFAIL\n";
+
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Reset;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Reset;
+   }
+
+   std::cout << std::flush;
+}
+
+void TestStatus::OnSegFault()
+{
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Red;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Red;
+   }
+
+   std::cout << "\nSegmentation Fault\n";
+   std::cerr << "\nSegmentation Fault\n";
+
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Reset;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Reset;
+   }
+
+   std::cout << std::flush;
+
+   ::exit(97);
+}
+
+void TestStatus::OnTerminated()
+{
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Red;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Red;
+   }
+
+   std::cout << "\nProcess Terminated\n";
+   std::cerr << "\nProcess Terminated\n";
+
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Reset;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Reset;
+   }
+
+   std::cout << std::flush;
+
+   ::exit(98);
+}
+
+void TestStatus::OnKeepaliveTimeout()
+{
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Red;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Red;
+   }
+
+   std::cout << "\nKeep-alive Timer Expired\n";
+   std::cerr << "\nKeep-alive Timer Expired\n";
+
+   if ( ::isatty(1) ) {
+      std::cout << TestStatus::sm_Reset;
+   }
+   if ( ::isatty(2) ) {
+      std::cerr << TestStatus::sm_Reset;
+   }
+
+   std::cout << std::flush;
+
+   ::exit(99);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 // Retrieve the current test and test case name from gtest.
 // Must be called within the context of a test case/fixture.
@@ -104,6 +260,15 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os)
 # error TODO implement SignalHelper class for windows.
 #elif defined( __AAL_LINUX__ )
 
+SignalHelper SignalHelper::sm_GlobalInstance;
+
+SignalHelper & SignalHelper::GlobalInstance()
+{
+   return SignalHelper::sm_GlobalInstance;
+}
+
+SignalHelper::SignalHelper() {}
+
 SignalHelper::~SignalHelper()
 {
    // re-map each signal to its original handler.
@@ -164,24 +329,178 @@ void SignalHelper::EmptySIGUSR2Handler(int sig, siginfo_t *info, void * /* unuse
    EXPECT_EQ(SI_TKILL, info->si_code);
 }
 
-volatile AAL::btBool gWaitHereOnSegv = true;
-void SignalHelper::StopOnSIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
+void SignalHelper::SIGSEGVHandler(int sig, siginfo_t *info, void * /* unused */)
 {
-   while ( gWaitHereOnSegv ) {
-      SleepMilli(250);
-   }
+   TestStatus::Report(TestStatus::STATUS_SEGFAULT);
 }
 
-SignalHelper gSignalHelper;
+void SignalHelper::SIGINTHandler(int sig, siginfo_t *info, void * /* unused */)
+{
+   TestStatus::Report(TestStatus::STATUS_TERMINATED);
+}
 
 #endif // OS
 
-void StopOnSegv()
+////////////////////////////////////////////////////////////////////////////////
+
+KeepAliveTimerEnv *KeepAliveTimerEnv::sm_pInstance = NULL;
+KeepAliveTimerEnv * KeepAliveTimerEnv::GetInstance()
 {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO implement SignalHelper class for windows.
-#elif defined( __AAL_LINUX__ )
-   gSignalHelper.Install(SIGSEGV, SignalHelper::StopOnSIGSEGVHandler);
+   if ( NULL == KeepAliveTimerEnv::sm_pInstance ) {
+      KeepAliveTimerEnv::sm_pInstance = new KeepAliveTimerEnv();
+   }
+   return KeepAliveTimerEnv::sm_pInstance;
+}
+
+KeepAliveTimerEnv::KeepAliveTimerEnv() :
+   m_KeepAliveRunning(true),
+   m_KeepAliveCounter(0),
+   m_KeepAliveTimeouts(0)
+#if defined( __AAL_WINDOWS__ )
+   , m_hEvent(NULL),
+   m_hJoinEvent(NULL)
+#endif // __AAL_WINDOWS__
+{}
+
+void KeepAliveTimerEnv::SetUp()
+{
+   m_KeepAliveRunning  = true;
+   m_KeepAliveCounter  = 0;
+   m_KeepAliveTimeouts = 0;
+   KeepAliveTimerEnv::sm_KeepAliveFreqMillis = MINUTES_IN_TERMS_OF_MILLIS(1);
+
+#if   defined( __AAL_LINUX__ )
+   pthread_mutexattr_t attr;
+
+   pthread_mutexattr_init(&attr);
+   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+   pthread_mutex_init(&m_mutex, &attr);
+   pthread_mutexattr_destroy(&attr);
+   pthread_cond_init(&m_condition, NULL);
+
+   pthread_create(&m_thread, NULL, KeepAliveTimerEnv::KeepAliveThread, this);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   m_hEvent = CreateEvent(NULL,   // no inheritance
+                          FALSE,  // auto-reset event
+                          FALSE,  // not signaled
+                          NULL);  // no name
+
+   m_hJoinEvent = CreateEvent(NULL,   // no inheritance
+                              TRUE,   // manual-reset event
+                              FALSE,  // not signaled
+                              NULL);  // no name
+
+   _beginthread(KeepAliveTimerEnv::KeepAliveThread, 0, this);
+
+#endif // OS
+}
+
+void KeepAliveTimerEnv::TearDown()
+{
+   KeepAliveTimerEnv::sm_KeepAliveFreqMillis = 100;
+   m_KeepAliveRunning = false;
+
+#if   defined( __AAL_LINUX__ )
+
+   pthread_cond_signal(&m_condition);
+   pthread_join(m_thread, NULL);
+
+   pthread_cond_destroy(&m_condition);
+   pthread_mutex_destroy(&m_mutex);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   SetEvent(m_hEvent);
+   WaitForSingleObject(m_hJoinEvent, INFINITE);
+
+   CloseHandle(m_hEvent);
+   CloseHandle(m_hJoinEvent);
+
+   m_hEvent = m_hJoinEvent = NULL;
+
+#endif // OS
+}
+
+void KeepAliveTimerEnv::KeepAliveExpired()
+{
+   TestStatus::Report(TestStatus::STATUS_KEEPALIVE_TIMEOUT);
+}
+
+      btTime        KeepAliveTimerEnv::sm_KeepAliveFreqMillis  = MINUTES_IN_TERMS_OF_MILLIS(1);
+const btUnsignedInt KeepAliveTimerEnv::sm_MaxKeepAliveTimeouts = 3;
+
+#if   defined( __AAL_LINUX__ )
+void * KeepAliveTimerEnv::KeepAliveThread(void *arg)
+#elif defined ( __AAL_WINDOWS__ )
+void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
+#endif // OS
+{
+   KeepAliveTimerEnv *e = reinterpret_cast<KeepAliveTimerEnv *>(arg);
+
+#if   defined( __AAL_LINUX__ )
+   struct timeval  tv;
+   struct timespec ts;
+#elif defined( __AAL_WINDOWS__ )
+
+#endif // OS
+
+   btUnsigned64bitInt LastKeepAliveCounter = e->m_KeepAliveCounter;
+
+   while ( e->m_KeepAliveRunning ) {
+#if   defined( __AAL_LINUX__ )
+
+      gettimeofday(&tv, NULL);
+
+      ts.tv_sec  = tv.tv_sec;
+      ts.tv_nsec = (tv.tv_usec * 1000) + (KeepAliveTimerEnv::sm_KeepAliveFreqMillis * 1000000);
+
+      ts.tv_sec  += ts.tv_nsec / 1000000000;
+      ts.tv_nsec %= 1000000000;
+
+      pthread_mutex_lock(&e->m_mutex);
+
+      if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
+                                               &e->m_mutex,
+                                               &ts) ) {
+         if ( !e->m_KeepAliveRunning ) {
+            pthread_mutex_unlock(&e->m_mutex);
+            break;
+         }
+      }
+
+      pthread_mutex_unlock(&e->m_mutex);
+
+#elif defined( __AAL_WINDOWS__ )
+
+      if ( WAIT_OBJECT_0 == WaitForSingleObject(m_hEvent, (DWORD)KeepAliveTimerEnv::sm_KeepAliveFreqMillis) ) {
+         if ( !e->m_KeepAliveRunning ) {
+             break;
+         }
+      }
+
+#endif // OS
+
+      if ( e->m_KeepAliveCounter == LastKeepAliveCounter ) {
+         // keep-alive not updated before timer expired.
+         ++e->m_KeepAliveTimeouts;
+         if ( e->m_KeepAliveTimeouts >= KeepAliveTimerEnv::sm_MaxKeepAliveTimeouts ) {
+            e->KeepAliveExpired();
+            break;
+         }
+      } else {
+         e->m_KeepAliveTimeouts = 0;
+      }
+
+      LastKeepAliveCounter = e->m_KeepAliveCounter;
+   }
+
+#if   defined( __AAL_LINUX__ )
+   return NULL;
+#elif defined( __AAL_WINDOWS__ )
+   SetEvent(e->m_hJoinEvent);
+   return;
 #endif // OS
 }
 

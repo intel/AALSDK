@@ -7,5 +7,6 @@ declare -r SCRIPT_NAME='run-standalone'
 
 . ./run-common
 
+setup
 run_standalone
 exit $?

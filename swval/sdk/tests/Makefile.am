@@ -2,7 +2,8 @@
 
 SUBDIRS=\
 standalone \
-harnessed
+harnessed \
+swvalmod
 
 TESTSUITE_AT=\
 standalone/standalone.at \

@@ -18,6 +18,9 @@ protected:
    {}
    virtual ~OSAL_ThreadGroupSR_vp() {}
 
+   typedef std::list<IDispatchable *> disp_list_t;
+   typedef disp_list_t::iterator      disp_list_iter;
+
    virtual void SetUp()
    {
       unsigned i;
@@ -30,12 +33,26 @@ protected:
    }
    virtual void TearDown()
    {
-      Destroy();
+      if ( NULL != m_pGroup ) {
+         delete m_pGroup;
+         m_pGroup = NULL;
+      }
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
+      }
+
+      disp_list_iter iter;
+      for ( iter = m_WorkList.begin() ; iter != m_WorkList.end() ; ++iter ) {
+         delete *iter;
+      }
+      m_WorkList.clear();
+
+      for ( i = 0 ; i < sizeof(m_Sems) / sizeof(m_Sems[0]) ; ++i ) {
+         m_Sems[i].Destroy();
       }
    }
 
@@ -51,17 +68,15 @@ protected:
       return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_JoinTimeout);
    }
 
-   AAL::btBool Destroy()
+   AAL::btBool Add(IDispatchable *pDisp)
    {
-      if ( NULL == m_pGroup ) {
-         return false;
+      if ( NULL != pDisp ) {
+         m_WorkList.push_back(pDisp);
       }
-      delete m_pGroup;
-      m_pGroup = NULL;
-      return true;
+      return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -71,6 +86,7 @@ protected:
    OSLThread                *m_pThrs[5];
    CSemaphore                m_Sems[4];
    AAL::btUnsignedInt        m_Scratch[4];
+   disp_list_t               m_WorkList;
 };
 
 #define STAGE_WORKERS(__init)                                         \
@@ -92,7 +108,7 @@ protected:
                                                                       \
    AAL::btUnsignedInt i;                                              \
    for ( i = 0 ; i < m_MinThreads ; ++i ) {                           \
-      EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) )); \
+      EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));    \
    }                                                                  \
                                                                       \
    EXPECT_EQ(m_MinThreads, CurrentThreads());                         \
@@ -117,11 +133,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0104)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -131,7 +147,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0104)
 
    YIELD_WHILE(g->GetNumWorkItems() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    EXPECT_EQ(1, x);
 }
@@ -146,11 +162,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0105)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -162,7 +178,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0105)
 
    EXPECT_EQ(1, x);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0106)
@@ -173,11 +189,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0106)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -185,7 +199,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0106)
 
    EXPECT_TRUE(m_Sems[1].Post(w));
 
-   YIELD_WHILE(NULL != m_pGroup);
    YIELD_WHILE(CurrentThreads() > 0);
 }
 
@@ -200,13 +213,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0107)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new SleepThenPostD(100, m_Sems[1], w-1) ));
       } else if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -223,9 +236,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0107)
    EXPECT_EQ(0, g->GetNumWorkItems());
    EXPECT_EQ(1, x);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(0, CurrentThreads());
-
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0108)
@@ -239,13 +251,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0108)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -266,7 +278,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0108)
    EXPECT_EQ(0, g->GetNumWorkItems());
    EXPECT_EQ(1, x);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(0, CurrentThreads());
 }
 
@@ -279,31 +291,36 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0109)
 
    STAGE_WORKERS(GetParam());
 
-   EXPECT_TRUE(g->Add( new SleepThenPostThenJoinThreadGroupD(100,               // SleepMilli()
-                                                             m_Sems[1],         // CSemaphore to Post()
-                                                             w-1,               // Value to Post
-                                                             g,                 // OSLThreadGroup
-                                                             true,              // Expected Post() result
-                                                             AAL_INFINITE_WAIT, // Join() timeout
-                                                             false)             // Expected Join() result
-              ));
+   AAL::btInt x = 0;
 
-   for ( i = 0 ; i < 498 ; ++i ) {
-      EXPECT_TRUE(g->Add( new YieldD() ));
+   for ( i = 0 ; i < 50 ; ++i ) {
+      if ( 0 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( 1 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
+      } else if ( 12 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 48 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
+      } else if ( 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
+      } else {
+         EXPECT_TRUE(Add( new YieldD() ));
+      }
    }
 
-   AAL::btInt x = 0;
-   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
-
-   ASSERT_EQ(500, g->GetNumWorkItems());
+   ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake the first worker. It will sleep briefly, then wake the remaining workers, then attempt
    // to Join() the thread group. Meanwhile, we will have invoked ~OSLThreadGroup(), which will do
    // a Join(). The Join() invoked from ~OSLThreadGroup() will win.
    EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(1, x);
 }
@@ -318,22 +335,23 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0110)
 
    STAGE_WORKERS(GetParam());
 
-   EXPECT_TRUE(g->Add( new PostThenJoinThreadGroupD(m_Sems[0],         // CSemaphore to Post() (yes, m_Sems[0])
-                                                    1,                 // Value to Post        (yes, 1)
-                                                    g,                 // OSLThreadGroup
-                                                    true,              // Expected Post() result
-                                                    AAL_INFINITE_WAIT, // Join() timeout
-                                                    true)              // Expected Join() result
-              ));
+   AAL::btInt x = 0;
 
-   for ( i = 0 ; i < 498 ; ++i ) {
-      EXPECT_TRUE(g->Add( new YieldD() ));
+   for ( i = 0 ; i < 50 ; ++i ) {
+      if ( 0 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( 1 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( 12 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1)));
+      } else if ( 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
+      } else {
+         EXPECT_TRUE(Add( new YieldD() ));
+      }
    }
 
-   AAL::btInt x = 0;
-   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
-
-   ASSERT_EQ(500, g->GetNumWorkItems());
+   ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake the first worker. It will pulse m_Sems[0], waking us. Then the worker will immediately
    // invoke the self-referential Join().
@@ -341,17 +359,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0110)
 
    // Wait for the first worker to wake us.
    EXPECT_TRUE(m_Sems[0].Wait());
-   // In case the worker was preempted after posting m_Sems[0] but before calling Join().
-   cpu_yield();
-
-   // Now, wake the remaining workers so that the self-referential Join() can complete.
-   EXPECT_TRUE(m_Sems[1].Post(w-1));
-   cpu_yield();
 
    // This Join() should fail.
    EXPECT_FALSE(g->Join(AAL_INFINITE_WAIT));
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
    EXPECT_EQ(1, x);
@@ -367,9 +379,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0111)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       }
    }
 
@@ -379,7 +391,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0111)
 
    YIELD_WHILE(g->GetNumWorkItems() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
    EXPECT_EQ(0, CurrentThreads());
 }
@@ -396,13 +408,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0112)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
       }
    }
 
@@ -415,7 +427,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0112)
 
    YIELD_WHILE(CurrentThreads() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 }
 
@@ -430,15 +442,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0113)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -451,7 +463,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0113)
 
    YIELD_WHILE(CurrentThreads() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 }
 
@@ -467,15 +479,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0114)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g, false) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g, false) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -488,7 +500,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0114)
 
    YIELD_WHILE(CurrentThreads() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 }
 
@@ -503,15 +515,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0115)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new WaitD(m_Sems[1]) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -530,7 +542,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0115)
 
    EXPECT_EQ(1, x);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(0, CurrentThreads());
 }
 
@@ -545,13 +557,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0116)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 30 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g, false) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g, false) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -566,7 +578,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0116)
 
    EXPECT_EQ(1, x);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(0, CurrentThreads());
 }
 
@@ -579,15 +591,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0117)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -597,8 +607,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0117)
    // The first worker will invoke the self-referential Drain(), then wake the remaining workers.
    // Some worker invokes the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    YIELD_WHILE(CurrentThreads() > 0);
 }
@@ -612,15 +620,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0118)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g, false) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g, false) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -630,8 +636,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0118)
    // The first worker will invoke the self-referential Destroy(), then wake the remaining workers.
    // Some worker will attempt a Drain(), which will fail.
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    YIELD_WHILE(CurrentThreads() > 0);
 }
@@ -647,15 +651,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0119)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -667,7 +671,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0119)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
    EXPECT_EQ(0, CurrentThreads());
 }
@@ -682,14 +686,14 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0120)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      if ( 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 20 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g, false) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g, false) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -700,7 +704,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0120)
    // Some worker attempts a self-referential Drain(), which fails.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
    EXPECT_EQ(0, CurrentThreads());
 }
@@ -715,14 +719,14 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0121)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      if ( 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 20 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -737,7 +741,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0121)
 
    YIELD_WHILE(CurrentThreads() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 }
 
@@ -753,17 +757,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0122)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( 48 == i ) {
-         EXPECT_TRUE(g->Add( new WaitD(m_Sems[1]) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
+      } else if ( 3 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -783,7 +787,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0122)
 
    YIELD_WHILE(CurrentThreads() > 0);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 }
 
@@ -794,29 +798,32 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0123)
 
    STAGE_WORKERS(GetParam());
 
-   for ( i = 0 ; i < 50 ; ++i ) {
+   for ( i = 0 ; i < 100 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 20 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( 11 == i ) {
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
+      } else if ( 22 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 50 == i ) {
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
-   ASSERT_EQ(50, g->GetNumWorkItems());
+   ASSERT_EQ(100, g->GetNumWorkItems());
 
    // Wake the first worker, then invoke the external Drain().
    // The first worker wakes the remaining workers.
    // Some worker executes the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
+   EXPECT_TRUE(m_Sems[0].Wait());
 
+   EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(g->Drain());
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0124)
@@ -829,17 +836,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0124)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( 48 == i ) {
-         EXPECT_TRUE(g->Add( new WaitD(m_Sems[1]) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
+      } else if ( 3 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -858,7 +863,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0124)
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0125)
@@ -869,24 +873,23 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0125)
 
    STAGE_WORKERS(GetParam());
 
-   EXPECT_TRUE(g->Add( new PostThenJoinThreadGroupD(m_Sems[0],
-                                                    1,
-                                                    g) ));
-
    AAL::btInt x = 0;
 
-   for ( i = 0 ; i < 497 ; ++i ) {
-      if ( 200 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
+   for ( i = 0 ; i < 50 ; ++i ) {
+      if ( 0 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( 1 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 8 == i ) {
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
+      } else if ( 49 == i ) {
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
-   EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
-   EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
-
-   ASSERT_EQ(500, g->GetNumWorkItems());
+   ASSERT_EQ(50, g->GetNumWorkItems());
 
    // Wake the first worker.
    // The first worker will wake us (we're going to block on m_Sems[0], below).
@@ -898,17 +901,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0125)
    //  executes the work item that delete's the thread group.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
-   EXPECT_TRUE(m_Sems[0].Wait());
-   cpu_yield();
-
-   EXPECT_TRUE(m_Sems[1].Post(w-1));
-   cpu_yield();
-
    YIELD_WHILE(CurrentThreads() > 0);
    EXPECT_EQ(1, x);
-
-   // Because Destroy() will attempt to delete m_pGroup when non-NULL.
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0126)
@@ -921,15 +915,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0126)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -941,7 +933,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0126)
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0127)
@@ -958,15 +949,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0127)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -979,7 +970,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0127)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
    EXPECT_EQ(1, x);
@@ -998,13 +989,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0128)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g, AAL_INFINITE_WAIT, false) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1019,7 +1010,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0128)
    //  is already in the destructor.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    ASSERT_EQ(0, CurrentThreads());
    EXPECT_EQ(1, x);
 }
@@ -1035,13 +1026,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0129)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 24 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1056,7 +1045,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0129)
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0130)
@@ -1073,15 +1061,13 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0130)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1096,8 +1082,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0130)
    EXPECT_FALSE(g->Join(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   // Because Destroy() will attempt to delete m_pGroup when non-NULL.
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 
@@ -1172,11 +1156,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1194,7 +1178,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    // This thread calls Destroy()
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
    m_pThrs[0]->Join();
@@ -1257,13 +1241,11 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0141)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1280,8 +1262,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0141)
    // Wake the first worker. The first worker will wake the remaining workers.
    // Some worker does the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    m_pThrs[0]->Join();
    m_pThrs[1]->Join();
@@ -1326,15 +1306,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0142)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( 10 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1343,6 +1323,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0142)
    // Wake Thr4 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[2]);
+   YIELD_X(5);
 
    // Wake the first worker, then block on m_Sems[0].
    // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
@@ -1351,7 +1332,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0142)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    m_pThrs[0]->Join();
 
@@ -1391,18 +1372,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0143)
 
    EXPECT_EQ(1 + m_MinThreads, CurrentThreads());
 
-
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1420,7 +1398,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0143)
    m_pThrs[0]->Join();
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 void OSAL_ThreadGroup_vp_uint_2::Thr6(OSLThread *pThread, void *arg)
@@ -1460,17 +1437,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0144)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[2]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[2]) ));
       } else if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1489,7 +1466,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0144)
 
    YIELD_WHILE(0 == m_Scratch[2]);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    m_pThrs[0]->Join();
 
@@ -1507,19 +1484,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0145)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new WaitD(m_Sems[1]) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 10 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1540,7 +1515,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0145)
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0146)
@@ -1555,17 +1529,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0146)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1582,7 +1556,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0146)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
    EXPECT_EQ(1, x);
@@ -1598,17 +1572,15 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0147)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 6 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1623,7 +1595,6 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0147)
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 INSTANTIATE_TEST_CASE_P(My, OSAL_ThreadGroup_vp_uint_2,
@@ -1646,6 +1617,9 @@ protected:
    {}
    virtual ~OSAL_ThreadGroupSR_vp_tuple_0() {}
 
+   typedef std::list<IDispatchable *> disp_list_t;
+   typedef disp_list_t::iterator      disp_list_iter;
+
    virtual void SetUp()
    {
       unsigned i;
@@ -1658,12 +1632,26 @@ protected:
    }
    virtual void TearDown()
    {
-      Destroy();
+      if ( NULL != m_pGroup ) {
+         delete m_pGroup;
+         m_pGroup = NULL;
+      }
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
+      }
+
+      disp_list_iter iter;
+      for ( iter = m_WorkList.begin() ; iter != m_WorkList.end() ; ++iter ) {
+         delete *iter;
+      }
+      m_WorkList.clear();
+
+      for ( i = 0 ; i < sizeof(m_Sems) / sizeof(m_Sems[0]) ; ++i ) {
+         m_Sems[i].Destroy();
       }
    }
 
@@ -1679,17 +1667,15 @@ protected:
       return m_pGroup = new OSLThreadGroup(m_MinThreads, m_MaxThreads, m_ThrPriority, m_JoinTimeout);
    }
 
-   AAL::btBool Destroy()
+   AAL::btBool Add(IDispatchable *pDisp)
    {
-      if ( NULL == m_pGroup ) {
-         return false;
+      if ( NULL != pDisp ) {
+         m_WorkList.push_back(pDisp);
       }
-      delete m_pGroup;
-      m_pGroup = NULL;
-      return true;
+      return m_pGroup->Add(pDisp);
    }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    OSLThreadGroup           *m_pGroup;
    AAL::btUnsignedInt        m_MinThreads;
@@ -1699,6 +1685,7 @@ protected:
    OSLThread                *m_pThrs[16];
    CSemaphore                m_Sems[4];
    AAL::btUnsignedInt        m_Scratch[16];
+   disp_list_t               m_WorkList;
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
@@ -1809,11 +1796,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1824,6 +1811,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
+   YIELD_X(Externals);
 
    // Wake Thr1 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
@@ -1831,9 +1819,10 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
+   YIELD_X(5);
 
    // This thread calls Destroy()
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
    for ( i = 0 ; i <= Externals ; ++i ) {
@@ -1919,13 +1908,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0149)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -1936,6 +1923,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0149)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
+   YIELD_X(3);
 
    // Wake Thr3 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
@@ -1944,8 +1932,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0149)
    // Wake the first worker. The first worker will wake the remaining workers.
    // Some worker does the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    for ( i = 0 ; i <= Externals ; ++i ) {
       m_pThrs[i]->Join();
@@ -2005,16 +1991,16 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( 3 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      if ( Externals == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( Externals + 1 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( Externals + 2 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2034,7 +2020,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   YIELD_X(Externals);
+
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    for ( i = 0 ; i < Externals ; ++i ) {
       m_pThrs[i]->Join();
@@ -2092,16 +2080,14 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0151)
    EXPECT_EQ(Externals + m_MinThreads, CurrentThreads());
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+      if ( Externals == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( Externals + 1 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( Externals + 5 == i ) {
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2125,7 +2111,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0151)
    }
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr6(OSLThread *pThread, void *arg)
@@ -2175,17 +2160,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0152)
 
    for ( i = 0 ; i < 50 + Drains ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[2]) ));
-      } else if ( Drains + 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[2]) ));
+      } else if ( Drains + 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( Drains + 10 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2203,8 +2188,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0152)
    EXPECT_TRUE(m_Sems[0].Wait());
 
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(5);
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    m_pThrs[0]->Join();
 
@@ -2227,19 +2213,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0153)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new WaitD(m_Sems[1]) ));
+         EXPECT_TRUE(Add( new WaitD(m_Sems[1]) ));
       } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 9 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2260,7 +2244,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0153)
    EXPECT_TRUE(g->Join(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
@@ -2280,17 +2263,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
       } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2307,7 +2290,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0154)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    YIELD_WHILE(CurrentThreads() > 0);
    EXPECT_EQ(1, x);
@@ -2328,17 +2311,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0155)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 5 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2353,7 +2334,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0155)
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr7(OSLThread *pThread, void *arg)
@@ -2433,15 +2413,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+      } else if ( Externals + 2 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2466,8 +2446,10 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
+   YIELD_X(Externals);
+
    // This thread calls Destroy()
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
    for ( i = 0 ; i <= Externals ; ++i ) {
@@ -2553,17 +2535,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
       } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2574,9 +2554,10 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
+   YIELD_X(Externals);
 
    // Wake the first worker, then sleep on m_Sems[0].
-   // The first worker begins the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
+   // The first worker begins the self-referential Drain(), Post()'s m_Sems[0] to wake this thread,
    //  then sleeps again on m_Sems[1].
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
@@ -2584,12 +2565,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0157)
    // Wake Thr10 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(3);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    // Some worker does the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    for ( i = 0 ; i <= Externals ; ++i ) {
       m_pThrs[i]->Join();
@@ -2649,18 +2629,18 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0158)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
-      } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[0]) ));
-      } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+      if ( Externals == i ) {
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
+      } else if ( Externals + 1 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
+      } else if ( Externals + 2 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[0]) ));
+      } else if ( Externals + 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2680,7 +2660,9 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0158)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   EXPECT_TRUE(Destroy());
+   YIELD_X(Externals);
+
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    for ( i = 0 ; i < Externals ; ++i ) {
       m_pThrs[i]->Join();
@@ -2739,17 +2721,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
 
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
-      } else if ( 1 == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
-      } else if ( 2 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
+      } else if ( 3 == i ) {
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( 5 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
+      } else if ( 7 == i ) {
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2773,7 +2753,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    }
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 void OSAL_ThreadGroupSR_vp_tuple_0::Thr13(OSLThread *pThread, void *arg)
@@ -2852,15 +2831,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
-      } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+      } else if ( Drains + 5 == i ) {
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2869,6 +2848,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    // Wake Thr13 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[1]);
+   YIELD_X(5);
 
    // Wake the first worker, then sleep on m_Sems[0].
    // The first worker begins the self-Drain(), wakes us from sleep on m_Sems[0], then blocks
@@ -2879,12 +2859,13 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0160)
    // Wake Thr14 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(10);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
 
    // This thread calls Destroy()
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
    EXPECT_EQ(1, x);
 
    for ( i = 0 ; i < 2 ; ++i ) {
@@ -2969,17 +2950,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -2988,6 +2967,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
    // Wake Thr15 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[1]);
+   YIELD_X(3);
 
    // Wake the first worker, then sleep on m_Sems[0].
    // The first worker begins the self-referential Drain(), Post()'s m_Sems[0] to wake this thread,
@@ -2998,12 +2978,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0161)
    // Wake Thr16 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(3);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    // Some worker does the self-referential Destroy().
    EXPECT_TRUE(m_Sems[1].Post(1));
-
-   YIELD_WHILE(NULL != m_pGroup);
 
    for ( i = 0 ; i < 2 ; ++i ) {
       m_pThrs[i]->Join();
@@ -3061,17 +3040,17 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
+         EXPECT_TRUE(Add( new PostThenWaitD(m_Sems[0], m_Sems[1]) ));
       } else if ( Drains + 5 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new UnsafeCountUpD(x) ));
+         EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -3080,6 +3059,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
    // Wake Thr17 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(3);
 
    // Wake the first worker, then block on m_Sems[0].
    // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
@@ -3089,7 +3069,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
    EXPECT_TRUE(m_Sems[0].Wait());
 
    EXPECT_TRUE(m_Sems[1].Post(1));
-   EXPECT_TRUE(Destroy());
+   EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
    m_pThrs[0]->Join();
    EXPECT_EQ(2, m_Scratch[0]);
@@ -3143,17 +3123,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
 
    for ( i = 0 ; i < Drains + 50 ; ++i ) {
       if ( i < Drains ) {
-         EXPECT_TRUE(g->Add( new DrainThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
       } else if ( Drains == i ) {
-         EXPECT_TRUE(g->Add( new JoinThreadGroupD(g) ));
+         EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
       } else if ( Drains + 1 == i ) {
-         EXPECT_TRUE(g->Add( new PostD(m_Sems[1], w-1) ));
+         EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( Drains + 4 == i ) {
-         EXPECT_TRUE(g->Add( new DeleteThreadGroupD(g) ));
-      } else if ( Drains + 49 == i ) {
-         EXPECT_TRUE(g->Add( new SetThreadGroupPtrToNULLD(m_pGroup) ));
+         EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
-         EXPECT_TRUE(g->Add( new YieldD() ));
+         EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
@@ -3162,6 +3140,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
    // Wake Thr18 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(3);
 
    // Wake the first worker.
    // The first worker invokes the self-referential Join(), then wakes the remaining workers.
@@ -3172,7 +3151,6 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0163)
    EXPECT_EQ(2, m_Scratch[0]);
 
    YIELD_WHILE(CurrentThreads() > 0);
-   YIELD_WHILE(NULL != m_pGroup);
 }
 
 // ::testing::Range(begin, end [, step])

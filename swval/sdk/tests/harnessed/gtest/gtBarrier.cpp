@@ -73,7 +73,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -952,7 +952,7 @@ protected:
    AAL::btBool Wait() { return m_pBarrier->Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_pBarrier->Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    Barrier           *m_pBarrier;
    AAL::btUnsignedInt m_UnlockCount;
@@ -1210,7 +1210,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -1780,7 +1780,7 @@ protected:
    AAL::btBool Wait() { return m_Barrier.Wait(); }
    AAL::btBool Wait(AAL::btTime Timeout) { return m_Barrier.Wait(Timeout); }
 
-   AAL::btUnsignedInt CurrentThreads() const { return Config.CurrentThreads(); }
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
@@ -1864,7 +1864,7 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0185)
 
    // Pass the number of Wait() calls in m_Scratch[1]
    m_Scratch[1] = W;
-   m_Scratch[2] = 1000; // Timeout for Thr3's.
+   m_Scratch[2] = 3000; // Timeout for Thr3's.
 
    AAL::btUnsignedInt t;
    for ( t = 0 ; t < T ; ++t ) {
@@ -2142,7 +2142,7 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
    btTime       slept     = 0;
    const btTime sleepeach = 5;
-   const btTime thresh    = Timeout - ( Timeout / 20 ); // within 5%
+   const btTime thresh    = Timeout - ( Timeout / 5 ); // within 20%
 
    // Wake all threads, allowing them to block on the Barrier.
    EXPECT_TRUE(m_Sems[1].Post(NumThreads));

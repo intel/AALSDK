@@ -11,166 +11,289 @@
 
 #include "aalsdk/osal/Env.h"
 
+
 class EnvVarBasic : public ::testing::Test
 {
 protected:
 	EnvVarBasic() {}
 // virtual void SetUp() { }
-// virtual void TearDown() { }
-	Environment m_env;
+   virtual void TearDown()
+   {
+      Environment::ReleaseObj();
+   }
 };
 
+#if defined( __AAL_WINDOWS__ )
 
-TEST_F(EnvVarBasic, SetNewEnvVar /*TODO rename test case to test number per the wiki*/ )
-{
-   // Writes an Environment variable and verifies it.
-
-
-   // TODO Comment describing your test methodology.
-
-
-#if   defined( __AAL_LINUX__ )
-
-   // TODO If my_var exists before executing the test, then the test will fail.
-   // Instead of failing the test here, don't use an ASSERT_ or EXPECT_. Check
-   //  for the existence of the variable and select another name until you find one
-   //  that doesn't exist.
-
-   ASSERT_TRUE(getenv("my_var") == NULL) << "my_var already exists\n";
-
-#elif defined( __AAL_WINDOWS__ )
-
-   ASSERT_EQ(GetEnvironmentVariable("my_var", NULL,0), 0) << "my_var already exists\n"
+	char* buff;
+	DWORD bufsize;
+	DWORD dwRet;
 
 #endif
 
-	EXPECT_TRUE(m_env.Set("my_var", "my_val"));
+TEST_F(EnvVarBasic, aal0043)
+{
+   // Writes an Environment variable and verifies it.
 
-#if defined( __AAL_LINUX__ )
+   char EnvVar[20] = "my_var";
+   string StrVar;
+   int randomNum;
 
-   EXPECT_STREQ(getenv("my_var"), "my_val");
+   // Check for the existence of the variable and select another name until we find one
+   // that doesn't exist.
+#if   defined( __AAL_LINUX__ )
+
+   while (getenv(EnvVar) != NULL)
+   {
+	   randomNum = rand()%100;
+	   sprintf(EnvVar, "my_var_%d", randomNum);
+   }
 
 #elif defined( __AAL_WINDOWS__ )
 
-   dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
+   while (GetEnvironmentVariable(EnvVar, NULL,0) != 0)
+   {
+	   randomNum = rand();
+	   sprintf(EnvVar, "my_var_%d", randomNum);
+   }
+
+#endif
+
+   //Set the environment variable with a value
+    StrVar.assign(EnvVar);
+	EXPECT_TRUE(Environment::GetObj()->Set(StrVar, "my_val"));
+
+	//Verify that the environment variable has the expected value.
+	//Unset the environment variable after the verification.
+#if defined( __AAL_LINUX__ )
+
+   EXPECT_STREQ(getenv(EnvVar), "my_val");
+   unsetenv(EnvVar);
+   EXPECT_TRUE(getenv(EnvVar) == NULL);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   dwRet = GetEnvironmentVariable(EnvVar, buff, bufsize);
    EXPECT_STREQ(buff, "my_val");
+   EXPECT_FALSE(0 == SetEnvironmentVariable(EnvVar, NULL));
+   EXPECT_TRUE(0 == GetEnvironmentVariable(EnvVar, NULL, 0));
 
 #endif
 }
 
-TEST_F(EnvVarBasic, GetEnvVar /*TODO rename test case to test number per the wiki*/ )
+TEST_F(EnvVarBasic, aal0044 )
 {
    // Reads an Environment variable
 
+	std::string retVal;
 
-   // TODO Comment describing your test methodology.
-
+	//Set an environment variable with a value.
+	//If the environment variable does not exist, a new one will be created
+	//Verify that the environment variable has the expected value
 
 #if defined( __AAL_LINUX__ )
 
-   // TODO don't assume that my_var will exist prior to this test case. That won't
-   // always be the case, particularly when this case is run in isolation (--gtest_filter=*GetEnvVar*).
-
+   ASSERT_TRUE(0 == setenv("my_var", "my_val", 1));
    ASSERT_STREQ(getenv("my_var"), "my_val");
 
 #elif defined( __AAL_WINDOWS__ )
 
-  dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
-  ASSERT_STREQ(buff, "my_val");
+   ASSERT_FALSE(0 == SetEnvironmentVariable("my_var", "my_val"));
+   dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
+   ASSERT_STREQ(buff, "my_val");
 
 #endif
 
-	EXPECT_STREQ("my_val", m_env.Get("my_var"));
+   //Verify that Get() returns the expected value.
+   EXPECT_TRUE(Environment::GetObj()->Get("my_var", retVal));
+   EXPECT_STREQ("my_val", retVal.c_str());
+
+   //Unset the Environment variable.
+#if defined( __AAL_LINUX__ )
+   unsetenv("my_var");
+   EXPECT_TRUE(getenv("my_var") == NULL);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   EXPECT_FALSE(0 == SetEnvironmentVariable("my_var", NULL));
+   EXPECT_TRUE(0 == GetEnvironmentVariable("my_var", NULL, 0));
+
+#endif
 }
 
-TEST_F(EnvVarBasic, OverwriteEnvVar /*TODO rename test case to test number per the wiki*/ )
+TEST_F(EnvVarBasic, aal0045 )
 {
    // Overwrites an existing environment variable with overwrite flag set to true.
    // Verifies that the env var has the new value.
 
+	std::string retVal;
 
-
-   // TODO Comment describing your test methodology.
-
-
+	//Set an environment variable with an initial value.
+	//If the environment variable does not exist, a new one will be created.
+	//Verify that the environment variable exists.
 #if defined( __AAL_LINUX__ )
 
-   // TODO don't assume that my_var will exist. Not always the case (--gtest_filter=*OverwriteEnvVar*).
-   // Instead, use the OS-specific SDK to set a value to something you expect.
-
-        ASSERT_FALSE(getenv("my_var") == NULL) << "my_var does not exist\n";
+	ASSERT_TRUE(0 == setenv("my_var", "initial_val", 1));
+	ASSERT_FALSE(getenv("my_var") == NULL) << "my_var does not exist\n";
 
 #elif defined( __AAL_WINDOWS__ )
-        ASSERT_NE(GetEnvironmentVariable("my_var", NULL,0), 0) << "my_var does not exist\n"
+
+	ASSERT_FALSE(0 == SetEnvironmentVariable("my_var", "initial_val"));
+	ASSERT_NE(GetEnvironmentVariable("my_var", NULL,0), 0) << "my_var does not exist\n"
 
 #endif
 
-	EXPECT_TRUE(m_env.Set("my_var", "new_val", true));
-	EXPECT_STREQ("new_val", m_env.Get("my_var"));
+    //Overwrite the environment variable with a new value.
+	EXPECT_TRUE(Environment::GetObj()->Set("my_var", "new_val", true));
 
+	//Verify that the environment variable successfully overwritten.
+	//Unset the environment variable after the verification.
 #if defined( __AAL_LINUX__ )
-        EXPECT_STREQ(getenv("my_var"), "new_val");
+
+	EXPECT_STREQ(getenv("my_var"), "new_val");
+	unsetenv("my_var");
+    EXPECT_TRUE(getenv("my_var") == NULL);
 
 #elif defined( __AAL_WINDOWS__ )
-        dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
-        EXPECT_STREQ(buff, "new_val");
+
+	dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
+	EXPECT_STREQ(buff, "new_val");
+	EXPECT_FALSE(0 == SetEnvironmentVariable("my_var", NULL));
+    EXPECT_TRUE(0 == GetEnvironmentVariable("my_var", NULL, 0));
+
 #endif
 }
 
 
-TEST_F(EnvVarBasic, NoOverwriteEnvVar /*TODO rename test case to test number per the wiki*/ )
+TEST_F(EnvVarBasic, aal0046 )
 {
    //Overwrites an existing environment variable with overwrite flag set to false.
    //Verifies that the env var has the original value.
 
+	std::string retVal;
 
-   // TODO Comment describing your test methodology.
-
-
-   // TODO don't assume that my_var exists.
-
-	EXPECT_TRUE(m_env.Set("my_var", "initial_val", true));
-
+	//Set an environment variable with an initial value.
+	//If the environment variable does not exist, a new one will be created.
+	//Verify that the environment variable is initialised.
 #if defined( __AAL_LINUX__ )
-		ASSERT_STREQ(getenv("my_var"), "initial_val") << "my_var failed to initialise \n";
+
+	ASSERT_TRUE(0 == setenv("my_var", "initial_val", 1));
+	ASSERT_STREQ(getenv("my_var"), "initial_val") << "my_var failed to initialise \n";
 
 #elif defined( __AAL_WINDOWS__ )
-        dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
-		ASSERT_STREQ(buff, "initial_val") << "my_var failed to initialise \n";
+
+	ASSERT_FALSE(0 == SetEnvironmentVariable("my_var", "initial_val"));
+	dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
+	ASSERT_STREQ(buff, "initial_val") << "my_var failed to initialise \n";
+
 #endif
 
-	EXPECT_TRUE(m_env.Set("my_var", "another_val", false));
-	EXPECT_STRNE("another_val", m_env.Get("my_var"));
-	EXPECT_STREQ("initial_val", m_env.Get("my_var"));
+	//Overwrite the environment variable with a new value (overwrite flag is set to false).
+	EXPECT_TRUE(Environment::GetObj()->Set("my_var", "another_val", false));
 
+	//Verify that the environment variable was not overwritten.
+	//Unset the Environment variable after the verification.
 #if defined( __AAL_LINUX__ )
-		EXPECT_STREQ(getenv("my_var"), "initial_val");
+
+	EXPECT_STREQ(getenv("my_var"), "initial_val");
+	unsetenv("my_var");
+	EXPECT_TRUE(getenv("my_var") == NULL);
 
 #elif defined( __AAL_WINDOWS__ )
-		bufsize = GetEnvironmentVariable("my_var", buff, bufsize);
-		EXPECT_STREQ(buff, "initial_val") << "my_var failed to initialise \n";
+
+	dwRet = GetEnvironmentVariable("my_var", buff, bufsize);
+	EXPECT_STREQ(buff, "initial_val") << "my_var was overwritten when the'overwrite' flag was set to false \n";
+	EXPECT_FALSE(0 == SetEnvironmentVariable("my_var", NULL));
+	EXPECT_TRUE(0 == GetEnvironmentVariable("my_var", NULL, 0));
+
 #endif
 }
 
-TEST_F(EnvVarBasic, GetNonExistingEnvVar /*TODO rename test case to test number per the wiki*/ )
+TEST_F(EnvVarBasic, aal0047 )
 {
    // Accesses a non-existing environment variable
 
+	char EnvVar[20] = "absent_var";
+	int randomNum;
+	std::string StrVar, retVal;
 
-   // TODO Comment describing your test methodology.
-
-
+	 // Find a variable name that does not exist.
 #if defined( __AAL_LINUX__ )
 
-   // TODO Don't fail here is variable does exist - try another variable name.
-
-	ASSERT_TRUE(getenv("absent_var") == NULL) << "absent_var already exists\n";
+	 while (getenv(EnvVar) != NULL)
+    {
+	    randomNum = rand()%100;
+	    sprintf(EnvVar, "absent_var_%d", randomNum);
+    }
 
 #elif defined( __AAL_WINDOWS__ )
-	ASSERT_EQ(GetEnvironmentVariable("absent_var", NULL,0), 0) << "absent_var already exists\n";
+
+	 while (GetEnvironmentVariable(EnvVar, NULL,0) != 0)
+	 {
+	 	randomNum = rand();
+	 	sprintf(EnvVar, "absent_var_%d", randomNum);
+	 }
 
 #endif
 
-	EXPECT_TRUE(m_env.Get("absent_var") == NULL);
+	//Verify that Get() return NULL when it is used to access a non-existing environment variable.
+	 StrVar.assign(EnvVar);
+	 EXPECT_FALSE(Environment::GetObj()->Get(StrVar, retVal));
 }
 
+TEST_F(EnvVarBasic, aal0131 )
+{
+   // Sends an empty environment variable to be fetched by Get()
+	std::string retVal;
+
+	//Verify that Get() return NULL when it is used to access a non-existing environment variable.
+	 EXPECT_FALSE(Environment::GetObj()->Get("", retVal));
+}
+
+TEST_F(EnvVarBasic, aal0132 )
+{
+   // Sends invalid arguments to Set()
+
+	char EnvVar[20] = "my_var";
+	int randomNum;
+	std::string StrVar;
+
+	 // Find a variable name that does not exist.
+#if defined( __AAL_LINUX__ )
+
+	 while (getenv(EnvVar) != NULL)
+    {
+	    randomNum = rand()%100;
+	    sprintf(EnvVar, "my_var_%d", randomNum);
+    }
+
+#elif defined( __AAL_WINDOWS__ )
+
+	 while (GetEnvironmentVariable(EnvVar, NULL,0) != 0)
+	 {
+	 	randomNum = rand();
+	 	sprintf(EnvVar, "my_var_%d", randomNum);
+	 }
+
+#endif
+
+	 //Send an empty environment variable and an empty value as arguments to Set().
+	 EXPECT_FALSE(Environment::GetObj()->Set("", ""));
+
+	//Send a valid environment variable and an empty value as arguments to Set().
+	 StrVar.assign(EnvVar);
+	 EXPECT_TRUE(Environment::GetObj()->Set(StrVar, "")); //todo unset
+
+	 //unset the environment variable
+#if defined( __AAL_LINUX__ )
+
+   unsetenv(EnvVar);
+   EXPECT_TRUE(getenv(EnvVar) == NULL);
+
+#elif defined( __AAL_WINDOWS__ )
+
+   EXPECT_FALSE(0 == SetEnvironmentVariable(EnvVar, NULL));
+   EXPECT_TRUE(0 == GetEnvironmentVariable(EnvVar, NULL, 0));
+
+#endif
+}

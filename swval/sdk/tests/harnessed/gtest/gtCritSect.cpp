@@ -49,6 +49,7 @@ void OSAL_CritSect_f::Thr0(OSLThread *pThread, void *pContext)
 
    pTC->m_CS.Lock();      // blocks if already locked.
    pTC->m_Scratch[0] = 1; // signal that we're exiting.
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0021)
@@ -79,6 +80,7 @@ void OSAL_CritSect_f::Thr1(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[0] = 1;
    pTC->m_CS.Lock();
    pTC->m_Scratch[1] = 1;
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0022)
@@ -140,6 +142,7 @@ void OSAL_CritSect_f::Thr2(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[0] = 1;
    pTC->m_CS.Lock();
    pTC->m_Scratch[1] = 1;
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0025)
@@ -199,6 +202,7 @@ void OSAL_CritSect_f::Thr5(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[0] = 1;
    pTC->m_CS.Lock();
    pTC->m_Scratch[1] = 1;
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0027)
@@ -263,6 +267,7 @@ void OSAL_CritSect_f::Thr3(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[0] = 1;
    pTC->m_CS.Lock();
    pTC->m_Scratch[1] = 1;
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0028)
@@ -331,6 +336,7 @@ void OSAL_CritSect_f::Thr4(OSLThread *pThread, void *pContext)
 
    pTC->m_CS.Lock();
    pTC->m_Scratch[1] = 1;
+   pTC->m_CS.Unlock();
 }
 
 TEST_F(OSAL_CritSect_f, aal0042)

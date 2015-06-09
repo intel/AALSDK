@@ -1,28 +1,15 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-declare ARGS=''
-while [ "x$1" != x ]; do
-
-   case $1 in
-      --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
-      ;;
-      *)
-         ARGS="${ARGS} $1"
-      ;;
-   esac
-
-   shift
-done
-
 shopt -o -s nounset
 
 declare -r SCRIPT_NAME='run-nightly'
 
 . ./run-common
 
-declare -r RANDOMIZE="--gtest-opt=--gtest_shuffle --gtest-opt=--gtest_random_seed=${RANDOM} --gtest-opt=--gtest_repeat=200"
+declare -ri REPEAT=200
+declare -r  ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
 
-run_nightly ${ARGS} ${RANDOMIZE}
+setup
+run_nightly ${ARGS} ${1+"$@"}
 exit $?

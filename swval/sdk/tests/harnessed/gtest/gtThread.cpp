@@ -449,33 +449,37 @@ protected:
       }
    }
 
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+
    OSLThread          *m_pThrs[3];
    btTID               m_TIDs[3];
    volatile btUIntPtr  m_Scratch[10];
    CSemaphore          m_Semaphore;
 
    static void Thr0(OSLThread * , void * );
-
    static void Thr1(OSLThread * , void * );
-
    static void Thr2(OSLThread * , void * );
-
    static void Thr3(OSLThread * , void * );
    static void Thr4(OSLThread * , void * );
-
    static void Thr5(OSLThread * , void * );
    static void Thr6(OSLThread * , void * );
-
    static void Thr7(OSLThread * , void * );
    static void Thr8(OSLThread * , void * );
-
    static void Thr9(OSLThread * , void * );
-
    static void Thr10(OSLThread * , void * );
-
    static void Thr11(OSLThread * , void * );
-
    static void Thr12(OSLThread * , void * );
+   static void Thr13(OSLThread * , void * );
+   static void Thr14(OSLThread * , void * );
+   static void Thr15(OSLThread * , void * );
+   static void Thr16(OSLThread * , void * );
+   static void Thr17(OSLThread * , void * );
+   static void Thr18(OSLThread * , void * );
+   static void Thr19(OSLThread * , void * );
+   static void Thr20(OSLThread * , void * );
+   static void Thr21(OSLThread * , void * );
+   static void Thr22(OSLThread * , void * );
+   static void Thr23(OSLThread * , void * );
 };
 
 void OSAL_Thread_f::Thr0(OSLThread *pThread, void *pContext)
@@ -1069,23 +1073,14 @@ void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
    OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
-#if   defined( __AAL_WINDOWS__ )
-   FAIL() << "need to implement for windows";
-#elif defined( __AAL_LINUX__ )
-   // Register a one-shot signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, true));
-#endif // OS
-
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
-
    pTC->m_Semaphore.Wait();
 }
 
 TEST_F(OSAL_Thread_f, aal0017)
 {
-   // OSLThread::Join() - what is expected behavior of Join() when the target thread is OSLThread::Unblock()'ed?
+   // After calling OSLThread::Cancel() for a thread other than the current thread, the current
+   // thread should be able to immediately OSLThread::Join() the canceled thread.
 
    ASSERT_TRUE(m_Semaphore.Create(0, 1));
 
@@ -1098,9 +1093,12 @@ TEST_F(OSAL_Thread_f, aal0017)
 
    // wait for Thr10 to begin.
    YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(5);
 
    // cancel the child thread.
    m_pThrs[0]->Cancel();
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
 
    m_pThrs[0]->Join();
    delete m_pThrs[0];
@@ -1128,5 +1126,404 @@ TEST_F(OSAL_Thread_f, aal0065)
    delete m_pThrs[0];
 
    EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr13(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0164)
+{
+   // OSLThread::Join() safeguards against multiple Join().
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr13,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Join();
+   m_pThrs[0]->Join();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr14(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(pTC->m_Semaphore.Wait());
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0165)
+{
+   // OSLThread::Join() safeguards against Join() after Detach().
+
+   EXPECT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr14,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   m_pThrs[0]->Detach();
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
+
+   m_pThrs[0]->Join();
+
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+   EXPECT_EQ(1, m_Scratch[0]);
+   EXPECT_EQ(1, m_Scratch[1]);
+
+   YIELD_WHILE(CurrentThreads() > 0);
+   delete m_pThrs[0];
+}
+
+void OSAL_Thread_f::Thr15(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0166)
+{
+   // OSLThread::Detach() behaves robustly when true == ThisThread.
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr15,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              true);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Detach();
+   // We still need to delete here, because StartThread was called from the constructor.
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr16(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(pTC->m_Semaphore.Wait());
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0167)
+{
+   // OSLThread::Detach() safeguards against multiple Detach().
+
+   EXPECT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr16,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   m_pThrs[0]->Detach();
+   m_pThrs[0]->Detach();
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
+
+   m_pThrs[0]->Detach();
+
+   YIELD_WHILE(0 == m_Scratch[1]);
+
+   EXPECT_EQ(1, m_Scratch[0]);
+   EXPECT_EQ(1, m_Scratch[1]);
+
+   YIELD_WHILE(CurrentThreads() > 0);
+   delete m_pThrs[0];
+}
+
+void OSAL_Thread_f::Thr17(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0168)
+{
+   // OSLThread::Detach() safeguards against Detach() after Join().
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr17,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Join();
+   m_pThrs[0]->Detach();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr18(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0169)
+{
+   // OSLThread::Cancel() behaves robustly when true == ThisThread.
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr18,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              true);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Cancel();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr19(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0170)
+{
+   // OSLThread::Cancel() safeguards against Cancel() after Join().
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr19,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Join();
+   m_pThrs[0]->Cancel();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+}
+
+void OSAL_Thread_f::Thr20(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(pTC->m_Semaphore.Wait());
+
+#ifdef __AAL_LINUX__
+   // The following may be redundant, as pthread_cond_wait() is a cancellation point.
+   // Such assumptions are dangerous, however, thus the following.
+   pthread_testcancel();
+#endif // __AAL_LINUX__
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0171)
+{
+   // OSLThread::Cancel() cancels the thread according to the cancellation policy
+   // for pthread_cancel() [Linux].
+
+   EXPECT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr20,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+   YIELD_X(5);
+
+   m_pThrs[0]->Cancel();
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
+
+   YIELD_WHILE(CurrentThreads() > 0);
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(0, m_Scratch[1]);
+}
+
+void OSAL_Thread_f::Thr21(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_TIDs[1]    = GetThreadID();
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(pTC->m_Semaphore.Wait());
+
+   EXPECT_TRUE(ThreadIDEqual(pTC->m_TIDs[0], pTC->m_TIDs[0]));
+   EXPECT_TRUE(ThreadIDEqual(pTC->m_TIDs[1], pTC->m_TIDs[1]));
+
+   EXPECT_TRUE(ThreadIDEqual(GetThreadID(),  pTC->m_TIDs[1]));
+   EXPECT_TRUE(ThreadIDEqual(pThread->tid(), pTC->m_TIDs[1]));
+
+   EXPECT_FALSE(ThreadIDEqual(pTC->m_TIDs[0], pTC->m_TIDs[1]));
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0200)
+{
+   // ThreadIDEqual() returns true if the two arguments identify the same thread,
+   // and false otherwise.
+
+   m_TIDs[0] = GetThreadID();
+
+   EXPECT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr21,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   EXPECT_TRUE(ThreadIDEqual(m_TIDs[0], m_TIDs[0]));
+   EXPECT_TRUE(ThreadIDEqual(m_TIDs[1], m_TIDs[1]));
+
+   EXPECT_TRUE(ThreadIDEqual(GetThreadID(), m_TIDs[0]));
+   EXPECT_TRUE(ThreadIDEqual(m_pThrs[0]->tid(), m_TIDs[1]));
+
+   EXPECT_FALSE(ThreadIDEqual(m_TIDs[0], m_TIDs[1]));
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
+
+   m_pThrs[0]->Join();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[1]);
+}
+
+void OSAL_Thread_f::Thr22(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_TIDs[1]    = GetThreadID();
+   pTC->m_Scratch[0] = 1;
+
+   EXPECT_TRUE(pTC->m_Semaphore.Wait());
+
+   EXPECT_FALSE(pThread->IsThisThread(pTC->m_TIDs[0]));
+   EXPECT_TRUE(pThread->IsThisThread(pTC->m_TIDs[1]));
+   EXPECT_TRUE(pThread->IsThisThread(pThread->tid()));
+
+   pTC->m_Scratch[1] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0201)
+{
+   // OSLThread::IsThisThread() returns true if the argument matches the thread ID of the
+   // OSLThread object, false otherwise.
+
+   m_TIDs[0] = GetThreadID();
+
+   EXPECT_TRUE(m_Semaphore.Create(0, 1));
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr22,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   YIELD_WHILE(0 == m_Scratch[0]);
+
+   EXPECT_FALSE(m_pThrs[0]->IsThisThread(m_TIDs[0]));
+   EXPECT_TRUE(m_pThrs[0]->IsThisThread(m_TIDs[1]));
+   EXPECT_TRUE(m_pThrs[0]->IsThisThread(m_pThrs[0]->tid()));
+
+   EXPECT_TRUE(m_Semaphore.Post(1));
+
+   m_pThrs[0]->Join();
+
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[1]);
+}
+
+void OSAL_Thread_f::Thr23(OSLThread *pThread, void *pContext)
+{
+   OSAL_Thread_f *pTC = static_cast<OSAL_Thread_f *>(pContext);
+   ASSERT_NONNULL(pTC);
+
+   pTC->m_Scratch[0] = 1;
+
+   ExitCurrentThread(pTC->m_Scratch[1]);
+
+   pTC->m_Scratch[2] = 1;
+}
+
+TEST_F(OSAL_Thread_f, aal0202)
+{
+   // ExitCurrentThread() causes the current thread to exit, with the given exit status.
+
+   m_Scratch[1] = 0xdeadbeef;
+
+   m_pThrs[0] = new OSLThread(OSAL_Thread_f::Thr23,
+                              OSLThread::THREADPRIORITY_NORMAL,
+                              this,
+                              false);
+
+   EXPECT_TRUE(m_pThrs[0]->IsOK());
+
+   m_pThrs[0]->Join();
+   delete m_pThrs[0];
+
+   EXPECT_EQ(1, m_Scratch[0]);
+   EXPECT_EQ(0, m_Scratch[2]);
 }
 

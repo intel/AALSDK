@@ -150,10 +150,13 @@ private:
       virtual ~AutoResetManager();
 
       void Create();
+      void Destroy();
 
       void UnblockAll();
       void AddWaiter();
-      void RemoveWaiter();
+      // true if the caller is to unlock the count mutex (CountUnlock()).
+      // false if the count mutex was already unlocked.
+      AAL::btBool RemoveWaiter();
 
       AAL::btUnsignedInt NumWaiters() const;
 
@@ -166,6 +169,7 @@ private:
       Barrier           *m_pBarrier;
       AAL::btUnsignedInt m_NumWaiters;    // number of threads blocked in Wait() calls on a locked Barrier.
       AAL::btUnsignedInt m_NumPreWaiters; // number of threads blocked in Wait() by an auto-reset.
+      AAL::btTime        m_WaitTimeout;
 #if   defined( __AAL_WINDOWS__ )
       HANDLE             m_hREvent;       // manual-reset event for auto-reset done.
       HANDLE             m_hZEvent;       // manual-reset event for zero waiters.
@@ -175,6 +179,9 @@ private:
       pthread_mutex_t    m_Zmutex;
       pthread_cond_t     m_Zcondition;
 #endif // OS
+
+      void WaitForAutoResetCompletion();
+      void WaitForAutoResetCompletion(AAL::btTime );
 
       void CountLock();
       void CountUnlock();

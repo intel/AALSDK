@@ -41,6 +41,8 @@
 #ifndef __AALSDK_OSAL_ENV_H__
 #define __AALSDK_OSAL_ENV_H__
 #include <aalsdk/AALDefs.h>
+#include <aalsdk/osal/CriticalSection.h>
+#include <aalsdk/CUnCopyable.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -48,100 +50,54 @@ BEGIN_NAMESPACE(AAL)
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
 //=============================================================================
-class Environment
+class Environment : public CUnCopyable
 {
 public:
-   Environment() :
-      m_buf(NULL)
-   {}
+   virtual ~Environment() {}
 
-   virtual ~Environment()
-   {
-      if ( NULL != m_buf ) {
-          delete m_buf;
-          m_buf = NULL;
-      }
-   }
+   //=============================================================================
+   /// GetObj
+   /// Get instance of the Environment class
+   /// @returns pointer to instance of Environment class
+   /// Comments:
+   //=============================================================================
+   static Environment * GetObj();
+
+   //=============================================================================
+   /// ReleaseObj
+   /// Release instance of the Environment class
+   /// Comments:
+   //=============================================================================
+   static void ReleaseObj();
 
    //=============================================================================
    /// Get
    /// Get the value of a variable
    /// @param[in] var - variable to query
-   ///  @returns pointer to value or NULL if not set.
+   /// @param[in] val - reference variable to get the value
+   /// @returns true - success.
    /// Comments:
    //=============================================================================
+   btBool Get(std::string var, std::string &val);
 
-   // TODO Test case: Environment::Get() behaves robustly when var is NULL.
-   // TODO Test case: thread safety for Environment::Get().
-   btcString Get(btcString var)
-   {
-#if defined( __AAL_LINUX__ )
-
-      return  std::getenv(var);
-
-#elif defined( __AAL_WINDOWS__ )
-
-      DWORD bufsize = GetEnvironmentVariable(var, NULL, 0);
-      if ( 0 == bufsize ) {
-         // variable doesn't exist.
-         return NULL;
-      }
-
-      // TODO this isn't thread safe.
-
-      if ( NULL != m_buf ) {
-         delete m_buf;
-      }
-
-      m_buf = new btByte[bufsize];
-
-      // TODO NULL check for above new?
-
-      GetEnvironmentVariable(var, m_buf,bufsize);
-
-      // TODO check return code.
-
-      return m_buf;
-#endif
-   }
-
-//=============================================================================
-///  Set
-///  Set the value of a variable
-/// @param[in] var - variable to query
-/// @param[in] val - value to set it to
-/// @param[in] overwrite - what to do if it already exists
-/// @returns true - success
-//=============================================================================
-
-   // TODO Test case: Environment::Set() behaves robustly when var is NULL.
-   // TODO Test case: Environment::Set() behaves robustly when val is NULL.
-   // TODO Test case: thread safety for Environment::Set().
-
-   btBool Set(btcString var, btcString val, btBool overwrite=true)
-   {
-#if defined( __AAL_LINUX__ )
-
-      int ret = setenv(var, val, overwrite ? 1 : 0);
-      return 0 == ret;
-
-#elif defined( __AAL_WINDOWS__ )
-
-      if ( !overwite ) {
-
-         // TODO This is inefficient - when getting the same var twice, we will
-         // delete / new m_buf each time.
-
-         if ( NULL!= getVal() );
-         // Already exists
-         return false;
-      }
-      return SetEnvironmentVariable(var,val);
-#endif
-   }
+   //=============================================================================
+   ///  Set
+   ///  Set the value of a variable
+   /// @param[in] var - variable to query
+   /// @param[in] val - value to set it to
+   /// @param[in] overwrite - what to do if it already exists
+   /// @returns true - success
+   //==============================================================================
+   btBool Set(std::string var, std::string val, btBool overwrite=true);
 
 private:
-   btString m_buf;
+   Environment();
+
+   Environment(Environment const & ); //copy constructor is made private so that singleton cannot be copied
+   Environment & operator = (const Environment & ); //Assignment operator is made private
+
+   static Environment    *sm_EnvObj;
+   static CriticalSection sm_Lock;
 };
 
 END_NAMESPACE(AAL)

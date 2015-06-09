@@ -32,12 +32,14 @@
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation
+///          Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 05/08/2008     HM       Comments & License
-/// 01/04/2009     HM       Updated Copyright@endverbatim
-/// 03/06/2014     JG       Complete rewrite.
+/// 01/04/2009     HM       Updated Copyright
+/// 03/06/2014     JG       Complete rewrite
+/// 05/07/2015     TSW      Complete rewrite@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_OSAL_THREADGROUP_H__
 #define __AALSDK_OSAL_THREADGROUP_H__
@@ -84,12 +86,13 @@ public:
    // return false if the queue could not be drained; otherwise true.
    virtual AAL::btBool                  Drain()                = 0;
 
+   virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
+
 protected:
    virtual AAL::btBool       CreateWorkerThread(ThreadProc ,
                                                 OSLThread::ThreadPriority ,
                                                 void * )       = 0;
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime )  = 0;
-   virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
 };
 
 
@@ -99,7 +102,8 @@ protected:
 // Interface: public
 // Comments: 
 //=============================================================================
-class OSAL_API OSLThreadGroup : public IThreadGroup
+class OSAL_API OSLThreadGroup : public IThreadGroup,
+                                public CriticalSection
 {
 public:
    // Default Min thread is to let the TG decide. Max < min then Max == Min
@@ -119,6 +123,7 @@ public:
    virtual AAL::btBool                  Drain()                     { return m_pState->Drain();           }
    virtual void                          Stop()                     { m_pState->Stop();                   }
    virtual AAL::btBool                  Start()                     { return m_pState->Start();           }
+   virtual AAL::btBool                Destroy(AAL::btTime Timeout);
    // </IThreadGroup>
 
 protected:
@@ -127,9 +132,6 @@ protected:
 
    virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout)
    { return m_pState->WaitForAllWorkersToStart(Timeout); }
-
-   virtual AAL::btBool Destroy(AAL::btTime Timeout)
-   { return m_pState->Destroy(Timeout); }
 
 private:
    //
@@ -156,6 +158,7 @@ private:
       virtual AAL::btBool                  Drain();
       virtual void                          Stop();
       virtual AAL::btBool                  Start();
+      virtual AAL::btBool                Destroy(AAL::btTime );
       // </IThreadGroup>
 
    protected:
@@ -211,15 +214,11 @@ private:
          // return true if tid found to be a Drain()'er.
          AAL::btBool End(AAL::btTID tid, Barrier *pDrainBarrier);
 
-         // Called when a thread group worker exits in the usual way. Removes all instances
-         //  of tid from the self-drainers list, and adjusts m_DrainNestLevel.
-         void WorkerHasExited(AAL::btTID tid);
-
          // External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
          // In the case of self-referential Join() and self-referential Destroy(), a worker is
          //  forced to self-terminate before it can Post() the Barrier object stored within
-         //  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier (and zero
-         //  m_DrainNestLevel) here so that external drainers can resume.
+         //  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier here so that external
+         //  drainers can resume.
          AAL::btBool ReleaseAllDrainers();
 
          // A thread group worker may execute a self-referential Drain(), and go on to execute
@@ -232,14 +231,53 @@ private:
          // Query the current Drain() nesting level (number of overlapping Drain() calls).
          AAL::btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
 
+         // Signal that the last participant in the current Drain() is hands-off the thread group.
+         void AllDrainersAreDone();
+
+         // Wait for all threads involved in Drain() to be hands-off the object.
+         void WaitForAllDrainersDone();
+
       protected:
-         typedef std::list<AAL::btTID>    drainer_list_t;
-         typedef drainer_list_t::iterator drainer_list_iter;
+
+         // Functor that signals completion of a call to OSLThreadGroup::Drain().
+         class NestedBarrierPostD : public IDispatchable
+         {
+         public:
+            NestedBarrierPostD(IDispatchable *pContained,
+                               DrainManager  *pDrainMgr) :
+               m_pContained(pContained),
+               m_pDrainMgr(pDrainMgr)
+            {}
+
+            void operator() ()
+            {
+               (*m_pContained) ();                        // Execute the contained work item.
+               m_pDrainMgr->CompleteNestedWorkItem(this); // signal its completion.
+            }
+
+         protected:
+            IDispatchable *m_pContained;
+            DrainManager  *m_pDrainMgr;
+         };
+
+         typedef std::list<AAL::btTID>           drainer_list_t;
+         typedef drainer_list_t::iterator        drainer_list_iter;
+
+         typedef std::list<NestedBarrierPostD *> nested_list_t;
+         typedef nested_list_t::iterator         nested_list_iter;
+
+         void CompleteNestedWorkItem(NestedBarrierPostD *);
+         void DestructMembers();
 
          ThrGrpState       *m_pTGS;
          AAL::btUnsignedInt m_DrainNestLevel;
-         Barrier            m_DrainBarrier;
+         AAL::btTime        m_WaitTimeout;
+         Barrier            m_DrainBarrier;       // follows the # of work items involved in the Drain().
+         Barrier            m_DrainerDoneBarrier; // becomes signaled when the last nested Drain()'er is hands-off.
          drainer_list_t     m_SelfDrainers;
+         nested_list_t      m_NestedWorkItems;
+
+         friend class ThrGrpState;
       };
 
       DrainManager       m_DrainManager;
@@ -249,13 +287,13 @@ private:
       // <IThreadGroup>
       virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
       virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
-      virtual AAL::btBool Destroy(AAL::btTime );
       // </IThreadGroup>
 
       AAL::btBool     DestroyWhileDraining(AAL::btTime );
       AAL::btBool      DestroyWhileJoining(AAL::btTime );
 
       AAL::btBool                  Quiesce(AAL::btTime);
+      void                 DestructMembers();
 
       void                WorkerHasStarted(OSLThread * );
       void                 WorkerHasExited(OSLThread * );
@@ -274,6 +312,7 @@ private:
    // lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
+   AAL::btBool  m_bDestroyed;
    AAL::btTime  m_JoinTimeout;
    ThrGrpState *m_pState;
 };

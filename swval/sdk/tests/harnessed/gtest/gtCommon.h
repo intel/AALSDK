@@ -30,7 +30,7 @@ AAL::btUIntPtr DbgOSLThreadCount();
 class GlobalTestConfig
 {
 public:
-   GlobalTestConfig() {}
+   static const GlobalTestConfig & GetInstance();
 
    // Certain thread tests require entering a tight loop, yielding the cpu in order
    // to allow other threads to reach some state. Defines the max number of polls
@@ -46,8 +46,12 @@ public:
 #endif // OS
    }
 
+protected:
+   GlobalTestConfig();
+   virtual ~GlobalTestConfig();
+
+   static GlobalTestConfig sm_Instance;
 };
-extern GlobalTestConfig Config;
 
 // Enter a tight loop, yielding the cpu so long as __predicate evaluates to true.
 #define YIELD_WHILE(__predicate) \
@@ -58,28 +62,67 @@ do                               \
    }                             \
 }while(0)
 
-// Yield the cpu Config.MaxCPUYieldPolls() times.
-#define YIELD_N()                                        \
-do                                                       \
-{                                                        \
-   AAL::btUIntPtr       __i;                             \
-   const AAL::btUIntPtr __N = Config.MaxCPUYieldPolls(); \
-   for ( __i = 0 ; __i < __N ; ++__i ) {                 \
-      cpu_yield();                                       \
-   }                                                     \
+// Yield the cpu the given number of times.
+#define YIELD_X(__x)                                 \
+do                                                   \
+{                                                    \
+   AAL::btUIntPtr       __i;                         \
+   const AAL::btUIntPtr __N = (AAL::btUIntPtr)(__x); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {             \
+      cpu_yield();                                   \
+   }                                                 \
+}while(0)
+
+// Yield the cpu a fixed number of times.
+#define YIELD_N()                                                                 \
+do                                                                                \
+{                                                                                 \
+   AAL::btUIntPtr       __i;                                                      \
+   const AAL::btUIntPtr __N = GlobalTestConfig::GetInstance().MaxCPUYieldPolls(); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {                                          \
+      cpu_yield();                                                                \
+   }                                                                              \
 }while(0)
 
 // Yield the cpu Config.MaxCPUYieldPolls() times, executing __expr after each yield.
-#define YIELD_N_FOREACH(__expr)                          \
-do                                                       \
-{                                                        \
-   AAL::btUIntPtr       __i;                             \
-   const AAL::btUIntPtr __N = Config.MaxCPUYieldPolls(); \
-   for ( __i = 0 ; __i < __N ; ++__i ) {                 \
-      cpu_yield();                                       \
-      __expr ;                                           \
-   }                                                     \
+#define YIELD_N_FOREACH(__expr)                                                   \
+do                                                                                \
+{                                                                                 \
+   AAL::btUIntPtr       __i;                                                      \
+   const AAL::btUIntPtr __N = GlobalTestConfig::GetInstance().MaxCPUYieldPolls(); \
+   for ( __i = 0 ; __i < __N ; ++__i ) {                                          \
+      cpu_yield();                                                                \
+      __expr ;                                                                    \
+   }                                                                              \
 }while(0)
+
+////////////////////////////////////////////////////////////////////////////////
+
+class TestStatus
+{
+public:
+   enum Status
+   {
+      STATUS_PASS,
+      STATUS_FAIL,
+      STATUS_SEGFAULT,
+      STATUS_TERMINATED,
+      STATUS_KEEPALIVE_TIMEOUT
+   };
+
+   static void Report(Status st);
+
+protected:
+   static void OnPass();
+   static void OnFail();
+   static void OnSegFault();
+   static void OnTerminated();
+   static void OnKeepaliveTimeout();
+
+   static const char sm_Red[];
+   static const char sm_Green[];
+   static const char sm_Reset[];
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -126,8 +169,10 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 class SignalHelper
 {
 public:
-   SignalHelper() {}
+   SignalHelper();
    virtual ~SignalHelper();
+
+   static SignalHelper & GlobalInstance();
 
    typedef void (*handler)(int , siginfo_t * , void * );
 
@@ -135,10 +180,11 @@ public:
    // non-zero on error.
    int Install(int signum, handler h, bool oneshot=false);
 
-   static void    EmptySIGIOHandler(int , siginfo_t * , void * );
-   static void  EmptySIGUSR1Handler(int , siginfo_t * , void * );
-   static void  EmptySIGUSR2Handler(int , siginfo_t * , void * );
-   static void StopOnSIGSEGVHandler(int , siginfo_t * , void * );
+   static void   EmptySIGIOHandler(int , siginfo_t * , void * );
+   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
+   static void EmptySIGUSR2Handler(int , siginfo_t * , void * );
+   static void      SIGSEGVHandler(int , siginfo_t * , void * );
+   static void       SIGINTHandler(int , siginfo_t * , void * );
 
 protected:
    typedef std::map<int, struct sigaction> sigmap;
@@ -146,14 +192,65 @@ protected:
    typedef sigmap::const_iterator          const_sigiter;
 
    sigmap m_sigmap;
-};
 
-extern SignalHelper gSignalHelper;
+   static SignalHelper sm_GlobalInstance;
+};
 
 #endif // OS
 
-void StopOnSegv();
+////////////////////////////////////////////////////////////////////////////////
+
+class KeepAliveTimerEnv : public ::testing::Environment
+{
+public:
+   static KeepAliveTimerEnv * GetInstance();
+   virtual ~KeepAliveTimerEnv() {}
+
+   void KeepAlive()
+   {
+      ++m_KeepAliveCounter;
+   }
+
+   virtual void SetUp();
+   virtual void TearDown();
+
+protected:
+   KeepAliveTimerEnv();
+
+   void KeepAliveExpired();
+
+   btBool             m_KeepAliveRunning;
+   btUnsigned64bitInt m_KeepAliveCounter;
+   btUnsignedInt      m_KeepAliveTimeouts;
+#if   defined( __AAL_LINUX__ )
+   pthread_t          m_thread;
+   pthread_mutex_t    m_mutex;
+   pthread_cond_t     m_condition;
+#elif defined ( __AAL_WINDOWS__ )
+   HANDLE             m_hEvent;
+   HANDLE             m_hJoinEvent;
+#endif // OS
+
+   static       btTime        sm_KeepAliveFreqMillis;
+   static const btUnsignedInt sm_MaxKeepAliveTimeouts;
+
+#if   defined( __AAL_LINUX__ )
+   static void * KeepAliveThread(void * );
+#elif defined ( __AAL_WINDOWS__ )
+   static void   KeepAliveThread(void * );
+#endif // OS
+
+   static KeepAliveTimerEnv *sm_pInstance;
+};
+
+class KeepAliveTestListener : public ::testing::EmptyTestEventListener
+{
+public:
+   virtual void OnTestEnd(const ::testing::TestInfo & /*test_info*/)
+   {
+      KeepAliveTimerEnv::GetInstance()->KeepAlive();
+   }
+};
 
 #endif // __GTCOMMON_H__
-
 
