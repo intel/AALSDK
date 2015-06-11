@@ -7,6 +7,14 @@ declare -r SCRIPT_NAME='valgrind-standalone'
 
 . ./valgrind-common
 
+if [ $# -gt 0 ]; then
+   if [ "$1" = 'clean' ]; then
+      clean_valgrind_all "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem"
+      clean_valgrind_all "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup"
+      exit 0
+   fi
+fi
+
 run_valgrind_all "tests/standalone/OSAL_TestSem/.libs/OSAL_TestSem" ${1+"$@"}
 run_valgrind_all "tests/standalone/OSAL_TestThreadGroup/.libs/OSAL_TestThreadGroup" ${1+"$@"}
 exit $?

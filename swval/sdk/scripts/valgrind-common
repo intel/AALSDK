@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
 die() {
@@ -27,10 +29,19 @@ declare -r SED="`which sed`" 2>/dev/null
 declare -r VALGRIND="`which valgrind`" 2>/dev/null
 [ "x${VALGRIND}" = x ] && die "no valgrind?"
 
-declare -r VALGRIND_VER=`${VALGRIND} --version | ${SED} -re 's,.*(([0-9]+[.])+[0-9]+),\1,'`
-declare -r VALGRIND_VER_MAJOR=`echo ${VALGRIND_VER} | ${SED} -re 's,([0-9]+)[.].*,\1,'`
-declare -r VALGRIND_VER_MINOR=`echo ${VALGRIND_VER} | ${SED} -re 's,(([0-9]+)[.])([0-9]+)[.]?,\3,'`
-printf "valgrind ver = %d.%d\n" ${VALGRIND_VER_MAJOR} ${VALGRIND_VER_MINOR}
+declare VALGRIND_VER=`${VALGRIND} --version`
+VALGRIND_VER=`echo ${VALGRIND_VER} | ${SED} -nre 's,[-a-zA-Z ]+(.*),\1,p'`
+#printf "\nVALGRIND_VER=%s\n" "${VALGRIND_VER}"
+
+declare -r VALGRIND_VER_MAJOR=`echo ${VALGRIND_VER} | ${SED} -nre 's,([0-9]+)[.].*,\1,p'`
+#printf "VALGRIND_VER_MAJOR=%s\n" "${VALGRIND_VER_MAJOR}"
+
+declare x=`echo ${VALGRIND_VER} | ${SED} -nre 's,[0-9]+[.](.*),\1,p'`
+
+declare -r VALGRIND_VER_MINOR=`echo $x | ${SED} -nre 's,([0-9]+)[.].*,\1,p'`
+#printf "VALGRIND_VER_MINOR=%s\n" "${VALGRIND_VER_MINOR}"
+unset x
+#printf "valgrind ver = %d.%d\n" ${VALGRIND_VER_MAJOR} ${VALGRIND_VER_MINOR}
 
 declare -r CG_ANNOTATE="`which cg_annotate`" 2>/dev/null
 [ "x${CG_ANNOTATE}" = x ] && die "no cg_annotate?"
@@ -42,16 +53,10 @@ declare -r MS_PRINT="`which ms_print`" 2>/dev/null
 set -e
 
 declare VPATH=''
-declare VPATH_ALREADY_EXISTED=false
 declare KILLED=false
 
 on_exit() {
-   if ${KILLED} ; then
-      if ! ${VPATH_ALREADY_EXISTED} ; then
-         # Don't destroy results created by a previous full run.
-         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
-      fi
-   fi
+   ${KILLED} && printf "=[\n"
 }
 trap 'on_exit' EXIT
 
@@ -79,9 +84,7 @@ setup() {
    local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
    VPATH="${PWD}/valgrind.${app}.${git_commit_hash:0:7}"
-   if [ -d "${VPATH}/${analysis}" ]; then
-      VPATH_ALREADY_EXISTED=true
-   else
+   if ! [ -d "${VPATH}/${analysis}" ]; then
       ${MKDIR} -p "${VPATH}/${analysis}"
    fi
 
@@ -106,15 +109,80 @@ setup() {
       pushd "${VPATH}/${analysis}" >/dev/null 2>&1
 
       ${srcdir}/configure --with-valgrind="${analysis}"
-      ${MAKE}
-      ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" install
-      ${MAKE} check
 
       popd >/dev/null 2>&1
    fi
 
+   pushd "${VPATH}/${analysis}" >/dev/null 2>&1
+
+   ${MAKE}
+   ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" install
+   ${MAKE} check
+
+   popd >/dev/null 2>&1
+
    printf "\n"
    printf "%s\n" "${git_commit_hash}"
+
+   return 0
+}
+
+# $1 : name of the application binary to be analyzed.
+# $2 : the valgrind analysis requested.
+cleanup() {
+   local -r app="$1"
+   local -r analysis="$2"
+
+   # This script is located in swval/sdk/scripts
+   local -r srcdir="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   local -r gitdir="${reporoot}/.git"
+
+   # Make sure we're being run from the right place.
+   [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
+
+   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+
+   VPATH="${PWD}/valgrind.${app}.${git_commit_hash:0:7}"
+   if ! [ -d "${VPATH}/${analysis}" ]; then
+      # nothing to clean
+      return 0
+   fi
+
+   case ${analysis} in
+      memcheck)
+         ${RM} -f "${VPATH}/memcheck.log"
+      ;;
+      cachegrind)
+         ${RM} -f "${VPATH}/cachegrind/cachegrind.log" \
+                  "${VPATH}/cachegrind/cachegrind.out" \
+                  "${VPATH}/cachegrind.out.annotated"
+      ;;
+      callgrind)
+         ${RM} -f "${VPATH}/callgrind/callgrind.log" \
+                  "${VPATH}/callgrind/callgrind.out" \
+                  "${VPATH}/callgrind.out.annotated"
+      ;;
+      helgrind)
+         ${RM} -f "${VPATH}/helgrind.log"
+      ;;
+      drd)
+         ${RM} -f "${VPATH}/drd.log"
+      ;;
+      massif)
+         ${RM} -f "${VPATH}/massif/massif.log" \
+                  "${VPATH}/massif/massif.out" \
+                  "${VPATH}/massif.out.ms_print"
+      ;;
+      dhat)
+         ${RM} -f "${VPATH}/dhat.log"
+      ;;
+      sgcheck)
+         ${RM} -f "${VPATH}/sgcheck.log"
+      ;;
+   esac
+
+   printf "%s clean\n" "${analysis}"
 
    return 0
 }
@@ -132,6 +200,8 @@ run_valgrind_memcheck() {
    local -r tool='memcheck'
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   [ -e "${out}/${tool}.log" ] && return
 
    ${VALGRIND} -v \
                --trace-children=yes \
@@ -162,6 +232,8 @@ run_valgrind_cachegrind() {
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
 
+   [ -e "${out}/${tool}/${tool}.log" ] && return
+
    ${VALGRIND} -v \
                --trace-children=yes \
                --log-file="${out}/${tool}/${tool}.log" \
@@ -186,6 +258,8 @@ run_valgrind_callgrind() {
    local -r tool='callgrind'
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   [ -e "${out}/${tool}/${tool}.log" ] && return
 
    ${VALGRIND} -v \
                --trace-children=yes \
@@ -212,6 +286,8 @@ run_valgrind_helgrind() {
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
 
+   [ -e "${out}/${tool}.log" ] && return
+
    ${VALGRIND} -v \
                --trace-children=yes \
                --log-file="${out}/${tool}.log" \
@@ -235,6 +311,8 @@ run_valgrind_drd() {
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
 
+   [ -e "${out}/${tool}.log" ] && return
+
    ${VALGRIND} -v \
                --trace-children=yes \
                --log-file="${out}/${tool}.log" \
@@ -255,6 +333,8 @@ run_valgrind_massif() {
    local -r tool='massif'
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
+
+   [ -e "${out}/${tool}/${tool}.log" ] && return
 
    ${VALGRIND} -v \
                --trace-children=yes \
@@ -281,6 +361,8 @@ run_valgrind_dhat() {
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
 
+   [ -e "${out}/${tool}.log" ] && return
+
    ${VALGRIND} -v \
                --trace-children=yes \
                --log-file="${out}/${tool}.log" \
@@ -304,6 +386,8 @@ run_valgrind_sgcheck() {
 
    [ -d "${out}/${tool}" ] || ${MKDIR} -p "${out}/${tool}"
 
+   [ -e "${out}/${tool}.log" ] && return
+
    ${VALGRIND} -v \
                --trace-children=yes \
                --log-file="${out}/${tool}.log" \
@@ -325,16 +409,10 @@ run_valgrind_all() {
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_memcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
-   tool='cachegrind'
+   tool='massif'
    setup "${exe##*/}" "${tool}"
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
-   popd >/dev/null 2>&1
-
-   tool='callgrind'
-   setup "${exe##*/}" "${tool}"
-   pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='helgrind'
@@ -349,16 +427,22 @@ run_valgrind_all() {
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_drd "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
-   tool='massif'
-   setup "${exe##*/}" "${tool}"
-   pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" ${1+"$@"}
-   popd >/dev/null 2>&1
-
    tool='dhat'
    setup "${exe##*/}" "${tool}"
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_dhat "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='cachegrind'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   popd >/dev/null 2>&1
+
+   tool='callgrind'
+   setup "${exe##*/}" "${tool}"
+   pushd "${VPATH}" >/dev/null 2>&1
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='sgcheck'
@@ -366,5 +450,25 @@ run_valgrind_all() {
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_sgcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
+}
+
+# $1 : app to analyze
+clean_valgrind_all() {
+   local -r exe="$1"
+   shift
+
+   local tool
+
+   for tool in 'memcheck' \
+               'cachegrind' \
+               'callgrind' \
+               'helgrind' \
+               'drd' \
+               'massif' \
+               'dhat' \
+               'sgcheck'
+   do
+      cleanup "${exe##*/}" "${tool}"
+   done
 }
 

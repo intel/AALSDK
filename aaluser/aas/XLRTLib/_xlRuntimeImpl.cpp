@@ -479,15 +479,18 @@ void _runtime::removeProxy( Runtime *pRuntimeProxy)
 // Outputs: none.
 // Comments:
 //=============================================================================
-btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
+Environment * Environment::sm_EnvObj = NULL;
+
+btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
    NamedValueSet const *pConfigRecord;
    btcString            sName  = NULL;
-   Environment          env;
+   std::string               strSname;
+  // Environment          env;
 
    //
    // First check environment
-   if( NULL == (sName = env.Get(XLRUNTIME_CONFIG_BROKER_SERVICE)) ){
+   if( false == (Environment::GetObj()->Get("XLRUNTIME_CONFIG_BROKER_SERVICE", strSname)) ){
 
       if ( ENamedValuesOK != rConfigParms.Get(XLRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
          // Check to see if default services are running

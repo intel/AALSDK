@@ -21,13 +21,23 @@ int main(int argc, char *argv[])
          Version();
          return 0;
       }
-      if ( 0 == std::string(argv[1]).compare("--stop-on-segv") ) {
-         StopOnSegv();
-      }
    }
 
+   SignalHelper::GlobalInstance().Install(SIGSEGV, SignalHelper::SIGSEGVHandler, true);
+   SignalHelper::GlobalInstance().Install(SIGINT,  SignalHelper::SIGINTHandler,  true);
+
    ::testing::InitGoogleTest(&argc, argv);
+
+   ::testing::UnitTest::GetInstance()->listeners().Append(new KeepAliveTestListener());
+   ::testing::AddGlobalTestEnvironment(KeepAliveTimerEnv::GetInstance());
+
    int res = RUN_ALL_TESTS();
+
+   if ( 0 == res ) {
+      TestStatus::Report(TestStatus::STATUS_PASS);
+   } else {
+      TestStatus::Report(TestStatus::STATUS_FAIL);
+   }
 
    return res;
 }

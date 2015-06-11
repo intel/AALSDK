@@ -1,26 +1,14 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-declare ARGS=''
-while [ "x$1" != x ]; do
-
-   case $1 in
-      --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
-      ;;
-      *)
-         ARGS="${ARGS} $1"
-      ;;
-   esac
-
-   shift
-done
-
 shopt -o -s nounset
 
 declare -r SCRIPT_NAME='run-bat'
 
 . ./run-common
 
-run_bat ${ARGS}
+declare -r ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
+
+setup
+run_bat ${ARGS} ${1+"$@"}
 exit $?

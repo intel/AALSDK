@@ -32,14 +32,16 @@
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation
+///          Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 12/16/2007     JG       Changed include path to expose aas/
 /// 05/08/2008     HM       Cleaned up windows includes
 /// 05/08/2008     HM       Comments & License
-/// 01/04/2009     HM       Updated Copyright@endverbatim
-/// 03/06/2014     JG       Complete rewrite.
+/// 01/04/2009     HM       Updated Copyright
+/// 03/06/2014     JG       Complete rewrite
+/// 05/07/2015     TSW      Complete rewrite@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -48,57 +50,204 @@
 #include "aalsdk/osal/ThreadGroup.h"
 #include "aalsdk/osal/Sleep.h"
 
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
 
-// Functor that signals completion of a call to OSLThreadGroup::Drain().
-class OSLThreadGroupNestedSemPostD : public IDispatchable
+//=============================================================================
+// Name: OSLThreadGroup
+// Description: Constructor
+// Interface: public
+// Inputs: uiMinThreads - Minimum number of threads to use (default = 0 = auto).
+//         uiMaxThreads - Maximum threads. (default = 0 = auto)
+//         nPriority - Thread priority
+// Outputs: none.
+// Comments: Setting min == max != 0 results in a static thread pool.
+//           The algorithm summary:
+//               - The work queue and its semaphore are initialized to zero
+//                 for all threads to start.
+//               - The number of worker threads is determined and
+//                 the threads are created.
+//               - A count-up semaphore is use to wait for workers to start
+//=============================================================================
+OSLThreadGroup::OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads,
+                               AAL::btUnsignedInt        uiMaxThreads,
+                               OSLThread::ThreadPriority nPriority,
+                               AAL::btTime               JoinTimeout) :
+   m_bDestroyed(false),
+   m_JoinTimeout(JoinTimeout),
+   m_pState(NULL)
 {
-public:
-   OSLThreadGroupNestedSemPostD(IDispatchable *pContained,
-                                CSemaphore    &Sem,
-                                AAL::btInt     Value=1) :
-      m_pContained(pContained),
-      m_Sem(Sem),
-      m_Value(Value)
-   {}
-
-   void operator() ()
-   {
-      (*m_pContained) ();  // Execute the contained work item.
-      m_Sem.Post(m_Value); // signal its completion.
-      delete this;
+   // If Min Threads is zero then determine a good number based on
+   //  configuration
+   if ( 0 == uiMinThreads ) {
+      // TODO Use GetNumProcessors(), eventually.
+       // m_nNumThreads = GetNumProcessors();
+       uiMinThreads = 1;
    }
 
-protected:
-   IDispatchable *m_pContained;
-   CSemaphore    &m_Sem;
-   AAL::btInt     m_Value;
-};
+//TODO implement MaxThreads and dynamic sizing
+   if ( uiMaxThreads < uiMinThreads ) {
+      uiMaxThreads = uiMinThreads;
+   }
+
+   // Create the State object. The state object is a standalone object
+   //  whose life is somewhat independent of the ThreadGroup.  This is to
+   //  allow for the case that ThreadGroup is destroyed before the worker threads
+   //  have been deleted. By making the state and synchronization members outside
+   //  the ThreadGroup, the Threads can safely access them even if the Group object
+   //  is gone.
+   m_pState = new(std::nothrow) OSLThreadGroup::ThrGrpState(uiMinThreads);
+   if ( NULL == m_pState ) {
+      m_bDestroyed = true;
+      ASSERT(false);
+      return;
+   }
+
+   ASSERT(m_pState->IsOK());
+   if ( !m_pState->IsOK() ) {
+      m_bDestroyed = true;
+      delete m_pState;
+      m_pState = NULL;
+      return;
+   }
+
+   // Create the workers.
+
+   AAL::btUnsignedInt i;
+   for ( i = 0 ; i < uiMinThreads ; ++i ) {
+      // TODO: if worker thread creation fails.
+      CreateWorkerThread(OSLThreadGroup::ExecProc, nPriority, m_pState);
+   }
+
+   // Wait for all of the works to signal started.
+   // TODO Add timeout.
+   WaitForAllWorkersToStart(AAL_INFINITE_WAIT);
+}
+
+AAL::btBool OSLThreadGroup::Destroy(AAL::btTime Timeout)
+{
+   Lock();
+
+   if ( m_bDestroyed ) {
+      Unlock();
+      return true;
+   }
+
+   m_bDestroyed = true;
+
+   Unlock();
+
+   return m_pState->Destroy(Timeout);
+}
+
+//=============================================================================
+// Name: ~OSLThreadGroup
+// Description: Destructor - Stop all threads.
+// Interface: public
+// Comments: The state of the dispatch queue is not deterministic.
+//           Normally one would stop each thread AND wait for them to end with
+//           a join, however ThreadGroup can be killed from within a Thread in
+//           in the Group itself. So best that can be done for now is to have
+//           each thread delete itself.
+//=============================================================================
+OSLThreadGroup::~OSLThreadGroup()
+{
+   if ( !Destroy(m_JoinTimeout) ) {
+      ;
+   }
+}
+
+//=============================================================================
+// Name: ExecProc
+// Description: Worker Thread entry point
+// Interface: private
+// Comments:
+//=============================================================================
+void OSLThreadGroup::ExecProc(OSLThread *pThread, void *lpParms)
+{
+   OSLThreadGroup::ThrGrpState *pState = reinterpret_cast<OSLThreadGroup::ThrGrpState *>(lpParms);
+
+   ASSERT(NULL != pState);
+   if ( NULL == pState ) {
+      ASSERT(false);
+      return;
+   }
+
+   // Notify the constructor that we are up.
+   pState->WorkerHasStarted(pThread);
+
+   OSLThreadGroup::ThrGrpState::eState state;
+
+   IDispatchable *pWork;
+   AAL::btBool    bRunning = true;
+
+   while ( bRunning ) {
+
+      pWork = NULL;
+      state = pState->GetWorkItem(pWork);
+
+      switch ( state ) {
+
+         case OSLThreadGroup::ThrGrpState::Joining : {
+            if ( NULL == pWork ) {
+               // Queue has emptied - we are done.
+               bRunning = false;
+            } else {
+               (*pWork) (); // invoke the functor via operator() ()
+            }
+         } break;
+
+         case OSLThreadGroup::ThrGrpState::Draining : // FALL THROUGH
+         case OSLThreadGroup::ThrGrpState::Running  : {
+            if ( NULL != pWork ) {
+               (*pWork) (); // invoke the functor via operator() ()
+            }
+         } break;
+
+         case OSLThreadGroup::ThrGrpState::Stopped : {
+            // don't dispatch any items
+            if ( NULL != pWork ) {
+               ASSERT(false);
+               delete pWork;
+            }
+         } break;
+
+         default : // keep looping
+            break;
+      }
+
+   }
+
+   pState->WorkerHasExited(pThread);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // OSLThreadGroup::ThrGroupState
 
 OSLThreadGroup::ThrGrpState::ThrGrpState(AAL::btUnsignedInt NumThreads) :
-   m_eState(IThreadGroup::Running),
+   m_eState(Running),
    m_Flags(THRGRPSTATE_FLAG_OK),
    m_WorkSemTimeout(AAL_INFINITE_WAIT),
    m_Joiner(0),
-   m_ThrStartSem(),
-   m_ThrExitSem(),
+   m_ThrStartBarrier(),
+   m_ThrJoinBarrier(),
+   m_ThrExitBarrier(),
    m_WorkSem(),
    m_workqueue(),
    m_RunningThreads(),
    m_ExitedThreads(),
    m_DrainManager(this)
 {
-   AAL::btInt SemInitCount = (AAL::btInt)NumThreads;
-   SemInitCount = -SemInitCount;
-
-   if ( !m_ThrStartSem.Create(SemInitCount, INT_MAX) ) {
+   if ( !m_ThrStartBarrier.Create(NumThreads) ) {
       flag_clrf(m_Flags, THRGRPSTATE_FLAG_OK);
    }
 
-   if ( !m_ThrExitSem.Create(SemInitCount, INT_MAX) ) {
+   if ( !m_ThrJoinBarrier.Create(1) ) {
+      flag_clrf(m_Flags, THRGRPSTATE_FLAG_OK);
+   }
+
+   if ( !m_ThrExitBarrier.Create(NumThreads) ) {
       flag_clrf(m_Flags, THRGRPSTATE_FLAG_OK);
    }
 
@@ -109,11 +258,11 @@ OSLThreadGroup::ThrGrpState::ThrGrpState(AAL::btUnsignedInt NumThreads) :
 
 OSLThreadGroup::ThrGrpState::~ThrGrpState()
 {
-   ASSERT(IThreadGroup::Joining == m_eState);
-   ASSERT(flag_is_set(m_Flags, THRGRPSTATE_FLAG_JOINED));
+   ASSERT(Joining == m_eState);
    ASSERT(m_workqueue.empty());
    ASSERT(m_RunningThreads.empty());
    ASSERT(m_ExitedThreads.empty());
+   DestructMembers();
 }
 
 //=============================================================================
@@ -158,11 +307,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Add(IDispatchable *pDisp)
 
    Lock();
 
-   const IThreadGroup::eState state = State();
+   const eState state = State();
 
    // We allow new work items when Running or Joining.
-   if ( ( IThreadGroup::Stopped  == state ) ||
-        ( IThreadGroup::Draining == state ) ) {
+   if ( ( Stopped  == state ) ||
+        ( Draining == state ) ) {
       Unlock();
       return false;
    }
@@ -190,7 +339,7 @@ void OSLThreadGroup::ThrGrpState::Stop()
 {
    AutoLock(this);
 
-   if ( IThreadGroup::Stopped != State(IThreadGroup::Stopped) ) {
+   if ( Stopped != State(Stopped) ) {
       // State conflict, can't stop right now.
       return;
    }
@@ -218,7 +367,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Start()
 {
    AutoLock(this);
 
-   if ( IThreadGroup::Running == State(IThreadGroup::Running) ) {
+   if ( Running == State(Running) ) {
       AAL::btInt s = (AAL::btInt) m_workqueue.size();
 
       AAL::btInt c = 0;
@@ -237,40 +386,40 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Start()
 }
 
 // Do a state transition.
-IThreadGroup::eState OSLThreadGroup::ThrGrpState::State(IThreadGroup::eState st)
+OSLThreadGroup::ThrGrpState::eState OSLThreadGroup::ThrGrpState::State(eState st)
 {
    AutoLock(this);
 
-   if ( IThreadGroup::Joining == m_eState ) {
+   if ( Joining == m_eState ) {
       // Joining is a final state. Deny all requests to do otherwise.
       return m_eState;
    }
 
    switch ( m_eState ) {
-      case IThreadGroup::Running : {
+      case Running : {
          switch ( st ) {
-            /* case IThreadGroup::Running :  break; */ // Running -> Running (nop)
-            case IThreadGroup::Stopped  : m_eState = st; break; // Running -> Stopped  [ Stop()  ]
-            case IThreadGroup::Draining : m_eState = st; break; // Running -> Draining [ Drain() ]
-            case IThreadGroup::Joining  : m_eState = st; break; // Running -> Joining  [ Join()  ]
+            /* case Running :  break; */ // Running -> Running (nop)
+            case Stopped  : m_eState = st; break; // Running -> Stopped  [ Stop()  ]
+            case Draining : m_eState = st; break; // Running -> Draining [ Drain() ]
+            case Joining  : m_eState = st; break; // Running -> Joining  [ Join()  ]
          }
       } break;
 
-      case IThreadGroup::Stopped : {
+      case Stopped : {
          switch ( st ) {
-            case IThreadGroup::Running  : m_eState = st; break; // Stopped -> Running   [ Start() ]
-            /* case IThreadGroup::Stopped : break; */ // Stopped -> Stopped (nop)
-            case IThreadGroup::Draining : ASSERT(IThreadGroup::Draining != st); break; // Invalid (queue empty check)
-            case IThreadGroup::Joining  : m_eState = st; break; // Stopped -> Joining   [ Join(), ~OSLThreadGroup() ]
+            case Running  : m_eState = st; break; // Stopped -> Running   [ Start() ]
+            /* case Stopped : break; */ // Stopped -> Stopped (nop)
+            case Draining : ASSERT(Draining != st); break; // Invalid (queue empty check)
+            case Joining  : m_eState = st; break; // Stopped -> Joining   [ Join(), ~OSLThreadGroup() ]
          }
       } break;
 
-      case IThreadGroup::Draining : {
+      case Draining : {
         switch ( st ) {
-            case IThreadGroup::Running  : m_eState = st; break; // Draining -> Running  [ Drain() ]
-            case IThreadGroup::Stopped  : ASSERT(IThreadGroup::Stopped != st);  break; // Invalid
-            /* case IThreadGroup::Draining : break; */ // Draining -> Draining (nop)
-            case IThreadGroup::Joining  : m_eState = st; break; // Draining -> Joining  [ Join()  ]
+            case Running  : m_eState = st; break; // Draining -> Running  [ Drain() ]
+            case Stopped  : ASSERT(Stopped != st);  break; // Invalid
+            /* case Draining : break; */ // Draining -> Draining (nop)
+            case Joining  : m_eState = st; break; // Draining -> Joining  [ Join()  ]
          }
       } break;
    }
@@ -282,13 +431,22 @@ AAL::btBool OSLThreadGroup::ThrGrpState::CreateWorkerThread(ThreadProc          
                                                             OSLThread::ThreadPriority pri,
                                                             void                     *context)
 {
-   OSLThread *pthread = new(std::nothrow) OSLThread(fn, pri, context);
+   OSLThread *pThread = new(std::nothrow) OSLThread(fn, pri, context);
 
-   ASSERT(NULL != pthread);
-   if ( NULL == pthread ) {
-      ASSERT(false);
+   ASSERT(NULL != pThread);
+   if ( NULL == pThread ) {
       return false;
    }
+
+   ASSERT(pThread->IsOK());
+   if ( !pThread->IsOK() ) {
+      delete pThread;
+      return false;
+   }
+
+   Lock();
+   m_RunningThreads.push_back(pThread);
+   Unlock();
 
    return true;
 }
@@ -299,7 +457,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::CreateWorkerThread(ThreadProc          
 // Interface: public
 // Comments:
 //=============================================================================
-IThreadGroup::eState OSLThreadGroup::ThrGrpState::GetWorkItem(IDispatchable * &pWork)
+OSLThreadGroup::ThrGrpState::eState OSLThreadGroup::ThrGrpState::GetWorkItem(IDispatchable * &pWork)
 {
    // Wait for work item
    m_WorkSem.Wait(m_WorkSemTimeout);
@@ -307,19 +465,19 @@ IThreadGroup::eState OSLThreadGroup::ThrGrpState::GetWorkItem(IDispatchable * &p
    // Lock until flag and queue have been processed
    Lock();
 
-   const IThreadGroup::eState state = State();
+   const eState state = State();
 
    switch ( state ) {
-      case IThreadGroup::Joining  : // FALL THROUGH
-      case IThreadGroup::Draining : // FALL THROUGH
-      case IThreadGroup::Running  : {
+      case Joining  : // FALL THROUGH
+      case Draining : // FALL THROUGH
+      case Running  : {
          if ( m_workqueue.size() > 0 ) {
             pWork = m_workqueue.front();
             m_workqueue.pop();
          }
       } break;
 
-      case IThreadGroup::Stopped : {
+      case Stopped : {
          ; // return without setting pWork to a work item.
       } break;
 
@@ -333,150 +491,6 @@ IThreadGroup::eState OSLThreadGroup::ThrGrpState::GetWorkItem(IDispatchable * &p
    Unlock();
 
    return state;
-}
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
-//=============================================================================
-// Name: OSLThreadGroup
-// Description: Constructor
-// Interface: public
-// Inputs: uiMinThreads - Minimum number of threads to use (default = 0 = auto).
-//         uiMaxThreads - Maximum threads. (default = 0 = auto)
-//         nPriority - Thread priority
-// Outputs: none.
-// Comments: Setting min == max != 0 results in a static thread pool.
-//           The algorithm summary:
-//               - The work queue and its semaphore are initialized to zero
-//                 for all threads to start.
-//               - The number of worker threads is determined and
-//                 the threads are created.
-//               - A count-up semaphore is use to wait for workers to start
-//=============================================================================
-OSLThreadGroup::OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads,
-                               AAL::btUnsignedInt        uiMaxThreads,
-                               OSLThread::ThreadPriority nPriority,
-                               AAL::btTime               JoinTimeout) :
-   m_JoinTimeout(JoinTimeout),
-   m_pState(NULL)
-{
-   // If Min Threads is zero then determine a good number based on
-   //  configuration
-   if ( 0 == uiMinThreads ) {
-      // TODO Use GetNumProcessors(), eventually.
-       // m_nNumThreads = GetNumProcessors();
-       uiMinThreads = 1;
-   }
-
-//TODO implement MaxThreads and dynamic sizing
-   if ( uiMaxThreads < uiMinThreads ) {
-      uiMaxThreads = uiMinThreads;
-   }
-
-   // Create the State object. The state object is a standalone object
-   //  whose life is somewhat independent of the ThreadGroup.  This is to
-   //  allow for the case that ThreadGroup is destroyed before the worker threads
-   //  have been deleted. By making the state and synchronization members outside
-   //  the ThreadGroup, the Threads can safely access them even if the Group object
-   //  is gone.
-   m_pState = new(std::nothrow) OSLThreadGroup::ThrGrpState(uiMinThreads);
-   if ( NULL == m_pState ) {
-      ASSERT(false);
-      return;
-   }
-
-   // Create the workers.
-
-   AAL::btUnsignedInt i;
-   for ( i = 0 ; i < uiMinThreads ; ++i ) {
-      CreateWorkerThread(OSLThreadGroup::ExecProc, nPriority, m_pState);
-   }
-
-   // Wait for all of the works to signal started.
-   // TODO Add timeout.
-   WaitForAllWorkersToStart(AAL_INFINITE_WAIT);
-}
-
-//=============================================================================
-// Name: ~OSLThreadGroup
-// Description: Destructor - Stop all threads.
-// Interface: public
-// Comments: The state of the dispatch queue is not deterministic.
-//           Normally one would stop each thread AND wait for them to end with
-//           a join, however ThreadGroup can be killed from within a Thread in
-//           in the Group itself. So best that can be done for now is to have
-//           each thread delete itself.
-//=============================================================================
-OSLThreadGroup::~OSLThreadGroup()
-{
-   if ( !Destroy(m_JoinTimeout) ) {
-      ;
-   }
-}
-
-//=============================================================================
-// Name: ExecProc
-// Description: Worker Thread entry point
-// Interface: private
-// Comments:
-//=============================================================================
-void OSLThreadGroup::ExecProc(OSLThread *pThread, void *lpParms)
-{
-   OSLThreadGroup::ThrGrpState *pState = reinterpret_cast<OSLThreadGroup::ThrGrpState *>(lpParms);
-
-   ASSERT(NULL != pState);
-   if ( NULL == pState ) {
-      ASSERT(false);
-      return;
-   }
-
-   // Notify the constructor that we are up.
-   pState->WorkerHasStarted(pThread);
-
-   IDispatchable       *pWork;
-   IThreadGroup::eState state;
-   AAL::btBool          bRunning = true;
-
-   while ( bRunning ) {
-
-      pWork = NULL;
-      state = pState->GetWorkItem(pWork);
-
-      switch ( state ) {
-
-         case IThreadGroup::Joining : {
-            if ( NULL == pWork ) {
-               // Queue has emptied - we are done.
-               bRunning = false;
-            } else {
-               (*pWork) (); // invoke the functor via operator() ()
-            }
-         } break;
-
-         case IThreadGroup::Draining : // FALL THROUGH
-         case IThreadGroup::Running  : {
-            if ( NULL != pWork ) {
-               (*pWork) (); // invoke the functor via operator() ()
-            }
-         } break;
-
-         case IThreadGroup::Stopped : {
-            // don't dispatch any items
-            if ( NULL != pWork ) {
-               ASSERT(false);
-               delete pWork;
-            }
-         } break;
-
-         default : // keep looping
-            break;
-      }
-
-   }
-
-   pState->WorkerHasExited(pThread);
 }
 
 OSLThread * OSLThreadGroup::ThrGrpState::ThreadRunningInThisGroup(AAL::btTID tid) const
@@ -494,21 +508,41 @@ OSLThread * OSLThreadGroup::ThrGrpState::ThreadRunningInThisGroup(AAL::btTID tid
 
 void OSLThreadGroup::ThrGrpState::WorkerHasStarted(OSLThread *pThread)
 {
-   Lock();
-   m_RunningThreads.push_back(pThread);
-   Unlock();
-
-   m_ThrStartSem.Post(1);
+   m_ThrStartBarrier.Post(1);
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToStart(AAL::btTime Timeout)
 {
-   return m_ThrStartSem.Wait(Timeout);
+   return m_ThrStartBarrier.Wait(Timeout);
 }
 
-void OSLThreadGroup::ThrGrpState::RunningToExited(OSLThread *pThread)
+void OSLThreadGroup::ThrGrpState::WorkerIsSelfTerminating(OSLThread *pThread)
 {
-   AutoLock(this);
+   Lock();
+
+   // Remove the worker from the Running list, without placing it in the Exited list, because
+   //  we don't want to attempt to Join() this worker.
+   thr_list_iter iter = std::find(m_RunningThreads.begin(), m_RunningThreads.end(), pThread);
+
+   if ( m_RunningThreads.end() != iter ) {
+      m_RunningThreads.erase(iter);
+   }
+
+   // When self-terminating, if pThread is also a self-Drain()'er, we would not
+   //  otherwise be able to Post() the drain Barrier object. Do it here, instead.
+   while ( m_DrainManager.End(pThread->tid(), NULL) ) {
+      m_DrainManager.ForciblyCompleteWorkItem();
+   }
+
+   Unlock();
+
+   // The worker has now "exited".
+   m_ThrExitBarrier.Post(1);
+}
+
+void OSLThreadGroup::ThrGrpState::WorkerHasExited(OSLThread *pThread)
+{
+   Lock();
 
    // Move the worker from Running to Exited.
    thr_list_iter iter = std::find(m_RunningThreads.begin(), m_RunningThreads.end(), pThread);
@@ -517,198 +551,234 @@ void OSLThreadGroup::ThrGrpState::RunningToExited(OSLThread *pThread)
       m_RunningThreads.erase(iter);
       m_ExitedThreads.push_back(pThread);
    }
-}
-
-void OSLThreadGroup::ThrGrpState::RemoveFromRunning(OSLThread *pThread)
-{
-   AutoLock(this);
-
-   // Remove the worker from Running.
-   thr_list_iter iter = std::find(m_RunningThreads.begin(), m_RunningThreads.end(), pThread);
-
-   if ( m_RunningThreads.end() != iter ) {
-      m_RunningThreads.erase(iter);
-   }
-}
-
-void OSLThreadGroup::ThrGrpState::WorkerHasExited(OSLThread *pThread)
-{
-   RunningToExited(pThread);
-   m_DrainManager.WorkerHasExited(pThread->tid());
-   m_ThrExitSem.Post(1);
-}
-
-#if 0
-AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToExit(AAL::btTime Timeout)
-{
-   return m_ThrExitSem.Wait(Timeout);
-}
-#else
-AAL::btBool OSLThreadGroup::ThrGrpState::WaitForAllWorkersToExit(AAL::btTime Timeout)
-{
-   const AAL::btTime Interval = PollingInterval();
-
-   Lock();
-
-   if ( AAL_INFINITE_WAIT == Timeout ) {
-
-      while ( m_RunningThreads.size() > 0 ) {
-         Unlock();
-         AAL::SleepMilli(Interval);
-         Lock();
-      }
-
-   } else {
-      AAL::btTime Subtract;
-
-      while ( m_RunningThreads.size() > 0 ) {
-         Unlock();
-         Subtract = std::min(Timeout, Interval);
-         AAL::SleepMilli(Subtract);
-         Timeout -= Subtract;
-         if ( 0 == Timeout ) {
-            return false;
-         }
-         Lock();
-      }
-   }
 
    Unlock();
 
-   return true;
-}
-#endif // 0
-
-AAL::btBool OSLThreadGroup::ThrGrpState::JoinExitedWorkers(AAL::btTime Timeout)
-{
-   Lock();
-
-   const AAL::btTID MyThrID = GetThreadID();
-
-   if ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_JOINING) ||
-        ( MyThrID != m_Joiner ) ) {
-      // We're not the Join()'er.
-      Unlock();
-      return PollForAllWorkersToJoin(Timeout);
-   }
-
-   Unlock();
-
-   thr_list_iter iter;
-   for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ) {
-      (*iter)->Join();
-      delete *iter;
-      thr_list_iter trash(iter);
-      ++iter;
-      m_ExitedThreads.erase(trash);
-   }
-
-   Lock();
-
-   flag_setf(m_Flags, THRGRPSTATE_FLAG_JOINED);
-
-   Unlock();
-
-   return true;
-}
-
-AAL::btBool OSLThreadGroup::ThrGrpState::PollForAllWorkersToJoin(AAL::btTime Timeout)
-{
-   const AAL::btTime Interval = PollingInterval();
-
-   Lock();
-
-   if ( AAL_INFINITE_WAIT == Timeout ) {
-
-      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_JOINED) ) {
-         Unlock();
-         AAL::SleepMilli(Interval);
-         Lock();
-      }
-
-   } else {
-      AAL::btTime Subtract;
-
-      while ( flag_is_clr(m_Flags, THRGRPSTATE_FLAG_JOINED) ) {
-         Unlock();
-         Subtract = std::min(Timeout, Interval);
-         AAL::SleepMilli(Subtract);
-         Timeout -= Subtract;
-         if ( 0 == Timeout ) {
-            return false;
-         }
-         Lock();
-      }
-   }
-
-   Unlock();
-
-   return true;
-}
-
-AAL::btBool OSLThreadGroup::ThrGrpState::PollForDrainCompletion(AAL::btTime Timeout)
-{
-   const AAL::btTime Interval = PollingInterval();
-
-   Lock();
-
-   if ( AAL_INFINITE_WAIT == Timeout ) {
-
-      while ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_DRAINING) ) {
-         Unlock();
-         AAL::SleepMilli(Interval);
-         Lock();
-      }
-
-   } else {
-      AAL::btTime Subtract;
-
-      while ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_DRAINING) ) {
-         Unlock();
-         Subtract = std::min(Timeout, Interval);
-         AAL::SleepMilli(Subtract);
-         Timeout -= Subtract;
-         if ( 0 == Timeout ) {
-            return false;
-         }
-         Lock();
-      }
-   }
-
-   Unlock();
-
-   return true;
+   m_ThrExitBarrier.Post(1);
 }
 
 AAL::btBool OSLThreadGroup::ThrGrpState::Quiesce(AAL::btTime Timeout)
 {
    AAL::btBool res;
 
-   res = WaitForAllWorkersToExit(Timeout);
+   // Wait for all thread group workers to Post() m_ThrExitBarrier, signaling that they
+   //  are exiting.
+   res = m_ThrExitBarrier.Wait(Timeout);
+   ASSERT(res);
    if ( !res ) {
       return false;
    }
 
-   res = JoinExitedWorkers(Timeout);
-   if ( !res ) {
-      return false;
+   // If we are the designated Join()'er, then Join() all workers. If not, then wait for
+   //  the Join()'er to do its thing.
+
+   const AAL::btTID MyThrID = GetThreadID();
+
+   Lock();
+
+   // We need the check on THRGRPSTATE_FLAG_JOINING, because we don't know if 0 is a valid tid.
+
+   if ( flag_is_set(m_Flags, THRGRPSTATE_FLAG_JOINING) && ( MyThrID == m_Joiner ) ) {
+
+      Unlock();
+
+      // ASSERT: all workers have exited (we waited on m_ThrExitBarrier above).
+      // ASSERT: we are the sole Join()'er
+
+      thr_list_iter iter;
+      for ( iter = m_ExitedThreads.begin() ; m_ExitedThreads.end() != iter ; ++iter ) {
+         (*iter)->Join();
+         delete *iter;
+      }
+      m_ExitedThreads.clear();
+
+      // Are any external Drain()'ers blocked on our work item? When a self-referential Join() or
+      // a self-referential Destroy() is allowed to progress when there is an external Drain()'er(s),
+      // the thread group worker must signal the completion of the Drain() here, before
+      // self-terminating. Otherwise, the external Drain()'ers will become deadlocked.
+      m_DrainManager.ReleaseAllDrainers();
+
+      res = m_ThrJoinBarrier.Post(1);
+      ASSERT(res);
+      if ( !res ) {
+         return false;
+      }
+
+   } else {
+      Unlock();
+
+      // We're not the Join()'er.
+
+      res = m_ThrJoinBarrier.Wait(Timeout);
+      ASSERT(res);
+      if ( !res ) {
+         return false;
+      }
+
    }
 
    // Workers are joined.
 
-   // Are any external Drain()'ers blocked on our work item? If so, we need
-   //  to signal completion of the Drain() here, then wait for all external Drain()'ers
-   //  to exit the Drain() call(s) before deleting this.
-   m_DrainManager.ReleaseExternalDrainers();
-
-   res = PollForDrainCompletion(Timeout);
-   if ( !res ) {
-      return false;
-   }
-
-   // Everyone (except the current thread) is hands-off the thread group.
+   m_DrainManager.WaitForAllDrainersDone();
 
    return true;
+}
+
+void OSLThreadGroup::ThrGrpState::DestructMembers()
+{
+   m_ThrStartBarrier.Destroy();
+   m_ThrExitBarrier.Destroy();
+   m_DrainManager.DestructMembers();
+   m_ThrJoinBarrier.Destroy();
+}
+
+OSLThreadGroup::ThrGrpState::DrainManager::DrainManager(ThrGrpState *pTGS) :
+   m_pTGS(pTGS),
+   m_DrainNestLevel(0),
+   m_WaitTimeout(AAL_INFINITE_WAIT)
+{
+   m_DrainerDoneBarrier.Create(1);
+}
+
+OSLThreadGroup::ThrGrpState::DrainManager::~DrainManager()
+{
+   ASSERT(0 == m_DrainNestLevel);
+   ASSERT(0 == m_SelfDrainers.size());
+   ASSERT(0 == m_NestedWorkItems.size());
+}
+
+Barrier * OSLThreadGroup::ThrGrpState::DrainManager::Begin(AAL::btTID tid, AAL::btUnsignedInt items)
+{
+   AutoLock(m_pTGS);
+
+   ++m_DrainNestLevel;
+
+   if ( 1 == m_DrainNestLevel ) {
+      // Beginning a new series of (possibly nested) Drain() calls.
+      ASSERT((AAL::btUnsignedInt) m_pTGS->m_workqueue.size() == items);
+      ASSERT(0 == m_NestedWorkItems.size());
+
+      m_DrainerDoneBarrier.Reset();
+
+      m_DrainBarrier.Destroy();
+      m_DrainBarrier.Create(items);
+
+      work_queue_t        tmpq;
+      IDispatchable      *pWork;
+      NestedBarrierPostD *pNested;
+
+      // Pull each item from the work queue, and wrap it in a NestedBarrierPostD() object.
+      while ( m_pTGS->m_workqueue.size() > 0 ) {
+         pWork = m_pTGS->m_workqueue.front();
+         m_pTGS->m_workqueue.pop();
+
+         pNested = new(std::nothrow) NestedBarrierPostD(pWork, this);
+         m_NestedWorkItems.push_back(pNested);
+
+         tmpq.push( pNested );
+      }
+
+      // Re-populate the work queue.
+      while ( tmpq.size() > 0 ) {
+         m_pTGS->m_workqueue.push(tmpq.front());
+         tmpq.pop();
+      }
+   }
+
+   // non-NULL means self-referential Drain().
+   OSLThread *pThread = m_pTGS->ThreadRunningInThisGroup(tid);
+
+   if ( NULL != pThread ) {
+      // Add tid to the list of self-drainers, allowing duplicates.
+      m_SelfDrainers.push_back(tid);
+      // Self-drainers don't block on the Barrier.
+      return NULL;
+   }
+
+   return &m_DrainBarrier;
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::CompleteNestedWorkItem(OSLThreadGroup::ThrGrpState::DrainManager::NestedBarrierPostD *pItem)
+{
+   m_pTGS->Lock();
+
+   nested_list_iter iter = std::find(m_NestedWorkItems.begin(), m_NestedWorkItems.end(), pItem);
+
+   ASSERT(m_NestedWorkItems.end() != iter);
+   if ( m_NestedWorkItems.end() != iter ) {
+      m_NestedWorkItems.erase(iter);
+   }
+
+   m_pTGS->Unlock();
+
+   delete pItem;
+   m_DrainBarrier.Post(1);
+}
+
+AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::End(AAL::btTID tid, Barrier *pDrainBarrier)
+{
+   AutoLock(m_pTGS);
+
+   AAL::btBool bFound = false;
+
+   if ( NULL == pDrainBarrier ) {
+      // self-referential Drain(). Remove one instance of tid from m_SelfDrainers.
+
+      drainer_list_iter iter;
+      for ( iter = m_SelfDrainers.begin() ; m_SelfDrainers.end() != iter ; ++iter ) {
+         if ( ThreadIDEqual(tid, *iter) ) {
+            bFound = true;
+            m_SelfDrainers.erase(iter);
+            if ( m_DrainNestLevel > 0 ) {
+               --m_DrainNestLevel;
+            }
+            break;
+         }
+      }
+
+   } else {
+      // external Drain().
+      bFound = true;
+      if ( m_DrainNestLevel > 0 ) {
+         --m_DrainNestLevel;
+      }
+   }
+
+   return bFound;
+}
+
+AAL::btBool OSLThreadGroup::ThrGrpState::DrainManager::ReleaseAllDrainers()
+{
+   nested_list_iter iter;
+   for ( iter = m_NestedWorkItems.begin() ; iter != m_NestedWorkItems.end() ; ++iter ) {
+      delete *iter;
+   }
+   m_NestedWorkItems.clear();
+   m_WaitTimeout = 100;
+   return m_DrainBarrier.UnblockAll();
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::ForciblyCompleteWorkItem()
+{
+   m_DrainBarrier.Post(1);
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::AllDrainersAreDone()
+{
+   m_DrainerDoneBarrier.Post(1);
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::WaitForAllDrainersDone()
+{
+   while ( m_DrainNestLevel > 0 ) {
+      m_DrainerDoneBarrier.Wait(m_WaitTimeout);
+   }
+}
+
+void OSLThreadGroup::ThrGrpState::DrainManager::DestructMembers()
+{
+   m_DrainBarrier.Destroy();
+   m_DrainerDoneBarrier.Destroy();
 }
 
 //=============================================================================
@@ -724,7 +794,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Quiesce(AAL::btTime Timeout)
 AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
 {
    // Refer to the state checking mutator:
-   //   IThreadGroup::eState OSLThreadGroup::ThrGrpState::State(IThreadGroup::eState st);
+   //   eState OSLThreadGroup::ThrGrpState::State(eState st);
    //
    // The only valid transitions to state Draining are
    //   Running  -> Draining
@@ -737,7 +807,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
 
    Lock();
 
-   AAL::btInt items = (AAL::btInt) m_workqueue.size();
+   const AAL::btUnsignedInt items = (AAL::btUnsignedInt) m_workqueue.size();
 
    // No need to drain if already empty.
    if ( 0 == items ) {
@@ -746,17 +816,17 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
    }
 
    // Check for other state conflicts.
-   if ( IThreadGroup::Draining != State(IThreadGroup::Draining) ) {
+   if ( Draining != State(Draining) ) {
       // Can't drain now - state conflict.
       Unlock();
       return false;
    }
 
-   AAL::btTID     MyThrID   = GetThreadID();
-   CSemaphore    *pDrainSem = m_DrainManager.Begin(MyThrID, items);
+   AAL::btTID     MyThrID       = GetThreadID();
+   Barrier       *pDrainBarrier = m_DrainManager.Begin(MyThrID, items);
    IDispatchable *pWork;
 
-   if ( NULL == pDrainSem ) {
+   if ( NULL == pDrainBarrier ) {
       // Self-referential Drain().
 
       // We need to continue to execute work.
@@ -771,58 +841,42 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Drain()
       }
 
    } else {
-      // not a self-referential Drain().
-
-      work_queue_t tmpq;
-
-      // Pull each item from the work queue, and wrap it in a OSLThreadGroupNestedSemPostD() object.
-      while ( m_workqueue.size() > 0 ) {
-         pWork = m_workqueue.front();
-         m_workqueue.pop();
-         tmpq.push( new(std::nothrow) OSLThreadGroupNestedSemPostD(pWork, *pDrainSem) );
-      }
-
-      // Re-populate the work queue.
-      while ( tmpq.size() > 0 ) {
-         m_workqueue.push(tmpq.front());
-         tmpq.pop();
-      }
+      // external Drain().
 
       Unlock();
 
       // Wait for the work items to complete. Don't wait while locked.
-      pDrainSem->Wait();
+      pDrainBarrier->Wait();
 
       Lock();
    }
 
-   AAL::btUnsignedInt nesting = m_DrainManager.End(MyThrID, pDrainSem);
+   m_DrainManager.End(MyThrID, pDrainBarrier);
 
-   IThreadGroup::eState st = State();
+   const AAL::btUnsignedInt level = m_DrainManager.DrainNestLevel();
+         eState             st    = State();
 
-   if ( IThreadGroup::Joining == st ) {
+   if ( Joining == st ) {
       // Join() during Drain() is allowed. In this case, an attempt to set the
       // state to Running or Draining below would be denied. We want the success indicator here,
       // however, to reflect that the thread group was drained of items, hence this check.
       Unlock();
 
-      if ( 0 == nesting ) {
-         // This series of Drain() calls(s) is complete.
-         flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINING);
+      if ( 0 == level ) {
+         m_DrainManager.AllDrainersAreDone();
       }
 
       return true;
    }
 
-   st = (0 == nesting) ? IThreadGroup::Running : IThreadGroup::Draining;
+   st = (0 == level) ? Running : Draining;
 
    AAL::btBool res = (State(st) == st);
 
    Unlock();
 
-   if ( 0 == nesting ) {
-      // This series of Drain() calls(s) is complete.
-      flag_clrf(m_Flags, THRGRPSTATE_FLAG_DRAINING);
+   if ( 0 == level ) {
+      m_DrainManager.AllDrainersAreDone();
    }
 
    return res;
@@ -832,9 +886,9 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
 {
    Lock();
 
-   const IThreadGroup::eState st = State();
+   const eState st = State();
 
-   if ( IThreadGroup::Joining == st ) {
+   if ( Joining == st ) {
       // Prevent nested / multiple Join().
       Unlock();
       return false;
@@ -845,7 +899,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
    OSLThread       *pThread = ThreadRunningInThisGroup(MyThrID);
 
    // We are now Joining.
-   State(IThreadGroup::Joining);
+   State(Joining);
 
    // Workers are no longer required to block infinitely on work items. Give them a
    // chance to wake periodically and see that the thread group is being joined.
@@ -875,11 +929,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
          Lock();
       }
 
-      // Remove this thread from the Running list of workers so that it is not considered in Join().
-      RemoveFromRunning(pThread);
-
-      // So that we don't block on ourself below.
-      WorkerHasExited(pThread);
+      WorkerIsSelfTerminating(pThread);
 
       Unlock();
 
@@ -912,13 +962,13 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
 {
    Lock();
 
-   const IThreadGroup::eState st = State();
+   const eState st = State();
 
-   if ( IThreadGroup::Draining == st ) {
+   if ( Draining == st ) {
       return DestroyWhileDraining(Timeout);
    }
 
-   if ( IThreadGroup::Joining == st ) {
+   if ( Joining == st ) {
       return DestroyWhileJoining(Timeout);
    }
 
@@ -932,7 +982,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
    // to wake periodically and see that the thread group is being joined.
    m_WorkSemTimeout = PollingInterval();
 
-   State(IThreadGroup::Joining);
+   State(Joining);
 
    // Wake any threads that happen to be blocked infinitely.
    m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
@@ -958,11 +1008,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
          Lock();
       }
 
-      // Remove this thread from the Running list of workers so that it is not Join()'ed.
-      RemoveFromRunning(pThread);
-
-      // So that we don't block ourself below.
-      WorkerHasExited(pThread);
+      WorkerIsSelfTerminating(pThread);
 
       Unlock();
 
@@ -1016,7 +1062,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
    // Transition the state to Joining here. This is to prevent another thread from beginning
    //  a Join() once we unlock the critical section. Destroy() is essentially a Join(),
    //  and we don't allow Join()'s to nest.
-   State(IThreadGroup::Joining);
+   State(Joining);
 
    // Wake any threads that happen to be blocked infinitely.
    m_WorkSem.Post( (AAL::btInt) m_RunningThreads.size() );
@@ -1043,11 +1089,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileDraining(AAL::btTime Timeou
          Lock();
       }
 
-      // Remove this thread from the Running list of workers so that it is not Join()'ed.
-      RemoveFromRunning(pThread);
-
-      // Post()'s m_ThrExitSem so that we don't block on ourself below.
-      WorkerHasExited(pThread);
+      WorkerIsSelfTerminating(pThread);
 
       Unlock();
 
@@ -1112,11 +1154,7 @@ AAL::btBool OSLThreadGroup::ThrGrpState::DestroyWhileJoining(AAL::btTime Timeout
          Lock();
       }
 
-      // Remove this thread from the Running list of workers so that it isn't Join()'ed.
-      RemoveFromRunning(pThread);
-
-      // Post()'s m_ThrExitSem so that the Join()'er doesn't attempt to Join() us.
-      WorkerHasExited(pThread);
+      WorkerIsSelfTerminating(pThread);
 
       Unlock();
 
