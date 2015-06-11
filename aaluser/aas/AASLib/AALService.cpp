@@ -191,8 +191,7 @@ IBase * ServiceBase::_init(btEventHandler       eventHandler,
 IBase * ServiceBase::_init(IBase               *pclient,
                            TransactionID const &rtid,
                            NamedValueSet const &optArgs,
-                           CAALEvent           *pcmpltEvent,
-                           btBool               NoRuntimeEvent)
+                           CAALEvent           *pcmpltEvent)
 {
    if(NULL == pclient){
       return NULL;
@@ -208,7 +207,7 @@ IBase * ServiceBase::_init(IBase               *pclient,
    m_optArgs = optArgs;
 
    // This is used to generate the creation event.
-   m_RuntimeClient = (NoRuntimeEvent == true ? NULL : getRuntimeServiceProvider()->getRuntimeClient());
+   m_RuntimeClient = getRuntimeServiceProvider()->getRuntimeClient();
 
    // Check that mandatory initialization has occurred
 
@@ -305,10 +304,9 @@ void ServiceBase::MessageDeliveryThread()
 
 void ServiceBase::allocService(IBase                  *pClient,
                                NamedValueSet const    &rManifest,
-                               TransactionID const    &rTranID,
-                               IRuntime::eAllocatemode mode)
+                               TransactionID const    &rTranID)
 {
-   getRuntime()->allocService(pClient, rManifest, rTranID, mode);
+   getRuntime()->allocService(pClient, rManifest, rTranID);
 }
 
 void ServiceBase::SendMsg(IDispatchable *pMessage)

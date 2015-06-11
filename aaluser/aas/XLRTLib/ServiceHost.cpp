@@ -144,11 +144,10 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint,
 //=============================================================================
 btBool ServiceHost::allocService(IBase               *pClient,
                                  NamedValueSet const &rManifest,
-                                 TransactionID const &rTranID,
-                                 btBool               NoRuntimeEvent)
+                                 TransactionID const &rTranID)
 {
    if ( IsOK() && ( NULL != m_pProvider ) ) {
-      m_base = m_pProvider->Construct(pClient, rTranID, rManifest, NoRuntimeEvent);
+      m_base = m_pProvider->Construct(pClient, rTranID, rManifest);
       return NULL != m_base;
    }
 

@@ -63,8 +63,7 @@ public:
    ///@param[in] eAllocatemode Allocation mode. NoRuntimeClientNotification will squelch the notification to the Runtime.
    virtual void allocService( IBase                  *pClient,
                               const NamedValueSet    &rManifest,
-                              TransactionID const    &rTranID,
-                              IRuntime::eAllocatemode mode ) =0;
+                              TransactionID const    &rTranID) =0;
 
    virtual ~IServiceBroker(){}
 };

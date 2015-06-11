@@ -50,17 +50,34 @@ BEGIN_NAMESPACE(AAL)
 
 
 //=============================================================================
-/// Default Constructor of Runtime class
+/// Constructor of Runtime class
 ///
 /// Need to call start() after construction to actually get the
 ///   runtime initialized and functional
 //=============================================================================
-Runtime::Runtime() :
+Runtime::Runtime(IRuntimeClient *pClient) :
    m_pImplementation(NULL),
    m_status(false)
 {
-   m_pImplementation = _getnewXLRuntimeInstance();
-   m_status          = m_pImplementation != NULL;
+   // Must have a RuntimeClient
+   if(NULL == pClient){
+      return;
+   }
+
+   // Get the Runtime instance
+   m_pImplementation = _getnewRuntimeInstance(this, pClient);
+
+   // If failed _getnewXLRuntimeInstance() will generate the message
+   if(NULL == m_pImplementation){
+      return;
+   }
+   m_status = m_pImplementation != NULL ? true : false;
+   // Register interfaces
+   // Add the public interfaces
+   if ( SetSubClassInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
+      m_status = false;
+      return;
+   }
 }
 
 //=============================================================================
@@ -74,7 +91,7 @@ btBool Runtime::IsOK()
 }
 
 //=============================================================================
-/// Starts the XL Runtime implementation after initial construction
+/// Starts the AAL Runtime implementation after initial construction
 ///
 /// @param[in]    pClient        Pointer to the Runtime's client object (IBase).
 /// @param[in]    rConfigParms   Configuration parameter NVS
@@ -83,12 +100,11 @@ btBool Runtime::IsOK()
 ///                  typically start() results in a call back to IRuntimeClient
 ///                  runtimeStarted() or runtimeStartFailed().
 //=============================================================================
-btBool  Runtime::start(IBase               *pClient,
-                       const NamedValueSet &rConfigParms)
+btBool  Runtime::start(const NamedValueSet &rConfigParms)
 {
    // Try and start the system
    if ( IsOK() ) {
-      return m_pImplementation->start(pClient, rConfigParms);
+      return m_pImplementation->start(this, rConfigParms);
    }
    return false;
 }
@@ -100,7 +116,7 @@ btBool  Runtime::start(IBase               *pClient,
 void Runtime::stop()
 {
    if ( IsOK() ) {
-      m_pImplementation->stop();
+      m_pImplementation->stop(this);
    }
 }
 
@@ -117,11 +133,10 @@ void Runtime::stop()
 void Runtime::allocService(
       IBase                  *pClient,
       NamedValueSet const    &rManifest,
-      TransactionID const    &rTranID,
-      IRuntime::eAllocatemode mode)
+      TransactionID const    &rTranID)
 {
    if ( IsOK() ) {
-      m_pImplementation->allocService(pClient, rManifest, rTranID, mode);
+      m_pImplementation->allocService(pClient, rManifest, rTranID);
    }
 }
 
@@ -140,9 +155,77 @@ void Runtime::schedDispatchable(IDispatchable *pdispatchable)
 }
 
 //=============================================================================
-/// Virtual Destructor with empty implementation
+/// Get a new pointer to the Runtime
+///
+/// @param[in]    pClient - Pointer to client for Proxy
+/// @return       void
 //=============================================================================
-Runtime::~Runtime() {/*empty*/}
+IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
+{
+   Runtime *newProxy = new Runtime(pClient);
+
+   // If construction failed Client will be notified if possible.
+   //    we simply return NULL
+   if(!newProxy->IsOK()){
+      delete newProxy;
+      return NULL;
+   }else{
+      // Save the Proxy to clean up later
+      Lock();
+      m_proxyList.push_back(newProxy);
+      Unlock();
+      return dynamic_cast<IRuntime*>(newProxy);
+   }
+}
+
+//=============================================================================
+/// Get a new pointer to the Runtime
+///
+/// @param[in]    pRuntime - Pointer to Proxy to release
+/// @return       true - Success
+//=============================================================================
+btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
+{
+   AutoLock(this);
+
+   // Look through our the list of Proxies and release the appropriate one.
+   int cnt=0;
+   for(;cnt<m_proxyList.size(); cnt++){
+      if(m_proxyList[cnt] == dynamic_cast<IRuntime*>(pRuntime) ){
+
+         // Delete the proxy instance
+         delete m_proxyList[cnt];
+
+         // Remove it from the list
+         m_proxyList.erase(m_proxyList.begin() + cnt);
+         return true;
+      }
+   }
+   // If we got here we did not find the Proxy
+   return false;
+}
+
+//=============================================================================
+/// Destructor releases all proxies created though this object and releases
+///   the Runtime Instance
+//=============================================================================
+Runtime::~Runtime()
+{
+   AutoLock(this);
+
+    // Look through our the list of Proxies and release them.
+    int cnt=0;
+    for(;cnt<m_proxyList.size(); cnt++){
+       if(NULL != m_proxyList[cnt] ){
+          // Delete the proxy instance
+          delete m_proxyList[cnt];
+       }
+    }
+    // Free the vector.
+    m_proxyList.clear();
+
+    m_pImplementation->releaseRuntimeInstance(this);
+}
 
 
 END_NAMESPACE(AAL)

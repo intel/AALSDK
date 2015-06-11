@@ -219,8 +219,7 @@ public:
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL,
-                         btBool               NoRuntimeEvent = false);
+                         CAALEvent           *pcmpltEvent = NULL);
 
    /// Hook for derived classes to perform any post-creation initialization.
    ///
@@ -333,8 +332,7 @@ public:
    /// Enable service to allocate another Service. NOTE: default is the RuntimeClient is NOT notified
    void allocService(IBase                  *pClient,
                      NamedValueSet const    &rManifest = NamedValueSet(),
-                     TransactionID const    &rTranID   = TransactionID(),
-                     IRuntime::eAllocatemode mode      = IRuntime::NoRuntimeClientNotification);
+                     TransactionID const    &rTranID   = TransactionID());
 
    /// Send a Dispatchable
    /// @param[in]  pMessage  Pointer to IDispatchable.

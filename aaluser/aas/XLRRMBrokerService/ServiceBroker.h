@@ -82,7 +82,6 @@ public:
    // Map to hold clients of outstanding transactions
    struct ServiceDesc{
       IBase                  *ServiceBase;
-      IRuntime::eAllocatemode NoRuntimeEvent;
    };
 
    typedef std::map<TransactionID, struct ServiceDesc, tidcompare> ServiceClientMap;
@@ -117,8 +116,7 @@ public:
 
    void allocService(IBase                  *pClient,
                      const NamedValueSet    &rManifest,
-                     TransactionID const    &rTranID,
-                     IRuntime::eAllocatemode mode = IRuntime::NotifyAll);
+                     TransactionID const    &rTranID);
 protected:
    ServiceHost *findServiceHost(std::string const &sName);
 

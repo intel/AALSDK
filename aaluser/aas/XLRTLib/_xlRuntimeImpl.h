@@ -36,6 +36,7 @@
 #ifndef __XLRUNTIMEIMPL_H__
 #define __XLRUNTIMEIMPL_H__
 #include <aalsdk/AALTypes.h>
+#include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/xlRuntime.h>
 #include <aalsdk/aas/_xlRuntimeServices.h>
 #include <aalsdk/CUnCopyable.h>
@@ -56,45 +57,45 @@
 
 
 BEGIN_NAMESPACE(AAL)
-
+class _runtime;
 
 //=============================================================================
 // Name: _getnewRuntimeInstance
-// Description: XL runtime system factory.
+// Description: AAL Runtime system factory.
 // Comments:
 //=============================================================================
 BEGIN_C_DECLS
-_getnewRuntimeInstance( Runtime *pRuntimeProxy,
-                        IRuntimeClient *pClient);
+_runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
+                                  IRuntimeClient *pClient);
 END_C_DECLS
 
 
 //=============================================================================
-// Name: _xlruntime
+// Name: _runtime
 // Description: Class implements the internal XL runtime system.
 // Comments:
 //=============================================================================
-class _xlruntime : public  CAASBase,
-                   private CUnCopyable,
-                   private IServiceClient,
-                   public  IXLRuntimeServices,
-                   public  IRuntime
+class _runtime : public  CAASBase,
+                 private CUnCopyable,
+                 private IServiceClient,
+                 public  IXLRuntimeServices
 {
 public:
    typedef std::map<Runtime *, IRuntimeClient *> ClientMap;
    typedef ClientMap::iterator                 ClientMap_itr;
 
-   _xlruntime();
-   ~_xlruntime();
+   _runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient);
+   void releaseRuntimeInstance( Runtime *pRuntimeProxy);
+
 
    // Start: Start the runtime
-   //    Input: pProxy - Pointer to Proxy for the IRuntimeClient callback.
+   // Input: pProxy - Pointer to Proxy for the IRuntimeClient callback.
    //           rconfigParms - Reference to configuration parameters.
    btBool start( Runtime *pProxy,
                  const NamedValueSet &rconfigParms );
 
    // Stop: Stop the runtime
-   void stop();
+   void stop(Runtime* pProxy);
 
    btBool IsOK();
 
@@ -104,13 +105,16 @@ public:
    //                       description and any configuration parameters.
    void allocService( IBase                   *pClient,
                       NamedValueSet const     &rManifest = NamedValueSet(),
-                      TransactionID const     &rTranID   = TransactionID(),
-                      IRuntime::eAllocatemode  mode = NotifyAll);
+                      TransactionID const     &rTranID   = TransactionID());
 
    void schedDispatchable(IDispatchable *pdispatchable);
 
+   // Returns a proxy pointer to the singleton Runtime
    void addProxy(Runtime *pRuntimeProxy,
                  IRuntimeClient *pClient);
+
+   // Returns a proxy pointer to the singleton Runtime
+   void removeProxy(Runtime *pRuntimeProxy);
 
    // IXLRuntimeServices
    IBase      *getMessageDeliveryService();
@@ -136,6 +140,9 @@ protected:
    btBool ProcessConfigParms(const NamedValueSet &rConfigParms);
 
 private:
+   _runtime();
+   ~_runtime();
+
    enum Services{
       MDS = 1,
       Broker
@@ -146,11 +153,13 @@ private:
       Started
    };
 
-   btBool                          m_status;
-   IRuntimeClient                 *m_pclient;
-   enum State                      m_state;
+   btBool                         m_status;
+   enum State                     m_state;
 
-   ClientMap                       m_clientMap;
+   // Clients of the Runtime
+   Runtime                       *m_pOwner;     // Creator Runtime Proxy
+   IRuntimeClient                *m_pClient;    // Creator's Client
+   ClientMap                      m_mClientMap; // Map of Runtime Proxys
 
 
    // Core Facilities: Implemented as built-in plug-in Services
@@ -158,18 +167,19 @@ private:
    //  and a Service interface.
 
    // Default MDS Host container
-   ServiceHost                     *m_pMDSSvcHost;
+   ServiceHost                    *m_pMDSSvcHost;
+
    //Default Service Broker Host Container
-   ServiceHost                     *m_pBrokerSvcHost;
+   ServiceHost                    *m_pBrokerSvcHost;
 
    // Active core services
-   IEventDeliveryService           *m_pMDS;
-   IBase                           *m_pMDSbase;
+   IEventDeliveryService          *m_pMDS;
+   IBase                          *m_pMDSbase;
 
-   IServiceBroker                  *m_pBroker;
-   IBase                           *m_pBrokerbase;
+   IServiceBroker                 *m_pBroker;
+   IBase                          *m_pBrokerbase;
 
-   CSemaphore                       m_sem;
+   CSemaphore                      m_sem;
 };
 
 END_NAMESPACE(AAL)

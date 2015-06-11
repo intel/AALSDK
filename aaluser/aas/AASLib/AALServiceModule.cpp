@@ -90,16 +90,14 @@ IBase *AALServiceModule::Construct(btEventHandler       Listener,
 
 IBase *AALServiceModule::Construct(IBase               *Client,
                                    TransactionID const &tranID,
-                                   NamedValueSet const &optArgs,
-                                   btBool               NoRuntimeEvent)
+                                   NamedValueSet const &optArgs)
 {
    // Add this one to the list of objects this container holds.
    //  It's up to the factory to enforce singletons.
    m_pBase = m_SvcsFact.CreateServiceObject(this,
                                             Client,
                                             tranID,
-                                            optArgs,
-                                            NoRuntimeEvent);
+                                            optArgs);
 
    // Add the service to the list of services the module
    if ( NULL != m_pBase ) {

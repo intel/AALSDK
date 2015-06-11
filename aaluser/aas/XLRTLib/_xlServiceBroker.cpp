@@ -96,8 +96,7 @@ void _xlServiceBroker::init(TransactionID const &rtid)
 //=============================================================================
 void _xlServiceBroker::allocService(IBase                   *pClient,
                                     const NamedValueSet     &rManifest,
-                                    TransactionID const     &rTranID,
-                                    IRuntime::eAllocatemode  mode)
+                                    TransactionID const     &rTranID)
 {
    // Process the manifest
    btcString            sName  = NULL;
@@ -140,7 +139,7 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
    }
 
    // Allocate the service
-   if ( !SvcHost->allocService(pClient, rManifest, rTranID, mode) ) {
+   if ( !SvcHost->allocService(pClient, rManifest, rTranID) ) {
       QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                     pServiceClient,
                                                     NULL,

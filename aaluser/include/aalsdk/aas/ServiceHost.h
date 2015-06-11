@@ -65,8 +65,7 @@ public:
 
    btBool allocService( IBase               *pClient,
                         NamedValueSet const &rManifest = NamedValueSet(),
-                        TransactionID const &rTranID = TransactionID(),
-                        btBool               NoRuntimeEvent = false);
+                        TransactionID const &rTranID = TransactionID());
 
    std::string const &getName() const   { return m_name;      }
    IBase *  getIBase()const             { return m_base;      }

@@ -284,8 +284,7 @@ public:
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
                                        IBase               *Client,
                                        TransactionID const &rtid,
-                                       NamedValueSet const &optArgs,
-                                       btBool               NoRuntimeEvent) = 0;
+                                       NamedValueSet const &optArgs) = 0;
 };
 
 
@@ -326,8 +325,7 @@ public:
     /// @retval  NULL     On failure.
     virtual IBase *Construct(IBase               *Client,
                              TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet(),
-                             btBool               NoRuntimeEvent = false) = 0;
+                             NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
    /// Forcefully destroy the Service objects created by this module.
    ///
@@ -385,8 +383,7 @@ public:
                             NamedValueSet const &optArgs = NamedValueSet());
     virtual IBase *Construct(IBase               *Client,
                              TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet(),
-                             btBool               NoRuntimeEvent = false);
+                             NamedValueSet const &optArgs = NamedValueSet());
    virtual void Destroy();
 
    // </IServiceModule>

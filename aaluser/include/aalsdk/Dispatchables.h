@@ -130,8 +130,10 @@ class RuntimeCallback : public IDispatchable
 {
 public:
    enum MessageType{
+      CreateorGetProxyFailed,
       Started,
       StartFailed,
+      StopFailed,
       Stopped,
       Event
    };
@@ -171,6 +173,10 @@ public:
 void operator() ()
 {
    switch ( m_type ) {
+      case CreateorGetProxyFailed: {
+         m_pobject->runtimeCreateOrGetProxyFailed(*m_pEvent);
+      }break;
+
       case Started : {
          m_pobject->runtimeStarted(m_prt, m_rConfigParms);
       } break;

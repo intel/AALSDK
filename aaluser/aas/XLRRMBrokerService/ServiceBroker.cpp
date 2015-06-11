@@ -94,7 +94,7 @@ void ServiceBroker::init(TransactionID const &rtid)
 
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
-   if ( !m_pRMSvcHost->allocService( dynamic_cast<IBase*>(this), NamedValueSet(), tid, IRuntime::NoRuntimeClientNotification ) ) {
+   if ( !m_pRMSvcHost->allocService( dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
       QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
@@ -236,8 +236,7 @@ void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
 //=============================================================================
 void ServiceBroker::allocService(IBase                   *pServiceBase,
                                  const NamedValueSet     &rManifest,
-                                 TransactionID const     &rTranID,
-                                 IRuntime::eAllocatemode  mode)
+                                 TransactionID const     &rTranID)
 {
    // Process the manifest
    btcString            sName = NULL;
@@ -259,7 +258,6 @@ void ServiceBroker::allocService(IBase                   *pServiceBase,
          // Need to save the pServiceClient to be able to generate the final event
          TransactionID tid;
          m_ServiceClientMap[tid].ServiceBase = pServiceBase;
-         m_ServiceClientMap[tid].NoRuntimeEvent = mode;
          m_Transactions[tid] = rTranID;
 
          m_ResMgr->RequestResource(rManifest, tid );
@@ -286,7 +284,7 @@ void ServiceBroker::allocService(IBase                   *pServiceBase,
       }
 
       // Allocate the service
-      if ( !SvcHost->allocService(pServiceBase, rManifest, rTranID, mode) ) {
+      if ( !SvcHost->allocService(pServiceBase, rManifest, rTranID) ) {
          QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                         Client(),
                                                         NULL,
@@ -600,7 +598,6 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      m_Transactions.erase(tid);
 
      IBase *pClientBase    = m_ServiceClientMap[tid].ServiceBase;
-     btBool NoRuntimeEvent = m_ServiceClientMap[tid].NoRuntimeEvent;
      m_ServiceClientMap.erase(tid);
 
      NamedValueSet const *ConfigRecord;

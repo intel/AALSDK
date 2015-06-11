@@ -633,7 +633,7 @@ int main(int argc, char *argv[])
 
    CMyApp        myapp;
    NamedValueSet args;
-   Runtime       aal;
+   Runtime       aal(&myapp);
 
    myapp.AFUTarget(gMyCmdLine.AFUTarget);
 
@@ -647,7 +647,7 @@ int main(int argc, char *argv[])
    }
 
    INFO("Starting the AAL Runtime");
-   if ( aal.start(&myapp, args) ) {
+   if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
       ERR("AAL Runtime start failed");

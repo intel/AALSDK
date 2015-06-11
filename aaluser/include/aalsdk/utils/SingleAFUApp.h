@@ -73,9 +73,11 @@ public:
    void Stop();
 
    // <IRuntimeClient>
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
    virtual void     runtimeStarted(IRuntime *,
                                    const NamedValueSet &);
    virtual void     runtimeStopped(IRuntime *);
+   virtual void     runtimeStopFailed(const IEvent &rEvent);
    virtual void     runtimeStartFailed(const IEvent &);
    virtual void     runtimeAllocateServiceFailed(IEvent const &);
    virtual void     runtimeAllocateServiceSucceeded(IBase *,
@@ -209,6 +211,28 @@ void ISingleAFUApp<Proprietary>::Stop()
    }
 
    Post(); // Wake up main, if waiting
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::runtimeCreateOrGetProxyFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnRuntimeEvent(e);
+   m_bIsOK = false;
+   Post();
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::runtimeStopFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnRuntimeEvent(e);
+   m_bIsOK = false;
+   Post();
 }
 
 template <typename Proprietary>

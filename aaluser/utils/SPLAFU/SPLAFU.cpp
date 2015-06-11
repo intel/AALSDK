@@ -86,7 +86,7 @@ void SPLAFU::init(TransactionID const &TranID)
 
    // TODO Use wrap/unwrap utils.
    m_TranIDFrominit = TranID;
-   allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID(), IRuntime::NoRuntimeClientNotification);
+   allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID());
 }
 
 btBool SPLAFU::Release(TransactionID const &TranID, btTime timeout)

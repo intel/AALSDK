@@ -197,8 +197,7 @@ public:
       ServiceBase::_init(pclient,
                          rtid,
                          optArgs,
-                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid),
-                         NoRuntimeEvent);
+                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
       return this;
    }
 
@@ -290,7 +289,7 @@ private:
          // Allocate the AIA. The last parameter means do not send notification to RuntimeClient
          //   Pass the m_scContainer as the IBase containing the IServiceClient.  The ServiceClient
          //   actually publishes our private IServiceClient for us. (See note at top of class).
-         allocService(&m_scContainer, nvsManifest, tidLoadAIA, IRuntime::NoRuntimeClientNotification);
+         allocService(&m_scContainer, nvsManifest, tidLoadAIA);
       }
       return;
 

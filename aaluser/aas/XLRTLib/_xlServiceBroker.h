@@ -83,8 +83,7 @@ public:
 
    void allocService(IBase                    *pClient,
                      const NamedValueSet      &rManifest,
-                     TransactionID const      &rTranID,
-                     IRuntime::eAllocatemode = IRuntime::NotifyAll);
+                     TransactionID const      &rTranID);
 
 
    ~_xlServiceBroker();
