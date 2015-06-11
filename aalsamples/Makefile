@@ -47,9 +47,7 @@ splapp \
 splapp2 \
 splapp3 \
 SyncApp1 \
-UMsgTest \
-Histogram_ASE \
-UMsgTest_ASE
+UMsgTest 
 
 MFLAGS  =
 ifneq (,$(ndebug))
