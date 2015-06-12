@@ -31,16 +31,10 @@ fi
 set -e
 
 declare VPATH=''
-declare VPATH_ALREADY_EXISTED=false
 declare KILLED=false
 
 on_exit() {
-   if ${KILLED} ; then
-      if ! ${VPATH_ALREADY_EXISTED} ; then
-         # Don't destroy results created by a previous full run.
-         [ -n "${VPATH}" ] && [ -d "${VPATH}" ] && ${RM} -rf "${VPATH}"
-      fi
-   fi
+   ${KILLED} && printf "=[\n"
 }
 trap 'on_exit' EXIT
 
@@ -65,9 +59,7 @@ setup() {
    local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
 
    VPATH="${PWD}/gdb.${git_commit_hash:0:7}"
-   if [ -d "${VPATH}" ]; then
-      VPATH_ALREADY_EXISTED=true
-   else
+   if ! [ -d "${VPATH}" ]; then
       ${MKDIR} -p "${VPATH}"
    fi
 

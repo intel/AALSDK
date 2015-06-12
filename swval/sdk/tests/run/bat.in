@@ -2,4 +2,5 @@
 # @configure_input@              -*- shell-script -*- 
 # Do what it takes to run the bat binary as created by 'make check'.
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
+LD_LIBRARY_PATH='@abs_top_builddir@/tests/swvalmod/.libs' \
 exec '@abs_top_builddir@/tests/harnessed/gtest/bat' ${1+"$@"}

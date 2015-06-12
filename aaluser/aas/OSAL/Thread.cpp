@@ -115,10 +115,10 @@ OSLThread::OSLThread(ThreadProc                     pProc,
    m_pProc(pProc),
    m_nPriority(THREADPRIORITY_INVALID),
    m_pContext(pContext),
-   m_LocalThread(ThisThread),
-   m_IsOK(false),
-   m_Joined(false)
+   m_State(0)
 {
+   ASSERT(NULL != pProc);
+
    if ( ( nPriority >= 0 ) &&
         ( (unsigned)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
       m_nPriority = OSLThread::sm_PriorityTranslationTable[(AAL::btInt)nPriority];
@@ -137,33 +137,39 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_Semaphore.Create(0, 1) ) {
+   if ( !m_Semaphore.Create(0, INT_MAX) ) { // (Without setting THR_ST_OK.)
       return;
    }
 
 #endif // OS
 
-   if ( m_LocalThread ) {
+   if ( NULL == pProc ) { // (Without setting THR_ST_OK.)
+      return;
+   }
+
+   if ( ThisThread ) {
       // Run the thread function locally in this thread.
 
-      m_IsOK = true;
+      flag_setf(m_State, THR_ST_OK|THR_ST_LOCAL);
       OSLThread::StartThread(this);
 
    } else {
+
+      flag_setf(m_State, THR_ST_OK);
 
 #if   defined( __AAL_WINDOWS__ )
       // Create a new thread to run the thread function.
 
       uintptr_t res = _beginthread(OSLThread::StartThread, 0, this);
-      if ( -1L != res ) {
-         m_IsOK = true;
+      if ( -1L == res ) {
+         flag_clrf(m_State, THR_ST_OK);
       }
 
 #elif defined( __AAL_LINUX__ )
 
       int res = pthread_create(&m_Thread, NULL, OSLThread::StartThread, this);
-      if ( 0 == res ) {
-         m_IsOK = true;
+      if ( 0 != res ) {
+         flag_clrf(m_State, THR_ST_OK);
       }
 
 #endif // OS
@@ -179,6 +185,11 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 // Outputs: none.
 // Comments:
 //=============================================================================
+
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_0.cpp"
+#endif // DBG_OSLTHREAD
+
 #if   defined( __AAL_WINDOWS__ )
 void   OSLThread::StartThread(void *p)
 #elif defined( __AAL_LINUX__ )
@@ -199,8 +210,7 @@ void * OSLThread::StartThread(void *p)
 
 #if   defined( __AAL_WINDOWS__ )
 
-      SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
-     // pThread->m_tid = GetCurrentThreadId();
+      ::SetThreadPriority(GetCurrentThread(), pThread->m_nPriority);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -211,23 +221,33 @@ void * OSLThread::StartThread(void *p)
       sp.sched_priority = pThread->m_nPriority;
       pthread_setschedparam(pthread_self(), SCHED_RR, &sp);
 
-  //    pThread->m_tid = pthread_self();
-
 #endif // OS
-      pThread->m_tid = CurrentThreadID();
+
    }
+
+   pThread->m_tid = CurrentThreadID();
 
    ThreadProc fn = pThread->m_pProc;
 
    if ( NULL != fn ) {
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_1.cpp"
+#endif // DBG_OSLTHREAD
+
       fn(pThread, pThread->m_pContext);
+
+#ifdef DBG_OSLTHREAD
+# include "dbg_oslthread_2.cpp"
+#endif // DBG_OSLTHREAD
    }
 
 #if   defined( __AAL_WINDOWS__ )
    SetEvent(pThread->m_hJoinEvent);
-#elif defined( __AAL_LINUX__ )
+#endif // __AAL_WINDOWS__
+
+#if defined( __AAL_LINUX__ )
    return NULL;
-#endif // OS
+#endif // __AAL_LINUX__
 }
 
 //=============================================================================
@@ -248,15 +268,42 @@ OSLThread::~OSLThread()
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_LocalThread && !m_Joined ) {
-      // Mark the thread for termination
-      pthread_cancel(m_Thread);
+   // The thread is exiting. Post to the internal semaphore so that all waiters can wake (Wait() / Signal()).
+   AAL::btInt CurrentCount = 0;
+   AAL::btInt MaxCount     = 0;
 
-      // Detach it to free resources in case not joined
-      pthread_detach(m_Thread);
-   }
+   m_Semaphore.CurrCounts(CurrentCount, MaxCount);
+   m_Semaphore.Post(INT_MAX - CurrentCount);
 
 #endif // OS
+
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+      // If we didn't construct successfully, or if we're a "local" thread, or if we've already
+      //  been Join()'ed, then there's nothing left to do.
+      Unlock();
+      return;
+   }
+
+   Detach();  // Detach it to free resources - this thread won't be Join()'ed.
+
+   Unlock();
+
+   if ( IsThisThread( GetThreadID() ) ) {
+      // self-destruct
+      ExitCurrentThread(0);
+   } else {
+
+      Cancel();  // Mark the thread for termination at the next cancellation point.
+                 // TODO: refer to man pthread_setcanceltype
+                 //       the default cancellation type for threads is PTHREAD_CANCEL_DEFERRED,
+                 //       which means that cancellation requests are deferred until the target
+                 //       thread next calls a cancellation point.
+                 //       Use pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) to cancel
+                 //       a thread asap.
+   }
 }
 
 //=============================================================================
@@ -269,6 +316,24 @@ OSLThread::~OSLThread()
 //=============================================================================
 void OSLThread::Unblock()
 {
+   Lock();
+
+   // We can only manipulate m_Thread when OK and !Local.
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_UNBLOCKED);
+      }
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_UNBLOCKED);
+
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    //TODO
@@ -276,10 +341,8 @@ void OSLThread::Unblock()
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_LocalThread ) {
-      // Mark the thread for termination
-      pthread_kill(m_Thread, SIGIO);
-   }
+   // Mark the thread for termination
+   pthread_kill(m_Thread, SIGIO);
 
 #endif // OS
 }
@@ -357,6 +420,31 @@ void OSLThread::Wait()
 //=============================================================================
 void OSLThread::Join()
 {
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_JOINED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
+         ASSERT(OSLThread_attempt_to_Join_when_already_Joined_or_Detached);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_JOINED);
+
+   // Don't join while locked.
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    WaitForSingleObject(m_hJoinEvent, INFINITE);
@@ -367,8 +455,43 @@ void OSLThread::Join()
    pthread_join(m_Thread, &ret);
 
 #endif // OS
+}
 
-   m_Joined = true;
+// The underlying thread resource will never be join()'ed.
+void OSLThread::Detach()
+{
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_DETACHED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
+         ASSERT(OSLThread_attempt_to_Detach_when_already_Joined_or_Detached);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing else to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_DETACHED);
+
+   Unlock();
+
+#if   defined( __AAL_WINDOWS__ )
+
+#elif defined( __AAL_LINUX__ )
+
+   // Detach it to free resources.
+   pthread_detach(m_Thread);
+
+#endif // OS
 }
 
 //=============================================================================
@@ -381,17 +504,48 @@ void OSLThread::Join()
 //=============================================================================
 void OSLThread::Cancel()
 {
+   Lock();
+
+   if ( flag_is_clr(m_State, THR_ST_OK) ||
+        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+
+      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+         flag_setf(m_State, THR_ST_CANCELED);
+      }
+#if ENABLE_ASSERT
+      else {
+         const AAL::btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
+         ASSERT(OSLThread_attempt_to_Cancel_when_already_Joined);
+      }
+#endif // ENABLE_ASSERT
+
+      // Nothing to do.
+      Unlock();
+      return;
+   }
+
+   flag_setf(m_State, THR_ST_CANCELED);
+
+   Unlock();
+
 #if   defined( __AAL_WINDOWS__ )
 
    // TODO OSLThread::Cancel for Windows
 
 #elif defined( __AAL_LINUX__ )
 
-   if ( !m_LocalThread && !m_Joined ) {
-      // Mark the thread for termination
-      pthread_cancel(m_Thread);
-   }
+   // Mark the thread for termination
+   pthread_cancel(m_Thread);
 
+#endif // OS
+}
+
+AAL::btBool OSLThread::IsThisThread(AAL::btID id) const
+{
+#if   defined( __AAL_WINDOWS__ )
+   return id == m_tid;
+#elif defined( __AAL_LINUX__ )
+   return 0 != pthread_equal(id, m_tid);
 #endif // OS
 }
 
@@ -408,6 +562,7 @@ AAL::btTID OSLThread::tid()
    return m_tid;
 }
 
+/*
 //=============================================================================
 // Name: SetThreadPriority
 // Description:
@@ -416,7 +571,7 @@ AAL::btTID OSLThread::tid()
 // Outputs: none.
 // Comments:
 //=============================================================================
-OSAL_API void SetThreadPriority(AAL::btInt nPriority)
+OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 {
    if ( ( nPriority >= 0 ) &&
         ( (AAL::btUnsignedInt)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
@@ -425,7 +580,7 @@ OSAL_API void SetThreadPriority(AAL::btInt nPriority)
 
 #if   defined( __AAL_WINDOWS__ )
 
-      SetThreadPriority(GetCurrentThread(), pri);
+      ::SetThreadPriority(GetCurrentThread(), pri);
 
 #elif defined( __AAL_LINUX__ )
 
@@ -439,6 +594,7 @@ OSAL_API void SetThreadPriority(AAL::btInt nPriority)
 
    }
 }
+*/
 
 //=============================================================================
 // Name: GetProcessID
@@ -482,6 +638,33 @@ AAL::btTID GetThreadID()
 #endif // OS
 }
 
+AAL::btBool ThreadIDEqual(AAL::btTID x, AAL::btTID y)
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   return x == y;
+
+#elif defined( __AAL_LINUX__ )
+
+   return 0 != pthread_equal(x, y);
+
+#endif // OS
+}
+
+void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
+{
+#if   defined( __AAL_WINDOWS__ )
+
+   ExitThread((DWORD)ExitStatus);
+
+#elif defined( __AAL_LINUX__ )
+
+   pthread_exit((void *)ExitStatus);
+
+#endif // OS
+}
+
+/*
 //=============================================================================
 // Name: GetNumProcessors
 // Description:
@@ -506,9 +689,11 @@ OSAL_API AAL::btInt GetNumProcessors()
 
 #endif // OS
 }
+*/
 
 OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage)
 {
+   ASSERT(NULL != storage);
 #if   defined( __AAL_WINDOWS__ )
    unsigned int seed = (unsigned int)*storage;
    rand_s(&seed);

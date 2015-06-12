@@ -227,15 +227,18 @@ btBool _xlruntime::start(IBase               *pclient,
 // Outputs: none.
 // Comments:
 //=============================================================================
+Environment * Environment::sm_EnvObj = NULL;
+
 btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
    NamedValueSet const *pConfigRecord;
    btcString            sName  = NULL;
-   Environment          env;
+   std::string               strSname;
+  // Environment          env;
 
    //
    // First check environment
-   if( NULL == (sName = env.getVal(XLRUNTIME_CONFIG_BROKER_SERVICE)) ){
+   if( false == (Environment::GetObj()->Get("XLRUNTIME_CONFIG_BROKER_SERVICE", strSname)) ){
 
       if ( ENamedValuesOK != rConfigParms.Get(XLRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
          // Check to see if default services are running

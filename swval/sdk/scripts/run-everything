@@ -7,5 +7,6 @@ declare -r SCRIPT_NAME='run-everything'
 
 . ./run-common
 
+setup
 run_everything
 exit $?

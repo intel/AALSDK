@@ -3,7 +3,7 @@ dnl INTEL CONFIDENTIAL - For Intel Internal Use Only
 dnl # VERIFY_OPTIONS
 dnl # ---
 AC_DEFUN([VERIFY_OPTIONS], [
-   _conf_CPPFLAGS="${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
+   _conf_CPPFLAGS="-DDBG_OSLTHREAD=1 ${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
    _conf_CFLAGS="${CFLAGS}"
    _conf_CXXFLAGS="${CXXFLAGS}"
    _conf_LDFLAGS="${LDFLAGS}"
@@ -11,7 +11,7 @@ AC_DEFUN([VERIFY_OPTIONS], [
 
    AM_COND_IF([COND_WITH_GCOV],
               [ dnl requires -O0 --coverage
-               _conf_CPPFLAGS="${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
+               _conf_CPPFLAGS="-DDBG_OSLTHREAD=1 ${DEBUG_CPPFLAGS} ${ASSERT_CPPFLAGS}"
                _conf_CFLAGS="${GCOV_CFLAGS}"
                _conf_CXXFLAGS="${GCOV_CXXFLAGS}"
                _conf_LDFLAGS="${GCOV_LDFLAGS}"

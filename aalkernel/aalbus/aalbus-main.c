@@ -280,7 +280,7 @@ aalbus_attrib_store_debug(struct bus_type *bus, const char *buf, size_t size);
 // Static bus attributes
 //----------------------
 BUS_ATTR(version,S_IRUGO,aalbus_attrib_show_version,NULL);
-BUS_ATTR(debug,S_IRUGO|S_IWUGO,aalbus_attrib_show_debug,aalbus_attrib_store_debug);
+BUS_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP,aalbus_attrib_show_debug,aalbus_attrib_store_debug);
 
 //---------------
 // Bus Attributes

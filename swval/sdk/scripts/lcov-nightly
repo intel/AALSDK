@@ -1,6 +1,21 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
+declare ARGS=''
+while [ "x$1" != x ]; do
+
+   case $1 in
+      --gtest_*)
+         ARGS="${ARGS} --gtest-opt=$1"
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+
+   shift
+done
+
 shopt -o -s nounset
 
 declare -r SCRIPT_NAME='lcov-nightly'
@@ -11,7 +26,10 @@ declare -r D='nightly'
 
 setup "$D"
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --nightly --gtest-opt=--gtest_color=yes"
+declare AUTO_COLOR=''
+[ -t 1 ] && AUTO_COLOR='--gtest-opt=--gtest_color=yes'
+
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --nightly ${AUTO_COLOR} ${ARGS}"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \

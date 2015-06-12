@@ -113,6 +113,7 @@ OSAL_API unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value);
 # include <aalsdk/osal/DynLinkLibrary.h>
 # include <aalsdk/osal/CriticalSection.h>
 # include <aalsdk/osal/OSSemaphore.h>
+# include <aalsdk/osal/Barrier.h>
 # include <aalsdk/osal/Thread.h>
 # include <aalsdk/osal/ThreadGroup.h>
 # include <aalsdk/osal/OSServiceModule.h>

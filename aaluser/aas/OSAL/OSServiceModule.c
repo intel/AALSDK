@@ -160,19 +160,18 @@ bt32bitInt OSServiceModuleOpen(OSServiceModule *p)
    bt32bitInt  tmp;
    btByte      buf[AAL_SVC_MOD_FULL_NAME_MAX + 256];
 
-   btBool      locked  = false;
+   btBool      locked  = true;
    btBool      advised = false;
 
    tmp = aalsdk_ltdl_lock();
    if ( 0 != tmp ) {
+      locked = false;
       res = tmp;
       p->error_msg = strerror(res);
 # if DBG_DYN_LOAD
       fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", p->error_msg, res);
 # endif // DBG_DYN_LOAD
       // yes, continue anyway.
-   } else {
-      locked = true;
    }
 
    if ( NULL != p->entry_point_fn ) {
@@ -192,9 +191,8 @@ bt32bitInt OSServiceModuleOpen(OSServiceModule *p)
          p->error_msg = "lt_dladvise_init()";
       }
       goto ERROR;
-
-      advised = true;
    }
+   advised = true;
 
    tmp = lt_dladvise_global(&advise);
    if ( 0 != tmp ) {
@@ -313,19 +311,18 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
    }
 
 #elif HAVE_LTDL_H
-   btBool     locked = false;
+   btBool     locked = true;
    bt32bitInt tmp;
 
    tmp = aalsdk_ltdl_lock();
    if ( 0 != tmp ) {
+      locked = false;
       res = tmp;
       p->error_msg = strerror(res);
 # if DBG_DYN_LOAD
       fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", p->error_msg, res);
 # endif // DBG_DYN_LOAD
       // yes, continue anyway.
-   } else {
-      locked = true;
    }
 
    p->error_msg = NULL;

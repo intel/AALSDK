@@ -140,8 +140,7 @@ public:
    /// @param[pit]  rMaxCount    Maximum value.
    ///
    /// @retval The count.
-   AAL::btBool CurrCounts(AAL::btInt & rCurCount, AAL::btInt &rMaxCount);
-
+   AAL::btBool CurrCounts(AAL::btInt &rCurCount, AAL::btInt &rMaxCount);
 
    /// If the current count + nCount is less than or equal to the max count, then increment by nCount.
    ///
@@ -158,8 +157,6 @@ public:
    /// Returns the current number of waiters.
    /// NOTE: This is a snapshot and may change by the time the
    ///       caller examines the value
-   /// @retval  true   All waiters unblocked and return false.
-   /// @retval  false  Semaphore not initialized.
    AAL::btUnsignedInt NumWaiters();
 
    /// Wait for the Semaphore count to become greater than 0 or until the supplied timeout occurs.
@@ -177,29 +174,7 @@ public:
    /// @retval  false  Semaphore not initialized.
    AAL::btBool Wait();
 
-
 private:
-   class AutoWaiting
-   {
-   public:
-      AutoWaiting(CSemaphore *This)
-      : m_This(This)
-      {
-         This->m_WaitCount++;
-      }
-      ~AutoWaiting(){
-         m_This->m_WaitCount--;
-         // If Semaphore is being unblocked then reset
-         //  Unblocking flag when there are no more waiters
-         if((0==m_This->m_WaitCount) &&
-               (true == m_This->m_bUnBlocking)){
-            m_This->m_bUnBlocking = false;
-         }
-      }
-   private:
-      CSemaphore *m_This;
-   };
-
    AAL::btBool          m_bInitialized;
    AAL::btInt           m_MaxCount;
    AAL::btInt           m_CurCount;

@@ -161,7 +161,8 @@ include/aalsdk/xlrtlib.h \
 include/aalsdk/xlRuntime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h 
+include/aalsdk/IMessageHandler.h \
+include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
 include/aalsdk/aas/AALDeviceService.h \
@@ -237,6 +238,7 @@ include/aalsdk/osal/DynLinkLibrary.h \
 include/aalsdk/osal/Env.h \
 include/aalsdk/osal/OSALService.h \
 include/aalsdk/osal/OSSemaphore.h \
+include/aalsdk/osal/Barrier.h \
 include/aalsdk/osal/OSServiceModule.h \
 include/aalsdk/osal/Sleep.h \
 include/aalsdk/osal/ThreadGroup.h \
@@ -346,7 +348,8 @@ ase/hw/sdp_ram.sv \
 ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
-ase/hw/cci_rule_checker.sv \
+ase/hw/cci_sniffer.sv \
+ase/hw/stream_checker.sv \
 ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \

@@ -1,4 +1,1 @@
-2014-11-14  Tim Whisonant  <tim.whisonant@intel.com>
-
-* User Mode SDK: split out into separate project. (4.2.0).
-* all: Initial Autotools build for external distribution (3.1.0).
+../../aaluser/ChangeLog

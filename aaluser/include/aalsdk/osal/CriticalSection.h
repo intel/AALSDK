@@ -145,7 +145,7 @@ private:
 
 
 /// It is possible that the object may be immutable or in a const method so safely cast away the const
-#define AutoLock(p) _AutoLock LockObj(const_cast<CriticalSection *>(dynamic_cast<CriticalSection const *>(p)))
+#define AutoLock(__p) _AutoLock __LockObj(const_cast<CriticalSection *>(dynamic_cast<CriticalSection const *>(__p)))
 /// Stack-based convenience auto-Mutex objects. Use AutoLock to declare.
 class _AutoLock
 {
@@ -168,26 +168,18 @@ public:
    ///    // This code is protected by the Critical Section.
    ///
    /// }@endcode
-   _AutoLock(CriticalSection *p)
+   _AutoLock(CriticalSection *p) :
+      m_p(p)
    {
-      m_p = p;
+      ASSERT(NULL != m_p);
       m_p->Lock();
    }
 
    /// _AutoLock Destructor.
    ~_AutoLock()
    {
-      Unlock();
-   }
-
-   /// Unlock the auto-lock before the destructor does.
-   void Unlock()
-   {
-      if ( NULL != m_p ) {
-         CriticalSection *p = m_p;
-         m_p = NULL;
-         p->Unlock();
-      }
+      ASSERT(NULL != m_p);
+      m_p->Unlock();
    }
 
 protected:

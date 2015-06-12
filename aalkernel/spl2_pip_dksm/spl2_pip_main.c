@@ -177,7 +177,7 @@ static ssize_t spl2pip_attrib_store_rescan_index( struct device_driver *drv,
    return size;
 }
 
-DRIVER_ATTR(rescan_index,S_IWUGO|S_IWUGO, NULL,spl2pip_attrib_store_rescan_index);
+DRIVER_ATTR(rescan_index,S_IRUGO|S_IWUSR|S_IWGRP, NULL,spl2pip_attrib_store_rescan_index);
 
 
 MODULE_PARM_DESC(debug, "module debug level");
@@ -207,7 +207,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 }
 
 // Attribute accessors for debug
-DRIVER_ATTR(debug,S_IRUGO|S_IWUGO, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
+DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
 
 //=============================================================================
 // Name: devIID_tbl

@@ -42,11 +42,13 @@ CriticalSection.cpp \
 DynLinkLibrary.cpp \
 OSLib.cpp \
 OSSemaphore.cpp \
+Barrier.cpp \
 OSServiceModule.c \
 Sleep.cpp \
 Thread.cpp \
 ThreadGroup.cpp \
-Timer.cpp
+Timer.cpp \
+Env.cpp
 
 libOSAL_la_CPPFLAGS=\
 -DLIBDIR=\"$(libdir)\"
