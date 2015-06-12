@@ -41,13 +41,16 @@ App2 \
 cciapp \
 CCILib \
 CCIDemo \
-AllocDealloc_StressTest \
 SampleBrokerService \
 splapp \
 splapp2 \
 splapp3 \
 SyncApp1 \
-UMsgTest 
+UMsgTest \
+Hello_AAL_Service \
+Hello_AAL \
+Hello_CCI_NLB
+
 
 MFLAGS  =
 ifneq (,$(ndebug))
