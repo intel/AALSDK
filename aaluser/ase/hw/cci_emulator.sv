@@ -47,6 +47,8 @@
 `include "ase_global.vh"
 `include "platform.vh"
 
+`timescale 1ns/1ns
+
 // CCI to Memory translator module
 module cci_emulator();
 
@@ -136,7 +138,6 @@ module cci_emulator();
     * ***************************************************************************/
 
    logic                          clk   ;                  // out
-   logic 			  resetb ;                 // out
    logic 			  lp_initdone ;            // out
    logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
    logic 			  tx_c0_rdvalid;           // in
@@ -157,15 +158,13 @@ module cci_emulator();
    logic 			  rx_c0_intrvalid;         // out
    logic 			  rx_c1_intrvalid;         // out
 
-
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
-   logic 			  resetb_q;
-   // logic 			  tx_c1_intrvalid_sel;
 
    // Derived clocks
    logic 			  clk_32ui; // Normal 200 Mhz clock
    logic 			  clk_16ui; // Faster 400 Mhz clock
+   logic 			  clk_8ui;  // Internal 800 Mhz clock (for creating synchronized clocks)
 
    /*
     * Overflow/underflow signal checks
@@ -187,52 +186,46 @@ module cci_emulator();
    /*
     * Clock process: Operates the CAFU clock
     */
-   // 200 Mhz clock
-   initial begin : clk32ui_proc
-      begin
-	 clk_32ui = 0;
-	 forever begin
-	    #`CLK_32UI_TIME;
-	    clk_32ui = 1'b0;
-	    #`CLK_32UI_TIME;
-	    clk_32ui = 1'b1;
-	 end
-      end
-   end
+   logic [1:0] 			  ase_clk_rollover = 2'b11;
 
    // ASE clock
    assign clk = clk_32ui;
+   assign clk_16ui = ase_clk_rollover[0];
+   assign clk_32ui = ase_clk_rollover[1];
 
-   // 400 Mhz clock
-   initial begin : clk16ui_proc
+   // 800 Mhz internal reference clock
+   initial begin : clk8ui_proc
       begin
-	 clk_16ui = 0;
-	 forever begin
-	    #`CLK_16UI_TIME;
-	    clk_16ui = 1'b0;
-	    #`CLK_16UI_TIME;
-	    clk_16ui = 1'b1;
-	 end
+   	 clk_8ui = 0;
+   	 forever begin
+   	    #`CLK_8UI_TIME;
+   	    clk_8ui = 1'b0;
+   	    #`CLK_8UI_TIME;
+   	    clk_8ui = 1'b1;
+   	 end
       end
    end
 
+   // 200 Mhz clock
+   always @(posedge clk_8ui) begin : clk_rollover_ctr
+      ase_clk_rollover	<= ase_clk_rollover - 1;
+   end
 
    // Reset management
    logic 			  sys_reset_n;
+   logic 			  sys_reset_n_q;
+   logic 			  sw_reset_trig;
    logic 			  sw_reset_n;
    logic 			  sw_reset_n_q;
 
    /*
     * AFU reset - software & system resets
     */
-   always @(posedge clk) begin
-      if ((sys_reset_n == 1'b0) || (sw_reset_n == 1'b0)) begin
-   	 resetb <= 1'b0;
-      end
-      else begin
-   	 resetb <= 1'b1;
-      end
-   end
+   //       0        |     0               0     | Initial reset
+   //       0        |     0               1     |
+   //       0        |     1               0     |
+   //       1        |     1               1     |
+   assign sw_reset_n = sys_reset_n && sw_reset_trig;
 
 
    /*
@@ -254,7 +247,7 @@ module cci_emulator();
     * CSR Write infrastructure
     * csr_write_dispatch: A Single task to dispatch CSR Writes
     */
-   parameter int CSR_FIFO_WIDTH = 32 + 32;
+   parameter int CSR_FIFO_WIDTH = 16 + 32;
 
    logic [CSR_FIFO_WIDTH-1:0] csrff_din;
    logic [CSR_FIFO_WIDTH-1:0] csrff_dout;
@@ -270,29 +263,46 @@ module cci_emulator();
    logic [15:0] 	      csr_address;
    logic [13:0] 	      csr_index;
    logic [31:0] 	      csr_value;
-   
-   task csr_write_dispatch(int init, int csr_index, int csr_data);
+
+   logic 		      cwlp_valid;
+   logic [15:0] 	      cwlp_address;
+   logic [31:0] 	      cwlp_data;
+
+
+   task csr_write_dispatch(int init, int csr_addr_in, int csr_data_in);
       begin
 	 if (init) begin
-	    csrff_write = 0;
-	    csrff_din = 0;
+	    cwlp_valid = 0;
+	    cwlp_address = 0;
+	    cwlp_data = 0;
 	 end
 	 else begin
-	    csrff_write = 0;
-	    while (csrff_full) begin
-	       `BEGIN_RED_FONTCOLOR;
-	       $display("SIM-SV: WARNING => CSR FIFO is almost full, waiting to clear up");
-	       `END_RED_FONTCOLOR;
-	       run_clocks(1);
-	    end
+	    cwlp_valid = 0;
 	    run_clocks(1);
-	    csrff_din = {csr_index, csr_data};
-	    csrff_write = 1;
+	    {cwlp_address, cwlp_data} = {csr_addr_in[15:0], csr_data_in};
+	    cwlp_valid = 1;
 	    run_clocks(1);
-	    csrff_write = 0;
+	    cwlp_valid = 0;
 	 end
       end
    endtask
+
+   // *FIXME*: CSR Write latency model goes here
+   // Latency pipe with stages
+   // <CSRvalid>|<CSR address>|<CSR Data>
+   // CSR latency implementation
+   latency_pipe
+     #(
+       .NUM_DELAY  (`CSR_WRITE_LATRANGE),
+       .PIPE_WIDTH ( 1 + CSR_FIFO_WIDTH)
+       )
+   csrwr_latpipe
+     (
+      .clk      (clk),
+      .rst      (~sys_reset_n),
+      .pipe_in  ({cwlp_valid,  cwlp_address,   cwlp_data}),
+      .pipe_out ({csrff_write, csrff_din[47:32], csrff_din[31:0]})
+      );
 
 
    // CSR write FIFO
@@ -323,11 +333,14 @@ module cci_emulator();
    assign csr_address = csrff_dout[47:32];
    assign csr_index = csr_address[15:2];
    assign csr_value = csrff_dout[31:0];
-   
-   /*
-    * Umsg infrastructure
+
+
+   /* ******************************************************************
+    *
+    * Unordered Messages Engine
     * umsg_dispatch: Single push process triggering UMSG machinery
-    */
+    *
+    * *****************************************************************/
    parameter int UMSG_FIFO_WIDTH = `CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
 
    logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
@@ -341,135 +354,234 @@ module cci_emulator();
    logic 		       umsgff_overflow;
    logic 		       umsgff_underflow;
 
-   int 			       umas_iter;
-
-   umsg_t umsg_array[`UMSG_MAX_MSG];
    int 			       umsg_data_slot;
    int 			       umsg_hint_slot;
+   int 			       umsg_data_slot_old = 255;
+   int 			       umsg_hint_slot_old = 255;
+   umsg_t                      umsg_array[`UMSG_MAX_MSG];
 
-   logic [0:`UMSG_MAX_MSG-1]   umas_rst;
-   logic [0:`UMSG_MAX_MSG-1]   umas_en;
-   logic [0:`UMSG_MAX_MSG-1]   umas_rdy;
-   logic [`CCI_DATA_WIDTH-1:0] umsg_data_array [0:`UMSG_MAX_MSG-1];
+   logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
 
 
    // UMSG dispatch function
    task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [`CCI_DATA_WIDTH-1:0] umsg_data_in);
+      int 			       umas_iter;
       begin
 	 if (init) begin
 	    for (umas_iter = 0; umas_iter < `UMSG_MAX_MSG; umas_iter = umas_iter + 1) begin
-	       umsg_array[ umas_iter ].umsg_enable = 0;
-	       umsg_data_array[ umas_iter ]	<= `CCI_DATA_WIDTH'bx;
+	       umsg_array[ umas_iter ].data   <= `CCI_DATA_WIDTH'b0;
 	    end
 	 end
 	 else begin
-	    if (umas_en) begin
-	       if ( umsg_data_in != umsg_data_array[umsg_id]) begin
-		  umsg_data_array[ umsg_id ] = umsg_data_in;
-		  if (hint_en) begin
-		     umsg_array[ umsg_id ].umsg_data   = umsg_data_in;
-		     umsg_array[ umsg_id ].umsg_hint   = 1;
-		     umsg_array[ umsg_id ].umsg_enable = 1;
-		     run_clocks (1);
-		  end
-		  else begin
-		     umsg_array[ umsg_id ].umsg_data   = umsg_data_in;
-		     umsg_array[ umsg_id ].umsg_hint   = 0;
-		     umsg_array[ umsg_id ].umsg_enable = 1;
-		     run_clocks (1);
-		  end
-	       end
-	    end
-	    else begin
-	       umsg_array[ umsg_id ].umsg_enable = 0;
-	    end
+	    run_clocks(1);
+	    umsg_array[umsg_id].data        = umsg_data_in;
+	    umsg_array[umsg_id].hint_enable = hint_en;
 	 end
       end
    endtask
 
+
    // UMSG Hint-to-Data time emulator (toaster style)
    // New Umsg hints to same location are ignored
    // If Data is same, hints dont get generated
-   genvar umas_i;
+   genvar ii;
    generate
-      for ( umas_i = 0; umas_i > `UMSG_MAX_MSG; umas_i = umas_i + 1 ) begin
-	 // UMSG state machine
-	 always @(posedge clk) begin
-	      if (~sys_reset_n) begin
-		 umsg_array[umas_i].umsg_state			<= UMsg_Idle;
-	      end
-	      else begin
-		 case (umsg_array[umas_i].umsg_state)
-		   UMsg_Idle:
-		     begin
-			if (umsg_array[umas_i].umsg_enable && umsg_array[umas_i].umsg_hint) begin
-			   umsg_array[umas_i].umsg_timer	<= `UMSG_HINT2DATA_DELAY;
-			   umsg_array[umas_i].umsg_state	<= UMsg_SendHint;
-			end
-			else if (umsg_array[umas_i].umsg_enable && ~umsg_array[umas_i].umsg_hint) begin
-			   umsg_array[umas_i].umsg_timer	<= `UMSG_NOHINT_DATADELAY;
-			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
-			end
-			else begin
-			   umsg_array[umas_i].umsg_timer	<= `UMSG_DELAY_TIMER_LOG2'b0;
-			   umsg_array[umas_i].umsg_state	<= UMsg_Idle;
-			end
-		     end
+      for ( ii = 0; ii < `UMSG_MAX_MSG; ii = ii + 1 ) begin : gen_umsg_engine_inst
 
-		   UMsg_SendHint:
-		     begin
-			if (umsg_array[umas_i].umsghint_push) begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
-			end
-			else begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_SendHint;
-			end
-		     end
+	 // UMsg Write array unit
+	 always @(*) begin : comb_umsgff_write_arrunit
+	    if (umsg_array[ii].hint_ready) begin
+	       umsgff_write_array[ii] <= umsg_array[ii].hint_pop;
+	    end
+	    else if (umsg_array[ii].data_ready) begin
+	       umsgff_write_array[ii] <= umsg_array[ii].data_pop;
+	    end
+	    else begin
+	       umsgff_write_array[ii] <= 0;
+	    end
+	 end
+	 
+	 // Data register process
+	 always @(posedge clk) begin : umsgdata_reg_proc
+	    umsg_array[ii].data_q <= umsg_array[ii].data;
+	 end
 
-		   UMsg_H2D_Wait:
-		     begin
-			umsg_array[umas_i].umsg_timer		<= umsg_array[umas_i].umsg_timer - 1;
-			if (umsg_array[umas_i].umsg_timer	<= 1) begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_SendData;
-			end
-			else begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_H2D_Wait;
-			end
-		     end
+	 // Change detection
+	 always @(posedge clk) begin : umsg_change_detect
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].change	<= 0;
+	    end
+	    else begin
+	       if (umsg_array[ii].data != umsg_array[ii].data_q) begin
+		  umsg_array[ii].change <= 1;
+	       end
+	       else begin
+		  umsg_array[ii].change <= 0;
+	       end
+	    end
+	 end
 
-		   UMsg_SendData:
-		     begin
-			if (umsg_array[umas_i].umsgdata_push) begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_Idle;
-			end
-			else begin
-			   umsg_array[umas_i].umsg_state	<= UMsg_SendData;
-			end
-		     end
+	 // Hint timer down counter & hint ready generator
+	 always @(posedge clk) begin : umsg_c2h_latency
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].hint_timer		<= 0;
+	       umsg_array[ii].hint_timer_started	<= 0;
+	    end
+	    else begin
+	       if (umsg_array[ii].change && umsg_array[ii].hint_enable) begin
+		  umsg_array[ii].hint_timer		<= $urandom_range(`UMSG_START2HINT_LATRANGE);
+		  umsg_array[ii].hint_timer_started	<= 1;
+	       end
+	       else if (umsg_array[ii].hint_timer > 0) begin
+		  umsg_array[ii].hint_timer		<= umsg_array[ii].hint_timer - 1;
+	       end
+	       else if (umsg_array[ii].hint_pop||umsg_array[ii].data_pop) begin
+		  umsg_array[ii].hint_timer_started <= 0;
+	       end
+	    end
+	 end
 
-		   default:
-		     begin
-			umsg_array[umas_i].umsg_state	<= UMsg_Idle;
-		     end
-		 endcase
-	      end
-	   end
-	end
+	 // Data timer down counter & Data ready generator
+	 always @(posedge clk) begin : umsg_data_latency
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].data_timer		<= 0;
+	       umsg_array[ii].data_timer_started	<= 0;
+	    end
+	    else begin
+	       if (umsg_array[ii].change && ~umsg_array[ii].data_timer_started) begin
+		  umsg_array[ii].data_timer		<= $urandom_range(`UMSG_START2DATA_LATRANGE);
+		  umsg_array[ii].data_timer_started	<= 1;
+	       end
+	       else if (umsg_array[ii].data_timer > 0) begin
+		  umsg_array[ii].data_timer		<= umsg_array[ii].data_timer - 1;
+	       end
+	       else if (umsg_array[ii].data_pop) begin
+		  umsg_array[ii].data_timer_started <= 0;
+	       end
+	    end
+	 end
+
+	 // Hint ready indicator
+	 always @(posedge clk) begin : umsghint_rdy_indicator
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].hint_ready	<= 0;
+	    end
+	    else if (umsg_array[ii].hint_ready && (umsg_array[ii].hint_pop||umsg_array[ii].data_pop)) begin
+	       umsg_array[ii].hint_ready	<= 0;
+	    end
+	    else if (umsg_array[ii].hint_timer_started && (umsg_array[ii].hint_timer == 0)) begin
+	       umsg_array[ii].hint_ready	<= 1;
+	    end
+	 end
+
+	 // Data ready indicator
+	 always @(posedge clk) begin : umsgdata_rdy_indicator
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].data_ready	<= 0;
+	    end
+	    else if (umsg_array[ii].data_ready && umsg_array[ii].data_pop) begin
+	       umsg_array[ii].data_ready	<= 0;
+	    end
+	    else if (umsg_array[ii].data_timer_started && (umsg_array[ii].data_timer == 0) && ~umsg_array[ii].hint_ready) begin
+	       umsg_array[ii].data_ready	<= 1;
+	    end
+	 end
+
+
+	 /////////////////////////////////////////////////////////////////////////////////
+	 // State machine
+	 always @(posedge clk) begin : umsg_event_fsm
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].state <= UMsg_Idle;
+	    end
+	    else begin
+	       case (umsg_array[ii].state)
+		 // CHANGE from IDLE
+		 // - Hint  : If hint is enabled and hint_ready, move to SendHint
+		 // - NoHint: If hint is disabled, move to Waiting
+		 UMsg_Idle:
+		   begin
+		      if (umsg_array[ii].change && umsg_array[ii].hint_enable) begin
+			 umsg_array[ii].state <= UMsg_SendHint;
+		      end
+		      else if (umsg_array[ii].change && ~umsg_array[ii].hint_enable) begin
+			 umsg_array[ii].state <= UMsg_Waiting;
+		      end
+		      else begin
+			 umsg_array[ii].state <= UMsg_Idle;
+		      end
+		   end
+
+		 // SENDHINT
+		 // UMSGFF write end POPs this
+		 UMsg_SendHint:
+		   begin
+		      if (umsg_array[ii].hint_pop) begin
+			 umsg_array[ii].state <= UMsg_Waiting;
+		      end
+		      else begin
+			 umsg_array[ii].state <= UMsg_SendHint;
+		      end
+		   end
+
+		 // WAITING
+		 // If data_ready, send UMgData
+		 // else wait until a change occurs and a hint cycle begins
+		 UMsg_Waiting:
+		   begin
+		      if (umsg_array[ii].data_ready) begin
+			 umsg_array[ii].state <= UMsg_SendData;
+		      end
+		      else begin
+			 umsg_array[ii].state <= UMsg_Waiting;
+		      end
+		   end
+
+		 // Send data
+		 // Wait until pop signal is seen, go back do IDLE
+		 UMsg_SendData:
+		   begin
+		      if (umsg_array[ii].data_pop) begin
+			 umsg_array[ii].state <= UMsg_Idle;
+		      end
+		      else begin
+			 umsg_array[ii].state <= UMsg_SendData;
+		      end
+		   end
+
+		 // Default
+		 default:
+		   begin
+		      umsg_array[ii].state <= UMsg_Idle;
+		   end
+
+	       endcase
+	    end
+	 end
+	 /////////////////////////////////////////////////////////////////////////////////
+
+      end
    endgenerate
+
 
    // Find UMSG Hintable slot
    function int find_umsg_hint ();
       int ret_hint_slot;
       int slot;
+      int start_iter;
+      int end_iter;
       begin
-	 ret_hint_slot = 255;
-	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
-	    if (umsg_array[slot].umsg_state == UMsg_SendHint) begin
-	       ret_hint_slot = slot;
-	       break;
-	    end
-	 end
-	 return ret_hint_slot;
+	 start_iter = 0;
+	 end_iter   = start_iter + `UMSG_MAX_MSG;
+   	 ret_hint_slot = 255;
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
+   	    if (umsg_array[slot].hint_ready && ~umsg_array[slot].data_ready) begin
+   	       ret_hint_slot = slot;
+	       umsg_hint_slot_old = ret_hint_slot;	       
+   	       break;
+   	    end
+   	 end
+   	 return ret_hint_slot;
       end
    endfunction
 
@@ -477,49 +589,92 @@ module cci_emulator();
    function int find_umsg_data();
       int ret_data_slot;
       int slot;
+      int start_iter;
+      int end_iter;
       begin
-	 ret_data_slot = 255;
-	 for (slot = 0; slot < `UMSG_MAX_MSG; slot = slot + 1) begin
-	    if (umsg_array[slot].umsg_state == UMsg_SendData) begin
-	       ret_data_slot = slot;
-	       break;
-	    end
-	 end
-	 return ret_data_slot;
+	 start_iter = 0;
+	 end_iter   = end_iter + `UMSG_MAX_MSG;
+   	 ret_data_slot = 255;
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
+   	    if (umsg_array[slot].data_ready) begin
+   	       ret_data_slot = slot;	       
+	       umsg_data_slot_old = ret_data_slot;	       
+   	       break;
+   	    end
+   	 end
+   	 return ret_data_slot;
       end
    endfunction
 
    // Calculate slots for UMSGs
-   always @(posedge clk) begin
+   always @(posedge clk) begin : umsg_slot_finder_proc
       umsg_data_slot = find_umsg_data();
       umsg_hint_slot = find_umsg_hint();
    end
 
-   // UMSG latency model to UMSG FIFO glue process
+   // UMsgFIFO write process
+   int popiter;
+
+   typedef enum {UMsgToFifo_Idle, UMsgToFifo_Pop} UmsgToFifo_StateEnum;
+   UmsgToFifo_StateEnum umsgpop_state;
+
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 umsgff_write		<= 0;
+	 umsgpop_state				<= UMsgToFifo_Idle;	 
+   	 umsgff_write				<= 0;
+   	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
+   	    umsg_array[popiter].hint_pop	<= 0;
+   	    umsg_array[popiter].data_pop	<= 0;	    
+   	 end
       end
       else begin
-	 if ((umsg_data_slot != 255) && ~umsgff_full) begin
-	    umsgff_din		<= { `ASE_RX0_UMSG, 1'b0,
-			  1'b0, 6'b0,
-			  1'b0, umsg_data_slot[4:0],
-			  umsg_data_array[umsg_data_slot] };
-	    umsgff_write	<= 1;
-	 end
-	 else if ((umsg_hint_slot != 255) && ~umsgff_full) begin
-	    umsgff_din		<= { `ASE_RX0_UMSG, 1'b0,
-			  1'b1, 6'b0,
-			  1'b0, umsg_hint_slot[4:0],
-			  `CCI_DATA_WIDTH'b0 };
-	    umsgff_write	<= 1;
-	 end
-	 else begin
-	    umsgff_write	<= 0;
-	 end
+   	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
+   	    umsg_array[popiter].hint_pop	<= 0;
+   	    umsg_array[popiter].data_pop	<= 0;	    
+   	 end
+	 case (umsgpop_state)
+	   // IDLE
+	   UMsgToFifo_Idle:
+	     begin
+		umsgff_write			<= 0;
+		if (((umsg_hint_slot != 255)||(umsg_data_slot != 255)) && ~umsgff_full) begin
+		   umsgpop_state		<= UMsgToFifo_Pop;		   
+		end
+		else begin
+		   umsgpop_state		<= UMsgToFifo_Idle;		   
+		end		   
+	     end
+
+	   // POP
+	   UMsgToFifo_Pop:
+	     begin
+		if (umsg_hint_slot != 255) begin
+   		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b1, 6'b0, umsg_hint_slot[5:0]} , `CCI_DATA_WIDTH'b0};
+		   umsgff_write				<= 1;
+   		   umsg_array[umsg_hint_slot].hint_pop  <= 1;	    
+		end
+		else if (umsg_data_slot != 255) begin
+   		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b0, 6'b0, umsg_data_slot[5:0]} , umsg_array[umsg_data_slot].data};
+		   umsgff_write				<= 1;
+   		   umsg_array[umsg_data_slot].data_pop  <= 1;	    
+		end
+		else begin
+		   umsgff_write				<= 0;
+		end
+		umsgpop_state		<= UMsgToFifo_Idle;		   
+	     end
+
+	   // Default
+	   default:
+	     begin
+		umsgff_write	<= 0;
+		umsgpop_state	<= UMsgToFifo_Idle;		   
+	     end
+	 endcase
       end
    end
+      
+
 
    // Unordered message FIFO
    ase_fifo
@@ -553,9 +708,9 @@ module cci_emulator();
     */
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
-	 cfg.ase_mode           = cfg_in.ase_mode         ;	 
+	 cfg.ase_mode           = cfg_in.ase_mode         ;
 	 cfg.ase_timeout        = cfg_in.ase_timeout      ;
-	 cfg.ase_num_tests      = cfg_in.ase_num_tests    ;	 
+	 cfg.ase_num_tests      = cfg_in.ase_num_tests    ;
 	 cfg.enable_reuse_seed  = cfg_in.enable_reuse_seed;
 	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
 	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
@@ -564,59 +719,63 @@ module cci_emulator();
       end
    endtask
 
-   
+
    /*
     * Count Valid signals
     */
    int ase_rx0_cfgvalid_cnt;
    int ase_rx0_rdvalid_cnt;
    int ase_rx0_wrvalid_cnt;
-   int ase_rx0_umsgvalid_cnt;
+   int ase_rx0_umsghint_cnt;
+   int ase_rx0_umsgdata_cnt;
    int ase_rx0_intrvalid_cnt;
    int ase_rx1_wrvalid_cnt;
    int ase_rx1_intrvalid_cnt;
    int ase_tx0_rdvalid_cnt;
    int ase_tx1_wrvalid_cnt;
-   int ase_tx1_wrfence_cnt;   
+   int ase_tx1_wrfence_cnt;
    int ase_tx1_intrvalid_cnt;
 
-   always @(posedge clk) begin
+   always @(posedge clk) begin : cci_cnt_proc
       if (~sys_reset_n) begin
-	 ase_rx0_cfgvalid_cnt = 0;
-	 ase_rx0_rdvalid_cnt = 0;
-	 ase_rx0_wrvalid_cnt = 0;
-	 ase_rx0_umsgvalid_cnt = 0;
-	 ase_rx0_intrvalid_cnt = 0;
-	 ase_rx1_wrvalid_cnt = 0;
-	 ase_tx0_rdvalid_cnt = 0;
-	 ase_tx1_wrvalid_cnt = 0;
-	 ase_tx1_wrfence_cnt = 0;
+	 ase_rx0_cfgvalid_cnt <= 0;
+	 ase_rx0_rdvalid_cnt <= 0;
+	 ase_rx0_wrvalid_cnt <= 0;
+	 ase_rx0_umsghint_cnt <= 0;
+	 ase_rx0_umsgdata_cnt <= 0;
+	 ase_rx0_intrvalid_cnt <= 0;
+	 ase_rx1_wrvalid_cnt <= 0;
+	 ase_tx0_rdvalid_cnt <= 0;
+	 ase_tx1_wrvalid_cnt <= 0;
+	 ase_tx1_wrfence_cnt <= 0;
       end
       else begin
 	 // RX channels
-	 if (rx_c0_cfgvalid)  
+	 if (rx_c0_cfgvalid)
 	   ase_rx0_cfgvalid_cnt		<= ase_rx0_cfgvalid_cnt + 1;
-	 if (rx_c0_rdvalid)   
+	 if (rx_c0_rdvalid)
 	   ase_rx0_rdvalid_cnt		<= ase_rx0_rdvalid_cnt + 1;
-	 if (rx_c0_wrvalid)   
+	 if (rx_c0_wrvalid)
 	   ase_rx0_wrvalid_cnt		<= ase_rx0_wrvalid_cnt + 1;
-	 if (rx_c0_umsgvalid) 
-	   ase_rx0_umsgvalid_cnt	<= ase_rx0_umsgvalid_cnt + 1;
-	 if (rx_c0_intrvalid) 
-	   ase_rx0_intrvalid_cnt	<= ase_rx0_intrvalid_cnt + 1;	 
-	 if (rx_c1_wrvalid)   
+	 if (rx_c0_umsgvalid && rx_c0_header[12])
+	   ase_rx0_umsghint_cnt	        <= ase_rx0_umsghint_cnt + 1;
+	 if (rx_c0_umsgvalid && ~rx_c0_header[12])
+	   ase_rx0_umsgdata_cnt	        <= ase_rx0_umsgdata_cnt + 1;
+	 if (rx_c0_intrvalid)
+	   ase_rx0_intrvalid_cnt	<= ase_rx0_intrvalid_cnt + 1;
+	 if (rx_c1_wrvalid)
 	   ase_rx1_wrvalid_cnt		<= ase_rx1_wrvalid_cnt + 1;
-	 if (rx_c1_intrvalid) 
-	   ase_rx1_intrvalid_cnt	<= ase_rx1_intrvalid_cnt + 1;	 
+	 if (rx_c1_intrvalid)
+	   ase_rx1_intrvalid_cnt	<= ase_rx1_intrvalid_cnt + 1;
 	 // TX channels
-	 if (tx_c0_rdvalid)   
-	   ase_tx0_rdvalid_cnt		<= ase_tx0_rdvalid_cnt + 1;	 
- 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE))   
+	 if (tx_c0_rdvalid)
+	   ase_tx0_rdvalid_cnt		<= ase_tx0_rdvalid_cnt + 1;
+ 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE))
 	   ase_tx1_wrvalid_cnt		<= ase_tx1_wrvalid_cnt + 1;
- 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE))   
+ 	 if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE))
 	   ase_tx1_wrfence_cnt		<= ase_tx1_wrfence_cnt + 1;
-	 if (tx_c1_intrvalid) 
-	   ase_tx1_intrvalid_cnt	<= ase_tx1_intrvalid_cnt + 1;	 
+	 if (tx_c1_intrvalid)
+	   ase_tx1_intrvalid_cnt	<= ase_tx1_intrvalid_cnt + 1;
       end
    end
 
@@ -627,7 +786,6 @@ module cci_emulator();
     * graceful closedown
     */
    task simkill();
-   // function void simkill();
       begin
 	 $display("SIM-SV: Simulation kill command received...");
 	 // Print transactions
@@ -639,7 +797,9 @@ module cci_emulator();
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt );
 	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt );
 	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt );
-	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt ); 
+	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt );
+	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt );
+	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt );
 	 `END_YELLOW_FONTCOLOR;
 
 	 // Valid Count
@@ -668,7 +828,6 @@ module cci_emulator();
 	 $fclose(log_fd);
 	 $finish;
       end
-      //   endfunction
    endtask
 
 
@@ -719,7 +878,7 @@ module cci_emulator();
 
 
    // Both streams write back to CH0 at same time
-   always @(posedge clk) begin
+   always @(posedge clk) begin : error_check_proc
       if (cf2as_latbuf_ch1_read_0 && cf2as_latbuf_ch1_read_1) begin
 	 `BEGIN_RED_FONTCOLOR;
 	 $display ("*** ERROR: Both streams popped at the same time --- data may be lost");
@@ -788,11 +947,12 @@ module cci_emulator();
    // POP CH0 staging
    assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
 
-   always @(posedge clk)
-     cf2as_latbuf_ch0_empty_q	<= cf2as_latbuf_ch0_empty;
+   always @(posedge clk) begin : reg_proc_1
+      cf2as_latbuf_ch0_empty_q	<= cf2as_latbuf_ch0_empty;
+   end
 
    // Duplicate signals
-   always @(*) begin
+   always @(*) begin : comb_rename_1
       cf2as_latbuf_ch0_claddr	<= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
       cf2as_latbuf_ch0_meta	<= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
    end
@@ -857,11 +1017,12 @@ module cci_emulator();
    assign cf2as_latbuf_ch1_read = cf2as_latbuf_ch1_read_0 ^ cf2as_latbuf_ch1_read_1;
    assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
-   always @(posedge clk)
-     cf2as_latbuf_ch1_empty_q	<= cf2as_latbuf_ch1_empty;
+   always @(posedge clk) begin : reg_proc_2
+      cf2as_latbuf_ch1_empty_q	<= cf2as_latbuf_ch1_empty;
+   end
 
    // Duplicating signals (DPI seems to cause errors in DEX function) --- P2 debug priority
-   always @(*) begin
+   always @(*) begin : comb_rename_2
       cf2as_latbuf_ch1_claddr_1 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
       cf2as_latbuf_ch1_meta_1	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
       cf2as_latbuf_ch1_data_1	<= cf2as_latbuf_ch1_data;
@@ -887,7 +1048,7 @@ module cci_emulator();
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
    // always @(posedge clk) begin
-   always @(posedge clk) begin
+   always @(posedge clk) begin : channel_random_proc
       if (~sys_reset_n) begin
 	 tx_to_rx_channel	<= 1;
       end
@@ -979,7 +1140,7 @@ module cci_emulator();
    assign as2cf_fifo_ch1_read = ~as2cf_fifo_ch1_empty;
 
    // RX0 channel
-   always @(posedge clk) begin
+   always @(posedge clk) begin : as2cf_fifo_ch0_consumer
       if (~sys_reset_n) begin
 	 rx_c0_data		<= `CCI_DATA_WIDTH'b0;
 	 rx_c0_header		<= `CCI_RX_HDR_WIDTH'b0;
@@ -1010,7 +1171,7 @@ module cci_emulator();
    end
 
    // RX1 channel
-   always @(posedge clk) begin
+   always @(posedge clk) begin : as2cf_fifo_ch1_consumer
       if (~sys_reset_n) begin
 	 rx_c1_header		<= `CCI_RX_HDR_WIDTH'b0;
 	 rx_c1_wrvalid		<= 1'b0;
@@ -1032,13 +1193,14 @@ module cci_emulator();
    /*
     * RX0 channel management
     */
-   always @(posedge clk) begin
+   always @(posedge clk) begin : as2cf_fifo_ch0_producer
       if (~sys_reset_n) begin
    	 csrff_read				<= 0;
    	 umsgff_read				<= 0;
    	 as2cf_fifo_ch0_write			<= 0;
    	 cf2as_latbuf_ch0_read			<= 0;
    	 cf2as_latbuf_ch1_read_0		<= 0;
+	 sw_reset_trig                          <= 1;
    	 rx0_state				<= RxIdle;
       end
       else begin
@@ -1057,7 +1219,7 @@ module cci_emulator();
    		end
    		else if ( ~csrff_empty && (csr_address < AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full ) begin
    		   if (csrff_dout[45:32]	== CCI_RESET_CTRL_OFFSET) begin
-   		      sw_reset_n		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
+   		      sw_reset_trig		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
    		   end
    		   csrff_read			<= 1;
    		   umsgff_read			<= 0;
@@ -1095,7 +1257,7 @@ module cci_emulator();
    		   rx0_state			<= RxWriteResp;
    		end
    		else begin
-   		   as2cf_fifo_ch0_din		<= 0;		
+   		   as2cf_fifo_ch0_din		<= 0;
    		   csrff_read			<= 0;
    		   umsgff_read			<= 0;
    		   as2cf_fifo_ch0_write		<= 0;
@@ -1107,7 +1269,7 @@ module cci_emulator();
    	   // CSR Write in AFU space
    	   RxAFUCSRWrite:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1118,7 +1280,7 @@ module cci_emulator();
    	   // CSR Write in QLP region
    	   RxQLPCSRWrite:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1129,7 +1291,7 @@ module cci_emulator();
    	   // Unordered Message
    	   RxUmsg:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1140,7 +1302,7 @@ module cci_emulator();
    	   // Read Response
    	   RxReadResp:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1151,7 +1313,7 @@ module cci_emulator();
 	   // Write Response
    	   RxWriteResp:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1162,7 +1324,7 @@ module cci_emulator();
    	   // Interrupt Response
    	   RxIntrResp:
    	     begin
-   		as2cf_fifo_ch0_din		<= 0;		
+   		as2cf_fifo_ch0_din		<= 0;
    		csrff_read			<= 0;
    		umsgff_read			<= 0;
    		as2cf_fifo_ch0_write		<= 0;
@@ -1188,11 +1350,11 @@ module cci_emulator();
    /*
     * RX1 channel management
     */
-   always @(posedge clk) begin
+   always @(posedge clk) begin : as2cf_fifo_ch1_producer
       if (~sys_reset_n) begin
    	 as2cf_fifo_ch1_write			<= 0;
    	 cf2as_latbuf_ch1_read_1		<= 0;
-	 rx1_state				<= RxIdle;	 
+	 rx1_state				<= RxIdle;
       end
       else begin
 	 case (rx1_state)
@@ -1204,43 +1366,43 @@ module cci_emulator();
    		   as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
    		   as2cf_fifo_ch1_write		<= 1;
    		   cf2as_latbuf_ch1_read_1	<= ~cf2as_latbuf_ch1_empty;  // 1;
-		   rx1_state			<= RxWriteResp;		   
+		   rx1_state			<= RxWriteResp;
 		end
 		else begin
-		   as2cf_fifo_ch1_din		<= 0;		   
+		   as2cf_fifo_ch1_din		<= 0;
    		   as2cf_fifo_ch1_write		<= 0;
    		   cf2as_latbuf_ch1_read_1	<= 0;
-		   rx1_state			<= RxIdle;		   
+		   rx1_state			<= RxIdle;
 		end
 	     end
 	   // Write Response
 	   RxWriteResp:
 	     begin
-		as2cf_fifo_ch1_din		<= 0;		   
+		as2cf_fifo_ch1_din		<= 0;
    		as2cf_fifo_ch1_write		<= 0;
    		cf2as_latbuf_ch1_read_1		<= 0;
-		rx1_state			<= RxIdle;		
+		rx1_state			<= RxIdle;
 	     end
 	   // Interrupt response
 	   RxIntrResp:
 	     begin
-		as2cf_fifo_ch1_din		<= 0;		   
+		as2cf_fifo_ch1_din		<= 0;
    		as2cf_fifo_ch1_write		<= 0;
    		cf2as_latbuf_ch1_read_1		<= 0;
-		rx1_state			<= RxIdle;		
+		rx1_state			<= RxIdle;
 	     end
 	   // Lala land
 	   default:
 	     begin
-		as2cf_fifo_ch1_din		<= 0;		   
+		as2cf_fifo_ch1_din		<= 0;
    		as2cf_fifo_ch1_write		<= 0;
    		cf2as_latbuf_ch1_read_1		<= 0;
-		rx1_state			<= RxIdle;		
+		rx1_state			<= RxIdle;
 	     end
 	 endcase
       end
    end
-   
+
 
    /* *******************************************************************
     * Inactivity management block
@@ -1274,15 +1436,14 @@ module cci_emulator();
 
 
    // Check for first transaction
-   always @(posedge clk, any_valid)
-     begin
-	if(any_valid) begin
-	   first_transaction_seen	<= 1'b1;
-	end
-     end
+   always @(posedge clk, any_valid) begin : first_transaction_watcher
+      if(any_valid) begin
+	 first_transaction_seen	<= 1'b1;
+      end
+   end
 
    // Inactivity management - killswitch
-   always @(posedge clk) begin
+   always @(posedge clk) begin : call_simkill_countdown
       if((inactivity_found==1'b1) && (cfg.ase_timeout != 0)) begin
 	 $display("SIM-SV: Inactivity timeout reached !!\n");
 	 start_simkill_countdown();
@@ -1423,88 +1584,8 @@ module cci_emulator();
 
 
    /*
-    * CCI rule-checker function
-    * This block of code exists for checking incoming signals for 'X' & 'Z'
-    * Warning messages will be flashed, and simulation exited, when enabled
+    * ASE Flow control error monitoring
     */
-   // Used for rule-checking meta-only transactions
-   logic [`CCI_DATA_WIDTH-1:0] 		  zero_data = `CCI_DATA_WIDTH'b0;
-   logic 				  tx0_rc_error;
-   logic 				  tx1_rc_error;
-   logic 				  rx0_rc_error;
-   logic 				  rx1_rc_error;
-   int 					  tx0_rc_time;
-   int 					  tx1_rc_time;
-   int 					  rx0_rc_time;
-   int 					  rx1_rc_time;
-
-
-   // Initial message
-   // initial begin
-   //    if (cfg.enable_ccirules) begin
-   // 	 $display("SIM-SV: CCI Signal rule-checker is watching for 'X' and 'Z'");
-   //    end
-   // end
-
-   // CCI Rules Checker: Checking CCI for 'X' and 'Z' endorsed by valid signal
-   cci_rule_checker
-     #(
-       .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
-       .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
-       .DATA_WIDTH   (`CCI_DATA_WIDTH)
-       )
-   cci_rule_checker
-     (
-      // Enable
-      .enable          (1'b1),  // (cfg.enable_ccirules[0]),
-      // CCI signals
-      .clk             (clk),
-      .resetb          (sys_reset_n),
-      .lp_initdone     (lp_initdone),
-      .tx_c0_header    (tx_c0_header),
-      .tx_c0_rdvalid   (tx_c0_rdvalid),
-      .tx_c1_header    (tx_c1_header),
-      .tx_c1_data      (tx_c1_data),
-      .tx_c1_wrvalid   (tx_c1_wrvalid),
-      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
-      .rx_c0_header    (rx_c0_header),
-      .rx_c0_data      (rx_c0_data),
-      .rx_c0_rdvalid   (rx_c0_rdvalid),
-      .rx_c0_wrvalid   (rx_c0_wrvalid),
-      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
-      .rx_c1_header    (rx_c1_header),
-      .rx_c1_wrvalid   (rx_c1_wrvalid),
-      // Error signals
-      .tx_ch0_error    (tx0_rc_error),
-      .tx_ch1_error    (tx1_rc_error),
-      .rx_ch0_error    (rx0_rc_error),
-      .rx_ch1_error    (rx1_rc_error),
-      .tx_ch0_time     (tx0_rc_time),
-      .tx_ch1_time     (tx1_rc_time),
-      .rx_ch0_time     (rx0_rc_time),
-      .rx_ch1_time     (rx1_rc_time)
-      );
-
-   // Interrupt select (enables
-   // assign tx_c1_intrvalid_sel = cfg.enable_intr ? tx_c1_intrvalid : 1'b0 ;
-
-   // Call simkill on bad outcome of checker process
-   int prev_xz_simtime;
-   task xz_simkill(int sim_time) ;
-      begin
-	 if (prev_xz_simtime != sim_time) begin
-   	    `BEGIN_RED_FONTCOLOR;
-   	    $display("SIM-SV: ASE has detected 'Z' or 'X' were qualified by a valid signal.");
-   	    $display("SIM-SV: Check simulation around time, t = %d", sim_time);
-   	    // $display("SIM-SV: Simulation will end now");
-   	    // $display("SIM-SV: If 'X' or 'Z' are intentional, set ENABLE_CCI_RULES to '0' in ase.cfg file");
-   	    // start_simkill_countdown();
-   	    `END_RED_FONTCOLOR;
-	 end
-	 prev_xz_simtime = sim_time;
-      end
-   endtask
-
    // Flow simkill
    task flowerror_simkill(int sim_time, int channel) ;
       begin
@@ -1532,7 +1613,7 @@ module cci_emulator();
    // end
 
    // Flow error messages
-   always @(posedge clk) begin
+   always @(posedge clk) begin : overflow_error
       if (tx0_overflow) begin
 	 flowerror_simkill($time, 0);
       end
@@ -1547,23 +1628,49 @@ module cci_emulator();
       end
    end
 
-   // Watch checker signal
+
+   /*
+    * CCI Sniffer
+    * Aggregate point for all ASE checkers
+    * - XZ checker
+    * - Data hazard warning
+    */
+   cci_sniffer
+     #(
+       .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
+       .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
+       .DATA_WIDTH   (`CCI_DATA_WIDTH)
+       )
+   cci_sniffer
+     (
+      // CCI signals
+      .clk             (clk),
+      .resetb          (sys_reset_n),
+      .lp_initdone     (lp_initdone),
+      .tx_c0_header    (tx_c0_header),
+      .tx_c0_rdvalid   (tx_c0_rdvalid),
+      .tx_c1_header    (tx_c1_header),
+      .tx_c1_data      (tx_c1_data),
+      .tx_c1_wrvalid   (tx_c1_wrvalid),
+      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
+      .rx_c0_header    (rx_c0_header),
+      .rx_c0_data      (rx_c0_data),
+      .rx_c0_rdvalid   (rx_c0_rdvalid),
+      .rx_c0_wrvalid   (rx_c0_wrvalid),
+      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
+      .rx_c1_header    (rx_c1_header),
+      .rx_c1_wrvalid   (rx_c1_wrvalid)
+      );
+
+
+   // Registers for comparing previous states
    always @(posedge clk) begin
-      if (tx0_rc_error) begin
-   	 xz_simkill(tx0_rc_time);
-      end
-      else if (tx1_rc_error) begin
-   	 xz_simkill(tx1_rc_time);
-      end
-      else if (rx0_rc_error) begin
-   	 xz_simkill(rx0_rc_time);
-      end
-      else if (rx1_rc_error) begin
-   	 xz_simkill(rx1_rc_time);
-      end
+      lp_initdone_q	<= lp_initdone;
+      sw_reset_n_q	<= sw_reset_n;
+      sys_reset_n_q     <= sys_reset_n;
    end
 
-
+   
    /*
     * ASE Hardware Interface (CCI) logger
     * - Logs CCI transaction into a transactions.tsv file
@@ -1571,14 +1678,6 @@ module cci_emulator();
     */
    // Log file descriptor
    int log_fd;
-
-   // Registers for comparing previous states
-   always @(posedge clk) begin
-      lp_initdone_q	<= lp_initdone;
-      resetb_q		<= resetb;
-      sw_reset_n_q	<= sw_reset_n;
-   end
-
 
    /*
     * Watcher process
@@ -1604,8 +1703,8 @@ module cci_emulator();
 	    $fwrite(log_fd, "%d\tSoftware reset toggled from %b to %b\n", $time, sw_reset_n_q, sw_reset_n);
 	 end
 	 // If reset toggled, log the event
-	 if (resetb_q != resetb) begin
-	    $fwrite(log_fd, "%d\tResetb toggled from %b to %b\n", $time, resetb_q, resetb);
+	 if (sys_reset_n_q != sys_reset_n) begin
+	    $fwrite(log_fd, "%d\tSystem reset toggled from %b to %b\n", $time, sys_reset_n_q, sys_reset_n);
 	 end
 	 // Watch CCI for valid transactions
 	 if (lp_initdone) begin
@@ -1627,12 +1726,12 @@ module cci_emulator();
 	    ////////////////////////////// RX0 umsgvalid ////////////////////////////////
 	    if (rx_c0_umsgvalid) begin
 	       if (rx_c0_header[`CCI_UMSG_BITINDEX]) begin              // Umsg Hint
-		  $fwrite(log_fd, "%d\tUmsgHint\t0\n", $time );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t\t0\n", $time );
+		  $fwrite(log_fd, "%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
+		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
 	       end
 	       else begin                                               // Umsg with data
-		  $fwrite(log_fd, "%d\tUmsg    \t0\t%x\n", $time, rx_c0_data );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t\t0\t%x\n", $time, rx_c0_data );
+		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\t%x\n", $time, rx_c0_header[5:0], rx_c0_data );
+		  if (cfg.enable_cl_view) $display("%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
 	       end
 	    end
 	    /////////////////////////////// RX1 wrvalid /////////////////////////////////
@@ -1687,7 +1786,7 @@ module cci_emulator();
 `ifdef ASE_DEBUG
    // Read response checking
    int unsigned read_check_array[*];
-   always @(posedge clk) begin
+   always @(posedge clk) begin : read_array_checkproc
       if (tx_c0_rdvalid) begin
 	 read_check_array[tx_c0_header[`TX_MDATA_BITRANGE]] = tx_c0_header[`TX_CLADDR_BITRANGE];
       end
@@ -1696,10 +1795,10 @@ module cci_emulator();
 	   read_check_array.delete(rx_c0_header[`TX_MDATA_BITRANGE]);
       end
    end
-   
+
    // Write response checking
    int unsigned write_check_array[*];
-   always @(posedge clk) begin
+   always @(posedge clk) begin : write_array_checkproc
       if (tx_c1_wrvalid && (tx_c1_header[`TX_META_TYPERANGE] != `ASE_TX1_WRFENCE)) begin
 	 write_check_array[tx_c1_header[`TX_MDATA_BITRANGE]] = tx_c1_header[`TX_CLADDR_BITRANGE];
       end

@@ -79,7 +79,7 @@ module latency_pipe
 
 
    // Register stages (instantiated here, not connected)
-   genvar 		    ii;
+   genvar 			 ii;
    generate
       for(ii = 0; ii < NUM_DELAY; ii = ii + 1) begin
 	 register

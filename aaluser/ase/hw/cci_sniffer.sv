@@ -48,6 +48,8 @@
  * All warnings are logged in warnings.log
  */
 
+`include "ase_global.vh"
+`include "platform.vh"
 
 module cci_sniffer
   #(

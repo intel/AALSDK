@@ -47,7 +47,7 @@
  * This will also allow dumping to file if needed
  *
  */
-void capcm_init(uint64_t capcm_memsize)
+void capcm_init()
 {
   FUNC_CALL_ENTRY;
 

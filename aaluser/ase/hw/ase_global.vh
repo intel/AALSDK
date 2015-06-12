@@ -56,6 +56,11 @@
  `define GRAM_STYLE RAM_STYLE
  `define SYNC_RESET_POLARITY 0
 
+
+// Address widths
+ `define PHYSADDR_WIDTH       38
+ `define PHYSCLADDR_WIDTH     32
+
 /*
  * CCI Transactions
  */
@@ -200,19 +205,24 @@ ase_cfg_t cfg;
  * UMSG Hint/Data state machine
  */
 // UMSG control states
-typedef enum {UMsg_Idle, UMsg_SendHint, UMsg_H2D_Wait, UMsg_SendData}
+typedef enum {UMsg_Idle, UMsg_ChangeOccured, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
 	     UMsg_StateEnum;
 
 // UMSG control structure
 typedef struct {
-   logic [`UMSG_MAX_MSG_LOG2-1:0] umsg_id;
-   logic 			  umsg_enable;
-   logic 			  umsg_hint;
-   logic [`UMSG_DELAY_TIMER_LOG2-1:0] umsg_timer;
-   logic [`CCI_DATA_WIDTH-1:0] 	  umsg_data;
-   logic 			  umsghint_push;
-   logic 			  umsgdata_push;
-   UMsg_StateEnum umsg_state;
+   logic [`CCI_DATA_WIDTH-1:0] 	      data;
+   logic [`CCI_DATA_WIDTH-1:0] 	      data_q;
+   logic 			      change;
+   logic 			      hint_enable;
+   logic [`UMSG_DELAY_TIMER_LOG2-1:0] hint_timer;
+   logic 			      hint_timer_started; 			      
+   logic 			      hint_ready;
+   logic 			      hint_pop;
+   logic [`UMSG_DELAY_TIMER_LOG2-1:0] data_timer;
+   logic 			      data_timer_started;
+   logic 			      data_ready;
+   logic 			      data_pop;
+   UMsg_StateEnum                     state;
 } umsg_t;
 
 
