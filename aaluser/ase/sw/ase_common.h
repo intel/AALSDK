@@ -504,8 +504,8 @@ extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
-void ase_init();
-void ase_ready();
+int ase_init();
+int ase_ready();
 int ase_listener();
 void ase_config_parse(char*);
 

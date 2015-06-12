@@ -232,7 +232,7 @@ int ase_listener()
    */
   // Message string
   char umsg_str[SIZEOF_UMSG_PACK_T];
-  int ii;
+  /* int ii; */
   umsg_pack_t inst;
 
   // Cleanse receptacle string
@@ -383,7 +383,7 @@ void calc_phys_memory_ranges()
 // - Setup message queues
 // - Start buffer replicator, csr_write listener thread
 // -----------------------------------------------------------------------
-void ase_init()
+int ase_init()
 {
   FUNC_CALL_ENTRY;
 
@@ -470,7 +470,10 @@ void ase_init()
       printf("SIM-C : Information about opened workspaces => workspace_info.log \n");
     }
 
+  fflush(stdout);
+
   FUNC_CALL_EXIT;
+  return 0;
 }
 
 
@@ -478,8 +481,10 @@ void ase_init()
 // ASE ready indicator:  Print a message that ASE is ready to go.
 // Controls run-modes
 // -----------------------------------------------------------------------
-void ase_ready()
+int ase_ready()
 {
+  FUNC_CALL_ENTRY;
+
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
 
@@ -515,6 +520,11 @@ void ase_ready()
       printf("SIM-C : Press CTRL-C to close simulator...\n");
       END_GREEN_FONTCOLOR;
     }
+
+  fflush(stdout);
+
+  FUNC_CALL_EXIT;
+  return 0;
 }
 
 

@@ -562,7 +562,7 @@ void umsg_send(int umas_id, char *umsg_data)
   char umsg_str[SIZEOF_UMSG_PACK_T];
   /* uint32_t umsg_hint; */
   umsg_pack_t inst;
-  int ii;
+  /* int ii; */
 
   // If requested umas_id is illegal 
   if (umas_id >= 32)
