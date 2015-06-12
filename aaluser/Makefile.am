@@ -348,7 +348,8 @@ ase/hw/sdp_ram.sv \
 ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
-ase/hw/cci_rule_checker.sv \
+ase/hw/cci_sniffer.sv \
+ase/hw/stream_checker.sv \
 ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \
