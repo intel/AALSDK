@@ -254,6 +254,7 @@ class AASLIB_API ISvcsFact
 public:
    /// ISvcsFact Destructor.
    virtual ~ISvcsFact();
+#if 0
    /// Create an instance of a Service object.
    ///
    /// @param[in]  container  The AALServiceModule which contains this factory.
@@ -270,7 +271,7 @@ public:
                                        btApplicationContext context,
                                        TransactionID const &rtid,
                                        NamedValueSet const &optArgs) = 0;
-
+#endif
    /// Create an instance of a Service object.
    ///
    /// @param[in]  container  The AALServiceModule which contains this factory.
@@ -299,6 +300,7 @@ class AASLIB_API IServiceModule
 public:
    /// IServiceModule Destructor.
    virtual ~IServiceModule();
+#if 0
    /// Uses ISvcsFact to create the Service object.
    ///
    /// @param[in]  Listener  The event handler to receive the tranevtFactoryCreate event. The
@@ -313,7 +315,7 @@ public:
                             TransactionID const &tid,
                             btApplicationContext context,
                             NamedValueSet const &optArgs = NamedValueSet()) = 0;
-
+#endif
    /// Uses ISvcsFact to create the Service object.
     ///
     /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
@@ -376,11 +378,12 @@ public:
    virtual ~AALServiceModule();
 
    // <IServiceModule>
-
+#if 0
    virtual IBase *Construct(btEventHandler       Listener,
                             TransactionID const &tranID,
                             btApplicationContext context,
                             NamedValueSet const &optArgs = NamedValueSet());
+#endif
     virtual IBase *Construct(IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet());

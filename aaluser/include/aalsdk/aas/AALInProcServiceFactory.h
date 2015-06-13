@@ -99,6 +99,7 @@ template <typename I>
 class InProcSvcsFact : public ISvcsFact
 {
 public:
+#if 0
    IBase * CreateServiceObject(AALServiceModule    *container,
                                btEventHandler       eventHandler,
                                btApplicationContext context,
@@ -120,7 +121,7 @@ public:
 
       return ptr;
    }
-
+#endif
 
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IBase               *pclient,
@@ -158,7 +159,7 @@ public:
    InProcSingletonSvcsFact() :
       m_pService(NULL)
    {}
-
+#if 0
    IBase * CreateServiceObject(AALServiceModule    *container,
                                btEventHandler       eventHandler,
                                btApplicationContext context,
@@ -187,7 +188,7 @@ public:
       // Return what the service gives
       return ptr;
    }
-
+#endif
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IBase               *pclient,
                                TransactionID const &rtid,

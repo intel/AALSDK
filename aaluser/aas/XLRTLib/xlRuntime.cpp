@@ -57,7 +57,8 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient) :
    m_pImplementation(NULL),
-   m_status(false)
+   m_status(false),
+   m_pClient(pClient)
 {
    // Must have a RuntimeClient
    if(NULL == pClient){
@@ -130,13 +131,12 @@ void Runtime::stop()
 ///                                 or also the runtime client
 /// @return       void
 //=============================================================================
-void Runtime::allocService(
-      IBase                  *pClient,
-      NamedValueSet const    &rManifest,
-      TransactionID const    &rTranID)
+void Runtime::allocService( IBase                  *pClient,
+                            NamedValueSet const    &rManifest,
+                            TransactionID const    &rTranID)
 {
    if ( IsOK() ) {
-      m_pImplementation->allocService(pClient, rManifest, rTranID);
+      m_pImplementation->allocService(this, pClient, rManifest, rTranID);
    }
 }
 
@@ -176,6 +176,21 @@ IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
       Unlock();
       return dynamic_cast<IRuntime*>(newProxy);
    }
+}
+
+//=============================================================================
+// Name: getRuntimeClient
+// Description: return the Runtime's Client's Interface
+// Interface: public
+// Inputs: pobject - Dispatchable object to send
+//         parm - Parameter
+// Outputs: Pointer to client interface.
+// Comments:
+//=============================================================================
+IRuntimeClient *Runtime::getRuntimeClient()
+{
+   AutoLock(this);
+   return m_pClient;
 }
 
 //=============================================================================

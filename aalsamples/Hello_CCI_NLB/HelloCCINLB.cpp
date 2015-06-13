@@ -60,7 +60,7 @@
 #include <string.h>
 
 // Comment out for HW
-#define SWAFU 1
+//#define SWAFU 1
 
 using namespace AAL;
 
@@ -125,12 +125,16 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
 
    void runtimeStartFailed(const IEvent &rEvent);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
@@ -156,7 +160,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -166,7 +170,7 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   m_Runtime.start(this, configArgs);
+   m_Runtime.start(configArgs);
    m_Sem.Wait();
 }
 
@@ -180,6 +184,10 @@ btBool RuntimeClient::isOK()
    return m_isOK;
 }
 
+void RuntimeClient::runtimeCreateOrGetProxyFailed(const IEvent &rEvent)
+{
+    MSG("Runtime Create or Get Proxy failed");
+}
 
 void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
                                     const NamedValueSet &rConfigParms)
@@ -206,6 +214,11 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
     MSG("Runtime start failed");
+}
+
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+    MSG("Runtime stop failed");
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
@@ -267,6 +280,10 @@ IRuntime * RuntimeClient::getRuntime()
                           TransactionID const &rTranID);
 
     void serviceAllocateFailed(const IEvent        &rEvent);
+
+    void serviceReleased(const AAL::TransactionID&);
+
+    void serviceReleaseFailed(const AAL::IEvent&);
 
     void serviceFreed(TransactionID const &rTranID);
 
@@ -335,13 +352,14 @@ void HelloCCINLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 #else
 
-
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
 #endif
-
+   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(keyRegHandle, 20);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello CCI NLB");
 
@@ -470,10 +488,16 @@ void HelloCCINLBApp::run()
     m_Sem.Post(1);
  }
 
- void HelloCCINLBApp::serviceFreed(TransactionID const &rTranID)
+ void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
  {
     MSG("Service Freed");
     // Unblock Main()
+    m_Sem.Post(1);
+ }
+
+ void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
+ {
+    MSG("Failed to release a Service");
     m_Sem.Post(1);
  }
 

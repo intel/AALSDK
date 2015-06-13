@@ -98,12 +98,6 @@ public:
    virtual void Hello(btcString            sMessage,
                       TransactionID const &rTranID) = 0;
 
-   /// @brief Releases the Service, allowing the framework to destroy it.
-   ///
-   /// @param[in]  rTranID   For messages sent back to the caller.
-   /// @param[in]  timeout   How long to wait for the Service to be destroyed.
-   virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT) = 0;
-
    /// ISampleAFUPing Destructor
    virtual ~IHelloAALService() {}
 };

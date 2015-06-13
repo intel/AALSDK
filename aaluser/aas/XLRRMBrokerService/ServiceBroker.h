@@ -82,6 +82,8 @@ public:
    // Map to hold clients of outstanding transactions
    struct ServiceDesc{
       IBase                  *ServiceBase;
+      IRuntime               *pProxy;
+      IRuntimeClient         *pRuntimeClient;
    };
 
    typedef std::map<TransactionID, struct ServiceDesc, tidcompare> ServiceClientMap;
@@ -114,7 +116,9 @@ public:
    // Quiet Release. Used when Service is unloaded.
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(IBase                  *pClient,
+   void allocService(IRuntime               *pProxy,
+                     IRuntimeClient         *pRuntimClient,
+                     IBase                  *pServiceClientBase,
                      const NamedValueSet    &rManifest,
                      TransactionID const    &rTranID);
 protected:

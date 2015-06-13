@@ -52,7 +52,7 @@ BEGIN_NAMESPACE(AAL)
 // Comments:
 //=============================================================================
 ServiceHost::ServiceHost(btcString             root_name,
-                         IRuntime             *pxlRuntime,
+                         IRuntime             *pProxy,
                          IXLRuntimeServices   *pxlRuntimeServices) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
@@ -82,7 +82,7 @@ ServiceHost::ServiceHost(btcString             root_name,
    }
 
    // Success
-   m_pProvider->setRuntime(pxlRuntime);
+   m_pProvider->setRuntime(pProxy);
    m_pProvider->setRuntimeServiceProvider(pxlRuntimeServices);
 
    m_name  = std::string(root_name);

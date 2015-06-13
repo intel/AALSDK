@@ -48,7 +48,6 @@ public:
    virtual IBase *getMessageDeliveryService()                             = 0;
    virtual void setMessageDeliveryService(IBase *pMDSbase)                = 0;
    virtual btBool SendMsg(IDispatchable *pobject, btObjectType parm=NULL) = 0;
-   virtual IRuntimeClient *getRuntimeClient()                             = 0;
 
    virtual ~IXLRuntimeServices() {}
 };

@@ -37,19 +37,19 @@ SUBDIRS=\
 AFU1 \
 AFU2 \
 App1 \
-App2 \
-cciapp \
-CCILib \
-CCIDemo \
-SampleBrokerService \
-splapp \
-splapp2 \
-splapp3 \
-SyncApp1 \
-UMsgTest \
 Hello_AAL_Service \
 Hello_AAL \
 Hello_CCI_NLB
+
+#cciapp \
+#CCILib \
+#CCIDemo \
+#SampleBrokerService \
+#splapp \
+#splapp2 \
+#splapp3 \
+#SyncApp1 \
+#UMsgTest \
 
 
 MFLAGS  =

@@ -66,7 +66,7 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
 }
 
 AALServiceModule::~AALServiceModule() {}
-
+#if 0
 IBase *AALServiceModule::Construct(btEventHandler       Listener,
                                    TransactionID const &tranID,
                                    btApplicationContext context,
@@ -87,7 +87,7 @@ IBase *AALServiceModule::Construct(btEventHandler       Listener,
 
    return m_pBase;
 }
-
+#endif
 IBase *AALServiceModule::Construct(IBase               *Client,
                                    TransactionID const &tranID,
                                    NamedValueSet const &optArgs)

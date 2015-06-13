@@ -57,11 +57,15 @@ class IServiceBroker
 public:
 
    /// Allocate a Service
-   ///@param[in] pClient IBase of cleint for this Service
+   ///@param[in] pProxy Runtime Proxy for this Service
+   ///@param[in] pRuntimClient of client for this Service
+   ///@param[in] pServiceClient IBase of client for this Service
    ///@param[in] rManifest Manifest describing the Service to allocate
    ///@param[in] rTranID Trasnaction ID
    ///@param[in] eAllocatemode Allocation mode. NoRuntimeClientNotification will squelch the notification to the Runtime.
-   virtual void allocService( IBase                  *pClient,
+   virtual void allocService( IRuntime               *pProxy,
+                              IRuntimeClient         *pRuntimClient,
+                              IBase                  *pServiceClientBase,
                               const NamedValueSet    &rManifest,
                               TransactionID const    &rTranID) =0;
 

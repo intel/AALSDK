@@ -70,6 +70,7 @@ BEGIN_NAMESPACE(AAL)
 #define extranevtRuntimeDestroyorRelease  __AAL_ExTranEvt(AAL_sysAAL, 0x0101)
 #define extranevtStartFailed              __AAL_ExTranEvt(AAL_sysAAL, 0x0102)
 #define extranevtProxyStopped             __AAL_ExTranEvt(AAL_sysAAL, 0x0103)
+#define extranevtServiceAllocateFailed    __AAL_ExTranEvt(AAL_sysAAL, 0x0104)
 
 #define reasNotOwner                     AAL_ReasCode(0x0100)
 
@@ -248,6 +249,10 @@ public:
    /// @return    true - success
    virtual btBool releaseRuntimeProxy(IRuntime *pRuntime)                        = 0;
 
+   /// @brief     Gets the pointer to the Runtime interface attached to this Proxy.
+   /// @return    Client Pointer
+   virtual IRuntimeClient *getRuntimeClient()                                    = 0;
+
    /// @brief     Returns status of Runtime
    /// @return    void
    virtual btBool IsOK()                                                         = 0;
@@ -285,6 +290,8 @@ public:
 
    btBool releaseRuntimeProxy(IRuntime *pRuntime);
 
+   IRuntimeClient *getRuntimeClient();
+
    btBool IsOK();
 
    virtual ~Runtime();
@@ -294,6 +301,7 @@ private:
    Runtime();                             // No empty construction
    _runtime          *m_pImplementation;  // Implementation of runtime
    btBool             m_status;           // OK or not
+   IRuntimeClient    *m_pClient;
    vector<Runtime*>   m_proxyList;        // List of Runtime proxies created through this object
 };
 

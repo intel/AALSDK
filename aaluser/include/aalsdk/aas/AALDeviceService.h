@@ -139,7 +139,7 @@ public:
 
 
    // <ServiceBase>
-
+#if 0
    // Perform any post creation initialization including establishing communications.
    //
    // This function is virtual to allow the derived class to hook the
@@ -176,7 +176,7 @@ public:
                          new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
       return this;
    }
-
+#endif
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
@@ -251,9 +251,7 @@ private:
 
       OptArgs().Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &m_ConfigRecord);
 
-      cerr << StdStringFromNamedValueSet(*m_ConfigRecord);
-
-      // Get the device handle if the is one
+      // Get the device handle if there is one
       if ( OptArgs().Has(keyRegHandle) ) {
          OptArgs().Get(keyRegHandle, &m_devHandle);
       } else {

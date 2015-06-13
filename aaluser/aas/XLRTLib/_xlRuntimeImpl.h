@@ -76,8 +76,10 @@ END_C_DECLS
 // Comments:
 //=============================================================================
 class _runtime : public  CAASBase,
+                 public  IRuntime,
                  private CUnCopyable,
-                 private IServiceClient,
+                 private IServiceClient,        // For internal Services
+                 private IRuntimeClient,        // _runtime uses a Runtime Proxy
                  public  IXLRuntimeServices
 {
 public:
@@ -93,9 +95,31 @@ public:
    //           rconfigParms - Reference to configuration parameters.
    btBool start( Runtime *pProxy,
                  const NamedValueSet &rconfigParms );
-
    // Stop: Stop the runtime
    void stop(Runtime* pProxy);
+
+   //  allocService: This variant takes a proxy pointer so that the RuntimeClient
+   //                responses go to teh correct place.
+   //    Input: pProxy - Pointer to Runtime Proxy.
+   //           pClient - Pointer to an IBase containing and IServiceClient interface.
+   //           rManifest - Reference to manifest containing Service
+   //                       description and any configuration parameters.
+   void allocService( Runtime                 *pProxy,
+                      IBase                   *pClient,
+                      NamedValueSet const     &rManifest = NamedValueSet(),
+                      TransactionID const     &rTranID   = TransactionID());
+
+   // IRuntime - Needed so that internal services can use the Runtime
+   //            without involving Application's Runtime Proxy.  Can't use
+   //            a Proxy since the Runtime is not instantiated yet.
+   //            Some of the functions are not supported.
+   btBool start(const NamedValueSet &rconfigParms) {return false;};
+   void   stop() {return;};
+   IRuntime *getRuntimeProxy(IRuntimeClient *pClient){return NULL;};
+
+   btBool releaseRuntimeProxy(IRuntime *pRuntime){return false;};
+
+   IRuntimeClient *getRuntimeClient();
 
    btBool IsOK();
 
@@ -108,6 +132,8 @@ public:
                       TransactionID const     &rTranID   = TransactionID());
 
    void schedDispatchable(IDispatchable *pdispatchable);
+   // </IRuntime>
+
 
    // Returns a proxy pointer to the singleton Runtime
    void addProxy(Runtime *pRuntimeProxy,
@@ -120,7 +146,6 @@ public:
    IBase      *getMessageDeliveryService();
    void        setMessageDeliveryService(IBase *pMDSbase);
    btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
-   IRuntimeClient *getRuntimeClient();
 
 protected:
    //
@@ -136,6 +161,25 @@ protected:
    //          exceptions or events for which no standard callback is defined.
    void serviceEvent(const IEvent &rEvent);
 
+   // IRuntimeClient
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};
+
+    void runtimeStarted(IRuntime            *pRuntime,
+                        const NamedValueSet &rConfigParms){};
+
+    void runtimeStopped(IRuntime *pRuntime){};
+
+    void runtimeStartFailed(const IEvent &rEvent){};
+
+    void runtimeStopFailed(const IEvent &rEvent){};
+
+    void runtimeAllocateServiceFailed( IEvent const &rEvent){};
+
+    void runtimeAllocateServiceSucceeded(IBase               *pClient,
+                                         TransactionID const &rTranID){};
+
+    void runtimeEvent(const IEvent &rEvent){};
+    // </IRuntimeClient>
    // Internal interfaces
    btBool ProcessConfigParms(const NamedValueSet &rConfigParms);
 
@@ -155,11 +199,13 @@ private:
 
    btBool                         m_status;
    enum State                     m_state;
+   IRuntimeClient                *m_pClient;       // Client used by internal services
 
    // Clients of the Runtime
-   Runtime                       *m_pOwner;     // Creator Runtime Proxy
-   IRuntimeClient                *m_pClient;    // Creator's Client
-   ClientMap                      m_mClientMap; // Map of Runtime Proxys
+   Runtime                       *m_pOwner;        // Creator Runtime Proxy
+   IRuntimeClient                *m_pOwnerClient;  // Creator's Client
+
+   ClientMap                      m_mClientMap;    // Map of Runtime Proxys
 
 
    // Core Facilities: Implemented as built-in plug-in Services

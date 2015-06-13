@@ -81,7 +81,9 @@ public:
    // Quiet Release. Used when Service is unloaded.
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(IBase                    *pClient,
+   void allocService(IRuntime                 *pProxy,
+                     IRuntimeClient           *pRuntimeClient,
+                     IBase                    *pServiceClientBase,
                      const NamedValueSet      &rManifest,
                      TransactionID const      &rTranID);
 

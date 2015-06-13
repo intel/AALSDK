@@ -94,7 +94,9 @@ void _xlServiceBroker::init(TransactionID const &rtid)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void _xlServiceBroker::allocService(IBase                   *pClient,
+void _xlServiceBroker::allocService(IRuntime               *pProxy,
+                                    IRuntimeClient         *pRuntimeClient,
+                                    IBase                  *pServiceClientBase,
                                     const NamedValueSet     &rManifest,
                                     TransactionID const     &rTranID)
 {
@@ -102,10 +104,10 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
    btcString            sName  = NULL;
    NamedValueSet const *ConfigRecord;
 
-   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pClient);
-   if ( NULL == pServiceClient ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    NULL,
+   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
+   if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
+      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                    pServiceClient,
                                                     NULL,
                                                     rTranID,
                                                     errAllocationFailure,
@@ -123,12 +125,12 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
 
    ServiceHost *SvcHost = NULL;
    if ( NULL == (SvcHost = findServiceHost(sName)) ) {
-      // Instantiate the core facilities - If the allocation should not inform the Runtime Vl
-      SvcHost = new ServiceHost(sName, getRuntime(),getRuntimeServiceProvider());
+      // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
+      SvcHost = new ServiceHost(sName, pProxy, getRuntimeServiceProvider());
    }
 
    if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                     pServiceClient,
                                                     NULL,
                                                     rTranID,
@@ -139,8 +141,8 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
    }
 
    // Allocate the service
-   if ( !SvcHost->allocService(pClient, rManifest, rTranID) ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+   if ( !SvcHost->allocService(pServiceClientBase, rManifest, rTranID) ) {
+      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                     pServiceClient,
                                                     NULL,
                                                     rTranID,

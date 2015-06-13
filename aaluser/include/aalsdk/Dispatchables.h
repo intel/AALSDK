@@ -131,6 +131,8 @@ class RuntimeCallback : public IDispatchable
 public:
    enum MessageType{
       CreateorGetProxyFailed,
+      AllocateFailed,
+      ServiceAllocated,
       Started,
       StartFailed,
       StopFailed,
@@ -146,6 +148,7 @@ public:
    m_type(type),
    m_pobject(po),
    m_prt(prt),
+   m_so(NULL),
    m_rConfigParms(rConfigParms),
    m_pEvent(pEvent)
 {}
@@ -153,20 +156,33 @@ public:
    RuntimeCallback(enum MessageType        type,
                    IRuntimeClient          *po,
                    IRuntime                *prt) :
+   m_type(type),
    m_pobject(po),
    m_prt(prt),
+   m_so(NULL),
    m_rConfigParms(NamedValueSet()),
+   m_pEvent(NULL)
+{}
+
+   RuntimeCallback(enum MessageType        type,
+                   IBase                   *so,
+                   TransactionID const     &rtid) :
    m_type(type),
+   m_pobject(NULL),
+   m_prt(NULL),
+   m_so(so),
+   m_rConfigParms(NamedValueSet()),
+   m_rTranID(rtid),
    m_pEvent(NULL)
 {}
 
    RuntimeCallback(enum MessageType        type,
                    IRuntimeClient          *po,
                    const IEvent            *pEvent) :
+   m_type(type),
    m_pobject(po),
    m_prt(NULL),
    m_rConfigParms(NamedValueSet()),
-   m_type(type),
    m_pEvent(pEvent)
 {}
 
@@ -176,12 +192,17 @@ void operator() ()
       case CreateorGetProxyFailed: {
          m_pobject->runtimeCreateOrGetProxyFailed(*m_pEvent);
       }break;
-
       case Started : {
          m_pobject->runtimeStarted(m_prt, m_rConfigParms);
       } break;
       case StartFailed : {
          m_pobject->runtimeStartFailed(*m_pEvent);
+      } break;
+      case ServiceAllocated : {
+         m_pobject->runtimeAllocateServiceSucceeded(m_so, m_rTranID);
+      } break;
+      case AllocateFailed : {
+         m_pobject->runtimeAllocateServiceFailed(*m_pEvent);
       } break;
       case Stopped : {
          m_pobject->runtimeStopped(m_prt);
@@ -203,6 +224,7 @@ virtual ~RuntimeCallback() {}
 protected:
    IRuntimeClient          *m_pobject;
    IRuntime                *m_prt;
+   IBase                   *m_so;
    const NamedValueSet     &m_rConfigParms;
    enum MessageType         m_type;
    TransactionID const      m_rTranID;

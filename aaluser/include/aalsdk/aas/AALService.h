@@ -181,7 +181,7 @@ public:
    virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT);
 
    // </IAALService>
-
+#if 0
    // Hook for base classes to perform any post-creation initialization.
    //
    // Only base classes have _init(). This function is designed to be
@@ -208,7 +208,7 @@ public:
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL);
 
-
+#endif
    // @param[in]  pclient       Interface of client of service.
    // @param[in]  rtid          TransactionID for routing event responses.
    // @param[in]  optArgs       Optional arguments.
@@ -421,12 +421,13 @@ public:
    //           call its direct ancestor's _init() FIRST to ensure that the class
    //           hiearchy _init() called.
    //=============================================================================
+#if 0
     virtual IBase * _init(btEventHandler       eventHandler,
                           btApplicationContext context,
                           TransactionID const &rtid,
                           NamedValueSet const &optArgs,
                           CAALEvent           *pcmpltEvent = NULL);
-
+#endif
     virtual IBase * _init(IBase                   *pclient,
                           TransactionID const      &rtid,
                           NamedValueSet const      &optArgs,
@@ -464,13 +465,14 @@ public:
    //           _init() function.  It is the responsibility of the base class to
    //           call its direct ancestor's _init() FIRST to ensure that the class
    //           hiearchy _init() called.
-    //=============================================================================
+   //=============================================================================
+#if 0
    virtual IBase * _init(btEventHandler       eventHandler,
                          btApplicationContext context,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL);
-
+#endif
 
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,

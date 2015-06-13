@@ -97,12 +97,16 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
 
    void runtimeStartFailed(const IEvent &rEvent);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
@@ -128,7 +132,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -138,7 +142,7 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   m_Runtime.start(this, configArgs);
+   m_Runtime.start(configArgs);
    m_Sem.Wait();
 }
 
@@ -152,6 +156,12 @@ btBool RuntimeClient::isOK()
    return m_isOK;
 }
 
+void RuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+ {
+    MSG("Runtime Create or Get Proxy failed");
+    m_isOK = false;
+    m_Sem.Post(1);
+ }
 
 void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
                                     const NamedValueSet &rConfigParms)
@@ -178,6 +188,11 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
     MSG("Runtime start failed");
+}
+
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+    MSG("Runtime stop failed");
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
@@ -225,7 +240,9 @@ IRuntime * RuntimeClient::getRuntime()
 
     void serviceAllocateFailed(const IEvent        &rEvent);
 
-    void serviceFreed(TransactionID const &rTranID);
+    void serviceReleaseFailed(const AAL::IEvent&);
+
+    void serviceReleased(TransactionID const &rTranID);
 
     void serviceEvent(const IEvent &rEvent);
     // <end IServiceClient interface>
@@ -318,7 +335,13 @@ void HelloAALApp::run()
     m_Sem.Post(1);
  }
 
- void HelloAALApp::serviceFreed(TransactionID const &rTranID)
+ void HelloAALApp::serviceReleaseFailed(const IEvent        &rEvent)
+ {
+    MSG("Failed to Release a Service");
+    m_Sem.Post(1);
+ }
+
+ void HelloAALApp::serviceReleased(TransactionID const &rTranID)
  {
     MSG("Service Freed");
     m_Sem.Post(1);
@@ -330,9 +353,7 @@ void HelloAALApp::run()
     MSG("AAL says Hello Back ");
     IHelloAALService *ptheService = subclass_ptr<IHelloAALService>(m_pAALService);
 
-    ptheService->Release(TransactionID());
-
-    //dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
+    dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
  }
 
  void HelloAALApp::serviceEvent(const IEvent &rEvent)

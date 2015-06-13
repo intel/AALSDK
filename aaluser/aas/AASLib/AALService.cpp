@@ -154,7 +154,7 @@ btBool ServiceBase::Release(btTime timeout)
 
 
 
-
+#if 0
 IBase * ServiceBase::_init(btEventHandler       eventHandler,
                            btApplicationContext context,
                            TransactionID const &rtid,
@@ -185,7 +185,7 @@ IBase * ServiceBase::_init(btEventHandler       eventHandler,
    QueueAASEvent(pcmpltEvent);
    return this;
 }
-
+#endif
 
 
 IBase * ServiceBase::_init(IBase               *pclient,
@@ -207,7 +207,7 @@ IBase * ServiceBase::_init(IBase               *pclient,
    m_optArgs = optArgs;
 
    // This is used to generate the creation event.
-   m_RuntimeClient = getRuntimeServiceProvider()->getRuntimeClient();
+   m_RuntimeClient = getRuntime()->getRuntimeClient();
 
    // Check that mandatory initialization has occurred
 
@@ -385,7 +385,7 @@ ServiceProxyBase::ServiceProxyBase(AALServiceModule *container,
                unmarshaller),
    m_pcmpltEvent(NULL)
  {}
-
+#if 0
 IBase * ServiceProxyBase::_init(btEventHandler       eventHandler,
                                 btApplicationContext context,
                                 TransactionID const &rtid,
@@ -408,7 +408,7 @@ IBase * ServiceProxyBase::_init(btEventHandler       eventHandler,
                       new InitComplete<ServiceProxyBase>(this, &ServiceProxyBase::Doinit, rtid));
    return this;
 }
-
+#endif
 
 IBase * ServiceProxyBase::_init(IBase               *pclient,
                                 TransactionID const &rtid,
@@ -498,7 +498,7 @@ ServiceStubBase::ServiceStubBase(AALServiceModule *container,
                unmarshaller),
    m_pcmpltEvent(NULL)
 {}
-
+#if 0
 IBase * ServiceStubBase::_init(btEventHandler       eventHandler,
                                btApplicationContext context,
                                TransactionID const &rtid,
@@ -520,7 +520,7 @@ IBase * ServiceStubBase::_init(btEventHandler       eventHandler,
                       new InitComplete<ServiceStubBase>(this, &ServiceStubBase::Doinit, rtid));
    return this;
 }
-
+#endif
 IBase * ServiceStubBase::_init(IBase               *pclient,
                                TransactionID const &rtid,
                                NamedValueSet const &optArgs,

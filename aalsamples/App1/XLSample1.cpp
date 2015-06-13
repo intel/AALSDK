@@ -105,7 +105,8 @@ public:
 
    void serviceAllocateFailed(const IEvent        &rEvent);
 
-   void serviceFreed(TransactionID const &rTranID);
+   void serviceReleased(TransactionID const &rTranID);
+   void serviceReleaseFailed(const AAL::IEvent&);
 
    void PingReceived(TransactionID const &rTranID);
    void serviceEvent(const IEvent &rEvent);
@@ -132,10 +133,14 @@ public:
    void Post();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeStartFailed(const IEvent &rEvent);
 
@@ -162,7 +167,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 MyRuntimeClient::MyRuntimeClient() :
-    m_Runtime(),
+    m_Runtime(dynamic_cast<IRuntimeClient*>(this)),
     m_SvcClient(),
     m_pRuntime(NULL)
 {
@@ -177,7 +182,7 @@ MyRuntimeClient::MyRuntimeClient() :
    configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 #endif
    m_Sem.Create(0, 1);
-   m_Runtime.start(this, configArgs);
+   m_Runtime.start(configArgs);
 }
 
 MyRuntimeClient::~MyRuntimeClient()
@@ -194,6 +199,12 @@ MyRuntimeClient::~MyRuntimeClient()
  {
     m_Sem.Post(1);
  }
+
+void MyRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+ {
+    MSG("Runtime Create or Get Proxy failed");
+    m_Sem.Post(1);
+  }
 
  void MyRuntimeClient::runtimeStarted(IRuntime            *pRuntime,
                                       const NamedValueSet &rConfigParms)
@@ -214,6 +225,13 @@ MyRuntimeClient::~MyRuntimeClient()
     MSG("Runtime start failed");
     Post();
  }
+
+ void MyRuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+  {
+     MSG("Runtime stop failed");
+     Post();
+  }
+
  void MyRuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
  {
     MSG("Runtime AllocateService failed");
@@ -298,7 +316,14 @@ void MyServiceClient::start(MyRuntimeClient *p_Runtime)
     m_pRuntime->getRuntime()->stop();
  }
 
- void MyServiceClient::serviceFreed(TransactionID const &rTranID)
+ void MyServiceClient::serviceReleaseFailed(const IEvent        &rEvent)
+ {
+    MSG("Failed to release a Sample AFU 1");
+    m_pRuntime->getRuntime()->stop();
+ }
+
+
+ void MyServiceClient::serviceReleased(TransactionID const &rTranID)
  {
     MSG("Sample AFU 1 Freed");
     m_pRuntime->getRuntime()->stop();

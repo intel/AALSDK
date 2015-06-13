@@ -225,7 +225,7 @@ void uAIA::init( TransactionID const& rtid )
 
    pCAIA->SetuAIA(this);
 
-   pCAIA->_init(Handler(), Context(), rtid, OptArgs());
+   //pCAIA->_init(Handler(), Context(), rtid, OptArgs());
    pCAIA->init(rtid);
 
    //Singleton service already initialized

@@ -234,13 +234,26 @@ void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void ServiceBroker::allocService(IBase                   *pServiceBase,
-                                 const NamedValueSet     &rManifest,
-                                 TransactionID const     &rTranID)
+void ServiceBroker::allocService(IRuntime               *pProxy,
+                                 IRuntimeClient         *pRuntimeClient,
+                                 IBase                  *pServiceClientBase,
+                                 const NamedValueSet    &rManifest,
+                                 TransactionID const    &rTranID)
 {
    // Process the manifest
    btcString            sName = NULL;
    NamedValueSet const *ConfigRecord;
+
+   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
+   if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
+      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                    pServiceClient,
+                                                    NULL,
+                                                    rTranID,
+                                                    errAllocationFailure,
+                                                    reasMissingInterface,
+                                                    strMissingInterface));
+   }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
       return;
@@ -255,9 +268,11 @@ void ServiceBroker::allocService(IBase                   *pServiceBase,
 
       if ( NULL != m_ResMgr ) {
 
-         // Need to save the pServiceClient to be able to generate the final event
+         // Need to save the Runtime Proxy and Client interfaces to be able to generate the final event
          TransactionID tid;
-         m_ServiceClientMap[tid].ServiceBase = pServiceBase;
+         m_ServiceClientMap[tid].ServiceBase = pServiceClientBase;
+         m_ServiceClientMap[tid].pProxy = pProxy;
+         m_ServiceClientMap[tid].pRuntimeClient = pRuntimeClient;
          m_Transactions[tid] = rTranID;
 
          m_ResMgr->RequestResource(rManifest, tid );
@@ -274,8 +289,8 @@ void ServiceBroker::allocService(IBase                   *pServiceBase,
       }
 
       if ( !SvcHost->IsOK() ) {
-         QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                        Client(),
+         QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                        pServiceClient,
                                                         NULL,
                                                         rTranID,
                                                         errCreationFailure,
@@ -284,9 +299,9 @@ void ServiceBroker::allocService(IBase                   *pServiceBase,
       }
 
       // Allocate the service
-      if ( !SvcHost->allocService(pServiceBase, rManifest, rTranID) ) {
-         QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                        Client(),
+      if ( !SvcHost->allocService(pServiceClientBase, rManifest, rTranID) ) {
+         QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                        pServiceClient,
                                                         NULL,
                                                         rTranID,
                                                         errCreationFailure,
@@ -597,7 +612,10 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      TransactionID origTid = m_Transactions[tid];
      m_Transactions.erase(tid);
 
-     IBase *pClientBase    = m_ServiceClientMap[tid].ServiceBase;
+     // Get the Runtime Proxy and Clinet information
+     IBase *pClientBase             = m_ServiceClientMap[tid].ServiceBase;
+     IRuntime *pProxy               = m_ServiceClientMap[tid].pProxy;
+     IRuntimeClient *pRuntimeClient = m_ServiceClientMap[tid].pRuntimeClient;
      m_ServiceClientMap.erase(tid);
 
      NamedValueSet const *ConfigRecord;
@@ -611,12 +629,12 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
      ServiceHost *SvcHost = NULL;
      if ( NULL == (SvcHost = findServiceHost(sName)) ) {
-        // Instantiate the core facilities
-        SvcHost = new ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
+        // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
+        SvcHost = new ServiceHost(sName, pProxy, getRuntimeServiceProvider());
      }
 
      if ( !SvcHost->IsOK() ) {
-        QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+        QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                        dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
                                                        NULL,
                                                        origTid,
@@ -627,7 +645,7 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
      // Allocate the service
      if ( !SvcHost->allocService(pClientBase, nvsInstancerecord, origTid) ) {
-        QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+        QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                        dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
                                                        NULL,
                                                        origTid,
