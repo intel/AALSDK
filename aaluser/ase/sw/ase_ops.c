@@ -39,18 +39,7 @@ struct buffer_t *head;
 struct buffer_t *end;
 
 uint64_t csr_fake_pin;
-
-char null_str[CL_BYTE_WIDTH];
-
-unsigned long int ase_cci_transact_count;
-
-FILE *ase_cci_log_fd;
-
 struct timeval start;
-long int ref_anchor_time;
-uint32_t shim_called;
-
-uint64_t fake_off_low_bound;
 
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
@@ -102,8 +91,8 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n", (uint32_t*)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n", (uint32_t*)mem->fake_paddr_hi);
-  printf("\tIsDSM       = %d\n", mem->is_csrmap); 
-  printf("\tIsPrivMem   = %d\n", mem->is_privmem); 
+  /* printf("\tIsDSM       = %d\n", mem->is_csrmap);  */
+  /* printf("\tIsPrivMem   = %d\n", mem->is_privmem);  */
   BEGIN_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -123,12 +112,12 @@ void ase_buffer_oneline(struct buffer_t *mem)
   else
     printf("REMOVED ");
   printf("%5s \t", mem->memname);
-  printf("%p  ", (uint32_t*)mem->vbase);
-  printf("%p  ", (uint32_t*)mem->pbase);
-  printf("%p  ", (uint32_t*)mem->fake_paddr);
-  printf("%x  ", mem->memsize);
-  printf("%d  ", mem->is_csrmap);
-  printf("%d  ", mem->is_privmem);
+  /* printf("%p  ", (uint32_t*)mem->vbase); */
+  /* printf("%p  ", (uint32_t*)mem->pbase); */
+  /* printf("%p (%08x) ", (uint32_t*)mem->fake_paddr, (uint32_t)(mem->fake_paddr >> 6) ); */
+  /* printf("%x  ", mem->memsize); */
+  /* printf("%d  ", mem->is_csrmap); */
+  /* printf("%d  ", mem->is_privmem); */
   printf("\n");
 
   END_YELLOW_FONTCOLOR;
@@ -225,4 +214,43 @@ void ase_memory_barrier()
 {
   // asm volatile("" ::: "memory");
   __asm__ __volatile__ ("" ::: "memory");
+}
+
+
+/*
+ * Evaluate Session directory
+ * If SIM_SIDE is set, Return "$ASE_WORKDIR/work/"
+ *               else, Return "$PWD/work/"
+ *               Both must be the same location
+ *
+ * PROCEDURE:
+ * - Check if PWD/ASE_WORKDIR exists:
+ *   - Most cases, it will exist, created by Makefile
+ *     - Check if "work" directory already exists, if not create one
+ *   - If not Error out
+ */
+char* ase_eval_session_directory()
+{
+  FUNC_CALL_ENTRY;
+  
+  char *workdir_path;
+  /* struct stat s; */
+  /* int err; */
+    
+  workdir_path = malloc (ASE_FILEPATH_LEN);      
+  // Evaluate basename location
+#ifdef SIM_SIDE
+  workdir_path = getenv ("PWD");
+#else
+  workdir_path = getenv ("ASE_WORKDIR");
+#endif
+      
+  // Locate work directory
+  strcat( workdir_path, "/work/" ); 
+
+  // *FIXME*: Idiot-proof the work directory
+
+  FUNC_CALL_EXIT;
+  
+  return workdir_path;
 }

@@ -51,21 +51,19 @@
 #include <sys/stat.h>
 #include <time.h>       
 #include <ctype.h>         
-#include <mqueue.h>        // Message queue setup
-#include <errno.h>         // Error management
-#include <signal.h>        // Used to kill simulation             
-#include <pthread.h>       // DPI uses a csr_write listener thread
-#include <sys/resource.h>  // Used to get/set resource limit
-#include <sys/time.h>      // Timestamp generation
+#include <mqueue.h>        
+#include <errno.h>         
+#include <signal.h>        
+#include <pthread.h>       
+#include <sys/resource.h>  
+#include <sys/time.h>      
 #include <math.h>
-// #include <stdbool.h>       // Boolean datatype
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
 #endif
-
-// Debug switch
-// #define ASE_DEBUG
 
 /*
  * Return integers
@@ -73,37 +71,137 @@
 #define OK     0
 #define NOT_OK -1
 
-// Enable/Disable message queue and shared memory
-// DO NOT DISABLE if using with ASE
-/* #define ASE_MQ_ENABLE */
-/* #define ASE_SHM_ENABLE */
+/* *******************************************************************************
+ *
+ * SYSTEM FACTS
+ * 
+ * *******************************************************************************/
+#define FPGA_ADDR_WIDTH       38
+#define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
+#define CL_ALIGN_SHIFT        6
+
+// Width of a cache line in bytes
+#define CL_BYTE_WIDTH        64
+#define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
+
+// CSR memory map size
+#define CSR_MAP_SIZE            64*1024
+
+// Size of page
+#define ASE_PAGESIZE   0x1000        // 4096 bytes
+#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
 
 /*
- * Triggers, safety catches and debug information used in the AFU
- * simulator environment.
+ * Unordered Message (UMSG) Address space
  */
-// ASE message view #define - Print messages as they go around
-// #define ASE_MSG_VIEW
+// UMSG specific CSRs
+#define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address
+#define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
+#define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
 
-// Enable debug info from linked lists 
-// #define ASE_LL_VIEW
+/*
+ * SPL constants
+ */
+#define SPL_DSM_BASEL_OFF 0x1000 //0x910
+#define SPL_DSM_BASEH_OFF 0x1004 //0x914
+#define SPL_CXT_BASEL_OFF 0x1008 //0x918 // SPL Context Physical address
+#define SPL_CXT_BASEH_OFF 0x100c //0x91c 
+#define SPL_CH_CTRL_OFF   0x1010 //0x920
 
-// Print buffers as they are being alloc/dealloc
-// *FIXME*: Connect to ase.cfg
-// #define ASE_BUFFER_VIEW
+/*
+ * AFU constants
+ */
+#define AFU_DSM_BASEL_OFF 0x8A00
+#define AFU_DSM_BASEH_OFF 0x8A04
+#define AFU_CXT_BASEL_OFF 0x8A08
+#define AFU_CXT_BASEH_OFF 0x8A0c
+
+//                                Byte Offset  Attribute  Width  Comments
+#define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
+#define      DSM_STATUS            0x40         // RO      512b   test status and error info
 
 
-// ------------------------------------------------------------
+/* *******************************************************************************
+ *
+ * ASE INTERNAL MACROS
+ *
+ * *******************************************************************************/
 // SHM memory name length
-// ------------------------------------------------------------
 #define ASE_SHM_NAME_LEN   40
 
-// ------------------------------------------------------------------------------
-// Data structure used between APP and DPI for
-// sharing information about
-// APP side is implemented as discrete buffers (next = NULL)
-// DPI side is implemented as linked list
-// ------------------------------------------------------------------------------
+// ASE filepath length
+#define ASE_FILEPATH_LEN  256
+
+// work Directory location
+char *ase_workdir_path;
+
+// Run location
+char *ase_run_path;
+
+// Timestamp IPC file
+#define TSTAMP_FILENAME ".ase_timestamp"
+char *tstamp_filepath;
+
+// IPC control list
+char *ipclist_filepath;
+
+// Ready filepath
+char *ase_ready_filepath;
+
+// ASE Mode macros
+#define ASE_MODE_DAEMON_NO_SIMKILL   1
+#define ASE_MODE_DAEMON_SIMKILL      2
+#define ASE_MODE_DAEMON_SW_SIMKILL   3
+#define ASE_MODE_REGRESSION          4
+
+// UMAS establishment status
+#define UMAS_NOT_ESTABLISHED 0x0
+#define UMAS_ESTABLISHED     0xBEEF
+
+/*
+ * Console colors
+ */
+// ERROR codes are in RED color
+#define BEGIN_RED_FONTCOLOR    printf("\033[1;31m");
+#define END_RED_FONTCOLOR      printf("\033[0m");
+
+// INFO or INSTRUCTIONS are in GREEN color
+#define BEGIN_GREEN_FONTCOLOR  printf("\033[32;1m");
+#define END_GREEN_FONTCOLOR    printf("\033[0m");
+
+// WARNING codes in YELLOW color
+#define BEGIN_YELLOW_FONTCOLOR printf("\033[0;33m");
+#define END_YELLOW_FONTCOLOR   printf("\033[0m");
+
+/*
+ * ASE Error codes
+ */
+#define ASE_USR_CAPCM_NOINIT           0x1    // CAPCM not initialized
+#define ASE_OS_MQUEUE_ERR              0x2    // MQ open error
+#define ASE_OS_SHM_ERR                 0x3    // SHM open error
+#define ASE_OS_FOPEN_ERR               0x4    // Normal fopen failure
+#define ASE_OS_MEMMAP_ERR              0x5    // Memory map/unmap errors
+#define ASE_OS_MQTXRX_ERR              0x6    // MQ send receive error
+#define ASE_OS_MALLOC_ERR              0x7    // Malloc error
+#define ASE_OS_STRING_ERR              0x8    // String operations error
+#define ASE_IPCKILL_CATERR             0xA    // Catastropic error when cleaning
+                                              // IPCs, manual intervention required
+#define ASE_UNDEF_ERROR                0xFF   // Undefined error, pls report
+
+// Remote Start Stop messages
+/* #define HDR_ASE_READY_STAT   0xFACEFEED */
+/* #define HDR_ASE_KILL_CTRL    0xC00CB00C */
+
+// Simkill message
+#define ASE_SIMKILL_MSG      0xDEADDEAD
+
+
+/* *******************************************************************************
+ *
+ * Shared buffer 
+ * 
+ * ******************************************************************************/
+// Buffer information structure
 struct buffer_t                   //  Descriptiion                    Computed by
 {                                 // --------------------------------------------
   int fd_app;                     // File descriptor                 |   APP
@@ -117,22 +215,53 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t pbase;                 // SIM virtual address             |   SIM
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
-  int is_privmem;                 // Flag memory as a private memory |   SIM
-  int is_csrmap;                     // Flag memory as DSM              |   TBD
+  int is_privmem;                 // Flag memory as a private memory |    
+  int is_csrmap;                  // Flag memory as DSM              |   
+  int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
 
 // Compute buffer_t size 
 #define BUFSIZE     sizeof(struct buffer_t)
 
-// Size of page
-#define ASE_PAGESIZE   0x1000        // 4096 bytes
-#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
+
+// Head and tail pointers of DPI side Linked list
+extern struct buffer_t *head;      // Head pointer
+extern struct buffer_t *end;       // Tail pointer
+// CSR fake physical base address
+extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
+// DPI side CSR base, offsets updated on CSR writes
+extern uint32_t *ase_csr_base;      
+// Timestamp reference time
+extern struct timeval start;
+
+// ASE buffer valid/invalid indicator
+// When a buffer is 'allocated' successfully, it will be valid, when
+// it is deallocated, it will become invalid.
+#define ASE_BUFFER_VALID        0xFFFF
+#define ASE_BUFFER_INVALID      0x0
+
+// Buffer allocate/deallocate message headers
+#define HDR_MEM_ALLOC_REQ    0x7F
+#define HDR_MEM_ALLOC_REPLY  0xFF
+#define HDR_MEM_DEALLOC_REQ  0x0F
+
+// UMSG info structure
+typedef struct {
+  int id;
+  int hint;
+  char data[CL_BYTE_WIDTH];
+} umsg_pack_t;
+
+// Size map
+#define SIZEOF_UMSG_PACK_T    sizeof(umsg_pack_t)
 
 
-/*
- * Common Function prototypes
- */
+/* ********************************************************************
+ *
+ * FUNCTION PROTOTYPES
+ *
+ * ********************************************************************/
 // Linked list functions
 void ll_print_info(struct buffer_t *);
 void ll_traverse_print();
@@ -164,13 +293,16 @@ void ase_buffer_t_to_str(struct buffer_t *, char *);
 void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
+char* ase_eval_session_directory();
 
 // Message queue operations
-mqd_t mqueue_create(char*, int);
-void mqueue_close(mqd_t);
+void ipc_init();
+void mqueue_create(char*);
+int mqueue_open(char*, int);
+void mqueue_close(int);
 void mqueue_destroy(char*);
-void mqueue_send(mqd_t, char*);
-int mqueue_recv(mqd_t, char*);
+void mqueue_send(int, char*);
+int mqueue_recv(int, char*);
 
 // Debug interface
 void shm_dbg_memtest(struct buffer_t *);
@@ -201,60 +333,74 @@ extern "C" {
   void deallocate_buffer(struct buffer_t *);
   void csr_write(uint32_t, uint32_t);
   uint32_t csr_read(uint32_t);
-  // Remote starter
-  void ase_remote_start_simulator();
   // SPL bridge functions *FIXME*
   void setup_spl_cxt_pte(struct buffer_t *, struct buffer_t *);
   void spl_driver_dsm_setup(struct buffer_t *);
   void spl_driver_reset(struct buffer_t *);
   void spl_driver_afu_setup(struct buffer_t *);
-  // void spl_driver_start(struct buffer_t *, struct buffer_t *);
   void spl_driver_start(uint64_t *);
   void spl_driver_stop();
   // UMSG subsystem
-  void init_umsg_system(struct buffer_t *, struct buffer_t *);
-  void set_umsg_mode(uint32_t);
-  void send_umsg(struct buffer_t *, uint32_t, char*);
-  void deinit_umsg_system(struct buffer_t *);
+  void umas_init(uint32_t);
+  void umsg_send(int, char *);
+  void umas_deinit();
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
+#define DUMPSTRVAR(varname) fprintf(fp_workspace_log, "%s", #varname);
 
 
-/*
- * ASE buffer valid/invalid indicator
- * When a buffer is 'allocated' successfully, it will be valid, when
- * it is deallocated, it will become invalid.
- */
-#define ASE_BUFFER_VALID        0xFFFF
-#define ASE_BUFFER_INVALID      0x0
+/* ********************************************************************
+ *
+ * MESSAGING IPC
+ *
+ * ********************************************************************/
+// Buffer exchange messages
+/* #define APP2SIM_SMQ_PREFIX          "app2sim_bufping_smq." */
+/* #define SIM2APP_SMQ_PREFIX          "sim2app_bufpong_smq." */
+/* // CSR write messages */
+/* #define APP2SIM_CSR_WR_SMQ_PREFIX   "app2sim_csr_wr_smq." */
+/* // UMSG control messages from APP to SIM */
+/* #define APP2SIM_UMSG_SMQ_PREFIX     "app2sim_umsg_smq." */
+/* // Interrupt message from SIM to APP */
+/* #if 0 */
+/* #define SIM2APP_INTR_SMQ_PREFIX     "sim2app_intr_smq." */
+/* #endif */
+/* // Simkill control messages */
+/* #define APP2SIM_SIMKILL_SMQ_PREFIX  "app2sim_simkill_smq." */
 
-/*
- * CSR memory map size
- */
-#define CSR_MAP_SIZE            64*1024
+// Message Queue establishment status
+#define MQ_NOT_ESTABLISHED 0x0
+#define MQ_ESTABLISHED     0xCAFE
 
-/*
- * ASE message headers
- */
-// Buffer allocate/deallocate messages
-#define HDR_MEM_ALLOC_REQ    0x7F
-#define HDR_MEM_ALLOC_REPLY  0xFF
-#define HDR_MEM_DEALLOC_REQ  0x0F
+// Message queue parameters
+#define ASE_MQ_MAXMSG     8
+#define ASE_MQ_MSGSIZE    1024
+#define ASE_MQ_NAME_LEN   64
+#define ASE_MQ_INSTANCES  5
 
-// Remote Start Stop messages
-#define HDR_ASE_READY_STAT   0xFACEFEED
-#define HDR_ASE_KILL_CTRL    0xC00CB00C
+// Message presence setting
+#define ASE_MSG_PRESENT 0xD33D
+#define ASE_MSG_ABSENT  0xDEAD
 
-// Simkill message
-#define ASE_SIMKILL_MSG      0xDEADDEAD
+// Message queue controls
+struct ipc_t
+{
+  char name[ASE_MQ_NAME_LEN];
+  char path[ASE_FILEPATH_LEN];
+  int  perm_flag;
+};
+struct ipc_t mq_array[ASE_MQ_INSTANCES];
 
 
-/*
- * Enable function call entry/exit
- * Apocalyptically noisy debug feature to watch function entry/exit
- */
+/* ********************************************************************
+ *
+ * DEBUG STRUCTURES
+ *
+ * ********************************************************************/
+// Enable function call entry/exit
+// Extremely noisy debug feature to watch function entry/exit
 // #define ENABLE_ENTRY_EXIT_WATCH
 #ifdef  ENABLE_ENTRY_EXIT_WATCH
 #define FUNC_CALL_ENTRY printf("--- ENTER: %s ---\n", __FUNCTION__);
@@ -264,64 +410,14 @@ extern "C" {
 #define FUNC_CALL_EXIT
 #endif
 
+// ---------------------------------------------------------------------
+// Enable memory test function
+// ---------------------------------------------------------------------
+// Basic Memory Read/Write test feature (runs on allocate_buffer)
+// Leaving this setting ON automatically scrubs memory (sets 0s)
+// Read shm_dbg_memtest() and ase_dbg_memtest()
+// #define ASE_MEMTEST_ENABLE
 
-/*
- * ASE Mode macros
- */
-#define ASE_MODE_DAEMON_NO_SIMKILL   1
-#define ASE_MODE_DAEMON_SIMKILL      2
-#define ASE_MODE_DAEMON_SW_SIMKILL   3
-#define ASE_MODE_REGRESSION          4
-
-/*
- * ASE message queue 
- */
-// Buffer exchange messages
-#define APP2SIM_SMQ_PREFIX          "/app2sim_bufping_smq."
-#define SIM2APP_SMQ_PREFIX          "/sim2app_bufpong_smq."
-// CSR write messages
-#define APP2SIM_CSR_WR_SMQ_PREFIX   "/app2sim_csr_wr_smq."
-// UMSG control messages from APP to SIM
-#define APP2SIM_UMSG_SMQ_PREFIX     "/app2sim_umsg_smq."
-// Interrupt message from SIM to APP
-#define SIM2APP_INTR_SMQ_PREFIX     "/sim2app_intr_smq."
-// Simkill control messages
-#define APP2SIM_SIMKILL_SMQ_PREFIX  "/app2sim_simkill_smq."
-
-
-// Message queue parameters
-#define ASE_MQ_MAXMSG     8
-#define ASE_MQ_MSGSIZE    1024
-#define ASE_MQ_NAME_LEN   64
-
-// ASE filepath length
-#define ASE_FILEPATH_LEN  256
-
-// Message Queue establishment status
-#define MQ_NOT_ESTABLISHED 0x0
-#define MQ_ESTABLISHED     0xCAFE
-
-// UMAS establishment status
-#define UMAS_NOT_ESTABLISHED 0x0
-#define UMAS_ESTABLISHED     0xBEEF
-
-/*
- * Virtual to Pseudo-physical memory shim
- */
-#define FPGA_ADDR_WIDTH       38
-#define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
-#define CL_ALIGN_SHIFT        6
-
-// Width of a cache line in bytes
-#define CL_BYTE_WIDTH        64
-
-#define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 4)
-
-// ----------------------------------------------------------------
-// Write responses can arrive on any random channel, this option
-// enables responses on random channel (CH0, CH1)
-// ----------------------------------------------------------------
-// #define ASE_RANDOMISE_WRRESP_CHANNEL
 
 // ------------------------------------------------------------------
 // DANGEROUS/BUGGY statements - uncomment prudently (OPEN ISSUES)
@@ -332,124 +428,20 @@ extern "C" {
 //#define ENABLE_FREE_STATEMENT
 
 
-/*
- * Memory translation 
- */
-// Head and tail pointers of DPI side Linked list
-extern struct buffer_t *head;      // Head pointer
-extern struct buffer_t *end;       // Tail pointer
-// CSR fake physical base address
-extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
-// DPI side CSR base, offsets updated on CSR writes
-extern uint32_t *ase_csr_base;      
-// A null string 
-extern char null_str[CL_BYTE_WIDTH];
-// Transaction count
-extern unsigned long int ase_cci_transact_count;
-// ASE log file descriptor
-extern FILE *ase_cci_log_fd;
-// Timestamp reference time
-extern struct timeval start;
-extern long int ref_anchor_time;
-extern uint32_t shim_called;
-// Fake lower bound for offset
-extern uint64_t fake_off_low_bound;
+// ------------------------------------------------------------------
+// Triggers, safety catches and debug information used in the AFU
+// simulator environment.
+// ------------------------------------------------------------------
+// ASE message view #define - Print messages as they go around
+// #define ASE_MSG_VIEW
 
-// ---------------------------------------------------------------------
-// Enable memory test function
-// ---------------------------------------------------------------------
-// Basic Memory Read/Write test feature (runs on allocate_buffer)
-// Leaving this setting ON automatically scrubs memory (sets 0s)
-// Read shm_dbg_memtest() and ase_dbg_memtest()
-#define ASE_MEMTEST_ENABLE
+// Enable debug info from linked lists 
+// #define ASE_LL_VIEW
 
-// ---------------------------------------------------------------------
-// Virtual memory safety catch
-// ---------------------------------------------------------------------
-// Checks for the following conditions in memory shim and exits on them
-// - If generated address is not cache aligned (not modulo 0x40)
-// - If generated address is not within monitored memory region
-// Disable this ONLY if you want to segfault intentionally 
-// NOTE: Simulator will close down if safety catch sees illegal
-// transactions
-// ---------------------------------------------------------------------
-#define ASE_VADDR_SAFETY_CATCH
-#define SHIMERR_OORANGE         1
-#define SHIMERR_NO_REGION       2
-#define SHIMERR_NOT_THIS_BUFFER 3
-#define SHIMERR_INVALID_BUFFER  4
+// Print buffers as they are being alloc/dealloc
+// *FIXME*: Connect to ase.cfg
+// #define ASE_BUFFER_VIEW
 
-
-/*
- * Timestamp IPC file
- */
-#define TSTAMP_FILENAME ".ase_timestamp"
-
-// Unified SWCallsASE switch
-// #define UNIFIED_FLOW
-
-/*
- * Console colors
- */
-// ERROR codes are in RED color
-#define BEGIN_RED_FONTCOLOR    printf("\033[1;31m");
-#define END_RED_FONTCOLOR      printf("\033[0m");
-
-// INFO or INSTRUCTIONS are in GREEN color
-#define BEGIN_GREEN_FONTCOLOR  printf("\033[32;1m");
-#define END_GREEN_FONTCOLOR    printf("\033[0m");
-
-// WARNING codes in YELLOW color
-#define BEGIN_YELLOW_FONTCOLOR printf("\033[0;33m");
-#define END_YELLOW_FONTCOLOR   printf("\033[0m");
-
-
-/*
- * ASE Error codes
- */
-#define ASE_USR_CAPCM_NOINIT           0x1    // CAPCM not initialized
-#define ASE_OS_MQUEUE_ERR              0x2    // MQ open error
-#define ASE_OS_SHM_ERR                 0x3    // SHM open error
-#define ASE_OS_FOPEN_ERR               0x4    // Normal fopen failure
-#define ASE_OS_MEMMAP_ERR              0x5    // Memory map/unmap errors
-#define ASE_OS_MQTXRX_ERR              0x6    // MQ send receive error
-#define ASE_OS_MALLOC_ERR              0x7    // Malloc error
-#define ASE_OS_STRING_ERR              0x8    // String operations error
-#define ASE_IPCKILL_CATERR             0xA    // Catastropic error when cleaning
-                                              // IPCs, manual intervention required
-#define ASE_UNDEF_ERROR                0xFF   // Undefined error, pls report
-
-
-/*
- * Unordered Message (UMSG) Address space
- */
-
-// UMSG specific CSRs
-#define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address
-#define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
-#define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
-
-/*
- * SPL constants
- */
-#define SPL_DSM_BASEL_OFF 0x1000 //0x910
-#define SPL_DSM_BASEH_OFF 0x1004 //0x914
-#define SPL_CXT_BASEL_OFF 0x1008 //0x918 // SPL Context Physical address
-#define SPL_CXT_BASEH_OFF 0x100c //0x91c 
-#define SPL_CH_CTRL_OFF   0x1010 //0x920
-
-
-/*
- * AFU constants
- */
-#define AFU_DSM_BASEL_OFF 0x8A00
-#define AFU_DSM_BASEH_OFF 0x8A04
-#define AFU_CXT_BASEL_OFF 0x8A08
-#define AFU_CXT_BASEH_OFF 0x8A0c
-
-//                                Byte Offset  Attribute  Width  Comments
-#define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
-#define      DSM_STATUS            0x40         // RO      512b   test status and error info
 
 
 /* *********************************************************************
@@ -507,14 +499,13 @@ extern void simkill();
 extern void sw_simkill_request();
 extern void csr_write_init();
 extern void csr_write_dispatch(int, int, int);
-extern void umsg_init();
+/* extern void umsg_init(); */
+extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
-void ase_init();
-void ase_ready();
-/* int csr_write_listener(); */
-// int buffer_replicator();
+int ase_init();
+int ase_ready();
 int ase_listener();
 void ase_config_parse(char*);
 
@@ -525,6 +516,7 @@ void run_clocks(int num_clocks);
 // CSR Write 
 void csr_write_dex(cci_pkt *csr);
 void csr_write_completed();
+
 // Read system memory line
 void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
 // Write system memory line
@@ -532,8 +524,6 @@ void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
 
 // CAPCM functions
 extern void capcm_init();
-/* void rd_capcmline_dex(cci_pkt *pkt, int *cl_addr, int *mdata ); */
-/* void wr_capcmline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data ); */
 
 // UMSG functions
 void ase_umsg_init();
@@ -591,17 +581,6 @@ uint64_t ase_addr_seed;
 uint64_t capcm_num_buffers;
 
 // CAPCM buffer chain info (each buffer holds 1 GB)
-/* struct capcm_bufchain_t */
-/* { */
-/*   int index;                      // Index of array */
-/*   int fd;                         // File descriptor */
-/*   char memname[ASE_SHM_NAME_LEN]; // SHM name */
-/*   uint64_t byte_offset_lo;        // Byte address low */
-/*   uint64_t byte_offset_hi;        // Byte address high */
-/*   uint64_t *vmem_lo;              // Virtual memory low address */
-/*   uint64_t *vmem_hi;              // Virtual memory high address */
-/* }; */
-// struct capcm_bufchain_t *capcm_buf;
 struct buffer_t *capcm_buf;
 
 
@@ -626,6 +605,9 @@ uint64_t capcm_phys_hi;
 
 // ASE PID
 int ase_pid;
+
+// Workspace information log (information dump of 
+FILE *fp_workspace_log;
 
 #endif
 #endif
