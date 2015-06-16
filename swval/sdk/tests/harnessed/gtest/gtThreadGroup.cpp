@@ -596,6 +596,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0088)
       }
    }
 
+   YIELD_X(3);
+
    g->Stop();
    EXPECT_LT(0, y);
    EXPECT_EQ(0, g->GetNumWorkItems());
@@ -944,7 +946,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    // Seeing the Drain() completion, the Destroy() proceeds.
 
    EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_X(3);
+   YIELD_X(10);
 
    EXPECT_TRUE(m_Sems[1].Post(1));
 

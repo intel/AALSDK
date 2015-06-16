@@ -1160,7 +1160,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 3 == i ) {
+      if ( 10 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1179,7 +1179,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
    // Wake Thr1 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[3]);
-   YIELD_X(5);
+   YIELD_X(10);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
