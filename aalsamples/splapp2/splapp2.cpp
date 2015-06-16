@@ -1014,7 +1014,8 @@ btInt SPLTest(CMyApp *p)
    bt32bitInt count(500);  // 5 seconds with 10 millisecond sleep
    bt32bitInt delay(10);   // 10 milliseconds is the default
    if ( 0 == p->AFUTarget().compare(SPLAFU_NVS_VAL_TARGET_ASE) ) {
-      delay = 1000;        // 500 second timeout for RTL simulation
+      delay = 1000;        // 1 second polling loop for RTL simulation
+      count = 7200;        // two hour timeout
    }
 
    // Wait for SPL VAFU to finish code
