@@ -112,6 +112,9 @@ public:
 
    static void Report(Status st);
 
+   static void HaltOnSegFault(bool );
+   static void HaltOnKeepaliveTimeout(bool );
+
 protected:
    static void OnPass();
    static void OnFail();
@@ -121,7 +124,11 @@ protected:
 
    static const char sm_Red[];
    static const char sm_Green[];
+   static const char sm_Blue[];
    static const char sm_Reset[];
+
+   static bool       sm_HaltOnSegFault;
+   static bool       sm_HaltOnKeepaliveTimeout;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,9 +147,9 @@ const std::string SampleAFU1ConfigRecord("9 20 ConfigRecordIncluded\n \
    9 29 ---- End of embedded NVS ----\n \
       9999\n");
 
-// Retrieve the current test and test case name from gtest.
+// Retrieve the current test case and test name from gtest.
 // Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &Test, std::string &TestCase);
+void TestCaseName(std::string &TestCase, std::string &Test);
 
 #if defined( __AAL_LINUX__ )
 
@@ -158,6 +165,21 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 #endif // __AAL_LINUX__
 
 
+class ThreadRegistry : public CriticalSection
+{
+public:
+   ThreadRegistry();
+
+   btUnsignedInt ThreadRegister(btTID );
+   btUnsignedInt ThreadLookup(btTID );
+   void          RegistryReset();
+
+protected:
+   btUnsignedInt m_NextThread;
+   btTID         m_RegisteredThreads[50];
+};
+
+
 #if   defined( __AAL_WINDOWS__ )
 # error TODO implement SignalHelper class for windows.
 #elif defined( __AAL_LINUX__ )
@@ -166,34 +188,60 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 # include <sys/types.h>
 # include <signal.h>
 
-class SignalHelper
+class SignalHelper : public ThreadRegistry
 {
 public:
-   SignalHelper();
-   virtual ~SignalHelper();
+   enum SigIndex
+   {
+      IDX_SIGINT = 0,
+      IDX_FIRST  = IDX_SIGINT,
+      IDX_SIGSEGV,
+      IDX_SIGIO,
+      IDX_SIGUSR1,
+      IDX_SIGUSR2,
 
-   static SignalHelper & GlobalInstance();
+      IDX_COUNT
+   };
 
-   typedef void (*handler)(int , siginfo_t * , void * );
+   static SignalHelper & GetInstance();
 
    // Does not allow hooking the same signum multiple times.
    // non-zero on error.
-   int Install(int signum, handler h, bool oneshot=false);
+   int        Install(SigIndex i);
 
-   static void   EmptySIGIOHandler(int , siginfo_t * , void * );
-   static void EmptySIGUSR1Handler(int , siginfo_t * , void * );
-   static void EmptySIGUSR2Handler(int , siginfo_t * , void * );
-   static void      SIGSEGVHandler(int , siginfo_t * , void * );
-   static void       SIGINTHandler(int , siginfo_t * , void * );
+   // non-zero on error.
+   int      Uninstall(SigIndex i);
+
+
+   btUIntPtr GetCount(SigIndex i, btUnsignedInt thr);
 
 protected:
-   typedef std::map<int, struct sigaction> sigmap;
-   typedef sigmap::iterator                sigiter;
-   typedef sigmap::const_iterator          const_sigiter;
+   SignalHelper();
+   virtual ~SignalHelper();
 
-   sigmap m_sigmap;
+   void PutCount(SigIndex i, btUnsignedInt thr);
 
-   static SignalHelper sm_GlobalInstance;
+   typedef void (*handler)(int , siginfo_t * , void * );
+
+   struct SigTracker
+   {
+      int              signum;
+      handler          h;
+      btBool           installed;
+      struct sigaction orig;
+      btUIntPtr        Counts[50]; // support the max number of threads.
+   };
+
+   SigTracker    m_Tracker[IDX_COUNT];
+
+   static SignalHelper sm_Instance;
+
+   static void   SIGIOHandler(int , siginfo_t * , void * );
+   static void SIGUSR1Handler(int , siginfo_t * , void * );
+   static void SIGUSR2Handler(int , siginfo_t * , void * );
+
+   static void SIGSEGVHandler(int , siginfo_t * , void * );
+   static void  SIGINTHandler(int , siginfo_t * , void * );
 };
 
 #endif // OS
@@ -210,6 +258,8 @@ public:
    {
       ++m_KeepAliveCounter;
    }
+
+   void StopThread();
 
    virtual void SetUp();
    virtual void TearDown();
