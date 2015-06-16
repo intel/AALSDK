@@ -93,6 +93,20 @@ BEGIN_NAMESPACE(AAL)
 
 void SWSimSPLAFU::init(TransactionID const &TranID)
 {
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ASSERT( NULL != pClient );
+   if(NULL == pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish ISPLClient Interface"));
+      return;
+   }
+
    m_NextPhys = __PHYS_ADDR_CONST(1) << LOG2_CL;
 
    m_CSRMap.insert(std::make_pair(CSR_AFU_DSM_SCRATCH, CSR(CSR_AFU_DSM_SCRATCH, 0, false)));

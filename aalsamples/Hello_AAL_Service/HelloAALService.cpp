@@ -125,6 +125,18 @@ void HelloAALService::init(TransactionID const &TranID)
 {
    m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, ClientBase());
    ASSERT( NULL != m_pClient ); //QUEUE object failed
+   if(NULL == m_pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish IHelloAALClient Interface"));
+      return;
+   }
+
    QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
                                          Client(),
                                          dynamic_cast<IBase *>(this),

@@ -49,8 +49,8 @@ SyncApp1 \
 UMsgTest \
 Hello_AAL_Service \
 Hello_AAL \
-Hello_CCI_NLB
-
+Hello_CCI_NLB \
+Hello_SPL_LB
 
 MFLAGS  =
 ifneq (,$(ndebug))
