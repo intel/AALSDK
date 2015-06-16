@@ -2447,7 +2447,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0156)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
-   YIELD_X(Externals);
+   YIELD_X(3 * Externals);
 
    // Wake the first worker, then sleep on m_Sems[0].
    // The first worker begins the self-Drain(), wakes us from sleep on m_Sems[0], then blocks
