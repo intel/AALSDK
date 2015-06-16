@@ -675,14 +675,12 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = AFU1/SampleAFU1Service.h \
-                         AFU1 \
-                         AFU2 \
-                         App1 \
-                         App2 \
-                         cciapp \
-                         CCIDemo \
+INPUT                  = cciapp \
                          CCILib \
+                         Hello_AAL \
+                         Hello_AAL_Service \
+                         Hello_CCI_NLB \
+                         Hello_SPL_LIB \
                          SampleBrokerService \
                          splapp \
                          splapp2 \
