@@ -1489,6 +1489,7 @@ TEST_F(OSAL_Sem_f, aal0066)
 
    YIELD_WHILE(0 == m_Scratch[1]);
 
+   YIELD_X(10);
 
    EXPECT_TRUE(m_Sem.UnblockAll());
 
