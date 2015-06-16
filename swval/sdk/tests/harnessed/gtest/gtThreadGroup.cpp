@@ -643,6 +643,8 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0089)
       }
    }
 
+   YIELD_X(10);
+
    g->Stop();
    EXPECT_LT(0, x);
    EXPECT_EQ(0, g->GetNumWorkItems());
