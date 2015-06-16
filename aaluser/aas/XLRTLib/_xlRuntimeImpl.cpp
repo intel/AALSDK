@@ -227,8 +227,6 @@ btBool _xlruntime::start(IBase               *pclient,
 // Outputs: none.
 // Comments:
 //=============================================================================
-Environment * Environment::sm_EnvObj = NULL;
-
 btBool _xlruntime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
    NamedValueSet const *pConfigRecord;

@@ -62,6 +62,20 @@ BEGIN_NAMESPACE(AAL)
 
 void CCIAFU::init(TransactionID const &TranID)
 {
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ASSERT( NULL != pClient );
+   if(NULL == pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish ICCIClient Interface"));
+      return;
+   }
+
    // Default target is hardware AFU.
    NamedValueSet manifest(std::string(HWCCIAFU_MANIFEST));
 

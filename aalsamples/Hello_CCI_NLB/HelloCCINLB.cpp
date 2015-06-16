@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file HelloCCINLB.cpp
-/// @brief Basic AFU interaction.
+/// @brief Basic CCI AFU interaction.
 /// @ingroup HelloCCINLB
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
@@ -43,7 +43,7 @@
 ///    - Use of interface IDs (iids).
 ///    - Accessing object interfaces through the Interface functions.
 ///
-/// This sample is designed to be used with SampleAFU1.
+/// This sample is designed to be used with the CCIAFU Service.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -166,6 +166,12 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
+
+   // Using Hardware Services requires the Remote Resource Manager Broker Service
+   //  Note that this could also be accomplished by setting the environment variable
+   //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   configArgs.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+
    m_Runtime.start(this, configArgs);
    m_Sem.Wait();
 }
@@ -205,12 +211,17 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    MSG("Runtime start failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-    MSG("Runtime AllocateService failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
+
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -281,7 +292,7 @@ IRuntime * RuntimeClient::getRuntime()
     ICCIAFU         *m_NLBService;
     CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
     btBool           m_Status;
-    btUnsignedInt    m_wsfreed;        // Simple used for when we free workspaces
+    btUnsignedInt    m_wsfreed;        // Simple counter used for when we free workspaces
 
     // Workspace info
     btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
@@ -449,6 +460,7 @@ void HelloCCINLBApp::run()
     m_pAALService = pServiceBase;
     ASSERT(NULL != m_pAALService);
 
+    // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
     m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
 
     ASSERT(NULL != m_NLBService);
@@ -466,7 +478,9 @@ void HelloCCINLBApp::run()
 
  void HelloCCINLBApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    MSG("Failed to allocate a Service");
+    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+    ERR("Failed to allocate a Service");
+    ERR(pExEvent->Description());
     m_Sem.Post(1);
  }
 
@@ -521,9 +535,13 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
    }
 }
 
-void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &Event)
+void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
+   ERR(pExEvent->Description());
+
+
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -538,9 +556,11 @@ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 }
 
-void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &Event)
+void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
+   ERR(pExEvent->Description());
    m_Status = false;
    m_Sem.Post(1);
 }

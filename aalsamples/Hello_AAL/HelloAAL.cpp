@@ -177,12 +177,16 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    MSG("Runtime start failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-    MSG("Runtime AllocateService failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -314,7 +318,9 @@ void HelloAALApp::run()
 
  void HelloAALApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    MSG("Failed to allocate a Service");
+    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+    ERR("Failed to allocate a Service");
+    ERR(pExEvent->Description());
     m_Sem.Post(1);
  }
 

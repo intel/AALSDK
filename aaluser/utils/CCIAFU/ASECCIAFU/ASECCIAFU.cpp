@@ -67,6 +67,20 @@ CriticalSection ASECCIAFU::sm_ASEMtx;
 
 void ASECCIAFU::init(TransactionID const &TranID)
 {
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ASSERT( NULL != pClient );
+   if(NULL == pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish ICCIClient Interface"));
+      return;
+   }
+
   session_init();
   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
 						      Client(),
