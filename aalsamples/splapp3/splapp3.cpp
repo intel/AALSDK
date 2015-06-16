@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
    // 3) Destination buffer of 4 MiB length
 
    // Allocate the buffer, and expose the virtual address and length for the general case
-   myapp.syncWorkspaceAllocate( sizeof(VAFU2_CNTXT) + MB(4) + MB(4), TransactionID());
+   myapp.syncWorkspaceAllocate( sizeof(VAFU2_CNTXT) + CL(4) + CL(4), TransactionID());
 
    btVirtAddr         pWSUsrVirt = myapp.OneLargeVirt(); // Address of Workspace
    const btWSSize     WSLen      = myapp.OneLargeSize(); // Length of workspace
@@ -602,7 +602,8 @@ int main(int argc, char *argv[])
    bt32bitInt count(500);  // 5 seconds with 10 millisecond sleep
    bt32bitInt delay(10);   // 10 milliseconds is the default
    if ( 0 == myapp.AFUTarget().compare(SPLAFU_NVS_VAL_TARGET_ASE) ) {
-      delay = 1000;        // 500 second timeout for RTL simulation
+      delay = 1000;        // 1 second polling loop for RTL simulation
+      count = 7200;        // two hour timeout
    }
 
    // Wait for SPL VAFU to finish code

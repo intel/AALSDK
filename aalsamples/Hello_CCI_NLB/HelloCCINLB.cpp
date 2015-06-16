@@ -59,8 +59,12 @@
 
 #include <string.h>
 
-// Comment out for HW
-#define SWAFU 1
+//****************************************************************************
+// UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
+//    DEFAULT is to use Software Simulation.
+//****************************************************************************
+// #define  HWAFU
+// #define  ASEAFU
 
 using namespace AAL;
 
@@ -336,29 +340,33 @@ void HelloCCINLBApp::run()
    // Request our AFU.
 
    // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  This code is work around code and subject to change.
+   //  mechanism.  This code is work around code and subject to change. But it does
+   //  illustrate the utility of having different implementations of a service all
+   //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-#ifdef SWAFU
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-#else
-
+#if defined( HWAFU )                /* Use FPGA hardware */
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+
+   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+   #else                            /* default is Software Simulator */
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
 #endif
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
-
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello CCI NLB");
-
    MSG("Allocating Service");
-
-
 
    // Allocate the Service and allocate the required workspace.
    //   This happens in the background via callbacks (simple state machine).
@@ -372,27 +380,15 @@ void HelloCCINLBApp::run()
    //         A better design would do all appropriate clean-up.
    if(true == m_Status){
 
-
       //=============================
       // Now we have the NLB Service
       //   now we can use it
       //=============================
       MSG("Running Test");
 
-      btCSRValue i;
-      btCSRValue csr;
-
-      // Assert CAFU Reset
-      csr = 0;
-      m_NLBService->CSRRead(CSR_CIPUCTL, &csr);
-      csr |= 0x01000000;
-      m_NLBService->CSRWrite(CSR_CIPUCTL, csr);
-
-      // De-assert CAFU Reset
-      csr = 0;
-      m_NLBService->CSRRead(CSR_CIPUCTL, &csr);
-      csr &= ~0x01000000;
-      m_NLBService->CSRWrite(CSR_CIPUCTL, csr);
+      // Initialize the source and destination buffers
+      memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
+      memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
 
       // Set DSM base, high then low
       m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
@@ -430,11 +426,17 @@ void HelloCCINLBApp::run()
       while( 0 == *StatusAddr ) {
          SleepMicro(100);
       }
-
       MSG("Done Running Test");
 
       // Stop the device
       m_NLBService->CSRWrite(CSR_CTL, 7);
+
+      // Check that output buffer now contains what was in input buffer, e.g. 0xAF
+      if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
+         ERR("Output does NOT Match input, at offset " << err << "!");
+      } else {
+         MSG("Output matches Input!");
+      }
 
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple

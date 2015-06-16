@@ -9,6 +9,8 @@ class OSAL_CritSect_f : public ::testing::Test
 {
 protected:
    OSAL_CritSect_f() {}
+   virtual ~OSAL_CritSect_f() {}
+
    virtual void SetUp()
    {
       unsigned i;
@@ -22,6 +24,8 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
@@ -30,9 +34,11 @@ protected:
       }
    }
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CriticalSection     m_CS;
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+
+   OSLThread      *m_pThrs[3];
+   btUIntPtr       m_Scratch[10];
+   CriticalSection m_CS;
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );

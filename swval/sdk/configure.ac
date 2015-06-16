@@ -64,7 +64,7 @@ AALSDK_DEBUG_OUTPUT([yes])
 AALSDK_DEBUG_DYNLOAD([no])
 AALSDK_ASSERT([yes])
 AALSDK_MAINTAINER
-AALSDK_LOCAL_GTEST([tests/harnessed/gtest], [1.6.0])
+AALSDK_LOCAL_GTEST([tests/harnessed/gtest], [1.7.0])
 
 dnl ############################################################################
 dnl ## Checks for programs #####################################################
@@ -197,6 +197,7 @@ AC_CONFIG_FILES([tests/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile
                  tests/standalone/OSAL_TestThreadGroup/Makefile
+                 tests/standalone/isolated/Makefile
                  tests/swvalmod/Makefile])
 
 AC_OUTPUT
