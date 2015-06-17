@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,49 +27,23 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     utils/cciapp/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     06/16/2015    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-SampleBrokerService \
-Hello_AAL_Service \
-Hello_AAL \
-Hello_CCI_NLB \
-Hello_SPL_LB
+bin_PROGRAMS=cciapp
 
-MFLAGS  =
-ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
-endif
-ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
-endif
+cciapp_SOURCES=\
+cciapp.cpp
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
-endif
-else
-ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
-endif
-MFLAGS += DESTDIR=$(DESTDIR)
-endif
+cciapp_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
-
-.PHONY:all clean
-
-doc docs: docclean
-	doxygen doc/Doxyfile
-
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
-
-.PHONY:doc docs docclean docsclean
+cciapp_LDADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/XLRTLib/libxlrt.la \
+$(top_builddir)/clp/libaalclp.la

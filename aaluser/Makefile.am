@@ -103,11 +103,7 @@ aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
-utils/aalscan \
-utils/data_model \
-utils/fpgasane \
-utils/CCIAFU \
-utils/SPLAFU
+utils
 
 
 aalsdkhdrsdir=$(includedir)/aalsdk

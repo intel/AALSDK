@@ -40,6 +40,10 @@
 /// ==========    ===    ====
 /// 11/10/2014    TSW    CCILib / XL adapter.@endverbatim
 //****************************************************************************
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
 #include <new>
 #include <cstdio>
 #include <cstdarg>

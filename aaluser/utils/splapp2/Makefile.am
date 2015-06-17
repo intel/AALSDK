@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,49 +27,23 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/splapp/Makefile
+##     utils/splapp2/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     11/19/2014    TSW   Initial version
+##     06/16/2015    TSW   Initial version
 ##******************************************************************************
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
+bin_PROGRAMS=splapp2
 
-ifneq (,$(ndebug))
-else
-CPPFLAGS += -DENABLE_DEBUG=1
-endif
-ifneq (,$(nassert))
-else
-CPPFLAGS += -DENABLE_ASSERT=1
-endif
+splapp2_SOURCES=\
+splapp2.cpp
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
-            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
-endif
-else
-ifeq (,$(prefix))
-prefix = /usr/local
-endif
-CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(DESTDIR)$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
-            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(DESTDIR)$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
-endif
+splapp2_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-all: splapp
-
-splapp: splapp.o
-	$(CXX) -g -O2 -o splapp splapp.o $(LDFLAGS) -lOSAL -lAAS -lxlrt -laalclp
-
-splapp.o: splapp.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o splapp.o splapp.cpp
-
-clean:
-	$(RM) splapp splapp.o
-
-.PHONY:all clean
+splapp2_LDADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/XLRTLib/libxlrt.la \
+$(top_builddir)/clp/libaalclp.la

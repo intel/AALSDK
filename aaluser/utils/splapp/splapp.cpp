@@ -43,6 +43,10 @@
 /// WHEN:          WHO:     WHAT:
 /// 7/21/2014      TSW      Initial version.@endverbatim
 //****************************************************************************
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
 
