@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file HelloAALService-internal.h
 /// @brief Definitions for Hello AAL Service.
-/// @ingroup hello aal service
+/// @ingroup hello_service
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -38,7 +38,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 04/12/2015     JG       Initial version
+/// 04/12/2015     JG       Initial version@endverbatim
 //****************************************************************************
 #ifndef __HELLOAALSERVICE_INT_H__
 #define __HELLOAALSERVICE_INT_H__
@@ -49,6 +49,8 @@
 
 using namespace AAL;
 
+/// @addtogroup hello_service
+/// @{
 
 //=============================================================================
 // Name: HelloAALService
@@ -111,6 +113,8 @@ protected:
    IBase                *m_pSevice;
    TransactionID const  &m_TranID;
 };
+
+/// @} group hello_service
 
 #endif //__SAMPLEAFU1SERVICE_INT_H__
 

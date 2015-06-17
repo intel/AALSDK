@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file HelloAALService.cpp
 /// @brief Implementation of HelloAALService - a Simple AFU Service.
-/// @ingroup HelloAALService
+/// @ingroup hello_service
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -113,6 +113,11 @@ AAL_END_SVC_MOD()
 //////                                                                ///////
 //////                                                                ///////
 /////////////////////////////////////////////////////////////////////////////
+
+
+/// @addtogroup hello_service
+/// @{
+
 //=============================================================================
 // Name:
 // Description:
@@ -186,4 +191,7 @@ void HelloAppDispatchable::operator() ()
    m_pSvcClient->HelloApp(m_TranID);
    delete this;
 }
+
+/// @} group hello_service
+
 
