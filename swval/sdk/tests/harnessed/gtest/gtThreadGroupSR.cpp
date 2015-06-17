@@ -1825,12 +1825,12 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
-   YIELD_X(Externals + 5);
+   YIELD_X(Externals + Workers + 5);
 
    // Wake Thr1 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(Externals + 5);
+   YIELD_X(Externals + Workers + 5);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
