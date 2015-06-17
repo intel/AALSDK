@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,53 +27,21 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/CCILib/Makefile
+##     utils/CCILib/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     11/19/2014    TSW   Initial version
+##     06/16/2015    TSW   Initial version
 ##******************************************************************************
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
+lib_LTLIBRARIES=libCCI.la
 
-ifneq (,$(ndebug))
-else
-CPPFLAGS += -DENABLE_DEBUG=1
-endif
-ifneq (,$(nassert))
-else
-CPPFLAGS += -DENABLE_ASSERT=1
-endif
+libCCI_la_SOURCES=\
+CCILib.cpp \
+CCILib.h
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
-endif
-else
-ifeq (,$(prefix))
-prefix = /usr/local
-endif
-CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
-endif
+libCCI_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-all: libCCI.so libCCI.so.0
-
-libCCI.so: libCCI.so.0.0.0
-	ln -sf libCCI.so.0.0.0 libCCI.so
-
-libCCI.so.0: libCCI.so.0.0.0
-	ln -sf libCCI.so.0.0.0 libCCI.so.0
-
-libCCI.so.0.0.0: CCILib.o
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libCCI.so.0 CCILib.o $(LDFLAGS) -lOSAL -lAAS -lxlrt -o libCCI.so.0.0.0
-
-CCILib.o: CCILib.cpp CCILib.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o CCILib.o CCILib.cpp
-
-clean:
-	$(RM) libCCI.so libCCI.so.0 libCCI.so.0.0.0 CCILib.o
-
-.PHONY: all clean
+libCCI_la_LDFLAGS=\
+-version-info $(CCILIB_VERSION_CURRENT):$(CCILIB_VERSION_REVISION):$(CCILIB_VERSION_AGE)

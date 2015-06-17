@@ -83,6 +83,7 @@ AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [0],[0],[0])
+AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [2],[0],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -200,6 +201,7 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
+                 utils/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
                  utils/fpgasane/Makefile
@@ -210,7 +212,12 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/Makefile
                  utils/SPLAFU/HWSPLAFU/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
-                 utils/SPLAFU/SWSimSPLAFU/Makefile])
+                 utils/SPLAFU/SWSimSPLAFU/Makefile
+                 utils/cciapp/Makefile
+                 utils/splapp/Makefile
+                 utils/splapp2/Makefile
+                 utils/splapp3/Makefile
+                 utils/CCILib/Makefile])
 
 AC_OUTPUT
 

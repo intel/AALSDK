@@ -576,8 +576,7 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
  }
  // <end IServiceClient interface>
 
-/// @} group HelloAAL
-
+/// @} group HelloCCINLB
 
 
 //=============================================================================

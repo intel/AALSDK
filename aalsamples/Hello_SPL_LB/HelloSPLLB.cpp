@@ -674,8 +674,8 @@ void  HelloSPLLBApp::OnTransactionStopped( TransactionID const &TranID)
     }
     oss << std::nouppercase;
  }  // _DumpCL
-/// @} group HelloAAL
 
+/// @} group HelloSPLLB
 
 
 //=============================================================================

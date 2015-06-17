@@ -45,6 +45,10 @@
 /// 10/12/2014    HM    Initial version copied from splapp.
 /// 10/14/2014    HM    Added new SPL protocol for StopTransaction@endverbatim
 //****************************************************************************
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
 #include <cstring>                        // memcmp
 #include <aalsdk/utils/Utilities.h>       // Brings in CL, MB, GB, etc.
 #include <aalsdk/utils/CSyncClient.h>

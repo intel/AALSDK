@@ -47,6 +47,10 @@
 /// 10/20/2014    HM    Copied from splapp2
 /// 10/31/2014    HM    Simplifying@endverbatim
 //****************************************************************************
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
 #include <cstring>                        // memcmp
 #include <aalsdk/utils/Utilities.h>       // Brings in CL, MB, GB, etc.
 #include <aalsdk/utils/CSyncClient.h>     // CSyncClient object
