@@ -96,19 +96,6 @@ using namespace AAL;
 #define LPBK1_BUFFER_SIZE        CL(1)
 
 #define LPBK1_DSM_SIZE           MB(4)
-#if 0
-#define CSR_AFU_DSM_BASEH        0x1a04
-#define CSR_SRC_ADDR             0x1a20
-#define CSR_DST_ADDR             0x1a24
-#define CSR_CTL                  0x1a2c
-#define CSR_CFG                  0x1a34
-#define CSR_CIPUCTL              0x280
-#define CSR_NUM_LINES            0x1a28
-#define DSM_STATUS_TEST_COMPLETE 0x40
-#define CSR_AFU_DSM_BASEL        0x1a00
-#define CSR_AFU_DSM_BASEH        0x1a04
-#endif
-
 
 /// @addtogroup HelloSPLLB
 /// @{
@@ -256,12 +243,6 @@ IRuntime * RuntimeClient::getRuntime()
  class HelloSPLLBApp : public CAASBase, public IServiceClient, public ISPLClient
  {
  public:
-    enum WorkspaceType
-    {
-       WKSPC_DSM, ///< Device Status Memory
-       WKSPC_IN,  ///< Input workspace
-       WKSPC_OUT  ///< Output workspace
-    };
 
     HelloSPLLBApp(RuntimeClient * rtc);
     ~HelloSPLLBApp();
