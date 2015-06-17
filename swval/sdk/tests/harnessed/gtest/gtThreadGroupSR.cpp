@@ -2028,6 +2028,8 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
       YIELD_WHILE(0 == m_Scratch[i]);
    }
 
+   YIELD_X(Externals + 5);
+
    // Wake the first worker, then block on m_Sems[0].
    // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,
    //  then wakes the remaining workers.
@@ -2035,7 +2037,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0150)
    EXPECT_TRUE(m_Sems[1].Post(1));
    EXPECT_TRUE(m_Sems[0].Wait());
 
-   YIELD_X(Externals);
+   YIELD_X(Externals + 5);
 
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
 
