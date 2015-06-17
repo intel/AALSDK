@@ -1159,17 +1159,17 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
 
    AAL::btInt x = 0;
 
-   for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 10 == i ) {
+   for ( i = 0 ; i < 150 ; ++i ) {
+      if ( 30 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 49 == i ) {
+      } else if ( 149 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
       }
    }
 
-   ASSERT_EQ(50, g->GetNumWorkItems());
+   ASSERT_EQ(150, g->GetNumWorkItems());
 
    // Wake Thr0 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
