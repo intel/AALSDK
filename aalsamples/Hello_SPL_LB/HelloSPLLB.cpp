@@ -337,6 +337,7 @@ IRuntime * RuntimeClient::getRuntime()
  {
     SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
     SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
     m_Sem.Create(0, 1);
  }
 
