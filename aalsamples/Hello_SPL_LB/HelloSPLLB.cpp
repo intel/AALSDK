@@ -168,7 +168,8 @@ RuntimeClient::RuntimeClient() :
     m_pRuntime(NULL),
     m_isOK(false)
 {
-   NamedValueSet configArgs;     // Bot used
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
 
    // Publish our interface
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -178,7 +179,8 @@ RuntimeClient::RuntimeClient() :
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
    //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
-   configArgs.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 
    m_Runtime.start(this, configArgs);
    m_Sem.Wait();
@@ -335,6 +337,7 @@ IRuntime * RuntimeClient::getRuntime()
  {
     SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
     SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
     m_Sem.Create(0, 1);
  }
 

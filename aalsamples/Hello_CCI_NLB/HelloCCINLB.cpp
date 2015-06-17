@@ -164,7 +164,8 @@ RuntimeClient::RuntimeClient() :
     m_pRuntime(NULL),
     m_isOK(false)
 {
-   NamedValueSet configArgs;     // Bot used
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
 
    // Publish our interface
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
@@ -174,7 +175,8 @@ RuntimeClient::RuntimeClient() :
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
    //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
-   configArgs.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 
    m_Runtime.start(this, configArgs);
    m_Sem.Wait();
@@ -292,7 +294,7 @@ IRuntime * RuntimeClient::getRuntime()
 
  protected:
     IBase           *m_pAALService;    // The generic AAL Service interface for the AFU.
-    RuntimeClient   *m_runtimClient;
+    RuntimeClient   *m_runtimeClient;
     ICCIAFU         *m_NLBService;
     CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
     btBool           m_Status;
@@ -317,7 +319,7 @@ IRuntime * RuntimeClient::getRuntime()
 ///////////////////////////////////////////////////////////////////////////////
  HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc):
     m_pAALService(NULL),
-    m_runtimClient(rtc),
+    m_runtimeClient(rtc),
     m_NLBService(NULL),
     m_Status(true)
  {
@@ -371,7 +373,7 @@ void HelloCCINLBApp::run()
    // Allocate the Service and allocate the required workspace.
    //   This happens in the background via callbacks (simple state machine).
    //   When everything is set we do the real work here in the main thread.
-   m_runtimClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
+   m_runtimeClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
 
    m_Sem.Wait();
 
@@ -450,7 +452,7 @@ void HelloCCINLBApp::run()
       m_Sem.Wait();
    }
 
-   m_runtimClient->end();
+   m_runtimeClient->end();
 }
 
  // We must implement the IServiceClient interface (IServiceClient.h):
