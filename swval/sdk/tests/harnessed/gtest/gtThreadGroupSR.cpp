@@ -1183,6 +1183,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_2, aal0140)
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
+   YIELD_X(5);
 
    // This thread calls Destroy()
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));
@@ -1808,7 +1809,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 3 == i ) {
+      if ( Externals == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
@@ -1824,16 +1825,15 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
    for ( i = 1 ; i <= Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
-   YIELD_X(Externals);
+   YIELD_X(Externals + 5);
 
    // Wake Thr1 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(Externals + 2);
+   YIELD_X(Externals + 5);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
-   YIELD_X(Externals + 2);
 
    // This thread calls Destroy()
    EXPECT_TRUE(g->Destroy(AAL_INFINITE_WAIT));

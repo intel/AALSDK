@@ -10,6 +10,19 @@ clean-local:
 	@$(RM) $(top_builddir)/dist-file-list
 
 
+# SUBDIRS=
+# aas/OSAL 
+# aas/AASLib 
+# aas/XLRTLib 
+# aas/XLRRMBrokerService 
+# aas/AASRegistrar 
+# aas/uAIA 
+# aas/AASResourceManager 
+# ase/sw 
+# clp 
+# utils 
+# tests
+
 SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
@@ -18,15 +31,7 @@ aas/XLRRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
 aas/AASResourceManager \
-ase/sw \
-clp \
-utils/aalscan \
-utils/data_model \
-utils/fpgasane \
-utils/CCIAFU \
-utils/SPLAFU \
 tests
-
 
 aalsdkhdrsdir=$(includedir)/aalsdk
 aashdrsdir=$(aalsdkhdrsdir)/aas
