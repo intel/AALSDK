@@ -64,7 +64,7 @@
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
 // #define  HWAFU
-#define  ASEAFU
+// #define  ASEAFU
 
 using namespace AAL;
 
