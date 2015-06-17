@@ -546,8 +546,16 @@ void HelloSPLLBApp::run()
 
     MSG("Service Allocated");
 
-    // Allocate Workspaces needed.
-    m_SPLService->WorkspaceAllocate(sizeof(VAFU2_CNTXT) + MB(4) + MB(4), TransactionID());
+    // Allocate Workspaces needed. ASE runs more slowly and we want to watch the transfers,
+    //   so have fewer of them.
+    #if defined ( ASEAFU )
+       #define LB_BUFFER_SIZE CL(16)
+    #else
+       #define LB_BUFFER_SIZE MB(4)
+    #endif
+
+    m_SPLService->WorkspaceAllocate( sizeof(VAFU2_CNTXT) + LB_BUFFER_SIZE + LB_BUFFER_SIZE,
+                                     TransactionID());
 
  }
 
