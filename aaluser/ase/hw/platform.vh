@@ -78,7 +78,7 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define CSR_WRITE_LATRANGE         145 // 730 ns
+`define CSR_WRITE_LATRANGE         8 // 730 ns
 `define RDLINE_LATRANGE 8,16
 `define WRLINE_LATRANGE 4,7
 `define WRTHRU_LATRANGE 4,7
