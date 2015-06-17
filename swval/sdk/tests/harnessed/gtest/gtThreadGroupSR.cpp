@@ -688,9 +688,9 @@ TEST_P(OSAL_ThreadGroup_vp_uint_1, aal0120)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 5 == i ) {
+      if ( 20 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 20 == i ) {
+      } else if ( 30 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g, false) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));
