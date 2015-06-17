@@ -2742,11 +2742,11 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    for ( i = 0 ; i < 50 ; ++i ) {
       if ( 0 == i ) {
          EXPECT_TRUE(Add( new DrainThreadGroupD(g) ));
-      } else if ( 3 == i ) {
+      } else if ( 10 == i ) {
          EXPECT_TRUE(Add( new JoinThreadGroupD(g) ));
-      } else if ( 5 == i ) {
+      } else if ( 15 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
-      } else if ( 7 == i ) {
+      } else if ( 20 == i ) {
          EXPECT_TRUE(Add( new DestroyThreadGroupD(g) ));
       } else {
          EXPECT_TRUE(Add( new YieldD() ));
@@ -2761,6 +2761,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0159)
    for ( i = 0 ; i < Externals ; ++i ) {
       YIELD_WHILE(0 == m_Scratch[i]);
    }
+   YIELD_X(Externals + 5);
 
    // Wake the first worker.
    // The first worker invokes the self-referential Join(), then wakes the remaining workers.
