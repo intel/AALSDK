@@ -138,7 +138,10 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   m_Runtime.start(this, configArgs);
+   if(!m_Runtime.start(this, configArgs)){
+      m_isOK = false;
+      return;
+   }
    m_Sem.Wait();
 }
 
@@ -362,6 +365,10 @@ int main(int argc, char *argv[])
    RuntimeClient     runtimeClient;
    HelloAALApp       theApp(&runtimeClient);
    
+   if(!runtimeClient.isOK()){
+      ERR("Runtime Failed to Start");
+      exit(1);
+   }
    theApp.run();
 
    MSG("Done");
