@@ -925,7 +925,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    AAL::btInt x = 0;
 
    for ( i = 0 ; i < 50 ; ++i ) {
-      if ( 20 == i ) {
+      if ( 40 == i ) {
          EXPECT_TRUE(Add( new PostD(m_Sems[1], w-1) ));
       } else if ( 49 == i ) {
          EXPECT_TRUE(Add( new UnsafeCountUpD(x) ));

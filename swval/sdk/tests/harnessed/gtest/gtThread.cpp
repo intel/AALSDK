@@ -594,8 +594,19 @@ TEST_F(OSAL_Thread_f, aal0011)
 
    YIELD_X(5);
 
-   // reap the child thread.
-   m_pThrs[0]->Unblock();
+#if   defined( __AAL_WINDOWS__ )
+
+#elif defined( __AAL_LINUX__ )
+
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[0]->tid());
+
+   while ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < 1 ) {
+      // reap the child thread.
+      m_pThrs[0]->Unblock();
+      sleep_millis(1);
+   }
+
+#endif // OS
 
    // wait for Thr1 to return.
    YIELD_WHILE(0 == m_Scratch[1]);
