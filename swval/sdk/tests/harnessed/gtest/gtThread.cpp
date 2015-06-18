@@ -546,7 +546,7 @@ void OSAL_Thread_f::Thr1(OSLThread *pThread, void *pContext)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
+   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
 #endif // OS
 
    pTC->m_Scratch[0] = 1; // set the first scratch space to 1 to signify that we're running.
@@ -564,8 +564,6 @@ void OSAL_Thread_f::Thr1(OSLThread *pThread, void *pContext)
    int res = nanosleep(&ts, NULL);
    EXPECT_EQ(-1, res);
    EXPECT_EQ(EINTR, errno);
-
-   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < 1);
 
 #endif // OS
 
@@ -591,22 +589,9 @@ TEST_F(OSAL_Thread_f, aal0011)
 
    // Thr1 has started and is going to be sleeping.
    EXPECT_TRUE(m_pThrs[0]->IsOK());
-
    YIELD_X(5);
 
-#if   defined( __AAL_WINDOWS__ )
-
-#elif defined( __AAL_LINUX__ )
-
-   btUnsignedInt idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[0]->tid());
-
-   while ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < 1 ) {
-      // reap the child thread.
-      m_pThrs[0]->Unblock();
-      sleep_millis(1);
-   }
-
-#endif // OS
+   m_pThrs[0]->Unblock();
 
    // wait for Thr1 to return.
    YIELD_WHILE(0 == m_Scratch[1]);
