@@ -44,7 +44,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 4.2
+ASE_VERSION = 4.1.7
 
 # ASE Debug
 ASE_DEBUG = 0
