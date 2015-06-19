@@ -184,7 +184,6 @@ private:
 #if   defined( __AAL_WINDOWS__ )
    HANDLE               m_hEvent;
 #elif defined( __AAL_LINUX__ )
-   pthread_mutex_t      m_mutex;
    pthread_cond_t       m_condition;
 #endif // OS
 };

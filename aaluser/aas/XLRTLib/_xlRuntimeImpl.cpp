@@ -126,30 +126,30 @@ btBool _xlruntime::IsOK()
 //=============================================================================
 void _xlruntime::stop()
 {
-   Lock();
+   {
+      AutoLock(this);
+      if ( IsOK() && ( Stopped != m_state ) ) {
+         m_status  = false;
+      } else {
+         // Dispatch the event ourselves, because MDS is no more.
+         OSLThreadGroup oneShot;
+         RuntimeMessage *pRuntimeStopped = new RuntimeMessage(m_pclient,
+                                                              this,
+                                                              RuntimeMessage::Stopped);
 
-   if ( IsOK() && (m_state !=Stopped) ) {
-      m_status = false;
-      Unlock();
+          // Fire the final event
+         oneShot.Add(pRuntimeStopped);
+         oneShot.Drain();  // Wait for it to be dispatched
 
-      // Prepare our sem. We will wait for notification from serviceFreed() before continuing.
-      m_sem.Reset(0);
-
-      // Release the Service Broker.
-      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
-   } else {
-      // Dispatch the event ourselves, because MDS is no more.
-      OSLThreadGroup oneShot;
-      RuntimeMessage *pRuntimeStopped = new RuntimeMessage(m_pclient,
-                                            this,
-                                            RuntimeMessage::Stopped);
-
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
-
-      Unlock();
+         return; // we're done.
+      }
    }
+
+   // Prepare our sem. We will wait for notification from serviceFreed() before continuing.
+   m_sem.Reset(0);
+
+   // Release the Service Broker.
+   dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
 }
 
 //=============================================================================

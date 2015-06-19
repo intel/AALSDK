@@ -228,11 +228,13 @@ btBool _xlServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 
    // Important to Lock here and in thread to ensure that the assignment
    //  is complete before thread runs.
-   Lock();
-   m_pShutdownThread = new OSLThread(_xlServiceBroker::ShutdownThread,
-                                     OSLThread::THREADPRIORITY_NORMAL,
-                                     pparms);
-   Unlock();
+   {
+      AutoLock(this);
+      m_pShutdownThread = new OSLThread(_xlServiceBroker::ShutdownThread,
+                                        OSLThread::THREADPRIORITY_NORMAL,
+                                        pparms);
+   }
+
    return true;
 }
 
@@ -334,33 +336,33 @@ btBool _xlServiceBroker::DoShutdown(TransactionID const &rTranID,
    }
 
    srvcCount.Wait(timeout);
-   Lock();
 
-   //------------------------------------------
-   // Send an event to the system event handler
-   //------------------------------------------
-   if ( m_servicecount > 0 ) {
-      // Timed out - Shutdown did not succeed
-      QueueAASEvent(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                   exttranevtServiceShutdown,
-                                                   rTranID,
-                                                   errSystemTimeout,
-                                                   reasSystemTimeout,
-                                                   const_cast<btString>(strSystemTimeout)));
-      Unlock();
-   } else {
-      // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
-      SendMsg(new ServiceClientMessage(Client(),
-                                       this,
-                                       ServiceClientMessage::Freed,
-                                       rTranID));
+   {
+      AutoLock(this);
+      //------------------------------------------
+      // Send an event to the system event handler
+      //------------------------------------------
+      if ( m_servicecount > 0 ) {
+         // Timed out - Shutdown did not succeed
+         QueueAASEvent(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                      exttranevtServiceShutdown,
+                                                      rTranID,
+                                                      errSystemTimeout,
+                                                      reasSystemTimeout,
+                                                      const_cast<btString>(strSystemTimeout)));
+      } else {
+         // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
+         SendMsg(new ServiceClientMessage(Client(),
+                                          this,
+                                          ServiceClientMessage::Freed,
+                                          rTranID));
 
-      // Clear the map now
-      m_ServiceMap.clear();
+         // Clear the map now
+         m_ServiceMap.clear();
 
-      // Unlock before Release as that Destroys "this"
-      Unlock();
-      return true;
+         // Unlock before Release as that Destroys "this"
+         return true;
+      }
    }
 
    return false;
@@ -391,16 +393,15 @@ void _xlServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
 
    pProvider->Destroy();
 
-   Lock();
+   {
+      AutoLock(this);
+      // Delete the service which unloads the plug-in (e.g.,so or dll)
+      // DEBUG_CERR("_xlServiceBroker::ShutdownHandler: pLibrary = " << (void *)( pProvider ) << endl);
 
-   // Delete the service which unloads the plug-in (e.g.,so or dll)
-   // DEBUG_CERR("_xlServiceBroker::ShutdownHandler: pLibrary = " << (void *)( pProvider ) << endl);
-
-   delete pSvcHost;
-   m_servicecount--;
-   cnt.Post(1);
-
-   Unlock();
+      delete pSvcHost;
+      m_servicecount--;
+      cnt.Post(1);
+   }
 }
 
  // Quiet Release. Used when Service is unloaded.

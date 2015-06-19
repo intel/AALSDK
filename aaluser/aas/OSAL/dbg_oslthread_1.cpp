@@ -10,9 +10,10 @@
 
 # elif defined( __AAL_LINUX__ )
 
-   gOSLThreadCountLock.Lock();
-   ++gOSLThreadCount;
-   gOSLThreadCountLock.Unlock();
+   {
+      AutoLock(&gOSLThreadCountLock);
+      ++gOSLThreadCount;
+   }
    pthread_cleanup_push(pthread_OSLThreadCount_cleanup, pThread);
 
 # endif // OS

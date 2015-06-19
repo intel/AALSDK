@@ -114,26 +114,25 @@ void AALServiceModule::Destroy()
    // Protect the counter calculation
    //  so nothing can be released until
    //  we are waiting
-   this->Lock();
+   {
+      AutoLock(this);
 
-   list_type::size_type size = m_serviceList.size();
-   if ( 0 == size ) {
-      this->Unlock();
-      return;
+      list_type::size_type size = m_serviceList.size();
+      if ( 0 == size ) {
+         return;
+      }
+
+      // Initialize the semaphore as a count up by initializing
+      //  count to a negative number.
+      //  The waiter will block until the semaphore
+      //  counts up to zero.
+      m_srvcCount.Create( - static_cast<btInt>(size) );
+
+      // TODO CHECK RETURN
+
+      // Loop through all services and shut them down
+      SendReleaseToAll();
    }
-
-   // Initialize the semaphore as a count up by initializing
-   //  count to a negative number.
-   //  The waiter will block until the semaphore
-   //  counts up to zero.
-   m_srvcCount.Create( - static_cast<btInt>(size) );
-
-   // TODO CHECK RETURN
-
-   // Loop through all services and shut them down
-   SendReleaseToAll();
-
-   this->Unlock();
 
    // Wait for all to complete.
    m_srvcCount.Wait();

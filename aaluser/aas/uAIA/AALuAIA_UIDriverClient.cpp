@@ -477,28 +477,27 @@ FAILED: // If got here then DeviceIoControl failed.
 #elif defined( __AAL_LINUX__ )
 
    // Break out of the while with a return
-
    do
    {
-      Lock();
+      {
+         AutoLock(this);
 
-      // Check for messages first
-      memset(&ioctlMessage,0, sizeof(struct aalui_ioctlreq));
-      if( ( ret = ioctl(m_fdClient, AALUID_IOCTL_GETMSG_DESC, &ioctlMessage) ) == 0 ) {
+         // Check for messages first
+         memset(&ioctlMessage,0, sizeof(struct aalui_ioctlreq));
+         if( ( ret = ioctl(m_fdClient, AALUID_IOCTL_GETMSG_DESC, &ioctlMessage) ) == 0 ) {
 
-         uidrvMessagep->size(ioctlMessage.size);
+            uidrvMessagep->size(ioctlMessage.size);
 
-         // Get the message -
-         if( ioctl(m_fdClient, AALUID_IOCTL_GETMSG, uidrvMessagep->GetReqp()) == -1 ) {
-            Unlock();
-            goto FAILED;
+            // Get the message -
+            if( ioctl(m_fdClient, AALUID_IOCTL_GETMSG, uidrvMessagep->GetReqp()) == -1 ) {
+               goto FAILED;
+            }
+
+            return true;
          }
 
-         Unlock();
-         return true;
       }
 
-      Unlock();
       AAL_VERBOSE(LM_UAIA, "UIDriverClient::GetMessage: About to wait" << std::endl);
 
       ret = poll(pollfds, 1, -1);
