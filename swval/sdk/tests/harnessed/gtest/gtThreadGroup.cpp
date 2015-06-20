@@ -2084,9 +2084,8 @@ public:
 
    void operator() ()
    {
-      m_CS.Lock();
+      AutoLock(&m_CS);
       ++m_Counter;
-      m_CS.Unlock();
    }
 
 protected:

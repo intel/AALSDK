@@ -137,9 +137,11 @@ AAL::btBool OSLThreadGroup::Destroy(AAL::btTime Timeout)
       if ( m_bDestroyed ) {
          return true;
       }
+
+      m_bDestroyed = true;
    }
 
-   return m_bDestroyed = m_pState->Destroy(Timeout);
+   return m_pState->Destroy(Timeout);
 }
 
 //=============================================================================
