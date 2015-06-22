@@ -6,25 +6,62 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
+static const char *gAppName =
 #if   defined( TEST_SUITE_BAT )
-void Version() { std::cout << "bat 1.1.1"     << std::endl; }
+   "bat"
 #elif defined( TEST_SUITE_NIGHTLY )
-void Version() { std::cout << "nightly 1.1.1" << std::endl; }
+   "nightly"
 #elif defined( TEST_SUITE_WEEKLY )
-void Version() { std::cout << "weekly 1.1.1"  << std::endl; }
+   "weekly"
 #endif // test suite
+;
+
+static const char *gAppVersion =
+#if   defined( TEST_SUITE_BAT )
+   "1.1.1"
+#elif defined( TEST_SUITE_NIGHTLY )
+   "1.1.1"
+#elif defined( TEST_SUITE_WEEKLY )
+   "1.1.1"
+#endif // test suite
+;
+
+void Version()
+{
+   std::cout << gAppName << " " << gAppVersion << std::endl;
+}
+
+void Help()
+{
+   std::cout << gAppName << " [--halt-on-segv] [--halt-on-timeout] [--version] [--help]"    << std::endl
+             << "\t" << "--halt-on-segv    : enter a wait loop on memory access violation." << std::endl
+             << "\t" << "--halt-on-timeout : enter a wait loop on keep-alive timeout."      << std::endl
+             << std::endl;
+}
 
 int main(int argc, char *argv[])
 {
-   if ( argc > 1 ) {
-      if ( 0 == std::string(argv[1]).compare("--version") ) {
+   int i;
+
+   for ( i = 1 ; i < argc ; ++i ) {
+      if ( 0 == std::string(argv[i]).compare("--version") ) {
          Version();
          return 0;
+      } else if ( 0 == std::string(argv[i]).compare("--help") ) {
+         Help();
+         ::testing::InitGoogleTest(&argc, argv);
+         return 0;
+      } else if ( 0 == std::string(argv[i]).compare("--halt-on-segv") ) {
+         TestStatus::HaltOnSegFault(true);
+      } else if ( 0 == std::string(argv[i]).compare("--halt-on-timeout") ) {
+         TestStatus::HaltOnKeepaliveTimeout(true);
       }
    }
 
-   SignalHelper::GlobalInstance().Install(SIGSEGV, SignalHelper::SIGSEGVHandler, true);
-   SignalHelper::GlobalInstance().Install(SIGINT,  SignalHelper::SIGINTHandler,  true);
+   SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGSEGV);
+   SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGINT);
+   SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGIO);
+   SignalHelper::GetInstance().Install(SignalHelper::IDX_SIGUSR1);
 
    ::testing::InitGoogleTest(&argc, argv);
 

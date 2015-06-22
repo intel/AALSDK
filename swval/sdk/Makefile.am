@@ -20,13 +20,8 @@ aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
-utils/aalscan \
-utils/data_model \
-utils/fpgasane \
-utils/CCIAFU \
-utils/SPLAFU \
+utils \
 tests
-
 
 aalsdkhdrsdir=$(includedir)/aalsdk
 aashdrsdir=$(aalsdkhdrsdir)/aas
@@ -79,7 +74,8 @@ include/aalsdk/xlrtlib.h \
 include/aalsdk/xlRuntime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h 
+include/aalsdk/IMessageHandler.h \
+include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
 include/aalsdk/aas/AALDeviceService.h \
@@ -141,6 +137,7 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
@@ -154,6 +151,7 @@ include/aalsdk/osal/DynLinkLibrary.h \
 include/aalsdk/osal/Env.h \
 include/aalsdk/osal/OSALService.h \
 include/aalsdk/osal/OSSemaphore.h \
+include/aalsdk/osal/Barrier.h \
 include/aalsdk/osal/OSServiceModule.h \
 include/aalsdk/osal/Sleep.h \
 include/aalsdk/osal/ThreadGroup.h \
@@ -251,6 +249,7 @@ ase/sw/linked_list_ops.c \
 ase/sw/capcm_ops.c \
 ase/sw/ase_common.h \
 ase/sw/protocol_backend.c \
+ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
 ase/Makefile \
@@ -263,13 +262,13 @@ ase/hw/sdp_ram.sv \
 ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
-ase/hw/cci_rule_checker.sv \
-ase/scripts/run_ase_automated.py \
-ase/scripts/gen_afu_env.py \
+ase/hw/cci_sniffer.sv \
+ase/hw/stream_checker.sv \
+ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_ipc_clean.py \
+ase/scripts/ipc_clean.py \
 ase/README
 
 CLP_EXTRA=\

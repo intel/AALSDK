@@ -47,6 +47,7 @@ AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [1],[1],[1])
 AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
+AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [1],[1],[1])
 
 AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],     [3],[2],[1])
 AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  [6],[5],[4])
@@ -64,7 +65,7 @@ AALSDK_DEBUG_OUTPUT([yes])
 AALSDK_DEBUG_DYNLOAD([no])
 AALSDK_ASSERT([yes])
 AALSDK_MAINTAINER
-AALSDK_LOCAL_GTEST([tests/harnessed/gtest], [1.6.0])
+AALSDK_LOCAL_GTEST([tests/harnessed/gtest], [1.7.0])
 
 dnl ############################################################################
 dnl ## Checks for programs #####################################################
@@ -179,6 +180,7 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
+                 utils/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
                  utils/fpgasane/Makefile
@@ -189,7 +191,12 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/Makefile
                  utils/SPLAFU/HWSPLAFU/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
-                 utils/SPLAFU/SWSimSPLAFU/Makefile])
+                 utils/SPLAFU/SWSimSPLAFU/Makefile
+                 utils/cciapp/Makefile
+                 utils/splapp/Makefile
+                 utils/splapp2/Makefile
+                 utils/splapp3/Makefile
+                 utils/CCILib/Makefile])
 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
@@ -197,6 +204,7 @@ AC_CONFIG_FILES([tests/Makefile
                  tests/standalone/Makefile
                  tests/standalone/OSAL_TestSem/Makefile
                  tests/standalone/OSAL_TestThreadGroup/Makefile
+                 tests/standalone/isolated/Makefile
                  tests/swvalmod/Makefile])
 
 AC_OUTPUT

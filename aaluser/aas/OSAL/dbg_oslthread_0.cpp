@@ -23,9 +23,8 @@ static void pthread_OSLThreadCount_cleanup(void *arg)
 {
    // Executes when the thread is canceled or if the thread terminates by calling pthread_exit().
    // Does not execute when the thread returns normally.
-   gOSLThreadCountLock.Lock();
+   AutoLock(&gOSLThreadCountLock);
    --gOSLThreadCount;
-   gOSLThreadCountLock.Unlock();
 }
 
 # endif // OS

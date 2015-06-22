@@ -431,16 +431,18 @@ uAIA::Process_Event()
       }
 
       if (rspid_UID_Shutdown == pMessage->id()) { // Are we done?
-         // Important to Lock here to make sure the m+pShutdownThread has been set
-         Lock();
-         AAL_INFO(LM_UAIA, "uAIA::Process_Event: Shutdown Seen\n");
-         //Shutdown complete
-         if(NULL == m_pShutdownThread) {
-            std::cerr << "NULL THREAD" << std::endl;
-         }else{
-            m_pShutdownThread->Join();
+         // Important to Lock here to make sure the m_pShutdownThread has been set
+         {
+            AutoLock(this);
+
+            AAL_INFO(LM_UAIA, "uAIA::Process_Event: Shutdown Seen\n");
+
+            //Shutdown complete
+            ASSERT(NULL != m_pShutdownThread);
+            if ( NULL != m_pShutdownThread ) {
+               m_pShutdownThread->Join();
+            }
          }
-         Unlock();
          delete pMessage;
          return;
       }else {
@@ -515,41 +517,49 @@ void uAIA::WaitForShutdown(ui_shutdownreason_e      reason,
                            btTime                   waittime,
                            stTransactionID_t const &rTranID_t)
 {
-   btBool notimeout=true;
+   btBool     notimeout = true;
+   btBool     DoWait    = false;
+   CAALEvent *pTheEvent = NULL;
 
-   CAALEvent * pTheEvent=NULL;
+   {
+      AutoLock(this);
 
-   Lock();
+      DEBUG_CERR("uAIA::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
+      AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
 
+      // If the refcount is not zero setup a count up
+      // semaphore to wait until all resources release
+      if ( m_refcount ) {
+         DEBUG_CERR("uAIA::WaitForShutdown() refcount is non-zero. 2 of 3\n");
+         AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount is non-zero. 2 of 3\n");
 
-   DEBUG_CERR("uAIA::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
-   AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
+         m_pShutdownSem = new CSemaphore();
+         // Negative count means the semaphore counts up
+         m_pShutdownSem->Create(-m_refcount, 1);
 
-   // If the refcount is not zero setup a count up
-   // semaphore to wait until all resources release
-   if(m_refcount){
-      DEBUG_CERR("uAIA::WaitForShutdown() refcount is non-zero. 2 of 3\n");
-      AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount is non-zero. 2 of 3\n");
+         DoWait = true;
 
-      m_pShutdownSem = new CSemaphore();
-      // Negative count means the semaphore counts up
-      m_pShutdownSem->Create(-m_refcount, 1);
-      Unlock();
+      } else {
+         DEBUG_CERR("uAIA::WaitForShutdown() refcount was 0. 2 of 3\n");
+         AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount was 0. 2 of 3\n");
+      }
+
+   }
+
+   if ( DoWait ) {
 
       // The semaphore returns true if it unblocked with no timeout
       if ( AAL_INFINITE_WAIT == waittime ) {
          notimeout = m_pShutdownSem->Wait();
-      }else{
+      } else {
          notimeout = m_pShutdownSem->Wait(waittime);
       }
-      Lock();
-      delete m_pShutdownSem; m_pShutdownSem=NULL;
-      Unlock();
 
-   } else {
-      DEBUG_CERR("uAIA::WaitForShutdown() refcount was 0. 2 of 3\n");
-      AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() refcount was 0. 2 of 3\n");
-      Unlock();   // match the initial Lock
+      {
+         AutoLock(this);
+         delete m_pShutdownSem;
+         m_pShutdownSem = NULL;
+      }
    }
 
    // Generate an event if the shutdown was called by the quite version of Release()
@@ -657,16 +667,17 @@ btBool uAIA::Release(TransactionID const &rTranID,
 
    //Important to lock here and not unlock until after the assignment are  the Shutdown
    //  thread can come and go before the assignment, resulting in the join off of m_pShutdownThread
-   //  being off of a NULL poiter
-   Lock();
-   // Create the Shutdown thread
-   m_pShutdownThread = new OSLThread(uAIA::ShutdownThread,
-                                     OSLThread::THREADPRIORITY_NORMAL,
-                                     pParms);
-   if ( NULL == m_pShutdownThread ) {
-      std::cout << "youch null threa" << std::endl;
+   //  being off of a NULL pointer.
+
+   {
+      AutoLock(this);
+
+      // Create the Shutdown thread
+      m_pShutdownThread = new(std::nothrow) OSLThread(uAIA::ShutdownThread,
+                                                      OSLThread::THREADPRIORITY_NORMAL,
+                                                      pParms);
+      ASSERT(NULL != m_pShutdownThread);
    }
-   Unlock();
 
    DEBUG_CERR(__AAL_FUNC__ << ": Goodbye.\n");
    AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Goodbye.\n");

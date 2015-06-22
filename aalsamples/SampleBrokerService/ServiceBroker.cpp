@@ -212,11 +212,12 @@ btBool ServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 
    // Important to Lock here and in thread to ensure that the assignment
    //  is complete before thread runs.
-   Lock();
-   m_pShutdownThread = new OSLThread(ServiceBroker::ShutdownThread,
-                                     OSLThread::THREADPRIORITY_NORMAL,
-                                     pparms);
-   Unlock();
+   {
+      AutoLock(this);
+      m_pShutdownThread = new OSLThread(ServiceBroker::ShutdownThread,
+                                        OSLThread::THREADPRIORITY_NORMAL,
+                                        pparms);
+   }
    return true;
 }
 
@@ -315,21 +316,22 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
    }
 
    srvcCount.Wait(timeout);
-   Lock();
 
-   //------------------------------------------
-   // Send an event to the system event handler
-   //------------------------------------------
-   if ( m_servicecount ) {
-      // Timed out - Shutdown did not succeed
-      QueueAASEvent( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                    exttranevtServiceShutdown,
-                                                    rTranID,
-                                                    errSystemTimeout,
-                                                    reasSystemTimeout,
-                                                    const_cast<btString>(strSystemTimeout)) );
-      Unlock();
-   } else {
+   {
+      AutoLock(this);
+
+      //------------------------------------------
+      // Send an event to the system event handler
+      //------------------------------------------
+      if ( m_servicecount ) {
+         // Timed out - Shutdown did not succeed
+         QueueAASEvent( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                       exttranevtServiceShutdown,
+                                                       rTranID,
+                                                       errSystemTimeout,
+                                                       reasSystemTimeout,
+                                                       const_cast<btString>(strSystemTimeout)) );
+      } else {
 #if 0
       // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
       SendMessage(new ServiceClientMessage( Client(),
@@ -339,13 +341,13 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                           );
 #endif
 
-      QueueAASEvent( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
+         QueueAASEvent( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
 
-      // Clear the map now
-      m_ServiceMap.clear();
-      // Unlock before Release as that Destroys "this"
-      Unlock();
-      return true;
+         // Clear the map now
+         m_ServiceMap.clear();
+         // Unlock before Release as that Destroys "this"
+         return true;
+      }
    }
 
    return false;
@@ -376,16 +378,15 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
    pProvider->Destroy();
 
-   Lock();
-
    // Delete the service which unloads the plug-in (e.g.,so or dll)
    //DEBUG_CERR("ServiceBroker::ShutdownHandler: pLibrary = " << (void*)(( *itr ).second.pLibrary) << endl);
 
-   delete (*itr).second;
-   m_servicecount--;
-   cnt.Post(1);
-
-   Unlock();
+   {
+      AutoLock(this);
+      delete (*itr).second;
+      m_servicecount--;
+      cnt.Post(1);
+   }
 }
 
 // Quiet Release. Used when Service is unloaded.

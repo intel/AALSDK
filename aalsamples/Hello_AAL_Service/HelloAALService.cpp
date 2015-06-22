@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file HelloAALService.cpp
 /// @brief Implementation of HelloAALService - a Simple AFU Service.
-/// @ingroup HelloAALService
+/// @ingroup hello_service
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -113,6 +113,11 @@ AAL_END_SVC_MOD()
 //////                                                                ///////
 //////                                                                ///////
 /////////////////////////////////////////////////////////////////////////////
+
+
+/// @addtogroup hello_service
+/// @{
+
 //=============================================================================
 // Name:
 // Description:
@@ -125,6 +130,18 @@ void HelloAALService::init(TransactionID const &TranID)
 {
    m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, ClientBase());
    ASSERT( NULL != m_pClient ); //QUEUE object failed
+   if(NULL == m_pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish IHelloAALClient Interface"));
+      return;
+   }
+
    QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
                                          Client(),
                                          dynamic_cast<IBase *>(this),
@@ -174,4 +191,7 @@ void HelloAppDispatchable::operator() ()
    m_pSvcClient->HelloApp(m_TranID);
    delete this;
 }
+
+/// @} group hello_service
+
 

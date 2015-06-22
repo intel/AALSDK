@@ -66,37 +66,6 @@
 #if defined( __AAL_LINUX__ )
 # include <errno.h>
 # include <sys/time.h>
-
-// Acquire the lock that protects m_bInitialized.
-# define INIT_LOCK()               this->Lock()
-// Release the lock that protects m_bInitialized.
-# define INIT_UNLOCK()             this->Unlock()
-// Release the lock that protects m_bInitialized.
-// Acquire the lock that protects the counters.
-# define INIT_UNLOCK_COUNT_LOCK()  \
-do                                 \
-{                                  \
-   this->Unlock();                 \
-   ::pthread_mutex_lock(&m_mutex); \
-}while(0)
-// Acquire the lock that protects the counters.
-# define COUNT_LOCK()              ::pthread_mutex_lock(&m_mutex);
-// Release the lock that protects the counters.
-# define COUNT_UNLOCK()            ::pthread_mutex_unlock(&m_mutex);
-
-#elif defined( __AAL_WINDOWS__ )
-
-// Acquire the lock that protects m_bInitialized.
-# define INIT_LOCK()    this->Lock()
-// Release the lock that protects m_bInitialized.
-# define INIT_UNLOCK()  this->Unlock()
-// noop for Windows - there is only one lock.
-# define INIT_UNLOCK_COUNT_LOCK()
-// Acquire the lock that protects the counters.
-# define COUNT_LOCK()   this->Lock()
-// Release the lock that protects the counters.
-# define COUNT_UNLOCK() this->Unlock()
-
 #endif // OS
 
 //=============================================================================
@@ -141,9 +110,9 @@ CSemaphore::~CSemaphore()
 AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMaxCount)
 {
    // We always protect m_bInitialized with our internal lock (CriticalSection).
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
@@ -153,22 +122,13 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
                               1,                              // max of 1
                               NULL);
    if ( NULL == m_hEvent ) {
-      INIT_UNLOCK();
       return false;
    }
 #elif defined( __AAL_LINUX__ )
-   if ( pthread_mutex_init(&m_mutex, NULL) ) {
-      INIT_UNLOCK();
-      return false;
-   }
    if ( pthread_cond_init(&m_condition, NULL) ) {
-      pthread_mutex_destroy(&m_mutex);
-      INIT_UNLOCK();
       return false;
    }
 #endif // OS
-
-   COUNT_LOCK(); // Yes, lock the init lock then lock the count lock.
 
    m_bUnBlocking = false;
 
@@ -201,12 +161,7 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
 
    }
 
-   COUNT_UNLOCK();
-
-   m_bInitialized = true;
-
-   INIT_UNLOCK();
-   return true;
+   return m_bInitialized = true;
 }
 //=============================================================================
 // Name: Destroy 
@@ -220,7 +175,7 @@ AAL::btBool CSemaphore::Destroy()
 {
    AAL::btBool res = false;
 
-   INIT_LOCK();
+   AutoLock(this);
 
    if ( m_bInitialized ) {
 
@@ -228,9 +183,6 @@ AAL::btBool CSemaphore::Destroy()
       res = ( 0 != CloseHandle(m_hEvent) );
 #elif defined( __AAL_LINUX__ )
       res = true;
-      if ( 0 != pthread_mutex_destroy(&m_mutex) ) {
-         res = false;
-      }
       if ( 0 != pthread_cond_destroy(&m_condition) ) {
          res = false;
       }
@@ -239,7 +191,6 @@ AAL::btBool CSemaphore::Destroy()
       m_bInitialized = false;
    }
 
-   INIT_UNLOCK();
    return res;
 }
 
@@ -254,22 +205,18 @@ AAL::btBool CSemaphore::Destroy()
 //=============================================================================
 AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
 {
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
-   INIT_UNLOCK_COUNT_LOCK();
-
    // Do not reset while someone is waiting.
    if ( m_WaitCount > 0 ) {
-      COUNT_UNLOCK();
       return false;
    }
 
    if ( nCount > m_MaxCount ) {
-      COUNT_UNLOCK();
       return false;
    }
 
@@ -299,8 +246,6 @@ AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
       m_CurCount++;
    }
 
-   COUNT_UNLOCK();
-
    return true;
 }
 
@@ -315,16 +260,14 @@ AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
 //=============================================================================
 AAL::btBool CSemaphore::CurrCounts(AAL::btInt &rcurrCount, AAL::btInt &rmaxCount)
 {
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
-   INIT_UNLOCK_COUNT_LOCK();
    rcurrCount = m_CurCount;
    rmaxCount  = m_MaxCount;
-   COUNT_UNLOCK();
 
    return true;
 }
@@ -340,19 +283,14 @@ AAL::btBool CSemaphore::CurrCounts(AAL::btInt &rcurrCount, AAL::btInt &rmaxCount
 //=============================================================================
 AAL::btBool CSemaphore::Post(AAL::btInt nCount)
 {
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
-   // Lock the mutex used in the wait
-   //  to protect the shared predicate values (counts)
-   INIT_UNLOCK_COUNT_LOCK();
-
    // Can't post such that you exceed MaxCount
    if ( ( m_CurCount + nCount ) > m_MaxCount ) {
-      COUNT_UNLOCK();
       return false;
    }
 
@@ -378,8 +316,6 @@ AAL::btBool CSemaphore::Post(AAL::btInt nCount)
 
    }
 
-   COUNT_UNLOCK();
-
    return true;
 }
 
@@ -397,16 +333,13 @@ AAL::btBool CSemaphore::Post(AAL::btInt nCount)
 //=============================================================================
 AAL::btBool CSemaphore::UnblockAll()
 {
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
    AAL::btBool res = true;
-
-   // Protect predicate and block any waking threads
-   INIT_UNLOCK_COUNT_LOCK();
 
    m_bUnBlocking = true;
    m_CurCount    = 0;
@@ -423,8 +356,6 @@ AAL::btBool CSemaphore::UnblockAll()
       ReleaseSemaphore(m_hEvent, m_WaitCount, NULL );   // Release  (signal)
 #endif
    }
-
-   COUNT_UNLOCK();
 
    return res;
 }
@@ -471,14 +402,14 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   INIT_LOCK();
-   if ( !m_bInitialized ) {
-      INIT_UNLOCK();
-      return false;
+   {
+      AutoLock(this);
+      if ( !m_bInitialized ) {
+         return false;
+      }
    }
 
-   // Allow other waits and posts
-   INIT_UNLOCK();
+   // Unlock to allow other waits and posts..
 
    struct timeval tv;
    struct timezone tz;
@@ -492,8 +423,8 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
    ts.tv_sec += ts.tv_nsec / 1000000000;
    ts.tv_nsec = ts.tv_nsec % 1000000000;
 
-   // Protect the predicate check (locks the mutex used in wait
-   COUNT_LOCK();
+   // Protect the predicate check (locks the mutex used in wait)
+   AutoLock(this);
 
    ADD_WAITER();
 
@@ -506,12 +437,9 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      if ( ETIMEDOUT == pthread_cond_timedwait(&m_condition,
-                                               &m_mutex,
-                                               &ts) ) {
+      if ( ETIMEDOUT == __LockObj.PthreadCondTimedWait(&m_condition, &ts) ) {
          DEL_WAITER();
          // Unlock the mutex locked by the return from wait
-         COUNT_UNLOCK();
          return false;
       }
 
@@ -519,7 +447,6 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
       //   modify predicate.
       if ( m_bUnBlocking ) {
          DEL_WAITER();
-         COUNT_UNLOCK();
          return false;
       }
    }
@@ -529,9 +456,6 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
    m_CurCount--;
 
    DEL_WAITER();
-
-   // Unlock predicate protection
-   COUNT_UNLOCK();
 
    return true;
 }
@@ -548,16 +472,15 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
 //=============================================================================
 AAL::btBool CSemaphore::Wait()
 {
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
 
    // Both the comparison of m_CurCount to 0 and the decrement of m_CurCount must occur atomically.
    //  This is done by assuring that manipulation is always done within a lock()
    // Protect the predicate check (locks the mutex used in wait)
-   INIT_UNLOCK_COUNT_LOCK();
 
    ADD_WAITER();
 
@@ -568,13 +491,12 @@ AAL::btBool CSemaphore::Wait()
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      pthread_cond_wait(&m_condition, &m_mutex);   // Infinite wait
+      __LockObj.PthreadCondWait(&m_condition); // Infinite wait
 
       // If we being unblocked then immediately return false and do not
       //   modify predicate.
       if ( m_bUnBlocking ) {
          DEL_WAITER();
-         COUNT_UNLOCK();
          return false;
       }
    }
@@ -582,8 +504,6 @@ AAL::btBool CSemaphore::Wait()
    m_CurCount--;
 
    DEL_WAITER();
-
-   COUNT_UNLOCK();
 
    return true;
 }
@@ -604,13 +524,11 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
-
-   INIT_UNLOCK_COUNT_LOCK();
 
    ADD_WAITER();
 
@@ -624,19 +542,13 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
 WAITLOOP:
    while ( m_CurCount <= 0 ) {
 
-      COUNT_UNLOCK();
-
-      // ASSERT: we are unlocked.
-      dwWaitResult = WaitForSingleObject(m_hEvent,        // handle to Semaphore
-                                         (DWORD)Timeout); // time-out interval
-
-      COUNT_LOCK();
+      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent,        // handle to Semaphore
+                                                   (DWORD)Timeout); // time-out interval
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // semaphore was signaled
          default : {
             DEL_WAITER();
-            COUNT_UNLOCK();
             return false;     // timeout or error
          }
       }
@@ -645,7 +557,6 @@ WAITLOOP:
       //   modify predicate.
       if ( m_bUnBlocking ) {
          DEL_WAITER();
-         COUNT_UNLOCK();
          return false;
       }
 
@@ -663,7 +574,6 @@ WAITLOOP:
 
    m_CurCount--;
 
-   COUNT_UNLOCK();
    return true;
 }
 
@@ -679,13 +589,11 @@ AAL::btBool CSemaphore::Wait()
 {
    DWORD dwWaitResult;
 
-   INIT_LOCK();
+   AutoLock(this);
+
    if ( !m_bInitialized ) {
-      INIT_UNLOCK();
       return false;
    }
-
-   INIT_UNLOCK_COUNT_LOCK();
 
    ADD_WAITER();
 
@@ -699,19 +607,13 @@ AAL::btBool CSemaphore::Wait()
 WAITLOOP:
    while ( m_CurCount <= 0 ) {
 
-      COUNT_UNLOCK();
-
-      // ASSERT: we are unlocked
-      dwWaitResult = WaitForSingleObject(m_hEvent,    // handle to Semaphore
-                                         INFINITE);   // no time-out interval
-
-      COUNT_LOCK();
+      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent,    // handle to Semaphore
+                                                   INFINITE);   // no time-out interval
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // semaphore was signaled
          default : {
             DEL_WAITER();
-            COUNT_UNLOCK();
             return false;     // error (using INFINITE above)
          }
       }
@@ -720,7 +622,6 @@ WAITLOOP:
       //   modify predicate.
       if ( m_bUnBlocking ) {
          DEL_WAITER();
-         COUNT_UNLOCK();
          return false;
       }
    }
@@ -735,7 +636,6 @@ WAITLOOP:
 
    m_CurCount--;
 
-   COUNT_UNLOCK();
    return true;
 }
 

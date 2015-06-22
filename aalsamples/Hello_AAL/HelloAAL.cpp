@@ -138,7 +138,10 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   m_Runtime.start(this, configArgs);
+   if(!m_Runtime.start(this, configArgs)){
+      m_isOK = false;
+      return;
+   }
    m_Sem.Wait();
 }
 
@@ -177,12 +180,16 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    MSG("Runtime start failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-    MSG("Runtime AllocateService failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -314,7 +321,9 @@ void HelloAALApp::run()
 
  void HelloAALApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    MSG("Failed to allocate a Service");
+    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+    ERR("Failed to allocate a Service");
+    ERR(pExEvent->Description());
     m_Sem.Post(1);
  }
 
@@ -328,11 +337,9 @@ void HelloAALApp::run()
  {
 
     MSG("AAL says Hello Back ");
-    IHelloAALService *ptheService = subclass_ptr<IHelloAALService>(m_pAALService);
-
-    ptheService->Release(TransactionID());
-
-    //dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
+    IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+    ASSERT( pIAALService);
+    pIAALService->Release(TransactionID());
  }
 
  void HelloAALApp::serviceEvent(const IEvent &rEvent)
@@ -358,6 +365,10 @@ int main(int argc, char *argv[])
    RuntimeClient     runtimeClient;
    HelloAALApp       theApp(&runtimeClient);
    
+   if(!runtimeClient.isOK()){
+      ERR("Runtime Failed to Start");
+      exit(1);
+   }
    theApp.run();
 
    MSG("Done");

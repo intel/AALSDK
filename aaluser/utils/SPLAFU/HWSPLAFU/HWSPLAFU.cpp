@@ -61,6 +61,20 @@ BEGIN_NAMESPACE(AAL)
 
 void HWSPLAFU::init(TransactionID const &TranID)
 {
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ASSERT( NULL != pClient );
+   if(NULL == pClient){
+      /// ObjectCreatedExceptionEvent Constructor.
+      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                    Client(),
+                                                    this,
+                                                    TranID,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish ISPLClient Interface"));
+      return;
+   }
+
    QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
                                                        Client(),
                                                        dynamic_cast<IBase *>(this),

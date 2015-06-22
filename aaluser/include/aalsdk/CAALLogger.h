@@ -213,12 +213,19 @@ private:
       }
    }
 
-   void StopFlushThread() {
-      Lock();
-      if ( NULL != m_pFlushThread ) {
-         m_needFlush = false;
+   void StopFlushThread()
+   {
+      AAL::btBool JoinFlushThr = false;
 
-         Unlock();
+      {
+         AutoLock(this);
+         if ( NULL != m_pFlushThread ) {
+            m_needFlush  = false;
+            JoinFlushThr = true;
+         }
+      }
+
+      if ( JoinFlushThr ) {
 
          while ( !m_bFlushThreadIsExiting ) {
             m_bExitFlushThread = true;
@@ -228,13 +235,14 @@ private:
 
          m_pFlushThread->Join();
 
-         Lock();
-         delete m_pFlushThread;
-         m_pFlushThread = NULL;
+         {
+            AutoLock(this);
+            delete m_pFlushThread;
+            m_pFlushThread = NULL;
+            m_flushEvent.Destroy();
+         }
 
-         m_flushEvent.Destroy();
       }
-      Unlock();
    }
 
    btBool SetFlushEvent() {

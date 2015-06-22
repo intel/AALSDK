@@ -50,34 +50,30 @@ BEGIN_NAMESPACE(AAL)
 
 Environment * Environment::GetObj()
 {
-   Environment::sm_Lock.Lock();
+   AutoLock(&Environment::sm_Lock);
 
    if ( NULL == Environment::sm_EnvObj ) {
       Environment::sm_EnvObj = new(std::nothrow) Environment();
    }
-
-   Environment::sm_Lock.Unlock();
 
    return Environment::sm_EnvObj;
 }
 
 void Environment::ReleaseObj()
 {
-   Environment::sm_Lock.Lock();
+   AutoLock(&Environment::sm_Lock);
 
    if ( NULL != Environment::sm_EnvObj ) {
       delete Environment::sm_EnvObj;
       Environment::sm_EnvObj = NULL;
    }
-
-   Environment::sm_Lock.Unlock();
 }
 
 btBool Environment::Get(std::string var, std::string &val)
 {
-#if   defined( __AAL_LINUX__ )
+   AutoLock(&Environment::sm_Lock);
 
-   Environment::sm_Lock.Lock();
+#if   defined( __AAL_LINUX__ )
 
    const char* temp_var =  var.c_str();
    char* temp_val = std::getenv(temp_var);
@@ -86,13 +82,9 @@ btBool Environment::Get(std::string var, std::string &val)
       val.assign(temp_val);
    }
 
-   Environment::sm_Lock.Unlock();
-
    return NULL != temp_val;
 
 #elif defined( __AAL_WINDOWS__ )
-
-   Environment::sm_Lock.Lock();
 
    char* temp_val = NULL;
    const char* temp_var;
@@ -103,20 +95,17 @@ btBool Environment::Get(std::string var, std::string &val)
 
    if (( 0 == bufsize ) && ( ERROR_ENVVAR_NOT_FOUND == GetLastError())) {
       // variable doesn't exist.
-      Environment::sm_Lock.Unlock();
       return false;
    }
 
    if ( 0 == bufsize ) {
       val.assign("");
-      Environment::sm_Lock.Unlock();
       return true;
    }
 
    temp_val = new char[bufsize];
 
    if ( NULL == temp_val ) {
-      Environment::sm_Lock.Unlock();
       return false;
    }
    GetEnvironmentVariable(temp_var, temp_val, bufsize);
@@ -125,24 +114,20 @@ btBool Environment::Get(std::string var, std::string &val)
 
    delete temp_val;
 
-   Environment::sm_Lock.Unlock();
-
    return true;
 #endif // OS
 }
 
 btBool Environment::Set(std::string var, std::string val, btBool overwrite)
 {
-#if   defined( __AAL_LINUX__ )
+   AutoLock(&Environment::sm_Lock);
 
-   Environment::sm_Lock.Lock();
+#if   defined( __AAL_LINUX__ )
 
    const char* temp_var = var.c_str();
    const char* temp_val = val.c_str();
 
    int ret = setenv(temp_var, temp_val, overwrite ? 1 : 0);
-
-   Environment::sm_Lock.Unlock();
 
    return 0 == ret;
 
@@ -155,11 +140,7 @@ btBool Environment::Set(std::string var, std::string val, btBool overwrite)
       }
    }
 
-   Environment::sm_Lock.Lock();
-
    btBool ret = SetEnvironmentVariable(var,val);
-
-   Environment::sm_Lock.Unlock();
 
    return ret;
 #endif // OS

@@ -103,11 +103,7 @@ aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
-utils/aalscan \
-utils/data_model \
-utils/fpgasane \
-utils/CCIAFU \
-utils/SPLAFU
+utils
 
 
 aalsdkhdrsdir=$(includedir)/aalsdk
@@ -336,6 +332,7 @@ ase/sw/linked_list_ops.c \
 ase/sw/capcm_ops.c \
 ase/sw/ase_common.h \
 ase/sw/protocol_backend.c \
+ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
 ase/Makefile \

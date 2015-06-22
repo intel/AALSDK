@@ -29,7 +29,7 @@
 ##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
 ##        Software Developer Kit (SDK)
 ##****************************************************************************
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/AFU1:$PWD/AFU2:$PWD/CCILib:$PWD/SampleBrokerService"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/SampleBrokerService:$PWD/Hello_AAL_Service"
 if [ $# -gt 0 ]; then
    for d in $@ ; do
       export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$d"

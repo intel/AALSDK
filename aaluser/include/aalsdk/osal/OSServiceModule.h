@@ -256,27 +256,24 @@ case AAL_SVC_CMD_VER_AGE : {                                                    
    *(BT32U *)(__arg) = __verage;                                                              \
 } return 0;                                                                                   \
 case AAL_SVC_CMD_GET_PROVIDER : {                                                             \
-   cs.Lock();                                                                                 \
+   AutoLock(&cs);                                                                             \
    if ( NULL == pServiceFactory ) {                                                           \
       pServiceFactory = new __svcfactory();                                                   \
       if ( NULL == pServiceFactory ) {                                                        \
-         cs.Unlock();                                                                         \
          return 1;                                                                            \
       }                                                                                       \
    }                                                                                          \
    if ( NULL == pServiceProvider ) {                                                          \
       pServiceProvider = new AAL::AALServiceModule(*pServiceFactory);                         \
       if ( NULL == pServiceProvider ) {                                                       \
-         cs.Unlock();                                                                         \
          return 2;                                                                            \
       }                                                                                       \
    }                                                                                          \
    *((AAL::IServiceModule **)(arg)) =                                                         \
       AAL::dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, pServiceProvider);            \
-   cs.Unlock();                                                                               \
 } return 0;                                                                                   \
 case AAL_SVC_CMD_FREE_PROVIDER : {                                                            \
-   cs.Lock();                                                                                 \
+   AutoLock(&cs);                                                                             \
    if ( NULL != pServiceProvider ) {                                                          \
       delete pServiceProvider;                                                                \
       pServiceProvider = NULL;                                                                \
@@ -285,7 +282,6 @@ case AAL_SVC_CMD_FREE_PROVIDER : {                                              
       delete pServiceFactory;                                                                 \
       pServiceFactory = NULL;                                                                 \
    }                                                                                          \
-   cs.Unlock();                                                                               \
 } return 0
 
 

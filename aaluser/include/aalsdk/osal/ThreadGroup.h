@@ -289,15 +289,12 @@ private:
       virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
       // </IThreadGroup>
 
-      AAL::btBool     DestroyWhileDraining(AAL::btTime );
-      AAL::btBool      DestroyWhileJoining(AAL::btTime );
+      AAL::btBool          Quiesce(AAL::btTime);
+      void         DestructMembers();
 
-      AAL::btBool                  Quiesce(AAL::btTime);
-      void                 DestructMembers();
-
-      void                WorkerHasStarted(OSLThread * );
-      void                 WorkerHasExited(OSLThread * );
-      void         WorkerIsSelfTerminating(OSLThread * );
+      void        WorkerHasStarted(OSLThread * );
+      void         WorkerHasExited(OSLThread * );
+      void WorkerIsSelfTerminating(OSLThread * );
 
       // returns NULL if tid not in group.
       OSLThread * ThreadRunningInThisGroup(AAL::btTID ) const;

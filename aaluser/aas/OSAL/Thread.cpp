@@ -277,19 +277,18 @@ OSLThread::~OSLThread()
 
 #endif // OS
 
-   Lock();
+   {
+      AutoLock(this);
 
-   if ( flag_is_clr(m_State, THR_ST_OK) ||
-        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
-      // If we didn't construct successfully, or if we're a "local" thread, or if we've already
-      //  been Join()'ed, then there's nothing left to do.
-      Unlock();
-      return;
+      if ( flag_is_clr(m_State, THR_ST_OK) ||
+           flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+         // If we didn't construct successfully, or if we're a "local" thread, or if we've already
+         //  been Join()'ed, then there's nothing left to do.
+         return;
+      }
+
+      Detach();  // Detach it to free resources - this thread won't be Join()'ed.
    }
-
-   Detach();  // Detach it to free resources - this thread won't be Join()'ed.
-
-   Unlock();
 
    if ( IsThisThread( GetThreadID() ) ) {
       // self-destruct
@@ -316,23 +315,22 @@ OSLThread::~OSLThread()
 //=============================================================================
 void OSLThread::Unblock()
 {
-   Lock();
+   {
+      AutoLock(this);
 
-   // We can only manipulate m_Thread when OK and !Local.
-   if ( flag_is_clr(m_State, THR_ST_OK) ||
-        flag_is_set(m_State, THR_ST_LOCAL) ) {
+      // We can only manipulate m_Thread when OK and !Local.
+      if ( flag_is_clr(m_State, THR_ST_OK) ||
+           flag_is_set(m_State, THR_ST_LOCAL) ) {
 
-      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
-         flag_setf(m_State, THR_ST_UNBLOCKED);
+         if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+            flag_setf(m_State, THR_ST_UNBLOCKED);
+         }
+         // Nothing else to do.
+         return;
       }
-      // Nothing else to do.
-      Unlock();
-      return;
+
+      flag_setf(m_State, THR_ST_UNBLOCKED);
    }
-
-   flag_setf(m_State, THR_ST_UNBLOCKED);
-
-   Unlock();
 
 #if   defined( __AAL_WINDOWS__ )
 
@@ -420,39 +418,39 @@ void OSLThread::Wait()
 //=============================================================================
 void OSLThread::Join()
 {
-   Lock();
+   {
+      AutoLock(this);
 
-   if ( flag_is_clr(m_State, THR_ST_OK) ||
-        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+      if ( flag_is_clr(m_State, THR_ST_OK) ||
+           flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
 
-      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
-         flag_setf(m_State, THR_ST_JOINED);
-      }
+         if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+            flag_setf(m_State, THR_ST_JOINED);
+         }
 #if ENABLE_ASSERT
-      else {
-         const AAL::btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
-         ASSERT(OSLThread_attempt_to_Join_when_already_Joined_or_Detached);
-      }
+         else {
+            const AAL::btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
+            ASSERT(OSLThread_attempt_to_Join_when_already_Joined_or_Detached);
+         }
 #endif // ENABLE_ASSERT
 
-      // Nothing else to do.
-      Unlock();
-      return;
+         // Nothing else to do.
+         return;
+      }
+
+      flag_setf(m_State, THR_ST_JOINED);
    }
 
-   flag_setf(m_State, THR_ST_JOINED);
-
    // Don't join while locked.
-   Unlock();
 
 #if   defined( __AAL_WINDOWS__ )
 
-   WaitForSingleObject(m_hJoinEvent, INFINITE);
+   ::WaitForSingleObject(m_hJoinEvent, INFINITE);
 
 #elif defined( __AAL_LINUX__ )
 
    void *ret;
-   pthread_join(m_Thread, &ret);
+   ::pthread_join(m_Thread, &ret);
 
 #endif // OS
 }
@@ -460,36 +458,35 @@ void OSLThread::Join()
 // The underlying thread resource will never be join()'ed.
 void OSLThread::Detach()
 {
-   Lock();
+   {
+      AutoLock(this);
 
-   if ( flag_is_clr(m_State, THR_ST_OK) ||
-        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
+      if ( flag_is_clr(m_State, THR_ST_OK) ||
+           flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED|THR_ST_DETACHED) ) {
 
-      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
-         flag_setf(m_State, THR_ST_DETACHED);
-      }
+         if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+            flag_setf(m_State, THR_ST_DETACHED);
+         }
 #if ENABLE_ASSERT
-      else {
-         const AAL::btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
-         ASSERT(OSLThread_attempt_to_Detach_when_already_Joined_or_Detached);
-      }
+         else {
+            const AAL::btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
+            ASSERT(OSLThread_attempt_to_Detach_when_already_Joined_or_Detached);
+         }
 #endif // ENABLE_ASSERT
 
-      // Nothing else to do.
-      Unlock();
-      return;
+         // Nothing else to do.
+         return;
+      }
+
+      flag_setf(m_State, THR_ST_DETACHED);
    }
-
-   flag_setf(m_State, THR_ST_DETACHED);
-
-   Unlock();
 
 #if   defined( __AAL_WINDOWS__ )
 
 #elif defined( __AAL_LINUX__ )
 
    // Detach it to free resources.
-   pthread_detach(m_Thread);
+   ::pthread_detach(m_Thread);
 
 #endif // OS
 }
@@ -504,29 +501,28 @@ void OSLThread::Detach()
 //=============================================================================
 void OSLThread::Cancel()
 {
-   Lock();
+   {
+      AutoLock(this);
 
-   if ( flag_is_clr(m_State, THR_ST_OK) ||
-        flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
+      if ( flag_is_clr(m_State, THR_ST_OK) ||
+           flag_is_set(m_State, THR_ST_LOCAL|THR_ST_JOINED) ) {
 
-      if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
-         flag_setf(m_State, THR_ST_CANCELED);
-      }
+         if ( flag_is_set(m_State, THR_ST_LOCAL) ) {
+            flag_setf(m_State, THR_ST_CANCELED);
+         }
 #if ENABLE_ASSERT
-      else {
-         const AAL::btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
-         ASSERT(OSLThread_attempt_to_Cancel_when_already_Joined);
-      }
+         else {
+            const AAL::btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
+            ASSERT(OSLThread_attempt_to_Cancel_when_already_Joined);
+         }
 #endif // ENABLE_ASSERT
 
-      // Nothing to do.
-      Unlock();
-      return;
+         // Nothing to do.
+         return;
+      }
+
+      flag_setf(m_State, THR_ST_CANCELED);
    }
-
-   flag_setf(m_State, THR_ST_CANCELED);
-
-   Unlock();
 
 #if   defined( __AAL_WINDOWS__ )
 
@@ -535,7 +531,7 @@ void OSLThread::Cancel()
 #elif defined( __AAL_LINUX__ )
 
    // Mark the thread for termination
-   pthread_cancel(m_Thread);
+   ::pthread_cancel(m_Thread);
 
 #endif // OS
 }
@@ -608,11 +604,11 @@ AAL::btPID GetProcessID()
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   return (AAL::btPID) GetCurrentProcessId();
+   return (AAL::btPID) ::GetCurrentProcessId();
 
 #elif defined( __AAL_LINUX__ )
 
-   return (AAL::btPID) getpid();
+   return (AAL::btPID) ::getpid();
 
 #endif // OS
 }
@@ -629,11 +625,11 @@ AAL::btTID GetThreadID()
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   return (AAL::btTID) GetCurrentThreadId();
+   return (AAL::btTID) ::GetCurrentThreadId();
 
 #elif defined( __AAL_LINUX__ )
 
-   return (AAL::btTID) pthread_self();
+   return (AAL::btTID) ::pthread_self();
 
 #endif // OS
 }
@@ -646,7 +642,7 @@ AAL::btBool ThreadIDEqual(AAL::btTID x, AAL::btTID y)
 
 #elif defined( __AAL_LINUX__ )
 
-   return 0 != pthread_equal(x, y);
+   return 0 != ::pthread_equal(x, y);
 
 #endif // OS
 }
@@ -655,11 +651,11 @@ void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   ExitThread((DWORD)ExitStatus);
+   ::ExitThread((DWORD)ExitStatus);
 
 #elif defined( __AAL_LINUX__ )
 
-   pthread_exit((void *)ExitStatus);
+   ::pthread_exit((void *)ExitStatus);
 
 #endif // OS
 }
@@ -696,11 +692,11 @@ OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage)
    ASSERT(NULL != storage);
 #if   defined( __AAL_WINDOWS__ )
    unsigned int seed = (unsigned int)*storage;
-   rand_s(&seed);
+   ::rand_s(&seed);
    return (*storage = (AAL::btUnsigned32bitInt)seed);
 #elif defined( __AAL_LINUX__ )
    unsigned int            seed = (unsigned int)*storage;
-   AAL::btUnsigned32bitInt val  = (AAL::btUnsigned32bitInt)rand_r(&seed);
+   AAL::btUnsigned32bitInt val  = (AAL::btUnsigned32bitInt) ::rand_r(&seed);
    *storage = (AAL::btUnsigned32bitInt)seed;
    return val;
 #endif // OS

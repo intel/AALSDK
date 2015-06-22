@@ -153,17 +153,15 @@ private:
       void Destroy();
 
       void UnblockAll();
-      void AddWaiter();
-      // true if the caller is to unlock the count mutex (CountUnlock()).
-      // false if the count mutex was already unlocked.
-      AAL::btBool RemoveWaiter();
+      void AddWaiter(_AutoLock * );
+      void RemoveWaiter();
 
       AAL::btUnsignedInt NumWaiters() const;
 
       void AutoResetBegin();
       void AutoResetEnd();
 
-      void WaitForAllWaitersToExit();
+      void WaitForAllWaitersToExit(_AutoLock * );
 
    protected:
       Barrier           *m_pBarrier;
@@ -174,17 +172,12 @@ private:
       HANDLE             m_hREvent;       // manual-reset event for auto-reset done.
       HANDLE             m_hZEvent;       // manual-reset event for zero waiters.
 #elif defined( __AAL_LINUX__ )
-      pthread_mutex_t    m_Rmutex;
       pthread_cond_t     m_Rcondition;
-      pthread_mutex_t    m_Zmutex;
       pthread_cond_t     m_Zcondition;
 #endif // OS
 
-      void WaitForAutoResetCompletion();
-      void WaitForAutoResetCompletion(AAL::btTime );
-
-      void CountLock();
-      void CountUnlock();
+      void WaitForAutoResetCompletion(_AutoLock *  );
+      void WaitForAutoResetCompletion(_AutoLock * , AAL::btTime );
    };
 
    AutoResetManager   m_AutoResetManager;
@@ -192,17 +185,10 @@ private:
 #if   defined( __AAL_WINDOWS__ )
    HANDLE             m_hEvent;
 #elif defined( __AAL_LINUX__ )
-   pthread_mutex_t    m_mutex;
    pthread_cond_t     m_condition;
 #endif // OS
 
    friend class AutoResetManager;
-
-   void StateLock();
-   void StateUnlock();
-   void StateUnlockCountLock();
-   void CountLock();
-   void CountUnlock();
 };
 
 /// @} group OSAL

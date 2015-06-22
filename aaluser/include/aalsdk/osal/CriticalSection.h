@@ -44,7 +44,7 @@
 //****************************************************************************
 #ifndef __AALSDK_OSAL_CRITICALSECTION_H__
 #define __AALSDK_OSAL_CRITICALSECTION_H__
-#include <aalsdk/AALTypes.h>
+#include <aalsdk/osal/IDispatchable.h>
 
 #ifdef __AAL_UNKNOWN_OS__
 # error TODO Add CriticalSection support for unknown OS.
@@ -79,6 +79,7 @@ public:
 #endif // OS
    }
 
+private:
    /// Obtain the critical section. (blocking)
    void Lock()
    {
@@ -119,6 +120,8 @@ public:
 #endif // OS
    }
 
+#if DEPRECATED
+
    /// Try to obtain the critical section. (non-blocking)
    AAL::btBool TryLock()
    {
@@ -134,13 +137,16 @@ public:
       return true;
    }
 
-private:
+#endif // DEPRECATED
+
 #if   defined( __AAL_WINDOWS__ )
                 CRITICAL_SECTION m_Lock;
 #elif defined( __AAL_LINUX__ )
                 pthread_mutex_t  m_Lock;
    static const pthread_mutex_t  sm_MutexInitializer;
 #endif // OS
+
+   friend class _AutoLock;
 };
 
 
@@ -176,10 +182,43 @@ public:
    }
 
    /// _AutoLock Destructor.
-   ~_AutoLock()
+   virtual ~_AutoLock()
    {
       ASSERT(NULL != m_p);
       m_p->Unlock();
+   }
+
+#if   defined( __AAL_WINDOWS__ )
+
+   DWORD WaitForSingleObject(HANDLE h, DWORD dwTimeout)
+   {
+      // Don't wait while locked.
+      m_p->Unlock();
+      DWORD dwResult = ::WaitForSingleObject(h, dwTimeout);
+      m_p->Lock();
+      return dwResult;
+   }
+
+#elif defined( __AAL_LINUX__ )
+
+   /// Infinite wait on condition variable.
+   int PthreadCondWait(pthread_cond_t *pCond)
+   {
+      return ::pthread_cond_wait(pCond, &m_p->m_Lock);
+   }
+   /// Timed wait on condition variable.
+   int PthreadCondTimedWait(pthread_cond_t *pCond, struct timespec *pTS)
+   {
+      return ::pthread_cond_timedwait(pCond, &m_p->m_Lock, pTS);
+   }
+
+#endif // __AAL_LINUX__
+
+   void UnlockedDispatch(IDispatchable *pDisp)
+   {
+      m_p->Unlock();
+      pDisp->operator() ();
+      m_p->Lock();
    }
 
 protected:

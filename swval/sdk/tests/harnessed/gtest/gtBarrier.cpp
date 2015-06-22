@@ -41,12 +41,19 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      for ( i = 0 ; i < sizeof(m_Sems) / sizeof(m_Sems[0]) ; ++i ) {
+         m_Sems[i].Destroy();
+      }
+
       Destroy();
    }
 
@@ -1732,7 +1739,8 @@ class OSAL_Barrier_vp_tuple_0 : public ::testing::TestWithParam< std::tr1::tuple
 protected:
    OSAL_Barrier_vp_tuple_0() :
       m_UnlockCount(0),
-      m_bAutoReset(false)
+      m_bAutoReset(false),
+      m_Signals(0)
    {}
    virtual ~OSAL_Barrier_vp_tuple_0() {}
 
@@ -1745,15 +1753,23 @@ protected:
       for ( i = 0 ; i < sizeof(m_Scratch) / sizeof(m_Scratch[0]) ; ++i ) {
          m_Scratch[i] = 0;
       }
+      m_Signals = 0;
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      for ( i = 0 ; i < sizeof(m_Sems) / sizeof(m_Sems[0]) ; ++i ) {
+         m_Sems[i].Destroy();
+      }
+
       Destroy();
    }
 
@@ -1784,6 +1800,7 @@ protected:
 
    AAL::btUnsignedInt m_UnlockCount;
    AAL::btBool        m_bAutoReset;
+   AAL::btUIntPtr     m_Signals;
    Barrier            m_Barrier;
    OSLThread         *m_pThrs[25];
    AAL::btUnsignedInt m_Scratch[25];
@@ -1942,11 +1959,20 @@ void OSAL_Barrier_vp_tuple_0::Thr1(OSLThread *pThread, void *pArg)
    OSAL_Barrier_vp_tuple_0 *f = reinterpret_cast<OSAL_Barrier_vp_tuple_0 *>(pArg);
    ASSERT_NONNULL(f);
 
+#if defined( __AAL_LINUX__ )
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
+#endif // __AAL_LINUX__
+
    const AAL::btUnsignedInt t = f->m_Scratch[0]; // my unique thread index.
 
    EXPECT_TRUE(f->m_Sems[0].Post(1));
 
    EXPECT_TRUE(f->Wait());
+
+#if defined( __AAL_LINUX__ )
+   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
+#endif // __AAL_LINUX__
+
    f->m_Scratch[t] = 1;
 }
 
@@ -1959,16 +1985,16 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-   // Register a signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+   SignalHelper::GetInstance().RegistryReset();
+   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
 #endif // OS
 
    AAL::btUnsignedInt NumThreads;
    AAL::btUnsignedInt SignalAttempts;
 
    std::tr1::tie(NumThreads, SignalAttempts) = GetParam();
+
+   m_Signals = SignalAttempts;
 
    ASSERT_TRUE(Create(1, true));
 
@@ -1994,14 +2020,23 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
 
    AAL::btUnsignedInt s;
 
-   const btTime sleepeach = 5;
+   const btTime  sleepeach = 5;
+   btBool        Done      = false;
+   btUnsignedInt idx;
 
-   for ( s = 0 ; s < SignalAttempts ; ++s ) {
+   while ( !Done ) {
 
       for ( t = 0 ; t < NumThreads ; ++t ) {
 #if   defined( __AAL_WINDOWS__ )
          FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
+
+         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
+
+         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+            continue;
+         }
+
          EXPECT_EQ(0, pthread_kill(m_pThrs[t]->tid(), SIGIO));
 #endif // OS
       }
@@ -2014,6 +2049,17 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
 
       EXPECT_EQ(t, CurrentThreads());
       EXPECT_EQ(t, NumWaiters());
+
+      Done = true;
+#if defined( __AAL_LINUX__ )
+      for ( t = 0 ; t < NumThreads ; ++t ) {
+         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
+         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
+            Done = false;
+            break;
+         }
+      }
+#endif // __AAL_LINUX__
    }
 
    // Unlock the Barrier, allowing threads to exit.
@@ -2026,6 +2072,10 @@ TEST_P(OSAL_Barrier_vp_tuple_0, aal0195)
 
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(0, NumWaiters());
+
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+#endif // __AAL_LINUX__
 }
 
 // ::testing::Range(begin, end [, step])
@@ -2067,6 +2117,10 @@ void OSAL_Barrier_vp_tuple_1::Thr0(OSLThread *pThread, void *pArg)
    OSAL_Barrier_vp_tuple_1 *f = reinterpret_cast<OSAL_Barrier_vp_tuple_1 *>(pArg);
    ASSERT_NONNULL(f);
 
+#if defined( __AAL_LINUX__ )
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
+#endif // __AAL_LINUX__
+
    const AAL::btUnsignedInt t       = f->m_Scratch[0]; // my unique thread index.
    const AAL::btTime        Timeout = f->m_Scratch[1]; // timeout to Wait().
 
@@ -2074,6 +2128,11 @@ void OSAL_Barrier_vp_tuple_1::Thr0(OSLThread *pThread, void *pArg)
    EXPECT_TRUE(f->m_Sems[1].Wait());
 
    EXPECT_FALSE(f->Wait(Timeout));
+
+#if defined( __AAL_LINUX__ )
+   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < f->m_Signals);
+#endif // __AAL_LINUX__
+
    ++f->m_Scratch[t];
 }
 
@@ -2087,11 +2146,11 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-   // Register a signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+   SignalHelper::GetInstance().RegistryReset();
+   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
 #endif // OS
+
+   m_Signals = 15;
 
    AAL::btUnsignedInt NumThreads;
    AAL::btTime        Timeout;
@@ -2147,22 +2206,29 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
    // Wake all threads, allowing them to block on the Barrier.
    EXPECT_TRUE(m_Sems[1].Post(NumThreads));
 
-   while ( slept < Timeout ) {
+   btUnsignedInt idx;
+   btBool        Done = false;
+
+   while ( !Done ) {
       sleep_millis(sleepeach);
       slept += sleepeach;
 
-      if ( slept < thresh ) {
-         for ( t = 0 ; t < NumThreads ; ++t ) {
-            EXPECT_EQ(0, m_Scratch[t]);
-
+      for ( t = 0 ; t < NumThreads ; ++t ) {
 #if   defined( __AAL_WINDOWS__ )
-            FAIL() << "need to implement for windows";
+         FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-            EXPECT_EQ(0, pthread_kill(m_pThrs[t]->tid(), SIGIO));
-#endif // OS
 
+         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
+         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Signals ) {
+            continue;
          }
 
+         EXPECT_EQ(0, m_Scratch[t]);
+         pthread_kill(m_pThrs[t]->tid(), SIGIO);
+#endif // OS
+      }
+
+      if ( slept < thresh ) {
          c = u = 0;
          EXPECT_TRUE(CurrCounts(c, u));
          EXPECT_EQ(1, c);
@@ -2170,6 +2236,22 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
          EXPECT_EQ(t, CurrentThreads());
          EXPECT_EQ(t, NumWaiters());
+      }
+
+      Done = true;
+      for ( t = 0 ; t < NumThreads ; ++t ) {
+#if   defined( __AAL_WINDOWS__ )
+         FAIL() << "need to implement for windows";
+#elif defined( __AAL_LINUX__ )
+
+         idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[t]->tid());
+         if ( SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < m_Signals ) {
+            if ( ESRCH != pthread_kill(m_pThrs[t]->tid(), SIGIO) ) {
+               Done = false;
+               break;
+            }
+         }
+#endif // OS
       }
    }
 
@@ -2187,6 +2269,10 @@ TEST_P(OSAL_Barrier_vp_tuple_1, aal0196)
 
    EXPECT_EQ(0, CurrentThreads());
    EXPECT_EQ(0, NumWaiters());
+
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+#endif // __AAL_LINUX__
 }
 
 // ::testing::Range(begin, end [, step])

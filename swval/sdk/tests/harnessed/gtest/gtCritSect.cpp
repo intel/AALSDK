@@ -9,6 +9,8 @@ class OSAL_CritSect_f : public ::testing::Test
 {
 protected:
    OSAL_CritSect_f() {}
+   virtual ~OSAL_CritSect_f() {}
+
    virtual void SetUp()
    {
       unsigned i;
@@ -22,6 +24,8 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
@@ -30,9 +34,11 @@ protected:
       }
    }
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CriticalSection     m_CS;
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+
+   OSLThread      *m_pThrs[3];
+   btUIntPtr       m_Scratch[10];
+   CriticalSection m_CS;
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
@@ -47,9 +53,10 @@ void OSAL_CritSect_f::Thr0(OSLThread *pThread, void *pContext)
    OSAL_CritSect_f *pTC = static_cast<OSAL_CritSect_f *>(pContext);
    ASSERT_NONNULL(pTC);
 
-   pTC->m_CS.Lock();      // blocks if already locked.
-   pTC->m_Scratch[0] = 1; // signal that we're exiting.
-   pTC->m_CS.Unlock();
+   {
+      AutoLock(&pTC->m_CS); // blocks if already locked.
+      pTC->m_Scratch[0] = 1; // signal that we're exiting.
+   }
 }
 
 TEST_F(OSAL_CritSect_f, aal0021)
@@ -78,9 +85,10 @@ void OSAL_CritSect_f::Thr1(OSLThread *pThread, void *pContext)
    ASSERT_NONNULL(pTC);
 
    pTC->m_Scratch[0] = 1;
-   pTC->m_CS.Lock();
-   pTC->m_Scratch[1] = 1;
-   pTC->m_CS.Unlock();
+   {
+      AutoLock(&pTC->m_CS);
+      pTC->m_Scratch[1] = 1;
+   }
 }
 
 TEST_F(OSAL_CritSect_f, aal0022)
@@ -96,21 +104,22 @@ This thread unlocks the critical section, waking A.
 A sets scratch[1] and exits.
 */
 
-   m_CS.Lock();
+   {
+      AutoLock(&m_CS);
 
-   m_pThrs[0] = new OSLThread(OSAL_CritSect_f::Thr1,
-                              OSLThread::THREADPRIORITY_NORMAL,
-                              this);
+      m_pThrs[0] = new OSLThread(OSAL_CritSect_f::Thr1,
+                                 OSLThread::THREADPRIORITY_NORMAL,
+                                 this);
 
-   EXPECT_TRUE(m_pThrs[0]->IsOK());
+      EXPECT_TRUE(m_pThrs[0]->IsOK());
 
-   while ( 0 == m_Scratch[0] ) {
-      cpu_yield();
+      while ( 0 == m_Scratch[0] ) {
+         cpu_yield();
+      }
+
+      EXPECT_EQ(0, m_Scratch[1]);
+
    }
-
-   EXPECT_EQ(0, m_Scratch[1]);
-
-   m_CS.Unlock();
 
    m_pThrs[0]->Join();
 
@@ -121,16 +130,37 @@ TEST_F(OSAL_CritSect_f, aal0023)
 {
    // CriticalSection::Lock() can be called recursively by the same owner.
 
-   const unsigned count = 10;
-   unsigned       i;
-
-   for ( i = 0 ; i < count ; ++i ) {
-      m_CS.Lock();
+   {
+      AutoLock(&m_CS);
+      {
+         AutoLock(&m_CS);
+         {
+            AutoLock(&m_CS);
+            {
+               AutoLock(&m_CS);
+               {
+                  AutoLock(&m_CS);
+                  {
+                     AutoLock(&m_CS);
+                     {
+                        AutoLock(&m_CS);
+                        {
+                           AutoLock(&m_CS);
+                           {
+                              AutoLock(&m_CS);
+                              {
+                                 AutoLock(&m_CS);
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
    }
 
-   for ( i = 0 ; i < count ; ++i ) {
-      m_CS.Unlock();
-   }
 }
 
 
@@ -140,9 +170,10 @@ void OSAL_CritSect_f::Thr2(OSLThread *pThread, void *pContext)
    ASSERT_NONNULL(pTC);
 
    pTC->m_Scratch[0] = 1;
-   pTC->m_CS.Lock();
-   pTC->m_Scratch[1] = 1;
-   pTC->m_CS.Unlock();
+   {
+      AutoLock(&pTC->m_CS);
+      pTC->m_Scratch[1] = 1;
+   }
 }
 
 TEST_F(OSAL_CritSect_f, aal0025)
@@ -162,38 +193,34 @@ After N verifications that A is still blocked, this thread unlocks the critical 
  for A to exit.
 */
 
-   m_CS.Lock();
-   m_CS.Lock();
+   {
+      AutoLock(&m_CS);
 
-   m_pThrs[0] = new OSLThread(OSAL_CritSect_f::Thr2,
+      {
+         AutoLock(&m_CS);
+         m_pThrs[0] = new OSLThread(OSAL_CritSect_f::Thr2,
                               OSLThread::THREADPRIORITY_NORMAL,
                               this);
 
-   EXPECT_TRUE(m_pThrs[0]->IsOK());
+         EXPECT_TRUE(m_pThrs[0]->IsOK());
 
-   while ( 0 == m_Scratch[0] ) {
-      cpu_yield();
+         while ( 0 == m_Scratch[0] ) {
+            cpu_yield();
+         }
+
+         EXPECT_EQ(0, m_Scratch[1]);
+      }
+
+      // We still hold 1 count on the critical section.
+      YIELD_N_FOREACH(EXPECT_EQ(0, m_Scratch[1]));
    }
-
-   EXPECT_EQ(0, m_Scratch[1]);
-
-   m_CS.Unlock(); // We still hold 1 count on the critical section.
-
-   const unsigned count = 1000;
-   unsigned       i;
-
-   for ( i = 0 ; i < count ; ++i ) {
-      EXPECT_EQ(0, m_Scratch[1]);
-      cpu_yield();
-   }
-
-   m_CS.Unlock(); // This will allow A to unblock and exit.
 
    m_pThrs[0]->Join();
 
    EXPECT_EQ(1, m_Scratch[1]);
 }
 
+#if DEPRECATED
 void OSAL_CritSect_f::Thr5(OSLThread *pThread, void *pContext)
 {
    OSAL_CritSect_f *pTC = static_cast<OSAL_CritSect_f *>(pContext);
@@ -205,6 +232,7 @@ void OSAL_CritSect_f::Thr5(OSLThread *pThread, void *pContext)
    pTC->m_CS.Unlock();
 }
 
+Deprecated as of Redmine 512.
 TEST_F(OSAL_CritSect_f, aal0027)
 {
    // When a CriticalSection is unlocked, calling Unlock() on it does not cause
@@ -258,7 +286,10 @@ Verifying that A has not exited, this thread unlocks the critical section and wa
 
    EXPECT_EQ(1, m_Scratch[1]);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
+Deprecated as of Redmine 512.
 void OSAL_CritSect_f::Thr3(OSLThread *pThread, void *pContext)
 {
    OSAL_CritSect_f *pTC = static_cast<OSAL_CritSect_f *>(pContext);
@@ -325,7 +356,10 @@ This thread then calls Unlock() once again to wake A and allow it to exit.
 
    EXPECT_EQ(1, m_Scratch[1]);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
+Deprecated as of Redmine 512.
 void OSAL_CritSect_f::Thr4(OSLThread *pThread, void *pContext)
 {
    OSAL_CritSect_f *pTC = static_cast<OSAL_CritSect_f *>(pContext);
@@ -385,10 +419,14 @@ This one call to Unlock() must relinquish the critical section to A, or else the
 
    EXPECT_EQ(1, m_Scratch[1]);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
+Deprecated as of Redmine 512.
 TEST_F(OSAL_CritSect_f, DestroyWhileLocked)
 {
    // What happens when a critical section is destroyed with a non-zero lock count?
    m_CS.Lock();
 }
+#endif // DEPRECATED
 
