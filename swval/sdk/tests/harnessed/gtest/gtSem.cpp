@@ -89,20 +89,26 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      m_Sem.Destroy();
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btInt          m_nInitialCount;
    AAL::btUnsignedInt  m_nMaxCount;
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CSemaphore          m_Sem;
+   OSLThread  *m_pThrs[3];
+   btUIntPtr   m_Scratch[10];
+   CSemaphore  m_Sem;
 
    static void Thr0(OSLThread * , void * );
 };
@@ -207,20 +213,26 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      m_Sem.Destroy();
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btInt          m_nInitialCount;
    AAL::btUnsignedInt  m_nMaxCount;
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CSemaphore          m_Sem;
+   OSLThread  *m_pThrs[3];
+   btUIntPtr   m_Scratch[10];
+   CSemaphore  m_Sem;
 
    static void Thr0(OSLThread * , void * );
 };
@@ -375,20 +387,26 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      m_Sem.Destroy();
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btInt          m_nInitialCount;
    AAL::btUnsignedInt  m_nMaxCount;
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CSemaphore          m_Sem;
+   OSLThread  *m_pThrs[3];
+   btUIntPtr   m_Scratch[10];
+   CSemaphore  m_Sem;
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
@@ -558,20 +576,26 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      m_Sem.Destroy();
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btInt          m_nInitialCount;
    AAL::btUnsignedInt  m_nMaxCount;
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CSemaphore          m_Sem;
+   OSLThread  *m_pThrs[3];
+   btUIntPtr   m_Scratch[10];
+   CSemaphore  m_Sem;
 };
 
 class OSAL_Sem_vp_int_0 : public OSAL_Sem_vp< AAL::btInt >
@@ -876,20 +900,26 @@ protected:
    }
    virtual void TearDown()
    {
+      YIELD_WHILE(CurrentThreads() > 0);
+
       unsigned i;
       for ( i = 0 ; i < sizeof(m_pThrs) / sizeof(m_pThrs[0]) ; ++i ) {
          if ( NULL != m_pThrs[i] ) {
             delete m_pThrs[i];
          }
       }
+
+      m_Sem.Destroy();
    }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
 
    AAL::btInt          m_nInitialCount;
    AAL::btUnsignedInt  m_nMaxCount;
 
-   OSLThread          *m_pThrs[3];
-   volatile btUIntPtr  m_Scratch[10];
-   CSemaphore          m_Sem;
+   OSLThread  *m_pThrs[3];
+   btUIntPtr   m_Scratch[10];
+   CSemaphore  m_Sem;
 
    static void Thr0(OSLThread * , void * );
    static void Thr1(OSLThread * , void * );
@@ -1459,6 +1489,7 @@ TEST_F(OSAL_Sem_f, aal0066)
 
    YIELD_WHILE(0 == m_Scratch[1]);
 
+   YIELD_X(10);
 
    EXPECT_TRUE(m_Sem.UnblockAll());
 
@@ -1610,15 +1641,17 @@ void OSAL_Sem_f::Thr12(OSLThread *pThread, void *pContext)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-   // Register a signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
 #endif // OS
 
    pTC->m_Scratch[0] = 1;
    EXPECT_FALSE(pTC->m_Sem.Wait(pTC->m_Scratch[2]));
+
    pTC->m_Scratch[1] = 1;
+
+#if defined( __AAL_LINUX__ )
+   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < pTC->m_Scratch[3]);
+#endif // OS
 }
 
 TEST_F(OSAL_Sem_f, aal0068)
@@ -1628,7 +1661,13 @@ TEST_F(OSAL_Sem_f, aal0068)
    // another thread, the blocked thread waits at least X milliseconds before resuming,
    // even in the presence of signals.
 
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
+#endif // __AAL_LINUX__
+
    m_Scratch[2] = 250; // timeout (millis) for the Wait() call in m_Scratch[2].
+   m_Scratch[3] = 20;
 
    btTime       slept     = 0;
    const btTime sleepeach = 5;
@@ -1644,23 +1683,41 @@ TEST_F(OSAL_Sem_f, aal0068)
 
    YIELD_WHILE(0 == m_Scratch[0]);
 
-   while ( slept < m_Scratch[2] ) {
+#if defined( __AAL_LINUX__ )
+   btUnsignedInt  idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[0]->tid());
+#endif // __AAL_LINUX__
+
+   int    k;
+   btBool Done = false;
+   while ( !Done ) {
       sleep_millis(sleepeach);
       slept += sleepeach;
+
       if ( slept < thresh ) {
          // we still expect the thread to be blocked.
          EXPECT_EQ(0, m_Scratch[1]);
+      }
 
 #if   defined( __AAL_WINDOWS__ )
          FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-         EXPECT_EQ(0, pthread_kill(m_pThrs[0]->tid(), SIGIO));
-#endif // OS
+
+      Done = SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Scratch[3];
+
+      if ( !Done ) {
+         k = pthread_kill(m_pThrs[0]->tid(), SIGIO);
+         Done = ( ESRCH == k );
       }
+
+#endif // OS
    }
 
    m_pThrs[0]->Join();
    EXPECT_EQ(1, m_Scratch[1]);
+
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+#endif // __AAL_LINUX__
 }
 
 TEST_F(OSAL_Sem_f, aal0069)
@@ -1677,15 +1734,17 @@ void OSAL_Sem_f::Thr13(OSLThread *pThread, void *pContext)
 #if   defined( __AAL_WINDOWS__ )
    FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-   // Register a signal handler for SIGIO so that the process is not
-   // reaped as a result of having received an un-handled signal.
-   SignalHelper sig;
-   ASSERT_EQ(0, sig.Install(SIGIO, SignalHelper::EmptySIGIOHandler, false));
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadRegister(GetThreadID());
 #endif // OS
 
    pTC->m_Scratch[0] = 1;
    EXPECT_TRUE(pTC->m_Sem.Wait());
+
    pTC->m_Scratch[1] = 1;
+
+#if defined( __AAL_LINUX__ )
+   YIELD_WHILE(SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) < pTC->m_Scratch[3]);
+#endif // __AAL_LINUX__
 }
 
 TEST_F(OSAL_Sem_f, aal0070)
@@ -1693,6 +1752,13 @@ TEST_F(OSAL_Sem_f, aal0070)
    // When the sem is initialized and a thread blocks in CSemaphore::Wait(void),
    // given that no call to CSemaphore::Post() nor CSemaphore::UnblockAll() is made
    // by another thread, the blocked thread waits infinitely, even in the presence of signals.
+
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+   SignalHelper::GetInstance().ThreadRegister(GetThreadID());
+#endif // __AAL_LINUX__
+
+   m_Scratch[3] = 2;
 
    EXPECT_TRUE(m_Sem.Create(0, 1));
 
@@ -1704,25 +1770,41 @@ TEST_F(OSAL_Sem_f, aal0070)
 
    YIELD_WHILE(0 == m_Scratch[0]);
 
-   int          i;
-   const int    count     = 50;
-   const btTime sleepeach = 5;
-
-   for ( i = 0 ; i < count ; ++i ) {
-      sleep_millis(sleepeach);
-      EXPECT_EQ(0, m_Scratch[1]);
-
 #if   defined( __AAL_WINDOWS__ )
-      FAIL() << "need to implement for windows";
+   FAIL() << "need to implement for windows";
 #elif defined( __AAL_LINUX__ )
-      EXPECT_EQ(0, pthread_kill(m_pThrs[0]->tid(), SIGIO));
-#endif // OS
-   }
+
+   btUnsignedInt idx = SignalHelper::GetInstance().ThreadLookup(m_pThrs[0]->tid());
+
+   EXPECT_EQ(0, pthread_kill(m_pThrs[0]->tid(), SIGIO));
+   EXPECT_EQ(0, m_Scratch[1]);
+
+#endif // __AAL_LINUX__
 
    EXPECT_TRUE(m_Sem.Post(1));
 
+#if defined( __AAL_LINUX__ )
+
+   int    k;
+   btBool Done = false;
+   while ( !Done ) {
+      sleep_millis(1);
+
+      Done = SignalHelper::GetInstance().GetCount(SignalHelper::IDX_SIGIO, idx) >= m_Scratch[3];
+      if ( !Done ) {
+         k = pthread_kill(m_pThrs[0]->tid(), SIGIO);
+         Done = ( ESRCH == k );
+      }
+   }
+
+#endif // OS
+
    m_pThrs[0]->Join();
    EXPECT_EQ(1, m_Scratch[1]);
+
+#if defined( __AAL_LINUX__ )
+   SignalHelper::GetInstance().RegistryReset();
+#endif // __AAL_LINUX__
 }
 
 void OSAL_Sem_f::Thr14(OSLThread *pThread, void *pContext)
@@ -1799,9 +1881,15 @@ TEST_F(OSAL_Sem_f, DISABLED_aal0071)
 class SemBasic : public ::testing::Test
 {
 protected:
-SemBasic() {}
+   SemBasic() {}
+   virtual ~SemBasic() {}
+
 // virtual void SetUp() { }
-// virtual void TearDown() { }
+   virtual void TearDown()
+   {
+      m_Sem.Destroy();
+   }
+
    CSemaphore m_Sem;
 };
 
@@ -1832,29 +1920,34 @@ TEST_F(SemBasic, DestroyBeforeCreate)
 class SemWait : public ::testing::TestWithParam< btInt >
 {
 protected:
-SemWait() {}
+   SemWait() {}
+   virtual ~SemWait() {}
 
-virtual void SetUp()
-{
-   m_pThr  = NULL;
-   m_Count = 0;
-}
-
-virtual void TearDown()
-{
-   if ( NULL != m_pThr ) {
-      delete m_pThr;
+   virtual void SetUp()
+   {
+      m_pThr  = NULL;
+      m_Count = 0;
    }
 
-   EXPECT_TRUE(m_Sem.Destroy());
-}
+   virtual void TearDown()
+   {
+      YIELD_WHILE(CurrentThreads() > 0);
 
-static void ThrLoop(OSLThread * , void * );
-static void ThrOnce(OSLThread * , void * );
+      if ( NULL != m_pThr ) {
+         delete m_pThr;
+      }
+
+      EXPECT_TRUE(m_Sem.Destroy());
+   }
+
+   AAL::btUnsignedInt CurrentThreads() const { return GlobalTestConfig::GetInstance().CurrentThreads(); }
+
+   static void ThrLoop(OSLThread * , void * );
+   static void ThrOnce(OSLThread * , void * );
 
    CSemaphore m_Sem;
    OSLThread *m_pThr;
-   btInt m_Count;
+   btInt      m_Count;
 };
 
 void SemWait::ThrLoop(OSLThread * /* unused */, void *arg)

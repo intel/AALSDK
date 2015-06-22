@@ -294,7 +294,7 @@ btBool _runtime::IsOK()
 //=============================================================================
 void _runtime::stop(Runtime* pProxy)
 {
-   Lock();
+   {
    if(NULL == pProxy){
       // Runtime Failed to start because it already is  TODO broadcast
       SendMsg(new RuntimeCallback(RuntimeCallback::Event,
@@ -321,30 +321,29 @@ void _runtime::stop(Runtime* pProxy)
                                   NULL);
 
    }
-
    // If the runtime is OK but is NOT stopped AND
-   if ( IsOK() && (m_state != Stopped) ) {
-      m_status = false;
-      Unlock();
-
+         m_status  = false;
       // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
-      m_sem.Reset(0);
-
-      // Release the Service Broker.
-      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
-   } else {
-      // Dispatch the event ourselves, because MDS is no more.
-      OSLThreadGroup oneShot;
+      } else {
+         // Dispatch the event ourselves, because MDS is no more.
+         OSLThreadGroup oneShot;
       RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
                                                              m_pOwnerClient,
                                                              pProxy);
 
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
+          // Fire the final event
+         oneShot.Add(pRuntimeStopped);
+         oneShot.Drain();  // Wait for it to be dispatched
 
-      Unlock();
+         return; // we're done.
+      }
    }
+
+   // Prepare our sem. We will wait for notification from serviceFreed() before continuing.
+   m_sem.Reset(0);
+
+   // Release the Service Broker.
+   dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
 }
 
 //=============================================================================
@@ -480,8 +479,6 @@ void _runtime::removeProxy( Runtime *pRuntimeProxy)
 // Outputs: none.
 // Comments:
 //=============================================================================
-Environment * Environment::sm_EnvObj = NULL;
-
 btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
    NamedValueSet const *pConfigRecord;

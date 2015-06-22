@@ -34,13 +34,10 @@
 ##     11/18/2014    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-AFU1 \
-AFU2 \
-App1 \
 Hello_AAL_Service \
 Hello_AAL \
-Hello_CCI_NLB
-
+Hello_CCI_NLB \
+Hello_SPL_LB
 #cciapp \
 #CCILib \
 #CCIDemo \
@@ -50,7 +47,6 @@ Hello_CCI_NLB
 #splapp3 \
 #SyncApp1 \
 #UMsgTest \
-
 
 MFLAGS  =
 ifneq (,$(ndebug))

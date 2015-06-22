@@ -300,6 +300,22 @@ protected:
    AAL::btBool     m_bExpectedResult;
 };
 
+class UncheckedDrainThreadGroupD : public IDispatchable
+{
+public:
+   UncheckedDrainThreadGroupD(OSLThreadGroup *pTG) :
+      m_pTG(pTG)
+   {}
+   virtual ~UncheckedDrainThreadGroupD() {}
+   virtual void operator() ()
+   {
+      m_pTG->Drain();
+   }
+
+protected:
+   OSLThreadGroup *m_pTG;
+};
+
 class JoinThreadGroupD : public IDispatchable
 {
 public:

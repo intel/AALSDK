@@ -78,56 +78,6 @@ Barrier::~Barrier()
 # include <sys/time.h>
 #endif // __AAL_LINUX__
 
-// Acquire the lock that protects m_Flags.
-void Barrier::StateLock()   { this->Lock();   }
-// Release the lock that protects m_Flags.
-void Barrier::StateUnlock() { this->Unlock(); }
-// Release the lock that protects m_Flags.
-// Acquire the lock that protects the counters.
-void Barrier::StateUnlockCountLock()
-{
-#if   defined( __AAL_LINUX__ )
-   int res;
-
-   this->Unlock();
-   res = pthread_mutex_lock(&m_mutex);
-   ASSERT(0 == res);
-
-#elif defined( __AAL_WINDOWS__ )
-   // No action here for Windows - use the same lock for both.
-#endif // OS
-}
-// Acquire the lock that protects the counters.
-void Barrier::CountLock()
-{
-#if   defined( __AAL_LINUX__ )
-   int res;
-
-   res = pthread_mutex_lock(&m_mutex);
-   ASSERT(0 == res);
-
-#elif defined( __AAL_WINDOWS__ )
-
-   this->Lock();
-
-#endif // OS
-}
-// Release the lock that protects the counters.
-void Barrier::CountUnlock()
-{
-#if   defined( __AAL_LINUX__ )
-   int res;
-
-   res = pthread_mutex_unlock(&m_mutex);
-   ASSERT(0 == res);
-
-#elif defined( __AAL_WINDOWS__ )
-
-   this->Unlock();
-
-#endif // OS
-}
-
 //=============================================================================
 // Name: Create
 // Description: Creates or initializes a Barrier
@@ -140,11 +90,10 @@ void Barrier::CountUnlock()
 //=============================================================================
 AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoReset)
 {
-   StateLock();
+   AutoLock(this);
    
    if ( flag_is_set(m_Flags, BARRIER_FLAG_INIT) ) {
       // Already initialized
-      StateUnlock();
       return false;
    }
 
@@ -155,41 +104,16 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
                           FALSE,  // not signaled
                           NULL);  // no name
    if ( NULL == m_hEvent ) {
-      INIT_UNLOCK();
       return false;
    }
    
 #elif defined( __AAL_LINUX__ )
    
-   pthread_mutexattr_t attr;
-   
-   if ( 0 != pthread_mutexattr_init(&attr) ) {
-      StateUnlock();
-      return false;
-   }
-   
-   if ( 0 != pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) ) {
-      pthread_mutexattr_destroy(&attr);
-      StateUnlock();
-      return false;
-   }
-   
-   if ( 0 != pthread_mutex_init(&m_mutex, &attr) ) {
-      pthread_mutexattr_destroy(&attr);
-      StateUnlock();
-      return false;
-   }
-   
-   pthread_mutexattr_destroy(&attr);
-   
    if ( 0 != pthread_cond_init(&m_condition, NULL) ) {
-      StateUnlock();
       return false;
    }
    
 #endif // OS
-
-   CountLock(); // yes, both locks.
 
    m_Flags = 0;
 
@@ -206,9 +130,6 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
 
    flag_setf(m_Flags, BARRIER_FLAG_INIT);
    
-   CountUnlock();
-   StateUnlock();
-   
    return true;
 }
 //=============================================================================
@@ -223,21 +144,18 @@ AAL::btBool Barrier::Destroy()
 {
    AAL::btBool res = true;
    
-   StateLock();
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
-      StateUnlock();
       return false;
    }
 
    flag_setf(m_Flags, BARRIER_FLAG_DESTROYING);
 
-   StateUnlock();
-
    UnblockAll();
 
-   m_AutoResetManager.WaitForAllWaitersToExit();
+   m_AutoResetManager.WaitForAllWaitersToExit(&__LockObj);
    m_AutoResetManager.Destroy();
 
 #if   defined( __AAL_WINDOWS__ )
@@ -247,10 +165,6 @@ AAL::btBool Barrier::Destroy()
 #elif defined( __AAL_LINUX__ )
 
    if ( 0 != pthread_cond_destroy(&m_condition) ) {
-      res = false;
-   }
-   
-   if ( 0 != pthread_mutex_destroy(&m_mutex) ) {
       res = false;
    }
    
@@ -272,19 +186,16 @@ AAL::btBool Barrier::Destroy()
 //=============================================================================
 AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
 {
-   StateLock();
+   AAL::btBool res = true;
+
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Auto-reset is enabled, we're unblocking, we're destroying.
-      StateUnlock();
       return false;
    }
-
-   AAL::btBool res = true;
-   
-   StateUnlockCountLock();
 
 #if defined( __AAL_WINDOWS__ )
 
@@ -303,8 +214,6 @@ AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
    if ( UnlockCount > 0 ) {
       m_UnlockCount = UnlockCount;
    }
-
-   CountUnlock();
    
    return res;
 }
@@ -320,19 +229,15 @@ AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
 //=============================================================================
 AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedInt &rUnlockCount)
 {
-   StateLock();
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
-      // Not initialized.
-      StateUnlock();
       return false;
    }
 
-   StateUnlockCountLock();
    rCurCount    = m_CurCount;
    rUnlockCount = m_UnlockCount;
-   CountUnlock();
-   
+
    return true;
 }
 
@@ -347,19 +252,16 @@ AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedIn
 //=============================================================================
 AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 {
-   StateLock();
+   AAL::btBool res = true;
+
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Unblocking or Destroying.
-      StateUnlock();
       return false;
    }
-
-   AAL::btBool res = true;
-
-   StateUnlockCountLock();
    
    const AAL::btBool bWasLocked = (m_CurCount < m_UnlockCount);
 
@@ -392,8 +294,6 @@ AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 #endif // OS
 
    }
-
-   CountUnlock();
    
    return res;
 }
@@ -412,17 +312,14 @@ AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 //=============================================================================
 AAL::btBool Barrier::UnblockAll()
 {
-   StateLock();
+   AAL::btBool res = true;
+
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ) {
       // Not initialized.
-      StateUnlock();
       return false;
    }
-
-   AAL::btBool res = true;
-
-   StateUnlockCountLock();
 
    flag_setf(m_Flags, BARRIER_FLAG_UNBLOCKING);
 
@@ -445,8 +342,6 @@ AAL::btBool Barrier::UnblockAll()
 #endif // OS
 
    m_AutoResetManager.UnblockAll();
-
-   CountUnlock();
    
    return res;
 }
@@ -492,22 +387,6 @@ void Barrier::AutoResetManager::Create()
 #elif defined( __AAL_LINUX__ )
 
    int res;
-   pthread_mutexattr_t attr;
-
-   res = pthread_mutexattr_init(&attr);
-   ASSERT(0 == res);
-
-   res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-   ASSERT(0 == res);
-
-   res = pthread_mutex_init(&m_Rmutex, &attr);
-   ASSERT(0 == res);
-
-   res = pthread_mutex_init(&m_Zmutex, &attr);
-   ASSERT(0 == res);
-
-   res = pthread_mutexattr_destroy(&attr);
-   ASSERT(0 == res);
 
    res = pthread_cond_init(&m_Rcondition, NULL);
    ASSERT(0 == res);
@@ -536,13 +415,7 @@ void Barrier::AutoResetManager::Destroy()
    res = pthread_cond_destroy(&m_Rcondition);
    ASSERT(0 == res);
 
-   res += pthread_mutex_destroy(&m_Rmutex);
-   ASSERT(0 == res);
-
    res += pthread_cond_destroy(&m_Zcondition);
-   ASSERT(0 == res);
-
-   res += pthread_mutex_destroy(&m_Zmutex);
    ASSERT(0 == res);
 
 #endif // OS
@@ -570,36 +443,28 @@ void Barrier::AutoResetManager::UnblockAll()
    AutoResetEnd();
 }
 
-void Barrier::AutoResetManager::WaitForAutoResetCompletion()
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock)
 {
-#if defined( __AAL_LINUX__ )
-      pthread_mutex_lock(&m_Rmutex);
-#endif // __AAL_LINUX__
-
-      while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
-         // We must hang out here until the Barrier is fully reset.
+   while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
+      // We must hang out here until the Barrier is fully reset.
 
 #if   defined( __AAL_LINUX__ )
 
-         pthread_cond_wait(&m_Rcondition, &m_Rmutex);
+      pAutoLock->PthreadCondWait(&m_Rcondition);
 
 #elif defined( __AAL_WINDOWS__ )
 
-         WaitForSingleObject(m_hREvent, INFINITE);
+      pAutoLock->WaitForSingleObject(m_hREvent, INFINITE);
 
 #endif // OS
 
-      }
-
-#if defined( __AAL_LINUX__ )
-      pthread_mutex_unlock(&m_Rmutex);
-#endif // __AAL_LINUX__
+   }
 }
 
-void Barrier::AutoResetManager::WaitForAutoResetCompletion(AAL::btTime Timeout)
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock, AAL::btTime Timeout)
 {
    if ( AAL_INFINITE_WAIT == Timeout ) {
-      WaitForAutoResetCompletion();
+      WaitForAutoResetCompletion(pAutoLock);
       return;
    }
 
@@ -614,30 +479,30 @@ void Barrier::AutoResetManager::WaitForAutoResetCompletion(AAL::btTime Timeout)
 
    ts.tv_sec  += ts.tv_nsec / 1000000000;
    ts.tv_nsec %= 1000000000;
-
-   pthread_mutex_lock(&m_Rmutex);
+#endif // __AAL_LINUX__
 
    while ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
       // We must hang out here until the Barrier is fully reset.
 
-      if ( ETIMEDOUT == pthread_cond_timedwait(&m_Rcondition,
-                                               &m_Rmutex,
-                                               &ts) ) {
+#if   defined( __AAL_LINUX__ )
+
+      if ( ETIMEDOUT == pAutoLock->PthreadCondTimedWait(&m_Rcondition, &ts) ) {
          break;
       }
 
-   }
-
-   pthread_mutex_unlock(&m_Rmutex);
-
 #elif defined( __AAL_WINDOWS__ )
 
-   WaitForSingleObject(m_hREvent, (DWORD)Timeout);
+      if ( WAIT_OBJECT_0 != pAutoLock->WaitForSingleObject(m_hREvent, (DWORD)Timeout) ) {
+         // Timeout or error.
+         break;
+      }
 
 #endif // OS
+
+   }
 }
 
-void Barrier::AutoResetManager::AddWaiter()
+void Barrier::AutoResetManager::AddWaiter(_AutoLock *pAutoLock)
 {
    // When doing auto-reset, we cannot increment m_NumWaiters until we have decremented
    //  m_NumWaiters to 0 and reset the Barrier to the locked state. This is to prevent
@@ -653,11 +518,7 @@ void Barrier::AutoResetManager::AddWaiter()
       ++m_NumPreWaiters;
 
 WAITLOOP:
-      CountUnlock(); // Don't sleep while the outer object is locked.
-
-      WaitForAutoResetCompletion(m_WaitTimeout);
-
-      CountLock(); // We must grab the outer object's count lock and check again.
+      WaitForAutoResetCompletion(pAutoLock, m_WaitTimeout);
 
       // This check is required because we're crossing lock domains.
       if ( flags_are_set(m_pBarrier->m_Flags, BARRIER_FLAG_AUTO_RESET|BARRIER_FLAG_RESETTING) ) {
@@ -672,11 +533,11 @@ WAITLOOP:
    ++m_NumWaiters;
 }
 
-AAL::btBool Barrier::AutoResetManager::RemoveWaiter()
+void Barrier::AutoResetManager::RemoveWaiter()
 {
    if ( 0 == m_NumWaiters ) {
       // Nothing to do.
-      return true;
+      return;
    }
 
    --m_NumWaiters;
@@ -707,13 +568,9 @@ AAL::btBool Barrier::AutoResetManager::RemoveWaiter()
 #elif defined( __AAL_LINUX__ )
          pthread_cond_broadcast(&m_Zcondition); // wake all
 #endif // OS
-
-         CountUnlock();
-         return false;
       }
    }
 
-   return true;
 }
 
 AAL::btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
@@ -761,15 +618,13 @@ void Barrier::AutoResetManager::AutoResetEnd()
 #endif // OS
 }
 
-void Barrier::AutoResetManager::WaitForAllWaitersToExit()
+void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
 {
    const AAL::btTime Timeout = 100;
 
 #if defined( __AAL_LINUX__ )
    struct timeval  tv;
    struct timespec ts;
-
-   pthread_mutex_lock(&m_Zmutex);
 
    while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
       // Wait for the last waiter to call RemoveWaiter().
@@ -782,28 +637,21 @@ void Barrier::AutoResetManager::WaitForAllWaitersToExit()
       ts.tv_sec  += ts.tv_nsec / 1000000000;
       ts.tv_nsec %= 1000000000;
 
-      pthread_cond_timedwait(&m_Zcondition,
-                             &m_Zmutex,
-                             &ts);
+      pAutoLock->PthreadCondTimedWait(&m_Zcondition, &ts);
 
    }
-
-   pthread_mutex_unlock(&m_Zmutex);
 
 #elif defined( __AAL_WINDOWS__ )
 
    while ( ( m_NumWaiters + m_NumPreWaiters ) > 0 ) {
       // Wait for the last waiter to call RemoveWaiter().
 
-      WaitForSingleObject(m_hZEvent, (DWORD)Timeout);
+      pAutoLock->WaitForSingleObject(m_hZEvent, (DWORD)Timeout);
 
    }
 
 #endif // OS
 }
-
-void Barrier::AutoResetManager::CountLock()   { m_pBarrier->CountLock();   }
-void Barrier::AutoResetManager::CountUnlock() { m_pBarrier->CountUnlock(); }
 
 #if defined( __AAL_LINUX__ )
 
@@ -817,21 +665,18 @@ void Barrier::AutoResetManager::CountUnlock() { m_pBarrier->CountUnlock(); }
 //=============================================================================
 AAL::btBool Barrier::Wait()
 {
-   StateLock();
+   AutoLock(this);
    
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Unblocking or Destroying.
-      StateUnlock();
       return false;
    }
    
-   StateUnlockCountLock();
-
    AAL::btBool res = true;
    
-   m_AutoResetManager.AddWaiter();
+   m_AutoResetManager.AddWaiter(&__LockObj);
    
    while ( m_CurCount < m_UnlockCount ) {
 
@@ -839,19 +684,16 @@ AAL::btBool Barrier::Wait()
          res = false;
          break;
       }
-      
-      pthread_cond_wait(&m_condition, &m_mutex);
 
+      __LockObj.PthreadCondWait(&m_condition);
    }
 
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       res = false;
    }
 
-   if ( m_AutoResetManager.RemoveWaiter() ) {
-      CountUnlock();
-   }
-   
+   m_AutoResetManager.RemoveWaiter();
+
    return res;
 }
 
@@ -870,17 +712,14 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   StateLock();
+   AutoLock(this);
+
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Unblocking or Destroying.
-      StateUnlock();
       return false;
    }
-
-   // Allow Post()'s and Wait()'s during gettimeofday().
-   StateUnlock();
 
    struct timeval tv;
    gettimeofday(&tv, NULL);
@@ -895,9 +734,7 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
 
    AAL::btBool res = true;
 
-   CountLock();
-
-   m_AutoResetManager.AddWaiter();
+   m_AutoResetManager.AddWaiter(&__LockObj);
 
    while ( m_CurCount < m_UnlockCount ) {
 
@@ -913,9 +750,7 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       // * when the caller wakes, the lock is guaranteed to be held (locked) by the caller.
       // In this way, the examination and mutation of the counter predicate occur atomically.
 
-      if ( ETIMEDOUT == pthread_cond_timedwait(&m_condition,
-                                               &m_mutex,
-                                               &ts) ) {
+      if ( ETIMEDOUT == __LockObj.PthreadCondTimedWait(&m_condition, &ts) ) {
          res = false;
          break;
       }
@@ -926,9 +761,7 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       res = false;
    }
 
-   if ( m_AutoResetManager.RemoveWaiter() ) {
-      CountUnlock();
-   }
+   m_AutoResetManager.RemoveWaiter();
 
    return res;
 }
@@ -947,26 +780,22 @@ AAL::btBool Barrier::Wait()
 {
    DWORD dwWaitResult;
 
-   StateLock();
+   AutoLock(this);
+
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Unblocking or Destroying.
-      StateUnlock();
       return false;
    }
 
-   StateUnlockCountLock();
-
-   m_AutoResetManager.AddWaiter();
+   m_AutoResetManager.AddWaiter(&__LockObj);
 
 WAITLOOP:
 
    // When un-blocking, don't allow threads to loop and potentially block again.
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-      if ( m_AutoResetManager.RemoveWaiter() ) {
-         CountUnlock();
-      }
+      m_AutoResetManager.RemoveWaiter();
       return false;
    }
 
@@ -974,25 +803,17 @@ WAITLOOP:
 
       // If we're being unblocked then immediately return false.
       if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         if ( m_AutoResetManager.RemoveWaiter() ) {
-            CountUnlock();
-         }
+         m_AutoResetManager.RemoveWaiter();
          return false;
       }
 
-      CountUnlock();
-
       // ASSERT: we are unlocked - don't wait while locked!
-      dwWaitResult = WaitForSingleObject(m_hEvent, INFINITE);
-
-      CountLock();
+      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent, INFINITE);
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            if ( m_AutoResetManager.RemoveWaiter() ) {
-               CountUnlock();
-            }
+            m_AutoResetManager.RemoveWaiter();
             return false;     // error (using INFINITE above)
          }
       }
@@ -1007,9 +828,7 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   if ( m_AutoResetManager.RemoveWaiter() ) {
-      CountUnlock();
-   }
+   m_AutoResetManager.RemoveWaiter();
    
    return true;
 }
@@ -1031,26 +850,22 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
       return Wait();
    }
 
-   StateLock();
+   AutoLock(this);
+
    if ( flag_is_clr(m_Flags, BARRIER_FLAG_INIT) ||
         flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
       // Not initialized -or-
       // Unblocking or Destroying.
-      StateUnlock();
       return false;
    }
 
-   StateUnlockCountLock();
-
-   m_AutoResetManager.AddWaiter();
+   m_AutoResetManager.AddWaiter(&__LockObj);
 
 WAITLOOP:
 
    // When un-blocking, don't allow threads to loop and potentially block again.
    if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-      if ( m_AutoResetManager.RemoveWaiter() ) {
-         CountUnlock();
-      }
+      m_AutoResetManager.RemoveWaiter();
       return false;
    }
 
@@ -1058,25 +873,16 @@ WAITLOOP:
 
       // If we're being unblocked then immediately return false.
       if ( flag_is_set(m_Flags, BARRIER_FLAG_UNBLOCKING|BARRIER_FLAG_DESTROYING) ) {
-         if ( m_AutoResetManager.RemoveWaiter() ) {
-            CountUnlock();
-         }
+         m_AutoResetManager.RemoveWaiter();
          return false;
       }
 
-      CountUnlock();
-
-      // ASSERT: we are unlocked - don't wait while locked!
-      dwWaitResult = WaitForSingleObject(m_hEvent, (DWORD)Timeout);
-
-      CountLock();
+      dwWaitResult = __LockObj.WaitForSingleObject(m_hEvent, (DWORD)Timeout);
 
       switch( dwWaitResult ) {
          case WAIT_OBJECT_0 : break; // event was signaled
          default : {
-            if ( m_AutoResetManager.RemoveWaiter() ) {
-               CountUnlock();
-            }
+            m_AutoResetManager.RemoveWaiter();
             return false;     // timeout or error
          }
       }
@@ -1091,9 +897,7 @@ WAITLOOP:
       goto WAITLOOP;
    }
 
-   if ( m_AutoResetManager.RemoveWaiter() ) {
-      CountUnlock();
-   }
+   m_AutoResetManager.RemoveWaiter();
    
    return true;
 }

@@ -24,19 +24,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-
-/// @defgroup SampleAFUs AALSDK Sample AFUs
-/// @brief Sample AALSDK Accelerator Function Units.
-
-
-
-
-// HelloAALService
-
 //****************************************************************************
-/// @file HELLOAALSERVICEService.h
-/// @brief ISampleAFUPing and related interfaces.
-/// @ingroup sample_afu1
+/// @file HelloAALService.h
+/// @brief IHelloAALClient and IHelloAALService.
+/// @ingroup hello_service
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -66,7 +57,7 @@ using namespace AAL;
 //AAL_DECLARE_SVC_MOD(libHELLOAALSERVICE, HELLOAAL_SERVICE_API)
 
 
-/// @addtogroup
+/// @addtogroup hello_service
 /// @{
 
 #define iidSampleHelloAALClient __INTC_IID(INTC_sysSampleAFU,0x0002)
@@ -102,7 +93,7 @@ public:
    virtual ~IHelloAALService() {}
 };
 
-/// @} group sample_afu1
+/// @} group hello_service
 
 // Convenience macros for printing messages and errors.
 #ifndef MSG

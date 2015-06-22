@@ -103,11 +103,7 @@ aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
-utils/aalscan \
-utils/data_model \
-utils/fpgasane \
-utils/CCIAFU \
-utils/SPLAFU
+utils
 
 
 aalsdkhdrsdir=$(includedir)/aalsdk
@@ -335,6 +331,7 @@ ase/sw/linked_list_ops.c \
 ase/sw/capcm_ops.c \
 ase/sw/ase_common.h \
 ase/sw/protocol_backend.c \
+ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
 ase/Makefile \
@@ -347,7 +344,8 @@ ase/hw/sdp_ram.sv \
 ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
-ase/hw/cci_rule_checker.sv \
+ase/hw/cci_sniffer.sv \
+ase/hw/stream_checker.sv \
 ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \

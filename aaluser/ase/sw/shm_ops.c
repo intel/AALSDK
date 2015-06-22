@@ -35,22 +35,20 @@
 #include "ase_common.h"
 
 // Message queues opened by APP
-mqd_t app2sim_tx;           // app2sim mesaage queue in TX mode
-mqd_t sim2app_rx;           // sim2app mesaage queue in RX mode
-mqd_t app2sim_csr_wr_tx;    // CSR Write MQ in TX mode
-mqd_t app2sim_umsg_tx;      // UMSG MQ in TX mode
-mqd_t sim2app_intr_rx;      // INTR MQ in RX mode
-mqd_t app2sim_simkill_tx;   // Simkill MQ in TX mode
+int app2sim_tx;           // app2sim mesaage queue in TX mode
+int sim2app_rx;           // sim2app mesaage queue in RX mode
+int app2sim_csr_wr_tx;    // CSR Write MQ in TX mode
+int app2sim_umsg_tx;      // UMSG MQ in TX mode
+#if 0
+int sim2app_intr_rx;      // INTR MQ in RX mode
+#endif
+int app2sim_simkill_tx;   // Simkill MQ in TX mode
 
 // Lock
 pthread_mutex_t lock;
 
-/* #ifndef SIM_SIDE */
-/* int ase_pid; */
-/* #endif */
-
 // CSR Map
-uint32_t csr_map[CSR_MAP_SIZE/4];
+/* uint32_t csr_map[CSR_MAP_SIZE/4]; */
 uint32_t csr_write_cnt = 0;
 uint32_t *ase_csr_base;
 
@@ -62,6 +60,8 @@ uint32_t *dsm_cirbstat;
 uint32_t num_umsg_log2;
 uint32_t num_umsg;
 uint32_t umas_exist_status = UMAS_NOT_ESTABLISHED;
+struct buffer_t *umas;
+uint32_t glbl_umsgmode_csr;
 
 // Instances for SPL page table and context
 struct buffer_t *spl_pt;
@@ -88,6 +88,7 @@ void send_simkill()
   /* kill (ase_pid, SIGKILL); */
 }
 
+
 /*
  * Session Initialize
  * Open the message queues to ASE simulator
@@ -96,12 +97,21 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
+  ipc_init();
+
   // Initialize lock
   if ( pthread_mutex_init(&lock, NULL) != 0)
     {
       printf("  [APP]  Lock initialization failed, EXIT\n");
       exit (1);
     }
+  
+  // Initialize ase_workdir_path
+  ase_workdir_path = ase_eval_session_directory();
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  ASE Session Directory located at =>\n");
+  printf("         %s\n", ase_workdir_path);
+  END_YELLOW_FONTCOLOR;
 
   // Register kill signals
   signal(SIGTERM, send_simkill);
@@ -114,12 +124,21 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
+#if 0
   app2sim_csr_wr_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
   app2sim_tx         = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
   sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
   app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
   app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
+  //#if 0
   sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
+#endif
+
+  app2sim_tx         = mqueue_open(mq_array[0].name, mq_array[0].perm_flag);
+  app2sim_csr_wr_tx  = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
+  app2sim_umsg_tx    = mqueue_open(mq_array[2].name, mq_array[2].perm_flag);
+  app2sim_simkill_tx = mqueue_open(mq_array[3].name, mq_array[3].perm_flag);
+  sim2app_rx         = mqueue_open(mq_array[4].name, mq_array[4].perm_flag);
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
@@ -145,18 +164,18 @@ void session_init()
 /*
  * Start ASE RTL simulator
  */
-void ase_remote_start_simulator()
-{
-  int ret;
-  ret = system("cd $ASE_WORKDIR ; make sim &");
-  if (ret == -1)
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("APP-C : Problem starting simulator, check if executable exists\n");
-      END_RED_FONTCOLOR;
-      exit(1);
-    }
-}
+/* void ase_remote_start_simulator() */
+/* { */
+/*   int ret; */
+/*   ret = system("cd $ASE_WORKDIR ; make sim &"); */
+/*   if (ret == -1) */
+/*     { */
+/*       BEGIN_RED_FONTCOLOR; */
+/*       printf("APP-C : Problem starting simulator, check if executable exists\n"); */
+/*       END_RED_FONTCOLOR; */
+/*       exit(1); */
+/*     } */
+/* } */
 
 
 /*
@@ -173,6 +192,14 @@ void session_deinit()
   END_YELLOW_FONTCOLOR;
   deallocate_buffer(csr_region);
 
+  if (umas_exist_status == UMAS_ESTABLISHED) 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  Deallocating UMAS\n");
+      deallocate_buffer(umas);
+      END_YELLOW_FONTCOLOR;
+    }
+
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deinitializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
@@ -188,7 +215,9 @@ void session_deinit()
   mqueue_close(app2sim_tx);
   mqueue_close(sim2app_rx);
   mqueue_close(app2sim_umsg_tx);
+#if 0
   mqueue_close(sim2app_intr_rx);
+#endif
   mqueue_close(app2sim_simkill_tx);
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -212,12 +241,6 @@ void csr_write(uint32_t csr_offset, uint32_t data)
 
   char csr_wr_str[ASE_MQ_MSGSIZE];
   uint32_t *csr_vaddr;
-  /* uint64_t  *dsm_vaddr; */
-
-  if ( csr_offset < CSR_MAP_SIZE )
-    {
-      csr_map[csr_offset/4] = data;
-    }
 
   // Update CSR Region
   csr_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + csr_offset);
@@ -229,10 +252,6 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   // CSR_write message:  | offset | data |
   //                     -----------------
   // ---------------------------------------------------
-  // #ifdef ASE_MQ_ENABLE
-  // Open message queue
-  // app2sim_csr_wr_tx = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
-
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
@@ -240,19 +259,14 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   sprintf(csr_wr_str, "%u %u", csr_offset, data);
   mqueue_send(app2sim_csr_wr_tx, csr_wr_str);
 
-  // Close message queue
-  /* mqueue_close(app2sim_csr_wr_tx); */
-  // #endif
+  // Display
   csr_write_cnt++;
-  // RRS: Write inside DSM
-  /* dsm_vaddr = (uint64_t*)((uint64_t)head->vbase + csr_offset); */
-  /* *dsm_vaddr = data; */
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  CSR_write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
+  printf("  [APP]  CSR Write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
   END_YELLOW_FONTCOLOR;
-
+  
   usleep(100);
-
+  
   FUNC_CALL_EXIT;
 }
 
@@ -265,9 +279,19 @@ uint32_t csr_read(uint32_t csr_offset)
 {
   FUNC_CALL_ENTRY;
 
+  uint32_t csr_data;
+  uint32_t *csr_vaddr; 
+
+  csr_vaddr = (uint32_t*)((uint64_t)ase_csr_base + csr_offset); 
+  csr_data = *csr_vaddr;
+  
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  CSR Read\t: offset = 0x%x, data = 0x%08x\n", csr_offset, csr_data);
+  END_YELLOW_FONTCOLOR;
+
   FUNC_CALL_EXIT;
 
-  return csr_map[csr_offset/4];
+  return csr_data;
 }
 
 
@@ -305,15 +329,14 @@ void allocate_buffer(struct buffer_t *mem)
   // called "/csr", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
-  /* if(buffer_index == 0) */
-  if (mem->is_csrmap == 1) 
+  if(buffer_index_count == 0)
+    /* if (mem->is_csrmap == 1)  */
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
       /* mem->is_csrmap = 1; */
-      ase_csr_base = (uint32_t*)mem->vbase;
     }
- else
+  else
     {
       sprintf(mem->memname, "/buf%d.", buffer_index_count);
       strcat(mem->memname, get_timestamp(0) );
@@ -324,7 +347,11 @@ void allocate_buffer(struct buffer_t *mem)
   mem->is_privmem = 0;
 
   // Obtain a file descriptor for the shared memory region
-  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
+  // Tue May  5 19:24:21 PDT 2015
+  // https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
+  // S_IREAD | S_IWRITE are obselete
+  // mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
+  mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_app < 0)
     {
       /* ase_error_report("shm_open", errno, ASE_OS_SHM_ERR); */
@@ -341,10 +368,15 @@ void allocate_buffer(struct buffer_t *mem)
       exit(1);
     }
 
-  // Extend memory to required size
-  if ( ftruncate(mem->fd_app, (off_t)mem->memsize) ) {
-     // TODO handle error
+// Pin ASE CSR base, so CSR Writes can be managed
+if (buffer_index_count == 0)
+  {
+      ase_csr_base = (uint32_t*)mem->vbase;
+      //      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
   }
+
+  // Extend memory to required size
+  ftruncate(mem->fd_app, (off_t)mem->memsize);
 
   // Set ase_csr_base
   //  if (buffer_index_count == 0)
@@ -419,11 +451,6 @@ void deallocate_buffer(struct buffer_t *mem)
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ
   mem->metadata = HDR_MEM_DEALLOC_REQ;
 
-  // Open message queue
-  strcpy(mq_name, APP2SIM_SMQ_PREFIX);
-  strcat(mq_name, get_timestamp(1));
-  app2sim_tx = mq_open(mq_name, O_WRONLY);
-
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
   mqueue_send(app2sim_tx, tmp_msg);
@@ -477,78 +504,43 @@ void shm_dbg_memtest(struct buffer_t *mem)
 
 
 /*
- * init_umsg_system : Set up UMAS region
- *                    Create a ASE_PAGESIZE * 4KB Umsg region
- * Requires         : buffer_t handles to UMAS and DSM regions
+ * umas_init : Set up UMAS region
+ *             Create a ASE_PAGESIZE * 4KB Umsg region
+ * Requires buffer_t handles to UMAS and CSR regions
  */
-void init_umsg_system(struct buffer_t *umas, struct buffer_t *dsm)
+void umas_init(uint32_t umsg_mode) 
 {
-  FUNC_CALL_ENTRY;
+  uint32_t csr_umsgbase;
 
   if (umas_exist_status == UMAS_ESTABLISHED)
     {
-      BEGIN_RED_FONTCOLOR;
-      printf("  [APP]  UMAS has already been set up. A second UMAS region cannot exist !!\n");
-      printf("        Simulation will exit now\n");
-      END_RED_FONTCOLOR;
-      exit(1);
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  UMAS already established.\n");
+      END_YELLOW_FONTCOLOR;
     }
   else
     {
-      umas_exist_status = UMAS_NOT_ESTABLISHED;
+      // Initialize 
+      umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+      umas->memsize = 32 * 1024;
+      umas->is_umas = 1;
+      allocate_buffer (umas);
+
+      // UMSGmode
+      csr_write (ASE_UMSGMODE_CSROFF, umsg_mode);
+      glbl_umsgmode_csr = umsg_mode;
+
+      // Setting UMSGBASE
+      // UMAS setting in UMSG spec page 12
+      csr_umsgbase = ((umas->fake_paddr >> 8) << 2) || 0x1;
+      csr_write ( ASE_UMSGBASE_CSROFF, csr_umsgbase);
+  
+      // Message
+      umas_exist_status = UMAS_ESTABLISHED;
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  UMAS initialized. \n");
+      END_YELLOW_FONTCOLOR;
     }
-
-  // Read the number of umsg count supported by system
-  // Reads offset 0x278 of DSM range
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Reading CIRBSTAT & Num_UMSGs\n");
-  // Problems due to multiple global configs
-  //   num_umsg      = (uint32_t)pow((float)2, (float)cfg->num_umsg_log2);
-  dsm_cirbstat = (uint32_t*)((uint64_t)dsm->vbase + (uint64_t)ASE_CIRBSTAT_CSROFF);
-  while ((*dsm_cirbstat & 0xFF) == 0);
-  printf("        CIRBSTAT  = %08x\n", *dsm_cirbstat);
-  num_umsg_log2 = (*dsm_cirbstat >> 4) & 0xF;
-  num_umsg = (uint32_t)pow((float)2, (float)num_umsg_log2);
-  printf("        NUM_UMSGs = %d \n", num_umsg);
-  END_YELLOW_FONTCOLOR;
-
-  // Set UMSG size
-  umas->memsize = num_umsg * ASE_PAGESIZE;
-  allocate_buffer(umas);
-
-  // Test UMAS allocation
-  #ifdef ASE_MEMTEST_ENABLE
-  shm_dbg_memtest(umas);
-  #endif
-
-    // Print out the buffer
-  #ifdef ASE_BUFFER_VIEW
-  ase_buffer_info(umas);
-  #endif
-
-  umas_exist_status = UMAS_ESTABLISHED;
-  printf("  [APP]  UMAS subsystem has been initialized.\n");
-
-  FUNC_CALL_EXIT;
-}
-
-
-/*
- * set_umsg_mode : Set UMSGMODE for the system
- * - Sends csr_write to set up UMSGMODE offset
- * Ideally this is a one-time setup
- */
-void set_umsg_mode(uint32_t umsgmode_array)
-{
-  FUNC_CALL_ENTRY;
-
-  // Send out csr_write to control application level UMSGMODE
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Setting UMSGMODE CSR to %08x\n", umsgmode_array);
-  END_YELLOW_FONTCOLOR;
-  csr_write(ASE_UMSGMODE_CSROFF, umsgmode_array);
-
-  FUNC_CALL_EXIT;
 }
 
 
@@ -563,71 +555,59 @@ void set_umsg_mode(uint32_t umsgmode_array)
  * Action     : Form a message and send it down a message queue
  *
  */
-void send_umsg(struct buffer_t *umas, uint32_t msg_id, char* umsg_data)
+void umsg_send(int umas_id, char *umsg_data)
 {
-  FUNC_CALL_ENTRY;
 
-  char umsg_str[ASE_MQ_MSGSIZE];
   uint64_t *umas_target_addr;
-  uint64_t umas_sim_addr;
-  uint32_t hint_mask;
-  uint32_t umsg_hint;
+  char umsg_str[SIZEOF_UMSG_PACK_T];
+  /* uint32_t umsg_hint; */
+  umsg_pack_t inst;
+  /* int ii; */
 
-  // Checker routing (if msg_id lies in num_umsgs)
-  if (msg_id >= num_umsg)
+  // If requested umas_id is illegal 
+  if (umas_id >= 32)
     {
       BEGIN_RED_FONTCOLOR;
       printf("  [APP]  Requested message ID has not been allocated !!\n");
-      printf("        Max messages possible = %d, requested message ID = %d !! \n", num_umsg, msg_id);
       END_RED_FONTCOLOR;
       exit(1);
     }
 
-  // Commit message to memory
-  hint_mask = (csr_read(ASE_UMSGMODE_CSROFF) & (1 << msg_id));
-  umsg_hint = (hint_mask != 0) ? 1 : 0;
-#if 0
-  printf ("Umsg hint_mask = %x, umsg_hint = %x\n", hint_mask, umsg_hint);
-#endif
-
-  // Write message to memory
-  umas_target_addr = (uint64_t*)((uint64_t)umas->vbase + (uint64_t)(msg_id*ASE_PAGESIZE));
-#if 0
-  BEGIN_RED_FONTCOLOR;
-  printf("UMAS target addr = %p\n", umas_target_addr);
-  printf("Printing data...\n");
-  int ii = 0;
-  for (ii = 0; ii < CL_BYTE_WIDTH; ii++)
-    printf("%02d ", umsg_data[ii]);
-  printf("\nDONE\n");
-  END_RED_FONTCOLOR;
-#endif
+  // Write data to UMAS + umas_id*64
+  umas_target_addr = (uint64_t*)((uint64_t)umas->vbase + (umas_id*CL_BYTE_WIDTH));
   memcpy(umas_target_addr, umsg_data, CL_BYTE_WIDTH);
 
-  ///////////// SEND MESSAGE DOWN MQUEUE /////////////////
-  // sprintf(umsg_str, "%u %u %s", msg_id, umsg_hint, umsg_data);
-  umas_sim_addr = ((uint64_t)umas->pbase + (uint64_t)(msg_id*ASE_PAGESIZE));
-  sprintf(umsg_str, "%u %u %lu", msg_id, umsg_hint, umas_sim_addr);
+  // Calculate hint
+  // umsg_hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
+  inst.id = umas_id;
+  inst.hint = glbl_umsgmode_csr & (0x0 || (1 << umas_id));  
+  memcpy(inst.data, umsg_data, CL_BYTE_WIDTH);
+
+  // MQ Send to SIM
+  // memset(umsg_str, '\0',ASE_MQ_MSGSIZE );
+  memcpy(umsg_str, &inst, SIZEOF_UMSG_PACK_T);
+  /* printf("umsg_str =>\n"); */
+  /* for(ii = 0 ; ii < SIZEOF_UMSG_PACK_T; ii++) */
+  /*   printf("%02X", (int)umsg_str[ii]); */
+  /* printf("\n"); */
 
   mqueue_send(app2sim_umsg_tx, umsg_str);
-  usleep(500);
-
-  FUNC_CALL_EXIT;
 }
 
 
 /*
- * deinit_umsg_system : Deinitialize UMAS region
- *                      Deallocate region and unlink
+ * umas_deinit : Deinitialize UMAS region
+ *               Deallocate region and unlink
  */
-void deinit_umsg_system(struct buffer_t *buf)
+void umas_deinit()
 {
-  FUNC_CALL_ENTRY;
-
-  deallocate_buffer(buf);
+  // Disable UMSGBASE
+  csr_write (ASE_UMSGBASE_CSROFF, 0x0);
+  deallocate_buffer(umas);
   umas_exist_status = UMAS_NOT_ESTABLISHED;
-
-  FUNC_CALL_EXIT;
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  UMAS deinitialized. \n");  
+  END_RED_FONTCOLOR;
 }
 
 

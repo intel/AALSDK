@@ -39,12 +39,14 @@
 #include "ase_common.h"
 
 // Message queues opened by DPI
-mqd_t app2sim_rx;           // app2sim mesaage queue in RX mode
-mqd_t sim2app_tx;           // sim2app mesaage queue in TX mode
-mqd_t app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
-mqd_t app2sim_umsg_rx;      // UMsg listener MQ in RX mode
-mqd_t app2sim_simkill_rx;   // Simkill listener in RX mode
-mqd_t sim2app_intr_tx;      // INTR message queue in TX mode
+int app2sim_rx;           // app2sim mesaage queue in RX mode
+int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
+int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
+int app2sim_simkill_rx;   // Simkill listener in RX mode
+#if 0
+int sim2app_intr_tx;      // INTR message queue in TX mode
+#endif
 
 // '1' indicates that teardown is in progress
 int self_destruct_in_progress = 0;
@@ -61,6 +63,7 @@ void ase_mqueue_setup()
 {
   FUNC_CALL_ENTRY;
 
+#if 0
   mq_unlink(APP2SIM_SMQ_PREFIX);
   mq_unlink(SIM2APP_SMQ_PREFIX);
   mq_unlink(APP2SIM_CSR_WR_SMQ_PREFIX);
@@ -71,8 +74,12 @@ void ase_mqueue_setup()
   sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
   app2sim_csr_wr_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
   app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
+#if 0
   sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
+#endif
   app2sim_simkill_rx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_CREAT|O_RDONLY );
+
+#endif
 
   FUNC_CALL_EXIT;
 }
@@ -91,16 +98,26 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_tx);       
   mqueue_close(app2sim_csr_wr_rx);
   mqueue_close(app2sim_umsg_rx);
+#if 0
   mqueue_close(sim2app_intr_tx);       
+#endif
   mqueue_close(app2sim_simkill_rx);
 
+#if 0
   // Unlink message queues
   mqueue_destroy(APP2SIM_SMQ_PREFIX);       
   mqueue_destroy(SIM2APP_SMQ_PREFIX);       
   mqueue_destroy(APP2SIM_CSR_WR_SMQ_PREFIX);
   mqueue_destroy(APP2SIM_UMSG_SMQ_PREFIX);
+#if 0 
   mqueue_destroy(SIM2APP_INTR_SMQ_PREFIX);
+#endif
   mqueue_destroy(APP2SIM_SIMKILL_SMQ_PREFIX);
+#endif
+
+  int ipc_iter;
+  for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
+    mqueue_destroy(mq_array[ipc_iter].name);
 
   FUNC_CALL_EXIT;
 }
@@ -146,22 +163,21 @@ int ase_recv_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
- // Temporary buffer
   char tmp_msg[ASE_MQ_MSGSIZE];
 
   // Receive a message on mqueue
-  if(mqueue_recv(app2sim_rx, tmp_msg)==1)
-  {
-          // Convert the string to buffer_t
-          ase_str_to_buffer_t(tmp_msg, mem);
-          FUNC_CALL_EXIT;
-          return 1;
-  }
+  if(mqueue_recv(app2sim_rx, tmp_msg)==ASE_MSG_PRESENT)
+    {
+      // Convert the string to buffer_t
+      ase_str_to_buffer_t(tmp_msg, mem);
+      FUNC_CALL_EXIT;
+      return ASE_MSG_PRESENT;
+    }
   else
-  {
-          FUNC_CALL_EXIT;
-          return 0;
-  }
+    {
+      FUNC_CALL_EXIT;
+      return ASE_MSG_ABSENT;
+    }
 }
 
 
@@ -281,10 +297,7 @@ void ase_alloc_action(struct buffer_t *mem)
   if (mem->index == 0)
     {
       // If UMSG is enabled, write information to CSR region
-      /* if (cfg->enable_umsg) */
       ase_umsg_init(mem->pbase);
-      // If CAPCM is enabled
-
     }
 
   FUNC_CALL_EXIT;

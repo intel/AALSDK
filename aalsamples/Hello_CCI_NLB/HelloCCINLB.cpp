@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file HelloCCINLB.cpp
-/// @brief Basic AFU interaction.
+/// @brief Basic CCI AFU interaction.
 /// @ingroup HelloCCINLB
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
@@ -43,7 +43,7 @@
 ///    - Use of interface IDs (iids).
 ///    - Accessing object interfaces through the Interface functions.
 ///
-/// This sample is designed to be used with SampleAFU1.
+/// This sample is designed to be used with the CCIAFU Service.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -59,8 +59,12 @@
 
 #include <string.h>
 
-// Comment out for HW
-//#define SWAFU 1
+//****************************************************************************
+// UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
+//    DEFAULT is to use Software Simulation.
+//****************************************************************************
+// #define  HWAFU
+// #define  ASEAFU
 
 using namespace AAL;
 
@@ -164,13 +168,26 @@ RuntimeClient::RuntimeClient() :
     m_pRuntime(NULL),
     m_isOK(false)
 {
-   NamedValueSet configArgs;     // Bot used
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
 
    // Publish our interface
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   m_Runtime.start(configArgs);
+
+   // Using Hardware Services requires the Remote Resource Manager Broker Service
+   //  Note that this could also be accomplished by setting the environment variable
+   //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+#if defined( HWAFU )
+   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
+#endif
+
+   if(!m_Runtime.start(this, configArgs)){
+      m_isOK = false;
+      return;
+   }
    m_Sem.Wait();
 }
 
@@ -213,7 +230,9 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    MSG("Runtime start failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
@@ -223,7 +242,10 @@ void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-    MSG("Runtime AllocateService failed");
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
+
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -294,11 +316,11 @@ IRuntime * RuntimeClient::getRuntime()
 
  protected:
     IBase           *m_pAALService;    // The generic AAL Service interface for the AFU.
-    RuntimeClient   *m_runtimClient;
+    RuntimeClient   *m_runtimeClient;
     ICCIAFU         *m_NLBService;
     CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
     btBool           m_Status;
-    btUnsignedInt    m_wsfreed;        // Simple used for when we free workspaces
+    btUnsignedInt    m_wsfreed;        // Simple counter used for when we free workspaces
 
     // Workspace info
     btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
@@ -319,7 +341,7 @@ IRuntime * RuntimeClient::getRuntime()
 ///////////////////////////////////////////////////////////////////////////////
  HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc):
     m_pAALService(NULL),
-    m_runtimClient(rtc),
+    m_runtimeClient(rtc),
     m_NLBService(NULL),
     m_Status(true)
  {
@@ -342,35 +364,39 @@ void HelloCCINLBApp::run()
    // Request our AFU.
 
    // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  This code is work around code and subject to change.
+   //  mechanism.  This code is work around code and subject to change. But it does
+   //  illustrate the utility of having different implementations of a service all
+   //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-#ifdef SWAFU
+#if defined( HWAFU )                /* Use FPGA hardware */
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-#else
-
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-#endif
    Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
 
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+   #else                            /* default is Software Simulator */
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+#endif
+
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello CCI NLB");
-
    MSG("Allocating Service");
-
-
 
    // Allocate the Service and allocate the required workspace.
    //   This happens in the background via callbacks (simple state machine).
    //   When everything is set we do the real work here in the main thread.
-   m_runtimClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
+   m_runtimeClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
 
    m_Sem.Wait();
 
@@ -379,27 +405,15 @@ void HelloCCINLBApp::run()
    //         A better design would do all appropriate clean-up.
    if(true == m_Status){
 
-
       //=============================
       // Now we have the NLB Service
       //   now we can use it
       //=============================
       MSG("Running Test");
 
-      btCSRValue i;
-      btCSRValue csr;
-
-      // Assert CAFU Reset
-      csr = 0;
-      m_NLBService->CSRRead(CSR_CIPUCTL, &csr);
-      csr |= 0x01000000;
-      m_NLBService->CSRWrite(CSR_CIPUCTL, csr);
-
-      // De-assert CAFU Reset
-      csr = 0;
-      m_NLBService->CSRRead(CSR_CIPUCTL, &csr);
-      csr &= ~0x01000000;
-      m_NLBService->CSRWrite(CSR_CIPUCTL, csr);
+      // Initialize the source and destination buffers
+      memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
+      memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
 
       // Set DSM base, high then low
       m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
@@ -437,11 +451,17 @@ void HelloCCINLBApp::run()
       while( 0 == *StatusAddr ) {
          SleepMicro(100);
       }
-
       MSG("Done Running Test");
 
       // Stop the device
       m_NLBService->CSRWrite(CSR_CTL, 7);
+
+      // Check that output buffer now contains what was in input buffer, e.g. 0xAF
+      if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
+         ERR("Output does NOT Match input, at offset " << err << "!");
+      } else {
+         MSG("Output matches Input!");
+      }
 
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
@@ -455,7 +475,7 @@ void HelloCCINLBApp::run()
       m_Sem.Wait();
    }
 
-   m_runtimClient->end();
+   m_runtimeClient->end();
 }
 
  // We must implement the IServiceClient interface (IServiceClient.h):
@@ -467,6 +487,7 @@ void HelloCCINLBApp::run()
     m_pAALService = pServiceBase;
     ASSERT(NULL != m_pAALService);
 
+    // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
     m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
 
     ASSERT(NULL != m_NLBService);
@@ -484,7 +505,9 @@ void HelloCCINLBApp::run()
 
  void HelloCCINLBApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    MSG("Failed to allocate a Service");
+    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+    ERR("Failed to allocate a Service");
+    ERR(pExEvent->Description());
     m_Sem.Post(1);
  }
 
@@ -545,9 +568,13 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
    }
 }
 
-void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &Event)
+void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
+   ERR(pExEvent->Description());
+
+
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -562,9 +589,11 @@ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 }
 
-void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &Event)
+void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
+   ERR(pExEvent->Description());
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -576,8 +605,7 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &Event)
  }
  // <end IServiceClient interface>
 
-/// @} group HelloAAL
-
+/// @} group HelloCCINLB
 
 
 //=============================================================================
@@ -592,7 +620,10 @@ int main(int argc, char *argv[])
 {
    RuntimeClient  runtimeClient;
    HelloCCINLBApp theApp(&runtimeClient);
-   
+   if(!runtimeClient.isOK()){
+      ERR("Runtime Failed to Start");
+      exit(1);
+   }
    theApp.run();
 
    MSG("Done");
