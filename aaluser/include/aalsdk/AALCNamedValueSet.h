@@ -148,30 +148,30 @@ BEGIN_NAMESPACE(AAL)
          btObjectArray           ObjA;
          NamedValueSet          *pNVS;
       } Val_t;
-   private:
-      Val_t                m_Val;      // 64 bits
-      btUnsigned32bitInt   m_Size;     // 32 bits
-      eBasicTypes          m_Type;     // 32 bits
+
+      btUnsigned32bitInt m_Size;     // 32 bits
+      eBasicTypes        m_Type;     // 32 bits
+      Val_t              m_Val;      // 64 bits
                                        // Total 16 bytes
    public:
       //=======================================================================
       //Constructor
       //=======================================================================
-      CValue()
-      :  m_Size(0),
+      CValue() :
+         m_Size(0),
          m_Type(btUnknownType_t)
       {
-         m_Val.Obj=NULL;
+         m_Val.Obj = NULL;
       }
 
       //=======================================================================
       // Copy Constructor
       //=======================================================================
-      CValue(const CValue &rOther)
-      :  m_Size(0),
+      CValue(const CValue &rOther) :
+         m_Size(0),
          m_Type(btUnknownType_t)
       {
-         m_Val.Obj=NULL;
+         m_Val.Obj = NULL;
 
          //Assignment operator does the real work
          *this = rOther;
@@ -180,56 +180,49 @@ BEGIN_NAMESPACE(AAL)
       //=======================================================================
       //Destructor
       //=======================================================================
-//      virtual ~CValue() - not needed as not derived from, and adds overhead to object
       ~CValue()
       {
-
          // =======================================
          // If the value is not a normal scaler
          // delete any allocated arrays and objects
          //========================================
-         switch(m_Type)
-         {
-         case btByteArray_t:
-            delete [] m_Val._8bA;
+         switch ( m_Type ) {
+            case btByteArray_t :
+               delete [] m_Val._8bA;
             break;
-         case bt32bitIntArray_t:
-            delete [] m_Val._32bA;
+            case bt32bitIntArray_t :
+               delete [] m_Val._32bA;
             break;
-         case btUnsigned32bitIntArray_t:
-            delete [] m_Val._U32bA;
+            case btUnsigned32bitIntArray_t :
+               delete [] m_Val._U32bA;
             break;
-         case bt64bitIntArray_t:
-            delete [] m_Val._64bA;
+            case bt64bitIntArray_t :
+               delete [] m_Val._64bA;
             break;
-         case btUnsigned64bitIntArray_t:
-            delete [] m_Val._U64bA;
+            case btUnsigned64bitIntArray_t :
+               delete [] m_Val._U64bA;
             break;
-         case btFloatArray_t:
-            delete [] m_Val.fltA;
+            case btFloatArray_t :
+               delete [] m_Val.fltA;
             break;
-         case btString_t:
-            free(m_Val.str);
+            case btString_t :
+               free(m_Val.str);
             break;
-         case btStringArray_t:
-         {
-            for ( unsigned i=0; i<m_Size; i++ ) {
-               free ( m_Val.strA[i] );
-            }
-            delete [] m_Val.strA;
-            break;
-         }
-         case btObjectArray_t:
-            delete [] m_Val.ObjA;
+            case btStringArray_t : {
+               unsigned i;
+               for ( i = 0 ; i < m_Size; ++i ) {
+                  free(m_Val.strA[i]);
+               }
+               delete [] m_Val.strA;
+            } break;
+            case btObjectArray_t:
+               delete [] m_Val.ObjA;
             break;
 
-         case btNamedValueSet_t:
-            delete m_Val.pNVS;
+            case btNamedValueSet_t:
+               delete m_Val.pNVS;
             break;
-         default:
-            {
-               break;
-            }
+            default : break;
          }//End case
       }
 
@@ -242,10 +235,70 @@ BEGIN_NAMESPACE(AAL)
             return *this; // don't duplicate self
          }
 
+         // Put() for complex types allocates memory. We need to examine the type here, freeing
+         // memory as required.
+
+         switch ( m_Type ) {
+            case btByteArray_t : {
+               if ( NULL != m_Val._8bA ) {
+                  delete[] m_Val._8bA;
+               }
+            } break;
+            case bt32bitIntArray_t : {
+               if ( NULL != m_Val._32bA ) {
+                  delete[] m_Val._32bA;
+               }
+            } break;
+            case btUnsigned32bitIntArray_t : {
+               if ( NULL != m_Val._U32bA ) {
+                  delete[] m_Val._U32bA;
+               }
+            } break;
+            case bt64bitIntArray_t : {
+               if ( NULL != m_Val._64bA ) {
+                  delete[] m_Val._64bA;
+               }
+            } break;
+            case btUnsigned64bitIntArray_t : {
+               if ( NULL != m_Val._U64bA ) {
+                  delete[] m_Val._U64bA;
+               }
+            } break;
+            case btFloatArray_t : {
+               if ( NULL != m_Val.fltA ) {
+                  delete[] m_Val.fltA;
+               }
+            } break;
+            case btStringArray_t : {
+               if ( NULL != m_Val.strA ) {
+                  btUnsigned32bitInt i;
+                  for ( i = 0 ; i < m_Size ; ++i ) {
+                     free(m_Val.strA[i]);
+                  }
+                  delete[] m_Val.strA;
+               }
+            } break;
+            case btObjectArray_t : {
+               if ( NULL != m_Val.ObjA ) {
+                  delete[] m_Val.ObjA;
+               }
+            } break;
+            case btString_t : {
+               if ( NULL != m_Val.str ) {
+                  free(m_Val.str);
+               }
+            } break;
+            case btNamedValueSet_t : {
+               if ( NULL != m_Val.pNVS ) {
+                  delete m_Val.pNVS;
+               }
+            } break;
+         }
+
          m_Type = rOther.m_Type;
          m_Size = rOther.m_Size;
 
-         //Copy array types using mutator
+         // Copy array, string, and NVS types using mutator.
          switch ( m_Type ) {
             case btByteArray_t :
                Put(rOther.m_Val._8bA, m_Size);
@@ -274,10 +327,13 @@ BEGIN_NAMESPACE(AAL)
             case btString_t :
                Put(rOther.m_Val.str);
             break;
+            case btNamedValueSet_t :
+               Put(*rOther.m_Val.pNVS);
+            break;
 
             default:
-               //Otherwise simple value
-               m_Val=rOther.m_Val;
+               // Otherwise simple value
+               m_Val = rOther.m_Val;
             break;
          }
 
@@ -307,15 +363,14 @@ BEGIN_NAMESPACE(AAL)
       //=======================================================================
       void Put(NamedValueSet const &val)
       {
-         m_Type=btNamedValueSet_t;
+         m_Type     = btNamedValueSet_t;
          m_Val.pNVS = new NamedValueSet(val);
-         m_Size=1;
+         m_Size     = 1;
       }
 
       void Put(btcString val)
       {
          m_Type    = btString_t;
-         ASSERT(NULL == m_Val.str); // Leak, otherwise
          m_Val.str = strdup(val);
          m_Size    = 1;
       }
@@ -323,74 +378,80 @@ BEGIN_NAMESPACE(AAL)
       //=======================================================================
       //Array CValue Mutators
       //=======================================================================
-      void Put(btByteArray val,btUnsigned32bitInt Num)
+      void Put(btByteArray val, btUnsigned32bitInt Num)
       {
+         m_Type = btByteArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val._8bA = new btByte[Num];
-         memcpy(m_Val._8bA,val,(sizeof(btByte)*Num));
-         m_Type=btByteArray_t;m_Size=Num;
+         memcpy(m_Val._8bA, val, (sizeof(btByte)*Num));
       }
 
-      void Put(bt32bitIntArray val,btUnsigned32bitInt Num)
+      void Put(bt32bitIntArray val, btUnsigned32bitInt Num)
       {
+         m_Type = bt32bitIntArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val._32bA = new bt32bitInt[Num];
-         memcpy(m_Val._32bA,val,(sizeof(bt32bitInt)*Num));
-         m_Type=bt32bitIntArray_t;m_Size=Num;
+         memcpy(m_Val._32bA, val, (sizeof(bt32bitInt)*Num));
       }
 
-      void Put(btUnsigned32bitIntArray val,btUnsigned32bitInt Num)
+      void Put(btUnsigned32bitIntArray val, btUnsigned32bitInt Num)
       {
+         m_Type = btUnsigned32bitIntArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val._U32bA = new btUnsigned32bitInt[Num];
-         memcpy(m_Val._U32bA,val,(sizeof(btUnsigned32bitInt)*Num));
-         m_Type=btUnsigned32bitIntArray_t;m_Size=Num;
+         memcpy(m_Val._U32bA, val, (sizeof(btUnsigned32bitInt)*Num));
       }
 
       void Put(bt64bitIntArray val,btUnsigned32bitInt Num)
       {
+         m_Type = bt64bitIntArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val._64bA = new bt64bitInt[Num];
-         memcpy(m_Val._64bA,val,(sizeof(bt64bitInt)*Num));
-         m_Type=bt64bitIntArray_t;m_Size=Num;
+         memcpy(m_Val._64bA, val, (sizeof(bt64bitInt)*Num));
       }
 
       void Put(btUnsigned64bitIntArray val,btUnsigned32bitInt Num)
       {
+         m_Type = btUnsigned64bitIntArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val._64bA = new bt64bitInt[Num];
-         memcpy(m_Val._U64bA,val,(sizeof(bt64bitInt)*Num));
-         m_Type=btUnsigned64bitIntArray_t;m_Size=Num;
+         memcpy(m_Val._U64bA, val, (sizeof(bt64bitInt)*Num));
       }
 
       void Put(btFloatArray val,btUnsigned32bitInt Num)
       {
+         m_Type = btFloatArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val.fltA = new btFloat[Num];
-         memcpy(m_Val.fltA,val,(sizeof(btFloat)*Num));
-         m_Type=btFloatArray_t;m_Size=Num;
+         memcpy(m_Val.fltA, val, (sizeof(btFloat)*Num));
       }
 
       void Put(btStringArray val, btUnsigned32bitInt NumElements)
       {
-         m_Type=btStringArray_t;
-         m_Size=NumElements;
+         m_Type = btStringArray_t;
+         m_Size = NumElements;
          // Copy the array of btStrings and create btString array
          m_Val.strA = new btString[NumElements];
-         for(btUnsigned32bitInt x=0; x < NumElements; x++)
-         {
+         btUnsigned32bitInt x;
+         for ( x = 0 ; x < NumElements ; ++x ) {
             //Copy string
             m_Val.strA[x] = strdup(val[x]);
          }
-
       }
 
       void Put(btObjectArray val,btUnsigned32bitInt Num)
       {
+         m_Type = btObjectArray_t;
+         m_Size = Num;
          //Allocate space for local array copy
          m_Val.ObjA = new btObjectType[Num];
-         memcpy(m_Val.ObjA ,val,(sizeof(btObjectType)*Num));
-         m_Type=btObjectArray_t;m_Size=Num;
+         memcpy(m_Val.ObjA , val, (sizeof(btObjectType)*Num));
       }
 
       //=======================================================================
@@ -398,199 +459,182 @@ BEGIN_NAMESPACE(AAL)
       //=======================================================================
       ENamedValues Get(bt32bitInt *pval) const
       {
-         if(m_Type!=bt32bitInt_t)
-         {
-            *pval=0;
+         if ( m_Type != bt32bitInt_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._32b;
+         *pval = m_Val._32b;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btBool *pval) const
       {
-         if(m_Type!=btBool_t)
-         {
-            *pval=false;
+         if ( m_Type != btBool_t ) {
+            *pval = false;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._1b;
+         *pval = m_Val._1b;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btByte *pval) const
       {
-         if(m_Type!=btByte_t)
-         {
-            *pval=0;
+         if ( m_Type != btByte_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._8b;
+         *pval = m_Val._8b;
          return ENamedValuesOK;
       }
 
 
       ENamedValues Get(btUnsigned32bitInt *pval) const
       {
-         if(m_Type!=btUnsigned32bitInt_t)
-         {
-            *pval=0;
+         if ( m_Type != btUnsigned32bitInt_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._U32b;
+         *pval = m_Val._U32b;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(bt64bitInt *pval) const
       {
-         if(m_Type!=bt64bitInt_t)
-         {
-            *pval=0;
+         if ( m_Type != bt64bitInt_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._64b;
+         *pval = m_Val._64b;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btUnsigned64bitInt *pval) const
       {
-         if(m_Type!=btUnsigned64bitInt_t)
-         {
-            *pval=0;
+         if ( m_Type != btUnsigned64bitInt_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._U64b;
+         *pval = m_Val._U64b;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btFloat *pval) const
       {
-         if(m_Type!=btFloat_t)
-         {
-            *pval=0;
+         if ( m_Type != btFloat_t ) {
+            *pval = 0;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.flt;
+         *pval = m_Val.flt;
          return ENamedValuesOK;
       }
 
-      ENamedValues Get( btcString *pval) const
+      ENamedValues Get(btcString *pval) const
       {
-         if(m_Type!=btString_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btString_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.str;
+         *pval = m_Val.str;
          return ENamedValuesOK;
       }
 
-      ENamedValues Get( NamedValueSet const **pval) const
+      ENamedValues Get(NamedValueSet const **pval) const
       {
-         if(m_Type!=btNamedValueSet_t)
-         {
+         if ( m_Type != btNamedValueSet_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.pNVS;
+         *pval = m_Val.pNVS;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btObjectType *pval) const
       {
-         if(m_Type!=btObjectType_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btObjectType_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.Obj;
+         *pval = m_Val.Obj;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btByteArray *pval) const
       {
-         if(m_Type!=btByteArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btByteArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._8bA;
+         *pval = m_Val._8bA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(bt32bitIntArray *pval) const
       {
-         if(m_Type!=bt32bitIntArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != bt32bitIntArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._32bA;
+         *pval = m_Val._32bA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btUnsigned32bitIntArray *pval) const
       {
-         if(m_Type!=btUnsigned32bitIntArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btUnsigned32bitIntArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._U32bA;
+         *pval = m_Val._U32bA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(bt64bitIntArray *pval) const
       {
-         if(m_Type!=bt64bitIntArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != bt64bitIntArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._64bA;
+         *pval = m_Val._64bA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btUnsigned64bitIntArray *pval) const
       {
-         if(m_Type!=btUnsigned64bitIntArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btUnsigned64bitIntArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val._U64bA;
+         *pval = m_Val._U64bA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btFloatArray *pval) const
       {
-         if(m_Type!=btFloatArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btFloatArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.fltA;
+         *pval = m_Val.fltA;
          return ENamedValuesOK;
       }
 
-      ENamedValues Get( btStringArray *pval) const
+      ENamedValues Get(btStringArray *pval) const
       {
-         if(m_Type!=btStringArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btStringArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.strA;
+         *pval = m_Val.strA;
          return ENamedValuesOK;
       }
 
       ENamedValues Get(btObjectArray *pval) const
       {
-         if(m_Type!=btObjectArray_t)
-         {
-            *pval=NULL;
+         if ( m_Type != btObjectArray_t ) {
+            *pval = NULL;
             return ENamedValuesBadType;
          }
-         *pval=m_Val.ObjA;
+         *pval = m_Val.ObjA;
          return ENamedValuesOK;
       }
 
