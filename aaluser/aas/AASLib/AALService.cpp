@@ -67,6 +67,7 @@ BEGIN_NAMESPACE(AAL)
    // Comments:
    //=============================================================================
 ServiceBase::ServiceBase(AALServiceModule *container,
+                         IRuntime         *pxlRuntime,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
@@ -75,6 +76,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
+   m_Runtime(pxlRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
@@ -92,6 +94,7 @@ ServiceBase::ServiceBase(ServiceBase const &rother) :
    m_eventHandler(rother.m_eventHandler),
    m_pclient(rother.m_pclient),
    m_pcontainer(rother.m_pcontainer),
+   m_Runtime(rother.m_Runtime->getRuntimeProxy(this)),
    m_ptransport(rother.m_ptransport),
    m_pmarshaller(rother.m_pmarshaller),
    m_punmarshaller(rother.m_punmarshaller),
@@ -141,6 +144,10 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
                                                       NULL,
                                                       rTranID,
                                                       Context()));
+
+   // Release the Proxy
+   getRuntime()->releaseRuntimeProxy();
+   m_Runtime = NULL;
    delete this;
    return true;
 }
@@ -148,45 +155,13 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
 btBool ServiceBase::Release(btTime timeout)
 {
    Released();
+
+   // Release the Proxy
+   getRuntime()->releaseRuntimeProxy();
+   m_Runtime = NULL;
    delete this;
    return true;
 }
-
-
-
-#if 0
-IBase * ServiceBase::_init(btEventHandler       eventHandler,
-                           btApplicationContext context,
-                           TransactionID const &rtid,
-                           NamedValueSet const &optArgs,
-                           CAALEvent           *pcmpltEvent)
-{
-   if(NULL == eventHandler){
-      return NULL;
-   } else {
-      m_eventHandler = eventHandler;
-   }
-
-   m_Context      = context;
-   m_optArgs      = optArgs;
-
-   // This is used to generate the creation event.
-   m_RuntimeClient = NULL;
-
-   // If no completion event then this is the direct superclass
-   //  of the most derived class in the Service class hierarchy.
-   if ( NULL == pcmpltEvent ) {
-      init(rtid);
-      return this;
-   }
-
-   // Queue the completion to enable next layer down (the class derived from this)
-   //   to initialize
-   QueueAASEvent(pcmpltEvent);
-   return this;
-}
-#endif
-
 
 IBase * ServiceBase::_init(IBase               *pclient,
                            TransactionID const &rtid,
@@ -312,10 +287,10 @@ void ServiceBase::allocService(IBase                  *pClient,
 void ServiceBase::SendMsg(IDispatchable *pMessage)
 {
    // BREAKPOINT Queue Dispatchable
-   getRuntimeServiceProvider()->SendMsg(pMessage);
+   getRuntime()->schedDispatchable(pMessage);
 }
 
-btBool ServiceBase::QueueAASEvent(CAALEvent *pEvent)
+btBool ServiceBase::QueueAASEvent(CAALEvent *pEvent)  // TODO Deprecate
 {
    // BREAKPOINT Queue Event
    if ( NULL != Handler() ) {
@@ -376,39 +351,17 @@ ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 // Comments:
 //=============================================================================
 ServiceProxyBase::ServiceProxyBase(AALServiceModule *container,
-                                   IAALTransport *ptransport,
-                                   IAALMarshaller *marshaller,
+                                   IRuntime         *pxlRuntime,
+                                   IAALTransport    *ptransport,
+                                   IAALMarshaller   *marshaller,
                                    IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
+               pxlRuntime,
                ptransport,
                marshaller,
                unmarshaller),
    m_pcmpltEvent(NULL)
  {}
-#if 0
-IBase * ServiceProxyBase::_init(btEventHandler       eventHandler,
-                                btApplicationContext context,
-                                TransactionID const &rtid,
-                                NamedValueSet const &optArgs,
-                                CAALEvent           *pcmpltEvent)
-{
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pcmpltEvent ) {
-
-      // No then save the completion event and post it when our initialization
-      //  completes
-      m_pcmpltEvent = pcmpltEvent;
-      return this;
-   }
-
-   ServiceBase::_init(eventHandler,
-                      context,
-                      rtid,
-                      optArgs,
-                      new InitComplete<ServiceProxyBase>(this, &ServiceProxyBase::Doinit, rtid));
-   return this;
-}
-#endif
 
 IBase * ServiceProxyBase::_init(IBase               *pclient,
                                 TransactionID const &rtid,
@@ -489,38 +442,18 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
 
 ServiceStubBase::ServiceStubBase(AALServiceModule *container,
+                                 IRuntime         *pxlRuntime,
                                  IAALTransport    *ptransport,
                                  IAALMarshaller   *marshaller,
                                  IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
+               pxlRuntime,
                ptransport,
                marshaller,
                unmarshaller),
    m_pcmpltEvent(NULL)
 {}
-#if 0
-IBase * ServiceStubBase::_init(btEventHandler       eventHandler,
-                               btApplicationContext context,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs,
-                               CAALEvent           *pcmpltEvent)
-{
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pcmpltEvent ) {
-      // No then save the completion event and post it when our initialization
-      //  completes
-      m_pcmpltEvent = pcmpltEvent;
-      return this;
-   }
 
-   ServiceBase::_init(eventHandler,
-                      context,
-                      rtid,
-                      optArgs,
-                      new InitComplete<ServiceStubBase>(this, &ServiceStubBase::Doinit, rtid));
-   return this;
-}
-#endif
 IBase * ServiceStubBase::_init(IBase               *pclient,
                                TransactionID const &rtid,
                                NamedValueSet const &optArgs,

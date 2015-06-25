@@ -126,7 +126,7 @@ void _xlServiceBroker::allocService(IRuntime               *pProxy,
    ServiceHost *SvcHost = NULL;
    if ( NULL == (SvcHost = findServiceHost(sName)) ) {
       // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
-      SvcHost = new ServiceHost(sName, pProxy, getRuntimeServiceProvider());
+      SvcHost = new ServiceHost(sName);
    }
 
    if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
@@ -141,7 +141,7 @@ void _xlServiceBroker::allocService(IRuntime               *pProxy,
    }
 
    // Allocate the service
-   if ( !SvcHost->allocService(pServiceClientBase, rManifest, rTranID) ) {
+   if ( !SvcHost->allocService(pProxy, getRuntimeServiceProvider(), pServiceClientBase, rManifest, rTranID) ) {
       QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                     pServiceClient,
                                                     NULL,

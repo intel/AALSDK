@@ -68,11 +68,12 @@ Runtime::Runtime(IRuntimeClient *pClient) :
    // Get the Runtime instance
    m_pImplementation = _getnewRuntimeInstance(this, pClient);
 
-   // If failed _getnewXLRuntimeInstance() will generate the message
+   // If failed _getnewRuntimeInstance() will generate the message
    if(NULL == m_pImplementation){
       return;
    }
    m_status = m_pImplementation != NULL ? true : false;
+
    // Register interfaces
    // Add the public interfaces
    if ( SetSubClassInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
@@ -88,7 +89,8 @@ Runtime::Runtime(IRuntimeClient *pClient) :
 //=============================================================================
 btBool Runtime::IsOK()
 {
-   return m_pImplementation->IsOK();
+   // If either are bad return false
+   return m_status && m_pImplementation->IsOK();
 }
 
 //=============================================================================
@@ -171,9 +173,8 @@ IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
       return NULL;
    }else{
       // Save the Proxy to clean up later
-      Lock();
+      AutoLock(this);
       m_proxyList.push_back(newProxy);
-      Unlock();
       return dynamic_cast<IRuntime*>(newProxy);
    }
 }
@@ -199,9 +200,30 @@ IRuntimeClient *Runtime::getRuntimeClient()
 /// @param[in]    pRuntime - Pointer to Proxy to release
 /// @return       true - Success
 //=============================================================================
+btBool Runtime::releaseRuntimeProxy()
+{
+   AutoLock(this);
+
+   delete this;
+
+   // If we got here we did not find the Proxy
+   return false;
+}
+
+//=============================================================================
+/// Get a new pointer to the Runtime
+///
+/// @param[in]    pRuntime - Pointer to Proxy to release
+/// @return       true - Success
+//=============================================================================
 btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
 {
    AutoLock(this);
+
+   // Deleting self?
+   if(this == pRuntime){
+      return releaseRuntimeProxy();
+   }
 
    // Look through our the list of Proxies and release the appropriate one.
    int cnt=0;

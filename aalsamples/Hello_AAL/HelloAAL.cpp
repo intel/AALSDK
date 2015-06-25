@@ -143,9 +143,6 @@ RuntimeClient::RuntimeClient() :
 
    m_Sem.Create(0, 1);
    m_Runtime.start(configArgs);
-      m_isOK = false;
-      return;
-   }
    m_Sem.Wait();
 }
 
@@ -210,6 +207,7 @@ void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
+   TransactionID const * foo = &rTranID;
     MSG("Runtime Allocate Service Succeeded");
 }
 

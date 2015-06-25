@@ -78,7 +78,7 @@ public:
    /// Default Constructor just gets memory initialized and registers interfaces
    CSyncClient() :
          m_bIsOK(false),
-         m_runTime(),
+         m_runTime(this),
          m_bRunningStatus(false),
          m_pCurrentService(NULL),
          m_pAALService(NULL)
@@ -154,7 +154,7 @@ public:
    bool syncStart( const NamedValueSet &configArgs)
    {
       // Can return false if no way to call back, if so then die immediately
-      m_bRunningStatus = m_runTime.start(this, configArgs);
+      m_bRunningStatus = m_runTime.start(configArgs);
       if (m_bRunningStatus) {                // Posted and Set in runtimeStarted
          Wait();                             //    or runtimeStartFailed
       }
@@ -194,6 +194,15 @@ public:
       }
       Post();
    }
+
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+   {
+      m_bIsOK = false;
+      m_pCurrentService = NULL;
+      ERR("CreateOrGetProxyFailed");
+      PrintExceptionDescription(rEvent); // Builtin function to print exception events
+      Post();;
+   }
    /// CSyncClient implementation of IServiceClient::serviceAllocateFailed
    void serviceAllocateFailed(const IEvent &rEvent)
    {
@@ -203,11 +212,32 @@ public:
       PrintExceptionDescription(rEvent); // Builtin function to print exception events
       Post();
    }
+
+   void runtimeStopFailed(const IEvent &rEvent)
+   {
+      m_bIsOK = false;
+      m_pCurrentService = NULL;
+      ERR("runtimeStopFailed");
+      PrintExceptionDescription(rEvent); // Builtin function to print exception events
+      Post();
+   }
    /// CSyncClient implementation of IServiceClient::serviceFreed
-   void serviceFreed(TransactionID const &rTranID)
+   void serviceReleased(TransactionID const &rTranID)
    {
       m_pCurrentService = NULL;
       Post();
+   }
+
+   void serviceReleaseFailed(const IEvent &e)
+   {
+      m_bIsOK = false;
+      ERR("Allocate Service Failed to allocate Service");
+      if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+          PrintExceptionDescription(e);
+          m_bIsOK = false;
+          Post();
+          return;
+       }
    }
    /// CSyncClient implementation of IServiceClient::serviceEvent
    void serviceEvent(const IEvent &rEvent)

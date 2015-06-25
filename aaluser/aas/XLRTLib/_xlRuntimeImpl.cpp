@@ -219,15 +219,26 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
 
    m_status = true;  // Assume all will go fine.
 
+}
+
+//=============================================================================
+// Name: InstallDefaults
+// Description: Install Default Services
+// Interface: public
+// Outputs: none.
+// Comments:
+//=============================================================================
+btBool _runtime::InstallDefaults()
+{
    // Message Delivery Service
 
    // The ServiceHost loads the Service Implementation, typically contained in a Service Library (.so/.dll)
    //  The default Service implementations are allocated directly in the Runtime Service Library.
    //  This variant assumes the Service is implemented within this executable.
-   m_pMDSSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localMDS), this, this);
+   m_pMDSSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localMDS));
 
-   // Instantiate the Service where the Runtime (this) implements the Client.
-   m_pMDSSvcHost->allocService( this, NamedValueSet(), TransactionID(MDS));
+   // Instantiate the MDS Service. The Runtime we provide is a Proxy acquired by the original Proxy
+   m_pMDSSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IXLRuntimeServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(MDS));
 
    // Block until the serviceAllocated (or failed) callback
    m_sem.Wait(); // for the local Message Delivery Service
@@ -246,12 +257,12 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
        // Fire the final event
       oneShot.Add(pRuntimeFailed);
       oneShot.Drain();  // Wait for it to be dispatched
-      return;
+      return false;
    }
 
    // Service Broker
-   m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker), this, this);
-   m_pBrokerSvcHost->allocService( this, NamedValueSet(), TransactionID(Broker));
+   m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
+   m_pBrokerSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IXLRuntimeServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
    m_sem.Wait(); // for the local Broker
 
    if(false == m_status){
@@ -269,8 +280,9 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
         // Fire the final event
        oneShot.Add(pRuntimeFailed);
        oneShot.Drain();  // Wait for it to be dispatched
-       return;
-    }
+       return false;
+   }
+   return true;
 }
 
 //=============================================================================
@@ -294,9 +306,8 @@ btBool _runtime::IsOK()
 //=============================================================================
 void _runtime::stop(Runtime* pProxy)
 {
-   {
    if(NULL == pProxy){
-      // Runtime Failed to start because it already is  TODO broadcast
+      // Bad Parameter
       SendMsg(new RuntimeCallback(RuntimeCallback::Event,
                                   m_pOwnerClient,
                                   new CExceptionTransactionEvent(m_pOwner,
@@ -306,7 +317,10 @@ void _runtime::stop(Runtime* pProxy)
                                                                  reasMissingParameter,
                                                                  "NULL Proxy")),
                                   NULL);
+      return;
    }
+
+   AutoLock(this);
 
    if(m_pOwner != pProxy ){
       // Runtime Failed to stop. Can only stop original
@@ -319,31 +333,28 @@ void _runtime::stop(Runtime* pProxy)
                                                                  reasNotOwner,
                                                                  "Not using original Runtime")),
                                   NULL);
+      return;
 
    }
-   // If the runtime is OK but is NOT stopped AND
-         m_status  = false;
+   // If the runtime is OK but is NOT stopped
+   if ( IsOK() && (m_state != Stopped) ) {
+
       // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
-      } else {
-         // Dispatch the event ourselves, because MDS is no more.
-         OSLThreadGroup oneShot;
+      m_sem.Reset(0);
+
+      // Release the Service Broker.
+      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
+
+   }else{
+      // Dispatch the event ourselves, because MDS is no more.
+      OSLThreadGroup oneShot;
       RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
                                                              m_pOwnerClient,
                                                              pProxy);
-
-          // Fire the final event
-         oneShot.Add(pRuntimeStopped);
-         oneShot.Drain();  // Wait for it to be dispatched
-
-         return; // we're done.
-      }
+      // Fire the final event
+      oneShot.Add(pRuntimeStopped);
+      oneShot.Drain();  // Wait for it to be dispatched
    }
-
-   // Prepare our sem. We will wait for notification from serviceFreed() before continuing.
-   m_sem.Reset(0);
-
-   // Release the Service Broker.
-   dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
 }
 
 //=============================================================================
@@ -389,6 +400,8 @@ btBool _runtime::start(Runtime             *pProxy,
                                   NULL);
       return false;
    }
+
+   btBool ret = InstallDefaults();
 
    // Process the configuration parameters
    if ( !ProcessConfigParms(rConfigParms) ) {

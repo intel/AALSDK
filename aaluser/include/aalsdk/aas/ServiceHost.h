@@ -53,17 +53,15 @@ BEGIN_NAMESPACE(AAL)
 class XLRT_API ServiceHost : private CUnCopyable
 {
 public:
-   ServiceHost( btcString root_name ,
-                IRuntime * ,
-                IXLRuntimeServices * );
-   ServiceHost( AALSvcEntryPoint EP, 
-                IRuntime * ,
-                IXLRuntimeServices * );
+   ServiceHost( btcString root_name );
+   ServiceHost( AALSvcEntryPoint EP);
 
    btBool IsOK() const {return m_bIsOK;}
    ~ServiceHost(){}
 
-   btBool allocService( IBase               *pClient,
+   btBool allocService( IRuntime * pRuntime,
+                        IXLRuntimeServices * pRuntimeService,
+                        IBase               *pClient,
                         NamedValueSet const &rManifest = NamedValueSet(),
                         TransactionID const &rTranID = TransactionID());
 

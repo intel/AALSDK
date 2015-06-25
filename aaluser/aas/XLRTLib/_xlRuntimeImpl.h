@@ -118,6 +118,7 @@ public:
    IRuntime *getRuntimeProxy(IRuntimeClient *pClient){return NULL;};
 
    btBool releaseRuntimeProxy(IRuntime *pRuntime){return false;};
+   btBool releaseRuntimeProxy(){return false;};
 
    IRuntimeClient *getRuntimeClient();
 
@@ -148,6 +149,7 @@ public:
    btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
 
 protected:
+   btBool InstallDefaults();
    //
    // IServiceClient Interface
    //-------------------------

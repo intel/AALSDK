@@ -137,7 +137,9 @@ protected:
 ///   The ServiceBase class is intended to be inherited by AAL Services.
 ///   The purpose is to provide the canonical implementation for the Service.
 //=============================================================================
-class AASLIB_API ServiceBase : public CAASBase, public IAALService
+class AASLIB_API ServiceBase : public CAASBase,
+                               public IRuntimeClient,
+                               public IAALService
 {
 public:
 /// @brief  Used to create the appropriate Constructor signature for Services derived from ServiceBase.
@@ -145,19 +147,23 @@ public:
 /// @param[in]  C  The name of the class being constructed.
 /// @param[in]  P  The name of the parent class being implemented, ie ServiceBase, DeviceServiceBase, etc.
 #define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AALServiceModule *container,                             \
+                                                AAL::IRuntime         *pxlRuntime,                            \
                                                 AAL::IAALTransport    *ptransport   = NULL,                   \
                                                 AAL::IAALMarshaller   *marshaller   = NULL,                   \
                                                 AAL::IAALUnMarshaller *unmarshaller = NULL) : P(container,    \
+                                                                                                pxlRuntime,   \
                                                                                                 ptransport,   \
                                                                                                 marshaller,   \
                                                                                                 unmarshaller)
 
    /// @brief     Constructor called by Service Broker
    /// @param[in] container Pointer to the Service Module
+   /// @param[in] pxlRuntime runtime to use
    /// @param[in] ptransport Transport if not in-proc
    /// @param[in] marshaller Marshaller if not in-proc
    /// @param[in] unmarshaller Unmarshaller if not in-proc
    ServiceBase(AALServiceModule *container,
+               IRuntime         *pxlRuntime,
                IAALTransport    *ptransport   = NULL,
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
@@ -169,7 +175,7 @@ public:
    /// ServiceBase Destructor.
    virtual ~ServiceBase();
 
-   // <IAALService>
+   // <IAALService> - Empty defaults
 
    /// @brief     Called to release Service and free its resources
    ///
@@ -181,34 +187,106 @@ public:
    virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT);
 
    // </IAALService>
-#if 0
-   // Hook for base classes to perform any post-creation initialization.
-   //
-   // Only base classes have _init(). This function is designed to be
-   // called by the factory to perform canonical initialization. The
-   // factory will call the most derived base class' (super base class)
-   // _init() function.  It is the responsibility of the base class to
-   // call its direct ancestor's _init() FIRST to ensure that the class
-   // hierarchy _init() called.
-   //
-   //
-   // This is called BEFORE connection has been established with remote.
-   //
-   //  The function comes in two flavors.
-   //  Client is using event handler method of signaling
-   // @param[in]  eventHandler  The event handler for the Service.
-   // @param[in]  context       Application-specific context.
-   // @param[in]  rtid          TransactionID for routing event responses.
-   // @param[in]  optArgs       Optional arguments.
-   // @param[in]  pcmpltEvent   Optional completion event. Used internally to
-   //  traverse the inheritance hierarchy during initialization.
-   virtual IBase * _init(btEventHandler       eventHandler,
-                         btApplicationContext context,
-                         TransactionID const &rtid,
-                         NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL);
 
-#endif
+
+   // <IRuntimeClient>
+   /// @brief     Called by a Runtime object to indicate that it failed to
+   ///               successfully allocate a new instance or to return a proxy
+   ///               after a call to Runtime() or getRuntimeProxy().
+   /// @param[in] rEvent will be an exception event that can be parsed to determine
+   ///               the error that occurred.
+   /// @return    void
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent) {};
+
+
+   /// @brief     Called by a Runtime object to indicate that it started successfully
+   ///               after a call to Runtime.start()
+   /// @param[in] pRuntime Pointer to the Runtime object that is calling back
+   ///               indicating that it has started successfully after
+   ///               Runtime.start() was called.
+   /// @param[in] rConfigParms Copy of the configuration parameters passed in to
+   ///               Runtime.start() call.
+   /// @return    void
+   virtual void runtimeStarted(IRuntime            *pRuntime,
+                               const NamedValueSet &rConfigParms) {};
+
+   /// @brief     Called by a Runtime object to indicate that it has stopped successfully
+   ///               after a call to Runtime.stop()
+   /// @param[in] pRuntime Pointer to the Runtime object that is calling back
+   ///               indicating that it has stopped successfully after
+   ///               Runtime.stop() was called.
+   /// @return    void
+   virtual void runtimeStopped(IRuntime *pRuntime){};
+
+   /// @brief     Called by a Runtime object to indicate that it failed to start
+   ///               successfully after a call to Runtime.start().
+   ///
+   ///            Although not started, the object still exists, and if dynamically
+   ///               allocated will still need to be freed.
+   /// @param[in] rEvent will be an exception event that can be parsed to determine
+   ///               the error that occurred.
+   /// @return    void
+   virtual void runtimeStartFailed(const IEvent &rEvent){};
+
+   /// @brief     Called by a Runtime object to indicate that it failed to stop
+   ///               successfully after a call to Runtime.stop().
+   ///
+   ///            This will usually occur when trying to stop a proxy.
+   ///
+   /// @param[in] rEvent will be an exception event that can be parsed to determine
+   ///               the error that occurred.
+   /// @return    void
+   virtual void runtimeStopFailed(const IEvent &rEvent){};
+
+   /// @brief     Called by a Runtime object to indicate that it failed to
+   ///               successfully allocate a service after a call to
+   ///               Runtime.allocService().
+   /// @param[in] rEvent will be an exception event that can be parsed to determine
+   ///               the error that occurred.
+   /// @return    void
+   virtual void runtimeAllocateServiceFailed( IEvent const &rEvent){};
+
+   /// @brief     Called by a Runtime object to indicate that it
+   ///               successfully allocated a service after a call to
+   ///               Runtime.allocService().
+   ///
+   /// Note that the Service version of this function and the Runtime version of this function
+   ///   are both called. One can choose to use either or both.
+   ///
+   /// @param[in] pServiceBase is an IBase that will contain the pointer to the service
+   ///               that was allocated. The actual pointer is extracted via the
+   ///               dynamic_ptr<> operator. It will also contain a pointer to the
+   ///               IService interface of the Service that was allocated, through which
+   ///               Release() will need to be called.
+   /// @param[in] rTranID is reference to the TransactionID that was passed to
+   ///               Runtime.allocService().
+   /// @return    void
+   ///
+   /// @code
+   /// void runtimeAllocateServiceSucceeded( IBase *pServiceBase,
+   ///                                       TransactionID const &rTranID) {
+   ///    ASSERT( pServiceBase );        // if false, then Service threw a bad pointer
+   ///
+   ///    ISampleAFUPing *m_pAALService; // used to call Release on the Service
+   ///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
+   ///    ASSERT( m_pAALService );
+   ///
+   ///    ISampleAFUPing *m_pPingAFU;    // used for Specific Service (in this case Ping)
+   ///    m_pPingAFU = dynamic_ptr<ISampleAFUPing>( iidSampleAFUPing, pServiceBase);
+   ///    ASSERT( m_pPingAFU );
+   /// }
+   /// @endcode
+   virtual void runtimeAllocateServiceSucceeded( IBase               *pServiceBase,
+                                                 TransactionID const &rTranID){};
+
+   /// @brief     Called by a Runtime object to pass exceptions and other
+   ///               unsolicited messages.
+   /// @param[in] rEvent will be an event that can be parsed to determine
+   ///               what occurred.
+   /// @return    void
+   virtual void runtimeEvent(const IEvent &rEvent){};
+   // </IRuntimeClient>
+
    // @param[in]  pclient       Interface of client of service.
    // @param[in]  rtid          TransactionID for routing event responses.
    // @param[in]  optArgs       Optional arguments.
@@ -319,8 +397,7 @@ public:
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
-   ///   Use getRuntimeServiceProvider to get a usable Runtime pointer
-   IRuntime * getRuntime() { return pAALServiceModule()->getRuntime(); }
+   IRuntime * getRuntime() { return m_Runtime; }
 
    /// Accessor to pointer to the Runtime Client
    IRuntimeClient * getRuntimeClient() { return m_RuntimeClient; }
@@ -329,7 +406,7 @@ public:
    //  Accessors to utility functions
    //---------------------------------
 
-   /// Enable service to allocate another Service. NOTE: default is the RuntimeClient is NOT notified
+   /// Enable service to allocate another Service.
    void allocService(IBase                  *pClient,
                      NamedValueSet const    &rManifest = NamedValueSet(),
                      TransactionID const    &rTranID   = TransactionID());
@@ -366,6 +443,7 @@ protected:
 
    NamedValueSet                     m_optArgs;
    IRuntimeClient                   *m_RuntimeClient;
+   IRuntime                         *m_Runtime;
    btEventHandler                    m_eventHandler;
    IServiceClient                   *m_pclient;
    IBase                            *m_pclientbase;
@@ -406,6 +484,7 @@ class AASLIB_API ServiceProxyBase: public ServiceBase
 {
 public:
    ServiceProxyBase(AALServiceModule *container,
+                    IRuntime         *pxlRuntime,
                     IAALTransport    *ptransport   = NULL,
                     IAALMarshaller   *marshaller   = NULL,
                     IAALUnMarshaller *unmarshaller = NULL);
@@ -421,14 +500,7 @@ public:
    //           call its direct ancestor's _init() FIRST to ensure that the class
    //           hiearchy _init() called.
    //=============================================================================
-#if 0
-    virtual IBase * _init(btEventHandler       eventHandler,
-                          btApplicationContext context,
-                          TransactionID const &rtid,
-                          NamedValueSet const &optArgs,
-                          CAALEvent           *pcmpltEvent = NULL);
-#endif
-    virtual IBase * _init(IBase                   *pclient,
+   virtual IBase * _init(IBase                   *pclient,
                           TransactionID const      &rtid,
                           NamedValueSet const      &optArgs,
                           CAALEvent                *pcmpltEvent = NULL);
@@ -451,6 +523,7 @@ class AASLIB_API ServiceStubBase: public ServiceBase
 {
 public:
    ServiceStubBase(AALServiceModule *container,
+                   IRuntime         *pxlRuntime,
                    IAALTransport    *ptransport  = NULL,
                    IAALMarshaller   *marshaller  = NULL,
                    IAALUnMarshaller *unmarshaller= NULL);
@@ -466,14 +539,6 @@ public:
    //           call its direct ancestor's _init() FIRST to ensure that the class
    //           hiearchy _init() called.
    //=============================================================================
-#if 0
-   virtual IBase * _init(btEventHandler       eventHandler,
-                         btApplicationContext context,
-                         TransactionID const &rtid,
-                         NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL);
-#endif
-
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,

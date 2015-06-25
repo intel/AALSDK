@@ -83,9 +83,7 @@ void ServiceBroker::init(TransactionID const &rtid)
    //  using a ServiceHost allows us to specifically plug in the built-in
    //  implementation. NOTE: This is  the way the default runtime services
    //  are bootstrapped.
-   m_pRMSvcHost = new ServiceHost(AAL_BUILTIN_SVC_MOD_ENTRY_POINT(librrm),
-                                  getRuntime(),
-                                  getRuntimeServiceProvider());
+   m_pRMSvcHost = new ServiceHost(AAL_BUILTIN_SVC_MOD_ENTRY_POINT(librrm));
 
    //Allocate the service.
 
@@ -94,7 +92,9 @@ void ServiceBroker::init(TransactionID const &rtid)
 
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
-   if ( !m_pRMSvcHost->allocService( dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
+   if ( !m_pRMSvcHost->allocService( getRuntime(),
+                                     getRuntimeServiceProvider(),
+                                     dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
       QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
@@ -285,7 +285,7 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
       ServiceHost *SvcHost = NULL;
       if ( NULL == (SvcHost = findServiceHost(sName)) ) {
          // Instantiate the core facilities
-         SvcHost = new ServiceHost(sName, getRuntime(), getRuntimeServiceProvider());
+         SvcHost = new ServiceHost(sName);
       }
 
       if ( !SvcHost->IsOK() ) {
@@ -299,7 +299,7 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
       }
 
       // Allocate the service
-      if ( !SvcHost->allocService(pServiceClientBase, rManifest, rTranID) ) {
+      if ( !SvcHost->allocService( getRuntime(), getRuntimeServiceProvider(),pServiceClientBase, rManifest, rTranID) ) {
          QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                         pServiceClient,
                                                         NULL,
@@ -632,7 +632,7 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      ServiceHost *SvcHost = NULL;
      if ( NULL == (SvcHost = findServiceHost(sName)) ) {
         // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
-        SvcHost = new ServiceHost(sName, pProxy, getRuntimeServiceProvider());
+        SvcHost = new ServiceHost(sName);
      }
 
      if ( !SvcHost->IsOK() ) {
@@ -646,7 +646,7 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      }
 
      // Allocate the service
-     if ( !SvcHost->allocService(pClientBase, nvsInstancerecord, origTid) ) {
+     if ( !SvcHost->allocService(pProxy, getRuntimeServiceProvider(), pClientBase, nvsInstancerecord, origTid) ) {
         QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                        dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
                                                        NULL,

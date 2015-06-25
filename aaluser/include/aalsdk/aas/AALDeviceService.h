@@ -97,10 +97,11 @@ class DeviceServiceBase : public ServiceBase, private IServiceClient
 public:
    /// DeviceServiceBase Constructor.
    DeviceServiceBase(AALServiceModule *container,
+                     IRuntime         *pRuntime,
                      IAALTransport    *ptransport   = NULL,
                      IAALMarshaller   *marshaller   = NULL,
                      IAALUnMarshaller *unmarshaller = NULL) :
-      ServiceBase(container, ptransport, marshaller, unmarshaller),
+      ServiceBase(container, pRuntime, ptransport, marshaller, unmarshaller),
       m_pAIA(NULL),
       m_pSession(NULL),
       m_devHandle(NULL),

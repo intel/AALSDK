@@ -124,17 +124,18 @@ public:
 #endif
 
    IBase * CreateServiceObject(AALServiceModule    *container,
-                               IBase               *pclient,
+                               IRuntime            *pRuntime,
+                               IBase               *Client,
                                TransactionID const &rtid,
                                NamedValueSet const &optArgs)
    {
-      m_pService = new I(container);
+      m_pService = new I(container,pRuntime);
       if ( NULL == m_pService ) {
          return NULL;
       }
 
       // Initialize the service
-      IBase *ptr = m_pService->_init(pclient, rtid, optArgs, NULL);
+      IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
 
       if( NULL == ptr ) {
          delete m_pService;
@@ -190,15 +191,15 @@ public:
    }
 #endif
    IBase * CreateServiceObject(AALServiceModule    *container,
-                               IBase               *pclient,
+                               IRuntime            *pRuntime,
+                               IBase               *Client,
                                TransactionID const &rtid,
                                NamedValueSet const &optArgs)
-
     {
        // Only crate the new instance if one does not exist
        if ( NULL == m_pService ) {
 
-          m_pService = new I(container);
+          m_pService = new I(container,pRuntime);
           if ( NULL == m_pService ) {
              return NULL;
           }
@@ -206,7 +207,7 @@ public:
        }
 
        // Initialize the service
-       IBase *ptr = m_pService->_init(pclient, rtid, optArgs, NULL);
+       IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
 
        if ( NULL == ptr ) {
           delete m_pService;

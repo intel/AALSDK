@@ -221,7 +221,7 @@ void uAIA::init( TransactionID const& rtid )
 {
    AAL_INFO(LM_UAIA, "uAIA::Create. in\n");
 
-   CAIA *pCAIA = new CAIA(m_pcontainer);
+   CAIA *pCAIA = new CAIA(m_pcontainer, getRuntime() );
 
    pCAIA->SetuAIA(this);
 

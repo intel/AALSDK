@@ -283,6 +283,7 @@ public:
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
+                                       IRuntime            *pRuntime,
                                        IBase               *Client,
                                        TransactionID const &rtid,
                                        NamedValueSet const &optArgs) = 0;
@@ -325,7 +326,8 @@ public:
     ///
     /// @retval  IBase *  On success.
     /// @retval  NULL     On failure.
-    virtual IBase *Construct(IBase               *Client,
+    virtual IBase *Construct(IRuntime            *pxlRuntime,
+                             IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
@@ -384,7 +386,8 @@ public:
                             btApplicationContext context,
                             NamedValueSet const &optArgs = NamedValueSet());
 #endif
-    virtual IBase *Construct(IBase               *Client,
+    virtual IBase *Construct(IRuntime            *pxlRuntime,
+                             IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet());
    virtual void Destroy();

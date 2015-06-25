@@ -120,10 +120,14 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(const AAL::IEvent&);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeStartFailed(const IEvent &rEvent);
 
@@ -151,7 +155,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -171,7 +175,7 @@ RuntimeClient::RuntimeClient() :
    configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 #endif
 
-   if(!m_Runtime.start(this, configArgs)){
+   if(!m_Runtime.start(configArgs)){
       m_isOK = false;
       return;
    }
@@ -210,18 +214,31 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
     m_Sem.Post(1);
  }
 
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+   ERR("runtimeStopFailed");
+   PrintExceptionDescription(rEvent);
+}
+
+void RuntimeClient::runtimeCreateOrGetProxyFailed(const AAL::IEvent &rEvent)
+{
+   ERR("runtimeCreateOrGetProxyFailed");
+   PrintExceptionDescription(rEvent);
+   m_isOK = false;
+}
+
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
     ERR("Runtime start failed");
-    ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
+    m_isOK = false;
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
+   m_isOK = false;
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -260,26 +277,26 @@ IRuntime * RuntimeClient::getRuntime()
                   ostringstream &oss);
 
     // <ISPLClient>
-    virtual void  OnTransactionStarted(TransactionID const &TranID,
-                                        btVirtAddr           AFUDSM,
-                                        btWSSize             AFUDSMSize);
+    virtual void OnTransactionStarted(TransactionID const &TranID,
+                                      btVirtAddr           AFUDSM,
+                                      btWSSize             AFUDSMSize);
     virtual void OnContextWorkspaceSet(TransactionID const &TranID);
 
-    virtual void   OnTransactionFailed(const IEvent &Event);
+    virtual void OnTransactionFailed(const IEvent &Event);
 
     virtual void OnTransactionComplete(TransactionID const &TranID);
 
     virtual void OnTransactionStopped(TransactionID const &TranID);
-    virtual void     OnWorkspaceAllocated(TransactionID const &TranID,
-                                          btVirtAddr           WkspcVirt,
-                                          btPhysAddr           WkspcPhys,
-                                          btWSSize             WkspcSize);
+    virtual void OnWorkspaceAllocated(TransactionID const &TranID,
+                                      btVirtAddr           WkspcVirt,
+                                      btPhysAddr           WkspcPhys,
+                                      btWSSize             WkspcSize);
 
-    virtual void     OnWorkspaceAllocateFailed(const IEvent &Event);
+    virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
 
-    virtual void     OnWorkspaceFreed(TransactionID const &TranID);
+    virtual void OnWorkspaceFreed(TransactionID const &TranID);
 
-    virtual void     OnWorkspaceFreeFailed(const IEvent &Event);
+    virtual void OnWorkspaceFreeFailed(const IEvent &Event);
     // </ISPLClient>
 
     // <begin IServiceClient interface>
@@ -288,7 +305,9 @@ IRuntime * RuntimeClient::getRuntime()
 
     virtual void serviceAllocateFailed(const IEvent        &rEvent);
 
-    virtual void serviceFreed(TransactionID const &rTranID);
+    virtual void serviceReleased(TransactionID const &rTranID);
+
+    virtual void serviceReleaseFailed(const AAL::IEvent&);
 
     virtual void serviceEvent(const IEvent &rEvent);
     // <end IServiceClient interface>
@@ -561,18 +580,26 @@ void HelloSPLLBApp::run()
 
  void HelloSPLLBApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
     ERR("Failed to allocate a Service");
-    ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
+    m_Status = false;
     m_Sem.Post(1);
  }
 
- void HelloSPLLBApp::serviceFreed(TransactionID const &rTranID)
+ void HelloSPLLBApp::serviceReleased(TransactionID const &rTranID)
  {
     MSG("Service Freed");
     // Unblock Main()
     m_Sem.Post(1);
  }
+
+void HelloSPLLBApp::serviceReleaseFailed(const IEvent &rEvent)
+{
+   ERR("serviceReleaseFailed");
+   PrintExceptionDescription(rEvent);
+   m_Status = false;
+   m_Sem.Post(1);
+}
 
  // <ISPLClient>
 void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
@@ -591,9 +618,8 @@ void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
 void HelloSPLLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -607,9 +633,8 @@ void HelloSPLLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 void HelloSPLLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -633,9 +658,8 @@ void  HelloSPLLBApp::OnContextWorkspaceSet( TransactionID const &TranID)
 /// CMyApp Client implementation of ISPLClient::OnTransactionFailed
 void  HelloSPLLBApp::OnTransactionFailed( const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    MSG("Runtime AllocateService failed");
-   MSG(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    m_bIsOK = false;
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;

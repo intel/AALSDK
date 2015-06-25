@@ -301,7 +301,8 @@ public:
    virtual void OnServiceAllocated(IBase *,
                                    TransactionID const &);
    virtual void OnServiceAllocateFailed(const IEvent &);
-   virtual void OnServiceFreed(TransactionID const &);
+   virtual void OnServiceReleased(TransactionID const &);
+   virtual void OnServiceReleaseFailed(const IEvent &);
    virtual void OnServiceEvent(const IEvent &);
    // </ISingleAFUApp>
 
@@ -408,9 +409,20 @@ void CMyApp::OnServiceAllocateFailed(const IEvent &e)
    ERR("Service Allocate Failed");
 }
 
-void CMyApp::OnServiceFreed(TransactionID const &tid)
+void CMyApp::OnServiceReleased(TransactionID const &tid)
 {
    INFO("Service Freed");
+}
+void CMyApp::OnServiceReleaseFailed(const IEvent &e)
+{
+   m_bIsOK = false;
+   INFO("Service Release Start Failed");
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+       PrintExceptionDescription(e);
+       m_bIsOK = false;
+       Post();
+       return;
+    }
 }
 
 void CMyApp::OnServiceEvent(const IEvent &e)
@@ -512,7 +524,7 @@ int main(int argc, char *argv[])
 
    CMyApp        myapp;
    NamedValueSet args;
-   Runtime       aal;
+   Runtime       aal(&myapp);
 
    myapp.AFUTarget(gMyCmdLine.AFUTarget);
 
@@ -526,7 +538,7 @@ int main(int argc, char *argv[])
    }
 
    INFO("Starting the AAL Runtime");
-   if ( aal.start(&myapp, args) ) {
+   if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
       ERR("AAL Runtime start failed");

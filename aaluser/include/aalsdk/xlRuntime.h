@@ -244,10 +244,10 @@ public:
 
 
    /// @brief     Releases pointer to the Runtime acquired from getRuntimeProxy.
-   /// @param[in] rEvent will be an event that can be parsed to determine
-   ///               what occurred.
+   /// @param[in] Optional pointer to proxy to release. Self if not present
    /// @return    true - success
    virtual btBool releaseRuntimeProxy(IRuntime *pRuntime)                        = 0;
+   virtual btBool releaseRuntimeProxy()                                          = 0;
 
    /// @brief     Gets the pointer to the Runtime interface attached to this Proxy.
    /// @return    Client Pointer
@@ -289,6 +289,8 @@ public:
    IRuntime *getRuntimeProxy(IRuntimeClient *pClient);
 
    btBool releaseRuntimeProxy(IRuntime *pRuntime);
+
+   btBool releaseRuntimeProxy();
 
    IRuntimeClient *getRuntimeClient();
 

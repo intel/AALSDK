@@ -184,7 +184,7 @@ RuntimeClient::RuntimeClient() :
    configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 #endif
 
-   if(!m_Runtime.start(this, configArgs)){
+   if(!m_Runtime.start(configArgs)){
       m_isOK = false;
       return;
    }
@@ -203,7 +203,8 @@ btBool RuntimeClient::isOK()
 
 void RuntimeClient::runtimeCreateOrGetProxyFailed(const IEvent &rEvent)
 {
-    MSG("Runtime Create or Get Proxy failed");
+    ERR("Runtime Create or Get Proxy failed");
+    PrintExceptionDescription(rEvent);
 }
 
 void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
@@ -230,9 +231,8 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime start failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
 }
 
 void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
@@ -242,9 +242,8 @@ void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
 
 }
 
@@ -505,22 +504,22 @@ void HelloCCINLBApp::run()
 
  void HelloCCINLBApp::serviceAllocateFailed(const IEvent        &rEvent)
  {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
     ERR("Failed to allocate a Service");
-    ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
     m_Sem.Post(1);
  }
 
  void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
  {
-    MSG("Service Freed");
+    MSG("Service Released");
     // Unblock Main()
     m_Sem.Post(1);
  }
 
  void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
  {
-    MSG("Failed to release a Service");
+    ERR("Failed to release a Service");
+    PrintExceptionDescription(rEvent);
     m_Sem.Post(1);
  }
 
@@ -570,11 +569,8 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
 void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
-
-
+   PrintExceptionDescription(rEvent);
    m_Status = false;
    m_Sem.Post(1);
 }
@@ -591,9 +587,8 @@ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    m_Status = false;
    m_Sem.Post(1);
 }

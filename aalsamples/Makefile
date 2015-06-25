@@ -38,15 +38,7 @@ Hello_AAL_Service \
 Hello_AAL \
 Hello_CCI_NLB \
 Hello_SPL_LB
-#cciapp \
-#CCILib \
-#CCIDemo \
-#SampleBrokerService \
-#splapp \
-#splapp2 \
-#splapp3 \
-#SyncApp1 \
-#UMsgTest \
+
 
 MFLAGS  =
 ifneq (,$(ndebug))
