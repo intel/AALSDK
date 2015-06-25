@@ -38,7 +38,7 @@
 #ifndef __ISERVICEBROKER_H__
 #define __ISERVICEBROKER_H__
 #include <aalsdk/AALTypes.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/IServiceClient.h>
 
 BEGIN_NAMESPACE(AAL)

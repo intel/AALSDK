@@ -52,7 +52,7 @@
 /// 04/10/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
 using namespace AAL;

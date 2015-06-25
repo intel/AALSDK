@@ -71,7 +71,7 @@
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IMessageHandler.h>
 #include <aalsdk/IServiceClient.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
      #pragma warning( push)

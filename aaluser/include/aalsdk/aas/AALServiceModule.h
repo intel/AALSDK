@@ -61,7 +61,7 @@
 #include <aalsdk/CAALBase.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/OSSemaphore.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/aas/_xlRuntimeServices.h>
 
 /// @addtogroup Services

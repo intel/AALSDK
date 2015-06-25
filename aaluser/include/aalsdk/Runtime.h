@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: xlruntime.h
+//        FILE: Runtime.h
 //     CREATED: Mar 3, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
@@ -207,7 +207,7 @@ public:
 ///   the framework is designed to use pointers to interfaces, which for Runtime
 ///   is IRuntime.
 //=============================================================================
-class XLRT_API IRuntime
+class AALRUNTIME_API IRuntime
 {
 public:
    /// @brief     Starts the Runtime and all internal Services.
@@ -272,7 +272,7 @@ protected:
 //=============================================================================
 class _runtime; //Forward reference
 
-class XLRT_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
+class AALRUNTIME_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
 {
 public:
    Runtime(IRuntimeClient *pClient);

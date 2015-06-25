@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: _xlServiceBroker.h
+//        FILE: _ServiceBroker.h
 //     CREATED: Mar 14, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
@@ -34,8 +34,8 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-#ifndef ___XLSERVICEBROKER_H__
-#define ___XLSERVICEBROKER_H__
+#ifndef ___ServiceBroker_H__
+#define ___ServiceBroker_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/aas/IServiceBroker.h>
 #include <aalsdk/aas/AALService.h>
@@ -47,13 +47,13 @@
 // Name: AAL_DECLARE_SVC_MOD
 // Description: Declares a module entry point.
 //=============================================================================
-AAL_DECLARE_SVC_MOD(localServiceBroker, XLRT_API)
+AAL_DECLARE_SVC_MOD(localServiceBroker, AALRUNTIME_API)
 
 
 BEGIN_NAMESPACE(AAL)
 
 
-class _xlServiceBroker : public  ServiceBase,
+class _ServiceBroker : public  ServiceBase,
                          private CUnCopyable,
                          public  IServiceBroker
 {
@@ -63,7 +63,7 @@ public:
 
 
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlServiceBroker, ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(_ServiceBroker, ServiceBase),
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
@@ -88,7 +88,7 @@ public:
                      TransactionID const      &rTranID);
 
 
-   ~_xlServiceBroker();
+   ~_ServiceBroker();
 
 protected:
    ServiceHost *findServiceHost(std::string const &sName);
@@ -110,4 +110,4 @@ protected:
 END_NAMESPACE(AAL)
 
 
-#endif // ___XLSERVICEBROKER_H__
+#endif // ___ServiceBroker_H__

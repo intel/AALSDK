@@ -41,7 +41,7 @@
 
 BEGIN_NAMESPACE(AAL)
 
-class XLRT_API IXLRuntimeServices
+class AALRUNTIME_API IXLRuntimeServices
 {
 public:
 

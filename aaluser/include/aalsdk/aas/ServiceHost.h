@@ -50,7 +50,7 @@ BEGIN_NAMESPACE(AAL)
 // Interface: public
 // Comments:
 //=============================================================================
-class XLRT_API ServiceHost : private CUnCopyable
+class AALRUNTIME_API ServiceHost : private CUnCopyable
 {
 public:
    ServiceHost( btcString root_name );

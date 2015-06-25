@@ -47,7 +47,7 @@
                                        // Here for backward compatibility.
                                        // Better to move to where SingleAFUApp.h is #included itself
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 using namespace AAL;
 
 /// @addtogroup SingleAFUApp

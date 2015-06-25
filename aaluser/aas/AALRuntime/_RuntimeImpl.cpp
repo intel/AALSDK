@@ -24,27 +24,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: _xlRuntimeImpl.cpp
+//        FILE: _RuntimeImpl.cpp
 //     CREATED: Mar 7, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE: Implementation of XL _runtime class
+// PURPOSE: Implementation of AAL _runtime class
 // HISTORY:
 // COMMENTS: This is the internal implementation of the runtime
 // WHEN:          WHO:     WHAT:
+// 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-// XL Runtime definitions
+// Runtime definitions
 #include "aalsdk/AALTypes.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/Dispatchables.h"
 
-#include "_xlRuntimeImpl.h"
-#include "_xlMessageDelivery.h"
-#include "_xlServiceBroker.h"
+#include "_RuntimeImpl.h"
+#include "_MessageDelivery.h"
+#include "_ServiceBroker.h"
 
 #include "aalsdk/osal/Sleep.h"
 #include "aalsdk/osal/Env.h"

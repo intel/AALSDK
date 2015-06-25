@@ -29,36 +29,36 @@
 ##  Content:
 ##     libxlrt: Intel(R) Accelerator Abstraction Layer Library
 ##        Accelerator Abstraction Services XL (accelerator) Runtime Library
-##     aas/XLRTLib/Makefile.am
+##     aas/AALRuntime/Makefile.am
 ##  Author:
 ##     Joseph Grecco, Intel Corporation
 ##     Tim Whisonant, Intel Corporation
 ##  History:
 ##******************************************************************************
 
-## libxlrt is a typically loaded shared object library
+## libaalrt is a typically loaded shared object library
 
-lib_LTLIBRARIES=libxlrt.la
+lib_LTLIBRARIES=libaalrt.la
 
-libxlrt_la_SOURCES=\
-xlrtlib.cpp \
-xlRuntime.cpp \
-_xlRuntimeImpl.h \
-_xlRuntimeImpl.cpp \
-_xlMessageDelivery.h \
-_xlMessageDelivery.cpp \
-_xlServiceBroker.h \
-_xlServiceBroker.cpp \
+libaalrt_la_SOURCES=\
+rtlib.cpp \
+Runtime.cpp \
+_RuntimeImpl.h \
+_RuntimeImpl.cpp \
+_MessageDelivery.h \
+_MessageDelivery.cpp \
+_ServiceBroker.h \
+_ServiceBroker.cpp \
 ServiceHost.cpp
 
-libxlrt_la_CPPFLAGS=\
+libaalrt_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include \
 -I$(srcdir)
 
-libxlrt_la_LDFLAGS=\
--version-info $(XLRT_VERSION_CURRENT):$(XLRT_VERSION_REVISION):$(XLRT_VERSION_AGE)
+libaalrt_la_LDFLAGS=\
+-version-info $(AALRUNTIME_VERSION_CURRENT):$(AALRUNTIME_VERSION_REVISION):$(AALRUNTIME_VERSION_AGE)
 
-libxlrt_la_LIBADD=\
+libaalrt_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la

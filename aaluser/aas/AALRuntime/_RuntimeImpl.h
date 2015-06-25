@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: _xlruntimeimpl.h
+//        FILE: _runtimeimpl.h
 //     CREATED: Mar 7, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
@@ -32,12 +32,13 @@
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
+// 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
-#ifndef __XLRUNTIMEIMPL_H__
-#define __XLRUNTIMEIMPL_H__
+#ifndef __RUNTIMEIMPL_H__
+#define __RUNTIMEIMPL_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/aas/_xlRuntimeServices.h>
 #include <aalsdk/CUnCopyable.h>
 #include <aalsdk/AALBase.h>

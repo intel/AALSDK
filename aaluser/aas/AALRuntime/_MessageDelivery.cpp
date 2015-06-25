@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file _xlMessageDelivery.cpp
+/// @file _MessageDelivery.cpp
 /// @brief Definitions for the XL Runtime internal default Message Delivery facility.
 /// @ingroup MDS
 ///
@@ -35,7 +35,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 03/13/2014     JG       Initial version@endverbatim
+/// 03/13/2014     JG       Initial version
+/// 06/25/2015     JG       Removed RT from name@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -46,7 +47,7 @@
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
 #include "aalsdk/Dispatchables.h"
-#include "_xlMessageDelivery.h"
+#include "_MessageDelivery.h"
 
 
 // Define the factory to use for this service.
@@ -60,7 +61,7 @@
 //   well known name is generated.
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_xlMessageDelivery >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_MessageDelivery >
 
 
 #if defined ( __AAL_WINDOWS__ )
@@ -68,7 +69,7 @@
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, localMDS, XLRT_API, XLRT_VERSION, XLRT_VERSION_CURRENT, XLRT_VERSION_REVISION, XLRT_VERSION_AGE)
+AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, localMDS, AALRUNTIME_API, AALRUNTIME_VERSION, AALRUNTIME_VERSION_CURRENT, AALRUNTIME_VERSION_REVISION, AALRUNTIME_VERSION_AGE)
    // Only default commands for now.
 AAL_END_SVC_MOD()
 
@@ -90,7 +91,7 @@ BEGIN_NAMESPACE(AAL)
 // Interface: public
 // Comments: The only thing required is to send the message
 //=============================================================================
-void _xlMessageDelivery::init(TransactionID const &rtid)
+void _MessageDelivery::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
    QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
@@ -105,7 +106,7 @@ void _xlMessageDelivery::init(TransactionID const &rtid)
 // Interface: public
 // Comments:
 //=============================================================================
-btBool _xlMessageDelivery::Release(TransactionID const &rTranID, btTime timeout)
+btBool _MessageDelivery::Release(TransactionID const &rTranID, btTime timeout)
 {
    AutoLock(this);
    // Delete the Dispatcher. This will cause all messages to be processed
@@ -117,7 +118,7 @@ btBool _xlMessageDelivery::Release(TransactionID const &rTranID, btTime timeout)
 }
 
 // Quiet Release. Used when Service is unloaded.
-btBool _xlMessageDelivery::Release(btTime timeout)
+btBool _MessageDelivery::Release(btTime timeout)
 {
    AutoLock(this);
    // Delete the Dispatcher. This will cause all messages to be processed
@@ -135,7 +136,7 @@ btBool _xlMessageDelivery::Release(btTime timeout)
 // Interface: public
 // Comments: Unsupported
 //=============================================================================
-EDS_Status _xlMessageDelivery::Schedule()
+EDS_Status _MessageDelivery::Schedule()
 {
    return EDS_statusUnsupportedModel;
 }
@@ -146,7 +147,7 @@ EDS_Status _xlMessageDelivery::Schedule()
 // Interface: public
 // Comments:
 //=============================================================================
-void _xlMessageDelivery::StartEventDelivery()
+void _MessageDelivery::StartEventDelivery()
 {
    AutoLock(this);
    if ( NULL == m_Dispatcher ) {
@@ -160,7 +161,7 @@ void _xlMessageDelivery::StartEventDelivery()
 // Interface: public
 // Comments: Brute force method
 //=============================================================================
-void _xlMessageDelivery::StopEventDelivery()
+void _MessageDelivery::StopEventDelivery()
 {
    AutoLock(this);
    if( NULL != m_Dispatcher ) {
@@ -174,7 +175,7 @@ void _xlMessageDelivery::StopEventDelivery()
 // Interface: public
 // Comments: Unsupported
 //=============================================================================
-btBool _xlMessageDelivery::SetParms(NamedValueSet const &rparms)
+btBool _MessageDelivery::SetParms(NamedValueSet const &rparms)
 {
    return false;
 }
@@ -189,7 +190,7 @@ btBool _xlMessageDelivery::SetParms(NamedValueSet const &rparms)
 //           2 - for functors wrapped as events (deprecated)
 //           3 - for proper dispatchable functors.
 //=============================================================================
-btBool _xlMessageDelivery::QueueEvent(btEventHandler handler,
+btBool _MessageDelivery::QueueEvent(btEventHandler handler,
                                       CAALEvent     *pevent )
 {
    AutoLock(this);
@@ -201,7 +202,7 @@ btBool _xlMessageDelivery::QueueEvent(btEventHandler handler,
    return true;
 }
 
-btBool _xlMessageDelivery::QueueEvent(btObjectType  parm,
+btBool _MessageDelivery::QueueEvent(btObjectType  parm,
                                       CAALEvent    *pevent )
 {
    AutoLock(this);
@@ -212,7 +213,7 @@ btBool _xlMessageDelivery::QueueEvent(btObjectType  parm,
    return true;
 }
 
-btBool _xlMessageDelivery::QueueEvent(btObjectType   parm,
+btBool _MessageDelivery::QueueEvent(btObjectType   parm,
                                       IDispatchable *pfunctor)
 {
    AutoLock(this);
@@ -230,18 +231,18 @@ btBool _xlMessageDelivery::QueueEvent(btObjectType   parm,
 // Interface: public
 // Comments: Unsupported
 //=============================================================================
-IEventDispatcher *_xlMessageDelivery::GetEventDispatcher(EDSDispatchClass disclass)
+IEventDispatcher *_MessageDelivery::GetEventDispatcher(EDSDispatchClass disclass)
 {
    return NULL;
 }
 
 //=============================================================================
-// Name: ~_xlMessageDelivery
+// Name: ~_MessageDelivery
 // Description: Retrieve the IEventDispatcher interface.
 // Interface: public
 // Comments:
 //=============================================================================
-_xlMessageDelivery::~_xlMessageDelivery()
+_MessageDelivery::~_MessageDelivery()
 {
    StopEventDelivery();
 }

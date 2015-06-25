@@ -39,7 +39,7 @@
 #include <aalsdk/AALDefs.h>
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IServiceClient.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 
 BEGIN_NAMESPACE(AAL)
 

@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file _xlMessageDelivery.h
+/// @file _MessageDelivery.h
 /// @brief Definitions for the XL Runtime internal default Message Delivery facility.
 /// @ingroup MDS
 ///
@@ -41,8 +41,8 @@
 /// WHEN:          WHO:     WHAT:
 /// 03/13/2014     JG       Initial version@endverbatim
 //****************************************************************************
-#ifndef __XLMESSAGEDELIVERY_H__
-#define __XLMESSAGEDELIVERY_H__
+#ifndef __MessageDelivery_H__
+#define __MessageDelivery_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALIDDefs.h>
 #include <aalsdk/eds/AASEventDeliveryService.h>
@@ -61,26 +61,26 @@
 // Description: Declares a module entry point.
 // Comments: Not used for static built-in Services
 //=============================================================================
-AAL_DECLARE_SVC_MOD(localMDS, XLRT_API)
+AAL_DECLARE_SVC_MOD(localMDS, AALRUNTIME_API)
 
 
 BEGIN_NAMESPACE(AAL)
 
-class _xlMessageDelivery;
+class _MessageDelivery;
 
 //=============================================================================
-// Name: _xlMessageDelivery
+// Name: _MessageDelivery
 // Description: Default message delivery facility
 // Interface: IEventDeliveryService
 // Comments:  This object is operational and meets its minimum functional
 //            requirements pior to init()
 //=============================================================================
-class _xlMessageDelivery : public ServiceBase,
+class _MessageDelivery : public ServiceBase,
                            public IEventDeliveryService
 {
 public:
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(_xlMessageDelivery, ServiceBase)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(_MessageDelivery, ServiceBase)
    {
       // Default is a simple single threaded scheduler.
       m_Dispatcher = new OSLThreadGroup;
@@ -124,7 +124,7 @@ public:
    /// Retrieve the IEventDispatcher interface.
    IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal);
 
-   ~_xlMessageDelivery();
+   ~_MessageDelivery();
 
 protected:
    OSLThreadGroup *m_Dispatcher;
@@ -135,4 +135,4 @@ END_NAMESPACE(AAL)
 
 /// @} group MDS
 
-#endif // __XLMESSAGEDELIVERY_H__
+#endif // __MessageDelivery_H__

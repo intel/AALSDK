@@ -66,7 +66,7 @@ dnl ## Library Versioning ######################################################
 dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [3],[4],[0])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [3],[4],[0])
-AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [4],[2],[0])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [4],[2],[0])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [4],[2],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[0],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [2],[0],[0])
@@ -193,7 +193,7 @@ AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
-                 aas/XLRTLib/Makefile
+                 aas/AALRuntime/Makefile
                  aas/XLRRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile

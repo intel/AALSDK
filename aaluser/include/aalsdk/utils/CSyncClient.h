@@ -45,7 +45,7 @@
 #define __AALSDK_UTILS_CSYNCCLIENT_H__
 
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 using namespace AAL;
 
 

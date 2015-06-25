@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: xlruntime.cpp
+//        FILE: runtime.cpp
 //     CREATED: Mar 3, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
@@ -32,18 +32,19 @@
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
+// 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-// XL Runtime definitions
+// AAL Runtime definitions
 #include "aalsdk/AALTypes.h"
-#include "aalsdk/xlRuntime.h"
-#include "_xlRuntimeImpl.h"
+#include "aalsdk/Runtime.h"
+#include "_RuntimeImpl.h"
 #include "aalsdk/CAALEvent.h"
 
-/// @addtogroup XLRuntime
+/// @addtogroup AAL Runtime
 /// @{
 
 BEGIN_NAMESPACE(AAL)

@@ -50,4 +50,4 @@ libSWSimCCIAFU_la_LDFLAGS=\
 libSWSimCCIAFU_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la
+$(top_builddir)/aas/AALRuntime/libaalrt.la

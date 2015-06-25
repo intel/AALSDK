@@ -96,7 +96,7 @@ clean-local: $(DOXYGEN_CLEAN)
 SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
-aas/XLRTLib \
+aas/AALRuntime \
 aas/XLRRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
@@ -154,7 +154,7 @@ include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
 include/aalsdk/Dispatchables.h \
-include/aalsdk/xlRuntime.h \
+include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
 include/aalsdk/IMessageHandler.h \

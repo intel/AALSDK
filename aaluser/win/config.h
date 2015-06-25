@@ -88,10 +88,10 @@
 #define UTILSAFU_VERSION_AGE          0
 #define UTILSAFU_VERSION              "0.0.0"
 
-#define XLRT_VERSION_CURRENT          0
-#define XLRT_VERSION_REVISION         0
-#define XLRT_VERSION_AGE              0
-#define XLRT_VERSION                  "0.0.0"
+#define AALRUNTIME_VERSION_CURRENT          0
+#define AALRUNTIME_VERSION_REVISION         0
+#define AALRUNTIME_VERSION_AGE              0
+#define AALRUNTIME_VERSION                  "0.0.0"
 
 #define SAMPLEAFU1_VERSION_CURRENT    0
 #define SAMPLEAFU1_VERSION_REVISION   0

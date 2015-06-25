@@ -265,11 +265,11 @@
 # else
 #    define OSAL_API                     __declspec(dllimport)
 # endif // OSAL_EXPORTS
-# ifdef XLRT_EXPORTS
-#    define XLRT_API                     __declspec(dllexport)
+# ifdef AALRT_EXPORTS
+#    define AALRT_API                     __declspec(dllexport)
 # else
-#    define XLRT_API                     __declspec(dllimport)
-# endif // XLRT_EXPORTS
+#    define AALRT_API                     __declspec(dllimport)
+# endif // AALRT_EXPORTS
 # ifdef AASLIB_EXPORTS
 #    define AASLIB_API                   __declspec(dllexport)
 # else
@@ -323,8 +323,8 @@
 # define __declspec(x)
 // OSAL
 # define OSAL_API                        __declspec(0)
-// XLRT
-# define XLRT_API                        __declspec(0)
+// AALRT
+# define AALRT_API                        __declspec(0)
 // AASLib
 # define AASLIB_API                      __declspec(0)
 // uAIA
