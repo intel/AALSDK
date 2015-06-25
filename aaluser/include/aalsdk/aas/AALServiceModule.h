@@ -326,7 +326,7 @@ public:
     ///
     /// @retval  IBase *  On success.
     /// @retval  NULL     On failure.
-    virtual IBase *Construct(IRuntime            *pxlRuntime,
+    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
                              IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet()) = 0;
@@ -339,8 +339,8 @@ public:
    virtual void   Destroy() = 0;
 
    // AAL 4.0 Service Interface (DEPRECATE) - Used for Event Queuing
-   virtual void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices) = 0;
-   virtual IXLRuntimeServices  *getRuntimeServiceProvider() = 0;
+   virtual void setRuntimeServiceProvider(IAALRUNTIMEServices *pRuntimeServices) = 0;
+   virtual IAALRUNTIMEServices  *getRuntimeServiceProvider() = 0;
 
    virtual void setRuntime(IRuntime *pRuntime) = 0;
    virtual IRuntime  *getRuntime() = 0;
@@ -386,7 +386,7 @@ public:
                             btApplicationContext context,
                             NamedValueSet const &optArgs = NamedValueSet());
 #endif
-    virtual IBase *Construct(IRuntime            *pxlRuntime,
+    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
                              IBase               *Client,
                              TransactionID const &tid = TransactionID(),
                              NamedValueSet const &optArgs = NamedValueSet());
@@ -401,14 +401,14 @@ public:
    // </IServiceModuleCallback>
 
    // AAL 4.0 Service Interface
-   void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices)
+   void setRuntimeServiceProvider(IAALRUNTIMEServices *pRuntimeServices)
    {
       // Lock
       m_RuntimeServices = pRuntimeServices;
    }
 
    // AAL 4.0 Service Interface
-   IXLRuntimeServices  *getRuntimeServiceProvider()
+   IAALRUNTIMEServices  *getRuntimeServiceProvider()
    {
       // Lock
       return m_RuntimeServices;
@@ -497,7 +497,7 @@ protected:
    IAALService                            *m_pService;
    btUnsignedInt                           m_refcount; // TODO use CCountedObject
 
-   IXLRuntimeServices                     *m_RuntimeServices;
+   IAALRUNTIMEServices                     *m_RuntimeServices;
    IRuntime                               *m_Runtime;
    IRuntimeClient                         *m_RuntimeClient;
    ISvcsFact                              &m_SvcsFact;

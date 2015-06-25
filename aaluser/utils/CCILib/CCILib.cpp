@@ -501,8 +501,8 @@ protected:
          args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
       } else {
          NamedValueSet ConfigRecord;
-         ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-         args.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+         ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+         args.Add(AALRUNTIME_CONFIG_RECORD, ConfigRecord);
       }
 
       TRACE(GetSynchronizer(), TR_INFO, "Starting the AAL Runtime\n");

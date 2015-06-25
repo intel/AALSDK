@@ -38,14 +38,14 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALBase.h>
 
-/// @addtogroup XLRuntime
+/// @addtogroup AALRUNTIME
 /// @{
 
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 /// @class        IServiceClient
-/// @brief        Client Interface for any Service object in the AAL XLRuntime.
+/// @brief        Client Interface for any Service object in the AAL AALRUNTIME.
 ///
 ///   An object that
 ///   wants to use a Service in the XL Runtime instantiates an instance of this class,
@@ -130,4 +130,4 @@ END_NAMESPACE(AAL)
 
 #endif // __AALSDK_ISERVICECLIENT_H__
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME

@@ -101,7 +101,7 @@ AASLIB_API TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, bt
 /// @param[in]  pTranID      Pointer to the TransactionID to be copied into the Event.
 AASLIB_API void ReThrow(IBase               *This,
                         const IEvent        &theEvent,
-                        IXLRuntimeServices  *pDispatcher,
+                        IAALRUNTIMEServices  *pDispatcher,
                         btEventHandler       Handler,
                         const TransactionID *pTranID);
 
@@ -124,7 +124,7 @@ AASLIB_API void ReThrow(IBase               *This,
 /// @param[in]  Handler      Event handler pointer.
 AASLIB_API void UnWrapAndReThrow(IBase              *This,
                                  const IEvent       &theEvent,
-                                 IXLRuntimeServices *pDispatcher,
+                                 IAALRUNTIMEServices *pDispatcher,
                                  btEventHandler      Handler);
 
 /// @} group EventUtils

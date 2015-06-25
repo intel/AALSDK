@@ -44,7 +44,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOSAL", "..\aas\OSAL\win\
 		{B5633A5B-A64E-4EF9-BFC2-5069502EE175} = {B5633A5B-A64E-4EF9-BFC2-5069502EE175}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libxlrt", "..\aas\XLRTLib\win\libxlrt.vcxproj", "{314AD84F-1736-415A-98BD-33129F049FE3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libaalrt", "..\aas\aalrtLib\win\libaalrt.vcxproj", "{314AD84F-1736-415A-98BD-33129F049FE3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4C7A6B0B-E7CD-4866-B642-1909495B8682} = {4C7A6B0B-E7CD-4866-B642-1909495B8682}
 		{B5633A5B-A64E-4EF9-BFC2-5069502EE175} = {B5633A5B-A64E-4EF9-BFC2-5069502EE175}
@@ -196,8 +196,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aalsdk", "aalsdk", "{628F31
 		..\include\aalsdk\Registrar.h = ..\include\aalsdk\Registrar.h
 		..\include\aalsdk\ResMgr.h = ..\include\aalsdk\ResMgr.h
 		..\include\aalsdk\uAIALib.h = ..\include\aalsdk\uAIALib.h
-		..\include\aalsdk\xlrtlib.h = ..\include\aalsdk\xlrtlib.h
-		..\include\aalsdk\xlRuntime.h = ..\include\aalsdk\xlRuntime.h
+		..\include\aalsdk\aalrtlib.h = ..\include\aalsdk\aalrtlib.h
+		..\include\aalsdk\AALRUNTIME.h = ..\include\aalsdk\AALRUNTIME.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aalclp", "aalclp", "{C47FC3D9-4C05-4856-8FE4-8474DFA4C246}"
@@ -207,7 +207,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aalclp", "aalclp", "{C47FC3
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aas", "aas", "{D1260D1D-EE07-4FBA-93E9-C549440949DF}"
 	ProjectSection(SolutionItems) = preProject
-		..\include\aalsdk\aas\_xlRuntimeServices.h = ..\include\aalsdk\aas\_xlRuntimeServices.h
+		..\include\aalsdk\aas\_AALRUNTIMEServices.h = ..\include\aalsdk\aas\_AALRUNTIMEServices.h
 		..\include\aalsdk\aas\AALDeviceService.h = ..\include\aalsdk\aas\AALDeviceService.h
 		..\include\aalsdk\aas\AALInProcServiceFactory.h = ..\include\aalsdk\aas\AALInProcServiceFactory.h
 		..\include\aalsdk\aas\AALIPCServiceFactory.h = ..\include\aalsdk\aas\AALIPCServiceFactory.h
@@ -220,7 +220,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aas", "aas", "{D1260D1D-EE0
 		..\include\aalsdk\aas\CAASServiceContainer.h = ..\include\aalsdk\aas\CAASServiceContainer.h
 		..\include\aalsdk\aas\IServiceBroker.h = ..\include\aalsdk\aas\IServiceBroker.h
 		..\include\aalsdk\aas\ServiceHost.h = ..\include\aalsdk\aas\ServiceHost.h
-		..\include\aalsdk\aas\XLRuntimeMessages.h = ..\include\aalsdk\aas\XLRuntimeMessages.h
+		..\include\aalsdk\aas\AALRUNTIMEMessages.h = ..\include\aalsdk\aas\AALRUNTIMEMessages.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ccilib", "ccilib", "{DAD854CB-0B63-4B4E-AEDA-6633544F0A23}"

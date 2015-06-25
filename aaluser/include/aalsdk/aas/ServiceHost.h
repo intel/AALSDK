@@ -60,7 +60,7 @@ public:
    ~ServiceHost(){}
 
    btBool allocService( IRuntime * pRuntime,
-                        IXLRuntimeServices * pRuntimeService,
+                        IAALRUNTIMEServices * pRuntimeService,
                         IBase               *pClient,
                         NamedValueSet const &rManifest = NamedValueSet(),
                         TransactionID const &rTranID = TransactionID());

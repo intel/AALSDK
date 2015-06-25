@@ -73,7 +73,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\aas\_xlRuntimeServices.h">
+    <ClInclude Include="..\..\..\include\aalsdk\aas\_AALRUNTIMEServices.h">
       <Filter>Header Files\aalsdk\aas</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\aalsdk\aas\AALDeviceService.h">
@@ -109,7 +109,7 @@
     <ClInclude Include="..\..\..\include\aalsdk\aas\ServiceHost.h">
       <Filter>Header Files\aalsdk\aas</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\aas\XLRuntimeMessages.h">
+    <ClInclude Include="..\..\..\include\aalsdk\aas\AALRUNTIMEMessages.h">
       <Filter>Header Files\aalsdk\aas</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\aalsdk\aas\AALService.h">
@@ -120,7 +120,7 @@
     <None Include="..\..\..\include\aalsdk\aas\AASService.h.in">
       <Filter>Header Files\aalsdk\aas</Filter>
     </None>
-    <None Include="..\..\..\include\aalsdk\aas\XLRuntimeModule.h.in">
+    <None Include="..\..\..\include\aalsdk\aas\AALRUNTIMEModule.h.in">
       <Filter>Header Files\aalsdk\aas</Filter>
     </None>
   </ItemGroup>

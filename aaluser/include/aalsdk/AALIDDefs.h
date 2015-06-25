@@ -499,7 +499,7 @@
 #define __AAL_SysNid(Num)                 __AAL_Nid      (AAL_sysAAS, Num)
 
 
-/// @addtogroup XLRuntime
+/// @addtogroup AALRUNTIME
 /// @{
 
 /// Interface id of event sent in response to successful SystemInit.
@@ -515,7 +515,7 @@
 #define exttranevtServiceShutdown         __AAL_SysExTranEvt (0x0003)
 #define exttranevtSystemStart             __AAL_SysExTranEvt (0x0004)
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME
 
 
 #define exttranevtNotImplemented          __AAL_SysExTranEvt (0x0004)

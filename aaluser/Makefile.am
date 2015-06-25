@@ -249,9 +249,9 @@ include/aalsdk/registrar/RegDBProxy.h \
 include/aalsdk/registrar/RegDBStub.h
 
 rmhdrs_HEADERS=\
-include/aalsdk/rm/XLResourceManager.h \
-include/aalsdk/rm/XLResourceManagerClient.h \
-include/aalsdk/rm/XLResourceManagerProxy.h \
+include/aalsdk/rm/AALResourceManager.h \
+include/aalsdk/rm/AALResourceManagerClient.h \
+include/aalsdk/rm/AALResourceManagerProxy.h \
 include/aalsdk/rm/CAASResourceManager.h \
 include/aalsdk/rm/CRegistrarDatabase.h \
 include/aalsdk/rm/InstanceRecord.h \

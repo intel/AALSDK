@@ -998,7 +998,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
    AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler AIA = " << static_cast<void*> (pAIA) << std::endl);
 
    // Get the Event Dispatcher -  TODO JG - Not event dispatcher any more.
-   IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IAALRUNTIMEServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "WkSp_Allocate_Mapping_EventHandler pEventDispatcher = "
             << static_cast<void*> (pEventDispatcher) << std::endl);
@@ -1223,7 +1223,7 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(IEvent
 
 
    // Get the Event Dispatcher  TODO JG - Not event dispatcher any more.
-   IXLRuntimeServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IAALRUNTIMEServices* pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "WkSp_Free_Mapping_EventHandler pEventDispatcher = "
             << static_cast<void*> (pEventDispatcher) << std::endl);
@@ -1816,7 +1816,7 @@ void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(IEvent const &
    AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject AIA = " << static_cast<void*> (pAIA) << std::endl);
 
    // Get the Event Dispatcher  TODO JG - Not event dispatcher any more.
-   IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IAALRUNTIMEServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
 
    AAL_VERBOSE(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject pEventDispatcher = "
             << static_cast<void*> (pEventDispatcher) << std::endl);

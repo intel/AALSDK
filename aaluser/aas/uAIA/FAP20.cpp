@@ -186,7 +186,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
    ASSERT(pAIA);
 
    // Get the Event Dispatcher
-   IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
+   IAALRUNTIMEServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
    ASSERT(pEventDispatcher);
 
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.

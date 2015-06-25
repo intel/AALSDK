@@ -37,7 +37,7 @@
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates the following:
-///    - The basic structure of an AAL program using the XL APIs.
+///    - The basic structure of an AAL program using the AAL APIs.
 ///    - The IHelloAAL and IHelloAALClient interfaces of HelloAALService.
 ///    - System initialization and shutdown.
 ///    - Use of interface IDs (iids).

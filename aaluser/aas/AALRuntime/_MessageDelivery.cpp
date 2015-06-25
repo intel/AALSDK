@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file _MessageDelivery.cpp
-/// @brief Definitions for the XL Runtime internal default Message Delivery facility.
+/// @brief Definitions for the AAL Runtime internal default Message Delivery facility.
 /// @ingroup MDS
 ///
 /// @verbatim
@@ -43,7 +43,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALDefs.h"
-#include "aalsdk/aas/XLRuntimeModule.h"
+#include "aalsdk/aas/AALRuntimeModule.h"
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
 #include "aalsdk/Dispatchables.h"

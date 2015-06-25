@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{314AD84F-1736-415A-98BD-33129F049FE3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>libxlrt</RootNamespace>
+    <RootNamespace>libaalrt</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -66,31 +66,31 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\XLRuntimeModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AALRUNTIMEModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\XLRuntimeModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AALRUNTIMEModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\XLRuntimeModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AALRUNTIMEModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\o\$(ProjectName)\</IntDir>
-    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\XLRuntimeModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <ExtensionsToDeleteOnClean>$(SolutionDir)..\include\aalsdk\aas\AALRUNTIMEModule.h;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;XLRT_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;aalrt_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -109,7 +109,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;XLRT_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;aalrt_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;XLRT_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;aalrt_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -151,7 +151,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;XLRT_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;aalrt_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -166,16 +166,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ServiceHost.cpp" />
-    <ClCompile Include="..\xlrtlib.cpp" />
-    <ClCompile Include="..\xlRuntime.cpp" />
+    <ClCompile Include="..\aalrtlib.cpp" />
+    <ClCompile Include="..\AALRUNTIME.cpp" />
     <ClCompile Include="..\_xlMessageDelivery.cpp" />
-    <ClCompile Include="..\_xlRuntimeImpl.cpp" />
+    <ClCompile Include="..\_AALRUNTIMEImpl.cpp" />
     <ClCompile Include="..\_xlServiceBroker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\xlRuntime.h" />
+    <ClInclude Include="..\..\..\include\aalsdk\AALRUNTIME.h" />
     <ClInclude Include="..\_xlMessageDelivery.h" />
-    <ClInclude Include="..\_xlRuntimeImpl.h" />
+    <ClInclude Include="..\_AALRUNTIMEImpl.h" />
     <ClInclude Include="..\_xlServiceBroker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

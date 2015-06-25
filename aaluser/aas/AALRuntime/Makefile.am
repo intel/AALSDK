@@ -27,8 +27,8 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     libxlrt: Intel(R) Accelerator Abstraction Layer Library
-##        Accelerator Abstraction Services XL (accelerator) Runtime Library
+##     libaalrt: Intel(R) Accelerator Abstraction Layer Library
+##        Accelerator Abstraction Services AAL (accelerator) Runtime Library
 ##     aas/AALRuntime/Makefile.am
 ##  Author:
 ##     Joseph Grecco, Intel Corporation

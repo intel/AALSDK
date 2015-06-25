@@ -43,7 +43,7 @@
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/osal/OSServiceModule.h>
 
-#include <aalsdk/rm/XLResourceManagerClient.h>
+#include <aalsdk/rm/AALResourceManagerClient.h>
 
 #include <CResourceManager.h>
 

@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLResourceManager.cpp
+/// @file AALRESourceManager.cpp
 /// @brief Implementation of the Remote Resource Manager Service
 /// @ingroup ResMgr
 /// @verbatim
@@ -82,7 +82,7 @@
 #define RRM_VERSION_AGE      0
 #define RRM_VERSION          "0.0.0"
 
-AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, XLRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
+AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, AALRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
    // Only default service commands for now.
 AAL_END_SVC_MOD()
 

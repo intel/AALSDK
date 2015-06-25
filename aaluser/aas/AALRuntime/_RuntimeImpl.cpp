@@ -239,7 +239,7 @@ btBool _runtime::InstallDefaults()
    m_pMDSSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localMDS));
 
    // Instantiate the MDS Service. The Runtime we provide is a Proxy acquired by the original Proxy
-   m_pMDSSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IXLRuntimeServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(MDS));
+   m_pMDSSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IAALRUNTIMEServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(MDS));
 
    // Block until the serviceAllocated (or failed) callback
    m_sem.Wait(); // for the local Message Delivery Service
@@ -263,7 +263,7 @@ btBool _runtime::InstallDefaults()
 
    // Service Broker
    m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
-   m_pBrokerSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IXLRuntimeServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
+   m_pBrokerSvcHost->allocService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IAALRUNTIMEServices *>(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
    m_sem.Wait(); // for the local Broker
 
    if(false == m_status){
@@ -428,7 +428,7 @@ btBool _runtime::start(Runtime             *pProxy,
                                                                  TransactionID(),
                                                                  errSystemTimeout,
                                                                  reasSystemTimeout,
-                                                                 "XL Runtime Failed to start - Rest of event is bogus")),
+                                                                 "AAL Runtime Failed to start - Rest of event is bogus")),
                                   NULL);
       return false;
    }
@@ -502,14 +502,14 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 
    //
    // First check environment
-   if( false == (Environment::GetObj()->Get("XLRUNTIME_CONFIG_BROKER_SERVICE", strSname)) ){
+   if( false == (Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname)) ){
 
-      if ( ENamedValuesOK != rConfigParms.Get(XLRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
+      if ( ENamedValuesOK != rConfigParms.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
          // Check to see if default services are running
          return true;
       }
 
-      if ( ENamedValuesOK == pConfigRecord->Get(XLRUNTIME_CONFIG_BROKER_SERVICE, &sName) ) {
+      if ( ENamedValuesOK == pConfigRecord->Get(AALRUNTIME_CONFIG_BROKER_SERVICE, &sName) ) {
          if ( NULL == m_pBrokerbase ) {
             // Runtime Failed to start
             SendMsg(new RuntimeCallback(RuntimeCallback::StartFailed,
@@ -521,7 +521,7 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
                                                                        TransactionID(),
                                                                        errSystemTimeout,
                                                                        reasSystemTimeout,
-                                                                       "XL Runtime Failed to start - No Broker - Rest of event is bogus")),
+                                                                       "AAL Runtime Failed to start - No Broker - Rest of event is bogus")),
                                         NULL);
             return false;
          }
@@ -784,7 +784,7 @@ void _runtime::serviceEvent(const IEvent &rEvent)
 
 
 
-// IXLRuntimeServices
+// IAALRUNTIMEServices
 //=============================================================================
 // Name: getMessageDeliveryService
 // Description: Get the base interface to teh MDS

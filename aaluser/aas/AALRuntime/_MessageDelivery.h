@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file _MessageDelivery.h
-/// @brief Definitions for the XL Runtime internal default Message Delivery facility.
+/// @brief Definitions for the AAL Runtime internal default Message Delivery facility.
 /// @ingroup MDS
 ///
 /// The Message Delivery is designed as a pluggable AAL Service even
@@ -53,8 +53,8 @@
 /// @addtogroup MDS
 /// @{
 
-#define XLMDS_SVC_MOD         "localMDS" AAL_SVC_MOD_EXT
-#define XLMDS_SVC_ENTRY_POINT "localMDS" AAL_SVC_MOD_ENTRY_SUFFIX
+#define AALMDS_SVC_MOD         "localMDS" AAL_SVC_MOD_EXT
+#define AALMDS_SVC_ENTRY_POINT "localMDS" AAL_SVC_MOD_ENTRY_SUFFIX
 
 //=============================================================================
 // Name: AAL_DECLARE_SVC_MOD

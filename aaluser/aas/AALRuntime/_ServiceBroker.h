@@ -28,7 +28,7 @@
 //     CREATED: Mar 14, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Defintions for the internal default XL Runtime Service Broker
+// PURPOSE:   Defintions for the internal default AAL Runtime Service Broker
 //            facility.
 // HISTORY:
 // COMMENTS:

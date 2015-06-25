@@ -79,7 +79,7 @@ BEGIN_NAMESPACE(AAL)
 void ServiceBroker::init(TransactionID const &rtid)
 {
    // The Resource Manager is implemented as an AAL Service however rather
-   //  than going through the XLRuntime and default broker to aqcuire it
+   //  than going through the AALRUNTIME and default broker to aqcuire it
    //  using a ServiceHost allows us to specifically plug in the built-in
    //  implementation. NOTE: This is  the way the default runtime services
    //  are bootstrapped.

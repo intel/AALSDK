@@ -28,7 +28,7 @@
 //     CREATED: Mar 3, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Public definitions for the I_xlruntime interface.
+// PURPOSE:   Public definitions for the I_AALRUNTIME interface.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -78,15 +78,15 @@ BEGIN_NAMESPACE(AAL)
 
 class  IRuntime;
 
-#define XLRUNTIME_CONFIG_RECORD "XLRUNTIME_CONFIG_RECORD"
-#define XLRUNTIME_CONFIG_BROKER_SERVICE  "XLRUNTIME_CONFIG_BROKER_SERVICE"
+#define AALRUNTIME_CONFIG_RECORD "AALRUNTIME_CONFIG_RECORD"
+#define AALRUNTIME_CONFIG_BROKER_SERVICE  "AALRUNTIME_CONFIG_BROKER_SERVICE"
 
 
 
 
 //=============================================================================
 /// @class        IRuntimeClient
-/// @brief        Public Interface class for the AAL XLRuntime Client object.
+/// @brief        Public Interface class for the AAL AALRUNTIME Client object.
 ///
 ///   An object that
 ///   wants to use the XL Runtime instantiates an instance of this class,
@@ -201,7 +201,7 @@ public:
 
 //=============================================================================
 /// @class IRuntime
-/// Public pure virtual interface class the AAL XLRuntime object.
+/// Public pure virtual interface class the AAL AALRUNTIME object.
 ///
 /// NOTE: Although one can directly instantiate a Runtime object for convenience,
 ///   the framework is designed to use pointers to interfaces, which for Runtime
@@ -264,11 +264,11 @@ protected:
 
 //=============================================================================
 /// @class Runtime
-/// Public wrapper class for the AAL XLRuntime object.
+/// Public wrapper class for the AAL AALRUNTIME object.
 ///
 /// Instantiate this object
 ///   and one has access to the service allocation and asynchronous eventing
-///   system of the XLRuntime.
+///   system of the AALRUNTIME.
 //=============================================================================
 class _runtime; //Forward reference
 

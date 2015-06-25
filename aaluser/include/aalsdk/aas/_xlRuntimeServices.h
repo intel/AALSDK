@@ -24,24 +24,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: _xlRuntimeServices.h
+//        FILE: _AALRUNTIMEServices.h
 //     CREATED: Mar 27, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Interface to accessor and mutators for XLRuntime services
+// PURPOSE:   Interface to accessor and mutators for AALRUNTIME services
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-#ifndef __XLRUNTIMESERVICES_H__
-#define __XLRUNTIMESERVICES_H__
+#ifndef __AALRUNTIMESERVICES_H__
+#define __AALRUNTIMESERVICES_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALBase.h>
 #include <aalsdk/osal/IDispatchable.h>
 
 BEGIN_NAMESPACE(AAL)
 
-class AALRUNTIME_API IXLRuntimeServices
+class AALRUNTIME_API IAALRUNTIMEServices
 {
 public:
 
@@ -49,10 +49,10 @@ public:
    virtual void setMessageDeliveryService(IBase *pMDSbase)                = 0;
    virtual btBool SendMsg(IDispatchable *pobject, btObjectType parm=NULL) = 0;
 
-   virtual ~IXLRuntimeServices() {}
+   virtual ~IAALRUNTIMEServices() {}
 };
 
 END_NAMESPACE(AAL)
 
-#endif /* XLRUNTIMESERVICES_H_ */
+#endif /* AALRUNTIMESERVICES_H_ */
 

@@ -147,23 +147,23 @@ public:
 /// @param[in]  C  The name of the class being constructed.
 /// @param[in]  P  The name of the parent class being implemented, ie ServiceBase, DeviceServiceBase, etc.
 #define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AALServiceModule *container,                             \
-                                                AAL::IRuntime         *pxlRuntime,                            \
+                                                AAL::IRuntime         *pAALRUNTIME,                            \
                                                 AAL::IAALTransport    *ptransport   = NULL,                   \
                                                 AAL::IAALMarshaller   *marshaller   = NULL,                   \
                                                 AAL::IAALUnMarshaller *unmarshaller = NULL) : P(container,    \
-                                                                                                pxlRuntime,   \
+                                                                                                pAALRUNTIME,   \
                                                                                                 ptransport,   \
                                                                                                 marshaller,   \
                                                                                                 unmarshaller)
 
    /// @brief     Constructor called by Service Broker
    /// @param[in] container Pointer to the Service Module
-   /// @param[in] pxlRuntime runtime to use
+   /// @param[in] pAALRUNTIME runtime to use
    /// @param[in] ptransport Transport if not in-proc
    /// @param[in] marshaller Marshaller if not in-proc
    /// @param[in] unmarshaller Unmarshaller if not in-proc
    ServiceBase(AALServiceModule *container,
-               IRuntime         *pxlRuntime,
+               IRuntime         *pAALRUNTIME,
                IAALTransport    *ptransport   = NULL,
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
@@ -393,7 +393,7 @@ public:
    IBase *          ClientBase()  { return m_pclientbase;    }
 
    /// Accessor to pointer to the Runtime Services
-   IXLRuntimeServices * getRuntimeServiceProvider() { return pAALServiceModule()->getRuntimeServiceProvider(); }
+   IAALRUNTIMEServices * getRuntimeServiceProvider() { return pAALServiceModule()->getRuntimeServiceProvider(); }
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
@@ -484,7 +484,7 @@ class AASLIB_API ServiceProxyBase: public ServiceBase
 {
 public:
    ServiceProxyBase(AALServiceModule *container,
-                    IRuntime         *pxlRuntime,
+                    IRuntime         *pAALRUNTIME,
                     IAALTransport    *ptransport   = NULL,
                     IAALMarshaller   *marshaller   = NULL,
                     IAALUnMarshaller *unmarshaller = NULL);
@@ -523,7 +523,7 @@ class AASLIB_API ServiceStubBase: public ServiceBase
 {
 public:
    ServiceStubBase(AALServiceModule *container,
-                   IRuntime         *pxlRuntime,
+                   IRuntime         *pAALRUNTIME,
                    IAALTransport    *ptransport  = NULL,
                    IAALMarshaller   *marshaller  = NULL,
                    IAALUnMarshaller *unmarshaller= NULL);

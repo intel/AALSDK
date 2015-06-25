@@ -131,22 +131,22 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
 //         rTranID - Optional Transaction ID
 // Comments:
 //=============================================================================
-btBool ServiceHost::allocService( IRuntime           *pxlRuntime,
-                                  IXLRuntimeServices *pxlRuntimeServices,
+btBool ServiceHost::allocService( IRuntime           *pAALRUNTIME,
+                                  IAALRUNTIMEServices *pAALRUNTIMEServices,
                                   IBase               *pClientBase,
                                   NamedValueSet const &rManifest,
                                   TransactionID const &rTranID)
 {
 
    // Assign a runtime proxy to this Service  TODO DEPRECATE
-   if ( !IsOK() || (NULL == pxlRuntimeServices) ){
+   if ( !IsOK() || (NULL == pAALRUNTIMEServices) ){
       return false;
    }
 
-   m_pProvider->setRuntimeServiceProvider(pxlRuntimeServices);
+   m_pProvider->setRuntimeServiceProvider(pAALRUNTIMEServices);
 
    if ( IsOK() && ( NULL != m_pProvider ) ) {
-      m_base = m_pProvider->Construct(pxlRuntime, pClientBase, rTranID, rManifest);
+      m_base = m_pProvider->Construct(pAALRUNTIME, pClientBase, rTranID, rManifest);
       return NULL != m_base;
    }
 

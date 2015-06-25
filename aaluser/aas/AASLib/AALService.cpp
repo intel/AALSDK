@@ -67,7 +67,7 @@ BEGIN_NAMESPACE(AAL)
    // Comments:
    //=============================================================================
 ServiceBase::ServiceBase(AALServiceModule *container,
-                         IRuntime         *pxlRuntime,
+                         IRuntime         *pAALRUNTIME,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
@@ -76,7 +76,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
-   m_Runtime(pxlRuntime->getRuntimeProxy(this)),  // Use my own Proxy
+   m_Runtime(pAALRUNTIME->getRuntimeProxy(this)),  // Use my own Proxy
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
@@ -351,12 +351,12 @@ ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 // Comments:
 //=============================================================================
 ServiceProxyBase::ServiceProxyBase(AALServiceModule *container,
-                                   IRuntime         *pxlRuntime,
+                                   IRuntime         *pAALRUNTIME,
                                    IAALTransport    *ptransport,
                                    IAALMarshaller   *marshaller,
                                    IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
-               pxlRuntime,
+               pAALRUNTIME,
                ptransport,
                marshaller,
                unmarshaller),
@@ -442,12 +442,12 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
 
 ServiceStubBase::ServiceStubBase(AALServiceModule *container,
-                                 IRuntime         *pxlRuntime,
+                                 IRuntime         *pAALRUNTIME,
                                  IAALTransport    *ptransport,
                                  IAALMarshaller   *marshaller,
                                  IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
-               pxlRuntime,
+               pAALRUNTIME,
                ptransport,
                marshaller,
                unmarshaller),

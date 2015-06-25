@@ -169,10 +169,10 @@ RuntimeClient::RuntimeClient() :
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
-   //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
 #if defined( HWAFU )
-   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD,configRecord);
 #endif
 
    if(!m_Runtime.start(configArgs)){

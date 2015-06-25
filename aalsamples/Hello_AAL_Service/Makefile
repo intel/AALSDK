@@ -68,7 +68,7 @@ libhelloaalservice.so.0: libhelloaalservice.so.0.0.0
 	ln -sf libhelloaalservice.so.0.0.0 libhelloaalservice.so.0
 
 libhelloaalservice.so.0.0.0: libhelloaalservice.o
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libhelloaalservice.so.0 libhelloaalservice.o $(LDFLAGS) -lOSAL -lAAS -lxlrt -o libhelloaalservice.so.0.0.0
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libhelloaalservice.so.0 libhelloaalservice.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libhelloaalservice.so.0.0.0
 
 libhelloaalservice.o: HelloAALService.cpp HelloAALService-internal.h HelloAALService.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libhelloaalservice.o HelloAALService.cpp

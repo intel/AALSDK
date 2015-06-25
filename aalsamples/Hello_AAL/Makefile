@@ -65,7 +65,7 @@ endif
 all: helloaal
 
 helloaal: HelloAAL.o
-	$(CXX) -g -O2 -o helloaal HelloAAL.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+	$(CXX) -g -O2 -o helloaal HelloAAL.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 HelloAAL.o: HelloAAL.cpp ../Hello_AAL_Service/HelloAALService.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../Hello_AAL_Service -g -O2 -c -o HelloAAL.o HelloAAL.cpp

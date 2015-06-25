@@ -68,7 +68,7 @@ libsamplebroker.so.0: libsamplebroker.so.0.0.0
 	ln -sf libsamplebroker.so.0.0.0 libsamplebroker.so.0
 
 libsamplebroker.so.0.0.0: libsamplebroker.o
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libsamplebroker.so.0 libsamplebroker.o $(LDFLAGS) -lOSAL -lAAS -lxlrt -o libsamplebroker.so.0.0.0
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libsamplebroker.so.0 libsamplebroker.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libsamplebroker.so.0.0.0
 
 libsamplebroker.o: ServiceBroker.cpp ServiceBroker.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libsamplebroker.o ServiceBroker.cpp

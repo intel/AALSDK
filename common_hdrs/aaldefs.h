@@ -285,12 +285,12 @@
 # else
 #    define AASEDS_API                   __declspec(dllimport)
 # endif // AASEDS_EXPORTS
-# ifdef XLRESMGR_EXPORTS
-#     define XLRESOURCEMANAGERCLIENT_API __declspec(dllexport)
-#     define XLRESOURCEMANAGER_API       __declspec(dllexport)
+# ifdef AALRESMGR_EXPORTS
+#     define AALRESOURCEMANAGERCLIENT_API __declspec(dllexport)
+#     define AALRESOURCEMANAGER_API       __declspec(dllexport)
 # else
-#     define XLRESOURCEMANAGERCLIENT_API __declspec(dllimport)
-#     define XLRESOURCEMANAGER_API       __declspec(dllimport)
+#     define AALRESOURCEMANAGERCLIENT_API __declspec(dllimport)
+#     define AALRESOURCEMANAGER_API       __declspec(dllimport)
 # endif // XL Resource Manager
 # ifdef AASREGISTRAR_EXPORTS
 #    define AASREGISTRAR_API             __declspec(dllexport)
@@ -336,8 +336,8 @@
 // Resource Manager Client
 # define AASRESOURCEMANAGERCLIENT_API    __declspec(0)
 // XL Resource Manager
-# define XLRESOURCEMANAGERCLIENT_API     __declspec(0)
-# define XLRESOURCEMANAGER_API           __declspec(0)
+# define AALRESOURCEMANAGERCLIENT_API     __declspec(0)
+# define AALRESOURCEMANAGER_API           __declspec(0)
 // libFAPTrans1
 # define FAPTRANS1_API                   __declspec(0)
 // libFAPTrans2

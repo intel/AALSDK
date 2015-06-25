@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2014-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,29 +24,49 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLRuntimeModule.h
-/// @brief AAL Service Module definitions for XLRuntime
-/// @ingroup OSAL
+/// @file AALResourceManagerClient.h
+/// @brief AALResourceManagerClient - Public Interface to ResourceManagerClient
+/// @ingroup ResMgr
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation
-///
+/// AUTHOR: Joseph Grecco, Intel Corporation.
+///          
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 04/04/2014     JG       Initial version.@endverbatim
+/// 08/20/2014     JG       Initial version started
+/// 06/25/2015     JG       Removed XL from name@endverbatim
 //****************************************************************************
-#ifndef __XL_RUNTIMESERVICE_H__
-#define __XL_RUNTIMESERVICE_H__
-#include <aalsdk/osal/OSServiceModule.h>
+#ifndef __AALSDK_AASRESOURCEMANAGERCLIENT_H__
+#define __AALSDK_AASRESOURCEMANAGERCLIENT_H__
+#include <aalsdk/AALTransactionID.h>
+#include <aalsdk/kernel/aalrm_client.h>
 
-#define AALRUNTIME_SVC_MOD         "@AALRUNTIME_SVC_MOD@" AAL_SVC_MOD_EXT
-#define AALRUNTIME_SVC_ENTRY_POINT "@AALRUNTIME_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
+BEGIN_NAMESPACE(AAL)
 
-#define AALRUNTIME_BEGIN_MOD() AAL_BEGIN_MOD(@AALRUNTIME_SVC_MOD@, AALRUNTIME_API, AALRUNTIME_VERSION, AALRUNTIME_VERSION_CURRENT, AALRUNTIME_VERSION_REVISION, AALRUNTIME_VERSION_AGE)
-#define AALRUNTIME_END_MOD()   AAL_END_MOD()
 
-AAL_DECLARE_MOD(@AALRUNTIME_SVC_MOD@, AALRUNTIME_API)
+//=============================================================================
+// Constants and Events for methods in IResourceManagerClientService
+//=============================================================================
 
-#endif // __XL_RUNTIMESERVICE_H__
+//=============================================================================
+// Name: IResourceManagerClient
+// Description: Interface implemented by Resource Manager Clients
+//=============================================================================
+class AALRESOURCEMANAGERCLIENT_API IResourceManagerClient
+{
+public:
+   virtual ~IResourceManagerClient(){};
+
+   virtual void resourceAllocated( NamedValueSet const &nvsInstancerecord,
+                                   TransactionID const &tid ) = 0;
+   virtual void resourceRequestFailed( NamedValueSet const &nvsManifest,
+                                       const IEvent &rEvent ) = 0;
+   virtual void resourceManagerException( const IEvent &rEvent ) = 0;
+
+};
+
+END_NAMESPACE(AAL)
+
+#endif // __AALSDK_XL_AASRESOURCEMANAGERCLIENT_H__
 

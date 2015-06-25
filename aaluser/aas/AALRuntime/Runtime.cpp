@@ -28,7 +28,7 @@
 //     CREATED: Mar 3, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE: Implementation of XL Runtime classes
+// PURPOSE: Implementation of AAL Runtime classes
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -268,6 +268,6 @@ Runtime::~Runtime()
 
 END_NAMESPACE(AAL)
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME
 
 

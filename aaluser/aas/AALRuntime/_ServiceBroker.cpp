@@ -47,7 +47,7 @@
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
 #include "_ServiceBroker.h"
-#include "aalsdk/aas/XLRuntimeModule.h"
+#include "aalsdk/aas/AALRuntimeModule.h"
 
 
 #define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_ServiceBroker >

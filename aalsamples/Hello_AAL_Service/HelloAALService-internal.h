@@ -101,7 +101,7 @@ protected:
    TransactionID          m_CurrTranID;
 };
 
-// XL - aware event for generating the response.
+// AAL - aware event for generating the response.
 class HelloAppDispatchable : public IDispatchable
 {
 public:

@@ -33,7 +33,7 @@
 ##     Tim Whisonant, Intel Corporation
 ##  History:
 ##     06/26/2013    TSW   Initial version
-##     04/01/2014    JG    Added XLrtlib for AAL 4.x
+##     04/01/2014    JG    Added aalrtlib for AAL 4.x
 ##******************************************************************************
 dnl Process this file with autoconf to produce a configure script.
 
@@ -171,7 +171,7 @@ AC_CONFIG_FILES([doc/Doxyfile])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
-                 include/aalsdk/aas/XLRuntimeModule.h
+                 include/aalsdk/aas/AALRuntimeModule.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h

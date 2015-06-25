@@ -542,8 +542,8 @@ int main(int argc, char *argv[])
       RunTimeArgs.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
-      ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      RunTimeArgs.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+      ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+      RunTimeArgs.Add(AALRUNTIME_CONFIG_RECORD, ConfigRecord);
    }
 
    ////////////////////////////////////////////////////////////////////////////

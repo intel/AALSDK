@@ -28,7 +28,7 @@
 //     CREATED: Mar 7, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Definitions for the XL runtime implementation
+// PURPOSE:   Definitions for the AAL runtime implementation
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -52,7 +52,7 @@
 #include <aalsdk/aas/IServiceBroker.h>
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/eds/AASEventDeliveryService.h>
-#include <aalsdk/aas/XLRuntimeModule.h>
+#include <aalsdk/aas/AALRuntimeModule.h>
 
 #include <map>
 
@@ -73,7 +73,7 @@ END_C_DECLS
 
 //=============================================================================
 // Name: _runtime
-// Description: Class implements the internal XL runtime system.
+// Description: Class implements the internal AAL Runtime system.
 // Comments:
 //=============================================================================
 class _runtime : public  CAASBase,
@@ -81,7 +81,7 @@ class _runtime : public  CAASBase,
                  private CUnCopyable,
                  private IServiceClient,        // For internal Services
                  private IRuntimeClient,        // _runtime uses a Runtime Proxy
-                 public  IXLRuntimeServices
+                 public  IAALRUNTIMEServices
 {
 public:
    typedef std::map<Runtime *, IRuntimeClient *> ClientMap;
@@ -144,7 +144,7 @@ public:
    // Returns a proxy pointer to the singleton Runtime
    void removeProxy(Runtime *pRuntimeProxy);
 
-   // IXLRuntimeServices
+   // IAALRUNTIMEServices
    IBase      *getMessageDeliveryService();
    void        setMessageDeliveryService(IBase *pMDSbase);
    btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
@@ -234,5 +234,5 @@ private:
 END_NAMESPACE(AAL)
 
 
-#endif // __XLRUNTIMEIMPL_H__
+#endif // __AALRUNTIMEIMPL_H__
 

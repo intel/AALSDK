@@ -45,14 +45,14 @@
 #include <aalsdk/AALIDDefs.h>
 
 #include "aalsdk/AALTransactionID.h"
-#include "aalsdk/rm/XLResourceManager.h"
+#include "aalsdk/rm/AALResourceManager.h"
 #if defined( __AAL_LINUX__ )
 #  include "CResourceManagerProxy.h"
 #elif  defined( __AAL_WINDOWS__ )
 #  include "win/CResourceManagerProxy.h"
 #endif
 
-#include "aalsdk/rm/XLResourceManagerClient.h"
+#include "aalsdk/rm/AALResourceManagerClient.h"
 
 //#include <aalsdk/kernel/aalrm_client.h>
 
@@ -74,14 +74,14 @@ BEGIN_NAMESPACE(AAL)
 //           be used as the module's name (e.g., libxyz) to make it easier to
 //           convert built-in into plug-in service.
 //=============================================================================
-//AAL_DECLARE_SVC_MOD(localrm, XLRESOURCEMANAGER_API)
-AAL_DECLARE_BUILTIN_SVC_MOD(librrm, XLRESOURCEMANAGER_API)
+//AAL_DECLARE_SVC_MOD(localrm, AALRESOURCEMANAGER_API)
+AAL_DECLARE_BUILTIN_SVC_MOD(librrm, AALRESOURCEMANAGER_API)
 
 //=============================================================================
 // Name: CResourceManager
 // Description: Concrete definition of the Remote Resource Manager
 //=============================================================================
-class XLRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
+class AALRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
                                                public  ServiceBase,
                                                public  IResourceManager
 

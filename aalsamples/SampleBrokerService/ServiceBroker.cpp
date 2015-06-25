@@ -28,14 +28,14 @@
 //     CREATED: April 4, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Implements an XL Sample Service Broker Service plug-in.
+// PURPOSE:   Implements an AAL Sample Service Broker Service plug-in.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
 #include <aalsdk/osal/OSServiceModule.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>  // Defines InProc Service Factory
-#include <aalsdk/aas/XLRuntimeMessages.h>
+#include <aalsdk/aas/AALRUNTIMEMessages.h>
 #include <aalsdk/aas/ServiceHost.h>
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
 

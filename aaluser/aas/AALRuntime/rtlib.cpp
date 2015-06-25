@@ -40,7 +40,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALDefs.h"
-#include "aalsdk/aas/XLRuntimeModule.h"
+#include "aalsdk/aas/AALRuntimeModule.h"
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)

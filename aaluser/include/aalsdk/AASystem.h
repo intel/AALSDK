@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file AASystem.h
 /// @brief Public defines for the Intel(R) QuickAssist Technology System Services
-/// @ingroup XLRuntime
+/// @ingroup AALRUNTIME
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
@@ -71,7 +71,7 @@ typedef enum EnumCallbackModel
 // System configuration keys
 //--------------------------
 
-/// @addtogroup XLRuntime
+/// @addtogroup AALRUNTIME
 /// @{
 
 /// Key for System shutdown time.
@@ -81,7 +81,7 @@ typedef enum EnumCallbackModel
 /// Key for kernel-less mode.
 #define SYSINIT_KEY_SYSTEM_NOKERNEL      "sysinit_system_no_kernel"
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME
 
 //=============================================================================
 // Global system functions
