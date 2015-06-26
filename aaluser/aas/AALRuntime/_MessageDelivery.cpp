@@ -94,10 +94,10 @@ BEGIN_NAMESPACE(AAL)
 void _MessageDelivery::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(this),
-                                        rtid));
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
+                                                          Client(),
+                                                          dynamic_cast<IBase*>(this),
+                                                          rtid));
 }
 
 //=============================================================================
@@ -142,12 +142,12 @@ EDS_Status _MessageDelivery::Schedule()
 }
 
 //=============================================================================
-// Name: StartEventDelivery
+// Name: StartMessageDelivery
 // Description: Start the service
 // Interface: public
 // Comments:
 //=============================================================================
-void _MessageDelivery::StartEventDelivery()
+void _MessageDelivery::StartMessageDelivery()
 {
    AutoLock(this);
    if ( NULL == m_Dispatcher ) {
@@ -156,84 +156,20 @@ void _MessageDelivery::StartEventDelivery()
 }
 
 //=============================================================================
-// Name: StopEventDelivery
+// Name: StopMessageDelivery
 // Description: Stop the service
 // Interface: public
 // Comments: Brute force method
 //=============================================================================
-void _MessageDelivery::StopEventDelivery()
+void _MessageDelivery::StopMessageDelivery()
 {
    AutoLock(this);
    if( NULL != m_Dispatcher ) {
      m_Dispatcher->Drain();
+     m_Dispatcher->Stop();
+     delete m_Dispatcher;
+     m_Dispatcher = NULL;
    }
-}
-
-//=============================================================================
-// Name: SetParms
-// Description: Set service parameters
-// Interface: public
-// Comments: Unsupported
-//=============================================================================
-btBool _MessageDelivery::SetParms(NamedValueSet const &rparms)
-{
-   return false;
-}
-
-
-//=============================================================================
-// Name: QueueEvent
-// Description: Queue and Event or Funtor object for scheduled dispatch
-// Interface: public
-// Comments: 3 variants.
-//           1 - for events to event handlers
-//           2 - for functors wrapped as events (deprecated)
-//           3 - for proper dispatchable functors.
-//=============================================================================
-btBool _MessageDelivery::QueueEvent(btEventHandler handler,
-                                      CAALEvent     *pevent )
-{
-   AutoLock(this);
-   if ( NULL == m_Dispatcher ) {
-      return false;
-   }
-   pevent->setHandler(handler);
-   m_Dispatcher->Add(pevent);
-   return true;
-}
-
-btBool _MessageDelivery::QueueEvent(btObjectType  parm,
-                                      CAALEvent    *pevent )
-{
-   AutoLock(this);
-   if ( NULL == m_Dispatcher ) {
-      return false;
-   }
-   m_Dispatcher->Add(pevent);
-   return true;
-}
-
-btBool _MessageDelivery::QueueEvent(btObjectType   parm,
-                                      IDispatchable *pfunctor)
-{
-   AutoLock(this);
-   if ( NULL == m_Dispatcher ) {
-      return false;
-   }
-   m_Dispatcher->Add(pfunctor);
-   return true;
-}
-
-
-//=============================================================================
-// Name: GetEventDispatcher
-// Description: Retrieve the IEventDispatcher interface.
-// Interface: public
-// Comments: Unsupported
-//=============================================================================
-IEventDispatcher *_MessageDelivery::GetEventDispatcher(EDSDispatchClass disclass)
-{
-   return NULL;
 }
 
 //=============================================================================
@@ -244,7 +180,18 @@ IEventDispatcher *_MessageDelivery::GetEventDispatcher(EDSDispatchClass disclass
 //=============================================================================
 _MessageDelivery::~_MessageDelivery()
 {
-   StopEventDelivery();
+   StopMessageDelivery();
+}
+
+//=============================================================================
+// Name: ~scheduleMessage
+// Description: Schedule a message for processing
+// Interface: public
+// Comments:
+//=============================================================================
+btBool _MessageDelivery::scheduleMessage( IDispatchable *pDispatchable)
+{
+   return m_Dispatcher->Add(pDispatchable);
 }
 
 /// @} group MDS

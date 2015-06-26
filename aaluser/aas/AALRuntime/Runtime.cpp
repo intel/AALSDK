@@ -149,7 +149,7 @@ void Runtime::allocService( IBase                  *pClient,
 /// @param[in]    pdispatchable  Dispatchable object
 /// @return       void
 //=============================================================================
-void Runtime::schedDispatchable(IDispatchable *pdispatchable)
+btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 {
    if (IsOK()) {
       m_pImplementation->schedDispatchable(pdispatchable);

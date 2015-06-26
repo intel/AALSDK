@@ -73,7 +73,7 @@ BEGIN_NAMESPACE(AAL)
 #define extranevtServiceAllocateFailed    __AAL_ExTranEvt(AAL_sysAAL, 0x0104)
 
 #define reasNotOwner                     AAL_ReasCode(0x0100)
-
+#define reasInitError                    AAL_ReasCode(0x0101)
 
 
 class  IRuntime;
@@ -232,7 +232,7 @@ public:
    /// @brief     Schedule a Dispatchable
    /// @param[in] pdispatchable - Pointer Dispatchable to schedule.
    /// @return    void
-   virtual void schedDispatchable(IDispatchable *pdispatchable)                  = 0;
+   virtual btBool schedDispatchable(IDispatchable *pdispatchable)                = 0;
 
    /// @brief     Returns a unique pointer to the Runtime. This enables subordinate
    ///               objects to use the Runtime independently. Note that this pointer
@@ -284,7 +284,7 @@ public:
                               const NamedValueSet &rManifest = NamedValueSet(),
                               TransactionID const &rTranID   = TransactionID() );
 
-   virtual void schedDispatchable(IDispatchable *pdispatchable);
+   virtual btBool schedDispatchable(IDispatchable *pdispatchable);
 
    IRuntime *getRuntimeProxy(IRuntimeClient *pClient);
 

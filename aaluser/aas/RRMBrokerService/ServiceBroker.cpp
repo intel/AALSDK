@@ -92,18 +92,17 @@ void ServiceBroker::init(TransactionID const &rtid)
 
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
-   if ( !m_pRMSvcHost->allocService( getRuntime(),
-                                     getRuntimeServiceProvider(),
-                                     dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
+   if ( !m_pRMSvcHost->InstantiateService( getRuntime(),
+                                           dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    rtid,
-                                                    errServiceNotFound,
-                                                    reasUnknown,
-                                                    "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      rtid,
+                                                                      errServiceNotFound,
+                                                                      reasUnknown,
+                                                                      "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
   }
 }
 
@@ -134,22 +133,22 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
    m_ResMgr     = subclass_ptr<IResourceManager>(pServiceBase);
    if ( NULL == m_ResMgr ) {
 
-      QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                     Client(),
-                                                     this,
-                                                     origTid,
-                                                     errMethodNotImplemented,
-                                                     reasNotImplemented,
-                                                     "Service does not support IResourceManager") );
+      getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                       Client(),
+                                                                       this,
+                                                                       origTid,
+                                                                       errMethodNotImplemented,
+                                                                       reasNotImplemented,
+                                                                       "Service does not support IResourceManager") );
       return;
    }
 
    m_bIsOK = true;
 
-   QueueAASEvent( new ObjectCreatedEvent(getRuntimeClient(),
-                                         Client(),
-                                         dynamic_cast<IBase *>(this),
-                                         origTid) );
+   getRuntime()->schedDispatchable( new ObjectCreatedEvent(getRuntimeClient(),
+                                                           Client(),
+                                                           dynamic_cast<IBase *>(this),
+                                                           origTid) );
 }
 
 //=============================================================================
@@ -168,13 +167,13 @@ void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
    m_Transactions.erase(TranID);
 
    // If we were unable to load the ResourceManager then we cannot load.
-   QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                  Client(),
-                                                  this,
-                                                  origTid,
-                                                  errServiceNotFound,
-                                                  reasInvalidService,
-                                                  strInvalidService) );
+   getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                    Client(),
+                                                                    this,
+                                                                    origTid,
+                                                                    errServiceNotFound,
+                                                                    reasInvalidService,
+                                                                    strInvalidService) );
 
 }
 
@@ -191,10 +190,10 @@ void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 {
    AutoLock(this);
    // If we were unable to load the ResourceManager then we cannot load.
-   SendMsg( new ServiceClientCallback(ServiceClientCallback::Released,
-                                      Client(),
-                                      this,
-                                      rTranID) );
+   getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Released,
+                                                              Client(),
+                                                              this,
+                                                              rTranID) );
 }
 
 //=============================================================================
@@ -221,10 +220,10 @@ void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
 
 
    // Notify the client
-   SendMsg( new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
-                                      Client(),
-                                      this,
-                                      pcopyEvent) );
+   getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
+                                                              Client(),
+                                                              this,
+                                                              pcopyEvent) );
 }
 
 //=============================================================================
@@ -246,13 +245,13 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
 
    IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
    if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
-      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errAllocationFailure,
-                                                    reasMissingInterface,
-                                                    strMissingInterface));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errAllocationFailure,
+                                                                      reasMissingInterface,
+                                                                      strMissingInterface));
    }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
@@ -289,24 +288,24 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
       }
 
       if ( !SvcHost->IsOK() ) {
-         QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                        pServiceClient,
-                                                        NULL,
-                                                        rTranID,
-                                                        errCreationFailure,
-                                                        reasInternalError,
-                                                        "Failed to load Service") );
+         getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                          pServiceClient,
+                                                                          NULL,
+                                                                          rTranID,
+                                                                          errCreationFailure,
+                                                                          reasInternalError,
+                                                                          "Failed to load Service") );
       }
 
       // Allocate the service
-      if ( !SvcHost->allocService( getRuntime(), getRuntimeServiceProvider(),pServiceClientBase, rManifest, rTranID) ) {
-         QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                        pServiceClient,
-                                                        NULL,
-                                                        rTranID,
-                                                        errCreationFailure,
-                                                        reasInternalError,
-                                                        "Failed to construct Service") );
+      if ( !SvcHost->InstantiateService( getRuntime(), pServiceClientBase, rManifest, rTranID) ) {
+         getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                          pServiceClient,
+                                                                          NULL,
+                                                                          rTranID,
+                                                                          errCreationFailure,
+                                                                          reasInternalError,
+                                                                          "Failed to construct Service") );
       } else {
          // Save the ServiceHost
          m_ServiceMap[std::string(sName)] = SvcHost;
@@ -500,23 +499,15 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
       //------------------------------------------
       if ( m_servicecount ) {
          // Timed out - Shutdown did not succeed
-         QueueAASEvent( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                       exttranevtServiceShutdown,
-                                                       rTranID,
-                                                       errSystemTimeout,
-                                                       reasSystemTimeout,
-                                                       const_cast<btString>(strSystemTimeout)) );
+         getRuntime()->schedDispatchable( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                         exttranevtServiceShutdown,
+                                                                         rTranID,
+                                                                         errSystemTimeout,
+                                                                         reasSystemTimeout,
+                                                                         const_cast<btString>(strSystemTimeout)) );
       } else {
-#if 0
-         // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
-         SendMessage(new ServiceClientMessage( Client(),
-                                               this,
-                                               ServiceClientMessage::Freed,
-                                               rTranID)
-                                             );
-#endif
 
-         QueueAASEvent( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
+         getRuntime()->schedDispatchable( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
 
          // Clear the map now
          m_ServiceMap.clear();
@@ -636,24 +627,24 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      }
 
      if ( !SvcHost->IsOK() ) {
-        QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                       dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
-                                                       NULL,
-                                                       origTid,
-                                                       errCreationFailure,
-                                                       reasInternalError,
-                                                       "Failed to load Service") );
+        getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                         dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
+                                                                         NULL,
+                                                                         origTid,
+                                                                         errCreationFailure,
+                                                                         reasInternalError,
+                                                                         "Failed to load Service") );
      }
 
      // Allocate the service
-     if ( !SvcHost->allocService(pProxy, getRuntimeServiceProvider(), pClientBase, nvsInstancerecord, origTid) ) {
-        QueueAASEvent( new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                       dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
-                                                       NULL,
-                                                       origTid,
-                                                       errCreationFailure,
-                                                       reasInternalError,
-                                                       "Failed to construct Service") );
+     if ( !SvcHost->InstantiateService(pProxy, pClientBase, nvsInstancerecord, origTid) ) {
+        getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                         dynamic_ptr<IServiceClient>(iidServiceClient,pClientBase),
+                                                                         NULL,
+                                                                         origTid,
+                                                                         errCreationFailure,
+                                                                         reasInternalError,
+                                                                         "Failed to construct Service") );
      } else {
         // Save the ServiceHost
         m_ServiceMap[std::string(sName)] = SvcHost;
@@ -681,13 +672,13 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
     IBase *pClientBase = m_ServiceClientMap[tid].ServiceBase;
     m_ServiceClientMap.erase(tid);
-    QueueAASEvent( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                   dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase),
-                                                   NULL,
-                                                   origTid,
-                                                   errCreationFailure,
-                                                   reasResourcesNotAvailable,
-                                                   strNoResourceDescr) );
+    getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                     dynamic_ptr<IServiceClient>(iidServiceClient, pClientBase),
+                                                                     NULL,
+                                                                     origTid,
+                                                                     errCreationFailure,
+                                                                     reasResourcesNotAvailable,
+                                                                     strNoResourceDescr) );
  }
 
  //=============================================================================

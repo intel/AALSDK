@@ -65,20 +65,20 @@ void HWSPLAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ISPLClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ISPLClient Interface"));
       return;
    }
 
-   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                       Client(),
-                                                       dynamic_cast<IBase *>(this),
-                                                       TranID) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                                         Client(),
+                                                                         dynamic_cast<IBase *>(this),
+                                                                         TranID) );
 }
 
 btBool HWSPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -151,8 +151,8 @@ void HWSPLAFU::StartTransactionContext(TransactionID const &TranID,
                                                                      errMemory,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
-      SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                            pExcept) );
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                    pExcept) );
    }
 }
 
@@ -176,8 +176,8 @@ void HWSPLAFU::StopTransactionContext(TransactionID const &TranID)
                                                                      errMemory,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
-      SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                            pExcept) );
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                    pExcept) );
    }
 }
 
@@ -206,8 +206,8 @@ void HWSPLAFU::SetContextWorkspace(TransactionID const &TranID,
                                                                      errMemory,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
-      SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                            pExcept) );
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                    pExcept) );
    }
 }
 
@@ -268,10 +268,10 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
             //  remove it from theEvent.TranID().Context()
             TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
-            This->SendMsg( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
-                                                                         OrigTid,
-                                                                         pWSParms->ptr,
-                                                                         pWSParms->size) );
+            This->getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
+                                                                                                 OrigTid,
+                                                                                                 pWSParms->ptr,
+                                                                                                 pWSParms->size) );
             } else {
                // Delete the wrapper.
                (void) UnWrapTransactionIDFromEvent(theEvent, true);
@@ -292,8 +292,8 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
             //  remove it from theEvent.TranID().Context()
             TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
-            This->SendMsg( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
-                                                                         OrigTid) );
+            This->getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
+                                                                                                 OrigTid) );
             } else {
                // Delete the wrapper.
                (void) UnWrapTransactionIDFromEvent(theEvent, true);
@@ -311,8 +311,8 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
             //  remove it from theEvent.TranID().Context()
             TransactionID OrigTid = UnWrapTransactionIDFromEvent(theEvent, false);
 
-            This->SendMsg( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
-                                                                          OrigTid) );
+            This->getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
+                                                                                                  OrigTid) );
 
             } else {
                // Delete the wrapper.
@@ -330,8 +330,8 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
          if ( uid_errnumOK == revt.ResultCode() ) {
 
-            This->SendMsg( new(std::nothrow) SPLClientTransactionComplete(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
-                                                                          OrigTranID) );
+            This->getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionComplete(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
+                                                                                                  OrigTranID) );
          } else {
 
             descr = "bad ResultCode()";
@@ -357,8 +357,8 @@ _SEND_ERR:
                                                                   errInternal,
                                                                   reasCauseUnknown,
                                                                   descr);
-   This->SendMsg( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
-                                                               pExcept) );
+   This->getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, This->ClientBase()),
+                                                                                       pExcept) );
 }
 
 /// @} group HWSPLAFU

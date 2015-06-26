@@ -97,7 +97,7 @@ SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
 aas/AALRuntime \
-aas/XLRRMBrokerService \
+aas/RRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
 aas/AASResourceManager \
@@ -157,7 +157,6 @@ include/aalsdk/Dispatchables.h \
 include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h \
 include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
@@ -168,8 +167,7 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
-include/aalsdk/aas/ServiceHost.h \
-include/aalsdk/aas/_xlRuntimeServices.h 
+include/aalsdk/aas/ServiceHost.h 
 
 aalclphdrs_HEADERS=\
 include/aalsdk/aalclp/aalclp.h

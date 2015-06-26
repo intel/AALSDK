@@ -93,12 +93,11 @@ IApplicationExceptionEvent::~IApplicationExceptionEvent() {}
 // Description: Constructor
 // Comments: Concrete Base class for all events
 //=============================================================================
-CAALEvent::CAALEvent(IBase *pObject, IMessageHandler *pHandler) :
+CAALEvent::CAALEvent(IBase *pObject) :
    CriticalSection(),
    m_pObject(NULL),
    m_bIsOK(false),
    m_Context(NULL),
-   m_pMessageHandler(pHandler),
    m_InterfaceMap(),
    m_ISubClass(),
    m_SubClassID(0)
@@ -129,12 +128,11 @@ CAALEvent::CAALEvent(IBase *pObject, IMessageHandler *pHandler) :
 // Description: Constructor
 // Comments: Concrete Base class for all events
 //=============================================================================
-CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID, IMessageHandler *pHandler) :
+CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
    CriticalSection(),
    m_pObject(NULL),
    m_bIsOK(false),
    m_Context(NULL),
-   m_pMessageHandler(pHandler),
    m_InterfaceMap(),
    m_ISubClass(),
    m_SubClassID(0)
@@ -173,7 +171,6 @@ CAALEvent::CAALEvent(const CAALEvent &rOther) :
    m_pObject(NULL),
    m_bIsOK(false),
    m_Context(NULL),
-   m_pMessageHandler(NULL),
    m_InterfaceMap(),
    m_ISubClass(),
    m_SubClassID(0)
@@ -192,7 +189,6 @@ CAALEvent::CAALEvent(const CAALEvent &rOther) :
 
    m_pObject = rOther.m_pObject;
    m_Context = rOther.m_Context;
-   m_pMessageHandler = rOther.m_pMessageHandler;
    m_bIsOK   = rOther.m_bIsOK;
 }
 
@@ -346,12 +342,16 @@ void CAALEvent::operator()()
       return;
    }
 
-   if ( NULL != m_pMessageHandler ) {
-      m_pMessageHandler->messageHandler(*this);
+   if( NULL != m_pServiceClient ) {
+      m_pServiceClient->serviceEvent(*this);
       delete this;
-   } else if ( NULL != m_pEventHandler ) {
-      m_pEventHandler(*this);
    }
+
+   if( NULL != m_pRuntimeClient ) {
+      m_pRuntimeClient->runtimeEvent(*this);
+      delete this;
+   }
+
 }
 
 //=============================================================================
@@ -389,24 +389,6 @@ void CAALEvent::SetObject(IBase *pObject)
 {
    m_pObject = pObject;
    UpdateContext();
-}
-
-//=============================================================================
-// Name:          CAALEvent::Dispatch
-// Description:   Dispatch self to proper recipient
-// Interface:     public
-// Inputs:        Target object
-// Outputs:       void
-// Comments:      Default is AAL Event handler
-//=============================================================================
-void CAALEvent::Dispatch(btObjectType target) const
-{
-   btEventHandler eventHandler = reinterpret_cast<btEventHandler>(target);
-
-   ASSERT(NULL != eventHandler);
-   if ( NULL != eventHandler ) { // BREAKPOINT Event Dispatch
-      eventHandler(*this);
-   }
 }
 
 //=============================================================================
@@ -472,9 +454,8 @@ CAALEvent::~CAALEvent() {}
 //           Must be constructed with an object and a TranID.
 //=============================================================================
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
-                                     TransactionID const &TranID,
-                                     IMessageHandler     *pHandler) :
-   CAALEvent(pObject, pHandler)
+                                     TransactionID const &TranID) :
+   CAALEvent(pObject)
 {
    AutoLock(this);
    m_TranID = TranID;
@@ -496,9 +477,8 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
 //=============================================================================
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
                                      btIID                SubClassID,
-                                     TransactionID const &TranID,
-                                     IMessageHandler     *pHandler) :
-   CAALEvent(pObject, pHandler)
+                                     TransactionID const &TranID) :
+   CAALEvent(pObject)
 {
    AutoLock(this);
 
@@ -557,9 +537,8 @@ CTransactionEvent & CTransactionEvent::operator=(const CTransactionEvent & ) { r
 CExceptionEvent::CExceptionEvent(IBase    *pObject,
                                  btID      ExceptionNumber,
                                  btID      Reason,
-                                 btcString Description,
-                                 IMessageHandler *pHandler) :
-   CAALEvent(pObject, pHandler),
+                                 btcString Description) :
+   CAALEvent(pObject),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
@@ -586,9 +565,8 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
                                  btIID     SubClassID,
                                  btID      ExceptionNumber,
                                  btID      Reason,
-                                 btcString Description,
-                                 IMessageHandler *pHandler) :
-   CAALEvent(pObject, pHandler),
+                                 btcString Description) :
+   CAALEvent(pObject),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
@@ -648,9 +626,8 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        TransactionID const &TranID,
                                                        btID                 ExceptionNumber,
                                                        btID                 Reason,
-                                                       btcString            Description,
-                                                       IMessageHandler     *pHandler) :
-   CAALEvent(pObject,pHandler),
+                                                       btcString            Description) :
+   CAALEvent(pObject),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
@@ -683,9 +660,8 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        TransactionID const &TranID,
                                                        btID                 ExceptionNumber,
                                                        btID                 Reason,
-                                                       btcString            Description,
-                                                       IMessageHandler     *pHandler) :
-   CAALEvent(pObject, pHandler),
+                                                       btcString            Description) :
+   CAALEvent(pObject),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
@@ -778,9 +754,6 @@ void ObjectCreatedEvent::operator()()
    if ( NULL != m_pClient ) {
       m_pClient->serviceAllocated(m_pObject, m_TranID);
       delete this;
-   } else if ( NULL != m_pMessageHandler ) {
-      m_pMessageHandler->messageHandler(*this);
-      delete this;
    } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
    }
@@ -818,10 +791,7 @@ void ObjectCreatedExceptionEvent::operator()()
          m_pClient->serviceAllocateFailed(*this);
          delete this;
 
-   } else if(NULL != m_pMessageHandler){
-      m_pMessageHandler->messageHandler(*this);
-      delete this;
-   }else if(NULL != m_pEventHandler){
+   } else if(NULL != m_pEventHandler){
       m_pEventHandler(*this);
    }
 }
@@ -852,119 +822,12 @@ void CObjectDestroyedTransactionEvent::operator()()
    if(NULL != m_pClient){
       m_pClient->serviceReleased(m_TranID);;
       delete this;
-   }else if(NULL != m_pMessageHandler){
-      m_pMessageHandler->messageHandler(*this);
-      delete this;
    }else if(NULL != m_pEventHandler){
       m_pEventHandler(*this);
    }
 }
 CObjectDestroyedTransactionEvent::~CObjectDestroyedTransactionEvent() {/*empty*/}
 CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent()  {/*empty*/}
-
-
-
-//=============================================================================
-// Name: CApplicationEvent
-// Description: Constructor
-// Comments: Must Initialize base to ensure Interface registration.
-//           Must be constructed with an object.
-//=============================================================================
-CApplicationEvent::CApplicationEvent(btIID          subclass,
-                                     IBase         *pObject,
-                                     NamedValueSet &NValues) :
-   CAALEvent(pObject),
-   m_subclass(subclass)
-{
-   AutoLock(this);
-
-#if DEPRECATED
-   //Self register the interface
-   if(SetInterface(I_APPLICATION_EVENT,
-                   dynamic_cast<IApplicationEvent *>(this) )!= EObjOK) {
-      return;
-   }
-
-   //Self register the interface
-   if(SetInterface(C_APPLICATION_EVENT,
-                   dynamic_cast<C_ApplicationEvent*>(this) )!= EObjOK) {
-      return;
-   }
-
-   //Register the application defined type
-   if(SetInterface(subclass,
-                   dynamic_cast<IApplicationEvent *>(this) )!= EObjOK) {
-      return;
-   }
-
-   m_subclass = _strdup(subclass); // keep it for copy constructor
-   m_pObject=pObject;
-#endif // DEPRECATED
-
-   //Event inherits object's Application Context Value
-   if(pObject!=NULL && pObject->IsOK()) {
-      m_Context=pObject->Context();
-   }
-
-   m_pNamedValues = new NamedValueSet(NValues);
-   m_bIsOK = true;
-}
-
-//=============================================================================
-// Name: CApplicationEvent(const CApplicationEvent&rOther)
-// Description: Copy Constructor
-// Comments: Must Initialize base to ensure Interface registration.
-//           Must be constructed with an object.
-//=============================================================================
-CApplicationEvent::CApplicationEvent(const CApplicationEvent &rOther) :
-   CAALEvent(rOther),
-   m_subclass(rOther.m_subclass)
-{
-   AutoLock(this);
-#if DEPRECATED
-   //Self register the interface
-   if(SetInterface(I_APPLICATION_EVENT,
-                   dynamic_cast<IApplicationEvent *>(this) )!= EObjOK) {
-      return;
-   }
-
-   if(SetInterface(C_APPLICATION_EVENT,
-                   dynamic_cast<C_ApplicationEvent*>(this) )!= EObjOK) {
-      return;
-   }
-
-   //Register the application defined type
-   if(SetInterface(rOther.m_subclass,
-                   dynamic_cast<IApplicationEvent *>(this) )!= EObjOK) {
-      return;
-   }
-
-   m_pObject=rOther.m_pObject;
-   m_subclass = _strdup(rOther.m_subclass);
-#endif // DEPRECATED
-
-   m_pNamedValues = new NamedValueSet(*rOther.m_pNamedValues);
-   m_bIsOK = true;
-}
-
-//=============================================================================
-// Name: ~CApplicationEvent()
-// Description: Destructor
-// Comments:
-//=============================================================================
-CApplicationEvent::~CApplicationEvent() {
-#if DEPRECATED
-   if ( NULL != m_subclass ) {
-      free(m_subclass);
-   }
-#endif // DEPRECATED
-   if ( NULL != m_pNamedValues ) {
-      delete m_pNamedValues;
-   }
-}
-
-CApplicationEvent::CApplicationEvent() {/*empty*/}
-CApplicationEvent & CApplicationEvent::operator=(const CApplicationEvent & ) { return *this; }
 
 END_NAMESPACE(AAL)
 

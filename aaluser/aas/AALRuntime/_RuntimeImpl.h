@@ -39,7 +39,6 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/Runtime.h>
-#include <aalsdk/aas/_xlRuntimeServices.h>
 #include <aalsdk/CUnCopyable.h>
 #include <aalsdk/AALBase.h>
 
@@ -80,8 +79,7 @@ class _runtime : public  CAASBase,
                  public  IRuntime,
                  private CUnCopyable,
                  private IServiceClient,        // For internal Services
-                 private IRuntimeClient,        // _runtime uses a Runtime Proxy
-                 public  IAALRUNTIMEServices
+                 private IRuntimeClient         // _runtime uses a Runtime Proxy
 {
 public:
    typedef std::map<Runtime *, IRuntimeClient *> ClientMap;
@@ -133,7 +131,7 @@ public:
                       NamedValueSet const     &rManifest = NamedValueSet(),
                       TransactionID const     &rTranID   = TransactionID());
 
-   void schedDispatchable(IDispatchable *pdispatchable);
+   btBool schedDispatchable(IDispatchable *pdispatchable);
    // </IRuntime>
 
 
@@ -145,9 +143,9 @@ public:
    void removeProxy(Runtime *pRuntimeProxy);
 
    // IAALRUNTIMEServices
-   IBase      *getMessageDeliveryService();
-   void        setMessageDeliveryService(IBase *pMDSbase);
-   btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
+//   IBase      *getMessageDeliveryService();
+//   void        setMessageDeliveryService(IBase *pMDSbase);
+//   btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
 
 protected:
    btBool InstallDefaults();
@@ -222,7 +220,7 @@ private:
    ServiceHost                    *m_pBrokerSvcHost;
 
    // Active core services
-   IEventDeliveryService          *m_pMDS;
+   IMessageDeliveryService        *m_pMDS;
    IBase                          *m_pMDSbase;
 
    IServiceBroker                 *m_pBroker;

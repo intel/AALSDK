@@ -384,16 +384,11 @@ public:
    ///
    NamedValueSet const        &OptArgs()     { return m_optArgs;        }
 
-   btEventHandler              Handler()     { return m_eventHandler;   }
-
    /// Accessor to pointer to the Service's Client's Interface
    IServiceClient * Client()      { return m_pclient;        }
 
    /// Accessor to pointer to the Service's Client's IBase Interface
    IBase *          ClientBase()  { return m_pclientbase;    }
-
-   /// Accessor to pointer to the Runtime Services
-   IAALRUNTIMEServices * getRuntimeServiceProvider() { return pAALServiceModule()->getRuntimeServiceProvider(); }
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
@@ -411,20 +406,7 @@ public:
                      NamedValueSet const    &rManifest = NamedValueSet(),
                      TransactionID const    &rTranID   = TransactionID());
 
-   /// Send a Dispatchable
-   /// @param[in]  pMessage  Pointer to IDispatchable.
-   void SendMsg(IDispatchable *pMessage);
 
-   /// Convenience function to Queue an event to owner
-   /// @param[in]  pMessage  Pointer to Event.
-   btBool QueueAASEvent(CAALEvent *pEvent);
-
-   // Convenience function to Queue an event to anyone
-   btBool QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent);
-
-   // Queue and event to be dispatched through an object
-   btBool QueueAASEvent(btObjectType target, CAALEvent *pEvent);
-    
    // Accessor to this Services Service Module
    AALServiceModule     * pAALServiceModule()    { return m_pcontainer; }
 
@@ -444,7 +426,6 @@ protected:
    NamedValueSet                     m_optArgs;
    IRuntimeClient                   *m_RuntimeClient;
    IRuntime                         *m_Runtime;
-   btEventHandler                    m_eventHandler;
    IServiceClient                   *m_pclient;
    IBase                            *m_pclientbase;
    AALServiceModule                 *m_pcontainer;

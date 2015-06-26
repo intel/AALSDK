@@ -72,7 +72,6 @@ ServiceBase::ServiceBase(AALServiceModule *container,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
    CAASBase(),
-   m_eventHandler(NULL),
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
@@ -91,7 +90,6 @@ ServiceBase::ServiceBase(AALServiceModule *container,
 ServiceBase::ServiceBase(ServiceBase const &rother) :
    CAASBase(),
    m_optArgs(rother.m_optArgs),
-   m_eventHandler(rother.m_eventHandler),
    m_pclient(rother.m_pclient),
    m_pcontainer(rother.m_pcontainer),
    m_Runtime(rother.m_Runtime->getRuntimeProxy(this)),
@@ -139,11 +137,11 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
    Released();
 
    // Using NULL here to reinforce that we should not be manipulating this when
-   // EDS dispatches the CObjectDestroyedTransactionEvent - it will have been deleted.
-   QueueAASEvent(new CObjectDestroyedTransactionEvent(Client(),
-                                                      NULL,
-                                                      rTranID,
-                                                      Context()));
+   // MDS dispatches the CObjectDestroyedTransactionEvent - it will have been deleted.
+   getRuntime()->schedDispatchable(new CObjectDestroyedTransactionEvent(Client(),
+                                                                        NULL,
+                                                                        rTranID,
+                                                                        Context()));
 
    // Release the Proxy
    getRuntime()->releaseRuntimeProxy();
@@ -193,7 +191,7 @@ IBase * ServiceBase::_init(IBase               *pclient,
    } else {
       // Queue the completion to enable next layer down (the class derived from this)
       //   to initialize
-      QueueAASEvent(pcmpltEvent);
+      getRuntime()->schedDispatchable(pcmpltEvent);
    }
 
    return this;
@@ -284,37 +282,6 @@ void ServiceBase::allocService(IBase                  *pClient,
    getRuntime()->allocService(pClient, rManifest, rTranID);
 }
 
-void ServiceBase::SendMsg(IDispatchable *pMessage)
-{
-   // BREAKPOINT Queue Dispatchable
-   getRuntime()->schedDispatchable(pMessage);
-}
-
-btBool ServiceBase::QueueAASEvent(CAALEvent *pEvent)  // TODO Deprecate
-{
-   // BREAKPOINT Queue Event
-   if ( NULL != Handler() ) {
-      pEvent->setHandler(Handler());
-      return getRuntimeServiceProvider()->SendMsg(pEvent, (btObjectType)Handler());
-   } else {
-      pEvent->setHandler(Client());
-      return getRuntimeServiceProvider()->SendMsg(pEvent, Client());
-   }
-}
-
-btBool ServiceBase::QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent)
-{
-   // BREAKPOINT Queue Event
-   pEvent->setHandler(Eventhandler);
-   return getRuntimeServiceProvider()->SendMsg(pEvent, (btObjectType)Eventhandler);
-}
-
-btBool ServiceBase::QueueAASEvent(btObjectType target, CAALEvent *pEvent)
-{
-   // BREAKPOINT Queue Event
-   return getRuntimeServiceProvider()->SendMsg(pEvent, target);
-}
-
 void ServiceBase::Released()
 {
    // Mark as not OK before deleting self or it will recurse Releasing
@@ -326,7 +293,6 @@ void ServiceBase::initComplete(TransactionID const &rtid)
 {
    init(rtid);
 }
-
 
 void ServiceBase::messageHandler(const IEvent &rEvent)
 {
@@ -388,13 +354,13 @@ IBase * ServiceProxyBase::_init(IBase               *pclient,
 void ServiceProxyBase::Doinit(TransactionID const &rtid)
 {
    if ( !HasTransport() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasNoDevice,
-                                                    "No transport provided to proxy class"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasNoDevice,
+                                                                      "No transport provided to proxy class"));
       return;
    }
 
@@ -409,13 +375,13 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
    if ( !sendmsg() ) {
       m_ptransport->disconnect();
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to send NEW message to server"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to send NEW message to server"));
 
       return;
    }
@@ -432,7 +398,7 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
    //   init() method
    //
    if ( NULL != m_pcmpltEvent ) {
-      QueueAASEvent(m_pcmpltEvent);
+      getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
       init(rtid);
@@ -478,13 +444,13 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
 {
    // If there
    if ( !HasTransport() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasNoDevice,
-                                                    "No transport provided to stub class"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasNoDevice,
+                                                                      "No transport provided to stub class"));
       return;
    }
 
@@ -503,7 +469,7 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    //   init() method
    //
    if ( NULL != m_pcmpltEvent ) {
-      QueueAASEvent(m_pcmpltEvent);
+      getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
       init(rtid);

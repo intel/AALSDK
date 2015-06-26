@@ -273,7 +273,7 @@ void HWAFUWkspcDelegate<mode>::WkspcAlloc(btWSSize             Length,
                                                                      errAFUWorkSpace,
                                                                      reasAFUNoMemory,
                                                                      "AFUTran validity check failed");
-      SendMsg(
+      getRuntime()->schedDispatchable(
          new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                             pExcept)
 
@@ -306,7 +306,7 @@ void HWAFUWkspcDelegate<mode>::WkspcFree(btVirtAddr           Address,
                                                                      errMemory,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
-      SendMsg(
+      getRuntime()->schedDispatchable(
          new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                         pExcept)
              );
@@ -370,11 +370,11 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory allocation
 
       // Send the message
-      This->SendMsg( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
-                                                                   OrigTranID,
-                                                                   pResult->wsParms.ptr,
-                                                                   pResult->wsParms.physptr,
-                                                                   pResult->wsParms.size) );
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+                                                                                           OrigTranID,
+                                                                                           pResult->wsParms.ptr,
+                                                                                           pResult->wsParms.physptr,
+                                                                                           pResult->wsParms.size) );
 
    } else {    // error during allocate
       // get an error string
@@ -390,8 +390,8 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
-                                                                     pExcept) );
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+                                                                                                                     pExcept) );
 }
 
 template <TTASK_MODE mode>
@@ -451,8 +451,8 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory free
 
       // Send the message
-      This->SendMsg( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
-                                                               OrigTranID) );
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+                                                                                       OrigTranID) );
 
    } else {    // error during free
       // get an error string
@@ -468,8 +468,8 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
-                                                                 pExcept) );
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+                                                                                         pExcept) );
 }
 
 

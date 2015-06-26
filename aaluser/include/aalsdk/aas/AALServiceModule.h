@@ -62,7 +62,6 @@
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/OSSemaphore.h>
 #include <aalsdk/Runtime.h>
-#include <aalsdk/aas/_xlRuntimeServices.h>
 
 /// @addtogroup Services
 /// @{
@@ -254,24 +253,7 @@ class AASLIB_API ISvcsFact
 public:
    /// ISvcsFact Destructor.
    virtual ~ISvcsFact();
-#if 0
-   /// Create an instance of a Service object.
-   ///
-   /// @param[in]  container  The AALServiceModule which contains this factory.
-   /// @param[in]  eventHandler The event handler to receive the tranevtFactoryCreate event. The
-   ///   object contained within the event may be queried for the desired Service interfaces.
-   /// @param[in]  tid        TransactionID for the event.
-   /// @param[in]  context    Application-specific context for the event.
-   /// @param[in]  optArgs    Optional Service-specific arguments.
-   ///
-   /// @retval  IBase *  On success.
-   /// @retval  NULL     On failure.
-   virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       btEventHandler       eventHandler,
-                                       btApplicationContext context,
-                                       TransactionID const &rtid,
-                                       NamedValueSet const &optArgs) = 0;
-#endif
+
    /// Create an instance of a Service object.
    ///
    /// @param[in]  container  The AALServiceModule which contains this factory.
@@ -301,22 +283,7 @@ class AASLIB_API IServiceModule
 public:
    /// IServiceModule Destructor.
    virtual ~IServiceModule();
-#if 0
-   /// Uses ISvcsFact to create the Service object.
-   ///
-   /// @param[in]  Listener  The event handler to receive the tranevtFactoryCreate event. The
-   ///   object contained within the event may be queried for the desired Service interfaces.
-   /// @param[in]  tid       TransactionID for the event.
-   /// @param[in]  context   Application-specific context for the event.
-   /// @param[in]  optArgs   Optional Service-specific arguments.
-   ///
-   /// @retval  IBase *  On success.
-   /// @retval  NULL     On failure.
-   virtual IBase *Construct(btEventHandler       Listener,
-                            TransactionID const &tid,
-                            btApplicationContext context,
-                            NamedValueSet const &optArgs = NamedValueSet()) = 0;
-#endif
+
    /// Uses ISvcsFact to create the Service object.
     ///
     /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
@@ -338,9 +305,6 @@ public:
    ///  modules address space MUST be deleted.
    virtual void   Destroy() = 0;
 
-   // AAL 4.0 Service Interface (DEPRECATE) - Used for Event Queuing
-   virtual void setRuntimeServiceProvider(IAALRUNTIMEServices *pRuntimeServices) = 0;
-   virtual IAALRUNTIMEServices  *getRuntimeServiceProvider() = 0;
 
    virtual void setRuntime(IRuntime *pRuntime) = 0;
    virtual IRuntime  *getRuntime() = 0;
@@ -380,12 +344,7 @@ public:
    virtual ~AALServiceModule();
 
    // <IServiceModule>
-#if 0
-   virtual IBase *Construct(btEventHandler       Listener,
-                            TransactionID const &tranID,
-                            btApplicationContext context,
-                            NamedValueSet const &optArgs = NamedValueSet());
-#endif
+
     virtual IBase *Construct(IRuntime            *pAALRUNTIME,
                              IBase               *Client,
                              TransactionID const &tid = TransactionID(),
@@ -399,20 +358,6 @@ public:
    virtual void ServiceReleased(IBase *pService);
 
    // </IServiceModuleCallback>
-
-   // AAL 4.0 Service Interface
-   void setRuntimeServiceProvider(IAALRUNTIMEServices *pRuntimeServices)
-   {
-      // Lock
-      m_RuntimeServices = pRuntimeServices;
-   }
-
-   // AAL 4.0 Service Interface
-   IAALRUNTIMEServices  *getRuntimeServiceProvider()
-   {
-      // Lock
-      return m_RuntimeServices;
-   }
 
    void setRuntime(IRuntime *pRuntime)
    {
@@ -497,7 +442,6 @@ protected:
    IAALService                            *m_pService;
    btUnsignedInt                           m_refcount; // TODO use CCountedObject
 
-   IAALRUNTIMEServices                     *m_RuntimeServices;
    IRuntime                               *m_Runtime;
    IRuntimeClient                         *m_RuntimeClient;
    ISvcsFact                              &m_SvcsFact;

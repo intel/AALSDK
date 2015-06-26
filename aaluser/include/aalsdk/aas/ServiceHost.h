@@ -40,8 +40,6 @@
 #include <aalsdk/osal/OSServiceModule.h>
 #include <aalsdk/aas/AALServiceModule.h>
 
-#include "aalsdk/aas/_xlRuntimeServices.h"
-
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
@@ -59,11 +57,10 @@ public:
    btBool IsOK() const {return m_bIsOK;}
    ~ServiceHost(){}
 
-   btBool allocService( IRuntime * pRuntime,
-                        IAALRUNTIMEServices * pRuntimeService,
-                        IBase               *pClient,
-                        NamedValueSet const &rManifest = NamedValueSet(),
-                        TransactionID const &rTranID = TransactionID());
+   btBool InstantiateService( IRuntime            *pRuntime,
+                              IBase               *pClient,
+                              NamedValueSet const &rManifest = NamedValueSet(),
+                              TransactionID const &rTranID = TransactionID());
 
    std::string const &getName() const   { return m_name;      }
    IBase *  getIBase()const             { return m_base;      }

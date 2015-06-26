@@ -66,13 +66,13 @@ void CCIAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ICCIClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ICCIClient Interface"));
       return;
    }
 
@@ -140,7 +140,7 @@ void CCIAFU::serviceAllocated(IBase               *pServiceBase,
       SetInterface(iidHWCCIAFU, dynamic_ptr<ICCIAFU>(iidHWCCIAFU, pServiceBase));
    }
 
-   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
                                                        Client(),
                                                        dynamic_cast<IBase *>(this),
                                                        m_TranIDFrominit) );
@@ -150,13 +150,13 @@ void CCIAFU::serviceAllocateFailed(const IEvent        &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   QueueAASEvent( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                Client(),
-                                                                NULL,
-                                                                m_TranIDFrominit,
-                                                                errInternal,
-                                                                reasCauseUnknown,
-                                                                "Allocate Failed"));
+   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                                  Client(),
+                                                                                  NULL,
+                                                                                  m_TranIDFrominit,
+                                                                                  errInternal,
+                                                                                  reasCauseUnknown,
+                                                                                  "Allocate Failed"));
 }
 
 void CCIAFU::serviceReleased(TransactionID const &TranID)
@@ -169,22 +169,22 @@ void CCIAFU::serviceReleaseFailed(const IEvent        &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   QueueAASEvent( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                Client(),
-                                                                NULL,
-                                                                m_TranIDFrominit,
-                                                                errInternal,
-                                                                reasCauseUnknown,
-                                                                "Release Failed"));
+   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                                  Client(),
+                                                                                  NULL,
+                                                                                  m_TranIDFrominit,
+                                                                                  errInternal,
+                                                                                  reasCauseUnknown,
+                                                                                  "Release Failed"));
 }
 
 void CCIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   SendMsg( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
-		   	   	   	   	   	   	   	   	   	   	    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
+                                                                            Client(),
+                                                                            dynamic_cast<IBase *>(this),
+                                                                            &Event) );
 }
 
 
@@ -225,11 +225,11 @@ void CCIAFU::OnWorkspaceAllocated(TransactionID const &TranID,
                                   btWSSize             WkspcSize)
 {
    // Reflect the message to the outer client.
-   SendMsg( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-                                                          TranID,
-                                                          WkspcVirt,
-                                                          WkspcPhys,
-                                                          WkspcSize) );
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                  TranID,
+                                                                                  WkspcVirt,
+                                                                                  WkspcPhys,
+                                                                                  WkspcSize) );
 }
 
 void CCIAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
@@ -245,7 +245,7 @@ void CCIAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 void CCIAFU::OnWorkspaceFreed(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   SendMsg( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                       TranID) );
 }
 

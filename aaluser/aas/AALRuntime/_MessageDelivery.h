@@ -76,7 +76,7 @@ class _MessageDelivery;
 //            requirements pior to init()
 //=============================================================================
 class _MessageDelivery : public ServiceBase,
-                           public IEventDeliveryService
+                         public IMessageDeliveryService
 {
 public:
    // Loadable Service
@@ -84,9 +84,10 @@ public:
    {
       // Default is a simple single threaded scheduler.
       m_Dispatcher = new OSLThreadGroup;
-      SetSubClassInterface(iidEventDeliveryService,
-                           dynamic_cast<IEventDeliveryService *>(this));
-      m_pcontainer->getRuntimeServiceProvider()->setMessageDeliveryService(dynamic_cast<IBase *>(this));
+      SetSubClassInterface(iidMDS,
+                           dynamic_cast<IMessageDeliveryService *>(this));
+
+      //m_pcontainer->getRuntimeServiceProvider()->setMessageDeliveryService(dynamic_cast<IBase *>(this));
    }
 
    // Initialize the object including any configuration changes based on
@@ -100,29 +101,14 @@ public:
    // Quiet Release. Used when Service is unloaded.
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   // Set config parameters
-   btBool SetParms(NamedValueSet const &rparms);
-
    //
-   // IEventDeliverService
+   // IMessageDeliveryService
    EDS_Status Schedule();
-   // Nop for now
-   void Unblock() { ASSERT(false); }
 
-   void StartEventDelivery();
-   void StopEventDelivery();
+   void StartMessageDelivery();
+   void StopMessageDelivery();
 
-   btBool QueueEvent(btEventHandler ,
-                     CAALEvent * );
-
-   btBool QueueEvent(btObjectType ,
-                     CAALEvent * );
-
-   btBool QueueEvent(btObjectType ,
-                     IDispatchable *);
-
-   /// Retrieve the IEventDispatcher interface.
-   IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal);
+   btBool scheduleMessage( IDispatchable *);
 
    ~_MessageDelivery();
 

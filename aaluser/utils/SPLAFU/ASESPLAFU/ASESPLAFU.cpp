@@ -71,13 +71,13 @@ void ASESPLAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ISPLClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ISPLClient Interface"));
       return;
    }
 
@@ -93,10 +93,10 @@ void ASESPLAFU::init(TransactionID const &TranID)
   spl_driver_dsm_setup(m_dsm);
   spl_driver_afu_setup(m_dsm);
 
-  QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                      Client(),
-                                                      dynamic_cast<IBase *>(this),
-                                                      TranID) );
+  getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                                        Client(),
+                                                                        dynamic_cast<IBase *>(this),
+                                                                        TranID) );
 }
 
 btBool ASESPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -165,11 +165,11 @@ void ASESPLAFU::WorkspaceAllocate(btWSSize             Length,
       goto _SEND_ERR;
    }
 
-   SendMsg( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                          TranID,
-                                                          (btVirtAddr)buf.vbase,
-                                                          (btPhysAddr)buf.fake_paddr,
-                                                          (btWSSize)buf.memsize) );
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                  TranID,
+                                                                                  (btVirtAddr)buf.vbase,
+                                                                                  (btPhysAddr)buf.fake_paddr,
+                                                                                  (btWSSize)buf.memsize) );
    return;
 
 _SEND_ERR:
@@ -178,7 +178,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                                pExcept) );
 }
 
@@ -214,7 +214,7 @@ void ASESPLAFU::WorkspaceFree(btVirtAddr           Address,
       m_WkspcMap.erase(iter);
    }
 
-   SendMsg( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                       TranID) );
    return;
 
@@ -224,7 +224,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
                                                            pExcept) );
 }
 
@@ -287,10 +287,10 @@ void ASESPLAFU::StartTransactionContext(TransactionID const &TranID,
   if ( NULL == Address ) {
     // The user wants access to the AFU DSM before starting the transaction.
     // We don't actually start the transaction when Address is NULL.
-    SendMsg( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-							   TranID,
-							   AFUDSMVirt,
-							   AFUDSMSize) );
+    getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted( dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                    TranID,
+                                                                                    AFUDSMVirt,
+                                                                                    AFUDSMSize) );
     return;
   }
   
@@ -300,10 +300,10 @@ void ASESPLAFU::StartTransactionContext(TransactionID const &TranID,
 
 
 
-  SendMsg( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-							 TranID,
-							 AFUDSMVirt,
-							 AFUDSMSize) );
+  getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted( dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                  TranID,
+                                                                                  AFUDSMVirt,
+                                                                                  AFUDSMSize) );
 }
 
 void ASESPLAFU::StopTransactionContext(TransactionID const &TranID)
@@ -317,8 +317,8 @@ void ASESPLAFU::StopTransactionContext(TransactionID const &TranID)
 
 
 
-   SendMsg( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                          TranID) );
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                  TranID) );
 }
 
 void ASESPLAFU::SetContextWorkspace(TransactionID const &TranID,
@@ -333,8 +333,8 @@ void ASESPLAFU::SetContextWorkspace(TransactionID const &TranID,
       csr_write(SPL_CH_CTRL_OFF, 0x0);
    }
 
-   SendMsg( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
-                                                           TranID) );
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+                                                                                   TranID) );
 }
 
 /// @} group ASESPLAFU

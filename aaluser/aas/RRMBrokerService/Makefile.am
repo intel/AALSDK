@@ -27,7 +27,7 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     aas/XLRRMBrokerService/Makefile.am
+##     aas/RRMBrokerService/Makefile.am
 ##  Author:
 ##     Joe Grecco, Intel Corporation
 ##  History:

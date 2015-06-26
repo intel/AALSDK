@@ -294,7 +294,7 @@ private:
 
    badparm:
       // Post the object created exception
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                     Client(),
                                                     dynamic_cast<IBase *>(this),
                                                     rtid,
@@ -381,25 +381,25 @@ private:
    //=============================================================================
    void EventCallbackHandler(IEvent const &theEvent)
    {
+      // TODO check for NULL
+      m_pAIA = dynamic_ptr<CAIA>(iidAIA, theEvent.Object());
+
       if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
          //Print the description string.
          PrintExceptionDescription(theEvent);
          // Send the failure event. Unwrap and return the original TrasnactionID from the event
-         QueueAASEvent( Handler(),
-                        new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                        Client(),
-                                                        dynamic_cast<IBase *>(this),
-                                                        UnWrapTransactionIDFromEvent(theEvent),
-                                                        errCreationFailure,
-                                                        dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
-                                                        dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description()
-                                                       )
-         );
+         ObjectCreatedExceptionEvent *pEvent = new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                               Client(),
+                                                                               dynamic_cast<IBase *>(this),
+                                                                               UnWrapTransactionIDFromEvent(theEvent),
+                                                                               errCreationFailure,
+                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
+                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description());
+         m_pAIA->getRuntime()->schedDispatchable(pEvent);
          return;
       }
 
-      // TODO check for NULL
-      m_pAIA = dynamic_ptr<CAIA>(iidAIA, theEvent.Object());
+
 
       //---------------------------------------------------
       // Create a session with the AIA which serves as a
@@ -500,11 +500,10 @@ private:
             // If it is not a quiet release
             if ( !m_quietRelease ) {
                // Generate the event
-               QueueAASEvent( ClientBase(),
-                              new CObjectDestroyedTransactionEvent( Client(),
-                            		  	  	  	  	  	  	        dynamic_cast<IBase *>(this),
-                                                                    origTID,
-                                                                    Context()));
+               m_pAIA->getRuntime()->schedDispatchable( new CObjectDestroyedTransactionEvent( Client(),
+                                                                                              dynamic_cast<IBase *>(this),
+                                                                                              origTID,
+                                                                                              Context()));
             }
  
             // Destroy the AIA session

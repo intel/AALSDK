@@ -71,21 +71,21 @@ void ASECCIAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ICCIClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ICCIClient Interface"));
       return;
    }
 
   session_init();
-  QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-						      Client(),
-						      dynamic_cast<IBase *>(this),
-						      TranID) );
+  getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                                        Client(),
+                                                                        dynamic_cast<IBase *>(this),
+                                                                        TranID) );
 }
 
 btBool ASECCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -135,21 +135,21 @@ void ASECCIAFU::WorkspaceAllocate(btWSSize             Length,
     goto _SEND_ERR;
   }
 
-  SendMsg( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							 TranID,
-							 (btVirtAddr)buf.vbase,
-							 (btPhysAddr)buf.fake_paddr,
-							 (btWSSize)buf.memsize) );
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                 TranID,
+                                                                                 (btVirtAddr)buf.vbase,
+                                                                                 (btPhysAddr)buf.fake_paddr,
+                                                                                 (btWSSize)buf.memsize) );
   return;
 
  _SEND_ERR:
   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-								 TranID,
-								 errAFUWorkSpace,
-								 reasAFUNoMemory,
-								 descr);
-  SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							      pExcept));
+                                                                 TranID,
+                                                                 errAFUWorkSpace,
+                                                                 reasAFUNoMemory,
+                                                                 descr);
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                      pExcept));
 }
 
 void ASECCIAFU::WorkspaceFree(btVirtAddr           Address,
@@ -182,18 +182,18 @@ void ASECCIAFU::WorkspaceFree(btVirtAddr           Address,
       m_WkspcMap.erase(iter);
    }
 
-  SendMsg( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-						     TranID) );
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                             TranID) );
   return;
 
  _SEND_ERR:
   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-								 TranID,
-								 errAFUWorkSpace,
-								 reasAFUNoMemory,
-								 descr);
-  SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							  pExcept));
+                                                                 TranID,
+                                                                 errAFUWorkSpace,
+                                                                 reasAFUNoMemory,
+                                                                 descr);
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                  pExcept));
 }
 
 btBool ASECCIAFU::CSRRead(btCSROffset CSR,

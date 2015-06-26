@@ -441,10 +441,9 @@
 /// Registrar interface id.
 /// @ingroup Registrar
 #define iidRegistrar                 __AAL_IID(AAL_sysAAS, 0x0002)
-//#if DEPRECATED
-#define iidEDS                       __AAL_IID(AAL_sysAAS, 0x0003)
-#define iidEventDeliveryService      iidEDS                          // Alias
+#define iidMDS                       __AAL_IID(AAL_sysAAS, 0x0003)
 
+//#if DEPRECATED
 #define iidFactory                   __AAL_IID(AAL_sysAAS, 0x0004)
 //#endif // DEPRECATED
 /// @ingroup uAIA

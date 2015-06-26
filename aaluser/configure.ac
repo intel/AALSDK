@@ -194,7 +194,7 @@ AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
                  aas/AALRuntime/Makefile
-                 aas/XLRRMBrokerService/Makefile
+                 aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile
                  aas/AASResourceManager/Makefile])

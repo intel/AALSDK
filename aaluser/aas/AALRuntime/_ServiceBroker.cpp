@@ -82,10 +82,10 @@ BEGIN_NAMESPACE(AAL)
 void _ServiceBroker::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
-                                         Client(),
-                                         dynamic_cast<IBase*>(this),
-                                         rtid));
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
+                                                           Client(),
+                                                           dynamic_cast<IBase*>(this),
+                                                           rtid));
 }
 
 //=============================================================================
@@ -96,10 +96,10 @@ void _ServiceBroker::init(TransactionID const &rtid)
 // Comments:
 //=============================================================================
 void _ServiceBroker::allocService(IRuntime               *pProxy,
-                                    IRuntimeClient         *pRuntimeClient,
-                                    IBase                  *pServiceClientBase,
-                                    const NamedValueSet     &rManifest,
-                                    TransactionID const     &rTranID)
+                                  IRuntimeClient         *pRuntimeClient,
+                                  IBase                  *pServiceClientBase,
+                                  const NamedValueSet     &rManifest,
+                                  TransactionID const     &rTranID)
 {
    // Process the manifest
    btcString            sName  = NULL;
@@ -107,13 +107,13 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
 
    IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
    if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
-      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errAllocationFailure,
-                                                    reasMissingInterface,
-                                                    strMissingInterface));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errAllocationFailure,
+                                                                      reasMissingInterface,
+                                                                      strMissingInterface));
    }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
@@ -131,25 +131,25 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
    }
 
    if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to load Service"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to load Service"));
       return;
    }
 
    // Allocate the service
-   if ( !SvcHost->allocService(pProxy, getRuntimeServiceProvider(), pServiceClientBase, rManifest, rTranID) ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to construct Service"));
+   if ( !SvcHost->InstantiateService(pProxy, pServiceClientBase, rManifest, rTranID) ) {
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to construct Service"));
       return;
    }
 
@@ -346,18 +346,18 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
       //------------------------------------------
       if ( m_servicecount > 0 ) {
          // Timed out - Shutdown did not succeed
-         QueueAASEvent(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                      exttranevtServiceShutdown,
-                                                      rTranID,
-                                                      errSystemTimeout,
-                                                      reasSystemTimeout,
-                                                      const_cast<btString>(strSystemTimeout)));
+         getRuntime()->schedDispatchable(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                        exttranevtServiceShutdown,
+                                                                        rTranID,
+                                                                        errSystemTimeout,
+                                                                        reasSystemTimeout,
+                                                                        const_cast<btString>(strSystemTimeout)));
       } else {
          // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
-      SendMsg(new ServiceClientCallback(ServiceClientCallback::Released,
-                                        Client(),
-                                        this,
-                                        rTranID));
+         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                                   Client(),
+                                                                   this,
+                                                                   rTranID));
 
          // Clear the map now
          m_ServiceMap.clear();
