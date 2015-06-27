@@ -126,23 +126,24 @@ create_samples_dist() {
 
    SAMPLES_TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.s.XXXXXXXXXX"`"
 
-   ${MKDIR} -p "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+#   ${MKDIR} -p "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+   ${MKDIR} -p "${SAMPLES_TMPDIR}/Samples"
 
    for x in `${FIND} "$d" -maxdepth 1 -type d` ; do
       [ "x${x##*/}" = "x.git" ] && continue
       [ "x$x" = "x$d" ] && continue
-      ${CP} -R "$x" "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+      ${CP} -R "$x" "${SAMPLES_TMPDIR}/Samples"
    done
 
    for x in `${FIND} "$d" -maxdepth 1 -type f` ; do
       [ "x${x##*/}" = "x.git" ] && continue
-      ${CP} "$x" "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}"
+      ${CP} "$x" "${SAMPLES_TMPDIR}/Samples"
    done
 
-   ${FIND} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}" -type f \( -iname "*.vcxproj" -o -iname "*.vcxproj.filters" \) -delete
+   ${FIND} "${SAMPLES_TMPDIR}/Samples" -type f \( -iname "*.vcxproj" -o -iname "*.vcxproj.filters" \) -delete
 
    pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
-   ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" "aalsamples-${SAMPLES_VERSION}"
+   ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" "Samples"
    popd >/dev/null 2>&1
 
    ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" .
@@ -197,7 +198,7 @@ main() {
    create_kernel_dist
    create_user_dist
    create_samples_dist
-   create_final_dist
+#   create_final_dist
 }
 main
 
