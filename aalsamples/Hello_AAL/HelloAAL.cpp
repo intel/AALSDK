@@ -110,10 +110,7 @@ public:
                                         TransactionID const &rTranID);
 
    void runtimeEvent(const IEvent &rEvent);
-   
-
    // <end IRuntimeClient interface>
-
 
 protected:
    IRuntime        *m_pRuntime;  // Pointer to AAL runtime instance.
@@ -147,7 +144,7 @@ RuntimeClient::RuntimeClient() :
 
 RuntimeClient::~RuntimeClient()
 {
-    m_Sem.Destroy();
+   m_Sem.Destroy();
 }
 
 btBool RuntimeClient::isOK()
@@ -155,15 +152,14 @@ btBool RuntimeClient::isOK()
    return m_isOK;
 }
 
-
-void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
-                                    const NamedValueSet &rConfigParms)
- {
-    // Save a copy of our runtime interface instance.
-    m_pRuntime = pRuntime;
-    m_isOK = true;
-    m_Sem.Post(1);
- }
+void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
+                                   const NamedValueSet &rConfigParms)
+{
+   // Save a copy of our runtime interface instance.
+   m_pRuntime = pRuntime;
+   m_isOK = true;
+   m_Sem.Post(1);
+}
 
 void RuntimeClient::end()
 {
@@ -172,11 +168,11 @@ void RuntimeClient::end()
 }
 
 void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
- {
-    MSG("Runtime stopped");
-    m_isOK = false;
-    m_Sem.Post(1);
- }
+{
+   MSG("Runtime stopped");
+   m_isOK = false;
+   m_Sem.Post(1);
+}
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
@@ -195,12 +191,12 @@ void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
-    MSG("Runtime Allocate Service Succeeded");
+   MSG("Runtime Allocate Service Succeeded");
 }
 
 void RuntimeClient::runtimeEvent(const IEvent &rEvent)
 {
-    MSG("Generic message handler (runtime)");
+   MSG("Generic message handler (runtime)");
 }
 
 IRuntime * RuntimeClient::getRuntime()
@@ -209,62 +205,61 @@ IRuntime * RuntimeClient::getRuntime()
 }
 
 
- /// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
- ///          The Service Client contains the application logic.
- ///
- /// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
- class HelloAALApp : public CAASBase, public IServiceClient, public IHelloAALClient
- {
- public:
-    HelloAALApp(RuntimeClient * rtc);
-    ~HelloAALApp();
+/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
+///          The Service Client contains the application logic.
+///
+/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
+class HelloAALApp: public CAASBase, public IServiceClient, public IHelloAALClient
+{
+public:
+   HelloAALApp(RuntimeClient * rtc);
+   ~HelloAALApp();
 
-    void run();
+   int run();
 
-    // <begin IHelloAALClient>
-    void HelloApp(TransactionID const &rTranID);
-    // <end IHelloAALClient>
+   // <begin IHelloAALClient>
+   void HelloApp(TransactionID const &rTranID);
+   // <end IHelloAALClient>
 
+   // <begin IServiceClient interface>
+   void serviceAllocated(IBase *pServiceBase,
+            TransactionID const &rTranID);
 
-    // <begin IServiceClient interface>
-    void serviceAllocated(IBase               *pServiceBase,
-                          TransactionID const &rTranID);
+   void serviceAllocateFailed(const IEvent &rEvent);
 
-    void serviceAllocateFailed(const IEvent        &rEvent);
+   void serviceFreed(TransactionID const &rTranID);
 
-    void serviceFreed(TransactionID const &rTranID);
+   void serviceEvent(const IEvent &rEvent);
+   // <end IServiceClient interface>
 
-    void serviceEvent(const IEvent &rEvent);
-    // <end IServiceClient interface>
-
-
-
- protected:
-    IBase           *m_pAALService;    // The generic AAL Service interface for the AFU.
-    RuntimeClient   *m_runtimClient;
-    CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
- };
+protected:
+   IBase            *m_pAALService;    // The generic AAL Service interface for the AFU.
+   RuntimeClient    *m_runtimClient;
+   CSemaphore        m_Sem;            // For synchronizing with the AAL runtime.
+   int               m_Result;         // Returned result value; 0 if success
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
 ///  MyServiceClient Implementation
 ///
 ///////////////////////////////////////////////////////////////////////////////
- HelloAALApp::HelloAALApp(RuntimeClient *rtc):
-    m_pAALService(NULL),
-    m_runtimClient(rtc)
- {
-    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
-    SetInterface(iidSampleHelloAALClient, dynamic_cast<IHelloAALClient *>(this));
-    m_Sem.Create(0, 1);
- }
+HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
+   m_pAALService(NULL),
+   m_runtimClient(rtc),
+   m_Result(0)
+{
+   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidSampleHelloAALClient, dynamic_cast<IHelloAALClient *>(this));
+   m_Sem.Create(0, 1);
+}
 
- HelloAALApp::~HelloAALApp()
- {
-    m_Sem.Destroy();
- }
+HelloAALApp::~HelloAALApp()
+{
+   m_Sem.Destroy();
+}
 
-void HelloAALApp::run()
+int HelloAALApp::run()
 {
    cout <<"===================="<<endl;
    cout <<"= Hello AAL Sample ="<<endl;
@@ -293,60 +288,61 @@ void HelloAALApp::run()
    m_runtimClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
    m_Sem.Wait();
 
-
    m_runtimClient->end();
+   return m_Result;
 }
 
- // We must implement the IServiceClient interface (IServiceClient.h):
+// We must implement the IServiceClient interface (IServiceClient.h):
 
- // <begin IServiceClient interface>
- void HelloAALApp::serviceAllocated(IBase               *pServiceBase,
-                                    TransactionID const &rTranID)
- {
-    m_pAALService = pServiceBase;
-    ASSERT(NULL != m_pAALService);
+// <begin IServiceClient interface>
+void HelloAALApp::serviceAllocated(IBase *pServiceBase,
+                                   TransactionID const &rTranID)
+{
+   m_pAALService = pServiceBase;
+   ASSERT(NULL != m_pAALService);
 
-    IHelloAALService *ptheService = subclass_ptr<IHelloAALService>(pServiceBase);
+   IHelloAALService *ptheService = subclass_ptr<IHelloAALService>(pServiceBase);
 
-    ASSERT(NULL != ptheService);
-    if( NULL == ptheService ) {
-       return;
-    }
+   ASSERT(NULL != ptheService);
+   if ( NULL == ptheService ) {
+      return;
+   }
 
-    MSG("Service Allocated");
+   MSG("Service Allocated");
 
-    // We have the Service, now to use it.
-    ptheService->Hello("the Application", TransactionID());
- }
+   // We have the Service, now to use it.
+   ptheService->Hello("the Application", TransactionID());
+}
 
- void HelloAALApp::serviceAllocateFailed(const IEvent        &rEvent)
- {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
-    ERR("Failed to allocate a Service");
-    ERR(pExEvent->Description());
-    m_Sem.Post(1);
- }
+void HelloAALApp::serviceAllocateFailed(const IEvent &rEvent)
+{
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Failed to allocate a Service");
+   ERR(pExEvent->Description());
+   ++m_Result;
+   m_Sem.Post(1);
+}
 
- void HelloAALApp::serviceFreed(TransactionID const &rTranID)
- {
-    MSG("Service Freed");
-    m_Sem.Post(1);
- }
+void HelloAALApp::serviceFreed(TransactionID const &rTranID)
+{
+   MSG("Service Freed");
+   m_Sem.Post(1);
+}
 
- void HelloAALApp::HelloApp(TransactionID const &rTranID)
- {
+void HelloAALApp::HelloApp(TransactionID const &rTranID)
+{
 
-    MSG("AAL says Hello Back ");
-    IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
-    ASSERT( pIAALService);
-    pIAALService->Release(TransactionID());
- }
+   MSG("AAL says Hello Back ");
+   IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+   ASSERT(pIAALService);
+   pIAALService->Release(TransactionID());
+}
 
- void HelloAALApp::serviceEvent(const IEvent &rEvent)
- {
-    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
- }
- // <end IServiceClient interface>
+void HelloAALApp::serviceEvent(const IEvent &rEvent)
+{
+   ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+}
+// <end IServiceClient interface>
 
 /// @} group HelloAAL
 
@@ -369,9 +365,9 @@ int main(int argc, char *argv[])
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   theApp.run();
+   int result = theApp.run();
 
    MSG("Done");
-   return 0;
+   return result;
 }
 
