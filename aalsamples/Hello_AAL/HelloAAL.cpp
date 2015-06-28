@@ -281,6 +281,7 @@ IRuntime * RuntimeClient::getRuntime()
 
 void HelloAALApp::run()
 {
+
    cout <<"===================="<<endl;
    cout <<"= Hello AAL Sample ="<<endl;
    cout <<"===================="<<endl;
@@ -350,7 +351,7 @@ void HelloAALApp::run()
 
  void HelloAALApp::serviceReleased(TransactionID const &rTranID)
  {
-    MSG("Service Freed");
+    MSG("Service Released");
     m_Sem.Post(1);
  }
 
@@ -383,9 +384,10 @@ void HelloAALApp::run()
 //=============================================================================
 int main(int argc, char *argv[])
 {
+
    RuntimeClient     runtimeClient;
    HelloAALApp       theApp(&runtimeClient);
-   
+
    if(!runtimeClient.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);

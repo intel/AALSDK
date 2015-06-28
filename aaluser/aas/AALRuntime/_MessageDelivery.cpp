@@ -167,8 +167,8 @@ void _MessageDelivery::StopMessageDelivery()
    if( NULL != m_Dispatcher ) {
      m_Dispatcher->Drain();
      m_Dispatcher->Stop();
-     delete m_Dispatcher;
-     m_Dispatcher = NULL;
+//     delete m_Dispatcher;
+//     m_Dispatcher = NULL;
    }
 }
 

@@ -265,10 +265,10 @@ public:
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       IRuntime            *pRuntime,
-                                       IBase               *Client,
-                                       TransactionID const &rtid,
-                                       NamedValueSet const &optArgs) = 0;
+                                       IRuntime            *pRuntime) = 0;
+   virtual btBool InitializeService( IBase               *Client,
+                                     TransactionID const &rtid,
+                                     NamedValueSet const &optArgs) = 0;
 };
 
 

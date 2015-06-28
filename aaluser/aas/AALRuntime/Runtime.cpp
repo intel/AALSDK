@@ -56,8 +56,9 @@ BEGIN_NAMESPACE(AAL)
 /// Need to call start() after construction to actually get the
 ///   runtime initialized and functional
 //=============================================================================
-Runtime::Runtime(IRuntimeClient *pClient) :
+Runtime::Runtime(IRuntimeClient *pClient, IRuntime *pParent) :
    m_pImplementation(NULL),
+   m_pParent(pParent),
    m_status(false),
    m_pClient(pClient)
 {
@@ -165,7 +166,8 @@ btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 //=============================================================================
 IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 {
-   Runtime *newProxy = new Runtime(pClient);
+   // Create the new proxy storing this as the parent.
+   Runtime *newProxy = new Runtime(pClient,this);
 
    // If construction failed Client will be notified if possible.
    //    we simply return NULL
@@ -205,10 +207,8 @@ btBool Runtime::releaseRuntimeProxy()
 {
    AutoLock(this);
 
-   delete this;
-
-   // If we got here we did not find the Proxy
-   return false;
+   // Release from our parent
+   return m_pParent->releaseRuntimeProxy(this);
 }
 
 //=============================================================================
@@ -253,10 +253,13 @@ Runtime::~Runtime()
 
     // Look through our the list of Proxies and release them.
     int cnt=0;
+    int size = m_proxyList.size();
+
     for(;cnt<m_proxyList.size(); cnt++){
        if(NULL != m_proxyList[cnt] ){
           // Delete the proxy instance
-          delete m_proxyList[cnt];
+           delete m_proxyList[cnt];
+
        }
     }
     // Free the vector.

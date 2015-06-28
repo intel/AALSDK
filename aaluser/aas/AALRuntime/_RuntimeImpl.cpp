@@ -662,13 +662,19 @@ void _runtime::allocService(  Runtime                *pProxy,
 // Outputs: none.
 // Comments:
 //=============================================================================
-btBool _runtime::schedDispatchable(IDispatchable *pdispatchable)
+btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
 {
    // Let MDS do it
    if(NULL == m_pMDS){
-      return false;
+      // No MDS so lets do a one shot. This may be part of teh boot process.
+      OSLThreadGroup oneShot;
+
+      // Fire the event
+      oneShot.Add(pDispatchable);
+      oneShot.Drain();  // Wait for it to be dispatched
+      return true;
    }
-   m_pMDS->scheduleMessage(pdispatchable);
+   return m_pMDS->scheduleMessage(pDispatchable);
 }
 
 

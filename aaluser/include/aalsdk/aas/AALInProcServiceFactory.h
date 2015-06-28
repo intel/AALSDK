@@ -99,50 +99,32 @@ template <typename I>
 class InProcSvcsFact : public ISvcsFact
 {
 public:
-#if 0
-   IBase * CreateServiceObject(AALServiceModule    *container,
-                               btEventHandler       eventHandler,
-                               btApplicationContext context,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs)
-   {
-      m_pService = new I(container);
-      if ( NULL == m_pService ) {
-         return NULL;
-      }
-
-      // Initialize the service
-      IBase *ptr = m_pService->_init(eventHandler, context, rtid, optArgs);
-
-      if( NULL == ptr ) {
-         delete m_pService;
-         m_pService = NULL;
-      }
-
-      return ptr;
-   }
-#endif
 
    IBase * CreateServiceObject(AALServiceModule    *container,
-                               IRuntime            *pRuntime,
-                               IBase               *Client,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs)
+                               IRuntime            *pRuntime)
    {
       m_pService = new I(container,pRuntime);
       if ( NULL == m_pService ) {
          return NULL;
       }
+      // Service MUST be derived from IBase
+      return dynamic_cast<IBase*>(m_pService);
+   }
 
+
+   btBool InitializeService(IBase               *Client,
+                            TransactionID const &rtid,
+                            NamedValueSet const &optArgs)
+   {
       // Initialize the service
       IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
 
       if( NULL == ptr ) {
          delete m_pService;
          m_pService = NULL;
+         return false;
       }
-
-      return ptr;
+      return true;
    }
 protected:
    I *m_pService;
@@ -160,41 +142,9 @@ public:
    InProcSingletonSvcsFact() :
       m_pService(NULL)
    {}
-#if 0
+
    IBase * CreateServiceObject(AALServiceModule    *container,
-                               btEventHandler       eventHandler,
-                               btApplicationContext context,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs)
-
-   {
-      // Only crate the new instance if one does not exist
-      if ( NULL == m_pService ) {
-
-         m_pService = new I(container);
-         if ( NULL == m_pService ) {
-            return NULL;
-         }
-
-      }
-
-      // Initialize the service
-      IBase *ptr = m_pService->_init(eventHandler, context, rtid, optArgs);
-
-      if ( NULL == ptr ) {
-         delete m_pService;
-         m_pService = NULL;
-      }
-
-      // Return what the service gives
-      return ptr;
-   }
-#endif
-   IBase * CreateServiceObject(AALServiceModule    *container,
-                               IRuntime            *pRuntime,
-                               IBase               *Client,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs)
+                               IRuntime            *pRuntime)
     {
        // Only crate the new instance if one does not exist
        if ( NULL == m_pService ) {
@@ -203,19 +153,26 @@ public:
           if ( NULL == m_pService ) {
              return NULL;
           }
-
+          // Service MUST be derived from IBase
+           return dynamic_cast<IBase*>(m_pService);
        }
+    }
 
+    btBool InitializeService(IBase               *Client,
+                             TransactionID const &rtid,
+                             NamedValueSet const &optArgs)
+     {
        // Initialize the service
        IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
 
        if ( NULL == ptr ) {
           delete m_pService;
           m_pService = NULL;
+          return false;
        }
 
        // Return what the service gives
-       return ptr;
+       return true;
     }
 
 protected:

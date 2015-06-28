@@ -132,20 +132,20 @@ void HelloAALService::init(TransactionID const &TranID)
    ASSERT( NULL != m_pClient ); //QUEUE object failed
    if(NULL == m_pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish IHelloAALClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish IHelloAALClient Interface"));
       return;
    }
 
-   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
-                                         Client(),
-                                         dynamic_cast<IBase *>(this),
-                                         TranID) );
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
+                                                           Client(),
+                                                           dynamic_cast<IBase *>(this),
+                                                           TranID) );
 }
 
 //=============================================================================
@@ -162,7 +162,7 @@ void HelloAALService::Hello(btcString sMessage, TransactionID const &rTranID)
    AutoLock(this);
 
    MSG("Received a hello from '"<< sMessage << "'. Saying hello back.");
-   SendMsg(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
+   getRuntime()->schedDispatchable(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
 
 }
 

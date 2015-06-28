@@ -66,46 +66,32 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
 }
 
 AALServiceModule::~AALServiceModule() {}
-#if 0
-IBase *AALServiceModule::Construct(btEventHandler       Listener,
-                                   TransactionID const &tranID,
-                                   btApplicationContext context,
-                                   NamedValueSet const &optArgs)
-{
-   // Add this one to the list of objects this container holds.
-   //  It's up to the factory to enforce singletons.
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            Listener,
-                                            context,
-                                            tranID,
-                                            optArgs);
 
-   // Add the service to the list of services the module
-   if ( NULL != m_pBase ) {
-      AddToServiceList(m_pBase);
-   }
-
-   return m_pBase;
-}
-#endif
-IBase *AALServiceModule::Construct(IRuntime           *pAALRUNTIME,
+IBase *AALServiceModule::Construct(IRuntime           *pAALRuntime,
                                    IBase              *Client,
                                    TransactionID const &tranID,
                                    NamedValueSet const &optArgs)
 {
    // Add this one to the list of objects this container holds.
    //  It's up to the factory to enforce singletons.
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            pAALRUNTIME,
-                                            Client,
-                                            tranID,
-                                            optArgs);
+   // Add the Service to the Module List before the Service can start
 
+   AutoLock(this);      // Lock to protect the AddtoList.  The serviceAllocated can come at anytime
+
+   m_pBase = m_SvcsFact.CreateServiceObject(this,
+                                            pAALRuntime);
    // Add the service to the list of services the module
    if ( NULL != m_pBase ) {
       AddToServiceList(m_pBase);
-   }
 
+      // Service will issue serviceAllocated now or fail
+      if(!m_SvcsFact.InitializeService(Client,
+                                       tranID,
+                                       optArgs)){
+         RemovefromServiceList(m_pBase);
+         m_pBase = NULL;
+      }
+   }
    return m_pBase;
 }
 
@@ -149,10 +135,12 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
    AutoLock(this);
 
    if ( ServiceInstanceRegistered(pService) ) {
+      cerr << std::hex << pService <<"FAILURE Is ALREADY registered Services left " << m_serviceList.size() << endl;
       return false;
    }
 
    m_serviceList[pService] = pService;
+   cerr << std::hex << pService <<" Is NOW  registered Services left " << m_serviceList.size() << endl;
    return true;
 }
 
@@ -161,11 +149,14 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    AutoLock(this);
 
    if ( !ServiceInstanceRegistered(pService) ) {
+//      cerr << std::hex << pService << " Not registered with Module " << this << endl;
+//      cerr << std::hex << pService <<" Number of registered Services left " << m_serviceList.size() << endl;
       return false;
    }
-
+//   cerr << std::hex << pService << " Is registered with Module " << this << endl;
    m_serviceList.erase(pService);
 
+//   cerr << std::hex << pService <<" Number of registered Services left " << m_serviceList.size() << endl;
    // Post to the count up semaphore
    //  in case the service is shutting down
    m_srvcCount.Post(1);

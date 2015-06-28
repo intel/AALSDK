@@ -275,7 +275,7 @@ class _runtime; //Forward reference
 class AALRUNTIME_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
 {
 public:
-   Runtime(IRuntimeClient *pClient);
+   Runtime(IRuntimeClient *pClient, IRuntime *pParent = NULL);
 
    virtual btBool start(const NamedValueSet &rconfigParms);
    virtual void   stop();
@@ -302,6 +302,7 @@ public:
 private:
    Runtime();                             // No empty construction
    _runtime          *m_pImplementation;  // Implementation of runtime
+   IRuntime          *m_pParent;          // Parent of this proxy
    btBool             m_status;           // OK or not
    IRuntimeClient    *m_pClient;
    vector<Runtime*>   m_proxyList;        // List of Runtime proxies created through this object

@@ -142,7 +142,14 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
    }
 
    // Allocate the service
+
+   // Save the ServiceHost.  Do it now before the Service generates the serviceAllocated.
+   //  If it fails remove it
+   m_ServiceMap[std::string(sName)] = SvcHost;
+
    if ( !SvcHost->InstantiateService(pProxy, pServiceClientBase, rManifest, rTranID) ) {
+      m_ServiceMap.erase(std::string(sName));
+      delete SvcHost;
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
                                                                       pServiceClient,
                                                                       NULL,
@@ -153,8 +160,6 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
       return;
    }
 
-   // Save the ServiceHost
-   m_ServiceMap[std::string(sName)] = SvcHost;
 }
 
 
