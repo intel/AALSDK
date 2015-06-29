@@ -27,50 +27,50 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     samples/Hello_SPL_LB/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     06/15/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-SUBDIRS=\
-SampleBrokerService \
-Hello_AAL_Service \
-Hello_AAL \
-Hello_CCI_NLB \
-Hello_SPL_LB \
-Sudoku_SPL
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-MFLAGS  =
 ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+else
+CPPFLAGS += -DENABLE_DEBUG=1
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+all: Sudoku_SPL
+
+Sudoku_SPL: Sudoku_SPL.o
+	$(CXX) -g -O2 -o Sudoku_SPL Sudoku_SPL.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+
+Sudoku_SPL.o: Sudoku_SPL.cpp Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o Sudoku_SPL.o Sudoku_SPL.cpp
+
+clean:
+	$(RM) Sudoku_SPL.o Sudoku_SPL.cpp
 
 .PHONY:all clean
-
-doc docs: docclean
-	doxygen doc/Doxyfile
-
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
-
-.PHONY:doc docs docclean docsclean
