@@ -361,7 +361,7 @@ void HelloAALApp::run()
     MSG("AAL says Hello Back ");
     IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
     ASSERT( pIAALService);
-    dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
+    pIAALService->Release(TransactionID());
  }
 
  void HelloAALApp::serviceEvent(const IEvent &rEvent)
