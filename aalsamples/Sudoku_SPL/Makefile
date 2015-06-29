@@ -71,6 +71,6 @@ Sudoku_SPL.o: Sudoku_SPL.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o Sudoku_SPL.o Sudoku_SPL.cpp
 
 clean:
-	$(RM) Sudoku_SPL.o Sudoku_SPL.cpp
+	$(RM) Sudoku_SPL.o Sudoku_SPL
 
 .PHONY:all clean
