@@ -95,7 +95,7 @@ using namespace AAL;
 
 #define LPBK1_DSM_SIZE           MB(4)
 
-/// @addtogroup HelloSPLLB
+/// @addtogroup LinkedListApp
 /// @{
 
 
@@ -249,11 +249,6 @@ public:
    ~llApp();
 
    btInt  run();
-   void Show2CLs(void *pCLExpected,
-                 void *pCLFound,
-                 ostringstream &oss);
-   void _DumpCL(void *pCL,
-                ostringstream &oss);
 
    // <ISPLClient>
    virtual void OnTransactionStarted(TransactionID const &TranID,
@@ -313,7 +308,11 @@ llApp::llApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
    m_SPLService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_pWkspcVirt(NULL),
+   m_WkspcSize(0),
+   m_AFUDSMVirt(NULL),
+   m_AFUDSMSize(0)
 {
    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
@@ -496,11 +495,11 @@ int llApp::run()
 
 
 
-     // Issue Stop Transaction and wait for OnTransactionStopped
-     INFO("Stopping SPL Transaction");
-     m_SPLService->StopTransactionContext(TransactionID());
-     m_Sem.Wait();
-     INFO("SPL Transaction complete");
+      // Issue Stop Transaction and wait for OnTransactionStopped
+      INFO("Stopping SPL Transaction");
+      m_SPLService->StopTransactionContext(TransactionID());
+      m_Sem.Wait();
+      INFO("SPL Transaction complete");
    }
 
    ////////////////////////////////////////////////////////////////////////////
@@ -645,31 +644,7 @@ void llApp::serviceEvent(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-void llApp::Show2CLs(void *pCLExpected, // pointer to cache-line expected
-                     void *pCLFound,    // pointer to found cache line
-                     ostringstream &oss)         // add it to this ostringstream
-{
-   oss << "Expected: ";
-   _DumpCL(pCLExpected, oss);
-   oss << "\n";
-   oss << "Found:    ";
-   _DumpCL(pCLFound, oss);
-   //   oss << "\n";    /* no terminating linefeed, macro at end will add it. */
-}  // _DumpCL
-
-void llApp::_DumpCL(void *pCL,  // pointer to cache-line to print
-                    ostringstream &oss)  // add it to this ostringstream
-{
-   oss << std::hex << std::setfill('0') << std::uppercase;
-   btUnsigned32bitInt *pu32 = reinterpret_cast<btUnsigned32bitInt*>(pCL);
-   for (int i = 0; i < ( CL(1) / sizeof(btUnsigned32bitInt)); ++i) {
-      oss << "0x" << std::setw(8) << *pu32 << " ";
-      ++pu32;
-   }
-   oss << std::nouppercase;
-}  // _DumpCL
-
-/// @} group HelloSPLLB
+/// @} group LinkedListApp
 
 
 //=============================================================================

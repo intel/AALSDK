@@ -93,6 +93,8 @@ using namespace AAL;
 
 #define LPBK1_DSM_SIZE           MB(4)
 
+/// @addtogroup SudokuApp
+/// @{
 
 inline uint32_t ln2(uint32_t x)
 {
@@ -283,11 +285,6 @@ public:
    ~Sudoku();
 
    btInt run();
-   void Show2CLs(void *pCLExpected,
-                 void *pCLFound,
-                 ostringstream &oss);
-   void _DumpCL(void *pCL,
-                ostringstream &oss);
 
    // <ISPLClient>
    virtual void OnTransactionStarted(TransactionID const &TranID,
@@ -641,11 +638,15 @@ int32_t Sudoku::sudoku_norec(uint32_t *board, uint32_t *os)
 ///
 ///////////////////////////////////////////////////////////////////////////////
 Sudoku::Sudoku(RuntimeClient *rtc, char *puzName) :
+   m_puzName(puzName),
    m_pAALService(NULL),
    m_runtimClient(rtc),
    m_SPLService(NULL),
    m_Result(0),
-   m_puzName(puzName)
+   m_pWkspcVirt(NULL),
+   m_WkspcSize(0),
+   m_AFUDSMVirt(NULL),
+   m_AFUDSMSize(0)
 {
    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
@@ -858,11 +859,11 @@ btInt Sudoku::run()
       print_board((uint32_t*)boardOut);
 
 
-     // Issue Stop Transaction and wait for OnTransactionStopped
-     INFO("Stopping SPL Transaction");
-     m_SPLService->StopTransactionContext(TransactionID());
-     m_Sem.Wait();
-     INFO("SPL Transaction complete");
+      // Issue Stop Transaction and wait for OnTransactionStopped
+      INFO("Stopping SPL Transaction");
+      m_SPLService->StopTransactionContext(TransactionID());
+      m_Sem.Wait();
+      INFO("SPL Transaction complete");
 
 
    }
@@ -1016,30 +1017,7 @@ void Sudoku::serviceEvent(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-void Sudoku::Show2CLs(void          *pCLExpected, // pointer to cache-line expected
-                      void          *pCLFound,    // pointer to found cache line
-                      ostringstream &oss)         // add it to this ostringstream
-{
-   oss << "Expected: ";
-   _DumpCL(pCLExpected, oss);
-   oss << "\n";
-   oss << "Found:    ";
-   _DumpCL(pCLFound, oss);
-}  // _DumpCL
-
-void Sudoku::_DumpCL(void          *pCL,  // pointer to cache-line to print
-                     ostringstream &oss)  // add it to this ostringstream
-{
-   oss << std::hex << std::setfill('0') << std::uppercase;
-   btUnsigned32bitInt *pu32 = reinterpret_cast<btUnsigned32bitInt*>(pCL);
-   for (int i = 0; i < ( CL(1) / sizeof(btUnsigned32bitInt)); ++i) {
-      oss << "0x" << std::setw(8) << *pu32 << " ";
-      ++pu32;
-   }
-   oss << std::nouppercase;
-}  // _DumpCL
-
-/// @} group HelloSPLLB
+/// @} group SudokuApp
 
 
 //=============================================================================
