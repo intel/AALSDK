@@ -94,39 +94,41 @@ using namespace AAL;
 #define LPBK1_DSM_SIZE           MB(4)
 
 
-inline uint32_t ln2(uint32_t x) {
-  uint32_t y = 1;
-  while(x > 1) {
-    y++;
-    x = x>>1;
-  }
-  return y;
+inline uint32_t ln2(uint32_t x)
+{
+   uint32_t y = 1;
+   while ( x > 1 ) {
+      y++;
+      x = x >> 1;
+   }
+   return y;
 }
 
-inline uint32_t isPow2(uint32_t x) {
-  uint32_t pow2 = (x & (x-1));
-  return (pow2 == 0);
+inline uint32_t isPow2(uint32_t x)
+{
+   uint32_t pow2 = (x & (x - 1));
+   return (pow2 == 0);
 }
 
 inline void find_min(uint32_t *board, int32_t *min_idx, int *min_pos)
 {
-  int32_t tmp,idx,i,j;
-  int32_t tmin_idx,tmin_pos;
-  
-  tmin_idx = 0;
-  tmin_pos = INT_MAX;
-  for(idx=0;idx<81;idx++)
-    {
+   int32_t tmp, idx, i, j;
+   int32_t tmin_idx, tmin_pos;
+
+   tmin_idx = 0;
+   tmin_pos = INT_MAX;
+   for (idx = 0; idx < 81; idx++)
+      {
       tmp = __builtin_popcount(board[idx]);
       tmp = (tmp == 1) ? INT_MAX : tmp;
-      if(tmp < tmin_pos)
-	{
-	  tmin_pos = tmp;
-	  tmin_idx = idx;
-	}
-    }
-  *min_idx = tmin_idx;
-  *min_pos = tmin_pos;
+      if ( tmp < tmin_pos )
+         {
+         tmin_pos = tmp;
+         tmin_idx = idx;
+      }
+   }
+   *min_idx = tmin_idx;
+   *min_pos = tmin_pos;
 }
 
 
@@ -216,14 +218,14 @@ btBool RuntimeClient::isOK()
    return m_isOK;
 }
 
-void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
-                                    const NamedValueSet &rConfigParms)
- {
-    // Save a copy of our runtime interface instance.
-    m_pRuntime = pRuntime;
-    m_isOK = true;
-    m_Sem.Post(1);
- }
+void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
+                                   const NamedValueSet &rConfigParms)
+{
+   // Save a copy of our runtime interface instance.
+   m_pRuntime = pRuntime;
+   m_isOK = true;
+   m_Sem.Post(1);
+}
 
 void RuntimeClient::end()
 {
@@ -232,20 +234,20 @@ void RuntimeClient::end()
 }
 
 void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
- {
-    MSG("Runtime stopped");
-    m_isOK = false;
-    m_Sem.Post(1);
- }
+{
+   MSG("Runtime stopped");
+   m_isOK = false;
+   m_Sem.Post(1);
+}
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
-    ERR("Runtime start failed");
-    ERR(pExEvent->Description());
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
-void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
+void RuntimeClient::runtimeAllocateServiceFailed(IEvent const &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
@@ -255,12 +257,12 @@ void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
-    MSG("Runtime Allocate Service Succeeded");
+   MSG("Runtime Allocate Service Succeeded");
 }
 
 void RuntimeClient::runtimeEvent(const IEvent &rEvent)
 {
-    MSG("Generic message handler (runtime)");
+   MSG("Generic message handler (runtime)");
 }
 
 IRuntime * RuntimeClient::getRuntime()
@@ -269,79 +271,79 @@ IRuntime * RuntimeClient::getRuntime()
 }
 
 
- /// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
- ///          The Service Client contains the application logic.
- ///
- /// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
- class Sudoku : public CAASBase, public IServiceClient, public ISPLClient
- {
- public:
+/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
+///          The Service Client contains the application logic.
+///
+/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
+class Sudoku: public CAASBase, public IServiceClient, public ISPLClient
+{
+public:
 
    Sudoku(RuntimeClient * rtc, char *puzName);
    ~Sudoku();
 
-    btInt run();
-    void Show2CLs( void *pCLExpected,
-                   void          *pCLFound,
-                   ostringstream &oss);
-    void _DumpCL( void *pCL,
-                  ostringstream &oss);
+   btInt run();
+   void Show2CLs(void *pCLExpected,
+                 void *pCLFound,
+                 ostringstream &oss);
+   void _DumpCL(void *pCL,
+                ostringstream &oss);
 
-    // <ISPLClient>
-    virtual void  OnTransactionStarted(TransactionID const &TranID,
-                                        btVirtAddr           AFUDSM,
-                                        btWSSize             AFUDSMSize);
-    virtual void OnContextWorkspaceSet(TransactionID const &TranID);
+   // <ISPLClient>
+   virtual void OnTransactionStarted(TransactionID const &TranID,
+                                     btVirtAddr AFUDSM,
+                                     btWSSize AFUDSMSize);
+   virtual void OnContextWorkspaceSet(TransactionID const &TranID);
 
-    virtual void   OnTransactionFailed(const IEvent &Event);
+   virtual void OnTransactionFailed(const IEvent &Event);
 
-    virtual void OnTransactionComplete(TransactionID const &TranID);
+   virtual void OnTransactionComplete(TransactionID const &TranID);
 
-    virtual void OnTransactionStopped(TransactionID const &TranID);
-    virtual void     OnWorkspaceAllocated(TransactionID const &TranID,
-                                          btVirtAddr           WkspcVirt,
-                                          btPhysAddr           WkspcPhys,
-                                          btWSSize             WkspcSize);
+   virtual void OnTransactionStopped(TransactionID const &TranID);
+   virtual void OnWorkspaceAllocated(TransactionID const &TranID,
+                                     btVirtAddr WkspcVirt,
+                                     btPhysAddr WkspcPhys,
+                                     btWSSize WkspcSize);
 
-    virtual void     OnWorkspaceAllocateFailed(const IEvent &Event);
+   virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
 
-    virtual void     OnWorkspaceFreed(TransactionID const &TranID);
+   virtual void OnWorkspaceFreed(TransactionID const &TranID);
 
-    virtual void     OnWorkspaceFreeFailed(const IEvent &Event);
-    // </ISPLClient>
+   virtual void OnWorkspaceFreeFailed(const IEvent &Event);
+   // </ISPLClient>
 
-    // <begin IServiceClient interface>
-    virtual void serviceAllocated(IBase               *pServiceBase,
-                                  TransactionID const &rTranID);
+   // <begin IServiceClient interface>
+   virtual void serviceAllocated(IBase *pServiceBase,
+                                 TransactionID const &rTranID);
 
-    virtual void serviceAllocateFailed(const IEvent        &rEvent);
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
 
-    virtual void serviceFreed(TransactionID const &rTranID);
+   virtual void serviceFreed(TransactionID const &rTranID);
 
-    virtual void serviceEvent(const IEvent &rEvent);
-    // <end IServiceClient interface>
+   virtual void serviceEvent(const IEvent &rEvent);
+   // <end IServiceClient interface>
 
    /* SW implementation of a sudoku solver */
    static void print_board(uint32_t *board);
    static int32_t sudoku_norec(uint32_t *board, uint32_t *os);
    static int32_t check_correct(uint32_t *board, uint32_t *unsolved_pieces);
    static int32_t solve(uint32_t *board, uint32_t *os);
- protected:
+   protected:
 
-   char *m_puzName;
-   IBase           *m_pAALService;    // The generic AAL Service interface for the AFU.
-   RuntimeClient   *m_runtimClient;
-   ISPLAFU         *m_SPLService;
-   CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
-   btInt            m_Result;
+   char          *m_puzName;
+   IBase         *m_pAALService;    // The generic AAL Service interface for the AFU.
+   RuntimeClient *m_runtimClient;
+   ISPLAFU       *m_SPLService;
+   CSemaphore     m_Sem;            // For synchronizing with the AAL runtime.
+   btInt          m_Result;
 
    // Workspace info
-   btVirtAddr m_pWkspcVirt;           ///< Workspace virtual address.
-   btWSSize   m_WkspcSize;            ///< DSM workspace size in bytes.
+   btVirtAddr     m_pWkspcVirt;     ///< Workspace virtual address.
+   btWSSize       m_WkspcSize;      ///< DSM workspace size in bytes.
 
-   btVirtAddr m_AFUDSMVirt;           ///< Points to DSM
-   btWSSize   m_AFUDSMSize;           ///< Length in bytes of DSM
- };
+   btVirtAddr     m_AFUDSMVirt;     ///< Points to DSM
+   btWSSize       m_AFUDSMSize;     ///< Length in bytes of DSM
+};
 
 
 
@@ -349,288 +351,287 @@ IRuntime * RuntimeClient::getRuntime()
 /* DBS: for sudoku */
 
 
-void Sudoku::print_board(uint32_t *board) {
-  int32_t i,j;
-  char buf[80] = {0};
-  for(i=0;i<9;i++) {
-    for(j=0;j<9;j++) {
-      if(board[i*9+j]==511)
-	printf("? ");
-      else
-	printf("%d ", ln2(board[i*9+j]));
-    }
-    printf("\n");
-  }
-  printf("\n");
+void Sudoku::print_board(uint32_t *board)
+{
+   int32_t i, j;
+   char buf[80] = { 0 };
+   for (i = 0; i < 9; i++) {
+      for (j = 0; j < 9; j++) {
+         if ( board[i * 9 + j] == 511 )
+            printf("? ");
+         else
+            printf("%d ", ln2(board[i * 9 + j]));
+      }
+      printf("\n");
+   }
+   printf("\n");
 }
 
 int32_t Sudoku::check_correct(uint32_t *board, uint32_t *unsolved_pieces)
 {
-  int32_t i,j;
-  int32_t ii,jj;
-  int32_t si,sj;
-  int32_t tmp;
+   int32_t i, j;
+   int32_t ii, jj;
+   int32_t si, sj;
+   int32_t tmp;
 
-  *unsolved_pieces = 0;
-  int32_t violated = 0;
+   *unsolved_pieces = 0;
+   int32_t violated = 0;
 
-  uint32_t counts[81];
-  for(i=0;i < 81; i++)
-    {
+   uint32_t counts[81];
+   for (i = 0; i < 81; i++)
+      {
       counts[i] = __builtin_popcount(board[i]);
-      if(counts[i]!=1)
-	{
-	  *unsolved_pieces = 1;
-	  return 0;
-	}
-    }
-  
-
-  /* for each row */
-  for(i=0;i<9;i++)
-    {
-      uint32_t sums[9] = {0};
-      for(j=0;j<9;j++)
-	{
-	  if(counts[i*9 +j] == 1)
-	    {
-	      tmp =ln2(board[i*9+j])-1;
-	      sums[tmp]++;
-	      if(sums[tmp] > 1)
-		{
-		  //char buf[80];
-		  //sprintf_binary(board[i*9+j],buf,80);
-		  //printf("violated row %d, sums[%d]=%d, board = %s\n", i, tmp, sums[tmp], buf);
-		  //print_board(board);
-		  violated = 1;
-		  goto done;
-		}
-	    }
-	}
-    }
-  /* for each column */
-
-   for(j=0;j<9;j++)
-   {
-     uint32_t sums[9] = {0};
-     for(i=0;i<9;i++)
-     {
-       if(counts[i*9 +j] == 1)
-	 {
-	   tmp =ln2(board[i*9+j])-1;
-	   sums[tmp]++;
-	   if(sums[tmp] > 1)
-	     {
-	       violated = 1;
-	       goto done;
-	       //printf("violated column %d, sums[%d]=%d\n", i, tmp, sums[tmp]);
-	       //return 0;
-	     }
-	 }
-     }
+      if ( counts[i] != 1 )
+         {
+         *unsolved_pieces = 1;
+         return 0;
+      }
    }
 
-   for(i=0;i<9;i++)
-     {
-       si = 3*(i/3);
-       for(j=0;j<9;j++)
-	 {
-	   sj = 3*(j/3);
-	   uint32_t sums[9] = {0};
-	   for(ii=si;ii<(si+3);ii++)
-	     {
-	       for(jj=sj;jj<(sj+3);jj++)
-		 {
-		   if(counts[ii*9 +jj] == 1)
-		     {
-		       tmp =ln2(board[ii*9+jj])-1;
-		       sums[tmp]++;
-		       if(sums[tmp] > 1)
-			 {
-			   violated = 1;
-			   goto done;
-			 }
-		     }
-		 }
-	     }
-	 }
-     }
+   /* for each row */
+   for (i = 0; i < 9; i++)
+      {
+      uint32_t sums[9] = { 0 };
+      for (j = 0; j < 9; j++)
+         {
+         if ( counts[i * 9 + j] == 1 )
+            {
+            tmp = ln2(board[i * 9 + j]) - 1;
+            sums[tmp]++;
+            if ( sums[tmp] > 1 )
+               {
+               //char buf[80];
+               //sprintf_binary(board[i*9+j],buf,80);
+               //printf("violated row %d, sums[%d]=%d, board = %s\n", i, tmp, sums[tmp], buf);
+               //print_board(board);
+               violated = 1;
+               goto done;
+            }
+         }
+      }
+   }
+   /* for each column */
 
-done:
+   for (j = 0; j < 9; j++)
+      {
+      uint32_t sums[9] = { 0 };
+      for (i = 0; i < 9; i++)
+         {
+         if ( counts[i * 9 + j] == 1 )
+            {
+            tmp = ln2(board[i * 9 + j]) - 1;
+            sums[tmp]++;
+            if ( sums[tmp] > 1 )
+               {
+               violated = 1;
+               goto done;
+               //printf("violated column %d, sums[%d]=%d\n", i, tmp, sums[tmp]);
+               //return 0;
+            }
+         }
+      }
+   }
+
+   for (i = 0; i < 9; i++)
+      {
+      si = 3 * (i / 3);
+      for (j = 0; j < 9; j++)
+         {
+         sj = 3 * (j / 3);
+         uint32_t sums[9] = { 0 };
+         for (ii = si; ii < (si + 3); ii++)
+            {
+            for (jj = sj; jj < (sj + 3); jj++)
+               {
+               if ( counts[ii * 9 + jj] == 1 )
+                  {
+                  tmp = ln2(board[ii * 9 + jj]) - 1;
+                  sums[tmp]++;
+                  if ( sums[tmp] > 1 )
+                     {
+                     violated = 1;
+                     goto done;
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   done:
    return (violated == 0);
 }
 
 inline uint32_t one_set(uint32_t x)
 {
-  /* all ones if pow2, otherwise 0 */
-  uint32_t pow2 = (x & (x-1));
-  uint32_t m = (pow2 == 0);
-  return ((~m) + 1) & x;
+   /* all ones if pow2, otherwise 0 */
+   uint32_t pow2 = (x & (x - 1));
+   uint32_t m = (pow2 == 0);
+   return ((~m) + 1) & x;
 }
 
 int32_t Sudoku::solve(uint32_t *board, uint32_t *os)
 {
-  int32_t i,j,idx;
-  int32_t ii,jj;
-  int32_t ib,jb;
-  uint32_t set_row, set_col, set_sqr;
-  uint32_t row_or, col_or, sqr_or;
-  uint32_t tmp;
-  int32_t changed = 0;
-    
-  do
-    {
-      changed=0;
+   int32_t i, j, idx;
+   int32_t ii, jj;
+   int32_t ib, jb;
+   uint32_t set_row, set_col, set_sqr;
+   uint32_t row_or, col_or, sqr_or;
+   uint32_t tmp;
+   int32_t changed = 0;
+
+   do
+   {
+      changed = 0;
       //print_board(board);
       /* compute all positions one's set value */
-      for(i = 0; i < 9; i++)
-	{
-	  for(j = 0; j < 9; j++)
-	    {
-	      idx = i*9 + j;
-	      os[idx] = one_set(board[idx]);
-	    }
-	}
+      for (i = 0; i < 9; i++)
+         {
+         for (j = 0; j < 9; j++)
+            {
+            idx = i * 9 + j;
+            os[idx] = one_set(board[idx]);
+         }
+      }
 
-      for(i = 0; i < 9; i++)
-	{
-	  for(j = 0; j < 9; j++)
-	    {
-	      /* already solved */
-	      if(isPow2(board[i*9+j]))
-		continue;
-	      else if(board[idx]==0)
-		return 0;
+      for (i = 0; i < 9; i++)
+         {
+         for (j = 0; j < 9; j++)
+            {
+            /* already solved */
+            if ( isPow2(board[i * 9 + j]) )
+               continue;
+            else if ( board[idx] == 0 )
+               return 0;
 
-	      row_or = set_row = 0;
-	      for(jj = 0; jj < 9; jj++)
-		{
-		  idx = i*9 + jj;
-		  if(jj == j)
-		    continue;
-		  set_row |= os[idx];
-		  row_or |= board[idx];
-		}
-	      col_or = set_col = 0;
-	      for(ii = 0; ii < 9; ii++)
-		{
-		  idx = ii*9 + j;
-		  if(ii == i)
-		    continue;
-		  set_col |= os[idx];
-		  col_or |= board[idx];
-		}
-	      sqr_or = set_sqr = 0;
-	      ib = 3*(i/3);
-	      jb = 3*(j/3);
-	      for(ii=ib;ii < ib+3;ii++)
-		{
-		  for(jj=jb;jj<jb+3;jj++)
-		    {
-		      idx = ii*9 + jj;
-		      if((i==ii) && (j == jj))
-			continue;
-		      set_sqr |= os[idx];
-		      sqr_or |= board[idx];
-		    }
-		}
-	      tmp = board[i*9 + j] & ~( set_row | set_col | set_sqr);
-	      	      
-	      if(tmp != board[i*9 + j])
-		{
-		  changed = 1;
-		}
-	      board[i*9+j] = tmp;
+            row_or = set_row = 0;
+            for (jj = 0; jj < 9; jj++)
+               {
+               idx = i * 9 + jj;
+               if ( jj == j )
+                  continue;
+               set_row |= os[idx];
+               row_or |= board[idx];
+            }
+            col_or = set_col = 0;
+            for (ii = 0; ii < 9; ii++)
+               {
+               idx = ii * 9 + j;
+               if ( ii == i )
+                  continue;
+               set_col |= os[idx];
+               col_or |= board[idx];
+            }
+            sqr_or = set_sqr = 0;
+            ib = 3 * (i / 3);
+            jb = 3 * (j / 3);
+            for (ii = ib; ii < ib + 3; ii++)
+               {
+               for (jj = jb; jj < jb + 3; jj++)
+                  {
+                  idx = ii * 9 + jj;
+                  if ( (i == ii) && (j == jj) )
+                     continue;
+                  set_sqr |= os[idx];
+                  sqr_or |= board[idx];
+               }
+            }
+            tmp = board[i * 9 + j] & ~(set_row | set_col | set_sqr);
 
-	      /* check for singletons */
-	      tmp = 0;
-	      tmp = one_set(board[i*9 + j] & (~row_or));
-	      tmp |= one_set(board[i*9 + j] & (~col_or));
-	      tmp |= one_set(board[i*9 + j] & (~sqr_or));
-	      if(tmp != 0 && (board[i*9+j] != tmp))
-		{
-		  board[i*9+j] = tmp;
-		  changed = 1;
-		}
-	    }
-	}
-      
-    } while(changed);
+            if ( tmp != board[i * 9 + j] )
+               {
+               changed = 1;
+            }
+            board[i * 9 + j] = tmp;
 
-  return 0;
+            /* check for singletons */
+            tmp = 0;
+            tmp = one_set(board[i * 9 + j] & (~row_or));
+            tmp |= one_set(board[i * 9 + j] & (~col_or));
+            tmp |= one_set(board[i * 9 + j] & (~sqr_or));
+            if ( tmp != 0 && (board[i * 9 + j] != tmp) )
+               {
+               board[i * 9 + j] = tmp;
+               changed = 1;
+            }
+         }
+      }
+
+   } while ( changed );
+
+   return 0;
 }
-
 
 int32_t Sudoku::sudoku_norec(uint32_t *board, uint32_t *os)
 {
-  int32_t rc;
-  
-  int32_t tmp,min_pos;
-  int32_t min_idx;
-  int32_t i,j,idx;
-    
-  uint32_t cell;
-  uint32_t old[81];
- 
-  uint32_t unsolved_pieces = 0;
-  uint32_t *bptr, *nbptr;
+   int32_t rc;
 
-  int32_t stack_pos = 0;
-  int32_t stack_size = (1<<6);
-  uint32_t **stack = 0;
-  
-  stack = (uint32_t**)malloc(sizeof(uint32_t*)*stack_size);
-  for(i=0;i<stack_size;i++)
-    {
-      stack[i] = (uint32_t*)malloc(sizeof(uint32_t)*81);
-    }
+   int32_t tmp, min_pos;
+   int32_t min_idx;
+   int32_t i, j, idx;
 
-  memcpy(stack[stack_pos++], board, sizeof(uint32_t)*81);
+   uint32_t cell;
+   uint32_t old[81];
 
-  while(stack_pos > 0)
-    {
+   uint32_t unsolved_pieces = 0;
+   uint32_t *bptr, *nbptr;
+
+   int32_t stack_pos = 0;
+   int32_t stack_size = (1 << 6);
+   uint32_t **stack = 0;
+
+   stack = (uint32_t**) malloc(sizeof(uint32_t*) * stack_size);
+   for (i = 0; i < stack_size; i++)
+      {
+      stack[i] = (uint32_t*) malloc(sizeof(uint32_t) * 81);
+   }
+
+   memcpy(stack[stack_pos++], board, sizeof(uint32_t) * 81);
+
+   while ( stack_pos > 0 )
+   {
       unsolved_pieces = 0;
       bptr = stack[--stack_pos];
-      
-      bzero(os,sizeof(uint32_t)*81);
-      solve(bptr,os);
+
+      bzero(os, sizeof(uint32_t) * 81);
+      solve(bptr, os);
       rc = check_correct(bptr, &unsolved_pieces);
       /* solved puzzle */
-      if(rc == 1 && unsolved_pieces == 0)
-	{
-	  memcpy(board, bptr, sizeof(uint32_t)*81);
-	  goto solved_puzzle;
-	}
+      if ( rc == 1 && unsolved_pieces == 0 )
+         {
+         memcpy(board, bptr, sizeof(uint32_t) * 81);
+         goto solved_puzzle;
+      }
       /* traversed to bottom of search tree and
        * didn't find a valid solution */
-      if(rc == 0 && unsolved_pieces == 0)
-	{
-	  continue;
-	}
-      
-      find_min(bptr, &min_idx, &min_pos);
-      cell = bptr[min_idx];  
-      while(cell != 0)
-	{
-	  tmp = __builtin_ctz(cell);
-	  cell &= ~(1 << tmp);
-	  nbptr = stack[stack_pos];
-	  stack_pos++;
-	  memcpy(nbptr, bptr, sizeof(uint32_t)*81);
-	  nbptr[min_idx] = 1<<tmp;
-	  
-	  assert(stack_pos < stack_size);
-	}
-    }
- solved_puzzle:
-    
-  for(i=0;i<stack_size;i++)
-    {
-      free(stack[i]);
-    } 
-  free(stack);
+      if ( rc == 0 && unsolved_pieces == 0 )
+         {
+         continue;
+      }
 
-  return 1;
+      find_min(bptr, &min_idx, &min_pos);
+      cell = bptr[min_idx];
+      while ( cell != 0 )
+      {
+         tmp = __builtin_ctz(cell);
+         cell &= ~(1 << tmp);
+         nbptr = stack[stack_pos];
+         stack_pos++;
+         memcpy(nbptr, bptr, sizeof(uint32_t) * 81);
+         nbptr[min_idx] = 1 << tmp;
+
+         assert(stack_pos < stack_size);
+      }
+   }
+   solved_puzzle:
+
+   for (i = 0; i < stack_size; i++)
+      {
+      free(stack[i]);
+   }
+   free(stack);
+
+   return 1;
 }
 
 
@@ -639,23 +640,23 @@ int32_t Sudoku::sudoku_norec(uint32_t *board, uint32_t *os)
 ///  Implementation
 ///
 ///////////////////////////////////////////////////////////////////////////////
-Sudoku::Sudoku(RuntimeClient *rtc, char *puzName):
-    m_pAALService(NULL),
-    m_runtimClient(rtc),
-    m_SPLService(NULL),
-    m_Result(0),
-    m_puzName(puzName)
- {
-    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
-    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
-    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
-    m_Sem.Create(0, 1);
- }
+Sudoku::Sudoku(RuntimeClient *rtc, char *puzName) :
+   m_pAALService(NULL),
+   m_runtimClient(rtc),
+   m_SPLService(NULL),
+   m_Result(0),
+   m_puzName(puzName)
+{
+   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   m_Sem.Create(0, 1);
+}
 
- Sudoku::~Sudoku()
- {
-    m_Sem.Destroy();
- }
+Sudoku::~Sudoku()
+{
+   m_Sem.Destroy();
+}
 
 btInt Sudoku::run()
 {
@@ -758,45 +759,45 @@ btInt Sudoku::run()
       int c;
       while((c = fgetc(fp)) != EOF) {
          if(c == '\n')
-	   nPuzzles++;
+         nPuzzles++;
       }
       printf("nPuzzles=%u\n", nPuzzles);
       uint32_t **puzzles = (uint32_t**)malloc(sizeof(uint32_t*)*(nPuzzles));
       rewind(fp);
       {
-	uint32_t j=0,i=0;
-	for(i = 0; i < (nPuzzles); i++)
-	  puzzles[i] = (uint32_t*)malloc(sizeof(uint32_t)*81);
-	i = 0;
-	printf("done with malloc\n");
-	while((c  = fgetc(fp)) != EOF)
-	  {
-	    if(c == '\n')
-	      {
-		//printf("i=%u\n", i);
-		assert(j == 81);
-		j = 0;
-		i++;
-		if(i==nPuzzles)
-		  break;
-	      }
-	    else if(c == ' ')
-	      {
-		continue;
-	      }
-	    else if(c == '.')
-	      {
-		puzzles[i][j++] = 0x1ff;
-	      }
-	    else
-	      {
-		if(c >= 65 && c <= 70)
-		  c -= 55;
-		else
-		  c -= 48;
-		puzzles[i][j++] = 1 << (c-1);
-	      }
-	  }
+         uint32_t j = 0, i = 0;
+         for (i = 0; i < (nPuzzles); i++)
+            puzzles[i] = (uint32_t*) malloc(sizeof(uint32_t) * 81);
+         i = 0;
+         printf("done with malloc\n");
+         while ( (c = fgetc(fp)) != EOF )
+         {
+            if ( c == '\n' )
+               {
+               //printf("i=%u\n", i);
+               assert(j == 81);
+               j = 0;
+               i++;
+               if ( i == nPuzzles )
+                  break;
+            }
+            else if ( c == ' ' )
+               {
+               continue;
+            }
+            else if ( c == '.' )
+               {
+               puzzles[i][j++] = 0x1ff;
+            }
+            else
+            {
+               if ( c >= 65 && c <= 70 )
+                  c -= 55;
+               else
+                  c -= 48;
+               puzzles[i][j++] = 1 << (c - 1);
+            }
+         }
       }
       fclose(fp);
       printf("got puzzles\n");
@@ -806,7 +807,7 @@ btInt Sudoku::run()
       print_board((uint32_t*)boardIn);
 
       for(uint32_t i = 0; i < nPuzzles; i++)
-	free(puzzles[i]);
+         free(puzzles[i]);
       free(puzzles);
 
       /* Call software implementation */
@@ -876,59 +877,59 @@ btInt Sudoku::run()
    return m_Result;
 }
 
- // We must implement the IServiceClient interface (IServiceClient.h):
+// We must implement the IServiceClient interface (IServiceClient.h):
 
- // <begin IServiceClient interface>
- void Sudoku::serviceAllocated( IBase               *pServiceBase,
-                                       TransactionID const &rTranID)
- {
-    m_pAALService = pServiceBase;
-    ASSERT(NULL != m_pAALService);
+// <begin IServiceClient interface>
+void Sudoku::serviceAllocated(IBase               *pServiceBase,
+                              TransactionID const &rTranID)
+{
+   m_pAALService = pServiceBase;
+   ASSERT(NULL != m_pAALService);
 
-    // Documentation says SPLAFU Service publishes ISPLAFU as subclass interface
-    m_SPLService = subclass_ptr<ISPLAFU>(pServiceBase);
+   // Documentation says SPLAFU Service publishes ISPLAFU as subclass interface
+   m_SPLService = subclass_ptr<ISPLAFU>(pServiceBase);
 
-    ASSERT(NULL != m_SPLService);
-    if( NULL == m_SPLService ) {
-       return;
-    }
+   ASSERT(NULL != m_SPLService);
+   if ( NULL == m_SPLService ) {
+      return;
+   }
 
-    MSG("Service Allocated");
+   MSG("Service Allocated");
 
-    // Allocate Workspaces needed. ASE runs more slowly and we want to watch the transfers,
-    //   so have fewer of them.
-    #if defined ( ASEAFU )
-       #define LB_BUFFER_SIZE CL(16)
-    #else
-       #define LB_BUFFER_SIZE MB(4)
-    #endif
+   // Allocate Workspaces needed. ASE runs more slowly and we want to watch the transfers,
+   //   so have fewer of them.
+#if defined ( ASEAFU )
+#define LB_BUFFER_SIZE CL(16)
+#else
+#define LB_BUFFER_SIZE MB(4)
+#endif
 
-    m_SPLService->WorkspaceAllocate( sizeof(VAFU2_CNTXT) + LB_BUFFER_SIZE + LB_BUFFER_SIZE,
-                                     TransactionID());
+   m_SPLService->WorkspaceAllocate(sizeof(VAFU2_CNTXT) + LB_BUFFER_SIZE + LB_BUFFER_SIZE,
+      TransactionID());
 
- }
+}
 
- void Sudoku::serviceAllocateFailed(const IEvent        &rEvent)
- {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
-    ERR("Failed to allocate a Service");
-    ERR(pExEvent->Description());
-    ++m_Result;
-    m_Sem.Post(1);
- }
+void Sudoku::serviceAllocateFailed(const IEvent &rEvent)
+{
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Failed to allocate a Service");
+   ERR(pExEvent->Description());
+   ++m_Result;
+   m_Sem.Post(1);
+}
 
- void Sudoku::serviceFreed(TransactionID const &rTranID)
- {
-    MSG("Service Freed");
-    // Unblock Main()
-    m_Sem.Post(1);
- }
+void Sudoku::serviceFreed(TransactionID const &rTranID)
+{
+   MSG("Service Freed");
+   // Unblock Main()
+   m_Sem.Post(1);
+}
 
- // <ISPLClient>
+// <ISPLClient>
 void Sudoku::OnWorkspaceAllocated(TransactionID const &TranID,
-                                          btVirtAddr           WkspcVirt,
-                                          btPhysAddr           WkspcPhys,
-                                          btWSSize             WkspcSize)
+                                  btVirtAddr           WkspcVirt,
+                                  btPhysAddr           WkspcPhys,
+                                  btWSSize             WkspcSize)
 {
    AutoLock(this);
 
@@ -965,7 +966,7 @@ void Sudoku::OnWorkspaceFreeFailed(const IEvent &rEvent)
 }
 
 /// CMyApp Client implementation of ISPLClient::OnTransactionStarted
-void  Sudoku::OnTransactionStarted( TransactionID const &TranID,
+void Sudoku::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
 {
@@ -975,13 +976,13 @@ void  Sudoku::OnTransactionStarted( TransactionID const &TranID,
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
-void  Sudoku::OnContextWorkspaceSet( TransactionID const &TranID)
+void Sudoku::OnContextWorkspaceSet( TransactionID const &TranID)
 {
    INFO("Context Set");
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionFailed
-void  Sudoku::OnTransactionFailed( const IEvent &rEvent)
+void Sudoku::OnTransactionFailed( const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    MSG("Runtime AllocateService failed");
@@ -994,7 +995,7 @@ void  Sudoku::OnTransactionFailed( const IEvent &rEvent)
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionComplete
-void  Sudoku::OnTransactionComplete( TransactionID const &TranID)
+void Sudoku::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
@@ -1002,42 +1003,41 @@ void  Sudoku::OnTransactionComplete( TransactionID const &TranID)
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionStopped
-void  Sudoku::OnTransactionStopped( TransactionID const &TranID)
+void Sudoku::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
    INFO("Transaction Stopped");
    m_Sem.Post(1);
 }
- void Sudoku::serviceEvent(const IEvent &rEvent)
- {
-    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
- }
- // <end IServiceClient interface>
+void Sudoku::serviceEvent(const IEvent &rEvent)
+{
+   ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+}
+// <end IServiceClient interface>
 
- void Sudoku::Show2CLs( void          *pCLExpected, // pointer to cache-line expected
-                               void          *pCLFound,    // pointer to found cache line
-                               ostringstream &oss)         // add it to this ostringstream
- {
-    oss << "Expected: ";
-    _DumpCL( pCLExpected, oss);
-    oss << "\n";
-    oss << "Found:    ";
-    _DumpCL( pCLFound, oss);
- //   oss << "\n";    /* no terminating linefeed, macro at end will add it. */
- }  // _DumpCL
+void Sudoku::Show2CLs(void          *pCLExpected, // pointer to cache-line expected
+                      void          *pCLFound,    // pointer to found cache line
+                      ostringstream &oss)         // add it to this ostringstream
+{
+   oss << "Expected: ";
+   _DumpCL(pCLExpected, oss);
+   oss << "\n";
+   oss << "Found:    ";
+   _DumpCL(pCLFound, oss);
+}  // _DumpCL
 
- void Sudoku::_DumpCL( void         *pCL,  // pointer to cache-line to print
-                              ostringstream &oss)  // add it to this ostringstream
- {
-    oss << std::hex << std::setfill('0') << std::uppercase;
-    btUnsigned32bitInt *pu32 = reinterpret_cast<btUnsigned32bitInt*>(pCL);
-    for( int i = 0; i < ( CL(1) / sizeof(btUnsigned32bitInt)); ++i ) {
-       oss << "0x" << std::setw(8) << *pu32 << " ";
-       ++pu32;
-    }
-    oss << std::nouppercase;
- }  // _DumpCL
+void Sudoku::_DumpCL(void          *pCL,  // pointer to cache-line to print
+                     ostringstream &oss)  // add it to this ostringstream
+{
+   oss << std::hex << std::setfill('0') << std::uppercase;
+   btUnsigned32bitInt *pu32 = reinterpret_cast<btUnsigned32bitInt*>(pCL);
+   for (int i = 0; i < ( CL(1) / sizeof(btUnsigned32bitInt)); ++i) {
+      oss << "0x" << std::setw(8) << *pu32 << " ";
+      ++pu32;
+   }
+   oss << std::nouppercase;
+}  // _DumpCL
 
 /// @} group HelloSPLLB
 

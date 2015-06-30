@@ -125,9 +125,9 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
-    m_pRuntime(NULL),
-    m_isOK(false)
+   m_Runtime(),        // Instantiate the AAL Runtime
+   m_pRuntime(NULL),
+   m_isOK(false)
 {
    NamedValueSet configArgs;     // Bot used
 
@@ -135,7 +135,7 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   if(!m_Runtime.start(this, configArgs)){
+   if ( !m_Runtime.start(this, configArgs) ) {
       m_isOK = false;
       return;
    }

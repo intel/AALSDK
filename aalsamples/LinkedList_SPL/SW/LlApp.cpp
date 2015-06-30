@@ -176,7 +176,7 @@ RuntimeClient::RuntimeClient() :
 
 RuntimeClient::~RuntimeClient()
 {
-    m_Sem.Destroy();
+   m_Sem.Destroy();
 }
 
 btBool RuntimeClient::isOK()
@@ -208,9 +208,9 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
-    ERR("Runtime start failed");
-    ERR(pExEvent->Description());
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
@@ -223,12 +223,12 @@ void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
-    MSG("Runtime Allocate Service Succeeded");
+   MSG("Runtime Allocate Service Succeeded");
 }
 
 void RuntimeClient::runtimeEvent(const IEvent &rEvent)
 {
-    MSG("Generic message handler (runtime)");
+   MSG("Generic message handler (runtime)");
 }
 
 IRuntime * RuntimeClient::getRuntime()
@@ -290,18 +290,18 @@ public:
    // <end IServiceClient interface>
 
 protected:
-   IBase *m_pAALService;    // The generic AAL Service interface for the AFU.
+   IBase         *m_pAALService; // The generic AAL Service interface for the AFU.
    RuntimeClient *m_runtimClient;
-   ISPLAFU *m_SPLService;
-   CSemaphore m_Sem;            // For synchronizing with the AAL runtime.
-   btInt m_Result;          ///< zero if no errors
+   ISPLAFU       *m_SPLService;
+   CSemaphore     m_Sem;         // For synchronizing with the AAL runtime.
+   btInt          m_Result;      ///< zero if no errors
 
    // Workspace info
-   btVirtAddr m_pWkspcVirt;           ///< Workspace virtual address.
-   btWSSize m_WkspcSize;            ///< DSM workspace size in bytes.
+   btVirtAddr     m_pWkspcVirt;  ///< Workspace virtual address.
+   btWSSize       m_WkspcSize;   ///< DSM workspace size in bytes.
 
-   btVirtAddr m_AFUDSMVirt;           ///< Points to DSM
-   btWSSize m_AFUDSMSize;           ///< Length in bytes of DSM
+   btVirtAddr     m_AFUDSMVirt;  ///< Points to DSM
+   btWSSize       m_AFUDSMSize;  ///< Length in bytes of DSM
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -594,7 +594,7 @@ void llApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 }
 
 /// CMyApp Client implementation of ISPLClient::OnTransactionStarted
-void  llApp::OnTransactionStarted( TransactionID const &TranID,
+void llApp::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
 {
@@ -604,13 +604,13 @@ void  llApp::OnTransactionStarted( TransactionID const &TranID,
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
-void  llApp::OnContextWorkspaceSet( TransactionID const &TranID)
+void llApp::OnContextWorkspaceSet( TransactionID const &TranID)
 {
    INFO("Context Set");
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionFailed
-void  llApp::OnTransactionFailed( const IEvent &rEvent)
+void llApp::OnTransactionFailed( const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    MSG("Runtime AllocateService failed");
@@ -623,7 +623,7 @@ void  llApp::OnTransactionFailed( const IEvent &rEvent)
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionComplete
-void  llApp::OnTransactionComplete( TransactionID const &TranID)
+void llApp::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
@@ -631,7 +631,7 @@ void  llApp::OnTransactionComplete( TransactionID const &TranID)
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionStopped
-void  llApp::OnTransactionStopped( TransactionID const &TranID)
+void llApp::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
