@@ -524,7 +524,7 @@ btInt aalrm_processmsg(struct aalrm_ioctlreq    *preq,
             }
          }
 
-         DPRINTF(AALRMC_DBG_IOCTL, ": About to Get %d  \n %s\n",(int)pallocmsg->size,(char*)preq->payload);
+         DPRINTF(AALRMC_DBG_IOCTL, ": About to Get %d  \n %s\n",(int)pallocmsg->size,(char*)&pallocmsg->buf);
 
          //--------------------------------------------------------------
          // Call the RMS service request Device method
