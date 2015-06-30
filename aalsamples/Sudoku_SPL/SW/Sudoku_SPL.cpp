@@ -43,7 +43,7 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 06/29/2015     HM       Added David's version to the tree
+/// 06/29/2015     HM       Added David's version to the tree@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
 #include <aalsdk/xlRuntime.h>
@@ -67,12 +67,14 @@
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.
-#ifndef MSG
-# define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef MSG
+# undef MSG
 #endif // MSG
-#ifndef ERR
-# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
+#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef ERR
+# undef ERR
 #endif // ERR
+# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 // Print/don't print the event ID's entered in the event handlers.
 #if 1
@@ -93,7 +95,7 @@ using namespace AAL;
 
 #define LPBK1_DSM_SIZE           MB(4)
 
-/// @addtogroup SudokuApp
+/// @addtogroup SudokuSample
 /// @{
 
 inline uint32_t ln2(uint32_t x)
@@ -1017,7 +1019,7 @@ void Sudoku::serviceEvent(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-/// @} group SudokuApp
+/// @} group SudokuSample
 
 
 //=============================================================================

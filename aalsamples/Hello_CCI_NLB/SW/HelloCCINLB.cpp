@@ -69,12 +69,14 @@
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.
-#ifndef MSG
-# define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef MSG
+# undef MSG
 #endif // MSG
-#ifndef ERR
-# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
+#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef ERR
+# undef ERR
 #endif // ERR
+#define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 // Print/don't print the event ID's entered in the event handlers.
 #if 1
@@ -259,7 +261,7 @@ IRuntime * RuntimeClient::getRuntime()
 class HelloCCINLBApp: public CAASBase, public IServiceClient, public ICCIClient
 {
 public:
-   enum WorkspaceType
+   enum WorkspaceType   ///<Type of Workspace being allocated
    {
       WKSPC_DSM, ///< Device Status Memory
       WKSPC_IN,  ///< Input workspace
