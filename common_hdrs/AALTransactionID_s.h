@@ -86,7 +86,7 @@ BEGIN_NAMESPACE(AAL)
 #ifdef __cplusplus
    class IBase;
 #else
-   struct IBase;
+   typedef struct IBase IBase;
 #endif // __cplusplus
 
 /// User/Kernel shared Transaction ID structure.

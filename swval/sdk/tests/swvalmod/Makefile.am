@@ -19,7 +19,7 @@ libswvalmod_la_LDFLAGS=\
 libswvalmod_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la
+$(top_builddir)/aas/AALRuntime/libaalrt.la
 
 
 libswvalsvcmod_la_SOURCES=\
@@ -37,5 +37,5 @@ libswvalsvcmod_la_LDFLAGS=\
 libswvalsvcmod_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la
+$(top_builddir)/aas/AALRuntime/libaalrt.la
 

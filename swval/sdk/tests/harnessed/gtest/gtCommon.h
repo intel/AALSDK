@@ -8,7 +8,7 @@
 #include <map>
 
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 using namespace AAL;
 
 #include "gtest/gtest.h"

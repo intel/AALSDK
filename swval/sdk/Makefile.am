@@ -13,8 +13,8 @@ clean-local:
 SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
-aas/XLRTLib \
-aas/XLRRMBrokerService \
+aas/AALRuntime \
+aas/RRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
 aas/AASResourceManager \
@@ -70,11 +70,10 @@ include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
-include/aalsdk/xlrtlib.h \
-include/aalsdk/xlRuntime.h \
+include/aalsdk/Dispatchables.h \
+include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h \
 include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
@@ -85,9 +84,7 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
-include/aalsdk/aas/ServiceHost.h \
-include/aalsdk/aas/_xlRuntimeServices.h \
-include/aalsdk/aas/XLRuntimeMessages.h
+include/aalsdk/aas/ServiceHost.h 
 
 aalclphdrs_HEADERS=\
 include/aalsdk/aalclp/aalclp.h
@@ -167,9 +164,9 @@ include/aalsdk/registrar/RegDBProxy.h \
 include/aalsdk/registrar/RegDBStub.h
 
 rmhdrs_HEADERS=\
-include/aalsdk/rm/XLResourceManager.h \
-include/aalsdk/rm/XLResourceManagerClient.h \
-include/aalsdk/rm/XLResourceManagerProxy.h \
+include/aalsdk/rm/AALResourceManager.h \
+include/aalsdk/rm/AALResourceManagerClient.h \
+include/aalsdk/rm/AALResourceManagerProxy.h \
 include/aalsdk/rm/CAASResourceManager.h \
 include/aalsdk/rm/CRegistrarDatabase.h \
 include/aalsdk/rm/InstanceRecord.h \
