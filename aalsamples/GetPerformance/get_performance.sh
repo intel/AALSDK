@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Specify command to invoke your application below
-TEST_CMD="./myinst/bin/nlb-trput --begin=16384 --tabular --cont --timeout-sec=1 --wt"
+TEST_CMD="./splapp3 --target=fpga"
 
 # DO NOT EDIT the following
 #===============================================================================================================
