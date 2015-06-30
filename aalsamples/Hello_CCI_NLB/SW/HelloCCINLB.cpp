@@ -269,7 +269,7 @@ IRuntime * RuntimeClient::getRuntime()
     HelloCCINLBApp(RuntimeClient * rtc);
     ~HelloCCINLBApp();
 
-    void run();
+    btInt run();    ///< Return 0 if success
 
     // <ICCIClient>
     virtual void      OnWorkspaceAllocated(TransactionID const &TranID,
@@ -302,8 +302,8 @@ IRuntime * RuntimeClient::getRuntime()
     RuntimeClient   *m_runtimeClient;
     ICCIAFU         *m_NLBService;
     CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
-    btBool           m_Status;
     btUnsignedInt    m_wsfreed;        // Simple counter used for when we free workspaces
+    btInt            m_Result;         // Returned result value; 0 if success
 
     // Workspace info
     btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
@@ -326,7 +326,8 @@ IRuntime * RuntimeClient::getRuntime()
     m_pAALService(NULL),
     m_runtimeClient(rtc),
     m_NLBService(NULL),
-    m_Status(true)
+    m_wsfreed(0),
+    m_Result(0)
  {
     SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
     SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
@@ -338,7 +339,7 @@ IRuntime * RuntimeClient::getRuntime()
     m_Sem.Destroy();
  }
 
-void HelloCCINLBApp::run()
+btInt HelloCCINLBApp::run()
 {
    cout <<"========================"<<endl;
    cout <<"= Hello CCI NLB Sample ="<<endl;
@@ -385,7 +386,7 @@ void HelloCCINLBApp::run()
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
    //         A better design would do all appropriate clean-up.
-   if(true == m_Status){
+   if(0 == m_Result){
 
       //=============================
       // Now we have the NLB Service
@@ -441,6 +442,7 @@ void HelloCCINLBApp::run()
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
       if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
          ERR("Output does NOT Match input, at offset " << err << "!");
+         ++m_Result;
       } else {
          MSG("Output matches Input!");
       }
@@ -458,6 +460,7 @@ void HelloCCINLBApp::run()
    }
 
    m_runtimeClient->end();
+   return m_Result;
 }
 
  // We must implement the IServiceClient interface (IServiceClient.h):
@@ -490,6 +493,8 @@ void HelloCCINLBApp::run()
     IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
     ERR("Failed to allocate a Service");
     ERR(pExEvent->Description());
+    ++m_Result;                     // Remember the error
+
     m_Sem.Post(1);
  }
 
@@ -538,7 +543,7 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
       } break;
 
       default : {
-         m_Status = false;
+         ++m_Result;
          ERR("Invalid workspace type: " << TranID.ID());
       } break;
    }
@@ -550,8 +555,7 @@ void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
 
-
-   m_Status = false;
+   ++m_Result;                     // Remember the error
    m_Sem.Post(1);
 }
 
@@ -570,7 +574,7 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
-   m_Status = false;
+   ++m_Result;                     // Remember the error
    m_Sem.Post(1);
 }
 
@@ -600,9 +604,9 @@ int main(int argc, char *argv[])
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   theApp.run();
+   btInt Result = theApp.run();
 
    MSG("Done");
-   return 0;
+   return Result;
 }
 

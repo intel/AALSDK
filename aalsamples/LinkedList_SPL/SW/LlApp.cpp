@@ -248,7 +248,7 @@ public:
    llApp(RuntimeClient * rtc);
    ~llApp();
 
-   void run();
+   btInt  run();
    void Show2CLs(void *pCLExpected,
                  void *pCLFound,
                  ostringstream &oss);
@@ -294,7 +294,7 @@ protected:
    RuntimeClient *m_runtimClient;
    ISPLAFU *m_SPLService;
    CSemaphore m_Sem;            // For synchronizing with the AAL runtime.
-   btBool m_Status;
+   btInt m_Result;          ///< zero if no errors
 
    // Workspace info
    btVirtAddr m_pWkspcVirt;           ///< Workspace virtual address.
@@ -313,7 +313,7 @@ llApp::llApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
    m_SPLService(NULL),
-   m_Status(true)
+   m_Result(0)
 {
    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
@@ -336,7 +336,7 @@ typedef struct list {
 } __attribute__((__packed__)) list_t;
 
 
-void llApp::run()
+int llApp::run()
 {
    cout <<"======================="<<endl;
    cout <<"= Linked List Example ="<<endl;
@@ -381,7 +381,7 @@ void llApp::run()
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
    //         A better design would do all appropriate clean-up.
-   if(true == m_Status){
+   if(0 == m_Result){
 
 
       //=============================
@@ -510,6 +510,7 @@ void llApp::run()
    m_Sem.Wait();
 
    m_runtimClient->end();
+   return m_Result;
 }
 
 // We must implement the IServiceClient interface (IServiceClient.h):
@@ -541,6 +542,7 @@ void llApp::serviceAllocateFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Failed to allocate a Service");
    ERR(pExEvent->Description());
+   ++m_Result;
    m_Sem.Post(1);
 }
 
@@ -571,7 +573,7 @@ void llApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
-   m_Status = false;
+   ++m_Result;
    m_Sem.Post(1);
 }
 
@@ -587,7 +589,7 @@ void llApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
-   m_Status = false;
+   ++m_Result;
    m_Sem.Post(1);
 }
 
@@ -614,6 +616,7 @@ void  llApp::OnTransactionFailed( const IEvent &rEvent)
    MSG("Runtime AllocateService failed");
    MSG(pExEvent->Description());
    m_bIsOK = false;
+   ++m_Result;
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
    ERR("Transaction Failed");
@@ -686,9 +689,9 @@ int main(int argc, char *argv[])
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   theApp.run();
+   btInt Result = theApp.run();
 
    MSG("Done");
-   return 0;
+   return Result;
 }
 

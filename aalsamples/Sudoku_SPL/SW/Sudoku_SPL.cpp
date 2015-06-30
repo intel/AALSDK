@@ -280,7 +280,7 @@ IRuntime * RuntimeClient::getRuntime()
    Sudoku(RuntimeClient * rtc, char *puzName);
    ~Sudoku();
 
-    void run();
+    btInt run();
     void Show2CLs( void *pCLExpected,
                    void          *pCLFound,
                    ostringstream &oss);
@@ -333,12 +333,12 @@ IRuntime * RuntimeClient::getRuntime()
    RuntimeClient   *m_runtimClient;
    ISPLAFU         *m_SPLService;
    CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
-   btBool           m_Status;
-   
+   btInt            m_Result;
+
    // Workspace info
    btVirtAddr m_pWkspcVirt;           ///< Workspace virtual address.
    btWSSize   m_WkspcSize;            ///< DSM workspace size in bytes.
-   
+
    btVirtAddr m_AFUDSMVirt;           ///< Points to DSM
    btWSSize   m_AFUDSMSize;           ///< Length in bytes of DSM
  };
@@ -643,7 +643,7 @@ Sudoku::Sudoku(RuntimeClient *rtc, char *puzName):
     m_pAALService(NULL),
     m_runtimClient(rtc),
     m_SPLService(NULL),
-    m_Status(true),
+    m_Result(0),
     m_puzName(puzName)
  {
     SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
@@ -657,7 +657,7 @@ Sudoku::Sudoku(RuntimeClient *rtc, char *puzName):
     m_Sem.Destroy();
  }
 
-void Sudoku::run()
+btInt Sudoku::run()
 {
    cout <<"======================="<<endl;
    cout <<"= Hello SPL LB Sample ="<<endl;
@@ -702,7 +702,7 @@ void Sudoku::run()
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
    //         A better design would do all appropriate clean-up.
-   if(true == m_Status){
+   if(0 == m_Result){
 
 
       //=============================
@@ -873,6 +873,7 @@ void Sudoku::run()
    m_Sem.Wait();
 
    m_runtimClient->end();
+   return m_Result;
 }
 
  // We must implement the IServiceClient interface (IServiceClient.h):
@@ -912,6 +913,7 @@ void Sudoku::run()
     IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
     ERR("Failed to allocate a Service");
     ERR(pExEvent->Description());
+    ++m_Result;
     m_Sem.Post(1);
  }
 
@@ -942,7 +944,7 @@ void Sudoku::OnWorkspaceAllocateFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
-   m_Status = false;
+   ++m_Result;
    m_Sem.Post(1);
 }
 
@@ -958,7 +960,7 @@ void Sudoku::OnWorkspaceFreeFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
    ERR(pExEvent->Description());
-   m_Status = false;
+   ++m_Result;
    m_Sem.Post(1);
 }
 
@@ -985,6 +987,7 @@ void  Sudoku::OnTransactionFailed( const IEvent &rEvent)
    MSG("Runtime AllocateService failed");
    MSG(pExEvent->Description());
    m_bIsOK = false;
+   ++m_Result;
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
    ERR("Transaction Failed");
@@ -1056,9 +1059,9 @@ int main(int argc, char *argv[])
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   theApp.run();
+   btInt Result = theApp.run();
 
    MSG("Done");
-   return 0;
+   return Result;
 }
 
