@@ -47,6 +47,14 @@
    /// @ingroup Samples
    /// @brief Basic SPL AFU interaction
 
+   /// @defgroup SudokuSample Hello SPL LB
+   /// @ingroup Samples
+   /// @brief Sudoku using SPL base
+
+   /// @defgroup LinkedListSample Linked List Traversal
+   /// @ingroup Samples
+   /// @brief Linked list shared between Application and FPGA
+
 
 /**
 @mainpage
@@ -61,6 +69,8 @@
       <li>@ref HelloAAL     "Hello_AAL - Hello AFU Sample Application"</li>
       <li>@ref HelloCCINLB  "Hello_CCI_NLB - Hello CCI NLB"</li>
       <li>@ref HelloSPLLB   "Hello_SPL_LB - Hello SPL LB"</li>
+      <li>@ref SudokuSample "Sudoku_SPL - Sudoku on SPL"</li>
+      <li>@ref LinkedListSample "LinkedList_SPL - Linked List using SVM of SPL"</li>
     </ul>
 </ul>
 

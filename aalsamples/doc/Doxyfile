@@ -676,11 +676,13 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = doc/mainpage.dox \
-                         Hello_AAL \
-                         Hello_AAL_Service \
-                         Hello_CCI_NLB \
-                         Hello_SPL_LIB \
-                         SampleBrokerService
+                         Hello_AAL/SW \
+                         Hello_AAL_Service/SW \
+                         Hello_CCI_NLB/SW \
+                         Hello_SPL_LIB/SW \
+                         SampleBrokerService/SW \
+                         Sudoku_SPL/SW \
+                         LinkedList_SPL/SW
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
