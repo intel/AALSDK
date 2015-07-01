@@ -267,7 +267,8 @@ void _ServiceBroker::ShutdownThread(OSLThread *pThread,
    // Destroy the thread and parms
    delete pparms;
 
-   This->ServiceBase::Release(pparms->m_timeout);
+   // Release This
+//   This->ServiceBase::Release(pparms->m_timeout);
 }
 
 struct shutdown_handler_thread_parms
@@ -331,14 +332,11 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
          // Shutdown done in parallel so each gets same max-time
          //   assume 0 time start so no timeout adjust performed
 
-         // DEBUG_CERR("_ServiceBroker::DoShutdown - calling IServiceModule->Shutdown()\n");
-
          // Technically should join on these threads
          new OSLThread(_ServiceBroker::ShutdownHandlerThread,
                        OSLThread::THREADPRIORITY_NORMAL,
                        new shutdown_handler_thread_parms(this, (*itr).second, srvcCount, timeout));
 
-         // DEBUG_CERR("_ServiceBroker::DoShutdown - returned from IServiceModule->Shutdown()\n");
       }
    }
 
@@ -358,7 +356,7 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                                                         reasSystemTimeout,
                                                                         const_cast<btString>(strSystemTimeout)));
       } else {
-         // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
+         // Generate the callback and finish the cleanup (performed in the Dispatchable)
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
                                                                    Client(),
                                                                    this,
@@ -366,8 +364,6 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
 
          // Clear the map now
          m_ServiceMap.clear();
-
-         // Unlock before Release as that Destroys "this"
          return true;
       }
    }

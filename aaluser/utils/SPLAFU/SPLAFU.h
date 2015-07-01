@@ -96,6 +96,10 @@ public:
       SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
    }
 
+   ~SPLAFU()
+   {
+   };
+
    virtual void init(TransactionID const &TranID);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);

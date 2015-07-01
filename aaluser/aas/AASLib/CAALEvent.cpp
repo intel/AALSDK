@@ -735,24 +735,24 @@ ObjectCreatedEvent::ObjectCreatedEvent( IRuntimeClient       *prtClient,
                                         IBase                *pObject,
                                         TransactionID         TranID,
                                         const NamedValueSet  &OptArgs) :
-   m_prtClient(prtClient),
-   m_pClient(pClient),
    CTransactionEvent(pObject, TranID),
    m_OptArgs(OptArgs)
 {
+   m_pServiceClient = pClient;
+   m_pRuntimeClient = prtClient;
    SetSubClassInterface(tranevtFactoryCreate, dynamic_cast<IObjectCreatedEvent *>(this));
 }
 
 void ObjectCreatedEvent::operator()()
 {
    // Notify the Runtime Client first
-   if ( m_prtClient ) {
-      m_prtClient->runtimeAllocateServiceSucceeded(m_pObject, m_TranID);
+   if ( m_pRuntimeClient ) {
+      m_pRuntimeClient->runtimeAllocateServiceSucceeded(m_pObject, m_TranID);
    }
 
    // Now notify the Service Client
-   if ( NULL != m_pClient ) {
-      m_pClient->serviceAllocated(m_pObject, m_TranID);
+   if ( NULL != m_pServiceClient ) {
+      m_pServiceClient->serviceAllocated(m_pObject, m_TranID);
       delete this;
    } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
@@ -774,21 +774,21 @@ ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prt
                               TranID,
                               ExceptionNumber,
                               Reason,
-                              Description),
-   m_prtClient(prtClient),
-   m_pClient(pClient)
+                              Description)
 {
+   m_pRuntimeClient = prtClient;
+   m_pServiceClient = pClient;
    m_SubClassID = extranevtFactoryCreate;
 }
 
 void ObjectCreatedExceptionEvent::operator()()
 {
    // Notify the Runtime Client
-   if(m_prtClient){
-      m_prtClient->runtimeAllocateServiceFailed(*this);
+   if(m_pRuntimeClient){
+      m_pRuntimeClient->runtimeAllocateServiceFailed(*this);
       delete this;
-   }else if(NULL != m_pClient){
-         m_pClient->serviceAllocateFailed(*this);
+   }else if(NULL != m_pServiceClient){
+         m_pServiceClient->serviceAllocateFailed(*this);
          delete this;
 
    } else if(NULL != m_pEventHandler){
@@ -803,9 +803,9 @@ CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClien
                                                                    IBase                *pObject,
                                                                    TransactionID const  &TransID,
                                                                    btApplicationContext  Context) :
-   m_pClient(pClient),
    CTransactionEvent(pObject, TransID)
 {
+   m_pServiceClient = pClient;
    m_SubClassID = tranevtObjectDestroyed;
    m_Context    = Context;
 }
@@ -819,8 +819,8 @@ CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(const CObject
 
 void CObjectDestroyedTransactionEvent::operator()()
 {
-   if(NULL != m_pClient){
-      m_pClient->serviceReleased(m_TranID);;
+   if(NULL != m_pServiceClient){
+      m_pServiceClient->serviceReleased(m_TranID);;
       delete this;
    }else if(NULL != m_pEventHandler){
       m_pEventHandler(*this);

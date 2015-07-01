@@ -275,7 +275,7 @@ class _runtime; //Forward reference
 class AALRUNTIME_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
 {
 public:
-   Runtime(IRuntimeClient *pClient, IRuntime *pParent = NULL);
+   Runtime(IRuntimeClient *pClient, Runtime *pParent = NULL);
 
    virtual btBool start(const NamedValueSet &rconfigParms);
    virtual void   stop();

@@ -196,7 +196,6 @@ btBool SWSimSPLAFU::Release(TransactionID const &TranID, btTime timeout)
       InternalWkspcFree(m_AFUDSM.Virt(), m_AFUDSM);
       m_AFUDSM = WkspcAlloc();
    }
-
    return ServiceBase::Release(TranID, timeout);
 }
 

@@ -51,7 +51,8 @@
 #include <aalsdk/aas/IServiceBroker.h>
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/eds/AASEventDeliveryService.h>
-#include <aalsdk/aas/AALRuntimeModule.h>
+
+#include "_MessageDelivery.h"
 
 #include <map>
 
@@ -208,20 +209,21 @@ private:
 
    ClientMap                      m_mClientMap;    // Map of Runtime Proxys
 
+   IRuntime                      *m_pProxy;        // Runtime Proxy for _Runtime's Services
 
    // Core Facilities: Implemented as built-in plug-in Services
    //  each will have an Entry Point (module commands handler), IServiceModule (Factory)
    //  and a Service interface.
 
    // Default MDS Host container
-   ServiceHost                    *m_pMDSSvcHost;
+//   ServiceHost                    *m_pMDSSvcHost;
+   // Active core services
+   _MessageDelivery                 m_MDS;
+
 
    //Default Service Broker Host Container
    ServiceHost                    *m_pBrokerSvcHost;
 
-   // Active core services
-   IMessageDeliveryService        *m_pMDS;
-   IBase                          *m_pMDSbase;
 
    IServiceBroker                 *m_pBroker;
    IBase                          *m_pBrokerbase;

@@ -43,6 +43,7 @@
 #include "aalsdk/Runtime.h"
 #include "_RuntimeImpl.h"
 #include "aalsdk/CAALEvent.h"
+#include "aalsdk/Dispatchables.h"
 
 /// @addtogroup AAL Runtime
 /// @{
@@ -56,7 +57,7 @@ BEGIN_NAMESPACE(AAL)
 /// Need to call start() after construction to actually get the
 ///   runtime initialized and functional
 //=============================================================================
-Runtime::Runtime(IRuntimeClient *pClient, IRuntime *pParent) :
+Runtime::Runtime(IRuntimeClient *pClient, Runtime *pParent) :
    m_pImplementation(NULL),
    m_pParent(pParent),
    m_status(false),
@@ -230,9 +231,21 @@ btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
    int cnt=0;
    for(;cnt<m_proxyList.size(); cnt++){
       if(m_proxyList[cnt] == dynamic_cast<IRuntime*>(pRuntime) ){
+         Runtime *pProxy = m_proxyList[cnt];
+         int childCnt = 0;
+
+         // All Proxies that are children to the Proxy being deleted
+         //   must be shifted up to parent
+         for(;childCnt < pProxy->m_proxyList.size(); childCnt++){
+
+            // Put child on this list and make this the chold's parent
+            m_proxyList.push_back(pProxy->m_proxyList[childCnt]);
+            pProxy->m_proxyList[childCnt]->m_pParent = this;
+         }
 
          // Delete the proxy instance
-         delete m_proxyList[cnt];
+         pProxy->m_proxyList.clear();
+         delete pProxy;
 
          // Remove it from the list
          m_proxyList.erase(m_proxyList.begin() + cnt);
@@ -249,22 +262,28 @@ btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
 //=============================================================================
 Runtime::~Runtime()
 {
-   AutoLock(this);
 
-    // Look through our the list of Proxies and release them.
     int cnt=0;
-    int size = m_proxyList.size();
-
-    for(;cnt<m_proxyList.size(); cnt++){
-       if(NULL != m_proxyList[cnt] ){
-          // Delete the proxy instance
-           delete m_proxyList[cnt];
-
+    // If there are any Proxies on the Runtime it is an error!
+    if( 0 != m_proxyList.size()){
+       std::cerr << "~Runtime FAILED " << std::hex <<this << " Num = " << m_proxyList.size() << endl;
+       // This exception is generated as an Event to the Runtime Client
+       schedDispatchable(new RuntimeCallback(RuntimeCallback::Event,getRuntimeClient(), new CExceptionEvent(this,
+                                                                                           errProxyDestroy,
+                                                                                           reasInvalidState,
+                                                                                           "Destroying Runtime with Proxies attached. Deleting child Proxies!")));
+       AutoLock(this);
+       // This is badness
+       for(;cnt<m_proxyList.size(); cnt++){
+          if(NULL != m_proxyList[cnt] ){
+             // Delete the proxy instance
+              delete m_proxyList[cnt];
+          }
        }
-    }
-    // Free the vector.
-    m_proxyList.clear();
 
+       // Free the vector.
+       m_proxyList.clear();
+    }
     m_pImplementation->releaseRuntimeInstance(this);
 }
 

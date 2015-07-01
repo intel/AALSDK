@@ -33,6 +33,8 @@
 // COMMENTS: This is the internal implementation of the runtime
 // WHEN:          WHO:     WHAT:
 // 06/25/2015     JG       Removed XL from name
+// 07/01/2015     JG       Redesigned RUntime Proxy structure.
+//                            MDS is no longer a Service.
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -199,10 +201,7 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
    m_pOwner(pRuntimeProxy),
    m_pOwnerClient(pClient),
    m_pClient(this),              // Must be our own client for internal services
-   m_pMDSSvcHost(NULL),
    m_pBrokerSvcHost(NULL),
-   m_pMDS(NULL),
-   m_pMDSbase(NULL),
    m_pBroker(NULL),
    m_pBrokerbase(NULL),
    m_state(Stopped)
@@ -214,11 +213,7 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
    if ( SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) != EObjOK ) {
       return;
    }
-
-   // Instantiate the core facilities. To deal with chicken and egg problem, to bootstrap
-   //  default Services the Runtime performs some functionality typically reserved for Broker
-
-   m_status = true;  // Assume all will go fine.
+   m_status = true;
 
 }
 
@@ -233,37 +228,9 @@ btBool _runtime::InstallDefaults()
 {
    // Message Delivery Service
 
-   // The ServiceHost loads the Service Implementation, typically contained in a Service Library (.so/.dll)
-   //  The default Service implementations are allocated directly in the Runtime Service Library.
-   //  This variant assumes the Service is implemented within this executable.
-   m_pMDSSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localMDS));
-
-   // Instantiate the MDS Service. The Runtime we provide is a Proxy acquired by the original Proxy
-   m_pMDSSvcHost->InstantiateService( m_pOwner->getRuntimeProxy(this), dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(MDS));
-
-   // Block until the serviceAllocated (or failed) callback
-   m_sem.Wait(); // for the local Message Delivery Service
-   if(false == m_status){
-      // Dispatch the event ourselves, because MDS did not start.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeFailed = new RuntimeCallback( RuntimeCallback::CreateorGetProxyFailed,
-                                                             m_pOwnerClient,
-                                                             new CExceptionTransactionEvent( m_pOwner,
-                                                                                             extranevtRuntimeCreateorProxy,
-                                                                                             TransactionID(),
-                                                                                             errCreationFailure,
-                                                                                             reasSubModuleFailed,
-                                                                                             "Failed to load Message Delivery Service"));
-
-       // Fire the final event
-      oneShot.Add(pRuntimeFailed);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return false;
-   }
-
-   // Service Broker
+   // Service Broker. The m_Proxy is _runtime's Proxy which has a pointer to _runtime's IRuntimeClient
    m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
-   m_pBrokerSvcHost->InstantiateService( m_pOwner->getRuntimeProxy(this),dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
+   m_pBrokerSvcHost->InstantiateService( m_pProxy, dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
    m_sem.Wait(); // for the local Broker
 
    if(false == m_status){
@@ -405,6 +372,12 @@ btBool _runtime::start(Runtime             *pProxy,
       return false;
 
    }
+
+   // The Runtime needs a Runtime Proxy because it loads Services "much" like any application
+   //  so it requires a RuntimeClient of its own.
+   m_pProxy = m_pOwner->getRuntimeProxy(this);
+
+   m_status = m_pProxy->IsOK();
 
    if(!InstallDefaults()){
       OSLThreadGroup oneShot;
@@ -664,17 +637,7 @@ void _runtime::allocService(  Runtime                *pProxy,
 //=============================================================================
 btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
 {
-   // Let MDS do it
-   if(NULL == m_pMDS){
-      // No MDS so lets do a one shot. This may be part of teh boot process.
-      OSLThreadGroup oneShot;
-
-      // Fire the event
-      oneShot.Add(pDispatchable);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return true;
-   }
-   return m_pMDS->scheduleMessage(pDispatchable);
+   return m_MDS.scheduleMessage(pDispatchable);
 }
 
 
@@ -694,17 +657,11 @@ btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
 // Comments:
 //=============================================================================
 void _runtime::serviceAllocated(IBase               *pServiceBase,
-                                  TransactionID const &rTranID )
+                                TransactionID const &rTranID )
 {
    AutoLock(this);
 
    switch ( rTranID.ID() ) {
-      case MDS : {
-         m_pMDSbase = pServiceBase;
-         m_pMDS     = subclass_ptr<IMessageDeliveryService>(pServiceBase);
-         m_sem.Post(1);
-      } break;
-
       case Broker : {
          // Replace the Broker
          m_pBrokerbase = pServiceBase;
@@ -752,16 +709,21 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
          m_pBroker     = NULL;
          m_pBrokerbase = NULL;
 
-         m_pMDS->StopMessageDelivery();
+         m_MDS.StopMessageDelivery();
+
          m_state = Stopped;
 
+         // Release our Proxy
+         m_pOwner->releaseRuntimeProxy(m_pProxy);
+
          // Dispatch the event ourselves, because MDS is no more.
+         //
          OSLThreadGroup oneShot;
          RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
                                                                 m_pOwnerClient,
                                                                 m_pOwner);
 
-          // Fire the final event
+         // Fire the final event
          oneShot.Add(pRuntimeStopped);
          oneShot.Drain();  // Wait for it to be dispatched
       } break;
@@ -787,7 +749,7 @@ void _runtime::serviceReleaseFailed(const IEvent &rEvent)
    m_pBroker     = NULL;
    m_pBrokerbase = NULL;
 
-   m_pMDS->StopMessageDelivery();
+   m_MDS.StopMessageDelivery();
    m_state = Stopped;
 
    // Copy the exception event as the original will be destroyed when we return
@@ -834,54 +796,6 @@ void _runtime::serviceEvent(const IEvent &rEvent)
    ASSERT(false);
 }
 
-#if 0
-
-// IAALRUNTIMEServices
-//=============================================================================
-// Name: getMessageDeliveryService
-// Description: Get the base interface to teh MDS
-// Interface: public
-// Comments:
-//=============================================================================
-IBase *_runtime::getMessageDeliveryService()
-{
-   AutoLock(this);
-   return m_pMDSbase;
-}
-
-//=============================================================================
-// Name: messageHandler
-// Description: Unsolicited Event or Message handler
-// Interface: public
-// Inputs: rEvent - The event
-// Outputs: none.
-// Comments:
-//=============================================================================
-void _runtime::setMessageDeliveryService(IBase *pMDSbase)
-{
-   AutoLock(this);
-   m_pMDSbase = pMDSbase;
-}
-
-//=============================================================================
-// Name: SendMsg
-// Description:Send a message
-// Interface: public
-// Inputs: pobject - Dispatchable object to send
-//         parm - Parameter
-// Outputs: none.
-// Comments:
-//=============================================================================
-btBool _runtime::SendMsg(IDispatchable *pobject, btObjectType parm)
-{
-   AutoLock(this);
-   if ( NULL == m_pMDSbase ) {
-      return false;
-   }
-   subclass_ref<IEventDeliveryService>(m_pMDSbase).QueueEvent(parm, pobject);
-   return true;         // TODO cleanup IEventdeliveryService
-}
-#endif
 //=============================================================================
 // Name: getRuntimeClient
 // Description: return the Runtime's Client's Interface
@@ -894,8 +808,6 @@ IRuntimeClient *_runtime::getRuntimeClient()
    AutoLock(this);
    return m_pClient;
 }
-
-
 
 //=============================================================================
 // Name: ~_runtime
@@ -918,7 +830,7 @@ _runtime::~_runtime()
       while( cmIntr != m_mClientMap.end()){
          // The owner (creator) of the runtime does not need to be notified
          if(cmIntr->first != m_pOwner){
-            // Notify the Proxy owner that the proxy is dead.
+            // Notify the Proxy owner that the proxy is dead.  NOTE that this is presented as an Event.
              RuntimeCallback *pRuntimeRelease = new RuntimeCallback(RuntimeCallback::Event,
                                                                     cmIntr->second,
                                                                     new CExceptionTransactionEvent( cmIntr->first,            // The Proxy is in the event
@@ -939,11 +851,8 @@ _runtime::~_runtime()
       m_mClientMap.clear();
    }
 
-   if ( m_pMDSSvcHost ) {
-      m_pMDS->StopMessageDelivery();
-      delete m_pMDSSvcHost;
-      m_pMDSSvcHost = NULL;
-   }
+   m_MDS.StopMessageDelivery();
+
    if ( m_pBrokerSvcHost ) {
       delete m_pBrokerSvcHost;
       m_pBrokerSvcHost = NULL;

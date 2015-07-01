@@ -49,7 +49,7 @@
 
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
-
+#include "aalsdk/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -67,7 +67,7 @@ BEGIN_NAMESPACE(AAL)
    // Comments:
    //=============================================================================
 ServiceBase::ServiceBase(AALServiceModule *container,
-                         IRuntime         *pAALRUNTIME,
+                         IRuntime         *pAALRuntime,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
@@ -75,7 +75,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
-   m_Runtime(pAALRUNTIME->getRuntimeProxy(this)),  // Use my own Proxy
+   m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
@@ -134,24 +134,22 @@ ServiceBase::~ServiceBase()
 
 btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
 {
+   AutoLock(this);
    Released();
 
-   // Using NULL here to reinforce that we should not be manipulating this when
-   // MDS dispatches the CObjectDestroyedTransactionEvent - it will have been deleted.
-   getRuntime()->schedDispatchable(new CObjectDestroyedTransactionEvent(Client(),
-                                                                        NULL,
-                                                                        rTranID,
-                                                                        Context()));
-
-   // Release the Proxy
-   getRuntime()->releaseRuntimeProxy();
-   m_Runtime = NULL;
-   delete this;
+   // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
+   //  just before dispatching the callback thus insuring that the final cleanup is executed
+   //  before notification is received.
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                              Client(),
+                                                              this,
+                                                              rTranID));
    return true;
 }
 
 btBool ServiceBase::Release(btTime timeout)
 {
+   AutoLock(this);
    Released();
 
    // Release the Proxy
@@ -196,8 +194,6 @@ IBase * ServiceBase::_init(IBase               *pclient,
 
    return this;
 }
-
-
 
 btBool ServiceBase::sendmsg()
 {

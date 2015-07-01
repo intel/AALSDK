@@ -416,8 +416,6 @@ public:
 protected:
    ObjectCreatedEvent();
 
-   IRuntimeClient  *m_prtClient;
-   IServiceClient  *m_pClient;
    NamedValueSet    m_OptArgs;
 };
 
@@ -443,8 +441,6 @@ public:
 protected:
    ObjectCreatedExceptionEvent();
 
-   IRuntimeClient  *m_prtClient;
-   IServiceClient  *m_pClient;
 };
 
 /// Created in response to IAALService::Release.
@@ -469,9 +465,7 @@ public:
 protected:
    CObjectDestroyedTransactionEvent();
 
-   IServiceClient *m_pClient;
-   IRuntimeClient *m_prtClient;
-};
+ };
 
 /// @} group Events
 

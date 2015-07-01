@@ -105,14 +105,16 @@ void SPLAFU::init(TransactionID const &TranID)
 
 btBool SPLAFU::Release(TransactionID const &TranID, btTime timeout)
 {
+   AutoLock(this);
+
    if ( NULL != m_pDelegate ) {
-      dynamic_cast<IAALService *>(m_pDelegate)->Release(TransactionID(), timeout);
       m_TranIDFromRelease  = TranID;
       m_TimeoutFromRelease = timeout;
+      dynamic_cast<IAALService *>(m_pDelegate)->Release(TransactionID(), timeout);
       return true;
    }
-
-   return ServiceBase::Release(TranID, timeout);
+   ServiceBase::Release(TranID, timeout);
+   return false;
 }
 
 btBool SPLAFU::Release(btTime timeout)
@@ -120,6 +122,7 @@ btBool SPLAFU::Release(btTime timeout)
    if ( NULL != m_pDelegate ) {
       dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
       m_pDelegate = NULL;
+      return true;
    }
 
    return ServiceBase::Release(timeout);
@@ -167,6 +170,7 @@ void SPLAFU::serviceAllocateFailed(const IEvent &Event)
 
 void SPLAFU::serviceReleased(TransactionID const &TranID)
 {
+   AutoLock(this);
    m_pDelegate = NULL;
    ServiceBase::Release(m_TranIDFromRelease, m_TimeoutFromRelease);
 }

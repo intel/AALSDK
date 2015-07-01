@@ -507,11 +507,15 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                                                          const_cast<btString>(strSystemTimeout)) );
       } else {
 
-         getRuntime()->schedDispatchable( new CObjectDestroyedTransactionEvent(Client(), NULL, rTranID, NULL) );
+         // Generate the event
+         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                                   Client(),
+                                                                   this,
+                                                                   rTranID));
 
          // Clear the map now
          m_ServiceMap.clear();
-         // Unlock before Release as that Destroys "this"
+
          return true;
       }
    }

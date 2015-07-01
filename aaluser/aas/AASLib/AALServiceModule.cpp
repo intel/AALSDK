@@ -135,12 +135,10 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
    AutoLock(this);
 
    if ( ServiceInstanceRegistered(pService) ) {
-      cerr << std::hex << pService <<"FAILURE Is ALREADY registered Services left " << m_serviceList.size() << endl;
       return false;
    }
 
    m_serviceList[pService] = pService;
-   cerr << std::hex << pService <<" Is NOW  registered Services left " << m_serviceList.size() << endl;
    return true;
 }
 
@@ -149,14 +147,11 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    AutoLock(this);
 
    if ( !ServiceInstanceRegistered(pService) ) {
-//      cerr << std::hex << pService << " Not registered with Module " << this << endl;
-//      cerr << std::hex << pService <<" Number of registered Services left " << m_serviceList.size() << endl;
       return false;
    }
-//   cerr << std::hex << pService << " Is registered with Module " << this << endl;
+
    m_serviceList.erase(pService);
 
-//   cerr << std::hex << pService <<" Number of registered Services left " << m_serviceList.size() << endl;
    // Post to the count up semaphore
    //  in case the service is shutting down
    m_srvcCount.Post(1);

@@ -334,6 +334,7 @@
 #define errAllocationFailure           AAL_ErrNum     (0x0010)
 #define errReleaseFailure              AAL_ErrNum     (0x0011)
 #define errProxyInvalid                AAL_ErrNum     (0x0012)
+#define errProxyDestroy                AAL_ErrNum     (0x0013)
 
 #define reasCauseUnknown               AAL_ReasCode   (0x0001)
 #define reasFeatureNotSupported        AAL_ReasCode   (0x0002)

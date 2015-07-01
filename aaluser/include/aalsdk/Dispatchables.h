@@ -40,6 +40,7 @@
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/Runtime.h>
+#include <aalsdk/aas/AALService.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -96,6 +97,7 @@ void operator() ()
          m_pClient->serviceAllocateFailed(*m_pEvent);
       } break;
       case Released : {
+         dynamic_ptr<IAALService>(iidService, m_pServiceBase)->Release(0);
          m_pClient->serviceReleased(m_TranID);
       } break;
       case ReleaseFailed : {

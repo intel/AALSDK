@@ -48,21 +48,10 @@
 #include <aalsdk/eds/AASEventDeliveryService.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/osal/ThreadGroup.h>
-#include <aalsdk/osal/OSServiceModule.h>
+//#include <aalsdk/osal/OSServiceModule.h>
 
 /// @addtogroup MDS
 /// @{
-
-#define AALMDS_SVC_MOD         "localMDS" AAL_SVC_MOD_EXT
-#define AALMDS_SVC_ENTRY_POINT "localMDS" AAL_SVC_MOD_ENTRY_SUFFIX
-
-//=============================================================================
-// Name: AAL_DECLARE_SVC_MOD
-// Description: Declares a module entry point.
-// Comments: Not used for static built-in Services
-//=============================================================================
-AAL_DECLARE_SVC_MOD(localMDS, AALRUNTIME_API)
-
 
 BEGIN_NAMESPACE(AAL)
 
@@ -75,31 +64,19 @@ class _MessageDelivery;
 // Comments:  This object is operational and meets its minimum functional
 //            requirements pior to init()
 //=============================================================================
-class _MessageDelivery : public ServiceBase,
+class _MessageDelivery :// public ServiceBase,
+                         public CAASBase,
                          public IMessageDeliveryService
 {
 public:
    // Loadable Service
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(_MessageDelivery, ServiceBase)
+
+   _MessageDelivery() : m_Dispatcher()
    {
       // Default is a simple single threaded scheduler.
-      m_Dispatcher = new OSLThreadGroup;
-      SetSubClassInterface(iidMDS,
-                           dynamic_cast<IMessageDeliveryService *>(this));
-
-      //m_pcontainer->getRuntimeServiceProvider()->setMessageDeliveryService(dynamic_cast<IBase *>(this));
+       SetSubClassInterface(iidMDS,
+                            dynamic_cast<IMessageDeliveryService *>(this));
    }
-
-   // Initialize the object including any configuration changes based on
-   //  start-up config parameters. Once complete the facility is fully functional
-   void init(TransactionID const &rtid);
-
-
-   // Called when the service is released
-   btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
-
-   // Quiet Release. Used when Service is unloaded.
-   btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
    //
    // IMessageDeliveryService
@@ -113,7 +90,7 @@ public:
    ~_MessageDelivery();
 
 protected:
-   OSLThreadGroup *m_Dispatcher;
+   OSLThreadGroup m_Dispatcher;
 };
 
 
