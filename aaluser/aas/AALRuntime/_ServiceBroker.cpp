@@ -267,8 +267,6 @@ void _ServiceBroker::ShutdownThread(OSLThread *pThread,
    // Destroy the thread and parms
    delete pparms;
 
-   // Release This
-//   This->ServiceBase::Release(pparms->m_timeout);
 }
 
 struct shutdown_handler_thread_parms
