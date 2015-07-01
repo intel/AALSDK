@@ -68,9 +68,9 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall 
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall -std=c99 -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 
+CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 -pedantic
 endif
 
 ## Print information ##
@@ -277,6 +277,7 @@ else
 	@echo "############################################################"
   endif
 endif
+	python scripts/ipc_clean.py
 
 # Open Wave file
 wave: check

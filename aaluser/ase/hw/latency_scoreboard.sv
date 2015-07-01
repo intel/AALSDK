@@ -312,11 +312,11 @@ module latency_scoreboard
 	   // WriteFence
 	   `ASE_TX1_WRFENCE:
 	     begin
-`ifdef ASE_DEBUG
-		`BEGIN_YELLOW_FONTCOLOR;
-		$display("SIM-SV: %m =>  WriteFence must not enter latency model");
-		`END_YELLOW_FONTCOLOR;
-`endif
+// `ifdef ASE_DEBUG
+// 		`BEGIN_YELLOW_FONTCOLOR;
+// 		$display("SIM-SV: %m =>  WriteFence must not enter latency model");
+// 		`END_YELLOW_FONTCOLOR;
+// `endif
 		ret_random_lat = 1;
 	     end
 
@@ -329,12 +329,12 @@ module latency_scoreboard
 	   // Unspecified type (warn but specify latency
 	   default:
 	     begin
-`ifdef ASE_DEBUG
-		`BEGIN_YELLOW_FONTCOLOR;
-		$display("SIM-SV: %m =>");
-		$display("No Latency model available for meta type %x, using LAT_UNDEFINED", meta);
-		`END_YELLOW_FONTCOLOR;
-`endif
+// `ifdef ASE_DEBUG
+// 		`BEGIN_YELLOW_FONTCOLOR;
+// 		$display("SIM-SV: %m =>");
+// 		$display("No Latency model available for meta type %x, using LAT_UNDEFINED", meta);
+// 		`END_YELLOW_FONTCOLOR;
+// `endif
 		ret_random_lat = `LAT_UNDEFINED;
 	     end
 
@@ -502,7 +502,7 @@ module latency_scoreboard
    genvar 				     gen_i;
    generate
       // Managing each slot in transaction record
-      for (gen_i = 0 ; gen_i < NUM_TRANSACTIONS ; gen_i = gen_i + 1) begin
+      for (gen_i = 0 ; gen_i < NUM_TRANSACTIONS ; gen_i = gen_i + 1) begin : blkgen_latbuf_slot
 	 logic record_valid_reg;
 	 logic ready_to_go_reg;
 	 

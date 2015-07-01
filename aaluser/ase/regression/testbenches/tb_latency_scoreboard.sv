@@ -11,7 +11,7 @@ module tb_latency_scoreboard();
    int 			  ii;
    logic 		  overflow, underflow;
    
-      
+   // Buffer
    latency_scoreboard 
      #(
        .NUM_TRANSACTIONS (4),
@@ -46,12 +46,13 @@ module tb_latency_scoreboard();
 	 valid_in <= 0;
 	 wr_iter <= 0;
 	 data_in <= 0;	 
-	 meta_in <= 64'h00000000_00000000;	 
+	 meta_in <= 64'h00500000_00000000;	 
       end
       else begin
-	 if ((~full) && (wr_iter < 500000)) begin
+	 if ((~full) && (wr_iter < 10)) begin
+	    $display(wr_iter);	    
 	    wr_iter <= wr_iter + 1;
-	    meta_in <= meta_in + 64'h11111111_11111111;
+	    meta_in <= meta_in + 64'h00000000_11111111;
 	    valid_in <= 1;	    
 	 end
 	 else begin
@@ -66,10 +67,10 @@ module tb_latency_scoreboard();
    // int checker_meta[*];
    
    initial begin
-      #1_0000_0000;
-`ifdef ASE_DEBUG
-      $display (buffer.checker.check_array);
-`endif
+      #10_0000;
+// `ifdef ASE_DEBUG
+      $display (buffer.checkunit.check_array);
+// `endif
       $finish;     
    end
 

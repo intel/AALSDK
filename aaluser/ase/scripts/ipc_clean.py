@@ -8,7 +8,7 @@ USER = os.getenv("USER")
 
 print "############################################################"
 print "#                                                          #"
-print "#         ASE IPC Cleanup/Sanitation script called         #"
+print "#                ASE IPC Cleanup script                    #"
 print "#                                                          #"
 print "############################################################"
 

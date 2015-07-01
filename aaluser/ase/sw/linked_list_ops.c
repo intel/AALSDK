@@ -49,9 +49,9 @@ void ll_print_info(struct buffer_t *print_ptr)
   else
     printf("REMOVED ");
   printf("%5s \t", print_ptr->memname);
-  printf("%p  ", (uint32_t*)print_ptr->vbase);
-  printf("%p  ", (uint32_t*)print_ptr->pbase);
-  printf("%p  ", (uint32_t*)print_ptr->fake_paddr);
+  printf("%p  ", (void *)print_ptr->vbase);
+  printf("%p  ", (void *)print_ptr->pbase);
+  printf("%p  ", (void *)print_ptr->fake_paddr);
   printf("%x  ", print_ptr->memsize);
   printf("%d  ", print_ptr->is_csrmap);
   printf("%d  ", print_ptr->is_privmem);

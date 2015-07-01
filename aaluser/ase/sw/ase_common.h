@@ -561,6 +561,8 @@ FILE *ase_ready_fd;
 // ASE seed 
 uint64_t ase_addr_seed;
 
+// ASE error file
+FILE *error_fp;
 
 /*
  * QPI-CA private memory implementation

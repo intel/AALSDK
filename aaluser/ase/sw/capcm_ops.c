@@ -90,7 +90,7 @@ void capcm_init()
 	  add_to_ipc_list ("SHM", capcm_buf[mem_i].memname);	  
 	  
 	  // Map memory name, calculate memory high, ftruncate to given size
-	  capcm_buf[mem_i].fd_ase = shm_open(capcm_buf[mem_i].memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
+	  capcm_buf[mem_i].fd_ase = shm_open(capcm_buf[mem_i].memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
 	  if (capcm_buf[mem_i].fd_ase < 0)
 	    {
 	      ase_error_report("shm_open", errno, ASE_OS_SHM_ERR);

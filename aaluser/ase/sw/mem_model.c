@@ -218,7 +218,7 @@ void ase_alloc_action(struct buffer_t *mem)
   /* END_YELLOW_FONTCOLOR; */
 
   // Obtain a file descriptor
-  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IREAD|S_IWRITE);
+  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_ase < 0)
     {
       /* perror("shm_open"); */
@@ -501,7 +501,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
  */
 uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 {
-  FUNC_CALL_ENTRY;
+  FUNC_CALL_ENTRY; 
 
   // Clean up address of signed-ness
   req_paddr = req_paddr & 0x0000003FFFFFFFFF;
@@ -518,7 +518,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   // For debug only
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
-  printf("req_paddr = %p | ", (uint64_t*)req_paddr);
+  printf("req_paddr = %p | ", (void *)req_paddr);
   END_YELLOW_FONTCOLOR;
 #endif
 
@@ -534,7 +534,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  // Debug only
 #ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, ase_pbase);
+	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
 	  END_YELLOW_FONTCOLOR;
 #endif
 	  return ase_pbase;
@@ -551,9 +551,21 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
       printf("@ERROR: Simulation cannot continue, please check the code.\n");
       printf("@ERROR: Failure @ phys_addr = %016lx \n", req_paddr );
+      printf("@ERROR: See ERROR log file => ase_error.log");
       END_RED_FONTCOLOR;
+
+      // Write error to file
+      error_fp = fopen("ase_error.log", "wb");
+      fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
+      fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
+      fprintf(error_fp, "        Address not found in requested workspaces listed in workspace_info.log\n");
+      fprintf(error_fp, "        Timestamped transaction to this address is listed in transactions.tsv\n");
+      fflush(error_fp);
+      fclose(error_fp);
+
       // ase_perror_teardown();
       // final_ipc_cleanup();
+      // Request SIMKILL
       start_simkill_countdown(); // RRS: exit(1);
     }
 

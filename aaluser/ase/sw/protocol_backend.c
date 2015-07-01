@@ -180,9 +180,9 @@ int ase_listener()
 	{
 	  // Write Workspace info to workspace log file
 	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
-	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (uint64_t*)ase_buffer.vbase);
-	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (uint64_t*)ase_buffer.fake_paddr);
-	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (uint32_t*)(ase_buffer.fake_paddr >> 6));
+	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
 	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
 	  fprintf(fp_workspace_log, "\n");
 	  
@@ -607,9 +607,11 @@ void ase_umsg_init(uint64_t dsm_base)
 
   // CIRBSTAT setup (completed / ready)
   *cirbstat = cfg->num_umsg_log2 << 4 | 0x1 << 0;
-  printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
-  printf ("        CIRBSTAT addr = %p\n", cirbstat);
+#ifdef ASE_DEBUG
+  printf ("        DSM base      = %p\n", (void*)dsm_base);
+  printf ("        CIRBSTAT addr = %p\n", (void*)cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
+#endif
 
   FUNC_CALL_EXIT;
 }

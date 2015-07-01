@@ -85,12 +85,12 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tfd_ase      = %d \n",    mem->fd_ase);
   printf("\tindex       = %d \n",    mem->index);
   printf("\tvalid       = %x \n",    mem->valid);
-  printf("\tAPPVirtBase = %p \n",    (uint32_t*)mem->vbase); 
-  printf("\tSIMVirtBase = %p \n",    (uint32_t*)mem->pbase); 
+  printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
+  printf("\tSIMVirtBase = %p \n",    (void *)mem->pbase); 
   printf("\tBufferSize  = %x \n",    mem->memsize);  
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
-  printf("\tPhysAddr LO = %p\n", (uint32_t*)mem->fake_paddr); 
-  printf("\tPhysAddr HI = %p\n", (uint32_t*)mem->fake_paddr_hi);
+  printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
+  printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
   /* printf("\tIsDSM       = %d\n", mem->is_csrmap);  */
   /* printf("\tIsPrivMem   = %d\n", mem->is_privmem);  */
   BEGIN_YELLOW_FONTCOLOR;

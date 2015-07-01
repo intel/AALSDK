@@ -65,7 +65,7 @@
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
 // #define  HWAFU
-// #define  ASEAFU
+#define  ASEAFU
 
 using namespace AAL;
 
@@ -455,8 +455,8 @@ void HelloSPLLBApp::run()
       // Wait for the AFU to be done. This is AFU-specific, we have chosen to poll ...
 
       // Set timeout increment based on hardware, software, or simulation
-      bt32bitInt count(500);  // 5 seconds with 10 millisecond sleep
-      bt32bitInt delay(10);   // 10 milliseconds is the default
+      bt32bitInt count(500000);  // 5 seconds with 10 millisecond sleep
+      bt32bitInt delay(10000);   // 10 milliseconds is the default
 
       // Wait for SPL VAFU to finish code
       volatile bt32bitInt done = pVAFU2_cntxt->Status & VAFU2_CNTXT_STATUS_DONE;
@@ -549,7 +549,7 @@ void HelloSPLLBApp::run()
     // Allocate Workspaces needed. ASE runs more slowly and we want to watch the transfers,
     //   so have fewer of them.
     #if defined ( ASEAFU )
-       #define LB_BUFFER_SIZE CL(16)
+       #define LB_BUFFER_SIZE MB(1024)
     #else
        #define LB_BUFFER_SIZE MB(4)
     #endif
