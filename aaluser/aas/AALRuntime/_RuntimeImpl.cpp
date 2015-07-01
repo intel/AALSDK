@@ -501,9 +501,9 @@ void _runtime::removeProxy( Runtime *pRuntimeProxy)
 //=============================================================================
 btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 {
-   NamedValueSet const *pConfigRecord;
-   btcString            sName  = NULL;
-   std::string               strSname;
+   INamedValueSet const *pConfigRecord = NULL;
+   btcString             sName         = NULL;
+   std::string           strSname;
   // Environment          env;
 
    //
@@ -542,7 +542,7 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
 
       // Using back door because thats all we know.
       ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, sName);
-      optArgs.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+      optArgs.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
       // Allocate the service.
       allocService(this, optArgs, TransactionID(Broker));

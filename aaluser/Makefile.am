@@ -124,7 +124,6 @@ utilshdrsdir=$(aalsdkhdrsdir)/utils
 
 aalsdkhdrs_HEADERS=\
 include/aalsdk/AALBase.h \
-include/aalsdk/AALCNamedValueSet.h \
 include/aalsdk/_AALDefs.h \
 include/aalsdk/AALDefs.h \
 include/aalsdk/AALEvent.h \
@@ -148,6 +147,7 @@ include/aalsdk/CAALBase.h \
 include/aalsdk/CAALEvent.h \
 include/aalsdk/CAALLogger.h \
 include/aalsdk/CCountedObject.h \
+include/aalsdk/INamedValueSet.h \
 include/aalsdk/INTCDefs.h \
 include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
@@ -332,6 +332,7 @@ ase/sw/protocol_backend.c \
 ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
+ase/ase_regress.sh \
 ase/Makefile \
 ase/distclean.sh \
 ase/hw/counter.sv \

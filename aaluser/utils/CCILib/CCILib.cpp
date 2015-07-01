@@ -502,7 +502,7 @@ protected:
       } else {
          NamedValueSet ConfigRecord;
          ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-         args.Add(AALRUNTIME_CONFIG_RECORD, ConfigRecord);
+         args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
       }
 
       TRACE(GetSynchronizer(), TR_INFO, "Starting the AAL Runtime\n");

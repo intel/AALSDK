@@ -69,15 +69,15 @@ public:
    ENamedValues    Type(btStringKey Name, eBasicTypes *pType)        const { return m_NamedValueSet.Type(Name, pType);     }
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName)     const { return m_NamedValueSet.GetName(index, pName); }
 
-   ENamedValues Add(btNumberKey Name, btBool value)               { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, btByte value)               { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, bt32bitInt value)           { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, btUnsigned32bitInt value)   { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, bt64bitInt value)           { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, btUnsigned64bitInt value)   { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, btFloat value)              { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, btcString value)            { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btNumberKey Name, NamedValueSet const &value) { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btBool value)                { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btByte value)                { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, bt32bitInt value)            { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btUnsigned32bitInt value)    { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, bt64bitInt value)            { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btUnsigned64bitInt value)    { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btFloat value)               { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, btcString value)             { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btNumberKey Name, const INamedValueSet *value) { return m_NamedValueSet.Add(Name, value); }
 
    ENamedValues Add(btNumberKey Name, btByteArray value,             btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
    ENamedValues Add(btNumberKey Name, bt32bitIntArray value,         btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
@@ -89,15 +89,15 @@ public:
    ENamedValues Add(btNumberKey Name, btStringArray value,           btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
    ENamedValues Add(btNumberKey Name, btObjectArray value,           btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
 
-   ENamedValues Add(btStringKey Name, btBool value)               { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, btByte value)               { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, bt32bitInt value)           { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, btUnsigned32bitInt value)   { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, bt64bitInt value)           { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, btUnsigned64bitInt value)   { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, btFloat value)              { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, btcString value)            { return m_NamedValueSet.Add(Name, value); }
-   ENamedValues Add(btStringKey Name, NamedValueSet const &value) { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btBool value)                { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btByte value)                { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, bt32bitInt value)            { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btUnsigned32bitInt value)    { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, bt64bitInt value)            { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btUnsigned64bitInt value)    { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btFloat value)               { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, btcString value)             { return m_NamedValueSet.Add(Name, value); }
+   ENamedValues Add(btStringKey Name, const INamedValueSet *value) { return m_NamedValueSet.Add(Name, value); }
 
    ENamedValues Add(btStringKey Name, btByteArray value,             btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
    ENamedValues Add(btStringKey Name, bt32bitIntArray value,         btUnsigned32bitInt NumElements) { return m_NamedValueSet.Add(Name, value, NumElements); }
@@ -158,7 +158,7 @@ public:
    ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue)      const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, btFloat *pValue)                 const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, btcString *pValue)               const { return m_NamedValueSet.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, NamedValueSet const**pValue)     const { return m_NamedValueSet.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, INamedValueSet const**pValue)    const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, btByteArray *pValue)             const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue)         const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { return m_NamedValueSet.Get(Name, pValue); }
@@ -177,7 +177,7 @@ public:
    ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue)      const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, btFloat *pValue)                 const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, btcString *pValue)               const { return m_NamedValueSet.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, NamedValueSet const**pValue)     const { return m_NamedValueSet.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, INamedValueSet const**pValue)    const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, btByteArray *pValue)             const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue)         const { return m_NamedValueSet.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { return m_NamedValueSet.Get(Name, pValue); }
@@ -193,7 +193,7 @@ public:
    void importmsg(char const * pmsg, btWSSize len)
    {
       m_NamedValueSet.Empty();
-      NamedValueSetFromCharString((void*)pmsg, len, m_NamedValueSet);
+      m_NamedValueSet.FromStr(const_cast<char *>(pmsg), len);
    }
 
 protected:

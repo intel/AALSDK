@@ -137,8 +137,8 @@ inline UIDriverClient_uidrvManip BindDevice(UIDriverClient_uidrvMarshaler_t fop,
                                             uidrvMessageRoute              *mgsRoutep)
 {
    // Marshal the nvs out to a buffer for transport
-   std::string stManifest = StdStringFromNamedValueSet(nvsManifest);
-   btWSSize           len = (btWSSize)stManifest.size() + 1;
+   std::string stManifest(nvsManifest);
+   btWSSize    len = (btWSSize)stManifest.size() + 1;
 
    UIDriverClient_msgPayload Cpayload(len);
 
