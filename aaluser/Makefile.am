@@ -332,6 +332,7 @@ ase/sw/protocol_backend.c \
 ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
+ase/ase_regress.sh \
 ase/Makefile \
 ase/distclean.sh \
 ase/hw/counter.sv \
