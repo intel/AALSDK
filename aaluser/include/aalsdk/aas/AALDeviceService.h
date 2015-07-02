@@ -206,9 +206,9 @@ public:
    // </ServiceBase>
 
    // Convenience function to return the AFUdev
-   btBool                IsAFUDevOK()   { return NULL != m_pAFUDev; }
-   IAFUDev &             AFUDev()       { return *m_pAFUDev;        }
-   NamedValueSet const & ConfigRecord() { return *m_ConfigRecord;   }
+   btBool                 IsAFUDevOK()   { return NULL != m_pAFUDev; }
+   IAFUDev &              AFUDev()       { return *m_pAFUDev;        }
+   INamedValueSet const & ConfigRecord() { return *m_ConfigRecord;   }
 
 private:
    //=============================================================================
@@ -278,7 +278,7 @@ private:
          nvsServiceRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
 
          NamedValueSet nvsManifest;
-         nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, nvsServiceRecord);
+         nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsServiceRecord);
 
          // Copy original transaction ID so that we have it when it comes time to generate the
          //  ObjectCreated Event
@@ -538,7 +538,7 @@ protected:
    uAIASession          *m_pSession;     // AIA Session
    btObjectType          m_devHandle;    // low-level device handle
    IAFUDev              *m_pAFUDev;      // AFU device
-   NamedValueSet const  *m_ConfigRecord; // Config Record
+   INamedValueSet const *m_ConfigRecord; // Config Record
    btBool                m_quietRelease; // Used for quiet release
    ServiceClient         m_scContainer;  // IBase container for presenting ServiceClient
 };

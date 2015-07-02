@@ -172,7 +172,7 @@ RuntimeClient::RuntimeClient() :
    //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
 #if defined( HWAFU )
    configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(AALRUNTIME_CONFIG_RECORD,configRecord);
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
 #endif
 
    if(!m_Runtime.start(configArgs)){
@@ -380,7 +380,7 @@ void HelloSPLLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 #endif
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello SPL LB");
 

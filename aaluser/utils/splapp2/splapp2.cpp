@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
    } else {
       NamedValueSet ConfigRecord;
       ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      RunTimeArgs.Add(AALRUNTIME_CONFIG_RECORD, ConfigRecord);
+      RunTimeArgs.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    ////////////////////////////////////////////////////////////////////////////

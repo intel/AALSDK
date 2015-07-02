@@ -175,10 +175,10 @@ BEGIN_NAMESPACE(AAL)
 btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nvsList& listGoal)
 {
    // Yes, there is a backdoor
-   NamedValueSet nvsBackDoorRecord;
-   const NamedValueSet* pTemp;
-   nvsManifest.Get( AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &pTemp);
-   nvsBackDoorRecord = *pTemp;                           // Get a copy of it
+   INamedValueSet const *pTemp = NULL;
+   nvsManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &pTemp);
+
+   NamedValueSet nvsBackDoorRecord(*pTemp);              // Get a copy of it
 
    // Search instance record list for:
    //    If the instance is available
@@ -390,7 +390,7 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
          (*nvsitr).m_nvs = nvsInstRec;
 
          // Add the Manifest in as well
-         NVSMerge( (*nvsitr).m_nvs, nvsManifest);
+         (*nvsitr).m_nvs.Merge(nvsManifest);
 
       }  // Instance Record Loop
 

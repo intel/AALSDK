@@ -240,8 +240,8 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
                                  TransactionID const    &rTranID)
 {
    // Process the manifest
-   btcString            sName = NULL;
-   NamedValueSet const *ConfigRecord;
+   btcString             sName        = NULL;
+   INamedValueSet const *ConfigRecord = NULL;
 
    IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
    if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
@@ -611,7 +611,7 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
      IRuntimeClient *pRuntimeClient = m_ServiceClientMap[tid].pRuntimeClient;
      m_ServiceClientMap.erase(tid);
 
-     NamedValueSet const *ConfigRecord;
+     INamedValueSet const *ConfigRecord = NULL;
      if ( ENamedValuesOK != nvsInstancerecord.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
         return;
      }

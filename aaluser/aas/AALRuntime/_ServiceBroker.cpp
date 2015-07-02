@@ -102,8 +102,8 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
                                   TransactionID const     &rTranID)
 {
    // Process the manifest
-   btcString            sName  = NULL;
-   NamedValueSet const *ConfigRecord;
+   btcString             sName  = NULL;
+   INamedValueSet const *ConfigRecord = NULL;
 
    IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
    if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks

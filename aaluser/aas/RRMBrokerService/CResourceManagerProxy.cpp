@@ -253,7 +253,7 @@ btBool CResourceManagerProxy::GetMessage( NamedValueSet &nvs,
          }
 
          // Covert record into a Named Value for upstream processing
-         NamedValueSetFromCharString(Message.payload(), Message.size(), nvs);
+         nvs = NamedValueSet(Message.payload(), Message.size());
 
          nvs.Add(RM_MESSAGE_KEY_ID, MapEnumID(Message.id()));
          nvs.Add(RM_MESSAGE_KEY_RESULTCODE, (Message.result_code() == rms_resultOK ? errOK : errMethodFailure) );
@@ -278,7 +278,7 @@ FAILED:
 // Name: SendRequest
 // Description: Request a service matching Manifest criteria.
 //==========================================================================
-btBool CResourceManagerProxy::SendRequest( NamedValueSet const   &nvsManifest,
+btBool CResourceManagerProxy::SendRequest(NamedValueSet const   &nvsManifest,
                                           TransactionID const   &tid)
 {
    AutoLock(this);
@@ -292,7 +292,7 @@ btBool CResourceManagerProxy::SendRequest( NamedValueSet const   &nvsManifest,
    memset(&req, 0, sizeof(req));
 
    // Marshal the NVS into an ostringstream
-   std::string        temp = StdStringFromNamedValueSet(nvsManifest);
+   std::string        temp(nvsManifest);
    btUnsigned32bitInt len  = temp.length();
 
    btVirtAddr buf = (btVirtAddr)new(std::nothrow) btByte[len];

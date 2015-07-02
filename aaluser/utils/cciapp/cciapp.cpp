@@ -534,7 +534,7 @@ int main(int argc, char *argv[])
    } else {
       NamedValueSet ConfigRecord;
       ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      args.Add(AALRUNTIME_CONFIG_RECORD, ConfigRecord);
+      args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    INFO("Starting the AAL Runtime");
