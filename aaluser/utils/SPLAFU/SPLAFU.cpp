@@ -120,6 +120,7 @@ btBool SPLAFU::Release(btTime timeout)
    if ( NULL != m_pDelegate ) {
       dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
       m_pDelegate = NULL;
+      return true;
    }
 
    return ServiceBase::Release(timeout);
