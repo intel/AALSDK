@@ -316,7 +316,11 @@ HelloSPLLBApp::HelloSPLLBApp(RuntimeClient *rtc) :
    m_pAALService(NULL),
    m_runtimClient(rtc),
    m_SPLService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_pWkspcVirt(NULL),
+   m_WkspcSize(0),
+   m_AFUDSMVirt(NULL),
+   m_AFUDSMSize(0)
 {
    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
@@ -386,8 +390,8 @@ btInt HelloSPLLBApp::run()
       btVirtAddr         pWSUsrVirt = m_pWkspcVirt; // Address of Workspace
       const btWSSize     WSLen      = m_WkspcSize; // Length of workspace
 
-      INFO("Allocated " << WSLen << "-byte Workspace at virtual address "
-                        << std::hex << (void *)pWSUsrVirt);
+      MSG("Allocated " << WSLen << "-byte Workspace at virtual address "
+                       << std::hex << (void *)pWSUsrVirt);
 
       // Number of bytes in each of the source and destination buffers (4 MiB in this case)
       btUnsigned32bitInt a_num_bytes= (btUnsigned32bitInt) ((WSLen - sizeof(VAFU2_CNTXT)) / 2);
@@ -419,15 +423,15 @@ btInt HelloSPLLBApp::run()
       pVAFU2_cntxt->pSource = pSource;
       pVAFU2_cntxt->pDest   = pDest;
 
-      INFO("VAFU2 Context=" << std::hex << (void *)pVAFU2_cntxt <<
-           " Src="          << std::hex << (void *)pVAFU2_cntxt->pSource <<
-           " Dest="         << std::hex << (void *)pVAFU2_cntxt->pDest << std::dec);
-      INFO("Cache lines in each buffer="  << std::dec << pVAFU2_cntxt->num_cl <<
-           " (bytes="       << std::dec << pVAFU2_cntxt->num_cl * CL(1) <<
-           " 0x"            << std::hex << pVAFU2_cntxt->num_cl * CL(1) << std::dec << ")");
+      MSG("VAFU2 Context=" << std::hex << (void *)pVAFU2_cntxt <<
+          " Src="          << std::hex << (void *)pVAFU2_cntxt->pSource <<
+          " Dest="         << std::hex << (void *)pVAFU2_cntxt->pDest << std::dec);
+      MSG("Cache lines in each buffer="  << std::dec << pVAFU2_cntxt->num_cl <<
+          " (bytes="       << std::dec << pVAFU2_cntxt->num_cl * CL(1) <<
+          " 0x"            << std::hex << pVAFU2_cntxt->num_cl * CL(1) << std::dec << ")");
 
       // Init the src/dest buffers, based on the desired sequence (either fixed or random).
-      INFO("Initializing buffers with fixed data pattern. (src=0xafafafaf dest=0xbebebebe)");
+      MSG("Initializing buffers with fixed data pattern. (src=0xafafafaf dest=0xbebebebe)");
 
       ::memset( pSource, 0xAF, a_num_bytes );
       ::memset( pDest,   0xBE, a_num_bytes );
@@ -441,7 +445,7 @@ btInt HelloSPLLBApp::run()
       // Acquire the AFU. Once acquired in a TransactionContext, can issue CSR Writes and access DSM.
       // Provide a workspace and so also start the task.
       // The VAFU2 Context is assumed to be at the start of the workspace.
-      INFO("Starting SPL Transaction with Workspace");
+      MSG("Starting SPL Transaction with Workspace");
       m_SPLService->StartTransactionContext(TransactionID(), pWSUsrVirt, 100);
       m_Sem.Wait();
 
@@ -469,10 +473,10 @@ btInt HelloSPLLBApp::run()
      // Stop the AFU
 
      // Issue Stop Transaction and wait for OnTransactionStopped
-     INFO("Stopping SPL Transaction");
+     MSG("Stopping SPL Transaction");
      m_SPLService->StopTransactionContext(TransactionID());
      m_Sem.Wait();
-     INFO("SPL Transaction complete");
+     MSG("SPL Transaction complete");
 
      ////////////////////////////////////////////////////////////////////////////
      // Check the buffers to make sure they copied okay
@@ -484,7 +488,7 @@ btInt HelloSPLLBApp::run()
      btUnsigned32bitInt   tCacheLine[16];   // Temporary cacheline for various purposes
      CASSERT( sizeof(tCacheLine) == CL(1) );
 
-     INFO("Verifying buffers in workspace");
+     MSG("Verifying buffers in workspace");
 
      // Verify 1) that the source buffer was not corrupted and
      //        2) that the dest buffer contains the source buffer contents.
@@ -517,7 +521,7 @@ btInt HelloSPLLBApp::run()
 
    ////////////////////////////////////////////////////////////////////////////
    // Clean up and exit
-   INFO("Workspace verification complete, freeing workspace.");
+   MSG("Workspace verification complete, freeing workspace.");
    m_SPLService->WorkspaceFree(m_pWkspcVirt, TransactionID());
    m_Sem.Wait();
 
@@ -584,7 +588,7 @@ void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
    m_pWkspcVirt = WkspcVirt;
    m_WkspcSize = WkspcSize;
 
-   INFO("Got Workspace");         // Got workspace so unblock the Run() thread
+   MSG("Got Workspace");         // Got workspace so unblock the Run() thread
    m_Sem.Post(1);
 }
 
@@ -599,7 +603,7 @@ void HelloSPLLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 
 void HelloSPLLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
-   ERR("OnWorkspaceFreed");
+   MSG("OnWorkspaceFreed");
    // Freed so now Release() the Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
 }
@@ -618,7 +622,7 @@ void HelloSPLLBApp::OnTransactionStarted( TransactionID const &TranID,
                                    btVirtAddr           AFUDSMVirt,
                                    btWSSize             AFUDSMSize)
 {
-   INFO("Transaction Started");
+   MSG("Transaction Started");
    m_AFUDSMVirt = AFUDSMVirt;
    m_AFUDSMSize =  AFUDSMSize;
    m_Sem.Post(1);
@@ -626,15 +630,15 @@ void HelloSPLLBApp::OnTransactionStarted( TransactionID const &TranID,
 /// CMyApp Client implementation of ISPLClient::OnContextWorkspaceSet
 void HelloSPLLBApp::OnContextWorkspaceSet( TransactionID const &TranID)
 {
-   INFO("Context Set");
+   MSG("Context Set");
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionFailed
 void HelloSPLLBApp::OnTransactionFailed( const IEvent &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
-   MSG("Runtime AllocateService failed");
-   MSG(pExEvent->Description());
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
    m_bIsOK = false;
    ++m_Result;
    m_AFUDSMVirt = NULL;
@@ -647,7 +651,7 @@ void HelloSPLLBApp::OnTransactionComplete( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
-   INFO("Transaction Complete");
+   MSG("Transaction Complete");
    m_Sem.Post(1);
 }
 /// CMyApp Client implementation of ISPLClient::OnTransactionStopped
@@ -655,7 +659,7 @@ void HelloSPLLBApp::OnTransactionStopped( TransactionID const &TranID)
 {
    m_AFUDSMVirt = NULL;
    m_AFUDSMSize =  0;
-   INFO("Transaction Stopped");
+   MSG("Transaction Stopped");
    m_Sem.Post(1);
 }
 void HelloSPLLBApp::serviceEvent(const IEvent &rEvent)

@@ -327,7 +327,17 @@ HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc) :
    m_runtimeClient(rtc),
    m_NLBService(NULL),
    m_wsfreed(0),
-   m_Result(0)
+   m_Result(0),
+   m_DSMVirt(NULL),
+   m_DSMPhys(0),
+   m_DSMSize(0),
+   m_InputVirt(NULL),
+   m_InputPhys(0),
+   m_InputSize(0),
+   m_OutputVirt(NULL),
+   m_OutputPhys(0),
+   m_OutputSize(0)
+
 {
    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
@@ -398,14 +408,25 @@ btInt HelloCCINLBApp::run()
       memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
       memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
 
-      // Set DSM base, high then low
-      m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
-
-      // Assert Device Reset
-      m_NLBService->CSRWrite(CSR_CTL, 0);
 
       // Clear the DSM
       ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+
+      // Set DSM base, high then low
+      m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+
+      // Poll for AFU ID to ensure HW synchronized
+      volatile btUnsigned32bitInt csr;
+      do {
+         csr = *(volatile btUnsigned32bitInt *)m_DSMVirt;
+      }while( 0 == csr );
+
+      // Clear the DSM in case want to re-use the AFU_ID Space
+      ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+
+
+      // Assert Device Reset
+      m_NLBService->CSRWrite(CSR_CTL, 0);
 
       // De-assert Device Reset
       m_NLBService->CSRWrite(CSR_CTL, 1);
@@ -422,10 +443,8 @@ btInt HelloCCINLBApp::run()
       // Set the test mode
       m_NLBService->CSRWrite(CSR_CFG, 0);
 
-
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                          (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);
-
       // Start the test
       m_NLBService->CSRWrite(CSR_CTL, 3);
 
@@ -561,7 +580,7 @@ void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 
 void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
-   ERR("OnWorkspaceFreed");
+   MSG("OnWorkspaceFreed");
    if(++m_wsfreed == 3){
       // Freed all three so now Release() the Service through the Services IAALService::Release() method
       (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
