@@ -415,14 +415,10 @@ btInt HelloCCINLBApp::run()
       // Set DSM base, high then low
       m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
 
-      // Poll for AFU ID to ensure HW synchronized
-      volatile btUnsigned32bitInt csr;
-      do {
-         csr = *(volatile btUnsigned32bitInt *)m_DSMVirt;
-      }while( 0 == csr );
-
-      // Clear the DSM in case want to re-use the AFU_ID Space
-      ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+      // If ASE, give it some time to catch up
+      #if defined ( ASEAFU )
+      Sleep(5);
+      #endif /* ASE AFU */
 
 
       // Assert Device Reset
@@ -538,14 +534,14 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          m_DSMVirt = WkspcVirt;
          m_DSMPhys = WkspcPhys;
          m_DSMSize = WkspcSize;
-         INFO("Got DSM");
+         MSG("Got DSM");
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
          m_InputPhys = WkspcPhys;
          m_InputSize = WkspcSize;
-         INFO("Got Input Workspace");
+         MSG("Got Input Workspace");
 
          // Now get Output workspace
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_OUT));
@@ -555,7 +551,7 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          m_OutputPhys = WkspcPhys;
          m_OutputSize = WkspcSize;
 
-         INFO("Got Output Workspace");
+         MSG("Got Output Workspace");
 
          // Got all workspaces so unblock the Run() thread
          m_Sem.Post(1);
