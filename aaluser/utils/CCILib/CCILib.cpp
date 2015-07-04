@@ -68,12 +68,11 @@ public:
       va_list va_l;
       va_start(va_l, fmt);
 
-      m_MtxCout.Lock();
-
-      ::vsnprintf(m_pCoutBuf, m_CoutBufSize, fmt, va_l);
-      std::cout << m_pCoutBuf;
-
-      m_MtxCout.Unlock();
+      {
+         AutoLock(&m_MtxCout);
+         ::vsnprintf(m_pCoutBuf, m_CoutBufSize, fmt, va_l);
+         std::cout << m_pCoutBuf;
+      }
 
       va_end(va_l);
    }
@@ -90,12 +89,9 @@ public:
 
    virtual void Log(const char *fmt, va_list &va_l) throw()
    {
-      m_MtxCout.Lock();
-
+      AutoLock(&m_MtxCout);
       ::vsnprintf(m_pCoutBuf, m_CoutBufSize, fmt, va_l);
       m_pLogger->Log(m_LogLvl, m_pLogger->GetOss(m_LogLvl) << m_pCoutBuf);
-
-      m_MtxCout.Unlock();
    }
 
    virtual void Trace(const char *fmt, ...) throw()
@@ -110,12 +106,9 @@ public:
 
    virtual void Trace(const char *fmt, va_list &va_l) throw()
    {
-      m_MtxCerr.Lock();
-
+      AutoLock(&m_MtxCerr);
       ::vsnprintf(m_pCerrBuf, m_CerrBufSize, fmt, va_l);
       m_pLogger->Log(m_TraceLvl, m_pLogger->GetOss(m_TraceLvl) << m_pCerrBuf);
-
-      m_MtxCerr.Unlock();
    }
 
    virtual int GetLogLevel() const throw() { return m_LogLvl; }
@@ -188,7 +181,7 @@ CriticalSection       COutputSynchronizer::sm_SingletonMtx;
 
 IOutputSynchronizer * COutputSynchronizer::GetInstance() throw()
 {
-   COutputSynchronizer::sm_SingletonMtx.Lock();
+   AutoLock(&COutputSynchronizer::sm_SingletonMtx);
 
    if ( NULL == COutputSynchronizer::sm_pInstance ) {
       COutputSynchronizer::sm_pInstance =
@@ -197,21 +190,17 @@ IOutputSynchronizer * COutputSynchronizer::GetInstance() throw()
 
    IOutputSynchronizer *pSync = COutputSynchronizer::sm_pInstance;
 
-   COutputSynchronizer::sm_SingletonMtx.Unlock();
-
    return pSync;
 }
 
 void COutputSynchronizer::DestroyInstance() throw()
 {
-   COutputSynchronizer::sm_SingletonMtx.Lock();
+   AutoLock(&COutputSynchronizer::sm_SingletonMtx);
 
    if ( COutputSynchronizer::sm_pInstance != NULL ) {
       delete COutputSynchronizer::sm_pInstance;
       COutputSynchronizer::sm_pInstance = NULL;
    }
-
-   COutputSynchronizer::sm_SingletonMtx.Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -500,6 +489,7 @@ public:
 
 protected:
    CCCIDeviceFactory(std::string AFUTarget) throw() :
+      m_AALRuntime(this),
       m_AFUTarget(AFUTarget)
    {
       SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
@@ -511,12 +501,12 @@ protected:
          args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
       } else {
          NamedValueSet ConfigRecord;
-         ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-         args.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+         ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+         args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
       }
 
       TRACE(GetSynchronizer(), TR_INFO, "Starting the AAL Runtime\n");
-      if ( m_AALRuntime.start(this, args) ) {
+      if ( m_AALRuntime.start(args) ) {
          Wait(); // For Runtime Started notification.
 
          if ( !IsOK() ) {
@@ -544,9 +534,10 @@ protected:
          return NULL;
       }
 
-      Lock();
-      m_DevList.push_back(pDev);
-      Unlock();
+      {
+         AutoLock(this);
+         m_DevList.push_back(pDev);
+      }
 
       return pDev;
    }
@@ -582,7 +573,8 @@ protected:
    void OnServiceAllocated(IBase               *pServiceBase,
                            TransactionID const &tid);
    void OnServiceAllocateFailed(const IEvent &e);
-   void OnServiceFreed(TransactionID const &tid);
+   void OnServiceReleaseFailed(const IEvent &e);
+   void OnServiceReleased(TransactionID const &tid);
    void OnServiceEvent(const IEvent &e);
 
    void      OnWorkspaceAllocated(TransactionID const &TranID,
@@ -650,9 +642,15 @@ void CCCIDeviceFactory::OnServiceAllocateFailed(const IEvent &e)
    LOG(GetSynchronizer(), LOG_ERR, "Service Allocate Failed\n");
 }
 
-void CCCIDeviceFactory::OnServiceFreed(TransactionID const &tid)
+void CCCIDeviceFactory::OnServiceReleased(TransactionID const &tid)
 {
    TRACE(GetSynchronizer(), TR_INFO, "Service Freed\n");
+}
+
+void CCCIDeviceFactory::OnServiceReleaseFailed(const IEvent &e)
+{
+   m_bIsOK = false;
+   LOG(GetSynchronizer(), LOG_ERR, "Runtime Start Failed\n");
 }
 
 void CCCIDeviceFactory::OnServiceEvent(const IEvent &e)

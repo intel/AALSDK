@@ -24,48 +24,78 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLResourceManagerClient.h
-/// @brief XLResourceManagerClient - Public Interface to ResourceManagerClient
-/// @ingroup ResMgr
+/// @file _MessageDelivery.h
+/// @brief Definitions for the AAL Runtime internal default Message Delivery facility.
+/// @ingroup MDS
+///
+/// The Message Delivery is designed as a pluggable AAL Service even
+/// though it is a built-in. This makes for a more consistent model
+/// and provides for some desirable functionality like IBase.
+///
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHOR: Joseph Grecco, Intel Corporation.
-///          
+/// AUTHORS: Joseph Grecco, Intel Corporation
+///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 08/20/2014     JG       Initial version started@endverbatim
+/// 03/13/2014     JG       Initial version@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_XL_AASRESOURCEMANAGERCLIENT_H__
-#define __AALSDK_XL_AASRESOURCEMANAGERCLIENT_H__
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/kernel/aalrm_client.h>
+#ifndef __MessageDelivery_H__
+#define __MessageDelivery_H__
+#include <aalsdk/AALTypes.h>
+#include <aalsdk/AALIDDefs.h>
+#include <aalsdk/eds/AASEventDeliveryService.h>
+#include <aalsdk/aas/AALService.h>
+#include <aalsdk/osal/ThreadGroup.h>
+//#include <aalsdk/osal/OSServiceModule.h>
+
+/// @addtogroup MDS
+/// @{
 
 BEGIN_NAMESPACE(AAL)
 
+class _MessageDelivery;
 
 //=============================================================================
-// Constants and Events for methods in IResourceManagerClientService
+// Name: _MessageDelivery
+// Description: Default message delivery facility
+// Interface: IEventDeliveryService
+// Comments:  This object is operational and meets its minimum functional
+//            requirements pior to init()
 //=============================================================================
-
-//=============================================================================
-// Name: IResourceManagerClient
-// Description: Interface implemented by Resource Manager Clients
-//=============================================================================
-class XLRESOURCEMANAGERCLIENT_API IResourceManagerClient
+class _MessageDelivery :// public ServiceBase,
+                         public CAASBase,
+                         public IMessageDeliveryService
 {
 public:
-   virtual ~IResourceManagerClient(){};
+   // Loadable Service
 
-   virtual void resourceAllocated( NamedValueSet const &nvsInstancerecord,
-                                   TransactionID const &tid ) = 0;
-   virtual void resourceRequestFailed( NamedValueSet const &nvsManifest,
-                                       const IEvent &rEvent ) = 0;
-   virtual void resourceManagerException( const IEvent &rEvent ) = 0;
+   _MessageDelivery() : m_Dispatcher()
+   {
+      // Default is a simple single threaded scheduler.
+       SetSubClassInterface(iidMDS,
+                            dynamic_cast<IMessageDeliveryService *>(this));
+   }
 
+   //
+   // IMessageDeliveryService
+   EDS_Status Schedule();
+
+   void StartMessageDelivery();
+   void StopMessageDelivery();
+
+   btBool scheduleMessage( IDispatchable *);
+
+   ~_MessageDelivery();
+
+protected:
+   OSLThreadGroup m_Dispatcher;
 };
+
 
 END_NAMESPACE(AAL)
 
-#endif // __AALSDK_XL_AASRESOURCEMANAGERCLIENT_H__
+/// @} group MDS
 
+#endif // __MessageDelivery_H__

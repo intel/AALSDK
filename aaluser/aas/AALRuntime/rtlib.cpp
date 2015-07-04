@@ -24,24 +24,23 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: xlrtlib.cpp
+//        FILE: rtlib.cpp
 //     CREATED: Feb 28, 2014
 //      AUTHOR: Joseph Grecco
 //
-// PURPOSE: This file contains the top level implementation of the XL Runtime
+// PURPOSE: This file contains the top level implementation of the AAL Runtime
 //          library.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
+// 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALDefs.h"
-#include "aalsdk/aas/XLRuntimeModule.h"
-#include "aalsdk/xlrtlib.h"
-
+#include "aalsdk/aas/AALRuntimeModule.h"
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)
@@ -60,7 +59,7 @@
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-AAL_BEGIN_MOD(libxlrt, XLRT_API, XLRT_VERSION, XLRT_VERSION_CURRENT, XLRT_VERSION_REVISION, XLRT_VERSION_AGE)
+AAL_BEGIN_MOD(libAALRUNTIME, AALRUNTIME_API, AALRUNTIME_VERSION, AALRUNTIME_VERSION_CURRENT, AALRUNTIME_VERSION_REVISION, AALRUNTIME_VERSION_AGE)
    // Only default commands for now.
 AAL_END_MOD()
 

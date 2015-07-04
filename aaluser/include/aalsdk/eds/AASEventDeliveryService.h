@@ -99,13 +99,13 @@ public:
    /// IEventDeliveryService Destructor.
    virtual ~IEventDeliveryService() {}
 
-   virtual EDS_Status        Schedule()  = 0;
+ //  virtual EDS_Status        Schedule()  = 0;
 
-   virtual void               Unblock()  = 0;
+//   virtual void               Unblock()  = 0;
 
    virtual void    StartEventDelivery()  = 0;
    virtual void     StopEventDelivery()  = 0;
-
+#if 0
    virtual btBool QueueEvent(btEventHandler ,
                            CAALEvent * ) = 0;
 
@@ -113,15 +113,27 @@ public:
    /// @param CAALEvent Pointer to Event
    virtual btBool QueueEvent(btObjectType ,
                              CAALEvent * ) = 0;
-
-   virtual btBool QueueEvent( btObjectType parm,
-                              IDispatchable *)       = 0;
+#endif
+   virtual btBool scheduleWork( IDispatchable *)       = 0;
 
    /// Retrieve the IEventDispatcher interface.
-   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
+//   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
 };
 
 /// @} group EDS
+
+/// Interface for the Event Delivery System Service.
+class AASEDS_API IMessageDeliveryService
+{
+public:
+   /// IEventDeliveryService Destructor.
+   virtual ~IMessageDeliveryService() {}
+
+   virtual void   StartMessageDelivery()  = 0;
+   virtual void   StopMessageDelivery()  = 0;
+
+   virtual btBool scheduleMessage( IDispatchable *) = 0;
+};
 
 END_NAMESPACE(AAL)
 

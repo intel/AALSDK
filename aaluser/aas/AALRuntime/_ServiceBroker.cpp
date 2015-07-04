@@ -24,14 +24,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: _xlServiceBroker.cpp
+//        FILE: _ServiceBroker.cpp
 //     CREATED: Mar 14, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Implements the XL default Service Broker.
+// PURPOSE:   Implements the AAL default Service Broker.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
+// 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -42,21 +43,21 @@
 
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/aas/XLRuntimeMessages.h"
+#include "aalsdk/Dispatchables.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
-#include "_xlServiceBroker.h"
-#include "aalsdk/aas/XLRuntimeModule.h"
+#include "_ServiceBroker.h"
+#include "aalsdk/aas/AALRuntimeModule.h"
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_xlServiceBroker >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::_ServiceBroker >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, localServiceBroker, XLRT_API, XLRT_VERSION, XLRT_VERSION_CURRENT, XLRT_VERSION_REVISION, XLRT_VERSION_AGE)
+AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, localServiceBroker, AALRUNTIME_API, AALRUNTIME_VERSION, AALRUNTIME_VERSION_CURRENT, AALRUNTIME_VERSION_REVISION, AALRUNTIME_VERSION_AGE)
    // Only default service commands for now.
 AAL_END_SVC_MOD()
 
@@ -78,13 +79,13 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void _xlServiceBroker::init(TransactionID const &rtid)
+void _ServiceBroker::init(TransactionID const &rtid)
 {
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
-                                         Client(),
-                                         dynamic_cast<IBase*>(this),
-                                         rtid));
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
+                                                           Client(),
+                                                           dynamic_cast<IBase*>(this),
+                                                           rtid));
 }
 
 //=============================================================================
@@ -94,24 +95,25 @@ void _xlServiceBroker::init(TransactionID const &rtid)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void _xlServiceBroker::allocService(IBase                   *pClient,
-                                    const NamedValueSet     &rManifest,
-                                    TransactionID const     &rTranID,
-                                    IRuntime::eAllocatemode  mode)
+void _ServiceBroker::allocService(IRuntime               *pProxy,
+                                  IRuntimeClient         *pRuntimeClient,
+                                  IBase                  *pServiceClientBase,
+                                  const NamedValueSet     &rManifest,
+                                  TransactionID const     &rTranID)
 {
    // Process the manifest
-   btcString            sName  = NULL;
-   NamedValueSet const *ConfigRecord;
+   btcString             sName  = NULL;
+   INamedValueSet const *ConfigRecord = NULL;
 
-   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pClient);
-   if ( NULL == pServiceClient ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    NULL,
-                                                    NULL,
-                                                    rTranID,
-                                                    errAllocationFailure,
-                                                    reasMissingInterface,
-                                                    strMissingInterface));
+   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
+   if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errAllocationFailure,
+                                                                      reasMissingInterface,
+                                                                      strMissingInterface));
    }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
@@ -124,35 +126,40 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
 
    ServiceHost *SvcHost = NULL;
    if ( NULL == (SvcHost = findServiceHost(sName)) ) {
-      // Instantiate the core facilities - If the allocation should not inform the Runtime Vl
-      SvcHost = new ServiceHost(sName, getRuntime(),getRuntimeServiceProvider());
+      // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
+      SvcHost = new ServiceHost(sName);
    }
 
    if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to load Service"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to load Service"));
       return;
    }
 
    // Allocate the service
-   if ( !SvcHost->allocService(pClient, rManifest, rTranID, mode) ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    pServiceClient,
-                                                    NULL,
-                                                    rTranID,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to construct Service"));
+
+   // Save the ServiceHost.  Do it now before the Service generates the serviceAllocated.
+   //  If it fails remove it
+   m_ServiceMap[std::string(sName)] = SvcHost;
+
+   if ( !SvcHost->InstantiateService(pProxy, pServiceClientBase, rManifest, rTranID) ) {
+      m_ServiceMap.erase(std::string(sName));
+      delete SvcHost;
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to construct Service"));
       return;
    }
 
-   // Save the ServiceHost
-   m_ServiceMap[std::string(sName)] = SvcHost;
 }
 
 
@@ -162,7 +169,7 @@ void _xlServiceBroker::allocService(IBase                   *pClient,
 // Interface: public
 // Comments:
 //=============================================================================
-ServiceHost *_xlServiceBroker::findServiceHost(std::string const &sName)
+ServiceHost *_ServiceBroker::findServiceHost(std::string const &sName)
 {
    Servicemap_itr itr = m_ServiceMap.find(sName);
    if ( itr == m_ServiceMap.end() ) {
@@ -194,7 +201,7 @@ ServiceHost *_xlServiceBroker::findServiceHost(std::string const &sName)
 
 struct shutdown_thread_parms
 {
-   shutdown_thread_parms(_xlServiceBroker    *pfact,
+   shutdown_thread_parms(_ServiceBroker    *pfact,
                          TransactionID const &rTranID,
                          btTime               timeout) :
       m_this(pfact),
@@ -202,7 +209,7 @@ struct shutdown_thread_parms
       m_timeout(timeout)
    {}
 
-   _xlServiceBroker *m_this;
+   _ServiceBroker *m_this;
    TransactionID     m_rTranID;
    btTime            m_timeout;
 };
@@ -212,7 +219,7 @@ struct shutdown_thread_parms
 // Interface: public
 // Comments:
 //=============================================================================
-btBool _xlServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
+btBool _ServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 {
    struct shutdown_thread_parms *pparms =
                                     new struct shutdown_thread_parms(this,
@@ -228,11 +235,13 @@ btBool _xlServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 
    // Important to Lock here and in thread to ensure that the assignment
    //  is complete before thread runs.
-   Lock();
-   m_pShutdownThread = new OSLThread(_xlServiceBroker::ShutdownThread,
-                                     OSLThread::THREADPRIORITY_NORMAL,
-                                     pparms);
-   Unlock();
+   {
+      AutoLock(this);
+      m_pShutdownThread = new OSLThread(_ServiceBroker::ShutdownThread,
+                                        OSLThread::THREADPRIORITY_NORMAL,
+                                        pparms);
+   }
+
    return true;
 }
 
@@ -246,24 +255,23 @@ btBool _xlServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _xlServiceBroker::ShutdownThread(OSLThread *pThread,
+void _ServiceBroker::ShutdownThread(OSLThread *pThread,
                                       void      *pContext)
 {
    //Get a pointer to this objects context
    struct shutdown_thread_parms *pparms = static_cast<struct shutdown_thread_parms *>(pContext);
-   _xlServiceBroker             *This   = static_cast<_xlServiceBroker *>(pparms->m_this);
+   _ServiceBroker             *This   = static_cast<_ServiceBroker *>(pparms->m_this);
 
    This->DoShutdown(pparms->m_rTranID, pparms->m_timeout);
 
    // Destroy the thread and parms
    delete pparms;
 
-   This->ServiceBase::Release(pparms->m_timeout);
 }
 
 struct shutdown_handler_thread_parms
 {
-shutdown_handler_thread_parms(_xlServiceBroker *pfact,
+shutdown_handler_thread_parms(_ServiceBroker *pfact,
                               ServiceHost      *pSvcHost,
                               CSemaphore       &srvcCount,
                               btTime            timeout) :
@@ -273,7 +281,7 @@ shutdown_handler_thread_parms(_xlServiceBroker *pfact,
    m_srvcCount(srvcCount)
 {}
 
-   _xlServiceBroker *m_this;
+   _ServiceBroker *m_this;
    ServiceHost      *m_pSvcHost;
    btTime            m_timeout;
    CSemaphore       &m_srvcCount;
@@ -291,7 +299,7 @@ shutdown_handler_thread_parms(_xlServiceBroker *pfact,
 //                m_SrvcPkgMap, with asynchronous returns. Need timeouts to
 //                enable recovery in the case of one of them hanging.
 //=============================================================================
-btBool _xlServiceBroker::DoShutdown(TransactionID const &rTranID,
+btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                     btTime               timeout)
 {
    CSemaphore     srvcCount;
@@ -322,57 +330,52 @@ btBool _xlServiceBroker::DoShutdown(TransactionID const &rTranID,
          // Shutdown done in parallel so each gets same max-time
          //   assume 0 time start so no timeout adjust performed
 
-         // DEBUG_CERR("_xlServiceBroker::DoShutdown - calling IServiceModule->Shutdown()\n");
-
          // Technically should join on these threads
-         new OSLThread(_xlServiceBroker::ShutdownHandlerThread,
+         new OSLThread(_ServiceBroker::ShutdownHandlerThread,
                        OSLThread::THREADPRIORITY_NORMAL,
                        new shutdown_handler_thread_parms(this, (*itr).second, srvcCount, timeout));
 
-         // DEBUG_CERR("_xlServiceBroker::DoShutdown - returned from IServiceModule->Shutdown()\n");
       }
    }
 
    srvcCount.Wait(timeout);
-   Lock();
 
-   //------------------------------------------
-   // Send an event to the system event handler
-   //------------------------------------------
-   if ( m_servicecount > 0 ) {
-      // Timed out - Shutdown did not succeed
-      QueueAASEvent(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                   exttranevtServiceShutdown,
-                                                   rTranID,
-                                                   errSystemTimeout,
-                                                   reasSystemTimeout,
-                                                   const_cast<btString>(strSystemTimeout)));
-      Unlock();
-   } else {
-      // Generate the event - Note that CObjectDestroyedTransactionEvent will work as well
-      SendMsg(new ServiceClientMessage(Client(),
-                                       this,
-                                       ServiceClientMessage::Freed,
-                                       rTranID));
+   {
+      AutoLock(this);
+      //------------------------------------------
+      // Send an event to the system event handler
+      //------------------------------------------
+      if ( m_servicecount > 0 ) {
+         // Timed out - Shutdown did not succeed
+         getRuntime()->schedDispatchable(new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                        exttranevtServiceShutdown,
+                                                                        rTranID,
+                                                                        errSystemTimeout,
+                                                                        reasSystemTimeout,
+                                                                        const_cast<btString>(strSystemTimeout)));
+      } else {
+         // Generate the callback and finish the cleanup (performed in the Dispatchable)
+         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                                   Client(),
+                                                                   this,
+                                                                   rTranID));
 
-      // Clear the map now
-      m_ServiceMap.clear();
-
-      // Unlock before Release as that Destroys "this"
-      Unlock();
-      return true;
+         // Clear the map now
+         m_ServiceMap.clear();
+         return true;
+      }
    }
 
    return false;
-}  // _xlServiceBroker::DoShutdown
+}  // _ServiceBroker::DoShutdown
 
-void _xlServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
+void _ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
                                              void      *pContext)
 {
    //Get a pointer to this objects context
    struct shutdown_handler_thread_parms *pparms =
             static_cast<struct shutdown_handler_thread_parms *>(pContext);
-   _xlServiceBroker *This = static_cast<_xlServiceBroker *>(pparms->m_this);
+   _ServiceBroker *This = static_cast<_ServiceBroker *>(pparms->m_this);
 
    This->ShutdownHandler(pparms->m_pSvcHost, pparms->m_srvcCount);
 
@@ -384,39 +387,38 @@ void _xlServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
 // Name: ShutdownHandler
 // Description: Services shutdown complete events
 //=============================================================================
-void _xlServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
+void _ServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
 {
    // get second ptr
    IServiceModule *pProvider = pSvcHost->getProvider();
 
    pProvider->Destroy();
 
-   Lock();
+   {
+      AutoLock(this);
+      // Delete the service which unloads the plug-in (e.g.,so or dll)
+      // DEBUG_CERR("_ServiceBroker::ShutdownHandler: pLibrary = " << (void *)( pProvider ) << endl);
 
-   // Delete the service which unloads the plug-in (e.g.,so or dll)
-   // DEBUG_CERR("_xlServiceBroker::ShutdownHandler: pLibrary = " << (void *)( pProvider ) << endl);
-
-   delete pSvcHost;
-   m_servicecount--;
-   cnt.Post(1);
-
-   Unlock();
+      delete pSvcHost;
+      m_servicecount--;
+      cnt.Post(1);
+   }
 }
 
  // Quiet Release. Used when Service is unloaded.
- btBool _xlServiceBroker::Release(btTime timeout)
+ btBool _ServiceBroker::Release(btTime timeout)
  {
     return ServiceBase::Release(timeout);
  }
 
 
  //=============================================================================
- // Name: ~_xlServiceBroker
+ // Name: ~_ServiceBroker
  // Description: Destructor
  // Interface: public
  // Comments:
  //=============================================================================
- _xlServiceBroker::~_xlServiceBroker()
+ _ServiceBroker::~_ServiceBroker()
  {
 
  }

@@ -10,27 +10,17 @@ clean-local:
 	@$(RM) $(top_builddir)/dist-file-list
 
 
-# SUBDIRS=
-# aas/OSAL 
-# aas/AASLib 
-# aas/XLRTLib 
-# aas/XLRRMBrokerService 
-# aas/AASRegistrar 
-# aas/uAIA 
-# aas/AASResourceManager 
-# ase/sw 
-# clp 
-# utils 
-# tests
-
 SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
-aas/XLRTLib \
-aas/XLRRMBrokerService \
+aas/AALRuntime \
+aas/RRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
 aas/AASResourceManager \
+ase/sw \
+clp \
+utils \
 tests
 
 aalsdkhdrsdir=$(includedir)/aalsdk
@@ -51,7 +41,6 @@ utilshdrsdir=$(aalsdkhdrsdir)/utils
 
 aalsdkhdrs_HEADERS=\
 include/aalsdk/AALBase.h \
-include/aalsdk/AALCNamedValueSet.h \
 include/aalsdk/_AALDefs.h \
 include/aalsdk/AALDefs.h \
 include/aalsdk/AALEvent.h \
@@ -75,16 +64,17 @@ include/aalsdk/CAALBase.h \
 include/aalsdk/CAALEvent.h \
 include/aalsdk/CAALLogger.h \
 include/aalsdk/CCountedObject.h \
+include/aalsdk/INamedValueSet.h \
 include/aalsdk/INTCDefs.h \
 include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
-include/aalsdk/xlrtlib.h \
-include/aalsdk/xlRuntime.h \
+include/aalsdk/Dispatchables.h \
+include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
-include/aalsdk/IMessageHandler.h 
+include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
 include/aalsdk/aas/AALDeviceService.h \
@@ -94,9 +84,7 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
-include/aalsdk/aas/ServiceHost.h \
-include/aalsdk/aas/_xlRuntimeServices.h \
-include/aalsdk/aas/XLRuntimeMessages.h
+include/aalsdk/aas/ServiceHost.h 
 
 aalclphdrs_HEADERS=\
 include/aalsdk/aalclp/aalclp.h
@@ -146,6 +134,7 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
+include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
@@ -159,6 +148,7 @@ include/aalsdk/osal/DynLinkLibrary.h \
 include/aalsdk/osal/Env.h \
 include/aalsdk/osal/OSALService.h \
 include/aalsdk/osal/OSSemaphore.h \
+include/aalsdk/osal/Barrier.h \
 include/aalsdk/osal/OSServiceModule.h \
 include/aalsdk/osal/Sleep.h \
 include/aalsdk/osal/ThreadGroup.h \
@@ -174,9 +164,9 @@ include/aalsdk/registrar/RegDBProxy.h \
 include/aalsdk/registrar/RegDBStub.h
 
 rmhdrs_HEADERS=\
-include/aalsdk/rm/XLResourceManager.h \
-include/aalsdk/rm/XLResourceManagerClient.h \
-include/aalsdk/rm/XLResourceManagerProxy.h \
+include/aalsdk/rm/AALResourceManager.h \
+include/aalsdk/rm/AALResourceManagerClient.h \
+include/aalsdk/rm/AALResourceManagerProxy.h \
 include/aalsdk/rm/CAASResourceManager.h \
 include/aalsdk/rm/CRegistrarDatabase.h \
 include/aalsdk/rm/InstanceRecord.h \
@@ -256,6 +246,7 @@ ase/sw/linked_list_ops.c \
 ase/sw/capcm_ops.c \
 ase/sw/ase_common.h \
 ase/sw/protocol_backend.c \
+ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
 ase/Makefile \
@@ -268,13 +259,13 @@ ase/hw/sdp_ram.sv \
 ase/hw/cci_emulator.sv \
 ase/hw/latency_scoreboard.sv \
 ase/hw/ase_global.vh \
-ase/hw/cci_rule_checker.sv \
-ase/scripts/run_ase_automated.py \
-ase/scripts/gen_afu_env.py \
+ase/hw/cci_sniffer.sv \
+ase/hw/stream_checker.sv \
+ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
 ase/scripts/ase_setup.csh \
 ase/scripts/ase_functions.py \
-ase/scripts/ase_ipc_clean.py \
+ase/scripts/ipc_clean.py \
 ase/README
 
 CLP_EXTRA=\

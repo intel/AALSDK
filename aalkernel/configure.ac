@@ -78,11 +78,11 @@ AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
 dnl ############################################################################
 dnl ## Module Versioning #######################################################
 dnl ############################################################################
-AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [4],[1],[0])
-AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [4],[1],[0])
-AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[1],[0])
-AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[1],[0])
-AALKERNEL_DRIVER_VERSION([SPL2PIP],  [spl2pip],  [4],[1],[0])
+AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([SPL2PIP],  [spl2pip],  [4],[2],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################

@@ -58,16 +58,16 @@
 //=============================================================================
 
 #ifndef HELLOAALSERVICE_VERSION_CURRENT
-# define HELLOAALSERVICE_VERSION_CURRENT  0
+# define HELLOAALSERVICE_VERSION_CURRENT  4
 #endif // HELLOAALSERVICE_VERSION_CURRENT
 #ifndef HELLOAALSERVICE_VERSION_REVISION
-# define HELLOAALSERVICE_VERSION_REVISION 0
+# define HELLOAALSERVICE_VERSION_REVISION 2
 #endif // HELLOAALSERVICE_VERSION_REVISION
 #ifndef HELLOAALSERVICE_VERSION_AGE
 # define HELLOAALSERVICE_VERSION_AGE      0
 #endif // HELLOAALSERVICE_VERSION_AGE
 #ifndef HELLOAALSERVICE_VERSION
-# define HELLOAALSERVICE_VERSION          "0.0.0"
+# define HELLOAALSERVICE_VERSION          "4.2.0"
 #endif // HELLOAALSERVICE_VERSION
 
 #if defined ( __AAL_WINDOWS__ )
@@ -132,20 +132,20 @@ void HelloAALService::init(TransactionID const &TranID)
    ASSERT( NULL != m_pClient ); //QUEUE object failed
    if(NULL == m_pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish IHelloAALClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish IHelloAALClient Interface"));
       return;
    }
 
-   QueueAASEvent(new ObjectCreatedEvent( getRuntimeClient(),
-                                         Client(),
-                                         dynamic_cast<IBase *>(this),
-                                         TranID) );
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
+                                                           Client(),
+                                                           dynamic_cast<IBase *>(this),
+                                                           TranID) );
 }
 
 //=============================================================================
@@ -162,7 +162,7 @@ void HelloAALService::Hello(btcString sMessage, TransactionID const &rTranID)
    AutoLock(this);
 
    MSG("Received a hello from '"<< sMessage << "'. Saying hello back.");
-   SendMsg(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
+   getRuntime()->schedDispatchable(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
 
 }
 

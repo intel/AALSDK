@@ -356,7 +356,7 @@ eReg CRegistrarDatabase::LoadFromDisk(struct dirent **pNameList, int nNameList)
          insertRetVal = m_pdbrMap->insert( std::pair<DatabaseKey_t, DBRec>(dbKey, DBRecNil) );
 
          if (insertRetVal.second) {
-            ENamedValues eretval = NVSReadNVS (instream, &(*insertRetVal.first).second.m_nvs); // read the NVS
+            ENamedValues eretval = (*insertRetVal.first).second.m_nvs.Read(instream); // read the NVS
             if (eretval != ENamedValuesOK) {       // if got a bad nvs, remove it from the map
                m_pdbrMap->erase( insertRetVal.first );
                LogReturnCode(eRegOpenCannotReadNVSRec, fName + " '" + FullFileName+ "' ", LOG_ERR);
@@ -524,7 +524,7 @@ eReg CRegistrarDatabase::FlushRecordToDisk(const dbrMap_itr_t &itr)
 
       outstream.open( FullFileName.c_str(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
       if (outstream) {
-         ENamedValues eNVRetVal = NVSWriteOneNVSToFile (outstream, (*itr).second.m_nvs, 0);   // write the nvs
+         ENamedValues eNVRetVal = (*itr).second.m_nvs.WriteOne(outstream, 0); // write the nvs
          if (!outstream || (ENamedValuesOK != eNVRetVal)) {
             // record error and do not update modified flag
             eRetVal = LogReturnCode(eRegCannotWriteOpenFile, "FlushRecordToDisk - file '" + FullFileName + "'", LOG_WARNING);

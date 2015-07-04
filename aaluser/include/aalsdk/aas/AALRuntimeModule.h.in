@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+// Copyright (c) 2013-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,17 +24,29 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: xlrtlib.h
-//     CREATED: Mar 1, 2014
-//      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
-//
-// PURPOSE: Public definitions for the XLRTLib
-// HISTORY:
-// COMMENTS:
-// WHEN:          WHO:     WHAT:
-//****************************************************************************///
-#ifndef __XLRTLIB_H__
-#define __XLRTLIB_H__
+/// @file AALRuntimeModule.h
+/// @brief AAL Service Module definitions for AALRUNTIME
+/// @ingroup OSAL
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+///
+/// AUTHORS: Joseph Grecco, Intel Corporation
+///
+/// HISTORY:
+/// WHEN:          WHO:     WHAT:
+/// 04/04/2014     JG       Initial version.@endverbatim
+//****************************************************************************
+#ifndef __AAL_RUNTIMESERVICE_H__
+#define __AAL_RUNTIMESERVICE_H__
+#include <aalsdk/osal/OSServiceModule.h>
 
+#define AALRUNTIME_SVC_MOD         "@AALRUNTIME_SVC_MOD@" AAL_SVC_MOD_EXT
+#define AALRUNTIME_SVC_ENTRY_POINT "@AALRUNTIME_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
 
-#endif /* XLRTLIB_H_ */
+#define AALRUNTIME_BEGIN_MOD() AAL_BEGIN_MOD(@AALRUNTIME_SVC_MOD@, AALRUNTIME_API, AALRUNTIME_VERSION, AALRUNTIME_VERSION_CURRENT, AALRUNTIME_VERSION_REVISION, AALRUNTIME_VERSION_AGE)
+#define AALRUNTIME_END_MOD()   AAL_END_MOD()
+
+AAL_DECLARE_MOD(@AALRUNTIME_SVC_MOD@, AALRUNTIME_API)
+
+#endif // __AAL_RUNTIMESERVICE_H__
+

@@ -34,7 +34,6 @@
 ##     11/18/2014    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-SampleBrokerService/SW \
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
 Hello_CCI_NLB/SW \

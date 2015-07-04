@@ -41,7 +41,7 @@
 #define __AALSDK_XL_CRESOURCEMANAGERPROXY_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/CUnCopyable.h>
-#include <aalsdk/rm/XLResourceManagerProxy.h>
+#include <aalsdk/rm/AALResourceManagerProxy.h>
 #include <aalsdk/osal/CriticalSection.h>
 
 #include "aalsdk/kernel/aalrm.h"             // kernel transport services

@@ -28,7 +28,7 @@
 //     CREATED: Mar 14, 2014
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Definitions for the Sample default XL Runtime Service Broker
+// PURPOSE:   Definitions for the Sample default AAL Runtime Service Broker
 //            facility.
 // HISTORY:
 // COMMENTS:

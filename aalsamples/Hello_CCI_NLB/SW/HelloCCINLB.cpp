@@ -37,7 +37,7 @@
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates the following:
-///    - The basic structure of an AAL program using the XL APIs.
+///    - The basic structure of an AAL program using the AAL APIs.
 ///    - The ICCI and ICCIClient interfaces of CCIAFU Service.
 ///    - System initialization and shutdown.
 ///    - Use of interface IDs (iids).
@@ -50,7 +50,7 @@
 /// 06/09/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
 
@@ -131,12 +131,16 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
 
    void runtimeStartFailed(const IEvent &rEvent);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
@@ -162,7 +166,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -176,13 +180,13 @@ RuntimeClient::RuntimeClient() :
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
-   //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
 #if defined( HWAFU )
-   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
 #endif
 
-   if(!m_Runtime.start(this, configArgs)){
+   if(!m_Runtime.start(configArgs)){
       m_isOK = false;
       return;
    }
@@ -199,6 +203,11 @@ btBool RuntimeClient::isOK()
    return m_isOK;
 }
 
+void RuntimeClient::runtimeCreateOrGetProxyFailed(const IEvent &rEvent)
+{
+    ERR("Runtime Create or Get Proxy failed");
+    PrintExceptionDescription(rEvent);
+}
 
 void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
                                     const NamedValueSet &rConfigParms)
@@ -224,16 +233,19 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
 
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime start failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
+}
+
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+    MSG("Runtime stop failed");
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
 
 }
 
@@ -291,6 +303,10 @@ public:
                          TransactionID const &rTranID);
 
    void serviceAllocateFailed(const IEvent &rEvent);
+
+    void serviceReleased(const AAL::TransactionID&);
+
+    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceFreed(TransactionID const &rTranID);
 
@@ -369,8 +385,9 @@ btInt HelloCCINLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-
+   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+   Manifest.Add(keyRegHandle, 20);
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
@@ -382,7 +399,7 @@ btInt HelloCCINLBApp::run()
 
 #endif
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello CCI NLB");
    MSG("Allocating Service");
 
@@ -505,20 +522,26 @@ void HelloCCINLBApp::serviceAllocated(IBase *pServiceBase,
 
 void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Failed to allocate a Service");
-   ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
 
    m_Sem.Post(1);
 }
 
-void HelloCCINLBApp::serviceFreed(TransactionID const &rTranID)
+ void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
 {
-   MSG("Service Freed");
+    MSG("Service Released");
    // Unblock Main()
    m_Sem.Post(1);
 }
+
+ void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
+ {
+    ERR("Failed to release a Service");
+    PrintExceptionDescription(rEvent);
+    m_Sem.Post(1);
+ }
 
 // <ICCIClient>
 void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
@@ -566,11 +589,10 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
 void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
-
+   PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
+
    m_Sem.Post(1);
 }
 
@@ -586,9 +608,8 @@ void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
    m_Sem.Post(1);
 }

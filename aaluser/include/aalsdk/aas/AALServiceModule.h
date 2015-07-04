@@ -61,8 +61,7 @@
 #include <aalsdk/CAALBase.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/OSSemaphore.h>
-#include <aalsdk/xlRuntime.h>
-#include <aalsdk/aas/_xlRuntimeServices.h>
+#include <aalsdk/Runtime.h>
 
 /// @addtogroup Services
 /// @{
@@ -254,22 +253,6 @@ class AASLIB_API ISvcsFact
 public:
    /// ISvcsFact Destructor.
    virtual ~ISvcsFact();
-   /// Create an instance of a Service object.
-   ///
-   /// @param[in]  container  The AALServiceModule which contains this factory.
-   /// @param[in]  eventHandler The event handler to receive the tranevtFactoryCreate event. The
-   ///   object contained within the event may be queried for the desired Service interfaces.
-   /// @param[in]  tid        TransactionID for the event.
-   /// @param[in]  context    Application-specific context for the event.
-   /// @param[in]  optArgs    Optional Service-specific arguments.
-   ///
-   /// @retval  IBase *  On success.
-   /// @retval  NULL     On failure.
-   virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       btEventHandler       eventHandler,
-                                       btApplicationContext context,
-                                       TransactionID const &rtid,
-                                       NamedValueSet const &optArgs) = 0;
 
    /// Create an instance of a Service object.
    ///
@@ -282,10 +265,10 @@ public:
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       IBase               *Client,
-                                       TransactionID const &rtid,
-                                       NamedValueSet const &optArgs,
-                                       btBool               NoRuntimeEvent) = 0;
+                                       IRuntime            *pRuntime) = 0;
+   virtual btBool InitializeService( IBase               *Client,
+                                     TransactionID const &rtid,
+                                     NamedValueSet const &optArgs) = 0;
 };
 
 
@@ -300,20 +283,6 @@ class AASLIB_API IServiceModule
 public:
    /// IServiceModule Destructor.
    virtual ~IServiceModule();
-   /// Uses ISvcsFact to create the Service object.
-   ///
-   /// @param[in]  Listener  The event handler to receive the tranevtFactoryCreate event. The
-   ///   object contained within the event may be queried for the desired Service interfaces.
-   /// @param[in]  tid       TransactionID for the event.
-   /// @param[in]  context   Application-specific context for the event.
-   /// @param[in]  optArgs   Optional Service-specific arguments.
-   ///
-   /// @retval  IBase *  On success.
-   /// @retval  NULL     On failure.
-   virtual IBase *Construct(btEventHandler       Listener,
-                            TransactionID const &tid,
-                            btApplicationContext context,
-                            NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
    /// Uses ISvcsFact to create the Service object.
     ///
@@ -324,10 +293,10 @@ public:
     ///
     /// @retval  IBase *  On success.
     /// @retval  NULL     On failure.
-    virtual IBase *Construct(IBase               *Client,
+    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
+                             IBase               *Client,
                              TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet(),
-                             btBool               NoRuntimeEvent = false) = 0;
+                             NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
    /// Forcefully destroy the Service objects created by this module.
    ///
@@ -336,9 +305,6 @@ public:
    ///  modules address space MUST be deleted.
    virtual void   Destroy() = 0;
 
-   // AAL 4.0 Service Interface (DEPRECATE) - Used for Event Queuing
-   virtual void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices) = 0;
-   virtual IXLRuntimeServices  *getRuntimeServiceProvider() = 0;
 
    virtual void setRuntime(IRuntime *pRuntime) = 0;
    virtual IRuntime  *getRuntime() = 0;
@@ -379,14 +345,10 @@ public:
 
    // <IServiceModule>
 
-   virtual IBase *Construct(btEventHandler       Listener,
-                            TransactionID const &tranID,
-                            btApplicationContext context,
-                            NamedValueSet const &optArgs = NamedValueSet());
-    virtual IBase *Construct(IBase               *Client,
+    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
+                             IBase               *Client,
                              TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet(),
-                             btBool               NoRuntimeEvent = false);
+                             NamedValueSet const &optArgs = NamedValueSet());
    virtual void Destroy();
 
    // </IServiceModule>
@@ -396,20 +358,6 @@ public:
    virtual void ServiceReleased(IBase *pService);
 
    // </IServiceModuleCallback>
-
-   // AAL 4.0 Service Interface
-   void setRuntimeServiceProvider(IXLRuntimeServices *pRuntimeServices)
-   {
-      // Lock
-      m_RuntimeServices = pRuntimeServices;
-   }
-
-   // AAL 4.0 Service Interface
-   IXLRuntimeServices  *getRuntimeServiceProvider()
-   {
-      // Lock
-      return m_RuntimeServices;
-   }
 
    void setRuntime(IRuntime *pRuntime)
    {
@@ -494,7 +442,6 @@ protected:
    IAALService                            *m_pService;
    btUnsignedInt                           m_refcount; // TODO use CCountedObject
 
-   IXLRuntimeServices                     *m_RuntimeServices;
    IRuntime                               *m_Runtime;
    IRuntimeClient                         *m_RuntimeClient;
    ISvcsFact                              &m_SvcsFact;

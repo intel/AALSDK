@@ -464,8 +464,7 @@ int CResMgr::DoRequestDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
    if (pIoctlReq->size) {   // There is a payload, so retrieve the NVS and take appropriate action
 
       // Get the Manifest from the IoctlReq
-      NamedValueSet nvsManifest;
-      NamedValueSetFromCharString( pIoctlReq->payload, pIoctlReq->size, nvsManifest);
+      NamedValueSet nvsManifest(pIoctlReq->payload, pIoctlReq->size);
 
       // Compute the Goal Records, manifest in, list of goal records out
       nvsList listGoalRecords;
@@ -497,7 +496,7 @@ int CResMgr::DoRequestDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
             delete[] pIoctlReq->payload;  // matches allocator in Get_AALRMS_Msg
 
             // Write in the new payload, which is just a serialized copy of nvsGoal
-            std::string s = StdStringFromNamedValueSet( nvsGoal);
+            std::string s(nvsGoal);
             pIoctlReq->size = s.length();
             pIoctlReq->payload = reinterpret_cast<btVirtAddr>(new btByte[pIoctlReq->size]);
             BufFromString( pIoctlReq->payload, s);

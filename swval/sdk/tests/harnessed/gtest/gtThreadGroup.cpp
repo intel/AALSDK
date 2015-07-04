@@ -648,7 +648,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0089)
    YIELD_X(10);
 
    g->Stop();
-   EXPECT_LT(0, x);
+   EXPECT_LE(0, x);
    EXPECT_EQ(0, g->GetNumWorkItems());
    EXPECT_EQ(m_MinThreads, CurrentThreads());
 
@@ -946,7 +946,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0093)
    // Seeing the Drain() completion, the Destroy() proceeds.
 
    EXPECT_TRUE(m_Sems[3].Post(1));
-   YIELD_X(10);
+   YIELD_X(20);
 
    EXPECT_TRUE(m_Sems[1].Post(1));
 
@@ -2084,9 +2084,8 @@ public:
 
    void operator() ()
    {
-      m_CS.Lock();
+      AutoLock(&m_CS);
       ++m_Counter;
-      m_CS.Unlock();
    }
 
 protected:

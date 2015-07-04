@@ -71,21 +71,21 @@ void ASECCIAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ICCIClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ICCIClient Interface"));
       return;
    }
 
   session_init();
-  QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-						      Client(),
-						      dynamic_cast<IBase *>(this),
-						      TranID) );
+  getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                                        Client(),
+                                                                        dynamic_cast<IBase *>(this),
+                                                                        TranID) );
 }
 
 btBool ASECCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -112,9 +112,10 @@ void ASECCIAFU::WorkspaceAllocate(btWSSize             Length,
 
   buf.memsize = (uint32_t)Length;
 
-  ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(&buf);
-  ASECCIAFU::sm_ASEMtx.Unlock();
+  {
+     AutoLock(&ASECCIAFU::sm_ASEMtx);
+     allocate_buffer(&buf);
+  }
 
   if ( ( ASE_BUFFER_VALID != buf.valid )   ||
        ( MAP_FAILED == (void *)buf.vbase ) ||
@@ -123,106 +124,104 @@ void ASECCIAFU::WorkspaceAllocate(btWSSize             Length,
     goto _SEND_ERR;
   }
 
-  Lock();
-  // Map the virtual address to its internal representation.
-  res = m_WkspcMap.insert(std::make_pair((btVirtAddr)buf.vbase, buf));
-  Unlock();
+  {
+     AutoLock(this);
+     // Map the virtual address to its internal representation.
+     res = m_WkspcMap.insert(std::make_pair((btVirtAddr)buf.vbase, buf));
+  }
 
   if ( !res.second ) {
     descr = "map.insert()";
     goto _SEND_ERR;
   }
 
-  SendMsg( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							 TranID,
-							 (btVirtAddr)buf.vbase,
-							 (btPhysAddr)buf.fake_paddr,
-							 (btWSSize)buf.memsize) );
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                 TranID,
+                                                                                 (btVirtAddr)buf.vbase,
+                                                                                 (btPhysAddr)buf.fake_paddr,
+                                                                                 (btWSSize)buf.memsize) );
   return;
 
  _SEND_ERR:
   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-								 TranID,
-								 errAFUWorkSpace,
-								 reasAFUNoMemory,
-								 descr);
-  SendMsg( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							      pExcept));
+                                                                 TranID,
+                                                                 errAFUWorkSpace,
+                                                                 reasAFUNoMemory,
+                                                                 descr);
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                      pExcept));
 }
 
 void ASECCIAFU::WorkspaceFree(btVirtAddr           Address,
                               TransactionID const &TranID)
 {
-  btcString descr = NULL;
+   btcString descr = NULL;
+   map_iter  iter;
+   buffer_t  buf;
 
-  Lock();
+   {
+      AutoLock(this);
 
-  // Find the internal structure.
-  map_iter iter = m_WkspcMap.find(Address);
-  buffer_t buf;
+      // Find the internal structure.
+      iter = m_WkspcMap.find(Address);
 
-  if ( m_WkspcMap.end() == iter ) {
-    // No mapping for Address exists.
-    Unlock();
-    descr = "no such address";
-    goto _SEND_ERR;
-  }
+      if ( m_WkspcMap.end() == iter ) {
+         // No mapping for Address exists.
+         descr = "no such address";
+         goto _SEND_ERR;
+      }
 
-  buf = (*iter).second;
+      buf = (*iter).second;
 
-  ASECCIAFU::sm_ASEMtx.Lock();
-  deallocate_buffer(&buf);
-  ASECCIAFU::sm_ASEMtx.Unlock();
+      {
+         AutoLock(&ASECCIAFU::sm_ASEMtx);
+         deallocate_buffer(&buf);
+      }
 
-  // Remove the mapping.
-  m_WkspcMap.erase(iter);
+      // Remove the mapping.
+      m_WkspcMap.erase(iter);
+   }
 
-  Unlock();
-
-  SendMsg( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-						     TranID) );
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                             TranID) );
   return;
 
  _SEND_ERR:
   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-								 TranID,
-								 errAFUWorkSpace,
-								 reasAFUNoMemory,
-								 descr);
-  SendMsg( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
-							  pExcept));
+                                                                 TranID,
+                                                                 errAFUWorkSpace,
+                                                                 reasAFUNoMemory,
+                                                                 descr);
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+                                                                                  pExcept));
 }
 
 btBool ASECCIAFU::CSRRead(btCSROffset CSR,
                           btCSRValue *pValue)
 {
-  if ( __UINTPTR_T_CONST(0x344) == CSR ) {
-    *pValue = m_Last3c4;
-  } else if ( __UINTPTR_T_CONST(0x34c) == CSR ) {
-    *pValue = m_Last3cc;
-  } else {
-    ASECCIAFU::sm_ASEMtx.Lock();
-    *pValue = (btCSRValue) csr_read(CSR);
-    ASECCIAFU::sm_ASEMtx.Unlock();
-  }
-
-  return true;
+   if ( __UINTPTR_T_CONST(0x344) == CSR ) {
+      *pValue = m_Last3c4;
+   } else if ( __UINTPTR_T_CONST(0x34c) == CSR ) {
+      *pValue = m_Last3cc;
+   } else {
+      AutoLock(&ASECCIAFU::sm_ASEMtx);
+      *pValue = (btCSRValue) csr_read(CSR);
+   }
+   return true;
 }
 
 btBool ASECCIAFU::CSRWrite(btCSROffset CSR,
                            btCSRValue  Value)
 {
-  if ( __UINTPTR_T_CONST(0x3c4) == CSR ) {
-    m_Last3c4 = Value;
-  } else if ( __UINTPTR_T_CONST(0x3cc) == CSR ) {
-    m_Last3cc = Value;
-  } else {
-    ASECCIAFU::sm_ASEMtx.Lock();
-    csr_write(CSR, (bt32bitCSR)Value);
-    ASECCIAFU::sm_ASEMtx.Unlock();
-  }
-
-  return true;
+   if ( __UINTPTR_T_CONST(0x3c4) == CSR ) {
+      m_Last3c4 = Value;
+   } else if ( __UINTPTR_T_CONST(0x3cc) == CSR ) {
+      m_Last3cc = Value;
+   } else {
+      AutoLock(&ASECCIAFU::sm_ASEMtx);
+      csr_write(CSR, (bt32bitCSR)Value);
+   }
+   return true;
 }
 
 btBool ASECCIAFU::CSRWrite64(btCSROffset CSR,

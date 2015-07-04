@@ -296,20 +296,21 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
    }  // if (id == WSID_CSRMAP_READAREA)
 
    // Lock this critical region since 2 transactions are in flight simultaneously
-   Lock();
+   {
+      AutoLock(this);
 
-   // See if both have been set
-   --(*pnumEvents);
-   if ( 0 == *pnumEvents ) {
-      // and generate the event
-      m_pSession->QueueAASEvent(m_pSession->OwnerMessageRoute().Handler(),
-                                                new CTransactionEvent(static_cast <IBase*> (this),
-                                                                      tranevtInitAFUDevEvent,
-                                                                      rtid));
-      delete pnumEvents;
+      // See if both have been set
+      --(*pnumEvents);
+      if ( 0 == *pnumEvents ) {
+         // and generate the event
+         m_pSession->QueueAASEvent(m_pSession->OwnerMessageRoute().Handler(),
+                                                   new CTransactionEvent(static_cast <IBase*> (this),
+                                                                         tranevtInitAFUDevEvent,
+                                                                         rtid));
+         delete pnumEvents;
+      }
    }
 
-   Unlock();
    return;
 }
 

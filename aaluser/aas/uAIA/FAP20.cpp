@@ -185,10 +185,6 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
    uAIA *pAIA = static_cast <uAIA *>(theEvent.pObject());
    ASSERT(pAIA);
 
-   // Get the Event Dispatcher
-   IXLRuntimeServices *pEventDispatcher = pAIA->getRuntimeServiceProvider();
-   ASSERT(pEventDispatcher);
-
    // Get the AFU pointer. The AFU created the AIA object, and so the AIA object's Context should be the AFU pointer.
    //    Need it only for the 'this' pointer in event delivery, and there it is an IBase, so just get it that way.
    // TODO: enforce putting the pAFU in the context or in the AIA
@@ -197,12 +193,6 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
    IBase *pIBaseAFU = static_cast<IBase *>(theEvent.Object().Context());
    AAL_VERBOSE(LM_UAIA, __AAL_FUNC__ << "() pAFU = " << static_cast<void*> (pIBaseAFU) << std::endl);
 #endif
-
-   // DEBUG CODE, should never happen
-   if ( !pEventDispatcher ) {
-      AAL_ERR(LM_UAIA, __AAL_FUNC__ << "() pEventHandler is NULL. A message has been lost." << std::endl);
-      return;
-   }
 
    //////////////////////////////////////////////////////////////////////////////////////
    // Get the actual data to be returned.
@@ -313,7 +303,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
 
    ReThrow(&theEvent.Object(), // Pointer to AIA as IBase*
            theEvent,
-           pEventDispatcher,
+           pAIA->getRuntime(),
            pCAFUDev->Handler(),
            &origUserTranID);
 }

@@ -65,7 +65,7 @@ endif
 all: Sudoku_SPL
 
 Sudoku_SPL: Sudoku_SPL.o
-	$(CXX) -g -O2 -o Sudoku_SPL Sudoku_SPL.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+	$(CXX) -g -O2 -o Sudoku_SPL Sudoku_SPL.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 Sudoku_SPL.o: Sudoku_SPL.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o Sudoku_SPL.o Sudoku_SPL.cpp

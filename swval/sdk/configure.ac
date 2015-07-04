@@ -30,7 +30,7 @@ dnl ## Library Versioning ######################################################
 dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [1],[1],[1])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [1],[1],[1])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [1],[1],[1])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [1],[1],[1])
@@ -47,6 +47,7 @@ AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [1],[1],[1])
 AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
+AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [1],[1],[1])
 
 AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],     [3],[2],[1])
 AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  [6],[5],[4])
@@ -149,7 +150,7 @@ AC_CONFIG_FILES([gdb/gdbinit])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
-                 include/aalsdk/aas/XLRuntimeModule.h
+                 include/aalsdk/aas/AALRuntimeModule.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
@@ -171,26 +172,31 @@ AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
-                 aas/XLRTLib/Makefile
-                 aas/XLRRMBrokerService/Makefile
+                 aas/AALRuntime/Makefile
+                 aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile
                  aas/AASResourceManager/Makefile])
 
-dnl AC_CONFIG_FILES([ase/sw/Makefile
-dnl                  clp/Makefile
-dnl                  utils/Makefile
-dnl                  utils/aalscan/Makefile
-dnl                  utils/data_model/Makefile
-dnl                  utils/fpgasane/Makefile
-dnl                  utils/CCIAFU/Makefile
-dnl                  utils/CCIAFU/HWCCIAFU/Makefile
-dnl                  utils/CCIAFU/ASECCIAFU/Makefile
-dnl                  utils/CCIAFU/SWSimCCIAFU/Makefile
-dnl                  utils/SPLAFU/Makefile
-dnl                  utils/SPLAFU/HWSPLAFU/Makefile
-dnl                  utils/SPLAFU/ASESPLAFU/Makefile
-dnl                  utils/SPLAFU/SWSimSPLAFU/Makefile])
+AC_CONFIG_FILES([ase/sw/Makefile
+                 clp/Makefile
+                 utils/Makefile
+                 utils/aalscan/Makefile
+                 utils/data_model/Makefile
+                 utils/fpgasane/Makefile
+                 utils/CCIAFU/Makefile
+                 utils/CCIAFU/HWCCIAFU/Makefile
+                 utils/CCIAFU/ASECCIAFU/Makefile
+                 utils/CCIAFU/SWSimCCIAFU/Makefile
+                 utils/SPLAFU/Makefile
+                 utils/SPLAFU/HWSPLAFU/Makefile
+                 utils/SPLAFU/ASESPLAFU/Makefile
+                 utils/SPLAFU/SWSimSPLAFU/Makefile
+                 utils/cciapp/Makefile
+                 utils/splapp/Makefile
+                 utils/splapp2/Makefile
+                 utils/splapp3/Makefile
+                 utils/CCILib/Makefile])
 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile

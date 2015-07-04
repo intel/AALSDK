@@ -46,7 +46,7 @@
 /// 06/29/2015     HM       Initial integration into Samples.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>       // Logger
 
 
@@ -120,12 +120,16 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
 
    void runtimeStartFailed(const IEvent &rEvent);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
@@ -149,7 +153,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -169,10 +173,7 @@ RuntimeClient::RuntimeClient() :
    configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
 #endif
 
-   if(!m_Runtime.start(this, configArgs)){
-      m_isOK = false;
-      return;
-   }
+   m_Runtime.start(configArgs);
    m_Sem.Wait();
 }
 
@@ -184,6 +185,13 @@ RuntimeClient::~RuntimeClient()
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
+}
+
+void RuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+{
+   MSG("Runtime Create or Get Proxy failed");
+   m_isOK = false;
+   m_Sem.Post(1);
 }
 
 void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
@@ -213,6 +221,11 @@ void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime start failed");
    ERR(pExEvent->Description());
+}
+
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+   MSG("Runtime stop failed");
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
@@ -281,7 +294,9 @@ public:
 
    virtual void serviceAllocateFailed(const IEvent &rEvent);
 
-   virtual void serviceFreed(TransactionID const &rTranID);
+   void serviceReleaseFailed(const AAL::IEvent&);
+
+   void serviceReleased(TransactionID const &rTranID);
 
    virtual void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -366,7 +381,7 @@ int llApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 #endif
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello SPL LB");
 
@@ -547,11 +562,16 @@ void llApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-void llApp::serviceFreed(TransactionID const &rTranID)
+void llApp::serviceReleaseFailed(const IEvent        &rEvent)
 {
-   MSG("Service Freed");
-   // Unblock Main()
+   MSG("Failed to Release a Service");
    m_Sem.Post(1);
+}
+
+void llApp::serviceReleased(TransactionID const &rTranID)
+{
+   MSG("Service Released");
+  m_Sem.Post(1);
 }
 
 // <ISPLClient>

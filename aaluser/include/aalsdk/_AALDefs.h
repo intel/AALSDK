@@ -239,11 +239,11 @@
 # else
 #    define OSAL_API                     __declspec(dllimport)
 # endif // OSAL_EXPORTS
-# ifdef XLRT_EXPORTS
-#    define XLRT_API                     __declspec(dllexport)
+# ifdef AALRUNTIME_EXPORTS
+#    define AALRUNTIME_API                     __declspec(dllexport)
 # else
-#    define XLRT_API                     __declspec(dllimport)
-# endif // XLRT_EXPORTS
+#    define AALRUNTIME_API                     __declspec(dllimport)
+# endif // AALRUNTIME_EXPORTS
 # ifdef AASLIB_EXPORTS
 #    define AASLIB_API                   __declspec(dllexport)
 # else
@@ -259,12 +259,12 @@
 # else
 #    define AASEDS_API                   __declspec(dllimport)
 # endif // AASEDS_EXPORTS
-# ifdef XLRESMGR_EXPORTS
-#     define XLRESOURCEMANAGERCLIENT_API __declspec(dllexport)
-#     define XLRESOURCEMANAGER_API       __declspec(dllexport)
+# ifdef AALRESMGR_EXPORTS
+#     define AALRESOURCEMANAGERCLIENT_API __declspec(dllexport)
+#     define AALRESOURCEMANAGER_API       __declspec(dllexport)
 # else
-#     define XLRESOURCEMANAGERCLIENT_API __declspec(dllimport)
-#     define XLRESOURCEMANAGER_API       __declspec(dllimport)
+#     define AALRESOURCEMANAGERCLIENT_API __declspec(dllimport)
+#     define AALRESOURCEMANAGER_API       __declspec(dllimport)
 # endif // XL Resource Manager
 # ifdef AASREGISTRAR_EXPORTS
 #    define AASREGISTRAR_API             __declspec(dllexport)
@@ -297,8 +297,8 @@
 # define __declspec(x)
 // OSAL
 # define OSAL_API                        __declspec(0)
-// XLRT
-# define XLRT_API                        __declspec(0)
+// AALRUNTIME
+# define AALRUNTIME_API                        __declspec(0)
 // AASLib
 # define AASLIB_API                      __declspec(0)
 // uAIA
@@ -310,8 +310,8 @@
 // Resource Manager Client
 # define AASRESOURCEMANAGERCLIENT_API    __declspec(0)
 // XL Resource Manager
-# define XLRESOURCEMANAGERCLIENT_API     __declspec(0)
-# define XLRESOURCEMANAGER_API           __declspec(0)
+# define AALRESOURCEMANAGERCLIENT_API     __declspec(0)
+# define AALRESOURCEMANAGER_API           __declspec(0)
 // libFAPTrans1
 # define FAPTRANS1_API                   __declspec(0)
 // libFAPTrans2

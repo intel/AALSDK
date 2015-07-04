@@ -65,7 +65,7 @@ endif
 all: helloCCInlb
 
 helloCCInlb: HelloCCINLB.o
-	$(CXX) -g -O2 -o helloCCInlb HelloCCINLB.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+	$(CXX) -g -O2 -o helloCCInlb HelloCCINLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 HelloCCINLB.o: HelloCCINLB.cpp  Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o HelloCCINLB.o HelloCCINLB.cpp

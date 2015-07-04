@@ -37,7 +37,7 @@
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
 /// This Sample demonstrates the following:
-///    - The basic structure of an AAL program using the XL APIs.
+///    - The basic structure of an AAL program using the AAL APIs.
 ///    - The IHelloAAL and IHelloAALClient interfaces of HelloAALService.
 ///    - System initialization and shutdown.
 ///    - Use of interface IDs (iids).
@@ -52,7 +52,7 @@
 /// 04/10/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
 using namespace AAL;
@@ -99,12 +99,16 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
 
    void runtimeStartFailed(const IEvent &rEvent);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeAllocateServiceFailed( IEvent const &rEvent);
 
@@ -127,7 +131,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-   m_Runtime(),        // Instantiate the AAL Runtime
+   m_Runtime(this),        // Instantiate the AAL Runtime
    m_pRuntime(NULL),
    m_isOK(false)
 {
@@ -137,10 +141,7 @@ RuntimeClient::RuntimeClient() :
    SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
-   if ( !m_Runtime.start(this, configArgs) ) {
-      m_isOK = false;
-      return;
-   }
+   m_Runtime.start(configArgs);
    m_Sem.Wait();
 }
 
@@ -152,6 +153,13 @@ RuntimeClient::~RuntimeClient()
 btBool RuntimeClient::isOK()
 {
    return m_isOK;
+}
+
+void RuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+{
+   MSG("Runtime Create or Get Proxy failed");
+   m_isOK = false;
+   m_Sem.Post(1);
 }
 
 void RuntimeClient::runtimeStarted(IRuntime *pRuntime,
@@ -183,6 +191,11 @@ void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
    ERR(pExEvent->Description());
 }
 
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+    MSG("Runtime stop failed");
+}
+
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
    IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
@@ -193,6 +206,7 @@ void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
                                                     TransactionID const &rTranID)
 {
+   TransactionID const * foo = &rTranID;
    MSG("Runtime Allocate Service Succeeded");
 }
 
@@ -229,7 +243,9 @@ public:
 
    void serviceAllocateFailed(const IEvent &rEvent);
 
-   void serviceFreed(TransactionID const &rTranID);
+    void serviceReleaseFailed(const AAL::IEvent&);
+
+    void serviceReleased(TransactionID const &rTranID);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -263,6 +279,7 @@ HelloAALApp::~HelloAALApp()
 
 int HelloAALApp::run()
 {
+
    cout <<"===================="<<endl;
    cout <<"= Hello AAL Sample ="<<endl;
    cout <<"===================="<<endl;
@@ -277,7 +294,7 @@ int HelloAALApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libhelloaalservice");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello AAL");
 
@@ -325,9 +342,15 @@ void HelloAALApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
-void HelloAALApp::serviceFreed(TransactionID const &rTranID)
+ void HelloAALApp::serviceReleaseFailed(const IEvent        &rEvent)
 {
-   MSG("Service Freed");
+    MSG("Failed to Release a Service");
+    m_Sem.Post(1);
+ }
+
+ void HelloAALApp::serviceReleased(TransactionID const &rTranID)
+ {
+    MSG("Service Released");
    m_Sem.Post(1);
 }
 
@@ -360,9 +383,10 @@ void HelloAALApp::serviceEvent(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+
    RuntimeClient     runtimeClient;
    HelloAALApp       theApp(&runtimeClient);
-   
+
    if(!runtimeClient.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);

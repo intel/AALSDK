@@ -50,7 +50,7 @@
 /// 06/15/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
 
@@ -122,10 +122,14 @@ public:
    btBool isOK();
 
    // <begin IRuntimeClient interface>
+   void runtimeCreateOrGetProxyFailed(const AAL::IEvent&);
+
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
 
    void runtimeStopped(IRuntime *pRuntime);
+
+   void runtimeStopFailed(const IEvent &rEvent);
 
    void runtimeStartFailed(const IEvent &rEvent);
 
@@ -150,7 +154,7 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 RuntimeClient::RuntimeClient() :
-    m_Runtime(),        // Instantiate the AAL Runtime
+    m_Runtime(this),        // Instantiate the AAL Runtime
     m_pRuntime(NULL),
     m_isOK(false)
 {
@@ -164,13 +168,13 @@ RuntimeClient::RuntimeClient() :
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
-   //   XLRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
 #if defined( HWAFU )
-   configRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(XLRUNTIME_CONFIG_RECORD,configRecord);
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
 #endif
 
-   if(!m_Runtime.start(this, configArgs)){
+   if(!m_Runtime.start(configArgs)){
       m_isOK = false;
       return;
    }
@@ -209,18 +213,31 @@ void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
    m_Sem.Post(1);
 }
 
+void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
+{
+   ERR("runtimeStopFailed");
+   PrintExceptionDescription(rEvent);
+}
+
+void RuntimeClient::runtimeCreateOrGetProxyFailed(const AAL::IEvent &rEvent)
+{
+   ERR("runtimeCreateOrGetProxyFailed");
+   PrintExceptionDescription(rEvent);
+   m_isOK = false;
+}
+
 void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime start failed");
-   ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
+    m_isOK = false;
 }
 
 void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
+   m_isOK = false;
 }
 
 void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -287,7 +304,9 @@ public:
 
    virtual void serviceAllocateFailed(const IEvent &rEvent);
 
-   virtual void serviceFreed(TransactionID const &rTranID);
+    virtual void serviceReleased(TransactionID const &rTranID);
+
+    virtual void serviceReleaseFailed(const AAL::IEvent&);
 
    virtual void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -362,7 +381,7 @@ btInt HelloSPLLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 #endif
 
-   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, ConfigRecord);
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello SPL LB");
 
@@ -563,17 +582,23 @@ void HelloSPLLBApp::serviceAllocated(IBase *pServiceBase,
 
 void HelloSPLLBApp::serviceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Failed to allocate a Service");
-   ERR(pExEvent->Description());
+    PrintExceptionDescription(rEvent);
    ++m_Result;
    m_Sem.Post(1);
 }
 
-void HelloSPLLBApp::serviceFreed(TransactionID const &rTranID)
+ void HelloSPLLBApp::serviceReleased(TransactionID const &rTranID)
 {
    MSG("Service Freed");
    // Unblock Main()
+   m_Sem.Post(1);
+}
+
+void HelloSPLLBApp::serviceReleaseFailed(const IEvent &rEvent)
+{
+   ERR("serviceReleaseFailed");
+   PrintExceptionDescription(rEvent);
    m_Sem.Post(1);
 }
 
@@ -594,9 +619,8 @@ void HelloSPLLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
 void HelloSPLLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    ++m_Result;
    m_Sem.Post(1);
 }
@@ -610,9 +634,8 @@ void HelloSPLLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 void HelloSPLLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("OnWorkspaceAllocateFailed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    ++m_Result;
    m_Sem.Post(1);
 }
@@ -636,9 +659,8 @@ void HelloSPLLBApp::OnContextWorkspaceSet( TransactionID const &TranID)
 /// CMyApp Client implementation of ISPLClient::OnTransactionFailed
 void HelloSPLLBApp::OnTransactionFailed( const IEvent &rEvent)
 {
-   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
    ERR("Runtime AllocateService failed");
-   ERR(pExEvent->Description());
+   PrintExceptionDescription(rEvent);
    m_bIsOK = false;
    ++m_Result;
    m_AFUDSMVirt = NULL;

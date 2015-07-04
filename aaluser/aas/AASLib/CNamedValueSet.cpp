@@ -32,6 +32,7 @@
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation
 ///          Henry Mitchel, Intel Corporation
+///          Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -100,7 +101,7 @@
 #endif // HAVE_CONFIG_H
 
 #define NVSFileIO          /* for the time being, leave it in */
-#include "aalsdk/AALCNamedValueSet.h"
+#include "aalsdk/INamedValueSet.h"
 
 
 #define MAX_VALID_NVS_ARRAY_ENTRIES (1024 * 1024)
@@ -142,7 +143,460 @@
 
 BEGIN_NAMESPACE(AAL)
 
-INamedValueSet::~INamedValueSet() {}
+
+CValue::CValue() :
+   m_Size(0),
+   m_Type(btUnknownType_t)
+{
+   m_Val.Obj = NULL;
+}
+
+CValue::CValue(const CValue &rOther) :
+   m_Size(0),
+   m_Type(btUnknownType_t)
+{
+   m_Val.Obj = NULL;
+
+   //Assignment operator does the real work
+   *this = rOther;
+}
+
+CValue::~CValue()
+{
+   // =======================================
+   // If the value is not a normal scaler
+   // delete any allocated arrays and objects
+   //========================================
+   switch ( m_Type ) {
+      case btByteArray_t :
+         delete [] m_Val._8bA;
+      break;
+      case bt32bitIntArray_t :
+         delete [] m_Val._32bA;
+      break;
+      case btUnsigned32bitIntArray_t :
+         delete [] m_Val._U32bA;
+      break;
+      case bt64bitIntArray_t :
+         delete [] m_Val._64bA;
+      break;
+      case btUnsigned64bitIntArray_t :
+         delete [] m_Val._U64bA;
+      break;
+      case btFloatArray_t :
+         delete [] m_Val.fltA;
+      break;
+      case btString_t :
+         free(m_Val.str);
+      break;
+      case btStringArray_t : {
+         unsigned i;
+         for ( i = 0 ; i < m_Size; ++i ) {
+            free(m_Val.strA[i]);
+         }
+         delete [] m_Val.strA;
+      } break;
+      case btObjectArray_t:
+         delete [] m_Val.ObjA;
+      break;
+
+      case btNamedValueSet_t:
+         delete m_Val.pNVS;
+      break;
+      default : break;
+   }//End case
+}
+
+CValue & CValue::operator = (const CValue &rOther)
+{
+   if ( &rOther == this ) {
+      return *this; // don't duplicate self
+   }
+
+   // Put() for complex types allocates memory. We need to examine the type here, freeing
+   // memory as required.
+
+   switch ( m_Type ) {
+      case btByteArray_t : {
+         if ( NULL != m_Val._8bA ) {
+            delete[] m_Val._8bA;
+         }
+      } break;
+      case bt32bitIntArray_t : {
+         if ( NULL != m_Val._32bA ) {
+            delete[] m_Val._32bA;
+         }
+      } break;
+      case btUnsigned32bitIntArray_t : {
+         if ( NULL != m_Val._U32bA ) {
+            delete[] m_Val._U32bA;
+         }
+      } break;
+      case bt64bitIntArray_t : {
+         if ( NULL != m_Val._64bA ) {
+            delete[] m_Val._64bA;
+         }
+      } break;
+      case btUnsigned64bitIntArray_t : {
+         if ( NULL != m_Val._U64bA ) {
+            delete[] m_Val._U64bA;
+         }
+      } break;
+      case btFloatArray_t : {
+         if ( NULL != m_Val.fltA ) {
+            delete[] m_Val.fltA;
+         }
+      } break;
+      case btStringArray_t : {
+         if ( NULL != m_Val.strA ) {
+            btUnsigned32bitInt i;
+            for ( i = 0 ; i < m_Size ; ++i ) {
+               free(m_Val.strA[i]);
+            }
+            delete[] m_Val.strA;
+         }
+      } break;
+      case btObjectArray_t : {
+         if ( NULL != m_Val.ObjA ) {
+            delete[] m_Val.ObjA;
+         }
+      } break;
+      case btString_t : {
+         if ( NULL != m_Val.str ) {
+            free(m_Val.str);
+         }
+      } break;
+      case btNamedValueSet_t : {
+         if ( NULL != m_Val.pNVS ) {
+            delete m_Val.pNVS;
+         }
+      } break;
+   }
+
+   m_Type = rOther.m_Type;
+   m_Size = rOther.m_Size;
+
+   // Copy array, string, and NVS types using mutator.
+   switch ( m_Type ) {
+      case btByteArray_t :
+         Put(rOther.m_Val._8bA, m_Size);
+      break;
+      case bt32bitIntArray_t :
+         Put(rOther.m_Val._32bA, m_Size);
+      break;
+      case btUnsigned32bitIntArray_t :
+         Put(rOther.m_Val._U32bA, m_Size);
+      break;
+      case bt64bitIntArray_t :
+         Put(rOther.m_Val._64bA, m_Size);
+      break;
+      case btUnsigned64bitIntArray_t :
+         Put(rOther.m_Val._U64bA, m_Size);
+      break;
+      case btFloatArray_t :
+         Put(rOther.m_Val.fltA, m_Size);
+      break;
+      case btStringArray_t :
+         Put(rOther.m_Val.strA, m_Size);
+      break;
+      case btObjectArray_t :
+         Put(rOther.m_Val.ObjA, m_Size);
+      break;
+      case btString_t :
+         Put(rOther.m_Val.str);
+      break;
+      case btNamedValueSet_t :
+         Put(rOther.m_Val.pNVS);
+      break;
+
+      default:
+         // Otherwise simple value
+         m_Val = rOther.m_Val;
+      break;
+   }
+
+   return *this;
+}
+
+void CValue::Put(btBool val)             { m_Type = btBool_t;             m_Val._1b   = val; m_Size = 1; }
+void CValue::Put(btByte val)             { m_Type = btByte_t;             m_Val._8b   = val; m_Size = 1; }
+void CValue::Put(bt32bitInt val)         { m_Type = bt32bitInt_t;         m_Val._32b  = val; m_Size = 1; }
+void CValue::Put(btUnsigned32bitInt val) { m_Type = btUnsigned32bitInt_t; m_Val._U32b = val; m_Size = 1; }
+void CValue::Put(bt64bitInt val)         { m_Type = bt64bitInt_t;         m_Val._64b  = val; m_Size = 1; }
+void CValue::Put(btUnsigned64bitInt val) { m_Type = btUnsigned64bitInt_t; m_Val._U64b = val; m_Size = 1; }
+void CValue::Put(btFloat val)            { m_Type = btFloat_t;            m_Val.flt   = val; m_Size = 1; }
+void CValue::Put(btObjectType val)       { m_Type = btObjectType_t;       m_Val.Obj   = val; m_Size = 1; }
+
+void CValue::Put(const INamedValueSet *val)
+{
+   m_Type     = btNamedValueSet_t;
+   m_Val.pNVS = val->Clone();
+   m_Size     = 1;
+}
+
+void CValue::Put(btcString val)
+{
+   m_Type    = btString_t;
+   m_Val.str = strdup(val);
+   m_Size    = 1;
+}
+
+void CValue::Put(btByteArray val, btUnsigned32bitInt Num)
+{
+   m_Type = btByteArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val._8bA = new btByte[Num];
+   memcpy(m_Val._8bA, val, (sizeof(btByte)*Num));
+}
+
+void CValue::Put(bt32bitIntArray val, btUnsigned32bitInt Num)
+{
+   m_Type = bt32bitIntArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val._32bA = new bt32bitInt[Num];
+   memcpy(m_Val._32bA, val, (sizeof(bt32bitInt)*Num));
+}
+
+void CValue::Put(btUnsigned32bitIntArray val, btUnsigned32bitInt Num)
+{
+   m_Type = btUnsigned32bitIntArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val._U32bA = new btUnsigned32bitInt[Num];
+   memcpy(m_Val._U32bA, val, (sizeof(btUnsigned32bitInt)*Num));
+}
+
+void CValue::Put(bt64bitIntArray val,btUnsigned32bitInt Num)
+{
+   m_Type = bt64bitIntArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val._64bA = new bt64bitInt[Num];
+   memcpy(m_Val._64bA, val, (sizeof(bt64bitInt)*Num));
+}
+
+void CValue::Put(btUnsigned64bitIntArray val,btUnsigned32bitInt Num)
+{
+   m_Type = btUnsigned64bitIntArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val._64bA = new bt64bitInt[Num];
+   memcpy(m_Val._U64bA, val, (sizeof(bt64bitInt)*Num));
+}
+
+void CValue::Put(btFloatArray val,btUnsigned32bitInt Num)
+{
+   m_Type = btFloatArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val.fltA = new btFloat[Num];
+   memcpy(m_Val.fltA, val, (sizeof(btFloat)*Num));
+}
+
+void CValue::Put(btStringArray val, btUnsigned32bitInt NumElements)
+{
+   m_Type = btStringArray_t;
+   m_Size = NumElements;
+   // Copy the array of btStrings and create btString array
+   m_Val.strA = new btString[NumElements];
+   btUnsigned32bitInt x;
+   for ( x = 0 ; x < NumElements ; ++x ) {
+      //Copy string
+      m_Val.strA[x] = strdup(val[x]);
+   }
+}
+
+void CValue::Put(btObjectArray val,btUnsigned32bitInt Num)
+{
+   m_Type = btObjectArray_t;
+   m_Size = Num;
+   //Allocate space for local array copy
+   m_Val.ObjA = new btObjectType[Num];
+   memcpy(m_Val.ObjA , val, (sizeof(btObjectType)*Num));
+}
+
+ENamedValues CValue::Get(bt32bitInt *pval) const
+{
+   if ( m_Type != bt32bitInt_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._32b;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btBool *pval) const
+{
+   if ( m_Type != btBool_t ) {
+      *pval = false;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._1b;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btByte *pval) const
+{
+   if ( m_Type != btByte_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._8b;
+   return ENamedValuesOK;
+}
+
+
+ENamedValues CValue::Get(btUnsigned32bitInt *pval) const
+{
+   if ( m_Type != btUnsigned32bitInt_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._U32b;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(bt64bitInt *pval) const
+{
+   if ( m_Type != bt64bitInt_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._64b;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btUnsigned64bitInt *pval) const
+{
+   if ( m_Type != btUnsigned64bitInt_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._U64b;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btFloat *pval) const
+{
+   if ( m_Type != btFloat_t ) {
+      *pval = 0;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.flt;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btcString *pval) const
+{
+   if ( m_Type != btString_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.str;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(INamedValueSet const **pval) const
+{
+   if ( m_Type != btNamedValueSet_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.pNVS;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btObjectType *pval) const
+{
+   if ( m_Type != btObjectType_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.Obj;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btByteArray *pval) const
+{
+   if ( m_Type != btByteArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._8bA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(bt32bitIntArray *pval) const
+{
+   if ( m_Type != bt32bitIntArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._32bA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btUnsigned32bitIntArray *pval) const
+{
+   if ( m_Type != btUnsigned32bitIntArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._U32bA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(bt64bitIntArray *pval) const
+{
+   if ( m_Type != bt64bitIntArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._64bA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btUnsigned64bitIntArray *pval) const
+{
+   if ( m_Type != btUnsigned64bitIntArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val._U64bA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btFloatArray *pval) const
+{
+   if ( m_Type != btFloatArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.fltA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btStringArray *pval) const
+{
+   if ( m_Type != btStringArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.strA;
+   return ENamedValuesOK;
+}
+
+ENamedValues CValue::Get(btObjectArray *pval) const
+{
+   if ( m_Type != btObjectArray_t ) {
+      *pval = NULL;
+      return ENamedValuesBadType;
+   }
+   *pval = m_Val.ObjA;
+   return ENamedValuesOK;
+}
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -164,49 +618,1079 @@ INamedValueSet::~INamedValueSet() {}
 //=============================================================================
 
 //=============================================================================
-// Name: TNamedValuesSet
-// Description: Constructor
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
+// Name: TNamedValueSet
+// Description: Template class definition of for NamedValueSets
 //=============================================================================
-template<class Kt>
-TNamedValueSet<Kt>::TNamedValueSet(void) {}
+template<typename Kt>
+class TNamedValueSet
+{
+private:
+   typedef typename std::map<Kt, AAL::CValue> map_type;
+   typedef typename map_type::const_iterator  const_iterator;
+
+   map_type m_NVSet;
+
+public:
+   //=============================================================================
+   // Name: TNamedValuesSet
+   // Description: Constructor
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   TNamedValueSet() {}
+
+   //=============================================================================
+   // Name: TNamedValues
+   // Description: Copy Constructor
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   TNamedValueSet(const TNamedValueSet &rOther)
+   {
+      *this = rOther;
+   }
+
+   //=============================================================================
+   // Name: TNamedValues
+   // Description: Assignment
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   TNamedValueSet & operator = (const TNamedValueSet &rOther);
+
+   btBool Subset(const TNamedValueSet &rOther, btBool fEqual=false) const;
+
+   //=============================================================================
+   // Name: TNamedValues
+   // Description: operator ==
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments: Algorithm is to check if the number of elements is equal, and if
+   //           so, then do a subset. If the subset is true and the number of
+   //           elements are equal, the NVS's must be equal.
+   //=============================================================================
+   btBool operator == (const TNamedValueSet &rOther) const
+   {
+      btUnsignedInt NumNamesThis;
+      btUnsignedInt NumNamesOther;
+
+      GetNumNames(&NumNamesThis);
+      rOther.GetNumNames(&NumNamesOther);
+
+      if ( NumNamesThis == NumNamesOther ) {
+         return Subset(rOther, true); // Is this a subset of rOther?, and
+                                      //   are embedded NVS's also ==
+      }
+
+      return false;
+   }
+
+   //=============================================================================
+   // Name: ~TNamedValues
+   // Description: Destructor
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments: Iterate through list and free all named value sets.
+   //=============================================================================
+   virtual ~TNamedValueSet()
+   {
+      Empty();
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btBool value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btBool Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btByte value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btByte Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a bt32bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, bt32bitInt Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btUnsigned32bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btUnsigned32bitInt Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a bt64bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, bt64bitInt Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btUnsigned64bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btUnsigned64bitInt Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btFloat value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btFloat Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a string value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btcString Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add an INamedValueSet value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, const INamedValueSet *Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a ByteArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btByteArray        Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a 32bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, bt32bitIntArray    Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a btUnsigned32bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btUnsigned32bitIntArray Value,
+                             btUnsigned32bitInt      NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a 64bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, bt64bitIntArray    Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a Unsigned64bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btUnsigned64bitIntArray Value,
+                             btUnsigned32bitInt      NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a ObjectType value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btObjectType Value)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a floatArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btFloatArray       Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a stringArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btStringArray      Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Add
+   // Description: Add a ObjectArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   //         Value - Value
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Add(Kt Name, btObjectArray      Value,
+                             btUnsigned32bitInt NumElements)
+   {
+      const_iterator itr = m_NVSet.end();
+
+      //Check for exclusivity
+      if ( m_NVSet.find(Name) != itr ) {
+         return ENamedValuesDuplicateName;
+      }
+
+      //Store the value
+      m_NVSet[Name].Put(Value, NumElements);
+      return ENamedValuesOK;
+   }
+
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a btBool value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btBool *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a btByte value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btByte *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a 32bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, bt32bitInt *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a Unsigned32bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btUnsigned32bitInt *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a 64bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, bt64bitInt *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a Unsigned64bitInt value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btUnsigned64bitInt *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a float value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btFloat *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a string value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btcString *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get an INamedValueSet value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, INamedValueSet const **pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a ByteArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btByteArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a 32bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, bt32bitIntArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a Unsigned32bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btUnsigned32bitIntArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a 64bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, bt64bitIntArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a Unsigned64bitIntArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btUnsigned64bitIntArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a ObjectType value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btObjectType *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a floatArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btFloatArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a stringArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btStringArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Get
+   // Description: Get a ObjectArray value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pvalue - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues Get(Kt Name, btObjectArray *pValue) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      return (*itr).second.Get(pValue);
+   }
+
+   //=============================================================================
+   // Name: Delete
+   // Description: Delete a named value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: none.
+   // Comments:
+   //=============================================================================
+   ENamedValues Delete(Kt Name)
+   {
+      //Find the named value pair
+      if ( m_NVSet.end() == m_NVSet.find(Name) ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      //Remove the entry from the set
+      m_NVSet.erase(Name);
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Empty
+   // Description: Empties the NVS
+   // Interface: public
+   // Inputs: none.
+   // Outputs: none.
+   // Comments: Iterate through list and free all named value sets.
+   //=============================================================================
+   ENamedValues Empty()
+   {
+      btUnsignedInt NumNames;
+      Kt            CurrName;
+
+      GetNumNames(&NumNames);
+
+      while ( NumNames-- ) {
+         GetName(NumNames, &CurrName);
+         //Remove it
+         ENamedValues result;
+         result = Delete(CurrName);
+         if ( result != ENamedValuesOK ) {
+            return result;
+         }
+      }
+
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: GetSize
+   // Description: Get the size in objects of a named value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pSize - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues     GetSize(Kt Name, btWSSize    *pSize) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      *pSize = (*itr).second.Size();
+
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Type
+   // Description: Get the Type of a named value
+   // Interface: public
+   // Inputs: Name - Parameter name.
+   // Outputs: pType - Place to return value.
+   // Comments:
+   //=============================================================================
+   ENamedValues        Type(Kt Name, eBasicTypes *pType) const
+   {
+      const_iterator itr = m_NVSet.find(Name);
+
+      //Find the named value pair
+      if ( m_NVSet.end() == itr ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      //Return the Type
+      *pType = (*itr).second.Type();
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: GetNumNames
+   // Description: Get the number of named value pairs in this object
+   // Interface: public
+   // Inputs: none.
+   // Outputs: pNum - Place to return number of names.
+   // Comments:
+   //=============================================================================
+#if defined( _MSC_VER )
+   #pragma warning( push )
+   #pragma warning( disable:4251 )  // Cannot export template definitions
+#endif // _MSC_VER
+   ENamedValues GetNumNames(btUnsignedInt *pNum) const
+   {
+      *pNum = static_cast<btUnsignedInt>(m_NVSet.size());  // size_t truncation to int possible
+      return ENamedValuesOK;
+   }
+#if defined( _MSC_VER )
+   #pragma warning( pop )
+#endif // _MSC_VER
+
+   //=============================================================================
+   // Name: GetName
+   // Description: Gets the name of a named value pair at index number.
+   // Interface: public
+   // Inputs: index - Zero based index into list of named/value pairs.
+   // Outputs: pName - Place to return name.
+   // Comments:
+   //=============================================================================
+   ENamedValues     GetName(btUnsignedInt index, Kt *pName) const
+   {
+      const_iterator itr;
+
+      //Find the named value pair
+      if ( m_NVSet.size() < (typename map_type::size_type) index ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      //Get the right entry
+      for ( itr = m_NVSet.begin() ; index != 0 ; index--, itr++ ) {/*empty*/ ; }
+
+      //Return the name
+      *pName = (Kt)(*itr).first;
+
+      return ENamedValuesOK;
+   }
+
+   //=============================================================
+   // Specialized template function for std:string keys
+   // The default GetName implementation will not work for
+   // btcString keys. btcString keys are stored as std:strings in
+   // the map structure. So the normal return won't work.
+   // This specialized template function handles this one
+   // exception case.
+   //=============================================================
+   ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const
+   {
+      std::map<std::string, CValue>::const_iterator itr = m_NVSet.end();
+
+      // Find the named value pair
+      if ( m_NVSet.size() < (std::map<std::string, CValue>::size_type) index ) {
+         return ENamedValuesNameNotFound;
+      }
+
+      // Get the right entry
+      for ( itr = m_NVSet.begin() ; index != 0 ; index--, itr++ ) {/*empty*/ ; }
+
+      // Return the name
+      *pName = const_cast<btStringKey>((*itr).first.c_str());
+
+      return ENamedValuesOK;
+   }
+
+   //=============================================================================
+   // Name: Has
+   // Description: Return whether a named value pair exits
+   // Interface: public
+   // Inputs: Name - Name to check.
+   // Outputs: none.
+   // Comments: Returns ENamedValuesOK if Name exists
+   //=============================================================================
+   btBool Has(Kt Name) const
+   {
+      //Find the named value pair
+      return m_NVSet.find(Name) != m_NVSet.end();
+   }
+
+}; // End of template<class Kt>  class TNamedValueSet : public CriticalSection
 
 //=============================================================================
-// Name: TNamedValues
-// Description: Copy Constructor
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
 //=============================================================================
-template<class Kt>
-TNamedValueSet<Kt>::
-TNamedValueSet(const TNamedValueSet<Kt> &rOther) {
-   *this=(TNamedValueSet<Kt> &)rOther;
-}
+//   This template is used to construct a NVS class specific to a particular
+//   key data type. It is used in the CNamevValueSet  container class to hold
+//   an NVS instance that is specific to a particular key type.
+//   Namely std::string and and btUnsignedInt.  We could have defined a class
+//   for each type but this allows us to easily create new NVS for any key
+//   type.
+//=============================================================================
+//=============================================================================
 
-//=============================================================================
-// Name: TNamedValues
-// Description: Assignment
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-TNamedValueSet<Kt> &TNamedValueSet<Kt>::
-operator =(const TNamedValueSet<Kt> &rOther) {
-   AutoLock(this);
+template<typename Kt>
+TNamedValueSet<Kt> & TNamedValueSet<Kt>::operator = (const TNamedValueSet<Kt> &rOther)
+{
    btUnsignedInt NumNames;
    Kt CurrName;
    eBasicTypes Type;
 
    //Ignore assigning self to self
-   if(this == &rOther) {
-      return( *this);
+   if ( &rOther == this ) {
+      return *this;
    }
 
    //Make sure the target is empty
@@ -270,9 +1754,9 @@ operator =(const TNamedValueSet<Kt> &rOther) {
          }
          break;
          case btNamedValueSet_t: {
-            NamedValueSet const *pval;
-            rOther.Get(CurrName,&pval);
-            Add(CurrName,*pval);
+            INamedValueSet const *pval = NULL;
+            rOther.Get(CurrName, &pval);
+            Add(CurrName, pval);
          }
          break;
          case btByteArray_t: {
@@ -571,11 +2055,10 @@ btBool subsetIfArrayValuesNotEqualbtStringArray( const TNamedValueSet<Kt> &rThis
 //          the template is parameterized on that, the name types will automatically
 //          match.
 //=============================================================================
-template<class Kt>
+template<typename Kt>
 btBool TNamedValueSet<Kt>::Subset(const TNamedValueSet<Kt> &rOther,
                                   btBool fEqual) const
 {
-   AutoLock(this);
    btUnsignedInt NumNames;          // for iterating through 'this'
 
    //Get the number of entries
@@ -650,9 +2133,10 @@ btBool TNamedValueSet<Kt>::Subset(const TNamedValueSet<Kt> &rOther,
          }
          break;
          case btNamedValueSet_t: {
-            const NamedValueSet *valThis, *valOther;
-            Get(CurrName,&valThis);
-            rOther.Get(CurrName,&valOther);
+            INamedValueSet const *valThis  = NULL;
+            INamedValueSet const *valOther = NULL;
+            Get(CurrName, &valThis);
+            rOther.Get(CurrName, &valOther);
             if (fEqual) {                             // Truly want equality
                if (!(*valThis == *valOther)) {        // Handles equality testing in NVS
                   return false;
@@ -720,1097 +2204,475 @@ btBool TNamedValueSet<Kt>::Subset(const TNamedValueSet<Kt> &rOther,
 
 
 //=============================================================================
-// Name: TNamedValues
-// Description: operator ==
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: Algorithm is to check if the number of elements is equal, and if
-//           so, then do a subset. If the subset is true and the number of
-//           elements are equal, the NVS's must be equal.
 //=============================================================================
-template<class Kt>
-btBool TNamedValueSet<Kt>::operator==(const TNamedValueSet<Kt> &rOther) const {
-   AutoLock(this);
-   btUnsignedInt NumNamesThis, NumNamesOther;
-
-   GetNumNames(&NumNamesThis);
-   rOther.GetNumNames(&NumNamesOther);
-
-   if (NumNamesThis == NumNamesOther)
-      return Subset(rOther,true);        // Is this a subset of rOther?, and
-   //   are embedded NVS's also ==
-   else
-      return false;
-}  // end of operator ==
-
+//   The CNamedValuesSet class is a container class for the specific NVS
+//   instances.  It holds member for each NVS type it supports. Currently
+//   std:string keys and btUnsignedInt keys.  This object is the actual storage
+//   for the NVS used by the application. The application only "sees" the proxy
+//   object called NamedValueSet which simply calls through to this one.
 //=============================================================================
-// Name: Empty
-// Description: Empties the NVS
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: Iterate through list and free all named value sets.
 //=============================================================================
-template<class Kt>
-ENamedValues TNamedValueSet<Kt>::Empty(void) {
-   AutoLock(this);
 
-   btUnsignedInt NumNames;
-   Kt CurrName;
 
-   GetNumNames(&NumNames);
+/// Concrete implementation of the INamedValueSet interface.
+/// @ingroup BasicTypes
+class CNamedValueSet : public INamedValueSet,
+                       public CriticalSection
+{
+   // For the purposes of lock safety, we follow the order of..
+   //   AutoLock(this);
+   //   AutoLock(&Other);
+   // throughout CNamedValueSet.
 
-   while(NumNames--) {
-      GetName(NumNames,&CurrName);
-      //Remove it
-      ENamedValues result;
-      result = Delete(CurrName);
-      if(result != ENamedValuesOK) {
-         return result;
+private:
+   TNamedValueSet<btNumberKey> m_iNVS;
+   TNamedValueSet<std::string> m_sNVS;  // Note that the interface is btStringKey, which is const char*
+
+public:
+   /// CNamedValueSet Default Constructor.
+   CNamedValueSet() {}
+   /// CNamedValueSet Destructor.
+   virtual ~CNamedValueSet() {}
+
+   /// Assign Named Value Set to another.
+   CNamedValueSet & operator = (const CNamedValueSet &rOther)
+   {
+      if ( &rOther != this ) {   //Don't duplicate yourself
+         AutoLock(this);
+
+         // Make sure this NVS is empty
+         m_iNVS.Empty();
+         m_sNVS.Empty();
+
+         {
+            AutoLock(&rOther);
+            m_iNVS = rOther.m_iNVS;
+            m_sNVS = rOther.m_sNVS;
+         }
+      }
+      return *this;
+   }
+
+   /// CNamedValueSet Copy Constructor.
+   CNamedValueSet(const CNamedValueSet &rOther)
+   {
+      AutoLock(this);
+      {
+         AutoLock(&rOther);
+         // Do the copy
+         m_iNVS = rOther.m_iNVS;
+         m_sNVS = rOther.m_sNVS;
       }
    }
-   return ENamedValuesOK;
-}
 
-//=============================================================================
-// Name: ~TNamedValues
-// Description: Destructor
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: Iterate through list and free all named value sets.
-//=============================================================================
-template<class Kt>
-TNamedValueSet<Kt>::~TNamedValueSet(void) {
-   AutoLock(this);
-   Empty();
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a btBool value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btBool value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+   ENamedValues Add(btNumberKey Name, btBool Value)                { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btByte Value)                { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, bt32bitInt Value)            { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btUnsigned32bitInt Value)    { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, bt64bitInt Value)            { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btFloat Value)               { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btcString Value)             { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, const INamedValueSet *Value)
+   {
+      AutoLock(this);
+      if ( this == Value->Concrete() ) {
+         return ENamedValuesRecursiveAdd;
+      }
+      return m_iNVS.Add(Name, Value->Concrete());
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   ENamedValues Add(btNumberKey        Name,
+                    btByteArray        Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey        Name,
+                    bt32bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey             Name,
+                    btUnsigned32bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey        Name,
+                    bt64bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey             Name,
+                    btUnsigned64bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey Name, btObjectType Value) { AutoLock(this); return m_iNVS.Add(Name, Value);              }
+   ENamedValues Add(btNumberKey        Name,
+                    btFloatArray       Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey        Name,
+                    btStringArray      Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btNumberKey        Name,
+                    btObjectArray      Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
 
-//=============================================================================
-// Name: Add
-// Description: Add a btByte value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btByte value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+   ENamedValues Get(btNumberKey Name, btBool *pValue) const                  { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btByte *pValue) const                  { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt32bitInt *pValue) const              { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitInt  *pValue) const     { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt64bitInt *pValue) const              { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue) const      { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btFloat *pValue) const                 { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btcString *pValue) const               { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, INamedValueSet const **pValue) const   { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btByteArray *pValue) const             { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue) const         { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt64bitIntArray *pValue) const         { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btObjectType *pValue) const            { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btFloatArray *pValue) const            { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+
+   ENamedValues Delete(btNumberKey Name)                                     { AutoLock(this); return m_iNVS.Delete(Name);        }
+   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize) const             { AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
+   ENamedValues Type(btNumberKey Name, eBasicTypes *pType) const             { AutoLock(this); return m_iNVS.Type(Name,pType);    }
+   btBool       Has(btNumberKey Name) const                                  { AutoLock(this); return m_iNVS.Has(Name);           }
+   ENamedValues GetName(btUnsignedInt index, btNumberKey *pName) const
+   {
+      AutoLock(this);
+      eNameTypes Type;
+      GetNameType(index, &Type);
+      if ( Type != btNumberKey_t ) {
+         return ENamedValuesBadType;
+      }
+      return m_iNVS.GetName(index, pName);
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a bt32bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         bt32bitInt value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+   ENamedValues Add(btStringKey Name, btBool Value)                { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btByte Value)                { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, bt32bitInt Value)            { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btUnsigned32bitInt Value)    { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, bt64bitInt Value)            { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btFloat Value)               { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btcString Value)             { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, const INamedValueSet *Value)
+   {
+      AutoLock(this);
+      if ( this == Value->Concrete() ) {
+         return ENamedValuesRecursiveAdd;
+      }
+      return m_sNVS.Add(Name, Value->Concrete());
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   ENamedValues Add(btStringKey        Name,
+                    btByteArray        Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey        Name,
+                    bt32bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey             Name,
+                    btUnsigned32bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey        Name,
+                    bt64bitIntArray    Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey             Name,
+                    btUnsigned64bitIntArray Value,
+                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey Name, btObjectType Value) { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey        Name,
+                    btFloatArray       Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey        Name,
+                    btStringArray      Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+   ENamedValues Add(btStringKey        Name,
+                    btObjectArray      Value,
+                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
 
-//=============================================================================
-// Name: Add
-// Description: Add a btUnsigned32bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btUnsigned32bitInt  value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+   ENamedValues Get(btStringKey Name, btBool *pValue) const                  { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btByte *pValue) const                  { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt32bitInt *pValue) const              { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned32bitInt *pValue) const      { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt64bitInt *pValue) const              { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue) const      { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btFloat *pValue) const                 { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btcString *pValue) const               { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, INamedValueSet const **pValue) const   { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btByteArray *pValue) const             { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue) const         { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btObjectType *pValue) const            { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btFloatArray *pValue) const            { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+   ENamedValues Delete(btStringKey Name)                                  { AutoLock(this); return m_sNVS.Delete(Name);         }
+   ENamedValues GetSize(btStringKey Name, btWSSize *pSize) const          { AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
+   ENamedValues Type(btStringKey Name, eBasicTypes *pType) const          { AutoLock(this); return m_sNVS.Type(Name, pType);    }
+   btBool Has(btStringKey Name) const                                     { AutoLock(this); return m_sNVS.Has(Name);            }
+
+   ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const
+   {
+      AutoLock(this);
+      eNameTypes Type;
+      GetNameType(index, &Type);
+      if ( Type != btStringKey_t ) {
+         return ENamedValuesBadType;
+      }
+
+      //Adjust the index for non-string keys
+      btUnsignedInt iNum;
+      m_iNVS.GetNumNames(&iNum);
+      index -= iNum;
+      return m_sNVS.GetName(index, pName);
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
 
-   return ENamedValuesOK;
-}
+   //--------------------------------------------------------------------------
+   // Regular functions, not distinguished by key type
+   //--------------------------------------------------------------------------
 
-//=============================================================================
-// Name: Add
-// Description: Add a bt64bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         bt64bitInt value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+   ENamedValues Empty()          // Force the NVS to delete all its members
+   {
+      AutoLock(this);
+      ENamedValues res[2] = { ENamedValuesOK, ENamedValuesOK };
+      res[0] = m_iNVS.Empty();
+      res[1] = m_sNVS.Empty();
+      return ( ENamedValuesOK != res[0] ? res[0] : res[1] );
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   btBool Subset(const INamedValueSet &rOther) const
+   {
+      CNamedValueSet const *pCNamedValueSet = dynamic_cast<CNamedValueSet const *>(rOther.Concrete());
 
-//=============================================================================
-// Name: Add
-// Description: Add a btUnsigned64bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btUnsigned64bitInt value) {
-   AutoLock(this);
-   CValue tempVal;
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+      ASSERT(NULL != pCNamedValueSet);
+      if ( NULL == pCNamedValueSet ) {
+         return false;
+      }
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+      AutoLock(this);
+      {
+         AutoLock(pCNamedValueSet);
+         btBool iRet = m_iNVS.Subset(pCNamedValueSet->m_iNVS);
+         btBool sRet = m_sNVS.Subset(pCNamedValueSet->m_sNVS);
+         return (iRet && sRet);
+      }
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   btBool operator == (const INamedValueSet &rOther) const
+   {
+      CNamedValueSet const *pCNamedValueSet = dynamic_cast<CNamedValueSet const *>(rOther.Concrete());
+      ASSERT(NULL != pCNamedValueSet);
 
-//=============================================================================
-// Name: Add
-// Description: Add a btFloat value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btFloat value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+      ASSERT(NULL != pCNamedValueSet);
+      if ( NULL == pCNamedValueSet ) {
+         return false;
+      }
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+      AutoLock(this);
+      {
+         AutoLock(pCNamedValueSet);
+         btBool iRet = (m_iNVS == pCNamedValueSet->m_iNVS);
+         btBool sRet = (m_sNVS == pCNamedValueSet->m_sNVS);
+         return (iRet && sRet);
+      }
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   ENamedValues GetNumNames(btUnsignedInt *pNum) const
+   {
+      AutoLock(this);
 
-//=============================================================================
-// Name: Add
-// Description: Add a string value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btcString value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+      btUnsignedInt piNum;
+      btUnsignedInt psNum;
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+      ENamedValues result = m_iNVS.GetNumNames(&piNum);
+      if ( result != ENamedValuesOK ) {
+         return result;
+      }
+
+      result = m_sNVS.GetNumNames(&psNum);
+      if ( result != ENamedValuesOK ) {
+         return result;
+      }
+
+      //Return the sum of both NVS
+      *pNum = piNum + psNum;
+      return result;
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   ENamedValues GetNameType(btUnsignedInt index, eNameTypes *pType) const
+   {
+      AutoLock(this);
 
-//=============================================================================
-// Name: Add
-// Description: Add a NamedValueSet value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         NamedValueSet const &value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+      btUnsignedInt piNum;
+      btUnsignedInt NumNames;
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+      //Get the total number of names
+      GetNumNames(&NumNames);
+      if ( index > NumNames ) {
+         return ENamedValuesIndexOutOfRange;
+      }
+
+      //Get the total names that are indexed by integers
+      ENamedValues result = m_iNVS.GetNumNames(&piNum);
+
+      //Integers keys start at index zero
+      *pType = (index >= piNum ? btStringKey_t : btNumberKey_t);
+
+      return result;
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
+   virtual ENamedValues  Read(std::istream & );
+   virtual ENamedValues Write(std::ostream &os) const { return Write(os, 0); }
+   virtual ENamedValues Write(std::ostream & , unsigned ) const;
 
-//=============================================================================
-// Name: Add
-// Description: Add a 32bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         bt32bitIntArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   CValue tempVal;
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+   // was ENamedValues NVSWriteOneNVSToFile(std::ostream        &os, NamedValueSet const &nvsToWrite,   unsigned             level);
+   // Serialize NVS with ending demarcation
+   virtual ENamedValues WriteOne(std::ostream & , unsigned ) const;
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+#ifdef NVSFileIO
+
+   // Reads an open (binary) file and creates an NVS from it.
+   // was NVSReadNVS(FILE * , NamedValueSet * );
+   virtual ENamedValues Read(FILE * );
+
+   // was NVSWriteNVS(FILE * , NamedValueSet * , unsigned );
+   virtual ENamedValues Write(FILE *f) const { return Write(f, 0); }
+   virtual ENamedValues Write(FILE * , unsigned ) const;
+
+   // Serialize NVS with ending demarcation
+   // was NVSWriteOneNVSToFile(FILE * , NamedValueSet const & , unsigned );
+   virtual ENamedValues WriteOne(FILE * , unsigned ) const;
+
+#endif // NVSFileIO
+
+   virtual ENamedValues Merge(const INamedValueSet & );
+
+   virtual ENamedValues FromStr(const std::string & );
+   virtual ENamedValues FromStr(void * , btWSSize );
+   virtual std::string    ToStr() const;
+
+protected:
+
+   // Make this equal to the given INamedValueSet.
+   virtual ENamedValues Copy(const INamedValueSet &Other)
+   {
+      CNamedValueSet const *pCNamedValueSet = dynamic_cast<CNamedValueSet const *>(Other.Concrete());
+
+      ASSERT(NULL != pCNamedValueSet);
+      if ( NULL == pCNamedValueSet ) {
+         return ENamedValuesBadType;
+      }
+
+      AutoLock(this);
+      {
+         AutoLock(pCNamedValueSet);
+         m_iNVS = pCNamedValueSet->m_iNVS;
+         m_sNVS = pCNamedValueSet->m_sNVS;
+      }
+
+      return ENamedValuesOK;
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
-}
+   // Create a new identical copy of this object.
+   virtual INamedValueSet * Clone() const
+   {
+      INamedValueSet *p = AAL::NewNVS();
 
-//=============================================================================
-// Name: Add
-// Description: Add a ByteArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btByteArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   CValue tempVal;
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
+      ASSERT(NULL != p);
+      if ( NULL == p ) {
+         return NULL;
+      }
 
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+      AutoLock(this);
+      p->Copy(*this);
+
+      return p;
    }
 
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
+   virtual INamedValueSet const * Concrete() const { return this; }
+
+private:
+
+   // was void NVSWriteEndOfNVS(std::ostream &os, unsigned level);
+   static void WriteEndOfNVS(std::ostream & , unsigned );
+
+   // was void NVSWriteName(std::ostream &os, eNameTypes typeName, btStringKey pszName, unsigned level);
+   static void WriteName(std::ostream & , eNameTypes , btStringKey , unsigned );
+
+   // was void NVSWriteName(std::ostream &os, eNameTypes typeName, btNumberKey uName, unsigned level);
+   static void WriteName(std::ostream & , eNameTypes , btNumberKey , unsigned );
+
+   // was NVSWriteLevel(std::ostream &os, unsigned level);
+   static void WriteLevel(std::ostream & , unsigned );
+
+   // was void NVSWriteUnsigned(std::ostream &os, unsigned u, unsigned level);
+   static void WriteUnsigned(std::ostream & , btUnsignedInt , unsigned );
+
+   // was void NVSWriteString(std::ostream &os, btcString sz, unsigned level);
+   static void WriteString(std::ostream & , btcString , unsigned );
+
+   // was btBool  NVSReadUnsigned(std::istream &is, btUnsignedInt *pu);
+   static btBool ReadUnsigned(std::istream & , btUnsignedInt * );
+
+   // was char *    NVSReadString(std::istream &is);
+   static char * ReadString(std::istream & );
+
+   // was btBool NVSReadNumberKey(std::istream &is, btNumberKey *pu);
+   static btBool ReadNumberKey(std::istream & , btNumberKey * );
+
+   // was ENamedValues NVSReadNVSError(btmStringKey sName, ENamedValues error);
+   static ENamedValues ReadNVSError(btmStringKey , ENamedValues );
+
+#ifdef NVSFileIO
+
+   // was NVSWriteEndOfNVS(FILE * , unsigned );
+   static void WriteEndOfNVS(FILE * , unsigned );
+
+   // was NVSWriteName(FILE *file, eNameTypes typeName, btStringKey pszName, unsigned level);
+   static void WriteName(FILE * , eNameTypes , btStringKey , unsigned );
+
+   // was void NVSWriteName(FILE *file, eNameTypes typeName, btNumberKey uName, unsigned level);
+   static void WriteName(FILE * , eNameTypes , btNumberKey , unsigned );
+
+   // was NVSWriteLevel(FILE *file, unsigned level);
+   static void WriteLevel(FILE * , unsigned );
+
+   // was NVSWriteUnsigned(FILE *file, unsigned u, unsigned level);
+   static void WriteUnsigned(FILE * , btUnsignedInt , unsigned );
+
+   // was void NVSWriteString(FILE *file, btcString sz, unsigned level);
+   static void WriteString(FILE * , btcString , unsigned );
+
+   // was int NVSReadUnsigned(FILE *file, btUnsignedInt *pu);
+   static int ReadUnsigned(FILE * , btUnsignedInt * );
+
+   // was AASLIB_API btString NVSReadString(FILE *file);
+   static btString ReadString(FILE * );
+
+   // was int NVSReadNumberKey(FILE *file, btNumberKey *pu);
+   static int ReadNumberKey(FILE * , btNumberKey * );
+
+#endif // NVSFileIO
+
+}; // End of class CNamedValueSet
+
+/// NamedValueSet factory.
+/// @ingroup BasicTypes
+///
+/// @return Pointer to newly-allocated INamedValuesSet interface.
+INamedValueSet * NewNVS()
+{
+   return new(std::nothrow) CNamedValueSet();
 }
 
-
-//=============================================================================
-// Name: Add
-// Description: Add a btUnsigned32bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btUnsigned32bitIntArray  value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
+/// Deletes an INamedValueSet object.
+/// @ingroup BasicTypes
+void DeleteNVS(INamedValueSet *p)
+{
+   if ( NULL != p ) {
+      delete p;
    }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
 }
 
-//=============================================================================
-// Name: Add
-// Description: Add a 64bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         bt64bitIntArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a Unsigned64bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btUnsigned64bitIntArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a ObjectType value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btObjectType value) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a floatArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btFloatArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a stringArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btStringArray value,
-                         btUnsigned32bitInt NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Add
-// Description: Add a ObjectArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-//         Value - Value
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Add( Kt Name,
-                         btObjectArray value,
-                         btUnsigned32bitInt  NumElements) {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::iterator itr=m_NVSet.end();
-
-   //Check for exclusivity
-   if(m_NVSet.find(Name) != itr) {
-      return ENamedValuesDuplicateName;
-   }
-
-   //Store the value
-   m_NVSet[Name].Put(value,NumElements);
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a btBool value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btBool *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a btByte value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btByte *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-
-
-//=============================================================================
-// Name: Get
-// Description: Get a 32bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         bt32bitInt *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a Unsigned32bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btUnsigned32bitInt *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a 64bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         bt64bitInt *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a Unsigned64bitInt value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btUnsigned64bitInt *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a float value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btFloat *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a string value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btcString *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a NamedValueSet value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         NamedValueSet const **pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a ByteArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btByteArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a 32bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         bt32bitIntArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a Unsigned32bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btUnsigned32bitIntArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a 64bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         bt64bitIntArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a Unsigned64bitIntArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,
-                         btUnsigned64bitIntArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a ObjectType value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,btObjectType *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a floatArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,btFloatArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a stringArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,btStringArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Get
-// Description: Get a ObjectArray value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pvalue - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Get( Kt Name,btObjectArray *pvalue)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-   return (*itr).second.Get(pvalue);
-}
-
-//=============================================================================
-// Name: Delete
-// Description: Delete a named value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: none.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues  TNamedValueSet<Kt>::Delete( Kt Name) {
-   AutoLock(this);
-
-   //Find the named value pair
-   if(m_NVSet.find(Name) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-
-   //Remove the entry from the set
-   m_NVSet.erase(Name);
-
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: GetSize
-// Description: Get the size in objects of a named value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pSize - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::GetSize(Kt        Name,
-                            btWSSize *pSize) const {
-   AutoLock(this);
-
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-
-   *pSize = (*itr).second.Size();
-
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Type
-// Description: Get the Type of a named value
-// Interface: public
-// Inputs: Name - Parameter name.
-// Outputs: pType - Place to return value.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::Type( Kt Name,eBasicTypes *pType)const {
-   AutoLock(this);
-   CValue tempVal;
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if((itr=m_NVSet.find(Name)) == m_NVSet.end()) {
-      return ENamedValuesNameNotFound;
-   }
-
-   //Return the Type
-   *pType = (*itr).second.Type();
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: GetNumNames
-// Description: Get the number of named value pairs in this object
-// Interface: public
-// Inputs: none.
-// Outputs: pNum - Place to return number of names.
-// Comments:
-//=============================================================================
-#if defined( _MSC_VER )
-   #pragma warning( push )
-   #pragma warning( disable:4251 )  // Cannot export template definitions
-#endif // _MSC_VER
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::GetNumNames(btUnsignedInt *pNum)const {
-   AutoLock(this);
-   *pNum=static_cast<btUnsignedInt>(m_NVSet.size());  // size_t truncation to int possible
-   return ENamedValuesOK;
-}
-#if defined( _MSC_VER )
-   #pragma warning( pop )
-#endif // _MSC_VER
-
-//=============================================================================
-// Name: GetName
-// Description: Gets the name of a named value pair at index number.
-// Interface: public
-// Inputs: index - Zero based index into list of named/value pairs.
-// Outputs: pName - Place to return name.
-// Comments:
-//=============================================================================
-template<class Kt>
-ENamedValues
-TNamedValueSet<Kt>::GetName( btUnsignedInt index,
-                             Kt *pName)const {
-   AutoLock(this);
-   typename std::map<Kt,CValue>::const_iterator itr;
-
-   //Find the named value pair
-   if(m_NVSet.size() < (unsigned) index ) {
-      return ENamedValuesNameNotFound;
-   }
-
-   //Get the right entry
-   for(itr=m_NVSet.begin(); index!=0; index--,itr++) {/*empty*/}
-
-   //Return the name
-   *pName = (Kt)(*itr).first;
-
-   return ENamedValuesOK;
-}
-
-//=============================================================================
-// Name: Has
-// Description: Return whether a named value pair exits
-// Interface: public
-// Inputs: Name - Name to check.
-// Outputs: none.
-// Comments: Returns ENamedValuesOK if Name exists
-//=============================================================================
-template<class Kt>
-btBool  TNamedValueSet<Kt>::Has( Kt Name)const {
-   AutoLock(this);
-   CValue tempVal;
-   typename std::map<Kt,CValue>::const_iterator itr=m_NVSet.end();
-
-   //Find the named value pair
-   if(m_NVSet.find(Name) == itr) {
-      return false;
-   }
-   return true;
-}
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -1820,32 +2682,75 @@ btBool  TNamedValueSet<Kt>::Has( Kt Name)const {
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
-/// NamedValueSet factory.
-/// @ingroup BasicTypes
-///
-/// @return Pointer to newly-allocated INamedValuesSet interface.
-INamedValueSet * _NewNamedValueSet() {
-   return new CNamedValueSet;
-}
-
-/// Deletes an INamedValueSet object.
-/// @ingroup BasicTypes
-void _DeleteNamedValueSet(INamedValueSet *pNVS) {
-   if ( NULL != pNVS ) {
-      delete pNVS;
-   }
-}
-
-/// Copies a Named Value Set.
-/// @ingroup BasicTypes
-///
-/// @param[out]  pTarget  Pointer to target INamedValueSet interface.
-/// @param[in]   pOther   Named Value Set to copy.
-void _DupNamedValueSet(INamedValueSet *pTarget,
-                       INamedValueSet *pOther)
+//=============================================================================
+// Name:        NamedValueSetFromStdString
+// Description: Convert a std::string length into an NVS
+// Interface:   public
+// Inputs:      std::string containing the serialized representation of the
+//              NamedValueSet.
+// Outputs:     nvs is a non-const reference to the returned NamedValueSet
+//=============================================================================
+ENamedValues CNamedValueSet::FromStr(const std::string &s)
 {
-   *(dynamic_cast<CNamedValueSet*>(pTarget)) = *(dynamic_cast<CNamedValueSet*>(pOther));
+   std::istringstream iss(s); // put the string inside an istringstream
+   return Read(iss);          // use Read() to get it out
 }
+
+//=============================================================================
+// Name:        NamedValueSetFromCharString
+// Description: Convert a char* + length into an NVS
+// Interface:   public
+// Inputs:      char*, length of char* including a final terminating null.
+//              Note that the string itself may contain embedded nulls; they
+//              do not terminate the string. That is, the char* is not a normal
+//              NULL-terminated string
+// Outputs:     nvs is a non-const reference to the returned NamedValueSet
+//=============================================================================
+ENamedValues CNamedValueSet::FromStr(void *pv, btWSSize len)
+{
+   std::string s(static_cast<char *>(pv), (size_t)len);   // initializing this way allows embedded nulls
+   return FromStr(s);
+}
+
+//=============================================================================
+// Name:        StdStringFromNamedValueSet
+// Description: Return a std::string containing the serialized NamedValueSet
+// Interface:   public
+// Inputs:      const NamedValueSet& nvs
+// Returns:     As in description. Note that the returned string.length() is
+//              the correct length to allocate for a buffer in which to store
+//              the buffer.
+// NOTE:        See CharFromString for important usage note
+//=============================================================================
+std::string CNamedValueSet::ToStr() const
+{
+   std::ostringstream oss;
+   // oss << nvs << '\0';  // add a final, ensuring, terminating null
+   Write(oss);
+   oss << '\0';
+   return oss.str();
+}
+
+//=============================================================================
+// Name:          NVSMerge
+// Description:   Merge one NamedValueSet into another
+// Interface:     public
+// Inputs:        nvsInput and nvsOutput will be merged together
+// Outputs:       nvsOutput will contain the merged results
+// Returns:       ENamedValuesOK for success, appropriate value otherwise
+// Comments:      If there are duplicate names, the original value in the
+//                   nvsOutput takes precedence and there is no error
+//=============================================================================
+ENamedValues CNamedValueSet::Merge(const INamedValueSet &nvsInput)
+{
+   // Write nvsInput to a stringstream
+   std::stringstream ss;
+   ss << nvsInput;
+   ss >> *this;
+   return ENamedValuesOK;
+}  // NVSMerge
+
+
 
 //=============================================================================
 // Name:        operator << on NamedValueSet
@@ -1856,28 +2761,9 @@ void _DupNamedValueSet(INamedValueSet *pTarget,
 // Comments:    works for writing to any of cout, ostream, ofstream,
 //                 ostringstream, fstream, stringstream
 //=============================================================================
-std::ostream & operator << (std::ostream &s, const NamedValueSet &nvs)
+std::ostream & operator << (std::ostream &s, const INamedValueSet &nvs)
 {
-   NVSWriteNVS(s, nvs, 0);
-   return s;
-}
-
-//=============================================================================
-// Name:        operator << on FormattedNVS
-// Description: serializes a NamedValueSet to a stream in a formatted manner
-// Interface:   public
-// Inputs:      stream, FormattedNVS which was constructed from a
-//                 NamedValueSet, a tab value, and a debug value
-// Outputs:     serialized formatted NamedValueSet
-// Comments:    works for writing to any of cout, ostream, ofstream,
-//                 ostringstream, fstream, stringstream
-//              FormattedNVS is defined in AALNamedValueSet.h
-//=============================================================================
-std::ostream & operator << (std::ostream &s, const FormattedNVS &fnvs)
-{
-   NVSWriteNVS(s, fnvs.m_nvs, fnvs.m_tab);
-   // TODO: add debug (which is really just a human-readable form of the numeric keys) and both
-   //       hex and dec output of numerics. Debug format is NOT intended for being read back in!
+   nvs.Write(s);
    return s;
 }
 
@@ -1892,60 +2778,13 @@ std::ostream & operator << (std::ostream &s, const FormattedNVS &fnvs)
 // Comments: The passed in NamedValueSet is not emptied first, so if it contains
 //           information already, that will simply be added to.
 //=============================================================================
-std::istream & operator >> (std::istream &s, NamedValueSet &rnvs)
+std::istream & operator >> (std::istream &s, INamedValueSet &rnvs)
 {
-   ENamedValues eRet = NVSReadNVS(s, static_cast<NamedValueSet *>(&rnvs));
-   if (ENamedValuesOK != eRet) {
+   ENamedValues eRet = rnvs.Read(s);
+   if ( ENamedValuesOK != eRet ) {
       s.setstate(std::ios_base::failbit);
    }
    return s;
-}
-
-//=============================================================================
-// Name:        NamedValueSetFromStdString
-// Description: Convert a std::string length into an NVS
-// Interface:   public
-// Inputs:      std::string containing the serialized representation of the
-//              NamedValueSet.
-// Outputs:     nvs is a non-const reference to the returned NamedValueSet
-//=============================================================================
-void NamedValueSetFromStdString(const std::string &s, NamedValueSet &nvs)
-{
-   std::istringstream iss(s);      // put the string inside an istringstream
-   iss >> nvs;                // use operator >> to get it out
-}
-
-//=============================================================================
-// Name:        NamedValueSetFromCharString
-// Description: Convert a char* + length into an NVS
-// Interface:   public
-// Inputs:      char*, length of char* including a final terminating null.
-//              Note that the string itself may contain embedded nulls; they
-//              do not terminate the string. That is, the char* is not a normal
-//              NULL-terminated string
-// Outputs:     nvs is a non-const reference to the returned NamedValueSet
-//=============================================================================
-void NamedValueSetFromCharString(void *pv, btWSSize len, NamedValueSet &nvs)
-{
-   std::string s(static_cast<char *>(pv), (size_t)len);   // initializing this way allows embedded nulls
-   NamedValueSetFromStdString( s, nvs);
-}
-
-//=============================================================================
-// Name:        StdStringFromNamedValueSet
-// Description: Return a std::string containing the serialized NamedValueSet
-// Interface:   public
-// Inputs:      const NamedValueSet& nvs
-// Returns:     As in description. Note that the returned string.length() is
-//              the correct length to allocate for a buffer in which to store
-//              the buffer.
-// NOTE:        See CharFromString for important usage note
-//=============================================================================
-std::string StdStringFromNamedValueSet(const NamedValueSet &nvs)
-{
-   std::ostringstream oss;
-   oss << nvs << '\0';  // add a final, ensuring, terminating null
-   return oss.str();
 }
 
 //=============================================================================
@@ -2001,16 +2840,19 @@ void BufFromString(void *pBuf, std::string const &s)
 //=============================================================================
 // Name: NVSWriteLevel - write tabs so that entries will be nicely indented
 //=============================================================================
-void NVSWriteLevel(FILE *file, unsigned level) {
-   while (level--)
-      fputc ('\t', file);
+void CNamedValueSet::WriteLevel(FILE *file, unsigned level)
+{
+   while ( level-- ) {
+      fputc('\t', file);
+   }
 }
 
 //=============================================================================
 // Name: NVSWriteUnsigned - write a single unsigned, at the level passed in, followed by a space
 //=============================================================================
-void NVSWriteUnsigned(FILE *file, unsigned u, unsigned level) {
-   NVSWriteLevel(file, level);
+void CNamedValueSet::WriteUnsigned(FILE *file, btUnsignedInt u, unsigned level)
+{
+   CNamedValueSet::WriteLevel(file, level);
    fprintf(file, "%u ", u);
 }
 
@@ -2019,16 +2861,18 @@ void NVSWriteUnsigned(FILE *file, unsigned u, unsigned level) {
 //       Returns EOF on error, or other values - just check for EOF
 //=============================================================================
 #ifdef _MSC_VER
-   #pragma warning( push)      // fscanf
+   #pragma warning( push)                // fscanf
    #pragma warning( disable : 4996)      // fscanf
 #endif // _MSC_VER
-int NVSReadUnsigned (FILE *file, btUnsignedInt *pu) {
-   return fscanf( file, "%u", pu);   // eats preceeding whitespace
+int CNamedValueSet::ReadUnsigned(FILE *file, btUnsignedInt *pu)
+{
+   return fscanf(file, "%u", pu);   // eats preceeding whitespace
 }
 
 //=============================================================================
 //=============================================================================
-int NVSReadNumberKey(FILE *file, btNumberKey *pu) {
+int CNamedValueSet::ReadNumberKey(FILE *file, btNumberKey *pu)
+{
    return fscanf( file, "%llu", pu);   // choose one or the other
 // return fscanf( file, "%u", pu);     // depends on type of btNumberKey
 }
@@ -2042,8 +2886,9 @@ int NVSReadNumberKey(FILE *file, btNumberKey *pu) {
 //       not expecting errors here
 //       level preceeds string with an appropriate number of tabs
 //=============================================================================
-void NVSWriteString(FILE *file, btcString sz, unsigned level) {
-   NVSWriteLevel( file, level);
+void CNamedValueSet::WriteString(FILE *file, btcString sz, unsigned level)
+{
+   CNamedValueSet::WriteLevel(file, level);
    fprintf(file, "%u %s\n", (unsigned)strlen(sz), sz);
 }
 
@@ -2054,13 +2899,14 @@ void NVSWriteString(FILE *file, btcString sz, unsigned level) {
 //       Input is open file
 //       Returns pointer to malloc'd buffer if successful, NULL if not
 //=============================================================================
-btString NVSReadString(FILE *file) {
+btString CNamedValueSet::ReadString(FILE *file)
+{
    btUnsignedInt u = 0;
    btWSSize      szlen;
    btWSSize      Total;
    btWSSize      ThisTime;
 
-   if ( EOF == NVSReadUnsigned(file, &u) ) {
+   if ( EOF == CNamedValueSet::ReadUnsigned(file, &u) ) {
       return NULL;                  // Get length of string
    }
 
@@ -2119,36 +2965,23 @@ btString NVSReadString(FILE *file) {
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName(FILE *file, eNameTypes typeName, btStringKey pszName, unsigned level) {
-   NVSWriteLevel(file, level);                      // tab in
+void CNamedValueSet::WriteName(FILE *file, eNameTypes typeName, btStringKey pszName, unsigned level)
+{
+   CNamedValueSet::WriteLevel(file, level);                      // tab in
    fprintf(file, "%u ", static_cast<unsigned>(typeName));
-   NVSWriteString(file, pszName, 0);                // write the name
+   CNamedValueSet::WriteString(file, pszName, 0);                // write the name
 }
 
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName(FILE *file, eNameTypes typeName, btNumberKey uName, unsigned level) {
-   NVSWriteLevel(file, level);                       // tab in
+void CNamedValueSet::WriteName(FILE *file, eNameTypes typeName, btNumberKey uName, unsigned level)
+{
+   CNamedValueSet::WriteLevel(file, level);            // tab in
    fprintf(file, "%u ", static_cast<unsigned>(typeName));
-   fprintf(file, "%llu\n", uName);                   // Depends on underlying type of btNumberKey
+   fprintf(file, "%llu\n", uName);                     // Depends on underlying type of btNumberKey
 //   fprintf (file, "%u\n", uName);                    // No way to get around it in here
 }
-
-#if DEPRECATED
-//=============================================================================
-// Name: NVSWriteName to an open file
-//       name can only be integer or string, should be checked before calling
-//=============================================================================
-void NVSWriteName (FILE* file, eNameTypes typeName, void* pName, unsigned level) {
-   NVSWriteLevel(file, level);
-   fprintf (file, "%u ", static_cast<unsigned>(typeName));
-   if (btStringKey_t == typeName)      // btString_t type name
-      NVSWriteString (file, reinterpret_cast<btStringKey>(pName), 0);
-   else                             // btUnsignedInt_t type name
-      fprintf (file, "%u\n", *reinterpret_cast<unsigned*>(pName));
-}
-#endif
 
 //=============================================================================
 // Name: NVSWriteEndOfNVS
@@ -2156,9 +2989,10 @@ void NVSWriteName (FILE* file, eNameTypes typeName, void* pName, unsigned level)
 //       Name is hardcoded and fake - will never actually be read or used, can
 //          something already in the NVS without problem
 //=============================================================================
-void NVSWriteEndOfNVS(FILE *file, unsigned level) {
-   NVSWriteName(file, btStringKey_t, "---- End of NVS ----", level);
-   NVSWriteUnsigned(file, btEndOfNVS_t, level+1); // This is the real end marker
+void CNamedValueSet::WriteEndOfNVS(FILE *file, unsigned level)
+{
+   CNamedValueSet::WriteName(file, btStringKey_t, "---- End of NVS ----", level);
+   CNamedValueSet::WriteUnsigned(file, btEndOfNVS_t, level+1); // This is the real end marker
    fprintf(file, "\n");
 }  // End of NVSWriteEndOfNVS
 
@@ -2186,10 +3020,10 @@ void NVSWriteEndOfNVS(FILE *file, unsigned level) {
 //                or "\t19 2\n\t7 foo bar\n\t 9 foo2 bar2\n" is
 //                   special because it is an array of strings, which are separated by newlines instead of spaces
 //=============================================================================
-ENamedValues NVSWriteNVS(FILE                *file,
-                         NamedValueSet const &nvsToWrite,
-                         unsigned             level)
+ENamedValues CNamedValueSet::Write(FILE *file, unsigned level) const
 {
+   AutoLock(this);
+
    btUnsignedInt uElements;                  // number of elements in the NVS
    btUnsignedInt irg;                        // index for each element in the NVS
    eNameTypes    typeName;                   // to hold the type of the name
@@ -2198,21 +3032,21 @@ ENamedValues NVSWriteNVS(FILE                *file,
    eBasicTypes   typeData = btUnknownType_t; // type of data
 
 
-   nvsToWrite.GetNumNames(&uElements);     // initialize the loop to the number of elements in the NVS
+   GetNumNames(&uElements);     // initialize the loop to the number of elements in the NVS
 
    //Write one at a time
    for ( irg = 0 ; irg < uElements ; irg++ ) {        // walk forward through NVS
-      nvsToWrite.GetNameType(irg, &typeName);// Get name type
+      GetNameType(irg, &typeName);// Get name type
       switch ( typeName ) {
          case btStringKey_t:
-            nvsToWrite.GetName(irg,&sName);     // Get the name
-            NVSWriteName(file, typeName, sName, level); // Write the name
-            nvsToWrite.Type(sName,&typeData);   // Get the data type
+            GetName(irg,&sName);     // Get the name
+            CNamedValueSet::WriteName(file, typeName, sName, level); // Write the name
+            Type(sName,&typeData);   // Get the data type
          break;
          case btNumberKey_t:                 // same here, for UINT names
-            nvsToWrite.GetName(irg,&iName);
-            NVSWriteName(file, typeName, iName, level);
-            nvsToWrite.Type(iName,&typeData);
+            GetName(irg,&iName);
+            CNamedValueSet::WriteName(file, typeName, iName, level);
+            Type(iName,&typeData);
          break;
          default:
             ASSERT(false);
@@ -2231,21 +3065,21 @@ ENamedValues NVSWriteNVS(FILE                *file,
          case btBool_t : {
             btBool val;
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName,&val);
+               Get(sName, &val);
             } else {
-               nvsToWrite.Get(iName,&val);
+               Get(iName, &val);
             }
-            NVSWriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             fprintf(file, "%u\n", static_cast<unsigned>(val));
          } break;
          case btByte_t : {
             btByte val;
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName,&val);
+               Get(sName, &val);
             } else {
-               nvsToWrite.Get(iName,&val);
+               Get(iName, &val);
             }
-            NVSWriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
 //            fprintf( file, "%c\n", val);
             fwrite (&val, sizeof(btByte), 1, file);
             fprintf(file, "\n");
@@ -2253,76 +3087,82 @@ ENamedValues NVSWriteNVS(FILE                *file,
          case bt32bitInt_t : {
             bt32bitInt val;
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName,&val);
+               Get(sName, &val);
             } else {
-               nvsToWrite.Get(iName,&val);
+               Get(iName, &val);
             }
-            NVSWriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             fprintf(file, "%d\n", val);
          } break;
          case btUnsigned32bitInt_t: {
             btUnsigned32bitInt val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
-            NVSWriteUnsigned( file, typeData, level+1);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             fprintf( file, "%u\n", val);
          }
          break;
          case bt64bitInt_t: {
             bt64bitInt val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
-            NVSWriteUnsigned( file, typeData, level+1);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             fprintf( file, "%lld\n", val);
          }
          break;
          case btUnsigned64bitInt_t: {
             btUnsigned64bitInt val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
-            NVSWriteUnsigned( file, typeData, level+1);
-            fprintf( file, "%llu\n", val);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            fprintf(file, "%llu\n", val);
          }
          break;
          case btFloat_t: {
             btFloat val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
-            NVSWriteUnsigned( file, typeData, level+1);
-            fprintf( file, "%g\n", val);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            fprintf(file, "%g\n", val);
          }
          break;
          case btString_t: {
             btcString val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteString( file, val, 0);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteString(file, val, 0);
          }
          break;
          case btNamedValueSet_t: {
-            NamedValueSet const *pval;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&pval);
-            else
-               nvsToWrite.Get(iName,&pval);
+            INamedValueSet const *pval = NULL;
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &pval);
+            } else {
+               Get(iName, &pval);
+            }
             // NVS Name already written, write the NVS DataType
-            NVSWriteUnsigned( file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             fputc('\n',file);
-            NVSWriteNVS(file, *pval, level+2);  // Write the NVS itself
+            pval->Write(file, level+2);  // Write the NVS itself
             // Write the trailer - String Name, and DataType 'End of NVS'
-            NVSWriteName(file, btStringKey_t, "---- End of embedded NVS ----", level);
-            NVSWriteUnsigned( file, btEndOfNVS_t, level+1); // This is the real end marker
+            CNamedValueSet::WriteName(file, btStringKey_t, "---- End of embedded NVS ----", level);
+            CNamedValueSet::WriteUnsigned(file, btEndOfNVS_t, level+1); // This is the real end marker
             fprintf( file, "\n");
          }
          break;
@@ -2330,159 +3170,160 @@ ENamedValues NVSWriteNVS(FILE                *file,
             btByte  *val;
             btWSSize Num = 0;
             btWSSize NumWritten = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while (Num) {
-               NumWritten = fwrite( val, sizeof(btByte), Num, file);
+               NumWritten = fwrite(val, sizeof(btByte), Num, file);
                Num -= NumWritten;
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case bt32bitIntArray_t: {
             bt32bitInt *val;
             btWSSize    Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf( file, "%d ", *val++);
+               fprintf(file, "%d ", *val++);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case btUnsigned32bitIntArray_t: {
             btUnsigned32bitInt *val;
             btWSSize            Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf( file, "%u ", *val++);
+               fprintf(file, "%u ", *val++);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case bt64bitIntArray_t: {
             bt64bitInt *val;
             btWSSize    Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf( file, "%lld ", *val++);
+               fprintf(file, "%lld ", *val++);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case btUnsigned64bitIntArray_t: {
             btUnsigned64bitInt *val;
             btWSSize            Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf( file, "%llu ", *val++);
+               fprintf(file, "%llu ", *val++);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case btObjectType_t:      // Pointer, could be 32 or 64 bit
          {
             btObjectType val;
-            if (btStringKey_t == typeName)
-               nvsToWrite.Get(sName,&val);
-            else
-               nvsToWrite.Get(iName,&val);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
             btUnsigned64bitInt u64temp = reinterpret_cast<btUnsigned64bitInt>(val);
-            NVSWriteUnsigned( file, typeData, level+1);
-            fprintf( file, "%llu\n", u64temp);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            fprintf(file, "%llu\n", u64temp);
          }
          break;
          case btFloatArray_t: {
             btFloat *val;
             btWSSize Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf( file, "%g ", *val++);
+               fprintf(file, "%g ", *val++);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
          case btStringArray_t: {
             btString *val;
             btWSSize  Num = 0;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             fputs("\n", file);
             while ( Num-- ) {
-               NVSWriteString( file, *val++, level+2);
+               CNamedValueSet::WriteString(file, *val++, level+2);
             }
          }
          break;
          case btObjectArray_t: {
             btObjectType *val;     // pointer to array of pointers
             btWSSize      Num = 0; // number of pointers
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName,&val);
-               nvsToWrite.GetSize(sName,&Num);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName,&val);
-               nvsToWrite.GetSize(iName,&Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned( file, typeData, level+1);
-            NVSWriteUnsigned( file, Num, 0);
+            CNamedValueSet::WriteUnsigned(file, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
                btUnsigned64bitInt u64temp = reinterpret_cast<btUnsigned64bitInt>(*val++);
-               fprintf( file, "%llu ", u64temp);
+               fprintf(file, "%llu ", u64temp);
             }
-            fprintf( file, "\n");
+            fprintf(file, "\n");
          }
          break;
 
@@ -2500,23 +3341,13 @@ ENamedValues NVSWriteNVS(FILE                *file,
 // Name: NVSWriteOneNVSToFile
 //       Write an NVS + an EndofNVS marker to an open file
 //=============================================================================
-ENamedValues NVSWriteOneNVSToFile(FILE                *file,
-                                  NamedValueSet const &nvsToWrite,
-                                  unsigned             level) {
-   ENamedValues retval = NVSWriteNVS(file, nvsToWrite, level);
-   NVSWriteEndOfNVS(file, level);
+ENamedValues CNamedValueSet::WriteOne(FILE    *file,
+                                      unsigned level) const
+{
+   ENamedValues retval = Write(file, level);
+   CNamedValueSet::WriteEndOfNVS(file, level);
    return retval;
 }  // End of NVSWriteOneNVSToFile
-
-//=============================================================================
-// Utility function of NVSReadNVS for handling error returns
-//=============================================================================
-ENamedValues NVSReadNVSErrorFile(btmStringKey sName, ENamedValues error) {
-   if ( NULL != sName ) {
-      delete[] sName;       // clean up before error return
-   }
-   return error;
-}
 
 //=============================================================================
 // Name: NVSReadNVS from an open file, opened in binary mode
@@ -2536,8 +3367,10 @@ ENamedValues NVSReadNVSErrorFile(btmStringKey sName, ENamedValues error) {
 # pragma warning( push)           // fscanf
 # pragma warning( disable : 4996) // fscanf
 #endif // _MSC_VER
+ENamedValues CNamedValueSet::Read(FILE *file)
+{
+   AutoLock(this);
 
-ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
    btUnsignedInt irg;                        // index for each element in the NVS
    eNameTypes    typeName;                   // to hold the type of the name
    btNumberKey   iName;                      // to hold an integer name
@@ -2552,10 +3385,10 @@ ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
       //       Where NAME is either an INTEGER or a LEN STRING, depending upon the TYPE
 
       // Get type of the NAME
-      unsigned tempType;
+      btUnsignedInt tempType;
 
       tempType = 0;
-      if ( EOF == NVSReadUnsigned(file, &tempType) ) {
+      if ( EOF == CNamedValueSet::ReadUnsigned(file, &tempType) ) {
          return ENamedValuesEndOfFile;  // EOF means end of file, done with this NVS
       }
       if (tempType   != btNumberKey_t &&  // range check
@@ -2570,7 +3403,7 @@ ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
       {
          case btStringKey_t : {         // string name, FREE IT ONCE DONE WITH IT
 
-            sName = NVSReadString(file);
+            sName = CNamedValueSet::ReadString(file);
             if ( NULL == sName ) {
                return ENamedValuesInternalError_InvalidNameFormat;
             }
@@ -2579,7 +3412,7 @@ ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
 
          case btNumberKey_t : {         // integer name
 
-            if ( EOF == NVSReadNumberKey(file, &iName) ) {
+            if ( EOF == CNamedValueSet::ReadNumberKey(file, &iName) ) {
                return ENamedValuesInternalError_InvalidNameFormat;
             }
 
@@ -2592,12 +3425,12 @@ ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
 
       // Get type of the DATA - expect an unsigned here
       tempType = 0;
-      if (EOF == NVSReadUnsigned(file, &tempType)) {
-         return NVSReadNVSErrorFile( sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+      if (EOF == CNamedValueSet::ReadUnsigned(file, &tempType)) {
+         return CNamedValueSet::ReadNVSError( sName, ENamedValuesInternalError_UnexpectedEndOfFile);
       }
       if (tempType  > btUnknownType_t &&   // range check
           tempType != btEndOfNVS_t) {
-         return NVSReadNVSErrorFile(sName, ENamedValuesBadType);
+         return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);
       }
       typeData = static_cast<eBasicTypes>(tempType); // safe, because of range check
 
@@ -2615,56 +3448,56 @@ ENamedValues NVSReadNVS(FILE *file, NamedValueSet *nvsToRead) {
 do                                    \
 {                                     \
    if ( btStringKey_t == typeName ) { \
-      nvsToRead->Add(sName, __x);     \
+      Add(sName, __x);                \
    } else {                           \
-      nvsToRead->Add(iName, __x);     \
+      Add(iName, __x);                \
    }                                  \
 }while(0)
 
-#define NVSREADNVS_FSCANF(__type, __initializer, __fmt)                                      \
-case __type##_t : {                                                                          \
-   __type val = __initializer;                                                               \
-   if ( EOF == fscanf(file, __fmt, &val) ) { /* what happens if number is too big to fit? */ \
-      return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);      \
-   }                                                                                         \
-   NVS_ADD(val);                                                                             \
+#define NVSREADNVS_FSCANF(__type, __initializer, __fmt)                                          \
+case __type##_t : {                                                                              \
+   __type val = __initializer;                                                                   \
+   if ( EOF == fscanf(file, __fmt, &val) ) { /* what happens if number is too big to fit? */     \
+      return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile); \
+   }                                                                                             \
+   NVS_ADD(val);                                                                                 \
 } break
 
-#define NVS_ADD_ARRAY(__A, __len)        \
-do                                       \
-{                                        \
-   if ( btStringKey_t == typeName ) {    \
-      nvsToRead->Add(sName, __A, __len); \
-   } else {                              \
-      nvsToRead->Add(iName, __A, __len); \
-   }                                     \
+#define NVS_ADD_ARRAY(__A, __len)     \
+do                                    \
+{                                     \
+   if ( btStringKey_t == typeName ) { \
+      Add(sName, __A, __len);         \
+   } else {                           \
+      Add(iName, __A, __len);         \
+   }                                  \
 }while(0)
 
-#define NVSREADNVS_FSCANF_ARRAY(__type, __fmt)                                             \
-case __type##Array_t : {                                                                   \
-   __type##Array      val, p;                                                              \
-   btUnsigned32bitInt i,   Num = 0;                                                        \
-   btUnsigned32bitInt ThisTime;                                                            \
-   if ( EOF == NVSReadUnsigned(file, &Num) ) { /* read number of elements */               \
-      return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);    \
-   }                                                                                       \
-   if ( ( 0 == Num ) || ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) ) {                          \
-      break; /* end now on bad item count */                                               \
-   }                                                                                       \
-   if ( NULL == (val = new __type[Num]) ) {                                                \
-      return NVSReadNVSErrorFile(sName, ENamedValuesOutOfMemory);                          \
-   }                                                                                       \
-   i = Num;                                                                                \
-   p = val;                                                                                \
-   while ( i-- ) {                             /* read the array */                        \
-      ThisTime = fscanf(file, __fmt, p++);                                                 \
-      if ( ( 1 != ThisTime ) || ferror(file) ) {                                           \
-         delete[] val;                                                                     \
-         return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile); \
-      }                                                                                    \
-   }                                                                                       \
-   NVS_ADD_ARRAY(val, Num);                                                                \
-   delete[] val;                                                                           \
+#define NVSREADNVS_FSCANF_ARRAY(__type, __fmt)                                                      \
+case __type##Array_t : {                                                                            \
+   __type##Array      val, p;                                                                       \
+   btUnsigned32bitInt i,   Num = 0;                                                                 \
+   btUnsigned32bitInt ThisTime;                                                                     \
+   if ( EOF == CNamedValueSet::ReadUnsigned(file, &Num) ) { /* read number of elements */           \
+      return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);    \
+   }                                                                                                \
+   if ( ( 0 == Num ) || ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) ) {                                   \
+      break; /* end now on bad item count */                                                        \
+   }                                                                                                \
+   if ( NULL == (val = new __type[Num]) ) {                                                         \
+      return CNamedValueSet::ReadNVSError(sName, ENamedValuesOutOfMemory);                          \
+   }                                                                                                \
+   i = Num;                                                                                         \
+   p = val;                                                                                         \
+   while ( i-- ) {                             /* read the array */                                 \
+      ThisTime = fscanf(file, __fmt, p++);                                                          \
+      if ( ( 1 != ThisTime ) || ferror(file) ) {                                                    \
+         delete[] val;                                                                              \
+         return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile); \
+      }                                                                                             \
+   }                                                                                                \
+   NVS_ADD_ARRAY(val, Num);                                                                         \
+   delete[] val;                                                                                    \
 } break
 
       switch ( typeData ) {
@@ -2673,10 +3506,10 @@ case __type##Array_t : {                                                        
             int    uTemp = 0;
 
             if (EOF == fscanf(file, "%d", &uTemp)) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ((uTemp < 0) || (uTemp > 1)) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesBadType);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);
             }
 
             #if defined( _MSC_VER )
@@ -2696,26 +3529,26 @@ case __type##Array_t : {                                                        
          case btByte_t : {                // Read Data
             btByte val = 0;
             if ( EOF == fgetc(file) ) {   // remove preceeding whitespace
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 1 != fread(&val, sizeof(btByte), 1, file) ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             NVS_ADD(val);
          } break;
 
          case bt32bitInt_t : {            // Read Data
             bt32bitInt val = 0;
-            if (EOF == NVSReadUnsigned(file, reinterpret_cast<btUnsigned32bitInt*>(&val))) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if (EOF == CNamedValueSet::ReadUnsigned(file, reinterpret_cast<btUnsigned32bitInt*>(&val))) {
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             NVS_ADD(val);
          } break;
 
          case btUnsigned32bitInt_t : {    // Read Data
             btUnsigned32bitInt val = 0;
-            if ( EOF == NVSReadUnsigned(file, &val) ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( EOF == CNamedValueSet::ReadUnsigned(file, &val) ) {
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             NVS_ADD(val);
          } break;
@@ -2725,28 +3558,28 @@ case __type##Array_t : {                                                        
          NVSREADNVS_FSCANF(btFloat,            0.0, "%g"  );
 
          case btString_t : {              // Read Data
-            btString val = NVSReadString(file);
+            btString val = CNamedValueSet::ReadString(file);
             if (NULL == val) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             NVS_ADD(val);
             delete[] val;
          } break;
 
          case btNamedValueSet_t : {         // Read Data
-            NamedValueSet val;
-            ENamedValues  ret;
+            CNamedValueSet val;
+            ENamedValues   ret;
 
-            ret = NVSReadNVS(file, &val);
+            ret = val.Read(file);
             if ( ENamedValuesOK == ret ) {
-               NVS_ADD(val);
+               NVS_ADD(&val);
             } else {
-               return NVSReadNVSErrorFile(sName, ret);
+               return CNamedValueSet::ReadNVSError(sName, ret);
             }
          } break;
 
          // Normal end of embedded NVS, not really an error, but need to free sName
-         case btEndOfNVS_t  : return NVSReadNVSErrorFile(sName, ENamedValuesOK);
+         case btEndOfNVS_t  : return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
 
          case btByteArray_t : {       // Read Data
             btByteArray        val;
@@ -2754,17 +3587,17 @@ case __type##Array_t : {                                                        
             btUnsigned32bitInt Total;
             btUnsigned32bitInt ThisTime;
 
-            if ( EOF == NVSReadUnsigned(file, &Num) ) {  // read number of elements
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( EOF == CNamedValueSet::ReadUnsigned(file, &Num) ) {  // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {                            // crazy value, but possible, end now
                break;
             } else if ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesIndexOutOfRange);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesIndexOutOfRange);
             }
 
             if ( NULL == (val = new btByte[Num + 1]) ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesOutOfMemory);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesOutOfMemory);
             }
 
             fgetc(file);                             // eat the preceeding space
@@ -2781,7 +3614,7 @@ case __type##Array_t : {                                                        
 
                if ( ferror(file) ) {
                   delete[] val;
-                  return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+                  return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
                }
 
             }while( Total < (Num+1) );
@@ -2804,7 +3637,7 @@ case __type##Array_t : {                                                        
             btUnsigned64bitInt u64 = 0;
 
             if ( EOF == fscanf(file, "%llu", &u64) ) {   // what happens if number is too big to fit?
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             val = reinterpret_cast<btObjectType>(u64);
 
@@ -2815,16 +3648,16 @@ case __type##Array_t : {                                                        
             btStringArray      val;
             btUnsigned32bitInt i, Num = 0;
 
-            if ( EOF == NVSReadUnsigned(file, &Num) ) {  // read number of elements
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( EOF == CNamedValueSet::ReadUnsigned(file, &Num) ) {  // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {
                break;
             } else if ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesIndexOutOfRange);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesIndexOutOfRange);
             }
             if ( NULL == (val = new btString[Num]) ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesOutOfMemory);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesOutOfMemory);
             }
 
             for ( i = 0 ; i < Num ; ++i ) {                     // initialize, helps with final cleanup
@@ -2832,7 +3665,7 @@ case __type##Array_t : {                                                        
             }
 
             for ( i = 0 ; i < Num ; ++i ) {                     // read strings, break if run out of memory
-               if ( NULL == (val[i] = NVSReadString(file)) ) {
+               if ( NULL == (val[i] = CNamedValueSet::ReadString(file)) ) {
                   break;
                }
             }
@@ -2855,17 +3688,17 @@ case __type##Array_t : {                                                        
             btUnsigned32bitInt i, Num = 0;
             btUnsigned32bitInt ThisTime;
 
-            if ( EOF == NVSReadUnsigned(file, &Num) ) {  // read number of elements
-               return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( EOF == CNamedValueSet::ReadUnsigned(file, &Num) ) {  // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {                            // crazy value, but possible, end now
                break;
             } else if ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesIndexOutOfRange);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesIndexOutOfRange);
             }
 
             if ( NULL == (val = new btObjectType[Num]) ) {
-               return NVSReadNVSErrorFile(sName, ENamedValuesOutOfMemory);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesOutOfMemory);
             }
 
             btUnsigned64bitInt u64;
@@ -2874,7 +3707,7 @@ case __type##Array_t : {                                                        
                ThisTime = fscanf(file, "%llu", &u64);
                if ( ( 1 != ThisTime ) || ferror(file) ) {
                   delete[] val;
-                  return NVSReadNVSErrorFile(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+                  return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
                }
                val[i] = reinterpret_cast<btObjectType>(u64);
             }
@@ -2883,7 +3716,7 @@ case __type##Array_t : {                                                        
             delete[] val;
          } break;
 
-         case btUnknownType_t : return NVSReadNVSErrorFile(sName, ENamedValuesBadType);
+         case btUnknownType_t : return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);
          default              : break;
 
       } // switch typeData
@@ -2912,8 +3745,9 @@ case __type##Array_t : {                                                        
 //=============================================================================
 // Name: NVSWriteLevel - write tabs so that entries will be nicely indented
 //=============================================================================
-void NVSWriteLevel (std::ostream &os, unsigned level) {
-   while (level--) {
+void CNamedValueSet::WriteLevel(std::ostream &os, unsigned level)
+{
+   while ( level-- ) {
       os << "\t";
    }
 }
@@ -2921,8 +3755,9 @@ void NVSWriteLevel (std::ostream &os, unsigned level) {
 //=============================================================================
 // Name: NVSWriteUnsigned - write a single unsigned, at the level passed in, followed by a space
 //=============================================================================
-void NVSWriteUnsigned (std::ostream &os, unsigned u, unsigned level) {
-   NVSWriteLevel(os, level);
+void CNamedValueSet::WriteUnsigned(std::ostream &os, btUnsignedInt u, unsigned level)
+{
+   CNamedValueSet::WriteLevel(os, level);
    os << u << " ";
 }
 
@@ -2930,7 +3765,8 @@ void NVSWriteUnsigned (std::ostream &os, unsigned u, unsigned level) {
 // Name: NVSReadUnsigned - read a single unsigned integer, ignoring preceeding whitespace
 //       Returns EOF on error, or other values - just check for EOF
 //=============================================================================
-btBool NVSReadUnsigned (std::istream &is, btUnsignedInt* pu) {
+btBool CNamedValueSet::ReadUnsigned(std::istream &is, btUnsignedInt *pu)
+{
    is >> *pu;
    return is.good();    // true implies good health on the stream
 }
@@ -2939,7 +3775,8 @@ btBool NVSReadUnsigned (std::istream &is, btUnsignedInt* pu) {
 // Name: NVSReadNumberKey - read a number that is supposed to represent a number key
 //       Returns EOF on error, or other values - just check for EOF
 //=============================================================================
-btBool NVSReadNumberKey (std::istream &is, btNumberKey* pu) {
+btBool CNamedValueSet::ReadNumberKey(std::istream &is, btNumberKey *pu)
+{
    is >> *pu;
    return is.good();    // true implies good health on the stream
 }
@@ -2950,8 +3787,9 @@ btBool NVSReadNumberKey (std::istream &is, btNumberKey* pu) {
 //       not expecting errors here
 //       level preceeds string with an appropriate number of tabs
 //=============================================================================
-void NVSWriteString (std::ostream &os, btcString sz, unsigned level) {
-   NVSWriteLevel( os, level);
+void CNamedValueSet::WriteString(std::ostream &os, btcString sz, unsigned level)
+{
+   CNamedValueSet::WriteLevel(os, level);
    os << (unsigned)strlen(sz) << " " << sz << "\n";
 }
 
@@ -2962,10 +3800,11 @@ void NVSWriteString (std::ostream &os, btcString sz, unsigned level) {
 //       Input is open file
 //       Returns pointer to malloc'd buffer if successful, NULL if not
 //=============================================================================
-char* NVSReadString (std::istream &is) {
-   unsigned szlen = 0;
+char * CNamedValueSet::ReadString(std::istream &is)
+{
+   btUnsignedInt szlen = 0;
 
-   if ( !NVSReadUnsigned(is, &szlen) ) {
+   if ( !CNamedValueSet::ReadUnsigned(is, &szlen) ) {
       return NULL;                  // Get length of string
    }
    if ( 0 == szlen ) {
@@ -2994,17 +3833,19 @@ char* NVSReadString (std::istream &is) {
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName (std::ostream &os, eNameTypes typeName, btStringKey pszName, unsigned level) {
-   NVSWriteLevel(os, level);                       // tab in
-   os << static_cast<unsigned>(typeName) << " ";   // type of name (string)
-   NVSWriteString(os, pszName, 0);                 // write the name
+void CNamedValueSet::WriteName(std::ostream &os, eNameTypes typeName, btStringKey pszName, unsigned level)
+{
+   CNamedValueSet::WriteLevel(os, level);        // tab in
+   os << static_cast<unsigned>(typeName) << " "; // type of name (string)
+   CNamedValueSet::WriteString(os, pszName, 0);  // write the name
 }
 
 //=============================================================================
 // Name: NVSWriteName to an open file
 //=============================================================================
-void NVSWriteName (std::ostream &os, eNameTypes typeName, btNumberKey uName, unsigned level) {
-   NVSWriteLevel(os, level);                       // tab in
+void CNamedValueSet::WriteName(std::ostream &os, eNameTypes typeName, btNumberKey uName, unsigned level)
+{
+   CNamedValueSet::WriteLevel(os, level);          // tab in
    os << static_cast<unsigned>(typeName) << " ";   // type of name (int)
    os << uName << "\n";                            // write the name
 }
@@ -3015,65 +3856,12 @@ void NVSWriteName (std::ostream &os, eNameTypes typeName, btNumberKey uName, uns
 //       Name is hardcoded and fake - will never actually be read or used, can
 //          something already in the NVS without problem
 //=============================================================================
-void NVSWriteEndOfNVS (std::ostream &os, unsigned level) {
-   NVSWriteName(os, btStringKey_t, "---- End of NVS ----", level);
-   NVSWriteUnsigned( os, btEndOfNVS_t, level+1); // This is the real end marker
+void CNamedValueSet::WriteEndOfNVS(std::ostream &os, unsigned level)
+{
+   CNamedValueSet::WriteName(os, btStringKey_t, "---- End of NVS ----", level);
+   CNamedValueSet::WriteUnsigned(os, btEndOfNVS_t, level+1); // This is the real end marker
    os << "\n";
 }  // End of NVSWriteEndOfNVS
-
-//=============================================================================
-// Name: NVSWriteSingleValue
-//       Templatized code for writing a data type that has only one value
-//=============================================================================
-template <typename dataT>
-void NVSWriteSingleValue (std::ostream         &os,
-                          NamedValueSet  const &nvsToWrite,
-                          unsigned              level,
-                          eNameTypes            typeName,
-                          eBasicTypes           typeData,
-                          btNumberKey           iName,
-                          btStringKey           sName)
-{
-   dataT val;
-   if ( btStringKey_t == typeName ) {
-      nvsToWrite.Get(sName, &val);
-   } else {
-      nvsToWrite.Get(iName, &val);
-   }
-   NVSWriteUnsigned(os, typeData, level+1);
-   os << val << "\n";
-}  // End of NVSWriteSingleValue
-
-//=============================================================================
-// Name: NVSWriteArrayValue
-//       Templatized code for writing an array data type to a stream
-//=============================================================================
-template <typename dataT>
-void NVSWriteArrayValue (std::ostream         &os,
-                         NamedValueSet  const &nvsToWrite,
-                         unsigned              level,
-                         eNameTypes            typeName,
-                         eBasicTypes           typeData,
-                         btNumberKey           iName,
-                         btStringKey           sName)
-{
-   dataT   *val;
-   btWSSize Num = 0;
-
-   if ( btStringKey_t == typeName ) {
-      nvsToWrite.Get(sName, &val);
-      nvsToWrite.GetSize(sName, &Num);
-   } else {
-      nvsToWrite.Get(iName, &val);
-      nvsToWrite.GetSize(iName, &Num);
-   }
-   NVSWriteUnsigned(os, typeData, level+1);
-   NVSWriteUnsigned(os, Num, 0);
-   while ( Num-- ) {
-      os << *val++ << " ";
-   }
-   os << "\n";
-}  // End of NVSWriteArrayValue
 
 //=============================================================================
 // Name: NVSWriteNVS to an open file, opened in binary mode
@@ -3098,10 +3886,10 @@ void NVSWriteArrayValue (std::ostream         &os,
 //                or "\t20 2\n\t7 foo bar\n\t 9 foo2 bar2\n" is
 //                   special because it is an array of strings, which are separated by newlines instead of spaces
 //=============================================================================
-ENamedValues NVSWriteNVS (std::ostream        &os,
-                          NamedValueSet const &nvsToWrite,
-                          unsigned             level)
+ENamedValues CNamedValueSet::Write(std::ostream &os, unsigned level) const
 {
+   AutoLock(this);
+
    btUnsignedInt uElements = 0;              // number of elements in the NVS
    btUnsignedInt irg;                        // index for each element in the NVS
    eNameTypes    typeName;                   // to hold the type of the name
@@ -3109,22 +3897,22 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
    btStringKey   sName(NULL);                // to hold a string name
    eBasicTypes   typeData = btUnknownType_t; // type of data
 
-   nvsToWrite.GetNumNames(&uElements);          // initialize the loop to the number of elements in the NVS
+   GetNumNames(&uElements);          // initialize the loop to the number of elements in the NVS
 
    //Write one at a time
    for ( irg = 0 ; irg < uElements ; ++irg ) {        // walk forward through NVS
-      nvsToWrite.GetNameType(irg, &typeName);         // Get name type
+      GetNameType(irg, &typeName);         // Get name type
       switch ( typeName ) {
          case btStringKey_t : {
-            nvsToWrite.GetName(irg, &sName);          // Get the name
-            NVSWriteName(os, typeName, sName, level); // Write the name
-            nvsToWrite.Type(sName, &typeData);        // Get the data type
+            GetName(irg, &sName);          // Get the name
+            CNamedValueSet::WriteName(os, typeName, sName, level); // Write the name
+            Type(sName, &typeData);        // Get the data type
          } break;
 
          case btNumberKey_t : {                       // same here, for UINT names
-            nvsToWrite.GetName(irg, &iName);
-            NVSWriteName(os, typeName, iName, level);
-            nvsToWrite.Type(iName, &typeData);
+            GetName(irg, &iName);
+            CNamedValueSet::WriteName(os, typeName, iName, level);
+            Type(iName, &typeData);
          } break;
 
          default : {
@@ -3140,8 +3928,34 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
       // In this section, there is a matrix of typeName vs. typeData, with a different function
       //    having to be called for each. Clearly this should be templatized, or something, someday.
 
-#define NVSWRITENVS_CASE(__t)       case __t##_t      : NVSWriteSingleValue< __t >(os, nvsToWrite, level, typeName, typeData, iName, sName); break
-#define NVSWRITENVS_ARRAY_CASE(__t) case __t##Array_t : NVSWriteArrayValue<  __t >(os, nvsToWrite, level, typeName, typeData, iName, sName); break
+#define NVSWRITENVS_CASE(__t) case __t##_t : {           \
+   __t __val;                                            \
+   if ( btStringKey_t == typeName ) {                    \
+      Get(sName, &__val);                                \
+   } else {                                              \
+      Get(iName, &__val);                                \
+   }                                                     \
+   CNamedValueSet::WriteUnsigned(os, typeData, level+1); \
+   os << __val << "\n";                                  \
+} break
+
+#define NVSWRITENVS_ARRAY_CASE(__t) case __t##Array_t : { \
+   __t     *__val = NULL;                                 \
+   btWSSize __Num = 0;                                    \
+   if ( btStringKey_t == typeName ) {                     \
+      Get(sName, &__val);                                 \
+      GetSize(sName, &__Num);                             \
+   } else {                                               \
+      Get(iName, &__val);                                 \
+      GetSize(iName, &__Num);                             \
+   }                                                      \
+   CNamedValueSet::WriteUnsigned(os, typeData, level+1);  \
+   CNamedValueSet::WriteUnsigned(os, __Num, 0);           \
+   while ( __Num-- ) {                                    \
+      os << *__val++ << " ";                              \
+   }                                                      \
+   os << "\n";                                            \
+} break
 
       switch( typeData ) {
 
@@ -3155,32 +3969,32 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
 
          case btString_t : {
             btcString val = NULL;
-            if (btStringKey_t == typeName) {
-               nvsToWrite.Get(sName, &val);
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
             } else {
-               nvsToWrite.Get(iName, &val);
+               Get(iName, &val);
             }
-            NVSWriteUnsigned(os, typeData, level+1);
-            NVSWriteString(os, val, 0);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteString(os, val, 0);
          } break;
 
          case btNamedValueSet_t : {
-            NamedValueSet const *pval;
+            INamedValueSet const *pval = NULL;
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName, &pval);
+               Get(sName, &pval);
             } else {
-               nvsToWrite.Get(iName, &pval);
+               Get(iName, &pval);
             }
             // NVS Name already written, write the NVS DataType
-            NVSWriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
             os << "\n";
-            NVSWriteNVS(os, *pval, level+2);    // Write the NVS itself
+            pval->Write(os, level+2); // Write the NVS itself
             // Write the trailer - String Name, and DataType 'End of NVS'
             //NVSWriteEndOfNVS( os, level);     // Could use this instead, but the string is
                                                 // slightly different, and the archive test files
                                                 // would have to change. TODO: go ahead and do this.
-            NVSWriteName(os, btStringKey_t, "---- End of embedded NVS ----", level);
-            NVSWriteUnsigned(os, btEndOfNVS_t, level+1); // This is the real end marker
+            CNamedValueSet::WriteName(os, btStringKey_t, "---- End of embedded NVS ----", level);
+            CNamedValueSet::WriteUnsigned(os, btEndOfNVS_t, level+1); // This is the real end marker
             os << "\n";
          } break;
 
@@ -3189,14 +4003,14 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
             btByteArray val;
             btWSSize    Num = 0;
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName, &val);
-               nvsToWrite.GetSize(sName, &Num);
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName, &val);
-               nvsToWrite.GetSize(iName, &Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned(os, typeData, level+1);
-            NVSWriteUnsigned(os, Num, 0);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, Num, 0);
             os.write(val, Num);
             os << "\n";
          } break;
@@ -3211,13 +4025,13 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
             btObjectType val = NULL;
 
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName, &val);
+               Get(sName, &val);
             } else {
-               nvsToWrite.Get(iName, &val);
+               Get(iName, &val);
             }
 
             btUnsigned64bitInt u64temp = reinterpret_cast<btUnsigned64bitInt>(val);
-            NVSWriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
             os << u64temp << "\n";
          } break;
 
@@ -3226,17 +4040,17 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
             btWSSize  Num = 0;
 
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName, &val);
-               nvsToWrite.GetSize(sName, &Num);
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName, &val);
-               nvsToWrite.GetSize(iName, &Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned(os, typeData, level+1);
-            NVSWriteUnsigned(os, Num, 0);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, Num, 0);
             os << "\n";
             while ( Num-- ) {
-               NVSWriteString(os, *val++, level+2);
+               CNamedValueSet::WriteString(os, *val++, level+2);
             }
          } break;
 
@@ -3245,14 +4059,14 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
             btWSSize      Num = 0;    // number of pointers
 
             if ( btStringKey_t == typeName ) {
-               nvsToWrite.Get(sName, &val);
-               nvsToWrite.GetSize(sName, &Num);
+               Get(sName, &val);
+               GetSize(sName, &Num);
             } else {
-               nvsToWrite.Get(iName, &val);
-               nvsToWrite.GetSize(iName, &Num);
+               Get(iName, &val);
+               GetSize(iName, &Num);
             }
-            NVSWriteUnsigned(os, typeData, level+1);
-            NVSWriteUnsigned(os, Num, 0);
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, Num, 0);
 
             btUnsigned64bitInt u64temp;
             while ( Num-- ) {
@@ -3273,91 +4087,23 @@ ENamedValues NVSWriteNVS (std::ostream        &os,
 // Name: NVSWriteOneNVSToFile
 //       Write an NVS + an EndofNVS marker to an open file
 //=============================================================================
-ENamedValues NVSWriteOneNVSToFile(std::ostream        &os,
-                                  NamedValueSet const &nvsToWrite,
-                                  unsigned             level)
+ENamedValues CNamedValueSet::WriteOne(std::ostream &os, unsigned level) const
 {
-   ENamedValues retval = NVSWriteNVS(os, nvsToWrite, level);
-   NVSWriteEndOfNVS(os, level);
+   ENamedValues retval = Write(os, level);
+   CNamedValueSet::WriteEndOfNVS(os, level);
    return retval;
 }  // End of NVSWriteOneNVSToFile
 
 //=============================================================================
 // Utility function of NVSReadNVS for handling error returns
 //=============================================================================
-ENamedValues NVSReadNVSError(btmStringKey sName, ENamedValues error) {
+ENamedValues CNamedValueSet::ReadNVSError(btmStringKey sName, ENamedValues error)
+{
    if ( sName ) {
       delete[] sName;     // clean up before error return
    }
    return error;
 }
-
-//=============================================================================
-// Name: NVSReadSingleValue
-//       Templatized code for writing a data type that has only one value
-//=============================================================================
-template <typename dataT>
-ENamedValues NVSReadSingleValue (std::istream  &is,
-                                 NamedValueSet *nvsToRead,
-                                 eNameTypes     typeName,
-                                 btNumberKey    iName,
-                                 btmStringKey   sName)
-{
-   dataT val;
-   is >> val;
-   if ( !is.good() ) {
-      return NVSReadNVSError(sName, ENamedValuesBadType);
-   }
-   if (btStringKey_t == typeName) {
-      nvsToRead->Add(sName,val);
-   } else {
-      nvsToRead->Add(iName,val);
-   }
-   return ENamedValuesOK;
-}  // End of NVSReadSingleValue
-
-#if DEPRECATED
-//=============================================================================
-// Name: NVSReadArrayValue
-//       Templatized code for writing an array data type to a stream
-// PROBLEM: nvsToRead->Add() must vector to the correct type, but
-//    generally vectors to void* (that is, btObjectType). That doesn't
-//    work, obviously. The "static_cast<arrayT>(val))" is an unsuccessful
-//    attempt to vector it correctly.
-// TODO: templatize if possible
-//=============================================================================
-template <typename singleT, typename arrayT>
-ENamedValues NVSReadArrayValue (istream&       is,
-                                NamedValueSet* nvsToRead,
-                                eNameTypes     typeName,
-                                btNumberKey    iName,
-                                btStringKey    sName)
-{
-   arrayT             val, p;
-   btUnsigned32bitInt i, Num = 0;
-
-   if ( !NVSReadUnsigned(is, &Num) ) {         // read number of elements
-      return NVSReadNVSError((char *)sName, ENamedValuesInternalError_UnexpectedEndOfFile);
-   }
-   if ( 0 == Num ) {                           // crazy value, but possible, end now
-      return ENamedValuesOK;
-   }
-   val = new singleT[Num];
-   i = Num;
-   p = val;
-   while ( is && i-- ) {                       // read the array
-      is >> *p++;
-   }
-   if (btStringKey_t == typeName) {
-      nvsToRead->Add(sName, val);
-   } else {
-      nvsToRead->Add(iName, (val));
-      //nvsToRead->Add(iName,static_cast<arrayT>(val));
-   }
-   delete[] val;
-   return ENamedValuesOK;
-}  // End of NVSReadArrayValue
-#endif // DEPRECATED
 
 //=============================================================================
 // Name: NVSReadNVS from an open file, opened in binary mode
@@ -3372,8 +4118,10 @@ ENamedValues NVSReadArrayValue (istream&       is,
 //          EOF, implying finished with an NVS
 //          reading btUnknownType_t, implying finished reading an EMBEDDED NVS
 //=============================================================================
-ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
+ENamedValues CNamedValueSet::Read(std::istream &is)
 {
+   AutoLock(this);
+
    btUnsignedInt irg;                        // index for each element in the NVS
    eNameTypes    typeName;                   // to hold the type of the name
    btNumberKey   iName    = 0;               // to hold an integer name
@@ -3381,9 +4129,9 @@ ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
    eBasicTypes   typeData = btUnknownType_t; // type of data
    ENamedValues  eRetVal  = ENamedValuesOK;
 
-   if ( NULL == nvsToRead ) {                // if return parameter NULL, abort
-      return ENamedValuesInvalidReadToNull;
-   }
+   //if ( NULL == nvsToRead ) {                // if return parameter NULL, abort
+   //   return ENamedValuesInvalidReadToNull;
+   //}
 
    //Read one at a time, counting as we go
    for ( irg = 0 ; ; ++irg ) {         // walk forward through NVS
@@ -3393,8 +4141,8 @@ ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
       //       Where NAME is either an INTEGER or a LEN STRING, depending upon the TYPE
 
       // Get type of the NAME
-      unsigned tempType = 0;
-      if ( !NVSReadUnsigned(is, &tempType) ) {
+      btUnsignedInt tempType = 0;
+      if ( !CNamedValueSet::ReadUnsigned(is, &tempType) ) {
          return ENamedValuesEndOfFile;    // False means end of file or error, done with this NVS
       }
       if ( tempType != btNumberKey_t &&   // range check
@@ -3407,14 +4155,14 @@ ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
 
       switch ( typeName ) {                // if read of typeName successful, use it
          case btStringKey_t : {            // string name, FREE IT ONCE DONE WITH IT
-            sName = NVSReadString(is);
+            sName = CNamedValueSet::ReadString(is);
             if ( NULL == sName ) {
                return ENamedValuesInternalError_InvalidNameFormat;
             }
          } break;
 
          case btNumberKey_t : {            // integer name
-            if ( !NVSReadNumberKey(is, &iName) ) {
+            if ( !CNamedValueSet::ReadNumberKey(is, &iName) ) {
                return ENamedValuesInternalError_InvalidNameFormat;
             }
          } break;
@@ -3425,12 +4173,12 @@ ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
       //    and corresponding name is in either sName or iName
 
       // Get type of the DATA - expect an unsigned here
-      if ( !NVSReadUnsigned(is, &tempType) ) {
-         return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+      if ( !CNamedValueSet::ReadUnsigned(is, &tempType) ) {
+         return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
       }
       if ( tempType >  btUnknownType_t &&   // range check
            tempType != btEndOfNVS_t ) {
-         return NVSReadNVSError(sName, ENamedValuesBadType);
+         return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);
       }
       typeData = static_cast<eBasicTypes>(tempType); // safe, because of range check
 
@@ -3441,33 +4189,40 @@ ENamedValues NVSReadNVS(std::istream &is, NamedValueSet *nvsToRead)
       // If typeName is btString_t, sName must be freed. This is done at the end of the switch.
       //    Error returns or other aborts from the switch need to free sName.
 
-
-#define NVSREADNVS_SINGLE(__t)                                                 \
-case __t##_t : {                                                               \
-   eRetVal = NVSReadSingleValue< __t >(is, nvsToRead, typeName, iName, sName); \
-   if ( eRetVal != ENamedValuesOK ) {                                          \
-      return eRetVal;                                                          \
-   }                                                                           \
+#define NVSREADNVS_SINGLE(__t)                                             \
+case __t##_t : {                                                           \
+   __t __val;                                                              \
+   is >> __val;                                                            \
+   if ( !is.good() ) {                                                     \
+      return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);     \
+   }                                                                       \
+   if ( btStringKey_t == typeName ) {                                      \
+      Add(sName, __val);                                                   \
+   } else {                                                                \
+      Add(iName, __val);                                                   \
+   }                                                                       \
 } break
 
-#define NVSREADNVS_STREAM_ARRAY(__type)                                             \
-case __type##Array_t : {                                                            \
-   __type##Array      val, p;                                                       \
-   btUnsigned32bitInt i,   Num = 0;                                                 \
-   if ( !NVSReadUnsigned(is, &Num) ) { /* read number of elements */                \
-      return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile); \
-   }                                                                                \
-   if ( 0 == Num ) {                   /* crazy value, but possible, end now */     \
-      break;                                                                        \
-   }                                                                                \
-   val = new __type[Num];                                                           \
-   i = Num;                                                                         \
-   p = val;                                                                         \
-   while ( is && i-- ) {               /* read the array */                         \
-      is >> *p++;                                                                   \
-   }                                                                                \
-   NVS_ADD_ARRAY(val, Num);                                                         \
-   delete[] val;                                                                    \
+
+#define NVSREADNVS_STREAM_ARRAY(__type)                                                          \
+case __type##Array_t : {                                                                         \
+   __type##Array      val, p;                                                                    \
+   btUnsigned32bitInt i;                                                                         \
+   btUnsignedInt      Num = 0;                                                                   \
+   if ( !CNamedValueSet::ReadUnsigned(is, &Num) ) { /* read number of elements */                \
+      return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile); \
+   }                                                                                             \
+   if ( 0 == Num ) {                   /* crazy value, but possible, end now */                  \
+      break;                                                                                     \
+   }                                                                                             \
+   val = new __type[Num];                                                                        \
+   i = Num;                                                                                      \
+   p = val;                                                                                      \
+   while ( is && i-- ) {               /* read the array */                                      \
+      is >> *p++;                                                                                \
+   }                                                                                             \
+   NVS_ADD_ARRAY(val, Num);                                                                      \
+   delete[] val;                                                                                 \
 } break
 
       switch ( typeData ) {
@@ -3491,34 +4246,34 @@ case __type##Array_t : {                                                        
          NVSREADNVS_SINGLE(btFloat);
 
          case btString_t : {              // Read Data
-            btString val = NVSReadString(is);
+            btString val = CNamedValueSet::ReadString(is);
             if ( NULL == val ) {
-               return NVSReadNVSError( sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError( sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             NVS_ADD(val);
             delete[] val;
          } break;
 
          case btNamedValueSet_t : {         // Read Data
-            NamedValueSet  val;
+            CNamedValueSet val;
             ENamedValues   ret;
-            ret = NVSReadNVS(is, &val);
+            ret = val.Read(is);
             if ( ENamedValuesOK == ret ) {
-               NVS_ADD(val);
+               NVS_ADD(&val);
             } else {
-               return NVSReadNVSError(sName, ret);
+               return CNamedValueSet::ReadNVSError(sName, ret);
             }
          } break;
 
          // Normal end of embedded NVS, not really an error, but need to free sName
-         case btEndOfNVS_t  : return NVSReadNVSError(sName, ENamedValuesOK);
+         case btEndOfNVS_t  : return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
 
          case btByteArray_t : {      // Read Data
             btByteArray        val;
             btUnsigned32bitInt Num = 0;
 
-            if ( !NVSReadUnsigned(is, &Num) ) {          // read number of elements
-               return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( !CNamedValueSet::ReadUnsigned(is, &Num) ) {          // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {                            // crazy value, but possible, end now
                break;
@@ -3538,21 +4293,12 @@ case __type##Array_t : {                                                        
          NVSREADNVS_STREAM_ARRAY(btUnsigned64bitInt);
          NVSREADNVS_STREAM_ARRAY(btFloat);
 
-#if DEPRECATED
-         case bt32bitIntArray_t:       // Read Data
-         /* TODO: templatize if possible. See header of NVSReadArrayValue for issues */
-            eRetVal = NVSReadArrayValue <bt32bitInt, bt32bitIntArray> (is, nvsToRead, typeName, iName, sName);
-            if (eRetVal != ENamedValuesOK) {
-               return eRetVal;
-            }
-#endif // DEPRECATED
-
          case btObjectType_t : {             // Pointer, could be 32 or 64 bit
             btObjectType       val = NULL;
             btUnsigned64bitInt u64 = 0;
             is >> u64;
             if ( !is.good() ) {
-               return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             val = reinterpret_cast<btObjectType>(u64);
             NVS_ADD(val);
@@ -3562,8 +4308,8 @@ case __type##Array_t : {                                                        
             btStringArray      val;
             btUnsigned32bitInt i, Num = 0;
 
-            if ( !NVSReadUnsigned(is, &Num) ) {         // read number of elements
-               return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( !CNamedValueSet::ReadUnsigned(is, &Num) ) {         // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {                           // crazy value, but legal?, end now
                break;
@@ -3574,7 +4320,7 @@ case __type##Array_t : {                                                        
                val[i] = NULL;
             }
             for ( i = 0 ; i < Num ; ++i ) {             // read strings, break if run out of memory
-               if ( NULL == (val[i] = NVSReadString(is)) ) {
+               if ( NULL == (val[i] = CNamedValueSet::ReadString(is)) ) {
                   break;
                }
             }
@@ -3593,10 +4339,11 @@ case __type##Array_t : {                                                        
 
          case btObjectArray_t : {                 // Read Data
             btObjectArray      val;
-            btUnsigned32bitInt i, Num = 0;
+            btUnsigned32bitInt i;
+            btUnsignedInt      Num = 0;
 
-            if ( !NVSReadUnsigned(is, &Num) ) {   // read number of elements
-               return NVSReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            if ( !CNamedValueSet::ReadUnsigned(is, &Num) ) {   // read number of elements
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
             }
             if ( 0 == Num ) {                     // crazy value, but possible, end now
                break;
@@ -3614,7 +4361,7 @@ case __type##Array_t : {                                                        
             delete[] val;
          } break;
 
-         case btUnknownType_t : return NVSReadNVSError(sName, ENamedValuesBadType);
+         case btUnknownType_t : return CNamedValueSet::ReadNVSError(sName, ENamedValuesBadType);
          default              : break;
       } // switch typeData
 
@@ -3627,26 +4374,6 @@ case __type##Array_t : {                                                        
 
    return eRetVal;
 }  // NVSReadNVS
-
-
-//=============================================================================
-// Name:          NVSMerge
-// Description:   Merge one NamedValueSet into another
-// Interface:     public
-// Inputs:        nvsInput and nvsOutput will be merged together
-// Outputs:       nvsOutput will contain the merged results
-// Returns:       ENamedValuesOK for success, appropriate value otherwise
-// Comments:      If there are duplicate names, the original value in the
-//                   nvsOutput takes precedence and there is no error
-//=============================================================================
-ENamedValues NVSMerge(NamedValueSet &nvsOutput, const NamedValueSet &nvsInput)
-{
-   // Write nvsInput to a stringstream
-   std::stringstream ss;
-   ss << nvsInput;
-   ss >> nvsOutput;
-   return ENamedValuesOK;
-}  // NVSMerge
 
 
 END_NAMESPACE(AAL)

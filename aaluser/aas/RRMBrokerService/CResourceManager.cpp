@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLResourceManager.cpp
+/// @file AALRESourceManager.cpp
 /// @brief Implementation of the Remote Resource Manager Service
 /// @ingroup ResMgr
 /// @verbatim
@@ -43,7 +43,7 @@
 // AAL Runtime definitions
 #include "aalsdk/AALTypes.h"
 
-#include <aalsdk/aas/XLRuntimeMessages.h>
+#include <aalsdk/Dispatchables.h>
 
 #include "CResourceManager.h"
 #include <aalsdk/aas/AALInProcServiceFactory.h>  // Defines InProc Service Factory
@@ -82,7 +82,7 @@
 #define RRM_VERSION_AGE      0
 #define RRM_VERSION          "0.0.0"
 
-AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, XLRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
+AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, AALRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
    // Only default service commands for now.
 AAL_END_SVC_MOD()
 
@@ -119,26 +119,26 @@ void CResourceManager::init(TransactionID const &rtid)
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ClientBase());
    if( NULL == m_pResMgrClient ){
       // Sends a Service Client serviceAllocated callback
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    NULL,
-                                                    rtid,
-                                                    errBadParameter,
-                                                    reasInvalidParameter,
-                                                    strInvalidParameter));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      NULL,
+                                                                      rtid,
+                                                                      errBadParameter,
+                                                                      reasInvalidParameter,
+                                                                      strInvalidParameter));
 
    }
 
    // Create an open channel to the remote resource manager
    if ( !m_RMProxy.Open() ) {
       // Sends a Service Client serviceAllocated callback
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    NULL,
-                                                    rtid,
-                                                    errDevice,
-                                                    reasNoDevice,
-                                                    strNoDevice));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      NULL,
+                                                                      rtid,
+                                                                      errDevice,
+                                                                      reasNoDevice,
+                                                                      strNoDevice));
       return;
    }
 
@@ -148,16 +148,16 @@ void CResourceManager::init(TransactionID const &rtid)
                                  this);
    if(NULL == m_pProxyPoll){
       m_RMProxy.Close();
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    NULL,
-                                                    rtid,
-                                                    errInternal,
-                                                    reasCauseUnknown,
-                                                    "Could not create RM Proxy Poll thread."));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      NULL,
+                                                                      rtid,
+                                                                      errInternal,
+                                                                      reasCauseUnknown,
+                                                                      "Could not create RM Proxy Poll thread."));
    }
    // Sends a Service Client serviceAllocated callback
-   QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
                                         Client(),
                                         dynamic_cast<IBase*>(this),
                                         rtid));
@@ -180,14 +180,14 @@ void CResourceManager::RequestResource(NamedValueSet const &nvsManifest,
    if(false == m_RMProxy.SendRequest(nvsManifest,tid) ){
 
       // Failed to send the request so schedule a callback
-      SendMsg(new ResourceManagerClientMessage(m_pResMgrClient,
-                                               nvsManifest,
-                                               ResourceManagerClientMessage::AllocateFailed,
-                                               new CExceptionTransactionEvent(this,
-                                                                              tid,
-                                                                              errInternal,
-                                                                              reasCauseUnknown,
-                                                                              "Failed SendRequest on RM Proxy") ) );
+      getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                       nvsManifest,
+                                                                       ResourceManagerClientMessage::AllocateFailed,
+                                                                       new CExceptionTransactionEvent(this,
+                                                                                                      tid,
+                                                                                                      errInternal,
+                                                                                                      reasCauseUnknown,
+                                                                                                      "Failed SendRequest on RM Proxy") ) );
       return;
   }
 
@@ -236,14 +236,14 @@ void CResourceManager::ProcessRMMessages()
          if ( !m_RMProxy.IsOK() ) {
             perror("CResourceManager::ProcessRMMessages failed GetMessage()");
             //Proxy failed so generate an error
-            SendMsg(new ResourceManagerClientMessage(m_pResMgrClient,
-                                                     NamedValueSet(),
-                                                     ResourceManagerClientMessage::AllocateFailed,
-                                                     new CExceptionTransactionEvent(this,
-                                                                                    tid,
-                                                                                    errInternal,
-                                                                                    reasCauseUnknown,
-                                                                                    "CResourceManager::ProcessRMMessages failed GetMessage()") ) );
+            getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                             NamedValueSet(),
+                                                                             ResourceManagerClientMessage::AllocateFailed,
+                                                                             new CExceptionTransactionEvent(this,
+                                                                                                            tid,
+                                                                                                            errInternal,
+                                                                                                            reasCauseUnknown,
+                                                                                                            "CResourceManager::ProcessRMMessages failed GetMessage()") ) );
          } else {
             btIID reason_code;
             btcString reason_string;
@@ -252,14 +252,14 @@ void CResourceManager::ProcessRMMessages()
             nvs.Get(RM_MESSAGE_KEY_REASONSTRING, &reason_string);
 
             //Generate an error
-            SendMsg(new ResourceManagerClientMessage(m_pResMgrClient,
-                                                     nvs,
-                                                     ResourceManagerClientMessage::AllocateFailed,
-                                                     new CExceptionTransactionEvent(this,
-                                                                                    tid,
-                                                                                    result_code,
-                                                                                    reason_code,
-                                                                                    reason_string) ) );
+            getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                             nvs,
+                                                                             ResourceManagerClientMessage::AllocateFailed,
+                                                                             new CExceptionTransactionEvent(this,
+                                                                                                            tid,
+                                                                                                            result_code,
+                                                                                                            reason_code,
+                                                                                                            reason_string) ) );
          }
       } else {   // pMessage->result_code() == rms_resultOK
          rm_msg_ids  id;
@@ -281,20 +281,20 @@ void CResourceManager::ProcessRMMessages()
             }
 
             if( NULL == handle ){
-               SendMsg(new ResourceManagerClientMessage(m_pResMgrClient,
-                                                        nvs,
-                                                        ResourceManagerClientMessage::AllocateFailed,
-                                                        new CExceptionTransactionEvent(this,
-                                                                                       tid,
-                                                                                       errAllocationFailure,
-                                                                                       reasResourcesNotAvailable,
-                                                                                       strNoResourceDescr) ) );
+               getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                                nvs,
+                                                                                ResourceManagerClientMessage::AllocateFailed,
+                                                                                new CExceptionTransactionEvent(this,
+                                                                                                               tid,
+                                                                                                               errAllocationFailure,
+                                                                                                               reasResourcesNotAvailable,
+                                                                                                               strNoResourceDescr) ) );
             }else{
                // Generate the event
-               SendMsg(new ResourceManagerClientMessage(m_pResMgrClient,
-                                                        nvs,
-                                                        ResourceManagerClientMessage::Allocated,
-                                                        tid) );
+               getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                                nvs,
+                                                                                ResourceManagerClientMessage::Allocated,
+                                                                                tid) );
             }
          }
       }

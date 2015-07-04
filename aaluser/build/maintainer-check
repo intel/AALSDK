@@ -854,7 +854,7 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'Makefile.am' \
 'OSALService.h.in' \
 'uAIAService.h.in' \
-'XLRuntimeModule.h.in' \
+'AALRuntimeModule.h.in' \
 'CCIAFUService.h.in' \
 'ASECCIAFUService.h.in' \
 'HWCCIAFUService.h.in' \
@@ -881,7 +881,7 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'OSALService.h' \
 'Readme.MultiPackage.txt' \
 'uAIAService.h' \
-'XLRuntimeModule.h' \
+'AALRuntimeModule.h' \
 'CCIAFUService.h' \
 'ASECCIAFUService.h' \
 'HWCCIAFUService.h' \

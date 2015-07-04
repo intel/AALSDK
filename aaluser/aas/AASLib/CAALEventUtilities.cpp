@@ -96,7 +96,7 @@ TransactionID WrapTransactionID(const TransactionID &rTranID)
 //=============================================================================
 void UnWrapAndReThrow(IBase              *This,
                       const IEvent       &theEvent,
-                      IXLRuntimeServices *pDispatcher,
+                      IRuntime           *pDispatcher,
                       btEventHandler      Handler)
 {
    ITransactionEvent &rTransEvt   = dynamic_ref<ITransactionEvent>(iidTranEvent, theEvent);
@@ -175,7 +175,7 @@ TransactionID UnWrapTransactionIDFromEvent(const IEvent &theEvent, btBool bDelet
 //=============================================================================
 void ReThrow(IBase               *This,
              const IEvent        &theEvent,
-             IXLRuntimeServices  *pDispatcher,
+             IRuntime            *pDispatcher,
              btEventHandler       Handler,
              const TransactionID *pTranID)
 {
@@ -198,8 +198,7 @@ void ReThrow(IBase               *This,
    //Post to object's parent listen
    rCEvent.setHandler(Handler);
 
-   pDispatcher->SendMsg(dynamic_ptr<CAALEvent>(iidCEvent, theEvent),
-                        reinterpret_cast<btObjectType>(Handler));
+   pDispatcher->schedDispatchable(dynamic_ptr<CAALEvent>(iidCEvent, theEvent));
 }
 
 

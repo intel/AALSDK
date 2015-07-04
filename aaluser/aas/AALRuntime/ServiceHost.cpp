@@ -39,7 +39,7 @@
 
 #include "aalsdk/AALDefs.h"
 #include "aalsdk/aas/ServiceHost.h"
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -51,9 +51,7 @@ BEGIN_NAMESPACE(AAL)
 // Inputs: root_name - Name of the Service to load.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost(btcString             root_name,
-                         IRuntime             *pxlRuntime,
-                         IXLRuntimeServices   *pxlRuntimeServices) :
+ServiceHost::ServiceHost(btcString             root_name) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
@@ -81,10 +79,6 @@ ServiceHost::ServiceHost(btcString             root_name,
       goto ERR;
    }
 
-   // Success
-   m_pProvider->setRuntime(pxlRuntime);
-   m_pProvider->setRuntimeServiceProvider(pxlRuntimeServices);
-
    m_name  = std::string(root_name);
    m_bIsOK = true;
 
@@ -104,9 +98,7 @@ ERR:
 // Inputs: EntryPoint - Entry point of loaded Service Module.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint,
-                          IRuntime           *pxlRuntime,
-                          IXLRuntimeServices *pxlRuntimeServices) :
+ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
@@ -127,10 +119,7 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint,
       return;
 
    }
-   m_pProvider->setRuntime(pxlRuntime);
-   m_pProvider->setRuntimeServiceProvider(pxlRuntimeServices);
-
-   m_bIsOK = true;
+    m_bIsOK = true;
 }
 
 //=============================================================================
@@ -142,13 +131,19 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint,
 //         rTranID - Optional Transaction ID
 // Comments:
 //=============================================================================
-btBool ServiceHost::allocService(IBase               *pClient,
-                                 NamedValueSet const &rManifest,
-                                 TransactionID const &rTranID,
-                                 btBool               NoRuntimeEvent)
-{
+btBool ServiceHost::InstantiateService( IRuntime           *pRuntime,
+                                        IBase               *pClientBase,
+                                        NamedValueSet const &rManifest,
+                                        TransactionID const &rTranID)
+      {
+
+   // Assign a runtime proxy to this Service  TODO DEPRECATE
+   if ( !IsOK() || (NULL == pRuntime) ){
+      return false;
+   }
+
    if ( IsOK() && ( NULL != m_pProvider ) ) {
-      m_base = m_pProvider->Construct(pClient, rTranID, rManifest, NoRuntimeEvent);
+      m_base = m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);
       return NULL != m_base;
    }
 

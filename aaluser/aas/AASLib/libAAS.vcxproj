@@ -92,7 +92,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;XLRT_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;aalrt_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -113,7 +113,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;XLRT_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;aalrt_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -134,7 +134,7 @@
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;XLRT_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;aalrt_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -152,7 +152,7 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;XLRT_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=0;ENABLE_ASSERT=1;DEBUG_BEYOND_LOGGER=1;AASLIB_EXPORTS;aalrt_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -198,12 +198,12 @@
     <ClInclude Include="..\..\..\include\aalsdk\aas\CAASServiceContainer.h" />
     <ClInclude Include="..\..\..\include\aalsdk\aas\IServiceBroker.h" />
     <ClInclude Include="..\..\..\include\aalsdk\aas\ServiceHost.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\XLRuntimeMessages.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\_xlRuntimeServices.h" />
+    <ClInclude Include="..\..\..\include\aalsdk\aas\AALRUNTIMEMessages.h" />
+    <ClInclude Include="..\..\..\include\aalsdk\aas\_AALRUNTIMEServices.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\aalsdk\aas\AASService.h.in" />
-    <None Include="..\..\..\include\aalsdk\aas\XLRuntimeModule.h.in" />
+    <None Include="..\..\..\include\aalsdk\aas\AALRUNTIMEModule.h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

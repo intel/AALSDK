@@ -97,10 +97,11 @@ class DeviceServiceBase : public ServiceBase, private IServiceClient
 public:
    /// DeviceServiceBase Constructor.
    DeviceServiceBase(AALServiceModule *container,
+                     IRuntime         *pRuntime,
                      IAALTransport    *ptransport   = NULL,
                      IAALMarshaller   *marshaller   = NULL,
                      IAALUnMarshaller *unmarshaller = NULL) :
-      ServiceBase(container, ptransport, marshaller, unmarshaller),
+      ServiceBase(container, pRuntime, ptransport, marshaller, unmarshaller),
       m_pAIA(NULL),
       m_pSession(NULL),
       m_devHandle(NULL),
@@ -139,7 +140,7 @@ public:
 
 
    // <ServiceBase>
-
+#if 0
    // Perform any post creation initialization including establishing communications.
    //
    // This function is virtual to allow the derived class to hook the
@@ -176,7 +177,7 @@ public:
                          new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
       return this;
    }
-
+#endif
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
@@ -197,8 +198,7 @@ public:
       ServiceBase::_init(pclient,
                          rtid,
                          optArgs,
-                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid),
-                         NoRuntimeEvent);
+                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
       return this;
    }
 
@@ -206,9 +206,9 @@ public:
    // </ServiceBase>
 
    // Convenience function to return the AFUdev
-   btBool                IsAFUDevOK()   { return NULL != m_pAFUDev; }
-   IAFUDev &             AFUDev()       { return *m_pAFUDev;        }
-   NamedValueSet const & ConfigRecord() { return *m_ConfigRecord;   }
+   btBool                 IsAFUDevOK()   { return NULL != m_pAFUDev; }
+   IAFUDev &              AFUDev()       { return *m_pAFUDev;        }
+   INamedValueSet const & ConfigRecord() { return *m_ConfigRecord;   }
 
 private:
    //=============================================================================
@@ -252,9 +252,7 @@ private:
 
       OptArgs().Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &m_ConfigRecord);
 
-      cerr << StdStringFromNamedValueSet(*m_ConfigRecord);
-
-      // Get the device handle if the is one
+      // Get the device handle if there is one
       if ( OptArgs().Has(keyRegHandle) ) {
          OptArgs().Get(keyRegHandle, &m_devHandle);
       } else {
@@ -280,7 +278,7 @@ private:
          nvsServiceRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
 
          NamedValueSet nvsManifest;
-         nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, nvsServiceRecord);
+         nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsServiceRecord);
 
          // Copy original transaction ID so that we have it when it comes time to generate the
          //  ObjectCreated Event
@@ -290,13 +288,13 @@ private:
          // Allocate the AIA. The last parameter means do not send notification to RuntimeClient
          //   Pass the m_scContainer as the IBase containing the IServiceClient.  The ServiceClient
          //   actually publishes our private IServiceClient for us. (See note at top of class).
-         allocService(&m_scContainer, nvsManifest, tidLoadAIA, IRuntime::NoRuntimeClientNotification);
+         allocService(&m_scContainer, nvsManifest, tidLoadAIA);
       }
       return;
 
    badparm:
       // Post the object created exception
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                     Client(),
                                                     dynamic_cast<IBase *>(this),
                                                     rtid,
@@ -342,9 +340,14 @@ private:
    }
    
    
-   void serviceFreed(TransactionID const &rTranID = TransactionID())
+   void serviceReleased(TransactionID const &rTranID = TransactionID())
    {
       cerr << "TODO FREED\n";
+   }
+
+   void serviceReleaseFailed(const IEvent &rEvent)
+   {
+      cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
    }
 
 
@@ -378,25 +381,25 @@ private:
    //=============================================================================
    void EventCallbackHandler(IEvent const &theEvent)
    {
+      // TODO check for NULL
+      m_pAIA = dynamic_ptr<CAIA>(iidAIA, theEvent.Object());
+
       if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
          //Print the description string.
          PrintExceptionDescription(theEvent);
          // Send the failure event. Unwrap and return the original TrasnactionID from the event
-         QueueAASEvent( Handler(),
-                        new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                        Client(),
-                                                        dynamic_cast<IBase *>(this),
-                                                        UnWrapTransactionIDFromEvent(theEvent),
-                                                        errCreationFailure,
-                                                        dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
-                                                        dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description()
-                                                       )
-         );
+         ObjectCreatedExceptionEvent *pEvent = new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                               Client(),
+                                                                               dynamic_cast<IBase *>(this),
+                                                                               UnWrapTransactionIDFromEvent(theEvent),
+                                                                               errCreationFailure,
+                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
+                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description());
+         m_pAIA->getRuntime()->schedDispatchable(pEvent);
          return;
       }
 
-      // TODO check for NULL
-      m_pAIA = dynamic_ptr<CAIA>(iidAIA, theEvent.Object());
+
 
       //---------------------------------------------------
       // Create a session with the AIA which serves as a
@@ -497,11 +500,10 @@ private:
             // If it is not a quiet release
             if ( !m_quietRelease ) {
                // Generate the event
-               QueueAASEvent( ClientBase(),
-                              new CObjectDestroyedTransactionEvent( Client(),
-                            		  	  	  	  	  	  	        dynamic_cast<IBase *>(this),
-                                                                    origTID,
-                                                                    Context()));
+               m_pAIA->getRuntime()->schedDispatchable( new CObjectDestroyedTransactionEvent( Client(),
+                                                                                              dynamic_cast<IBase *>(this),
+                                                                                              origTID,
+                                                                                              Context()));
             }
  
             // Destroy the AIA session
@@ -536,7 +538,7 @@ protected:
    uAIASession          *m_pSession;     // AIA Session
    btObjectType          m_devHandle;    // low-level device handle
    IAFUDev              *m_pAFUDev;      // AFU device
-   NamedValueSet const  *m_ConfigRecord; // Config Record
+   INamedValueSet const *m_ConfigRecord; // Config Record
    btBool                m_quietRelease; // Used for quiet release
    ServiceClient         m_scContainer;  // IBase container for presenting ServiceClient
 };

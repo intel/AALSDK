@@ -43,7 +43,7 @@
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/osal/OSServiceModule.h>
 
-#include <aalsdk/rm/XLResourceManagerClient.h>
+#include <aalsdk/rm/AALResourceManagerClient.h>
 
 #include <CResourceManager.h>
 
@@ -82,7 +82,8 @@ public:
    // Map to hold clients of outstanding transactions
    struct ServiceDesc{
       IBase                  *ServiceBase;
-      IRuntime::eAllocatemode NoRuntimeEvent;
+      IRuntime               *pProxy;
+      IRuntimeClient         *pRuntimeClient;
    };
 
    typedef std::map<TransactionID, struct ServiceDesc, tidcompare> ServiceClientMap;
@@ -115,10 +116,11 @@ public:
    // Quiet Release. Used when Service is unloaded.
    btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
-   void allocService(IBase                  *pClient,
+   void allocService(IRuntime               *pProxy,
+                     IRuntimeClient         *pRuntimClient,
+                     IBase                  *pServiceClientBase,
                      const NamedValueSet    &rManifest,
-                     TransactionID const    &rTranID,
-                     IRuntime::eAllocatemode mode = IRuntime::NotifyAll);
+                     TransactionID const    &rTranID);
 protected:
    ServiceHost *findServiceHost(std::string const &sName);
 
@@ -126,7 +128,8 @@ protected:
    void serviceAllocated(IBase *pServiceBase,
                          TransactionID const &rTranID = TransactionID());
    void serviceAllocateFailed( const IEvent &rEvent);
-   void serviceFreed( TransactionID const &rTranID = TransactionID());
+   void serviceReleased( TransactionID const &rTranID = TransactionID());
+   void serviceReleaseFailed( const IEvent &rEvent);
    void serviceEvent(const IEvent &rEvent);
 
    // Internal IResourceManagerClient used to allocate Resources

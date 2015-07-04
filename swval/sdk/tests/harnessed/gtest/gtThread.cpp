@@ -1132,7 +1132,7 @@ void OSAL_Thread_f::Thr11(OSLThread *pThread, void *pContext)
    pTC->m_Semaphore.Wait();
 }
 
-TEST_F(OSAL_Thread_f, DISABLED_aal0017)
+TEST_F(OSAL_Thread_f, aal0017)
 {
    // After calling OSLThread::Cancel() for a thread other than the current thread, the current
    // thread should be able to immediately OSLThread::Join() the canceled thread.
@@ -1418,7 +1418,7 @@ void OSAL_Thread_f::Thr20(OSLThread *pThread, void *pContext)
    pTC->m_Scratch[1] = 1;
 }
 
-TEST_F(OSAL_Thread_f, DISABLED_aal0171)
+TEST_F(OSAL_Thread_f, aal0171)
 {
    // OSLThread::Cancel() cancels the thread according to the cancellation policy
    // for pthread_cancel() [Linux].

@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLResourceManagerProxy.h
+/// @file AALResourceManagerProxy.h
 /// @brief IResourecManagerProxy is the local proxy interface to the remote
 ///        Resource Manager Service.
 /// @ingroup ResMgr
@@ -35,10 +35,11 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 08/19/2014     JG       Initial version started@endverbatim
+/// 08/19/2014     JG       Initial version started
+/// 06/25/2015     JG       Removed XL from name@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_XL_RESOURCEMANAGERPROXY_H__
-#define __AALSDK_XL_RESOURCEMANAGERPROXY_H__
+#ifndef __AALSDK_RESOURCEMANAGERPROXY_H__
+#define __AALSDK_RESOURCEMANAGERPROXY_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALNamedValueSet.h>
 
@@ -116,5 +117,5 @@ public:
 
 END_NAMESPACE(AAL)
 
-#endif // __AALSDK_XL_RESOURCEMANAGERPROXY_H__
+#endif // __AALSDK_RESOURCEMANAGERPROXY_H__
 

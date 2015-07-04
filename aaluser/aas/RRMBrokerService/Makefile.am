@@ -27,7 +27,7 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     aas/XLRRMBrokerService/Makefile.am
+##     aas/RRMBrokerService/Makefile.am
 ##  Author:
 ##     Joe Grecco, Intel Corporation
 ##  History:
@@ -54,4 +54,4 @@ librrmbroker_la_LDFLAGS=\
 librrmbroker_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/XLRTLib/libxlrt.la 
+$(top_builddir)/aas/AALRuntime/libaalrt.la 

@@ -65,7 +65,7 @@ endif
 all: helloSPLlb
 
 helloSPLlb: HelloSPLLB.o
-	$(CXX) -g -O2 -o helloSPLlb HelloSPLLB.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+	$(CXX) -g -O2 -o helloSPLlb HelloSPLLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 HelloSPLLB.o: HelloSPLLB.cpp  Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o HelloSPLLB.o HelloSPLLB.cpp

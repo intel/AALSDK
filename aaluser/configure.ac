@@ -33,7 +33,7 @@
 ##     Tim Whisonant, Intel Corporation
 ##  History:
 ##     06/26/2013    TSW   Initial version
-##     04/01/2014    JG    Added XLrtlib for AAL 4.x
+##     04/01/2014    JG    Added aalrtlib for AAL 4.x
 ##******************************************************************************
 dnl Process this file with autoconf to produce a configure script.
 
@@ -66,23 +66,23 @@ dnl ## Library Versioning ######################################################
 dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [3],[4],[0])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [3],[4],[0])
-AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [0],[0],[0])
-AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [4],[2],[0])
+AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [4],[2],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[0],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [2],[0],[0])
 AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [1],[0],[0])
 AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [3],[4],[0])
-AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [3],[4],[0])
-AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [4],[2],[0])
+AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [4],[2],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[1],[0])
-AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [0],[0],[0])
-AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [0],[0],[0])
+AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [4],[2],[0])
+AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [4],[2],[0])
+AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [4],[2],[0])
+AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [4],[2],[0])
+AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [4],[2],[0])
+AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [4],[2],[0])
+AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [4],[2],[0])
+AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [4],[2],[0])
 AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [2],[0],[0])
 
 dnl ############################################################################
@@ -171,7 +171,7 @@ AC_CONFIG_FILES([doc/Doxyfile])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
-                 include/aalsdk/aas/XLRuntimeModule.h
+                 include/aalsdk/aas/AALRuntimeModule.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
@@ -193,8 +193,8 @@ AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
-                 aas/XLRTLib/Makefile
-                 aas/XLRRMBrokerService/Makefile
+                 aas/AALRuntime/Makefile
+                 aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile
                  aas/AASResourceManager/Makefile])

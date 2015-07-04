@@ -65,7 +65,7 @@ endif
 all: LlApp
 
 LlApp: LlApp.o
-	$(CXX) -g -O2 -o LlApp LlApp.o $(LDFLAGS) -lOSAL -lAAS -lxlrt
+	$(CXX) -g -O2 -o LlApp LlApp.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 LlApp.o: LlApp.cpp Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o LlApp.o LlApp.cpp

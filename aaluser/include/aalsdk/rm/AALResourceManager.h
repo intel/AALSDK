@@ -24,8 +24,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file XLResourceManager.h
-/// @brief XLResourceManager - Public Interface to the AAL ResourceManager
+/// @file AALResourceManager.h
+/// @brief AALResourceManager - Public Interface to the AAL ResourceManager
 /// @ingroup ResMgr
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -36,10 +36,10 @@
 /// WHEN:          WHO:     WHAT:
 /// 10/30/2008     JG       Initial version started@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_XL_AASRESOURCEMANAGER_H__
-#define __AALSDK_XL_AASRESOURCEMANAGER_H__
+#ifndef __AALSDK_AASRESOURCEMANAGER_H__
+#define __AALSDK_AASRESOURCEMANAGER_H__
 #include <aalsdk/AALTransactionID.h>
-#include <aalsdk/rm/XLResourceManagerClient.h>
+#include <aalsdk/rm/AALResourceManagerClient.h>
 //#include <aalsdk/kernel/aalrm_client.h>
 
 
@@ -120,7 +120,7 @@ protected:
 // Name: IResourceManager
 // Description: Public interface to the Resource Manager
 //=============================================================================
-class XLRESOURCEMANAGER_API IResourceManager
+class AALRESOURCEMANAGER_API IResourceManager
 {
 public:
    virtual ~IResourceManager(){};
