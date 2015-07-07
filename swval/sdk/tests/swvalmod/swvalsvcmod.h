@@ -5,7 +5,7 @@
 #include <aalsdk/AALBase.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/aas/XLRuntimeMessages.h>
+#include <aalsdk/aas/AALRuntimeModule.h>
 
 #if defined( __AAL_USER__ ) && defined( __AAL_WINDOWS__ )
 # ifdef SWVALSVCMOD_EXPORTS

@@ -23,8 +23,7 @@ public:
    {
       allocService(AAL::dynamic_ptr<AAL::IBase>(iidBase, this),
                    AAL::NamedValueSet(),
-                   AAL::TransactionID(),
-                   AAL::IRuntime::NoRuntimeClientNotification);
+                   AAL::TransactionID());
    }
 
    virtual AAL::btBool Release(AAL::TransactionID const &tid, AAL::btTime timeout=AAL_INFINITE_WAIT)

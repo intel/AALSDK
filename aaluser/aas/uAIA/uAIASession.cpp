@@ -235,12 +235,6 @@ void uAIASession::MessageHandler(IEvent const &theEvent)
 
 } // uAIASession::MessageHandler()
 
-void uAIASession::QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent)
-{
-   AALService().QueueAASEvent(Eventhandler, pEvent);
-}
-
-
 END_NAMESPACE(AAL)
 
 

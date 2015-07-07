@@ -281,6 +281,7 @@ void CMyCCIClient::OnWorkspaceFreeFailed(const IEvent & /*unused*/)
    ClientPost();
 }
 
+
 void CMyCCIClient::ClientWait() { m_Sem.Wait();  }
 
 void CMyCCIClient::ClientPost() { m_Sem.Post(1); }
@@ -312,7 +313,8 @@ public:
    virtual void OnServiceAllocated(IBase *,
                                    TransactionID const &);
    virtual void OnServiceAllocateFailed(const IEvent &);
-   virtual void OnServiceFreed(TransactionID const &);
+   virtual void OnServiceReleased(TransactionID const &);
+   virtual void OnServiceReleaseFailed(const IEvent &);
    virtual void OnServiceEvent(const IEvent &);
    // </ISingleAFUApp>
 
@@ -386,6 +388,7 @@ void CMyApp::OnRuntimeAllocateServiceFailed(IEvent const &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed (rt)");
+   Post();
 }
 
 void CMyApp::OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
@@ -417,11 +420,18 @@ void CMyApp::OnServiceAllocateFailed(const IEvent &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed");
+   Post();
 }
 
-void CMyApp::OnServiceFreed(TransactionID const &tid)
+void CMyApp::OnServiceReleased(TransactionID const &tid)
 {
    INFO("Service Freed");
+}
+
+void CMyApp::OnServiceReleaseFailed(const IEvent &e)
+{
+   m_bIsOK = false;
+   ERR("Service Release Failed");
 }
 
 void CMyApp::OnServiceEvent(const IEvent &e)
@@ -625,7 +635,7 @@ int main(int argc, char *argv[])
 
    CMyApp        myapp;
    NamedValueSet args;
-   Runtime       aal;
+   Runtime       aal(&myapp);
 
    myapp.AFUTarget(gMyCmdLine.AFUTarget);
 
@@ -634,20 +644,22 @@ int main(int argc, char *argv[])
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
-      ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      args.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+      ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+      args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    INFO("Starting the AAL Runtime");
-   if ( aal.start(&myapp, args) ) {
+   if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
-      ERR("AAL Runtime start failed");
+      cout << "Runtime start failed. Aborting." << endl;
       return 4;     // Runtime could not start
    }
 
    if ( !myapp.IsOK() ) {
       // runtime start failed.
+      cout << "Could not find NLB AFU. Aborting." << endl;
+      myapp.Stop();
       return 5;
    }
 

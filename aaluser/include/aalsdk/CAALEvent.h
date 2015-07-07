@@ -69,9 +69,8 @@
 #include <aalsdk/CAALBase.h>
 #include <aalsdk/CCountedObject.h>
 #include <aalsdk/osal/IDispatchable.h>
-#include <aalsdk/IMessageHandler.h>
 #include <aalsdk/IServiceClient.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
      #pragma warning( push)
@@ -111,9 +110,9 @@ class AASLIB_API CAALEvent : protected CriticalSection,
 {
 public:
    /// CAALEvent construct from IBase *. Sub-class interface id is iidEvent.
-   CAALEvent(IBase *pObject, IMessageHandler *pHandler=NULL);
+   CAALEvent(IBase *pObject);
    /// CAALEvent construct from IBase * and sub-class ID.
-   CAALEvent(IBase *pObject, btIID SubClassID, IMessageHandler *pHandler=NULL);
+   CAALEvent(IBase *pObject, btIID SubClassID);
    /// CAALEvent Copy Constructor. Sub-class interface id is iidEvent.
    CAALEvent(const CAALEvent &rOther);
 
@@ -128,10 +127,9 @@ public:
    virtual IBase *              pObject()                  const { return m_pObject;  }
    virtual btBool               IsOK()                     const { return m_bIsOK; }
    virtual btApplicationContext Context()                  const { return m_Context; } // Re-enabled HM 20090225, see file header comments
-   virtual void                 setHandler(IServiceClient  *pHandler) { m_pServiceClient = pHandler; m_pRuntimeClient = NULL;     m_pEventHandler = NULL;     m_pMessageHandler = NULL;     }
-   virtual void                 setHandler(IRuntimeClient  *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = pHandler; m_pEventHandler = NULL;     m_pMessageHandler = NULL;     }
-   virtual void                 setHandler(btEventHandler   pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = pHandler; m_pMessageHandler = NULL;     }
-   virtual void                 setHandler(IMessageHandler *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = NULL;     m_pMessageHandler = pHandler; }
+   virtual void                 setHandler(IServiceClient  *pHandler) { m_pServiceClient = pHandler; m_pRuntimeClient = NULL;     m_pEventHandler = NULL;}
+   virtual void                 setHandler(IRuntimeClient  *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = pHandler; m_pEventHandler = NULL;}
+   virtual void                 setHandler(btEventHandler   pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = pHandler;}
    virtual btApplicationContext SetContext(btApplicationContext Ctx)
    {
       btApplicationContext res = m_Context;
@@ -152,12 +150,10 @@ public:
    /// Update the object pointed to by the Event, and its associated cached context.
    void SetObject(IBase *pObject);  // needed for ReThrow
 
-   /// Dispatch self to target.
+   /// operator() Dispatch Event.
    ///
    /// @param[in]  target  Assumed to be of type EventHandler.
    ///             Functors can be created by overriding this function
-   virtual void Dispatch(btObjectType target) const;
-
    virtual void  operator()();
 
    /// Deletes this.
@@ -179,7 +175,6 @@ protected:
    IBase                   *m_pObject;
    btBool                   m_bIsOK;
    btApplicationContext     m_Context;
-   IMessageHandler         *m_pMessageHandler;
    IServiceClient          *m_pServiceClient;
    IRuntimeClient          *m_pRuntimeClient;
    btEventHandler           m_pEventHandler;
@@ -213,8 +208,7 @@ public:
    /// @param[in]  rTranID     For routing event responses.
    /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
-                     TransactionID const &rTranID,
-                     IMessageHandler *pHandler=NULL);
+                     TransactionID const &rTranID);
    /// CTransactionEvent Constructor.
    ///
    /// @param[in]  pObject     An IBase associated with this event.
@@ -223,8 +217,7 @@ public:
    /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
                      btIID                SubClassID,
-                     TransactionID const &rTranID,
-                     IMessageHandler *pHandler=NULL);
+                     TransactionID const &rTranID);
    /// CTransactionEvent Copy Constructor.
    CTransactionEvent(CTransactionEvent const &rOther);
    /// CTransactionEvent Destructor.
@@ -261,8 +254,7 @@ public:
    CExceptionEvent(IBase           *pObject,
                    btID             ExceptionNumber,
                    btID             Reason,
-                   btcString        Description,
-                   IMessageHandler *pHandler=NULL);
+                   btcString        Description);
    /// CExceptionEvent Constructor.
    ///
    /// @param[in]  pObject          An IBase associated with this event.
@@ -275,8 +267,7 @@ public:
                    btIID            SubClassID,
                    btID             ExceptionNumber,
                    btID             Reason,
-                   btcString        Description,
-                   IMessageHandler *pHandler=NULL);
+                   btcString        Description);
    /// CExceptionEvent Copy Constructor.
    CExceptionEvent(const CExceptionEvent &rOther);
    /// CExceptionEvent Destructor.
@@ -326,8 +317,7 @@ public:
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
                               btID                 Reason,
-                              btcString            Description,
-                              IMessageHandler     *pHandler=NULL);
+                              btcString            Description);
    /// CExceptionTransactionEvent Constructor.
    ///
    /// @param[in]  pObject          An IBase associated with this event.
@@ -342,8 +332,7 @@ public:
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
                               btID                 Reason,
-                              btcString            Description,
-                              IMessageHandler     *pHandler=NULL);
+                              btcString            Description);
    /// CExceptionTransactionEvent Copy Constructor.
    CExceptionTransactionEvent(CExceptionTransactionEvent const &rOther);
    /// CExceptionTransactionEvent Destructor.
@@ -427,8 +416,6 @@ public:
 protected:
    ObjectCreatedEvent();
 
-   IRuntimeClient  *m_prtClient;
-   IServiceClient  *m_pClient;
    NamedValueSet    m_OptArgs;
 };
 
@@ -454,8 +441,6 @@ public:
 protected:
    ObjectCreatedExceptionEvent();
 
-   IRuntimeClient  *m_prtClient;
-   IServiceClient  *m_pClient;
 };
 
 /// Created in response to IAALService::Release.
@@ -480,46 +465,7 @@ public:
 protected:
    CObjectDestroyedTransactionEvent();
 
-   IServiceClient *m_pClient;
-   IRuntimeClient *m_prtClient;
-};
-
-
-//=============================================================================
-// Name: CApplicationEvent
-// Description: CApplicationEvent class
-//=============================================================================
-class AASLIB_API CApplicationEvent : public CAALEvent, public IApplicationEvent
-{
-public:
-   CApplicationEvent(btIID          subclass,
-                     IBase         *pObject,
-                     NamedValueSet &pNamedValues);
-
-   CApplicationEvent(const CApplicationEvent& ApplicationEvent);
-   virtual ~CApplicationEvent(void);
-
-   IBase &Object() const  { return *m_pObject;      }
-
-   // IApplicationEvent
-   NamedValueSet &Parms() { return *m_pNamedValues; }
-// INamedValueSet &Parms() {return (INamedValueSet &)*m_pNamedValues;};
-
-   //Dynamic interface methods
-   btGenericInterface Interface(btIID Interface) const
-   { return CAALEvent::Interface(Interface); }
-
-   virtual btBool Has(btIID Interface) const
-   { return CAALEvent::Has(Interface); }
-
-protected:
-   IBase         *m_pObject;
-   NamedValueSet *m_pNamedValues;
-   btIID          m_subclass;
-
-   CApplicationEvent();
-   CApplicationEvent & operator = (const CApplicationEvent & );
-};
+ };
 
 /// @} group Events
 

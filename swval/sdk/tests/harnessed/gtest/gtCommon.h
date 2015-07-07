@@ -8,7 +8,7 @@
 #include <map>
 
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 using namespace AAL;
 
 #include "gtest/gtest.h"
@@ -95,6 +95,54 @@ do                                                                              
       __expr ;                                                                    \
    }                                                                              \
 }while(0)
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X>
+void MySort(X *p, btUnsignedInt n)
+{
+   // Selection Sort
+   btUnsignedInt i;
+   btUnsignedInt j;
+   btUnsignedInt k;
+
+   for ( i = 0 ; i < n ; ++i ) {
+      k = i;
+      for ( j = i + 1 ; j < n ; ++j ) {
+         if ( *(p + j) < *(p + k) ) {
+            k = j;
+         }
+      }
+      std::swap(*(p + i), *(p + k));
+   }
+}
+
+template <typename X>
+X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
+{
+   X             res;
+   btBool        unique;
+   btUnsignedInt i;
+
+   do
+   {
+      res = (X) GetRand(R);
+      if ( mod > 0 ) {
+         res %= mod;
+      }
+
+      unique = true;
+      for ( i = 0 ; i < n ; ++i ) {
+         if ( res == *(p + i) ) {
+            unique = false;
+            break;
+         }
+      }
+
+   }while( !unique );
+
+   return res;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

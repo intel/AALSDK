@@ -30,7 +30,7 @@ dnl ## Library Versioning ######################################################
 dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [1],[1],[1])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([XLRT],         [libxlrt],         [1],[1],[1])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [1],[1],[1])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [1],[1],[1])
@@ -150,7 +150,7 @@ AC_CONFIG_FILES([gdb/gdbinit])
 
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
-                 include/aalsdk/aas/XLRuntimeModule.h
+                 include/aalsdk/aas/AALRuntimeModule.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
@@ -172,8 +172,8 @@ AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
-                 aas/XLRTLib/Makefile
-                 aas/XLRRMBrokerService/Makefile
+                 aas/AALRuntime/Makefile
+                 aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile
                  aas/AASResourceManager/Makefile])

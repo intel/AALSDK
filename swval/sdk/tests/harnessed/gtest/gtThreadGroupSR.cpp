@@ -1830,7 +1830,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0148)
    // Wake Thr1 to begin the Join().
    EXPECT_TRUE(m_Sems[3].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(Externals + Workers + 5);
+   YIELD_X(Externals + Workers + 15);
 
    // Wake the first worker. The first worker will wake the remaining workers.
    EXPECT_TRUE(m_Sems[1].Post(1));
@@ -3080,7 +3080,7 @@ TEST_P(OSAL_ThreadGroupSR_vp_tuple_0, aal0162)
    // Wake Thr17 to begin the Drain().
    EXPECT_TRUE(m_Sems[2].Post(1));
    YIELD_WHILE(0 == m_Scratch[0]);
-   YIELD_X(3);
+   YIELD_X(10);
 
    // Wake the first worker, then block on m_Sems[0].
    // The first worker invokes the self-referential Join(), Post()'s m_Sems[0] to wake this thread,

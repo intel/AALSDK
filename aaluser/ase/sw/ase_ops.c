@@ -234,18 +234,26 @@ char* ase_eval_session_directory()
   FUNC_CALL_ENTRY;
   
   char *workdir_path;
+  char *env_path;
   /* struct stat s; */
   /* int err; */
     
-  workdir_path = malloc (ASE_FILEPATH_LEN);      
+  workdir_path = malloc (ASE_FILEPATH_LEN);
+  if (!workdir_path) return NULL;
+
   // Evaluate basename location
 #ifdef SIM_SIDE
-  workdir_path = getenv ("PWD");
+  env_path = getenv ("PWD");
 #else
-  workdir_path = getenv ("ASE_WORKDIR");
+  env_path = getenv ("ASE_WORKDIR");
 #endif
       
   // Locate work directory
+  if( env_path) {
+     strcat( workdir_path, env_path );
+  } else {
+     *workdir_path = '\0';
+  }
   strcat( workdir_path, "/work/" ); 
 
   // *FIXME*: Idiot-proof the work directory
@@ -254,3 +262,29 @@ char* ase_eval_session_directory()
   
   return workdir_path;
 }
+//char* ase_eval_session_directory()
+//{
+//  FUNC_CALL_ENTRY;
+//
+//  char *workdir_path;
+//  /* struct stat s; */
+//  /* int err; */
+//
+//  workdir_path = malloc (ASE_FILEPATH_LEN);
+//  // Evaluate basename location
+//#ifdef SIM_SIDE
+//  workdir_path = getenv ("PWD");
+//#else
+//  workdir_path = getenv ("ASE_WORKDIR");
+//#endif
+//
+//  // Locate work directory
+//  strcat( workdir_path, "/work/" );
+//
+//  // *FIXME*: Idiot-proof the work directory
+//
+//  FUNC_CALL_EXIT;
+//
+//  return workdir_path;
+//}
+

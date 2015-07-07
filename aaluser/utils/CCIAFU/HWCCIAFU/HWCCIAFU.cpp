@@ -63,20 +63,20 @@ void HWCCIAFU::init(TransactionID const &TranID)
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    this,
-                                                    TranID,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish ICCIClient Interface"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      this,
+                                                                      TranID,
+                                                                      errBadParameter,
+                                                                      reasMissingInterface,
+                                                                      "Client did not publish ICCIClient Interface"));
       return;
    }
 
-   QueueAASEvent( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                       Client(),
-                                                       dynamic_cast<IBase *>(this),
-                                                       TranID) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
+                                                                         Client(),
+                                                                         dynamic_cast<IBase *>(this),
+                                                                         TranID) );
 }
 
 btBool HWCCIAFU::Release(TransactionID const &TranID, btTime timeout)

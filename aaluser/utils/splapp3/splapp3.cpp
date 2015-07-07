@@ -45,7 +45,8 @@
 /// 10/12/2014    HM    Initial version copied from splapp.
 /// 10/14/2014    HM    Added new SPL protocol for StopTransaction
 /// 10/20/2014    HM    Copied from splapp2
-/// 10/31/2014    HM    Simplifying@endverbatim
+/// 10/31/2014    HM    Simplifying
+/// 06/29/2015    HM    Bumped FPGA default copy close to 2 GiB@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -457,8 +458,8 @@ int main(int argc, char *argv[])
       RunTimeArgs.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
-      ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      RunTimeArgs.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+      ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+      RunTimeArgs.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    ////////////////////////////////////////////////////////////////////////////
@@ -492,11 +493,18 @@ int main(int argc, char *argv[])
    // Get a big buffer that will contain 3 items:
    // 1) VAFU_CNTXT is a command parameter block instructing AFU what to do, and
    //    providing a place for AFU to respond when it is finished doing it.
-   // 2) Source buffer of 4 MiB length
-   // 3) Destination buffer of 4 MiB length
+   // 2) Source buffer of copy_buf_len length
+   // 3) Destination buffer of copy_buf_len length
+
+   // Set copy_buf_len based on target. Default small buffer for ASE and SW Sim, bit for HW.
+   btWSSize copy_buf_len = CL(16);
+   if ( (0 == myapp.AFUTarget().compare(SPLAFU_NVS_VAL_TARGET_FPGA))) {
+      copy_buf_len = GB(1)-CL(1);
+   }
 
    // Allocate the buffer, and expose the virtual address and length for the general case
-   myapp.syncWorkspaceAllocate( sizeof(VAFU2_CNTXT) + CL(4) + CL(4), TransactionID());
+   myapp.syncWorkspaceAllocate( sizeof(VAFU2_CNTXT) + copy_buf_len + copy_buf_len,
+      TransactionID());
 
    btVirtAddr         pWSUsrVirt = myapp.OneLargeVirt(); // Address of Workspace
    const btWSSize     WSLen      = myapp.OneLargeSize(); // Length of workspace

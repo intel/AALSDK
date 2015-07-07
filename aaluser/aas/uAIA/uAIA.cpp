@@ -221,11 +221,11 @@ void uAIA::init( TransactionID const& rtid )
 {
    AAL_INFO(LM_UAIA, "uAIA::Create. in\n");
 
-   CAIA *pCAIA = new CAIA(m_pcontainer);
+   CAIA *pCAIA = new CAIA(m_pcontainer, getRuntime() );
 
    pCAIA->SetuAIA(this);
 
-   pCAIA->_init(Handler(), Context(), rtid, OptArgs());
+   //pCAIA->_init(Handler(), Context(), rtid, OptArgs());
    pCAIA->init(rtid);
 
    //Singleton service already initialized
@@ -237,7 +237,7 @@ void uAIA::init( TransactionID const& rtid )
       m_pUIDC->Open();
       if (!m_pUIDC->IsOK()) {
          m_bIsOK = false;
-         QueueAASEvent(new ObjectCreatedExceptionEvent( getRuntimeClient(),
+         getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent( getRuntimeClient(),
                                                         Client(),
                                                         dynamic_cast<IBase*>(this),
                                                         rtid,
@@ -261,7 +261,7 @@ void uAIA::init( TransactionID const& rtid )
       AAL_INFO(LM_UAIA, "uAIA::Create, out\n");
    }
    // Create the object
-   QueueAASEvent(new ObjectCreatedEvent(getRuntimeClient(),
+   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
                                         Client(),
                                         dynamic_cast<IBase*>(pCAIA),rtid));
    return;
@@ -453,16 +453,13 @@ uAIA::Process_Event()
          IBase *proxybase = pMessage->msgRoute().AIAProxybasep();
          btEventHandler handler = pMessage->msgRoute().Handler();
          TransactionID tranID = pMessage->tranID();
-         QueueAASEvent(handler,
-                                 new UIDriverClientEvent(proxybase,
-                                                                pMessage,
-                                                                tranID));
-/*
-         QueueAASEvent(pMessage->msgRoute().Handler(),
-                                        new UIDriverClientEvent(dynamic_cast <IBase*> (pMessage->msgRoute().AIAProxybasep()),
-                                                                pMessage,
-                                                                pMessage->tranID()));
-*/
+
+         UIDriverClientEvent *pEvent = new UIDriverClientEvent(proxybase,
+                                                              pMessage,
+                                                              tranID);
+         pEvent->setHandler(handler);
+         getRuntime()->schedDispatchable(pEvent);
+
          pMessage = new uidrvMessage;
 
       }
@@ -575,16 +572,17 @@ void uAIA::WaitForShutdown(ui_shutdownreason_e      reason,
       }else{
            // Timeout event
          pTheEvent= new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                exttranevtServiceShutdown,
-                                                TransactionID(rTranID_t),
-                                                errSystemTimeout,
-                                                reasSystemTimeout,
-                                                const_cast<btString>(strSystemTimeout));
+                                                   exttranevtServiceShutdown,
+                                                   TransactionID(rTranID_t),
+                                                   errSystemTimeout,
+                                                   reasSystemTimeout,
+                                                   const_cast<btString>(strSystemTimeout));
       }
 
       if(pTheEvent){
          //Shutdown complete
-         QueueAASEvent(Handler(), pTheEvent);
+         pTheEvent->setHandler(m_Listener);
+         getRuntime()->schedDispatchable(pTheEvent);
          DEBUG_CERR("uAIA::WaitForShutdown() exiting. 3 of 3\n");
          AAL_DEBUG(LM_Shutdown,"uAIA::WaitForShutdown() exiting. 3 of 3\n");
       }else{

@@ -38,14 +38,14 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALBase.h>
 
-/// @addtogroup XLRuntime
+/// @addtogroup AALRUNTIME
 /// @{
 
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 /// @class        IServiceClient
-/// @brief        Client Interface for any Service object in the AAL XLRuntime.
+/// @brief        Client Interface for any Service object in the AAL AALRUNTIME.
 ///
 ///   An object that
 ///   wants to use a Service in the XL Runtime instantiates an instance of this class,
@@ -100,11 +100,19 @@ public:
    virtual void      serviceAllocateFailed(const IEvent &rEvent) = 0;
 
    /// @brief     Called by a Service object to indicate that it has stopped successfully
-   ///               and been freed after a call to IAALService.Release().
+   ///               and been Released after a call to IAALService.Release().
    /// @param[in] rTranID is reference to the TransactionID that was passed to
    ///               IAALService.Release().
    /// @return    void
-   virtual void      serviceFreed(TransactionID const &rTranID = TransactionID()) = 0;
+   virtual void      serviceReleased(TransactionID const &rTranID = TransactionID()) = 0;
+
+   /// @brief     Called by a Runtime object to indicate that it failed to
+   ///               successfully Release a service after a call to
+   ///               IAALService::Release().
+   /// @param[in] rEvent will be an exception event that can be parsed to determine
+   ///               the error that occurred.
+   /// @return    void
+   virtual void      serviceReleaseFailed(const IEvent &rEvent) = 0;
 
    /// @brief     Called by a Service object to pass exceptions and other
    ///               unsolicited messages.
@@ -122,4 +130,4 @@ END_NAMESPACE(AAL)
 
 #endif // __AALSDK_ISERVICECLIENT_H__
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME

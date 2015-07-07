@@ -1285,6 +1285,8 @@ write_cci_csr32(struct spl2_device *pspl2dev, btCSROffset offset, bt32bitCSR val
    if( spl2_dev_kvp_config(pspl2dev) ) {
       btVirtAddr  p  = ((btVirtAddr)spl2_dev_kvp_cci_csr(pspl2dev)) + offset; // offset is in bytes
       bt32bitCSR *up = (bt32bitCSR *)p;
+      PVERBOSE("Writing value 0x%x %d to offset 0x%x %d at address 0x%p\n",
+               value, value, offset, offset, p);
       *up            = value;
    } else {
       PERR("pdev->.m_kvp_config NULL, could not write CSR 0x%X with value 0x%X\n",

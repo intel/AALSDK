@@ -47,7 +47,7 @@
                                        // Here for backward compatibility.
                                        // Better to move to where SingleAFUApp.h is #included itself
 #include <aalsdk/AAL.h>
-#include <aalsdk/xlRuntime.h>
+#include <aalsdk/Runtime.h>
 using namespace AAL;
 
 /// @addtogroup SingleAFUApp
@@ -73,9 +73,11 @@ public:
    void Stop();
 
    // <IRuntimeClient>
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
    virtual void     runtimeStarted(IRuntime *,
                                    const NamedValueSet &);
    virtual void     runtimeStopped(IRuntime *);
+   virtual void     runtimeStopFailed(const IEvent &rEvent);
    virtual void     runtimeStartFailed(const IEvent &);
    virtual void     runtimeAllocateServiceFailed(IEvent const &);
    virtual void     runtimeAllocateServiceSucceeded(IBase *,
@@ -86,9 +88,10 @@ public:
    // <IServiceClient>
    virtual void      serviceAllocated(IBase *,
                                       TransactionID const & = TransactionID());
-   virtual void serviceAllocateFailed(const IEvent &);
-   virtual void          serviceFreed(TransactionID const & = TransactionID());
-   virtual void          serviceEvent(const IEvent &);
+   virtual void		 serviceAllocateFailed(const IEvent &);
+   virtual void      serviceReleased(TransactionID const & = TransactionID());
+   virtual void      serviceReleaseFailed(const IEvent &);
+   virtual void      serviceEvent(const IEvent &);
    // </IServiceClient>
 
    /// @brief Called in response to IRuntimeClient::runtimeStarted notification.
@@ -140,7 +143,13 @@ public:
    /// @note Subclasses must override to implement application-specific behavior.
    ///
    /// ISingleAFUApp's internal semaphore is posted after this call.
-   virtual void OnServiceFreed(TransactionID const &)          = 0;
+   virtual void OnServiceReleased(TransactionID const &)          = 0;
+   /// @brief Called in response to IServiceClient::serviceReleaseFailed notification.
+   /// @note Subclasses must override to implement application-specific behavior.
+   ///
+   /// ISingleAFUApp's internal semaphore is posted after this call.
+   /// m_bIsOK (inherited from CAASBase) is set to false after this call.
+   virtual void OnServiceReleaseFailed(const IEvent &)        = 0;
    /// @brief Called in response to IServiceClient::serviceEvent notification.
    /// @note Subclasses must override to implement application-specific behavior.
    virtual void OnServiceEvent(const IEvent &)                 = 0;
@@ -202,6 +211,28 @@ void ISingleAFUApp<Proprietary>::Stop()
    }
 
    Post(); // Wake up main, if waiting
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::runtimeCreateOrGetProxyFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnRuntimeEvent(e);
+   m_bIsOK = false;
+   Post();
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::runtimeStopFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnRuntimeEvent(e);
+   m_bIsOK = false;
+   Post();
 }
 
 template <typename Proprietary>
@@ -294,10 +325,20 @@ void ISingleAFUApp<Proprietary>::serviceAllocateFailed(const IEvent &e)
 }
 
 template <typename Proprietary>
-void ISingleAFUApp<Proprietary>::serviceFreed(TransactionID const &tid)
+void ISingleAFUApp<Proprietary>::serviceReleased(TransactionID const &tid)
 {
-   OnServiceFreed(tid);
+   OnServiceReleased(tid);
    Post();
+}
+
+template <typename Proprietary>
+void ISingleAFUApp<Proprietary>::serviceReleaseFailed(IEvent const &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   OnServiceReleaseFailed(e);
+   m_bIsOK = false;
 }
 
 template <typename Proprietary>

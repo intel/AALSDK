@@ -34,11 +34,12 @@
 ##     11/18/2014    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-SampleBrokerService \
-Hello_AAL_Service \
-Hello_AAL \
-Hello_CCI_NLB \
-Hello_SPL_LB
+Hello_AAL_Service/SW \
+Hello_AAL/SW \
+Hello_CCI_NLB/SW \
+Hello_SPL_LB/SW \
+Sudoku_SPL/SW \
+LinkedList_SPL/SW
 
 MFLAGS  =
 ifneq (,$(ndebug))

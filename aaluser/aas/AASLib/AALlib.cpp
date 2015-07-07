@@ -156,7 +156,7 @@ AAS_END_MOD()
    /// @defgroup CommonBase Common Base Class
    /// @ingroup AALCore
 
-   /// @defgroup XLRuntime XL Run Time Framework
+   /// @defgroup AALRUNTIME AAL Run Time Framework
    /// @ingroup AALCore
 
    /// @defgroup Events Event Infrastructure
@@ -315,10 +315,10 @@ AAS_END_MOD()
       /// @defgroup RMUtils Resource Manager Utilities
       /// @ingroup Utils
 
-      /// @defgroup SingleAFUApp ISingleAFUApp - Template helper class for XL applications requiring a single AFU.
+      /// @defgroup SingleAFUApp ISingleAFUApp - Template helper class for AAL applications requiring a single AFU.
       /// @ingroup Utils
 
-      /// @defgroup CSyncClient CSyncClient - Helper class for synchronous XL applications.
+      /// @defgroup CSyncClient CSyncClient - Helper class for synchronous AAL applications.
       /// @ingroup Utils
 
 /// @defgroup Debugging Internal Debugging Facilities
@@ -386,7 +386,7 @@ AAS_END_MOD()
       <li>@ref BasicTypes "Basic Data Types"</li>
       <li>@ref OSAL       "OS Abstraction Layer"</li>
       <li>@ref CommonBase "Common Base Class"</li>
-      <li>@ref XLRuntime  "XL Run Time Framework"</li>
+      <li>@ref AALRUNTIME  "AAL Run Time Framework"</li>
       <li>@ref Events     "Event Infrastructure"</li>
         <ul>
           <li>@ref SysEvents "System Events"</li>
@@ -414,8 +414,8 @@ AAS_END_MOD()
         <ul>
           <li>@ref AASUtils     "AAS Utilities"</li>
           <li>@ref RMUtils      "Resource Manager Utilities"</li>
-          <li>@ref SingleAFUApp "ISingleAFUApp - XL application template"</li>
-          <li>@ref CSyncClient  "CSyncClient - synchronous XL application base class"</li>
+          <li>@ref SingleAFUApp "ISingleAFUApp - AAL application template"</li>
+          <li>@ref CSyncClient  "CSyncClient - synchronous AAL application base class"</li>
         </ul>
   <li>@ref Debugging "Internal Debugging Facilities"</li>
   <li>@ref UtilityAFUs "AALSDK Utility AFUs"</li>

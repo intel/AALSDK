@@ -332,6 +332,9 @@
 #define errAFUTransactionNotFound	   AAL_ErrNum     (0x000E)
 #define errServiceNotFound             AAL_ErrNum     (0x000F)
 #define errAllocationFailure           AAL_ErrNum     (0x0010)
+#define errReleaseFailure              AAL_ErrNum     (0x0011)
+#define errProxyInvalid                AAL_ErrNum     (0x0012)
+#define errProxyDestroy                AAL_ErrNum     (0x0013)
 
 #define reasCauseUnknown               AAL_ReasCode   (0x0001)
 #define reasFeatureNotSupported        AAL_ReasCode   (0x0002)
@@ -358,7 +361,8 @@
 #define reasNotImplemented             AAL_ReasCode   (0x0017)
 #define reasSubModuleFailed            AAL_ReasCode   (0x0018) // some lower level module failed unexpectedly
 #define reasCommunicationFailed        AAL_ReasCode   (0x0019) // communications problem
-#define reasMissingInterface           AAL_ReasCode   (0x0020) // missing required interface
+#define reasMissingInterface           AAL_ReasCode   (0x001A) // missing required interface
+#define reasParentReleased             AAL_ReasCode   (0x001B) // missing required interface
 
 #define strNoError                     "No error."
 #define strInternalSystemFailure       "Internal system failure!"
@@ -413,6 +417,8 @@
 
 #define iidRuntimeClient             __AAL_IID(AAL_sysAAL, 0x0006)   // Class implements IRuntimeClient
 
+#define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0007)   // Class implements IRuntime
+
 
 /// @} group Services
 
@@ -436,10 +442,9 @@
 /// Registrar interface id.
 /// @ingroup Registrar
 #define iidRegistrar                 __AAL_IID(AAL_sysAAS, 0x0002)
-//#if DEPRECATED
-#define iidEDS                       __AAL_IID(AAL_sysAAS, 0x0003)
-#define iidEventDeliveryService      iidEDS                          // Alias
+#define iidMDS                       __AAL_IID(AAL_sysAAS, 0x0003)
 
+//#if DEPRECATED
 #define iidFactory                   __AAL_IID(AAL_sysAAS, 0x0004)
 //#endif // DEPRECATED
 /// @ingroup uAIA
@@ -494,7 +499,7 @@
 #define __AAL_SysNid(Num)                 __AAL_Nid      (AAL_sysAAS, Num)
 
 
-/// @addtogroup XLRuntime
+/// @addtogroup AALRUNTIME
 /// @{
 
 /// Interface id of event sent in response to successful SystemInit.
@@ -510,7 +515,7 @@
 #define exttranevtServiceShutdown         __AAL_SysExTranEvt (0x0003)
 #define exttranevtSystemStart             __AAL_SysExTranEvt (0x0004)
 
-/// @} group XLRuntime
+/// @} group AALRUNTIME
 
 
 #define exttranevtNotImplemented          __AAL_SysExTranEvt (0x0004)
@@ -523,13 +528,18 @@
 #define reasSystemMissingInterface        __AAL_SysReasCode(0x0002)
 #define strSystemMissingInterface         "missing required interface,"
 
-#define errSystemTimeout                  __AAL_SysErrNum(0x0002)
-#define reasSystemTimeout                 __AAL_SysReasCode(0x0002)
+#define errSystemTimeout                  __AAL_SysErrNum(0x0003)
+#define reasSystemTimeout                 __AAL_SysReasCode(0x0003)
 #define strSystemTimeout                  "Timeout"
 
-#define errSysAALLibLdr                   __AAL_SysErrNum(0x0003)
-#define reasAALLibLdr                     __AAL_SysReasCode(0x0003)
+#define errSysAALLibLdr                   __AAL_SysErrNum(0x0004)
+#define reasAALLibLdr                     __AAL_SysReasCode(0x0004)
 #define strAALLibLdr                      "AAL Dyn Load Library Error"
+
+#define errSysSystemPermission            __AAL_SysErrNum(0x0005)
+#define reasAALLibLdr                     __AAL_SysReasCode(0x0004)
+#define strAALLibLdr                      "AAL Dyn Load Library Error"
+
 
 // System Specific Keys
 #define nidSystemRegistrarPath            ("_AAL_SYSTEM_REGISTRAR_PATH")
@@ -599,7 +609,7 @@
 /// @addtogroup uAIA
 /// @{
 
-#define extevtUIDriverClientEvent     __AAL_UAIAExEvt          (0x0001)
+#define extevtUIDriverClientEvent      __AAL_UAIAExEvt         (0x0001)
 
 #define tranevtUIDriverClientEvent     __AAL_UAIATranEvt       (0x0001)
 #define exttranevtUIDriverClientEvent  __AAL_UAIAExTranEvt     (0x0001)

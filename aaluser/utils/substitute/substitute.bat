@@ -6,7 +6,7 @@
 %1 %2\faptrans\FAP10Service.h.in %2\faptrans\FAP10Service.h @FAPTRANS1_SVC_MOD@ libFAPTrans1
 %1 %2\faptrans\FAP20Service.h.in %2\faptrans\FAP20Service.h @FAPTRANS2_SVC_MOD@ libFAPTrans2
 %1 %2\faptrans\MAFUTransService.h.in %2\faptrans\MAFUTransService.h @MAFUTRANS_SVC_MOD@ libMAFUTrans
-%1 %2\aas\XLRuntimeModule.h.in %2\aas\XLRuntimeModule.h @XLRT_SVC_MOD@ libxlrt
+%1 %2\aas\AALRuntimeModule.h.in %2\aas\AALRuntimeModule.h @AALRUNTIME_SVC_MOD@ libaalrt
 %1 %2\service\CCIAFUService.h.in %2\service\CCIAFUService.h @CCIAFU_SVC_MOD@ libCCIAFU
 %1 %2\service\HWCCIAFUService.h.in %2\service\HWCCIAFUService.h @HWCCIAFU_SVC_MOD@ libHWCCIAFU
 %1 %2\service\ASECCIAFUService.h.in %2\service\ASECCIAFUService.h @ASECCIAFU_SVC_MOD@ libASECCIAFU

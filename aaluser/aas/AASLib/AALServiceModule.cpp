@@ -67,45 +67,31 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
 
 AALServiceModule::~AALServiceModule() {}
 
-IBase *AALServiceModule::Construct(btEventHandler       Listener,
+IBase *AALServiceModule::Construct(IRuntime           *pAALRuntime,
+                                   IBase              *Client,
                                    TransactionID const &tranID,
-                                   btApplicationContext context,
                                    NamedValueSet const &optArgs)
 {
    // Add this one to the list of objects this container holds.
    //  It's up to the factory to enforce singletons.
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            Listener,
-                                            context,
-                                            tranID,
-                                            optArgs);
+   // Add the Service to the Module List before the Service can start
 
+   AutoLock(this);      // Lock to protect the AddtoList.  The serviceAllocated can come at anytime
+
+   m_pBase = m_SvcsFact.CreateServiceObject(this,
+                                            pAALRuntime);
    // Add the service to the list of services the module
    if ( NULL != m_pBase ) {
       AddToServiceList(m_pBase);
+
+      // Service will issue serviceAllocated now or fail
+      if(!m_SvcsFact.InitializeService(Client,
+                                       tranID,
+                                       optArgs)){
+         RemovefromServiceList(m_pBase);
+         m_pBase = NULL;
+      }
    }
-
-   return m_pBase;
-}
-
-IBase *AALServiceModule::Construct(IBase               *Client,
-                                   TransactionID const &tranID,
-                                   NamedValueSet const &optArgs,
-                                   btBool               NoRuntimeEvent)
-{
-   // Add this one to the list of objects this container holds.
-   //  It's up to the factory to enforce singletons.
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            Client,
-                                            tranID,
-                                            optArgs,
-                                            NoRuntimeEvent);
-
-   // Add the service to the list of services the module
-   if ( NULL != m_pBase ) {
-      AddToServiceList(m_pBase);
-   }
-
    return m_pBase;
 }
 

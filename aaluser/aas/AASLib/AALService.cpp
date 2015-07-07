@@ -49,7 +49,7 @@
 
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
-
+#include "aalsdk/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -67,14 +67,15 @@ BEGIN_NAMESPACE(AAL)
    // Comments:
    //=============================================================================
 ServiceBase::ServiceBase(AALServiceModule *container,
+                         IRuntime         *pAALRuntime,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
    CAASBase(),
-   m_eventHandler(NULL),
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
+   m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
@@ -89,9 +90,9 @@ ServiceBase::ServiceBase(AALServiceModule *container,
 ServiceBase::ServiceBase(ServiceBase const &rother) :
    CAASBase(),
    m_optArgs(rother.m_optArgs),
-   m_eventHandler(rother.m_eventHandler),
    m_pclient(rother.m_pclient),
    m_pcontainer(rother.m_pcontainer),
+   m_Runtime(rother.m_Runtime->getRuntimeProxy(this)),
    m_ptransport(rother.m_ptransport),
    m_pmarshaller(rother.m_pmarshaller),
    m_punmarshaller(rother.m_punmarshaller),
@@ -133,66 +134,35 @@ ServiceBase::~ServiceBase()
 
 btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
 {
+   AutoLock(this);
    Released();
 
-   // Using NULL here to reinforce that we should not be manipulating this when
-   // EDS dispatches the CObjectDestroyedTransactionEvent - it will have been deleted.
-   QueueAASEvent(new CObjectDestroyedTransactionEvent(Client(),
-                                                      NULL,
-                                                      rTranID,
-                                                      Context()));
-   delete this;
+   // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
+   //  just before dispatching the callback thus insuring that the final cleanup is executed
+   //  before notification is received.
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                              Client(),
+                                                              this,
+                                                              rTranID));
    return true;
 }
 
 btBool ServiceBase::Release(btTime timeout)
 {
+   AutoLock(this);
    Released();
+
+   // Release the Proxy
+   getRuntime()->releaseRuntimeProxy();
+   m_Runtime = NULL;
    delete this;
    return true;
 }
 
-
-
-
-IBase * ServiceBase::_init(btEventHandler       eventHandler,
-                           btApplicationContext context,
-                           TransactionID const &rtid,
-                           NamedValueSet const &optArgs,
-                           CAALEvent           *pcmpltEvent)
-{
-   if(NULL == eventHandler){
-      return NULL;
-   } else {
-      m_eventHandler = eventHandler;
-   }
-
-   m_Context      = context;
-   m_optArgs      = optArgs;
-
-   // This is used to generate the creation event.
-   m_RuntimeClient = NULL;
-
-   // If no completion event then this is the direct superclass
-   //  of the most derived class in the Service class hierarchy.
-   if ( NULL == pcmpltEvent ) {
-      init(rtid);
-      return this;
-   }
-
-   // Queue the completion to enable next layer down (the class derived from this)
-   //   to initialize
-   QueueAASEvent(pcmpltEvent);
-   return this;
-}
-
-
-
 IBase * ServiceBase::_init(IBase               *pclient,
                            TransactionID const &rtid,
                            NamedValueSet const &optArgs,
-                           CAALEvent           *pcmpltEvent,
-                           btBool               NoRuntimeEvent)
+                           CAALEvent           *pcmpltEvent)
 {
    if(NULL == pclient){
       return NULL;
@@ -208,7 +178,7 @@ IBase * ServiceBase::_init(IBase               *pclient,
    m_optArgs = optArgs;
 
    // This is used to generate the creation event.
-   m_RuntimeClient = (NoRuntimeEvent == true ? NULL : getRuntimeServiceProvider()->getRuntimeClient());
+   m_RuntimeClient = getRuntime()->getRuntimeClient();
 
    // Check that mandatory initialization has occurred
 
@@ -219,13 +189,11 @@ IBase * ServiceBase::_init(IBase               *pclient,
    } else {
       // Queue the completion to enable next layer down (the class derived from this)
       //   to initialize
-      QueueAASEvent(pcmpltEvent);
+      getRuntime()->schedDispatchable(pcmpltEvent);
    }
 
    return this;
 }
-
-
 
 btBool ServiceBase::sendmsg()
 {
@@ -305,41 +273,9 @@ void ServiceBase::MessageDeliveryThread()
 
 void ServiceBase::allocService(IBase                  *pClient,
                                NamedValueSet const    &rManifest,
-                               TransactionID const    &rTranID,
-                               IRuntime::eAllocatemode mode)
+                               TransactionID const    &rTranID)
 {
-   getRuntime()->allocService(pClient, rManifest, rTranID, mode);
-}
-
-void ServiceBase::SendMsg(IDispatchable *pMessage)
-{
-   // BREAKPOINT Queue Dispatchable
-   getRuntimeServiceProvider()->SendMsg(pMessage);
-}
-
-btBool ServiceBase::QueueAASEvent(CAALEvent *pEvent)
-{
-   // BREAKPOINT Queue Event
-   if ( NULL != Handler() ) {
-      pEvent->setHandler(Handler());
-      return getRuntimeServiceProvider()->SendMsg(pEvent, (btObjectType)Handler());
-   } else {
-      pEvent->setHandler(Client());
-      return getRuntimeServiceProvider()->SendMsg(pEvent, Client());
-   }
-}
-
-btBool ServiceBase::QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent)
-{
-   // BREAKPOINT Queue Event
-   pEvent->setHandler(Eventhandler);
-   return getRuntimeServiceProvider()->SendMsg(pEvent, (btObjectType)Eventhandler);
-}
-
-btBool ServiceBase::QueueAASEvent(btObjectType target, CAALEvent *pEvent)
-{
-   // BREAKPOINT Queue Event
-   return getRuntimeServiceProvider()->SendMsg(pEvent, target);
+   getRuntime()->allocService(pClient, rManifest, rTranID);
 }
 
 void ServiceBase::Released()
@@ -353,7 +289,6 @@ void ServiceBase::initComplete(TransactionID const &rtid)
 {
    init(rtid);
 }
-
 
 void ServiceBase::messageHandler(const IEvent &rEvent)
 {
@@ -378,39 +313,17 @@ ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 // Comments:
 //=============================================================================
 ServiceProxyBase::ServiceProxyBase(AALServiceModule *container,
-                                   IAALTransport *ptransport,
-                                   IAALMarshaller *marshaller,
+                                   IRuntime         *pAALRUNTIME,
+                                   IAALTransport    *ptransport,
+                                   IAALMarshaller   *marshaller,
                                    IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
+               pAALRUNTIME,
                ptransport,
                marshaller,
                unmarshaller),
    m_pcmpltEvent(NULL)
  {}
-
-IBase * ServiceProxyBase::_init(btEventHandler       eventHandler,
-                                btApplicationContext context,
-                                TransactionID const &rtid,
-                                NamedValueSet const &optArgs,
-                                CAALEvent           *pcmpltEvent)
-{
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pcmpltEvent ) {
-
-      // No then save the completion event and post it when our initialization
-      //  completes
-      m_pcmpltEvent = pcmpltEvent;
-      return this;
-   }
-
-   ServiceBase::_init(eventHandler,
-                      context,
-                      rtid,
-                      optArgs,
-                      new InitComplete<ServiceProxyBase>(this, &ServiceProxyBase::Doinit, rtid));
-   return this;
-}
-
 
 IBase * ServiceProxyBase::_init(IBase               *pclient,
                                 TransactionID const &rtid,
@@ -437,13 +350,13 @@ IBase * ServiceProxyBase::_init(IBase               *pclient,
 void ServiceProxyBase::Doinit(TransactionID const &rtid)
 {
    if ( !HasTransport() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasNoDevice,
-                                                    "No transport provided to proxy class"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasNoDevice,
+                                                                      "No transport provided to proxy class"));
       return;
    }
 
@@ -458,13 +371,13 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
    if ( !sendmsg() ) {
       m_ptransport->disconnect();
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasInternalError,
-                                                    "Failed to send NEW message to server"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasInternalError,
+                                                                      "Failed to send NEW message to server"));
 
       return;
    }
@@ -481,7 +394,7 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
    //   init() method
    //
    if ( NULL != m_pcmpltEvent ) {
-      QueueAASEvent(m_pcmpltEvent);
+      getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
       init(rtid);
@@ -491,37 +404,17 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
 
 ServiceStubBase::ServiceStubBase(AALServiceModule *container,
+                                 IRuntime         *pAALRUNTIME,
                                  IAALTransport    *ptransport,
                                  IAALMarshaller   *marshaller,
                                  IAALUnMarshaller *unmarshaller) :
    ServiceBase(container,
+               pAALRUNTIME,
                ptransport,
                marshaller,
                unmarshaller),
    m_pcmpltEvent(NULL)
 {}
-
-IBase * ServiceStubBase::_init(btEventHandler       eventHandler,
-                               btApplicationContext context,
-                               TransactionID const &rtid,
-                               NamedValueSet const &optArgs,
-                               CAALEvent           *pcmpltEvent)
-{
-   // Check to see if this is the direct super class of the most derived class
-   if ( NULL != pcmpltEvent ) {
-      // No then save the completion event and post it when our initialization
-      //  completes
-      m_pcmpltEvent = pcmpltEvent;
-      return this;
-   }
-
-   ServiceBase::_init(eventHandler,
-                      context,
-                      rtid,
-                      optArgs,
-                      new InitComplete<ServiceStubBase>(this, &ServiceStubBase::Doinit, rtid));
-   return this;
-}
 
 IBase * ServiceStubBase::_init(IBase               *pclient,
                                TransactionID const &rtid,
@@ -547,13 +440,13 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
 {
    // If there
    if ( !HasTransport() ) {
-      QueueAASEvent(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasNoDevice,
-                                                    "No transport provided to stub class"));
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                      Client(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasNoDevice,
+                                                                      "No transport provided to stub class"));
       return;
    }
 
@@ -572,7 +465,7 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
    //   init() method
    //
    if ( NULL != m_pcmpltEvent ) {
-      QueueAASEvent(m_pcmpltEvent);
+      getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
       init(rtid);

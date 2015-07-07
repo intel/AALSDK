@@ -85,7 +85,7 @@ $ aalscan
 0.0.0 libSPLAFU
 0.0.0 libSWSimCCIAFU
 0.0.0 libSWSimSPLAFU
-0.0.0 libxlrt@endverbatim
+0.0.0 libAALRUNTIME@endverbatim
 
 @} group aalscan
 */
@@ -154,13 +154,13 @@ const char *gCoreAALServiceRootNames[] = {
    "libHWSPLAFU",
    "libOSAL",
    "librrmbroker",
-   "libsampleafu1",
-   "libsampleafu2",
+//   "libsampleafu1",
+//   "libsampleafu2",
    "libsamplebroker",
    "libSPLAFU",
    "libSWSimCCIAFU",
    "libSWSimSPLAFU",
-   "libxlrt"
+   "libAALRUNTIME"
 };
 
 OSServiceModule gServiceModules[sizeof(gCoreAALServiceRootNames)/sizeof(gCoreAALServiceRootNames[0])];
