@@ -47,10 +47,35 @@
 `include "ase_global.vh"
 `include "platform.vh"
 
-`timescale 1ns/1ns
+// `timescale 1ns/1ns
 
 // CCI to Memory translator module
-module cci_emulator();
+module cci_emulator
+  (
+   output logic                          clk_32ui   ,             // out
+   output logic                          clk_16ui   ,             // out
+   output logic                          sys_reset_n, 
+   output logic                          sw_reset_n, 
+   output logic 			 lp_initdone ,            // out
+   input logic  [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header,            // in
+   input logic 			         tx_c0_rdvalid,           // in
+   output logic 			 tx_c0_almostfull,        // out
+   input logic [`CCI_TX_HDR_WIDTH-1:0]   tx_c1_header,            // in
+   input logic [`CCI_DATA_WIDTH-1:0] 	 tx_c1_data,              // in
+   input logic 			         tx_c1_wrvalid,           // in
+   output logic 			 tx_c1_almostfull,        // out
+   output logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header,            // out
+   output logic [`CCI_DATA_WIDTH-1:0] 	 rx_c0_data,              // out
+   output logic 			 rx_c0_rdvalid,           // out
+   output logic 			 rx_c0_wrvalid,           // out
+   output logic 			 rx_c0_cfgvalid,          // out
+   output logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header,            // out
+   output logic 			 rx_c1_wrvalid,           // out
+   output logic 			 rx_c0_umsgvalid,         // out
+   input logic 			         tx_c1_intrvalid,         // in
+   output logic 			 rx_c0_intrvalid,         // out
+   output logic 			 rx_c1_intrvalid          // out
+   );
 
    /*
     * DPI import/export functions
@@ -74,8 +99,6 @@ module cci_emulator();
 
    // CAPCM initilize
    import "DPI-C" context task capcm_init();
-   // CAPCM destroy
-   // import "DPI-C" context task capcm_deinit();
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
@@ -138,32 +161,32 @@ module cci_emulator();
     * ***************************************************************************/
 
    logic                          clk   ;                  // out
-   logic 			  lp_initdone ;            // out
-   logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
-   logic 			  tx_c0_rdvalid;           // in
-   logic 			  tx_c0_almostfull;        // out
-   logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c1_header;            // in
-   logic [`CCI_DATA_WIDTH-1:0] 	  tx_c1_data;              // in
-   logic 			  tx_c1_wrvalid;           // in
-   logic 			  tx_c1_almostfull;        // out
-   logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
-   logic [`CCI_DATA_WIDTH-1:0] 	  rx_c0_data;              // out
-   logic 			  rx_c0_rdvalid;           // out
-   logic 			  rx_c0_wrvalid;           // out
-   logic 			  rx_c0_cfgvalid;          // out
-   logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
-   logic 			  rx_c1_wrvalid;           // out
-   logic 			  rx_c0_umsgvalid;         // out
-   logic 			  tx_c1_intrvalid;         // in
-   logic 			  rx_c0_intrvalid;         // out
-   logic 			  rx_c1_intrvalid;         // out
+   // logic 			  lp_initdone ;            // out
+   // logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
+   // logic 			  tx_c0_rdvalid;           // in
+   // logic 			  tx_c0_almostfull;        // out
+   // logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c1_header;            // in
+   // logic [`CCI_DATA_WIDTH-1:0] 	  tx_c1_data;              // in
+   // logic 			  tx_c1_wrvalid;           // in
+   // logic 			  tx_c1_almostfull;        // out
+   // logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
+   // logic [`CCI_DATA_WIDTH-1:0] 	  rx_c0_data;              // out
+   // logic 			  rx_c0_rdvalid;           // out
+   // logic 			  rx_c0_wrvalid;           // out
+   // logic 			  rx_c0_cfgvalid;          // out
+   // logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
+   // logic 			  rx_c1_wrvalid;           // out
+   // logic 			  rx_c0_umsgvalid;         // out
+   // logic 			  tx_c1_intrvalid;         // in
+   // logic 			  rx_c0_intrvalid;         // out
+   // logic 			  rx_c1_intrvalid;         // out
 
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
 
    // Derived clocks
-   logic 			  clk_32ui; // Normal 200 Mhz clock
-   logic 			  clk_16ui; // Faster 400 Mhz clock
+   // logic 			  clk_32ui; // Normal 200 Mhz clock
+   // logic 			  clk_16ui; // Faster 400 Mhz clock
    logic 			  clk_8ui;  // Internal 800 Mhz clock (for creating synchronized clocks)
 
    /*
@@ -359,10 +382,10 @@ module cci_emulator();
    int 			       umsg_data_slot_old = 255;
    int 			       umsg_hint_slot_old = 255;
    umsg_t                      umsg_array[`UMSG_MAX_MSG];
-
+   
    logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
-
-
+   logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
+   
    // UMSG dispatch function
    task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [`CCI_DATA_WIDTH-1:0] umsg_data_in);
       int 			       umas_iter;
@@ -388,6 +411,9 @@ module cci_emulator();
    generate
       for ( ii = 0; ii < `UMSG_MAX_MSG; ii = ii + 1 ) begin : gen_umsg_engine_inst
 
+	 // Any valid
+	 assign umsg_valid[ii] = umsg_array[ii].data_ready | umsg_array[ii].hint_ready;
+	 
 	 // UMsg Write array unit
 	 always @(*) begin : comb_umsgff_write_arrunit
 	    if (umsg_array[ii].hint_ready) begin
@@ -594,22 +620,24 @@ module cci_emulator();
       begin
 	 start_iter = 0;
 	 end_iter   = end_iter + `UMSG_MAX_MSG;
-   	 ret_data_slot = 255;
+   	 ret_data_slot = 255;	 
    	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].data_ready) begin
    	       ret_data_slot = slot;	       
 	       umsg_data_slot_old = ret_data_slot;	       
    	       break;
    	    end
-   	 end
+   	 end	  
    	 return ret_data_slot;
       end
    endfunction
 
    // Calculate slots for UMSGs
    always @(posedge clk) begin : umsg_slot_finder_proc
+      //      if (umsg_valid != `UMSG_MAX_MSG'b0) begin
       umsg_data_slot = find_umsg_data();
       umsg_hint_slot = find_umsg_hint();
+      //      end
    end
 
    // UMsgFIFO write process
@@ -673,7 +701,7 @@ module cci_emulator();
 	 endcase
       end
    end
-      
+   
 
 
    // Unordered message FIFO
@@ -805,24 +833,24 @@ module cci_emulator();
 	 // Valid Count
 `ifdef ASE_DEBUG
  `ifdef ASE_RANDOMIZE_TRANSACTIONS
-	    // Print errors
-	    `BEGIN_RED_FONTCOLOR;
-	    if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
-	      $display("\tREADs  : Response counts dont match request count !!");
-	    if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
-	      $display("\tWRITEs : Response counts dont match request count !!");
-	    `END_RED_FONTCOLOR;
-	    // Dropped transactions
-	    `BEGIN_YELLOW_FONTCOLOR;
-	    $display("cf2as_latbuf_ch0 dropped =>");
-	    $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	    $display("cf2as_latbuf_ch1 dropped =>");
-	    $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
-	    $display("Read Response checker =>");
-	    $display(read_check_array);
-	    $display("Write Response checker =>");
-	    $display(write_check_array);
-	    `END_YELLOW_FONTCOLOR;
+	 // Print errors
+	 `BEGIN_RED_FONTCOLOR;
+	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
+	   $display("\tREADs  : Response counts dont match request count !!");
+	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
+	   $display("\tWRITEs : Response counts dont match request count !!");
+	 `END_RED_FONTCOLOR;
+	 // Dropped transactions
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("cf2as_latbuf_ch0 dropped =>");
+	 $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 $display("cf2as_latbuf_ch1 dropped =>");
+	 $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 $display("Read Response checker =>");
+	 $display(read_check_array);
+	 $display("Write Response checker =>");
+	 $display(write_check_array);
+	 `END_YELLOW_FONTCOLOR;
  `endif
 `endif
 	 $fclose(log_fd);
@@ -1481,37 +1509,37 @@ module cci_emulator();
     *                    |             |
     *
     * ***************************************************************/
-   cci_std_afu cci_std_afu (
-			    /* Link/Protocol (LP) clocks and reset */
-			    .vl_clk_LPdomain_32ui             ( clk_32ui ),
-			    .vl_clk_LPdomain_16ui             ( clk_16ui ),
-			    .ffs_vl_LP32ui_lp2sy_InitDnForSys ( lp_initdone ),
-			    .ffs_vl_LP32ui_lp2sy_SystemReset_n( sys_reset_n ),
-			    .ffs_vl_LP32ui_lp2sy_SoftReset_n  ( sw_reset_n ),
-			    /* Channel 0 can receive READ, WRITE, WRITE CSR responses.*/
-			    .ffs_vl18_LP32ui_lp2sy_C0RxHdr    ( rx_c0_header ),
-			    .ffs_vl512_LP32ui_lp2sy_C0RxData  ( rx_c0_data ),
-			    .ffs_vl_LP32ui_lp2sy_C0RxWrValid  ( rx_c0_wrvalid ),
-			    .ffs_vl_LP32ui_lp2sy_C0RxRdValid  ( rx_c0_rdvalid ),
-			    .ffs_vl_LP32ui_lp2sy_C0RxCgValid  ( rx_c0_cfgvalid ),
-			    .ffs_vl_LP32ui_lp2sy_C0RxUgValid  ( rx_c0_umsgvalid ),
-			    .ffs_vl_LP32ui_lp2sy_C0RxIrValid  ( rx_c0_intrvalid ),
-			    /* Channel 1 reserved for WRITE RESPONSE ONLY */
-			    .ffs_vl18_LP32ui_lp2sy_C1RxHdr    ( rx_c1_header ),
-			    .ffs_vl_LP32ui_lp2sy_C1RxWrValid  ( rx_c1_wrvalid ),
-			    .ffs_vl_LP32ui_lp2sy_C1RxIrValid  ( rx_c1_intrvalid ),
-			    /*Channel 0 reserved for READ REQUESTS ONLY */
-			    .ffs_vl61_LP32ui_sy2lp_C0TxHdr    ( tx_c0_header ),
-			    .ffs_vl_LP32ui_sy2lp_C0TxRdValid  ( tx_c0_rdvalid ),
-			    /*Channel 1 reserved for WRITE REQUESTS ONLY */
-			    .ffs_vl61_LP32ui_sy2lp_C1TxHdr    ( tx_c1_header ),
-			    .ffs_vl512_LP32ui_sy2lp_C1TxData  ( tx_c1_data ),
-			    .ffs_vl_LP32ui_sy2lp_C1TxWrValid  ( tx_c1_wrvalid ),
-			    .ffs_vl_LP32ui_sy2lp_C1TxIrValid  ( tx_c1_intrvalid ),
-			    /* Tx push flow control */
-			    .ffs_vl_LP32ui_lp2sy_C0TxAlmFull  ( tx_c0_almostfull ),
-			    .ffs_vl_LP32ui_lp2sy_C1TxAlmFull  ( tx_c1_almostfull )
-			    );
+   // cci_std_afu cci_std_afu (
+   // 			    /* Link/Protocol (LP) clocks and reset */
+   // 			    .vl_clk_LPdomain_32ui             ( clk_32ui ),
+   // 			    .vl_clk_LPdomain_16ui             ( clk_16ui ),
+   // 			    .ffs_vl_LP32ui_lp2sy_InitDnForSys ( lp_initdone ),
+   // 			    .ffs_vl_LP32ui_lp2sy_SystemReset_n( sys_reset_n ),
+   // 			    .ffs_vl_LP32ui_lp2sy_SoftReset_n  ( sw_reset_n ),
+   // 			    /* Channel 0 can receive READ, WRITE, WRITE CSR responses.*/
+   // 			    .ffs_vl18_LP32ui_lp2sy_C0RxHdr    ( rx_c0_header ),
+   // 			    .ffs_vl512_LP32ui_lp2sy_C0RxData  ( rx_c0_data ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C0RxWrValid  ( rx_c0_wrvalid ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C0RxRdValid  ( rx_c0_rdvalid ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C0RxCgValid  ( rx_c0_cfgvalid ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C0RxUgValid  ( rx_c0_umsgvalid ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C0RxIrValid  ( rx_c0_intrvalid ),
+   // 			    /* Channel 1 reserved for WRITE RESPONSE ONLY */
+   // 			    .ffs_vl18_LP32ui_lp2sy_C1RxHdr    ( rx_c1_header ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C1RxWrValid  ( rx_c1_wrvalid ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C1RxIrValid  ( rx_c1_intrvalid ),
+   // 			    /*Channel 0 reserved for READ REQUESTS ONLY */
+   // 			    .ffs_vl61_LP32ui_sy2lp_C0TxHdr    ( tx_c0_header ),
+   // 			    .ffs_vl_LP32ui_sy2lp_C0TxRdValid  ( tx_c0_rdvalid ),
+   // 			    /*Channel 1 reserved for WRITE REQUESTS ONLY */
+   // 			    .ffs_vl61_LP32ui_sy2lp_C1TxHdr    ( tx_c1_header ),
+   // 			    .ffs_vl512_LP32ui_sy2lp_C1TxData  ( tx_c1_data ),
+   // 			    .ffs_vl_LP32ui_sy2lp_C1TxWrValid  ( tx_c1_wrvalid ),
+   // 			    .ffs_vl_LP32ui_sy2lp_C1TxIrValid  ( tx_c1_intrvalid ),
+   // 			    /* Tx push flow control */
+   // 			    .ffs_vl_LP32ui_lp2sy_C0TxAlmFull  ( tx_c0_almostfull ),
+   // 			    .ffs_vl_LP32ui_lp2sy_C1TxAlmFull  ( tx_c1_almostfull )
+   // 			    );
 
 
 
