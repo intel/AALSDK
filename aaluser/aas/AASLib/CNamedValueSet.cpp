@@ -2327,18 +2327,26 @@ public:
    ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
    ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
 
-   ENamedValues Delete(btNumberKey Name)                                     { AutoLock(this); return m_iNVS.Delete(Name);        }
-   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize) const             { AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
-   ENamedValues Type(btNumberKey Name, eBasicTypes *pType) const             { AutoLock(this); return m_iNVS.Type(Name,pType);    }
-   btBool       Has(btNumberKey Name) const                                  { AutoLock(this); return m_iNVS.Has(Name);           }
+   ENamedValues  Delete(btNumberKey Name)                                    { AutoLock(this); return m_iNVS.Delete(Name);        }
+   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize)       const       { AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
+   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)    const       { AutoLock(this); return m_iNVS.Type(Name,pType);    }
+   btBool           Has(btNumberKey Name)                        const       { AutoLock(this); return m_iNVS.Has(Name);           }
    ENamedValues GetName(btUnsignedInt index, btNumberKey *pName) const
    {
+      eNameTypes   Type = btNumberKey_t;
+      ENamedValues res;
+
       AutoLock(this);
-      eNameTypes Type;
-      GetNameType(index, &Type);
+
+      res = GetNameType(index, &Type);
+      if ( ENamedValuesOK != res ) {
+         return res;
+      }
+
       if ( Type != btNumberKey_t ) {
          return ENamedValuesBadType;
       }
+
       return m_iNVS.GetName(index, pName);
    }
 
@@ -2404,22 +2412,29 @@ public:
    ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
    ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
 
-   ENamedValues Delete(btStringKey Name)                                  { AutoLock(this); return m_sNVS.Delete(Name);         }
-   ENamedValues GetSize(btStringKey Name, btWSSize *pSize) const          { AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
-   ENamedValues Type(btStringKey Name, eBasicTypes *pType) const          { AutoLock(this); return m_sNVS.Type(Name, pType);    }
-   btBool Has(btStringKey Name) const                                     { AutoLock(this); return m_sNVS.Has(Name);            }
+   ENamedValues  Delete(btStringKey Name)                                    { AutoLock(this); return m_sNVS.Delete(Name);         }
+   ENamedValues GetSize(btStringKey Name, btWSSize *pSize)    const          { AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
+   ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { AutoLock(this); return m_sNVS.Type(Name, pType);    }
+   btBool           Has(btStringKey Name)                     const          { AutoLock(this); return m_sNVS.Has(Name);            }
 
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const
    {
+      eNameTypes    Type = btStringKey_t;
+      btUnsignedInt iNum = 0;
+      ENamedValues  res;
+
       AutoLock(this);
-      eNameTypes Type;
-      GetNameType(index, &Type);
+
+      res = GetNameType(index, &Type);
+      if ( ENamedValuesOK != res ) {
+         return res;
+      }
+
       if ( Type != btStringKey_t ) {
          return ENamedValuesBadType;
       }
 
-      //Adjust the index for non-string keys
-      btUnsignedInt iNum;
+      // Adjust the index for non-string keys
       m_iNVS.GetNumNames(&iNum);
       index -= iNum;
       return m_sNVS.GetName(index, pName);
@@ -2460,7 +2475,6 @@ public:
    btBool operator == (const INamedValueSet &rOther) const
    {
       CNamedValueSet const *pCNamedValueSet = dynamic_cast<CNamedValueSet const *>(rOther.Concrete());
-      ASSERT(NULL != pCNamedValueSet);
 
       ASSERT(NULL != pCNamedValueSet);
       if ( NULL == pCNamedValueSet ) {
@@ -2478,12 +2492,14 @@ public:
 
    ENamedValues GetNumNames(btUnsignedInt *pNum) const
    {
+      btUnsignedInt piNum = 0;
+      btUnsignedInt psNum = 0;
+
+      ENamedValues result;
+
       AutoLock(this);
 
-      btUnsignedInt piNum;
-      btUnsignedInt psNum;
-
-      ENamedValues result = m_iNVS.GetNumNames(&piNum);
+      result = m_iNVS.GetNumNames(&piNum);
       if ( result != ENamedValuesOK ) {
          return result;
       }
@@ -2493,36 +2509,42 @@ public:
          return result;
       }
 
-      //Return the sum of both NVS
+      // Return the sum of both NVS
       *pNum = piNum + psNum;
       return result;
    }
 
    ENamedValues GetNameType(btUnsignedInt index, eNameTypes *pType) const
    {
+      btUnsignedInt piNum    = 0;
+      btUnsignedInt NumNames = 0;
+
+      ENamedValues result;
+
       AutoLock(this);
 
-      btUnsignedInt piNum;
-      btUnsignedInt NumNames;
+      // Get the total number of names
+      result = GetNumNames(&NumNames);
+      if ( ENamedValuesOK != result ) {
+         return result;
+      }
 
-      //Get the total number of names
-      GetNumNames(&NumNames);
-      if ( index > NumNames ) {
+      if ( index >= NumNames ) {
          return ENamedValuesIndexOutOfRange;
       }
 
-      //Get the total names that are indexed by integers
-      ENamedValues result = m_iNVS.GetNumNames(&piNum);
+      // Get the total names that are indexed by integers
+      result = m_iNVS.GetNumNames(&piNum);
 
-      //Integers keys start at index zero
+      // Integers keys start at index zero
       *pType = (index >= piNum ? btStringKey_t : btNumberKey_t);
 
       return result;
    }
 
-   virtual ENamedValues  Read(std::istream & );
-   virtual ENamedValues Write(std::ostream &os) const { return Write(os, 0); }
-   virtual ENamedValues Write(std::ostream & , unsigned ) const;
+   virtual ENamedValues     Read(std::istream & );
+   virtual ENamedValues    Write(std::ostream &os) const { return Write(os, 0); }
+   virtual ENamedValues    Write(std::ostream & , unsigned ) const;
 
    // was ENamedValues NVSWriteOneNVSToFile(std::ostream        &os, NamedValueSet const &nvsToWrite,   unsigned             level);
    // Serialize NVS with ending demarcation
@@ -2532,11 +2554,11 @@ public:
 
    // Reads an open (binary) file and creates an NVS from it.
    // was NVSReadNVS(FILE * , NamedValueSet * );
-   virtual ENamedValues Read(FILE * );
+   virtual ENamedValues     Read(FILE * );
 
    // was NVSWriteNVS(FILE * , NamedValueSet * , unsigned );
-   virtual ENamedValues Write(FILE *f) const { return Write(f, 0); }
-   virtual ENamedValues Write(FILE * , unsigned ) const;
+   virtual ENamedValues    Write(FILE *f) const { return Write(f, 0); }
+   virtual ENamedValues    Write(FILE * , unsigned ) const;
 
    // Serialize NVS with ending demarcation
    // was NVSWriteOneNVSToFile(FILE * , NamedValueSet const & , unsigned );
@@ -2544,7 +2566,7 @@ public:
 
 #endif // NVSFileIO
 
-   virtual ENamedValues Merge(const INamedValueSet & );
+   virtual ENamedValues   Merge(const INamedValueSet & );
 
    virtual ENamedValues FromStr(const std::string & );
    virtual ENamedValues FromStr(void * , btWSSize );
@@ -2725,9 +2747,12 @@ ENamedValues CNamedValueSet::FromStr(void *pv, btWSSize len)
 std::string CNamedValueSet::ToStr() const
 {
    std::ostringstream oss;
-   // oss << nvs << '\0';  // add a final, ensuring, terminating null
+#if 1
+   oss << *this << '\0';  // add a final, ensuring, terminating null
+#else
    Write(oss);
    oss << '\0';
+#endif
    return oss.str();
 }
 

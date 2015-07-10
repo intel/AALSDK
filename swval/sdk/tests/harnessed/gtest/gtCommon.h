@@ -3,7 +3,9 @@
 #define __GTCOMMON_H__
 #include <cstdio>
 #include <string>
+#include <limits>
 #include <fstream>
+#include <sstream>
 #include <list>
 #include <map>
 
@@ -143,6 +145,226 @@ X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
 
    return res;
 }
+
+template <typename I>
+class TIntCmp
+{
+public:
+   TIntCmp() {}
+   void expect_eq(I a, I b) { EXPECT_EQ(a, b); }
+   void expect_ne(I a, I b) { EXPECT_NE(a, b); }
+};
+
+template <typename F>
+class TFltCmp
+{
+public:
+   TFltCmp() {}
+   void expect_eq(F a, F b) { FAIL(); }
+   void expect_ne(F a, F b) { EXPECT_NE(a, b); }
+};
+
+template <>
+class TFltCmp<btFloat>
+{
+public:
+   TFltCmp() {}
+   void expect_eq(btFloat a, btFloat b) { EXPECT_FLOAT_EQ(a, b); }
+};
+
+template <typename S>
+class TStrCmp
+{
+public:
+   TStrCmp() {}
+   void expect_eq(S a, S b) { EXPECT_STREQ(a, b); }
+   void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X>
+class TValueSequencer
+{
+public:
+   TValueSequencer(const X *pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count),
+      m_i(0),
+      m_Savei(0)
+   {}
+
+   void Snapshot() { m_Savei = m_i; }
+   void Replay()   { m_i = m_Savei; }
+
+   const X & Value()
+   {
+      btUnsigned32bitInt i = m_i;
+      m_i = (m_i + 1) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   btUnsigned32bitInt Count() const { return m_Count; }
+
+   btUnsigned32bitInt Seed(btUnsigned32bitInt ) { return 0; }
+
+   virtual eBasicTypes BasicType() const = 0;
+
+protected:
+   TValueSequencer() {}
+
+   const X                 *m_pValues;
+   const btUnsigned32bitInt m_Count;
+   btUnsigned32bitInt       m_i;
+   btUnsigned32bitInt       m_Savei;
+};
+
+template <typename X>
+class TValueRandomizer
+{
+public:
+   TValueRandomizer(const X *pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count),
+      m_Seed(0),
+      m_SaveSeed(0)
+   {}
+
+   void Snapshot() { m_SaveSeed = m_Seed;     }
+   void Replay()   { m_Seed     = m_SaveSeed; }
+
+   const X & Value()
+   {
+      btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   btUnsigned32bitInt Count() const { return m_Count; }
+
+   btUnsigned32bitInt Seed(btUnsigned32bitInt s)
+   {
+      btUnsigned32bitInt prev = m_Seed;
+      m_Seed = s;
+      return prev;
+   }
+
+   virtual eBasicTypes BasicType() const = 0;
+
+protected:
+   TValueRandomizer() {}
+
+   const X                 *m_pValues;
+   const btUnsigned32bitInt m_Count;
+   btUnsigned32bitInt       m_Seed;
+   btUnsigned32bitInt       m_SaveSeed;
+};
+
+template <typename X>
+class TArrayProvider
+{
+public:
+   TArrayProvider(const X pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count)
+   {}
+
+                   const X Array() const { return m_pValues; }
+        btUnsigned32bitInt Count() const { return m_Count;   }
+   virtual eBasicTypes BasicType() const = 0;
+
+protected:
+   TArrayProvider() {}
+
+   const X                  m_pValues;
+   const btUnsigned32bitInt m_Count;
+};
+
+template <typename S>
+class IOStreamMixin
+{
+public:
+   IOStreamMixin() :
+      m_IOStream(std::ios_base::in|std::ios_base::out|std::ios_base::binary)
+   {}
+
+   std::ostream & os() { return dynamic_cast<std::ostream &>(m_IOStream); }
+   std::istream & is() { return dynamic_cast<std::istream &>(m_IOStream); }
+
+   const std::ostream & os() const { return dynamic_cast<const std::ostream &>(m_IOStream); }
+   const std::istream & is() const { return dynamic_cast<const std::istream &>(m_IOStream); }
+
+   void CheckO(std::ios_base::iostate check) const
+   {
+      const std::ios_base::iostate common = os().rdstate() & check;
+      if ( 0 != common ) {
+         std::string flags;
+         if ( common & std::ios_base::eofbit ) {
+            flags += "eofbit ";
+         }
+         if ( common & std::ios_base::failbit ) {
+            flags += "failbit ";
+         }
+         if ( common & std::ios_base::badbit ) {
+            flags += "badbit ";
+         }
+         FAIL() << "ostream state: " << flags;
+      }
+   }
+
+   void CheckI(std::ios_base::iostate check) const
+   {
+      const std::ios_base::iostate common = is().rdstate() & check;
+      if ( 0 != common ) {
+         std::string flags;
+         if ( common & std::ios_base::eofbit ) {
+            flags += "eofbit ";
+         }
+         if ( common & std::ios_base::failbit ) {
+            flags += "failbit ";
+         }
+         if ( common & std::ios_base::badbit ) {
+            flags += "badbit ";
+         }
+         FAIL() << "istream state: " << flags;
+      }
+   }
+
+   bool  eof() const { return is().eof(); }
+   bool fail() const { return os().fail() || is().fail(); }
+   bool  bad() const { return os().bad()  || is().bad();  }
+
+   void ClearEOF()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::eofbit );
+      is().clear( is().rdstate() & ~std::ios_base::eofbit );
+   }
+   void ClearFail()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::failbit );
+      is().clear( is().rdstate() & ~std::ios_base::failbit );
+   }
+   void ClearBad()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::badbit );
+      is().clear( is().rdstate() & ~std::ios_base::badbit );
+   }
+
+   std::ios_base::streampos InputBytesRemaining()
+   {
+      const std::ios_base::streampos curpos = is().tellg();
+
+      is().seekg(0, std::ios_base::end);
+
+      const std::ios_base::streampos endpos = is().tellg();
+
+      is().seekg(curpos, std::ios_base::beg);
+
+      return endpos - curpos;
+   }
+
+protected:
+   S m_IOStream;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -333,6 +555,7 @@ protected:
    static const btUnsignedInt sm_MaxKeepAliveTimeouts;
 
 #if   defined( __AAL_LINUX__ )
+//   static void  KeepAliveCleanup(void * );
    static void * KeepAliveThread(void * );
 #elif defined ( __AAL_WINDOWS__ )
    static void   KeepAliveThread(void * );

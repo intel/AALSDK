@@ -132,9 +132,8 @@ void TestStatus::OnSegFault()
 
       KeepAliveTimerEnv::GetInstance()->StopThread();
 
-      bool &halt(TestStatus::sm_HaltOnSegFault);
-      int   i = 0;
-      while ( halt ) {
+      int i = 0;
+      while ( TestStatus::sm_HaltOnSegFault ) {
          if ( 0 == (i % (5 * 60)) ) {
             if ( ::isatty(2) ) {
                std::cerr << TestStatus::sm_Blue;
@@ -205,9 +204,8 @@ void TestStatus::OnKeepaliveTimeout()
 
    std::cout << std::flush;
 
-   bool &halt(TestStatus::sm_HaltOnKeepaliveTimeout);
-   int   i = 0;
-   while ( halt ) {
+   int i = 0;
+   while ( TestStatus::sm_HaltOnKeepaliveTimeout ) {
       if ( 0 == (i % (5 * 60)) ) {
          if ( ::isatty(2) ) {
             std::cerr << TestStatus::sm_Blue;
@@ -536,8 +534,11 @@ void KeepAliveTimerEnv::StopThread()
 
 #if   defined( __AAL_LINUX__ )
 
-   pthread_cancel(m_thread);
+   pthread_mutex_lock(&m_mutex);
    pthread_cond_signal(&m_condition);
+   pthread_mutex_unlock(&m_mutex);
+
+   pthread_join(m_thread, NULL);
 
 #elif defined( __AAL_WINDOWS__ )
 
@@ -566,7 +567,7 @@ void KeepAliveTimerEnv::SetUp()
    pthread_attr_t tattr;
 
    pthread_attr_init(&tattr);
-   pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+   //pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
 
    pthread_create(&m_thread, &tattr, KeepAliveTimerEnv::KeepAliveThread, this);
 
@@ -617,6 +618,7 @@ void KeepAliveTimerEnv::KeepAliveExpired()
 const btUnsignedInt KeepAliveTimerEnv::sm_MaxKeepAliveTimeouts = 3;
 
 #if   defined( __AAL_LINUX__ )
+//void KeepAliveTimerEnv::KeepAliveCleanup(void *arg) {}
 void * KeepAliveTimerEnv::KeepAliveThread(void *arg)
 #elif defined ( __AAL_WINDOWS__ )
 void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
@@ -627,6 +629,24 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 #if   defined( __AAL_LINUX__ )
    struct timeval  tv;
    struct timespec ts;
+
+   class _AutoMtx
+   {
+   public:
+      _AutoMtx(pthread_mutex_t *mutex) :
+         m_mutex(mutex)
+      {
+         pthread_mutex_lock(m_mutex);
+      }
+      ~_AutoMtx()
+      {
+         pthread_mutex_unlock(m_mutex);
+      }
+   protected:
+      pthread_mutex_t *m_mutex;
+   };
+
+//   pthread_cleanup_push(KeepAliveTimerEnv::KeepAliveCleanup, e);
 #elif defined( __AAL_WINDOWS__ )
 
 #endif // OS
@@ -644,23 +664,17 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
       ts.tv_sec  += ts.tv_nsec / 1000000000;
       ts.tv_nsec %= 1000000000;
 
-      pthread_testcancel();
-      pthread_mutex_lock(&e->m_mutex);
+      {
+         _AutoMtx lock(&e->m_mutex);
+         if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
+                                                  &e->m_mutex,
+                                                  &ts) ) {
 
-      pthread_testcancel();
-      if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
-                                               &e->m_mutex,
-                                               &ts) ) {
-         pthread_testcancel();
-
-         if ( !e->m_KeepAliveRunning ) {
-            pthread_mutex_unlock(&e->m_mutex);
-            break;
+            if ( !e->m_KeepAliveRunning ) {
+               break;
+            }
          }
       }
-
-      pthread_testcancel();
-      pthread_mutex_unlock(&e->m_mutex);
 
 #elif defined( __AAL_WINDOWS__ )
 
@@ -672,7 +686,6 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 
 #endif // OS
 
-      pthread_testcancel();
       if ( e->m_KeepAliveCounter == LastKeepAliveCounter ) {
          // keep-alive not updated before timer expired.
          ++e->m_KeepAliveTimeouts;
@@ -688,6 +701,7 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
    }
 
 #if   defined( __AAL_LINUX__ )
+//   pthread_cleanup_pop(1);
    return NULL;
 #elif defined( __AAL_WINDOWS__ )
    SetEvent(e->m_hJoinEvent);
