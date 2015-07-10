@@ -69,12 +69,14 @@
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.
-#ifndef MSG
-# define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef MSG
+# undef MSG
 #endif // MSG
-#ifndef ERR
-# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
+#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#ifdef ERR
+# undef ERR
 #endif // ERR
+#define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
 // Print/don't print the event ID's entered in the event handlers.
 #if 1
@@ -264,97 +266,106 @@ IRuntime * RuntimeClient::getRuntime()
 }
 
 
- /// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
- ///          The Service Client contains the application logic.
- ///
- /// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
- class HelloCCINLBApp : public CAASBase, public IServiceClient, public ICCIClient
- {
- public:
-    enum WorkspaceType
-    {
-       WKSPC_DSM, ///< Device Status Memory
-       WKSPC_IN,  ///< Input workspace
-       WKSPC_OUT  ///< Output workspace
-    };
+/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
+///          The Service Client contains the application logic.
+///
+/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
+class HelloCCINLBApp: public CAASBase, public IServiceClient, public ICCIClient
+{
+public:
+   enum WorkspaceType   ///<Type of Workspace being allocated
+   {
+      WKSPC_DSM, ///< Device Status Memory
+      WKSPC_IN,  ///< Input workspace
+      WKSPC_OUT  ///< Output workspace
+   };
 
-    HelloCCINLBApp(RuntimeClient * rtc);
-    ~HelloCCINLBApp();
+   HelloCCINLBApp(RuntimeClient * rtc);
+   ~HelloCCINLBApp();
 
-    void run();
+   btInt run();    ///< Return 0 if success
 
-    // <ICCIClient>
-    virtual void      OnWorkspaceAllocated(TransactionID const &TranID,
-                                           btVirtAddr           WkspcVirt,
-                                           btPhysAddr           WkspcPhys,
-                                           btWSSize             WkspcSize);
+   // <ICCIClient>
+   virtual void OnWorkspaceAllocated(TransactionID const &TranID,
+                                     btVirtAddr WkspcVirt,
+                                     btPhysAddr WkspcPhys,
+                                     btWSSize WkspcSize);
 
-    virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
+   virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
 
-    virtual void          OnWorkspaceFreed(TransactionID const &TranID);
+   virtual void OnWorkspaceFreed(TransactionID const &TranID);
 
-    virtual void     OnWorkspaceFreeFailed(const IEvent &Event);
-    // </ICCIClient>
+   virtual void OnWorkspaceFreeFailed(const IEvent &Event);
+   // </ICCIClient>
 
-    // <begin IServiceClient interface>
-    void serviceAllocated(IBase               *pServiceBase,
-                          TransactionID const &rTranID);
+   // <begin IServiceClient interface>
+   void serviceAllocated(IBase *pServiceBase,
+                         TransactionID const &rTranID);
 
-    void serviceAllocateFailed(const IEvent        &rEvent);
+   void serviceAllocateFailed(const IEvent &rEvent);
 
     void serviceReleased(const AAL::TransactionID&);
 
     void serviceReleaseFailed(const AAL::IEvent&);
 
-    void serviceFreed(TransactionID const &rTranID);
+   void serviceFreed(TransactionID const &rTranID);
 
-    void serviceEvent(const IEvent &rEvent);
-    // <end IServiceClient interface>
+   void serviceEvent(const IEvent &rEvent);
+   // <end IServiceClient interface>
 
+protected:
+   IBase         *m_pAALService;    // The generic AAL Service interface for the AFU.
+   RuntimeClient *m_runtimeClient;
+   ICCIAFU       *m_NLBService;
+   CSemaphore     m_Sem;            // For synchronizing with the AAL runtime.
+   btUnsignedInt  m_wsfreed;        // Simple counter used for when we free workspaces
+   btInt          m_Result;         // Returned result value; 0 if success
 
-
- protected:
-    IBase           *m_pAALService;    // The generic AAL Service interface for the AFU.
-    RuntimeClient   *m_runtimeClient;
-    ICCIAFU         *m_NLBService;
-    CSemaphore       m_Sem;            // For synchronizing with the AAL runtime.
-    btBool           m_Status;
-    btUnsignedInt    m_wsfreed;        // Simple counter used for when we free workspaces
-
-    // Workspace info
-    btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
-    btPhysAddr m_DSMPhys;    ///< DSM workspace physical address.
-    btWSSize   m_DSMSize;    ///< DSM workspace size in bytes.
-    btVirtAddr m_InputVirt;  ///< Input workspace virtual address.
-    btPhysAddr m_InputPhys;  ///< Input workspace physical address.
-    btWSSize   m_InputSize;  ///< Input workspace size in bytes.
-    btVirtAddr m_OutputVirt; ///< Output workspace virtual address.
-    btPhysAddr m_OutputPhys; ///< Output workspace physical address.
-    btWSSize   m_OutputSize; ///< Output workspace size in bytes.
- };
+   // Workspace info
+   btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
+   btPhysAddr     m_DSMPhys;        ///< DSM workspace physical address.
+   btWSSize       m_DSMSize;        ///< DSM workspace size in bytes.
+   btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
+   btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
+   btWSSize       m_InputSize;      ///< Input workspace size in bytes.
+   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
+   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
+   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
 ///  Implementation
 ///
 ///////////////////////////////////////////////////////////////////////////////
- HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc):
-    m_pAALService(NULL),
-    m_runtimeClient(rtc),
-    m_NLBService(NULL),
-    m_Status(true)
- {
-    SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
-    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
-    m_Sem.Create(0, 1);
- }
+HelloCCINLBApp::HelloCCINLBApp(RuntimeClient *rtc) :
+   m_pAALService(NULL),
+   m_runtimeClient(rtc),
+   m_NLBService(NULL),
+   m_wsfreed(0),
+   m_Result(0),
+   m_DSMVirt(NULL),
+   m_DSMPhys(0),
+   m_DSMSize(0),
+   m_InputVirt(NULL),
+   m_InputPhys(0),
+   m_InputSize(0),
+   m_OutputVirt(NULL),
+   m_OutputPhys(0),
+   m_OutputSize(0)
 
- HelloCCINLBApp::~HelloCCINLBApp()
- {
-    m_Sem.Destroy();
- }
+{
+   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   m_Sem.Create(0, 1);
+}
 
-void HelloCCINLBApp::run()
+HelloCCINLBApp::~HelloCCINLBApp()
+{
+   m_Sem.Destroy();
+}
+
+btInt HelloCCINLBApp::run()
 {
    cout <<"========================"<<endl;
    cout <<"= Hello CCI NLB Sample ="<<endl;
@@ -402,7 +413,7 @@ void HelloCCINLBApp::run()
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
    //         A better design would do all appropriate clean-up.
-   if(true == m_Status){
+   if(0 == m_Result){
 
       //=============================
       // Now we have the NLB Service
@@ -414,14 +425,21 @@ void HelloCCINLBApp::run()
       memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
       memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
 
-      // Set DSM base, high then low
-      m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
-
-      // Assert Device Reset
-      m_NLBService->CSRWrite(CSR_CTL, 0);
 
       // Clear the DSM
       ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+
+      // Set DSM base, high then low
+      m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+
+      // If ASE, give it some time to catch up
+      #if defined ( ASEAFU )
+      Sleep(5);
+      #endif /* ASE AFU */
+
+
+      // Assert Device Reset
+      m_NLBService->CSRWrite(CSR_CTL, 0);
 
       // De-assert Device Reset
       m_NLBService->CSRWrite(CSR_CTL, 1);
@@ -438,10 +456,8 @@ void HelloCCINLBApp::run()
       // Set the test mode
       m_NLBService->CSRWrite(CSR_CFG, 0);
 
-
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                          (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);
-
       // Start the test
       m_NLBService->CSRWrite(CSR_CTL, 3);
 
@@ -458,6 +474,7 @@ void HelloCCINLBApp::run()
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
       if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
          ERR("Output does NOT Match input, at offset " << err << "!");
+         ++m_Result;
       } else {
          MSG("Output matches Input!");
       }
@@ -475,46 +492,49 @@ void HelloCCINLBApp::run()
    }
 
    m_runtimeClient->end();
+   return m_Result;
 }
 
- // We must implement the IServiceClient interface (IServiceClient.h):
+// We must implement the IServiceClient interface (IServiceClient.h):
 
- // <begin IServiceClient interface>
- void HelloCCINLBApp::serviceAllocated(IBase               *pServiceBase,
-                                       TransactionID const &rTranID)
- {
-    m_pAALService = pServiceBase;
-    ASSERT(NULL != m_pAALService);
+// <begin IServiceClient interface>
+void HelloCCINLBApp::serviceAllocated(IBase *pServiceBase,
+                                      TransactionID const &rTranID)
+{
+   m_pAALService = pServiceBase;
+   ASSERT(NULL != m_pAALService);
 
-    // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
-    m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
+   // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
+   m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
 
-    ASSERT(NULL != m_NLBService);
-    if( NULL == m_NLBService ) {
-       return;
-    }
+   ASSERT(NULL != m_NLBService);
+   if ( NULL == m_NLBService ) {
+      return;
+   }
 
-    MSG("Service Allocated");
+   MSG("Service Allocated");
 
-    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
-    //   In workspaceAllocated() callback we allocate the rest
-    m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_DSM));
+   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
+   //   In workspaceAllocated() callback we allocate the rest
+   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloCCINLBApp::WKSPC_DSM));
 
- }
+}
 
- void HelloCCINLBApp::serviceAllocateFailed(const IEvent        &rEvent)
- {
-    ERR("Failed to allocate a Service");
+void HelloCCINLBApp::serviceAllocateFailed(const IEvent &rEvent)
+{
+   ERR("Failed to allocate a Service");
     PrintExceptionDescription(rEvent);
-    m_Sem.Post(1);
- }
+   ++m_Result;                     // Remember the error
+
+   m_Sem.Post(1);
+}
 
  void HelloCCINLBApp::serviceReleased(TransactionID const &rTranID)
- {
+{
     MSG("Service Released");
-    // Unblock Main()
-    m_Sem.Post(1);
- }
+   // Unblock Main()
+   m_Sem.Post(1);
+}
 
  void HelloCCINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
  {
@@ -523,7 +543,7 @@ void HelloCCINLBApp::run()
     m_Sem.Post(1);
  }
 
- // <ICCIClient>
+// <ICCIClient>
 void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
                                           btVirtAddr           WkspcVirt,
                                           btPhysAddr           WkspcPhys,
@@ -537,14 +557,14 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          m_DSMVirt = WkspcVirt;
          m_DSMPhys = WkspcPhys;
          m_DSMSize = WkspcSize;
-         INFO("Got DSM");
+         MSG("Got DSM");
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
          m_InputPhys = WkspcPhys;
          m_InputSize = WkspcSize;
-         INFO("Got Input Workspace");
+         MSG("Got Input Workspace");
 
          // Now get Output workspace
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_OUT));
@@ -554,14 +574,14 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          m_OutputPhys = WkspcPhys;
          m_OutputSize = WkspcSize;
 
-         INFO("Got Output Workspace");
+         MSG("Got Output Workspace");
 
          // Got all workspaces so unblock the Run() thread
          m_Sem.Post(1);
       } break;
 
       default : {
-         m_Status = false;
+         ++m_Result;
          ERR("Invalid workspace type: " << TranID.ID());
       } break;
    }
@@ -571,13 +591,14 @@ void HelloCCINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
    PrintExceptionDescription(rEvent);
-   m_Status = false;
+   ++m_Result;                     // Remember the error
+
    m_Sem.Post(1);
 }
 
 void HelloCCINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
-   ERR("OnWorkspaceFreed");
+   MSG("OnWorkspaceFreed");
    if(++m_wsfreed == 3){
       // Freed all three so now Release() the Service through the Services IAALService::Release() method
       (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
@@ -589,16 +610,16 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
    PrintExceptionDescription(rEvent);
-   m_Status = false;
+   ++m_Result;                     // Remember the error
    m_Sem.Post(1);
 }
 
 
  void HelloCCINLBApp::serviceEvent(const IEvent &rEvent)
- {
-    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
- }
- // <end IServiceClient interface>
+{
+   ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+}
+// <end IServiceClient interface>
 
 /// @} group HelloCCINLB
 
@@ -619,9 +640,9 @@ int main(int argc, char *argv[])
       ERR("Runtime Failed to Start");
       exit(1);
    }
-   theApp.run();
+   btInt Result = theApp.run();
 
    MSG("Done");
-   return 0;
+   return Result;
 }
 

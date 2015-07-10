@@ -376,6 +376,7 @@ void CMyApp::OnRuntimeAllocateServiceFailed(IEvent const &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed (rt)");
+   Post();
 }
 
 void CMyApp::OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
@@ -407,6 +408,7 @@ void CMyApp::OnServiceAllocateFailed(const IEvent &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed");
+   Post();
 }
 
 void CMyApp::OnServiceReleased(TransactionID const &tid)
@@ -547,6 +549,8 @@ int main(int argc, char *argv[])
 
    if ( !myapp.IsOK() ) {
       // runtime start failed.
+      INFO("Stopping the AAL Runtime");
+      myapp.Stop();
       return 5;
    }
 

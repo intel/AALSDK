@@ -1,5 +1,4 @@
-#!/bin/bash
-## Copyright (c) 2014-2015, Intel Corporation
+## Copyright (c) 2005-2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -25,13 +24,53 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
+##     Intel(R) Accelerator Abstraction Layer Library Software Developer
+##        Kit (SDK)
 ##  Content:
-##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
-##        Software Developer Kit (SDK)
-##****************************************************************************
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/SampleBrokerService/SW:$PWD/Hello_AAL_Service/SW"
-if [ $# -gt 0 ]; then
-   for d in $@ ; do
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$d"
-   done
-fi
+##     samples/Hello_AAL/Makefile
+##  Author:
+##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
+##  History:
+##     04/10/2015    JG   Initial version based off of canonical sample makefile
+##******************************************************************************
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
+
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
+
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
+endif
+
+all: helloaal
+
+helloaal: HelloAAL.o
+	$(CXX) -g -O2 -o helloaal HelloAAL.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+
+HelloAAL.o: HelloAAL.cpp ../../Hello_AAL_Service/SW/HelloAALService.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../../Hello_AAL_Service/SW -g -O2 -c -o HelloAAL.o HelloAAL.cpp
+
+clean:
+	$(RM) helloaal HelloAAL.o
+
+.PHONY:all clean

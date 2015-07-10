@@ -82,9 +82,6 @@ declare -r SLEEP="`which sleep`" 2>/dev/null
 
 # Names for sets of drivers which can be loaded by this script.
 declare -ra DRIVER_SETS=(\
-'direct' \
-'direct-nhm' \
-'direct-jkt' \
 'base' \
 'spl' \
 'spl-pci' \
@@ -109,48 +106,8 @@ fi
 
 declare mod
 declare mod_path
-declare DIRECT=false
 
    case $1 in
-
-      direct)
-         mod="fapdiag.ko"
-         mod_path="${BUILD_DIR}/fapdiag/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-         DIRECT=true
-      ;; # direct
-
-      direct-nhm|direct_nhm)
-         mod="fapdiag.ko"
-         mod_path="${BUILD_DIR}/fapdiag/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" qpi_aperture_phys=0x88080000 ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-         DIRECT=true
-      ;; # direct-nhm (qpi_aperture_phys=0x88080000)
-
-      direct-jkt|direct_jkt)
-         mod="fapdiag.ko"
-         mod_path="${BUILD_DIR}/fapdiag/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" qpi_aperture_phys=0xc8080000 ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-         DIRECT=true
-      ;; # direct-jkt (qpi_aperture_phys=0xc8080000)
 
       base)
          mod="@AALBUS_DRV_NAME@.ko"
@@ -415,17 +372,11 @@ declare DIRECT=false
 
 ${SLEEP} 3
 
-if ${DIRECT} ; then
-   ${CHMOD} "${DEV_PERMS}" '/dev/fapdiag'   || die "dev file perms for fapdiag"
+${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
+${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
+${CHMOD} "${DEV_PERMS}" '/dev/aalui'     || die "dev file perms for aalui"
 
-   ${LS} -l '/dev/fapdiag'
-else
-   ${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
-   ${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
-   ${CHMOD} "${DEV_PERMS}" '/dev/aalui'     || die "dev file perms for aalui"
-
-   ${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/aalui'
-fi
+${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/aalui'
 
 exit 0
 

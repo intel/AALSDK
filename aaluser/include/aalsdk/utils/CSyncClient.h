@@ -130,7 +130,12 @@ public:
    }
    /// CSyncClient implementation of IRuntimeClient::runtimeAllocateServiceFailed
    void runtimeAllocateServiceFailed(IEvent const &rEvent)
-   { /* Ignored */
+   {
+      m_bIsOK = false;
+      m_pCurrentService = NULL;
+      ERR("Allocate Service Failed to allocate Service (rt)");
+      PrintExceptionDescription(rEvent); // Builtin function to print exception events
+      Post();
    }
    /// CSyncClient implementation of IRuntimeClient::runtimeAllocateServiceSucceeded
    void runtimeAllocateServiceSucceeded(IBase *pClient,

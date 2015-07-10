@@ -388,6 +388,7 @@ void CMyApp::OnRuntimeAllocateServiceFailed(IEvent const &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed (rt)");
+   Post();
 }
 
 void CMyApp::OnRuntimeAllocateServiceSucceeded(IBase               *pServiceBase,
@@ -419,6 +420,7 @@ void CMyApp::OnServiceAllocateFailed(const IEvent &e)
 {
    m_bIsOK = false;
    ERR("Service Allocate Failed");
+   Post();
 }
 
 void CMyApp::OnServiceReleased(TransactionID const &tid)
@@ -650,12 +652,14 @@ int main(int argc, char *argv[])
    if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
-      ERR("AAL Runtime start failed");
+      cout << "Runtime start failed. Aborting." << endl;
       return 4;     // Runtime could not start
    }
 
    if ( !myapp.IsOK() ) {
       // runtime start failed.
+      cout << "Could not find NLB AFU. Aborting." << endl;
+      myapp.Stop();
       return 5;
    }
 

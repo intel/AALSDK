@@ -27,12 +27,12 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Hello_AAL/Makefile
+##     samples/Hello_SPL_LB/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##     Joseph Grecco, Intel Corporation
 ##  History:
-##     04/10/2015    JG   Initial version based off of canonical sample makefile
+##     06/15/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
 CPPFLAGS ?=
 CXX      ?= g++
@@ -62,15 +62,15 @@ LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpa
             -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
 endif
 
-all: helloaal
+all: Sudoku_SPL
 
-helloaal: HelloAAL.o
-	$(CXX) -g -O2 -o helloaal HelloAAL.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+Sudoku_SPL: Sudoku_SPL.o
+	$(CXX) -g -O2 -o Sudoku_SPL Sudoku_SPL.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-HelloAAL.o: HelloAAL.cpp ../Hello_AAL_Service/HelloAALService.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -I../Hello_AAL_Service -g -O2 -c -o HelloAAL.o HelloAAL.cpp
+Sudoku_SPL.o: Sudoku_SPL.cpp Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o Sudoku_SPL.o Sudoku_SPL.cpp
 
 clean:
-	$(RM) helloaal HelloAAL.o
+	$(RM) Sudoku_SPL.o Sudoku_SPL
 
 .PHONY:all clean
