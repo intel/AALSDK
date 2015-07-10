@@ -227,7 +227,7 @@ ifdef DUT_VLOG_SRC_LIST
 endif
 	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
 ifeq ($(CC), gcc)
-	vcs $(SNPS_VCS_OPT) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_TOP) $(ASE_LD_SWITCHES)
+	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
 endif
 
 
@@ -295,6 +295,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ | echo "Never mind"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
+	rm -rf profile* simprofile*
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean

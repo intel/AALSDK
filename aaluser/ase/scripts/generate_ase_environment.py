@@ -232,7 +232,7 @@ fd.write("ASESW_FILE_LIST = ")
 fd.write(ase_sw_files_str)
 fd.write("\n\n")
 
-fd.write("ASE_TOP = cci_emulator")
+fd.write("ASE_TOP = ase_top")
 fd.write("\n\n")
 
 # Update SIMULATOR
