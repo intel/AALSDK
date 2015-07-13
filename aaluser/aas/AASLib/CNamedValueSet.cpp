@@ -3969,9 +3969,6 @@ char * CNamedValueSet::ReadString(std::istream &is)
    if ( !CNamedValueSet::ReadUnsigned(is, &szlen) ) {
       return NULL;                  // Get length of string
    }
-   if ( 0 == szlen ) {
-      return NULL;
-   }
 
    if ( szlen > 256 ) {
       std::clog << "WARNING: NVSReadString: input length " << szlen << "greater than 256" << std::endl;

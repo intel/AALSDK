@@ -2652,26 +2652,26 @@ TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_1);
 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0398, AddGetbtNumberKeyTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0399, AddGetbtStringKeyTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0400, WriteOneReadbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0401, WriteOneReadbtNumberKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0402, WriteOneReadbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0403, WriteOneReadbtStringKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0404, ChevronsbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0405, ChevronsbtNumberKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0406, ChevronsbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, DISABLED_aal0407, ChevronsbtStringKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0400, WriteOneReadbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0401, WriteOneReadbtNumberKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0402, WriteOneReadbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0403, WriteOneReadbtStringKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0404, ChevronsbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0405, ChevronsbtNumberKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0406, ChevronsbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0407, ChevronsbtStringKeyTest_B)
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_1,
                            aal0398,
                            aal0399,
-                           DISABLED_aal0400,
-                           DISABLED_aal0401,
-                           DISABLED_aal0402,
-                           DISABLED_aal0403,
-                           DISABLED_aal0404,
-                           DISABLED_aal0405,
-                           DISABLED_aal0406,
-                           DISABLED_aal0407);
+                           aal0400,
+                           aal0401,
+                           aal0402,
+                           aal0403,
+                           aal0404,
+                           aal0405,
+                           aal0406,
+                           aal0407);
 
 typedef ::testing::Types< btcStringNVSTester_ZeroLengthStrings > NamedValueSet_btcString_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_1, NamedValueSet_btcString_tp_1_Types);
@@ -2785,18 +2785,18 @@ TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_1);
 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0408, AddGetbtNumberKeyTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0409, AddGetbtStringKeyTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, DISABLED_aal0410, WriteOneReadbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, DISABLED_aal0411, WriteOneReadbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, DISABLED_aal0412, ChevronsbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, DISABLED_aal0413, ChevronsbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0410, WriteOneReadbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0411, WriteOneReadbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0412, ChevronsbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0413, ChevronsbtStringKeyTest_A)
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_1,
                            aal0408,
                            aal0409,
-                           DISABLED_aal0410,
-                           DISABLED_aal0411,
-                           DISABLED_aal0412,
-                           DISABLED_aal0413);
+                           aal0410,
+                           aal0411,
+                           aal0412,
+                           aal0413);
 
 typedef ::testing::Types< btStringArrayNVSTester_ZeroLengthStrings > NamedValueSet_btStringArray_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_1, NamedValueSet_btStringArray_tp_1_Types);
