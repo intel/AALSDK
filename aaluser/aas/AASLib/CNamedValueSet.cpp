@@ -2272,9 +2272,11 @@ public:
    ENamedValues Add(btNumberKey Name, bt64bitInt Value)            { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btFloat Value)               { AutoLock(this); return m_iNVS.Add(Name, Value); }
-   ENamedValues Add(btNumberKey Name, btcString Value)             { AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btObjectType Value)          { ASSERT(NULL != Value); AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, const INamedValueSet *Value)
    {
+      ASSERT(NULL != Value);
       AutoLock(this);
       if ( this == Value->Concrete() ) {
          return ENamedValuesRecursiveAdd;
@@ -2284,57 +2286,122 @@ public:
 
    ENamedValues Add(btNumberKey        Name,
                     btByteArray        Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey        Name,
                     bt32bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey             Name,
                     btUnsigned32bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey        Name,
                     bt64bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey             Name,
                     btUnsigned64bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
-   ENamedValues Add(btNumberKey Name, btObjectType Value) { AutoLock(this); return m_iNVS.Add(Name, Value);              }
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
+
    ENamedValues Add(btNumberKey        Name,
                     btFloatArray       Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey        Name,
                     btStringArray      Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_iNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btNumberKey        Name,
                     btObjectArray      Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_iNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this); return m_iNVS.Add(Name, Value, NumElements);
+   }
 
-   ENamedValues Get(btNumberKey Name, btBool *pValue) const                  { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btByte *pValue) const                  { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt32bitInt *pValue) const              { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned32bitInt  *pValue) const     { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt64bitInt *pValue) const              { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue) const      { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btFloat *pValue) const                 { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btcString *pValue) const               { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, INamedValueSet const **pValue) const   { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btByteArray *pValue) const             { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue) const         { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, bt64bitIntArray *pValue) const         { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btObjectType *pValue) const            { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btFloatArray *pValue) const            { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
-   ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitInt  *pValue) const     { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
+   ENamedValues Get(btNumberKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_iNVS.Get(Name, pValue); }
 
    ENamedValues  Delete(btNumberKey Name)                                    { AutoLock(this); return m_iNVS.Delete(Name);        }
-   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize)       const       { AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
-   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)    const       { AutoLock(this); return m_iNVS.Type(Name,pType);    }
+   ENamedValues GetSize(btNumberKey Name, btWSSize *pSize)       const       { ASSERT(NULL != pSize); AutoLock(this); return m_iNVS.GetSize(Name,pSize); }
+   ENamedValues    Type(btNumberKey Name, eBasicTypes *pType)    const       { ASSERT(NULL != pType); AutoLock(this); return m_iNVS.Type(Name,pType);    }
    btBool           Has(btNumberKey Name)                        const       { AutoLock(this); return m_iNVS.Has(Name);           }
    ENamedValues GetName(btUnsignedInt index, btNumberKey *pName) const
    {
       eNameTypes   Type = btNumberKey_t;
       ENamedValues res;
+
+      ASSERT(NULL != pName);
 
       AutoLock(this);
 
@@ -2357,9 +2424,11 @@ public:
    ENamedValues Add(btStringKey Name, bt64bitInt Value)            { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btFloat Value)               { AutoLock(this); return m_sNVS.Add(Name, Value); }
-   ENamedValues Add(btStringKey Name, btcString Value)             { AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btObjectType Value)          { ASSERT(NULL != Value); AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, const INamedValueSet *Value)
    {
+      ASSERT(NULL != Value);
       AutoLock(this);
       if ( this == Value->Concrete() ) {
          return ENamedValuesRecursiveAdd;
@@ -2369,52 +2438,115 @@ public:
 
    ENamedValues Add(btStringKey        Name,
                     btByteArray        Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey        Name,
                     bt32bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey             Name,
                     btUnsigned32bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey        Name,
                     bt64bitIntArray    Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey             Name,
                     btUnsigned64bitIntArray Value,
-                    btUnsigned32bitInt      NumElements)  { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
-   ENamedValues Add(btStringKey Name, btObjectType Value) { AutoLock(this); return m_sNVS.Add(Name, Value); }
+                    btUnsigned32bitInt      NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey        Name,
                     btFloatArray       Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey        Name,
                     btStringArray      Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
    ENamedValues Add(btStringKey        Name,
                     btObjectArray      Value,
-                    btUnsigned32bitInt NumElements)       { AutoLock(this); return m_sNVS.Add(Name, Value, NumElements); }
+                    btUnsigned32bitInt NumElements)
+   {
+      ASSERT(NULL != Value);
+      if ( 0 == NumElements ) {
+         return ENamedValuesZeroSizedArray;
+      }
+      AutoLock(this);
+      return m_sNVS.Add(Name, Value, NumElements);
+   }
 
-   ENamedValues Get(btStringKey Name, btBool *pValue) const                  { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btByte *pValue) const                  { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt32bitInt *pValue) const              { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned32bitInt *pValue) const      { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt64bitInt *pValue) const              { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue) const      { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btFloat *pValue) const                 { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btcString *pValue) const               { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, INamedValueSet const **pValue) const   { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btByteArray *pValue) const             { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue) const         { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btObjectType *pValue) const            { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btFloatArray *pValue) const            { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
-   ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btBool *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btByte *pValue) const                  { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt32bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned32bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt64bitInt *pValue) const              { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned64bitInt *pValue) const      { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btFloat *pValue) const                 { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btcString *pValue) const               { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, INamedValueSet const **pValue) const   { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btByteArray *pValue) const             { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt32bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, bt64bitIntArray *pValue) const         { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btObjectType *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btFloatArray *pValue) const            { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btStringArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
+   ENamedValues Get(btStringKey Name, btObjectArray *pValue) const           { ASSERT(NULL != pValue); AutoLock(this); return m_sNVS.Get(Name, pValue); }
 
    ENamedValues  Delete(btStringKey Name)                                    { AutoLock(this); return m_sNVS.Delete(Name);         }
-   ENamedValues GetSize(btStringKey Name, btWSSize *pSize)    const          { AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
-   ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { AutoLock(this); return m_sNVS.Type(Name, pType);    }
+   ENamedValues GetSize(btStringKey Name, btWSSize *pSize)    const          { ASSERT(NULL != pSize); AutoLock(this); return m_sNVS.GetSize(Name, pSize); }
+   ENamedValues    Type(btStringKey Name, eBasicTypes *pType) const          { ASSERT(NULL != pType); AutoLock(this); return m_sNVS.Type(Name, pType);    }
    btBool           Has(btStringKey Name)                     const          { AutoLock(this); return m_sNVS.Has(Name);            }
 
    ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const
@@ -2422,6 +2554,8 @@ public:
       eNameTypes    Type = btStringKey_t;
       btUnsignedInt iNum = 0;
       ENamedValues  res;
+
+      ASSERT(NULL != pName);
 
       AutoLock(this);
 
@@ -2494,8 +2628,9 @@ public:
    {
       btUnsignedInt piNum = 0;
       btUnsignedInt psNum = 0;
+      ENamedValues  result;
 
-      ENamedValues result;
+      ASSERT(NULL != pNum);
 
       AutoLock(this);
 
@@ -2518,8 +2653,9 @@ public:
    {
       btUnsignedInt piNum    = 0;
       btUnsignedInt NumNames = 0;
+      ENamedValues  result;
 
-      ENamedValues result;
+      ASSERT(NULL != pType);
 
       AutoLock(this);
 
@@ -2730,6 +2866,7 @@ ENamedValues CNamedValueSet::FromStr(const std::string &s)
 //=============================================================================
 ENamedValues CNamedValueSet::FromStr(void *pv, btWSSize len)
 {
+   ASSERT(NULL != pv);
    std::string s(static_cast<char *>(pv), (size_t)len);   // initializing this way allows embedded nulls
    return FromStr(s);
 }

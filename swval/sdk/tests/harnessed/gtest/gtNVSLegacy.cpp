@@ -68,7 +68,7 @@ NVSSimple() :
    m_rgi64Test(NULL),
    m_rgu64TestTemp(NULL),
    m_rgu64Test(NULL),
-   m_pTest(NULL),
+   m_pTest((btObjectType)this),
    m_rgfTestTemp(NULL),
    m_rgfTest(NULL),
    m_rgszTest(m_rgszTestTemp),
@@ -271,6 +271,8 @@ virtual void SetUp()
    m_sMapRetToName[ ENamedValuesInternalError_UnexpectedEndOfFile ] =  "ENamedValuesInternalError_UnexpectedEndOfFile";
    m_sMapRetToName[ ENamedValuesOutOfMemory ] =                        "ENamedValuesOutOfMemory";
    m_sMapRetToName[ ENamedValuesEndOfFile ] =                          "ENamedValuesEndOfFile";
+   m_sMapRetToName[ ENamedValuesInvalidReadToNull ] =                  "ENamedValuesInvalidReadToNull";
+   m_sMapRetToName[ ENamedValuesZeroSizedArray ] =                     "ENamedValuesZeroSizedArray";
 
    CreateSmallNVS(&m_nvsEmbed);
    CreateBigNVS(&m_nvsTest);

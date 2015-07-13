@@ -63,7 +63,8 @@ typedef enum ENamedValues
    ENamedValuesInternalError_UnexpectedEndOfFile,
    ENamedValuesOutOfMemory,
    ENamedValuesEndOfFile,
-   ENamedValuesInvalidReadToNull
+   ENamedValuesInvalidReadToNull,
+   ENamedValuesZeroSizedArray
 } ENamedValues;
 
 #ifdef __cplusplus

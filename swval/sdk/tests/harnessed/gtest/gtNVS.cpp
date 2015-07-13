@@ -46,11 +46,11 @@ TEST(NVS, aal0252)
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, f));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, f));
 
-   btcString str = NULL;
+   btcString str = "abc";
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, str));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, str));
 
-   btObjectType o = NULL;
+   btObjectType o = &u64;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, o));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, o));
 
@@ -59,35 +59,35 @@ TEST(NVS, aal0252)
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, &m));
 
 
-   btByteArray byA = NULL;
+   btByteArray byA = &by;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, byA, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, byA, 1));
 
-   bt32bitIntArray s32A = NULL;
+   bt32bitIntArray s32A = &s32;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, s32A, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, s32A, 1));
 
-   btUnsigned32bitIntArray u32A = NULL;
+   btUnsigned32bitIntArray u32A = &u32;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, u32A, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, u32A, 1));
 
-   bt64bitIntArray s64A = NULL;
+   bt64bitIntArray s64A = &s64;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, s64A, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, s64A, 1));
 
-   btUnsigned64bitIntArray u64A = NULL;
+   btUnsigned64bitIntArray u64A = &u64;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, u64A, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, u64A, 1));
 
-   btFloatArray fA = NULL;
+   btFloatArray fA = &f;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, fA, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, fA, 1));
 
-   btStringArray strA = NULL;
+   btStringArray strA = const_cast<btStringArray>(&str);
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, strA, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, strA, 1));
 
-   btObjectArray oA = NULL;
+   btObjectArray oA = &o;
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(j, oA, 1));
    EXPECT_EQ(ENamedValuesDuplicateName, n.Add(k, oA, 1));
 
@@ -206,42 +206,43 @@ TEST(NVS, aal0253)
 
 TEST(NVS, aal0254)
 {
-   // When the NamedValueSet::Add(x, array, count) are given a count of 0, xyz is returned indicating an error.
+   // When the NamedValueSet::Add(x, array, count) are given a count of 0,
+   // ENamedValuesZeroSizedArray is returned indicating an error.
 
    NamedValueSet n;
    const btUnsigned32bitInt zero = 0;
 
    btByte by[3] = { 'a', 'b', 0 };
-   EXPECT_EQ(ENamedValuesOK, n.Add((btNumberKey)0, by, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("0", by, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add((btNumberKey)0, by, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("0", by, zero));
 
    bt32bitInt s32[3] = { 0, 1, 2 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(1,   s32, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("1", s32, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(1,   s32, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("1", s32, zero));
 
    btUnsigned32bitInt u32[3] = { 0, 1, 2 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(2,   u32, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("2", u32, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(2,   u32, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("2", u32, zero));
 
    bt64bitInt s64[3] = { 0, 1, 2 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(3,   s64, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("3", s64, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(3,   s64, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("3", s64, zero));
 
    btUnsigned64bitInt u64[3] = { 0, 1, 2 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(4,   u64, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("4", u64, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(4,   u64, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("4", u64, zero));
 
    btFloat f[3] = { 3.0, 4.0, 5.0 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(5,   f, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("5", f, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(5,   f, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("5", f, zero));
 
    btcString str[3] = { "one", "two", "three" };
-   EXPECT_EQ(ENamedValuesOK, n.Add(6,   (btStringArray)str, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("6", (btStringArray)str, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(6,   (btStringArray)str, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("6", (btStringArray)str, zero));
 
    btObjectType o[3] = { (btObjectType)1, (btObjectType)2, (btObjectType)3 };
-   EXPECT_EQ(ENamedValuesOK, n.Add(7,   o, zero));
-   EXPECT_EQ(ENamedValuesOK, n.Add("7", o, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add(7,   o, zero));
+   EXPECT_EQ(ENamedValuesZeroSizedArray, n.Add("7", o, zero));
 }
 
 TEST(NVS, aal0255)
