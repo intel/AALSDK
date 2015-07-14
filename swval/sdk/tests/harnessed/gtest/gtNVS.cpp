@@ -6,8 +6,6 @@
 
 #include "aalsdk/AALNamedValueSet.h"
 
-#define CHECK_REMAINING_INPUT_BYTES 0
-
 #define NVS_STREAM_WORKAROUND 1
 
 TEST(NVS, aal0252)
@@ -1385,12 +1383,9 @@ public:
       CheckO(O);
 
       NamedValueSet a;
+
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;
@@ -1414,12 +1409,9 @@ public:
       CheckO(O);
 
       NamedValueSet b;
+
       EXPECT_EQ(ENamedValuesOK, b.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;
@@ -1444,12 +1436,9 @@ public:
       CheckO(O);
 
       NamedValueSet a;
+
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;
@@ -1473,12 +1462,9 @@ public:
       CheckO(O);
 
       NamedValueSet b;
+
       EXPECT_EQ(ENamedValuesOK, b.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;
@@ -1869,12 +1855,9 @@ public:
       CheckO(O);
 
       NamedValueSet a;
+
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;
@@ -1898,12 +1881,9 @@ public:
       CheckO(O);
 
       NamedValueSet a;
+
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-
-#if CHECK_REMAINING_INPUT_BYTES
       EXPECT_EQ(0, InputBytesRemaining());
-#endif // CHECK_REMAINING_INPUT_BYTES
-
       CheckI(I);
 
       n = 99;

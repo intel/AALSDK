@@ -4425,7 +4425,10 @@ case __type##Array_t : {                                                        
          } break;
 
          // Normal end of embedded NVS, not really an error, but need to free sName
-         case btEndOfNVS_t  : return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
+         case btEndOfNVS_t  : {
+            is.ignore(2, '\n');
+            return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
+         }
 
          case btByteArray_t : {      // Read Data
             btByteArray        val;
