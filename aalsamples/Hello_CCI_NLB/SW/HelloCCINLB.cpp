@@ -434,7 +434,7 @@ btInt HelloCCINLBApp::run()
 
       // If ASE, give it some time to catch up
       #if defined ( ASEAFU )
-      Sleep(5);
+      SleepSec(5);
       #endif /* ASE AFU */
 
 
