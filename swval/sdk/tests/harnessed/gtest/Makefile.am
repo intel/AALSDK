@@ -44,7 +44,8 @@ gtOSServiceModule.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtTimer.cpp \
-gtSleep.cpp
+gtSleep.cpp \
+gtAASBase.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
