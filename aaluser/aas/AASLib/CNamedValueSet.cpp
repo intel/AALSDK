@@ -2273,7 +2273,7 @@ public:
    ENamedValues Add(btNumberKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btFloat Value)               { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_iNVS.Add(Name, Value); }
-   ENamedValues Add(btNumberKey Name, btObjectType Value)          { ASSERT(NULL != Value); AutoLock(this); return m_iNVS.Add(Name, Value); }
+   ENamedValues Add(btNumberKey Name, btObjectType Value)          { AutoLock(this); return m_iNVS.Add(Name, Value); }
    ENamedValues Add(btNumberKey Name, const INamedValueSet *Value)
    {
       ASSERT(NULL != Value);
@@ -2425,7 +2425,7 @@ public:
    ENamedValues Add(btStringKey Name, btUnsigned64bitInt Value)    { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btFloat Value)               { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, btcString Value)             { ASSERT(NULL != Value); AutoLock(this); return m_sNVS.Add(Name, Value); }
-   ENamedValues Add(btStringKey Name, btObjectType Value)          { ASSERT(NULL != Value); AutoLock(this); return m_sNVS.Add(Name, Value); }
+   ENamedValues Add(btStringKey Name, btObjectType Value)          { AutoLock(this); return m_sNVS.Add(Name, Value); }
    ENamedValues Add(btStringKey Name, const INamedValueSet *Value)
    {
       ASSERT(NULL != Value);
@@ -2850,6 +2850,7 @@ void DeleteNVS(INamedValueSet *p)
 //=============================================================================
 ENamedValues CNamedValueSet::FromStr(const std::string &s)
 {
+   AutoLock(this);
    std::istringstream iss(s); // put the string inside an istringstream
    return Read(iss);          // use Read() to get it out
 }
@@ -2883,6 +2884,7 @@ ENamedValues CNamedValueSet::FromStr(void *pv, btWSSize len)
 //=============================================================================
 std::string CNamedValueSet::ToStr() const
 {
+   AutoLock(this);
    std::ostringstream oss;
 #if 1
    oss << *this << '\0';  // add a final, ensuring, terminating null
@@ -2905,6 +2907,7 @@ std::string CNamedValueSet::ToStr() const
 //=============================================================================
 ENamedValues CNamedValueSet::Merge(const INamedValueSet &nvsInput)
 {
+   AutoLock(this);
    // Write nvsInput to a stringstream
    std::stringstream ss;
    ss << nvsInput;

@@ -181,6 +181,20 @@ public:
    void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
 };
 
+class NVSCmp
+{
+public:
+   NVSCmp() {}
+   void expect_eq(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_TRUE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+   void expect_ne(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_FALSE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename X>
