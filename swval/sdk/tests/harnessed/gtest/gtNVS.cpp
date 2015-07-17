@@ -3091,14 +3091,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btBool_tp_0,
                            aal0442,
                            aal0443,
                            aal0508,
-                           aal0531
-#ifdef NVSFileIO
-                         , aal0553,
+                           aal0531,
+                           aal0553,
                            aal0554,
                            aal0555,
-                           aal0556
-#endif // NVSFileIO
-);
+                           aal0556);
 
 typedef ::testing::Types< btBoolNVSTester > NamedValueSet_btBool_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btBool_tp_0, NamedValueSet_btBool_tp_0_Types);
@@ -3162,14 +3159,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByte_tp_0,
                            aal0446,
                            aal0447,
                            aal0509,
-                           aal0532
-#ifdef NVSFileIO
-                         , aal0557,
+                           aal0532,
+                           aal0557,
                            aal0558,
                            aal0559,
-                           aal0560
-#endif // NVSFileIO
-);
+                           aal0560);
 
 typedef ::testing::Types< btByteNVSTester > NamedValueSet_btByte_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByte_tp_0, NamedValueSet_btByte_tp_0_Types);
@@ -3218,12 +3212,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByteArray_tp_0,
                            aal0448,
                            aal0449,
                            aal0510,
-                           aal0533
-#ifdef NVSFileIO
-                         , aal0561,
-                           aal0562
-#endif // NVSFileIO
-);
+                           aal0533,
+                           aal0561,
+                           aal0562);
 
 typedef ::testing::Types< btByteArrayNVSTester > NamedValueSet_btByteArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByteArray_tp_0, NamedValueSet_btByteArray_tp_0_Types);
@@ -3287,14 +3278,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitInt_tp_0,
                            aal0452,
                            aal0453,
                            aal0511,
-                           aal0534
-#ifdef NVSFileIO
-                         , aal0563,
+                           aal0534,
+                           aal0563,
                            aal0564,
                            aal0565,
-                           aal0566
-#endif // NVSFileIO
-);
+                           aal0566);
 
 typedef ::testing::Types< bt32bitIntNVSTester > NamedValueSet_bt32bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitInt_tp_0, NamedValueSet_bt32bitInt_tp_0_Types);
@@ -3343,12 +3331,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitIntArray_tp_0,
                            aal0454,
                            aal0455,
                            aal0512,
-                           aal0535
-#ifdef NVSFileIO
-                         , aal0567,
-                           aal0568
-#endif // NVSFileIO
-);
+                           aal0535,
+                           aal0567,
+                           aal0568);
 
 typedef ::testing::Types< bt32bitIntArrayNVSTester > NamedValueSet_bt32bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitIntArray_tp_0, NamedValueSet_bt32bitIntArray_tp_0_Types);
@@ -3412,14 +3397,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitInt_tp_0,
                            aal0458,
                            aal0459,
                            aal0513,
-                           aal0536
-#ifdef NVSFileIO
-                         , aal0569,
+                           aal0536,
+                           aal0569,
                            aal0570,
                            aal0571,
-                           aal0572
-#endif // NVSFileIO
-);
+                           aal0572);
 
 typedef ::testing::Types< btUnsigned32bitIntNVSTester > NamedValueSet_btUnsigned32bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitInt_tp_0, NamedValueSet_btUnsigned32bitInt_tp_0_Types);
@@ -3468,12 +3450,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitIntArray_tp_0,
                            aal0460,
                            aal0461,
                            aal0514,
-                           aal0537
-#ifdef NVSFileIO
-                         , aal0573,
-                           aal0574
-#endif // NVSFileIO
-);
+                           aal0537,
+                           aal0573,
+                           aal0574);
 
 typedef ::testing::Types< btUnsigned32bitIntArrayNVSTester > NamedValueSet_btUnsigned32bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitIntArray_tp_0, NamedValueSet_btUnsigned32bitIntArray_tp_0_Types);
@@ -3537,14 +3516,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitInt_tp_0,
                            aal0464,
                            aal0465,
                            aal0515,
-                           aal0538
-#ifdef NVSFileIO
-                         , aal0575,
+                           aal0538,
+                           aal0575,
                            aal0576,
                            aal0577,
-                           aal0578
-#endif // NVSFileIO
-);
+                           aal0578);
 
 typedef ::testing::Types< bt64bitIntNVSTester > NamedValueSet_bt64bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitInt_tp_0, NamedValueSet_bt64bitInt_tp_0_Types);
@@ -3593,12 +3569,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitIntArray_tp_0,
                            aal0466,
                            aal0467,
                            aal0516,
-                           aal0539
-#ifdef NVSFileIO
-                         , aal0579,
-                           aal0580
-#endif // NVSFileIO
-);
+                           aal0539,
+                           aal0579,
+                           aal0580);
 
 typedef ::testing::Types< bt64bitIntArrayNVSTester > NamedValueSet_bt64bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitIntArray_tp_0, NamedValueSet_bt64bitIntArray_tp_0_Types);
@@ -3662,14 +3635,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitInt_tp_0,
                            aal0470,
                            aal0471,
                            aal0517,
-                           aal0540
-#ifdef NVSFileIO
-                         , aal0581,
+                           aal0540,
+                           aal0581,
                            aal0582,
                            aal0583,
-                           aal0584
-#endif // NVSFileIO
-);
+                           aal0584);
 
 typedef ::testing::Types< btUnsigned64bitIntNVSTester > NamedValueSet_btUnsigned64bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitInt_tp_0, NamedValueSet_btUnsigned64bitInt_tp_0_Types);
@@ -3718,12 +3688,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitIntArray_tp_0,
                            aal0472,
                            aal0473,
                            aal0518,
-                           aal0541
-#ifdef NVSFileIO
-                         , aal0585,
-                           aal0586
-#endif // NVSFileIO
-);
+                           aal0541,
+                           aal0585,
+                           aal0586);
 
 typedef ::testing::Types< btUnsigned64bitIntArrayNVSTester > NamedValueSet_btUnsigned64bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitIntArray_tp_0, NamedValueSet_btUnsigned64bitIntArray_tp_0_Types);
@@ -3787,14 +3754,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloat_tp_0,
                            DISABLED_aal0476,
                            DISABLED_aal0477,
                            DISABLED_aal0519,
-                           DISABLED_aal0542
-#ifdef NVSFileIO
-                         , DISABLED_aal0587,
+                           DISABLED_aal0542,
+                           DISABLED_aal0587,
                            DISABLED_aal0588,
                            DISABLED_aal0589,
-                           DISABLED_aal0590
-#endif // NVSFileIO
-);
+                           DISABLED_aal0590);
 
 typedef ::testing::Types< btFloatNVSTester > NamedValueSet_btFloat_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloat_tp_0, NamedValueSet_btFloat_tp_0_Types);
@@ -3843,12 +3807,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloatArray_tp_0,
                            DISABLED_aal0478,
                            DISABLED_aal0479,
                            DISABLED_aal0520,
-                           DISABLED_aal0543
-#ifdef NVSFileIO
-                         , DISABLED_aal0591,
-                           DISABLED_aal0592
-#endif // NVSFileIO
-);
+                           DISABLED_aal0543,
+                           DISABLED_aal0591,
+                           DISABLED_aal0592);
 
 typedef ::testing::Types< btFloatArrayNVSTester > NamedValueSet_btFloatArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloatArray_tp_0, NamedValueSet_btFloatArray_tp_0_Types);
@@ -3912,14 +3873,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_0,
                            aal0482,
                            aal0483,
                            aal0521,
-                           aal0544
-#ifdef NVSFileIO
-                         , aal0593,
+                           aal0544,
+                           aal0593,
                            aal0594,
                            aal0595,
-                           aal0596
-#endif // NVSFileIO
-);
+                           aal0596);
 
 typedef ::testing::Types< btcStringNVSTester > NamedValueSet_btcString_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_0, NamedValueSet_btcString_tp_0_Types);
@@ -3984,14 +3942,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_1,
                            aal0486,
                            aal0487,
                            aal0522,
-                           aal0545
-#ifdef NVSFileIO
-                         , aal0597,
+                           aal0545,
+                           aal0597,
                            aal0598,
                            aal0599,
-                           aal0600
-#endif // NVSFileIO
-);
+                           aal0600);
 
 typedef ::testing::Types< btcStringNVSTester_ZeroLengthStrings > NamedValueSet_btcString_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_1, NamedValueSet_btcString_tp_1_Types);
@@ -4056,14 +4011,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_2,
                            aal0490,
                            aal0491,
                            aal0523,
-                           aal0546
-#ifdef NVSFileIO
-                         , aal0601,
+                           aal0546,
+                           aal0601,
                            aal0602,
                            aal0603,
-                           aal0604
-#endif // NVSFileIO
-);
+                           aal0604);
 
 typedef ::testing::Types< btcStringNVSTester_LongStrings > NamedValueSet_btcString_tp_2_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_2, NamedValueSet_btcString_tp_2_Types);
@@ -4114,12 +4066,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_0,
                            aal0492,
                            aal0493,
                            aal0524,
-                           aal0547
-#ifdef NVSFileIO
-                         , aal0605,
-                           aal0606
-#endif // NVSFileIO
-);
+                           aal0547,
+                           aal0605,
+                           aal0606);
 
 typedef ::testing::Types< btStringArrayNVSTester > NamedValueSet_btStringArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_0, NamedValueSet_btStringArray_tp_0_Types);
@@ -4170,12 +4119,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_1,
                            aal0494,
                            aal0495,
                            aal0525,
-                           aal0548
-#ifdef NVSFileIO
-                         , aal0607,
-                           aal0608
-#endif // NVSFileIO
-);
+                           aal0548,
+                           aal0607,
+                           aal0608);
 
 typedef ::testing::Types< btStringArrayNVSTester_ZeroLengthStrings > NamedValueSet_btStringArray_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_1, NamedValueSet_btStringArray_tp_1_Types);
@@ -4226,12 +4172,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_2,
                            aal0496,
                            aal0497,
                            aal0526,
-                           aal0549
-#ifdef NVSFileIO
-                         , aal0609,
-                           aal0610
-#endif // NVSFileIO
-);
+                           aal0549,
+                           aal0609,
+                           aal0610);
 
 typedef ::testing::Types< btStringArrayNVSTester_LongStrings > NamedValueSet_btStringArray_tp_2_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_2, NamedValueSet_btStringArray_tp_2_Types);
@@ -4295,14 +4238,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectType_tp_0,
                            aal0500,
                            aal0501,
                            aal0527,
-                           aal0550
-#ifdef NVSFileIO
-                         , aal0611,
+                           aal0550,
+                           aal0611,
                            aal0612,
                            aal0613,
-                           aal0614
-#endif // NVSFileIO
-);
+                           aal0614);
 
 typedef ::testing::Types< btObjectTypeNVSTester > NamedValueSet_btObjectType_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectType_tp_0, NamedValueSet_btObjectType_tp_0_Types);
@@ -4351,12 +4291,9 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectArray_tp_0,
                            aal0502,
                            aal0503,
                            aal0528,
-                           aal0551
-#ifdef NVSFileIO
-                         , aal0615,
-                           aal0616
-#endif // NVSFileIO
-);
+                           aal0551,
+                           aal0615,
+                           aal0616);
 
 typedef ::testing::Types< btObjectArrayNVSTester > NamedValueSet_btObjectArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectArray_tp_0, NamedValueSet_btObjectArray_tp_0_Types);
@@ -4420,14 +4357,11 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_Nested_tp_0,
                            aal0506,
                            aal0507,
                            aal0529,
-                           aal0552
-#ifdef NVSFileIO
-                         , aal0617,
+                           aal0552,
+                           aal0617,
                            aal0618,
                            aal0619,
-                           aal0620
-#endif // NVSFileIO
-);
+                           aal0620);
 
 typedef ::testing::Types< NestedNVSTester > NamedValueSet_Nested_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_Nested_tp_0, NamedValueSet_Nested_tp_0_Types);
