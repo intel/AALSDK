@@ -41,6 +41,15 @@ declare KERNEL_VPATH=''
 declare USER_VPATH=''
 declare SAMPLES_TMPDIR=''
 declare FINAL_TMPDIR=''
+declare TAG=''
+declare ADD_TAG=0
+
+# grab tag if it exists
+if (( $# > 0 ))
+then
+   TAG=.$1
+   ADD_TAG=1
+fi
 
 on_exit() {
    local -r remove=true
@@ -83,11 +92,16 @@ create_kernel_dist() {
       tmp="$x"
       if [[ ${tmp} =~ ${regex} ]]; then
          renamed="${x##*/}"
-         renamed="${renamed/.tar.gz/.Dual-BSD-GPLv2-License.tar.gz}"
+         renamed="${renamed/.tar.gz/.Dual-BSD-GPLv2-License${TAG}.tar.gz}"
          ${MV} "$x" "./${renamed}"
          break
       fi
    done
+   
+ #  if (( ADD_TAG ))
+ #  then
+ #     ${MV} 
+ #  fi
 }
 
 create_user_dist() {
@@ -114,7 +128,7 @@ create_user_dist() {
       tmp="$x"
       if [[ ${tmp} =~ ${regex} ]]; then
          renamed="${x##*/}"
-         renamed="${renamed/.tar.gz/.BSD-License.tar.gz}"
+         renamed="${renamed/.tar.gz/.BSD-License${TAG}.tar.gz}"
          ${MV} "$x" "./${renamed}"
          break
       fi
@@ -143,10 +157,10 @@ create_samples_dist() {
    ${FIND} "${SAMPLES_TMPDIR}/Samples" -type f \( -iname "*.vcxproj" -o -iname "*.vcxproj.filters" \) -delete
 
    pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
-   ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" "Samples"
+   ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" "Samples"
    popd >/dev/null 2>&1
 
-   ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" .
+   ${MV} "${SAMPLES_TMPDIR}/aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" .
 }
 
 create_final_dist() {
@@ -154,19 +168,19 @@ create_final_dist() {
 
    ${MKDIR} -p "${FINAL_TMPDIR}/aalsdk-${SAMPLES_VERSION}"
 
-   for x in "aalsamples-${SAMPLES_VERSION}.BSD-License.tar.gz" \
-            "aalsdk-${SAMPLES_VERSION}.BSD-License.tar.gz" \
-            "aalkernel-${SAMPLES_VERSION}.Dual-BSD-GPLv2-License.tar.gz" \
+   for x in "aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" \
+            "aalsdk-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" \
+            "aalkernel-${SAMPLES_VERSION}.Dual-BSD-GPLv2-License${TAG}.tar.gz" \
             "./Readme.MultiPackage.txt"
    do
       ${CP} "$x" "${FINAL_TMPDIR}/aalsdk-${SAMPLES_VERSION}"
    done
 
    pushd "${FINAL_TMPDIR}" >/dev/null 2>&1
-   ${TAR} zcf "aalsdk-${SAMPLES_VERSION}.tar.gz" "aalsdk-${SAMPLES_VERSION}"
+   ${TAR} zcf "aalsdk-${SAMPLES_VERSION}${TAG}.tar.gz" "aalsdk-${SAMPLES_VERSION}"
    popd >/dev/null 2>&1
 
-   ${MV} "${FINAL_TMPDIR}/aalsdk-${SAMPLES_VERSION}.tar.gz" .
+   ${MV} "${FINAL_TMPDIR}/aalsdk-${SAMPLES_VERSION}${TAG}.tar.gz" .
 }
 
 
@@ -198,7 +212,7 @@ main() {
    create_kernel_dist
    create_user_dist
    create_samples_dist
-#   create_final_dist
+   #create_final_dist
 }
 main
 
