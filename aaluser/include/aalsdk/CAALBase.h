@@ -107,7 +107,7 @@ public:
    btApplicationContext   Context()                    const { return m_Context; }
    // </IBase>
 
-   void SetContext(btApplicationContext context) { m_Context = context; }
+   void SetContext(btApplicationContext context);
 
 protected:
    EOBJECT SetInterface(btIID              Interface,
