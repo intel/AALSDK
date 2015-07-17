@@ -1537,6 +1537,9 @@ template <typename V,               // Value type, btBool, btByte, etc.
           typename GivesNumKeys,    // btNumberKey generator. CbtNumberKeySequencer.
           typename GivesStringKeys> // btStringKey generator. CbtStringKeySequencer.
 class TNVSTester : public IOStreamMixin< std::stringstream >,
+#ifdef NVSFileIO
+                   public FILEMixin,
+#endif // NVSFileIO
                    public TTalksToNVS< V, VCmp >
 {
 public:
@@ -1702,7 +1705,7 @@ public:
       NamedValueSet a;
 
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -1728,7 +1731,7 @@ public:
       NamedValueSet b;
 
       EXPECT_EQ(ENamedValuesOK, b.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -1755,7 +1758,7 @@ public:
       NamedValueSet a;
 
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -1781,7 +1784,7 @@ public:
       NamedValueSet b;
 
       EXPECT_EQ(ENamedValuesOK, b.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -2238,6 +2241,134 @@ public:
       EXPECT_TRUE(c2 == *nvs);
    }
 
+#ifdef NVSFileIO
+   void WriteOneReadbtNumberKeyTest_FILE_A(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      iA(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet a;
+
+      EXPECT_EQ(ENamedValuesOK, a.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, a.GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      VerifyiA(&a, 0);
+
+      this->fclose(fp);
+   }
+   void WriteOneReadbtNumberKeyTest_FILE_B(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      iB(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(m_iCount, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet b;
+
+      EXPECT_EQ(ENamedValuesOK, b.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, b.GetNumNames(&n));
+      EXPECT_EQ(m_iCount, n);
+
+      VerifyiB(&b, 0);
+
+      this->fclose(fp);
+   }
+
+   void WriteOneReadbtStringKeyTest_FILE_A(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      sA(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet a;
+
+      EXPECT_EQ(ENamedValuesOK, a.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, a.GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      VerifysA(&a, 0);
+
+      this->fclose(fp);
+   }
+   void WriteOneReadbtStringKeyTest_FILE_B(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      sB(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(m_sCount, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet b;
+
+      EXPECT_EQ(ENamedValuesOK, b.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, b.GetNumNames(&n));
+      EXPECT_EQ(m_sCount, n);
+
+      VerifysB(&b, 0);
+
+      this->fclose(fp);
+   }
+#endif // NVSFileIO
+
 protected:
    GivesValues     m_GivesValues;
    GivesNumKeys    m_GivesNumKeys;
@@ -2320,6 +2451,9 @@ template <typename V,               // Value type, btBool, btByte, etc.
           typename GivesNumKeys,    // btNumberKey generator. CbtNumberKeySequencer.
           typename GivesStringKeys> // btStringKey generator. CbtStringKeySequencer.
 class TArrayNVSTester : public IOStreamMixin< std::stringstream >,
+#ifdef NVSFileIO
+                        public FILEMixin,
+#endif // NVSFileIO
                         public TTalksToNVS< V, VCmp >
 {
 public:
@@ -2495,7 +2629,7 @@ public:
       NamedValueSet a;
 
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -2521,7 +2655,7 @@ public:
       NamedValueSet a;
 
       EXPECT_EQ(ENamedValuesOK, a.Read(is()));
-      EXPECT_EQ(0, InputBytesRemaining());
+      EXPECT_EQ(0, IOStreamMixin< std::stringstream >::InputBytesRemaining());
       CheckI(I);
 
       n = 99;
@@ -2770,6 +2904,71 @@ public:
       EXPECT_TRUE(c2 == *nvs);
    }
 
+#ifdef NVSFileIO
+   void WriteOneReadbtNumberKeyTest_FILE_A(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      iA(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet a;
+
+      EXPECT_EQ(ENamedValuesOK, a.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, a.GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      VerifyiA(&a, 0);
+
+      this->fclose(fp);
+   }
+   void WriteOneReadbtStringKeyTest_FILE_A(INamedValueSet *nvs)
+   {
+      FILE *fp = fopen_tmp();
+      ASSERT_NONNULL(fp);
+
+      sA(nvs);
+
+      btUnsignedInt n = 99;
+      EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      ASSERT_EQ(ENamedValuesOK, nvs->WriteOne(fp, 0));
+      EXPECT_EQ(0, this->ferror(fp));
+
+      this->rewind(fp);
+
+      NamedValueSet a;
+
+      EXPECT_EQ(ENamedValuesOK, a.Read(fp));
+      EXPECT_EQ(0, FILEMixin::InputBytesRemaining(fp));
+      EXPECT_EQ(0, this->ferror(fp));
+      EXPECT_EQ(0, this->feof(fp));
+
+      n = 99;
+      EXPECT_EQ(ENamedValuesOK, a.GetNumNames(&n));
+      EXPECT_EQ(1, n);
+
+      VerifysA(&a, 0);
+
+      this->fclose(fp);
+   }
+#endif // NVSFileIO
+
 protected:
    GivesArrays     m_GivesArrays;
    GivesNumKeys    m_GivesNumKeys;
@@ -2869,6 +3068,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0442, ToFromStrbtString
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0443, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0508, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0531, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0553, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0554, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0555, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btBool_tp_0, aal0556, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btBool_tp_0,
                            aal0260,
@@ -2886,7 +3091,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btBool_tp_0,
                            aal0442,
                            aal0443,
                            aal0508,
-                           aal0531);
+                           aal0531
+#ifdef NVSFileIO
+                         , aal0553,
+                           aal0554,
+                           aal0555,
+                           aal0556
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btBoolNVSTester > NamedValueSet_btBool_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btBool_tp_0, NamedValueSet_btBool_tp_0_Types);
@@ -2927,6 +3139,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0446, ToFromStrbtString
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0447, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0509, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0532, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0557, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0558, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0559, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByte_tp_0, aal0560, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByte_tp_0,
                            aal0270,
@@ -2944,7 +3162,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByte_tp_0,
                            aal0446,
                            aal0447,
                            aal0509,
-                           aal0532);
+                           aal0532
+#ifdef NVSFileIO
+                         , aal0557,
+                           aal0558,
+                           aal0559,
+                           aal0560
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btByteNVSTester > NamedValueSet_btByte_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByte_tp_0, NamedValueSet_btByte_tp_0_Types);
@@ -2978,6 +3203,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0448, ToFromStrbtN
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0449, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0510, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0533, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0561, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btByteArray_tp_0, aal0562, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByteArray_tp_0,
                            aal0350,
@@ -2989,7 +3218,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btByteArray_tp_0,
                            aal0448,
                            aal0449,
                            aal0510,
-                           aal0533);
+                           aal0533
+#ifdef NVSFileIO
+                         , aal0561,
+                           aal0562
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btByteArrayNVSTester > NamedValueSet_btByteArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByteArray_tp_0, NamedValueSet_btByteArray_tp_0_Types);
@@ -3030,6 +3264,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0452, ToFromStrbtSt
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0453, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0511, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0534, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0563, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0564, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0565, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitInt_tp_0, aal0566, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitInt_tp_0,
                            aal0280,
@@ -3047,7 +3287,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitInt_tp_0,
                            aal0452,
                            aal0453,
                            aal0511,
-                           aal0534);
+                           aal0534
+#ifdef NVSFileIO
+                         , aal0563,
+                           aal0564,
+                           aal0565,
+                           aal0566
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< bt32bitIntNVSTester > NamedValueSet_bt32bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitInt_tp_0, NamedValueSet_bt32bitInt_tp_0_Types);
@@ -3081,6 +3328,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0454, ToFromSt
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0455, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0512, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0535, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0567, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt32bitIntArray_tp_0, aal0568, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitIntArray_tp_0,
                            aal0356,
@@ -3092,7 +3343,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt32bitIntArray_tp_0,
                            aal0454,
                            aal0455,
                            aal0512,
-                           aal0535);
+                           aal0535
+#ifdef NVSFileIO
+                         , aal0567,
+                           aal0568
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< bt32bitIntArrayNVSTester > NamedValueSet_bt32bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitIntArray_tp_0, NamedValueSet_bt32bitIntArray_tp_0_Types);
@@ -3133,6 +3389,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0458, ToFro
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0459, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0513, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0536, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0569, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0570, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0571, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitInt_tp_0, aal0572, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitInt_tp_0,
                            aal0290,
@@ -3150,7 +3412,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitInt_tp_0,
                            aal0458,
                            aal0459,
                            aal0513,
-                           aal0536);
+                           aal0536
+#ifdef NVSFileIO
+                         , aal0569,
+                           aal0570,
+                           aal0571,
+                           aal0572
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btUnsigned32bitIntNVSTester > NamedValueSet_btUnsigned32bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitInt_tp_0, NamedValueSet_btUnsigned32bitInt_tp_0_Types);
@@ -3184,6 +3453,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0460, 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0461, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0514, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0537, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0573, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned32bitIntArray_tp_0, aal0574, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitIntArray_tp_0,
                            aal0362,
@@ -3195,7 +3468,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned32bitIntArray_tp_0,
                            aal0460,
                            aal0461,
                            aal0514,
-                           aal0537);
+                           aal0537
+#ifdef NVSFileIO
+                         , aal0573,
+                           aal0574
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btUnsigned32bitIntArrayNVSTester > NamedValueSet_btUnsigned32bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitIntArray_tp_0, NamedValueSet_btUnsigned32bitIntArray_tp_0_Types);
@@ -3236,6 +3514,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0464, ToFromStrbtSt
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0465, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0515, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0538, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0575, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0576, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0577, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitInt_tp_0, aal0578, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitInt_tp_0,
                            aal0300,
@@ -3253,7 +3537,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitInt_tp_0,
                            aal0464,
                            aal0465,
                            aal0515,
-                           aal0538);
+                           aal0538
+#ifdef NVSFileIO
+                         , aal0575,
+                           aal0576,
+                           aal0577,
+                           aal0578
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< bt64bitIntNVSTester > NamedValueSet_bt64bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitInt_tp_0, NamedValueSet_bt64bitInt_tp_0_Types);
@@ -3287,6 +3578,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0466, ToFromSt
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0467, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0516, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0539, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0579, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_bt64bitIntArray_tp_0, aal0580, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitIntArray_tp_0,
                            aal0368,
@@ -3298,7 +3593,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_bt64bitIntArray_tp_0,
                            aal0466,
                            aal0467,
                            aal0516,
-                           aal0539);
+                           aal0539
+#ifdef NVSFileIO
+                         , aal0579,
+                           aal0580
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< bt64bitIntArrayNVSTester > NamedValueSet_bt64bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitIntArray_tp_0, NamedValueSet_bt64bitIntArray_tp_0_Types);
@@ -3339,6 +3639,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0470, ToFro
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0471, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0517, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0540, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0581, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0582, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0583, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitInt_tp_0, aal0584, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitInt_tp_0,
                            aal0310,
@@ -3356,7 +3662,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitInt_tp_0,
                            aal0470,
                            aal0471,
                            aal0517,
-                           aal0540);
+                           aal0540
+#ifdef NVSFileIO
+                         , aal0581,
+                           aal0582,
+                           aal0583,
+                           aal0584
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btUnsigned64bitIntNVSTester > NamedValueSet_btUnsigned64bitInt_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitInt_tp_0, NamedValueSet_btUnsigned64bitInt_tp_0_Types);
@@ -3390,6 +3703,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0472, 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0473, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0518, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0541, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0585, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btUnsigned64bitIntArray_tp_0, aal0586, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitIntArray_tp_0,
                            aal0374,
@@ -3401,7 +3718,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btUnsigned64bitIntArray_tp_0,
                            aal0472,
                            aal0473,
                            aal0518,
-                           aal0541);
+                           aal0541
+#ifdef NVSFileIO
+                         , aal0585,
+                           aal0586
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btUnsigned64bitIntArrayNVSTester > NamedValueSet_btUnsigned64bitIntArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitIntArray_tp_0, NamedValueSet_btUnsigned64bitIntArray_tp_0_Types);
@@ -3442,6 +3764,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0476, ToFromS
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0477, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0519, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0542, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0587, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0588, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0589, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0590, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloat_tp_0,
                            aal0320,
@@ -3459,7 +3787,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloat_tp_0,
                            DISABLED_aal0476,
                            DISABLED_aal0477,
                            DISABLED_aal0519,
-                           DISABLED_aal0542);
+                           DISABLED_aal0542
+#ifdef NVSFileIO
+                         , DISABLED_aal0587,
+                           DISABLED_aal0588,
+                           DISABLED_aal0589,
+                           DISABLED_aal0590
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btFloatNVSTester > NamedValueSet_btFloat_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloat_tp_0, NamedValueSet_btFloat_tp_0_Types);
@@ -3493,6 +3828,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0478, To
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0479, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0520, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0543, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0591, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0592, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloatArray_tp_0,
                            aal0380,
@@ -3504,7 +3843,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloatArray_tp_0,
                            DISABLED_aal0478,
                            DISABLED_aal0479,
                            DISABLED_aal0520,
-                           DISABLED_aal0543);
+                           DISABLED_aal0543
+#ifdef NVSFileIO
+                         , DISABLED_aal0591,
+                           DISABLED_aal0592
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btFloatArrayNVSTester > NamedValueSet_btFloatArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloatArray_tp_0, NamedValueSet_btFloatArray_tp_0_Types);
@@ -3545,6 +3889,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0482, ToFromStrbtStr
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0483, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0521, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0544, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0593, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0594, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0595, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_0, aal0596, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_0,
                            aal0330,
@@ -3562,7 +3912,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_0,
                            aal0482,
                            aal0483,
                            aal0521,
-                           aal0544);
+                           aal0544
+#ifdef NVSFileIO
+                         , aal0593,
+                           aal0594,
+                           aal0595,
+                           aal0596
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btcStringNVSTester > NamedValueSet_btcString_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_0, NamedValueSet_btcString_tp_0_Types);
@@ -3604,6 +3961,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0486, ToFromStrbtStr
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0487, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0522, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0545, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0597, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0598, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0599, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_1, aal0600, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_1,
                            aal0398,
@@ -3621,7 +3984,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_1,
                            aal0486,
                            aal0487,
                            aal0522,
-                           aal0545);
+                           aal0545
+#ifdef NVSFileIO
+                         , aal0597,
+                           aal0598,
+                           aal0599,
+                           aal0600
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btcStringNVSTester_ZeroLengthStrings > NamedValueSet_btcString_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_1, NamedValueSet_btcString_tp_1_Types);
@@ -3663,6 +4033,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0490, ToFromStrbtStr
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0491, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0523, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0546, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0601, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0602, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0603, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btcString_tp_2, aal0604, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_2,
                            aal0414,
@@ -3680,7 +4056,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btcString_tp_2,
                            aal0490,
                            aal0491,
                            aal0523,
-                           aal0546);
+                           aal0546
+#ifdef NVSFileIO
+                         , aal0601,
+                           aal0602,
+                           aal0603,
+                           aal0604
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btcStringNVSTester_LongStrings > NamedValueSet_btcString_tp_2_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_2, NamedValueSet_btcString_tp_2_Types);
@@ -3716,6 +4099,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0492, ToFromStrb
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0493, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0524, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0547, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0605, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_0, aal0606, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_0,
                            aal0386,
@@ -3727,7 +4114,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_0,
                            aal0492,
                            aal0493,
                            aal0524,
-                           aal0547);
+                           aal0547
+#ifdef NVSFileIO
+                         , aal0605,
+                           aal0606
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btStringArrayNVSTester > NamedValueSet_btStringArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_0, NamedValueSet_btStringArray_tp_0_Types);
@@ -3763,6 +4155,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0494, ToFromStrb
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0495, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0525, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0548, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0607, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_1, aal0608, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_1,
                            aal0408,
@@ -3774,7 +4170,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_1,
                            aal0494,
                            aal0495,
                            aal0525,
-                           aal0548);
+                           aal0548
+#ifdef NVSFileIO
+                         , aal0607,
+                           aal0608
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btStringArrayNVSTester_ZeroLengthStrings > NamedValueSet_btStringArray_tp_1_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_1, NamedValueSet_btStringArray_tp_1_Types);
@@ -3810,6 +4211,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0496, ToFromStrb
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0497, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0526, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0549, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0609, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btStringArray_tp_2, aal0610, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_2,
                            aal0424,
@@ -3821,7 +4226,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btStringArray_tp_2,
                            aal0496,
                            aal0497,
                            aal0526,
-                           aal0549);
+                           aal0549
+#ifdef NVSFileIO
+                         , aal0609,
+                           aal0610
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btStringArrayNVSTester_LongStrings > NamedValueSet_btStringArray_tp_2_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_2, NamedValueSet_btStringArray_tp_2_Types);
@@ -3862,6 +4272,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0500, ToFromStrbt
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0501, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0527, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0550, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0611, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0612, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0613, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectType_tp_0, aal0614, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectType_tp_0,
                            aal0340,
@@ -3879,7 +4295,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectType_tp_0,
                            aal0500,
                            aal0501,
                            aal0527,
-                           aal0550);
+                           aal0550
+#ifdef NVSFileIO
+                         , aal0611,
+                           aal0612,
+                           aal0613,
+                           aal0614
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btObjectTypeNVSTester > NamedValueSet_btObjectType_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectType_tp_0, NamedValueSet_btObjectType_tp_0_Types);
@@ -3913,6 +4336,10 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0502, ToFromStrb
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0503, ToFromStrbtStringKeyTest_A)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0528, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0551, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0615, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btObjectArray_tp_0, aal0616, WriteOneReadbtStringKeyTest_FILE_A)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectArray_tp_0,
                            aal0392,
@@ -3924,7 +4351,12 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btObjectArray_tp_0,
                            aal0502,
                            aal0503,
                            aal0528,
-                           aal0551);
+                           aal0551
+#ifdef NVSFileIO
+                         , aal0615,
+                           aal0616
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< btObjectArrayNVSTester > NamedValueSet_btObjectArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectArray_tp_0, NamedValueSet_btObjectArray_tp_0_Types);
@@ -3965,6 +4397,12 @@ MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0506, ToFromStrbtString
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0507, ToFromStrbtStringKeyTest_B)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0529, EqualityAndSubsetTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0552, CopyConstructorTest)
+#ifdef NVSFileIO
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0617, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0618, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0619, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_Nested_tp_0, aal0620, WriteOneReadbtStringKeyTest_FILE_B)
+#endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_Nested_tp_0,
                            aal0430,
@@ -3982,7 +4420,14 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_Nested_tp_0,
                            aal0506,
                            aal0507,
                            aal0529,
-                           aal0552);
+                           aal0552
+#ifdef NVSFileIO
+                         , aal0617,
+                           aal0618,
+                           aal0619,
+                           aal0620
+#endif // NVSFileIO
+);
 
 typedef ::testing::Types< NestedNVSTester > NamedValueSet_Nested_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_Nested_tp_0, NamedValueSet_Nested_tp_0_Types);

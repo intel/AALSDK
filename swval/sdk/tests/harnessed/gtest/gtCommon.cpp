@@ -15,6 +15,93 @@ GlobalTestConfig::~GlobalTestConfig() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
+FILEMixin::~FILEMixin()
+{
+   iterator iter;
+   for ( iter = m_FileMap.begin() ; iter != m_FileMap.end() ; ++iter ) {
+      ::fclose((*iter).first);
+      ::remove((*iter).second.m_fname.c_str());
+   }
+}
+
+FILE * FILEMixin::fopen_tmp()
+{
+   char tmplt[13] = { 'g', 't', 'e', 's', 't', '.', 'X', 'X', 'X', 'X', 'X', 'X', 0 };
+
+   int fd = ::mkstemp(tmplt);
+
+   if ( -1 == fd ) {
+      return NULL;
+   }
+
+   FILE *fp = ::fdopen(fd, "w+b");
+
+   if ( NULL == fp ) {
+      ::close(fd);
+      ::remove(tmplt);
+      return NULL;
+   }
+
+   FILEInfo info(tmplt, fd);
+
+   std::pair<iterator, bool> res = m_FileMap.insert(std::make_pair(fp, info));
+
+   if ( !res.second ) {
+      ::fclose(fp);
+      ::remove(tmplt);
+      return NULL;
+   }
+
+   return fp;
+}
+
+btBool FILEMixin::fclose(FILE *fp)
+{
+   iterator iter = m_FileMap.find(fp);
+
+   if ( m_FileMap.end() == iter ) {
+      // fp not found
+      return false;
+   }
+
+   ::fclose(fp);
+   ::remove((*iter).second.m_fname.c_str());
+
+   m_FileMap.erase(iter);
+
+   return false;
+}
+
+void FILEMixin::rewind(FILE *fp) const
+{
+   ::rewind(fp);
+}
+
+int FILEMixin::feof(FILE *fp) const
+{
+   return ::feof(fp);
+}
+
+int FILEMixin::ferror(FILE *fp) const
+{
+   return ::ferror(fp);
+}
+
+long FILEMixin::InputBytesRemaining(FILE *fp) const
+{
+   long curpos = ::ftell(fp);
+
+   ::fseek(fp, 0, SEEK_END);
+
+   long endpos = ::ftell(fp);
+
+   ::fseek(fp, curpos, SEEK_SET);
+
+   return endpos - curpos;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 const char TestStatus::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
 const char TestStatus::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
 const char TestStatus::sm_Blue[]  = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };

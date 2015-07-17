@@ -3075,10 +3075,6 @@ btString CNamedValueSet::ReadString(FILE *file)
       return NULL;                  // Get length of string
    }
 
-   if ( 0 == u ) {
-      return NULL;
-   }
-
    szlen = u;
 
    ASSERT(szlen <= 256);
@@ -3096,7 +3092,7 @@ btString CNamedValueSet::ReadString(FILE *file)
    }
 
    // get an input buffer
-   btString psz = new btByte[szlen + 1];
+   btString psz = new(std::nothrow) btByte[szlen + 1];
 
    if ( NULL == psz ) {
       return NULL;
@@ -3744,7 +3740,11 @@ case __type##Array_t : {                                                        
          } break;
 
          // Normal end of embedded NVS, not really an error, but need to free sName
-         case btEndOfNVS_t  : return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
+         case btEndOfNVS_t  : {
+            fgetc(file);
+            fgetc(file);
+            return CNamedValueSet::ReadNVSError(sName, ENamedValuesOK);
+         }
 
          case btByteArray_t : {       // Read Data
             btByteArray        val;

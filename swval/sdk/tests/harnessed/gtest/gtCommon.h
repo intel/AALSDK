@@ -380,6 +380,39 @@ protected:
    S m_IOStream;
 };
 
+class FILEMixin
+{
+public:
+   FILEMixin() {}
+   virtual ~FILEMixin();
+
+   FILE * fopen_tmp();
+   btBool    fclose(FILE * );
+
+   void rewind(FILE * ) const;
+   int    feof(FILE * ) const;
+   int  ferror(FILE * ) const;
+
+   long InputBytesRemaining(FILE * ) const;
+
+protected:
+   struct FILEInfo
+   {
+      FILEInfo(std::string fname, int fd) :
+         m_fname(fname),
+         m_fd(fd)
+      {}
+      std::string m_fname;
+      int         m_fd;
+   };
+
+   typedef std::map< FILE * , FILEInfo > map_type;
+   typedef map_type::iterator            iterator;
+   typedef map_type::const_iterator      const_iterator;
+
+   map_type m_FileMap;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class TestStatus
