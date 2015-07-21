@@ -78,12 +78,19 @@ BEGIN_NAMESPACE(AAL)
 #define CSR_NUM_LINES             0x1a28
 #define CSR_CTL                   0x1a2c
 #define CSR_CFG                   0x1a34
-#   define NLB_TEST_MODE_LPBK1    0x0
-#   define NLB_TEST_MODE_CONT     0x2
-#   define NLB_TEST_MODE_READ     0x4
-#   define NLB_TEST_MODE_WRITE    0x8
-#   define NLB_TEST_MODE_TRPUT    0xc
-#   define NLB_TEST_MODE_MASK     0x1c
+#   define NLB_TEST_MODE_LPBK1    0x000
+#   define NLB_TEST_MODE_WB       0x000
+#   define NLB_TEST_MODE_WT       0x001
+#   define NLB_TEST_MODE_CONT     0x002
+#   define NLB_TEST_MODE_READ     0x004
+#   define NLB_TEST_MODE_WRITE    0x008
+#   define NLB_TEST_MODE_TRPUT    0x00c
+#   define NLB_TEST_MODE_LPBK2    0x014
+#   define NLB_TEST_MODE_LPBK3    0x018
+#   define NLB_TEST_MODE_RDS      0x000
+#   define NLB_TEST_MODE_RDI      0x200
+#   define NLB_TEST_MODE_RDO      0x400
+#   define NLB_TEST_MODE_MASK     0x01c
 
 typedef struct _nlb_vafu_dsm
 {
