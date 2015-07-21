@@ -188,8 +188,8 @@ TEST_F(AASBase,aal0267)
 	EXPECT_TRUE(aasBaseA != AALIBase);
 
 	// Compare class object with AASBase object
-	EXPECT_FALSE(*this == aasBaseA);
-	EXPECT_TRUE(aasBaseB != aasBaseA);
+	EXPECT_TRUE(*this == aasBaseA);
+	EXPECT_FALSE(aasBaseB != aasBaseA);
 
 }
 

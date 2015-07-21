@@ -862,7 +862,11 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'SPLAFUService.h.in' \
 'ASESPLAFUService.h.in' \
 'HWSPLAFUService.h.in' \
-'SWSimSPLAFUService.h.in'\
+'SWSimSPLAFUService.h.in' \
+'CCIv3AFUService.h.in' \
+'ASECCIv3AFUService.h.in' \
+'HWCCIv3AFUService.h.in' \
+'SWSimCCIv3AFUService.h.in'\
 )
 declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'aalclp.h' \
@@ -890,6 +894,10 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'ASESPLAFUService.h' \
 'HWSPLAFUService.h' \
 'SWSimSPLAFUService.h' \
+'CCIv3AFUService.h' \
+'ASECCIv3AFUService.h' \
+'HWCCIv3AFUService.h' \
+'SWSimCCIv3AFUService.h' \
 'aalbus-device.h' \
 'aalbus.h' \
 'aalbus_imonitorconfig.h' \

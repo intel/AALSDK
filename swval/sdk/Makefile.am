@@ -184,7 +184,12 @@ include/aalsdk/service/SWSimCCIAFUService.h \
 include/aalsdk/service/SPLAFUService.h \
 include/aalsdk/service/HWSPLAFUService.h \
 include/aalsdk/service/ASESPLAFUService.h \
-include/aalsdk/service/SWSimSPLAFUService.h
+include/aalsdk/service/SWSimSPLAFUService.h \
+include/aalsdk/service/ICCIv3AFU.h \
+include/aalsdk/service/CCIv3AFUService.h \
+include/aalsdk/service/HWCCIv3AFUService.h \
+include/aalsdk/service/ASECCIv3AFUService.h \
+include/aalsdk/service/SWSimCCIv3AFUService.h
 
 uaiahdrs_HEADERS=\
 include/aalsdk/uaia/AALuAIA_Messaging.h \
@@ -249,6 +254,7 @@ ase/sw/protocol_backend.c \
 ase/sw/randomness_control.c \
 ase/sw/ase_ops.c \
 ase/ase.cfg \
+ase/ase_regress.sh \
 ase/Makefile \
 ase/distclean.sh \
 ase/hw/counter.sv \
@@ -287,7 +293,11 @@ include/aalsdk/service/SWSimCCIAFUService.h.in \
 include/aalsdk/service/SPLAFUService.h.in \
 include/aalsdk/service/HWSPLAFUService.h.in \
 include/aalsdk/service/ASESPLAFUService.h.in \
-include/aalsdk/service/SWSimSPLAFUService.h.in
+include/aalsdk/service/SWSimSPLAFUService.h.in \
+include/aalsdk/service/CCIv3AFUService.h.in \
+include/aalsdk/service/HWCCIv3AFUService.h.in \
+include/aalsdk/service/ASECCIv3AFUService.h.in \
+include/aalsdk/service/SWSimCCIv3AFUService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/uAIAService.h.in

@@ -181,6 +181,20 @@ public:
    void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
 };
 
+class NVSCmp
+{
+public:
+   NVSCmp() {}
+   void expect_eq(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_TRUE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+   void expect_ne(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_FALSE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename X>
@@ -365,6 +379,44 @@ public:
 protected:
    S m_IOStream;
 };
+
+class FILEMixin
+{
+public:
+   FILEMixin() {}
+   virtual ~FILEMixin();
+
+   FILE * fopen_tmp();
+   btBool    fclose(FILE * );
+
+   void rewind(FILE * ) const;
+   int    feof(FILE * ) const;
+   int  ferror(FILE * ) const;
+
+   long InputBytesRemaining(FILE * ) const;
+
+protected:
+   struct FILEInfo
+   {
+      FILEInfo(std::string fname, int fd) :
+         m_fname(fname),
+         m_fd(fd)
+      {}
+      std::string m_fname;
+      int         m_fd;
+   };
+
+   typedef std::map< FILE * , FILEInfo > map_type;
+   typedef map_type::iterator            iterator;
+   typedef map_type::const_iterator      const_iterator;
+
+   map_type m_FileMap;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X>
+X PassReturnByValue(X x) { return x; }
 
 ////////////////////////////////////////////////////////////////////////////////
 

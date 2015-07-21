@@ -5,12 +5,11 @@
 ******************************************************************************
 ******************************************************************************
 
-Three files are provided to make a complete AALSDK distribution,
-reflecting the different licenses of the three parts.
+Two files are provided to make a complete AALSDK distribution,
+reflecting the different licenses of the various parts.
 
   *.BSD-License.tar.gz
   *.Dual-BSD-GPLv2-License.tar.gz
-  *.GPLv2-License.tar.gz
 
 They are distributed separately only to demonstrate that the sets of
 files are governed by distinct and separate licenses.
