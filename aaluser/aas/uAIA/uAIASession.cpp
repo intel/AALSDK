@@ -235,6 +235,13 @@ void uAIASession::MessageHandler(IEvent const &theEvent)
 
 } // uAIASession::MessageHandler()
 
+void uAIASession::QueueAASEvent(btEventHandler Eventhandler, CAALEvent *pEvent)
+{
+
+   pEvent->setHandler(Eventhandler);
+   AALService().getRuntime()->schedDispatchable(pEvent);
+}
+
 END_NAMESPACE(AAL)
 
 

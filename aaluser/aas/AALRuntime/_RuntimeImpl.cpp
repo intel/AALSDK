@@ -570,7 +570,7 @@ void _runtime::allocService(IBase                  *pClient,
    if ( IsOK() ) {
       // Used for internal allocations, this object is the Runtime and the RuntimeClient
       //  (first 2 arguments)
-      m_pBroker->allocService(this, this, pClient, rManifest, rTranID);
+      m_pBroker->allocService(m_pProxy, this, pClient, rManifest, rTranID);
    }
 }
 

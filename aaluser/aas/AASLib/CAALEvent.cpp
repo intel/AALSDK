@@ -342,6 +342,10 @@ void CAALEvent::operator()()
       return;
    }
 
+   if ( NULL != m_pEventHandler ) {
+      m_pEventHandler(*this);
+   }
+
    if( NULL != m_pServiceClient ) {
       m_pServiceClient->serviceEvent(*this);
       delete this;
