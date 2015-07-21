@@ -22,6 +22,19 @@ TEST(NVS, Redmine529)
 }
 #endif // Redmine529
 
+TEST(NVS, BufFromString)
+{
+   char buf[4] = { 1, 2, 3, 4 };
+
+   std::string str("abc");
+
+   BufFromString(buf, str);
+   EXPECT_EQ('a', buf[0]);
+   EXPECT_EQ('b', buf[1]);
+   EXPECT_EQ('c', buf[2]);
+   EXPECT_EQ(4,   buf[3]); // BufFromString does not NULL-terminate the string.
+}
+
 TEST(NVS, aal0252)
 {
    // TNamedValueSet::Add() returns ENamedValuesDuplicateName when the given name conflicts with a contained name.
@@ -412,6 +425,19 @@ TEST(NVS, aal0530)
    btcString str = NULL;
    EXPECT_EQ(ENamedValuesOK, nvs.Get(sName, &str));
    EXPECT_STREQ("abc", str);
+}
+
+TEST(NVS, aal0621)
+{
+   // CNamedValueSet implements a safety check preventing recursive Add().
+
+   NamedValueSet nvs;
+
+   btNumberKey iname = 3;
+   btStringKey sname = "x";
+
+   EXPECT_EQ(ENamedValuesRecursiveAdd, nvs.Add(iname, &nvs));
+   EXPECT_EQ(ENamedValuesRecursiveAdd, nvs.Add(sname, &nvs));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2161,6 +2187,16 @@ public:
          EXPECT_FALSE(nvs->Subset(a));
          // a is a subset of nvs.
          EXPECT_TRUE(a.Subset(*nvs));
+
+
+         EXPECT_EQ(ENamedValuesOK, a.Merge(*nvs));
+
+         // We should now be equal, again.
+         EXPECT_TRUE(*nvs == a);
+         EXPECT_TRUE(a == *nvs);
+
+         EXPECT_TRUE(nvs->Subset(a));
+         EXPECT_TRUE(a.Subset(*nvs));
       }
 
       EXPECT_EQ(ENamedValuesOK, nvs->Empty());
@@ -2195,6 +2231,16 @@ public:
          EXPECT_FALSE(nvs->Subset(b));
          // b is a subset of nvs.
          EXPECT_TRUE(b.Subset(*nvs));
+
+
+         EXPECT_EQ(ENamedValuesOK, b.Merge(*nvs));
+
+         // We should now be equal, again.
+         EXPECT_TRUE(*nvs == b);
+         EXPECT_TRUE(b == *nvs);
+
+         EXPECT_TRUE(nvs->Subset(b));
+         EXPECT_TRUE(b.Subset(*nvs));
       }
    }
 
@@ -2208,7 +2254,7 @@ public:
       VerifysB(&c0, 0);
 
       // NamedValueSet(const NamedValueSet & )
-      NamedValueSet c1(c0);
+      NamedValueSet c1( PassReturnByValue(c0) );
 
       VerifysB(&c1, 0);
 
@@ -2232,7 +2278,7 @@ public:
       VerifyiB(&c2, 0);
 
       // NamedValueSet(const NamedValueSet & )
-      NamedValueSet c3(c2);
+      NamedValueSet c3( PassReturnByValue(c2) );
 
       VerifyiB(&c3, 0);
 
@@ -2860,6 +2906,16 @@ public:
       EXPECT_FALSE(nvs->Subset(a));
       // a is a subset of nvs.
       EXPECT_TRUE(a.Subset(*nvs));
+
+
+      EXPECT_EQ(ENamedValuesOK, a.Merge(*nvs));
+
+      // We should now be equal, again.
+      EXPECT_TRUE(*nvs == a);
+      EXPECT_TRUE(a == *nvs);
+
+      EXPECT_TRUE(nvs->Subset(a));
+      EXPECT_TRUE(a.Subset(*nvs));
    }
 
    void CopyConstructorTest(INamedValueSet *nvs)
@@ -2872,7 +2928,7 @@ public:
       VerifysA(&c0, 0);
 
       // NamedValueSet(const NamedValueSet & )
-      NamedValueSet c1(c0);
+      NamedValueSet c1( PassReturnByValue(c0) );
 
       VerifysA(&c1, 0);
 
@@ -2895,7 +2951,7 @@ public:
       VerifyiA(&c2, 0);
 
       // NamedValueSet(const NamedValueSet & )
-      NamedValueSet c3(c2);
+      NamedValueSet c3( PassReturnByValue(c2) );
 
       VerifyiA(&c3, 0);
 

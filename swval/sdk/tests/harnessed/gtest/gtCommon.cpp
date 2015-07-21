@@ -69,7 +69,7 @@ btBool FILEMixin::fclose(FILE *fp)
 
    m_FileMap.erase(iter);
 
-   return false;
+   return true;
 }
 
 void FILEMixin::rewind(FILE *fp) const
