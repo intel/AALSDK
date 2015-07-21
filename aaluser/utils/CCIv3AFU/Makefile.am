@@ -27,22 +27,32 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     utils/Makefile.am
+##     utils/CCIv3AFU/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     06/16/2015    TSW   Initial version
+##     07/20/2015    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-aalscan \
-data_model \
-fpgasane \
-CCIAFU \
-SPLAFU \
-cciapp \
-splapp \
-splapp2 \
-splapp3 \
-CCILib \
-CCIv3AFU
+ASECCIv3AFU \
+HWCCIv3AFU \
+SWSimCCIv3AFU
 
+lib_LTLIBRARIES=libCCIv3AFU.la
+
+libCCIv3AFU_la_SOURCES=\
+CCIv3AFU.cpp \
+CCIv3AFU.h
+
+libCCIv3AFU_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libCCIv3AFU_la_LDFLAGS=\
+-module \
+-version-info $(CCIV3AFU_VERSION_CURRENT):$(CCIV3AFU_VERSION_REVISION):$(CCIV3AFU_VERSION_AGE)
+
+libCCIv3AFU_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la
