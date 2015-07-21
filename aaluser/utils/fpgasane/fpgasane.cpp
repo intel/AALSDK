@@ -56,7 +56,7 @@
 
 #include <aalsdk/utils/SingleAFUApp.h>
 
-#include <aalsdk/kernel/NLBVAFU.h>
+#include <aalsdk/utils/NLBVAFU.h>
 
 USING_NAMESPACE(AAL)
 
