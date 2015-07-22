@@ -43,7 +43,7 @@
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 7/21/2014      TSW      Initial version(fpgasane).
-/// 5/28/2015      SC       fapdiag version.@endverbatim
+/// 5/28/2015      SC       fpgadiag version.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
