@@ -615,7 +615,7 @@ spl2_set_afu_dsm(struct spl2_device *pdev, btCSROffset csroffset)
    memset((void*)pAFU_DSM, 0, spl2_dev_AFUDSM_size);
 
    // Actual write of AFU DSM address to SPL
-   PVERBOSE("Writing AFU DSM Physical Base Address to config space\n");
+   PVERBOSE("Writing AFU DSM Physical Base Address to config space 0x%p\n", pAFU_DSM);
    write_cci_csr64(pdev, csroffset, virt_to_phys(pAFU_DSM));
 
    // Wait for timepout or AFU ID to appear
@@ -626,8 +626,8 @@ spl2_set_afu_dsm(struct spl2_device *pdev, btCSROffset csroffset)
 
    ASSERT(timeout > 0);
    if ( 0 != timeout ) {
-      PVERBOSE("Read AFUID 0x%" PRIx64 " 0x%" PRIx64 " from AFU DSM's physical address 0x%p\n",
-                  pAFU_DSM->vafu2.AFU_ID[1], pAFU_DSM->vafu2.AFU_ID[0], (void*)virt_to_phys(pAFU_DSM));
+      PVERBOSE("Read AFUID 0x%" PRIx64 " 0x%" PRIx64 " from AFU DSM's  0x%p @ physical address 0x%p\n",
+                  pAFU_DSM->vafu2.AFU_ID[1], pAFU_DSM->vafu2.AFU_ID[0], (void*) pAFU_DSM, (void*)virt_to_phys(pAFU_DSM));
       return 0;
    } else {
       PVERBOSE("Timed out attempting to read AFUID.\n");

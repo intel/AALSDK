@@ -178,6 +178,11 @@ spl2_sim_internal_probe(struct spl2_device   *pspl2dev,
    }
    spl2_dev_phys_config(pspl2dev) = virt_to_phys(spl2_dev_kvp_config(pspl2dev));
 
+   // Set CCI CSR Attributes
+   spl2_dev_phys_cci_csr(pspl2dev) = spl2_dev_phys_config(pspl2dev);
+   spl2_dev_kvp_cci_csr(pspl2dev) = spl2_dev_kvp_config(pspl2dev);
+   spl2_dev_len_cci_csr(pspl2dev) = QPI_APERTURE_SIZE;
+
    spl2_dev_set_simulated(pspl2dev);
    pspl2dev->m_simPIP = &MAFUpip;
 
@@ -197,6 +202,10 @@ spl2_sim_internal_probe(struct spl2_device   *pspl2dev,
 
    feature_id.FeatureID = FeatureID_CCI2;
    write_cci_csr32(pspl2dev, byte_offset_PCIE_FEATURE_HDR_F2, feature_id.csr);
+
+   PVERBOSE("Making Simulated CCI AFU (PCIE_FEATURE_HDR3_PROTOCOL_CCI3) \n");
+
+   spl2_dev_protocol(pspl2dev) =  PCIE_FEATURE_HDR3_PROTOCOL_CCI3;
 
    // Setup the MAFU device ID
    aaldevid_afuguidl(*paaldevid) = SPL2_SIM_AFUIDL;
