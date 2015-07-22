@@ -169,6 +169,8 @@ public:
    virtual void     runtimeAllocateServiceSucceeded(IBase *,
                                                     TransactionID const & );
    virtual void     runtimeEvent(const IEvent & );
+   virtual void 	runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+   virtual void 	runtimeStopFailed(const IEvent &rEvent);
    // </IRuntimeClient>
 
    // <IServiceClient>
@@ -177,6 +179,8 @@ public:
    virtual void serviceAllocateFailed(const IEvent &);
    virtual void          serviceFreed(TransactionID const & = TransactionID());
    virtual void          serviceEvent(const IEvent &);
+   virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void  serviceReleaseFailed(const IEvent &rEvent);
    // </IServiceClient>
 
    void Wait() { m_Sem.Wait();  }

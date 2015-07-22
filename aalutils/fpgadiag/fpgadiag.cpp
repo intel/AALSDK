@@ -43,7 +43,7 @@
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 7/21/2014      TSW      Initial version(fpgasane).
-/// 5/28/2015      SC       fapdiag version.@endverbatim
+/// 5/28/2015      SC       fpgadiag version.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
@@ -333,6 +333,26 @@ void CMyApp::runtimeEvent(const IEvent &e)
      Post();
 }
 
+void CMyApp::runtimeStopFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   INFO("Runtime Stop Failed");
+   Post();
+}
+
+void CMyApp::runtimeCreateOrGetProxyFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   INFO("Runtime Create or Get Proxy Failed");
+   Post();
+}
+
 void CMyApp::serviceAllocated(IBase               *pServiceBase,
 							  TransactionID const &tid)
 {
@@ -373,6 +393,21 @@ void CMyApp::serviceEvent(const IEvent &e)
 
 	   INFO("Unknown event");
 	   Post();
+}
+
+void CMyApp::serviceReleased(TransactionID const &tid)
+{
+	INFO("Service Released");
+    Post();
+}
+void CMyApp::serviceReleaseFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   ERR("Service Release Failed");
+   Post();
 }
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -555,7 +590,7 @@ int main(int argc, char *argv[])
 
    CMyApp        myapp;
    NamedValueSet args;
-   Runtime       aal;
+   Runtime       aal(&myapp);
 
    myapp.AFUTarget(gCmdLine.AFUTarget);
 
@@ -564,12 +599,12 @@ int main(int argc, char *argv[])
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
-      ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      args.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+      ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+      args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    INFO("Starting the AAL Runtime");
-   if ( aal.start(&myapp, args) ) {
+   if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
       ERR("AAL Runtime start failed");
