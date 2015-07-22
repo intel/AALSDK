@@ -22,6 +22,39 @@ TEST(NVS, Redmine529)
 }
 #endif // Redmine529
 
+#if 0
+TEST(NVS, PrintFloat)
+{
+   NamedValueSet nvs;
+
+   const btFloat pi = 3.14159;
+
+   nvs.Add(3,    pi);
+   nvs.Add("pi", pi);
+
+   btFloat A[] = { 0.0, 1.0, 2.0 };
+   nvs.Add(4,       A, 3);
+   nvs.Add("array", A, 3);
+
+   nvs.WriteOne(std::cout, 0);
+}
+TEST(NVS, PrintFloat_FILE)
+{
+   NamedValueSet nvs;
+
+   const btFloat pi = 3.14159;
+
+   nvs.Add(3,    pi);
+   nvs.Add("pi", pi);
+
+   btFloat A[] = { 0.0, 1.0, 2.0 };
+   nvs.Add(4,       A, 3);
+   nvs.Add("array", A, 3);
+
+   nvs.WriteOne(stdout, 0);
+}
+#endif // 0
+
 TEST(NVS, BufFromString)
 {
    char buf[4] = { 1, 2, 3, 4 };
@@ -3773,48 +3806,48 @@ TYPED_TEST_CASE_P(NamedValueSet_btFloat_tp_0);
 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0320, AddGetbtNumberKeyTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0321, AddGetbtStringKeyTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0322, WriteOneReadbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0323, WriteOneReadbtNumberKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0324, WriteOneReadbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0325, WriteOneReadbtStringKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0326, ChevronsbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0327, ChevronsbtNumberKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0328, ChevronsbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0329, ChevronsbtStringKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0474, ToFromStrbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0475, ToFromStrbtNumberKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0476, ToFromStrbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0477, ToFromStrbtStringKeyTest_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0519, EqualityAndSubsetTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0542, CopyConstructorTest)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0322, WriteOneReadbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0323, WriteOneReadbtNumberKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0324, WriteOneReadbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0325, WriteOneReadbtStringKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0326, ChevronsbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0327, ChevronsbtNumberKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0328, ChevronsbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0329, ChevronsbtStringKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0474, ToFromStrbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0475, ToFromStrbtNumberKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0476, ToFromStrbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0477, ToFromStrbtStringKeyTest_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0519, EqualityAndSubsetTest)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0542, CopyConstructorTest)
 #ifdef NVSFileIO
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0587, WriteOneReadbtNumberKeyTest_FILE_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0588, WriteOneReadbtNumberKeyTest_FILE_B)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0589, WriteOneReadbtStringKeyTest_FILE_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, DISABLED_aal0590, WriteOneReadbtStringKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0587, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0588, WriteOneReadbtNumberKeyTest_FILE_B)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0589, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloat_tp_0, aal0590, WriteOneReadbtStringKeyTest_FILE_B)
 #endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloat_tp_0,
                            aal0320,
                            aal0321,
-                           DISABLED_aal0322,
-                           DISABLED_aal0323,
-                           DISABLED_aal0324,
-                           DISABLED_aal0325,
-                           DISABLED_aal0326,
-                           DISABLED_aal0327,
-                           DISABLED_aal0328,
-                           DISABLED_aal0329,
-                           DISABLED_aal0474,
-                           DISABLED_aal0475,
-                           DISABLED_aal0476,
-                           DISABLED_aal0477,
-                           DISABLED_aal0519,
-                           DISABLED_aal0542,
-                           DISABLED_aal0587,
-                           DISABLED_aal0588,
-                           DISABLED_aal0589,
-                           DISABLED_aal0590);
+                           aal0322,
+                           aal0323,
+                           aal0324,
+                           aal0325,
+                           aal0326,
+                           aal0327,
+                           aal0328,
+                           aal0329,
+                           aal0474,
+                           aal0475,
+                           aal0476,
+                           aal0477,
+                           aal0519,
+                           aal0542,
+                           aal0587,
+                           aal0588,
+                           aal0589,
+                           aal0590);
 
 typedef ::testing::Types< btFloatNVSTester > NamedValueSet_btFloat_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloat_tp_0, NamedValueSet_btFloat_tp_0_Types);
@@ -3840,32 +3873,32 @@ TYPED_TEST_CASE_P(NamedValueSet_btFloatArray_tp_0);
 
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0380, AddGetbtNumberKeyTest)
 MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0381, AddGetbtStringKeyTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0382, WriteOneReadbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0383, WriteOneReadbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0384, ChevronsbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0385, ChevronsbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0478, ToFromStrbtNumberKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0479, ToFromStrbtStringKeyTest_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0520, EqualityAndSubsetTest)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0543, CopyConstructorTest)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0382, WriteOneReadbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0383, WriteOneReadbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0384, ChevronsbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0385, ChevronsbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0478, ToFromStrbtNumberKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0479, ToFromStrbtStringKeyTest_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0520, EqualityAndSubsetTest)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0543, CopyConstructorTest)
 #ifdef NVSFileIO
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0591, WriteOneReadbtNumberKeyTest_FILE_A)
-MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, DISABLED_aal0592, WriteOneReadbtStringKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0591, WriteOneReadbtNumberKeyTest_FILE_A)
+MY_TYPE_PARAMETERIZED_TEST(NamedValueSet_btFloatArray_tp_0, aal0592, WriteOneReadbtStringKeyTest_FILE_A)
 #endif // NVSFileIO
 
 REGISTER_TYPED_TEST_CASE_P(NamedValueSet_btFloatArray_tp_0,
                            aal0380,
                            aal0381,
-                           DISABLED_aal0382,
-                           DISABLED_aal0383,
-                           DISABLED_aal0384,
-                           DISABLED_aal0385,
-                           DISABLED_aal0478,
-                           DISABLED_aal0479,
-                           DISABLED_aal0520,
-                           DISABLED_aal0543,
-                           DISABLED_aal0591,
-                           DISABLED_aal0592);
+                           aal0382,
+                           aal0383,
+                           aal0384,
+                           aal0385,
+                           aal0478,
+                           aal0479,
+                           aal0520,
+                           aal0543,
+                           aal0591,
+                           aal0592);
 
 typedef ::testing::Types< btFloatArrayNVSTester > NamedValueSet_btFloatArray_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloatArray_tp_0, NamedValueSet_btFloatArray_tp_0_Types);
