@@ -134,7 +134,6 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
@@ -207,6 +206,7 @@ utilshdrs_HEADERS=\
 include/aalsdk/utils/AALEventUtilities.h \
 include/aalsdk/utils/AALWorkSpaceUtilities.h \
 include/aalsdk/utils/CSyncClient.h \
+include/aalsdk/utils/NLBVAFU.h \
 include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h

@@ -57,7 +57,7 @@
 #include <aalsdk/service/ICCIClient.h>
 #include "SWSimCCIv3AFU.h"
 
-#include <aalsdk/kernel/NLBVAFU.h>
+#include <aalsdk/utils/NLBVAFU.h>
 
 #ifdef INFO
 # undef INFO

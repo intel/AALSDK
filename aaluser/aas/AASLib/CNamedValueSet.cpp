@@ -2770,6 +2770,8 @@ private:
    // was void NVSWriteString(std::ostream &os, btcString sz, unsigned level);
    static void WriteString(std::ostream & , btcString , unsigned );
 
+   static void WritebtFloat(std::ostream & , btFloat );
+
    // was btBool  NVSReadUnsigned(std::istream &is, btUnsignedInt *pu);
    static btBool ReadUnsigned(std::istream & , btUnsignedInt * );
 
@@ -2781,6 +2783,8 @@ private:
 
    // was ENamedValues NVSReadNVSError(btmStringKey sName, ENamedValues error);
    static ENamedValues ReadNVSError(btmStringKey , ENamedValues );
+
+   static ENamedValues ReadbtFloat(std::istream & , btFloat * );
 
 #ifdef NVSFileIO
 
@@ -2802,6 +2806,8 @@ private:
    // was void NVSWriteString(FILE *file, btcString sz, unsigned level);
    static void WriteString(FILE * , btcString , unsigned );
 
+   static void WritebtFloat(FILE * , btFloat );
+
    // was int NVSReadUnsigned(FILE *file, btUnsignedInt *pu);
    static int ReadUnsigned(FILE * , btUnsignedInt * );
 
@@ -2810,6 +2816,8 @@ private:
 
    // was int NVSReadNumberKey(FILE *file, btNumberKey *pu);
    static int ReadNumberKey(FILE * , btNumberKey * );
+
+   static ENamedValues ReadbtFloat(FILE * , btFloat * );
 
 #endif // NVSFileIO
 
@@ -2888,12 +2896,7 @@ std::string CNamedValueSet::ToStr() const
 {
    AutoLock(this);
    std::ostringstream oss;
-#if 1
    oss << *this << '\0';  // add a final, ensuring, terminating null
-#else
-   Write(oss);
-   oss << '\0';
-#endif
    return oss.str();
 }
 
@@ -3159,6 +3162,57 @@ void CNamedValueSet::WriteEndOfNVS(FILE *file, unsigned level)
    fprintf(file, "\n");
 }  // End of NVSWriteEndOfNVS
 
+void CNamedValueSet::WritebtFloat(FILE *file, btFloat f)
+{
+   unsigned char       *p    = reinterpret_cast<unsigned char *>(&f);
+   unsigned char const *pEnd = p + sizeof(btFloat);
+
+   fprintf(file, "{ ");
+
+   while ( p < pEnd ) {
+      unsigned u = (unsigned)*p;
+      fprintf(file, "%02x ", u);
+      ++p;
+   }
+
+   fprintf(file, "}");
+}
+
+ENamedValues CNamedValueSet::ReadbtFloat(FILE *file, btFloat *pflt)
+{
+   unsigned char       *p    = reinterpret_cast<unsigned char *>(pflt);
+   unsigned char const *pEnd = p + sizeof(btFloat);
+
+   fgetc(file); // discard {
+   fgetc(file); // discard space
+
+   if ( feof(file) ) {
+      return ENamedValuesInternalError_UnexpectedEndOfFile;
+   }
+
+   while ( p < pEnd ) {
+      unsigned u = 0;
+      if ( EOF == fscanf(file, "%x", &u) ) {
+         return ENamedValuesInternalError_UnexpectedEndOfFile;
+      }
+      fgetc(file); // discard space
+
+      if ( feof(file) ) {
+         return ENamedValuesInternalError_UnexpectedEndOfFile;
+      }
+
+      *p = (unsigned char)u;
+      ++p;
+   }
+
+   fgetc(file); // discard }
+
+   if ( feof(file) ) {
+      return ENamedValuesInternalError_UnexpectedEndOfFile;
+   }
+
+   return ENamedValuesOK;
+}
 
 //=============================================================================
 // Name: NVSWriteNVS to an open file, opened in binary mode
@@ -3291,14 +3345,15 @@ ENamedValues CNamedValueSet::Write(FILE *file, unsigned level) const
          }
          break;
          case btFloat_t: {
-            btFloat val;
+            btFloat val = 0.0;
             if ( btStringKey_t == typeName ) {
                Get(sName, &val);
             } else {
                Get(iName, &val);
             }
             CNamedValueSet::WriteUnsigned(file, typeData, level+1);
-            fprintf(file, "%g\n", val);
+            CNamedValueSet::WritebtFloat(file, val);
+            fprintf(file, "\n");
          }
          break;
          case btString_t: {
@@ -3447,7 +3502,7 @@ ENamedValues CNamedValueSet::Write(FILE *file, unsigned level) const
             CNamedValueSet::WriteUnsigned(file, typeData, level+1);
             CNamedValueSet::WriteUnsigned(file, Num, 0);
             while ( Num-- ) {
-               fprintf(file, "%g ", *val++);
+               CNamedValueSet::WritebtFloat(file, *val++);
             }
             fprintf(file, "\n");
          }
@@ -3718,7 +3773,15 @@ case __type##Array_t : {                                                        
 
          NVSREADNVS_FSCANF(bt64bitInt,         0,   "%lld");
          NVSREADNVS_FSCANF(btUnsigned64bitInt, 0,   "%llu");
-         NVSREADNVS_FSCANF(btFloat,            0.0, "%g"  );
+
+         case btFloat_t : {
+            btFloat val = 0.0;
+            ENamedValues res = CNamedValueSet::ReadbtFloat(file, &val);
+            if ( ENamedValuesOK != res ) {
+               return CNamedValueSet::ReadNVSError(sName, res);
+            }
+            NVS_ADD(val);
+         } break;
 
          case btString_t : {              // Read Data
             btString val = CNamedValueSet::ReadString(file);
@@ -3796,7 +3859,32 @@ case __type##Array_t : {                                                        
          NVSREADNVS_FSCANF_ARRAY(btUnsigned32bitInt, "%u"  );
          NVSREADNVS_FSCANF_ARRAY(bt64bitInt,         "%lld");
          NVSREADNVS_FSCANF_ARRAY(btUnsigned64bitInt, "%llu");
-         NVSREADNVS_FSCANF_ARRAY(btFloat,            "%g"  );
+
+         case btFloatArray_t : {
+            btFloatArray       val, p;
+            btUnsigned32bitInt i,   Num = 0;
+            ENamedValues       res;
+            if ( EOF == CNamedValueSet::ReadUnsigned(file, &Num) ) { /* read number of elements */
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            }
+            if ( ( 0 == Num ) || ( Num > MAX_VALID_NVS_ARRAY_ENTRIES ) ) {
+               break; /* end now on bad item count */
+            }
+            if ( NULL == (val = new btFloat[Num]) ) {
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesOutOfMemory);
+            }
+            i = Num;
+            p = val;
+            while ( i-- ) { /* read the array */
+               res = CNamedValueSet::ReadbtFloat(file, p++);
+               if ( ( ENamedValuesOK != res ) || ferror(file) ) {
+                  delete[] val;
+                  return CNamedValueSet::ReadNVSError(sName, res);
+               }
+            }
+            NVS_ADD_ARRAY(val, Num);
+            delete[] val;
+         } break;
 
          // Read Data
          case btObjectType_t : {             // Pointer, could be 32 or 64 bit
@@ -4027,6 +4115,70 @@ void CNamedValueSet::WriteEndOfNVS(std::ostream &os, unsigned level)
    os << "\n";
 }  // End of NVSWriteEndOfNVS
 
+void CNamedValueSet::WritebtFloat(std::ostream &os, btFloat f)
+{
+   unsigned char       *p    = reinterpret_cast<unsigned char *>(&f);
+   unsigned char const *pEnd = p + sizeof(btFloat);
+
+   os << "{ ";
+
+   const std::ios_base::fmtflags flags = os.flags();
+   const std::streamsize         width = os.width();
+   const char                    fill  = os.fill();
+
+   os.flags(std::ios::hex|std::ios::right);
+   os.fill('0');
+
+   while ( p < pEnd ) {
+      unsigned u = *p;
+      os.width(2);
+      os << u << " ";
+      ++p;
+   }
+
+   os.fill(fill);
+   os.width(width);
+   os.flags(flags);
+
+   os << "}";
+}
+
+ENamedValues CNamedValueSet::ReadbtFloat(std::istream &is, btFloat *pflt)
+{
+   unsigned char *p = reinterpret_cast<unsigned char *>(pflt);
+
+   while ( '{' != is.peek() ) {
+      is.ignore(1);
+      if ( is.eof() ) {
+         return ENamedValuesInternalError_UnexpectedEndOfFile;
+      }
+   }
+
+   //           11111
+   // 012345678901234
+   // { xx xx xx xx }
+   char buf[(3 * sizeof(btFloat)) + 3];
+
+   is.read(buf, sizeof(buf));
+   if ( is.gcount() < sizeof(buf) ) {
+      return ENamedValuesInternalError_UnexpectedEndOfFile;
+   }
+
+   unsigned u;
+   unsigned i;
+   for ( i = 0 ; i < sizeof(btFloat) ; ++i ) {
+      buf[4 + (3 * i)] = 0;
+
+      u = 0;
+      sscanf(&buf[2 + (3 * i)], "%x", &u);
+
+      *p = (unsigned char)u;
+      ++p;
+   }
+
+   return ENamedValuesOK;
+}
+
 //=============================================================================
 // Name: NVSWriteNVS to an open file, opened in binary mode
 //       file has to be open, with EOL translation OFF (e.g. binary mode, b), file handle is not checked
@@ -4129,7 +4281,18 @@ ENamedValues CNamedValueSet::Write(std::ostream &os, unsigned level) const
          NVSWRITENVS_CASE(btUnsigned32bitInt);
          NVSWRITENVS_CASE(bt64bitInt);
          NVSWRITENVS_CASE(btUnsigned64bitInt);
-         NVSWRITENVS_CASE(btFloat);
+
+         case btFloat_t : {
+            btFloat val = 0.0;
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+            } else {
+               Get(iName, &val);
+            }
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WritebtFloat(os, val);
+            os << "\n";
+         } break;
 
          case btString_t : {
             btcString val = NULL;
@@ -4163,7 +4326,6 @@ ENamedValues CNamedValueSet::Write(std::ostream &os, unsigned level) const
          } break;
 
          case btByteArray_t : {
-//            NVSWriteArrayValue<btByte> (os, nvsToWrite, level, typeName, typeData, iName, sName);
             btByteArray val;
             btWSSize    Num = 0;
             if ( btStringKey_t == typeName ) {
@@ -4183,7 +4345,24 @@ ENamedValues CNamedValueSet::Write(std::ostream &os, unsigned level) const
          NVSWRITENVS_ARRAY_CASE(btUnsigned32bitInt);
          NVSWRITENVS_ARRAY_CASE(bt64bitInt);
          NVSWRITENVS_ARRAY_CASE(btUnsigned64bitInt);
-         NVSWRITENVS_ARRAY_CASE(btFloat);
+
+         case btFloatArray_t : {
+            btFloat *val = NULL;
+            btWSSize Num = 0;
+            if ( btStringKey_t == typeName ) {
+               Get(sName, &val);
+               GetSize(sName, &Num);
+            } else {
+               Get(iName, &val);
+               GetSize(iName, &Num);
+            }
+            CNamedValueSet::WriteUnsigned(os, typeData, level+1);
+            CNamedValueSet::WriteUnsigned(os, Num, 0);
+            while ( Num-- ) {
+               CNamedValueSet::WritebtFloat(os, *val++);
+            }
+            os << "\n";
+         } break;
 
          case btObjectType_t : {      // Pointer, could be 32 or 64 bit
             btObjectType val = NULL;
@@ -4407,7 +4586,20 @@ case __type##Array_t : {                                                        
          NVSREADNVS_SINGLE(btUnsigned32bitInt);
          NVSREADNVS_SINGLE(bt64bitInt);
          NVSREADNVS_SINGLE(btUnsigned64bitInt);
-         NVSREADNVS_SINGLE(btFloat);
+
+         case btFloat_t : {
+            btFloat val = 0.0;
+            ENamedValues res = CNamedValueSet::ReadbtFloat(is, &val);
+            if ( ENamedValuesOK != res ) {
+               return CNamedValueSet::ReadNVSError(sName, res);
+            }
+            is.ignore(1, '\n');
+            if ( btStringKey_t == typeName ) {
+               Add(sName, val);
+            } else {
+               Add(iName, val);
+            }
+         } break;
 
          case btString_t : {              // Read Data
             btString val = CNamedValueSet::ReadString(is);
@@ -4458,7 +4650,26 @@ case __type##Array_t : {                                                        
          NVSREADNVS_STREAM_ARRAY(btUnsigned32bitInt);
          NVSREADNVS_STREAM_ARRAY(bt64bitInt);
          NVSREADNVS_STREAM_ARRAY(btUnsigned64bitInt);
-         NVSREADNVS_STREAM_ARRAY(btFloat);
+
+         case btFloatArray_t : {
+            btFloatArray  val, p;
+            btUnsignedInt i;
+            btUnsignedInt Num = 0;
+            if ( !CNamedValueSet::ReadUnsigned(is, &Num) ) { /* read number of elements */
+               return CNamedValueSet::ReadNVSError(sName, ENamedValuesInternalError_UnexpectedEndOfFile);
+            }
+            if ( 0 == Num ) { /* crazy value, but possible, end now */
+               break;
+            }
+            val = new btFloat[Num];
+            i = Num;
+            p = val;
+            while ( is && i-- ) { /* read the array */
+               CNamedValueSet::ReadbtFloat(is, p++);
+            }
+            NVS_ADD_ARRAY(val, Num);
+            delete[] val;
+         } break;
 
          case btObjectType_t : {             // Pointer, could be 32 or 64 bit
             btObjectType       val = NULL;

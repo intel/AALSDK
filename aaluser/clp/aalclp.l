@@ -158,7 +158,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
 
 <INITIAL><<EOF>> yyterminate(); /* success */
 
-<INITIAL>.                                               {
+<INITIAL>(?s:.)                                          {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -194,7 +194,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<DASH>.                                                  {
+<DASH>(?s:.)                                             {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -219,7 +219,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXSHORTOPT>.                                           {
+<NIXSHORTOPT>(?s:.)                                      {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -255,7 +255,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXSHORTOPTWS>.                                         {
+<NIXSHORTOPTWS>(?s:.)                                    {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -290,7 +290,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXSHORTOPTSEQ>.                                        {
+<NIXSHORTOPTSEQ>(?s:.)                                   {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -360,7 +360,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXSHORTOPTSEQWS>.                                      {
+<NIXSHORTOPTSEQWS>(?s:.)                                 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -396,7 +396,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<DASHDASH>.                                              {
+<DASHDASH>(?s:.)                                         {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -424,7 +424,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXLONGOPT>.                                            {
+<NIXLONGOPT>(?s:.)                                       {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -460,7 +460,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NIXLONGOPTWS>.                                          {
+<NIXLONGOPTWS>(?s:.)                                     {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
@@ -490,7 +490,7 @@ PRINT_MINUS_WS_EQU   [[:print:]]{-}[[:space:]=]
                                                             my_begin(INITIAL);
                                                          }
 
-<NONOPTION>.                                             {
+<NONOPTION>(?s:.)                                        {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
                                                             }
