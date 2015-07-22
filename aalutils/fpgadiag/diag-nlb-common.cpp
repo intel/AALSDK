@@ -116,7 +116,7 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
       } else if ( 0 == strcmp("--log", option) ) {
          char *endptr = NULL;
 
-         nlbcl->LogLevel = (btInt)strtol(value, &endptr, 0);
+         nlbcl->LogLevel = (AAL::btInt)strtol(value, &endptr, 0);
          if ( endptr != value + strlen(value) ) {
         	 nlbcl->LogLevel = 0;
          } else if ( nlbcl->LogLevel < 0) {
