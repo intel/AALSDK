@@ -201,7 +201,7 @@ CValue::~CValue()
       break;
 
       case btNamedValueSet_t:
-         delete m_Val.pNVS;
+         AAL::DeleteNVS(m_Val.pNVS);
       break;
       default : break;
    }//End case
@@ -268,7 +268,7 @@ CValue & CValue::operator = (const CValue &rOther)
       } break;
       case btNamedValueSet_t : {
          if ( NULL != m_Val.pNVS ) {
-            delete m_Val.pNVS;
+            AAL::DeleteNVS(m_Val.pNVS);
          }
       } break;
    }

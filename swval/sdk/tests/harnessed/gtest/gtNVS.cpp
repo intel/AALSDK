@@ -7,7 +7,6 @@
 #include "aalsdk/AALNamedValueSet.h"
 
 #define NVS_IO_WORKAROUND    1
-#define NVS_HAS_FLOAT_ISSUES 1
 
 #if 0
 TEST(NVS, Redmine529)
@@ -475,12 +474,14 @@ TEST(NVS, aal0621)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CbtNumberKeySequencer : public TValueSequencer<btNumberKey>
+class CbtNumberKeySequencer : public TValueSequencer< btNumberKey, TIntCompare<btNumberKey> >
 {
 public:
    CbtNumberKeySequencer() :
-      TValueSequencer<btNumberKey>(CbtNumberKeySequencer::sm_Vals, CbtNumberKeySequencer::sm_Count)
+      TValueSequencer< btNumberKey, TIntCompare<btNumberKey> >(CbtNumberKeySequencer::sm_Vals,
+                                                               CbtNumberKeySequencer::sm_Count)
    {}
+   virtual ~CbtNumberKeySequencer() {}
 
    virtual eBasicTypes BasicType() const { return btUnsigned64bitInt_t; }
 
@@ -517,11 +518,11 @@ TEST(CbtNumberKeySequencer, verification)
 }
 #endif // 0
 
-class CbtStringKeySequencer : public TValueSequencer<btStringKey>
+class CbtStringKeySequencer : public TValueSequencer< btStringKey, TStrCompare<btStringKey> >
 {
 public:
    CbtStringKeySequencer() :
-      TValueSequencer<btStringKey>(CbtStringKeySequencer::sm_Vals, CbtStringKeySequencer::sm_Count)
+      TValueSequencer< btStringKey, TStrCompare<btStringKey> >(CbtStringKeySequencer::sm_Vals, CbtStringKeySequencer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btString_t; }
@@ -559,11 +560,11 @@ TEST(CbtStringKeySequencer, verification)
 }
 #endif // 0
 
-class CbtBoolRandomizer : public TValueRandomizer<btBool>
+class CbtBoolRandomizer : public TValueRandomizer< btBool, TIntCompare<btBool> >
 {
 public:
    CbtBoolRandomizer() :
-      TValueRandomizer<btBool>(CbtBoolRandomizer::sm_Vals, CbtBoolRandomizer::sm_Count)
+      TValueRandomizer< btBool, TIntCompare<btBool> >(CbtBoolRandomizer::sm_Vals, CbtBoolRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btBool_t; }
@@ -575,11 +576,11 @@ const btBool CbtBoolRandomizer::sm_Vals[] = { false, true };
 const btUnsigned32bitInt CbtBoolRandomizer::sm_Count =
    sizeof(CbtBoolRandomizer::sm_Vals) / sizeof(CbtBoolRandomizer::sm_Vals[0]);
 
-class CbtByteRandomizer : public TValueRandomizer<btByte>
+class CbtByteRandomizer : public TValueRandomizer< btByte, TIntCompare<btByte> >
 {
 public:
    CbtByteRandomizer() :
-      TValueRandomizer<btByte>(CbtByteRandomizer::sm_Vals, CbtByteRandomizer::sm_Count)
+      TValueRandomizer< btByte, TIntCompare<btByte> >(CbtByteRandomizer::sm_Vals, CbtByteRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btByte_t; }
@@ -597,11 +598,11 @@ const btByte CbtByteRandomizer::sm_Vals[] = {
 const btUnsigned32bitInt CbtByteRandomizer::sm_Count =
    sizeof(CbtByteRandomizer::sm_Vals) / sizeof(CbtByteRandomizer::sm_Vals[0]);
 
-class Cbt32bitIntRandomizer : public TValueRandomizer<bt32bitInt>
+class Cbt32bitIntRandomizer : public TValueRandomizer< bt32bitInt, TIntCompare<bt32bitInt> >
 {
 public:
    Cbt32bitIntRandomizer() :
-      TValueRandomizer<bt32bitInt>(Cbt32bitIntRandomizer::sm_Vals, Cbt32bitIntRandomizer::sm_Count)
+      TValueRandomizer< bt32bitInt, TIntCompare<bt32bitInt> >(Cbt32bitIntRandomizer::sm_Vals, Cbt32bitIntRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return bt32bitInt_t; }
@@ -640,13 +641,19 @@ TEST(Cbt32bitIntRandomizer, verification)
    EXPECT_EQ(v[2], r.Value());
    EXPECT_EQ(v[3], r.Value());
    EXPECT_EQ(v[4], r.Value());
+
+   unsigned i;
+   for ( i = 0 ; i < 100 ; ++i ) {
+      EXPECT_NE(v[0], r.ValueOtherThan(v[0]));
+   }
 }
 #endif // 0
-class CbtUnsigned32bitIntRandomizer : public TValueRandomizer<btUnsigned32bitInt>
+class CbtUnsigned32bitIntRandomizer : public TValueRandomizer< btUnsigned32bitInt, TIntCompare<btUnsigned32bitInt> >
 {
 public:
    CbtUnsigned32bitIntRandomizer() :
-      TValueRandomizer<btUnsigned32bitInt>(CbtUnsigned32bitIntRandomizer::sm_Vals, CbtUnsigned32bitIntRandomizer::sm_Count)
+      TValueRandomizer< btUnsigned32bitInt, TIntCompare<btUnsigned32bitInt> >(CbtUnsigned32bitIntRandomizer::sm_Vals,
+                                                                              CbtUnsigned32bitIntRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btUnsigned32bitInt_t; }
@@ -665,11 +672,12 @@ const btUnsigned32bitInt CbtUnsigned32bitIntRandomizer::sm_Count =
    sizeof(CbtUnsigned32bitIntRandomizer::sm_Vals) / sizeof(CbtUnsigned32bitIntRandomizer::sm_Vals[0]);
 
 
-class Cbt64bitIntRandomizer : public TValueRandomizer<bt64bitInt>
+class Cbt64bitIntRandomizer : public TValueRandomizer< bt64bitInt, TIntCompare<bt64bitInt> >
 {
 public:
    Cbt64bitIntRandomizer() :
-      TValueRandomizer<bt64bitInt>(Cbt64bitIntRandomizer::sm_Vals, Cbt64bitIntRandomizer::sm_Count)
+      TValueRandomizer< bt64bitInt, TIntCompare<bt64bitInt> >(Cbt64bitIntRandomizer::sm_Vals,
+                                                              Cbt64bitIntRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return bt64bitInt_t; }
@@ -687,11 +695,12 @@ const bt64bitInt Cbt64bitIntRandomizer::sm_Vals[] = {
 const btUnsigned64bitInt Cbt64bitIntRandomizer::sm_Count =
    sizeof(Cbt64bitIntRandomizer::sm_Vals) / sizeof(Cbt64bitIntRandomizer::sm_Vals[0]);
 
-class CbtUnsigned64bitIntRandomizer : public TValueRandomizer<btUnsigned64bitInt>
+class CbtUnsigned64bitIntRandomizer : public TValueRandomizer< btUnsigned64bitInt, TIntCompare<btUnsigned64bitInt> >
 {
 public:
    CbtUnsigned64bitIntRandomizer() :
-      TValueRandomizer<btUnsigned64bitInt>(CbtUnsigned64bitIntRandomizer::sm_Vals, CbtUnsigned64bitIntRandomizer::sm_Count)
+      TValueRandomizer< btUnsigned64bitInt, TIntCompare<btUnsigned64bitInt> >(CbtUnsigned64bitIntRandomizer::sm_Vals,
+                                                                              CbtUnsigned64bitIntRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btUnsigned64bitInt_t; }
@@ -710,11 +719,12 @@ const btUnsigned64bitInt CbtUnsigned64bitIntRandomizer::sm_Count =
    sizeof(CbtUnsigned64bitIntRandomizer::sm_Vals) / sizeof(CbtUnsigned64bitIntRandomizer::sm_Vals[0]);
 
 
-class CbtFloatRandomizer : public TValueRandomizer<btFloat>
+class CbtFloatRandomizer : public TValueRandomizer< btFloat, TFltCompare<btFloat> >
 {
 public:
    CbtFloatRandomizer() :
-      TValueRandomizer<btFloat>(CbtFloatRandomizer::sm_Vals, CbtFloatRandomizer::sm_Count)
+      TValueRandomizer< btFloat, TFltCompare<btFloat> >(CbtFloatRandomizer::sm_Vals,
+                                                        CbtFloatRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btFloat_t; }
@@ -734,11 +744,12 @@ const btUnsigned32bitInt CbtFloatRandomizer::sm_Count =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CbtcStringRandomizer : public TValueRandomizer<btcString>
+class CbtcStringRandomizer : public TValueRandomizer< btcString, TStrCompare<btcString> >
 {
 public:
    CbtcStringRandomizer() :
-      TValueRandomizer<btcString>(CbtcStringRandomizer::sm_Vals, CbtcStringRandomizer::sm_Count)
+      TValueRandomizer< btcString, TStrCompare<btcString> >(CbtcStringRandomizer::sm_Vals,
+                                                            CbtcStringRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btString_t; }
@@ -747,7 +758,6 @@ public:
    static const btUnsigned32bitInt sm_Count;
 };
 
-#if 1
 const btcString CbtcStringRandomizer::sm_Vals[] = {
    "a",
    "b",
@@ -755,26 +765,16 @@ const btcString CbtcStringRandomizer::sm_Vals[] = {
    "d",
    "e"
 };
-#else
-//   NULL,
-const btcString CbtcStringRandomizer::sm_Vals[] = {
-   "a",
-"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
-"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
-"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
-"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"
-};
-#endif
 const btUnsigned32bitInt CbtcStringRandomizer::sm_Count =
    sizeof(CbtcStringRandomizer::sm_Vals) / sizeof(CbtcStringRandomizer::sm_Vals[0]);
 
 
-class CbtcStringRandomizer_WithZeroLengthStrings : public TValueRandomizer<btcString>
+class CbtcStringRandomizer_WithZeroLengthStrings : public TValueRandomizer< btcString, TStrCompare<btcString> >
 {
 public:
    CbtcStringRandomizer_WithZeroLengthStrings() :
-      TValueRandomizer<btcString>(CbtcStringRandomizer_WithZeroLengthStrings::sm_Vals,
-                                  CbtcStringRandomizer_WithZeroLengthStrings::sm_Count)
+      TValueRandomizer< btcString, TStrCompare<btcString> >(CbtcStringRandomizer_WithZeroLengthStrings::sm_Vals,
+                                                            CbtcStringRandomizer_WithZeroLengthStrings::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btString_t; }
@@ -794,12 +794,12 @@ const btUnsigned32bitInt CbtcStringRandomizer_WithZeroLengthStrings::sm_Count =
 
 
 
-class CbtcStringRandomizer_WithLongStrings : public TValueRandomizer<btcString>
+class CbtcStringRandomizer_WithLongStrings : public TValueRandomizer< btcString, TStrCompare<btcString> >
 {
 public:
    CbtcStringRandomizer_WithLongStrings() :
-      TValueRandomizer<btcString>(CbtcStringRandomizer_WithLongStrings::sm_Vals,
-                                  CbtcStringRandomizer_WithLongStrings::sm_Count)
+      TValueRandomizer< btcString, TStrCompare<btcString> >(CbtcStringRandomizer_WithLongStrings::sm_Vals,
+                                                            CbtcStringRandomizer_WithLongStrings::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btString_t; }
@@ -833,12 +833,42 @@ const btcString CbtcStringRandomizer_WithLongStrings::sm_Vals[] = {
 const btUnsigned32bitInt CbtcStringRandomizer_WithLongStrings::sm_Count =
    sizeof(CbtcStringRandomizer_WithLongStrings::sm_Vals) / sizeof(CbtcStringRandomizer_WithLongStrings::sm_Vals[0]);
 
+#if 0
+TEST(CbtcStringRandomizer_WithLongStrings, verification)
+{
+   CbtcStringRandomizer_WithLongStrings r;
 
-class CbtObjectTypeRandomizer : public TValueRandomizer<btObjectType>
+   btcString v[5];
+
+   v[0] = r.Value();
+
+   r.Snapshot();
+
+   v[1] = r.Value();
+   v[2] = r.Value();
+   v[3] = r.Value();
+   v[4] = r.Value();
+
+   r.Replay();
+
+   EXPECT_STREQ(v[1], r.Value());
+   EXPECT_STREQ(v[2], r.Value());
+   EXPECT_STREQ(v[3], r.Value());
+   EXPECT_STREQ(v[4], r.Value());
+
+   unsigned i;
+   for ( i = 0 ; i < 100 ; ++i ) {
+      EXPECT_STRNE(v[0], r.ValueOtherThan(v[0]));
+   }
+}
+#endif // 0
+
+class CbtObjectTypeRandomizer : public TValueRandomizer< btObjectType, TIntCompare<btObjectType> >
 {
 public:
    CbtObjectTypeRandomizer() :
-      TValueRandomizer<btObjectType>(CbtObjectTypeRandomizer::sm_Vals, CbtObjectTypeRandomizer::sm_Count)
+      TValueRandomizer< btObjectType, TIntCompare<btObjectType> >(CbtObjectTypeRandomizer::sm_Vals,
+                                                                  CbtObjectTypeRandomizer::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btObjectType_t; }
@@ -891,6 +921,16 @@ public:
          case 3 : return Three();
          case 4 : return Four();
       }
+   }
+
+   const INamedValueSet * ValueOtherThan(const INamedValueSet *nvs)
+   {
+      const INamedValueSet *p;
+      do
+      {
+         p = Value();
+      }while ( p->operator == (*nvs) );
+      return p;
    }
 
    btUnsigned32bitInt Count() const { return m_Count; }
@@ -973,11 +1013,9 @@ INamedValueSet * CNVSRandomizer::One()
    btUnsigned64bitInt u64 = 0;
    EXPECT_EQ(ENamedValuesOK, nvs->Add(iname, u64));
 
-#if !NVS_HAS_FLOAT_ISSUES
    iname = 6;
    btFloat f = 3.14;
    EXPECT_EQ(ENamedValuesOK, nvs->Add(iname, f));
-#endif // NVS_HAS_FLOAT_ISSUES
 
    iname = 7;
    btcString str = "abc";
@@ -1007,11 +1045,9 @@ INamedValueSet * CNVSRandomizer::One()
    btUnsigned64bitInt u64A[] = { 25, 75, std::numeric_limits<btUnsigned64bitInt>::max() - 1 };
    EXPECT_EQ(ENamedValuesOK, nvs->Add(iname, u64A, 3));
 
-#if !NVS_HAS_FLOAT_ISSUES
    iname = 14;
    btFloat fA[] = { 25.678, 50.4, 123.982, 43234872.97 };
    EXPECT_EQ(ENamedValuesOK, nvs->Add(iname, fA, 4));
-#endif // NVS_HAS_FLOAT_ISSUES
 
    iname = 15;
    btcString strA[] = { "A", "B", "C" };
@@ -1030,10 +1066,8 @@ INamedValueSet * CNVSRandomizer::One()
    sname = "01";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, const_cast<btStringArray>(strA), 3));
 
-#if !NVS_HAS_FLOAT_ISSUES
    sname = "02";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, fA, 4));
-#endif // NVS_HAS_FLOAT_ISSUES
 
    sname = "03";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, u64A, 3));
@@ -1056,10 +1090,8 @@ INamedValueSet * CNVSRandomizer::One()
    sname = "09";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, str));
 
-#if !NVS_HAS_FLOAT_ISSUES
    sname = "10";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, f));
-#endif // NVS_HAS_FLOAT_ISSUES
 
    sname = "11";
    EXPECT_EQ(ENamedValuesOK, nvs->Add(sname, u64));
@@ -1138,11 +1170,12 @@ INamedValueSet * CNVSRandomizer::Four()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CbtByteArrayProvider : public TArrayProvider<btByteArray>
+class CbtByteArrayProvider : public TArrayProvider< btByte, TIntCompare<btByte>, btByteArray >
 {
 public:
    CbtByteArrayProvider() :
-      TArrayProvider<btByteArray>(const_cast<const btByteArray>(CbtByteArrayProvider::sm_Array), CbtByteArrayProvider::sm_Count)
+      TArrayProvider< btByte, TIntCompare<btByte>, btByteArray >(const_cast<const btByteArray>(CbtByteArrayProvider::sm_Array),
+                                                                 CbtByteArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btByteArray_t; }
@@ -1161,11 +1194,12 @@ const btUnsigned32bitInt CbtByteArrayProvider::sm_Count =
    sizeof(CbtByteArrayProvider::sm_Array) / sizeof(CbtByteArrayProvider::sm_Array[0]);
 
 
-class Cbt32bitIntArrayProvider : public TArrayProvider<bt32bitIntArray>
+class Cbt32bitIntArrayProvider : public TArrayProvider< bt32bitInt, TIntCompare<bt32bitInt>, bt32bitIntArray >
 {
 public:
    Cbt32bitIntArrayProvider() :
-      TArrayProvider<bt32bitIntArray>(const_cast<const bt32bitIntArray>(Cbt32bitIntArrayProvider::sm_Array), Cbt32bitIntArrayProvider::sm_Count)
+      TArrayProvider< bt32bitInt, TIntCompare<bt32bitInt>, bt32bitIntArray >(const_cast<const bt32bitIntArray>(Cbt32bitIntArrayProvider::sm_Array),
+                                                                             Cbt32bitIntArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return bt32bitIntArray_t; }
@@ -1184,11 +1218,13 @@ const btUnsigned32bitInt Cbt32bitIntArrayProvider::sm_Count =
    sizeof(Cbt32bitIntArrayProvider::sm_Array) / sizeof(Cbt32bitIntArrayProvider::sm_Array[0]);
 
 
-class CbtUnsigned32bitIntArrayProvider : public TArrayProvider<btUnsigned32bitIntArray>
+class CbtUnsigned32bitIntArrayProvider : public TArrayProvider< btUnsigned32bitInt, TIntCompare<btUnsigned32bitInt>, btUnsigned32bitIntArray >
 {
 public:
    CbtUnsigned32bitIntArrayProvider() :
-      TArrayProvider<btUnsigned32bitIntArray>(const_cast<const btUnsigned32bitIntArray>(CbtUnsigned32bitIntArrayProvider::sm_Array), CbtUnsigned32bitIntArrayProvider::sm_Count)
+      TArrayProvider< btUnsigned32bitInt, TIntCompare<btUnsigned32bitInt>, btUnsigned32bitIntArray >(
+               const_cast<const btUnsigned32bitIntArray>(CbtUnsigned32bitIntArrayProvider::sm_Array),
+               CbtUnsigned32bitIntArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btUnsigned32bitIntArray_t; }
@@ -1207,11 +1243,13 @@ const btUnsigned32bitInt CbtUnsigned32bitIntArrayProvider::sm_Count =
    sizeof(CbtUnsigned32bitIntArrayProvider::sm_Array) / sizeof(CbtUnsigned32bitIntArrayProvider::sm_Array[0]);
 
 
-class Cbt64bitIntArrayProvider : public TArrayProvider<bt64bitIntArray>
+class Cbt64bitIntArrayProvider : public TArrayProvider< bt64bitInt, TIntCompare<bt64bitInt>, bt64bitIntArray >
 {
 public:
    Cbt64bitIntArrayProvider() :
-      TArrayProvider<bt64bitIntArray>(const_cast<const bt64bitIntArray>(Cbt64bitIntArrayProvider::sm_Array), Cbt64bitIntArrayProvider::sm_Count)
+      TArrayProvider< bt64bitInt, TIntCompare<bt64bitInt>, bt64bitIntArray >(
+               const_cast<const bt64bitIntArray>(Cbt64bitIntArrayProvider::sm_Array),
+               Cbt64bitIntArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return bt64bitIntArray_t; }
@@ -1230,11 +1268,13 @@ const btUnsigned32bitInt Cbt64bitIntArrayProvider::sm_Count =
    sizeof(Cbt64bitIntArrayProvider::sm_Array) / sizeof(Cbt64bitIntArrayProvider::sm_Array[0]);
 
 
-class CbtUnsigned64bitIntArrayProvider : public TArrayProvider<btUnsigned64bitIntArray>
+class CbtUnsigned64bitIntArrayProvider : public TArrayProvider< btUnsigned64bitInt, TIntCompare<btUnsigned64bitInt>, btUnsigned64bitIntArray >
 {
 public:
    CbtUnsigned64bitIntArrayProvider() :
-      TArrayProvider<btUnsigned64bitIntArray>(const_cast<const btUnsigned64bitIntArray>(CbtUnsigned64bitIntArrayProvider::sm_Array), CbtUnsigned64bitIntArrayProvider::sm_Count)
+      TArrayProvider< btUnsigned64bitInt, TIntCompare<btUnsigned64bitInt>, btUnsigned64bitIntArray >(
+               const_cast<const btUnsigned64bitIntArray>(CbtUnsigned64bitIntArrayProvider::sm_Array),
+               CbtUnsigned64bitIntArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btUnsigned64bitIntArray_t; }
@@ -1253,11 +1293,13 @@ const btUnsigned32bitInt CbtUnsigned64bitIntArrayProvider::sm_Count =
    sizeof(CbtUnsigned64bitIntArrayProvider::sm_Array) / sizeof(CbtUnsigned64bitIntArrayProvider::sm_Array[0]);
 
 
-class CbtFloatArrayProvider : public TArrayProvider<btFloatArray>
+class CbtFloatArrayProvider : public TArrayProvider< btFloat, TFltCompare<btFloat>, btFloatArray >
 {
 public:
    CbtFloatArrayProvider() :
-      TArrayProvider<btFloatArray>(const_cast<const btFloatArray>(CbtFloatArrayProvider::sm_Array), CbtFloatArrayProvider::sm_Count)
+      TArrayProvider< btFloat, TFltCompare<btFloat>, btFloatArray >(
+               const_cast<const btFloatArray>(CbtFloatArrayProvider::sm_Array),
+               CbtFloatArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btFloatArray_t; }
@@ -1279,11 +1321,13 @@ const btUnsigned32bitInt CbtFloatArrayProvider::sm_Count =
 
 
 
-class CbtStringArrayProvider : public TArrayProvider<btStringArray>
+class CbtStringArrayProvider : public TArrayProvider< btString, TStrCompare<btString>, btStringArray >
 {
 public:
    CbtStringArrayProvider() :
-      TArrayProvider<btStringArray>(const_cast<const btStringArray>(CbtStringArrayProvider::sm_Array), CbtStringArrayProvider::sm_Count)
+      TArrayProvider< btString, TStrCompare<btString>, btStringArray >(
+               const_cast<const btStringArray>(CbtStringArrayProvider::sm_Array),
+               CbtStringArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btStringArray_t; }
@@ -1302,11 +1346,12 @@ const btUnsigned32bitInt CbtStringArrayProvider::sm_Count =
    sizeof(CbtStringArrayProvider::sm_Array) / sizeof(CbtStringArrayProvider::sm_Array[0]);
 
 
-class CbtStringArrayProvider_WithZeroLengthStrings : public TArrayProvider<btStringArray>
+class CbtStringArrayProvider_WithZeroLengthStrings : public TArrayProvider< btString, TStrCompare<btString>, btStringArray >
 {
 public:
    CbtStringArrayProvider_WithZeroLengthStrings() :
-      TArrayProvider<btStringArray>(const_cast<const btStringArray>(CbtStringArrayProvider_WithZeroLengthStrings::sm_Array),
+      TArrayProvider< btString, TStrCompare<btString>, btStringArray >(
+               const_cast<const btStringArray>(CbtStringArrayProvider_WithZeroLengthStrings::sm_Array),
                                     CbtStringArrayProvider_WithZeroLengthStrings::sm_Count)
    {}
 
@@ -1326,11 +1371,12 @@ const btUnsigned32bitInt CbtStringArrayProvider_WithZeroLengthStrings::sm_Count 
    sizeof(CbtStringArrayProvider_WithZeroLengthStrings::sm_Array) / sizeof(CbtStringArrayProvider_WithZeroLengthStrings::sm_Array[0]);
 
 
-class CbtStringArrayProvider_WithLongStrings : public TArrayProvider<btStringArray>
+class CbtStringArrayProvider_WithLongStrings : public TArrayProvider< btString, TStrCompare<btString>, btStringArray >
 {
 public:
    CbtStringArrayProvider_WithLongStrings() :
-      TArrayProvider<btStringArray>(const_cast<const btStringArray>(CbtStringArrayProvider_WithLongStrings::sm_Array),
+      TArrayProvider< btString, TStrCompare<btString>, btStringArray >(
+               const_cast<const btStringArray>(CbtStringArrayProvider_WithLongStrings::sm_Array),
                                     CbtStringArrayProvider_WithLongStrings::sm_Count)
    {}
 
@@ -1369,11 +1415,13 @@ const btUnsigned32bitInt CbtStringArrayProvider_WithLongStrings::sm_Count =
 
 
 
-class CbtObjectArrayProvider : public TArrayProvider<btObjectArray>
+class CbtObjectArrayProvider : public TArrayProvider< btObjectType, TIntCompare<btObjectType>, btObjectArray >
 {
 public:
    CbtObjectArrayProvider() :
-      TArrayProvider<btObjectArray>(const_cast<const btObjectArray>(CbtObjectArrayProvider::sm_Array), CbtObjectArrayProvider::sm_Count)
+      TArrayProvider< btObjectType, TIntCompare<btObjectType>, btObjectArray >(
+               const_cast<const btObjectArray>(CbtObjectArrayProvider::sm_Array),
+               CbtObjectArrayProvider::sm_Count)
    {}
 
    virtual eBasicTypes BasicType() const { return btObjectArray_t; }
@@ -1393,7 +1441,7 @@ const btUnsigned32bitInt CbtObjectArrayProvider::sm_Count =
 
 
 
-template <typename V, typename VCmp>
+template <typename V, typename Verifier>
 class TTalksToNVS
 {
 public:
@@ -1451,8 +1499,8 @@ public:
 
       {
          SCOPED_TRACE("TTalksToNVS::Verify(btNumberKey) value");
-         VCmp vcompare;
-         vcompare.expect_eq(expect_value, value);
+         Verifier verifier;
+         verifier.expect_eq(expect_value, value);
       }
    }
    void Verify(const INamedValueSet *nvs, btUnsignedInt index, btStringKey expect_name, V expect_value)
@@ -1476,8 +1524,8 @@ public:
 
       {
          SCOPED_TRACE("TTalksToNVS::Verify(btStringKey) value");
-         VCmp vcompare;
-         vcompare.expect_eq(expect_value, value);
+         Verifier verifier;
+         verifier.expect_eq(expect_value, value);
       }
    }
 
@@ -1545,11 +1593,11 @@ public:
 
       {
          SCOPED_TRACE("TTalksToNVS::Verify(btNumberKey,array) value");
-         VCmp vcompare;
+         Verifier verifier;
 
          btUnsigned32bitInt i;
          for ( i = 0 ; i < num ; ++i ) {
-            vcompare.expect_eq(*(expect_values + i), *(values + i));
+            verifier.expect_eq(*(expect_values + i), *(values + i));
          }
       }
    }
@@ -1578,11 +1626,11 @@ public:
 
       {
          SCOPED_TRACE("TTalksToNVS::Verify(btStringKey,array) value");
-         VCmp vcompare;
+         Verifier verifier;
 
          btUnsigned32bitInt i;
          for ( i = 0 ; i < num ; ++i ) {
-            vcompare.expect_eq(*(expect_values + i), *(values + i));
+            verifier.expect_eq(*(expect_values + i), *(values + i));
          }
       }
    }
@@ -1591,7 +1639,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename V,               // Value type, btBool, btByte, etc.
-          typename VCmp,            // Value comparison object. Instantiation of TIntCmp<>, TFltCmp<>, TStrCmp<>.
+          typename Verifier,        // Value verification object. Instantiation of TIntVerifier<>, TFltVerifier<>, TStrVerifier<>.
           typename GivesValues,     // Value generator. Instantiation of TValueSequencer<>, TValueRandomizer<>.
           typename GivesNumKeys,    // btNumberKey generator. CbtNumberKeySequencer.
           typename GivesStringKeys> // btStringKey generator. CbtStringKeySequencer.
@@ -1599,7 +1647,7 @@ class TNVSTester : public IOStreamMixin< std::stringstream >,
 #ifdef NVSFileIO
                    public FILEMixin,
 #endif // NVSFileIO
-                   public TTalksToNVS< V, VCmp >
+                   public TTalksToNVS< V, Verifier >
 {
 public:
    TNVSTester()
@@ -1700,7 +1748,7 @@ public:
          name  = m_GivesNumKeys.Value();
          value = m_GivesValues.Value();
 
-         TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), name, value);
+         TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), name, value);
 
          n = 99;
          EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
@@ -1713,7 +1761,7 @@ public:
       for ( i = 0 ; i < m_iCount ; ++i ) {
          name  = m_GivesNumKeys.Value();
          value = m_GivesValues.Value();
-         TTalksToNVS< V, VCmp >::Verify(nvs, i, name, value);
+         TTalksToNVS< V, Verifier >::Verify(nvs, i, name, value);
       }
    }
    void AddGetbtStringKeyTest(INamedValueSet *nvs)
@@ -1730,7 +1778,7 @@ public:
          name  = m_GivesStrKeys.Value();
          value = m_GivesValues.Value();
 
-         TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), name, value);
+         TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), name, value);
 
          n = 99;
          EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
@@ -1743,7 +1791,7 @@ public:
       for ( i = 0 ; i < m_sCount ; ++i ) {
          name  = m_GivesStrKeys.Value();
          value = m_GivesValues.Value();
-         TTalksToNVS< V, VCmp >::Verify(nvs, i, name, value);
+         TTalksToNVS< V, Verifier >::Verify(nvs, i, name, value);
       }
    }
 
@@ -2275,6 +2323,44 @@ public:
          EXPECT_TRUE(nvs->Subset(b));
          EXPECT_TRUE(b.Subset(*nvs));
       }
+
+      EXPECT_EQ(ENamedValuesOK, nvs->Empty());
+      n = 99;
+      ASSERT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
+      ASSERT_EQ(0, n);
+
+      // Same keys, different values.
+      {
+         sB(nvs);
+         VerifysB(nvs, 0);
+
+         m_GivesStrKeys.Replay();
+         m_GivesValues.Replay();
+
+         NamedValueSet c;
+         sB(&c);
+         VerifysB(&c, 0);
+
+         EXPECT_TRUE(c == *nvs);
+         EXPECT_TRUE(c.Subset(*nvs));
+
+         m_GivesStrKeys.Replay();
+
+         btStringKey k = m_GivesStrKeys.Value();
+
+         V v;
+         EXPECT_EQ(ENamedValuesOK, c.Get(k, &v));
+
+         V w( m_GivesValues.ValueOtherThan(v) );
+
+         EXPECT_EQ(ENamedValuesOK, c.Delete(k));
+
+         EXPECT_EQ(ENamedValuesOK, c.Add(k, w));
+
+         EXPECT_FALSE(c == *nvs) << c << "\nvs.\n\n" << *nvs;
+         EXPECT_FALSE(c.Subset(*nvs));
+         EXPECT_FALSE(nvs->Subset(c));
+      }
    }
 
    void CopyConstructorTest(INamedValueSet *nvs)
@@ -2460,13 +2546,13 @@ protected:
    {
       m_GivesNumKeys.Snapshot();
       m_GivesValues.Snapshot();
-      TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), m_GivesNumKeys.Value(), m_GivesValues.Value());
+      TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), m_GivesNumKeys.Value(), m_GivesValues.Value());
    }
    void VerifyiA(const INamedValueSet *nvs, btUnsignedInt index)
    {
       m_GivesNumKeys.Replay();
       m_GivesValues.Replay();
-      TTalksToNVS< V, VCmp >::Verify(nvs, index, m_GivesNumKeys.Value(), m_GivesValues.Value());
+      TTalksToNVS< V, Verifier >::Verify(nvs, index, m_GivesNumKeys.Value(), m_GivesValues.Value());
    }
 
    // all btNumberKey's
@@ -2476,7 +2562,7 @@ protected:
       m_GivesNumKeys.Snapshot();
       m_GivesValues.Snapshot();
       for ( i = 0 ; i < m_iCount ; ++i ) {
-         TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), m_GivesNumKeys.Value(), m_GivesValues.Value());
+         TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), m_GivesNumKeys.Value(), m_GivesValues.Value());
       }
    }
    void VerifyiB(const INamedValueSet *nvs, btUnsignedInt index)
@@ -2485,7 +2571,7 @@ protected:
       m_GivesNumKeys.Replay();
       m_GivesValues.Replay();
       for ( i = 0 ; i < m_iCount ; ++i ) {
-         TTalksToNVS< V, VCmp >::Verify(nvs, i + index, m_GivesNumKeys.Value(), m_GivesValues.Value());
+         TTalksToNVS< V, Verifier >::Verify(nvs, i + index, m_GivesNumKeys.Value(), m_GivesValues.Value());
       }
    }
 
@@ -2494,13 +2580,13 @@ protected:
    {
       m_GivesStrKeys.Snapshot();
       m_GivesValues.Snapshot();
-      TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), m_GivesStrKeys.Value(), m_GivesValues.Value());
+      TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), m_GivesStrKeys.Value(), m_GivesValues.Value());
    }
    void VerifysA(const INamedValueSet *nvs, btUnsignedInt index)
    {
       m_GivesStrKeys.Replay();
       m_GivesValues.Replay();
-      TTalksToNVS< V, VCmp >::Verify(nvs, index, m_GivesStrKeys.Value(), m_GivesValues.Value());
+      TTalksToNVS< V, Verifier >::Verify(nvs, index, m_GivesStrKeys.Value(), m_GivesValues.Value());
    }
 
    // all btStringKey's
@@ -2510,7 +2596,7 @@ protected:
       m_GivesStrKeys.Snapshot();
       m_GivesValues.Snapshot();
       for ( i = 0 ; i < m_sCount ; ++i ) {
-         TTalksToNVS< V, VCmp >::Add(nvs, m_GivesValues.BasicType(), m_GivesStrKeys.Value(), m_GivesValues.Value());
+         TTalksToNVS< V, Verifier >::Add(nvs, m_GivesValues.BasicType(), m_GivesStrKeys.Value(), m_GivesValues.Value());
       }
    }
    void VerifysB(const INamedValueSet *nvs, btUnsignedInt index)
@@ -2519,13 +2605,13 @@ protected:
       m_GivesStrKeys.Replay();
       m_GivesValues.Replay();
       for ( i = 0 ; i < m_sCount ; ++i ) {
-         TTalksToNVS< V, VCmp >::Verify(nvs, i + index, m_GivesStrKeys.Value(), m_GivesValues.Value());
+         TTalksToNVS< V, Verifier >::Verify(nvs, i + index, m_GivesStrKeys.Value(), m_GivesValues.Value());
       }
    }
 };
 
 template <typename V,               // Value type, btBool, btByte, etc.
-          typename VCmp,            // Value comparison object. Instantiation of TIntCmp<>, TFltCmp<>, TStrCmp<>.
+          typename Verifier,        // Value verification object. Instantiation of TIntVerifier<>, TFltVerifier<>, TStrVerifier<>.
           typename GivesArrays,     // Array Provider. Instantiation of TArrayProvider<>.
           typename GivesNumKeys,    // btNumberKey generator. CbtNumberKeySequencer.
           typename GivesStringKeys> // btStringKey generator. CbtStringKeySequencer.
@@ -2533,7 +2619,7 @@ class TArrayNVSTester : public IOStreamMixin< std::stringstream >,
 #ifdef NVSFileIO
                         public FILEMixin,
 #endif // NVSFileIO
-                        public TTalksToNVS< V, VCmp >
+                        public TTalksToNVS< V, Verifier >
 {
 public:
    TArrayNVSTester()
@@ -2632,11 +2718,11 @@ public:
       for ( i = 0 ; i < m_iCount ; ++i ) {
          name  = m_GivesNumKeys.Value();
 
-         TTalksToNVS< V, VCmp >::Add(nvs,
-                                     m_GivesArrays.BasicType(),
-                                     name,
-                                     m_GivesArrays.Array(),
-                                     m_GivesArrays.Count());
+         TTalksToNVS< V, Verifier >::Add(nvs,
+                                         m_GivesArrays.BasicType(),
+                                         name,
+                                         m_GivesArrays.Array(),
+                                         m_GivesArrays.Count());
 
          n = 99;
          EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
@@ -2648,11 +2734,11 @@ public:
       for ( i = 0 ; i < m_iCount ; ++i ) {
          name  = m_GivesNumKeys.Value();
 
-         TTalksToNVS< V, VCmp >::Verify(nvs,
-                                        i,
-                                        name,
-                                        m_GivesArrays.Array(),
-                                        m_GivesArrays.Count());
+         TTalksToNVS< V, Verifier >::Verify(nvs,
+                                            i,
+                                            name,
+                                            m_GivesArrays.Array(),
+                                            m_GivesArrays.Count());
       }
    }
    void AddGetbtStringKeyTest(INamedValueSet *nvs)
@@ -2667,11 +2753,11 @@ public:
       for ( i = 0 ; i < m_sCount ; ++i ) {
          name  = m_GivesStrKeys.Value();
 
-         TTalksToNVS< V, VCmp >::Add(nvs,
-                                     m_GivesArrays.BasicType(),
-                                     name,
-                                     m_GivesArrays.Array(),
-                                     m_GivesArrays.Count());
+         TTalksToNVS< V, Verifier >::Add(nvs,
+                                         m_GivesArrays.BasicType(),
+                                         name,
+                                         m_GivesArrays.Array(),
+                                         m_GivesArrays.Count());
 
          n = 99;
          EXPECT_EQ(ENamedValuesOK, nvs->GetNumNames(&n));
@@ -2683,11 +2769,11 @@ public:
       for ( i = 0 ; i < m_sCount ; ++i ) {
          name  = m_GivesStrKeys.Value();
 
-         TTalksToNVS< V, VCmp >::Verify(nvs,
-                                        i,
-                                        name,
-                                        m_GivesArrays.Array(),
-                                        m_GivesArrays.Count());
+         TTalksToNVS< V, Verifier >::Verify(nvs,
+                                            i,
+                                            name,
+                                            m_GivesArrays.Array(),
+                                            m_GivesArrays.Count());
       }
    }
 
@@ -2949,6 +3035,27 @@ public:
 
       EXPECT_TRUE(nvs->Subset(a));
       EXPECT_TRUE(a.Subset(*nvs));
+
+
+      // Same keys, different content.
+      m_GivesStrKeys.Replay();
+      btStringKey k = m_GivesStrKeys.Value();
+
+      V *v = NULL;
+      ASSERT_EQ(ENamedValuesOK, a.Get(k, &v));
+      btWSSize sz = 0;
+      ASSERT_EQ(ENamedValuesOK, a.GetSize(k, &sz));
+
+      if ( sz > 1 ) {
+         V save(v[0]);
+         v[0] = m_GivesArrays.ValueOtherThan(save);
+
+         EXPECT_FALSE(a == *nvs);
+         EXPECT_FALSE(a.Subset(*nvs));
+         EXPECT_FALSE(nvs->Subset(a));
+
+         v[0] = save;
+      }
    }
 
    void CopyConstructorTest(INamedValueSet *nvs)
@@ -3069,40 +3176,40 @@ protected:
    void iA(INamedValueSet *nvs)
    {
       m_GivesNumKeys.Snapshot();
-      TTalksToNVS< V, VCmp >::Add(nvs,
-                                  m_GivesArrays.BasicType(),
-                                  m_GivesNumKeys.Value(),
-                                  m_GivesArrays.Array(),
-                                  m_GivesArrays.Count());
+      TTalksToNVS< V, Verifier >::Add(nvs,
+                                      m_GivesArrays.BasicType(),
+                                      m_GivesNumKeys.Value(),
+                                      m_GivesArrays.Array(),
+                                      m_GivesArrays.Count());
    }
    void VerifyiA(const INamedValueSet *nvs, btUnsignedInt index)
    {
       m_GivesNumKeys.Replay();
-      TTalksToNVS< V, VCmp >::Verify(nvs,
-                                     index,
-                                     m_GivesNumKeys.Value(),
-                                     m_GivesArrays.Array(),
-                                     m_GivesArrays.Count());
+      TTalksToNVS< V, Verifier >::Verify(nvs,
+                                         index,
+                                         m_GivesNumKeys.Value(),
+                                         m_GivesArrays.Array(),
+                                         m_GivesArrays.Count());
    }
 
    // one Array, btStringKey
    void sA(INamedValueSet *nvs)
    {
       m_GivesStrKeys.Snapshot();
-      TTalksToNVS< V, VCmp >::Add(nvs,
-                                  m_GivesArrays.BasicType(),
-                                  m_GivesStrKeys.Value(),
-                                  m_GivesArrays.Array(),
-                                  m_GivesArrays.Count());
+      TTalksToNVS< V, Verifier >::Add(nvs,
+                                      m_GivesArrays.BasicType(),
+                                      m_GivesStrKeys.Value(),
+                                      m_GivesArrays.Array(),
+                                      m_GivesArrays.Count());
    }
    void VerifysA(const INamedValueSet *nvs, btUnsignedInt index)
    {
       m_GivesStrKeys.Replay();
-      TTalksToNVS< V, VCmp >::Verify(nvs,
-                                     index,
-                                     m_GivesStrKeys.Value(),
-                                     m_GivesArrays.Array(),
-                                     m_GivesArrays.Count());
+      TTalksToNVS< V, Verifier >::Verify(nvs,
+                                         index,
+                                         m_GivesStrKeys.Value(),
+                                         m_GivesArrays.Array(),
+                                         m_GivesArrays.Count());
    }
 };
 
@@ -3124,7 +3231,7 @@ TYPED_TEST_P(__fixture, __case)                                \
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btBool,
-                   TIntCmp<btBool>,
+                   TIntVerifier<btBool>,
                    CbtBoolRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btBoolNVSTester;
@@ -3192,7 +3299,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btBool_tp_0, NamedValueSet_btBoo
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btByte,
-                   TIntCmp<btByte>,
+                   TIntVerifier<btByte>,
                    CbtByteRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btByteNVSTester;
@@ -3259,7 +3366,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByte_tp_0, NamedValueSet_btByt
 
 
 typedef TArrayNVSTester<btByte,
-                        TIntCmp<btByte>,
+                        TIntVerifier<btByte>,
                         CbtByteArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btByteArrayNVSTester;
@@ -3311,7 +3418,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btByteArray_tp_0, NamedValueSet_
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<bt32bitInt,
-                   TIntCmp<bt32bitInt>,
+                   TIntVerifier<bt32bitInt>,
                    Cbt32bitIntRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> bt32bitIntNVSTester;
@@ -3378,7 +3485,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitInt_tp_0, NamedValueSet_b
 
 
 typedef TArrayNVSTester<bt32bitInt,
-                        TIntCmp<bt32bitInt>,
+                        TIntVerifier<bt32bitInt>,
                         Cbt32bitIntArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> bt32bitIntArrayNVSTester;
@@ -3430,7 +3537,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt32bitIntArray_tp_0, NamedValue
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btUnsigned32bitInt,
-                   TIntCmp<btUnsigned32bitInt>,
+                   TIntVerifier<btUnsigned32bitInt>,
                    CbtUnsigned32bitIntRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btUnsigned32bitIntNVSTester;
@@ -3497,7 +3604,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitInt_tp_0, NamedVa
 
 
 typedef TArrayNVSTester<btUnsigned32bitInt,
-                        TIntCmp<btUnsigned32bitInt>,
+                        TIntVerifier<btUnsigned32bitInt>,
                         CbtUnsigned32bitIntArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btUnsigned32bitIntArrayNVSTester;
@@ -3549,7 +3656,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned32bitIntArray_tp_0, Na
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<bt64bitInt,
-                   TIntCmp<bt64bitInt>,
+                   TIntVerifier<bt64bitInt>,
                    Cbt64bitIntRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> bt64bitIntNVSTester;
@@ -3616,7 +3723,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitInt_tp_0, NamedValueSet_b
 
 
 typedef TArrayNVSTester<bt64bitInt,
-                        TIntCmp<bt64bitInt>,
+                        TIntVerifier<bt64bitInt>,
                         Cbt64bitIntArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> bt64bitIntArrayNVSTester;
@@ -3668,7 +3775,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_bt64bitIntArray_tp_0, NamedValue
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btUnsigned64bitInt,
-                   TIntCmp<btUnsigned64bitInt>,
+                   TIntVerifier<btUnsigned64bitInt>,
                    CbtUnsigned64bitIntRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btUnsigned64bitIntNVSTester;
@@ -3735,7 +3842,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitInt_tp_0, NamedVa
 
 
 typedef TArrayNVSTester<btUnsigned64bitInt,
-                        TIntCmp<btUnsigned64bitInt>,
+                        TIntVerifier<btUnsigned64bitInt>,
                         CbtUnsigned64bitIntArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btUnsigned64bitIntArrayNVSTester;
@@ -3787,7 +3894,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btUnsigned64bitIntArray_tp_0, Na
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btFloat,
-                   TFltCmp<btFloat>,
+                   TFltVerifier<btFloat>,
                    CbtFloatRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btFloatNVSTester;
@@ -3854,7 +3961,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloat_tp_0, NamedValueSet_btFl
 
 
 typedef TArrayNVSTester<btFloat,
-                        TFltCmp<btFloat>,
+                        TFltVerifier<btFloat>,
                         CbtFloatArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btFloatArrayNVSTester;
@@ -3906,7 +4013,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btFloatArray_tp_0, NamedValueSet
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btcString,
-                   TStrCmp<btcString>,
+                   TStrVerifier<btcString>,
                    CbtcStringRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btcStringNVSTester;
@@ -3975,7 +4082,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_0, NamedValueSet_bt
 // zero-length strings
 
 typedef TNVSTester<btcString,
-                   TStrCmp<btcString>,
+                   TStrVerifier<btcString>,
                    CbtcStringRandomizer_WithZeroLengthStrings,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btcStringNVSTester_ZeroLengthStrings;
@@ -4044,7 +4151,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_1, NamedValueSet_bt
 // very long strings
 
 typedef TNVSTester<btcString,
-                   TStrCmp<btcString>,
+                   TStrVerifier<btcString>,
                    CbtcStringRandomizer_WithLongStrings,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btcStringNVSTester_LongStrings;
@@ -4113,7 +4220,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btcString_tp_2, NamedValueSet_bt
 
 
 typedef TArrayNVSTester<btString,
-                        TStrCmp<btString>,
+                        TStrVerifier<btString>,
                         CbtStringArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btStringArrayNVSTester;
@@ -4166,7 +4273,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_0, NamedValueSe
 // zero-length strings in array
 
 typedef TArrayNVSTester<btString,
-                        TStrCmp<btString>,
+                        TStrVerifier<btString>,
                         CbtStringArrayProvider_WithZeroLengthStrings,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btStringArrayNVSTester_ZeroLengthStrings;
@@ -4219,7 +4326,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_1, NamedValueSe
 // very long strings in array
 
 typedef TArrayNVSTester<btString,
-                        TStrCmp<btString>,
+                        TStrVerifier<btString>,
                         CbtStringArrayProvider_WithLongStrings,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btStringArrayNVSTester_LongStrings;
@@ -4271,7 +4378,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btStringArray_tp_2, NamedValueSe
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<btObjectType,
-                   TIntCmp<btObjectType>,
+                   TIntVerifier<btObjectType>,
                    CbtObjectTypeRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> btObjectTypeNVSTester;
@@ -4338,7 +4445,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectType_tp_0, NamedValueSet
 
 
 typedef TArrayNVSTester<btObjectType,
-                        TIntCmp<btObjectType>,
+                        TIntVerifier<btObjectType>,
                         CbtObjectArrayProvider,
                         CbtNumberKeySequencer,
                         CbtStringKeySequencer> btObjectArrayNVSTester;
@@ -4390,7 +4497,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_btObjectArray_tp_0, NamedValueSe
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef TNVSTester<const INamedValueSet *,
-                   NVSCmp,
+                   NVSVerifier,
                    CNVSRandomizer,
                    CbtNumberKeySequencer,
                    CbtStringKeySequencer> NestedNVSTester;

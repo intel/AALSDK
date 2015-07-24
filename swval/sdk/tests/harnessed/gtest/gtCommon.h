@@ -146,45 +146,48 @@ X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
    return res;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename I>
-class TIntCmp
+class TIntVerifier
 {
 public:
-   TIntCmp() {}
+   TIntVerifier() {}
    void expect_eq(I a, I b) { EXPECT_EQ(a, b); }
    void expect_ne(I a, I b) { EXPECT_NE(a, b); }
 };
 
 template <typename F>
-class TFltCmp
+class TFltVerifier
 {
 public:
-   TFltCmp() {}
+   TFltVerifier() {}
    void expect_eq(F a, F b) { FAIL(); }
    void expect_ne(F a, F b) { EXPECT_NE(a, b); }
 };
 
+// specialization for btFloat.
 template <>
-class TFltCmp<btFloat>
+class TFltVerifier<btFloat>
 {
 public:
-   TFltCmp() {}
+   TFltVerifier() {}
    void expect_eq(btFloat a, btFloat b) { EXPECT_FLOAT_EQ(a, b); }
 };
 
 template <typename S>
-class TStrCmp
+class TStrVerifier
 {
 public:
-   TStrCmp() {}
+   TStrVerifier() {}
    void expect_eq(S a, S b) { EXPECT_STREQ(a, b); }
    void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
 };
 
-class NVSCmp
+class NVSVerifier
 {
 public:
-   NVSCmp() {}
+   NVSVerifier() {}
    void expect_eq(const INamedValueSet *a, const INamedValueSet *b)
    {
       EXPECT_TRUE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
@@ -197,7 +200,40 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename X>
+template <typename I>
+class TIntCompare
+{
+public:
+   TIntCompare() {}
+   bool equal(I a, I b) { return a == b; }
+};
+
+template <typename F>
+class TFltCompare
+{
+public:
+   TFltCompare() {}
+   bool equal(F a, F b) { return a == b; }
+};
+
+template <typename S>
+class TStrCompare
+{
+public:
+   TStrCompare() {}
+   bool equal(S a, S b) { return (0 == ::strcmp(a, b)); }
+};
+
+class NVSCompare
+{
+public:
+   NVSCompare() {}
+   bool equal(const INamedValueSet *a, const INamedValueSet *b) { return a->operator == (*b); }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X, typename Compare>
 class TValueSequencer
 {
 public:
@@ -207,6 +243,7 @@ public:
       m_i(0),
       m_Savei(0)
    {}
+   virtual ~TValueSequencer() {}
 
    void Snapshot() { m_Savei = m_i; }
    void Replay()   { m_i = m_Savei; }
@@ -215,6 +252,18 @@ public:
    {
       btUnsigned32bitInt i = m_i;
       m_i = (m_i + 1) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   const X & ValueOtherThan(const X &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i;
+      do
+      {
+         i = m_i;
+         m_i = (m_i + 1) % m_Count;
+      }while ( c.equal(*(m_pValues + i), x) );
       return *(m_pValues + i);
    }
 
@@ -233,7 +282,7 @@ protected:
    btUnsigned32bitInt       m_Savei;
 };
 
-template <typename X>
+template <typename X, typename Compare>
 class TValueRandomizer
 {
 public:
@@ -243,6 +292,7 @@ public:
       m_Seed(0),
       m_SaveSeed(0)
    {}
+   virtual ~TValueRandomizer() {}
 
    void Snapshot() { m_SaveSeed = m_Seed;     }
    void Replay()   { m_Seed     = m_SaveSeed; }
@@ -250,6 +300,17 @@ public:
    const X & Value()
    {
       btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   const X & ValueOtherThan(const X &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i;
+      do
+      {
+         i = ::GetRand(&m_Seed) % m_Count;
+      }while ( c.equal(*(m_pValues + i), x) );
       return *(m_pValues + i);
    }
 
@@ -273,23 +334,35 @@ protected:
    btUnsigned32bitInt       m_SaveSeed;
 };
 
-template <typename X>
+template <typename ElemT, typename Compare, typename ArrT>
 class TArrayProvider
 {
 public:
-   TArrayProvider(const X pValues, btUnsigned32bitInt Count) :
+   TArrayProvider(const ArrT pValues, btUnsigned32bitInt Count) :
       m_pValues(pValues),
       m_Count(Count)
    {}
+   virtual ~TArrayProvider() {}
 
-                   const X Array() const { return m_pValues; }
+                const ArrT Array() const { return m_pValues; }
         btUnsigned32bitInt Count() const { return m_Count;   }
    virtual eBasicTypes BasicType() const = 0;
+
+   const ElemT & ValueOtherThan(const ElemT &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i = m_Count - 1;
+      do
+      {
+         i = (i + 1) % m_Count;
+      }while( c.equal(*(m_pValues + i), x) );
+      return *(m_pValues + i);
+   }
 
 protected:
    TArrayProvider() {}
 
-   const X                  m_pValues;
+   const ArrT               m_pValues;
    const btUnsigned32bitInt m_Count;
 };
 
