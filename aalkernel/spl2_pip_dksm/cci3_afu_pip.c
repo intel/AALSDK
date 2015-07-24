@@ -154,7 +154,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error = uid_errnumInvalidRequest;
 
-   PINFO("In SPL2 AFU message handler, AFUCommand().\n");
+   PINFO("In CCI3 AFU message handler, AFUCommand().\n");
 
    // Perform some basic checks while assigning the pdev
    if ( NULL == sessp ) {
@@ -204,6 +204,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          struct spl2req *preq = (struct spl2req *)p_localpayload;
 
          if ( !spl2_dev_allow_map_csr_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
             pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
                                                              0,
                                                              (btPhysAddr)NULL,
@@ -223,6 +224,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
             //------------------------------------------------------------
             if ( ( WSID_CSRMAP_WRITEAREA != preq->ahmreq.u.wksp.m_wsid ) &&
                  ( WSID_CSRMAP_READAREA  != preq->ahmreq.u.wksp.m_wsid ) ) {
+               PERR("Failed getCSR map Parameter\n");
                pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
@@ -250,7 +252,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                          ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
                          wsidp,
                          preq->ahmreq.u.wksp.m_wsid);
-
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",spl2_dev_phys_afu_csr(pdev), (int)spl2_dev_len_afu_csr(pdev));
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
                                  pownerSess->m_device,

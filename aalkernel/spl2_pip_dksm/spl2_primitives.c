@@ -615,7 +615,7 @@ spl2_set_afu_dsm(struct spl2_device *pdev, btCSROffset csroffset)
    memset((void*)pAFU_DSM, 0, spl2_dev_AFUDSM_size);
 
    // Actual write of AFU DSM address to SPL
-   PVERBOSE("Writing AFU DSM Physical Base Address to config space\n");
+   PVERBOSE("Writing AFU DSM Physical Base Address to config space 0x%p  phys = 0x%"  PRIx64 "\n", pAFU_DSM, virt_to_phys(pAFU_DSM));
    write_cci_csr64(pdev, csroffset, virt_to_phys(pAFU_DSM));
 
    // Wait for timepout or AFU ID to appear
@@ -626,8 +626,8 @@ spl2_set_afu_dsm(struct spl2_device *pdev, btCSROffset csroffset)
 
    ASSERT(timeout > 0);
    if ( 0 != timeout ) {
-      PVERBOSE("Read AFUID 0x%" PRIx64 " 0x%" PRIx64 " from AFU DSM's physical address 0x%p\n",
-                  pAFU_DSM->vafu2.AFU_ID[1], pAFU_DSM->vafu2.AFU_ID[0], (void*)virt_to_phys(pAFU_DSM));
+      PVERBOSE("Read AFUID 0x%" PRIx64 " 0x%" PRIx64 " from AFU DSM's  0x%p @ physical address 0x%p\n",
+                  pAFU_DSM->vafu2.AFU_ID[1], pAFU_DSM->vafu2.AFU_ID[0], (void*) pAFU_DSM, (void*)virt_to_phys(pAFU_DSM));
       return 0;
    } else {
       PVERBOSE("Timed out attempting to read AFUID.\n");
@@ -1096,6 +1096,8 @@ spl2_create_discovered_afu(struct spl2_device   *pdev,
    if ( (SPL2_SIM_AFUIDL == aaldevid_afuguidl(*pdevid)) &&
         (SPL2_SIM_AFUIDH == aaldevid_afuguidh(*pdevid)) ) {
       // Point to the MAFU PIP
+      PVERBOSE("Creating Simulated MAFU\n");
+
       ppip = spl2_MAFU_ppip_to_aalpipip(&MAFUpip);
 
       // Where to store the new aal_device
@@ -1119,6 +1121,8 @@ spl2_create_discovered_afu(struct spl2_device   *pdev,
 
       if(PCIE_FEATURE_HDR3_PROTOCOL_CCI3 == spl2_dev_protocol(pdev)){
          // Read and Write CSR is allowed.
+         PVERBOSE("Creating CCI\n");
+
          request.enableDirectAPI |= AAL_DEV_APIMAP_CSRWRITE;
          request.enableDirectAPI |= AAL_DEV_APIMAP_CSRREAD;
          spl2_dev_set_allow_map_csr_write_space(pdev);
@@ -1126,6 +1130,7 @@ spl2_create_discovered_afu(struct spl2_device   *pdev,
 
       }else{
          // For SPL Write CSR is allowed. Read CSR is not.
+         PVERBOSE("Creating SPL\n");
          request.enableDirectAPI |= AAL_DEV_APIMAP_CSRWRITE;
          request.enableDirectAPI &= ~AAL_DEV_APIMAP_CSRREAD;
          spl2_dev_set_allow_map_csr_write_space(pdev);

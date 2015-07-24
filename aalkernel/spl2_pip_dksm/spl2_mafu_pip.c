@@ -126,7 +126,23 @@ void spl2_sim_read_cci_csr(struct spl2_device *pdev, btCSROffset offset)
    if ( NULL != spl2_dev_to_simsession(pdev) ) {
       PVERBOSE("Processing by simulator application\n");
    }
+   //
+    // Process special offsets
+    switch(offset){
+       case byte_offset_CCI_CH_STAT0:
+       case byte_offset_CCI_CH_STAT1:
+          {
 
+             char       volatile *p  = ((char volatile *)spl2_dev_kvp_cci_csr(pdev)) + offset; // offset is in bytes
+             bt32bitCSR volatile *up = (bt32bitCSR volatile *)p;
+             PVERBOSE("Setting CH_STATx to 0x80000000\n");
+             *up=0x80000000;
+             break;
+          }
+
+       default:
+          break;
+    }
 }  // read_cci_csr
 
 
@@ -144,6 +160,7 @@ static void spl2_sim_write_cci_csr32(struct spl2_device *pdev,
                                      btCSROffset         offset,
                                      bt32bitCSR          value)
 {
+   static bt64bitCSR valueh = 0;
 
    // If we are attached to an application defer processing to application
    // TBD
@@ -158,6 +175,29 @@ static void spl2_sim_write_cci_csr32(struct spl2_device *pdev,
       case byte_offset_SPL_DSM_BASE:
          {
             ((struct CCIAFU_DSM *)pdev->m_SPL2DSM)->cci_afu_id = SPL2_ID;
+            break;
+         }
+      case byte_offset_CSR_AFU_DSM_BASE+4:
+      {
+         valueh = (bt64bitCSR)value << 32;
+         break;
+      }
+      case byte_offset_CSR_AFU_DSM_BASE:
+         {
+            spl2_dev_AFUDSM_type volatile *pAFU_DSM = NULL;
+            bt64bitCSR physaddr = valueh + value;
+            valueh = 0;
+
+            pAFU_DSM = (spl2_dev_AFUDSM_type *)phys_to_virt(physaddr);
+            // Set DSM and set the AFUID
+
+            pAFU_DSM->vafu2.AFU_ID[1] = 0xC000C9660D824272L;
+            pAFU_DSM->vafu2.AFU_ID[0] = 0x9AEFFE5F84570612L;
+            PVERBOSE("Setting Simulated DSM @ 0x%p [phys 0x%" PRIx64 "] and setting AFUID to 0x%" PRIx64 " 0x%" PRIx64 "\n",
+                                                                                       pAFU_DSM,
+                                                                                       physaddr,
+                                                                                       pAFU_DSM->vafu2.AFU_ID[1],
+                                                                                       pAFU_DSM->vafu2.AFU_ID[0]);
             break;
          }
 
