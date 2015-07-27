@@ -569,7 +569,7 @@ int main(int argc, char *argv[])
    }
 
    cout << endl
-        << "FpgaDiag - Intel QuickAssist FPGA Installation Test:" << endl;
+        << "FpgaDiag - Intel QuickAssist FPGA Diagnostics Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;

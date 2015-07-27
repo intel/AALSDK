@@ -61,7 +61,6 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    csr_type cfg = (csr_type)NLB_TEST_MODE_WRITE;
-   //m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE|NLB_TEST_MODE_CONT);
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
    {
@@ -72,6 +71,42 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
 
+   //if --prefill-hits is mentioned
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS))
+   {
+	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE);
+
+	   // Set the number of cache lines for the test
+	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls));
+
+	   // Start the test
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+	   // Wait for test completion
+	   while ( 0 == pAFUDSM->test_complete ) {
+		   SleepNano(10);
+	   }
+
+	   // Stop the device
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+	   ReadQLPCounters();
+	   SaveQLPCounters();
+
+	   //************************* DEVICE RESET ************************************//
+	   // Assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+	   // Clear the DSM status fields
+	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+	   // De-assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+	   //************************* DEVICE RESET ************************************//
+	   //Re-set the test mode
+	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   }
    m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
 
 #if   defined( __AAL_WINDOWS__ )
@@ -112,6 +147,10 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 				   ( Timer() < absolute ) ) {
 			   SleepNano(10);
 		   }
+
+		   // Stop the device
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
 		   ReadQLPCounters();
 
 		   PrintOutput(cmd, (sz / CL(1)));
@@ -119,8 +158,6 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   SaveQLPCounters();
 		   sz += CL(1);
        }
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    while ( ( 0 == pAFUDSM->test_complete ) &&
            ( MaxPoll >= 0 ) ) {

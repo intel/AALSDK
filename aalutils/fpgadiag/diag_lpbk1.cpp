@@ -48,7 +48,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
       return 1;
    }
 
-   ReadQLPCounters(); //TODO find right place
+   ReadQLPCounters();
    SaveQLPCounters();
 
    // Assert Device Reset
@@ -102,6 +102,9 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		  SleepMicro(100);
 	   }
 
+	   // Stop the device
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
 	   ReadQLPCounters();
 
 	   PrintOutput(cmd, (sz / CL(1)));
@@ -111,8 +114,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    }
 
 
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    //ReadQLPCounters();
