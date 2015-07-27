@@ -99,6 +99,10 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 			   SleepNano(10);
 		   }
+
+		   // Stop the device
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
 		   ReadQLPCounters();
 
 		   PrintOutput(cmd, (sz / CL(1)));
@@ -106,8 +110,6 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   SaveQLPCounters();
 		   sz += CL(1);
        }
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    while ( ( 0 == pAFUDSM->test_complete ) &&
            ( MaxPoll >= 0 ) ) {

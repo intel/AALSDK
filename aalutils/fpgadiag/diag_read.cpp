@@ -72,43 +72,52 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
 
    csr_type cfg = (csr_type)NLB_TEST_MODE_READ;
-
-   //if --prefill-hits is mentioned
-   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS))
-   {
-	   m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
-
-	   // Set the number of cache lines for the test
-	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls));
-
-	   // Start the test
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
-
-	   // Wait for test completion
-	   while ( 0 == pAFUDSM->test_complete ) {
-
-		   SleepNano(10);
-	   }
-
-	   // Stop the device
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-
-	   ReadQLPCounters();
-	   SaveQLPCounters();
-   }
-
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
 	  {
-	    cfg |= (csr_type)NLB_TEST_MODE_CONT;
+		cfg |= (csr_type)NLB_TEST_MODE_CONT;
 	  }
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
+	  {
+		cfg |= (csr_type)NLB_TEST_MODE_WT;
+	  }
+
+   //if --prefill-hits is mentioned
+    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS))
       {
-   	   cfg |= (csr_type)NLB_TEST_MODE_WT;
+   	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
+
+   	   // Set the number of cache lines for the test
+   	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls));
+
+   	   // Start the test
+   	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+   	   // Wait for test completion
+   	   while ( 0 == pAFUDSM->test_complete ) {
+   		   SleepNano(10);
+   	   }
+
+   	   // Stop the device
+   	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+   	   ReadQLPCounters();
+   	   SaveQLPCounters();
+
+   	   //************************* DEVICE RESET ************************************//
+   	   // Assert Device Reset
+   	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+   	   // Clear the DSM status fields
+   	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+   	   // De-assert Device Reset
+   	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+   	   //************************* DEVICE RESET ************************************//
+   	   //Re-set the test mode
+   	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
       }
+
 
    m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
 
@@ -133,7 +142,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 #error TODO
 #elif defined( __AAL_LINUX__ )
    struct timespec ts       = cmd.timeout;
-   const Timer     absolute = Timer() + Timer(&ts);
+   Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
    while ( sz <= CL(cmd.endcls))
@@ -151,16 +160,21 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   SleepNano(10);
 	   }
+
+	   // Stop the device
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
 	   ReadQLPCounters();
 
 	   PrintOutput(cmd, (sz / CL(1)));
 
 	   SaveQLPCounters();
 	   sz += CL(1);
+	   absolute = Timer() + Timer(&ts);
       }
 
    // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+  // m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
    while ( ( 0 == pAFUDSM->test_complete ) &&
            ( MaxPoll >= 0 ) ) {
