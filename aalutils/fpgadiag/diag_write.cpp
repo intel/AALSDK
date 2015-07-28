@@ -93,17 +93,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   ReadQLPCounters();
 	   SaveQLPCounters();
 
-	   //************************* DEVICE RESET ************************************//
-	   // Assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
-	   // Clear the DSM status fields
-	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
-
-	   // De-assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
-
-	   //************************* DEVICE RESET ************************************//
 	   //Re-set the test mode
 	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    }
@@ -113,7 +103,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 #error TODO
 #elif defined( __AAL_LINUX__ )
    struct timespec ts       = cmd.timeout;
-   const Timer     absolute = Timer() + Timer(&ts);
+   Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
@@ -135,6 +125,18 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    while ( sz <= CL(cmd.endcls) )
        {
+		   //************************* DEVICE RESET ************************************//
+		   // Assert Device Reset
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+		   // Clear the DSM status fields
+		   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+		   // De-assert Device Reset
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+		   //************************* DEVICE RESET ************************************//
+
 		   // Set the number of cache lines for the test
 		   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
@@ -157,6 +159,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   SaveQLPCounters();
 		   sz += CL(1);
+		   absolute = Timer() + Timer(&ts);
        }
 
    while ( ( 0 == pAFUDSM->test_complete ) &&

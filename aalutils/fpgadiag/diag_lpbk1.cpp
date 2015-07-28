@@ -75,6 +75,14 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    {
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
+   {
+	   cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
+   {
+	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
+   }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
 
@@ -111,6 +119,15 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 	   SaveQLPCounters();
 	   sz += CL(1);
+
+	   // Assert Device Reset
+		m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+		// Clear the DSM status fields
+		::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+		// De-assert Device Reset
+		m_pCCIAFU->CSRWrite(CSR_CTL, 1);
    }
 
 
