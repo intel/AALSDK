@@ -71,14 +71,12 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PREFILL_HITS);
    } else if ( 0 == strcmp("--prefill-misses", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PREFILL_MISS);
-   } else if ( 0 == strcmp("--no-gui", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_NOGUI);
-   } else if ( 0 == strcmp("--demo", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_DEMO);
-   } else if ( 0 == strcmp("--no-hist", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_NOHIST);
-   } else if ( 0 == strcmp("--hist-data", option) ) {
-      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HISTDATA);
+   } else if ( 0 == strcmp("--rds", option) ) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDS);
+   } else if ( 0 == strcmp("--rdi", option) ) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
+   } else if ( 0 == strcmp("--rdo", option) ) {
+      flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDO);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
@@ -722,7 +720,7 @@ void MyNLBShowHelp(FILE *fp, aalclp_gcs_compliance_data *gcs) {
 
 END_C_DECLS
 
-static uint_type NLBDisplayFlags(const NLBCmdLine &cmd) throw()
+/*static uint_type NLBDisplayFlags(const NLBCmdLine &cmd) throw()
 {
    uint_type res = 0;
 
@@ -967,7 +965,7 @@ static uint_type NLBDisplayFlags(const NLBCmdLine &cmd) throw()
    }
 
    return res;
-}
+}*/
 
 // false indicates error.
 bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
@@ -1038,6 +1036,15 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       return false;
    }
 
+   // --rdi, --rds, --rdo
+
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDS) ||
+	  flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDI|NLB_CMD_FLAG_RDO) ||
+	  flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_RDS|NLB_CMD_FLAG_RDO) ) {
+	  os << "--rdi --rds and --rdo are mutually exclusive." << endl;
+	  return false;
+   }
+
    // --wt, --wb, --pwr
 
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_WB|NLB_CMD_FLAG_WT) ) {
@@ -1062,7 +1069,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       //cfg.SetWriteType(INLBVAFU::eNLBWT_WRITE_THROUGH);
    }
 
-   //TODO cfg.SetPostedWrites(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PWR));
+   // cfg.SetPostedWrites(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PWR));
 
    // --prefill-hits and --prefill-misses
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS|NLB_CMD_FLAG_PREFILL_MISS) ) {
@@ -1135,7 +1142,7 @@ do                                                            \
 	   //TODO cfg.SetFPGAClkFreqHz(cmd.clkfreq);
    }
 
-   cmd.dispflags = NLBDisplayFlags(cmd);
+   //cmd.dispflags = NLBDisplayFlags(cmd);
 
    return true;
 }
@@ -1263,11 +1270,14 @@ std::string NLBCmdLineFor(const NLBCmdLine &cmd) throw()
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_MISS) ) {
       s += " --prefill-misses";
    }
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_NOGUI) ) {
-      s += " --no-gui";
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDS) ) {
+      s += " --rds";
    }
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_DEMO) ) {
-      s += " --demo";
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI) ) {
+	  s += " --rdi";
+   }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO) ) {
+	  s += " --rdo";
    }
    return s;
 }

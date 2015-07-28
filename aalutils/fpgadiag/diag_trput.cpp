@@ -57,6 +57,14 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    {
      cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
+   {
+	cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
+   {
+    cfg |= (csr_type)NLB_TEST_MODE_RDO;
+   }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
 
@@ -78,16 +86,24 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 #error TODO
 #elif defined( __AAL_LINUX__ )
    struct timespec ts       = cmd.timeout;
-   const Timer     absolute = Timer() + Timer(&ts);
+   Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
    while ( sz <= CL(cmd.endcls) )
       {
+	   	   // Assert Device Reset
+	   	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+	   	   // Clear the DSM status fields
+	   	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+	   	   // De-assert Device Reset
+	   	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
 	   	   // Set the number of cache lines for the test
-	      m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	       m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 		   // Start the test
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
@@ -109,6 +125,7 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   SaveQLPCounters();
 		   sz += CL(1);
+		   absolute = Timer() + Timer(&ts);
        }
 
    while ( ( 0 == pAFUDSM->test_complete ) &&

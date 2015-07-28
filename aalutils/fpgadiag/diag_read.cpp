@@ -80,6 +80,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  {
 		cfg |= (csr_type)NLB_TEST_MODE_WT;
 	  }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
+   	  {
+   		cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   	  }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
+	  {
+		cfg |= (csr_type)NLB_TEST_MODE_RDO;
+	  }
 
    //if --prefill-hits is mentioned
     if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS))
@@ -103,17 +111,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    	   ReadQLPCounters();
    	   SaveQLPCounters();
 
-   	   //************************* DEVICE RESET ************************************//
-   	   // Assert Device Reset
-   	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-   	   // Clear the DSM status fields
-   	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
-
-   	   // De-assert Device Reset
-   	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
-
-   	   //************************* DEVICE RESET ************************************//
    	   //Re-set the test mode
    	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
       }
@@ -148,6 +145,18 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    while ( sz <= CL(cmd.endcls))
       {
 
+	   //************************* DEVICE RESET ************************************//
+	   // Assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+	   // Clear the DSM status fields
+	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+	   // De-assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+	   //************************* DEVICE RESET ************************************//
+
 	   // Set the number of cache lines for the test
 	      m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
@@ -171,6 +180,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   SaveQLPCounters();
 	   sz += CL(1);
 	   absolute = Timer() + Timer(&ts);
+
       }
 
    // Stop the device
