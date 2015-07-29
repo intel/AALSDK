@@ -86,7 +86,9 @@ declare -ra DRIVER_SETS=(\
 'spl' \
 'spl-pci' \
 'spl-nhm' \
-'spl-jkt'\
+'spl-jkt' \
+'cciv4' \
+'cciv4-sim' \
 )
 
 declare -r DEV_PERMS='a+rw'
@@ -362,7 +364,111 @@ declare mod_path
          fi
          printf "[ OK ]\n"
       ;; # spl-jkt (nopcie=3)
+      
+      cciv4)
+         mod="@AALBUS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
 
+         mod="@AALRMS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALRMC_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALUIDRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/cciv4_driver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # cciv4 
+      
+      cciv4-sim|cciv4_sim)
+         mod="@AALBUS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALRMS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALRMC_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALUIDRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/cciv4_driver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" sim=4 ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # cciv4-sim (sim=4)
+       
       *)
          print_help
          die "$1 is not a valid driver set."

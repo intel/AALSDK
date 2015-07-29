@@ -90,7 +90,7 @@
 #define DRV_LICENSE           "Dual BSD/GPL"
 #define DRV_COPYRIGHT         "Copyright (c) 2012-2015 Intel Corporation"
 
-#define DEVICE_BASENAME       "CCIV4_DRV"
+#define DEVICE_BASENAME       "cciv4"
 
 #define CCIV4_PCI_DRIVER_NAME "aalcciv4"
 
@@ -132,151 +132,13 @@ struct cciv4_MAFUpip
 //=============================================================================
 // Prototypes
 //=============================================================================
-int cci3_init_ccidevice(struct cciv4_device            *pspl2dev,
-                        struct aal_device_id          *paaldevid);
 
-int cciv4_init_spl3device(struct cciv4_device            *pspl2dev,
-                         struct aal_device_id          *paaldevid);
-
-int cciv4_identify_device(struct cciv4_device *pdev);
-
-int
-cciv4_nopcie_internal_probe(struct cciv4_device   *pspl2dev,
-                           struct aal_device_id *paaldevid);
-
-/// cciv4_viddid_is_supported - Determine whether the board signature encoded
-/// in @viddid (PCIe VendorID/DeviceID) is that of an SPL2 device.
-/// @viddid: PCIe encoded VendorID/DeviceID to examine.
-/// @returns: non-zero if @viddid is supported.
-static inline
-int
-cciv4_viddid_is_supported(u32 viddid)
-{
-   u16 vid   = viddid & 0xffff;
-   u16 did   = viddid >> 16;
-   int valid = 1;
-
-   valid = valid && ( PCI_VENDOR_ID_INTEL == vid );
-   valid = valid && ( ( QPI_DEVICE_ID_FPGA == did ) || ( PCI_DEVICE_ID_PCIFPGA == did ) );
-
-   return valid;
-}
-
-/// cciv4_alloc_next_afu_addr - Returns a unique AAL device address, each time called.
-struct aal_device_addr
-cciv4_alloc_next_afu_addr(void);
-
-/// cciv4_nopcie_internal_probe - Called to probe actual SPL2 devices during manual configuration.
-/// @pspl2dev: The module device to be populated.
-/// @paaldevid: The module device id to be populated.
-/// @returns: 0 on success.
-int
-cciv4_nopcie_internal_probe(struct cciv4_device   *pspl2dev,
-                           struct aal_device_id *paaldevid);
-
-int
-cci_nopcie_internal_probe(struct cciv4_device   *pspl2dev,
-                          struct aal_device_id *paaldevid);
-
-/// cciv4_sim_internal_probe - Called to probe simulated SPL2 devices during manual configuration.
-/// @pspl2dev: The module device to be populated.
-/// @paaldevid: The module device id to be populated.
-/// @returns: 0 on success.
-int
-cciv4_sim_internal_probe(struct cciv4_device   *pspl2dev,
-                        struct aal_device_id *paaldevid);
-
-/// cciv4_device_init - Called to initialize a @pspl2dev that has been successfully probed.
-/// Allocates and initializes the internal data structures for the module device.
-/// Creates an AFU device, for the given @paaldevid.
-/// Adds @pspl2dev to @pdevlist on success.
-///
-/// @pspl2dev: The module device to be initialized.
-/// @paaldevid: The module device id to be initialized.
-/// @pdevlist: (optional) The list on which @pspl2dev should be inserted on success.
-/// @returns: 0 on success.
-int
-cciv4_spl_device_init(struct cciv4_device   *pspl2dev,
-                     struct aal_device_id *paaldevid,
-                     struct list_head     *pdevlist);
-
-
-int
-cciv4_cci_device_init(struct cciv4_device   *pspl2dev,
-                     struct aal_device_id *paaldevid,
-                     struct list_head     *pdevlist);
-
-/// cciv4_create_discovered_afu - Create the AAL AFU object detected by a successful device probe.
-/// @pspl2dev: The module device for the AFU.
-/// @paaldevid: The module device id for the AFU.
-///
-/// Note: Called by @cciv4_device_init.
-///
-/// @returns: 0 on success.
-int
-cciv4_create_discovered_afu(struct cciv4_device   *pspl2dev,
-                           struct aal_device_id *paaldevid,
-                           struct aal_ipip      *pafupip);
-
-/// cciv4_device_destroy - Called to destroy a @pspl2dev.
-/// @pspl2dev: The module device to be destroyed.
-/// @returns: 0 on success.
-void
-cciv4_device_destroy(struct cciv4_device *pspl2dev);
-
-struct cciv4_session;
-
-/// cciv4_trans_setup - Claims @pspl2sess for @pspl2dev. Initializes the DSMs.
-/// @pspl2sess: The session to be claimed.
-/// @pspl2dev: The module device to acquire the session.
-/// @returns: uid_errnum_OK on success.
-uid_errnum_e
-cciv4_trans_setup(struct cciv4_session *pspl2sess,
-                 struct cciv4_device  *pspl2dev);
-
-/// cciv4_trans_start - Sets the AFU/SPL contexts. Enables the device. Initiates the transaction.
-/// @pspl2sess: The session associated with the transaction.
-/// @pspl2dev: The module device handling the transaction.
-/// @pAFUCtxwsid: Buffer structure for the AFU context.
-/// @pollrate: Device status poll rate in milliseconds.
-/// @returns: uid_errnum_OK on success.
-uid_errnum_e
-cciv4_trans_start(struct cciv4_session *pspl2sess,
-                 struct cciv4_device  *pspl2dev,
-                 struct aal_wsid     *pAFUCtxwsid,
-                 unsigned             pollrate);
-
-/// cciv4_trans_end - Disables/resets the device. Releases the session, if any.
-/// @pspl2dev: The active module device.
-void
-cciv4_trans_end(struct cciv4_device *pspl2dev);
 
 bt32bitCSR read_cci_csr(struct cciv4_device * , btCSROffset );
 void    write_cci_csr32(struct cciv4_device * , btCSROffset , bt32bitCSR );
 void    write_cci_csr64(struct cciv4_device * , btCSROffset , bt64bitCSR );
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-////////////////////                                     //////////////////////
-/////////////////                 SPL2 MACROS              ////////////////////
-////////////////////                                     //////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//=============================================================================
-//=============================================================================
 
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-////////////////////                                     //////////////////////
-/////////////////            SPL2 AFU Device            ////////////////////
-////////////////////                                     //////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//=============================================================================
-//=============================================================================
-#define SPL2_DISABLE 0
-#define SPL2_ENABLE  1
 //=============================================================================
 // Name: cciv4_device
 // Description: Structure describing a SPL2 device
@@ -389,7 +251,7 @@ struct cciv4_device {
 //                                PROTOTYPES
 //=============================================================================
 //=============================================================================
-void AFUrelease_device( struct device *pdev );
+void cciv4_release_device( struct device *pdev );
 
 extern int
 cciv4_sim_mmap(struct aaldev_ownerSession* pownerSess,

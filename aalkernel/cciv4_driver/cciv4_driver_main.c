@@ -200,11 +200,10 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 // Attribute accessors for debug
 DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-/////////////////              PCIE INTERFACES             ////////////////////
+/////////////////           AAL DRIVER INTERFACES          ////////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,35 +242,40 @@ module_init(cciv4drv_init);
 module_exit(cciv4drv_exit);
 
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////              PCIE INTERFACES             ////////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-static
-int
-cciv4_pci_probe(struct pci_dev * , const struct pci_device_id * );
-static
-void
-cciv4_pci_remove(struct pci_dev * );
+//=============================================================================
+// Prototypes
+//=============================================================================
+static int cciv4_pci_probe(struct pci_dev * , const struct pci_device_id * );
+static void cciv4_pci_remove(struct pci_dev * );
+
+static int cciv4_qpi_internal_probe(struct cciv4_device         * ,
+                                    struct aal_device_id       * ,
+                                    struct pci_dev             * ,
+                                    const struct pci_device_id * );
+
+static int cciv4_pcie_internal_probe(struct cciv4_device         * ,
+                                     struct aal_device_id       * ,
+                                     struct pci_dev             * ,
+                                     const struct pci_device_id * );
+
 
 /// cciv4_internal_probe - type of probe functions called by the module's main pci probe.
 typedef int (*cciv4_internal_probe)(struct cciv4_device         * ,
-                                   struct aal_device_id       * ,
-                                   struct pci_dev             * ,
-                                   const struct pci_device_id * );
-static
-int
-cciv4_qpi_internal_probe(struct cciv4_device         * ,
-                        struct aal_device_id       * ,
-                        struct pci_dev             * ,
-                        const struct pci_device_id * );
+                                    struct aal_device_id       * ,
+                                    struct pci_dev             * ,
+                                    const struct pci_device_id * );
 
-static
-int
-cciv4_pcie_internal_probe(struct cciv4_device         * ,
-                         struct aal_device_id       * ,
-                         struct pci_dev             * ,
-                         const struct pci_device_id * );
-
-
+///=================================================================
 /// cciv4_pci_id_tbl - identify PCI devices supported by this module
+///=================================================================
 static struct pci_device_id cciv4_pci_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, QPI_DEVICE_ID_FPGA   ), .driver_data = (kernel_ulong_t)cciv4_qpi_internal_probe  },
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCIFPGA), .driver_data = (kernel_ulong_t)cciv4_pcie_internal_probe },
@@ -310,9 +314,17 @@ static struct cciv4_pci_driver_info cciv4_pci_driver_info = {
    },
 };
 
-/// cciv4_pci_probe - Called during the device probe by PCI subsystem.
-/// @pcidev: kernel-provided device pointer.
-/// @pcidevid: kernel-provided device id pointer.
+/// cciv4_pci_probe - C
+/// @
+//=============================================================================
+// Name: cciv4_pci_probe
+// Description: Called during the device probe by PCIe subsystem.
+// Interface: public
+// Inputs: pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Outputs: 0 = success.
+// Comments:
+//=============================================================================
 static
 int
 cciv4_pci_probe(struct pci_dev             *pcidev,
@@ -329,12 +341,19 @@ cciv4_pci_probe(struct pci_dev             *pcidev,
    return res;
 }
 
-/// cciv4_pcie_internal_probe - Called during the device probe by cciv4_pci_probe
-///                            when the device id matches PCI_DEVICE_ID_PCIFPGA.
-/// @pspl2dev: module-specific device to be populated.
-/// @paaldevid: AAL device id to be populated.
-/// @pcidev: kernel-provided device pointer.
-/// @pcidevid: kernel-provided device id pointer.
+
+//=============================================================================
+// Name: cciv4_pcie_internal_probe
+// Description: Called during the device probe by cciv4_pci_probe
+//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
+// Interface: public
+// Inputs: pspl2dev - module-specific device to be populated.
+//         paaldevid - AAL device id to be populated.
+//         pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Outputs: 0 = success.
+// Comments:
+//=============================================================================
 static
 int
 cciv4_pcie_internal_probe(struct cciv4_device         *pspl2dev,
@@ -354,18 +373,26 @@ cciv4_pcie_internal_probe(struct cciv4_device         *pspl2dev,
 }
 
 
-/// cciv4_qpi_internal_probe - Called during the device probe by cciv4_pci_probe
-///                            when the device id matches QPI_DEVICE_ID_FPGA.
-/// @pspl2dev: module-specific device to be populated.
-/// @paaldevid: AAL device id to be populated.
-/// @pcidev: kernel-provided device pointer.
-/// @pcidevid: kernel-provided device id pointer.
+/// cciv4_qpi_internal_probe - C
+
+//=============================================================================
+// Name: cciv4_qpi_internal_probe
+// Description: Called during the device probe by cciv4_pci_probe
+//                  when the device id matches QPI_DEVICE_ID_FPGA.
+// Interface: public
+// Inputs: pspl2dev - module-specific device to be populated.
+//         paaldevid - AAL device id to be populated.
+//         pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Outputs: 0 = success.
+// Comments:
+//=============================================================================
 static
 int
 cciv4_qpi_internal_probe(struct cciv4_device         *pspl2dev,
-                        struct aal_device_id       *paaldevid,
-                        struct pci_dev             *pcidev,
-                        const struct pci_device_id *pcidevid)
+                         struct aal_device_id       *paaldevid,
+                         struct pci_dev             *pcidev,
+                         const struct pci_device_id *pcidevid)
 {
 
    int res =0;
@@ -379,11 +406,16 @@ cciv4_qpi_internal_probe(struct cciv4_device         *pspl2dev,
 }
 
 
-/// cciv4_pci_remove_and_rescan - Used to force a rescan of the device
-/// @index: zero based index indicating which board to remove and rescan
-///
-/// Searches through @g_device_list to find a board at the index entry in the device
-/// list and then removes it. Then a rescan on teh parent bus is issued.
+//=============================================================================
+// Name: cciv4_pci_remove_and_rescan
+// Description: Used to force a rescan of the PCIe subsystem.
+// Interface: public
+// Inputs: index - zero based index indicating which board to remove and rescan.
+// Outputs: none.
+// Comments: Searches through g_device_list to find a board at the index entry
+//            in the devicelist and then removes it. Then a rescan on the
+//            parent bus is issued.
+//=============================================================================
 static void
 cciv4_pci_remove_and_rescan(unsigned index)
 {
@@ -405,24 +437,23 @@ cciv4_pci_remove_and_rescan(unsigned index)
 
          pspl2dev = cciv4_list_to_cciv4_device(This);
 
-         // If this is
+         // If this is it
          if( 0 == cnt ) {
 
-        	struct pci_bus *parent = NULL;
-        	struct aal_device * paaldev = cciv4_dev_to_aaldev(pspl2dev);
+            struct pci_bus *parent = NULL;
+            struct aal_device * paaldev = cciv4_dev_to_aaldev(pspl2dev);
 
-        	noprobe =1;
+            noprobe =1;
 
-        	// Save device information
-       	    pcidev = cciv4_dev_pci_dev(pspl2dev);
-       	    bustype = cciv4_dev_board_type(pspl2dev);
+            // Save device information
+            pcidev = cciv4_dev_pci_dev(pspl2dev);
+            bustype = cciv4_dev_board_type(pspl2dev);
 
-       	    parent = pcidev->bus->parent;
+            parent = pcidev->bus->parent;
 
             PDEBUG("Removing the SPL2 device %p\n", pcidev);
 
             // Save the address so it can be restored
-
             rescanned_address = aaldev_devaddr(paaldev);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
@@ -431,33 +462,34 @@ cciv4_pci_remove_and_rescan(unsigned index)
 #else
             pci_stop_and_remove_bus_device(pcidev);
 #endif
-        	noprobe =0;
+            noprobe =0;
 
-        	if(NULL != parent){
-                PDEBUG("Rescanning bus\n");
-                pci_rescan_bus(parent);
-        	}
-
-
-
+            if(NULL != parent){
+                   PDEBUG("Rescanning bus\n");
+                   pci_rescan_bus(parent);
+            }
             goto DONE;
-         }
+         }// if( 0 == cnt )
          cnt--;
-      }
+      }// list_for_each_safe
 
-   }
+   }// !list_empty
    PDEBUG("No device at index %d\n", index);
 DONE:
 
    PTRACEOUT;
 }
 
-/// cciv4_pci_remove - Entry point called when a device registered with the PCIe
-///                   subsystem is being removed.
-/// @pcidev: kernel-provided device pointer.
-///
-/// Searches through @g_device_list to find any spl2dev which has a cached
-/// pointer to @pcidev and removes/destroys any found.
+//=============================================================================
+// Name: cciv4_pci_remove
+// Description: Entry point called when a device registered with the PCIe
+//              subsystem is being removed
+// Interface: public
+// Inputs: pcidev - kernel-provided device pointer.
+// Outputs: none.
+// Comments: Searches through @g_device_list to find any spl2dev which has a
+//           cached pointer to pcidev and removes/destroys any found.
+//=============================================================================
 static
 void
 cciv4_pci_remove(struct pci_dev *pcidev)
@@ -570,16 +602,17 @@ cciv4drv_init(void)
    if(driver_create_file(&cciv4_pci_driver_info.aaldriver.m_driver,&driver_attr_debug)){
        DPRINTF (AHMPIP_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
        // Unregister the driver with the bus
-       aalbus_get_bus()->unregister_driver( &cciv4_pci_driver_info.aaldriver );
-       return -EIO;
+       ret = -EIO;
+       goto ERR;
    }
 
    // Process command line arguments
    if ( 0 == sim ) {
-      return -EIO;
+      ret =  -EIO;
+      goto ERR;
 #if 0
       // Expecting real hardware. Register with PCIe subsystem and wait for OS enumeration
-      int ret =0;
+      ret =0;
 
       // Attempt to register with the kernel PCIe subsystem.
       ret = pci_register_driver(&cciv4_pci_driver_info.pcidrv);
@@ -628,18 +661,17 @@ cciv4drv_init(void)
       ret = aalbus_get_bus()->register_service_interface(&cciv4_simafu_pip_interface);
       ASSERT(ret >= 0);
       if ( ret < 0 ) {
-         aalbus_get_bus()->unregister_driver( &cciv4_pci_driver_info.aaldriver );
          PERR("Failed to register Simulated cciv4 AFU PIP service interface.\n");
-         return ret;
+         goto ERR;
       }
 
       // Enumerate and Instantiate the Simulated Devices
       ret  = cciv4_sim_discover_devices(sim, &g_device_list);
       ASSERT(0 == ret);
       if(0 >ret){
-         aalbus_get_bus()->unregister_driver( &cciv4_pci_driver_info.aaldriver );
+         PERR("Failed to create Simulated cciv4 devices.\n");
          // If cciv4_sim_discover_devices() fails it will have cleaned up.
-         return ret;
+         goto ERR;
       }
 
    }
@@ -662,18 +694,12 @@ ERR:
       cciv4_pci_driver_info.isregistered = 0;
    }
 
-   aalbus_get_bus()->unregister_driver( &cciv4_pci_driver_info.aaldriver );
+   aalbus_get_bus()->release_driver(&cciv4_pci_driver_info.aaldriver, &cciv4drv_class);
 
    PTRACEOUT_INT(ret);
    return ret;
 }
 
-/// cciv4drv_exit - Exit function when unloading the module.
-///
-/// Walks @g_device_list, destroying any device not registered with
-/// the PCIe subsystem.
-/// Unregisters the module AFU/MAFU interfaces.
-/// Unregisters the driver with the PCI subsystem, if needed.
 
 //=============================================================================
 // Name: cciv4drv_exit
@@ -738,12 +764,17 @@ cciv4drv_exit(void)
    PTRACEOUT;
 }
 
-/// AFUrelease_device - callback for notification that an AFU is being destroyed.
-/// @pdev: kernel-provided generic device structure.
-///
-/// NOTE: AALBus does the AFU destruction
+
+//=============================================================================
+// Name: cciv4_release_device
+// Description: callback for notification that an AAL Device is being destroyed.
+// Interface: public
+// Inputs: pdev: kernel-provided generic device structure.
+// Outputs: none.
+// Comments:
+//=============================================================================
 void
-AFUrelease_device(struct device *pdev)
+cciv4_release_device(struct device *pdev)
 {
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
 

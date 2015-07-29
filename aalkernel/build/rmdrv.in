@@ -151,7 +151,7 @@ rm_drv() {
    return 0
 }
 
-
+rm_drv '@CCIV4DRV_DRV_NAME@.ko' '_none_'         'AAL CCIv4 driver'
 rm_drv '@SPL2PIP_DRV_NAME@.ko'  '_none_'         'AAL System Protocol Layer 2 driver'
 rm_drv '@AALUIDRV_DRV_NAME@.ko' '/dev/aalui'     'AAL Universal Interface driver'
 rm_drv '@AALRMC_DRV_NAME@.ko'   '/dev/aalresmgr' 'AAL Resource Manager Client driver'

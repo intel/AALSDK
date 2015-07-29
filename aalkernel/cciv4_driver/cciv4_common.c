@@ -166,7 +166,7 @@ int cciv4_publish_aaldevice(struct cciv4_device * pCCIv4dev,
    //   First arg is the request describing the AAL Device to create, 2nd is a pointer
    //   to call when the AFU is released (removed from the system) and the 3rd
    //   is a pointer to the device's PIP (see above explanation).
-   pdev = aaldev_factp(pAALbus).create(&request, AFUrelease_device, pPIP);
+   pdev = aaldev_factp(pAALbus).create(&request, cciv4_release_device, pPIP);
    ASSERT(pdev);
    if ( NULL == pdev ) {
       return -ENODEV;
