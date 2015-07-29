@@ -268,7 +268,41 @@ btVirtAddr _kosal_kmalloc(__ASSERT_HERE_PROTO btWSSize size_in_bytes)
    return krnl_virt;
 }
 
+btVirtAddr _kosal_kzmalloc(__ASSERT_HERE_PROTO btWSSize size_in_bytes)
+{
+   btVirtAddr krnl_virt = NULL;
 
+   __ASSERT_HERE_IN_FN(size_in_bytes > 0);
+
+#if   defined( __AAL_LINUX__ )
+# ifdef __i386__
+   krnl_virt = __get_free_pages(GFP_KERNEL, get_order(kosal_round_up_to_page_size(size_in_bytes)));
+   if(krnl_virt){
+      memset(krnl_virt, 0 , (size_t)size_in_bytes);
+   }
+# else
+   krnl_virt = kmalloc((size_t)size_in_bytes, GFP_KERNEL);
+   if(krnl_virt){
+      memset(krnl_virt, 0 , (size_t)size_in_bytes);
+   }
+# endif // __i386__
+#elif defined( __AAL_WINDOWS__ )
+
+   krnl_virt = (btVirtAddr)MmAllocateNonCachedMemory((SIZE_T)size_in_bytes);
+   if(krnl_virt){
+      RtlZeroMemory(krnl_virt, 0 , (SIZE_T)size_in_bytes);
+   }
+#endif // OS
+
+   __ASSERT_HERE_IN_FN(NULL != krnl_virt);
+
+   PMEMORY_HERE("kosal_kzmalloc(size=%llu [0x%llx]) = 0x%" PRIxUINTPTR_T " [phys=0x%" PRIxPHYS_ADDR "]\n",
+                   size_in_bytes, size_in_bytes,
+                   __UINTPTR_T_CAST(krnl_virt),
+                   kosal_virt_to_phys(krnl_virt));
+
+   return krnl_virt;
+}
 
 void _kosal_kfree(__ASSERT_HERE_PROTO btAny krnl_virt, btWSSize size_in_bytes)
 {

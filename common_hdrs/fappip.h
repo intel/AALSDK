@@ -194,6 +194,8 @@ struct spl2req
    btTime            pollrate;
 };
 
+// Alias for now
+#define cciv4req spl2req
 
 /*
  * Used to submit a group of descriptors that constitute a single task.

@@ -83,6 +83,7 @@ AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([SPL2PIP],  [spl2pip],  [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [4],[2],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -190,12 +191,25 @@ AC_CONFIG_LINKS([spl2_pip_dksm/kbuild/buf-desc.h:spl2_pip_dksm/buf-desc.h
                  spl2_pip_dksm/kbuild/xsid.h:spl2_pip_dksm/xsid.h
                  spl2_pip_dksm/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
+AC_CONFIG_FILES([cciv4_driver/kbuild/Makefile:cciv4_driver/Kbuild.in])
+AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driver_main.c
+                 cciv4_driver/kbuild/cciv4_driver_internal.h:cciv4_driver/cciv4_driver_internal.h
+                 cciv4_driver/kbuild/cciv4_simulator.c:cciv4_driver/cciv4_simulator.c
+                 cciv4_driver/kbuild/cciv4_simulator.h:cciv4_driver/cciv4_simulator.h
+                 cciv4_driver/kbuild/cciv4_common.c:cciv4_driver/cciv4_common.c
+                 cciv4_driver/kbuild/cciv4_PIPsession.h:cciv4_driver/cciv4_PIPsession.h
+                 cciv4_driver/kbuild/cciv4_PIPsession.c:cciv4_driver/cciv4_PIPsession.c
+                 cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c      
+                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c                                                                                    
+                 cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
+
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile
                  aalresourcemgr_server/Makefile
                  aalresourcemgr_client/Makefile
                  aal_uidriver/Makefile
-                 spl2_pip_dksm/Makefile])
+                 spl2_pip_dksm/Makefile
+                 cciv4_driver/Makefile])
 
 AC_OUTPUT
 
