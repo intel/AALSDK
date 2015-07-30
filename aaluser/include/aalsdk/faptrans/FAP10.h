@@ -839,6 +839,85 @@ BEGIN_NAMESPACE(AAL)
    }; // end of class Sig_MapCSRSpace_EventHandlerObject
 
    //=============================================================================
+   // Name:          Sig_MapMMIO_Space_AFUTransaction
+   // Description:   Encapsulates the request to Map device MMIO-r or UMSG space
+   //=============================================================================
+   class FAPTRANS1_API Sig_MapMMIO_Space_AFUTransaction : public IAFUTransaction
+   {
+   public:
+      Sig_MapMMIO_Space_AFUTransaction();
+
+      btVirtAddr      GetPayloadPtr();
+      btWSSize        GetSize();
+      TransactionID * GetTranIDPtr();
+      uid_msgIDs_e    GetCommand();
+      btID            GetPIPVer();         // Return the PIP version, burned in
+      btID            GetAPIVer();         // Return the API version, burned in
+      btBool          IsOK();
+      std::string     GetError();          // Called if IsOK() fails
+
+   protected:
+      struct big
+      {
+         struct aalui_AFUmessage afuMsg;
+         struct ahm_req          ahmreq;
+      };
+      struct big                          m_big;
+      btBool                              m_bIsOK;
+      TransactionID                       m_tidEmbedded;
+      Sig_MapCSRSpace_EventHandlerObject *m_pEventHandler;
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4251)
+#endif // _MSC_VER
+      std::string                         m_ErrorString;
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif // _MSC_VER
+
+   }; // end of class Sig_MapMMIO_Space_AFUTransaction
+
+   //=============================================================================
+   // Name:          Sig_MapUMSGpace_AFUTransaction
+   // Description:   Encapsulates the request to Map device MMIO-r or UMSG space
+   //=============================================================================
+   class FAPTRANS1_API Sig_MapUMSGpace_AFUTransaction : public IAFUTransaction
+   {
+   public:
+      Sig_MapUMSGpace_AFUTransaction();
+
+      btVirtAddr      GetPayloadPtr();
+      btWSSize        GetSize();
+      TransactionID * GetTranIDPtr();
+      uid_msgIDs_e    GetCommand();
+      btID            GetPIPVer();         // Return the PIP version, burned in
+      btID            GetAPIVer();         // Return the API version, burned in
+      btBool          IsOK();
+      std::string     GetError();          // Called if IsOK() fails
+
+   protected:
+      struct big
+      {
+         struct aalui_AFUmessage afuMsg;
+         struct ahm_req          ahmreq;
+      };
+      struct big                          m_big;
+      btBool                              m_bIsOK;
+      TransactionID                       m_tidEmbedded;
+      Sig_MapCSRSpace_EventHandlerObject *m_pEventHandler;
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4251)
+#endif // _MSC_VER
+      std::string                         m_ErrorString;
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif // _MSC_VER
+
+   }; // end of class Sig_MapUMSGpace_AFUTransaction
+
+
+   //=============================================================================
    // Name:          Sig_MapCSRSpace_AFUTransaction
    // Description:   Encapsulates the request to Map device CSR signaling space
    // Constructor:   Parameter is the length of the buffer requested, in bytes

@@ -111,7 +111,6 @@ session_create(struct aaldev_ownerSession *pownerSess)
 
    kosal_mutex_init(cciv4_PIPsessionp_semaphore(pSess));
 
-
    // Save the device for this AFU. (Saved when the AFU was created)
    cciv4_PIPsessionp_to_cciv4dev(pSess) = aaldev_pip_context_to_obj(struct cciv4_device *, pSess->paaldev);
    //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cciv4_device *, pSess->paaldev);
@@ -192,7 +191,7 @@ int session_destroy(struct cciv4_PIPsession *pSess)
 int UnbindSession(struct aaldev_ownerSession *pownerSess)
 {
    struct cciv4_PIPsession *pSess = (struct cciv4_PIPsession *)pownerSess->m_PIPHandle;
-   struct cciv4_device     *pdev  = cciv4_PIPsessionp_currContext(pSess);
+   struct cciv4_device     *pdev  = cciv4_PIPsessionp_to_cciv4dev(pSess);
 
    PDEBUG("UnBinding UI Session\n");
 

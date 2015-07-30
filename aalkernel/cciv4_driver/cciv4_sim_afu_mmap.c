@@ -175,11 +175,16 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
    if ( WSM_TYPE_CSR == wsidp->m_type ) {
       void  *ptr;
       size_t size;
-
-      if ( (WSID_CSRMAP_WRITEAREA != wsidp->m_id) &&
-           (WSID_CSRMAP_READAREA  != wsidp->m_id) ) {
-        PERR("Attempt to map invalid WSID type %d\n", (int)wsidp->m_id);
-        goto ERROR;
+      switch(wsidp->m_id)
+      {
+         case WSID_CSRMAP_WRITEAREA:
+         case WSID_CSRMAP_READAREA:
+         case WSID_MAP_MMIOR:
+         case WSID_MAP_UMSG:
+            break;
+         default:
+              PERR("Attempt to map invalid WSID type %d\n", (int)wsidp->m_id);
+              goto ERROR;
       }
 
       // Verify that we can fulfill the request - we set flags at create time.
@@ -200,6 +205,8 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
          }
       }
+
+      // TO REST OF CHECKS
 
       // Map the PCIe BAR as the CSR region.
       ptr  = (void *)cciv4_dev_phys_cci_csr(pdev);

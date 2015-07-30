@@ -87,7 +87,6 @@ struct cciv4_PIPsession {
 
    // Current transaction
    stTransactionID_t              currTranID;
-   void                          *currContext;
 
    // Owner Session hold shared session instance information
    struct aaldev_ownerSession    *pownerSess;
@@ -98,7 +97,6 @@ struct cciv4_PIPsession {
 #define cciv4_PIPsessionp_to_aal_afup(s)            ((s)->paaldev)
 #define cciv4_PIPsessionp_to_ownerSession(s)        ((s)->pownerSess)
 #define cciv4_PIPsessionp_semaphore(s)              (&(s)->session_sem)
-#define cciv4_PIPsessionp_currContext(s)            ((s)->currContext)
 
 //=============================================================================
 //=============================================================================

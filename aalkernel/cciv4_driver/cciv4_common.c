@@ -186,7 +186,7 @@ int cciv4_publish_aaldevice(struct cciv4_device * pCCIv4dev,
    // The PIP uses the PIP context to get a handle to the AAL Device.
    //  The generic (i.e., base class) pointer is passed around in messages to the PIP
    //  typically through the owner session object.  .
-   aaldev_pip_context(pdev) = (void*)pdev;
+   aaldev_pip_context(pdev) = (void*)pCCIv4dev;
 
    PVERBOSE("Published CCIv4 device\n");
 

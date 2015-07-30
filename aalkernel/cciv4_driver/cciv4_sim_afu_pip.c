@@ -321,22 +321,21 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
                                                                 uid_errnumBadParameter);
-               PERR("Bad WSID on fappip_getCSRmap\n");
+               PERR("Bad WSID on fappip_getMMIORmap\n");
 
                retval = -EINVAL;
             } else {
 
                wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
                if ( NULL == wsidp ) {
-                  PERR("Could not allocate CSR workspace\n");
+                  PERR("Could not allocate MMIOR workspace\n");
                   retval = -ENOMEM;
                   /* generate a failure event back to the caller? */
                   goto ERROR;
                }
 
                wsidp->m_type = WSM_TYPE_CSR;
-               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
-                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+               PDEBUG("Getting CSR Aperature WSID %p WSID_MAP_MMIOR using id %llx .\n",
                          wsidp,
                          preq->ahmreq.u.wksp.m_wsid);
 
@@ -354,7 +353,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                  Message.m_context,
                                  uid_errnumOK);
 
-               PVERBOSE("Sending uid_wseventCSRMap Event\n");
+               PVERBOSE("Sending fappip_getMMIORmap Event\n");
 
                retval = 0;
             }
@@ -393,8 +392,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             //------------------------------------------------------------
             // Create the WSID object and add to the list for this session
             //------------------------------------------------------------
-            if ( ( WSID_CSRMAP_WRITEAREA != preq->ahmreq.u.wksp.m_wsid ) &&
-                 ( WSID_CSRMAP_READAREA  != preq->ahmreq.u.wksp.m_wsid ) ) {
+            if ( WSID_MAP_UMSG != preq->ahmreq.u.wksp.m_wsid ) {
                PERR("Failed getCSR map Parameter\n");
                pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
                                                                 0,
@@ -405,22 +403,21 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
                                                                 uid_errnumBadParameter);
-               PERR("Bad WSID on fappip_getCSRmap\n");
+               PERR("Bad WSID on fappip_getuMSGmap\n");
 
                retval = -EINVAL;
             } else {
 
                wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
                if ( NULL == wsidp ) {
-                  PERR("Could not allocate CSR workspace\n");
+                  PERR("Could not allocate UMSG workspace\n");
                   retval = -ENOMEM;
                   /* generate a failure event back to the caller? */
                   goto ERROR;
                }
 
                wsidp->m_type = WSM_TYPE_CSR;
-               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
-                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+               PDEBUG("Getting CSR Aperature WSID %p WSID_MAP_UMSG using id %llx .\n",
                          wsidp,
                          preq->ahmreq.u.wksp.m_wsid);
 
@@ -438,7 +435,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                  Message.m_context,
                                  uid_errnumOK);
 
-               PVERBOSE("Sending uid_wseventCSRMap Event\n");
+               PVERBOSE("Sending fappip_getuMSGmap Event\n");
 
                retval = 0;
             }
