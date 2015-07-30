@@ -652,7 +652,7 @@ cciv4drv_init(void)
 
       // Initialize the aal_interface
       aal_interface_init( cciv4_simafu_pip_interface,  // Interface container
-                         &CCIV4_SIMAFUpip,             // PIP Service interface (Vtable)
+                         &cciv4_simAFUpip,             // PIP Service interface (Vtable)
                           CCIV4_SIMAFUPIP_IID);        // Interface ID
 
       // Register with the service interface broker

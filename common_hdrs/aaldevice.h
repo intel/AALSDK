@@ -104,6 +104,8 @@ BEGIN_C_DECLS
 #define AAL_DEV_APIMAP_NONE     0x00000000
 #define AAL_DEV_APIMAP_CSRREAD  0x00000001
 #define AAL_DEV_APIMAP_CSRWRITE 0x00000002
+#define AAL_DEV_APIMAP_MMIOR    0x00000004
+#define AAL_DEV_APIMAP_UMSG     0x00000008
 #define AAL_DEV_APIMAP_CSRRW    ( AAL_DEV_APIMAP_CSRREAD | AAL_DEV_APIMAP_CSRWRITE )
 
 //=============================================================================

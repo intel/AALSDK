@@ -170,7 +170,7 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
 
    pvma->vm_ops = NULL;
 
-   // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the SPL2
+   // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
    // CSR region, then satisfy the request by mapping PCIe BAR 0.
    if ( WSM_TYPE_CSR == wsidp->m_type ) {
       void  *ptr;

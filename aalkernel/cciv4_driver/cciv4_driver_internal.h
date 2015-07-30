@@ -149,6 +149,8 @@ struct cciv4_device {
 #define CCIV4_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE  0x00000004
 #define CCIV4_DEV_FLAG_ALLOW_MAP_CSR_WRITE_SPACE 0x00000008
 #define CCIV4_DEV_FLAG_SIMULATED_DEV             0x00000010
+#define CCIV4_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE     0x00000020
+#define CCIV4_DEV_FLAG_ALLOW_MAP_UMSG_SPACE      0x00000040
 
    struct aal_device         *m_aaldev;         // AAL Device from which this is derived
    struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
@@ -162,6 +164,8 @@ struct cciv4_device {
    struct semaphore           m_sem;
 
    enum aal_bus_types_e       m_boardtype;
+
+   int                        m_simulated;
 
    int                        m_protocolID;
 
@@ -210,11 +214,23 @@ struct cciv4_device {
 
    #define cciv4_dev_allow_map_csr_space(pdev) ( cciv4_dev_allow_map_csr_read_space(pdev) || cciv4_dev_allow_map_csr_write_space(pdev) )
 
+   #define cciv4_dev_allow_map_mmior_space(pdev)     ((pdev)->m_flags & CCIV4_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cciv4_dev_set_allow_map_mmior_space(pdev) ((pdev)->m_flags |= CCIV4_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+   #define cciv4_dev_clr_allow_map_mmior_space(pdev) ((pdev)->m_flags &= ~CCIV4_DEV_FLAG_ALLOW_MAP_MMIOR_SPACE)
+
+   #define cciv4_dev_allow_map_umsg_space(pdev)     ((pdev)->m_flags & CCIV4_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cciv4_dev_set_allow_map_umsg_space(pdev) ((pdev)->m_flags |= CCIV4_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+   #define cciv4_dev_clr_allow_map_umsg_space(pdev) ((pdev)->m_flags &= ~CCIV4_DEV_FLAG_ALLOW_MAP_UMSG_SPACE)
+
    #define cciv4_dev_is_simulated(pdev)  ((pdev)->m_flags & CCIV4_DEV_FLAG_SIMULATED_DEV)
    #define cciv4_dev_set_simulated(pdev) ((pdev)->m_flags |= CCIV4_DEV_FLAG_SIMULATED_DEV)
    #define cciv4_dev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCIV4_DEV_FLAG_SIMULATED_DEV)
 
 #define cciv4_dev_board_type(pdev)            ((pdev)->m_boardtype)
+
+#define cciv4_set_simulated(pdev)             ((pdev)->m_simulated = 1)
+#define cciv4_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
+#define cciv4_is_simulated(pdev)             ((pdev)->m_simulated == 1)
 
 #define cciv4_dev_protocol(pdev)              ((pdev)->m_protocolID)
 
@@ -272,7 +288,9 @@ cciv4_destroy_device(struct cciv4_device* );
 extern void
 cciv4_remove_device(struct cciv4_device *);
 
-extern struct aal_ipip CCIV4_SIMAFUpip;
+extern struct aal_ipip cciv4_simAFUpip;
+extern struct aal_ipip cciv4_simMAFUpip;
+extern struct aal_ipip cciv4_simCMAFUpip;
 
 extern void
 cciv4_flush_all_wsids(struct cciv4_PIPsession *psess);

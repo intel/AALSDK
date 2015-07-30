@@ -85,6 +85,7 @@ cciv4_common.c \
 cciv4_simulator.c \
 cciv4_simulator.h \
 cciv4_sim_afu_pip.c \
+cciv4_sim_mafu_pip.c \
 cciv4_PIPsession.c \
 cciv4_sim_afu_mmap.c \
 cciv4_PIPsession.h 

@@ -142,6 +142,15 @@ int cciv4_publish_aaldevice(struct cciv4_device * pCCIv4dev,
       request.enableDirectAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
+   if( cciv4_dev_allow_map_mmior_space(pCCIv4dev) ){
+      request.enableDirectAPI |= AAL_DEV_APIMAP_MMIOR;
+   }
+
+   if( cciv4_dev_allow_map_umsg_space(pCCIv4dev) ){
+      request.enableDirectAPI |= AAL_DEV_APIMAP_UMSG;
+   }
+
+
    // Create the AAL Device.
    //   Notes:
    //   When creating an AAL Device a Physical Interface Protocol (PIP) is
@@ -179,7 +188,7 @@ int cciv4_publish_aaldevice(struct cciv4_device * pCCIv4dev,
    //  typically through the owner session object.  .
    aaldev_pip_context(pdev) = (void*)pdev;
 
-   PVERBOSE("Publishing CCIv4 device\n");
+   PVERBOSE("Published CCIv4 device\n");
 
    return 0;
 } //cciv4_publish_aaldevice
@@ -233,10 +242,6 @@ cciv4_remove_device(struct cciv4_device *pCCIv4dev)
    if ( cciv4_dev_pci_dev_is_region_requested(pCCIv4dev) ) {
       pci_release_regions(cciv4_dev_pci_dev(pCCIv4dev));
       cciv4_dev_pci_dev_clr_region_requested(pCCIv4dev);
-   }else{
-      if(NULL != cciv4_dev_kvp_config(pCCIv4dev)){
-         kosal_kfree(cciv4_dev_kvp_config(pCCIv4dev), cciv4_dev_len_config(pCCIv4dev));
-      }
    }
 
    if ( cciv4_dev_pci_dev_is_enabled(pCCIv4dev) ) {
@@ -247,7 +252,12 @@ cciv4_remove_device(struct cciv4_device *pCCIv4dev)
    kosal_kfree(cciv4_dev_kvp_afu_mmio(pCCIv4dev), cciv4_dev_len_afu_mmio(pCCIv4dev));
    kosal_kfree(cciv4_dev_kvp_afu_umsg(pCCIv4dev),cciv4_dev_len_afu_umsg(pCCIv4dev));
 
-
+   // If simulated free the BAR
+   if( cciv4_is_simulated(pCCIv4dev) ){
+      if(NULL != cciv4_dev_kvp_config(pCCIv4dev)){
+         kosal_kfree(cciv4_dev_kvp_config(pCCIv4dev), cciv4_dev_len_config(pCCIv4dev));
+      }
+   }
 
    cciv4_destroy_device(pCCIv4dev);
 

@@ -94,7 +94,7 @@ CommandHandler(struct aaldev_ownerSession *,
 // Description: Physical Interface Protocol Interface for the SPL2 AFU
 //              kernel based AFU engine.
 //=============================================================================
-struct aal_ipip CCIV4_SIMAFUpip = {
+struct aal_ipip cciv4_simAFUpip = {
    .m_messageHandler = {
       .sendMessage   = CommandHandler,       // Command Handler
       .bindSession   = BindSession,          // Session binder
@@ -112,7 +112,7 @@ struct aal_ipip CCIV4_SIMAFUpip = {
 };
 
 //=============================================================================
-// Name: AFUCommand
+// Name: CommandHandler
 // Description: Implements the PIP command handler
 // Interface: public
 // Inputs: pownerSess - Session between App and device
@@ -166,7 +166,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       return -EIO;
    }
 
-   // Get the spl2 device
+   // Get the cciv4 device
    pdev = cciv4_PIPsessionp_to_cciv4dev(pSess);
    if ( NULL == pdev ) {
       PDEBUG("Error: No device\n");
@@ -264,6 +264,174 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                  wsidobjp_to_wid(wsidp),
                                  cciv4_dev_phys_cci_csr(pdev),        // Return the requested aperture
                                  cciv4_dev_len_cci_csr(pdev),         // Return the requested aperture size
+                                 CCIV4_CSR_SIZE,                      // Return the CSR size in octets
+                                 CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
+                                 Message.m_tranID,
+                                 Message.m_context,
+                                 uid_errnumOK);
+
+               PVERBOSE("Sending uid_wseventCSRMap Event\n");
+
+               retval = 0;
+            }
+         }
+
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         if ( 0 != retval ) {
+            goto ERROR;
+         }
+
+      } break;
+
+      // Returns a workspace ID for the MMIO-R Space
+      AFU_COMMAND_CASE(fappip_getMMIORmap) {
+         struct cciv4req *preq = (struct cciv4req *)p_localpayload;
+
+         if ( !cciv4_dev_allow_map_mmior_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
+            pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                             0,
+                                                             (btPhysAddr)NULL,
+                                                             0,
+                                                             0,
+                                                             0,
+                                                             Message.m_tranID,
+                                                             Message.m_context,
+                                                             uid_errnumPermission);
+            PERR("Direct API access not permitted on this device\n");
+
+            retval = -EPERM;
+         } else {
+
+            //------------------------------------------------------------
+            // Create the WSID object and add to the list for this session
+            //------------------------------------------------------------
+            if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
+               PERR("Failed getCSR map Parameter\n");
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                                0,
+                                                                (btPhysAddr)NULL,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                Message.m_tranID,
+                                                                Message.m_context,
+                                                                uid_errnumBadParameter);
+               PERR("Bad WSID on fappip_getCSRmap\n");
+
+               retval = -EINVAL;
+            } else {
+
+               wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+               if ( NULL == wsidp ) {
+                  PERR("Could not allocate CSR workspace\n");
+                  retval = -ENOMEM;
+                  /* generate a failure event back to the caller? */
+                  goto ERROR;
+               }
+
+               wsidp->m_type = WSM_TYPE_CSR;
+               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
+                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+                         wsidp,
+                         preq->ahmreq.u.wksp.m_wsid);
+
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cciv4_dev_phys_afu_mmio(pdev), (int)cciv4_dev_len_afu_mmio(pdev));
+
+               // Return the event with all of the appropriate aperture descriptor information
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
+                                 pownerSess->m_device,
+                                 wsidobjp_to_wid(wsidp),
+                                 cciv4_dev_phys_afu_mmio(pdev),        // Return the requested aperture
+                                 cciv4_dev_len_afu_mmio(pdev),         // Return the requested aperture size
+                                 CCIV4_CSR_SIZE,                      // Return the CSR size in octets
+                                 CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
+                                 Message.m_tranID,
+                                 Message.m_context,
+                                 uid_errnumOK);
+
+               PVERBOSE("Sending uid_wseventCSRMap Event\n");
+
+               retval = 0;
+            }
+         }
+
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         if ( 0 != retval ) {
+            goto ERROR;
+         }
+
+      } break;
+
+      AFU_COMMAND_CASE(fappip_getuMSGmap) {
+         struct cciv4req *preq = (struct cciv4req *)p_localpayload;
+
+         if ( !cciv4_dev_allow_map_umsg_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
+            pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                             0,
+                                                             (btPhysAddr)NULL,
+                                                             0,
+                                                             0,
+                                                             0,
+                                                             Message.m_tranID,
+                                                             Message.m_context,
+                                                             uid_errnumPermission);
+            PERR("Direct API access not permitted on this device\n");
+
+            retval = -EPERM;
+         } else {
+
+            //------------------------------------------------------------
+            // Create the WSID object and add to the list for this session
+            //------------------------------------------------------------
+            if ( ( WSID_CSRMAP_WRITEAREA != preq->ahmreq.u.wksp.m_wsid ) &&
+                 ( WSID_CSRMAP_READAREA  != preq->ahmreq.u.wksp.m_wsid ) ) {
+               PERR("Failed getCSR map Parameter\n");
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                                0,
+                                                                (btPhysAddr)NULL,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                Message.m_tranID,
+                                                                Message.m_context,
+                                                                uid_errnumBadParameter);
+               PERR("Bad WSID on fappip_getCSRmap\n");
+
+               retval = -EINVAL;
+            } else {
+
+               wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+               if ( NULL == wsidp ) {
+                  PERR("Could not allocate CSR workspace\n");
+                  retval = -ENOMEM;
+                  /* generate a failure event back to the caller? */
+                  goto ERROR;
+               }
+
+               wsidp->m_type = WSM_TYPE_CSR;
+               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
+                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+                         wsidp,
+                         preq->ahmreq.u.wksp.m_wsid);
+
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cciv4_dev_phys_afu_umsg(pdev), (int)cciv4_dev_len_afu_umsg(pdev));
+
+               // Return the event with all of the appropriate aperture descriptor information
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
+                                 pownerSess->m_device,
+                                 wsidobjp_to_wid(wsidp),
+                                 cciv4_dev_phys_afu_umsg(pdev),        // Return the requested aperture
+                                 cciv4_dev_len_afu_umsg(pdev),         // Return the requested aperture size
                                  CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                  CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
                                  Message.m_tranID,
@@ -546,7 +714,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    } // switch (pmsg->cmd)
 
    ASSERT(0 == retval);
-   return retval;
 
 ERROR:
    if ( NULL != p_localpayload ) {

@@ -151,11 +151,11 @@
 #define SPL2_AFUPIP_IID       (0x8ee7ef537e245c28LL)
 #define SPL2_AFUAPI_IID       (0xa579bdeabc56d3c5LL)
 
-#define CCIV4_MAFUPIP_IID     (0xbb353944ae885dddLL)
 #define CCIV4_AFUPIP_IID      (0x8ee7ef537e245c28LL)
-#define CCIV4_AFUAPI_IID      (0xa579bdeabc56d3c5LL)
+#define CCIV4_AFUAPI_IID      (0xa579bdeabc56d3c6LL)
 #define CCIV4_SIMAFUPIP_IID   (0x5e2f2894f9a14eb1LL)
-
+#define CCIV4_MAFUPIP_IID     (0xbb353944ae885ddfLL)
+#define CCIV4_CMAFUPIP_IID    (0xbb353944ae885ddeLL)
 
 /////////////////////////////////////////////////////////////////////////////////
 // QPI related IDs

@@ -126,7 +126,9 @@ typedef enum
     fappip_afucmdCSR_GETSET,
     fappip_afucmdDESC_MULTISUBMIT,
     fappip_afucmdSTOP_SPL2_TRANSACTION,
-    fappip_getCSRmap
+    fappip_getCSRmap,
+    fappip_getMMIORmap,
+    fappip_getuMSGmap
 
 } fappip_afuCmdID_e;
 
@@ -172,7 +174,8 @@ struct ahm_req
 // XXX These must match aaldevice.h:AAL_DEV_APIMAP_CSR*
 #define WSID_CSRMAP_READAREA  0x00000001
 #define WSID_CSRMAP_WRITEAREA 0x00000002
-
+#define WSID_MAP_MMIOR        0x00000003
+#define WSID_MAP_UMSG         0x00000004
       // mem_get_cookie
       struct {
          btWSID             m_wsid;   /* IN  */

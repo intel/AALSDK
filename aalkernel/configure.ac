@@ -199,7 +199,8 @@ AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driv
                  cciv4_driver/kbuild/cciv4_common.c:cciv4_driver/cciv4_common.c
                  cciv4_driver/kbuild/cciv4_PIPsession.h:cciv4_driver/cciv4_PIPsession.h
                  cciv4_driver/kbuild/cciv4_PIPsession.c:cciv4_driver/cciv4_PIPsession.c
-                 cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c      
+                 cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c  
+                 cciv4_driver/kbuild/cciv4_sim_mafu_pip.c:cciv4_driver/cciv4_sim_mafu_pip.c      
                  cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c                                                                                    
                  cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 

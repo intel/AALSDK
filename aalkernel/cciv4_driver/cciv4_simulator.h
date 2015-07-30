@@ -41,6 +41,13 @@
 // Using NLB AFU ID
 #define CCIV4_SIM_AFUIDH            ( 0xC000C9660D824272L )
 #define CCIV4_SIM_AFUIDL            ( 0x9AEFFE5F84570612L )
+
+#define CCIV4_SIM_MAFUIDH           ( 0x6d0b2b05111c460eL )
+#define CCIV4_SIM_MAFUIDL           ( 0xaaf163c9f423dc1dL )
+
+#define CCIV4_SIM_CMAFUIDH          ( 0xf05c0786e3e64b43L )
+#define CCIV4_SIM_CMAFUIDL          ( 0x94d78e96d28152c6L )
+
 //
 // Prototypes
 int cciv4_sim_discover_devices(ulong numdevices,
