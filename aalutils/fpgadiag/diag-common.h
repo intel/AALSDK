@@ -169,8 +169,10 @@ public:
    virtual void     runtimeAllocateServiceSucceeded(IBase *,
                                                     TransactionID const & );
    virtual void     runtimeEvent(const IEvent & );
-   virtual void 	runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    virtual void 	runtimeStopFailed(const IEvent &rEvent);
+   virtual void 	runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+
    // </IRuntimeClient>
 
    // <IServiceClient>
