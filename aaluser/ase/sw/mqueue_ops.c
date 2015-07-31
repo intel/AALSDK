@@ -190,7 +190,11 @@ void mqueue_close(int mq)
   ret = close (mq);
   if (ret == -1) 
     {
+#ifdef SIM_SIDE
+ #ifdef ASE_DEBUG
       printf("Error closing IPC\n");
+ #endif
+#endif
     }
 
   FUNC_CALL_EXIT;

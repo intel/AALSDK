@@ -64,12 +64,12 @@ module cci_emulator
    input logic [`CCI_DATA_WIDTH-1:0] 	 tx_c1_data,              // in
    input logic 			         tx_c1_wrvalid,           // in
    output logic 			 tx_c1_almostfull,        // out
-   output logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header,            // out
+   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c0_header,            // out
    output logic [`CCI_DATA_WIDTH-1:0] 	 rx_c0_data,              // out
    output logic 			 rx_c0_rdvalid,           // out
    output logic 			 rx_c0_wrvalid,           // out
    output logic 			 rx_c0_cfgvalid,          // out
-   output logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header,            // out
+   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c1_header,            // out
    output logic 			 rx_c1_wrvalid,           // out
    output logic 			 rx_c0_umsgvalid,         // out
    input logic 			         tx_c1_intrvalid,         // in
@@ -169,12 +169,12 @@ module cci_emulator
    // logic [`CCI_DATA_WIDTH-1:0] 	  tx_c1_data;              // in
    // logic 			  tx_c1_wrvalid;           // in
    // logic 			  tx_c1_almostfull;        // out
-   // logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
+   // logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
    // logic [`CCI_DATA_WIDTH-1:0] 	  rx_c0_data;              // out
    // logic 			  rx_c0_rdvalid;           // out
    // logic 			  rx_c0_wrvalid;           // out
    // logic 			  rx_c0_cfgvalid;          // out
-   // logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
+   // logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
    // logic 			  rx_c1_wrvalid;           // out
    // logic 			  rx_c0_umsgvalid;         // out
    // logic 			  tx_c1_intrvalid;         // in
@@ -364,7 +364,7 @@ module cci_emulator
     * umsg_dispatch: Single push process triggering UMSG machinery
     *
     * *****************************************************************/
-   parameter int UMSG_FIFO_WIDTH = `CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
+   parameter int UMSG_FIFO_WIDTH = `ASE_CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
 
    logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
    logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
@@ -619,7 +619,7 @@ module cci_emulator
       int end_iter;
       begin
 	 start_iter = 0;
-	 end_iter   = end_iter + `UMSG_MAX_MSG;
+	 end_iter   = start_iter + `UMSG_MAX_MSG;
    	 ret_data_slot = 255;	 
    	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].data_ready) begin
@@ -1095,8 +1095,8 @@ module cci_emulator
     * - as2cf_fifo_ch1
     *
     * *******************************************************************/
-   parameter int 		 ASE_RX0_PATHWIDTH = 5 + `CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
-   parameter int 		 ASE_RX1_PATHWIDTH = 2 + `CCI_RX_HDR_WIDTH;
+   parameter int 		 ASE_RX0_PATHWIDTH = 5 + `ASE_CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
+   parameter int 		 ASE_RX1_PATHWIDTH = 2 + `ASE_CCI_RX_HDR_WIDTH;
 
    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
@@ -1171,7 +1171,7 @@ module cci_emulator
    always @(posedge clk) begin : as2cf_fifo_ch0_consumer
       if (~sys_reset_n) begin
 	 rx_c0_data		<= `CCI_DATA_WIDTH'b0;
-	 rx_c0_header		<= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c0_header		<= `ASE_CCI_RX_HDR_WIDTH'b0;
 	 rx_c0_cfgvalid		<= 0;
 	 rx_c0_wrvalid		<= 0;
 	 rx_c0_rdvalid		<= 0;
@@ -1180,12 +1180,12 @@ module cci_emulator
       end
       else if (as2cf_fifo_ch0_valid) begin
 	 rx_c0_data		<= as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
-	 rx_c0_header		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
-	 rx_c0_cfgvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH)];
-	 rx_c0_rdvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+1)];
-	 rx_c0_wrvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+2)];
-	 rx_c0_umsgvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+3)];
-	 rx_c0_intrvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`CCI_RX_HDR_WIDTH+4)];
+	 rx_c0_header		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
+	 rx_c0_cfgvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH)];
+	 rx_c0_rdvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+1)];
+	 rx_c0_wrvalid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+2)];
+	 rx_c0_umsgvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+3)];
+	 rx_c0_intrvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+4)];
       end
       else begin
 	 rx_c0_data		<= 0;
@@ -1201,17 +1201,17 @@ module cci_emulator
    // RX1 channel
    always @(posedge clk) begin : as2cf_fifo_ch1_consumer
       if (~sys_reset_n) begin
-	 rx_c1_header		<= `CCI_RX_HDR_WIDTH'b0;
+	 rx_c1_header		<= `ASE_CCI_RX_HDR_WIDTH'b0;
 	 rx_c1_wrvalid		<= 1'b0;
 	 rx_c1_intrvalid	<= 1'b0;
       end
       else if (as2cf_fifo_ch1_valid) begin
-	 rx_c1_header		<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
-	 rx_c1_wrvalid		<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH];
-	 rx_c1_intrvalid	<= as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH+1];
+	 rx_c1_header		<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_wrvalid		<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH];
+	 rx_c1_intrvalid	<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH+1];
       end
       else begin
-	 rx_c1_header		<= 0; // as2cf_fifo_ch1_dout[`CCI_RX_HDR_WIDTH-1:0];
+	 rx_c1_header		<= 0; // as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH-1:0];
 	 rx_c1_wrvalid		<= 1'b0;
 	 rx_c1_intrvalid	<= 1'b0;
       end
@@ -1267,7 +1267,7 @@ module cci_emulator
    		end
    		else if (~cf2as_latbuf_ch0_empty && ~as2cf_fifo_ch0_full ) begin
    		   rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
-   		   as2cf_fifo_ch0_din		<= {5'b00010, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], unpack_ccipkt_to_vector(rx0_pkt)};
+   		   as2cf_fifo_ch0_din		<= {5'b00010, rx0_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0], unpack_ccipkt_to_vector(rx0_pkt)};
    		   as2cf_fifo_ch0_write		<= 1;
    		   cf2as_latbuf_ch0_read	<= ~cf2as_latbuf_ch0_empty;
    		   csrff_read			<= 0;
@@ -1278,7 +1278,7 @@ module cci_emulator
    		else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0) && ~as2cf_fifo_ch0_full ) begin
    		   wr_memline_dex(rx0_pkt, cf2as_latbuf_ch1_claddr_0, cf2as_latbuf_ch1_meta_0, cf2as_latbuf_ch1_data_0 );
    		   csrff_read			<= 0;
-   		   as2cf_fifo_ch0_din		<= {5'b00100, rx0_pkt.meta[`CCI_RX_HDR_WIDTH-1:0], 512'b0};
+   		   as2cf_fifo_ch0_din		<= {5'b00100, rx0_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0], 512'b0};
    		   as2cf_fifo_ch0_write		<= 1;
    		   cf2as_latbuf_ch1_read_0	<= ~cf2as_latbuf_ch1_empty; // 1;
    		   cf2as_latbuf_ch0_read	<= 0;
@@ -1391,7 +1391,7 @@ module cci_emulator
 	     begin
 		if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1) && ~as2cf_fifo_ch1_full ) begin
    		   wr_memline_dex(rx1_pkt, cf2as_latbuf_ch1_claddr_1, cf2as_latbuf_ch1_meta_1, cf2as_latbuf_ch1_data_1 );
-   		   as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`CCI_RX_HDR_WIDTH-1:0]};
+   		   as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0]};
    		   as2cf_fifo_ch1_write		<= 1;
    		   cf2as_latbuf_ch1_read_1	<= ~cf2as_latbuf_ch1_empty;  // 1;
 		   rx1_state			<= RxWriteResp;
@@ -1666,7 +1666,7 @@ module cci_emulator
    cci_sniffer
      #(
        .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
-       .RX_HDR_WIDTH (`CCI_RX_HDR_WIDTH),
+       .RX_HDR_WIDTH (`ASE_CCI_RX_HDR_WIDTH),
        .DATA_WIDTH   (`CCI_DATA_WIDTH)
        )
    cci_sniffer

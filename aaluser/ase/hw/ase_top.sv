@@ -36,7 +36,7 @@
  *
  * **************************************************************************/
  
- `include "ase_global.vh"
+`include "ase_global.vh"
 `include "platform.vh"
 
 `timescale 1ns/1ns
@@ -56,12 +56,12 @@ module ase_top();
    logic [`CCI_DATA_WIDTH-1:0] 	  tx_c1_data;              // in
    logic 			  tx_c1_wrvalid;           // in
    logic 			  tx_c1_almostfull;        // out
-   logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
+   logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
    logic [`CCI_DATA_WIDTH-1:0] 	  rx_c0_data;              // out
    logic 			  rx_c0_rdvalid;           // out
    logic 			  rx_c0_wrvalid;           // out
    logic 			  rx_c0_cfgvalid;          // out
-   logic [`CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
+   logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
    logic 			  rx_c1_wrvalid;           // out
    logic 			  rx_c0_umsgvalid;         // out
    logic 			  tx_c1_intrvalid;         // in

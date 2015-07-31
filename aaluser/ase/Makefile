@@ -47,7 +47,7 @@ include ase_sources.mk
 ASE_VERSION = 4.1.7
 
 # ASE Debug
-ASE_DEBUG = 0
+ASE_DEBUG = 1
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -107,7 +107,7 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
-# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
@@ -116,7 +116,7 @@ SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
 

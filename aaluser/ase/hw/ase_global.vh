@@ -89,7 +89,7 @@
  * CCI specifications
  */
  `define CCI_TX_HDR_WIDTH           61
- `define CCI_RX_HDR_WIDTH           18
+ `define ASE_CCI_RX_HDR_WIDTH           18
  `define CCI_DATA_WIDTH             512
  `define CCI_CSR_WIDTH              32
  `define CCI_META_WIDTH             14
