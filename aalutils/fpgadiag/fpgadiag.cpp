@@ -421,6 +421,9 @@ CMyCCIClient::CMyCCIClient() :
    m_OutputVirt(NULL),
    m_OutputPhys(0),
    m_OutputSize(0),
+   m_UMsgVirt(NULL),
+   m_UMsgPhys(0),
+   m_UMsgSize(0),
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
@@ -448,6 +451,10 @@ void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
          Output(WkspcVirt, WkspcPhys, WkspcSize);
          INFO("Got Output Workspace");
       } break;
+      case WKSPC_UMSG: {
+		   UMsg(WkspcVirt, WkspcPhys, WkspcSize);
+		   INFO("Got UMsg Workspace");
+		} break;
       default : {
          GotOne = false;
          ERR("Invalid workspace type: " << TranID.ID());
@@ -487,6 +494,10 @@ void CMyCCIClient::OnWorkspaceFreed(TransactionID const &TranID)
          Output(NULL, 0, 0);
          INFO("Freed Output Workspace");
       } break;
+      case WKSPC_UMSG : {
+		  Output(NULL, 0, 0);
+		  INFO("Freed UMsg Workspace");
+	   } break;
       default : {
          FreedOne = false;
          ERR("Invalid workspace type");
@@ -668,6 +679,21 @@ int main(int argc, char *argv[])
    totalres += res;
    if ( 0 == res ) {
       cout << PASS << nlbtrput.ReadBandwidth() << " / " << nlbtrput.WriteBandwidth();
+   } else {
+      cout << FAIL << "ERROR";
+   }
+   cout << NORMAL << endl
+        << endl;
+
+   // Run an SW Test..
+   // * report bandwidth in GiB/s
+   CNLBSW nlbsw(&myapp);
+
+   cout << " * SW test " << flush;
+   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
+   totalres += res;
+   if ( 0 == res ) {
+      cout << PASS << nlbsw.ReadBandwidth() << " / " << nlbsw.WriteBandwidth();
    } else {
       cout << FAIL << "ERROR";
    }

@@ -77,6 +77,14 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDI);
    } else if ( 0 == strcmp("--rdo", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDO);
+   } else if ( 0 == strcmp("--poll", option) ) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_POLL);
+   } else if ( 0 == strcmp("--csr-write", option) ) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE);
+   } else if ( 0 == strcmp("--umsg-data", option) ) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
+   } else if ( 0 == strcmp("--umsg-hint", option) ) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
