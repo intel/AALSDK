@@ -44,6 +44,8 @@
 //#include "nlb-inner.h"
 BEGIN_C_DECLS
 
+#define HIGH 0xffffffff
+
 struct NLBDefaults
 {
    wkspc_size_type mincls;
@@ -149,10 +151,10 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_RDI          (u64_type)0x10000000  /* --rdi          	 (readline - invalidate)                        */
 #define NLB_CMD_FLAG_RDO          (u64_type)0x20000000  /* --rdo          	 (readline - ownership)                         */
 
-//#define NLB_CMD_FLAG_NOGUI        (u64_type)0x08000000  /* --no-gui          (force text mode)                              */
-//#define NLB_CMD_FLAG_DEMO         (u64_type)0x10000000  /* --demo            (use settings desirable for GUI demos)         */
-//#define NLB_CMD_FLAG_NOHIST       (u64_type)0x20000000  /* --no-hist         (don't display the histogram)                  */
-//#define NLB_CMD_FLAG_HISTDATA     (u64_type)0x40000000  /* --hist-data       (dump the histogram data points, post test)    */
+#define NLB_CMD_FLAG_POLL        (u64_type)0x08000000  /* --poll          	 notice sent from CPU to FPGA via poll                              */
+#define NLB_CMD_FLAG_CSR_WRITE   (u64_type)0x10000000  /* --csr-write        notice sent from CPU to FPGA via csr-write     */
+#define NLB_CMD_FLAG_UMSG_DATA   (u64_type)0x20000000  /* --umsg-data        notice sent from CPU to FPGA via umsg-data     */
+#define NLB_CMD_FLAG_UMSG_HINT   (u64_type)0x40000000  /* --umsg-hint        notice sent from CPU to FPGA via umsg-hint		*/
 
 #define NLB_CMD_FLAG_FEATURE0     (u64_type)0x80000000  /* --0 */
 #define NLB_CMD_FLAG_FEATURE1     (u64_type)0x100000000 /* --1 */
