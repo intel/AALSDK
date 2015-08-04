@@ -6,7 +6,7 @@
 ##
 ##                            GPL LICENSE SUMMARY
 ##
-##  Copyright(c) 2012-2015, Intel Corporation.
+##  Copyright(c) 2008-2015, Intel Corporation.
 ##
 ##  This program  is  free software;  you  can redistribute it  and/or  modify
 ##  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 ##
 ##                                BSD LICENSE
 ##
-##  Copyright(c) 2012-2015, Intel Corporation.
+##  Copyright(c) 2008-2015, Intel Corporation.
 ##
 ##  Redistribution and  use  in source  and  binary  forms,  with  or  without
 ##  modification,  are   permitted  provided  that  the  following  conditions
@@ -54,94 +54,51 @@
 ##  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 ##  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 ##******************************************************************************
-ACLOCAL_AMFLAGS=-I m4
+##****************************************************************************
+##  FILE: aalkernel/aal_uidriver/Makefile
+##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
+##     Intel(R) QuickAssist Technology AAL UIDrv
+##        Driver Module for Linux
+##  Author:
+##     Tim Whisonant, Intel Corporation
+##  Created:
+##     08/15/2014
+##****************************************************************************
+MY_KBUILD_VERBOSE    = $(my__kbuild_verbose_$(V))
+my__kbuild_verbose_  = $(AM_DEFAULT_VERBOSITY)
+my__kbuild_verbose_0 = 0
+my__kbuild_verbose_1 = 1
 
-.PHONY: dist-file-list
-dist-file-list: dist-all
-	@tar ztf "$(top_builddir)/$(distdir).tar.gz" | sed -e '/\/$$/d' -e 's/$(distdir)/\./' >"$(top_builddir)/dist-file-list"
-	@$(RM) $(DIST_ARCHIVES)
+moduledir=@AAL_OS_MODULE_INSTALL_PATH@
+
+module_DATA=\
+kbuild/@CCIV4DRV_DRV_NAME@.ko
+
+EXTRA_DIST=Kbuild.in
+
+EXTRA_PROGRAMS=driver
+
+driver_SOURCES=\
+cciv4_driver_internal.h \
+cciv4_driver_main.c \
+cciv4_common.c \
+cciv4_simulator.c \
+cciv4_simulator.h \
+cciv4_sim_afu_pip.c \
+cciv4_sim_mafu_pip.c \
+cciv4_PIPsession.c \
+cciv4_sim_afu_mmap.c \
+cciv4_PIPsession.h 
+
+kbuild/@CCIV4DRV_DRV_NAME@.ko: kbuild/Module.symvers
+
+kbuild/Module.symvers: $(abs_top_builddir)/aalbus/kbuild/Module.symvers $(driver_SOURCES) $(abs_top_builddir)/cciv4_driver/kbuild/kOSAL.c $(abs_top_builddir)/cciv4_driver/kbuild/Makefile
+	@cp --preserve=all "$(abs_top_builddir)/aalbus/kbuild/Module.symvers" "$(abs_top_builddir)/cciv4_driver/kbuild" && \
+$(MAKE) -C "@AAL_OS_KERNEL_BUILD_PATH@" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cciv4_driver/kbuild" aalkernelinc="$(abs_top_srcdir)/include" modules && \
+if [ -f "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.o" ]; then touch "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.o" ; fi && \
+if [ -f "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.mod.o" ]; then touch "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.mod.o" ; fi && \
+if [ -f "$(abs_top_builddir)/cciv4_driver/kbuild/Module.symvers" ]; then touch "$(abs_top_builddir)/cciv4_driver/kbuild/Module.symvers" ; fi && \
+if [ -f "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.ko" ]; then touch "$(abs_top_builddir)/cciv4_driver/kbuild/@CCIV4DRV_DRV_NAME@.ko" ; fi
 
 clean-local:
-	@$(RM) $(top_builddir)/dist-file-list
-
-if AAL_COND_MAINTAINER
-
-MAINTAINER_CHECK=maintainer-check
-maintainer-check:
-	   @+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
-			--conf='$(abs_top_srcdir)/configure' \
-			--srcdir='$(abs_top_srcdir)' \
-			--distdir='$(distdir)' \
-			--wkspc='$(abs_top_builddir)/maintainer-check''
-
-endif
-.PHONY: $(MAINTAINER_CHECK)
-
-SUBDIRS=\
-aalbus \
-aalresourcemgr_server \
-aalresourcemgr_client \
-aal_uidriver \
-spl2_pip_dksm \
-cciv4_driver
-
-aalsdkhdrsdir=$(includedir)/aalsdk
-kernelhdrsdir=$(aalsdkhdrsdir)/kernel
-encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
-
-kernelhdrs_HEADERS=\
-include/aalsdk/kernel/aalbus-device.h \
-include/aalsdk/kernel/aalbus.h \
-include/aalsdk/kernel/aalbus_imonitorconfig.h \
-include/aalsdk/kernel/aalbus-ipip.h \
-include/aalsdk/kernel/aalbus_iupdate_config.h \
-include/aalsdk/kernel/aaldefs.h \
-include/aalsdk/kernel/aaldevice.h \
-include/aalsdk/kernel/aalids.h \
-include/aalsdk/kernel/aalinterface.h \
-include/aalsdk/kernel/aalmafu-events.h \
-include/aalsdk/kernel/aalmafu.h \
-include/aalsdk/kernel/aalqueue.h \
-include/aalsdk/kernel/aalrm_client.h \
-include/aalsdk/kernel/aalrm.h \
-include/aalsdk/kernel/aalrm_server.h \
-include/aalsdk/kernel/aalrm_server-services.h \
-include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/AALTransactionID_s.h \
-include/aalsdk/kernel/aaltypes.h \
-include/aalsdk/kernel/aalui-events.h \
-include/aalsdk/kernel/aalui.h \
-include/aalsdk/kernel/AALWorkspace.h \
-include/aalsdk/kernel/aalwsservice.h \
-include/aalsdk/kernel/ahmpip.h \
-include/aalsdk/kernel/ahmpipdefs.h \
-include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/fappip.h \
-include/aalsdk/kernel/KernelStructs.h \
-include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/splpip.h \
-include/aalsdk/kernel/vafu2defs.h
-
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
-
-if COND_AAL_MODPROBE_CONFIG
-modprobeconfdir=@AAL_MODPROBE_CONFIG_PATH@
-modprobeconf_DATA=\
-aalsdk.conf
-endif
-
-if COND_AAL_UDEV_RULES
-udevrulesdir=@AAL_UDEV_RULES_PATH@
-udevrules_DATA=\
-40-aalsdk.rules
-endif
-
-EXTRA_DIST=\
-README.GPLV2-LICENSE.TXT \
-build/aalsdk.conf.in \
-build/40-aalsdk.rules.in \
-build/insdrv.in \
-build/rmdrv.in
-
+	@$(MAKE) -C "@AAL_OS_KERNEL_BUILD_PATH@" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cciv4_driver/kbuild" clean

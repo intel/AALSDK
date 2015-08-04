@@ -1694,6 +1694,79 @@ void CSR_AFUTransaction::Clear()
 ///////////////////////////////////////////////////////////////////////////////
 
 //=============================================================================
+// Name:          Sig_MapMMIO_Space_AFUTransaction::
+// Description:   Causes the device's Control and Status Registers to be
+//                Mapped into user space.
+// Constructor:
+// Comments:      Returns and CSR manipulator specifc to this implementation.
+//=============================================================================
+Sig_MapMMIO_Space_AFUTransaction::Sig_MapMMIO_Space_AFUTransaction() :
+      m_big(), m_bIsOK(false), m_tidEmbedded(), m_pEventHandler(NULL), m_ErrorString()
+{
+
+   memset(&m_big, 0, sizeof(struct big));
+
+   m_big.afuMsg.cmd           = fappip_getMMIORmap;
+   m_big.afuMsg.payload       = (btVirtAddr)&m_big.ahmreq;
+   m_big.afuMsg.size          = sizeof(struct ahm_req);
+   m_big.afuMsg.apiver        = GetAPIVer();
+   m_big.afuMsg.pipver        = GetPIPVer();
+   m_big.ahmreq.u.wksp.m_wsid = WSID_MAP_MMIOR;
+
+   m_pEventHandler = new Sig_MapCSRSpace_EventHandlerObject();
+   m_tidEmbedded.Context(static_cast<btApplicationContext>(m_pEventHandler));
+   m_tidEmbedded.Handler(m_pEventHandler->GetEventHandler());
+   m_tidEmbedded.Filter(true);
+   m_bIsOK = true;
+}
+
+btVirtAddr     Sig_MapMMIO_Space_AFUTransaction::GetPayloadPtr() { return reinterpret_cast<btVirtAddr>(&m_big); }
+btWSSize       Sig_MapMMIO_Space_AFUTransaction::GetSize()       { return sizeof(struct big); }
+TransactionID *Sig_MapMMIO_Space_AFUTransaction::GetTranIDPtr()  { return &m_tidEmbedded;     }
+uid_msgIDs_e   Sig_MapMMIO_Space_AFUTransaction::GetCommand()    { return reqid_UID_SendPIP;  }
+btID           Sig_MapMMIO_Space_AFUTransaction::GetPIPVer()     { return AAL_AHMPIP_IID_1_0; }
+btID           Sig_MapMMIO_Space_AFUTransaction::GetAPIVer()     { return AAL_AHMAPI_IID_1_0; }
+btBool         Sig_MapMMIO_Space_AFUTransaction::IsOK()          { return m_bIsOK;            }
+std::string    Sig_MapMMIO_Space_AFUTransaction::GetError()      { return m_ErrorString;      }
+
+//=============================================================================
+// Name:          Sig_MapUMSGpace_AFUTransaction::
+// Description:   Causes the device's Control and Status Registers to be
+//                Mapped into user space.
+// Constructor:
+// Comments:      Returns and CSR manipulator specifc to this implementation.
+//=============================================================================
+Sig_MapUMSGpace_AFUTransaction::Sig_MapUMSGpace_AFUTransaction() :
+      m_big(), m_bIsOK(false), m_tidEmbedded(), m_pEventHandler(NULL), m_ErrorString()
+{
+
+   memset(&m_big, 0, sizeof(struct big));
+
+   m_big.afuMsg.cmd           = fappip_getuMSGmap;
+   m_big.afuMsg.payload       = (btVirtAddr)&m_big.ahmreq;
+   m_big.afuMsg.size          = sizeof(struct ahm_req);
+   m_big.afuMsg.apiver        = GetAPIVer();
+   m_big.afuMsg.pipver        = GetPIPVer();
+   m_big.ahmreq.u.wksp.m_wsid = WSID_MAP_UMSG;
+
+   m_pEventHandler = new Sig_MapCSRSpace_EventHandlerObject();
+   m_tidEmbedded.Context(static_cast<btApplicationContext>(m_pEventHandler));
+   m_tidEmbedded.Handler(m_pEventHandler->GetEventHandler());
+   m_tidEmbedded.Filter(true);
+   m_bIsOK = true;
+}
+
+btVirtAddr     Sig_MapUMSGpace_AFUTransaction::GetPayloadPtr() { return reinterpret_cast<btVirtAddr>(&m_big); }
+btWSSize       Sig_MapUMSGpace_AFUTransaction::GetSize()       { return sizeof(struct big); }
+TransactionID *Sig_MapUMSGpace_AFUTransaction::GetTranIDPtr()  { return &m_tidEmbedded;     }
+uid_msgIDs_e   Sig_MapUMSGpace_AFUTransaction::GetCommand()    { return reqid_UID_SendPIP;  }
+btID           Sig_MapUMSGpace_AFUTransaction::GetPIPVer()     { return AAL_AHMPIP_IID_1_0; }
+btID           Sig_MapUMSGpace_AFUTransaction::GetAPIVer()     { return AAL_AHMAPI_IID_1_0; }
+btBool         Sig_MapUMSGpace_AFUTransaction::IsOK()          { return m_bIsOK;            }
+std::string    Sig_MapUMSGpace_AFUTransaction::GetError()      { return m_ErrorString;      }
+
+
+//=============================================================================
 // Name:          Sig_MapCSRSpace_AFUTransaction::
 // Description:   Causes the device's Control and Status Registers to be
 //                Mapped into user space.
