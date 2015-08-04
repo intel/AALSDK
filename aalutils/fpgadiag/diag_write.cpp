@@ -97,7 +97,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   //Re-set the test mode
 	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
    }
-   m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
+   m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
 
 #if   defined( __AAL_WINDOWS__ )
 #error TODO

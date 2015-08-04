@@ -76,16 +76,16 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 	   btUnsigned32bitInt umsgmode_csr_val = (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)) ? HIGH : 0;
 	   m_pCCIAFU->CSRWrite(CSR_UMSG_MODE, umsgmode_csr_val);
+
+	   btCSRValue umsg_status = 0;
+	   do {
+		   m_pCCIAFU->CSRRead(CSR_CIRBSTAT, &umsg_status);
+	   }while(0 == (umsg_status & 0x1));
+
    }
-
-   btCSRValue umsg_status = 0;
-   do {
-	   m_pCCIAFU->CSRRead(CSR_CIRBSTAT, &umsg_status);
-   }while(0 == (umsg_status & 0x1));
-
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_MASK; //TODO Reconfirm this
+   csr_type cfg = (csr_type)NLB_TEST_MODE_MASK; //TODO confirm with Tim
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
    {
@@ -107,6 +107,10 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    {
 	 cfg |= (csr_type)NLB_TEST_MODE_UMSG_HINT;
    }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT)) //Check for write through mode and add to CSR_CFG
+    {
+	 cfg |= (csr_type)NLB_TEST_MODE_WT;
+    }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
 
@@ -137,11 +141,25 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    while ( sz <= CL(cmd.endcls))
    {
+	   //************************* DEVICE RESET ************************************//
+	   // Assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+	   // Clear the DSM status fields
+	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+	   // De-assert Device Reset
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+
+	   //************************* DEVICE RESET ************************************//
+
 	  // Set the number of cache lines for the test
 	  m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	  // Start the test
 	  m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+
+	  timeout = Timer() + Timer(&ts);
 
 	  //Test flow
 	  //1. CPU polls on Addr N+1
@@ -149,7 +167,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  {
 		  if(Timer() > timeout )
 		  {
-			  res++;
+			  res++; cout << "Error 1 \n";
 			  break;
 		  }
 	  }
@@ -178,16 +196,17 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  }
 
 	  // Wait for test completion
-	  timeout = Timer(&ts);
+	  timeout = Timer() + Timer(&ts);
 	  while ( ( 0 == pAFUDSM->test_complete ) &&
 			   ( 0 == res) )
 	  {
 		  if(Timer() > timeout )
 		  {
-			  res++;
+			  res++;cout << "Error 2 \n";
 			  break;
 		  }
 	  }
+
 
 	   // Stop the device
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
@@ -216,11 +235,11 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    // Check the device status
    if ( MaxPoll < 0 ) {
 	   cerr << "The maximum timeout for test stop was exceeded." << endl;
-	   ++res;
+	   ++res;cout << "Error 3 \n";
    }
 
    if ( 0 != pAFUDSM->test_error ) {
-	   ++res;
+	   ++res;cout << "Error 4 \n";
    }
 
    // Clean up..
