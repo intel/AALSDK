@@ -35,7 +35,7 @@
 /// @defgroup Samples AALSDK Sample Applications
 /// @brief Applications illustrating various features, capabilities, and techniques of the AALSDK.
 
-   /// @defgroup HelloAAL Hello AFU Sample Application
+   /// @defgroup HelloAAL Hello AFU Sample Application	
    /// @ingroup Samples
    /// @brief Illustrates the basic structure of an AAL program using the XL APIs.
 
@@ -47,7 +47,7 @@
    /// @ingroup Samples
    /// @brief Basic SPL AFU interaction
 
-   /// @defgroup SudokuSample Hello SPL LB
+   /// @defgroup SudokuSample Sudoku
    /// @ingroup Samples
    /// @brief Sudoku using SPL base
 
@@ -55,6 +55,22 @@
    /// @ingroup Samples
    /// @brief Linked list shared between Application and FPGA
 
+/// @defgroup Sampleout AALSDK Sample Application outputs 
+/// @brief Outputs of Sample Applications
+   
+   /// @defgroup HelloAALout Hello AAL Sample Application outputs
+   /// @ingroup Sampleout
+   /// @brief Sample output of the HelloAAL application
+   
+   /// @defgroup HelloSPLLBout Hello SPL LB Sample Application outputs
+   /// @ingroup Sampleout
+   /// @brief Sample output of the HelloSPLLBout application
+
+   /// @defgroup HelloCCINLBout Hello CCI NLB Sample Application outputs
+   /// @ingroup Sampleout
+   /// @brief Sample output of the HelloCCINLB application
+
+/// @defgroup Outputs
 
 /**
 @mainpage
@@ -72,9 +88,13 @@
       <li>@ref SudokuSample "Sudoku_SPL - Sudoku on SPL"</li>
       <li>@ref LinkedListSample "LinkedList_SPL - Linked List using SVM of SPL"</li>
     </ul>
-</ul>
-
-
+  <li>@ref Sampleout "AALSDK Sample Application outputs"</li>
+    <ul>
+      <li>@ref HelloAALout "Hello_AAL_OUTPUT "</li>
+      <li>@ref HelloSPLLBout "Hello_SPL_LB_OUTPUT "</li>
+      <li>@ref HelloCCINLBout "Hello_CCI_NLB_OUTPUT "</li>
+    </ul>
+ 
 @verbatim
    INFORMATION IN THIS DOCUMENT IS PROVIDED IN  CONNECTION  WITH  INTEL(R)
    PRODUCTS. NO LICENSE, EXPRESS OR IMPLIED, BY ESTOPPEL OR  OTHERWISE, TO
@@ -190,6 +210,7 @@ POSSIBILITY OF SUCH DAMAGE.@endverbatim
 
 This document contains information on products in the design phase of
 development.
-
+<ul>
 */
+
 
