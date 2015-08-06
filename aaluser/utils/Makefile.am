@@ -44,5 +44,5 @@ splapp \
 splapp2 \
 splapp3 \
 CCILib \
-CCIv3AFU
+ALIAFU
 
