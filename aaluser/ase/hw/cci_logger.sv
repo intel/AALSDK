@@ -41,10 +41,122 @@ module cci_logger
     parameter LOGNAME   = "ccis_transactions.tsv"
     )
    (
+    // Configure enable
     
+    // CCI interface
     
     );
 
-   
+      /*
+    * ASE Hardware Interface (CCI) logger
+    * - Logs CCI transaction into a transactions.tsv file
+    * - Watch for "*valid", and write transaction to log name
+    */
+   // Log file descriptor
+   int log_fd;
+
+   /*
+    * Watcher process
+    */
+   initial begin : logger_proc
+      // Display
+      $display("SIM-SV: CCI Logger started");
+
+      // Open transactions.tsv file
+      log_fd = $fopen("transactions.tsv", "w");
+
+      // Headers
+      $fwrite(log_fd, "\tTime\tTransactionType\tChannel\tMetaInfo\tCacheAddr\tData\n");
+
+      // Watch CCI port
+      forever begin
+	 // If LP_initdone changed, log the event
+	 if (lp_initdone_q != lp_initdone) begin
+	    $fwrite(log_fd, "%d\tLP_initdone toggled from %b to %b\n", $time, lp_initdone_q, lp_initdone);
+	 end
+	 // Indicate Software controlled reset
+	 if (sw_reset_n_q != sw_reset_n) begin
+	    $fwrite(log_fd, "%d\tSoftware reset toggled from %b to %b\n", $time, sw_reset_n_q, sw_reset_n);
+	 end
+	 // If reset toggled, log the event
+	 if (sys_reset_n_q != sys_reset_n) begin
+	    $fwrite(log_fd, "%d\tSystem reset toggled from %b to %b\n", $time, sys_reset_n_q, sys_reset_n);
+	 end
+	 // Watch CCI for valid transactions
+	 if (lp_initdone) begin
+	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
+	    if (rx_c0_cfgvalid) begin
+	       $fwrite(log_fd, "%d\tCSRWrite\t\t\t%x\t%x\n", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
+	       if (cfg.enable_cl_view) $display("%d\tCSRWrite\t\t\t%x\t%x", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
+	    end
+	    /////////////////////////////// RX0 wrvalid /////////////////////////////////
+	    if (rx_c0_wrvalid) begin
+	       $fwrite(log_fd, "%d\tWrResp\t\t0\t%x\tNA\tNA\n", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
+	       if (cfg.enable_cl_view) $display("%d\tWrResp\t\t0\t%x\tNA\tNA", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
+	    end
+	    /////////////////////////////// RX0 rdvalid /////////////////////////////////
+	    if (rx_c0_rdvalid) begin
+	       $fwrite(log_fd, "%d\tRdResp\t\t0\t%x\tNA\t%x\n", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
+	       if (cfg.enable_cl_view) $display("%d\tRdResp\t\t0\t%x\tNA\t%x", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
+	    end
+	    ////////////////////////////// RX0 umsgvalid ////////////////////////////////
+	    if (rx_c0_umsgvalid) begin
+	       if (rx_c0_header[`CCI_UMSG_BITINDEX]) begin              // Umsg Hint
+		  $fwrite(log_fd, "%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
+		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
+	       end
+	       else begin                                               // Umsg with data
+		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\t%x\n", $time, rx_c0_header[5:0], rx_c0_data );
+		  if (cfg.enable_cl_view) $display("%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
+	       end
+	    end
+	    /////////////////////////////// RX1 wrvalid /////////////////////////////////
+	    if (rx_c1_wrvalid) begin
+	       $fwrite(log_fd, "%d\tWrResp\t\t1\t%x\tNA\tNA\n", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
+	       if (cfg.enable_cl_view) $display("%d\tWrResp\t\t1\t%x\tNA\tNA", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
+	    end
+	    /////////////////////////////// TX0 rdvalid /////////////////////////////////
+	    if (tx_c0_rdvalid) begin
+	       if ((tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_S) || (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE)) begin
+		  $fwrite(log_fd, "%d\tRdLineReq_S\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_S\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+	       end
+	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_I) begin
+		  $fwrite(log_fd, "%d\tRdLineReq_I\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_I\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+	       end
+	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_O) begin
+		  $fwrite(log_fd, "%d\tRdLineReq_O\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_O\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
+	       end
+	       else begin
+		  $fwrite(log_fd, "ReadValid on TX-CH0 validated an UNKNOWN Request type at t = %d \n", $time);
+	       end
+	    end
+	    /////////////////////////////// TX1 wrvalid /////////////////////////////////
+	    if (tx_c1_wrvalid) begin
+	       if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRTHRU) begin
+		  $fwrite(log_fd, "%d\tWrThruReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
+		  if (cfg.enable_cl_view) $display("%d\tWrThruReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
+	       end
+	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRLINE) begin
+		  $fwrite(log_fd, "%d\tWrLineReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
+		  if (cfg.enable_cl_view) $display("%d\tWrLineReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
+	       end
+	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE) begin
+		  $fwrite(log_fd, "%d\tWriteFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
+		  if (cfg.enable_cl_view) $display("%d\tWriteFence\t1\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
+	       end
+	       else begin
+		  $fwrite(log_fd, "WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
+		  if (cfg.enable_cl_view) $display("WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
+	       end
+	    end
+	 end
+	 // Wait till next clock
+	 @(posedge clk);
+      end
+   end
+
    
 endmodule

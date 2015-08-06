@@ -122,9 +122,6 @@ endif
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do vcs_run.tcl
-# ifeq ($(ASE_DEBUG), 1)
-# VCS_SIM_OPT+=  -cm line+fsm+cond+tgl+branch
-# endif
 
 
 #########################################################################
@@ -292,7 +289,7 @@ endif
 #                            Clean all                                  #
 #########################################################################
 clean: header
-	rm -rf work/ *.log *.tsv AN.DB/ | echo "Never mind"
+	rm -rf work/ *.log *.tsv AN.DB/ | echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
 	rm -rf profile* simprofile*

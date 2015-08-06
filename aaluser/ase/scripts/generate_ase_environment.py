@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #######################################################################
 # generate_ase_environment.py : Generate AFU paths, include directories as a
 # Makefile snippet for ASE builds

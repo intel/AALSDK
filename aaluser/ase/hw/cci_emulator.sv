@@ -52,29 +52,29 @@
 // CCI to Memory translator module
 module cci_emulator
   (
-   output logic                          clk_32ui   ,             // out
-   output logic                          clk_16ui   ,             // out
-   output logic                          sys_reset_n, 
-   output logic                          sw_reset_n, 
-   output logic 			 lp_initdone ,            // out
-   input logic  [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header,            // in
-   input logic 			         tx_c0_rdvalid,           // in
-   output logic 			 tx_c0_almostfull,        // out
-   input logic [`CCI_TX_HDR_WIDTH-1:0]   tx_c1_header,            // in
-   input logic [`CCI_DATA_WIDTH-1:0] 	 tx_c1_data,              // in
-   input logic 			         tx_c1_wrvalid,           // in
-   output logic 			 tx_c1_almostfull,        // out
-   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c0_header,            // out
-   output logic [`CCI_DATA_WIDTH-1:0] 	 rx_c0_data,              // out
-   output logic 			 rx_c0_rdvalid,           // out
-   output logic 			 rx_c0_wrvalid,           // out
-   output logic 			 rx_c0_cfgvalid,          // out
-   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c1_header,            // out
-   output logic 			 rx_c1_wrvalid,           // out
-   output logic 			 rx_c0_umsgvalid,         // out
-   input logic 			         tx_c1_intrvalid,         // in
-   output logic 			 rx_c0_intrvalid,         // out
-   output logic 			 rx_c1_intrvalid          // out
+   output logic                             clk_32ui   ,             // out
+   output logic                             clk_16ui   ,             // out
+   output logic                             sys_reset_n,             // out
+   output logic                             sw_reset_n,              // out
+   output logic 			    lp_initdone ,            // out
+   input logic  [`CCI_TX_HDR_WIDTH-1:0]     tx_c0_header,            // in
+   input logic 			            tx_c0_rdvalid,           // in
+   output logic 			    tx_c0_almostfull,        // out
+   input logic [`CCI_TX_HDR_WIDTH-1:0]      tx_c1_header,            // in
+   input logic [`CCI_DATA_WIDTH-1:0] 	    tx_c1_data,              // in
+   input logic 			            tx_c1_wrvalid,           // in
+   output logic 		            tx_c1_almostfull,        // out
+   input logic 			            tx_c1_intrvalid,         // in
+   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0] rx_c0_header,            // out
+   output logic [`CCI_DATA_WIDTH-1:0] 	    rx_c0_data,              // out
+   output logic 			    rx_c0_rdvalid,           // out
+   output logic 			    rx_c0_wrvalid,           // out
+   output logic 			    rx_c0_cfgvalid,          // out
+   output logic [`ASE_CCI_RX_HDR_WIDTH-1:0] rx_c1_header,            // out
+   output logic 			    rx_c1_wrvalid,           // out
+   output logic 			    rx_c0_umsgvalid,         // out
+   output logic 			    rx_c0_intrvalid,         // out
+   output logic 			    rx_c1_intrvalid          // out
    );
 
    /*
@@ -160,34 +160,13 @@ module cci_emulator
     *
     * ***************************************************************************/
 
-   logic                          clk   ;                  // out
-   // logic 			  lp_initdone ;            // out
-   // logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c0_header;            // in
-   // logic 			  tx_c0_rdvalid;           // in
-   // logic 			  tx_c0_almostfull;        // out
-   // logic [`CCI_TX_HDR_WIDTH-1:0]  tx_c1_header;            // in
-   // logic [`CCI_DATA_WIDTH-1:0] 	  tx_c1_data;              // in
-   // logic 			  tx_c1_wrvalid;           // in
-   // logic 			  tx_c1_almostfull;        // out
-   // logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c0_header;            // out
-   // logic [`CCI_DATA_WIDTH-1:0] 	  rx_c0_data;              // out
-   // logic 			  rx_c0_rdvalid;           // out
-   // logic 			  rx_c0_wrvalid;           // out
-   // logic 			  rx_c0_cfgvalid;          // out
-   // logic [`ASE_CCI_RX_HDR_WIDTH-1:0]  rx_c1_header;            // out
-   // logic 			  rx_c1_wrvalid;           // out
-   // logic 			  rx_c0_umsgvalid;         // out
-   // logic 			  tx_c1_intrvalid;         // in
-   // logic 			  rx_c0_intrvalid;         // out
-   // logic 			  rx_c1_intrvalid;         // out
+   logic                          clk   ;
 
    // LP initdone & reset registered signals
    logic 			  lp_initdone_q;
 
-   // Derived clocks
-   // logic 			  clk_32ui; // Normal 200 Mhz clock
-   // logic 			  clk_16ui; // Faster 400 Mhz clock
-   logic 			  clk_8ui;  // Internal 800 Mhz clock (for creating synchronized clocks)
+   // Internal 800 Mhz clock (for creating synchronized clocks)
+   logic 			  clk_8ui;  
 
    /*
     * Overflow/underflow signal checks
@@ -382,10 +361,10 @@ module cci_emulator
    int 			       umsg_data_slot_old = 255;
    int 			       umsg_hint_slot_old = 255;
    umsg_t                      umsg_array[`UMSG_MAX_MSG];
-   
+
    logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
    logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
-   
+
    // UMSG dispatch function
    task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [`CCI_DATA_WIDTH-1:0] umsg_data_in);
       int 			       umas_iter;
@@ -413,7 +392,7 @@ module cci_emulator
 
 	 // Any valid
 	 assign umsg_valid[ii] = umsg_array[ii].data_ready | umsg_array[ii].hint_ready;
-	 
+
 	 // UMsg Write array unit
 	 always @(*) begin : comb_umsgff_write_arrunit
 	    if (umsg_array[ii].hint_ready) begin
@@ -426,7 +405,7 @@ module cci_emulator
 	       umsgff_write_array[ii] <= 0;
 	    end
 	 end
-	 
+
 	 // Data register process
 	 always @(posedge clk) begin : umsgdata_reg_proc
 	    umsg_array[ii].data_q <= umsg_array[ii].data;
@@ -603,7 +582,7 @@ module cci_emulator
    	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].hint_ready && ~umsg_array[slot].data_ready) begin
    	       ret_hint_slot = slot;
-	       umsg_hint_slot_old = ret_hint_slot;	       
+	       umsg_hint_slot_old = ret_hint_slot;
    	       break;
    	    end
    	 end
@@ -620,14 +599,14 @@ module cci_emulator
       begin
 	 start_iter = 0;
 	 end_iter   = start_iter + `UMSG_MAX_MSG;
-   	 ret_data_slot = 255;	 
+   	 ret_data_slot = 255;
    	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
    	    if (umsg_array[slot].data_ready) begin
-   	       ret_data_slot = slot;	       
-	       umsg_data_slot_old = ret_data_slot;	       
+   	       ret_data_slot = slot;
+	       umsg_data_slot_old = ret_data_slot;
    	       break;
    	    end
-   	 end	  
+   	 end
    	 return ret_data_slot;
       end
    endfunction
@@ -648,17 +627,17 @@ module cci_emulator
 
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 umsgpop_state				<= UMsgToFifo_Idle;	 
+	 umsgpop_state				<= UMsgToFifo_Idle;
    	 umsgff_write				<= 0;
    	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
    	    umsg_array[popiter].hint_pop	<= 0;
-   	    umsg_array[popiter].data_pop	<= 0;	    
+   	    umsg_array[popiter].data_pop	<= 0;
    	 end
       end
       else begin
    	 for (popiter = 0 ; popiter < `UMSG_MAX_MSG ; popiter = popiter + 1) begin
    	    umsg_array[popiter].hint_pop	<= 0;
-   	    umsg_array[popiter].data_pop	<= 0;	    
+   	    umsg_array[popiter].data_pop	<= 0;
    	 end
 	 case (umsgpop_state)
 	   // IDLE
@@ -666,11 +645,11 @@ module cci_emulator
 	     begin
 		umsgff_write			<= 0;
 		if (((umsg_hint_slot != 255)||(umsg_data_slot != 255)) && ~umsgff_full) begin
-		   umsgpop_state		<= UMsgToFifo_Pop;		   
+		   umsgpop_state		<= UMsgToFifo_Pop;
 		end
 		else begin
-		   umsgpop_state		<= UMsgToFifo_Idle;		   
-		end		   
+		   umsgpop_state		<= UMsgToFifo_Idle;
+		end
 	     end
 
 	   // POP
@@ -679,29 +658,29 @@ module cci_emulator
 		if (umsg_hint_slot != 255) begin
    		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b1, 6'b0, umsg_hint_slot[5:0]} , `CCI_DATA_WIDTH'b0};
 		   umsgff_write				<= 1;
-   		   umsg_array[umsg_hint_slot].hint_pop  <= 1;	    
+   		   umsg_array[umsg_hint_slot].hint_pop  <= 1;
 		end
 		else if (umsg_data_slot != 255) begin
    		   umsgff_din				<= { {`ASE_RX0_UMSG, 1'b0, 1'b0, 6'b0, umsg_data_slot[5:0]} , umsg_array[umsg_data_slot].data};
 		   umsgff_write				<= 1;
-   		   umsg_array[umsg_data_slot].data_pop  <= 1;	    
+   		   umsg_array[umsg_data_slot].data_pop  <= 1;
 		end
 		else begin
 		   umsgff_write				<= 0;
 		end
-		umsgpop_state		<= UMsgToFifo_Idle;		   
+		umsgpop_state		<= UMsgToFifo_Idle;
 	     end
 
 	   // Default
 	   default:
 	     begin
 		umsgff_write	<= 0;
-		umsgpop_state	<= UMsgToFifo_Idle;		   
+		umsgpop_state	<= UMsgToFifo_Idle;
 	     end
 	 endcase
       end
    end
-   
+
 
 
    // Unordered message FIFO
@@ -1495,54 +1474,6 @@ module cci_emulator
       );
 
 
-   /* ****************************************************************
-    * Initialising the CAFU here.
-    * If SPL2 is enabled, SPL top is mapped
-    * If CCI is enabled, cci_std_afu.sv is mapped
-    *
-    * ****************************************************************
-    *
-    *              ASE   |             |   CAFU or (SPL + AFU)
-    *                  TX|------------>|RX
-    *                    |             |
-    *                  RX|<------------|TX
-    *                    |             |
-    *
-    * ***************************************************************/
-   // cci_std_afu cci_std_afu (
-   // 			    /* Link/Protocol (LP) clocks and reset */
-   // 			    .vl_clk_LPdomain_32ui             ( clk_32ui ),
-   // 			    .vl_clk_LPdomain_16ui             ( clk_16ui ),
-   // 			    .ffs_vl_LP32ui_lp2sy_InitDnForSys ( lp_initdone ),
-   // 			    .ffs_vl_LP32ui_lp2sy_SystemReset_n( sys_reset_n ),
-   // 			    .ffs_vl_LP32ui_lp2sy_SoftReset_n  ( sw_reset_n ),
-   // 			    /* Channel 0 can receive READ, WRITE, WRITE CSR responses.*/
-   // 			    .ffs_vl18_LP32ui_lp2sy_C0RxHdr    ( rx_c0_header ),
-   // 			    .ffs_vl512_LP32ui_lp2sy_C0RxData  ( rx_c0_data ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C0RxWrValid  ( rx_c0_wrvalid ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C0RxRdValid  ( rx_c0_rdvalid ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C0RxCgValid  ( rx_c0_cfgvalid ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C0RxUgValid  ( rx_c0_umsgvalid ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C0RxIrValid  ( rx_c0_intrvalid ),
-   // 			    /* Channel 1 reserved for WRITE RESPONSE ONLY */
-   // 			    .ffs_vl18_LP32ui_lp2sy_C1RxHdr    ( rx_c1_header ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C1RxWrValid  ( rx_c1_wrvalid ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C1RxIrValid  ( rx_c1_intrvalid ),
-   // 			    /*Channel 0 reserved for READ REQUESTS ONLY */
-   // 			    .ffs_vl61_LP32ui_sy2lp_C0TxHdr    ( tx_c0_header ),
-   // 			    .ffs_vl_LP32ui_sy2lp_C0TxRdValid  ( tx_c0_rdvalid ),
-   // 			    /*Channel 1 reserved for WRITE REQUESTS ONLY */
-   // 			    .ffs_vl61_LP32ui_sy2lp_C1TxHdr    ( tx_c1_header ),
-   // 			    .ffs_vl512_LP32ui_sy2lp_C1TxData  ( tx_c1_data ),
-   // 			    .ffs_vl_LP32ui_sy2lp_C1TxWrValid  ( tx_c1_wrvalid ),
-   // 			    .ffs_vl_LP32ui_sy2lp_C1TxIrValid  ( tx_c1_intrvalid ),
-   // 			    /* Tx push flow control */
-   // 			    .ffs_vl_LP32ui_lp2sy_C0TxAlmFull  ( tx_c0_almostfull ),
-   // 			    .ffs_vl_LP32ui_lp2sy_C1TxAlmFull  ( tx_c1_almostfull )
-   // 			    );
-
-
-
    /*
     * Initialization procedure
     *
@@ -1563,6 +1494,7 @@ module cci_emulator
     *
     */
    initial begin : ase_entry_point
+
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
       csr_write_dispatch(1, 0, 0);
@@ -1591,6 +1523,22 @@ module cci_emulator
 
    end
 
+   // Parameter test
+   // Pick up +cfg & +script
+   string config_filepath;
+   string script_filepath;   
+   initial begin
+      if ($value$plusargs("CONFIG=%S", config_filepath)) begin
+	 $display("Config = %s\n", config_filepath);	 
+      end
+   end
+
+   initial begin
+      if ($value$plusargs("SCRIPT=%S", script_filepath)) begin
+	 $display("Script = %s\n", script_filepath);	 
+      end
+   end
+   
 
    /*
     * Latency pipe : For LP_InitDone delay
@@ -1698,7 +1646,7 @@ module cci_emulator
       sys_reset_n_q     <= sys_reset_n;
    end
 
-   
+
    /*
     * ASE Hardware Interface (CCI) logger
     * - Logs CCI transaction into a transactions.tsv file

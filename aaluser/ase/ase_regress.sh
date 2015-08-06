@@ -30,11 +30,11 @@ export ASE_WORKDIR=${PWD}   || echo ""
 export BUILD_DIR=my_build
 export LD_LIBRARY_PATH=$PWD/../../myinst/usr/local/lib/
 
-cd ../../aalsamples/Hello_SPL_LB/SW/
-./helloSPLlb
-./helloSPLlb
-./helloSPLlb
-./helloSPLlb
+# cd ../../aalsamples/Hello_SPL_LB/SW/
+# ./helloSPLlb
+# ./helloSPLlb
+# ./helloSPLlb
+# ./helloSPLlb
 
-# cd $ASE_WORKDIR/regression/apps/
-# ./nlb_test 1024
+cd $ASE_WORKDIR/regression/apps/
+./nlb_test 1024

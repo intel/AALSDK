@@ -408,7 +408,7 @@ int ase_init()
   // Evaluate Session directory
   ase_workdir_path = malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
-  sprintf(ase_workdir_path, "%s/work/", ase_run_path);
+  sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : ASE Run path =>\n");
