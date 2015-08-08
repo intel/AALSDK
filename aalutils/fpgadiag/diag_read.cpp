@@ -9,6 +9,8 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
+   const btInt StopTimeoutMillis = 250;
+   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
   // uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
 
    m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
@@ -55,6 +57,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    ReadQLPCounters();
    SaveQLPCounters();
+
+   //if --prefill-miss is mentioned
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_MISS))
+   {
+	   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
+			 cerr << "Cache cool failed\n";
+		  }
+   }
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
@@ -115,11 +125,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
       }
 
-
    m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
 
-   const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -144,7 +152,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    while ( sz <= CL(cmd.endcls))
       {
-
 	   //************************* DEVICE RESET ************************************//
 	   // Assert Device Reset
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);

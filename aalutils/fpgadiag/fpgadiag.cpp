@@ -139,7 +139,9 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_SUPPRESSHDR,
       DEFAULT_WT,
       DEFAULT_WB,
-      DEFAULT_PWR,
+      DEFAULT_RDS,
+      DEFAULT_RDI,
+      DEFAULT_RDO,
       DEFAULT_CONT,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -151,10 +153,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_TOMIN,
       DEFAULT_TOHOUR,
 #endif // OS
-      DEFAULT_NOGUI,
-      DEFAULT_DEMO,
-      DEFAULT_NOHIST,
-      DEFAULT_HISTDATA
+      DEFAULT_POLL,
+      DEFAULT_CSR_WRITE,
+      DEFAULT_UMSG_DATA,
+      DEFAULT_UMSG_HINT
    },
    0,
    {
@@ -169,6 +171,7 @@ struct NLBCmdLine gCmdLine =
    },
    0,
    std::string(DEFAULT_TARGET_AFU),
+   std::string(DEFAULT_TEST_MODE),
    0
 };
 
@@ -604,6 +607,7 @@ int main(int argc, char *argv[])
    Runtime       aal(&myapp);
 
    myapp.AFUTarget(gCmdLine.AFUTarget);
+   myapp.TestMode(gCmdLine.TestMode);
 
    if ( (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_SWSIM)) ) {
@@ -627,79 +631,89 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   // Run NLB Lpbk1, which performs sw data verification.
-   CNLBLpbk1 nlblpbk1(&myapp);
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
+   {
+	   // Run NLB Lpbk1, which performs sw data verification.
+	   CNLBLpbk1 nlblpbk1(&myapp);
 
-   cout << " * Data Copy " << flush;
-   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << "VERIFIED";
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Data Copy " << flush;
+	   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
+   {
+	   // Run an NLB Read bandwidth measurement..
+	   // * cold cache (a la, --prefill-misses)
+	   // * report read bandwidth in GiB/s
+	   CNLBRead nlbread(&myapp);
 
-   // Run an NLB Read bandwidth measurement..
-   // * cold cache (a la, --prefill-misses)
-   // * report read bandwidth in GiB/s
-   CNLBRead nlbread(&myapp);
-
-   cout << " * Read Bandwidth from Memory " << flush;
-   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbread.ReadBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Read Bandwidth from Memory " << flush;
+	   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
+   {
+	   // Run an NLB Write bandwidth measurement..
+	   // * cold cache (a la, --prefill-misses)
+	   // * report write bandwidth in GiB/s
+	   CNLBWrite nlbwrite(&myapp);
 
-   // Run an NLB Write bandwidth measurement..
-   // * cold cache (a la, --prefill-misses)
-   // * report write bandwidth in GiB/s
-   CNLBWrite nlbwrite(&myapp);
-
-   cout << " * Write Bandwidth to Memory " << flush;
-   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbwrite.WriteBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Write Bandwidth to Memory " << flush;
+	   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
+   {
+	   // Run an NLB Trput measurement..
+	   // * report bandwidth in GiB/s
+	   CNLBTrput nlbtrput(&myapp);
 
-   // Run an NLB Trput measurement..
-   // * report bandwidth in GiB/s
-   CNLBTrput nlbtrput(&myapp);
-
-   cout << " * Simultaneous Read/Write Bandwidth " << flush;
-   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbtrput.ReadBandwidth() << " / " << nlbtrput.WriteBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Simultaneous Read/Write Bandwidth " << flush;
+	   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
    }
-   cout << NORMAL << endl
-        << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
+   {
+	   // Run an SW Test..
+	   // * report bandwidth in GiB/s
+	   CNLBSW nlbsw(&myapp);
 
-   // Run an SW Test..
-   // * report bandwidth in GiB/s
-   CNLBSW nlbsw(&myapp);
-
-   cout << " * SW test " << flush;
-   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbsw.ReadBandwidth() << " / " << nlbsw.WriteBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * SW test " << flush;
+	   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
    }
-   cout << NORMAL << endl
-        << endl;
-
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
@@ -1010,59 +1024,6 @@ std::string INLB::Normalized(const NLBCmdLine &cmd ) const throw()
 
 
 BEGIN_C_DECLS
-
-/*int my_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option)
-{
-   struct CMyCmdLine *cl = (struct CMyCmdLine *)user;
-
-   if ( 0 == strcmp("--help", option) ) {
-      flag_setf(cl->flags, MY_CMD_FLAG_HELP);
-   } else if ( 0 == strcmp("--version", option) ) {
-      flag_setf(cl->flags, MY_CMD_FLAG_VERSION);
-   }
-
-   return 0;
-}
-
-int my_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
-{
-   struct CMyCmdLine *cl = (struct CMyCmdLine *)user;
-
-   if ( 0 == strcmp("--target", option) ) {
-      if ( 0 == strcasecmp("fpga", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_FPGA);
-      } else if ( 0 == strcasecmp("ase", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_ASE);
-      } else if ( 0 == strcasecmp("swsim", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_SWSIM);
-      } else {
-         cout << "Invalid value for --target : " << value << endl;
-         return 4;
-      }
-   } else if ( 0 == strcmp("--log", option) ) {
-      char *endptr = NULL;
-
-      cl->LogLevel = (btInt)strtol(value, &endptr, 0);
-      if ( endptr != value + strlen(value) ) {
-         cl->LogLevel = 0;
-      } else if ( cl->LogLevel < 0) {
-         cl->LogLevel = 0;
-      } else if ( cl->LogLevel > 8) {
-         cl->LogLevel = 8;
-      }
-   }
-   return 0;
-}
-
-void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   fprintf(fp, "fpgasane takes no command arguments.\n");
-}
-
-void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   help_msg_callback(fp, gcs);
-}*/
 
 int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
 {

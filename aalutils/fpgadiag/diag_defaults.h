@@ -15,7 +15,9 @@
 #define DEFAULT_SUPPRESSHDR "no"
 #define DEFAULT_WT          "off"
 #define DEFAULT_WB          "on"
-#define DEFAULT_PWR         "off"
+#define DEFAULT_RDS         "on"
+#define DEFAULT_RDI         "off"
+#define DEFAULT_RDO         "off"
 #define DEFAULT_CONT        "off"
 #define DEFAULT_TONSEC      0
 #define DEFAULT_TOUSEC      0
@@ -23,10 +25,10 @@
 #define DEFAULT_TOSEC       0
 #define DEFAULT_TOMIN       0
 #define DEFAULT_TOHOUR      0
-#define DEFAULT_NOGUI       "no"
-#define DEFAULT_DEMO        "no"
-#define DEFAULT_NOHIST      "no"
-#define DEFAULT_HISTDATA    "no"
+#define DEFAULT_POLL       "yes"
+#define DEFAULT_CSR_WRITE  "no"
+#define DEFAULT_UMSG_DATA  "no"
+#define DEFAULT_UMSG_HINT  "no"
 
 
 #endif
