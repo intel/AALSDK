@@ -46,6 +46,12 @@ BEGIN_C_DECLS
 
 #define HIGH 0xffffffff
 
+# define NLB_TESTMODE_LPBK1 "TestMode_lpbk1"
+# define NLB_TESTMODE_READ  "TestMode_read"
+# define NLB_TESTMODE_WRITE "TestMode_write"
+# define NLB_TESTMODE_TRPUT "TestMode_trput"
+# define NLB_TESTMODE_SW    "TestMode_sw"
+
 struct NLBDefaults
 {
    wkspc_size_type mincls;
@@ -63,7 +69,9 @@ struct NLBDefaults
    const char     *suppresshdr;
    const char     *wt;
    const char     *wb;
-   const char     *pwr;
+   const char     *rds;
+   const char     *rdi;
+   const char     *rdo;
    const char     *cont;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -75,10 +83,10 @@ struct NLBDefaults
    timespec_type   to_min;
    timespec_type   to_hour;
 #endif // OS
-   const char     *nogui;
-   const char     *demo;
-   const char     *nohist;
-   const char     *histdata;
+   const char     *poll;
+   const char     *csr_write;
+   const char     *umsg_data;
+   const char     *umsg_hint;
 };
 
 struct NLBBandwidth
@@ -187,6 +195,7 @@ struct NLBCmdLine
    #define MY_CMD_FLAG_HELP    0x00000001
    #define MY_CMD_FLAG_VERSION 0x00000002
    std::string      AFUTarget;
+   std::string      TestMode;
    AAL::btInt       LogLevel;
 };
 
@@ -256,103 +265,6 @@ void nlb_help_message_callback(FILE * , struct _aalclp_gcs_compliance_data * );
 void MyNLBShowHelp(FILE * , aalclp_gcs_compliance_data * );
 
 END_C_DECLS
-
-/*class NLBConfig
-{
-public:
-   NLBConfig(bool                    bAsynchronous=true,
-             wkspc_size_type         SizeInBytes=DEFAULT_NLB_WKSPC_SIZE,
-             Workspace               SrcWkspc=NULLWorkspace,
-             Workspace               DestWkspc=NULLWorkspace,
-             Workspace               DevStatusWkspc=NULLWorkspace,
-             INLBVAFU::eNLBCacheInit CacheInit=DEFAULT_NLB_CACHE_INIT,
-             INLBVAFU::eNLBWriteType WriteType=DEFAULT_NLB_WRITE_TYPE,
-             bool                    bPostedWrites=DEFAULT_NLB_POSTED_WRITES,
-             bool                    bContinuousMode=false,
-             freq_type               FPGAClkFreqHz=200000000ULL/*TODO DEFAULT_FPGA_CLK_FREQ.Hertz()*//*) throw() :
-      m_bAsynchronous(bAsynchronous),
-      m_SizeInBytes(SizeInBytes),
-      m_SrcWkspc(SrcWkspc),
-      m_DestWkspc(DestWkspc),
-      m_DevStatusWkspc(DevStatusWkspc),
-      m_CacheInit(CacheInit),
-      m_WriteType(WriteType),
-      m_bPostedWrites(bPostedWrites),
-      m_bContinuousMode(bContinuousMode),
-      m_FPGAClkFreqHz(FPGAClkFreqHz)
-   {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-      struct timespec ts = { DEFAULT_NLB_CONT_TIMEOUT_SEC, DEFAULT_NLB_CONT_TIMEOUT_NS };
-      m_ContModeTimeout  = ts;
-#endif // OS
-   }
-
-   void SetAsynchronous(bool bAsync)                   throw() { m_bAsynchronous = bAsync;    }
-   bool GetAsynchronous()                        const throw() { return m_bAsynchronous;      }
-
-   void            SetSizeInBytes(wkspc_size_type sz)  throw() { m_SizeInBytes = sz;          }
-   wkspc_size_type GetSizeInBytes()              const throw() { return m_SizeInBytes;        }
-
-   void      SetSrcWkspc(const Workspace &wkspc)       throw()
-   {
-      m_SrcWkspc = wkspc;
-      if ( 0 != m_SrcWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_SrcWkspc.TagName() = "NLB Src";
-      }
-   }
-   Workspace GetSrcWkspc()                       const throw() { return m_SrcWkspc;           }
-
-   void      SetDestWkspc(const Workspace &wkspc)      throw()
-   {
-      m_DestWkspc = wkspc;
-      if ( 0 != m_DestWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_DestWkspc.TagName() = "NLB Dst";
-      }
-   }
-   Workspace GetDestWkspc()                      const throw() { return m_DestWkspc;          }
-
-   void      SetDevStatusWkspc(const Workspace &wkspc) throw()
-   {
-      m_DevStatusWkspc = wkspc;
-      if ( 0 != m_DevStatusWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_DevStatusWkspc.TagName() = "NLB DSM";
-      }
-   }
-   Workspace GetDevStatusWkspc()                 const throw() { return m_DevStatusWkspc;     }
-
-   void SetCacheInit(INLBVAFU::eNLBCacheInit init)     throw() { m_CacheInit = init;          }
-   INLBVAFU::eNLBCacheInit GetCacheInit()        const throw() { return m_CacheInit;          }
-
-   void SetWriteType(INLBVAFU::eNLBWriteType type)     throw() { m_WriteType = type;          }
-   INLBVAFU::eNLBWriteType GetWriteType()        const throw() { return m_WriteType;          }
-
-   void SetPostedWrites(bool bPostedWr)                throw() { m_bPostedWrites = bPostedWr; }
-   bool GetPostedWrites()                        const throw() { return m_bPostedWrites;      }
-
-   void SetContinuous(bool bCont)                      throw() { m_bContinuousMode = bCont;   }
-   bool GetContinuous()                          const throw() { return m_bContinuousMode;    }
-
-   void SetFPGAClkFreqHz(freq_type FreqHz)             throw() { m_FPGAClkFreqHz = FreqHz;    }
-   freq_type GetFPGAClkFreqHz()                  const throw() { return m_FPGAClkFreqHz;      }
-
-   void SetContModeTimeout(const Timer &t)             throw() { m_ContModeTimeout = t;       }
-   Timer GetContModeTimeout()                    const throw() { return m_ContModeTimeout;    }
-
-protected:
-   bool                    m_bAsynchronous;
-   wkspc_size_type         m_SizeInBytes;    // size of Src / Dest Workspaces
-   Workspace               m_SrcWkspc;
-   Workspace               m_DestWkspc;
-   Workspace               m_DevStatusWkspc;
-   INLBVAFU::eNLBCacheInit m_CacheInit;
-   INLBVAFU::eNLBWriteType m_WriteType;
-   bool                    m_bPostedWrites;
-   bool                    m_bContinuousMode;
-   freq_type               m_FPGAClkFreqHz;
-   Timer                   m_ContModeTimeout;
-};*/
 
 bool         NLBVerifyCmdLine(NLBCmdLine       & ,
                               std::ostream     & ) throw();

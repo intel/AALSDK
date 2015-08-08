@@ -119,7 +119,22 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
             cout << "Invalid value for --target : " << value << endl;
             return 4;
          }
-      } else if ( 0 == strcmp("--log", option) ) {
+      }else if ( 0 == strcmp("--mode", option) ) {
+          if ( 0 == strcasecmp("lpbk1", value) ) {
+         	 nlbcl->TestMode = std::string(NLB_TESTMODE_LPBK1);
+          } else if ( 0 == strcasecmp("read", value) ) {
+         	 nlbcl->TestMode = std::string(NLB_TESTMODE_READ);
+          } else if ( 0 == strcasecmp("write", value) ) {
+         	 nlbcl->TestMode = std::string(NLB_TESTMODE_WRITE);
+          } else if ( 0 == strcasecmp("trput", value) ) {
+			 nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
+          } else if ( 0 == strcasecmp("sw", value) ) {
+			 nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
+          } else {
+             cout << "Invalid value for --mode : " << value << endl;
+             return 4;
+          }
+       }else if ( 0 == strcmp("--log", option) ) {
          char *endptr = NULL;
 
          nlbcl->LogLevel = (AAL::btInt)strtol(value, &endptr, 0);
@@ -484,27 +499,27 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)gcs->user;
 
 	string test;
-	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [LPBK2]" << endl;
+	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW]" << endl;
 	cin >> test;
    fprintf(fp, "Usage:\n");
 
    if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
-      fprintf(fp, "   nlb-lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "READ") ) {
-      fprintf(fp, "   nlb-read <TARGET> [<BEGIN>] [<END>] [<WKSPCS>] [<PREFILL>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "WRITE") ) {
-      fprintf(fp, "   nlb-write <TARGET> [<BEGIN>] [<END>] [<WKSPCS>] [<PREFILL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
-      fprintf(fp, "   nlb-trput <TARGET> [<BEGIN>] [<END>] [<WKSPCS>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "LPBK2") ) {
-      fprintf(fp, "   nlb-lpbk2 <TARGET> [<BEGIN>] [<END>] [<WKSPCS>] [<WRITES>] [<TIMEOUT>]");
+      fprintf(fp, "   --mode=trput <TARGET> [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
+   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+      fprintf(fp, "   --mode=sw <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
    }
 
    fprintf(fp, "\n\n");
 
    fprintf(fp, "      <TARGET>    = --target=one of { fpga ase swsim }\n");
    if ( 0 != strcmp(test.c_str(), "LPBK1") &&
-		0 != strcmp(test.c_str(), "LPBK2")) {
+		0 != strcmp(test.c_str(), "SW")) {
       fprintf(fp, "      <BANDWIDTH> = --no-bw,          suppress bandwidth calculations,                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.nobw);
@@ -529,58 +544,6 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "Default=%llu\n", nlbcl->defaults.endcls);
    }
 
-   /*fprintf(fp, "      <WKSPCS>    = --dsm-phys=P,     physical address for device status memory,      ");
-   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_DSM_PHYS) ) {
-      fprintf(fp, "0x%" PRIxPHYS_ADDR, nlbcl->dsmphys);
-   } else {
-      fprintf(fp, "Default=0x%" PRIxPHYS_ADDR " (allocate from OS)", nlbcl->defaults.dsmphys);
-   }
-   fprintf(fp, "\n");
-
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "READ")  ||
-        0 == strcmp(test.c_str(), "TRPUT") ) {
-      fprintf(fp, "                    --src-phys=P,     physical address for source workspace,          ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_PHYS) ) {
-         fprintf(fp, "0x%" PRIxPHYS_ADDR, nlbcl->srcphys);
-      } else if ( flag_is_clr(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_CAPCM) ) {
-         fprintf(fp, "Default=0x%" PRIxPHYS_ADDR " (allocate from OS)", nlbcl->defaults.srcphys);
-      }
-      fprintf(fp, "\n");
-
-      fprintf(fp, "                    --src-capcm=Q,    CA PCM offset for source workspace,             ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_CAPCM) ) {
-         fprintf(fp, "0x%" PRIxPHYS_ADDR, nlbcl->srcphys);
-      } else if ( flag_is_clr(nlbcl->cmdflags, NLB_CMD_FLAG_SRC_PHYS) ) {
-         fprintf(fp, "Default=0x%" PRIxPHYS_ADDR " (allocate from OS)", nlbcl->defaults.srcphys);
-      }
-      fprintf(fp, "\n");
-   }
-
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "WRITE") ||
-        0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "LPBK2") ) {
-      fprintf(fp, "                    --dest-phys=P,    physical address for destination workspace,     ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_DST_PHYS) ) {
-         fprintf(fp, "0x%" PRIxPHYS_ADDR, nlbcl->dstphys);
-      } else if ( flag_is_clr(nlbcl->cmdflags, NLB_CMD_FLAG_DST_CAPCM) ) {
-         fprintf(fp, "Default=0x%" PRIxPHYS_ADDR " (allocate from OS)", nlbcl->defaults.dstphys);
-      }
-      fprintf(fp, "\n");
-
-      if ( 0 != strcmp(test.c_str(), "LPBK2") ) {
-         // The address for this mode must be accessible by the CPU.
-         fprintf(fp, "                    --dest-capcm=Q,   CA PCM offset for destination workspace,        ");
-         if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_DST_CAPCM) ) {
-            fprintf(fp, "0x%" PRIxPHYS_ADDR, nlbcl->dstphys);
-         } else if ( flag_is_clr(nlbcl->cmdflags, NLB_CMD_FLAG_DST_PHYS) ) {
-            fprintf(fp, "Default=0x%" PRIxPHYS_ADDR " (allocate from OS)", nlbcl->defaults.dstphys);
-         }
-         fprintf(fp, "\n");
-      }
-   }*/
-
    if ( 0 == strcmp(test.c_str(), "READ") ||
         0 == strcmp(test.c_str(), "WRITE") ) {
       fprintf(fp, "      <PREFILL>   = --prefill-hits,   attempt to prime the cache with hits,           ");
@@ -601,7 +564,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    if ( 0 == strcmp(test.c_str(), "LPBK1") ||
         0 == strcmp(test.c_str(), "WRITE") ||
         0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "LPBK2") ) {
+        0 == strcmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <WRITES>    = --wt,             write-through cache behavior,                   ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WT) ) {
          fprintf(fp, "on\n");
@@ -615,22 +578,14 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       } else {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.wb);
       }
-
-      if ( 0 != strcmp(test.c_str(), "LPBK1"))
-    	{
-		  fprintf(fp, "                    --pwr,            posted writes,                                  ");
-		  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PWR) ) {
-			 fprintf(fp, "on\n");
-		  } else {
-			 fprintf(fp, "Default=%s\n", nlbcl->defaults.pwr);
-		  }
-      }
    }
 
    if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
-         fprintf(fp, "      <CONT>        (LPBK1 is a continuous mode-only test)                            on\n");
-   } else if ( 0 == strcmp(test.c_str(), "LPBK2") ) {
-      fprintf(fp, "      <CONT>        (LPBK2 is a continuous mode-only test)                            on\n");
+	  fprintf(fp, "      <CONT>        (LPBK1 is a non-continuous mode-only test)                        off\n");
+   } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
+      fprintf(fp, "      <CONT>        (TRPUT is a continuous mode-only test)                            on\n");
+   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+	  fprintf(fp, "      <CONT>        (SW is a non-continuous mode-only test)                           off\n");
    } else {
       fprintf(fp, "      <CONT>      = --cont,           continuous mode,                                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CONT) ) {
@@ -644,8 +599,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 
    if ( 0 == strcmp(test.c_str(), "READ") ||
 	    0 == strcmp(test.c_str(), "WRITE") ||
-	    0 == strcmp(test.c_str(), "TRPUT") ||
-	    0 == strcmp(test.c_str(), "SW1") ) {
+	    0 == strcmp(test.c_str(), "TRPUT") ) {
 
 	   fprintf(fp, "      <TIMEOUT>   = --timeout-nsec=T, timeout for --cont mode (nanoseconds portion),  ");
 	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC) ) {
@@ -689,36 +643,69 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 		  fprintf(fp, "Default=%ld\n", nlbcl->defaults.to_hour);
 	   }
    }
-  /* if ( 0 != strcmp(test.c_str(), "LPBK2") ) {
-      fprintf(fp, "      <FREQ>      = --clock-freq,     clock frequency used in bandwidth calculations, ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CLKFREQ) ) {
-         fprintf(fp, "%s\n", freq_to_str(nlbcl->clkfreq));
-      } else {
-         fprintf(fp, "Default=%s\n", freq_to_str(nlbcl->defaults.clkfreq));
-      }
-   }*/
 
-   if ( 0 != strcmp(test.c_str(), "LPBK2") ) {
-      fprintf(fp, "      <OUTPUT>    = --suppress-hdr,   suppress column headers for text output,        ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-         fprintf(fp, "yes\n");
-      } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.suppresshdr);
-      }
+   fprintf(fp, "      <OUTPUT>    = --suppress-hdr,   suppress column headers for text output,        ");
+   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
+	  fprintf(fp, "yes\n");
+   } else {
+	  fprintf(fp, "Default=%s\n", nlbcl->defaults.suppresshdr);
    }
 
    if ( 0 == strcmp(test.c_str(), "LPBK1") ||
         0 == strcmp(test.c_str(), "READ")  ||
-        0 == strcmp(test.c_str(), "WRITE") ||
-        0 == strcmp(test.c_str(), "TRPUT") ) {
-      fprintf(fp, "                    --tabular,        create tabular output,                          ");
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TABULAR) ) {
+        0 == strcmp(test.c_str(), "TRPUT") ||
+        0 == strcmp(test.c_str(), "SW") ) {
+      fprintf(fp, "      <RDSEL>     = --rds,            readline-shared,                                ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDS) ) {
          fprintf(fp, "yes\n");
       } else {
-         fprintf(fp, "Default=%s\n", nlbcl->defaults.tabular);
+         fprintf(fp, "Default=%s\n", nlbcl->defaults.rds);
       }
+
+     fprintf(fp, "                  = --rdi,            readline-invalidate,                            ");
+	 if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDI) ) {
+	   fprintf(fp, "yes\n");
+	 } else {
+	   fprintf(fp, "Default=%s\n", nlbcl->defaults.rdi);
+	 }
+
+	 fprintf(fp, "                  = --rdo,            readline-ownership,                             ");
+	 if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDO) ) {
+	   fprintf(fp, "yes\n");
+	 } else {
+	   fprintf(fp, "Default=%s\n", nlbcl->defaults.rdo);
+	 }
    }
 
+   if ( 0 == strcmp(test.c_str(), "SW") ) {
+      fprintf(fp, "      <NOTICE>    = --poll,           Polling-method,                                 ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
+         fprintf(fp, "yes\n");
+      } else {
+         fprintf(fp, "Default=%s\n", nlbcl->defaults.poll);
+      }
+
+      fprintf(fp, "                  = --csr-write,      CSR Write,                                      ");
+	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE) ) {
+	     fprintf(fp, "yes\n");
+	  } else {
+	     fprintf(fp, "Default=%s\n", nlbcl->defaults.csr_write);
+	  }
+
+	  fprintf(fp, "                  = --umsg-data,      UMsg with data,                                 ");
+	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA) ) {
+		 fprintf(fp, "yes\n");
+	  } else {
+		 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_data);
+	  }
+
+	  fprintf(fp, "                  = --umsg-hint,      UMsg Hint without data,                         ");
+	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT) ) {
+		 fprintf(fp, "yes\n");
+	  } else {
+		 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_hint);
+	  }
+   }
    fprintf(fp, "\n");
 }
 
@@ -727,253 +714,6 @@ void MyNLBShowHelp(FILE *fp, aalclp_gcs_compliance_data *gcs) {
 }
 
 END_C_DECLS
-
-/*static uint_type NLBDisplayFlags(const NLBCmdLine &cmd) throw()
-{
-   uint_type res = 0;
-
-   if ( 0 == ::strcmp(cmd.mode, "LPBK1") ) {
-
-      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_DEMO) ) {
-         // demo flags for LPBK1
-         res |= NLB_DISP_FLAG_TITLE         |
-                NLB_DISP_FLAG_HEADERS       |
-                NLB_DISP_FLAG_ITERS         |
-                NLB_DISP_FLAG_CLS           |
-                NLB_DISP_FLAG_FREQ          |
-                NLB_DISP_FLAG_EVICT         |
-                NLB_DISP_FLAG_WR_TYPE       |
-                NLB_DISP_FLAG_POSTED_WR     |
-
-                NLB_DISP_FLAG_READS         |
-                NLB_DISP_FLAG_CACHE_RD_HITS |
-                NLB_DISP_FLAG_CACHE_RD_MISS |
-
-                NLB_DISP_FLAG_RD_BW         |
-                NLB_DISP_FLAG_PEAK_RD_BW    |
-//                NLB_DISP_FLAG_AVG_RD_BW     |
-
-                NLB_DISP_FLAG_WRITES        |
-                NLB_DISP_FLAG_CACHE_WR_HITS |
-                NLB_DISP_FLAG_CACHE_WR_MISS |
-
-                NLB_DISP_FLAG_WR_BW         |
-                NLB_DISP_FLAG_PEAK_WR_BW    |
-//                NLB_DISP_FLAG_AVG_WR_BW     |
-
-                NLB_DISP_FLAG_CONT          |
-
-                NLB_DISP_FLAG_COPYRIGHT;
-      } else {
-         // non-demo flags for LPBK1
-         res |= NLB_DISP_FLAG_ALL;
-
-         flag_clrf(res, NLB_DISP_FLAG_CACHE_INIT); // no cache init options for LPBK1
-
-         if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-            flag_clrf(res, NLB_DISP_FLAG_HEADERS);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-            flag_clrf(res, NLB_DISP_FLAG_RD_BW      |
-                           NLB_DISP_FLAG_PEAK_RD_BW |
-                           NLB_DISP_FLAG_AVG_RD_BW  |
-                           NLB_DISP_FLAG_AVG_WR_BW  |
-                           NLB_DISP_FLAG_WR_BW      |
-                           NLB_DISP_FLAG_PEAK_WR_BW
-                     );
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CONT);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CSRS) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CSRS);
-         }
-
-      }
-
-   } else if ( 0 == ::strcmp(cmd.mode, "READ") ) {
-
-      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_DEMO) ) {
-         // demo flags for READ
-         res |= NLB_DISP_FLAG_TITLE         |
-                NLB_DISP_FLAG_HEADERS       |
-                NLB_DISP_FLAG_ITERS         |
-                NLB_DISP_FLAG_CLS           |
-                NLB_DISP_FLAG_FREQ          |
-                NLB_DISP_FLAG_EVICT         |
-                NLB_DISP_FLAG_CACHE_INIT    |
-
-                NLB_DISP_FLAG_READS         |
-                NLB_DISP_FLAG_CACHE_RD_HITS |
-                NLB_DISP_FLAG_CACHE_RD_MISS |
-
-                NLB_DISP_FLAG_RD_BW         |
-                NLB_DISP_FLAG_PEAK_RD_BW    |
-//                NLB_DISP_FLAG_AVG_RD_BW     |
-
-                NLB_DISP_FLAG_CONT          |
-
-                NLB_DISP_FLAG_COPYRIGHT;
-      } else {
-         // non-demo flags for READ
-         res |= NLB_DISP_FLAG_ALL;
-
-         flag_clrf(res, NLB_DISP_FLAG_WR_TYPE       |
-                        NLB_DISP_FLAG_POSTED_WR     |
-                        NLB_DISP_FLAG_WRITES        |
-                        NLB_DISP_FLAG_CACHE_WR_HITS |
-                        NLB_DISP_FLAG_CACHE_WR_MISS |
-                        NLB_DISP_FLAG_WR_BW         |
-                        NLB_DISP_FLAG_PEAK_WR_BW    |
-                        NLB_DISP_FLAG_DST_WKSPC);
-
-         if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-            flag_clrf(res, NLB_DISP_FLAG_HEADERS);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-            flag_clrf(res, NLB_DISP_FLAG_RD_BW      |
-                           NLB_DISP_FLAG_AVG_RD_BW  |
-                           NLB_DISP_FLAG_PEAK_RD_BW
-                     );
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CONT);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CSRS) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CSRS);
-         }
-      }
-
-   } else if ( 0 == ::strcmp(cmd.mode, "WRITE") ) {
-
-      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_DEMO) ) {
-         // demo flags for WRITE
-         res |= NLB_DISP_FLAG_TITLE         |
-                NLB_DISP_FLAG_HEADERS       |
-                NLB_DISP_FLAG_ITERS         |
-                NLB_DISP_FLAG_CLS           |
-                NLB_DISP_FLAG_FREQ          |
-                NLB_DISP_FLAG_EVICT         |
-                NLB_DISP_FLAG_CACHE_INIT    |
-                NLB_DISP_FLAG_WR_TYPE       |
-                NLB_DISP_FLAG_POSTED_WR     |
-
-                NLB_DISP_FLAG_WRITES        |
-                NLB_DISP_FLAG_CACHE_WR_HITS |
-                NLB_DISP_FLAG_CACHE_WR_MISS |
-
-                NLB_DISP_FLAG_WR_BW         |
-                NLB_DISP_FLAG_PEAK_WR_BW    |
-//                NLB_DISP_FLAG_AVG_WR_BW     |
-
-                NLB_DISP_FLAG_CONT          |
-
-                NLB_DISP_FLAG_COPYRIGHT;
-
-      } else {
-         // non-demo flags for WRITE
-         res |= NLB_DISP_FLAG_ALL;
-
-         flag_clrf(res, NLB_DISP_FLAG_READS         |
-                        NLB_DISP_FLAG_CACHE_RD_HITS |
-                        NLB_DISP_FLAG_CACHE_RD_MISS |
-                        NLB_DISP_FLAG_RD_BW         |
-                        NLB_DISP_FLAG_PEAK_RD_BW    |
-                        NLB_DISP_FLAG_AVG_RD_BW     |
-                        NLB_DISP_FLAG_SRC_WKSPC);
-
-         if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-            flag_clrf(res, NLB_DISP_FLAG_HEADERS);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-            flag_clrf(res, NLB_DISP_FLAG_WR_BW      |
-                           NLB_DISP_FLAG_AVG_WR_BW  |
-                           NLB_DISP_FLAG_PEAK_WR_BW
-                     );
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CONT);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CSRS) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CSRS);
-         }
-      }
-
-   } else if ( 0 == ::strcmp(cmd.mode, "TRPUT") ) {
-
-      if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_DEMO) ) {
-         // demo flags for TRPUT
-         res |= NLB_DISP_FLAG_TITLE         |
-                NLB_DISP_FLAG_HEADERS       |
-                NLB_DISP_FLAG_ITERS         |
-                NLB_DISP_FLAG_CLS           |
-                NLB_DISP_FLAG_FREQ          |
-                NLB_DISP_FLAG_EVICT         |
-                NLB_DISP_FLAG_WR_TYPE       |
-                NLB_DISP_FLAG_POSTED_WR     |
-
-                NLB_DISP_FLAG_READS         |
-                NLB_DISP_FLAG_CACHE_RD_HITS |
-                NLB_DISP_FLAG_CACHE_RD_MISS |
-
-                NLB_DISP_FLAG_RD_BW         |
-                NLB_DISP_FLAG_PEAK_RD_BW    |
-//                NLB_DISP_FLAG_AVG_RD_BW     |
-
-                NLB_DISP_FLAG_WRITES        |
-                NLB_DISP_FLAG_CACHE_WR_HITS |
-                NLB_DISP_FLAG_CACHE_WR_MISS |
-
-                NLB_DISP_FLAG_WR_BW         |
-                NLB_DISP_FLAG_PEAK_WR_BW    |
-//                NLB_DISP_FLAG_AVG_WR_BW     |
-
-                NLB_DISP_FLAG_CONT          |
-
-                NLB_DISP_FLAG_COPYRIGHT;
-      } else {
-         // non-demo flags for TRPUT
-         res |= NLB_DISP_FLAG_ALL;
-
-         flag_clrf(res, NLB_DISP_FLAG_CACHE_INIT); // no cache init options for TRPUT
-
-         if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-            flag_clrf(res, NLB_DISP_FLAG_HEADERS);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-            flag_clrf(res, NLB_DISP_FLAG_RD_BW      |
-                           NLB_DISP_FLAG_PEAK_RD_BW |
-                           NLB_DISP_FLAG_AVG_RD_BW  |
-                           NLB_DISP_FLAG_AVG_WR_BW  |
-                           NLB_DISP_FLAG_WR_BW      |
-                           NLB_DISP_FLAG_PEAK_WR_BW
-                     );
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CONT);
-         }
-
-         if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_CSRS) ) {
-            flag_clrf(res, NLB_DISP_FLAG_CSRS);
-         }
-
-      }
-
-   }
-
-   return res;
-}*/
 
 // false indicates error.
 bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
@@ -1052,6 +792,20 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 	  os << "--rdi --rds and --rdo are mutually exclusive." << endl;
 	  return false;
    }
+
+   // --rdi, --rds, --rdo
+
+   if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_CSR_WRITE) ||
+   flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_DATA) ||
+   flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_HINT) ||
+   flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_DATA) ||
+   flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE|NLB_CMD_FLAG_UMSG_HINT) ||
+   flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA|NLB_CMD_FLAG_UMSG_HINT)
+   ) {
+   os << "--poll --csr-write --umsg-data and --umsg-hint are mutually exclusive." << endl;
+   return false;
+   }
+
 
    // --wt, --wb, --pwr
 
