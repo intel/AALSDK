@@ -208,7 +208,7 @@ void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
 void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );*/
 
 AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "fpgasane",
+                             "fpgadiag",
                              "0.0.0",
                              "",
                              nlb_help_message_callback,
@@ -581,6 +581,10 @@ int main(int argc, char *argv[])
    } else if ( !NLBVerifyCmdLine(gCmdLine, std::cout) ) {
       return 3;
    }
+
+   if ( flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_HELP) ) {
+       return 0; // per GCS
+      }
 
    cout << endl
         << "FpgaDiag - Intel QuickAssist FPGA Diagnostics Test:" << endl;
