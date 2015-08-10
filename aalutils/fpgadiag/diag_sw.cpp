@@ -85,7 +85,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    }
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_MASK; //TODO confirm with Tim
+   csr_type cfg = (csr_type)NLB_TEST_MODE_SW;
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
    {
