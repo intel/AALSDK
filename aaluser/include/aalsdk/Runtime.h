@@ -47,9 +47,6 @@
 #include <aalsdk/osal/IDispatchable.h>
 
 
-#include <vector>
-using namespace std;
-
 /// @addtogroup Runtime
 /// @{
 /** The Runtime object is exposed by the AAL Runtime implementation as a means to provide its services
@@ -300,12 +297,12 @@ public:
 
 
 private:
-   Runtime();                             // No empty construction
-   _runtime          *m_pImplementation;  // Implementation of runtime
-   IRuntime          *m_pParent;          // Parent of this proxy
-   btBool             m_status;           // OK or not
-   IRuntimeClient    *m_pClient;
-   vector<Runtime*>   m_proxyList;        // List of Runtime proxies created through this object
+   Runtime();                                 // No empty construction
+   _runtime              *m_pImplementation;  // Implementation of runtime
+   IRuntime              *m_pParent;          // Parent of this proxy
+   btBool                 m_status;           // OK or not
+   IRuntimeClient        *m_pClient;
+   std::vector<Runtime *> m_proxyList;        // List of Runtime proxies created through this object
 };
 
 

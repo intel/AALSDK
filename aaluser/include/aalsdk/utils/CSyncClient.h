@@ -46,8 +46,8 @@
 
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
-using namespace AAL;
 
+USING_NAMESPACE(AAL)
 
 // Convenience macros for printing messages and errors.
 #ifndef MSG

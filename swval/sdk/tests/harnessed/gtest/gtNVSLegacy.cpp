@@ -778,12 +778,12 @@ btBool F_CLOSE(FILE *fp)
 
 btBool S_OPEN_FOR_READ(std::fstream &fs, const char *file)
 {
-   fs.open(file, ios_base::binary | ios_base::in);
+   fs.open(file, std::ios_base::binary | std::ios_base::in);
    return fs.good();
 }
 btBool S_OPEN_FOR_WRITE(std::fstream &fs, const char *file)
 {
-   fs.open(file, ios_base::binary | ios_base::out);
+   fs.open(file, std::ios_base::binary | std::ios_base::out);
    return fs.good();
 }
 void S_CLOSE(std::fstream &fs)

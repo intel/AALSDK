@@ -55,8 +55,6 @@
 #include "aalsdk/INTCDefs.h"
 #include "aalsdk/CAALEvent.h"
 
-using namespace std;
-
 BEGIN_NAMESPACE(AAL)
 
 
