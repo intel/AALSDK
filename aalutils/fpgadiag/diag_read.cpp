@@ -1,3 +1,47 @@
+// Copyright (c) 2013-2014, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+// @file diag_read.cpp
+// @brief NLB VAFU template application file.
+// @ingroup
+// @verbatim
+// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+//
+// AUTHORS: Tim Whisonant, Intel Corporation
+//			Sadruta Chandrashekar, Intel Corporation
+//
+// HISTORY:
+// WHEN:          WHO:     WHAT:
+// 05/30/2013     TSW      Initial version.
+// 07/30/2105     SC	   fpgadiag version@endverbatim
+//****************************************************************************
+
+//READ: This ia a read-only test with no data checking. AFU reads CSR_NUM_LINES starting from CSR_SRC_ADDR.
+//This test is used to stress the read path and measure 100% read bandwidth and latency.
+
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -9,9 +53,9 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
+
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
-  // uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
 
    m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
    m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -152,7 +196,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    while ( sz <= CL(cmd.endcls))
       {
-	   //************************* DEVICE RESET ************************************//
 	   // Assert Device Reset
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
@@ -162,13 +205,11 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   // De-assert Device Reset
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
-	   //************************* DEVICE RESET ************************************//
-
 	   // Set the number of cache lines for the test
-	      m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	   // Start the test
-	      m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 	   // Wait for test completion
 	   while ( ( 0 == pAFUDSM->test_complete ) &&
@@ -185,14 +226,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   PrintOutput(cmd, (sz / CL(1)));
 
 	   SaveQLPCounters();
+
+	   // Increment Cachelines and update timer.
 	   sz += CL(1);
 	   absolute = Timer() + Timer(&ts);
 
       }
 
-   // Stop the device
-  // m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
+   // Wait till test complete or timeout
    while ( ( 0 == pAFUDSM->test_complete ) &&
            ( MaxPoll >= 0 ) ) {
       MaxPoll -= 500;
