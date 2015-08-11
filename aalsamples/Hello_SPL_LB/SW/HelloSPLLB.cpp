@@ -98,7 +98,7 @@ using namespace AAL;
 #define LPBK1_BUFFER_SIZE        CL(1)
 
 #define LPBK1_DSM_SIZE           MB(4)
-
+#define RuntimeClient HelloSPLLBRuntimeClient
 /// @addtogroup HelloSPLLB
 /// @{
 
@@ -112,17 +112,28 @@ class RuntimeClient : public CAASBase,
                       public IRuntimeClient
 {
 public:
-   RuntimeClient();
+    RuntimeClient();
    ~RuntimeClient();
 
+   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-
+   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
+   ///
+   /// This pointer is used to allocate Service. 
    IRuntime* getRuntime();
 
-   btBool isOK();
+   /// @brief Checks that the object is in an internally consistent state
+   ///
+   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+   /// as opposed to throwing exceptions or having to constantly check return codes.
+   /// We implement this to check if the status of the service allocated.
+   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+  btBool isOK();
+
 
    // <begin IRuntimeClient interface>
-   void runtimeCreateOrGetProxyFailed(const AAL::IEvent&);
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent); 
+  // void runtimeCreateOrGetProxyFailed(const AAL::IEvent&);
 
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
@@ -267,11 +278,16 @@ public:
 
    HelloSPLLBApp(RuntimeClient * rtc);
    ~HelloSPLLBApp();
-
+   /// @brief Called by the main part of the application,Returns 0 if Success   
+   ///
+   /// Application Requests Service using Runtime Client passing a pointer to self.  
+   /// Blocks calling thread from [Main} untill application is done.    
    btInt run();
+  /// @brief This function displays Expected and Found Cachelines
    void Show2CLs(void *pCLExpected,
                  void *pCLFound,
                  ostringstream &oss);
+   /// @brief This function prints the cachelines 
    void _DumpCL(void *pCL,
                 ostringstream &oss);
 
@@ -306,7 +322,7 @@ public:
 
     virtual void serviceReleased(TransactionID const &rTranID);
 
-    virtual void serviceReleaseFailed(const AAL::IEvent&);
+    virtual void serviceReleaseFailed(const IEvent &rEvent);
 
    virtual void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>

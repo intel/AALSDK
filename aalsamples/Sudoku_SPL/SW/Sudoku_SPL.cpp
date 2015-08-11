@@ -135,7 +135,7 @@ inline void find_min(uint32_t *board, int32_t *min_idx, int *min_pos)
    *min_pos = tmin_pos;
 }
 
-
+#define RuntimeClient SudokuSPLRuntimeClient
 /// @brief   Define our Runtime client class so that we can receive the runtime started/stopped notifications.
 ///
 /// We implement a Service client within, to handle AAL Service allocation/free.
@@ -144,14 +144,23 @@ class RuntimeClient : public CAASBase,
                       public IRuntimeClient
 {
 public:
-   RuntimeClient();
-   ~RuntimeClient();
+	RuntimeClient();
+	   ~RuntimeClient();
 
-   void end();
+	   /// @brief Synchronous wrapper for stopping the Runtime.
+	   void end();
+	   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
+	   ///
+	   /// This pointer is used to allocate Service.
+	   IRuntime* getRuntime();
 
-   IRuntime* getRuntime();
-
-   btBool isOK();
+	   /// @brief Checks that the object is in an internally consistent state
+	   ///
+	   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+	   /// as opposed to throwing exceptions or having to constantly check return codes.
+	   /// We implement this to check if the status of the service allocated.
+	   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+	   btBool isOK();
 
    // <begin IRuntimeClient interface>
    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
@@ -298,6 +307,10 @@ public:
 
    Sudoku(RuntimeClient * rtc, char *puzName);
    ~Sudoku();
+   /// @brief Called by the main part of the application,Returns 0 if Success
+   ///
+   /// Application Requests Service using Runtime Client passing a pointer to self.
+   /// Blocks calling thread from [Main} untill application is done.
 
    btInt run();
 
@@ -330,7 +343,7 @@ public:
 
    virtual void serviceAllocateFailed(const IEvent &rEvent);
 
-   void serviceReleaseFailed(const AAL::IEvent&);
+   void serviceReleaseFailed(const IEvent &rEvent);
 
    void serviceReleased(TransactionID const &rTranID);
 
@@ -338,9 +351,12 @@ public:
    // <end IServiceClient interface>
 
    /* SW implementation of a sudoku solver */
+   /// @ brief prints the Sudoku board
    static void print_board(uint32_t *board);
    static int32_t sudoku_norec(uint32_t *board, uint32_t *os);
+   /// @brief checks if the Puzzle is solved
    static int32_t check_correct(uint32_t *board, uint32_t *unsolved_pieces);
+   /// @brief logic to solve the puzzzle
    static int32_t solve(uint32_t *board, uint32_t *os);
    protected:
 

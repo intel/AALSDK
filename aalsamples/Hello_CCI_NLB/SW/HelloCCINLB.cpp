@@ -63,7 +63,7 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-#define  HWAFU
+// #define  HWAFU
 // #define  ASEAFU
 
 using namespace AAL;
@@ -107,7 +107,8 @@ using namespace AAL;
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x1a00
 #define CSR_AFU_DSM_BASEH        0x1a04
-
+// hack to generate correct Class diagrams
+#define RuntimeClient HelloCCINLBRuntimeClient
 /// @addtogroup HelloCCINLB
 /// @{
 
@@ -121,14 +122,23 @@ class RuntimeClient : public CAASBase,
                       public IRuntimeClient
 {
 public:
-   RuntimeClient();
+    RuntimeClient();
    ~RuntimeClient();
 
+   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-
+   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
+   ///
+   /// This pointer is used to allocate Service. 
    IRuntime* getRuntime();
 
-   btBool isOK();
+   /// @brief Checks that the object is in an internally consistent state
+   ///
+   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+   /// as opposed to throwing exceptions or having to constantly check return codes.
+   /// We implement this to check if the status of the service allocated.
+   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+  btBool isOK();
 
    // <begin IRuntimeClient interface>
    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
@@ -304,9 +314,9 @@ public:
 
    void serviceAllocateFailed(const IEvent &rEvent);
 
-    void serviceReleased(const AAL::TransactionID&);
+    void serviceReleased(TransactionID const &rTranID);
 
-    void serviceReleaseFailed(const AAL::IEvent&);
+    void serviceReleaseFailed(const IEvent        &rEvent);
 
    void serviceFreed(TransactionID const &rTranID);
 
@@ -420,7 +430,7 @@ btInt HelloCCINLBApp::run()
       //   now we can use it
       //=============================
       MSG("Running Test");
-#if 0
+
       // Initialize the source and destination buffers
       memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
       memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
@@ -482,8 +492,7 @@ btInt HelloCCINLBApp::run()
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
       //  state machine via callbacks
-#endif
-      MSG("Done Running Test");
+
       // Release the Workspaces and wait for all three then Release the Service
       m_wsfreed = 0;  // Reset the counter
       m_NLBService->WorkspaceFree(m_InputVirt,  TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));

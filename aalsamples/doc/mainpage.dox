@@ -56,21 +56,24 @@
    /// @brief Linked list shared between Application and FPGA
 
 /// @defgroup Sampleout AALSDK Sample Application outputs 
-/// @brief Outputs of Sample Applications
-   
+/// @brief Outputs of Sample Applications.
+
    /// @defgroup HelloAALout Hello AAL Sample Application outputs
    /// @ingroup Sampleout
    /// @brief Sample output of the HelloAAL application
-   
-   /// @defgroup HelloSPLLBout Hello SPL LB Sample Application outputs
-   /// @ingroup Sampleout
-   /// @brief Sample output of the HelloSPLLBout application
 
    /// @defgroup HelloCCINLBout Hello CCI NLB Sample Application outputs
    /// @ingroup Sampleout
    /// @brief Sample output of the HelloCCINLB application
+  
+   /// @defgroup HelloSPLLBout Hello SPL LB Sample Application outputs
+   /// @ingroup Sampleout
+   /// @brief Sample output of the HelloSPLLBout application
 
-/// @defgroup Outputs
+   /// @defgroup SudokuSPLOut Sudoku SPL Sample Application outputs
+   /// @ingroup Sampleout
+   /// @brief Sample output of the SudokuSPL application
+
 
 /**
 @mainpage
@@ -91,10 +94,11 @@
   <li>@ref Sampleout "AALSDK Sample Application outputs"</li>
     <ul>
       <li>@ref HelloAALout "Hello_AAL_OUTPUT "</li>
-      <li>@ref HelloSPLLBout "Hello_SPL_LB_OUTPUT "</li>
       <li>@ref HelloCCINLBout "Hello_CCI_NLB_OUTPUT "</li>
+      <li>@ref HelloSPLLBout "Hello_SPL_LB_OUTPUT "</li>
+      <li>@ref SudokuSPLOut "Sudoku_SPL_OUTPUT"</li>
     </ul>
- 
+</ul> 
 @verbatim
    INFORMATION IN THIS DOCUMENT IS PROVIDED IN  CONNECTION  WITH  INTEL(R)
    PRODUCTS. NO LICENSE, EXPRESS OR IMPLIED, BY ESTOPPEL OR  OTHERWISE, TO
@@ -210,7 +214,6 @@ POSSIBILITY OF SUCH DAMAGE.@endverbatim
 
 This document contains information on products in the design phase of
 development.
-<ul>
 */
 
 
