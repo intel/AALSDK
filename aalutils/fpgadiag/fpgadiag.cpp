@@ -110,7 +110,7 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_DSMPHYS,
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
-   200000000ULL, // TODO - Add as DEFAULT_FPGA_CLK_FREQ.Hertz(), - But this is hardcoded as well
+   DEFAULT_FPGA_CLK_FREQ,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
@@ -131,7 +131,7 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_DSMPHYS,
       DEFAULT_SRCPHYS,
       DEFAULT_DSTPHYS,
-      200000000ULL, // TODO - Add as DEFAULT_FPGA_CLK_FREQ.Hertz(), - But this is hardcoded as well
+      DEFAULT_FPGA_CLK_FREQ,
       DEFAULT_PREFILLHITS,
       DEFAULT_PREFILLMISS,
       DEFAULT_NOBW,
@@ -181,31 +181,6 @@ END_C_DECLS
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
 
-/*struct CMyCmdLine
-{
-   btUIntPtr   flags;
-#define MY_CMD_FLAG_HELP    0x00000001
-#define MY_CMD_FLAG_VERSION 0x00000002
-
-   std::string AFUTarget;
-   btInt       LogLevel;
-};*/
-
-/*struct CMyCmdLine gMyCmdLine =
-{
-   0,
-   std::string(DEFAULT_TARGET_AFU),
-   0
-};*/
-
-/*int my_on_nix_long_option_only(AALCLP_USER_DEFINED , const char * );
-int my_on_nix_long_option(AALCLP_USER_DEFINED , const char * , const char * );
-
-aalclp_option_only my_nix_long_option_only = { my_on_nix_long_option_only, };
-aalclp_option      my_nix_long_option      = { my_on_nix_long_option,      };
-
-void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
-void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );*/
 
 AALCLP_DECLARE_GCS_COMPLIANT(stdout,
                              "fpgadiag",
@@ -382,20 +357,20 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
 void CMyApp::serviceFreed(TransactionID const &tid)
 {
 	INFO("Service Freed");
-   Post();
+	Post();
 }
 
 void CMyApp::serviceEvent(const IEvent &e)
 {
-	  if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
-	      PrintExceptionDescription(e);
-	      m_bIsOK = false;
-	      Post();
-	      return;
-	   }
+  if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+	  PrintExceptionDescription(e);
+	  m_bIsOK = false;
+	  Post();
+	  return;
+   }
 
-	   INFO("Unknown event");
-	   Post();
+   INFO("Unknown event");
+   Post();
 }
 
 void CMyApp::serviceReleased(TransactionID const &tid)
@@ -561,15 +536,6 @@ int main(int argc, char *argv[])
    btInt res      = 0;
    btInt totalres = 0;
 
-   // NLBConfig          cfg;
-   /*uint_type          i;
-   uint_type          NumCacheLines;
-   wkspc_size_type    sz;
-   std::ostringstream oss;
-   Workspace          DSMWkspc;
-   Workspace          SrcWkspc(NULLWorkspace);
-   Workspace          DestWkspc(NULLWorkspace);*/
-
    if ( argc < 2 ) {
 	   MyNLBShowHelp(stdout, &_aalclp_gcs_data);
 	   return 1;
@@ -583,7 +549,7 @@ int main(int argc, char *argv[])
    }
 
    if ( flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_HELP) ) {
-       return 0; // per GCS
+       return 0; // Exit after displaying the help menu
       }
 
    cout << endl
@@ -936,12 +902,17 @@ std::string INLB::CalcReadBandwidth(const NLBCmdLine &cmd)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
    bt32bitCSR rds          = pAFUDSM->num_reads;
+   bt64bitCSR ticks;
 
-   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
 
-   // cont mode
-   bt64bitCSR ticks = rawticks - startpenalty;
-
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))// cont mode
+   {
+	   ticks = rawticks - startpenalty;
+   }
+   else //non-cont mode
+   {
+	   ticks = rawticks - (startpenalty + endpenalty);
+   }
    const double Rds   = (double)rds;
    const double Ticks = (double)ticks;
    const double Hz    = (double)clockfreq;
@@ -971,11 +942,15 @@ std::string INLB::CalcWriteBandwidth(const NLBCmdLine &cmd)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
    bt32bitCSR wrs          = pAFUDSM->num_writes;
-
-   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
-
-   // cont mode
-   bt64bitCSR ticks = rawticks - startpenalty;
+   bt64bitCSR ticks;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))// cont mode
+   {
+	   ticks = rawticks - startpenalty;
+   }
+   else //non-cont mode
+   {
+	   ticks = rawticks - (startpenalty + endpenalty);
+   }
 
    const double Wrs   = (double)wrs;
    const double Ticks = (double)ticks;
@@ -1019,9 +994,6 @@ std::string INLB::Normalized(const NLBCmdLine &cmd ) const throw()
 
 }
 
-
-
-
 #if defined ( __AAL_WINDOWS__ )
 # define strcasecmp _stricmp
 #endif // __AAL_WINDOWS__
@@ -1040,12 +1012,6 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
       cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
       return res;
    }
-
-  /* my_nix_long_option_only.user = cl;
-   aalclp_add_nix_long_option_only(&clp, &my_nix_long_option_only);
-
-   my_nix_long_option.user = cl;
-   aalclp_add_nix_long_option(&clp, &my_nix_long_option);*/
 
    NLBSetupCmdLineParser(&clp, nlbcl);
 
@@ -1073,10 +1039,6 @@ CLEANUP:
    return res;
 }
 
-/*int verifycmds(struct NLBCmdLine *cl)
-{
-   return 0;
-}*/
 
 END_C_DECLS
 

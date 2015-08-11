@@ -24,20 +24,22 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-// @file nlb-common.h
+// @file diag-nlb-common.h
 // @brief Functionality common to all NLB utils.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
+// 			Sadruta Chandrashekar, Intel Corporation
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 06/09/2013     TSW      Initial version.@endverbatim
+// 06/09/2013     TSW      Initial version.
+// 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
-#ifndef __NLB_COMMON_H__
-#define __NLB_COMMON_H__
+#ifndef __DIAG_NLB_COMMON_H__
+#define __DIAG_NLB_COMMON_H__
 #include <aalsdk/aalclp/aalclp.h>
 
 #include "utils.h"
@@ -307,5 +309,5 @@ END_C_DECLS
 
 
 
-#endif // __NLB_COMMON_H__
+#endif // __DIAG_NLB_COMMON_H__
 

@@ -1,3 +1,47 @@
+// Copyright (c) 2013-2014, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+// @file diag_lpbk1.cpp
+// @brief NLB VAFU template application file.
+// @ingroup
+// @verbatim
+// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+//
+// AUTHORS: Tim Whisonant, Intel Corporation
+//			Sadruta Chandrashekar, Intel Corporation
+//
+// HISTORY:
+// WHEN:          WHO:     WHAT:
+// 05/30/2013     TSW      Initial version.
+// 07/30/2105     SC	   fpgadiag version@endverbatim
+//****************************************************************************
+
+//LPBK1: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
+//On test completion, the software compares the source and destination buffers.
+
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -67,14 +111,14 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the test mode
-   //m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_LPBK1);
    csr_type cfg = (csr_type)NLB_TEST_MODE_LPBK1;
 
-   //Check for write through mode and add to CSR_CFG
+   // Check for write through mode and add to CSR_CFG
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
    {
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
+   // Set the read flags.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
    {
 	   cfg |= (csr_type)NLB_TEST_MODE_RDI;
@@ -95,15 +139,14 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  cout << endl;
    }
 
-   // Set the number of cache lines for the test
+
    while ( sz <= CL(cmd.endcls) )
    {
+	   // Set the number of cache lines for the test
 	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
-
 
 	   // Start the test
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
-
 
 	   // Wait for test completion
 	   while ( 0 == pAFUDSM->test_complete ) {
@@ -118,6 +161,8 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   PrintOutput(cmd, (sz / CL(1)));
 
 	   SaveQLPCounters();
+
+	   //Increment number of cachelines
 	   sz += CL(1);
 
 	   // Assert Device Reset
@@ -130,11 +175,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		m_pCCIAFU->CSRWrite(CSR_CTL, 1);
    }
 
-
-
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-   //ReadQLPCounters();
 
    // Verify the buffers
    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
@@ -190,8 +231,6 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 		  ticks = rawticks - (startpenalty + endpenalty);
 	  }
 	  cout  << setw(16) << ticks;
-
-
 
 	    cout << endl;
 }

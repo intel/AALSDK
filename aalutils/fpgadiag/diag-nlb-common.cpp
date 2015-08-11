@@ -24,17 +24,19 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-// @file nlb-common.cpp
+// @file diag-nlb-common.cpp
 // @brief Functionality common to all NLB utils.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
+//			Sadruta Chandrashekar, Intel Corporation
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 06/09/2013     TSW      Initial version.@endverbatim
+// 06/09/2013     TSW      Initial version.
+// 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
 #include "diag-nlb-common.h"
 #include <aalsdk/service/ICCIAFU.h>
@@ -487,13 +489,6 @@ void NLBSetupCmdLineParser(aalclp *clp, struct NLBCmdLine *nlbcl) {
    aalclp_add_non_option(clp,            &nlb_non_option);
    aalclp_add_invalid(clp,               &nlb_invalid);
 }
-/*
-const char * freq_to_str(freq_type f) {
-   static char buf[32];
-   CFrequency cf(f);
-   strncpy(buf, cf.Normalized().c_str(), sizeof(buf));
-   return buf;
-}*/
 
 void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs) {
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)gcs->user;
