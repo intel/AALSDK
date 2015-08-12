@@ -138,6 +138,10 @@ module cci_emulator
       end
    endfunction
 
+   // Finish logger command
+   int finish_logger = 0;
+   
+   
    /* ***************************************************************************
     * CCI signals declarations
     * ***************************************************************************
@@ -832,7 +836,10 @@ module cci_emulator
 	 `END_YELLOW_FONTCOLOR;
  `endif
 `endif
-	 $fclose(log_fd);
+	 // $fclose(log_fd);
+	 finish_logger = 1;
+	 
+	 // Command to close logfd
 	 $finish;
       end
    endtask
@@ -1640,11 +1647,11 @@ module cci_emulator
 
 
    // Registers for comparing previous states
-   always @(posedge clk) begin
-      lp_initdone_q	<= lp_initdone;
-      sw_reset_n_q	<= sw_reset_n;
-      sys_reset_n_q     <= sys_reset_n;
-   end
+   // always @(posedge clk) begin
+   //    lp_initdone_q	<= lp_initdone;
+   //    sw_reset_n_q	<= sw_reset_n;
+   //    sys_reset_n_q     <= sys_reset_n;
+   // end
 
 
    /*
@@ -1653,11 +1660,12 @@ module cci_emulator
     * - Watch for "*valid", and write transaction to log name
     */
    // Log file descriptor
-   int log_fd;
+//   int log_fd;
 
    /*
     * Watcher process
     */
+/*
    initial begin : logger_proc
       // Display
       $display("SIM-SV: CCI Logger started");
@@ -1757,7 +1765,8 @@ module cci_emulator
 	 @(posedge clk);
       end
    end
-
+*/
+ 
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
    // Read response checking
@@ -1789,4 +1798,35 @@ module cci_emulator
    end
 `endif
 
+   // CCI Logger module
+   cci_logger cci_logger
+     (
+      .enable_logger    (cfg.enable_cl_view),
+      .finish_logger    (finish_logger     ),
+      // interface
+      .clk              (clk              ),        
+      .sys_reset_n     	(sys_reset_n      ),     
+      .sw_reset_n      	(sw_reset_n       ),      
+      .lp_initdone     	(lp_initdone      ),    
+      .tx_c0_header    	(tx_c0_header     ),    
+      .tx_c0_rdvalid   	(tx_c0_rdvalid    ),   
+      .tx_c0_almostfull	(tx_c0_almostfull ),
+      .tx_c1_header    	(tx_c1_header     ),    
+      .tx_c1_data      	(tx_c1_data       ),      
+      .tx_c1_wrvalid   	(tx_c1_wrvalid    ),   
+      .tx_c1_almostfull	(tx_c1_almostfull ),
+      .tx_c1_intrvalid 	(tx_c1_intrvalid  ), 
+      .rx_c0_header    	(rx_c0_header     ),    
+      .rx_c0_data      	(rx_c0_data       ),      
+      .rx_c0_rdvalid   	(rx_c0_rdvalid    ),   
+      .rx_c0_wrvalid   	(rx_c0_wrvalid    ),   
+      .rx_c0_cfgvalid  	(rx_c0_cfgvalid   ),  
+      .rx_c1_header    	(rx_c1_header     ),    
+      .rx_c1_wrvalid   	(rx_c1_wrvalid    ),   
+      .rx_c0_umsgvalid 	(rx_c0_umsgvalid  ), 
+      .rx_c0_intrvalid 	(rx_c0_intrvalid  ), 
+      .rx_c1_intrvalid  (rx_c1_intrvalid  )     
+      );
+   
+   
 endmodule // cci_emulator

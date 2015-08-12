@@ -38,6 +38,7 @@
 #########################################################################
 # Provides a template for compiling ASE with RTL CAFU sources in VCS
 # and Questasim
+# For a full experience, roll your own Makefile
 #
 ##########################################################################
 
@@ -51,6 +52,9 @@ ASE_DEBUG = 1
 
 # Timescale
 TIMESCALE = 1ns/1ns
+
+# ASE Source directory
+ASE_SRCDIR = $(shell pwd)
 
 #########################################################################
 #                          Default options                              #
@@ -121,7 +125,7 @@ SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile
 endif
 
 ## Simulation options
-VCS_SIM_OPT = -l run.log -ucli -do vcs_run.tcl
+VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 
 
 #########################################################################
@@ -264,7 +268,8 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	./$(WORK)/ase_simv $(VCS_SIM_OPT)
+#	./$(WORK)/ase_simv $(VCS_SIM_OPT)
+	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
@@ -274,7 +279,7 @@ else
 	@echo "############################################################"
   endif
 endif
-	python scripts/ipc_clean.py
+#	python scripts/ipc_clean.py
 
 # Open Wave file
 wave: check

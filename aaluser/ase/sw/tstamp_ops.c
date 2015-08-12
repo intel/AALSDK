@@ -189,7 +189,11 @@ char* get_timestamp(int dont_kill)
   // tstamp_filepath = generate_tstamp_path( TSTAMP_FILENAME );
   memset(tstamp_filepath, '\0', ASE_FILEPATH_LEN);
   strcpy(tstamp_filepath, ase_workdir_path);
+  strcat(tstamp_filepath, "/");
   strcat(tstamp_filepath, TSTAMP_FILENAME);  
+#ifdef ASE_DEBUG
+  printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
+#endif
 
   fp = fopen(tstamp_filepath, "r");
   if (dont_kill) 

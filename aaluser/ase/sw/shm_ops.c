@@ -334,6 +334,9 @@ void allocate_buffer(struct buffer_t *mem)
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
+    #ifdef ASE_DEBUG
+      printf("  DEBUG memname => %s\n", mem->memname);
+    #endif      
       /* mem->is_csrmap = 1; */
     }
   else

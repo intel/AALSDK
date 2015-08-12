@@ -246,7 +246,7 @@ char* ase_eval_session_directory()
   } else {
      *workdir_path = '\0';
   }
-  strcat( workdir_path, "/work/" ); 
+  // strcat( workdir_path, "/work/" );  || RRS:
 
   // *FIXME*: Idiot-proof the work directory
 
