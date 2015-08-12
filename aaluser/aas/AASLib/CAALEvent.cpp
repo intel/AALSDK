@@ -81,13 +81,6 @@
 
 BEGIN_NAMESPACE(AAL)
 
-IEvent::~IEvent() {}
-ITransactionEvent::~ITransactionEvent() {}
-IExceptionEvent::~IExceptionEvent() {}
-IApplicationEvent::~IApplicationEvent() {}
-IApplicationExceptionEvent::~IApplicationExceptionEvent() {}
-
-
 //=============================================================================
 // Name: CAALEvent
 // Description: Constructor
@@ -237,7 +230,7 @@ btBool CAALEvent::Has(btIID ID) const
 // Comments: equality is defined as implementing the same
 //           interfaces NOT the contents of the objects data.
 //=============================================================================
-btBool CAALEvent::operator != (IEvent &rOther)
+btBool CAALEvent::operator != (const IEvent &rOther) const
 {
    return ! this->operator == (rOther);
 }
@@ -259,7 +252,7 @@ btBool CAALEvent::operator != (IEvent &rOther)
 //  3) Both objects must implement a) the same number and b) the same types of
 //     other interfaces.
 //=============================================================================
-btBool CAALEvent::operator == (IEvent &rOther)
+btBool CAALEvent::operator == (const IEvent &rOther) const
 {
    AutoLock(this);
 

@@ -121,8 +121,8 @@ public:
    virtual btBool                      Has(btIID ID)        const;
    virtual btGenericInterface    ISubClass()                const { return m_ISubClass;  }
    virtual btIID                SubClassID()                const { return m_SubClassID; }
-   virtual btBool             operator != (IEvent &rOther);
-   virtual btBool             operator == (IEvent &rOther); ///< Equality is defined here as instance exact.
+   virtual btBool             operator != (const IEvent & ) const;
+   virtual btBool             operator == (const IEvent & ) const; ///< Equality is defined here as instance exact.
    virtual IBase &                  Object()                const { return *m_pObject;   }
    virtual IBase *                 pObject()                const { return  m_pObject;   }
    virtual btBool                     IsOK()                const { return  m_bIsOK;     }

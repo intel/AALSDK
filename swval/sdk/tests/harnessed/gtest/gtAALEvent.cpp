@@ -8,17 +8,17 @@ class CAALEvent_f : public AAL::IEvent,
                     public ::testing::Test
 {
 public:
-   virtual btGenericInterface    Interface(btIID ID)           const { return m_pCAALEvent->Interface(ID);       }
-   virtual btBool                      Has(btIID ID)           const { return m_pCAALEvent->Has(ID);             }
-   virtual btGenericInterface    ISubClass()                   const { return m_pCAALEvent->ISubClass();         }
-   virtual btIID                SubClassID()                   const { return m_pCAALEvent->SubClassID();        }
-   virtual btBool             operator != (IEvent &rother)           { return m_pCAALEvent->operator !=(rother); }
-   virtual btBool             operator == (IEvent &rother)           { return m_pCAALEvent->operator ==(rother); }
-   virtual IBase &                  Object()                   const { return m_pCAALEvent->Object();            }
-   virtual IBase *                 pObject()                   const { return m_pCAALEvent->pObject();           }
-   virtual btBool                     IsOK()                   const { return m_pCAALEvent->IsOK();              }
-   virtual btApplicationContext    Context()                   const { return m_pCAALEvent->Context();           }
-   virtual btApplicationContext SetContext(btApplicationContext Ctx) { return m_pCAALEvent->SetContext(Ctx);     }
+   virtual btGenericInterface    Interface(btIID ID)           const { return m_pCAALEvent->Interface(ID);    }
+   virtual btBool                      Has(btIID ID)           const { return m_pCAALEvent->Has(ID);          }
+   virtual btGenericInterface    ISubClass()                   const { return m_pCAALEvent->ISubClass();      }
+   virtual btIID                SubClassID()                   const { return m_pCAALEvent->SubClassID();     }
+   virtual btBool             operator != (const IEvent &rhs)  const { return m_pCAALEvent->operator !=(rhs); }
+   virtual btBool             operator == (const IEvent &rhs)  const { return m_pCAALEvent->operator ==(rhs); }
+   virtual IBase &                  Object()                   const { return m_pCAALEvent->Object();         }
+   virtual IBase *                 pObject()                   const { return m_pCAALEvent->pObject();        }
+   virtual btBool                     IsOK()                   const { return m_pCAALEvent->IsOK();           }
+   virtual btApplicationContext    Context()                   const { return m_pCAALEvent->Context();        }
+   virtual btApplicationContext SetContext(btApplicationContext Ctx) { return m_pCAALEvent->SetContext(Ctx);  }
 
    virtual void setHandler(IServiceClient *p) { m_pCAALEvent->setHandler(p); }
    virtual void setHandler(IRuntimeClient *p) { m_pCAALEvent->setHandler(p); }
@@ -433,16 +433,16 @@ TEST(CAALEventTest, aal0640)
          m_IBase(b),
          m_SubClassIfc( reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(this) ) )
       {}
-      btGenericInterface    Interface(btIID Interface) const    { return NULL;     }
-      btBool                      Has(btIID Interface) const    { return false;    }
-      btGenericInterface    ISubClass() const                   { return m_SubClassIfc; }
-      btIID                SubClassID() const                   { return iidEvent; }
-      btBool             operator != (IEvent &rother)           { return true;     }
-      btBool             operator == (IEvent &rother)           { return false;    }
-      btBool                     IsOK() const                   { return true;     }
-      btApplicationContext    Context() const                   { return NULL;     }
-      IBase &                  Object() const                   { return m_IBase;  }
-      IBase *                 pObject() const                   { return &m_IBase; }
+      btGenericInterface    Interface(btIID Interface)   const { return NULL;     }
+      btBool                      Has(btIID Interface)   const { return false;    }
+      btGenericInterface    ISubClass()                  const { return m_SubClassIfc; }
+      btIID                SubClassID()                  const { return iidEvent; }
+      btBool             operator != (const IEvent &rhs) const { return true;     }
+      btBool             operator == (const IEvent &rhs) const { return false;    }
+      btBool                     IsOK()                  const { return true;     }
+      btApplicationContext    Context()                  const { return NULL;     }
+      IBase &                  Object()                  const { return m_IBase;  }
+      IBase *                 pObject()                  const { return &m_IBase; }
       btApplicationContext SetContext(btApplicationContext Ctx) { return NULL;     }
 
    protected:
