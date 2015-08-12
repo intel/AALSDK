@@ -685,7 +685,7 @@ TEST(CAALEventTest, aal0655)
 {
    // CAALEvent::setHandler(IServiceClient * ) updates m_pServiceClient. When m_pServiceClient
    // is non-NULL, subsequent calls to CAALEvent::operator()() invoke IServiceClient::serviceEvent(),
-   // passing this as the argument.
+   // passing this as the argument. The event is then deleted.
 
    CAASBase base;
    // new'ing the event, because operator()() with an IServiceClient deletes it.
@@ -708,7 +708,7 @@ TEST(CAALEventTest, aal0656)
 {
    // CAALEvent::setHandler(IRuntimeClient * ) updates m_pRuntimeClient. When m_pRuntimeClient
    // is non-NULL, subsequent calls to CAALEvent::operator()() invoke IRuntimeClient::runtimeEvent(),
-   // passing this as the argument.
+   // passing this as the argument. The event is then deleted.
 
    CAASBase base;
    // new'ing the event, because operator()() with an IRuntimeClient deletes it.

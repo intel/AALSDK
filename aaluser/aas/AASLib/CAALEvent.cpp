@@ -398,13 +398,19 @@ void CAALEvent::operator()()
       m_pEventHandler(*this);
    }
 
+   btBool del = false;
+
    if ( NULL != m_pServiceClient ) {
+      del = true;
       m_pServiceClient->serviceEvent(*this);
-      delete this;
    }
 
    if ( NULL != m_pRuntimeClient ) {
+      del = true;
       m_pRuntimeClient->runtimeEvent(*this);
+   }
+
+   if ( del ) {
       delete this;
    }
 }
