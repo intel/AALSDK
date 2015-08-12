@@ -58,6 +58,7 @@ BEGIN_NAMESPACE(AAL)
 #define NLB_DSM_SIZE              MB(4)
 #define NUM_UMSGS				  32
 #define MAX_UMSG_SIZE        	  CL(64*NUM_UMSGS)
+#define MAX_CPU_CACHE_SIZE		  (100*1024*1024) //100 MB
 
 #define QLP_CSR_CIPUCTL           0x280
 #   define CIPUCTL_RESET_BIT      0x01000000
