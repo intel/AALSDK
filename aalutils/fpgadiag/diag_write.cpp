@@ -153,6 +153,18 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
 
+   if(flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
+   {
+	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
+	   int iterator;
+
+	   for (iterator = 0; iterator < MAX_CPU_CACHE_SIZE; iterator++)
+	   {
+		   c[iterator] = iterator; //Operation to fill the cache with irrelevant content
+	   }
+
+   }
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
 			 //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012

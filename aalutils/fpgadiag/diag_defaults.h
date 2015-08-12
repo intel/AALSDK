@@ -10,6 +10,7 @@
 #define DEFAULT_DSTPHYS     	0
 #define DEFAULT_PREFILLHITS 	"no"
 #define DEFAULT_PREFILLMISS 	"no"
+#define DEFAULT_COOLCPUCACHE 	"no"
 #define DEFAULT_NOBW        	"no"
 #define DEFAULT_TABULAR     	"no"
 #define DEFAULT_SUPPRESSHDR 	"no"

@@ -149,7 +149,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
 
    	   // Set the number of cache lines for the test
-   	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls));
+   	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls)); //TODO min of endcls or 1024(cache size)
 
    	   // Start the test
    	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
@@ -185,6 +185,18 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  }
 
 	  cout << endl;
+   }
+
+   if(flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
+   {
+	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
+	   int iterator;
+
+	   for (iterator = 0; iterator < MAX_CPU_CACHE_SIZE; iterator++)
+	   {
+		   c[iterator] = iterator; //Operation to fill the cache with irrelevant content
+	   }
+
    }
 
 #if   defined( __AAL_WINDOWS__ )

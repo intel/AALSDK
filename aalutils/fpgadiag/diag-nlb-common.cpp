@@ -73,6 +73,8 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PREFILL_HITS);
    } else if ( 0 == strcmp("--prefill-misses", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PREFILL_MISS);
+   } else if ( 0 == strcmp("--cool-cpu-cache", option) ) {
+	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE);
    } else if ( 0 == strcmp("--rds", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_RDS);
    } else if ( 0 == strcmp("--rdi", option) ) {
@@ -501,9 +503,9 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
       fprintf(fp, "   --mode=lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "READ") ) {
-      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "WRITE") ) {
-      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "   --mode=trput <TARGET> [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcmp(test.c_str(), "SW") ) {
@@ -548,11 +550,18 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
          fprintf(fp, "Default=%s\n", nlbcl->defaults.prefillhits);
       }
 
-      fprintf(fp, "                    --prefill-misses, attempt to prime the cache with misses,         ");
+      /*fprintf(fp, "                    --prefill-misses, attempt to prime the cache with misses,         ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PREFILL_MISS) ) {
          fprintf(fp, "yes\n");
       } else {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.prefillmiss);
+      }*/
+
+      fprintf(fp, "      <CPU-CACHE> = --cool-cpu-cache, attempt to prime the cpu cache with misses,     ");
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE) ) {
+	   fprintf(fp, "yes\n");
+      } else {
+	   fprintf(fp, "Default=%s\n", nlbcl->defaults.coolcpucache);
       }
    }
 
@@ -590,7 +599,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   fprintf(fp, "      <FREQ>      = --clock-freq=T,   Clock frequency in Hz,                          Default = 200000000 Hz\n");
+   fprintf(fp, "      <FREQ>      = --clock-freq=T,   Clock frequency in Hz,                          Default=200 MHz\n");
 
    if ( 0 == strcmp(test.c_str(), "READ") ||
 	    0 == strcmp(test.c_str(), "WRITE") ||
