@@ -528,24 +528,6 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
-#define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
-#define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
-#define EXPECT_NULL(x)    EXPECT_EQ((void *)NULL, x)
-
-const std::string SampleAFU1ConfigRecord("9 20 ConfigRecordIncluded\n \
-      \t10\n \
-          \t\t9 17 ServiceExecutable\n \
-            \t\t\t9 13 libsampleafu1\n \
-         \t\t9 18 _CreateSoftService\n \
-         \t\t0 1\n \
-   9 29 ---- End of embedded NVS ----\n \
-      9999\n");
-
-// Retrieve the current test case and test name from gtest.
-// Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &TestCase, std::string &Test);
-
 #if defined( __AAL_LINUX__ )
 
 // Make sure that the given path appears in LD_LIBRARY_PATH, preventing duplication.
@@ -643,6 +625,15 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
+#define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
+#define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
+#define EXPECT_NULL(x)    EXPECT_EQ((void *)NULL, x)
+
+// Retrieve the current test case and test name from gtest.
+// Must be called within the context of a test case/fixture.
+void TestCaseName(std::string &TestCase, std::string &Test);
+
 class KeepAliveTimerEnv : public ::testing::Environment
 {
 public:
@@ -695,6 +686,173 @@ public:
    virtual void OnTestEnd(const ::testing::TestInfo & /*test_info*/)
    {
       KeepAliveTimerEnv::GetInstance()->KeepAlive();
+   }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class MethodCallLogEntry
+{
+public:
+   MethodCallLogEntry(const std::string &method, Timer timestamp=Timer()) :
+      m_MethodName(method),
+      m_TimeStamp(timestamp)
+   {}
+
+   const std::string & MethodName() const { return m_MethodName; }
+
+   void AddParam(const std::string &param, void *value)
+   {
+      m_Params.push_back(std::make_pair(param, value));
+   }
+
+   unsigned Params() const { return m_Params.size(); }
+
+   const std::string & ParamName(unsigned i) const
+   {
+      const_iterator iter;
+      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return (*iter).first;
+   }
+
+   void * ParamValue(unsigned i) const
+   {
+      const_iterator iter;
+      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return (*iter).second;
+   }
+
+protected:
+   typedef std::pair< std::string, void * > ParamEntry;
+   typedef std::list<ParamEntry>            ParamList;
+   typedef ParamList::const_iterator        const_iterator;
+
+   std::string m_MethodName;
+   Timer       m_TimeStamp;
+   ParamList   m_Params;
+};
+
+class MethodCallLog : public CriticalSection
+{
+public:
+   MethodCallLog() {}
+
+   MethodCallLogEntry * AddToLog(const std::string &method)
+   {
+      AutoLock(this);
+
+      m_LogList.push_back(MethodCallLogEntry(method));
+
+      iterator iter = m_LogList.end();
+      --iter;
+      return &(*iter);
+   }
+
+   unsigned LogEntries() const { AutoLock(this); return m_LogList.size(); }
+
+   const MethodCallLogEntry & Entry(unsigned i) const
+   {
+      AutoLock(this);
+
+      const_iterator iter;
+      for ( iter = m_LogList.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return *iter;
+   }
+
+   void ClearLog() { m_LogList.clear(); }
+
+protected:
+   typedef std::list<MethodCallLogEntry> LogList;
+   typedef LogList::iterator             iterator;
+   typedef LogList::const_iterator       const_iterator;
+
+   LogList m_LogList;
+};
+
+class CallTrackingServiceClient : public AAL::IServiceClient,
+                                  public MethodCallLog
+{
+public:
+   CallTrackingServiceClient() {}
+
+   virtual void serviceAllocated(IBase               *pBase,
+                                 TransactionID const &tid= TransactionID())
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocated");
+      l->AddParam("pBase", pBase);
+      l->AddParam("tid",   reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void serviceAllocateFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocateFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void serviceReleased(TransactionID const &tid= TransactionID())
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleased");
+      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void serviceReleaseFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleaseFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void serviceEvent(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceEvent");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+};
+
+class CallTrackingRuntimeClient : public AAL::IRuntimeClient,
+                                  public MethodCallLog
+{
+public:
+   CallTrackingRuntimeClient() {}
+
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeCreateOrGetProxyFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeStarted(IRuntime            *pRuntime,
+                               const NamedValueSet &nvs)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStarted");
+      l->AddParam("pRuntime", pRuntime);
+      l->AddParam("nvs", reinterpret_cast<void *>( & const_cast<NamedValueSet &>(nvs) ));
+   }
+   virtual void runtimeStopped(IRuntime *pRuntime)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopped");
+      l->AddParam("pRuntime", pRuntime);
+   }
+   virtual void runtimeStartFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStartFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeStopFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeAllocateServiceFailed(IEvent const &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
+                                                TransactionID const &tid)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceSucceeded");
+      l->AddParam("pServiceBase", pServiceBase);
+      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void runtimeEvent(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeEvent");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
    }
 };
 

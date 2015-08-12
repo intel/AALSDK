@@ -104,9 +104,9 @@ BEGIN_NAMESPACE(AAL)
 
 /// Concrete implementation of IEvent.
 class AASLIB_API CAALEvent : protected CriticalSection,
-                             public CCountedObject,
-                             public IDispatchable,
-                             public IEvent
+                             public    CCountedObject,
+                             public    IDispatchable,
+                             public    IEvent
 {
 public:
    /// CAALEvent construct from IBase *. Sub-class interface id is iidEvent.
@@ -117,26 +117,22 @@ public:
    CAALEvent(const CAALEvent &rOther);
 
    // <IEvent>
-   virtual btGenericInterface   Interface(btIID Interface) const;
-   virtual btBool               Has(btIID Interface)       const;
-   virtual btGenericInterface   ISubClass()                const;
-   virtual btIID                SubClassID()               const;
-   virtual btBool               operator != (IEvent &rOther);
-   virtual btBool               operator == (IEvent &rOther); ///< Equality is defined here as instance exact.
-   virtual IBase &              Object()                   const { return *m_pObject; }
-   virtual IBase *              pObject()                  const { return m_pObject;  }
-   virtual btBool               IsOK()                     const { return m_bIsOK; }
-   virtual btApplicationContext Context()                  const { return m_Context; } // Re-enabled HM 20090225, see file header comments
-   virtual void                 setHandler(IServiceClient  *pHandler) { m_pServiceClient = pHandler; m_pRuntimeClient = NULL;     m_pEventHandler = NULL;}
-   virtual void                 setHandler(IRuntimeClient  *pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = pHandler; m_pEventHandler = NULL;}
-   virtual void                 setHandler(btEventHandler   pHandler) { m_pServiceClient = NULL;     m_pRuntimeClient = NULL;     m_pEventHandler = pHandler;}
-   virtual btApplicationContext SetContext(btApplicationContext Ctx)
-   {
-      btApplicationContext res = m_Context;
-      m_Context = Ctx;
-      return res;
-   }
+   virtual btGenericInterface    Interface(btIID ID)        const;
+   virtual btBool                      Has(btIID ID)        const;
+   virtual btGenericInterface    ISubClass()                const { return m_ISubClass;  }
+   virtual btIID                SubClassID()                const { return m_SubClassID; }
+   virtual btBool             operator != (IEvent &rOther);
+   virtual btBool             operator == (IEvent &rOther); ///< Equality is defined here as instance exact.
+   virtual IBase &                  Object()                const { return *m_pObject;   }
+   virtual IBase *                 pObject()                const { return  m_pObject;   }
+   virtual btBool                     IsOK()                const { return  m_bIsOK;     }
+   virtual btApplicationContext    Context()                const { return  m_Context;   } // Re-enabled HM 20090225, see file header comments
+   virtual btApplicationContext SetContext(btApplicationContext Ctx);
    // </IEvent>
+
+   virtual void setHandler(IServiceClient *pHandler);
+   virtual void setHandler(IRuntimeClient *pHandler);
+   virtual void setHandler(btEventHandler  pHandler);
 
    /// Set the native subclass interface for this Event.
    ///
@@ -154,7 +150,7 @@ public:
    ///
    /// @param[in]  target  Assumed to be of type EventHandler.
    ///             Functors can be created by overriding this function
-   virtual void  operator()();
+   virtual void operator()();
 
    /// Deletes this.
    virtual void Delete();
@@ -172,25 +168,24 @@ protected:
    virtual ~CAALEvent();
 
 protected:
-   IBase                   *m_pObject;
-   btBool                   m_bIsOK;
-   btApplicationContext     m_Context;
-   IServiceClient          *m_pServiceClient;
-   IRuntimeClient          *m_pRuntimeClient;
-   btEventHandler           m_pEventHandler;
-   TransactionID            m_TranID;  // Only accessible outside from TransactionEvents
+   IBase                *m_pObject;
+   btBool                m_bIsOK;
+   btApplicationContext  m_Context;
+   IServiceClient       *m_pServiceClient;
+   IRuntimeClient       *m_pRuntimeClient;
+   btEventHandler        m_pEventHandler;
+   btGenericInterface    m_ISubClass;
+   btIID                 m_SubClassID;
+   TransactionID         m_TranID;  // Only accessible outside from TransactionEvents
 
 #if defined( __AAL_WINDOWS__ )
 # pragma warning( push )
 # pragma warning( disable:4251 )  // Cannot export template definitions
 #endif
-   iidInterfaceMap_t    m_InterfaceMap;
+   iidInterfaceMap_t     m_InterfaceMap;
 #if defined( __AAL_WINDOWS__ )
 # pragma warning( pop )
 #endif
-
-   btGenericInterface   m_ISubClass;
-   btIID                m_SubClassID;
 };
 
 
