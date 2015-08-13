@@ -44,6 +44,9 @@ module cci_logger
     // Configure enable
     input int                               enable_logger,
     input int                               finish_logger,
+    // Buffer message injection
+    // input logic                             log_string_en,
+    // input string [1023:0]                   log_string ,
     // CCI interface
     input logic                             clk      ,               // out
     input logic                             sys_reset_n,             // out
@@ -96,6 +99,17 @@ module cci_logger
       sys_reset_n_q     <= sys_reset_n;
    end
 
+
+   /*
+    * Buffer messages
+    */
+   // export "DPI-C" task buffer_messages;
+   // task buffer_messages (string log_string);
+   //    begin
+   // 	 $fwrite (log_fd, log_string);	 
+   //    end
+   // endtask
+ 
    
    /*
     * Watcher process
@@ -124,6 +138,10 @@ module cci_logger
 	 if (sys_reset_n_q != sys_reset_n) begin
 	    $fwrite(log_fd, "%d\tSystem reset toggled from %b to %b\n", $time, sys_reset_n_q, sys_reset_n);
 	 end
+	 // Buffer messages
+	 // if (log_string_en) begin
+	 //    $fwrite(log_fd, log_string);	    
+	 // end
 	 // Watch CCI for valid transactions
 	 if (lp_initdone) begin
 	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
@@ -204,6 +222,4 @@ module cci_logger
       end
    end
 
-   
-   
 endmodule

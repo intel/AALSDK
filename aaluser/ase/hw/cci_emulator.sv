@@ -105,10 +105,17 @@ module cci_emulator
    // Signal to kill simulation
    export "DPI-C" task simkill;
 
-   // Data exchange for READ system/CAPCM memory line
+   // Signal to cci_logger to write string to log file
+   // export "DPI-C" task buffer_messages;
+
+   // CONFIG, SCRIPT DEX operations
+   import "DPI-C" function void sv2c_config_dex(string str);
+   import "DPI-C" function void sv2c_script_dex(string str);     
+      
+   // Data exchange for READ, WRITE system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
-   // Data exchange for WRITE system/CAPCM memory line
    import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata, inout bit [511:0] wr_data );
+
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
@@ -129,6 +136,37 @@ module cci_emulator
    endfunction
 
 
+   /*
+    * Multi-instance multi-user +CONFIG,+SCRIPT instrumentation
+    * RUN =>
+    * cd <work>
+    * ./<simulator> +CONFIG=<path_to_cfg> +SCRIPT=<path_to_run_SEE_README>
+    * 
+    */ 
+   string config_filepath;
+   string script_filepath;   
+`ifdef ASE_DEBUG
+   initial begin
+      if ($value$plusargs("CONFIG=%S", config_filepath)) begin
+	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 $display("  [DEBUG]  Config = %s", config_filepath);
+	 `END_YELLOW_FONTCOLOR;	 
+      end
+   end
+
+   initial begin
+      if ($value$plusargs("SCRIPT=%S", script_filepath)) begin
+	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 $display("  [DEBUG]  Script = %s", script_filepath);
+	 `END_YELLOW_FONTCOLOR;	 
+      end
+   end
+`else
+   initial $value$plusargs("CONFIG=%S", config_filepath);
+   initial $value$plusargs("SCRIPT=%S", script_filepath);   
+`endif
+   
+   
    /*
     * FUNCTION: Return absolute value
     */
@@ -218,11 +256,11 @@ module cci_emulator
    end
 
    // Reset management
-   logic 			  sys_reset_n;
-   logic 			  sys_reset_n_q;
+   // logic 			  sys_reset_n;
+   // logic 			  sys_reset_n_q;
    logic 			  sw_reset_trig;
-   logic 			  sw_reset_n;
-   logic 			  sw_reset_n_q;
+   // logic 			  sw_reset_n;
+   // logic 			  sw_reset_n_q;
 
    /*
     * AFU reset - software & system resets
@@ -844,6 +882,27 @@ module cci_emulator
       end
    endtask
 
+
+   /*
+    * Task : String logs to cci_logger
+    */
+   // logic cci_logger_msg_en;
+   // string cci_logger_msg;
+      
+   // task buffer_messages (int init, string log_string);
+   //    begin
+   // 	 if (init == 1) begin
+   // 	    cci_logger_msg_en = 0;	    
+   // 	 end
+   // 	 else begin	    
+   // 	    cci_logger_msg = log_string;
+   // 	    cci_logger_msg_en = 1;
+   // 	    @(posedge clk);
+   // 	    cci_logger_msg_en = 0;
+   // 	 end
+   //    end
+   // endtask
+   
 
    /*
     * Unified message watcher daemon
@@ -1506,6 +1565,17 @@ module cci_emulator
       // Initialize data-structures
       csr_write_dispatch(1, 0, 0);
       umsg_dispatch(1, 0, 0, 0, 0);
+      // buffer_messages (1, "ASE");
+
+      // Globally write CONFIG, SCRIPT paths
+      if (config_filepath.len() != 0) begin
+	 sv2c_config_dex(config_filepath);
+      end
+      if (script_filepath.len() != 0) begin
+	 sv2c_script_dex(script_filepath);
+      end
+
+      // Initialize SW side of ASE
       ase_init();
 
       // Initial signal values *FIXME*
@@ -1530,23 +1600,7 @@ module cci_emulator
 
    end
 
-   // Parameter test
-   // Pick up +cfg & +script
-   string config_filepath;
-   string script_filepath;   
-   initial begin
-      if ($value$plusargs("CONFIG=%S", config_filepath)) begin
-	 $display("Config = %s\n", config_filepath);	 
-      end
-   end
-
-   initial begin
-      if ($value$plusargs("SCRIPT=%S", script_filepath)) begin
-	 $display("Script = %s\n", script_filepath);	 
-      end
-   end
    
-
    /*
     * Latency pipe : For LP_InitDone delay
     * This block simulates the latency between a generic reset and QLP
@@ -1645,128 +1699,6 @@ module cci_emulator
       .rx_c1_wrvalid   (rx_c1_wrvalid)
       );
 
-
-   // Registers for comparing previous states
-   // always @(posedge clk) begin
-   //    lp_initdone_q	<= lp_initdone;
-   //    sw_reset_n_q	<= sw_reset_n;
-   //    sys_reset_n_q     <= sys_reset_n;
-   // end
-
-
-   /*
-    * ASE Hardware Interface (CCI) logger
-    * - Logs CCI transaction into a transactions.tsv file
-    * - Watch for "*valid", and write transaction to log name
-    */
-   // Log file descriptor
-//   int log_fd;
-
-   /*
-    * Watcher process
-    */
-/*
-   initial begin : logger_proc
-      // Display
-      $display("SIM-SV: CCI Logger started");
-
-      // Open transactions.tsv file
-      log_fd = $fopen("transactions.tsv", "w");
-
-      // Headers
-      $fwrite(log_fd, "\tTime\tTransactionType\tChannel\tMetaInfo\tCacheAddr\tData\n");
-
-      // Watch CCI port
-      forever begin
-	 // If LP_initdone changed, log the event
-	 if (lp_initdone_q != lp_initdone) begin
-	    $fwrite(log_fd, "%d\tLP_initdone toggled from %b to %b\n", $time, lp_initdone_q, lp_initdone);
-	 end
-	 // Indicate Software controlled reset
-	 if (sw_reset_n_q != sw_reset_n) begin
-	    $fwrite(log_fd, "%d\tSoftware reset toggled from %b to %b\n", $time, sw_reset_n_q, sw_reset_n);
-	 end
-	 // If reset toggled, log the event
-	 if (sys_reset_n_q != sys_reset_n) begin
-	    $fwrite(log_fd, "%d\tSystem reset toggled from %b to %b\n", $time, sys_reset_n_q, sys_reset_n);
-	 end
-	 // Watch CCI for valid transactions
-	 if (lp_initdone) begin
-	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
-	    if (rx_c0_cfgvalid) begin
-	       $fwrite(log_fd, "%d\tCSRWrite\t\t\t%x\t%x\n", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
-	       if (cfg.enable_cl_view) $display("%d\tCSRWrite\t\t\t%x\t%x", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
-	    end
-	    /////////////////////////////// RX0 wrvalid /////////////////////////////////
-	    if (rx_c0_wrvalid) begin
-	       $fwrite(log_fd, "%d\tWrResp\t\t0\t%x\tNA\tNA\n", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
-	       if (cfg.enable_cl_view) $display("%d\tWrResp\t\t0\t%x\tNA\tNA", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
-	    end
-	    /////////////////////////////// RX0 rdvalid /////////////////////////////////
-	    if (rx_c0_rdvalid) begin
-	       $fwrite(log_fd, "%d\tRdResp\t\t0\t%x\tNA\t%x\n", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
-	       if (cfg.enable_cl_view) $display("%d\tRdResp\t\t0\t%x\tNA\t%x", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
-	    end
-	    ////////////////////////////// RX0 umsgvalid ////////////////////////////////
-	    if (rx_c0_umsgvalid) begin
-	       if (rx_c0_header[`CCI_UMSG_BITINDEX]) begin              // Umsg Hint
-		  $fwrite(log_fd, "%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
-	       end
-	       else begin                                               // Umsg with data
-		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\t%x\n", $time, rx_c0_header[5:0], rx_c0_data );
-		  if (cfg.enable_cl_view) $display("%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
-	       end
-	    end
-	    /////////////////////////////// RX1 wrvalid /////////////////////////////////
-	    if (rx_c1_wrvalid) begin
-	       $fwrite(log_fd, "%d\tWrResp\t\t1\t%x\tNA\tNA\n", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
-	       if (cfg.enable_cl_view) $display("%d\tWrResp\t\t1\t%x\tNA\tNA", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
-	    end
-	    /////////////////////////////// TX0 rdvalid /////////////////////////////////
-	    if (tx_c0_rdvalid) begin
-	       if ((tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_S) || (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE)) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_S\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_S\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_I) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_I\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_I\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_O) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_O\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (cfg.enable_cl_view) $display("%d\tRdLineReq_O\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else begin
-		  $fwrite(log_fd, "ReadValid on TX-CH0 validated an UNKNOWN Request type at t = %d \n", $time);
-	       end
-	    end
-	    /////////////////////////////// TX1 wrvalid /////////////////////////////////
-	    if (tx_c1_wrvalid) begin
-	       if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRTHRU) begin
-		  $fwrite(log_fd, "%d\tWrThruReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-		  if (cfg.enable_cl_view) $display("%d\tWrThruReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-	       end
-	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRLINE) begin
-		  $fwrite(log_fd, "%d\tWrLineReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-		  if (cfg.enable_cl_view) $display("%d\tWrLineReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-	       end
-	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE) begin
-		  $fwrite(log_fd, "%d\tWriteFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
-		  if (cfg.enable_cl_view) $display("%d\tWriteFence\t1\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
-	       end
-	       else begin
-		  $fwrite(log_fd, "WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
-		  if (cfg.enable_cl_view) $display("WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
-	       end
-	    end
-	 end
-	 // Wait till next clock
-	 @(posedge clk);
-      end
-   end
-*/
- 
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
    // Read response checking
@@ -1798,11 +1730,15 @@ module cci_emulator
    end
 `endif
 
-   // CCI Logger module
+   /*
+    * CCI Logger module
+    */
    cci_logger cci_logger
      (
       .enable_logger    (cfg.enable_cl_view),
       .finish_logger    (finish_logger     ),
+      // .log_string_en    (cci_logger_msg_en ),
+      // .log_string       (cci_logger_msg    ),
       // interface
       .clk              (clk              ),        
       .sys_reset_n     	(sys_reset_n      ),     

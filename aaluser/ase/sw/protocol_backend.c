@@ -62,6 +62,58 @@ void scope_function()
 
 
 /*
+ * DPI: CONFIG path data exchange
+ */
+void sv2c_config_dex(const char *str)
+{
+  sv2c_config_filepath = malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_config_filepath, str);
+#ifdef ASE_DEBUG
+  printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
+#endif
+  
+  // Check for existance of file
+  if ( access(sv2c_config_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_config_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
+ * DPI: SCRIPT path data exchange
+ */
+void sv2c_script_dex(const char *str)
+{
+  sv2c_script_filepath = malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_script_filepath, str);
+#ifdef ASE_DEBUG
+  printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
+#endif
+
+  // Check for existance of file
+  if ( access(sv2c_script_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_script_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
  * DPI: WriteLine Data exchange
  */
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
@@ -151,6 +203,9 @@ int ase_listener()
   // DPI buffer
   struct buffer_t ase_buffer;
 
+  // Logger string
+  char logger_str[ASE_LOGGER_LEN];
+
   // Prepare an empty buffer
   ase_empty_buffer(&ase_buffer);
   // Receive a DPI message and get information from replicated buffer
@@ -178,15 +233,23 @@ int ase_listener()
       // Write buffer information to file
       if ( (ase_buffer.is_csrmap == 0) || (ase_buffer.is_privmem == 0) )
 	{
-	  // Write Workspace info to workspace log file
-	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
-	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
-	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
-	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
-	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
-	  fprintf(fp_workspace_log, "\n");
+	  // Zero out string
+	  memset (logger_str, '\0', ASE_LOGGER_LEN);
 	  
+	  // Format workspace info string
+	  sprintf(logger_str + strlen(logger_str), "Workspace %d Allocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Write to CCI logger module | Placeholder
+	  // *FIXME* 
+	  // buffer_messages ( logger_str );
+
 	  // Flush info to file
+	  fprintf(fp_workspace_log, logger_str);
 	  fflush(fp_workspace_log);
 	}
       
@@ -485,6 +548,10 @@ int ase_ready()
 {
   FUNC_CALL_ENTRY;
 
+  // App run command
+  app_run_cmd = malloc (ASE_FILEPATH_LEN);
+  memset (app_run_cmd, '\0', ASE_FILEPATH_LEN);
+
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
 
@@ -511,7 +578,16 @@ int ase_ready()
   if (cfg->ase_mode == ASE_MODE_REGRESSION) 
     {
       printf("Starting ase_regress.sh script...\n");
-      system("./ase_regress.sh &");  
+      if ( strlen(sv2c_script_filepath) != 0 )
+	{
+	  strcpy(app_run_cmd, sv2c_script_filepath);
+	  strcat(app_run_cmd, " &");
+	}
+      else
+	{
+	  strcpy(app_run_cmd, "./ase_regress.sh &");  
+	}
+      system(app_run_cmd);
     }
   else
     {
@@ -686,7 +762,14 @@ void ase_config_parse(char *filename)
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = malloc(256);
-  sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+  if ( strlen(sv2c_config_filepath) != 0 )
+    {
+      strcpy(ase_cfg_filepath, sv2c_config_filepath);
+    }
+  else
+    {
+      sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+    }
 
   // Allocate space to store ASE config
   cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );

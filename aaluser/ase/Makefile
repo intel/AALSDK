@@ -269,7 +269,7 @@ endif
 sim: check
 ifeq ($(SIMULATOR), VCS)
 #	./$(WORK)/ase_simv $(VCS_SIM_OPT)
-	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) ; cd -
+	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 

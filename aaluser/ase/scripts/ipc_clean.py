@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os, re, sys, commands
 
 MQUEUE_MOUNT = "./work/"

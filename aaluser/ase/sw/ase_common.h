@@ -132,6 +132,9 @@
 // ASE filepath length
 #define ASE_FILEPATH_LEN  256
 
+// ASE logger len
+#define ASE_LOGGER_LEN    1024
+
 // work Directory location
 char *ase_workdir_path;
 
@@ -147,6 +150,13 @@ char *ipclist_filepath;
 
 // Ready filepath
 char *ase_ready_filepath;
+
+// CONFIG,SCRIPT parameter paths received from SV (initial)
+char *sv2c_config_filepath;
+char *sv2c_script_filepath;
+
+// ASE-APP run command
+char *app_run_cmd;
 
 // ASE Mode macros
 #define ASE_MODE_DAEMON_NO_SIMKILL   1
@@ -499,6 +509,7 @@ extern void simkill();
 extern void sw_simkill_request();
 extern void csr_write_init();
 extern void csr_write_dispatch(int, int, int);
+extern void buffer_messages(char *);
 /* extern void umsg_init(); */
 extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
