@@ -72,6 +72,9 @@
 #include "aalsdk/kernel/spl2defs.h"
 #include "aalsdk/kernel/fappip.h"
 
+
+#define CCIV4_MMIO_UMSG_TEST 1
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -141,6 +144,8 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
                struct aal_wsid            *wsidp,
                btAny                       os_specific)
 {
+
+
    struct vm_area_struct   *pvma = (struct vm_area_struct *)os_specific;
 
    struct cciv4_PIPsession  *pSess        = NULL;
@@ -205,6 +210,80 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
          }
       }
+
+#if CCIV4_MMIO_UMSG_TEST
+
+        if ( WSID_MAP_MMIOR == wsidp->m_id )
+
+        {
+		  if ( !cciv4_dev_allow_map_mmior_space(pdev) ) {
+					PERR("Denying request to map cciv4_dev_allow_map_mmior_space Read space for device 0x%p.\n", pdev);
+					goto ERROR;
+			}
+
+           ptr  = (void *)cciv4_dev_phys_afu_mmio(pdev);
+           size = cciv4_dev_len_afu_mmio(pdev);
+
+			PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
+						((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
+						ptr,
+						size,
+						(void *)pvma->vm_start);
+
+			// Map the region to user VM
+			res =  remap_pfn_range(pvma,                             // Virtual Memory Area
+								   pvma->vm_start,                   // Start address of virtual mapping
+								   ((unsigned long)ptr)>>PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
+								   size,
+								   pvma->vm_page_prot);
+
+			 if ( unlikely(0 != res) ) {
+			   PERR("remap_pfn_range error at CSR mmap %d\n", res);
+			   goto ERROR;
+			 }
+
+			 // Successfully mapped CSR region.
+			 return 0;
+
+
+          }
+
+        if ( WSID_MAP_UMSG == wsidp->m_id )
+
+      	 {
+		  if ( !cciv4_dev_allow_map_umsg_space(pdev) ) {
+							PERR("Denying request to map cciv4_dev_allow_map_umsg_space Read space for device 0x%p.\n", pdev);
+							goto ERROR;
+		   }
+
+   		  ptr  = (void *)cciv4_dev_phys_afu_umsg(pdev);
+          size = cciv4_dev_len_afu_umsg(pdev);
+
+		  PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
+						((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
+						ptr,
+						size,
+						(void *)pvma->vm_start);
+
+		// Map the region to user VM
+		res =  remap_pfn_range(pvma,                             // Virtual Memory Area
+							   pvma->vm_start,                   // Start address of virtual mapping
+							   ((unsigned long)ptr)>>PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
+							   size,
+							   pvma->vm_page_prot);
+
+		 if ( unlikely(0 != res) ) {
+		   PERR("remap_pfn_range error at CSR mmap %d\n", res);
+		   goto ERROR;
+		 }
+
+		 // Successfully mapped CSR region.
+		 return 0;
+
+
+      	 }
+
+#endif
 
       // TO REST OF CHECKS
 

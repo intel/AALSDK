@@ -338,6 +338,9 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
       AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_MMIOR initialized" << std::endl);
 
+      std::cout <<"WSID_MAP_MMIOR pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
+
+
    }  // if (id == WSID_MAP_MMIOR)
 
    if ( WSID_MAP_UMSG == id ) {
@@ -347,6 +350,8 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
       m_umsgsize = (btUnsigned32bitInt)pResult->wsParms.size;
 
       AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_UMSG initialized" << std::endl);
+
+      std::cout <<"WSID_MAP_UMSG pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
 
    }  // if (id == WSID
 
