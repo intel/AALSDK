@@ -159,9 +159,13 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 
 		   // Wait for test completion
-		   while ( ( 0 == pAFUDSM->test_complete ) &&
-				   ( Timer() < absolute ) ) {
-
+		   while ( ( 0 == pAFUDSM->test_complete ))
+		   {
+			   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
+			   {
+				   absolute = Timer() + Timer(&ts);
+				   break;
+			   }
 			   SleepNano(10);
 		   }
 
@@ -176,7 +180,6 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   // Increment number of cachelines and update Timer
 		   sz += CL(1);
-		   absolute = Timer() + Timer(&ts);
        }
 
 

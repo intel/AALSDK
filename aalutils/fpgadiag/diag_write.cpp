@@ -180,7 +180,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    }
 
    while ( sz <= CL(cmd.endcls) )
-       {
+   {
 		   // Assert Device Reset
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
@@ -198,8 +198,13 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 
 		   // Wait for test completion
-		   while ( ( 0 == pAFUDSM->test_complete ) &&
-				   ( Timer() < absolute ) ) {
+		   while ( ( 0 == pAFUDSM->test_complete ))
+		   {
+			   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
+			   {
+				   absolute = Timer() + Timer(&ts);
+				   break;
+			   }
 			   SleepNano(10);
 		   }
 
@@ -214,7 +219,6 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   //Incrememnt the cachelines and update the timer.
 		   sz += CL(1);
-		   absolute = Timer() + Timer(&ts);
        }
 
    //Wait until test completes or timeout
