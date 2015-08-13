@@ -194,7 +194,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 	   for (iterator = 0; iterator < MAX_CPU_CACHE_SIZE; iterator++)
 	   {
-		   c[iterator] = iterator; //Operation to fill the cache with irrelevant content
+		   //c[iterator] = iterator; //Operation to fill the cache with irrelevant content
 	   }
 
    }
@@ -218,15 +218,19 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
 	   // Set the number of cache lines for the test
+
 	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	   // Start the test
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 	   // Wait for test completion
-	   while ( ( 0 == pAFUDSM->test_complete ) &&
-			   ( Timer() < absolute ) ) {
-
+	   while ( ( 0 == pAFUDSM->test_complete )) {
+		   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
+		   {
+			   absolute = Timer() + Timer(&ts);
+			   break;
+		   }
 		   SleepNano(10);
 	   }
 
@@ -241,7 +245,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 	   // Increment Cachelines and update timer.
 	   sz += CL(1);
-	   absolute = Timer() + Timer(&ts);
 
       }
 
