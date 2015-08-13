@@ -1,0 +1,68 @@
+///@addtogroup HelloAALout
+///@{
+//! <pre>
+///HelloAAL OUTPUT
+///====================
+///= Hello AAL Sample =
+///====================
+///HelloAAL.cpp:314:run() : Allocating Service
+///HelloAAL.cpp:343:serviceAllocated() : Service Allocated
+///HelloAALService.cpp:164:Hello() : Received a hello from 'the Application'. Saying hello back.
+///HelloAAL.cpp:373:HelloApp() : AAL says Hello Back 
+///HelloAAL.cpp:366:serviceReleased() : Service Released
+///HelloAAL.cpp:192:runtimeStopped() : Runtime stopped
+///HelloAAL.cpp:409:main() : Done
+//! <pre>
+///@}
+/// @addtogroup HelloSPLLBout
+/// @{
+//! <pre>
+///HelloSPLLB OUTPUT
+///=======================
+///= Hello SPL LB Sample =
+///=======================
+///HelloSPLLB.cpp:399:run() : Allocating Service
+///HelloSPLLB.cpp:579:serviceAllocated() : Service Allocated
+///HelloSPLLB.cpp:627:OnWorkspaceAllocated() : Got Workspace
+///HelloSPLLB.cpp:418:run() : Running Test
+///HelloSPLLB.cpp:424:run() : Allocated 8388736-byte Workspace at virtual address 0x2ae6740008c0
+///HelloSPLLB.cpp:1ca:run() : VAFU2 Context=0x2ae6740008c0 Src=0x2ae674000940 Dest=0x2ae674400940
+///HelloSPLLB.cpp:461:run() : Cache lines in each buffer=65536 (bytes=4194304 0x400000)
+///HelloSPLLB.cpp:464:run() : Initializing buffers with fixed data pattern. (src=0xafafafaf dest=0xbebebebe)
+///HelloSPLLB.cpp:478:run() : Starting SPL Transaction with Workspace
+///HelloSPLLB.cpp:659:OnTransactionStarted() : Transaction Started
+///HelloSPLLB.cpp:506:run() : Stopping SPL Transaction
+///HelloSPLLB.cpp:695:OnTransactionStopped() : Transaction Stopped
+///HelloSPLLB.cpp:509:run() : SPL Transaction complete
+///HelloSPLLB.cpp:521:run() : Verifying buffers in workspace
+///HelloSPLLB.cpp:554:run() : Workspace verification complete, freeing workspace.
+///HelloSPLLB.cpp:641:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloSPLLB.cpp:604:serviceReleased() : Service Freed
+///HelloSPLLB.cpp:222:runtimeStopped() : Runtime stopped
+///HelloSPLLB.cpp:749:main() : Done
+//! <pre>
+///@}
+/// @addtogroup HelloCCINLBout
+/// @{
+//! <pre>
+///HelloCCINLB OUTPUT
+///========================
+///= Hello CCI NLB Sample =
+///========================
+///HelloCCINLB.cpp:414:run() : Allocating Service
+///HelloCCINLB.cpp:525:serviceAllocated() : Service Allocated
+///HelloCCINLB.cpp:570:OnWorkspaceAllocated() : Got DSM
+///HelloCCINLB.cpp:577:OnWorkspaceAllocated() : Got Input Workspace
+///HelloCCINLB.cpp:587:OnWorkspaceAllocated() : Got Output Workspace
+///HelloCCINLB.cpp:432:run() : Running Test
+///HelloCCINLB.cpp:479:run() : Done Running Test
+///HelloCCINLB.cpp:489:run() : Output matches Input!
+///HelloCCINLB.cpp:611:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:611:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:611:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:544:serviceReleased() : Service Released
+///HelloCCINLB.cpp:239:runtimeStopped() : Runtime stopped
+///HelloCCINLB.cpp:655:main() : Done
+//! <pre>
+///@}
+

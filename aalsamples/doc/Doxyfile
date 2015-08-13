@@ -676,7 +676,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = doc/mainpage.dox \
-			 doc/sampleout.dox \
+			 doc/output/final.dox \
                          Hello_AAL/SW \
                          Hello_AAL_Service/SW \
                          Hello_CCI_NLB/SW \
