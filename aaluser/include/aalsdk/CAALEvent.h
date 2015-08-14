@@ -259,13 +259,11 @@ public:
                    btcString        Description);
    /// CExceptionEvent Copy Constructor.
    CExceptionEvent(const CExceptionEvent &rOther);
-   /// CExceptionEvent Destructor.
-   virtual ~CExceptionEvent();
 
    // <IExceptionEvent>
    btID ExceptionNumber() const { return m_ExceptionNumber; }
    btID          Reason() const { return m_Reason;          }
-   btString Description() const { return (btString)(char *)m_strDescription.c_str(); }
+   btString Description() const;
    // </IExceptionEvent>
 
 protected:

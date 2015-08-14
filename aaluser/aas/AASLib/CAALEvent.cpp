@@ -598,14 +598,12 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
 {
    AutoLock(this);
 
-   // default native subclass interface unless overriden by a subclass
+   // default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CExceptionEvent
@@ -627,15 +625,15 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
 
    // iidExEvent is the default native subclass interface unless overriden by a subclass
    if ( SetInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    // default native subclass interface unless overriden by a subclass
    if ( SetSubClassInterface(SubClassID, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
 
 //=============================================================================
@@ -645,27 +643,31 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
 //           Must be constructed with an object.
 //=============================================================================
 CExceptionEvent::CExceptionEvent(const CExceptionEvent &rOther) :
-   CAALEvent(rOther),
-   m_ExceptionNumber(rOther.m_ExceptionNumber),
-   m_Reason(rOther.m_Reason),
-   m_strDescription(rOther.m_strDescription)
+   CAALEvent(rOther)
 {
    AutoLock(this);
+   {
+      AutoLock(&rOther);
 
-   // default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
-      m_bIsOK = false;
-      return;
+      // default native subclass interface unless overridden by a subclass
+      if ( SetSubClassInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+         m_bIsOK = false;
+         return;
+      }
+
+      m_ExceptionNumber = rOther.m_ExceptionNumber;
+      m_Reason          = rOther.m_Reason;
+      m_strDescription  = rOther.m_strDescription;
    }
 }
 
-//=============================================================================
-// Name: ~CExceptionEvent
-// Description: Destructor
-//=============================================================================
-CExceptionEvent::~CExceptionEvent() {}
+btString CExceptionEvent::Description() const
+{
+   AutoLock(this);
+   return (btString)(char *)m_strDescription.c_str();
+}
 
-CExceptionEvent::CExceptionEvent() {}
+CExceptionEvent::CExceptionEvent() {/*empty*/}
 CExceptionEvent & CExceptionEvent::operator=(const CExceptionEvent & ) { return *this; }
 
 //=============================================================================
