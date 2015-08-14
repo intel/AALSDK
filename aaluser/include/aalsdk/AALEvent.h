@@ -106,7 +106,7 @@ public:
    /// ITransactionEvent Destructor.
    virtual ~ITransactionEvent() {}
    /// Retrieve the TransactionID associated with this Transaction Event.
-   virtual TransactionID TranID()                      = 0;
+   virtual TransactionID TranID() const                = 0;
    /// Set the TransactionID for this Transaction Event.
    virtual void SetTranID(TransactionID const &TranID) = 0;
 };
@@ -118,11 +118,11 @@ public:
    /// IExceptionEvent Destructor.
    virtual ~IExceptionEvent() {}
    /// Retrieve the Exception id.
-   virtual btID ExceptionNumber() = 0;
+   virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
-   virtual btID Reason()          = 0;
+   virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
-   virtual btString Description() = 0;
+   virtual btString Description() const = 0;
 };
 
 /// Base interface for all Exception Transaction Event interfaces.
@@ -130,11 +130,11 @@ class AASLIB_API IExceptionTransactionEvent : public ITransactionEvent
 {
 public:
    /// Retrieve the Exception id.
-   virtual btID ExceptionNumber() = 0;
+   virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
-   virtual btID Reason()          = 0;
+   virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
-   virtual btString Description() = 0;
+   virtual btString Description() const = 0;
 };
 
 /// Interface of event response returned for IFactory::Create.
@@ -161,7 +161,7 @@ public:
    /// IApplicationEvent Destructor.
    virtual ~IApplicationEvent() {}
    /// Retrieve the parameters associated with this Application-specific event.
-   virtual NamedValueSet &Parms() = 0;
+   virtual NamedValueSet & Parms() = 0;
 };
 
 /// Base interface for Application-specific Exception Events.
@@ -171,13 +171,13 @@ public:
    /// IApplicationExceptionEvent Destructor.
    virtual ~IApplicationExceptionEvent() {}
    /// Retrieve the Exception id.
-   virtual btID ExceptionNumber() = 0;
+   virtual btID ExceptionNumber() const = 0;
    /// Retrieve the Exception reason code.
-   virtual btID Reason()          = 0;
+   virtual btID          Reason() const = 0;
    /// Retrieve a string description of the Exception.
-   virtual btString Description() = 0;
+   virtual btString Description() const = 0;
    /// Retrieve the parameters associated with this Application-specific Exception Event.
-   virtual NamedValueSet &Parm()  = 0;
+   virtual NamedValueSet & Parm()       = 0;
 };
 
 /// Print information in Exception and ExceptionTransaction Events.

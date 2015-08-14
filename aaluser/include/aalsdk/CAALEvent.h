@@ -201,7 +201,6 @@ public:
    ///
    /// @param[in]  pObject     An IBase associated with this event.
    /// @param[in]  rTranID     For routing event responses.
-   /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
                      TransactionID const &rTranID);
    /// CTransactionEvent Constructor.
@@ -209,26 +208,21 @@ public:
    /// @param[in]  pObject     An IBase associated with this event.
    /// @param[in]  SubClassID  The native sub-class id for this event.
    /// @param[in]  rTranID     For routing event responses.
-   /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
                      btIID                SubClassID,
                      TransactionID const &rTranID);
    /// CTransactionEvent Copy Constructor.
    CTransactionEvent(CTransactionEvent const &rOther);
-   /// CTransactionEvent Destructor.
-   virtual ~CTransactionEvent();
 
    // <ITransactionEvent>
-   TransactionID TranID()                      { return m_TranID;   }
-   void SetTranID(TransactionID const &TranID) { m_TranID = TranID; }
+   TransactionID TranID() const;
+   void       SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 
 protected:
-
    // These Constructor forms are invalid.
    CTransactionEvent();
    CTransactionEvent(IBase * );
-
    CTransactionEvent & operator = (const CTransactionEvent & );
 };
 
@@ -269,9 +263,9 @@ public:
    virtual ~CExceptionEvent();
 
    // <IExceptionEvent>
-   btID ExceptionNumber() { return m_ExceptionNumber; }
-   btID Reason()          { return m_Reason;          }
-   btString Description() { return (btString)(char *)m_strDescription.c_str(); }
+   btID ExceptionNumber() const { return m_ExceptionNumber; }
+   btID          Reason() const { return m_Reason;          }
+   btString Description() const { return (btString)(char *)m_strDescription.c_str(); }
    // </IExceptionEvent>
 
 protected:
@@ -334,13 +328,13 @@ public:
    virtual ~CExceptionTransactionEvent();
 
    // <IExceptionEvent>
-   btID ExceptionNumber() { return m_ExceptionNumber; }
-   btID Reason()          { return m_Reason;          }
-   btString Description() { return (btString)(char *)m_strDescription.c_str(); }
+   btID ExceptionNumber() const { return m_ExceptionNumber; }
+   btID          Reason() const { return m_Reason;          }
+   btString Description() const { return (btString)(char *)m_strDescription.c_str(); }
    // </IExceptionEvent>
 
    // <ITransactionEvent>
-   TransactionID TranID()                      { return m_TranID;   }
+   TransactionID TranID() const                { return m_TranID;   }
    void SetTranID(TransactionID const &TranID) { m_TranID = TranID; }
    // </ITransactionEvent>
 

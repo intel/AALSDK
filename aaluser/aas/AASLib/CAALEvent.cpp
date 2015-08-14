@@ -503,16 +503,15 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
    CAALEvent(pObject)
 {
    AutoLock(this);
+
    m_TranID = TranID;
 
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
+   // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CTransactionEvent
@@ -529,18 +528,17 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
 
    m_TranID = TranID;
 
-
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
+   // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    // Set the subclass to the one provided
    if ( SetSubClassInterface(SubClassID, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
 
 //=============================================================================
@@ -553,21 +551,30 @@ CTransactionEvent::CTransactionEvent(CTransactionEvent const &rOther) :
    CAALEvent(rOther)
 {
    AutoLock(this);
+   {
+      AutoLock(&rOther);
 
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
-      m_bIsOK = false;
-      return;
+      m_TranID = rOther.m_TranID;
+
+      // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
+      if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+         m_bIsOK = false;
+         return;
+      }
    }
-
-   m_TranID = rOther.m_TranID;
 }
 
-//=============================================================================
-// Name: CTransactionEvent
-// Description: Destructor
-//=============================================================================
-CTransactionEvent::~CTransactionEvent() {}
+TransactionID CTransactionEvent::TranID() const
+{
+   AutoLock(this);
+   return m_TranID;
+}
+
+void CTransactionEvent::SetTranID(TransactionID const &TranID)
+{
+   AutoLock(this);
+   m_TranID = TranID;
+}
 
 CTransactionEvent::CTransactionEvent() {/*empty*/}
 CTransactionEvent::CTransactionEvent(IBase * ) {/*empty*/}

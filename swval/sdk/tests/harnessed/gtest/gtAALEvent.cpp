@@ -745,3 +745,260 @@ TEST(CAALEventTest, aal0657)
    EXPECT_EQ(Expect, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(CTransactionEventTest, aal0662)
+{
+   // CTransactionEvent(IBase * , TransactionID const & ) constructs CAALEvent with the IBase *,
+   // and stores the TransactionID for later retrieval by TranID(). On success, a SubClass of
+   // iidTranEvent/ITransactionEvent * is set.
+
+   CAASBase      base;
+   TransactionID tid;
+
+   tid.ID(7);
+
+   CTransactionEvent e(&base, tid);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ(7, e.TranID().ID());
+
+   EXPECT_EQ(iidTranEvent, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+}
+
+TEST(CTransactionEventTest, aal0663)
+{
+   // CTransactionEvent(IBase * , btIID ID, TransactionID const & ) constructs CAALEvent with the
+   // IBase *, and stores the TransactionID for later retrieval by TranID(). On success, a SubClass
+   // of ID/ITransactionEvent * is set. Interface iidTranEvent/ITransactionEvent * is also added.
+
+   CAASBase      base;
+   TransactionID tid;
+
+   tid.ID(7);
+
+   const btIID ID = 998;
+
+   CTransactionEvent e(&base, ID, tid);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ(7, e.TranID().ID());
+
+   EXPECT_EQ(ID, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
+}
+
+TEST(CTransactionEventTest, aal0664)
+{
+   // CTransactionEvent(const CTransactionEvent & ) (copy constructor) creates an exact copy
+   // of the given CTransactionEvent.
+
+   CAASBase      baseA((btApplicationContext)71);
+   TransactionID tidA;
+
+   tidA.ID(8);
+
+   CTransactionEvent a(&baseA, tidA);
+
+   a.setHandler(CAALEventProtected::EventHandler);
+
+   CTransactionEvent copyA(PassReturnByValue(a));
+
+   IEvent const &crA(copyA);
+   void *ExpectA = reinterpret_cast<void *>( & const_cast<IEvent &>(crA) );
+
+   EXPECT_TRUE(copyA.Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(&copyA) ), copyA.Interface(iidEvent));
+
+   EXPECT_TRUE(copyA.Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(&copyA) ), copyA.Interface(iidCEvent));
+
+   EXPECT_TRUE(copyA.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&copyA) ), copyA.Interface(iidTranEvent));
+
+   EXPECT_EQ(iidTranEvent, copyA.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&copyA) ), copyA.ISubClass());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), &copyA.Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), copyA.pObject());
+
+   EXPECT_TRUE(copyA.IsOK());
+   EXPECT_EQ((btApplicationContext)71, copyA.Context());
+
+   EXPECT_EQ(8, copyA.TranID().ID());
+
+   EXPECT_TRUE(a == copyA);
+   EXPECT_FALSE(a != copyA);
+
+   EXPECT_TRUE(copyA == a);
+   EXPECT_FALSE(copyA != a);
+
+   ASSERT_EQ(0, CAALEventProtected::sm_CallLog.LogEntries());
+
+   copyA.operator()();
+
+   ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
+   EXPECT_STREQ("CAALEventProtected::EventHandler", CAALEventProtected::sm_CallLog.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectA, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   CAALEventProtected::sm_CallLog.ClearLog();
+
+
+
+   CAASBase      baseB((btApplicationContext)72);
+   TransactionID tidB;
+   const btIID   IDB = 998;
+
+   tidB.ID(9);
+
+   CTransactionEvent b(&baseB, IDB, tidB);
+
+   CallTrackingServiceClient clientB;
+
+   b.setHandler(&clientB);
+
+   // new'ing the event, because operator()() with IServiceClient will delete it.
+   CTransactionEvent *copyB = new CTransactionEvent(PassReturnByValue(b));
+
+   IEvent const &crB(*copyB);
+   void *ExpectB = reinterpret_cast<void *>( & const_cast<IEvent &>(crB) );
+
+   EXPECT_TRUE(copyB->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyB) ), copyB->Interface(iidEvent));
+
+   EXPECT_TRUE(copyB->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyB) ), copyB->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyB->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ), copyB->Interface(iidTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyB->Has(IDB));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ), copyB->Interface(iidTranEvent));
+
+   EXPECT_EQ(IDB, copyB->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ), copyB->ISubClass());
+
+   EXPECT_TRUE(b == *copyB);
+   EXPECT_FALSE(b != *copyB);
+
+   EXPECT_TRUE(*copyB == b);
+   EXPECT_FALSE(*copyB != b);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), &copyB->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), copyB->pObject());
+
+   EXPECT_TRUE(copyB->IsOK());
+   EXPECT_EQ((btApplicationContext)72, copyB->Context());
+
+   EXPECT_EQ(9, copyB->TranID().ID());
+
+   ASSERT_EQ(0, clientB.LogEntries());
+
+   copyB->operator()(); // Delete's copyB.
+
+   ASSERT_EQ(1, clientB.LogEntries());
+   EXPECT_STREQ("IServiceClient::serviceEvent", clientB.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectB, clientB.Entry(0).ParamValue(0));
+
+
+
+   CAASBase      baseC((btApplicationContext)73);
+   TransactionID tidC;
+   const btIID   IDC = 999;
+
+   tidC.ID(10);
+
+   CTransactionEvent c(&baseC, IDC, tidC);
+
+   CallTrackingRuntimeClient clientC;
+
+   c.setHandler(&clientC);
+
+   // new'ing the event, because operator()() with IRuntimeClient will delete it.
+   CTransactionEvent *copyC = new CTransactionEvent(PassReturnByValue(c));
+
+   IEvent const &crC(*copyC);
+   void *ExpectC = reinterpret_cast<void *>( & const_cast<IEvent &>(crC) );
+
+   EXPECT_TRUE(copyC->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyC) ), copyC->Interface(iidEvent));
+
+   EXPECT_TRUE(copyC->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyC) ), copyC->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyC->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ), copyC->Interface(iidTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyC->Has(IDC));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ), copyC->Interface(iidTranEvent));
+
+   EXPECT_EQ(IDC, copyC->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ), copyC->ISubClass());
+
+   EXPECT_TRUE(c == *copyC);
+   EXPECT_FALSE(c != *copyC);
+
+   EXPECT_TRUE(*copyC == c);
+   EXPECT_FALSE(*copyC != c);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), &copyC->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), copyC->pObject());
+
+   EXPECT_TRUE(copyC->IsOK());
+   EXPECT_EQ((btApplicationContext)73, copyC->Context());
+
+   EXPECT_EQ(10, copyC->TranID().ID());
+
+   ASSERT_EQ(0, clientC.LogEntries());
+
+   copyC->operator()(); // Delete's copyC.
+
+   ASSERT_EQ(1, clientC.LogEntries());
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
+}
+
+TEST(CTransactionEventTest, aal0665)
+{
+   // CTransactionEvent::SetTranID() mutates the TransactionID that is accessed by
+   // CTransactionEvent::TranID().
+
+   CAASBase      baseA((btApplicationContext)71);
+   TransactionID tidA;
+
+   tidA.ID(8);
+
+   CTransactionEvent a(&baseA, tidA);
+
+   EXPECT_EQ(8, a.TranID().ID());
+
+   TransactionID tidB;
+
+   tidB.ID(9);
+
+   a.SetTranID(tidB);
+
+   EXPECT_EQ(9, a.TranID().ID());
+
+
+   CAASBase baseB((btApplicationContext)72);
+   const btIID IDB = 998;
+
+   tidB.ID(10);
+
+   CTransactionEvent b(&baseB, IDB, tidB);
+
+   EXPECT_EQ(10, b.TranID().ID());
+
+   tidB.ID(11);
+
+   b.SetTranID(tidB);
+   EXPECT_EQ(11, b.TranID().ID());
+}
