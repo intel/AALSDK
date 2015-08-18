@@ -46,8 +46,20 @@
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
+#include <thread>
 
-// continuous mode for 10 seconds.
+void * CNLBRead::HotCache(void *arg)
+{
+	CMyApp *e = reinterpret_cast<CMyApp *>(arg);
+	volatile btUnsigned32bitInt *loadCPUCache;
+	loadCPUCache = (volatile btUnsigned32bitInt *)e->InputVirt();
+	cout << "Thread 2: loadCPUCache = " << loadCPUCache << endl;
+	pthread_exit(NULL);
+	/*while (0 == ((volatile nlb_vafu_dsm *)e->DSMVirt())->test_complete )
+	{
+		loadCPUCache = (volatile btUnsigned32bitInt *)e->InputVirt();
+	}*/
+}
 // cool off fpga cache.
 btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
@@ -187,14 +199,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  cout << endl;
    }
 
-   if(flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
    {
 	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
 	   int iterator;
 
 	   for (iterator = 0; iterator < MAX_CPU_CACHE_SIZE; iterator++)
 	   {
-		   //c[iterator] = iterator; //Operation to fill the cache with irrelevant content
+		   c[iterator] = iterator; //Operation to fill the cache with irrelevant content
 	   }
 
    }
@@ -205,6 +217,14 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    struct timespec ts       = cmd.timeout;
    Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
+
+  volatile btUnsigned32bitInt *loadCPUCache = (volatile btUnsigned32bitInt *)m_pMyApp->InputVirt();
+
+
+  pthread_t thread2;
+  int i = 1;
+  pthread_create(&thread2, NULL, HotCache, this);
+  //std::thread t2(HotCache);
 
    while ( sz <= CL(cmd.endcls))
       {
@@ -231,6 +251,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 			   absolute = Timer() + Timer(&ts);
 			   break;
 		   }
+		   //loadCPUCache = (volatile btUnsigned32bitInt *)m_pMyApp->InputVirt();
 		   SleepNano(10);
 	   }
 

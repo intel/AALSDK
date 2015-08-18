@@ -317,6 +317,7 @@ public:
    {}
    virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+   static void *HotCache(void *arg);
 };
 
 class CNLBWrite : public INLB
