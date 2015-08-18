@@ -153,7 +153,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
 
-   if(flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
    {
 	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
 	   int iterator;
