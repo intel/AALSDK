@@ -46,20 +46,7 @@
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
-#include <thread>
 
-void * CNLBRead::HotCache(void *arg)
-{
-	CMyApp *e = reinterpret_cast<CMyApp *>(arg);
-	volatile btUnsigned32bitInt *loadCPUCache;
-	loadCPUCache = (volatile btUnsigned32bitInt *)e->InputVirt();
-	cout << "Thread 2: loadCPUCache = " << loadCPUCache << endl;
-	pthread_exit(NULL);
-	/*while (0 == ((volatile nlb_vafu_dsm *)e->DSMVirt())->test_complete )
-	{
-		loadCPUCache = (volatile btUnsigned32bitInt *)e->InputVirt();
-	}*/
-}
 // cool off fpga cache.
 btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
@@ -113,14 +100,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    ReadQLPCounters();
    SaveQLPCounters();
-
-   //if --prefill-miss is mentioned
-   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_MISS))
-   {
-	   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
-			 cerr << "Cache cool failed\n";
-		  }
-   }
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
@@ -218,14 +197,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
-  volatile btUnsigned32bitInt *loadCPUCache = (volatile btUnsigned32bitInt *)m_pMyApp->InputVirt();
-
-
-  pthread_t thread2;
-  int i = 1;
-  pthread_create(&thread2, NULL, HotCache, this);
-  //std::thread t2(HotCache);
-
    while ( sz <= CL(cmd.endcls))
       {
 	   // Assert Device Reset
@@ -251,7 +222,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 			   absolute = Timer() + Timer(&ts);
 			   break;
 		   }
-		   //loadCPUCache = (volatile btUnsigned32bitInt *)m_pMyApp->InputVirt();
+
 		   SleepNano(10);
 	   }
 
