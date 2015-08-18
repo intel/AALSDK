@@ -201,6 +201,8 @@ TEST_F(CAALEvent_f_0, aal0625)
    EXPECT_EQ(NULL, Context());
 }
 
+#if 0
+Copies were de-featured.
 TEST_F(CAALEvent_f_0, aal0626)
 {
    // CAALEvent::CAALEvent(const CAALEvent &rOther) sets an interface pointer for iidCEvent,
@@ -232,6 +234,7 @@ TEST_F(CAALEvent_f_0, aal0626)
 
    copy->Delete();
 }
+#endif
 
 TEST_F(CAALEvent_f_0, aal0627)
 {
@@ -796,6 +799,8 @@ TEST(CTransactionEventTest, aal0663)
    EXPECT_TRUE(e.IsOK());
 }
 
+#if 0
+Copies were de-featured.
 TEST(CTransactionEventTest, aal0664)
 {
    // CTransactionEvent(const CTransactionEvent & ) (copy constructor) creates an exact copy
@@ -975,6 +980,7 @@ TEST(CTransactionEventTest, aal0664)
    EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
    EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
 }
+#endif
 
 TEST(CTransactionEventTest, aal0665)
 {
@@ -1075,6 +1081,8 @@ TEST(CExceptionEventTest, aal0667)
    EXPECT_TRUE(e.IsOK());
 }
 
+#if 0
+Copies were de-featured.
 TEST(CExceptionEventTest, aal0668)
 {
    // CExceptionEvent(const CExceptionEvent& ) (copy constructor) creates an exact copy of the
@@ -1257,6 +1265,7 @@ TEST(CExceptionEventTest, aal0668)
    EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
    EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1339,6 +1348,8 @@ TEST(CExceptionTransactionEventTest, aal0670)
    EXPECT_TRUE(e.IsOK());
 }
 
+#if 0
+Copies were de-featured.
 TEST(CExceptionTransactionEventTest, aal0671)
 {
    // CExceptionTransactionEvent(const CExceptionTransactionEvent& ) (copy constructor) creates
@@ -1535,4 +1546,5 @@ TEST(CExceptionTransactionEventTest, aal0671)
    EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
    EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
 }
+#endif
 
