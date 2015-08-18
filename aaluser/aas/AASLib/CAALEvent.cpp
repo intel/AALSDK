@@ -682,26 +682,24 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        btID                 Reason,
                                                        btcString            Description) :
    CAALEvent(pObject),
+   m_TranID(TranID),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
 {
    AutoLock(this);
 
-   m_TranID = TranID;
-
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
-   // default native subclass interface unless overriden by a subclass
+   // Default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CExceptionTransactionEvent
@@ -716,28 +714,28 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        btID                 Reason,
                                                        btcString            Description) :
    CAALEvent(pObject),
+   m_TranID(TranID),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
 {
    AutoLock(this);
 
-   m_TranID = TranID;
-
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    if ( SetInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
-   // default native subclass interface unless overriden by a subclass
+   // Default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(SubClassID, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
 
 //=============================================================================
@@ -756,28 +754,36 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(CExceptionTransactionEven
       return;
    }
 
-   // default native subclass interface unless overriden by a subclass
+   // Default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
       m_bIsOK = false;
       return;
    }
 
-   m_TranID          = rOther.m_TranID;
-   m_strDescription  = rOther.m_strDescription;
-   m_Reason          = rOther.m_Reason;
-   m_ExceptionNumber = rOther.m_ExceptionNumber;
- }
+   {
+      AutoLock(&rOther);
+      m_TranID          = rOther.m_TranID;
+      m_ExceptionNumber = rOther.m_ExceptionNumber;
+      m_Reason          = rOther.m_Reason;
+      m_strDescription  = rOther.m_strDescription;
+   }
+}
 
-//=============================================================================
-// Name: ~CExceptionTransactionEvent
-// Description: Destructor
-//=============================================================================
-CExceptionTransactionEvent::~CExceptionTransactionEvent() {}
+btString CExceptionTransactionEvent::Description() const
+{
+   AutoLock(this);
+   return (btString)(char *)m_strDescription.c_str();
+}
+
+void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
+{
+   AutoLock(this);
+   m_TranID = TranID;
+}
 
 CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}
 CExceptionTransactionEvent::CExceptionTransactionEvent(IBase * ) {/*empty*/}
 CExceptionTransactionEvent & CExceptionTransactionEvent::operator=(const CExceptionTransactionEvent & ) { return *this; }
-
 
 
 //=============================================================================

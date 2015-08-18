@@ -299,7 +299,6 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionTransactionEvent(IBase               *pObject,
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
@@ -313,27 +312,24 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionTransactionEvent(IBase               *pObject,
-                              btID                 SubClassID,
+                              btIID                SubClassID,
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
                               btID                 Reason,
                               btcString            Description);
    /// CExceptionTransactionEvent Copy Constructor.
    CExceptionTransactionEvent(CExceptionTransactionEvent const &rOther);
-   /// CExceptionTransactionEvent Destructor.
-   virtual ~CExceptionTransactionEvent();
 
    // <IExceptionEvent>
    btID ExceptionNumber() const { return m_ExceptionNumber; }
    btID          Reason() const { return m_Reason;          }
-   btString Description() const { return (btString)(char *)m_strDescription.c_str(); }
+   btString Description() const;
    // </IExceptionEvent>
 
    // <ITransactionEvent>
-   TransactionID TranID() const                { return m_TranID;   }
-   void SetTranID(TransactionID const &TranID) { m_TranID = TranID; }
+   TransactionID TranID() const { return m_TranID;   }
+   void SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 
 protected:
