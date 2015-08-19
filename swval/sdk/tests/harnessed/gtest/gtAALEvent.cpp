@@ -703,8 +703,11 @@ TEST(CAALEventTest, aal0655)
    pEvent->operator()(); // pEvent is deleted.
 
    ASSERT_EQ(1, client.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceEvent", client.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, client.Entry(0).ParamValue(0));
+   EXPECT_STREQ("IServiceClient::serviceEvent", client.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   client.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
 }
 
 TEST(CAALEventTest, aal0656)
@@ -726,8 +729,11 @@ TEST(CAALEventTest, aal0656)
    pEvent->operator()(); // pEvent is deleted.
 
    ASSERT_EQ(1, client.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeEvent", client.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, client.Entry(0).ParamValue(0));
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", client.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   client.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
 }
 
 TEST(CAALEventTest, aal0657)
@@ -744,8 +750,12 @@ TEST(CAALEventTest, aal0657)
    e.operator()();
 
    ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
-   EXPECT_STREQ("CAALEventProtected::EventHandler", CAALEventProtected::sm_CallLog.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   EXPECT_STREQ("CAALEventProtected::EventHandler",
+                CAALEventProtected::sm_CallLog.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   CAALEventProtected::sm_CallLog.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1547,4 +1557,85 @@ TEST(CExceptionTransactionEventTest, aal0671)
    EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
 }
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(ObjectCreatedEventTest, aal0672)
+{
+   // ObjectCreatedEvent(IRuntimeClient * , IServiceClient * , IBase * , TransactionID ,
+   // const NamedValueSet & ) constructs CTransactionEvent with the IBase * and TransactionID,
+   // stores the IRuntimeClient * and IServiceClient * for later use by operator()(), and stores
+   // the NamedValueSet for later retrieval by GetOptArgs(). On success, a SubClass of
+   // tranevtFactoryCreate/IObjectCreatedEvent * is set.
+
+   CallTrackingRuntimeClient rtc;
+   CallTrackingServiceClient svc;
+
+   CAASBase      base((btApplicationContext)71);
+   TransactionID tid;
+   tid.ID(32);
+
+   NamedValueSet nvs;
+   nvs.Add((btNumberKey)5, (btcString)"hello");
+
+   // new'ing the event because operator()() will delete it.
+   ObjectCreatedEvent *e = new ObjectCreatedEvent(&rtc, &svc, &base, tid, nvs);
+
+   EXPECT_TRUE(e->IsOK());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), &e->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e->pObject());
+
+   EXPECT_EQ((btApplicationContext)71, e->Context());
+
+   EXPECT_EQ(32, e->TranID().ID());
+
+   EXPECT_TRUE(e->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(e) ),
+             e->Interface(iidEvent));
+
+   EXPECT_TRUE(e->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(e) ),
+             e->Interface(iidCEvent));
+
+   EXPECT_TRUE(e->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(e) ),
+             e->Interface(iidTranEvent));
+
+   EXPECT_TRUE(e->Has(tranevtFactoryCreate));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IObjectCreatedEvent *>(e) ),
+             e->Interface(tranevtFactoryCreate));
+
+   EXPECT_EQ(tranevtFactoryCreate, e->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IObjectCreatedEvent *>(e) ),
+             e->ISubClass());
+
+   EXPECT_EQ(nvs, e->GetOptArgs());
+
+   // Deletes e.
+   e->operator()();
+
+   ASSERT_EQ(1, rtc.LogEntries());
+   ASSERT_STREQ("IRuntimeClient::runtimeAllocateServiceSucceeded", rtc.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   rtc.Entry(0).GetParam("pServiceBase", &x);
+   ASSERT_EQ(dynamic_cast<IBase *>(&base), reinterpret_cast<IBase *>(x));
+
+   TransactionID tid2;
+   rtc.Entry(0).GetParam("tid", tid2);
+   EXPECT_EQ(tid.ID(), tid2.ID());
+
+
+   ASSERT_EQ(1, svc.LogEntries());
+   ASSERT_STREQ("IServiceClient::serviceAllocated", svc.Entry(0).MethodName());
+
+   x = NULL;
+   svc.Entry(0).GetParam("pBase", &x);
+   ASSERT_EQ(dynamic_cast<IBase *>(&base), reinterpret_cast<IBase *>(x));
+
+   TransactionID tid3;
+   svc.Entry(0).GetParam("tid", tid3);
+   EXPECT_EQ(tid.ID(), tid3.ID());
+}
 

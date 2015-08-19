@@ -370,11 +370,11 @@ public:
    ///
    /// The native sub-class interface id is tranevtFactoryCreate.
    ///
-   /// @param[in] prtClient Pointer to Runtime Client
-   /// @param[in]  pClient  ServiceClient.
-   /// @param[in]  pObject  The Service requested by the IFactory::Create call.
-   /// @param[in]  TranID   The original TransactionID from IFactory::Create.
-   /// @param[in]  OptArgs  The NamedValueSet from the IFactory::Create call.
+   /// @param[in]  prtClient Pointer to Runtime Client
+   /// @param[in]  pClient   ServiceClient.
+   /// @param[in]  pObject   The Service requested by the IFactory::Create call.
+   /// @param[in]  TranID    The original TransactionID from IFactory::Create.
+   /// @param[in]  OptArgs   The NamedValueSet from the IFactory::Create call.
    ObjectCreatedEvent(IRuntimeClient      *prtClient,
                       IServiceClient      *pClient,
                       IBase               *pObject,

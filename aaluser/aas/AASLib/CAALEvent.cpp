@@ -677,6 +677,8 @@ ObjectCreatedEvent::ObjectCreatedEvent(IRuntimeClient       *prtClient,
    CTransactionEvent(pObject, TranID),
    m_OptArgs(OptArgs)
 {
+   AutoLock(this);
+
    m_pServiceClient = pClient;
    m_pRuntimeClient = prtClient;
 
@@ -688,6 +690,8 @@ ObjectCreatedEvent::ObjectCreatedEvent(IRuntimeClient       *prtClient,
 
 void ObjectCreatedEvent::operator()()
 {
+   btBool del = false;
+
    // Notify the Runtime Client first
    if ( m_pRuntimeClient ) {
       m_pRuntimeClient->runtimeAllocateServiceSucceeded(m_pObject, m_TranID);
@@ -696,9 +700,13 @@ void ObjectCreatedEvent::operator()()
    // Now notify the Service Client
    if ( NULL != m_pServiceClient ) {
       m_pServiceClient->serviceAllocated(m_pObject, m_TranID);
-      delete this;
+      del = true;
    } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
+   }
+
+   if ( del ) {
+      delete this;
    }
 }
 
@@ -725,16 +733,21 @@ ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prt
 
 void ObjectCreatedExceptionEvent::operator()()
 {
+   btBool del = false;
+
    // Notify the Runtime Client
    if ( NULL != m_pRuntimeClient ) {
       m_pRuntimeClient->runtimeAllocateServiceFailed(*this);
-      delete this;
+      del = true;
    } else if ( NULL != m_pServiceClient ) {
-         m_pServiceClient->serviceAllocateFailed(*this);
-         delete this;
-
-   } else if(NULL != m_pEventHandler){
+      m_pServiceClient->serviceAllocateFailed(*this);
+      del = true;
+   } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
+   }
+
+   if ( del ) {
+      delete this;
    }
 }
 
@@ -753,11 +766,17 @@ CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClien
 
 void CObjectDestroyedTransactionEvent::operator()()
 {
+   btBool del = false;
+
    if ( NULL != m_pServiceClient ) {
       m_pServiceClient->serviceReleased(m_TranID);
-      delete this;
+      del = true;
    } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
+   }
+
+   if ( del ) {
+      delete this;
    }
 }
 

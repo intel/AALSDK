@@ -694,42 +694,99 @@ public:
 class MethodCallLogEntry
 {
 public:
-   MethodCallLogEntry(const std::string &method, Timer timestamp=Timer()) :
-      m_MethodName(method),
+   MethodCallLogEntry(btcString method, Timer timestamp=Timer()) :
       m_TimeStamp(timestamp)
-   {}
-
-   const std::string & MethodName() const { return m_MethodName; }
-
-   void AddParam(const std::string &param, void *value)
    {
-      m_Params.push_back(std::make_pair(param, value));
+      m_NVS.Add((btStringKey)"__func__", method);
    }
 
-   unsigned Params() const { return m_Params.size(); }
-
-   const std::string & ParamName(unsigned i) const
+   btcString MethodName() const
    {
-      const_iterator iter;
-      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
-      return (*iter).first;
+      btcString n = NULL;
+      m_NVS.Get((btStringKey)"__func__", &n);
+      return n;
    }
 
-   void * ParamValue(unsigned i) const
+   void AddParam(btcString name, btBool             value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btByte             value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, bt32bitInt         value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btUnsigned32bitInt value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, bt64bitInt         value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btUnsigned64bitInt value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btFloat            value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btcString          value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, btObjectType       value) { m_NVS.Add(name, value); }
+   void AddParam(btcString name, INamedValueSet    *value) { m_NVS.Add(name, value); }
+
+   void AddParam(btcString name, const TransactionID &value)
    {
-      const_iterator iter;
-      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
-      return (*iter).second;
+      std::string var(name);
+      std::string key;
+
+      stTransactionID_t tidStruct = (stTransactionID_t)value;
+
+      key = var + std::string(".m_ID");
+      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_ID));
+
+      key = var + std::string(".m_Handler");
+      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Handler));
+
+      key = var + std::string(".m_IBase");
+      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_IBase));
+
+      key = var + std::string(".m_Filter");
+      m_NVS.Add(key.c_str(), tidStruct.m_Filter);
+
+      key = var + std::string(".m_intID");
+      m_NVS.Add(key.c_str(), tidStruct.m_intID);
+   }
+
+   unsigned Params() const
+   {
+      btUnsignedInt u = 0;
+      m_NVS.GetNumNames(&u);
+      return (unsigned)(u - 1);
+   }
+
+   void GetParam(btcString name, btBool                *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btByte                *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, bt32bitInt            *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btUnsigned32bitInt    *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, bt64bitInt            *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btUnsigned64bitInt    *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btFloat               *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btcString             *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, btObjectType          *pValue) const { m_NVS.Get(name, pValue); }
+   void GetParam(btcString name, INamedValueSet const **pValue) const { m_NVS.Get(name, pValue); }
+
+   void GetParam(btcString name, TransactionID &tid) const
+   {
+      std::string var(name);
+      std::string key;
+
+      stTransactionID_t tidStruct;
+
+      key = var + std::string(".m_ID");
+      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_ID));
+
+      key = var + std::string(".m_Handler");
+      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Handler));
+
+      key = var + std::string(".m_IBase");
+      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_IBase));
+
+      key = var + std::string(".m_Filter");
+      m_NVS.Get(key.c_str(), &tidStruct.m_Filter);
+
+      key = var + std::string(".m_intID");
+      m_NVS.Get(key.c_str(), &tidStruct.m_intID);
+
+      tid = tidStruct;
    }
 
 protected:
-   typedef std::pair< std::string, void * > ParamEntry;
-   typedef std::list<ParamEntry>            ParamList;
-   typedef ParamList::const_iterator        const_iterator;
-
-   std::string m_MethodName;
-   Timer       m_TimeStamp;
-   ParamList   m_Params;
+   Timer         m_TimeStamp;
+   NamedValueSet m_NVS;
 };
 
 class MethodCallLog : public CriticalSection
@@ -737,7 +794,7 @@ class MethodCallLog : public CriticalSection
 public:
    MethodCallLog() {}
 
-   MethodCallLogEntry * AddToLog(const std::string &method)
+   MethodCallLogEntry * AddToLog(btcString method)
    {
       AutoLock(this);
 
@@ -779,28 +836,28 @@ public:
                                  TransactionID const &tid= TransactionID())
    {
       MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocated");
-      l->AddParam("pBase", pBase);
-      l->AddParam("tid",   reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+      l->AddParam("pBase", reinterpret_cast<btObjectType>(pBase));
+      l->AddParam("tid",   tid);
    }
    virtual void serviceAllocateFailed(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocateFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void serviceReleased(TransactionID const &tid= TransactionID())
    {
       MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleased");
-      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+      l->AddParam("tid", tid);
    }
    virtual void serviceReleaseFailed(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleaseFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void serviceEvent(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IServiceClient::serviceEvent");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
 };
 
@@ -813,46 +870,46 @@ public:
    virtual void runtimeCreateOrGetProxyFailed(IEvent const &e)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeCreateOrGetProxyFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void runtimeStarted(IRuntime            *pRuntime,
                                const NamedValueSet &nvs)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStarted");
-      l->AddParam("pRuntime", pRuntime);
-      l->AddParam("nvs", reinterpret_cast<void *>( & const_cast<NamedValueSet &>(nvs) ));
+      l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
+      l->AddParam("nvs",      &nvs);
    }
    virtual void runtimeStopped(IRuntime *pRuntime)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopped");
-      l->AddParam("pRuntime", pRuntime);
+      l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
    }
    virtual void runtimeStartFailed(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStartFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void runtimeStopFailed(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void runtimeAllocateServiceFailed(IEvent const &e)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceFailed");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
    virtual void runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
                                                 TransactionID const &tid)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceSucceeded");
-      l->AddParam("pServiceBase", pServiceBase);
-      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+      l->AddParam("pServiceBase", reinterpret_cast<btObjectType>(pServiceBase));
+      l->AddParam("tid",          tid);
    }
    virtual void runtimeEvent(const IEvent &e)
    {
       MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeEvent");
-      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
    }
 };
 
