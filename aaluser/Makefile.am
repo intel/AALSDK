@@ -217,7 +217,6 @@ include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/NLBVAFU.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
@@ -267,7 +266,12 @@ include/aalsdk/service/SWSimCCIAFUService.h \
 include/aalsdk/service/SPLAFUService.h \
 include/aalsdk/service/HWSPLAFUService.h \
 include/aalsdk/service/ASESPLAFUService.h \
-include/aalsdk/service/SWSimSPLAFUService.h
+include/aalsdk/service/SWSimSPLAFUService.h \
+include/aalsdk/service/IALIAFU.h \
+include/aalsdk/service/ALIAFUService.h \
+include/aalsdk/service/HWALIAFUService.h \
+include/aalsdk/service/ASEALIAFUService.h \
+include/aalsdk/service/SWSimALIAFUService.h
 
 uaiahdrs_HEADERS=\
 include/aalsdk/uaia/AALuAIA_Messaging.h \
@@ -285,6 +289,7 @@ utilshdrs_HEADERS=\
 include/aalsdk/utils/AALEventUtilities.h \
 include/aalsdk/utils/AALWorkSpaceUtilities.h \
 include/aalsdk/utils/CSyncClient.h \
+include/aalsdk/utils/NLBVAFU.h \
 include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h
@@ -376,7 +381,11 @@ include/aalsdk/service/SWSimCCIAFUService.h.in \
 include/aalsdk/service/SPLAFUService.h.in \
 include/aalsdk/service/HWSPLAFUService.h.in \
 include/aalsdk/service/ASESPLAFUService.h.in \
-include/aalsdk/service/SWSimSPLAFUService.h.in
+include/aalsdk/service/SWSimSPLAFUService.h.in \
+include/aalsdk/service/ALIAFUService.h.in \
+include/aalsdk/service/HWALIAFUService.h.in \
+include/aalsdk/service/ASEALIAFUService.h.in \
+include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/uAIAService.h.in

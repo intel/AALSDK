@@ -33,15 +33,17 @@ void Version()
 
 void Help()
 {
-   std::cout << gAppName << " [--halt-on-segv] [--halt-on-timeout] [--version] [--help]"    << std::endl
-             << "\t" << "--halt-on-segv    : enter a wait loop on memory access violation." << std::endl
-             << "\t" << "--halt-on-timeout : enter a wait loop on keep-alive timeout."      << std::endl
+   std::cout << gAppName << " [--halt-on-segv] [--halt-on-timeout] [--no-timeout] [--version] [--help]" << std::endl
+             << "\t" << "--halt-on-segv    : enter a wait loop on memory access violation."             << std::endl
+             << "\t" << "--halt-on-timeout : enter a wait loop on keep-alive timeout."                  << std::endl
+             << "\t" << "--no-timeout      : disabled keep-alive timeout."                              << std::endl
              << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
-   int i;
+   int    i;
+   btBool KeepAlive = true;
 
    for ( i = 1 ; i < argc ; ++i ) {
       if ( 0 == std::string(argv[i]).compare("--version") ) {
@@ -55,6 +57,8 @@ int main(int argc, char *argv[])
          TestStatus::HaltOnSegFault(true);
       } else if ( 0 == std::string(argv[i]).compare("--halt-on-timeout") ) {
          TestStatus::HaltOnKeepaliveTimeout(true);
+      } else if ( 0 == std::string(argv[i]).compare("--no-timeout") ) {
+         KeepAlive = false;
       }
    }
 
@@ -65,8 +69,10 @@ int main(int argc, char *argv[])
 
    ::testing::InitGoogleTest(&argc, argv);
 
-   ::testing::UnitTest::GetInstance()->listeners().Append(new KeepAliveTestListener());
-   ::testing::AddGlobalTestEnvironment(KeepAliveTimerEnv::GetInstance());
+   if ( KeepAlive ) {
+      ::testing::UnitTest::GetInstance()->listeners().Append(new KeepAliveTestListener());
+      ::testing::AddGlobalTestEnvironment(KeepAliveTimerEnv::GetInstance());
+   }
 
    int res = RUN_ALL_TESTS();
 

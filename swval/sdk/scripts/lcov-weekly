@@ -29,7 +29,7 @@ setup "$D"
 declare AUTO_COLOR=''
 [ -t 1 ] && AUTO_COLOR='--gtest-opt=--gtest_color=yes'
 
-WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --weekly ${AUTO_COLOR} ${ARGS}"
+WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --weekly --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
 
 # GCDA_DIRS=(\
 # "--directory ${VPATH}/aas/OSAL/.libs" \

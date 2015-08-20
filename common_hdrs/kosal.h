@@ -236,7 +236,7 @@ extern KOSAL_UINT debug; // Bit mask defined by module, DRV_NAME similarly
         		DRV_NAME, __AAL_SHORT_FILE__, __LINE__, __AAL_FUNC__, kosal_get_pid(), kosal_get_tid(), ##__VA_ARGS__)
 
 # else
-#    define kosal_printk_level(_level, _fmt, ...) printk(_level "[%" KOSAL_PRINTK_DRV_NAME_FMT "] " _fmt, DRV_NAME, __VA_ARGS__)
+#    define kosal_printk_level(_level, _fmt, ...) printk(_level "[%" KOSAL_PRINTK_DRV_NAME_FMT "] " _fmt, DRV_NAME, ##__VA_ARGS__)
 # endif // ENABLE_DEBUG
 #elif defined( __AAL_WINDOWS__ )
 // wdm.h
@@ -425,43 +425,43 @@ unsigned debug = 0
 # ifdef PDEBUG
 #    undef PDEBUG
 # endif // PDEBUG
-# define PDEBUG(_fmt, ...)        0
+# define PDEBUG(_fmt, ...)        do{}while(0)
 # ifdef PVERBOSE
 #    undef PVERBOSE
 # endif // PVERBOSE
-# define PVERBOSE(_fmt, ...)      0
+# define PVERBOSE(_fmt, ...)      do{}while(0)
 # ifdef PINFO
 #    undef PINFO
 # endif // PINFO
-# define PINFO(_fmt, ...)         0
+# define PINFO(_fmt, ...)         do{}while(0)
 # ifdef PNOTICE
 #    undef PNOTICE
 # endif // PNOTICE
-# define PNOTICE(_fmt, ...)       0
+# define PNOTICE(_fmt, ...)       do{}while(0)
 # ifdef PMEMORY_HERE
 #    undef PMEMORY_HERE
 # endif // PMEMORY_HERE
-# define PMEMORY_HERE(_fmt, ...)  0
+# define PMEMORY_HERE(_fmt, ...)  do{}while(0)
 # ifdef PMEMORY
 #    undef PMEMORY
 # endif // PMEMORY
-# define PMEMORY(_fmt, ...)       0
+# define PMEMORY(_fmt, ...)       do{}while(0)
 # ifdef PPCI_HERE
 #    undef PPCI_HERE
 # endif // PPCI_HERE
-# define PPCI_HERE(_fmt, ...)     0
+# define PPCI_HERE(_fmt, ...)     do{}while(0)
 # ifdef PPCI
 #    undef PPCI
 # endif // PPCI
-# define PPCI(_fmt, ...)          0
+# define PPCI(_fmt, ...)          do{}while(0)
 # ifdef PPOLLING_HERE
 #    undef PPOLLING_HERE
 # endif // PPOLLING_HERE
-# define PPOLLING_HERE(_fmt, ...) 0
+# define PPOLLING_HERE(_fmt, ...) do{}while(0)
 # ifdef PPOLLING
 #    undef PPOLLING
 # endif // PPOLLING
-# define PPOLLING(_fmt, ...)      0
+# define PPOLLING(_fmt, ...)      do{}while(0)
 #endif // ENABLE_DEBUG
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -493,23 +493,23 @@ unsigned debug = 0
 # ifdef PTRACEIN
 #    undef PTRACEIN
 # endif // PTRACEIN
-# define PTRACEIN                0
+# define PTRACEIN                do{}while(0)
 # ifdef PTRACEOUT
 #    undef PTRACEOUT
 # endif // PTRACEOUT
-# define PTRACEOUT               0
+# define PTRACEOUT               do{}while(0)
 # ifdef PTRACEOUT_INT
 #    undef PTRACEOUT_INT
 # endif // PTRACEOUT_INT
-# define PTRACEOUT_INT(_retval)  0
+# define PTRACEOUT_INT(_retval)  do{}while(0)
 # ifdef PTRACEOUT_LINT
 #    undef PTRACEOUT_LINT
 # endif // PTRACEOUT_LINT
-# define PTRACEOUT_LINT(_retval) 0
+# define PTRACEOUT_LINT(_retval) do{}while(0)
 # ifdef PTRACEOUT_PTR
 #    undef PTRACEOUT_PTR
 # endif // PTRACEOUT_PTR
-# define PTRACEOUT_PTR(_retval)  0
+# define PTRACEOUT_PTR(_retval)  do{}while(0)
 #endif // ENABLE_DEBUG
 
 //=============================================================================

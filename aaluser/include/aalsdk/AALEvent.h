@@ -73,30 +73,30 @@ class AASLIB_API IEvent
 {
 public:
    /// IEvent Destructor.
-   virtual ~IEvent();
+   virtual ~IEvent() {}
    /// Query interface for a given interface id.
-   virtual btGenericInterface Interface(btIID Interface) const       = 0;
+   virtual btGenericInterface    Interface(btIID Interface)      const = 0;
    /// Determine whether this event contains the specified interface.
-   virtual btBool Has(btIID Interface) const                         = 0;
+   virtual btBool                      Has(btIID Interface)      const = 0;
    /// Query the native subclass interface.
-   virtual btGenericInterface ISubClass() const                      = 0;
+   virtual btGenericInterface    ISubClass()                     const = 0;
    /// Retrieve the native subclass id.
-   virtual btIID SubClassID() const                                  = 0;
+   virtual btIID                SubClassID()                     const = 0;
    /// IEvent inequality.
-   virtual btBool operator != (IEvent &rother)                       = 0;
+   virtual btBool             operator != (const IEvent &rother) const = 0;
    /// IEvent equality.
-   virtual btBool operator == (IEvent &rother)                       = 0;
+   virtual btBool             operator == (const IEvent &rother) const = 0;
    /// Conversion to IBase &.
-   virtual IBase & Object() const                                    = 0;
+   virtual IBase &                  Object()                     const = 0;
    /// Conversion to IBase *.
-   virtual IBase *pObject() const                                    = 0;
+   virtual IBase *                 pObject()                     const = 0;
    /// Internal state check.
-   virtual btBool IsOK() const                                       = 0;
+   virtual btBool                     IsOK()                     const = 0;
    /// Retrieve the application-specific context for the event.
-   virtual btApplicationContext Context() const                      = 0;
+   virtual btApplicationContext    Context()                     const = 0;
    /// Set the context.
    /// @return Previous context.
-   virtual btApplicationContext SetContext(btApplicationContext Ctx) = 0;
+   virtual btApplicationContext SetContext(btApplicationContext Ctx)   = 0;
 };
 
 /// Base interface for all Transaction Event interfaces.
@@ -104,7 +104,7 @@ class AASLIB_API ITransactionEvent
 {
 public:
    /// ITransactionEvent Destructor.
-   virtual ~ITransactionEvent();
+   virtual ~ITransactionEvent() {}
    /// Retrieve the TransactionID associated with this Transaction Event.
    virtual TransactionID TranID()                      = 0;
    /// Set the TransactionID for this Transaction Event.
@@ -116,7 +116,7 @@ class AASLIB_API IExceptionEvent
 {
 public:
    /// IExceptionEvent Destructor.
-   virtual ~IExceptionEvent();
+   virtual ~IExceptionEvent() {}
    /// Retrieve the Exception id.
    virtual btID ExceptionNumber() = 0;
    /// Retrieve the Exception reason code.
@@ -145,7 +145,7 @@ class AASLIB_API IObjectCreatedEvent
 {
 public:
    /// IObjectCreatedEvent Destructor.
-   virtual ~IObjectCreatedEvent(){};
+   virtual ~IObjectCreatedEvent() {}
    /// Retrieve the Named Values, which are now fully resolved as of the Create event.
    virtual const NamedValueSet & GetOptArgs() const = 0;
 };
@@ -159,7 +159,7 @@ class AASLIB_API IApplicationEvent
 {
 public:
    /// IApplicationEvent Destructor.
-   virtual ~IApplicationEvent();
+   virtual ~IApplicationEvent() {}
    /// Retrieve the parameters associated with this Application-specific event.
    virtual NamedValueSet &Parms() = 0;
 };
@@ -169,7 +169,7 @@ class AASLIB_API IApplicationExceptionEvent
 {
 public:
    /// IApplicationExceptionEvent Destructor.
-   virtual ~IApplicationExceptionEvent();
+   virtual ~IApplicationExceptionEvent() {}
    /// Retrieve the Exception id.
    virtual btID ExceptionNumber() = 0;
    /// Retrieve the Exception reason code.

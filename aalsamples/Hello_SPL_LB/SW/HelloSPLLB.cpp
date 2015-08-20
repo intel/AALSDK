@@ -67,6 +67,7 @@
 // #define  HWAFU
 #define  ASEAFU
 
+using namespace std;
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.

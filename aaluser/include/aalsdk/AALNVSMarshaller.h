@@ -44,9 +44,6 @@
 #include <aalsdk/aas/AALServiceModule.h>
 #include <aalsdk/AALLoggerExtern.h>
 
-#include <sstream>
-using namespace std;
-
 BEGIN_NAMESPACE(AAL)
 
 
@@ -114,7 +111,7 @@ public:
    {
 //      std::string s(StdStringFromNamedValueSet(m_NamedValueSet));
 
-      ostringstream oss;
+      std::ostringstream oss;
       oss << m_NamedValueSet << '\0';  // add a final, ensuring, terminating null
       std::string s = oss.str();
       if ( NULL != m_tempbuf ) {

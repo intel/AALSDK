@@ -109,6 +109,77 @@ CAASBase::CAASBase(btApplicationContext Context) :
 }
 
 //=============================================================================
+// Name: ~CAASBase
+// Description: Destructor
+// Interface: public
+// Inputs: none.
+// Outputs: none.
+// Comments:
+//=============================================================================
+CAASBase::~CAASBase() {/*empty*/}
+
+//=============================================================================
+// Name: CAASBase::Interface
+// Description: Gets a pointer to the requested interface
+// Interface: public
+// Inputs: Interface - name of the interface to get.
+// Outputs: Interface pointer.
+// Comments:
+//=============================================================================
+btGenericInterface CAASBase::Interface(btIID Interface) const
+{
+   AutoLock(this);
+
+   IIDINTERFACE_CITR itr = m_InterfaceMap.find(Interface);
+
+   if ( m_InterfaceMap.end() == itr ) {
+      return NULL;
+   }
+
+   return (*itr).second;
+}
+
+//=============================================================================
+// Name: CAASBase::Has
+// Description: Returns whether an object has an interface.
+// Interface: public
+// Inputs: Interface - name of the interface.
+// Outputs: true - has interface otherwise false
+// Comments:
+//=============================================================================
+btBool CAASBase::Has(btIID Interface) const
+{
+   AutoLock(this);
+   return m_InterfaceMap.end() != m_InterfaceMap.find(Interface);
+}
+
+//=============================================================================
+// Name: CAASBase::ISubClass
+// Description: Returns the cached pointer to the native (subclass) object
+// Interface: public
+// Inputs: none.
+// Outputs: class pointer
+// Comments:
+//=============================================================================
+btGenericInterface CAASBase::ISubClass() const
+{
+   return m_ISubClass;
+}
+
+//=============================================================================
+// Name: CAASBase::SubClassID
+// Description: Returns the subclass ID for the Object
+// Interface: public
+// Inputs: none
+// Outputs: ID
+// Comments:
+//=============================================================================
+btIID CAASBase::SubClassID() const
+{
+   return m_SubClassID;
+}
+
+//=============================================================================
 // Name: CAASBase::operator !=
 // Description: operator !=
 // Interface: public
@@ -117,35 +188,133 @@ CAASBase::CAASBase(btApplicationContext Context) :
 // Comments: checks to see if each interface in one object is implemented
 //           in the other.
 //=============================================================================
-btBool CAASBase::operator != (IBase const &rOther) const {
-   AutoLock(this);
-
-   CAASBase *pOther = (CAASBase *)rOther.Interface(iidCBase);
-   if ( pOther != NULL ) {
-      return (m_InterfaceMap != pOther->m_InterfaceMap);
-   }
-   return true;
+btBool CAASBase::operator != (IBase const &rOther) const
+{
+   return ! this->operator == (rOther);
 }
 
 //=============================================================================
-// Name: CLRObjectInterface::operator ==
+// Name: CAASBase::operator ==
 // Description: operator ==
 // Interface: public
 // Inputs: none.
 // Outputs: none.
 // Comments: checks to see if each interface in one object is implemented
 //           in the other.
+//
+// Three criteria must be met for CAASBase equality:
+//  1) Both objects must implement iidCBase (ie, both are conceptually CAASBase
+//     instances).
+//  2) Both objects must implement the same SubClass (ie, both conceptually have
+//     the same default interface).
+//  3) Both objects must implement a) the same number and b) the same types of
+//     other interfaces.
 //=============================================================================
-btBool CAASBase::operator == (IBase const &rOther) const {
+btBool CAASBase::operator == (IBase const &rOther) const
+{
    AutoLock(this);
 
-   CAASBase *pOther = (CAASBase *)rOther.Interface(iidCBase);
-   if ( pOther != NULL ) {
-      return (m_InterfaceMap == pOther->m_InterfaceMap);
+   CAASBase *pOther = reinterpret_cast<CAASBase *>(rOther.Interface(iidCBase));
+   if ( NULL == pOther ) {
+      // 1) fails
+      return false;
    }
-   return false;
+
+   {
+      AutoLock(pOther);
+
+      if ( SubClassID() != pOther->SubClassID() ) {
+         // 2) fails
+         return false;
+      }
+
+      if ( m_InterfaceMap.size() != pOther->m_InterfaceMap.size() ) {
+         // 3a) fails
+         return false;
+      }
+
+      IIDINTERFACE_CITR l;
+      IIDINTERFACE_CITR r;
+
+      for ( l = m_InterfaceMap.begin(), r = pOther->m_InterfaceMap.begin() ;
+               l != m_InterfaceMap.end() ;
+                  ++l, ++r ) {
+         if ( (*l).first != (*r).first ) {
+            // 3b) fails
+            return false;
+         }
+      }
+   }
+
+   // objects are equal
+   return true;
 }
 
+void CAASBase::SetContext(btApplicationContext context)
+{
+   AutoLock(this);
+   m_Context = context;
+}
+
+//=============================================================================
+// Name: CAASBase::SetInterface
+// Description: Sets an interface pointer on the object.
+// Interface: protected
+// Inputs: Interface - name of the interface to set.
+//         pInterface - Interface pointer
+// Outputs: Interface pointer.
+// Comments:
+//=============================================================================
+EOBJECT CAASBase::SetInterface(btIID              Interface,
+                               btGenericInterface pInterface)
+{
+   if ( NULL == pInterface ) {
+      return EObjBadObject;
+   }
+
+   AutoLock(this);
+
+   // Make sure there is not an implementation already.
+   if ( Has(Interface) ) {
+      return EObjDuplicateName;
+   }
+
+   //Add the interface
+   m_InterfaceMap[Interface] = pInterface;
+
+   return EObjOK;
+}
+
+//=============================================================================
+// Name: CAASBase::SetSubClassInterface
+// Description: Sets an interface pointer on the subclass interface for the
+//              object.  This function may only be called once per class.
+// Interface: protected
+// Inputs: Interface - name of the interface to set.
+//         pInterface - Interface pointer
+// Outputs: Interface pointer.
+// Comments:
+//=============================================================================
+EOBJECT CAASBase::SetSubClassInterface(btIID              InterfaceID,
+                                       btGenericInterface pInterface)
+{
+   EOBJECT result;
+
+   AutoLock(this);
+
+   if ( (result = SetInterface(InterfaceID,
+                               pInterface)) != EObjOK ) {
+      return result;
+   }
+
+   m_ISubClass  = pInterface;
+   m_SubClassID = InterfaceID;
+
+   return result;
+}
+
+
+#if DEPRECATED
 //=============================================================================
 // Name: CAASBase::CAASBase
 // Description: Copy Constructor
@@ -175,140 +344,8 @@ CAASBase::CAASBase(const CAASBase &rOther) :
    m_Context = rOther.m_Context;
    m_bIsOK   = rOther.m_bIsOK;
 }
+#endif // DEPRECATED
 
-
-//=============================================================================
-// Name: CAASBase::Interface
-// Description: Gets a pointer to the requested interface
-// Interface: public
-// Inputs: Interface - name of the interface to get.
-// Outputs: Interface pointer.
-// Comments:
-//=============================================================================
-btGenericInterface CAASBase::Interface(btIID Interface) const
-{
-   AutoLock(this);
-
-   if ( !Has(Interface) ) {
-      return NULL;
-   }
-
-   IIDINTERFACE_CITR itr = m_InterfaceMap.find(Interface);
-
-   if ( m_InterfaceMap.end() == itr ) {
-      return NULL;
-   }
-
-   return (*itr).second;
-}
-
-
-//=============================================================================
-// Name: CAASBase::SetInterface
-// Description: Sets an interface pointer on the object.
-// Interface: protected
-// Inputs: Interface - name of the interface to set.
-//         pInterface - Interface pointer
-// Outputs: Interface pointer.
-// Comments:
-//=============================================================================
-EOBJECT CAASBase::SetInterface(btIID              Interface,
-                               btGenericInterface pInterface)
-{
-   AutoLock(this);
-   if ( NULL == pInterface ) {
-      return EObjBadObject;
-   }
-   // Make sure there is not an implementation already.
-   if ( Has(Interface) ) {
-      return EObjDuplicateName;
-   }
-
-   //Add the interface
-   m_InterfaceMap[Interface] = pInterface;
-
-   return EObjOK;
-}
-
-//=============================================================================
-// Name: CAASBase::SetSubClassInterface
-// Description: Sets an interface pointer on the subclass interface for the
-//              object.  This function may only be called once per class.
-// Interface: protected
-// Inputs: Interface - name of the interface to set.
-//         pInterface - Interface pointer
-// Outputs: Interface pointer.
-// Comments:
-//=============================================================================
-EOBJECT CAASBase::SetSubClassInterface(btIID              InterfaceID,
-                                       btGenericInterface pInterface)
-{
-   EOBJECT result;
-   if ( (result = SetInterface(InterfaceID,
-                               pInterface)) != EObjOK ) {
-      return result;
-   }
-   m_ISubClass  = pInterface;
-   m_SubClassID = InterfaceID;
-   return result;
-}
-
-//=============================================================================
-// Name: CAASBase::ISubClass
-// Description: Returns the cached pointer to the native (subclass) object
-// Interface: public
-// Inputs: none.
-// Outputs: class pointer
-// Comments:
-//=============================================================================
-btGenericInterface CAASBase::ISubClass() const
-{
-   return m_ISubClass;
-}
-
-//=============================================================================
-// Name: CAASBase::SubClassID
-// Description: Returns the subclass ID for the Object
-// Interface: public
-// Inputs: none
-// Outputs: ID
-// Comments:
-//=============================================================================
-btIID CAASBase::SubClassID() const
-{
-   return m_SubClassID;
-}
-
-
-//=============================================================================
-// Name: CAASBase::Has
-// Description: Returns whether an object has an interface.
-// Interface: public
-// Inputs: Interface - name of the interface.
-// Outputs: true - has interface otherwise false
-// Comments:
-//=============================================================================
-btBool CAASBase::Has(btIID Interface) const
-{
-   AutoLock(this);
-   IIDINTERFACE_CITR itr = m_InterfaceMap.end();
-
-   // Find the named value pair
-   if ( m_InterfaceMap.find(Interface) == itr ) {
-      return false;
-   }
-   return true;
-}
-
-//=============================================================================
-// Name: ~CAASBase
-// Description: Destructor
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments:
-//=============================================================================
-CAASBase::~CAASBase() {/*empty*/}
 
 //=============================================================================
 // Name: CAALBase

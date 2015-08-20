@@ -62,7 +62,8 @@
 #include <aalsdk/aalclp/aalclp.h>         // Command-line processor
 #include <aalsdk/service/SPLAFUService.h> // Service Manifest and #defines
 
-using namespace AAL;
+USING_NAMESPACE(std)
+USING_NAMESPACE(AAL)
 
 #ifdef INFO
 # undef INFO

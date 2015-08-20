@@ -44,7 +44,9 @@ gtOSServiceModule.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtTimer.cpp \
-gtSleep.cpp
+gtSleep.cpp \
+gtAASBase.cpp \
+gtAALEvent.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -77,6 +79,7 @@ weekly_SOURCES=\
 main.cpp \
 gtCommon.h \
 gtCommon.cpp \
+gtNVSLegacy.cpp \
 gtNVS.cpp
 
 weekly_CPPFLAGS=\
@@ -94,6 +97,7 @@ gtCommon.h \
 gtCommon.cpp \
 gtCritSect.cpp \
 gtSem.cpp \
+gtNVSLegacy.cpp \
 gtNVS.cpp \
 gtThread.cpp \
 gtThreadGroup.h \

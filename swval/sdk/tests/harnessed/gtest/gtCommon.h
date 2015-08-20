@@ -3,7 +3,9 @@
 #define __GTCOMMON_H__
 #include <cstdio>
 #include <string>
+#include <limits>
 #include <fstream>
+#include <sstream>
 #include <list>
 #include <map>
 
@@ -146,6 +148,351 @@ X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename I>
+class TIntVerifier
+{
+public:
+   TIntVerifier() {}
+   void expect_eq(I a, I b) { EXPECT_EQ(a, b); }
+   void expect_ne(I a, I b) { EXPECT_NE(a, b); }
+};
+
+template <typename F>
+class TFltVerifier
+{
+public:
+   TFltVerifier() {}
+   void expect_eq(F a, F b) { FAIL(); }
+   void expect_ne(F a, F b) { EXPECT_NE(a, b); }
+};
+
+// specialization for btFloat.
+template <>
+class TFltVerifier<btFloat>
+{
+public:
+   TFltVerifier() {}
+   void expect_eq(btFloat a, btFloat b) { EXPECT_FLOAT_EQ(a, b); }
+};
+
+template <typename S>
+class TStrVerifier
+{
+public:
+   TStrVerifier() {}
+   void expect_eq(S a, S b) { EXPECT_STREQ(a, b); }
+   void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
+};
+
+class NVSVerifier
+{
+public:
+   NVSVerifier() {}
+   void expect_eq(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_TRUE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+   void expect_ne(const INamedValueSet *a, const INamedValueSet *b)
+   {
+      EXPECT_FALSE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
+   }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename I>
+class TIntCompare
+{
+public:
+   TIntCompare() {}
+   bool equal(I a, I b) { return a == b; }
+};
+
+template <typename F>
+class TFltCompare
+{
+public:
+   TFltCompare() {}
+   bool equal(F a, F b) { return a == b; }
+};
+
+template <typename S>
+class TStrCompare
+{
+public:
+   TStrCompare() {}
+   bool equal(S a, S b) { return (0 == ::strcmp(a, b)); }
+};
+
+class NVSCompare
+{
+public:
+   NVSCompare() {}
+   bool equal(const INamedValueSet *a, const INamedValueSet *b) { return a->operator == (*b); }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X, typename Compare>
+class TValueSequencer
+{
+public:
+   TValueSequencer(const X *pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count),
+      m_i(0),
+      m_Savei(0)
+   {}
+   virtual ~TValueSequencer() {}
+
+   void Snapshot() { m_Savei = m_i; }
+   void Replay()   { m_i = m_Savei; }
+
+   const X & Value()
+   {
+      btUnsigned32bitInt i = m_i;
+      m_i = (m_i + 1) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   const X & ValueOtherThan(const X &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i;
+      do
+      {
+         i = m_i;
+         m_i = (m_i + 1) % m_Count;
+      }while ( c.equal(*(m_pValues + i), x) );
+      return *(m_pValues + i);
+   }
+
+   btUnsigned32bitInt Count() const { return m_Count; }
+
+   btUnsigned32bitInt Seed(btUnsigned32bitInt ) { return 0; }
+
+   virtual eBasicTypes BasicType() const = 0;
+
+protected:
+   TValueSequencer() {}
+
+   const X                 *m_pValues;
+   const btUnsigned32bitInt m_Count;
+   btUnsigned32bitInt       m_i;
+   btUnsigned32bitInt       m_Savei;
+};
+
+template <typename X, typename Compare>
+class TValueRandomizer
+{
+public:
+   TValueRandomizer(const X *pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count),
+      m_Seed(0),
+      m_SaveSeed(0)
+   {}
+   virtual ~TValueRandomizer() {}
+
+   void Snapshot() { m_SaveSeed = m_Seed;     }
+   void Replay()   { m_Seed     = m_SaveSeed; }
+
+   const X & Value()
+   {
+      btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
+      return *(m_pValues + i);
+   }
+
+   const X & ValueOtherThan(const X &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i;
+      do
+      {
+         i = ::GetRand(&m_Seed) % m_Count;
+      }while ( c.equal(*(m_pValues + i), x) );
+      return *(m_pValues + i);
+   }
+
+   btUnsigned32bitInt Count() const { return m_Count; }
+
+   btUnsigned32bitInt Seed(btUnsigned32bitInt s)
+   {
+      btUnsigned32bitInt prev = m_Seed;
+      m_Seed = s;
+      return prev;
+   }
+
+   virtual eBasicTypes BasicType() const = 0;
+
+protected:
+   TValueRandomizer() {}
+
+   const X                 *m_pValues;
+   const btUnsigned32bitInt m_Count;
+   btUnsigned32bitInt       m_Seed;
+   btUnsigned32bitInt       m_SaveSeed;
+};
+
+template <typename ElemT, typename Compare, typename ArrT>
+class TArrayProvider
+{
+public:
+   TArrayProvider(const ArrT pValues, btUnsigned32bitInt Count) :
+      m_pValues(pValues),
+      m_Count(Count)
+   {}
+   virtual ~TArrayProvider() {}
+
+                const ArrT Array() const { return m_pValues; }
+        btUnsigned32bitInt Count() const { return m_Count;   }
+   virtual eBasicTypes BasicType() const = 0;
+
+   const ElemT & ValueOtherThan(const ElemT &x)
+   {
+      Compare            c;
+      btUnsigned32bitInt i = m_Count - 1;
+      do
+      {
+         i = (i + 1) % m_Count;
+      }while( c.equal(*(m_pValues + i), x) );
+      return *(m_pValues + i);
+   }
+
+protected:
+   TArrayProvider() {}
+
+   const ArrT               m_pValues;
+   const btUnsigned32bitInt m_Count;
+};
+
+template <typename S>
+class IOStreamMixin
+{
+public:
+   IOStreamMixin() :
+      m_IOStream(std::ios_base::in|std::ios_base::out|std::ios_base::binary)
+   {}
+
+   std::ostream & os() { return dynamic_cast<std::ostream &>(m_IOStream); }
+   std::istream & is() { return dynamic_cast<std::istream &>(m_IOStream); }
+
+   const std::ostream & os() const { return dynamic_cast<const std::ostream &>(m_IOStream); }
+   const std::istream & is() const { return dynamic_cast<const std::istream &>(m_IOStream); }
+
+   void CheckO(std::ios_base::iostate check) const
+   {
+      const std::ios_base::iostate common = os().rdstate() & check;
+      if ( 0 != common ) {
+         std::string flags;
+         if ( common & std::ios_base::eofbit ) {
+            flags += "eofbit ";
+         }
+         if ( common & std::ios_base::failbit ) {
+            flags += "failbit ";
+         }
+         if ( common & std::ios_base::badbit ) {
+            flags += "badbit ";
+         }
+         FAIL() << "ostream state: " << flags;
+      }
+   }
+
+   void CheckI(std::ios_base::iostate check) const
+   {
+      const std::ios_base::iostate common = is().rdstate() & check;
+      if ( 0 != common ) {
+         std::string flags;
+         if ( common & std::ios_base::eofbit ) {
+            flags += "eofbit ";
+         }
+         if ( common & std::ios_base::failbit ) {
+            flags += "failbit ";
+         }
+         if ( common & std::ios_base::badbit ) {
+            flags += "badbit ";
+         }
+         FAIL() << "istream state: " << flags;
+      }
+   }
+
+   bool  eof() const { return is().eof(); }
+   bool fail() const { return os().fail() || is().fail(); }
+   bool  bad() const { return os().bad()  || is().bad();  }
+
+   void ClearEOF()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::eofbit );
+      is().clear( is().rdstate() & ~std::ios_base::eofbit );
+   }
+   void ClearFail()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::failbit );
+      is().clear( is().rdstate() & ~std::ios_base::failbit );
+   }
+   void ClearBad()
+   {
+      os().clear( os().rdstate() & ~std::ios_base::badbit );
+      is().clear( is().rdstate() & ~std::ios_base::badbit );
+   }
+
+   std::ios_base::streampos InputBytesRemaining()
+   {
+      const std::ios_base::streampos curpos = is().tellg();
+
+      is().seekg(0, std::ios_base::end);
+
+      const std::ios_base::streampos endpos = is().tellg();
+
+      is().seekg(curpos, std::ios_base::beg);
+
+      return endpos - curpos;
+   }
+
+protected:
+   S m_IOStream;
+};
+
+class FILEMixin
+{
+public:
+   FILEMixin() {}
+   virtual ~FILEMixin();
+
+   FILE * fopen_tmp();
+   btBool    fclose(FILE * );
+
+   void rewind(FILE * ) const;
+   int    feof(FILE * ) const;
+   int  ferror(FILE * ) const;
+
+   long InputBytesRemaining(FILE * ) const;
+
+protected:
+   struct FILEInfo
+   {
+      FILEInfo(std::string fname, int fd) :
+         m_fname(fname),
+         m_fd(fd)
+      {}
+      std::string m_fname;
+      int         m_fd;
+   };
+
+   typedef std::map< FILE * , FILEInfo > map_type;
+   typedef map_type::iterator            iterator;
+   typedef map_type::const_iterator      const_iterator;
+
+   map_type m_FileMap;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename X>
+X PassReturnByValue(X x) { return x; }
+
+////////////////////////////////////////////////////////////////////////////////
+
 class TestStatus
 {
 public:
@@ -180,24 +527,6 @@ protected:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
-#define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
-#define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
-#define EXPECT_NULL(x)    EXPECT_EQ((void *)NULL, x)
-
-const std::string SampleAFU1ConfigRecord("9 20 ConfigRecordIncluded\n \
-      \t10\n \
-          \t\t9 17 ServiceExecutable\n \
-            \t\t\t9 13 libsampleafu1\n \
-         \t\t9 18 _CreateSoftService\n \
-         \t\t0 1\n \
-   9 29 ---- End of embedded NVS ----\n \
-      9999\n");
-
-// Retrieve the current test case and test name from gtest.
-// Must be called within the context of a test case/fixture.
-void TestCaseName(std::string &TestCase, std::string &Test);
 
 #if defined( __AAL_LINUX__ )
 
@@ -296,6 +625,15 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define ASSERT_NONNULL(x) ASSERT_NE((void *)NULL, x)
+#define ASSERT_NULL(x)    ASSERT_EQ((void *)NULL, x)
+#define EXPECT_NONNULL(x) EXPECT_NE((void *)NULL, x)
+#define EXPECT_NULL(x)    EXPECT_EQ((void *)NULL, x)
+
+// Retrieve the current test case and test name from gtest.
+// Must be called within the context of a test case/fixture.
+void TestCaseName(std::string &TestCase, std::string &Test);
+
 class KeepAliveTimerEnv : public ::testing::Environment
 {
 public:
@@ -333,6 +671,7 @@ protected:
    static const btUnsignedInt sm_MaxKeepAliveTimeouts;
 
 #if   defined( __AAL_LINUX__ )
+//   static void  KeepAliveCleanup(void * );
    static void * KeepAliveThread(void * );
 #elif defined ( __AAL_WINDOWS__ )
    static void   KeepAliveThread(void * );
@@ -347,6 +686,173 @@ public:
    virtual void OnTestEnd(const ::testing::TestInfo & /*test_info*/)
    {
       KeepAliveTimerEnv::GetInstance()->KeepAlive();
+   }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class MethodCallLogEntry
+{
+public:
+   MethodCallLogEntry(const std::string &method, Timer timestamp=Timer()) :
+      m_MethodName(method),
+      m_TimeStamp(timestamp)
+   {}
+
+   const std::string & MethodName() const { return m_MethodName; }
+
+   void AddParam(const std::string &param, void *value)
+   {
+      m_Params.push_back(std::make_pair(param, value));
+   }
+
+   unsigned Params() const { return m_Params.size(); }
+
+   const std::string & ParamName(unsigned i) const
+   {
+      const_iterator iter;
+      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return (*iter).first;
+   }
+
+   void * ParamValue(unsigned i) const
+   {
+      const_iterator iter;
+      for ( iter = m_Params.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return (*iter).second;
+   }
+
+protected:
+   typedef std::pair< std::string, void * > ParamEntry;
+   typedef std::list<ParamEntry>            ParamList;
+   typedef ParamList::const_iterator        const_iterator;
+
+   std::string m_MethodName;
+   Timer       m_TimeStamp;
+   ParamList   m_Params;
+};
+
+class MethodCallLog : public CriticalSection
+{
+public:
+   MethodCallLog() {}
+
+   MethodCallLogEntry * AddToLog(const std::string &method)
+   {
+      AutoLock(this);
+
+      m_LogList.push_back(MethodCallLogEntry(method));
+
+      iterator iter = m_LogList.end();
+      --iter;
+      return &(*iter);
+   }
+
+   unsigned LogEntries() const { AutoLock(this); return m_LogList.size(); }
+
+   const MethodCallLogEntry & Entry(unsigned i) const
+   {
+      AutoLock(this);
+
+      const_iterator iter;
+      for ( iter = m_LogList.begin() ; i-- ; ++iter ) { ; /* traverse */ }
+      return *iter;
+   }
+
+   void ClearLog() { m_LogList.clear(); }
+
+protected:
+   typedef std::list<MethodCallLogEntry> LogList;
+   typedef LogList::iterator             iterator;
+   typedef LogList::const_iterator       const_iterator;
+
+   LogList m_LogList;
+};
+
+class CallTrackingServiceClient : public AAL::IServiceClient,
+                                  public MethodCallLog
+{
+public:
+   CallTrackingServiceClient() {}
+
+   virtual void serviceAllocated(IBase               *pBase,
+                                 TransactionID const &tid= TransactionID())
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocated");
+      l->AddParam("pBase", pBase);
+      l->AddParam("tid",   reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void serviceAllocateFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocateFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void serviceReleased(TransactionID const &tid= TransactionID())
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleased");
+      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void serviceReleaseFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleaseFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void serviceEvent(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceEvent");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+};
+
+class CallTrackingRuntimeClient : public AAL::IRuntimeClient,
+                                  public MethodCallLog
+{
+public:
+   CallTrackingRuntimeClient() {}
+
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeCreateOrGetProxyFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeStarted(IRuntime            *pRuntime,
+                               const NamedValueSet &nvs)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStarted");
+      l->AddParam("pRuntime", pRuntime);
+      l->AddParam("nvs", reinterpret_cast<void *>( & const_cast<NamedValueSet &>(nvs) ));
+   }
+   virtual void runtimeStopped(IRuntime *pRuntime)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopped");
+      l->AddParam("pRuntime", pRuntime);
+   }
+   virtual void runtimeStartFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStartFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeStopFailed(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeAllocateServiceFailed(IEvent const &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceFailed");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
+   }
+   virtual void runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
+                                                TransactionID const &tid)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceSucceeded");
+      l->AddParam("pServiceBase", pServiceBase);
+      l->AddParam("tid", reinterpret_cast<void *>( & const_cast<TransactionID &>(tid) ));
+   }
+   virtual void runtimeEvent(const IEvent &e)
+   {
+      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeEvent");
+      l->AddParam("e", reinterpret_cast<void *>( & const_cast<IEvent &>(e) ));
    }
 };
 

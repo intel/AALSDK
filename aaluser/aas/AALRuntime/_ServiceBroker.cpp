@@ -117,10 +117,24 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
    }
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errAllocationFailure,
+                                                                      reasBadConfiguration,
+                                                                      "Missing Config Record"));
       return;
    }
 
    if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
+      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                      pServiceClient,
+                                                                      NULL,
+                                                                      rTranID,
+                                                                      errAllocationFailure,
+                                                                      reasBadConfiguration,
+                                                                      "Missing Config RecordService Name"));
       return;
    }
 

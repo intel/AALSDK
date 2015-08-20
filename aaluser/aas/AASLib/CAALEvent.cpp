@@ -81,25 +81,19 @@
 
 BEGIN_NAMESPACE(AAL)
 
-IEvent::~IEvent() {}
-ITransactionEvent::~ITransactionEvent() {}
-IExceptionEvent::~IExceptionEvent() {}
-IApplicationEvent::~IApplicationEvent() {}
-IApplicationExceptionEvent::~IApplicationExceptionEvent() {}
-
-
 //=============================================================================
 // Name: CAALEvent
 // Description: Constructor
 // Comments: Concrete Base class for all events
 //=============================================================================
 CAALEvent::CAALEvent(IBase *pObject) :
-   CriticalSection(),
    m_pObject(NULL),
    m_bIsOK(false),
    m_Context(NULL),
-   m_InterfaceMap(),
-   m_ISubClass(),
+   m_pServiceClient(NULL),
+   m_pRuntimeClient(NULL),
+   m_pEventHandler(NULL),
+   m_ISubClass(NULL),
    m_SubClassID(0)
 {
    AutoLock(this);
@@ -122,19 +116,19 @@ CAALEvent::CAALEvent(IBase *pObject) :
    m_bIsOK = true;
 }
 
-
 //=============================================================================
 // Name: CAALEvent
 // Description: Constructor
 // Comments: Concrete Base class for all events
 //=============================================================================
 CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
-   CriticalSection(),
    m_pObject(NULL),
    m_bIsOK(false),
    m_Context(NULL),
-   m_InterfaceMap(),
-   m_ISubClass(),
+   m_pServiceClient(NULL),
+   m_pRuntimeClient(NULL),
+   m_pEventHandler(NULL),
+   m_ISubClass(NULL),
    m_SubClassID(0)
 {
    AutoLock(this);
@@ -166,18 +160,11 @@ CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
 // Description: Copy constructor Constructor
 // Comments:
 //=============================================================================
-CAALEvent::CAALEvent(const CAALEvent &rOther) :
-   CriticalSection(),
-   m_pObject(NULL),
-   m_bIsOK(false),
-   m_Context(NULL),
-   m_InterfaceMap(),
-   m_ISubClass(),
-   m_SubClassID(0)
+CAALEvent::CAALEvent(const CAALEvent &rOther)
 {
    AutoLock(this);
 
-   //Self register the interface
+   // Self register the interface
    if ( SetInterface(iidCEvent, dynamic_cast<CAALEvent *>(this)) != EObjOK ) {
       return;
    }
@@ -187,33 +174,154 @@ CAALEvent::CAALEvent(const CAALEvent &rOther) :
       return;
    }
 
-   m_pObject = rOther.m_pObject;
-   m_Context = rOther.m_Context;
-   m_bIsOK   = rOther.m_bIsOK;
-}
+   {
+      AutoLock(&rOther);
 
+      m_pObject        = rOther.m_pObject;
+      m_bIsOK          = rOther.m_bIsOK;
+      m_Context        = rOther.m_Context;
+
+      m_pServiceClient = rOther.m_pServiceClient;
+      m_pRuntimeClient = rOther.m_pRuntimeClient;
+      m_pEventHandler  = rOther.m_pEventHandler;
+   }
+}
 
 //=============================================================================
 // Name: CAALEvent::Interface
 // Description: Gets a pointer to the requested interface
 // Interface: public
-// Inputs: Interface - name of the interface to get.
+// Inputs: ID - name of the interface to get.
 // Outputs: Interface pointer.
 // Comments:
 //=============================================================================
-btGenericInterface CAALEvent::Interface(btIID Interface) const {
+btGenericInterface CAALEvent::Interface(btIID ID) const
+{
    AutoLock(this);
 
-   if ( !Has(Interface) ) {
-      return NULL;
-   }
-
-   IIDINTERFACE_CITR itr = m_InterfaceMap.find(Interface);
+   IIDINTERFACE_CITR itr = m_InterfaceMap.find(ID);
    if ( m_InterfaceMap.end() == itr ) { // not found
       return NULL;
    }
 
    return (*itr).second;
+}
+
+//=============================================================================
+// Name: CAALEvent::Has
+// Description: Returns whether an object has an interface.
+// Interface: public
+// Inputs: ID - name of the interface.
+// Outputs: true - has interface otherwise false
+// Comments:
+//=============================================================================
+btBool CAALEvent::Has(btIID ID) const
+{
+   AutoLock(this);
+   return m_InterfaceMap.end() != m_InterfaceMap.find(ID);
+}
+
+//=============================================================================
+// Name: CAALEvent::operator !=
+// Description: operator !=
+// Interface: public
+// Inputs: rOther - other object to compare against.
+// Outputs: != ? true : flase.
+// Comments: equality is defined as implementing the same
+//           interfaces NOT the contents of the objects data.
+//=============================================================================
+btBool CAALEvent::operator != (const IEvent &rOther) const
+{
+   return ! this->operator == (rOther);
+}
+
+//=============================================================================
+// Name: CAALEvent::operator ==
+// Description: operator ==
+// Interface: public
+// Inputs: rOther - other object to compare against.
+// Outputs: == ? true : flase.
+// Comments: equality is defined as implementing the same
+//           interfaces NOT the contents of the objects data.
+//
+// Three criteria must be met for CAALEvent equality:
+//  1) Both objects must implement iidCEvent (ie, both are conceptually CAALEvent
+//     instances).
+//  2) Both objects must implement the same SubClass (ie, both conceptually have
+//     the same default interface).
+//  3) Both objects must implement a) the same number and b) the same types of
+//     other interfaces.
+//=============================================================================
+btBool CAALEvent::operator == (const IEvent &rOther) const
+{
+   AutoLock(this);
+
+   CAALEvent *pOther = reinterpret_cast<CAALEvent *>(rOther.Interface(iidCEvent));
+   if ( NULL == pOther ) {
+      // 1) fails
+      return false;
+   }
+
+   {
+      AutoLock(pOther);
+
+      if ( SubClassID() != pOther->SubClassID() ) {
+         // 2) fails
+         return false;
+      }
+
+      if ( m_InterfaceMap.size() != pOther->m_InterfaceMap.size() ) {
+         // 3a) fails
+         return false;
+      }
+
+      IIDINTERFACE_CITR l;
+      IIDINTERFACE_CITR r;
+
+      for ( l = m_InterfaceMap.begin(), r = pOther->m_InterfaceMap.begin() ;
+               l != m_InterfaceMap.end() ;
+                  ++l, ++r ) {
+         if ( (*l).first != (*r).first ) {
+            // 3b) fails
+            return false;
+         }
+      }
+   }
+
+   // objects are equal
+   return true;
+}
+
+void CAALEvent::setHandler(IServiceClient *pHandler)
+{
+   AutoLock(this);
+   m_pServiceClient = pHandler;
+   m_pRuntimeClient = NULL;
+   m_pEventHandler  = NULL;
+}
+
+void CAALEvent::setHandler(IRuntimeClient *pHandler)
+{
+   AutoLock(this);
+   m_pServiceClient = NULL;
+   m_pRuntimeClient = pHandler;
+   m_pEventHandler  = NULL;
+}
+
+void CAALEvent::setHandler(btEventHandler pHandler)
+{
+   AutoLock(this);
+   m_pServiceClient = NULL;
+   m_pRuntimeClient = NULL;
+   m_pEventHandler  = pHandler;
+}
+
+btApplicationContext CAALEvent::SetContext(btApplicationContext Ctx)
+{
+   AutoLock(this);
+   btApplicationContext res = m_Context;
+   m_Context = Ctx;
+   return res;
 }
 
 //=============================================================================
@@ -227,106 +335,43 @@ btGenericInterface CAALEvent::Interface(btIID Interface) const {
 // Comments:
 //=============================================================================
 EOBJECT CAALEvent::SetSubClassInterface(btIID              InterfaceID,
-                                        btGenericInterface pInterface) {
+                                        btGenericInterface pInterface)
+{
    EOBJECT result;
-   if( (result = SetInterface(InterfaceID,
-                              pInterface)) != EObjOK ) {
+
+   AutoLock(this);
+
+   if ( (result = SetInterface(InterfaceID,
+                               pInterface)) != EObjOK ) {
       return result;
    }
+
    m_ISubClass  = pInterface;
    m_SubClassID = InterfaceID;
+
    return result;
 }
 
 //=============================================================================
-// Name: CAALEvent::ISubClass
-// Description: Returns the cached pointer to the native (subclass) object
-// Interface: public
-// Inputs: none.
-// Outputs: class pointer
-// Comments:
+// Name:          CAALEvent::SetObject
+// Description:   Update the object pointed to by the Event, and its associated
+//                   cached context
+// Interface:     public
+// Inputs:        pointer to new IBase
+// Outputs:       void
+// Comments:      Used by ReThrow, where the message needs to be modified but
+//                   not completely reconstructed
 //=============================================================================
-btGenericInterface CAALEvent::ISubClass() const
-{
-   return m_ISubClass;
-}
-
-//=============================================================================
-// Name: CAALEvent::SubClassID
-// Description: Returns the subclass ID for the Object
-// Interface: public
-// Inputs: none
-// Outputs: ID
-// Comments:
-//=============================================================================
-btIID CAALEvent::SubClassID() const
-{
-   return m_SubClassID;
-}
-
-//=============================================================================
-// Name: CAALEvent::Has
-// Description: Returns whether an object has an interface.
-// Interface: public
-// Inputs: Interface - name of the interface.
-// Outputs: true - has interface otherwise false
-// Comments:
-//=============================================================================
-btBool CAALEvent::Has(btIID Interface) const
+void CAALEvent::SetObject(IBase *pObject)
 {
    AutoLock(this);
-   IIDINTERFACE_CITR itr = m_InterfaceMap.end();
-
-   // Find the named value pair
-   if ( m_InterfaceMap.find(Interface) == itr ) {
-      return false;
-   }
-   return true;
-}
-
-//=============================================================================
-// Name: CAALEvent::operator !=
-// Description: operator !=
-// Interface: public
-// Inputs: rOther - other object to compare against.
-// Outputs: != ? true : flase.
-// Comments: equality is defined as implementing the same
-//           interfaces NOT the contents of the objects data.
-//=============================================================================
-btBool CAALEvent::operator != (IEvent &rOther)
-{
-   AutoLock(this);
-
-   CAALEvent *pOther = (CAALEvent*)rOther.Interface(iidCEvent);
-   if ( pOther != NULL ) {
-      return (m_InterfaceMap != pOther->m_InterfaceMap);
-   }
-   return true;
-}
-
-//=============================================================================
-// Name: CAALEvent::operator ==
-// Description: operator ==
-// Interface: public
-// Inputs: rOther - other object to compare against.
-// Outputs: == ? true : flase.
-// Comments: equality is defined as implementing the same
-//           interfaces NOT the contents of the objects data.
-//=============================================================================
-btBool CAALEvent::operator == (IEvent &rOther)
-{
-   AutoLock(this);
-
-   CAALEvent *pOther = (CAALEvent *)rOther.Interface(iidCEvent);
-   if ( pOther != NULL ) {
-      return (m_InterfaceMap == pOther->m_InterfaceMap);
-   }
-   return false;
+   m_pObject = pObject;
+   UpdateContext();
 }
 
 //=============================================================================
 // Name: CAALEvent::operator ()
-// Description: Funtor operator
+// Description: Functor operator
 // Interface: public
 // Inputs: context - payload
 // Comments: Canonical processing:
@@ -342,53 +387,25 @@ void CAALEvent::operator()()
       return;
    }
 
-   if( NULL != m_pServiceClient ) {
+   if ( NULL != m_pEventHandler ) {
+      m_pEventHandler(*this);
+   }
+
+   btBool del = false;
+
+   if ( NULL != m_pServiceClient ) {
+      del = true;
       m_pServiceClient->serviceEvent(*this);
-      delete this;
    }
 
-   if( NULL != m_pRuntimeClient ) {
+   if ( NULL != m_pRuntimeClient ) {
+      del = true;
       m_pRuntimeClient->runtimeEvent(*this);
+   }
+
+   if ( del ) {
       delete this;
    }
-
-}
-
-//=============================================================================
-// Name:         CAALEvent::ProcessEventTranID
-// Description:  Process the transaction ID for Event Handling
-// Interface:    protected
-// Comments:
-//=============================================================================
-btBool CAALEvent::ProcessEventTranID()
-{
-   btBool ret = false;
-
-   // If a static handler has been assigned
-   if ( NULL != m_TranID.Handler() ) {
-      //Call it
-      m_TranID.Handler()(*this);
-      ret =  m_TranID.Filter();
-      // If an IMessageHandler has been assigned
-   }
-   // Return filter value or false if no override at all
-   return ret;
-}
-
-//=============================================================================
-// Name:          CAALEvent::SetObject
-// Description:   Update the object pointed to by the Event, and its associated
-//                   cached context
-// Interface:     public
-// Inputs:        pointer to new IBase
-// Outputs:       void
-// Comments:      Used by ReThrow, where the message needs to be modified but
-//                   not completely reconstructed
-//=============================================================================
-void CAALEvent::SetObject(IBase *pObject)
-{
-   m_pObject = pObject;
-   UpdateContext();
 }
 
 //=============================================================================
@@ -410,6 +427,7 @@ void CAALEvent::Delete()
 //=============================================================================
 void CAALEvent::UpdateContext()
 {
+   AutoLock(this);
    if ( (NULL != m_pObject) && m_pObject->IsOK() ) {
       m_Context = m_pObject->Context();
    }
@@ -425,8 +443,14 @@ void CAALEvent::UpdateContext()
 // Comments:
 //=============================================================================
 EOBJECT CAALEvent::SetInterface(btIID              Interface,
-                                btGenericInterface pInterface) {
+                                btGenericInterface pInterface)
+{
+   if ( NULL == pInterface ) {
+      return EObjBadObject;
+   }
+
    AutoLock(this);
+
    // Make sure there is not an implementation already.
    if ( Has(Interface) ) {
       return EObjDuplicateName;
@@ -436,6 +460,27 @@ EOBJECT CAALEvent::SetInterface(btIID              Interface,
    m_InterfaceMap[Interface] = pInterface;
 
    return EObjOK;
+}
+
+//=============================================================================
+// Name:         CAALEvent::ProcessEventTranID
+// Description:  Process the transaction ID for Event Handling
+// Interface:    protected
+// Comments:
+//=============================================================================
+btBool CAALEvent::ProcessEventTranID()
+{
+   btBool ret = false;
+
+   // If a static handler has been assigned
+   if ( NULL != m_TranID.Handler() ) {
+      //Call it
+      m_TranID.Handler()(*this);
+      ret =  m_TranID.Filter();
+      // If an IMessageHandler has been assigned
+   }
+   // Return filter value or false if no override at all
+   return ret;
 }
 
 CAALEvent::CAALEvent() {/*empty*/}

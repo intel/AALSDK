@@ -336,18 +336,18 @@ private:
 
    void serviceAllocateFailed(const IEvent &rEvent)
    {
-      cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
+      std::cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
    }
    
    
    void serviceReleased(TransactionID const &rTranID = TransactionID())
    {
-      cerr << "TODO FREED\n";
+      std::cerr << "TODO FREED\n";
    }
 
    void serviceReleaseFailed(const IEvent &rEvent)
    {
-      cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
+      std::cerr << "TODO FAILDE ALLOCATE IN DEVICE SERVICE BASE\n";
    }
 
 

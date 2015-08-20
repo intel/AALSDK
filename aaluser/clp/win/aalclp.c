@@ -366,16 +366,15 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[76] =
+static yyconst flex_int16_t yy_accept[68] =
     {   0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-       36,    4,    1,    1,    3,    2,    8,    5,    5,    7,
-        6,   24,   21,   21,   23,   22,   34,   32,   32,   33,
-       11,    9,    9,   10,   14,   35,   13,   12,   17,   15,
-       15,   16,   20,   19,   18,   28,   25,   25,   27,   26,
-       31,   30,   29,    1,   33,    9,   10,   13,   15,   16,
-       19,   25,   27,   30,    0
+       36,    4,    1,    3,    2,    8,    5,    7,    6,   24,
+       21,   23,   22,   34,   32,   33,   11,    9,   10,   14,
+       13,   12,   17,   15,   16,   20,   19,   18,   28,   25,
+       27,   26,   31,   30,   29,    1,   33,    9,   10,   13,
+       15,   16,   19,   25,   27,   30,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
@@ -415,43 +414,41 @@ static yyconst flex_int32_t yy_meta[7] =
         1,    2,    2,    3,    3,    4
     } ;
 
-static yyconst flex_int16_t yy_base[87] =
+static yyconst flex_int16_t yy_base[79] =
     {   0,
         0,    0,    6,    0,   12,    0,   18,    0,   24,    0,
        30,    0,   36,    0,   42,    0,   48,    0,   54,    0,
-       78,   79,    0,    0,   79,   79,   79,   79,   79,   79,
-       79,   79,   79,   79,   79,   79,   79,   79,   79,    0,
-       79,    0,    0,    0,   79,   79,    0,   79,   79,    0,
-        0,    0,   79,    0,   79,   79,    0,    0,    0,   79,
-       79,    0,   79,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,   79,   75,   58,   74,   60,   62,
-       73,   64,   66,   72,   70,   68
+       78,   79,    0,   79,   79,   79,   79,   79,   79,   79,
+       79,   79,   79,   79,   79,    0,   79,    0,    0,   79,
+        0,   79,   79,    0,    0,   79,    0,   79,   79,    0,
+        0,   79,   79,    0,   79,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    0,   79,   75,   58,   74,
+       60,   62,   73,   64,   66,   72,   70,   68
     } ;
 
-static yyconst flex_int16_t yy_def[87] =
+static yyconst flex_int16_t yy_def[79] =
     {   0,
-       75,    1,   75,    3,   75,    5,   75,    7,   75,    9,
-       75,   11,   75,   13,   75,   15,   75,   17,   75,   19,
-       75,   75,   76,   76,   75,   75,   75,   75,   75,   75,
-       75,   75,   75,   75,   75,   75,   75,   75,   75,   77,
-       75,   78,   78,   79,   75,   75,   80,   75,   75,   81,
-       81,   82,   75,   83,   75,   75,   84,   84,   85,   75,
-       75,   86,   75,   76,   77,   78,   79,   80,   81,   82,
-       83,   84,   85,   86,    0,   75,   75,   75,   75,   75,
-       75,   75,   75,   75,   75,   75
+       67,    1,   67,    3,   67,    5,   67,    7,   67,    9,
+       67,   11,   67,   13,   67,   15,   67,   17,   67,   19,
+       67,   67,   68,   67,   67,   67,   67,   67,   67,   67,
+       67,   67,   67,   67,   67,   69,   67,   70,   71,   67,
+       72,   67,   67,   73,   74,   67,   75,   67,   67,   76,
+       77,   67,   67,   78,   67,   68,   69,   70,   71,   72,
+       73,   74,   75,   76,   77,   78,    0,   67,   67,   67,
+       67,   67,   67,   67,   67,   67,   67,   67
     } ;
 
 static yyconst flex_int16_t yy_nxt[86] =
     {   0,
-       22,   23,   24,   25,   26,   25,   27,   28,   29,   30,
-       31,   30,   32,   33,   34,   35,   36,   35,   37,   38,
-       39,   40,   40,   40,   41,   42,   43,   44,   44,   44,
-       45,   45,   46,   47,   48,   47,   49,   50,   51,   52,
-       52,   52,   53,   53,   46,   54,   55,   54,   56,   57,
-       58,   59,   59,   60,   61,   61,   46,   62,   63,   62,
-       65,   65,   67,   67,   68,   68,   70,   70,   71,   71,
-       74,   74,   73,   72,   69,   66,   64,   75,   21,   75,
-       75,   75,   75,   75,   75
+       22,   23,   23,   24,   25,   24,   26,   27,   27,   28,
+       29,   28,   30,   31,   31,   32,   33,   32,   34,   35,
+       35,   36,   36,   36,   37,   38,   38,   39,   39,   39,
+       40,   40,   40,   41,   42,   41,   43,   44,   44,   45,
+       45,   45,   46,   46,   46,   47,   48,   47,   49,   50,
+       50,   51,   51,   52,   53,   53,   53,   54,   55,   54,
+       57,   57,   59,   59,   60,   60,   62,   62,   63,   63,
+       66,   66,   65,   64,   61,   58,   56,   67,   21,   67,
+       67,   67,   67,   67,   67
     } ;
 
 static yyconst flex_int16_t yy_chk[86] =
@@ -462,9 +459,9 @@ static yyconst flex_int16_t yy_chk[86] =
        11,   11,   11,   11,   11,   11,   13,   13,   13,   13,
        13,   13,   15,   15,   15,   15,   15,   15,   17,   17,
        17,   17,   17,   17,   19,   19,   19,   19,   19,   19,
-       77,   77,   79,   79,   80,   80,   82,   82,   83,   83,
-       86,   86,   85,   84,   81,   78,   76,   21,   75,   75,
-       75,   75,   75,   75,   75
+       69,   69,   71,   71,   72,   72,   74,   74,   75,   75,
+       78,   78,   77,   76,   73,   70,   68,   21,   67,   67,
+       67,   67,   67,   67,   67
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -474,9 +471,9 @@ static yyconst flex_int16_t yy_chk[86] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "aalclp.l"
-#line 2 "aalclp.l"
-// Copyright (c) 2013-2014, Intel Corporation
+#line 1 "../../clp/aalclp.l"
+#line 2 "../../clp/aalclp.l"
+// Copyright (c) 2013-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -550,7 +547,7 @@ static yyconst flex_int16_t yy_chk[86] =
       }
       return TRUE;
    }
-#endif // __AAL_WINDOWS__
+#endif // WIN32
 
 /* All fn's return non-zero on error, unless otherwise noted. */
 
@@ -626,7 +623,7 @@ do                     \
 
 
 
-#line 613 "aalclp.c"
+#line 604 "aalclp.c"
 
 #define INITIAL 0
 #define DASH 1
@@ -861,11 +858,11 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 150 "aalclp.l"
+#line 144 "../../clp/aalclp.l"
 
 
 
-#line 852 "aalclp.c"
+#line 843 "aalclp.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -918,7 +915,7 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 76 )
+				if ( yy_current_state >= 68 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -951,12 +948,12 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 153 "aalclp.l"
+#line 147 "../../clp/aalclp.l"
 /* eat whitespace */
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 155 "aalclp.l"
+#line 149 "../../clp/aalclp.l"
 {
                                                             begin_option('-');
                                                             my_begin(DASH);
@@ -964,19 +961,19 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 160 "aalclp.l"
+#line 154 "../../clp/aalclp.l"
 {
                                                             yyless(0);
                                                             my_begin(NONOPTION);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 165 "aalclp.l"
+#line 159 "../../clp/aalclp.l"
 yyterminate(); /* success */
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 167 "aalclp.l"
+#line 161 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -986,7 +983,7 @@ YY_RULE_SETUP
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 174 "aalclp.l"
+#line 168 "../../clp/aalclp.l"
 { // -
                                                             yyless(0);
                                                             if ( aalclp_on_dash_only(yyscanner) ) {
@@ -999,7 +996,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 184 "aalclp.l"
+#line 178 "../../clp/aalclp.l"
 { // --
                                                             cont_option(yytext, yyleng);
                                                             my_begin(DASHDASH);
@@ -1007,14 +1004,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 189 "aalclp.l"
+#line 183 "../../clp/aalclp.l"
 { // -a
                                                             cont_option(yytext, yyleng);
                                                             my_begin(NIXSHORTOPT);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(DASH):
-#line 194 "aalclp.l"
+#line 188 "../../clp/aalclp.l"
 { // -<EOF>
                                                             if ( aalclp_on_dash_only(yyscanner) ) {
                                                                yyterminate();
@@ -1026,7 +1023,7 @@ case YY_STATE_EOF(DASH):
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 203 "aalclp.l"
+#line 197 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1036,21 +1033,21 @@ YY_RULE_SETUP
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 210 "aalclp.l"
+#line 204 "../../clp/aalclp.l"
 { // -a
                                                             my_begin(NIXSHORTOPTWS);
                                                          }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 214 "aalclp.l"
+#line 208 "../../clp/aalclp.l"
 { // -ab
                                                             cont_option(yytext, yyleng);
                                                             my_begin(NIXSHORTOPTSEQ);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXSHORTOPT):
-#line 219 "aalclp.l"
+#line 213 "../../clp/aalclp.l"
 { // -a
                                                             if ( aalclp_on_nix_short_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1062,7 +1059,7 @@ case YY_STATE_EOF(NIXSHORTOPT):
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 228 "aalclp.l"
+#line 222 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1071,7 +1068,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 235 "aalclp.l"
+#line 229 "../../clp/aalclp.l"
 { // -a -
                                                             if ( aalclp_on_nix_short_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1083,7 +1080,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 244 "aalclp.l"
+#line 238 "../../clp/aalclp.l"
 { // -a abc
                                                             strncpy(argument, yytext, sizeof(argument));
                                                             if ( aalclp_on_nix_short_option(yyscanner, option, argument) ) {
@@ -1096,7 +1093,7 @@ YY_RULE_SETUP
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXSHORTOPTWS):
-#line 255 "aalclp.l"
+#line 249 "../../clp/aalclp.l"
 { // -a <EOF>
                                                             if ( aalclp_on_nix_short_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1108,7 +1105,7 @@ case YY_STATE_EOF(NIXSHORTOPTWS):
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 264 "aalclp.l"
+#line 258 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1118,20 +1115,20 @@ YY_RULE_SETUP
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 271 "aalclp.l"
+#line 265 "../../clp/aalclp.l"
 { // -abc
                                                             my_begin(NIXSHORTOPTSEQWS);
                                                          }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 275 "aalclp.l"
+#line 269 "../../clp/aalclp.l"
 { // -abcd
                                                             cont_option(yytext, yyleng);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXSHORTOPTSEQ):
-#line 279 "aalclp.l"
+#line 273 "../../clp/aalclp.l"
 { // -abc<EOF>
                                                             char *p = option + 1;
                                                             char buf[3];
@@ -1154,7 +1151,7 @@ case YY_STATE_EOF(NIXSHORTOPTSEQ):
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 299 "aalclp.l"
+#line 293 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1163,7 +1160,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 306 "aalclp.l"
+#line 300 "../../clp/aalclp.l"
 { // -abc -
                                                             char *p = option + 1;
                                                             char buf[3];
@@ -1186,7 +1183,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 326 "aalclp.l"
+#line 320 "../../clp/aalclp.l"
 { // -abc xyz
                                                             char *p = option + 1;
                                                             char buf[3];
@@ -1211,7 +1208,7 @@ YY_RULE_SETUP
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXSHORTOPTSEQWS):
-#line 349 "aalclp.l"
+#line 343 "../../clp/aalclp.l"
 { // -abc <EOF>
                                                             char *p = option + 1;
                                                             char buf[3];
@@ -1234,7 +1231,7 @@ case YY_STATE_EOF(NIXSHORTOPTSEQWS):
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 369 "aalclp.l"
+#line 363 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1244,7 +1241,7 @@ YY_RULE_SETUP
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 375 "aalclp.l"
+#line 369 "../../clp/aalclp.l"
 { // --
                                                             yyless(0);
 
@@ -1258,7 +1255,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 386 "aalclp.l"
+#line 380 "../../clp/aalclp.l"
 { // ---
                                                             cont_option(yytext, yyleng);
                                                             my_begin(NONOPTION);
@@ -1266,14 +1263,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 391 "aalclp.l"
+#line 385 "../../clp/aalclp.l"
 {  // --abc
                                                             cont_option(yytext, yyleng);
                                                             my_begin(NIXLONGOPT);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(DASHDASH):
-#line 396 "aalclp.l"
+#line 390 "../../clp/aalclp.l"
 { // --<EOF>
                                                             if ( aalclp_on_dash_dash_only(yyscanner) ) {
                                                                yyterminate();
@@ -1285,7 +1282,7 @@ case YY_STATE_EOF(DASHDASH):
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 405 "aalclp.l"
+#line 399 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1295,27 +1292,27 @@ YY_RULE_SETUP
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 412 "aalclp.l"
+#line 406 "../../clp/aalclp.l"
 { // --abc
                                                             my_begin(NIXLONGOPTWS);
                                                          }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 416 "aalclp.l"
+#line 410 "../../clp/aalclp.l"
 { // --abcd=
                                                             my_begin(NIXLONGOPTWS);
                                                          }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 420 "aalclp.l"
+#line 414 "../../clp/aalclp.l"
 { // --abcd
                                                             cont_option(yytext, yyleng);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXLONGOPT):
-#line 424 "aalclp.l"
+#line 418 "../../clp/aalclp.l"
 { // --abc<EOF>
                                                             if ( aalclp_on_nix_long_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1327,7 +1324,7 @@ case YY_STATE_EOF(NIXLONGOPT):
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 433 "aalclp.l"
+#line 427 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1336,7 +1333,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 440 "aalclp.l"
+#line 434 "../../clp/aalclp.l"
 { // --abc -
                                                             if ( aalclp_on_nix_long_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1348,7 +1345,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 449 "aalclp.l"
+#line 443 "../../clp/aalclp.l"
 { // --abc xyz
                                                             strncpy(argument, yytext, sizeof(argument));
                                                             if ( aalclp_on_nix_long_option(yyscanner, option, argument) ) {
@@ -1361,7 +1358,7 @@ YY_RULE_SETUP
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NIXLONGOPTWS):
-#line 460 "aalclp.l"
+#line 454 "../../clp/aalclp.l"
 { // --abc <EOF>
                                                             if ( aalclp_on_nix_long_option_only(yyscanner, option) ) {
                                                                yyterminate();
@@ -1373,7 +1370,7 @@ case YY_STATE_EOF(NIXLONGOPTWS):
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 469 "aalclp.l"
+#line 463 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1383,7 +1380,7 @@ YY_RULE_SETUP
 case 32:
 /* rule 32 can match eol */
 YY_RULE_SETUP
-#line 476 "aalclp.l"
+#line 470 "../../clp/aalclp.l"
 {
                                                             yyless(0);
                                                             if ( aalclp_on_non_option(yyscanner, option) ) {
@@ -1396,13 +1393,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 486 "aalclp.l"
+#line 480 "../../clp/aalclp.l"
 {
                                                             cont_option(yytext, yyleng);
                                                          }
 	YY_BREAK
 case YY_STATE_EOF(NONOPTION):
-#line 490 "aalclp.l"
+#line 484 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_non_option(yyscanner, option) ) {
                                                                yyterminate();
@@ -1414,7 +1411,7 @@ case YY_STATE_EOF(NONOPTION):
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 499 "aalclp.l"
+#line 493 "../../clp/aalclp.l"
 {
                                                             if ( aalclp_on_invalid(yyscanner, yytext, yyleng) ) {
                                                                yyterminate();
@@ -1423,10 +1420,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 505 "aalclp.l"
+#line 499 "../../clp/aalclp.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1413 "aalclp.c"
+#line 1404 "aalclp.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1718,7 +1715,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 76 )
+			if ( yy_current_state >= 68 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -1747,11 +1744,11 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 76 )
+		if ( yy_current_state >= 68 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-	yy_is_jam = (yy_current_state == 75);
+	yy_is_jam = (yy_current_state == 67);
 
 	return yy_is_jam ? 0 : yy_current_state;
 }
@@ -2580,7 +2577,8 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 505 "aalclp.l"
+#line 499 "../../clp/aalclp.l"
+
 
 
 #define aalclp_offset_of(__cont_type, __linksname) \

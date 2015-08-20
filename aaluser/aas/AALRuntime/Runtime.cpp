@@ -266,7 +266,7 @@ Runtime::~Runtime()
     int cnt=0;
     // If there are any Proxies on the Runtime it is an error!
     if( 0 != m_proxyList.size()){
-       std::cerr << "~Runtime FAILED " << std::hex <<this << " Num = " << m_proxyList.size() << endl;
+       std::cerr << "~Runtime FAILED " << std::hex <<this << " Num = " << m_proxyList.size() << std::endl;
        // This exception is generated as an Event to the Runtime Client
        schedDispatchable(new RuntimeCallback(RuntimeCallback::Event,getRuntimeClient(), new CExceptionEvent(this,
                                                                                            errProxyDestroy,

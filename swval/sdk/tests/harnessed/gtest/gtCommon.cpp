@@ -15,6 +15,93 @@ GlobalTestConfig::~GlobalTestConfig() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
+FILEMixin::~FILEMixin()
+{
+   iterator iter;
+   for ( iter = m_FileMap.begin() ; iter != m_FileMap.end() ; ++iter ) {
+      ::fclose((*iter).first);
+      ::remove((*iter).second.m_fname.c_str());
+   }
+}
+
+FILE * FILEMixin::fopen_tmp()
+{
+   char tmplt[13] = { 'g', 't', 'e', 's', 't', '.', 'X', 'X', 'X', 'X', 'X', 'X', 0 };
+
+   int fd = ::mkstemp(tmplt);
+
+   if ( -1 == fd ) {
+      return NULL;
+   }
+
+   FILE *fp = ::fdopen(fd, "w+b");
+
+   if ( NULL == fp ) {
+      ::close(fd);
+      ::remove(tmplt);
+      return NULL;
+   }
+
+   FILEInfo info(tmplt, fd);
+
+   std::pair<iterator, bool> res = m_FileMap.insert(std::make_pair(fp, info));
+
+   if ( !res.second ) {
+      ::fclose(fp);
+      ::remove(tmplt);
+      return NULL;
+   }
+
+   return fp;
+}
+
+btBool FILEMixin::fclose(FILE *fp)
+{
+   iterator iter = m_FileMap.find(fp);
+
+   if ( m_FileMap.end() == iter ) {
+      // fp not found
+      return false;
+   }
+
+   ::fclose(fp);
+   ::remove((*iter).second.m_fname.c_str());
+
+   m_FileMap.erase(iter);
+
+   return true;
+}
+
+void FILEMixin::rewind(FILE *fp) const
+{
+   ::rewind(fp);
+}
+
+int FILEMixin::feof(FILE *fp) const
+{
+   return ::feof(fp);
+}
+
+int FILEMixin::ferror(FILE *fp) const
+{
+   return ::ferror(fp);
+}
+
+long FILEMixin::InputBytesRemaining(FILE *fp) const
+{
+   long curpos = ::ftell(fp);
+
+   ::fseek(fp, 0, SEEK_END);
+
+   long endpos = ::ftell(fp);
+
+   ::fseek(fp, curpos, SEEK_SET);
+
+   return endpos - curpos;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 const char TestStatus::sm_Red[]   = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
 const char TestStatus::sm_Green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
 const char TestStatus::sm_Blue[]  = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
@@ -132,9 +219,8 @@ void TestStatus::OnSegFault()
 
       KeepAliveTimerEnv::GetInstance()->StopThread();
 
-      bool &halt(TestStatus::sm_HaltOnSegFault);
-      int   i = 0;
-      while ( halt ) {
+      int i = 0;
+      while ( TestStatus::sm_HaltOnSegFault ) {
          if ( 0 == (i % (5 * 60)) ) {
             if ( ::isatty(2) ) {
                std::cerr << TestStatus::sm_Blue;
@@ -205,9 +291,8 @@ void TestStatus::OnKeepaliveTimeout()
 
    std::cout << std::flush;
 
-   bool &halt(TestStatus::sm_HaltOnKeepaliveTimeout);
-   int   i = 0;
-   while ( halt ) {
+   int i = 0;
+   while ( TestStatus::sm_HaltOnKeepaliveTimeout ) {
       if ( 0 == (i % (5 * 60)) ) {
          if ( ::isatty(2) ) {
             std::cerr << TestStatus::sm_Blue;
@@ -536,8 +621,11 @@ void KeepAliveTimerEnv::StopThread()
 
 #if   defined( __AAL_LINUX__ )
 
-   pthread_cancel(m_thread);
+   pthread_mutex_lock(&m_mutex);
    pthread_cond_signal(&m_condition);
+   pthread_mutex_unlock(&m_mutex);
+
+   pthread_join(m_thread, NULL);
 
 #elif defined( __AAL_WINDOWS__ )
 
@@ -566,7 +654,7 @@ void KeepAliveTimerEnv::SetUp()
    pthread_attr_t tattr;
 
    pthread_attr_init(&tattr);
-   pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+   //pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
 
    pthread_create(&m_thread, &tattr, KeepAliveTimerEnv::KeepAliveThread, this);
 
@@ -617,6 +705,7 @@ void KeepAliveTimerEnv::KeepAliveExpired()
 const btUnsignedInt KeepAliveTimerEnv::sm_MaxKeepAliveTimeouts = 3;
 
 #if   defined( __AAL_LINUX__ )
+//void KeepAliveTimerEnv::KeepAliveCleanup(void *arg) {}
 void * KeepAliveTimerEnv::KeepAliveThread(void *arg)
 #elif defined ( __AAL_WINDOWS__ )
 void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
@@ -627,6 +716,24 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 #if   defined( __AAL_LINUX__ )
    struct timeval  tv;
    struct timespec ts;
+
+   class _AutoMtx
+   {
+   public:
+      _AutoMtx(pthread_mutex_t *mutex) :
+         m_mutex(mutex)
+      {
+         pthread_mutex_lock(m_mutex);
+      }
+      ~_AutoMtx()
+      {
+         pthread_mutex_unlock(m_mutex);
+      }
+   protected:
+      pthread_mutex_t *m_mutex;
+   };
+
+//   pthread_cleanup_push(KeepAliveTimerEnv::KeepAliveCleanup, e);
 #elif defined( __AAL_WINDOWS__ )
 
 #endif // OS
@@ -644,23 +751,17 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
       ts.tv_sec  += ts.tv_nsec / 1000000000;
       ts.tv_nsec %= 1000000000;
 
-      pthread_testcancel();
-      pthread_mutex_lock(&e->m_mutex);
+      {
+         _AutoMtx lock(&e->m_mutex);
+         if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
+                                                  &e->m_mutex,
+                                                  &ts) ) {
 
-      pthread_testcancel();
-      if ( ETIMEDOUT != pthread_cond_timedwait(&e->m_condition,
-                                               &e->m_mutex,
-                                               &ts) ) {
-         pthread_testcancel();
-
-         if ( !e->m_KeepAliveRunning ) {
-            pthread_mutex_unlock(&e->m_mutex);
-            break;
+            if ( !e->m_KeepAliveRunning ) {
+               break;
+            }
          }
       }
-
-      pthread_testcancel();
-      pthread_mutex_unlock(&e->m_mutex);
 
 #elif defined( __AAL_WINDOWS__ )
 
@@ -672,7 +773,6 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
 
 #endif // OS
 
-      pthread_testcancel();
       if ( e->m_KeepAliveCounter == LastKeepAliveCounter ) {
          // keep-alive not updated before timer expired.
          ++e->m_KeepAliveTimeouts;
@@ -688,6 +788,7 @@ void   KeepAliveTimerEnv::KeepAliveThread(void *arg)
    }
 
 #if   defined( __AAL_LINUX__ )
+//   pthread_cleanup_pop(1);
    return NULL;
 #elif defined( __AAL_WINDOWS__ )
    SetEvent(e->m_hJoinEvent);

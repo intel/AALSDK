@@ -56,7 +56,8 @@
 
 #include <aalsdk/utils/SingleAFUApp.h>
 
-using namespace AAL;
+USING_NAMESPACE(std)
+USING_NAMESPACE(AAL)
 
 #ifdef INFO
 # undef INFO

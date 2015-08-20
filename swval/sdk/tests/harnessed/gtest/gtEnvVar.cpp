@@ -36,7 +36,7 @@ TEST_F(EnvVarBasic, aal0043)
    // Writes an Environment variable and verifies it.
 
    char EnvVar[20] = "my_var";
-   string StrVar;
+   std::string StrVar;
    int randomNum;
 
    // Check for the existence of the variable and select another name until we find one

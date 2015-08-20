@@ -101,12 +101,26 @@ void ServiceBroker::allocService(IBase                   *pServiceClient,
    NamedValueSet const *ConfigRecord;
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
-      return;
-   }
+       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                       pServiceClient,
+                                                                       NULL,
+                                                                       rTranID,
+                                                                       errAllocationFailure,
+                                                                       reasBadConfiguration,
+                                                                       "Missing Config Record"));
+       return;
+    }
 
-   if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
-      return;
-   }
+    if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
+       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
+                                                                       pServiceClient,
+                                                                       NULL,
+                                                                       rTranID,
+                                                                       errAllocationFailure,
+                                                                       reasBadConfiguration,
+                                                                       "Missing Config RecordService Name"));
+       return;
+    }
 
    ServiceHost *SvcHost = NULL;
    if ( NULL == (SvcHost = findServiceHost(sName)) ) {
@@ -241,7 +255,6 @@ void ServiceBroker::ShutdownThread(OSLThread *pThread,
 
    // Destroy the thread and parms
    delete pparms;
-   This->ServiceBase::Release(pparms->m_timeout);
 }
 
 struct shutdown_handler_thread_parms

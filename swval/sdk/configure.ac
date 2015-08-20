@@ -48,6 +48,10 @@ AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
 AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [1],[1],[1])
+AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [1],[1],[1])
+AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [1],[1],[1])
+AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [1],[1],[1])
 
 AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],     [3],[2],[1])
 AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  [6],[5],[4])
@@ -165,7 +169,11 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/service/SPLAFUService.h
                  include/aalsdk/service/HWSPLAFUService.h
                  include/aalsdk/service/ASESPLAFUService.h
-                 include/aalsdk/service/SWSimSPLAFUService.h])
+                 include/aalsdk/service/SWSimSPLAFUService.h
+                 include/aalsdk/service/ALIAFUService.h
+                 include/aalsdk/service/HWALIAFUService.h
+                 include/aalsdk/service/ASEALIAFUService.h
+                 include/aalsdk/service/SWSimALIAFUService.h])
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 
@@ -196,7 +204,11 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/splapp/Makefile
                  utils/splapp2/Makefile
                  utils/splapp3/Makefile
-                 utils/CCILib/Makefile])
+                 utils/CCILib/Makefile
+                 utils/ALIAFU/Makefile
+                 utils/ALIAFU/HWALIAFU/Makefile
+                 utils/ALIAFU/ASEALIAFU/Makefile
+                 utils/ALIAFU/SWSimALIAFU/Makefile])
 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
