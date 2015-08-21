@@ -367,14 +367,10 @@ CResourceManager::~CResourceManager()
 // Interface: public
 // Comments:
 //=============================================================================
-btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout){
-
-}
-
-// Quiet Release. Used when Service is unloaded.
-btBool CResourceManager::Release(btTime timeout)
+btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
-   return ServiceBase::Release(timeout);
+   // TODO  - Send the shutdown to the driver and wait until done before issuing this
+   ServiceBase::Release(rTranID, timeout);
 }
 
 

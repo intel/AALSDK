@@ -67,7 +67,8 @@ class _runtime;
 //=============================================================================
 BEGIN_C_DECLS
 _runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
-                                  IRuntimeClient *pClient);
+                                  IRuntimeClient *pClient,
+                                  btBool bFirstTime=true);
 END_C_DECLS
 
 
@@ -148,7 +149,7 @@ public:
 //   void        setMessageDeliveryService(IBase *pMDSbase);
 //   btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
 
-protected:
+
    btBool InstallDefaults();
    //
    // IServiceClient Interface
@@ -227,7 +228,7 @@ private:
 
    IServiceBroker                 *m_pBroker;
    IBase                          *m_pBrokerbase;
-
+   IBase                          *m_pDefaultBrokerbase;
    CSemaphore                      m_sem;
 };
 

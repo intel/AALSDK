@@ -221,7 +221,7 @@ void uAIA::init( TransactionID const& rtid )
 {
    AAL_INFO(LM_UAIA, "uAIA::Create. in\n");
 
-   CAIA *pCAIA = new CAIA(m_pcontainer, getRuntime()->getRuntimeProxy(this) );
+   CAIA *pCAIA = new CAIA(m_pcontainer, getRuntime() );
 
    pCAIA->SetuAIA(this);
 
@@ -499,7 +499,7 @@ void uAIA::ShutdownThread(OSLThread *pThread,
 
    delete pParms;
 
-}
+   }
 
 
 //=============================================================================
@@ -657,7 +657,7 @@ btBool uAIA::Release(TransactionID const &rTranID,
 
    //--------------------------------------------------------------
    // The shutdown process involves a thread ShutdownThread
-   //   that waits for all resources currently using the AAI to
+   //   that waits for all resources currently using the AIA to
    //   release or until a timeout occurs.  At that point the
    //   message delivery engine is shutdown and the AIA is done.
    //--------------------------------------------------------------
@@ -681,21 +681,6 @@ btBool uAIA::Release(TransactionID const &rTranID,
    AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Goodbye.\n");
    return (m_pShutdownThread != NULL);
 }
-
-//=============================================================================
-// Name: Release
-// Description: Quite release calls release but suppresses events
-// Interface: public
-// Inputs:
-// Outputs: none.
-// Comments: Used when preparing the service for unloading
-//=============================================================================
-btBool uAIA::Release(btTime timeout)
-{
-   m_quietRelease = true;
-   return Release(TransactionID(), timeout);
-}
-
 
 CAIA::~CAIA() {}
 

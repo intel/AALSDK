@@ -58,6 +58,7 @@
 #include <aalsdk/uaia/AALuAIA_Messaging.h>
 #include <aalsdk/uaia/uAIASession.h> // uAIASession{}
 #include <aalsdk/uaia/uAIA.h>        // CAIA{}
+#include <aalsdk/Dispatchables.h>
 
 #include <aalsdk/IServiceClient.h>
 
@@ -123,16 +124,9 @@ public:
 
    btBool Release(TransactionID const &rTranID, btTime timeout)
    {
+
       TransactionID newTID = WrapTransactionID(rTranID);
       m_pSession->UnBind(m_devHandle, newTID);
-      return true;
-   }
-
-   btBool Release(btTime timeout)
-   {
-      m_quietRelease = true;
-      // Call the asynchronous version to cleanup
-      Release(TransactionID(), timeout);
       return true;
    }
 
@@ -343,6 +337,7 @@ private:
    void serviceReleased(TransactionID const &rTranID = TransactionID())
    {
       std::cerr << "TODO FREED\n";
+      // AIA Released now Unbind
    }
 
    void serviceReleaseFailed(const IEvent &rEvent)
@@ -496,7 +491,7 @@ private:
          case tranevtUnBindAFUDevEvent : {
             // The transaction ID has the original TransactionID as its context
             TransactionID origTID = UnWrapTransactionIDFromEvent(theEvent);
-
+#if 0
             // If it is not a quiet release
             if ( !m_quietRelease ) {
                // Generate the event
@@ -505,22 +500,36 @@ private:
                                                                                               origTID,
                                                                                               Context()));
             }
- 
+#endif
             // Destroy the AIA session
             if ( m_pAIA != NULL ) {
                m_pAIA->DestroyAIASession(m_pSession);
                m_pSession = NULL;
             }
+//DO OPPOSITE OF START UP. Release AIA
 
             m_devHandle = NULL;
 
             // Quiet release for now  TODO perhaps should be regular release
             if ( m_pAIA != NULL ) {
-               m_pAIA->Release();
+               m_pAIA->Delete();
             }
 
-            // MUST call parent Release
-            ServiceBase::Release();
+            // If it is not a quiet release
+            if ( !m_quietRelease ) {
+
+               ServiceBase::Release(origTID, 0);
+/*
+               // Generate the event
+               getRuntime()->schedDispatchable( new ServiceClientCallback( ServiceClientCallback::Released,
+                                                                           Client(),
+                                                                           dynamic_cast<IBase *>(this),
+                                                                           origTID));
+*/
+            }else{
+               // MUST call parent Release
+               ServiceBase::Release();
+            }
          } break;
 
          default:

@@ -189,11 +189,16 @@ void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
 void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 {
    AutoLock(this);
-   // If we were unable to load the ResourceManager then we cannot load.
-   getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Released,
-                                                              Client(),
-                                                              this,
-                                                              rTranID) );
+
+   // Resource Manager is Released. Get the original TID from rTranID
+   TransactionID tid = *(reinterpret_cast<TransactionID *>(rTranID.Context()));
+
+   // Reasource Manager Proxy is gone. Generate the event
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                             Client(),
+                                                             this,
+                                                             tid));
+
 }
 
 //=============================================================================
@@ -520,12 +525,8 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                                                          reasSystemTimeout,
                                                                          const_cast<btString>(strSystemTimeout)) );
       } else {
-
-         // Generate the event
-         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                   Client(),
-                                                                   this,
-                                                                   rTranID));
+         // Now release the Resource Manager. Final Release event sent in Released() callback
+         dynamic_ptr<IAALService>(iidService, m_ResMgrBase)->Release(TransactionID(reinterpret_cast<btApplicationContext>(new TransactionID(rTranID)) ));
 
          // Clear the map now
          m_ServiceMap.clear();
@@ -533,6 +534,8 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
          return true;
       }
    }
+
+
 
    return false;
 }  // ServiceBroker::DoShutdown
@@ -574,11 +577,6 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
    }
 }
 
- // Quiet Release. Used when Service is unloaded.
- btBool ServiceBroker::Release(btTime timeout)
- {
-    return ServiceBase::Release(timeout);
- }
 
  //=============================================================================
  // Name: messageHandler

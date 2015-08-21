@@ -172,12 +172,6 @@ btBool HelloAALService::Release(TransactionID const &rTranID, btTime timeout)
    return ServiceBase::Release(rTranID, timeout);
 }
 
-btBool HelloAALService::Release(btTime timeout)
-{
-   return ServiceBase::Release(timeout);
-}
-
-
 HelloAppDispatchable::HelloAppDispatchable(IHelloAALClient      *pClient,
                                            IBase                *pHelloAALService,
                                            TransactionID const  &rTranID) :

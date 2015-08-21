@@ -241,9 +241,7 @@ public:
 
 
    /// @brief     Releases pointer to the Runtime acquired from getRuntimeProxy.
-   /// @param[in] Optional pointer to proxy to release. Self if not present
-   /// @return    true - success
-   virtual btBool releaseRuntimeProxy(IRuntime *pRuntime)                        = 0;
+   /// @return    true - success;
    virtual btBool releaseRuntimeProxy()                                          = 0;
 
    /// @brief     Gets the pointer to the Runtime interface attached to this Proxy.
@@ -272,7 +270,7 @@ class _runtime; //Forward reference
 class AALRUNTIME_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
 {
 public:
-   Runtime(IRuntimeClient *pClient, Runtime *pParent = NULL);
+   Runtime(IRuntimeClient *pClient);
 
    virtual btBool start(const NamedValueSet &rconfigParms);
    virtual void   stop();
@@ -285,8 +283,6 @@ public:
 
    IRuntime *getRuntimeProxy(IRuntimeClient *pClient);
 
-   btBool releaseRuntimeProxy(IRuntime *pRuntime);
-
    btBool releaseRuntimeProxy();
 
    IRuntimeClient *getRuntimeClient();
@@ -295,14 +291,15 @@ public:
 
    virtual ~Runtime();
 
+protected:
+   void init(IRuntimeClient *pClient, btBool bFirstTime);
+   Runtime(IRuntimeClient *pClient, btBool bFirstTime);
 
 private:
    Runtime();                                 // No empty construction
    _runtime              *m_pImplementation;  // Implementation of runtime
-   IRuntime              *m_pParent;          // Parent of this proxy
    btBool                 m_status;           // OK or not
    IRuntimeClient        *m_pClient;
-   std::vector<Runtime *> m_proxyList;        // List of Runtime proxies created through this object
 };
 
 

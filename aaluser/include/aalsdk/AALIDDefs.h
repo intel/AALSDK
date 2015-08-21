@@ -361,8 +361,9 @@
 #define reasNotImplemented             AAL_ReasCode   (0x0017)
 #define reasSubModuleFailed            AAL_ReasCode   (0x0018) // some lower level module failed unexpectedly
 #define reasCommunicationFailed        AAL_ReasCode   (0x0019) // communications problem
-#define reasMissingInterface           AAL_ReasCode   (0x001A) // missing required interface
-#define reasParentReleased             AAL_ReasCode   (0x001B) // missing required interface
+#define reasMissingInterface           AAL_ReasCode   (0x001A)
+#define reasParentReleased             AAL_ReasCode   (0x001B)
+#define reasSingletoneExists           AAL_ReasCode   (0x001C)
 
 #define strNoError                     "No error."
 #define strInternalSystemFailure       "Internal system failure!"
@@ -412,12 +413,15 @@
 
 /// IAALService interface id.
 #define iidService                   __AAL_IID(AAL_sysAAL, 0x0004)   // Class implements service
+#define iidServiceBase               __AAL_IID(AAL_sysAAL, 0x0005)   // Class implements service base
 
-#define iidServiceClient             __AAL_IID(AAL_sysAAL, 0x0005)   // Class implements IServiceClient
+#define iidServiceClient             __AAL_IID(AAL_sysAAL, 0x0006)   // Class implements IServiceClient
 
-#define iidRuntimeClient             __AAL_IID(AAL_sysAAL, 0x0006)   // Class implements IRuntimeClient
+#define iidRuntimeClient             __AAL_IID(AAL_sysAAL, 0x0007)   // Class implements IRuntimeClient
 
-#define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0007)   // Class implements IRuntime
+#define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0008)   // Class implements IRuntime
+
+
 
 
 /// @} group Services

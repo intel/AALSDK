@@ -83,6 +83,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_pMDT(NULL)
 
 {
+   SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this));
    SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this));
    m_bIsOK = true;
 }
@@ -140,7 +141,7 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
    // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
    //  just before dispatching the callback thus insuring that the final cleanup is executed
    //  before notification is received.
-   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+   getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Released,
                                                               Client(),
                                                               this,
                                                               rTranID));

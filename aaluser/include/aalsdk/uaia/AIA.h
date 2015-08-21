@@ -121,7 +121,11 @@ public:
 
    virtual btBool atomicSetCSR(btCSROffset CSR, btCSRValue  Value) = 0;
    virtual btBool atomicGetCSR(btCSROffset CSR, btCSRValue *Value) = 0;
+   virtual btVirtAddr getMMIOR()                                   = 0;
+   virtual btUnsigned32bitInt getMMIORsize()                       = 0;
 
+   virtual btVirtAddr getUMSG()                                    = 0;
+   virtual btUnsigned32bitInt getUMSGsize()                        = 0;
    virtual void Destroy(TransactionID const & ) = 0;
 };
 
