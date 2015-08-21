@@ -694,95 +694,35 @@ public:
 class MethodCallLogEntry
 {
 public:
-   MethodCallLogEntry(btcString method, Timer timestamp=Timer()) :
-      m_TimeStamp(timestamp)
-   {
-      m_NVS.Add((btStringKey)"__func__", method);
-   }
+   MethodCallLogEntry(btcString method, Timer timestamp=Timer());
 
-   btcString MethodName() const
-   {
-      btcString n = NULL;
-      m_NVS.Get((btStringKey)"__func__", &n);
-      return n;
-   }
+   btcString MethodName() const;
 
-   void AddParam(btcString name, btBool             value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btByte             value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, bt32bitInt         value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btUnsigned32bitInt value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, bt64bitInt         value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btUnsigned64bitInt value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btFloat            value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btcString          value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, btObjectType       value) { m_NVS.Add(name, value); }
-   void AddParam(btcString name, INamedValueSet    *value) { m_NVS.Add(name, value); }
+   void AddParam(btcString , btBool                );
+   void AddParam(btcString , btByte                );
+   void AddParam(btcString , bt32bitInt            );
+   void AddParam(btcString , btUnsigned32bitInt    );
+   void AddParam(btcString , bt64bitInt            );
+   void AddParam(btcString , btUnsigned64bitInt    );
+   void AddParam(btcString , btFloat               );
+   void AddParam(btcString , btcString             );
+   void AddParam(btcString , btObjectType          );
+   void AddParam(btcString , INamedValueSet *      );
+   void AddParam(btcString , const TransactionID & );
 
-   void AddParam(btcString name, const TransactionID &value)
-   {
-      std::string var(name);
-      std::string key;
+   unsigned Params() const;
 
-      stTransactionID_t tidStruct = (stTransactionID_t)value;
-
-      key = var + std::string(".m_ID");
-      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_ID));
-
-      key = var + std::string(".m_Handler");
-      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Handler));
-
-      key = var + std::string(".m_IBase");
-      m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_IBase));
-
-      key = var + std::string(".m_Filter");
-      m_NVS.Add(key.c_str(), tidStruct.m_Filter);
-
-      key = var + std::string(".m_intID");
-      m_NVS.Add(key.c_str(), tidStruct.m_intID);
-   }
-
-   unsigned Params() const
-   {
-      btUnsignedInt u = 0;
-      m_NVS.GetNumNames(&u);
-      return (unsigned)(u - 1);
-   }
-
-   void GetParam(btcString name, btBool                *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btByte                *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, bt32bitInt            *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btUnsigned32bitInt    *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, bt64bitInt            *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btUnsigned64bitInt    *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btFloat               *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btcString             *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, btObjectType          *pValue) const { m_NVS.Get(name, pValue); }
-   void GetParam(btcString name, INamedValueSet const **pValue) const { m_NVS.Get(name, pValue); }
-
-   void GetParam(btcString name, TransactionID &tid) const
-   {
-      std::string var(name);
-      std::string key;
-
-      stTransactionID_t tidStruct;
-
-      key = var + std::string(".m_ID");
-      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_ID));
-
-      key = var + std::string(".m_Handler");
-      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Handler));
-
-      key = var + std::string(".m_IBase");
-      m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_IBase));
-
-      key = var + std::string(".m_Filter");
-      m_NVS.Get(key.c_str(), &tidStruct.m_Filter);
-
-      key = var + std::string(".m_intID");
-      m_NVS.Get(key.c_str(), &tidStruct.m_intID);
-
-      tid = tidStruct;
-   }
+   void GetParam(btcString , btBool                * ) const;
+   void GetParam(btcString , btByte                * ) const;
+   void GetParam(btcString , bt32bitInt            * ) const;
+   void GetParam(btcString , btUnsigned32bitInt    * ) const;
+   void GetParam(btcString , bt64bitInt            * ) const;
+   void GetParam(btcString , btUnsigned64bitInt    * ) const;
+   void GetParam(btcString , btFloat               * ) const;
+   void GetParam(btcString , btcString             * ) const;
+   void GetParam(btcString , btObjectType          * ) const;
+   void GetParam(btcString , INamedValueSet const ** ) const;
+   void GetParam(btcString , TransactionID &         ) const;
 
 protected:
    Timer         m_TimeStamp;
@@ -794,29 +734,10 @@ class MethodCallLog : public CriticalSection
 public:
    MethodCallLog() {}
 
-   MethodCallLogEntry * AddToLog(btcString method)
-   {
-      AutoLock(this);
-
-      m_LogList.push_back(MethodCallLogEntry(method));
-
-      iterator iter = m_LogList.end();
-      --iter;
-      return &(*iter);
-   }
-
-   unsigned LogEntries() const { AutoLock(this); return m_LogList.size(); }
-
-   const MethodCallLogEntry & Entry(unsigned i) const
-   {
-      AutoLock(this);
-
-      const_iterator iter;
-      for ( iter = m_LogList.begin() ; i-- ; ++iter ) { ; /* traverse */ }
-      return *iter;
-   }
-
-   void ClearLog() { m_LogList.clear(); }
+   MethodCallLogEntry *    AddToLog(btcString method);
+   unsigned              LogEntries()           const;
+   const MethodCallLogEntry & Entry(unsigned i) const;
+   void                    ClearLog();
 
 protected:
    typedef std::list<MethodCallLogEntry> LogList;
@@ -826,91 +747,157 @@ protected:
    LogList m_LogList;
 };
 
-class CallTrackingServiceClient : public AAL::IServiceClient,
-                                  public MethodCallLog
+////////////////////////////////////////////////////////////////////////////////
+
+#define DECLARE_RETVAL_ACCESSORS(__membfn, __rettype) \
+__rettype __membfn##ReturnsThisValue() const;         \
+void __membfn##ReturnsThisValue(__rettype );
+
+#define IMPLEMENT_RETVAL_ACCESSORS(__cls, __membfn, __rettype, __membvar) \
+__rettype __cls::__membfn##ReturnsThisValue() const { return __membvar; } \
+void __cls::__membfn##ReturnsThisValue(__rettype x) { __membvar = x;    }
+
+class EmptyIServiceClient : public AAL::IServiceClient
 {
 public:
-   CallTrackingServiceClient() {}
-
-   virtual void serviceAllocated(IBase               *pBase,
-                                 TransactionID const &tid= TransactionID())
-   {
-      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocated");
-      l->AddParam("pBase", reinterpret_cast<btObjectType>(pBase));
-      l->AddParam("tid",   tid);
-   }
-   virtual void serviceAllocateFailed(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceAllocateFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void serviceReleased(TransactionID const &tid= TransactionID())
-   {
-      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleased");
-      l->AddParam("tid", tid);
-   }
-   virtual void serviceReleaseFailed(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceReleaseFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void serviceEvent(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IServiceClient::serviceEvent");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
+   EmptyIServiceClient() {}
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & ) {}
+   virtual void serviceAllocateFailed(const IEvent & )        {}
+   virtual void       serviceReleased(TransactionID const & ) {}
+   virtual void  serviceReleaseFailed(const IEvent & )        {}
+   virtual void          serviceEvent(const IEvent & )        {}
 };
 
-class CallTrackingRuntimeClient : public AAL::IRuntimeClient,
-                                  public MethodCallLog
+class EmptyIRuntimeClient : public AAL::IRuntimeClient,
+                            public MethodCallLog
 {
 public:
-   CallTrackingRuntimeClient() {}
+   EmptyIRuntimeClient() {}
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        {}
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & ) {}
+   virtual void                  runtimeStopped(IRuntime * )            {}
+   virtual void              runtimeStartFailed(const IEvent & )        {}
+   virtual void               runtimeStopFailed(const IEvent & )        {}
+   virtual void    runtimeAllocateServiceFailed(IEvent const & )        {}
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & ) {}
+   virtual void                    runtimeEvent(const IEvent & )        {}
+};
 
-   virtual void runtimeCreateOrGetProxyFailed(IEvent const &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeCreateOrGetProxyFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void runtimeStarted(IRuntime            *pRuntime,
-                               const NamedValueSet &nvs)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStarted");
-      l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
-      l->AddParam("nvs",      &nvs);
-   }
-   virtual void runtimeStopped(IRuntime *pRuntime)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopped");
-      l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
-   }
-   virtual void runtimeStartFailed(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStartFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void runtimeStopFailed(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStopFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void runtimeAllocateServiceFailed(IEvent const &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceFailed");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
-   virtual void runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
-                                                TransactionID const &tid)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeAllocateServiceSucceeded");
-      l->AddParam("pServiceBase", reinterpret_cast<btObjectType>(pServiceBase));
-      l->AddParam("tid",          tid);
-   }
-   virtual void runtimeEvent(const IEvent &e)
-   {
-      MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeEvent");
-      l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
-   }
+class EmptyISvcsFact : public AAL::ISvcsFact
+{
+public:
+   EmptyISvcsFact();
+
+   virtual IBase * CreateServiceObject(AALServiceModule * ,
+                                       IRuntime         * );
+   virtual btBool    InitializeService(IBase               * ,
+                                       TransactionID const & ,
+                                       NamedValueSet const & );
+   DECLARE_RETVAL_ACCESSORS(CreateServiceObject, IBase *)
+   DECLARE_RETVAL_ACCESSORS(InitializeService,   btBool)
+protected:
+   IBase  *m_CreateServiceObject_returns;
+   btBool  m_InitializeService_returns;
+};
+
+class EmptyIRuntime : public AAL::IRuntime
+{
+public:
+   EmptyIRuntime();
+
+   virtual btBool                     start(const NamedValueSet & );
+   virtual void                        stop() {}
+   virtual void                allocService(IBase                * ,
+                                            NamedValueSet const & = NamedValueSet(),
+                                            TransactionID const & = TransactionID()) {}
+   virtual btBool         schedDispatchable(IDispatchable * );
+   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
+   virtual btBool       releaseRuntimeProxy(IRuntime * );
+   virtual btBool       releaseRuntimeProxy();
+   virtual IRuntimeClient *getRuntimeClient();
+   virtual btBool                      IsOK();
+
+   DECLARE_RETVAL_ACCESSORS(start,                btBool           )
+   DECLARE_RETVAL_ACCESSORS(schedDispatchable,    btBool           )
+   DECLARE_RETVAL_ACCESSORS(getRuntimeProxy,      IRuntime *       )
+   DECLARE_RETVAL_ACCESSORS(releaseRuntimeProxy0, btBool           )
+   DECLARE_RETVAL_ACCESSORS(releaseRuntimeProxy1, btBool           )
+   DECLARE_RETVAL_ACCESSORS(getRuntimeClient,     IRuntimeClient * )
+   DECLARE_RETVAL_ACCESSORS(IsOK,                 btBool           )
+
+protected:
+   btBool          m_start_returns;
+   btBool          m_schedDispatchable_returns;
+   IRuntime       *m_getRuntimeProxy_returns;
+   btBool          m_releaseRuntimeProxy_0_returns;
+   btBool          m_releaseRuntimeProxy_1_returns;
+   IRuntimeClient *m_getRuntimeClient_returns;
+   btBool          m_IsOK_returns;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class CallTrackingIServiceClient : public AAL::IServiceClient,
+                                   public MethodCallLog
+{
+public:
+   CallTrackingIServiceClient() {}
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & );
+   virtual void serviceAllocateFailed(const IEvent & );
+   virtual void       serviceReleased(TransactionID const & );
+   virtual void  serviceReleaseFailed(const IEvent & );
+   virtual void          serviceEvent(const IEvent & );
+};
+
+class CallTrackingIRuntimeClient : public AAL::IRuntimeClient,
+                                   public MethodCallLog
+{
+public:
+   CallTrackingIRuntimeClient() {}
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & );
+   virtual void                  runtimeStopped(IRuntime * );
+   virtual void              runtimeStartFailed(const IEvent & );
+   virtual void               runtimeStopFailed(const IEvent & );
+   virtual void    runtimeAllocateServiceFailed(IEvent const & );
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & );
+   virtual void                    runtimeEvent(const IEvent & );
+};
+
+class CallTrackingISvcsFact : public EmptyISvcsFact,
+                              public MethodCallLog
+{
+public:
+   CallTrackingISvcsFact() {}
+   virtual IBase * CreateServiceObject(AALServiceModule * ,
+                                       IRuntime         * );
+   virtual btBool    InitializeService(IBase               * ,
+                                       TransactionID const & ,
+                                       NamedValueSet const & );
+};
+
+class CallTrackingIRuntime : public EmptyIRuntime,
+                             public MethodCallLog
+{
+public:
+   CallTrackingIRuntime() {}
+   virtual btBool                     start(const NamedValueSet & );
+   virtual void                        stop();
+   virtual void                allocService(IBase                * ,
+                                            NamedValueSet const &rManifest = NamedValueSet(),
+                                            TransactionID const &rTranID   = TransactionID());
+   virtual btBool         schedDispatchable(IDispatchable * );
+   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
+   virtual btBool       releaseRuntimeProxy(IRuntime * );
+   virtual btBool       releaseRuntimeProxy();
+   virtual IRuntimeClient *getRuntimeClient();
+   virtual btBool                      IsOK();
 };
 
 #endif // __GTCOMMON_H__

@@ -46,7 +46,8 @@ gtEnvVar.cpp \
 gtTimer.cpp \
 gtSleep.cpp \
 gtAASBase.cpp \
-gtAALEvent.cpp
+gtAALEvent.cpp \
+gtAALService.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -92,25 +93,26 @@ CLEANFILES=gtest-all.cc
 else
 
 EXTRA_DIST=\
-main.cpp \
-gtCommon.h \
+gtAALEvent.cpp \
+gtAALService.cpp \
+gtAASBase.cpp \
+gtBarrier.cpp \
 gtCommon.cpp \
+gtCommon.h \
 gtCritSect.cpp \
-gtSem.cpp \
-gtNVSLegacy.cpp \
-gtNVS.cpp \
-gtThread.cpp \
-gtThreadGroup.h \
-gtThreadGroup.cpp \
-gtThreadGroupSR.cpp \
-gtPaths.cpp \
-gtStartupShutdown.cpp \
-gtEnvVar.cpp \
-gtOSServiceModule.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtNVS.cpp \
+gtNVSLegacy.cpp \
+gtOSServiceModule.cpp \
+gtSem.cpp \
+gtSleep.cpp \
+gtThread.cpp \
+gtThreadGroup.cpp \
+gtThreadGroup.h \
+gtThreadGroupSR.cpp \
 gtTimer.cpp \
-gtSleep.cpp
+main.cpp
 
 endif
 

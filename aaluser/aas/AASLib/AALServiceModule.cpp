@@ -51,48 +51,44 @@ IAALTransport::~IAALTransport() {}
 IAALMarshalUnMarshallerUtil::~IAALMarshalUnMarshallerUtil() {}
 IAALMarshaller::~IAALMarshaller() {}
 IAALUnMarshaller::~IAALUnMarshaller() {}
-ISvcsFact::~ISvcsFact() {}
-IServiceModule::~IServiceModule() {}
-IServiceModuleCallback::~IServiceModuleCallback() {}
 
 AALServiceModule::AALServiceModule(ISvcsFact &fact) :
-   CAASBase(),
-   m_pBase(NULL),
-   m_pService(NULL),
-   m_refcount(0),
-   m_SvcsFact(fact)
+   m_SvcsFact(fact),
+   m_Runtime(NULL),
+   m_RuntimeClient(NULL)
 {
-   SetInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this));
+   if ( SetSubClassInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
 }
 
-AALServiceModule::~AALServiceModule() {}
-
-IBase *AALServiceModule::Construct(IRuntime           *pAALRuntime,
-                                   IBase              *Client,
-                                   TransactionID const &tranID,
-                                   NamedValueSet const &optArgs)
+IBase * AALServiceModule::Construct(IRuntime            *pAALRuntime,
+                                    IBase               *Client,
+                                    TransactionID const &tranID,
+                                    NamedValueSet const &optArgs)
 {
    // Add this one to the list of objects this container holds.
    //  It's up to the factory to enforce singletons.
    // Add the Service to the Module List before the Service can start
 
-   AutoLock(this);      // Lock to protect the AddtoList.  The serviceAllocated can come at anytime
+   AutoLock(this); // Lock to protect the AddtoList. The serviceAllocated can come at any time.
 
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            pAALRuntime);
-   // Add the service to the list of services the module
-   if ( NULL != m_pBase ) {
-      AddToServiceList(m_pBase);
+   IBase *pSvc = m_SvcsFact.CreateServiceObject(this, pAALRuntime);
 
-      // Service will issue serviceAllocated now or fail
-      if(!m_SvcsFact.InitializeService(Client,
-                                       tranID,
-                                       optArgs)){
-         RemovefromServiceList(m_pBase);
-         m_pBase = NULL;
+   // Add the service to the list of services the module tracks.
+   ASSERT(NULL != pSvc);
+   if ( NULL != pSvc ) {
+      AddToServiceList(pSvc);
+
+      // Service will issue serviceAllocated now or fail.
+      if ( !m_SvcsFact.InitializeService(Client, tranID, optArgs) ) {
+         RemovefromServiceList(pSvc);
+         pSvc = NULL;
       }
    }
-   return m_pBase;
+
+   return pSvc;
 }
 
 void AALServiceModule::Destroy()
@@ -112,22 +108,46 @@ void AALServiceModule::Destroy()
       //  count to a negative number.
       //  The waiter will block until the semaphore
       //  counts up to zero.
+      btBool res =
       m_srvcCount.Create( - static_cast<btInt>(size) );
 
-      // TODO CHECK RETURN
+      ASSERT(res);
 
       // Loop through all services and shut them down
       SendReleaseToAll();
    }
 
-   // Wait for all to complete.
+   // Wait for all to complete. Unlock before waiting.
    m_srvcCount.Wait();
+}
+
+void AALServiceModule::setRuntime(IRuntime *pRuntime)
+{
+   AutoLock(this);
+   m_Runtime = pRuntime;
+}
+
+IRuntime * AALServiceModule::getRuntime() const
+{
+   AutoLock(this);
+   return m_Runtime;
 }
 
 void AALServiceModule::ServiceReleased(IBase *pService)
 {
-   AutoLock(this);
    RemovefromServiceList(pService);
+}
+
+void AALServiceModule::setRuntimeClient(IRuntimeClient *pRTC)
+{
+   AutoLock(this);
+   m_RuntimeClient = pRTC;
+}
+
+IRuntimeClient * AALServiceModule::getRuntimeClient() const
+{
+   AutoLock(this);
+   return m_RuntimeClient;
 }
 
 btBool AALServiceModule::AddToServiceList(IBase *pService)
@@ -139,6 +159,7 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
    }
 
    m_serviceList[pService] = pService;
+
    return true;
 }
 
@@ -155,21 +176,14 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    // Post to the count up semaphore
    //  in case the service is shutting down
    m_srvcCount.Post(1);
+
    return true;
 }
 
 btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 {
    AutoLock(this);
-
-   const_iterator itr = m_serviceList.end();
-
-   // Find the named value pair
-   if ( m_serviceList.find(pService) == itr ) {
-      return false;
-   }
-
-   return true;
+   return m_serviceList.end() != m_serviceList.find(pService);
 }
 
 void AALServiceModule::SendReleaseToAll()
@@ -192,7 +206,4 @@ void AALServiceModule::SendReleaseToAll()
    }
 }
 
-
 END_NAMESPACE(AAL)
-
-
