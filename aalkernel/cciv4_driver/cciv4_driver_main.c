@@ -739,7 +739,7 @@ cciv4drv_exit(void)
       }// kosal_list_for_each_safe
 
    }else {
-      PDEBUG("No registered Devices")
+      PDEBUG("No registered Devices");
 
    } // if( !kosal_list_is_empty(&g_device_list) )
 
