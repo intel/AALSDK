@@ -184,12 +184,14 @@ TEST(AALServiceModuleTest, aal0677)
    NamedValueSet optArgs;
    optArgs.Add((btStringKey)"A", false);
 
-
    class aal0677Service : public CAASBase,
                           public AAL::IAALService
    {
    public:
-      aal0677Service(IServiceModuleCallback *pSvcModCB, int &Counter) :
+      aal0677Service(IThreadGroup           *pGrp,
+                     IServiceModuleCallback *pSvcModCB,
+                     int                    &Counter) :
+         m_pGrp(pGrp),
          m_pSvcModCB(pSvcModCB),
          m_Counter(Counter)
       {
@@ -199,23 +201,46 @@ TEST(AALServiceModuleTest, aal0677)
       virtual btBool Release(TransactionID const & ,
                              btTime                ) { return false; }
 
+      // We need the IServiceModuleCallback::ServiceReleased() notification to happen
+      // from another thread so that AALServiceModule's CriticalSection prevents manipulation
+      // of AALServiceModule::m_serviceList while the list is being walked by
+      // AALServiceModule::SendReleaseToAll().
+      class DoServiceReleased : public IDispatchable
+      {
+      public:
+         DoServiceReleased(IServiceModuleCallback *pSMC, IBase *pSvc) :
+            m_pSMC(pSMC),
+            m_pSvc(pSvc)
+         {}
+         virtual void operator()()
+         {
+            m_pSMC->ServiceReleased(m_pSvc);
+            delete this;
+         }
+      protected:
+         IServiceModuleCallback *m_pSMC;
+         IBase                  *m_pSvc;
+      };
+
       virtual btBool Release(btTime timeout)
       {
-         m_pSvcModCB->ServiceReleased( dynamic_ptr<IBase>(iidBase, this) );
          ++m_Counter;
-         return true;
+         return m_pGrp->Add( new DoServiceReleased(m_pSvcModCB, dynamic_ptr<IBase>(iidBase, this)) );
       }
 
       virtual btBool SetParms(NamedValueSet const & ) { return false; }
 
    protected:
+      IThreadGroup           *m_pGrp;
       IServiceModuleCallback *m_pSvcModCB;
       int                    &m_Counter;
    };
 
+   OSLThreadGroup grp;
    int            Count = 0;
-   aal0677Service ServiceA(&mod, Count);
-   aal0677Service ServiceB(&mod, Count);
+
+   aal0677Service ServiceA(&grp, &mod, Count);
+   aal0677Service ServiceB(&grp, &mod, Count);
    IBase         *pServices[2];
 
    factory.CreateServiceObjectReturnsThisValue( dynamic_ptr<IBase>(iidBase, &ServiceA) );
@@ -230,11 +255,8 @@ TEST(AALServiceModuleTest, aal0677)
 
    mod.Destroy();
 
+   EXPECT_TRUE(grp.Join(AAL_INFINITE_WAIT));
    EXPECT_EQ(2, Count);
-
-
-
-
 }
 
 TEST(AALServiceModuleTest, aal0678)
