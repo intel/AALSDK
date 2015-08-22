@@ -116,8 +116,8 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
 
-   //if --prefill-hits is mentioned
-   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PREFILL_HITS))
+   //if --warm-fpga-cache is mentioned
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
    {
 	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_WRITE);
 
@@ -168,7 +168,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
 			 //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Ticks(@"
+	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
 		   << Normalized(cmd)  << ")'";
 
 	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
