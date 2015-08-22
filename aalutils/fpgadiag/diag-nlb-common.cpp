@@ -682,7 +682,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    }
 
    if ( 0 == strcmp(test.c_str(), "SW") ) {
-      fprintf(fp, "      <NOTICE>    = --poll OR --p,                Polling-method,                                 ");
+      fprintf(fp, "      <NOTICE>    = --poll      OR --p,           Polling-method,                                 ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
          fprintf(fp, "yes\n");
       } else {
