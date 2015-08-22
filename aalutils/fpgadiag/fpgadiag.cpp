@@ -132,8 +132,8 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_SRCPHYS,
       DEFAULT_DSTPHYS,
       DEFAULT_FPGA_CLK_FREQ,
-      DEFAULT_PREFILLHITS,
-      DEFAULT_PREFILLMISS,
+      DEFAULT_WARMFPGACACHE,
+      DEFAULT_COOLFPGACACHE,
       DEFAULT_COOLCPUCACHE,
       DEFAULT_NOBW,
       DEFAULT_TABULAR,
@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
 	   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
-		  cout << PASS << "VERIFIED";
+		  cout << PASS << "PASS - DATA VERIFIED";
 	   } else {
 		  cout << FAIL << "ERROR";
 	   }
@@ -628,7 +628,7 @@ int main(int argc, char *argv[])
 	   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
-		  cout << PASS << "PASS";
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
 	   } else {
 		  cout << FAIL << "ERROR";
 	   }
@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
 	   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
-		  cout << PASS << "PASS";
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
 	   } else {
 		  cout << FAIL << "ERROR";
 	   }
@@ -661,7 +661,7 @@ int main(int argc, char *argv[])
 	   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
-		  cout << PASS << "PASS";
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
 	   } else {
 		  cout << FAIL << "ERROR";
 	   }
@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
 	   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
-		  cout << PASS << "PASS";
+		  cout << PASS << "PASS - DATA VERIFIED";
 	   } else {
 		  cout << FAIL << "ERROR";
 	   }
