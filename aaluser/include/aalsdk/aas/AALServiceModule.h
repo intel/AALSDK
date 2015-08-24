@@ -389,25 +389,25 @@ public:
 private:
    //=============================================================================
    // Name: AddToServiceList
-   // Description: Add service to  service list
-   //      Inputs: pService - IBase of service
-   //     Returns: false - service already registered
+   /// @brief Adds service to  service list
+   ///   @param[in] pService  IBase of service
+   ///    @return false service already registered
    //=============================================================================
    btBool AddToServiceList(IBase *pService);
 
    //=============================================================================
    // Name: RemovefromServiceList
-   // Description: Add servcie to  service list
-   //      Inputs: pService - IBase of service
-   //     Returns: false - was not registered
+   /// @brief  Remove service from service list
+   ///      @param[in] pService - IBase of service
+   ///     @return false - was not registered
    //=============================================================================
    btBool RemovefromServiceList(IBase *pService);
 
    //=============================================================================
    // Name: ServiceInstanceRegistered
-   // Description: Determine if a service is already registerd
-   //      Inputs: pService - IBase of service
-   //     Returns: true  - service registered
+   /// @brief Determines if a service is already registerd
+   /// @param[in]   pService IBase of service
+   ///     @return true if service registered
    //=============================================================================
    btBool ServiceInstanceRegistered(IBase *pService);
 
@@ -417,12 +417,12 @@ private:
 
    //=============================================================================
    // Name: SendReleaseToAll
-   // Description: Send a Release to all services
-   //      Inputs: pService - IBase of service
-   // Comments: The object remains locked through the loop of Releases to prevent
-   //           Services being removed in the background and corrupting the iter
-   //           The Release() used here is a quiet one. It does not generate an event.
-   //           This is to allow the Service to cleanly shutdown for unloading.
+   /// @brief Sends a Release to all services
+   /// @param[in]   pService IBase of service
+   /// 			The object remains locked through the loop of Releases to prevent
+   ///           Services being removed in the background and corrupting the iter
+   ///           The Release() used here is a quiet one. It does not generate an event.
+   ///           This is to allow the Service to cleanly shutdown for unloading.
    //=============================================================================
    void SendReleaseToAll();
 
@@ -454,19 +454,20 @@ END_NAMESPACE(AAL)
 
 //=============================================================================
 // Name: DECLARE_SERVICE_PROVIDER_ACCESSOR
-// Description: Implements the Service Provider accessor for the package.
-//              Add this macro to the Service Package source module to enable
-//              loading by factory.
+/// @brief Implements the Service Provider accessor for the package.
+///              Add this macro to the Service Package source module to enable
+///              loading by factory.
 // Interface: public
-// Inputs: - Class name.
-// Outputs: Pointer to the service provider.
-// Comments: Macro expands to generate code for type _CLASSNAME_.
-//           _CLASSNAME must be the exact name of the Factory class.
-//           The _CLASSNAME_ provider MUST be derived from IBase and must be a
-//           fully implemented IBase (e.g., CAASBase). The _CLASSNAME_ provider
-//           MAY implement IServiceModule as an aggregated object.
-//           Note that dynamic_cast<> is used on the provider object to get the
-//           IBase interface pointer but dynamic_ptr<> is used to get
+/// @param[in] _CLASSNAME_ - Class name.
+/// @param[out] Pointer to the service provider.
+///
+///           Macro expands to generate code for type _CLASSNAME_.
+///           _CLASSNAME must be the exact name of the Factory class.
+///           The _CLASSNAME_ provider MUST be derived from IBase and must be a
+///           fully implemented IBase (e.g., CAASBase). The _CLASSNAME_ provider
+///           MAY implement IServiceModule as an aggregated object.
+///           Note that dynamic_cast<> is used on the provider object to get the
+///           IBase interface pointer but dynamic_ptr<> is used to get
 //           IServiceModule.
 //=============================================================================
 
@@ -516,7 +517,7 @@ __declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::CAASServiceConta
 }
 
 
-/// @} group Services
+/// @}
 
 
 #endif // __AALSDK_AAS_AALSERVICEMODULE_H__

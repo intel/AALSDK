@@ -158,7 +158,7 @@ AASLIB_API int                  UCharFromHexNybble         (unsigned char Nybble
 AASLIB_API int                  UCharFromHex               (unsigned char upperNybble,
                                                             unsigned char lowerNybble);
 
-/// @} group RMUtils
+/// @}
 
 END_NAMESPACE(AAL)
 

@@ -311,7 +311,7 @@ private:
 
 END_NAMESPACE(AAL)
 
-/// @} group Runtime
+/// @}
 
 #endif // __AAL_RUNTIME_H__
 

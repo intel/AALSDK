@@ -657,7 +657,7 @@ btBool SWSimSPLAFU::Driver_TransStart(TransactionID const &TranID, btVirtAddr AF
    return true;
 }
 
-/// @} group SWSimSPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

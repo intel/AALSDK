@@ -114,7 +114,7 @@ protected:
    TransactionID const  &m_TranID;
 };
 
-/// @} group hello_service
+/// @}
 
 #endif //__SAMPLEAFU1SERVICE_INT_H__
 

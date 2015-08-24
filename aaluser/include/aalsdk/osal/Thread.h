@@ -197,7 +197,7 @@ private:
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
 */
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_THREAD_H__
 

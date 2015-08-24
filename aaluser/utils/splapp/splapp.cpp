@@ -481,7 +481,7 @@ void CMyApp::OnServiceEvent(const IEvent &e)
    Post();
 }
 
-/// @} group splapp
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
@@ -1184,7 +1184,7 @@ btInt SPLTest(CMyApp *p)
    return 0;
 }
 
-/// @} group splapp
+/// @}
 
 #if defined ( __AAL_WINDOWS__ )
 # define strcasecmp _stricmp
@@ -1392,6 +1392,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ splapp --target=swsim@endcode
 
-@} group splapp
+@}
 */
 

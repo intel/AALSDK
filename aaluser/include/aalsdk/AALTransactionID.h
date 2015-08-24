@@ -236,7 +236,7 @@ private:
 /// TransactionID streamer.
 AASLIB_API std::ostream & operator << (std::ostream &s, const TransactionID &TranID);
 
-/// @} group Events
+/// @}
 
 #endif //__cplusplus
 

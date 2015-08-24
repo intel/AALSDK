@@ -303,7 +303,7 @@
 #define extranevtNotImplemented        __AAL_ExTranEvt(AAL_sysAAL, 0x0003)
 #define extranevtDeferRequest          __AAL_ExTranEvt(AAL_sysAAL, 0x0004)
 
-/// @} group SysEvents
+/// @}
 
 /// COKEvent interface id.
 #define evtOK                          __AAL_Evt(AAL_sysAAL, 0x0001)
@@ -384,7 +384,7 @@
 #define strNoManifest                  "No Manifest present"
 #define strInvalidService              "Specified service invalid."
 #define strMissingInterface            "Missing required interface"
-/// @} group SysEvents
+/// @}
 
 /*=============================================================================
 ===============================================================================
@@ -398,7 +398,7 @@
 /// IBase interface id.
 #define iidBase                      __AAL_IID(AAL_sysAAL, 0x0001)
 
-/// @} group CommonBase
+/// @}
 
 #if DEPRECATED
 #define iidProxyBase                 __AAL_IID(AAL_sysAAL, 0x0002)
@@ -420,7 +420,7 @@
 #define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0007)   // Class implements IRuntime
 
 
-/// @} group Services
+/// @}
 
 /// @addtogroup Events
 /// @{
@@ -434,7 +434,7 @@
 /// IExceptionTransactionEvent interface id.
 #define iidExTranEvent               __AAL_ExTranEvt(AAL_sysAAS, 0x0000)
 
-/// @} group Events
+/// @}
 
 /// IAASServiceContainer interface id.
 /// @ingroup SysServices
@@ -515,7 +515,7 @@
 #define exttranevtServiceShutdown         __AAL_SysExTranEvt (0x0003)
 #define exttranevtSystemStart             __AAL_SysExTranEvt (0x0004)
 
-/// @} group AALRUNTIME
+/// @}
 
 
 #define exttranevtNotImplemented          __AAL_SysExTranEvt (0x0004)
@@ -561,7 +561,7 @@
 /// ObjectCreatedExceptionEvent interface id.
 #define extranevtFactoryCreate            __AAL_FactExTranEvt        (0x0002)
 
-/// @} group SysEvents
+/// @}
 
 #define reasParameterNameInvalidToFactory __AAL_FactReasCode         (0x0001)
 #define reasMissingParameterToFactory     __AAL_FactReasCode         (0x0002)
@@ -595,7 +595,7 @@
 #define tranevtRequestDevice           __AAL_RmcsTranEvt       (0x0001)
 #define extranevtRequestDevice         __AAL_RmcsExTranEvt     (0x0001)
 
-/// @} group ResMgr
+/// @}
 
 /******************************************************************************
 * Define Universal AIA Service Specific Macros
@@ -623,7 +623,7 @@
 #define tranevtUnBindAFUDevEvent       __AAL_UAIATranEvt       (0x0004)
 #define exttranevtUnBindAFUDevEvent    __AAL_UAIAExTranEvt     (0x0004)
 
-/// @} group uAIA
+/// @}
 
 /******************************************************************************
 * Define Event Deliver Service Specific macros
@@ -641,7 +641,7 @@
 
 #define strEnknownEDSfailure           "Unknown EDS Failure"
 
-/// @} group MDS
+/// @}
 
 /*=============================================================================
 ====================== Define Registrar Specific macros =======================
@@ -935,7 +935,7 @@ END_NAMESPACE(AAL)
 #define reasRegCheckErrno              __AAL_RegReasCode (0x000B)
 
 
-/// @} group Registrar
+/// @}
 
 
 /******************************************************************************
@@ -978,7 +978,7 @@ END_NAMESPACE(AAL)
 #define strAIAWorkSpaceAllocateFailed  "No workspace manager"
 #define strAIANoMemory                 "No Memory"
 
-/// @} group uAIA
+/// @}
 
 /******************************************************************************
 * Define AFU Specific macros
@@ -1023,7 +1023,7 @@ END_NAMESPACE(AAL)
 #define tranevtAFU_ProcessMessage      __AFU_FactTranEvt  (0x0005)
 #define extranevtAFU_ProcessMessage    __AFU_FactExTranEvt(0x0005)
 
-/// @} group AFU
+/// @}
 
 /******************************************************************************
 * Define ManagementAFU Specific macros

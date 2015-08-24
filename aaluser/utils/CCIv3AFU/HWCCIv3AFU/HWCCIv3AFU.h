@@ -101,7 +101,7 @@ public:
    // </ICCIv3AFU>
 };
 
-/// @} group HWCCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

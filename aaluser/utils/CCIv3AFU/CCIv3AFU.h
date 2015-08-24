@@ -154,7 +154,7 @@ protected:
 };
 
 
-/// @} group CCIv3AFU
+/// @}
 
 
 END_NAMESPACE(AAL)

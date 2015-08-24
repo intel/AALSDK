@@ -260,7 +260,7 @@ void CCIv3AFU::OnWorkspaceFreeFailed(const IEvent &Event)
    }
 }
 
-/// @} group CCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

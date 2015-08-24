@@ -138,7 +138,7 @@ public:
 
 }; // ICCIv3AFU
 
-/// @} group ICCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

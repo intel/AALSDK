@@ -729,7 +729,7 @@ void HelloSPLLBApp::Show2CLs(void          *pCLExpected, // pointer to cache-lin
     oss << std::nouppercase;
  }  // _DumpCL
 
-/// @} group HelloSPLLB
+/// @}
 
 
 //=============================================================================

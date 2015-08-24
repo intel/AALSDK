@@ -152,7 +152,7 @@ protected:
    btEventHandler m_pEventHandler;
 
 private:
-   // Cannot construct without event handler
+   /// Cannot construct without event handler
    CAALBase();
    // No copying allowed
    CAALBase(const CAALBase & );

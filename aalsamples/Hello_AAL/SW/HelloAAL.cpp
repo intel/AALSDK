@@ -382,7 +382,7 @@ void HelloAALApp::serviceEvent(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-/// @} group HelloAAL
+/// @}
 
 
 

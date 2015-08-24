@@ -174,7 +174,7 @@ T * subclass_ptr(IEvent const &obj) {
 }
 
 
-/// @} group CommonBase
+/// @}
 
 
 /// Base interface for AAL Services.
@@ -201,7 +201,7 @@ public:
    /// This version is blocking and MUST have completed its shutdown before returning.
    virtual btBool Release(btTime timeout) = 0;
 
-   // Used as a method for setting general purpose parameters on a Service
+   /// Used as a method for setting general purpose parameters on a Service
    virtual btBool SetParms(NamedValueSet const &rparms) = 0;
 };
 

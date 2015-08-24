@@ -191,7 +191,7 @@ private:
    friend class AutoResetManager;
 };
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_BARRIER_H__
 

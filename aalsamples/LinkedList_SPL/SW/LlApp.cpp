@@ -680,7 +680,7 @@ void llApp::serviceEvent(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-/// @} group LinkedListSample
+/// @}
 
 
 //=============================================================================

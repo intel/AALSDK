@@ -332,7 +332,7 @@ protected:
    btWSSize             m_WSRequestLen;   ///< Requested size of the AFU Context workspace in bytes.
 }; //CMyApp
 
-/// @} group splapp3
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
@@ -883,7 +883,7 @@ void Show2CLs( void          *pCLExpected, // pointer to cache-line expected
 //   oss << "\n";    /* no terminating linefeed, macro at end will add it. */
 }  // _DumpCL
 
-/// @} group splapp3
+/// @}
 
 // End Utility functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -987,7 +987,7 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ splapp3 --target=swsim@endcode
 
-@} group splapp3
+@}
 */
 
 

@@ -72,7 +72,7 @@ public:
    virtual ~IServiceBroker(){}
 };
 
-///@} group ServiceBroker
+///@}
 
 END_NAMESPACE(AAL)
 

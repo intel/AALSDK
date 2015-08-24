@@ -126,7 +126,7 @@ btBool HWCCIv3AFU::CSRWrite64(btCSROffset CSR,
    return false;
 }
 
-/// @} group HWCCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

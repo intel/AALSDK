@@ -93,7 +93,7 @@ public:
    virtual ~IHelloAALService() {}
 };
 
-/// @} group hello_service
+/// @}
 
 // Convenience macros for printing messages and errors.
 #ifndef MSG

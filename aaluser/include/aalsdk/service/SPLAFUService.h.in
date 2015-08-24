@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(libSPLAFU, SPLAFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group SPLAFU
+/// @}
 
 #endif // __SERVICE_SPLAFUSERVICE_H__
 

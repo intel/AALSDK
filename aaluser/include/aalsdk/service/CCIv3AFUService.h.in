@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(@CCIV3AFU_SVC_MOD@, CCIV3AFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group CCIv3AFU
+/// @}
 
 #endif // __SERVICE_CCIV3AFUSERVICE_H__
 

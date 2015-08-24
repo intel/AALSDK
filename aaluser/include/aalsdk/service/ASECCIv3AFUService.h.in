@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(libASECCIv3AFU, ASECCIV3AFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group ASECCIv3AFU
+/// @}
 
 #endif // __SERVICE_ASECCIV3AFUSERVICE_H__
 

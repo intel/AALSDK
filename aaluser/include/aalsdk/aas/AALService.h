@@ -287,13 +287,13 @@ public:
    virtual void runtimeEvent(const IEvent &rEvent){};
    // </IRuntimeClient>
 
-   // @param[in]  pclient       Interface of client of service.
-   // @param[in]  rtid          TransactionID for routing event responses.
-   // @param[in]  optArgs       Optional arguments.
-   // @param[in]  pcmpltEvent   Optional completion event. Used internally to
-   //  traverse the inheritance hierarchy during initialization.
-   //
-   //  Client is using callback interface method of signaling
+   /// @param[in]  pclient       Interface of client of service.
+   /// @param[in]  rtid          TransactionID for routing event responses.
+   /// @param[in]  optArgs       Optional arguments.
+   /// @param[in]  pcmpltEvent   Optional completion event. Used internally to
+   ///  traverse the inheritance hierarchy during initialization.
+   ///
+   ///  Client is using callback interface method of signaling
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
@@ -311,7 +311,7 @@ public:
 #endif // DEPRECATED
 
    //
-   // IServiceClient - For backward compatibility with < version 4.0
+   //@brief  IServiceClient - For backward compatibility with < version 4.0
    void messageHandler(const IEvent &rEvent);
 
    // Accessors for marshalers and transport
@@ -323,49 +323,49 @@ public:
 
    //=============================================================================
    // Name: sendmsg
-   // @brief Convenience function for sending the message currently carried
-   //              by the marshaler.
+   /// @brief Convenience function for sending the message currently carried
+   ///              by the marshaler.
    //
    //
-   // Comments: This is a destructive send. It empties the marshaler once sent.
+   /// Comments: This is a destructive send. It empties the marshaler once sent.
    //=============================================================================
    btBool sendmsg();
 
    //=============================================================================
    // Name:        getmsg
-   // @brief Convenience function for getting the next message into
-   //              unmarshaller
+   /// @brief Convenience function for getting the next message into
+   ///              unmarshaller
    //
-   // Comments:    This is a destructive get. It empties the unmarshaller before
-   //              getting.
-   // @return      true if data in unmarshaller, false if not
+   /// Comments:    This is a destructive get. It empties the unmarshaller before
+   ///              getting.
+   /// @return      true if data in unmarshaller, false if not
    //=============================================================================
    btBool getmsg();
 
    //=============================================================================
    // Name: processmsg
-   // @brief Process a single received message
+   /// @brief Process a single received message
    //
-   // Comments This will be called by some scheduling entity dependent on the
-   //           container
+   /// Comments This will be called by some scheduling entity dependent on the
+   ///           container
    //=============================================================================
    // TODO
    virtual void processmsg() {}
 
    //=============================================================================
    // Name: startMDS
-   // @brief   Starts the message deliver system.
+   /// @brief   Starts the message deliver system.
    //
    //
-   // Comments: Used by objects that implement asynchronous message delivery.
-   //           This starts a thread that continuously polls the receiver and
-   //           when a message is available calls proceemsg().
+   /// Comments: Used by objects that implement asynchronous message delivery.
+   ///           This starts a thread that continuously polls the receiver and
+   ///           when a message is available calls proceemsg().
    //=============================================================================
    virtual btBool startMDS();
 
    //=============================================================================
    // Name: MessageSeliveryThread
-   // Description: polls message queue and  dispatches
+   /// @brief polls message queue and  dispatches
    //=============================================================================
    static void _MessageDeliveryThread(OSLThread *pThread, void *pContext);
    void MessageDeliveryThread();
@@ -377,7 +377,7 @@ public:
    btBool HasUnMarshaller() { return NULL != m_punmarshaller; }
    btBool HasTransport()    { return NULL != m_ptransport;    }
 
-   // Hook to allow Services to expose parameters. Default is not supported
+   /// @brief Hook to allow Services to expose parameters. Default is not supported
    virtual btBool SetParms(NamedValueSet const &rparms){return false;}
 
    /// Accessor to optional arguments passed during allocateService
@@ -407,7 +407,7 @@ public:
                      TransactionID const    &rTranID   = TransactionID());
 
 
-   // Accessor to this Services Service Module
+   /// Accessor to this Services Service Module
    AALServiceModule     * pAALServiceModule()    { return m_pcontainer; }
 
 
@@ -459,7 +459,7 @@ enum aal_service_method_id
 
 //=============================================================================
 // Name: ServiceProxyBase
-// Description: Base class for all services
+/// @brief Base class for all services
 //=============================================================================
 class AASLIB_API ServiceProxyBase: public ServiceBase
 {
@@ -472,14 +472,15 @@ public:
 
    //=============================================================================
    // Name: _init
-   // Description: Perform any post creation initialization including establishing
-   //               communications.
-   // Comments: Only base classes have  _init(). This function is designed to be
-   //           called by the factory to perform canonical initialization. The 
-   //           factory will call the most derived base class' (super base class)
-   //           _init() function.  It is the responsibility of the base class to
-   //           call its direct ancestor's _init() FIRST to ensure that the class
-   //           hiearchy _init() called.
+   /// @brief Perform any post creation initialization including establishing
+   ///               communications.
+   ///
+   ///           Only base classes have  _init(). This function is designed to be
+   ///           called by the factory to perform canonical initialization. The
+   ///           factory will call the most derived base class' (super base class)
+   ///           _init() function.  It is the responsibility of the base class to
+   ///           call its direct ancestor's _init() FIRST to ensure that the class
+   ///           hiearchy _init() called.
    //=============================================================================
    virtual IBase * _init(IBase                   *pclient,
                           TransactionID const      &rtid,
@@ -488,7 +489,7 @@ public:
 private:
     //=============================================================================
     // Name: Doinit
-    // Description: Real initialization function
+    /// @brief Real initialization function
     // Comments:
     //=============================================================================
     void Doinit(TransactionID const &rtid);
@@ -498,7 +499,7 @@ private:
 
 //=============================================================================
 // Name: ServiceStubBase
-// Description: Base class for all service stubs
+/// @brief Base class for all service stubs
 //=============================================================================
 class AASLIB_API ServiceStubBase: public ServiceBase
 {
@@ -511,14 +512,14 @@ public:
 
    //=============================================================================
    // Name: init
-   // Description: Perform any post creation initialization including establishing
-   //               communications.
-   // Comments: Only base classes have  _init(). This function is designed to be
-   //           called by the factory to perform canonical initialization. The 
-   //           factory will call the most derived base class' (super base class)
-   //           _init() function.  It is the responsibility of the base class to
-   //           call its direct ancestor's _init() FIRST to ensure that the class
-   //           hiearchy _init() called.
+   /// @brief Perform any post creation initialization including establishing
+   ///               communications.
+   ///
+   ///           called by the factory to perform canonical initialization. The
+   ///           factory will call the most derived base class' (super base class)
+   ///           _init() function.  It is the responsibility of the base class to
+   ///           call its direct ancestor's _init() FIRST to ensure that the class
+   ///           hiearchy _init() called.
    //=============================================================================
    virtual IBase * _init(IBase               *pclient,
                          TransactionID const &rtid,
@@ -528,7 +529,7 @@ public:
 private:
    //=============================================================================
    // Name: Doinit
-   // Description: Real initialization function
+   /// @brief Real initialization function
    // Comments:
    //=============================================================================
    void Doinit(TransactionID const &rtid);
@@ -536,7 +537,7 @@ private:
    CAALEvent *m_pcmpltEvent;
 };
 
-/// @} group Services
+/// @}
 
 END_NAMESPACE(AAL)
 

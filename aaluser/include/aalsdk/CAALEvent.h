@@ -160,11 +160,17 @@ public:
    virtual void Delete();
 
 protected:
-   void UpdateContext();   // Update m_Context based on m_pObject
-
+   /// Update m_Context based on m_pObject
+   void UpdateContext();
+   /// Sets an interface pointer on the object.
+   ///
+   /// @param[in]  Interface   The name of the interface to set..
+   /// @param[in]  pInterface  The interface pointer.
+   ///
+   /// Outputs interface pointer
    EOBJECT SetInterface(btIID              Interface,
                         btGenericInterface pInterface);
-
+   /// Processes the transaction ID for Event Handling
    btBool ProcessEventTranID();
 
    CAALEvent();
@@ -467,7 +473,7 @@ protected:
 
  };
 
-/// @} group Events
+/// @}
 
 END_NAMESPACE(AAL)
 

@@ -290,6 +290,6 @@ Runtime::~Runtime()
 
 END_NAMESPACE(AAL)
 
-/// @} group AALRUNTIME
+/// @}
 
 

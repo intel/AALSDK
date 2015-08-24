@@ -361,7 +361,7 @@ _SEND_ERR:
                                                                                        pExcept) );
 }
 
-/// @} group HWSPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

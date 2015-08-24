@@ -185,7 +185,7 @@ AASLIB_API void PrintExceptionDescription(IEvent const &theEvent);
 
 #endif //__cplusplus
 
-/// @} group Events
+/// @}
 
 
 END_NAMESPACE(AAL)

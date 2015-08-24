@@ -81,7 +81,7 @@ typedef enum EnumCallbackModel
 /// Key for kernel-less mode.
 #define SYSINIT_KEY_SYSTEM_NOKERNEL      "sysinit_system_no_kernel"
 
-/// @} group AALRUNTIME
+/// @}
 
 //=============================================================================
 // Global system functions

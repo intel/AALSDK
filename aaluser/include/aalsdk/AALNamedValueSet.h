@@ -367,7 +367,7 @@ inline std::ostream & operator << (std::ostream &s, const FormattedNVS &fnvs)
 
 #endif //__cplusplus
 
-/// @} group BasicTypes
+/// @}
 
 END_NAMESPACE(AAL)
 

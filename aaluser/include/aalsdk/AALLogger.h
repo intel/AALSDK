@@ -372,66 +372,66 @@ BEGIN_NAMESPACE(AAL)
 
    //=============================================================================
    // Name: ILogger
-   // Description: Main logger interface
+   // @brief Main logger interface
    //=============================================================================
    class AASLIB_API ILogger
    {
    public:
-      // Set the output destination of the logger
+      /// @brief Sets the output destination of the logger
       enum eLogTo {
          COUT,
          CERR,
          SYSLOG,
          FILE
       };
-      // Ctor implicit, Dtor standard for abstract interface class
+      /// @brief Ctor of implicit, Dtor of standard for abstract interface class
       virtual            ~ILogger();
 
-      // Ask whether the log should be executed at all
+      /// @brief Asks whether the log should be executed at all
       virtual btBool      IfLog              (LogMask_t mask, btInt errlevel) const = 0;
 
-      // Get an ostringstream to write to
+      /// @brief Gets an ostringstream to write to
       virtual std::ostringstream& GetOss     (btInt errLevel=-1) = 0;
 
-      // Return the perror string for an errno defined in errno.h
-      //    or a string version of the error and message that it was not found
+      /// @brief Returns the perror string for an errno defined in errno.h
+      ///    or a string version of the error and message that it was not found
       virtual char*       GetErrorString     (btInt errNum) = 0;
 
-      // Log a string
+      /// @brief Log a string
       virtual void        Log                (btInt errlevel, btcString psz) = 0;
       virtual void        Log                (btInt errlevel, std::ostringstream &ros) = 0;
       virtual void        Log                (btInt errlevel, std::basic_ostream<char, std::char_traits<char> >& ros) = 0;
 
-      // if eDest is FILE, there better be a no-null filename
+      /// @brief if eDest is FILE, there better be a no-null filename
       virtual void        SetDestination     (eLogTo eDest=COUT, std::string sFile="") = 0;
       virtual eLogTo      GetDestinationEnum () const = 0;
       virtual std::string GetDestinationFile () const = 0;
 
-      // Set the mask that determines what is logged, and for each bit in it the threshold of what is to be logged.
+      /// @brief Sets the mask that determines what is logged, and for each bit in it the threshold of what is to be logged.
       virtual void        AddToMask          (LogMask_t mask, btInt errLevel) = 0;
       virtual void        RemoveFromMask     (LogMask_t mask) = 0;
       virtual LogMask_t   GetMask            () const = 0;
 
-      // Get the threshold level associated with a particular bit in the mask.
+      /// @brief Gets the threshold level associated with a particular bit in the mask.
       virtual int         GetLevel           (LogMask_t mask) const = 0;
 
-      // Tell the Logger to prepend the PID of the caller (for multi-threaded applications)
+      /// @brief Tells the Logger to prepend the PID of the caller (for multi-threaded applications)
       virtual void        SetLogPID          (btBool fLogPID) = 0;
       virtual btBool      GetLogPID          () const = 0;
 
-      // Tell the Logger to prepend a wall-clock timestamp
+      /// @brief Tells the Logger to prepend a wall-clock timestamp
       virtual void        SetLogTimeStamp    (btBool fLogTimeStamp) = 0;
       virtual btBool      GetLogTimeStamp    () const = 0;
 
-      // Tell the Logger to always prepend a string
+      /// @brief Tells the Logger to always prepend a string
       virtual void        SetLogPrepend      (std::string sPrepend) = 0;
       virtual std::string GetLogPrepend      () const = 0;
 
-      // Tell the Logger whether to prepend the error Level
+      /// @brief Tells the Logger whether to prepend the error Level
       virtual void        SetLogErrorLevelPrepend (btBool errLevel) = 0;
       virtual btBool      GetLogErrorLevelPrepend () const = 0;
 
-      // Tell the Logger whether to flush on EVERY full write
+      /// @brief Tells the Logger whether to flush on EVERY full write
       virtual void        SetFlush (btBool flush) = 0;
       virtual btBool      GetFlush () const = 0;
 

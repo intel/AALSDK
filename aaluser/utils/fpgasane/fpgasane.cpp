@@ -447,7 +447,7 @@ void CMyApp::OnServiceEvent(const IEvent &e)
    Post();
 }
 
-/// @} group cciapp
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
@@ -1656,6 +1656,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ cciapp --target=swsim@endcode
 
-@} group cciapp
+@}
 */
 

@@ -290,7 +290,7 @@ protected:
                                              //    used for Release.
 }; // CSyncClient
 
-/// @} group CSyncClient
+/// @}
 
 #endif // __AALSDK_UTILS_CSYNCCLIENT_H__
 

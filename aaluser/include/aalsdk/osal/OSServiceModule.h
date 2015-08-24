@@ -569,7 +569,7 @@ BT32I OSAL_API OSServiceModuleClose(OSServiceModule *p);
 
 END_C_DECLS
 
-/// @} group ServiceModule
+/// @}
 
 #endif // __OSAL_OSSERVICEMODULE_H__
 

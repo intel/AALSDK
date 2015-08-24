@@ -87,7 +87,7 @@ AAL_DECLARE_SVC_MOD(@HWCCIAFU_SVC_MOD@, HWCCIAFU_API)
 9 11 ServiceName\n \
 \t9 8 HWCCIAFU\n"
 
-/// @} group HWCCIAFU
+/// @}
 
 #endif // __SERVICE_HWCCIAFUSERVICE_H__
 

@@ -100,7 +100,7 @@ public:
    virtual ~IMAFUQueryDeviceTransactionEvent() {}
 };
 
-/// @} group SysEvents
+/// @}
 
 //=============================================================================
 // Name: IMAFU

@@ -63,7 +63,7 @@ void OSAL_API SleepNano(unsigned long nsecs);
 /// Yield the CPU.
 void OSAL_API SleepZero(void);
 
-/// @} group OSAL
+/// @}
 
 END_C_DECLS
 

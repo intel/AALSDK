@@ -108,7 +108,7 @@ protected:
    static CriticalSection sm_ASEMtx;
 };
 
-/// @} group ASECCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

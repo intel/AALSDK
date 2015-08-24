@@ -613,7 +613,7 @@ typedef void (*btEventHandler)(void *TheEvent);
 #endif // __AALSDK_BASIC_TYPES_DEFINED
 
 
-/// @} group BasicTypes
+/// @}
 
 
 CASSERT(true);

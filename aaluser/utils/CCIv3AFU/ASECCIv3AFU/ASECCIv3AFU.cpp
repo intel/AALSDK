@@ -233,7 +233,7 @@ btBool ASECCIv3AFU::CSRWrite64(btCSROffset CSR,
   return false;
 }
 
-/// @} group ASECCIv3AFU
+/// @}
 
 END_NAMESPACE(AAL)
 

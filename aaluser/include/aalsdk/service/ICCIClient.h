@@ -218,7 +218,7 @@ protected:
    IEvent     *m_pExcept;
 };
 
-/// @} group ICCIAFU
+/// @}
 
 #ifdef INFO
 # undef INFO
