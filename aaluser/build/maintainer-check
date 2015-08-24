@@ -754,64 +754,116 @@ verify_all_build_targets() {
 ################################################################################
 # Build / packaging
 
+# $1 : (optional) additional config path level.
+# $2 : (optional) additional options for configure.
 build_working_tree_in_tree() {
-   local -r cpath="${WKSPC}/in_working_tree"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r cpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r cpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
    print_title     "in working tree : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'in working tree' "${SRCDIR}" "${cpath}"
 
    [ -d "${SRCDIR}/DESTDIR" ] && cmd ${RM} -rf "${SRCDIR}/DESTDIR"
-   [ -f "${SRCDIR}/${DISTDIR}.tar.gz" ] && cmd ${MV} "${SRCDIR}/${DISTDIR}.tar.gz" "${WKSPC}"
+   [ -f "${SRCDIR}/${DISTDIR}.tar.gz" ] && cmd ${MV} "${SRCDIR}/${DISTDIR}.tar.gz" "${cpath}"
 }
 
+# $1 : (optional) additional config path level.
+# $2 : (optional) additional options for configure.
 build_working_tree_vpath() {
-   local -r cpath="${WKSPC}/working_tree_vpath"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r cpath="${WKSPC}/working_tree_vpath/$1"
+      shift
+   else
+      local -r cpath="${WKSPC}/working_tree_vpath"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    local -r vpath="${cpath}/vpath"
    [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
 
    print_title     "working tree VPATH : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "${CONFIGURE}" "${vpath}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${CONFIGURE}" "${vpath}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'working tree VPATH' "${vpath}" "${cpath}"
 }
 
 build_tarball_in_tree() {
-   local -r cpath="${WKSPC}/tarball_in_tree"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r   cpath="${WKSPC}/tarball_in_tree/$1"
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r   cpath="${WKSPC}/tarball_in_tree"
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
 
    print_title     "tarball in tree : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'tarball in tree' "${cpath}/${DISTDIR}" "${cpath}"
 }
 
 build_tarball_vpath() {
-   local -r cpath="${WKSPC}/tarball_vpath"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r   cpath="${WKSPC}/tarball_vpath/$1"
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r   cpath="${WKSPC}/tarball_vpath"
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    local -r vpath="${cpath}/vpath"
    [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
 
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
 
    print_title     "tarball VPATH : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "${cpath}/${DISTDIR}/configure" "${vpath}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${cpath}/${DISTDIR}/configure" "${vpath}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'tarball VPATH' "${vpath}" "${cpath}"
@@ -2076,9 +2128,16 @@ verify_copyrights() {
 
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
+   if [ $# -gt 0 ]; then
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
@@ -2112,12 +2171,36 @@ main() {
 
    open_log "${WKSPC}"
 
-   build_working_tree_in_tree
-   build_working_tree_vpath
-   build_tarball_in_tree
-   build_tarball_vpath
+   if [ "${SRCDIR##*/}" = aalkernel ]; then
+      build_working_tree_in_tree dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_working_tree_in_tree dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_working_tree_in_tree dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_working_tree_in_tree dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
 
-   verify_copyrights
+      build_working_tree_vpath   dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_working_tree_vpath   dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_working_tree_vpath   dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_working_tree_vpath   dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      build_tarball_in_tree      dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_tarball_in_tree      dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_tarball_in_tree      dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_tarball_in_tree      dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      build_tarball_vpath        dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_tarball_vpath        dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_tarball_vpath        dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_tarball_vpath        dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      verify_copyrights dbg0asrt0
+   else
+      build_working_tree_in_tree
+      build_working_tree_vpath
+      build_tarball_in_tree
+      build_tarball_vpath
+
+      verify_copyrights
+   fi
 
    return 0
 }
