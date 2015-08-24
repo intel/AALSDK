@@ -682,28 +682,28 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    }
 
    if ( 0 == strcmp(test.c_str(), "SW") ) {
-      fprintf(fp, "      <NOTICE>    = --poll      OR --p,           Polling-method,                                 ");
+      fprintf(fp, "      <NOTICE>    = --poll            OR --p,     Polling-method,                                 ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
          fprintf(fp, "yes\n");
       } else {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.poll);
       }
 
-      fprintf(fp, "                  = --csr-write OR --cw,          CSR Write,                                      ");
+      fprintf(fp, "                  = --csr-write       OR --cw,    CSR Write,                                      ");
 	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_CSR_WRITE) ) {
 	     fprintf(fp, "yes\n");
 	  } else {
 	     fprintf(fp, "Default=%s\n", nlbcl->defaults.csr_write);
 	  }
 
-	  fprintf(fp, "                  = --umsg-data OR --ud,          UMsg with data,                                 ");
+	  fprintf(fp, "                  = --umsg-data       OR --ud,    UMsg with data,                                 ");
 	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA) ) {
 		 fprintf(fp, "yes\n");
 	  } else {
 		 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_data);
 	  }
 
-	  fprintf(fp, "                  = --umsg-hint OR --uh,          UMsg Hint without data,                         ");
+	  fprintf(fp, "                  = --umsg-hint       OR --uh,    UMsg Hint without data,                         ");
 	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT) ) {
 		 fprintf(fp, "yes\n");
 	  } else {
