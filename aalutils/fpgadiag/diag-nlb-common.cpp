@@ -49,7 +49,7 @@ static int
 nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
 
-   if ( 0 == strcmp("--help", option) ) {
+   if ( 0 == strcmp("--help", option) || 0 == strcmp("--h", option)) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HELP);
    } else if ( 0 == strcmp("--version", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VERSION);
@@ -500,23 +500,23 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	cin >> test;
    fprintf(fp, "Usage:\n");
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
       fprintf(fp, "   --mode=lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "READ") ) {
-      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "WRITE") ) {
-      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
+      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
+      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "   --mode=trput <TARGET> [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "   --mode=sw <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
    }
 
    fprintf(fp, "\n\n");
 
    fprintf(fp, "      <TARGET>    = --target=one of { fpga ase swsim } OR --t=one of { fpga ase swsim }\n");
-   if ( 0 != strcmp(test.c_str(), "LPBK1") &&
-		0 != strcmp(test.c_str(), "SW")) {
+   if ( 0 != strcasecmp(test.c_str(), "LPBK1") &&
+		0 != strcasecmp(test.c_str(), "SW")) {
       fprintf(fp, "      <BANDWIDTH> = --no-bw,                      suppress bandwidth calculations,                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.nobw);
@@ -541,8 +541,8 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
    }
 
-   if ( 0 == strcmp(test.c_str(), "READ") ||
-        0 == strcmp(test.c_str(), "WRITE") ) {
+   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+        0 == strcasecmp(test.c_str(), "WRITE") ) {
       fprintf(fp, "      <FPGA-CACHE>= --warm-fpga-cache OR --wfc,   attempt to prime the cache with hits,           ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE) ) {
          fprintf(fp, "yes\n");
@@ -565,10 +565,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "WRITE") ||
-        0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <WRITES>    = --wt,                         write-through cache behavior,                   ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WT) ) {
          fprintf(fp, "on\n");
@@ -584,11 +584,11 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
 	  fprintf(fp, "      <CONT>                   (LPBK1 is a non-continuous mode-only test)                         off\n");
-   } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "      <CONT>                   (TRPUT is a continuous mode-only test)                             on\n");
-   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
 	  fprintf(fp, "      <CONT>                   (SW is a non-continuous mode-only test)                            off\n");
    } else {
       fprintf(fp, "      <CONT>      = --cont,                       continuous mode,                                ");
@@ -601,9 +601,9 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 
    fprintf(fp, "      <FREQ>      = --clock-freq=T    OR --f=T,   Clock frequency in Hz,                          Default=200 MHz\n");
 
-   if ( 0 == strcmp(test.c_str(), "READ") ||
-	    0 == strcmp(test.c_str(), "WRITE") ||
-	    0 == strcmp(test.c_str(), "TRPUT") ) {
+   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+	    0 == strcasecmp(test.c_str(), "WRITE") ||
+	    0 == strcasecmp(test.c_str(), "TRPUT") ) {
 
 	   fprintf(fp, "      <TIMEOUT>   = --timeout-nsec=T  OR --tn=T,  timeout for --cont mode (nanoseconds portion),  ");
 	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC) ) {
@@ -655,10 +655,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	  fprintf(fp, "Default=%s\n", nlbcl->defaults.suppresshdr);
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "READ")  ||
-        0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "READ")  ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <RDSEL>     = --rds,                        readline-shared,                                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDS) ) {
          fprintf(fp, "yes\n");
@@ -681,7 +681,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	 }
    }
 
-   if ( 0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <NOTICE>    = --poll            OR --p,     Polling-method,                                 ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
          fprintf(fp, "yes\n");
