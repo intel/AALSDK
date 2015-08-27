@@ -1,0 +1,41 @@
+Please check the line numbers in doc/output/test.sh before editing this file. change line numbers accordingly.
+<-------(line 3-13)Error message for executables not built---->  
+///<B>
+///****** OUTPUT NOT CREATED *******
+///
+///****** Executable not built *****
+///
+///********* Refer to Installation Guide *********
+///****** to learn how to built executables ******
+///
+///
+///
+///</B>
+
+<------(line16-26)Error message for HelloAAl app if return value is non Zero
+///<B>
+///
+///****** OUTPUT NOT CREATED *******
+///
+///****** Wrong Executable built *****
+///
+///****** Did You source ld_library_path ******
+///
+///********* Refer to Installation Guide *********
+///****** to learn how to built executables ******
+///</B>
+
+<-----(line29-40) Error message general if return value is non Zero
+///<B>
+///
+///****** OUTPUT NOT CREATED *******
+///
+///****** Wrong Executable built *****
+///
+///********* Refer to Installation Guide *********
+///****** to learn how to built executables ******
+///
+///
+///
+///</B>
+

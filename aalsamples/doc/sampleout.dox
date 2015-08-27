@@ -1,0 +1,165 @@
+/// @addtogroup HelloAALout
+///@{
+//! <pre>
+///====================
+///= Hello AAL Sample =
+///====================
+///HelloAAL.cpp:301:run() : Allocating Service.
+///HelloAAL.cpp:330:serviceAllocated() : Service Allocated.
+///HelloAALService.cpp:164:Hello() : Received a hello from 'the Application'. Saying hello back.
+///HelloAAL.cpp:360:HelloApp() : AAL says Hello Back .
+///HelloAAL.cpp:353:serviceReleased() : Service Released.
+///HelloAAL.cpp:182:runtimeStopped() : Runtime stopped.
+///HelloAAL.cpp:396:main() : Done.
+//! <pre>
+/// @}  
+
+/// @addtogroup HelloSPLLBout
+/// @{
+//! <pre>
+///=======================
+///= Hello SPL LB Sample =
+///=======================
+///HelloSPLLB.cpp:388:run() : Allocating Service
+///HelloSPLLB.cpp:568:serviceAllocated() : Service Allocated
+///HelloSPLLB.cpp:616:OnWorkspaceAllocated() : Got Workspace
+///HelloSPLLB.cpp:407:run() : Running Test
+///HelloSPLLB.cpp:413:run() : Allocated 8388736-byte Workspace at virtual address 0x7fbcf40008c0
+///HelloSPLLB.cpp:1bf:run() : VAFU2 Context=0x7fbcf40008c0 Src=0x7fbcf4000940 Dest=0x7fbcf4400940
+///HelloSPLLB.cpp:450:run() : Cache lines in each buffer=65536 (bytes=4194304 0x400000)
+///HelloSPLLB.cpp:453:run() : Initializing buffers with fixed data pattern. (src=0xafafafaf dest=0xbebebebe)
+///HelloSPLLB.cpp:467:run() : Starting SPL Transaction with Workspace
+///HelloSPLLB.cpp:648:OnTransactionStarted() : Transaction Started
+///HelloSPLLB.cpp:495:run() : Stopping SPL Transaction
+///HelloSPLLB.cpp:684:OnTransactionStopped() : Transaction Stopped
+///HelloSPLLB.cpp:498:run() : SPL Transaction complete
+///HelloSPLLB.cpp:510:run() : Verifying buffers in workspace
+///HelloSPLLB.cpp:543:run() : Workspace verification complete, freeing workspace.
+///HelloSPLLB.cpp:630:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloSPLLB.cpp:593:serviceReleased() : Service Freed
+///HelloSPLLB.cpp:211:runtimeStopped() : Runtime stopped
+///HelloSPLLB.cpp:738:main() : Done
+//! <pre>
+/// @}
+
+/// @addtogroup HelloCCINLBout
+/// @{
+//! <pre>
+///========================
+///= Hello CCI NLB Sample =
+///========================
+///HelloCCINLB.cpp:404:run() : Allocating Service
+///HelloCCINLB.cpp:515:serviceAllocated() : Service Allocated
+///HelloCCINLB.cpp:560:OnWorkspaceAllocated() : Got DSM
+///HelloCCINLB.cpp:567:OnWorkspaceAllocated() : Got Input Workspace
+///HelloCCINLB.cpp:577:OnWorkspaceAllocated() : Got Output Workspace
+///HelloCCINLB.cpp:422:run() : Running Test
+///HelloCCINLB.cpp:469:run() : Done Running Test
+///HelloCCINLB.cpp:479:run() : Output matches Input!
+///HelloCCINLB.cpp:601:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:601:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:601:OnWorkspaceFreed() : OnWorkspaceFreed
+///HelloCCINLB.cpp:534:serviceReleased() : Service Released
+///HelloCCINLB.cpp:229:runtimeStopped() : Runtime stopped
+///HelloCCINLB.cpp:645:main() : Done
+//! <pre>
+/// @} 
+/// @addtogroup SudokuSPLOut
+/// @{
+//! <pre>
+///=======================
+///= Hello SPL LB Sample =
+///=======================
+///Sudoku_SPL.cpp:695:run() : Allocating Service
+///[APP] ASE Session Directory located at =>
+////nfs/site/disks/atp.02/tekubas/aalsdk_06_25_15/aalsdk-4.1.7/ase/work/
+///[APP] Initializing simulation session ... DONE
+///[APP] Session started
+///[APP] Creating CSR map...
+///[APP] Attempting to open a shared memory... SUCCESS
+///[APP] Attempting to open a shared memory... SUCCESS
+///[APP] Issuing SPL Reset
+///[APP] CSR Write #1 : offset = 0x1010, data = 0x00000001
+///[APP] CSR Write #2 : offset = 0x1010, data = 0x00000000
+///[APP] CSR Write #3 : offset = 0x1004, data = 0x00000020
+///[APP] CSR Write #4 : offset = 0x1000, data = 0x5c200000
+///*** SPL ID 0 0 0 11100101***
+///Polling AFU_ID...
+///[APP] CSR Write #5 : offset = 0x8a04, data = 0x00000020
+///[APP] CSR Write #6 : offset = 0x8a00, data = 0x5c200000
+///*** AFU_ID 5da62813 9a754228 8fdb5d40 6dd55ce***
+///Sudoku_SPL.cpp:262:runtimeAllocateServiceSucceeded() : Runtime Allocate Service Succeeded
+///Sudoku_SPL.cpp:898:serviceAllocated() : Service Allocated
+///[APP] Attempting to open a shared memory... SUCCESS
+///APP-C: Building SPL page table and context
+///AFU CXT size = 0x880 bytes | Number of 2 MB chunks = 1
+///[APP] Attempting to open a shared memory... SUCCESS
+///[APP] Attempting to open a shared memory... SUCCESS
+///Sudoku_SPL.cpp:714:run() : Running Test
+///nPuzzles=95
+///done with malloc
+///got puzzles
+///3 ? ? ? 8 ? ? ? ?
+///? ? ? 7 ? ? ? ? 5
+///1 ? ? ? ? ? ? ? ?
+///? ? ? ? ? ? 3 6 ?
+///? ? 2 ? ? 4 ? ? ?
+///? 7 ? ? ? ? ? ? ?
+///? ? ? ? 6 ? 1 3 ?
+///? 4 5 2 ? ? ? ? ?
+///? ? ? ? ? ? 8 ? ?
+///[APP] Issuing SPL Reset
+///[APP] CSR Write #7 : offset = 0x1010, data = 0x00000001
+///[APP] CSR Write #8 : offset = 0x1010, data = 0x00000000
+///[APP] CSR Write #9 : offset = 0x1004, data = 0x00000020
+///[APP] CSR Write #10 : offset = 0x1000, data = 0x5c200000
+///*** SPL ID 0 0 0 11100101***
+///Polling AFU_ID...
+///[APP] CSR Write #11 : offset = 0x8a04, data = 0x00000020
+///[APP] CSR Write #12 : offset = 0x8a00, data = 0x5c200000
+///*** AFU_ID 5da62813 9a754228 8fdb5d40 6dd55ce***
+///APP-C : Starting SPL ... [APP] CSR Write #13 : offset = 0x100c, data = 0x00000027
+///[APP] CSR Write #14 : offset = 0x1008, data = 0x32000000
+///[APP] CSR Write #15 : offset = 0x8a0c, data = 0x00002aaa
+///[APP] CSR Write #16 : offset = 0x8a08, data = 0xacd0f000
+///[APP] CSR Write #17 : offset = 0x1010, data = 0x00000002
+///DONE
+///SW:
+///3 5 4 1 8 6 9 2 7
+///2 9 8 7 4 3 6 1 5
+///1 6 7 9 5 2 4 8 3
+///4 8 1 5 2 7 3 6 9
+///9 3 2 6 1 4 5 7 8
+///5 7 6 3 9 8 2 4 1
+///7 2 9 8 6 5 1 3 4
+///8 4 5 2 3 1 7 9 6
+///6 1 3 4 7 9 8 5 2
+///HW:
+///3 5 4 1 8 6 9 2 7
+///2 9 8 7 4 3 6 1 5
+///1 6 7 9 5 2 4 8 3
+///4 8 1 5 2 7 3 6 9
+///9 3 2 6 1 4 5 7 8
+///5 7 6 3 9 8 2 4 1
+///7 2 9 8 6 5 1 3 4
+///8 4 5 2 3 1 7 9 6
+///6 1 3 4 7 9 8 5 2
+///[APP] APP-C : Stopping SPL [APP] CSR Write #18 : offset = 0x1010, data = 0x00000000
+///[APP] Issuing SPL Reset
+///[APP] CSR Write #19 : offset = 0x1010, data = 0x00000001
+///[APP] CSR Write #20 : offset = 0x1010, data = 0x00000000
+///[APP] Deallocating memory region /buf2.3474870375751497521 ...SUCCESS
+///[APP] Deallocating memory region /buf1.3474870375751497521 ...SUCCESS
+///[APP] Deallocating CSR map
+///[APP] Deallocating memory region /csr.3474870375751497521 ...SUCCESS
+///[APP] Deinitializing simulation session ...  DONE
+///[APP] Session ended
+///Sudoku_SPL.cpp:924:serviceFreed() : Service Freed
+///Sudoku_SPL.cpp:240:runtimeStopped() : Runtime stopped
+///Sudoku_SPL.cpp:1042:main() : Done
+//! <pre>
+/// @} 
+
+
+
+
