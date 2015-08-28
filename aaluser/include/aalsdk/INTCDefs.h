@@ -71,6 +71,7 @@
 #define __INTC_ExTranEvt(sys, Num)   AAL_ExceptionTransactionEvent( AAL_vendINTC, (sys), (Num))
 #define __INTC_ErrNum(sys, Num)      AAL_ExceptionCode( AAL_vendINTC, (sys), (Num))
 #define __INTC_ReasCode(sys, Num)    AAL_ReasonCode( AAL_vendINTC, (sys), (Num))
+#define __INTC_RegistrarKey(sys,Num) AAL_RegistrarKey( AAL_vendINTC, (sys), (Num))
 
 /// CAASBase interface id.
 #define iidCBase                     __INTC_IID(AAL_sysAAL, 0x0001)
@@ -101,6 +102,7 @@
 #define  INTC_sysFSBV1AIA              INTC_sysBase(0x0004)    // FSB Version 1.0 AIA
 
 #define  INTC_sysSampleAFU             INTC_sysBase(0x0005)    // Sample AFU
+#define  INTC_sysAFULinkInterface      INTC_sysBase(0x0006)    // AFU Link Interface & derivatives
 
 #define  INTC_sysNext                  0x0009
 
