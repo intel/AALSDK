@@ -119,20 +119,21 @@ public:
       (m_That->*m_ptr)(m_rtid);
    }
 
-   virtual void  operator()()
+   virtual void operator()()
    {
       (m_That->*m_ptr)(m_rtid);
    }
 
 protected:
-   T             *m_That;
-   void          (T::*m_ptr)(TransactionID const &);
+   T                  *m_That;
+   void           (T::*m_ptr)(TransactionID const &);
    TransactionID const m_rtid;
 };
 
 
 //=============================================================================
-///  ServiceBase Interface used for framework operations not intended to be
+/// @interface IServiceBase
+/// @brief ServiceBase Interface used for framework operations not intended to be
 ///  exposed to users.
 ///
 ///   The ServiceBase class is intended to be inherited by AAL Services.
@@ -141,11 +142,13 @@ protected:
 class AASLIB_API IServiceBase
 {
 public:
-   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT) =0;
+   virtual ~IServiceBase() {}
+   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT) = 0;
 };
 
 //=============================================================================
-///   Base class for software-based AAL Services.
+/// @interface ServiceBase
+/// @brief Base class for software-based AAL Services.
 ///
 ///   The ServiceBase class is intended to be inherited by AAL Services.
 ///   The purpose is to provide the canonical implementation for the Service.
@@ -161,11 +164,11 @@ public:
 /// @param[in]  C  The name of the class being constructed.
 /// @param[in]  P  The name of the parent class being implemented, ie ServiceBase, DeviceServiceBase, etc.
 #define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AALServiceModule *container,                             \
-                                                AAL::IRuntime         *pAALRUNTIME,                            \
+                                                AAL::IRuntime         *pAALRUNTIME,                           \
                                                 AAL::IAALTransport    *ptransport   = NULL,                   \
                                                 AAL::IAALMarshaller   *marshaller   = NULL,                   \
                                                 AAL::IAALUnMarshaller *unmarshaller = NULL) : P(container,    \
-                                                                                                pAALRUNTIME,   \
+                                                                                                pAALRUNTIME,  \
                                                                                                 ptransport,   \
                                                                                                 marshaller,   \
                                                                                                 unmarshaller)
@@ -197,11 +200,11 @@ public:
    ///  AFTER completing their Release() implementation to insure proper clean-up
    /// @param[in] rTranID TransactionID if not atomic
    /// @param[in] timeout Timeout
-   virtual btBool Release(TransactionID const &rTranID, btTime timeout = AAL_INFINITE_WAIT);
+   virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
    // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
    //   This function destroys the Service object.
-   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
+   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
    // </IAALService>
 
@@ -212,8 +215,7 @@ public:
    ///               after a call to Runtime() or getRuntimeProxy().
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent) {};
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const & ) {/*to be implemented by the service*/}
 
 
    /// @brief     Called by a Runtime object to indicate that it started successfully
@@ -223,17 +225,15 @@ public:
    ///               Runtime.start() was called.
    /// @param[in] rConfigParms Copy of the configuration parameters passed in to
    ///               Runtime.start() call.
-   /// @return    void
-   virtual void runtimeStarted(IRuntime            *pRuntime,
-                               const NamedValueSet &rConfigParms) {};
+   virtual void runtimeStarted(IRuntime            * ,
+                               const NamedValueSet & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it has stopped successfully
    ///               after a call to Runtime.stop()
    /// @param[in] pRuntime Pointer to the Runtime object that is calling back
    ///               indicating that it has stopped successfully after
    ///               Runtime.stop() was called.
-   /// @return    void
-   virtual void runtimeStopped(IRuntime *pRuntime){};
+   virtual void runtimeStopped(IRuntime * ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to start
    ///               successfully after a call to Runtime.start().
@@ -242,8 +242,7 @@ public:
    ///               allocated will still need to be freed.
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeStartFailed(const IEvent &rEvent){};
+   virtual void runtimeStartFailed(const IEvent & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to stop
    ///               successfully after a call to Runtime.stop().
@@ -252,16 +251,14 @@ public:
    ///
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeStopFailed(const IEvent &rEvent){};
+   virtual void runtimeStopFailed(const IEvent & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully allocate a service after a call to
    ///               Runtime.allocService().
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeAllocateServiceFailed( IEvent const &rEvent){};
+   virtual void runtimeAllocateServiceFailed(IEvent const & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it
    ///               successfully allocated a service after a call to
@@ -277,7 +274,6 @@ public:
    ///               Release() will need to be called.
    /// @param[in] rTranID is reference to the TransactionID that was passed to
    ///               Runtime.allocService().
-   /// @return    void
    ///
    /// @code
    /// void runtimeAllocateServiceSucceeded( IBase *pServiceBase,
@@ -293,15 +289,14 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void runtimeAllocateServiceSucceeded( IBase               *pServiceBase,
-                                                 TransactionID const &rTranID){};
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to pass exceptions and other
    ///               unsolicited messages.
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
-   /// @return    void
-   virtual void runtimeEvent(const IEvent &rEvent){};
+   virtual void runtimeEvent(const IEvent & ) {/*to be implemented by the service*/}
    // </IRuntimeClient>
 
    // @param[in]  pclient       Interface of client of service.
@@ -323,20 +318,9 @@ public:
    virtual void init(TransactionID const &rtid) = 0;
 
 #if DEPRECATED
-   // TODO
-   virtual void   Destroy(void){}
-#endif // DEPRECATED
-
-   //
    // IServiceClient - For backward compatibility with < version 4.0
    void messageHandler(const IEvent &rEvent);
-
-   // Accessors for marshalers and transport
-   IAALMarshaller   & marshall()   { return *m_pmarshaller;   }
-   IAALUnMarshaller & unmarshall() { return *m_punmarshaller; }
-   IAALTransport    & recvr()      { return *m_ptransport;    }
-   IAALTransport    & sender()     { return *m_ptransport;    }
-
+#endif // DEPRECATED
 
    //=============================================================================
    // Name: sendmsg
@@ -367,7 +351,7 @@ public:
    //           container
    //=============================================================================
    // TODO
-   virtual void processmsg() {}
+   virtual void processmsg() {/*to be implemented by the service*/}
 
    //=============================================================================
    // Name: startMDS
@@ -376,20 +360,20 @@ public:
    //
    // Comments: Used by objects that implement asynchronous message delivery.
    //           This starts a thread that continuously polls the receiver and
-   //           when a message is available calls proceemsg().
+   //           when a message is available calls processmsg().
    //=============================================================================
    virtual btBool startMDS();
-
-   //=============================================================================
-   // Name: MessageSeliveryThread
-   // Description: polls message queue and  dispatches
-   //=============================================================================
-   static void _MessageDeliveryThread(OSLThread *pThread, void *pContext);
-   void MessageDeliveryThread();
 
    //--------------------------------------------------
    //                   Utilities
    //--------------------------------------------------
+
+   // Accessors for marshalers and transport
+   IAALMarshaller   &   marshall();
+   IAALUnMarshaller & unmarshall();
+   IAALTransport    &      recvr();
+   IAALTransport    &     sender();
+
    btBool HasMarshaller()   { return NULL != m_pmarshaller;   }
    btBool HasUnMarshaller() { return NULL != m_punmarshaller; }
    btBool HasTransport()    { return NULL != m_ptransport;    }
@@ -427,12 +411,16 @@ public:
    // Accessor to this Services Service Module
    AALServiceModule     * pAALServiceModule()    { return m_pcontainer; }
 
-
-   void Released();
-
 protected:
    // operator= not allowed
    ServiceBase & operator = (const ServiceBase & );
+
+   //=============================================================================
+   // Name: MessageDeliveryThread
+   // Description: polls message queue and dispatches
+   //=============================================================================
+   static void _MessageDeliveryThread(OSLThread *pThread, void *pContext);
+   void MessageDeliveryThread();
 
    //=============================================================================
    // Name: initComplete
@@ -440,18 +428,20 @@ protected:
    //=============================================================================
    void initComplete(TransactionID const &rtid);
 
-   NamedValueSet                     m_optArgs;
-   IRuntimeClient                   *m_RuntimeClient;
-   IRuntime                         *m_Runtime;
-   IServiceClient                   *m_pclient;
-   IBase                            *m_pclientbase;
-   AALServiceModule                 *m_pcontainer;
-   IAALTransport                    *m_ptransport;
-   IAALMarshaller                   *m_pmarshaller;
-   IAALUnMarshaller                 *m_punmarshaller;
-   btBool                            m_runMDT;
-   OSLThread                        *m_pMDT;
-   };
+   void Released();
+
+   IRuntimeClient    *m_RuntimeClient;
+   IRuntime          *m_Runtime;
+   IServiceClient    *m_pclient;
+   IBase             *m_pclientbase;
+   AALServiceModule  *m_pcontainer;
+   IAALTransport     *m_ptransport;
+   IAALMarshaller    *m_pmarshaller;
+   IAALUnMarshaller  *m_punmarshaller;
+   btBool             m_runMDT;
+   OSLThread         *m_pMDT;
+   NamedValueSet      m_optArgs;
+};
 
 
 // Standard messsage keys
