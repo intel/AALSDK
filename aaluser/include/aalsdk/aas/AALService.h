@@ -374,29 +374,31 @@ public:
    IAALTransport    &      recvr();
    IAALTransport    &     sender();
 
-   btBool HasMarshaller()   { return NULL != m_pmarshaller;   }
-   btBool HasUnMarshaller() { return NULL != m_punmarshaller; }
-   btBool HasTransport()    { return NULL != m_ptransport;    }
+   btBool          HasMarshaller() const;
+   btBool        HasUnMarshaller() const;
+   btBool           HasTransport() const;
 
-   // Hook to allow Services to expose parameters. Default is not supported
-   virtual btBool SetParms(NamedValueSet const &rparms){return false;}
+   // Hook to allow Services to expose parameters.
+   // Default is to not support parameters (Services can override to implement parameters).
+   virtual btBool SetParms(NamedValueSet const & ) { return false; }
 
    /// Accessor to optional arguments passed during allocateService
-   ///
-   NamedValueSet const        &OptArgs()     { return m_optArgs;        }
+   NamedValueSet const &        OptArgs() const;
 
    /// Accessor to pointer to the Service's Client's Interface
-   IServiceClient * Client()      { return m_pclient;        }
+   IServiceClient *              Client() const;
 
    /// Accessor to pointer to the Service's Client's IBase Interface
-   IBase *          ClientBase()  { return m_pclientbase;    }
+   IBase *                   ClientBase() const;
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
-   ///
-   IRuntime * getRuntime() { return m_Runtime; }
+   IRuntime *                getRuntime() const;
 
    /// Accessor to pointer to the Runtime Client
-   IRuntimeClient * getRuntimeClient() { return m_RuntimeClient; }
+   IRuntimeClient *    getRuntimeClient() const;
+
+   /// Accessor to this Services Service Module
+   AALServiceModule * pAALServiceModule() const;
 
    //---------------------------------
    //  Accessors to utility functions
@@ -406,10 +408,6 @@ public:
    void allocService(IBase                  *pClient,
                      NamedValueSet const    &rManifest = NamedValueSet(),
                      TransactionID const    &rTranID   = TransactionID());
-
-
-   // Accessor to this Services Service Module
-   AALServiceModule     * pAALServiceModule()    { return m_pcontainer; }
 
 protected:
    // operator= not allowed

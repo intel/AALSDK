@@ -313,30 +313,21 @@ void ServiceBase::MessageDeliveryThread()
    }
 }
 
-IAALMarshaller & ServiceBase::marshall()
-{
-   AutoLock(this);
-   return *m_pmarshaller;
-}
+IAALMarshaller &     ServiceBase::marshall() { AutoLock(this); return *m_pmarshaller;   }
+IAALUnMarshaller & ServiceBase::unmarshall() { AutoLock(this); return *m_punmarshaller; }
+IAALTransport &         ServiceBase::recvr() { AutoLock(this); return *m_ptransport;    }
+IAALTransport &        ServiceBase::sender() { AutoLock(this); return *m_ptransport;    }
 
-IAALUnMarshaller & ServiceBase::unmarshall()
-{
-   AutoLock(this);
-   return *m_punmarshaller;
-}
+btBool   ServiceBase::HasMarshaller()  const { AutoLock(this); return NULL != m_pmarshaller;   }
+btBool ServiceBase::HasUnMarshaller()  const { AutoLock(this); return NULL != m_punmarshaller; }
+btBool    ServiceBase::HasTransport()  const { AutoLock(this); return NULL != m_ptransport;    }
 
-IAALTransport & ServiceBase::recvr()
-{
-   AutoLock(this);
-   return *m_ptransport;
-}
-
-IAALTransport & ServiceBase::sender()
-{
-   AutoLock(this);
-   return *m_ptransport;
-}
-
+NamedValueSet const &        ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;       }
+IServiceClient *              ServiceBase::Client() const { AutoLock(this); return m_pclient;       }
+IBase *                   ServiceBase::ClientBase() const { AutoLock(this); return m_pclientbase;   }
+IRuntime *                ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;       }
+IRuntimeClient *    ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient; }
+AALServiceModule * ServiceBase::pAALServiceModule() const { AutoLock(this); return m_pcontainer;    }
 
 void ServiceBase::allocService(IBase                  *pClient,
                                NamedValueSet const    &rManifest,
@@ -347,6 +338,7 @@ void ServiceBase::allocService(IBase                  *pClient,
 
 void ServiceBase::Released()
 {
+   AutoLock(this);
    // Mark as not OK before deleting self or it will recurse Releasing
    m_bIsOK = false;
    m_pcontainer->ServiceReleased(this);
