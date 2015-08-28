@@ -1,41 +1,41 @@
 Please check the line numbers in doc/output/test.sh before editing this file. change line numbers accordingly.
 <-------(line 3-13)Error message for executables not built---->  
 ///<B>
-///****** OUTPUT NOT CREATED *******
-///
-///****** Executable not built *****
-///
-///********* Refer to Installation Guide *********
-///****** to learn how to built executables ******
-///
-///
-///
+///******                                                  ******
+///******               OUTPUT NOT CREATED                 ******
+///******                                                  ******
+///******         Executable has not been built.           ****** 
+///******                                                  ******
+///******    Please refer to the Installation Guide for    ******
+///****** instructions on how to build the SDK and Samples ******
+///******      and set up the execution environment.       ******
+///******                                                  ******
 ///</B>
 
-<------(line16-26)Error message for HelloAAl app if return value is non Zero
+<------(line16-26)Error message if error seen during execution of Hello_AAL, requiring ld_library_path
 ///<B>
-///
-///****** OUTPUT NOT CREATED *******
-///
-///****** Wrong Executable built *****
-///
-///****** Did You source ld_library_path ******
-///
-///********* Refer to Installation Guide *********
-///****** to learn how to built executables ******
+///******               OUTPUT NOT CREATED                 ******
+///******                                                  ******
+///******          ERROR found during execution            ****** 
+///******                                                  ******
+///******         Did you source ld_library_path?          ******
+///******                                                  ******
+///******    Please refer to the Installation Guide for    ******
+///****** instructions on how to build the SDK and Samples ******
+///******      and set up the execution environment.       ******
 ///</B>
 
 <-----(line29-40) Error message general if return value is non Zero
 ///<B>
-///
-///****** OUTPUT NOT CREATED *******
-///
-///****** Wrong Executable built *****
-///
-///********* Refer to Installation Guide *********
-///****** to learn how to built executables ******
-///
-///
-///
+///******                                                  ******
+///******                                                  ******
+///******               OUTPUT NOT CREATED                 ******
+///******                                                  ******
+///******          ERROR found during execution            ****** 
+///******                                                  ******
+///******    Please refer to the Installation Guide for    ******
+///****** instructions on how to build the SDK and Samples ******
+///******      and set up the execution environment.       ******
+///******                                                  ******
 ///</B>
 
