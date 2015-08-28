@@ -146,7 +146,7 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
    struct cciv4_PIPsession   *pSess = NULL;
    struct cciv4_device       *pdev = NULL;
    unsigned long              max_length = 0; // mmap length requested by user
-   int res =                 -EINVAL;
+   int                        res = -EINVAL;
 
    ASSERT(pownerSess);
    ASSERT(wsidp);
