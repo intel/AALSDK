@@ -58,6 +58,7 @@ using namespace AAL;
 // Interface: IHelloAALService
 // Comments:
 //=============================================================================
+/// @brief Simple AAL Service
 class HelloAALService : public ServiceBase, public IHelloAALService
 {
 public:
