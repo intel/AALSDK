@@ -157,6 +157,8 @@ void HelloAALService::init(TransactionID const &TranID)
 // Outputs: none.
 // Comments:
 //=============================================================================
+///@ brief Ping method send 5 replies
+/// @param[in] sMessage  Message to send
 void HelloAALService::Hello(btcString sMessage, TransactionID const &rTranID)
 {
    AutoLock(this);
