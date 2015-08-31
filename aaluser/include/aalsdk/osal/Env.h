@@ -45,7 +45,8 @@
 #include <aalsdk/CUnCopyable.h>
 
 BEGIN_NAMESPACE(AAL)
-
+/// @addtogroup OSAL
+/// @{
 //=============================================================================
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
@@ -56,32 +57,32 @@ public:
    virtual ~Environment() {}
 
    //=============================================================================
-   /// GetObj
+   // GetObj
    /// Get instance of the Environment class
    /// @returns pointer to instance of Environment class
-   /// Comments:
+   // Comments:
    //=============================================================================
    static Environment * GetObj();
 
    //=============================================================================
-   /// ReleaseObj
+   // ReleaseObj
    /// Release instance of the Environment class
-   /// Comments:
+   // Comments:
    //=============================================================================
    static void ReleaseObj();
 
    //=============================================================================
-   /// Get
+   // Get
    /// Get the value of a variable
    /// @param[in] var - variable to query
    /// @param[in] val - reference variable to get the value
    /// @returns true - success.
-   /// Comments:
+   // Comments:
    //=============================================================================
    btBool Get(std::string var, std::string &val);
 
    //=============================================================================
-   ///  Set
+   //  Set
    ///  Set the value of a variable
    /// @param[in] var - variable to query
    /// @param[in] val - value to set it to
@@ -104,3 +105,4 @@ END_NAMESPACE(AAL)
 
 #endif // __AALSDK_OSAL_ENV_H__
 
+/// @}
