@@ -70,10 +70,6 @@
    /// @ingroup Sampleout
    /// @brief Sample output of the HelloSPLLBout application
 
-   /// @defgroup SudokuSPLOut Sudoku SPL Sample Application outputs
-   /// @ingroup Sampleout
-   /// @brief Sample output of the SudokuSPL application
-
 
 /**
 @mainpage
@@ -96,7 +92,6 @@
       <li>@ref HelloAALout "Hello_AAL_OUTPUT "</li>
       <li>@ref HelloCCINLBout "Hello_CCI_NLB_OUTPUT "</li>
       <li>@ref HelloSPLLBout "Hello_SPL_LB_OUTPUT "</li>
-      <li>@ref SudokuSPLOut "Sudoku_SPL_OUTPUT"</li>
     </ul>
 </ul> 
 @verbatim
