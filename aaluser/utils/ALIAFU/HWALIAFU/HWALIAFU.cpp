@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HWCCIv3AFU.cpp
-/// @brief Implementation of CCIv3 AFU Hardware Service.
-/// @ingroup HWCCIv3AFU
+/// @file HWALIAFU.cpp
+/// @brief Implementation of ALI AFU Hardware Service.
+/// @ingroup HWALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -50,14 +50,14 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "HWCCIv3AFU.h"
+#include "HWALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup HWCCIv3AFU
+/// @addtogroup HWALIAFU
 /// @{
 
-void HWCCIv3AFU::init(TransactionID const &TranID)
+void HWALIAFU::init(TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
    ASSERT( NULL != pClient );
@@ -79,45 +79,40 @@ void HWCCIv3AFU::init(TransactionID const &TranID)
                                                                          TranID) );
 }
 
-btBool HWCCIv3AFU::Release(TransactionID const &TranID, btTime timeout)
+btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
    return DeviceServiceBase::Release(TranID, timeout);
 }
 
-btBool HWCCIv3AFU::Release(btTime timeout)
-{
-   return DeviceServiceBase::Release(timeout);
-}
-
-void HWCCIv3AFU::WorkspaceAllocate(btWSSize             Length,
+void HWALIAFU::WorkspaceAllocate(btWSSize             Length,
                                    TransactionID const &TranID)
 {
    AutoLock(this);
    WkspcAlloc(Length, TranID);
 }
 
-void HWCCIv3AFU::WorkspaceFree(btVirtAddr           Address,
+void HWALIAFU::WorkspaceFree(btVirtAddr           Address,
                                TransactionID const &TranID)
 {
    AutoLock(this);
    WkspcFree(Address, TranID);
 }
 
-btBool HWCCIv3AFU::CSRRead(btCSROffset CSR,
+btBool HWALIAFU::CSRRead(btCSROffset CSR,
                            btCSRValue *pValue)
 {
    // Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
    return AFUDev().atomicGetCSR(CSR >> 2, pValue);
 }
 
-btBool HWCCIv3AFU::CSRWrite(btCSROffset CSR,
+btBool HWALIAFU::CSRWrite(btCSROffset CSR,
                             btCSRValue  Value)
 {
    // Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
    return AFUDev().atomicSetCSR(CSR >> 2, Value);
 }
 
-btBool HWCCIv3AFU::CSRWrite64(btCSROffset CSR,
+btBool HWALIAFU::CSRWrite64(btCSROffset CSR,
                               bt64bitCSR  Value)
 {
    if ( CSRWrite(CSR + 4, Value >> 32) ) {
@@ -153,16 +148,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::HWCCIv3AFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::HWALIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-HWCCIV3AFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
+HWALIAFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-HWCCIV3AFU_END_SVC_MOD()
+HWALIAFU_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)

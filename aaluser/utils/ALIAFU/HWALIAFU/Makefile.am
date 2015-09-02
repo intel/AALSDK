@@ -27,27 +27,27 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     utils/CCIv3AFU/HWCCIv3AFU/Makefile.am
+##     utils/ALIAFU/HWALIAFU/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
 ##     07/20/2015    TSW   Initial version
 ##******************************************************************************
-lib_LTLIBRARIES=libHWCCIv3AFU.la
+lib_LTLIBRARIES=libHWALIAFU.la
 
-libHWCCIv3AFU_la_SOURCES=\
-HWCCIv3AFU.cpp \
-HWCCIv3AFU.h
+libHWALIAFU_la_SOURCES=\
+HWALIAFU.cpp \
+HWALIAFU.h
 
-libHWCCIv3AFU_la_CPPFLAGS=\
+libHWALIAFU_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include
 
-libHWCCIv3AFU_la_LDFLAGS=\
+libHWALIAFU_la_LDFLAGS=\
 -module \
--version-info $(HWCCIV3AFU_VERSION_CURRENT):$(HWCCIV3AFU_VERSION_REVISION):$(HWCCIV3AFU_VERSION_AGE)
+-version-info $(HWALIAFU_VERSION_CURRENT):$(HWALIAFU_VERSION_REVISION):$(HWALIAFU_VERSION_AGE)
 
-libHWCCIv3AFU_la_LIBADD=\
+libHWALIAFU_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
 $(top_builddir)/aas/AALRuntime/libaalrt.la \

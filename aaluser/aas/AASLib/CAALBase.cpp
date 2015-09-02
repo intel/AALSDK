@@ -286,6 +286,35 @@ EOBJECT CAASBase::SetInterface(btIID              Interface,
 }
 
 //=============================================================================
+// Name: CAASBase::ReplaceInterface
+// Description: Sets an interface pointer on the object.
+// Interface: protected
+// Inputs: Interface - name of the interface to set.
+//         pInterface - Interface pointer. NULL means delete.
+// Outputs: Interface pointer.
+// Comments:
+//=============================================================================
+EOBJECT CAASBase::ReplaceInterface(btIID              Interface,
+                                   btGenericInterface pInterface)
+{
+   AutoLock(this);
+
+   // Make sure there is not an implementation already.
+   if ( !Has(Interface) ) {
+      return EPObjNameNotFound;
+   }
+
+
+   if ( NULL == pInterface ) {
+      m_InterfaceMap.erase(m_InterfaceMap.find(Interface));
+   }else{
+      //Add the interface
+      m_InterfaceMap[Interface] = pInterface;
+   }
+   return EObjOK;
+}
+
+//=============================================================================
 // Name: CAASBase::SetSubClassInterface
 // Description: Sets an interface pointer on the subclass interface for the
 //              object.  This function may only be called once per class.

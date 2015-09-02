@@ -55,6 +55,7 @@
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
+using namespace std;
 using namespace AAL;
 
 #include "HelloAALService.h"      // Service API

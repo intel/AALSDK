@@ -63,9 +63,10 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-// #define  HWAFU
+#define  HWAFU
 // #define  ASEAFU
 
+using namespace std;
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.
@@ -314,9 +315,9 @@ public:
 
    void serviceAllocateFailed(const IEvent &rEvent);
 
-    void serviceReleased(TransactionID const &rTranID);
+    void serviceReleased(const AAL::TransactionID&);
 
-    void serviceReleaseFailed(const IEvent        &rEvent);
+    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceFreed(TransactionID const &rTranID);
 
@@ -430,7 +431,7 @@ btInt HelloCCINLBApp::run()
       //   now we can use it
       //=============================
       MSG("Running Test");
-
+#if 1
       // Initialize the source and destination buffers
       memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
       memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
@@ -492,7 +493,8 @@ btInt HelloCCINLBApp::run()
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
       //  state machine via callbacks
-
+#endif
+      MSG("Done Running Test");
       // Release the Workspaces and wait for all three then Release the Service
       m_wsfreed = 0;  // Reset the counter
       m_NLBService->WorkspaceFree(m_InputVirt,  TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));

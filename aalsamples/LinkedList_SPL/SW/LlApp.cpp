@@ -65,6 +65,7 @@
 /* DBS */
 //#define  ASEAFU
 
+using namespace std;
 using namespace AAL;
 
 // Convenience macros for printing messages and errors.
@@ -614,7 +615,7 @@ void llApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
 
 void llApp::OnWorkspaceFreed(TransactionID const &TranID)
 {
-   ERR("OnWorkspaceFreed");
+   INFO("OnWorkspaceFreed");
    // Freed so now Release() the Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
 }

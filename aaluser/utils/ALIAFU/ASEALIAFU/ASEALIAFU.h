@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ASECCIv3AFU.h
-/// @brief Definitions for ASE CCIv3 AFU Service.
-/// @ingroup ASECCIv3AFU
+/// @file ASEALIAFU.h
+/// @brief Definitions for ASE ALI AFU Service.
+/// @ingroup ASEALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -42,36 +42,36 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __ASECCIV3AFU_H__
-#define __ASECCIV3AFU_H__
-#include <aalsdk/service/ICCIv3AFU.h>
+#ifndef __ASEALIAFU_H__
+#define __ASEALIAFU_H__
+#include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/ase/ase_common.h>
 
-#include <aalsdk/service/CCIv3AFUService.h>
-#include <aalsdk/service/ASECCIv3AFUService.h>
+#include <aalsdk/service/ALIAFUService.h>
+#include <aalsdk/service/ASEALIAFUService.h>
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup ASECCIv3AFU
+/// @addtogroup ASEALIAFU
 /// @{
 
-/// @brief This is the Delegate of the Strategy pattern used by CCIv3AFU to interact with the
+/// @brief This is the Delegate of the Strategy pattern used by ALIAFU to interact with the
 /// AFU Simulation Environment.
 ///
-/// ASECCIv3AFU is selected by passing the Named Value pair (CCIV3AFU_NVS_KEY_TARGET, CCIV3AFU_NVS_VAL_TARGET_ASE)
-/// in the arguments to IRuntime::allocService when requesting a CCIv3AFU.
-class ASECCIV3AFU_API ASECCIv3AFU : public ServiceBase,
-                                    public ICCIv3AFU
+/// ASEALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_ASE)
+/// in the arguments to IRuntime::allocService when requesting a ALIAFU.
+class ASEALIAFU_API ASEALIAFU : public ServiceBase,
+                                    public IALIAFU
 {
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASECCIv3AFU, ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ASEALIAFU, ServiceBase),
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-      SetInterface(        iidCCIv3AFU,    dynamic_cast<ICCIv3AFU *>(this));
-      SetSubClassInterface(iidASECCIv3AFU, dynamic_cast<ICCIv3AFU *>(this));
+      SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
+      SetSubClassInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
    virtual void init(TransactionID const &TranID);
@@ -80,7 +80,7 @@ public:
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
-   // <ICCIv3AFU>
+   // <IALIAFU>
    virtual void WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID);
 
@@ -94,7 +94,7 @@ public:
                                   btCSRValue  Value);
    virtual btBool      CSRWrite64(btCSROffset CSR,
                                   bt64bitCSR  Value);
-   // </ICCIv3AFU>
+   // </IALIAFU>
 
 protected:
    typedef std::map<btVirtAddr, buffer_t> map_t;
@@ -112,5 +112,5 @@ protected:
 
 END_NAMESPACE(AAL)
 
-#endif // __ASECCIV3AFU_H__
+#endif // __ASEALIAFU_H__
 

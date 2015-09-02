@@ -48,7 +48,8 @@
                                        // Better to move to where SingleAFUApp.h is #included itself
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
-using namespace AAL;
+
+USING_NAMESPACE(AAL)
 
 /// @addtogroup SingleAFUApp
 /// @{

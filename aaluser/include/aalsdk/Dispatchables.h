@@ -97,7 +97,7 @@ void operator() ()
          m_pClient->serviceAllocateFailed(*m_pEvent);
       } break;
       case Released : {
-         dynamic_ptr<IAALService>(iidService, m_pServiceBase)->Release(0);
+         dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase)->Release(0);
          m_pClient->serviceReleased(m_TranID);
       } break;
       case ReleaseFailed : {

@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file CCIv3AFU.cpp
-/// @brief Implementation of CCIv3 AFU Service.
-/// @ingroup CCIv3AFU
+/// @file ALIAFU.cpp
+/// @brief Implementation of ALI AFU Service.
+/// @ingroup ALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -48,19 +48,19 @@
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/service/HWCCIv3AFUService.h>
-#include <aalsdk/service/ASECCIv3AFUService.h>
-#include <aalsdk/service/SWSimCCIv3AFUService.h>
+#include <aalsdk/service/HWALIAFUService.h>
+#include <aalsdk/service/ASEALIAFUService.h>
+#include <aalsdk/service/SWSimALIAFUService.h>
 #include <aalsdk/Dispatchables.h>
 
-#include "CCIv3AFU.h"
+#include "ALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup CCIv3AFU
+/// @addtogroup ALIAFU
 /// @{
 
-void CCIv3AFU::init(TransactionID const &TranID)
+void ALIAFU::init(TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
    ASSERT( NULL != pClient );
@@ -77,18 +77,18 @@ void CCIv3AFU::init(TransactionID const &TranID)
    }
 
    // Default target is hardware AFU.
-   NamedValueSet manifest(std::string(HWCCIV3AFU_MANIFEST));
+   NamedValueSet manifest(std::string(HWALIAFU_MANIFEST));
 
    // Determine which AFU implementation has been requested (HW, ASE, or SW Sim).
-   if ( m_optArgs.Has(CCIV3AFU_NVS_KEY_TARGET) ) {
+   if ( m_optArgs.Has(ALIAFU_NVS_KEY_TARGET) ) {
 
-      m_optArgs.Get(CCIV3AFU_NVS_KEY_TARGET, &m_TargetAFU);
+      m_optArgs.Get(ALIAFU_NVS_KEY_TARGET, &m_TargetAFU);
       ASSERT(NULL != m_TargetAFU);
 
-      if ( 0 == std::string(m_TargetAFU).compare(CCIV3AFU_NVS_VAL_TARGET_ASE) ) {
-         manifest = NamedValueSet(std::string(ASECCIV3AFU_MANIFEST));
-      } else if ( 0 == std::string(m_TargetAFU).compare(CCIV3AFU_NVS_VAL_TARGET_SWSIM) ) {
-         manifest = NamedValueSet(std::string(SWSIMCCIV3AFU_MANIFEST));
+      if ( 0 == std::string(m_TargetAFU).compare(ALIAFU_NVS_VAL_TARGET_ASE) ) {
+         manifest = NamedValueSet(std::string(ASEALIAFU_MANIFEST));
+      } else if ( 0 == std::string(m_TargetAFU).compare(ALIAFU_NVS_VAL_TARGET_SWSIM) ) {
+         manifest = NamedValueSet(std::string(SWSIMALIAFU_MANIFEST));
       }
    }
 
@@ -97,7 +97,7 @@ void CCIv3AFU::init(TransactionID const &TranID)
    allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID());
 }
 
-btBool CCIv3AFU::Release(TransactionID const &TranID, btTime timeout)
+btBool ALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
    if ( NULL != m_pDelegate ) {
       dynamic_cast<IAALService *>(m_pDelegate)->Release(TransactionID(), timeout);
@@ -109,7 +109,7 @@ btBool CCIv3AFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool CCIv3AFU::Release(btTime timeout)
+btBool ALIAFU::Release(btTime timeout)
 {
    if ( NULL != m_pDelegate ) {
       dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
@@ -121,24 +121,24 @@ btBool CCIv3AFU::Release(btTime timeout)
 }
 
 
-void CCIv3AFU::serviceAllocated(IBase               *pServiceBase,
+void ALIAFU::serviceAllocated(IBase               *pServiceBase,
                                 TransactionID const &TranID)
 {
-   m_pDelegate = dynamic_ptr<ICCIv3AFU>(iidCCIv3AFU, pServiceBase);
+   m_pDelegate = dynamic_ptr<IALIAFU>(iidALIAFU, pServiceBase);
    ASSERT(NULL != m_pDelegate);
 
    if ( NULL != m_TargetAFU ) {
-      if ( 0 == std::string(m_TargetAFU).compare(CCIV3AFU_NVS_VAL_TARGET_FPGA) ) {
-         SetInterface(iidHWCCIv3AFU, dynamic_ptr<ICCIv3AFU>(iidHWCCIv3AFU, pServiceBase));
-      } else if ( 0 == std::string(m_TargetAFU).compare(CCIV3AFU_NVS_VAL_TARGET_ASE) ) {
-         SetInterface(iidASECCIv3AFU, dynamic_ptr<ICCIv3AFU>(iidASECCIv3AFU, pServiceBase));
-      } else if ( 0 == std::string(m_TargetAFU).compare(CCIV3AFU_NVS_VAL_TARGET_SWSIM) ) {
-         SetInterface(iidSWSIMCCIv3AFU, dynamic_ptr<ICCIv3AFU>(iidSWSIMCCIv3AFU, pServiceBase));
+      if ( 0 == std::string(m_TargetAFU).compare(ALIAFU_NVS_VAL_TARGET_FPGA) ) {
+         SetInterface(iidHWALIAFU, dynamic_ptr<IALIAFU>(iidHWALIAFU, pServiceBase));
+      } else if ( 0 == std::string(m_TargetAFU).compare(ALIAFU_NVS_VAL_TARGET_ASE) ) {
+         SetInterface(iidASEALIAFU, dynamic_ptr<IALIAFU>(iidASEALIAFU, pServiceBase));
+      } else if ( 0 == std::string(m_TargetAFU).compare(ALIAFU_NVS_VAL_TARGET_SWSIM) ) {
+         SetInterface(iidSWSIMALIAFU, dynamic_ptr<IALIAFU>(iidSWSIMALIAFU, pServiceBase));
       } else {
          ASSERT(false); // unsupported target AFU
       }
    } else { // default to hardware
-      SetInterface(iidHWCCIv3AFU, dynamic_ptr<ICCIv3AFU>(iidHWCCIv3AFU, pServiceBase));
+      SetInterface(iidHWALIAFU, dynamic_ptr<IALIAFU>(iidHWALIAFU, pServiceBase));
    }
 
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
@@ -147,7 +147,7 @@ void CCIv3AFU::serviceAllocated(IBase               *pServiceBase,
                                                                          m_TranIDFrominit) );
 }
 
-void CCIv3AFU::serviceAllocateFailed(const IEvent &Event)
+void ALIAFU::serviceAllocateFailed(const IEvent &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
@@ -160,13 +160,13 @@ void CCIv3AFU::serviceAllocateFailed(const IEvent &Event)
                                                                                   "Allocate Failed") );
 }
 
-void CCIv3AFU::serviceReleased(TransactionID const &TranID)
+void ALIAFU::serviceReleased(TransactionID const &TranID)
 {
    m_pDelegate = NULL;
    ServiceBase::Release(m_TranIDFromRelease, m_TimeoutFromRelease);
 }
 
-void CCIv3AFU::serviceReleaseFailed(const IEvent &Event)
+void ALIAFU::serviceReleaseFailed(const IEvent &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
@@ -179,7 +179,7 @@ void CCIv3AFU::serviceReleaseFailed(const IEvent &Event)
                                                                                   "Release Failed") );
 }
 
-void CCIv3AFU::serviceEvent(const IEvent &Event)
+void ALIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
    getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
@@ -189,38 +189,38 @@ void CCIv3AFU::serviceEvent(const IEvent &Event)
 }
 
 
-// We delegate our ICCIv3AFU interface to the chosen implementation strategy.
-void CCIv3AFU::WorkspaceAllocate(btWSSize             Length,
+// We delegate our IALIAFU interface to the chosen implementation strategy.
+void ALIAFU::WorkspaceAllocate(btWSSize             Length,
                                  TransactionID const &TranID)
 {
    m_pDelegate->WorkspaceAllocate(Length, TranID);
 }
 
-void CCIv3AFU::WorkspaceFree(btVirtAddr           Address,
+void ALIAFU::WorkspaceFree(btVirtAddr           Address,
                              TransactionID const &TranID)
 {
    m_pDelegate->WorkspaceFree(Address, TranID);
 }
 
-btBool CCIv3AFU::CSRRead(btCSROffset CSR,
+btBool ALIAFU::CSRRead(btCSROffset CSR,
                          btCSRValue *pValue)
 {
    return m_pDelegate->CSRRead(CSR, pValue);
 }
 
-btBool CCIv3AFU::CSRWrite(btCSROffset CSR,
+btBool ALIAFU::CSRWrite(btCSROffset CSR,
                           btCSRValue  Value)
 {
    return m_pDelegate->CSRWrite(CSR, Value);
 }
 
-btBool CCIv3AFU::CSRWrite64(btCSROffset CSR,
+btBool ALIAFU::CSRWrite64(btCSROffset CSR,
                             bt64bitCSR  Value)
 {
    return m_pDelegate->CSRWrite64(CSR, Value);
 }
 
-void CCIv3AFU::OnWorkspaceAllocated(TransactionID const &TranID,
+void ALIAFU::OnWorkspaceAllocated(TransactionID const &TranID,
                                     btVirtAddr           WkspcVirt,
                                     btPhysAddr           WkspcPhys,
                                     btWSSize             WkspcSize)
@@ -233,7 +233,7 @@ void CCIv3AFU::OnWorkspaceAllocated(TransactionID const &TranID,
                                                                                   WkspcSize) );
 }
 
-void CCIv3AFU::OnWorkspaceAllocateFailed(const IEvent &Event)
+void ALIAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
@@ -243,14 +243,14 @@ void CCIv3AFU::OnWorkspaceAllocateFailed(const IEvent &Event)
    }
 }
 
-void CCIv3AFU::OnWorkspaceFreed(TransactionID const &TranID)
+void ALIAFU::OnWorkspaceFreed(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
    getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
                                                                               TranID) );
 }
 
-void CCIv3AFU::OnWorkspaceFreeFailed(const IEvent &Event)
+void ALIAFU::OnWorkspaceFreeFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
@@ -287,16 +287,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::CCIv3AFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ALIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-CCIV3AFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
+ALIAFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-CCIV3AFU_END_SVC_MOD()
+ALIAFU_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)

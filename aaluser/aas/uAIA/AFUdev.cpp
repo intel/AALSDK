@@ -54,6 +54,9 @@
 #include "aalsdk/kernel/ahmpipdefs.h"
 #include "aalsdk/AALLoggerExtern.h"
 
+#define CCIV4_MMIO_UMSG_TEST 0
+// Turn on in cciv4_simulator.c, as well, if want the mmio and umsg debuggings
+
 
 BEGIN_NAMESPACE(AAL)
 
@@ -123,7 +126,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
     // Store the extended bin parameters (TODO bind parms need to be deep copied)
     m_extBindParms = *extBindParmsp;
 
-    // If mappable API enabled for this device then map CSRs
+    // If mappable API enabled for this device then map CSRs, MMIO=R and UMSG spaces
     if(m_extBindParms.m_mappableAPI){
        // Need to keep track of number of CSR map transactions to wait for.
        unsigned int *pnumEvents = NULL;
@@ -160,6 +163,41 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 
           Sig_MapCSRSpace_AFUTransaction MapWriteTran( WSID_CSRMAP_WRITEAREA );
           SendTransaction(&MapWriteTran, wrtid);
+       }
+
+
+       if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_MMIOR ) {
+          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI MMIO-R" << std::endl);
+
+          if ( NULL == pnumEvents ) {
+             pnumEvents = new unsigned;
+             *pnumEvents = 0;
+          }
+
+          ++(*pnumEvents);
+
+          struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_MAP_MMIOR,rtid, pnumEvents);
+          TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
+
+          Sig_MapMMIO_Space_AFUTransaction MapMMIORTran;
+          SendTransaction(&MapMMIORTran, wrtid);
+       }
+
+       if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_UMSG ) {
+          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI UMSG" << std::endl);
+
+          if ( NULL == pnumEvents ) {
+             pnumEvents = new unsigned;
+             *pnumEvents = 0;
+          }
+
+          ++(*pnumEvents);
+
+          struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_MAP_UMSG,rtid, pnumEvents);
+          TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
+
+          Sig_MapUMSGpace_AFUTransaction MapUMSGTran;
+          SendTransaction(&MapUMSGTran, wrtid);
        }
 
     }else{
@@ -295,7 +333,34 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
    }  // if (id == WSID_CSRMAP_READAREA)
 
-   // Lock this critical region since 2 transactions are in flight simultaneously
+   if ( WSID_MAP_MMIOR == id ) {
+
+      // Save the pointer and size
+      m_mmiormap  = pResult->wsParms.ptr;
+      m_mmiorsize = (btUnsigned32bitInt)pResult->wsParms.size;
+
+      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_MMIOR initialized" << std::endl);
+
+      #if CCIV4_MMIO_UMSG_TEST
+      std::cout <<"WSID_MAP_MMIOR pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
+      #endif
+
+   }  // if (id == WSID_MAP_MMIOR)
+
+   if ( WSID_MAP_UMSG == id ) {
+
+      // Save the pointer and size
+      m_umsgmap  = pResult->wsParms.ptr;
+      m_umsgsize = (btUnsigned32bitInt)pResult->wsParms.size;
+
+      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_UMSG initialized" << std::endl);
+
+      #if CCIV4_MMIO_UMSG_TEST
+      std::cout <<"WSID_MAP_UMSG pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
+      #endif
+   }  // if (id == WSID
+
+   // Lock this critical region since multiple transactions are in flight simultaneously
    {
       AutoLock(this);
 
@@ -551,6 +616,15 @@ void CAFUDev::FreeAllWS()
       m_csrreadmap = NULL;
    }
 
+   if ( NULL != m_mmiormap ) {
+      UnMapWSID(m_mmiormap, m_mmiorsize, WSID_MAP_MMIOR);
+      m_mmiormap = NULL;
+   }
+
+   if ( NULL != m_umsgmap ) {
+      UnMapWSID(m_umsgmap, m_umsgsize, WSID_MAP_UMSG);
+      m_umsgmap = NULL;
+   }
 }
 
 //=============================================================================

@@ -53,38 +53,44 @@
 
 BEGIN_NAMESPACE(AAL)
 
-   //=============================================================================
-   // Name: ServiceBase
-   // Description: Constructor.
-   // Interface: public
-   // Inputs: AALServiceModule *container - Pointer to the Service Module that
-   //                                       provdes access to core facilities and
-   //                                       maintains a list of all Services
-   //                                       constructed by this module.
-   //         IAALTransport    *ptransport - Optional transport (remote only)
-   //         IAALMarshaller   *marshaller - Optional Marshaller (remote only)
-   //         IAALUnMarshaller *unmarshaller - Optional Unmarshaller (remote only)
-   // Comments:
-   //=============================================================================
+//=============================================================================
+// Name: ServiceBase
+// Description: Constructor.
+// Interface: public
+// Inputs: AALServiceModule *container - Pointer to the Service Module that
+//                                       provdes access to core facilities and
+//                                       maintains a list of all Services
+//                                       constructed by this module.
+//         IAALTransport    *ptransport - Optional transport (remote only)
+//         IAALMarshaller   *marshaller - Optional Marshaller (remote only)
+//         IAALUnMarshaller *unmarshaller - Optional Unmarshaller (remote only)
+// Comments:
+//=============================================================================
 ServiceBase::ServiceBase(AALServiceModule *container,
                          IRuntime         *pAALRuntime,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
-   CAASBase(),
+   m_RuntimeClient(NULL),
+   m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
-   m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
    m_runMDT(false),
    m_pMDT(NULL)
-
 {
-   SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this));
-   m_bIsOK = true;
+   if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   if ( EObjOK != SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this)) ) {
+      m_bIsOK = false;
+      return;
+   }
 }
 
 ServiceBase::ServiceBase(ServiceBase const &rother) :
@@ -105,56 +111,78 @@ ServiceBase::ServiceBase(ServiceBase const &rother) :
 
 ServiceBase::~ServiceBase()
 {
-   // Cleanup objects we were handed
-   //   TODO May want to consider moving to upper layer that created them
-   //   but the factory is currently temporal.
-   if ( HasTransport() ) {
-      delete m_ptransport;
-      m_ptransport = NULL;
-   }
-   if ( HasMarshaller() ) {
-      delete m_pmarshaller;
-      m_pmarshaller = NULL;
-   }
-   if ( HasUnMarshaller() ) {
-      delete m_punmarshaller;
-      m_punmarshaller = NULL;
+   btBool DoJoin = false;
+
+   {
+      AutoLock(this);
+
+      // Cleanup objects we were handed
+      //   TODO May want to consider moving to upper layer that created them
+      //   but the factory is currently temporal.
+      if ( HasTransport() ) {
+         delete m_ptransport;
+         m_ptransport = NULL;
+      }
+
+      if ( HasMarshaller() ) {
+         delete m_pmarshaller;
+         m_pmarshaller = NULL;
+      }
+
+      if ( HasUnMarshaller() ) {
+         delete m_punmarshaller;
+         m_punmarshaller = NULL;
+      }
+
+      m_runMDT = false;
+      DoJoin = ( NULL != m_pMDT );
    }
 
-   m_runMDT = false;
-   if ( NULL != m_pMDT ) {
+   if ( DoJoin ) {
+      // Don't join while locked.
       m_pMDT->Join();
    }
 
-   if ( m_bIsOK ) {
-      // Not been released yet.
-      Released();
+   {
+      AutoLock(this);
+
+      if ( m_bIsOK ) {
+         // Not been released yet.
+         Released();
+      }
    }
 }
 
 btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
 {
    AutoLock(this);
+
    Released();
 
    // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
    //  just before dispatching the callback thus insuring that the final cleanup is executed
    //  before notification is received.
-   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                              Client(),
-                                                              this,
-                                                              rTranID));
-   return true;
+   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Released,
+                                                                     Client(),
+                                                                     this,
+                                                                     rTranID) );
 }
 
 btBool ServiceBase::Release(btTime timeout)
 {
-   AutoLock(this);
-   Released();
+   {
+      AutoLock(this);
 
-   // Release the Proxy
-   getRuntime()->releaseRuntimeProxy();
-   m_Runtime = NULL;
+      Released();
+
+      // Release the Proxy
+      getRuntime()->releaseRuntimeProxy();
+      m_Runtime = NULL;
+   }
+
+   // We must constrain the scope of the AutoLock above to prevent dereferencing
+   // this after deleting it below.
+
    delete this;
    return true;
 }
@@ -164,14 +192,16 @@ IBase * ServiceBase::_init(IBase               *pclient,
                            NamedValueSet const &optArgs,
                            CAALEvent           *pcmpltEvent)
 {
-   if(NULL == pclient){
+   if ( NULL == pclient ) {
       return NULL;
-   }else{
-      m_pclientbase = pclient;
    }
 
+   AutoLock(this);
+
+   m_pclientbase = pclient;
+
    m_pclient = dynamic_ptr<IServiceClient>(iidServiceClient, pclient);
-   if(NULL == m_pclient){
+   if ( NULL == m_pclient ) {
       return NULL;
    }
 
@@ -197,6 +227,8 @@ IBase * ServiceBase::_init(IBase               *pclient,
 
 btBool ServiceBase::sendmsg()
 {
+   AutoLock(this);
+
    if ( !HasTransport() ) {
       return false;
    }
@@ -215,6 +247,8 @@ btBool ServiceBase::sendmsg()
 
 btBool ServiceBase::getmsg()
 {
+   AutoLock(this);
+
    if ( !HasTransport() ) {
       return false;
    }
@@ -223,7 +257,7 @@ btBool ServiceBase::getmsg()
    btcString msg = recvr().getmsg(&len);
       
    if ( (btWSSize)-1 == len ) {
-      AAL_ERR(LM_AAS, "recv error" << endl);
+      AAL_ERR(LM_AAS, "recv error\n");
       return false;
    }
 
@@ -237,11 +271,19 @@ btBool ServiceBase::getmsg()
 
 btBool ServiceBase::startMDS()
 {
-   m_runMDT = true;
+   AutoLock(this);
 
-   m_pMDT   = new OSLThread(ServiceBase::_MessageDeliveryThread,
-                            OSLThread::THREADPRIORITY_ABOVE_NORMAL,
-                            this);
+   ASSERT(NULL == m_pMDT);
+   if ( NULL != m_pMDT ) {
+      // prevent multiple start's so that we don't leak threads.
+      return false;
+   }
+   ASSERT(!m_runMDT);
+
+   m_runMDT = true;
+   m_pMDT   = new(std::nothrow) OSLThread(ServiceBase::_MessageDeliveryThread,
+                                          OSLThread::THREADPRIORITY_ABOVE_NORMAL,
+                                          this);
    if ( NULL == m_pMDT ) {
       m_runMDT = false;
       return false;
@@ -271,6 +313,22 @@ void ServiceBase::MessageDeliveryThread()
    }
 }
 
+IAALMarshaller &     ServiceBase::marshall() { AutoLock(this); return *m_pmarshaller;   }
+IAALUnMarshaller & ServiceBase::unmarshall() { AutoLock(this); return *m_punmarshaller; }
+IAALTransport &         ServiceBase::recvr() { AutoLock(this); return *m_ptransport;    }
+IAALTransport &        ServiceBase::sender() { AutoLock(this); return *m_ptransport;    }
+
+btBool   ServiceBase::HasMarshaller()  const { AutoLock(this); return NULL != m_pmarshaller;   }
+btBool ServiceBase::HasUnMarshaller()  const { AutoLock(this); return NULL != m_punmarshaller; }
+btBool    ServiceBase::HasTransport()  const { AutoLock(this); return NULL != m_ptransport;    }
+
+NamedValueSet const &        ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;       }
+IServiceClient *              ServiceBase::Client() const { AutoLock(this); return m_pclient;       }
+IBase *                   ServiceBase::ClientBase() const { AutoLock(this); return m_pclientbase;   }
+IRuntime *                ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;       }
+IRuntimeClient *    ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient; }
+AALServiceModule * ServiceBase::pAALServiceModule() const { AutoLock(this); return m_pcontainer;    }
+
 void ServiceBase::allocService(IBase                  *pClient,
                                NamedValueSet const    &rManifest,
                                TransactionID const    &rTranID)
@@ -280,6 +338,7 @@ void ServiceBase::allocService(IBase                  *pClient,
 
 void ServiceBase::Released()
 {
+   AutoLock(this);
    // Mark as not OK before deleting self or it will recurse Releasing
    m_bIsOK = false;
    m_pcontainer->ServiceReleased(this);
@@ -290,11 +349,13 @@ void ServiceBase::initComplete(TransactionID const &rtid)
    init(rtid);
 }
 
+#if DEPRECATED
 void ServiceBase::messageHandler(const IEvent &rEvent)
 {
    // Forward the event to the static event handler
    ASSERT(false);
 }
+#endif // DEPRECATED
 
 ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 

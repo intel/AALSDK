@@ -84,10 +84,10 @@ AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [4],[2],[0])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [4],[2],[0])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [4],[2],[0])
 AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [2],[0],[0])
-AALSDK_LTLIB_VERSION([CCIV3AFU],     [libCCIv3AFU],     [4],[2],[0])
-AALSDK_LTLIB_VERSION([HWCCIV3AFU],   [libHWCCIv3AFU],   [4],[2],[0])
-AALSDK_LTLIB_VERSION([ASECCIV3AFU],  [libASECCIv3AFU],  [4],[2],[0])
-AALSDK_LTLIB_VERSION([SWSIMCCIV3AFU],[libSWSimCCIv3AFU],[4],[2],[0])
+AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [4],[2],[0])
+AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [4],[2],[0])
+AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [4],[2],[0])
+AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [4],[2],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -191,10 +191,10 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/service/HWSPLAFUService.h
                  include/aalsdk/service/ASESPLAFUService.h
                  include/aalsdk/service/SWSimSPLAFUService.h
-                 include/aalsdk/service/CCIv3AFUService.h
-                 include/aalsdk/service/HWCCIv3AFUService.h
-                 include/aalsdk/service/ASECCIv3AFUService.h
-                 include/aalsdk/service/SWSimCCIv3AFUService.h])
+                 include/aalsdk/service/ALIAFUService.h
+                 include/aalsdk/service/HWALIAFUService.h
+                 include/aalsdk/service/ASEALIAFUService.h
+                 include/aalsdk/service/SWSimALIAFUService.h])
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 
@@ -226,10 +226,10 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/splapp2/Makefile
                  utils/splapp3/Makefile
                  utils/CCILib/Makefile
-                 utils/CCIv3AFU/Makefile
-                 utils/CCIv3AFU/HWCCIv3AFU/Makefile
-                 utils/CCIv3AFU/ASECCIv3AFU/Makefile
-                 utils/CCIv3AFU/SWSimCCIv3AFU/Makefile])
+                 utils/ALIAFU/Makefile
+                 utils/ALIAFU/HWALIAFU/Makefile
+                 utils/ALIAFU/ASEALIAFU/Makefile
+                 utils/ALIAFU/SWSimALIAFU/Makefile])
 
 AC_OUTPUT
 

@@ -452,8 +452,8 @@ TEST_F(TimerBasic, aal0145)
 	//Tests accuracy of NormalisedUnits()
 
 	Timer time_one;
-	string NormalisedUnit;
-	string units;
+   std::string NormalisedUnit;
+   std::string units;
 
 	// Initialize a timer with 5000 seconds.
 #if defined( __AAL_LINUX__ )
@@ -588,8 +588,8 @@ TEST_F(TimerBasic, aal0146)
 	//Tests accuracy of Normalized()
 
 	Timer time_one;
-	string NormalisedUnit;
-	string ExpectedResult;
+   std::string NormalisedUnit;
+   std::string ExpectedResult;
 	AAL::btUnsigned64bitInt i =0;
 	double d = 0.0;
 

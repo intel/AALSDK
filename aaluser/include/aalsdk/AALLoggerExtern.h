@@ -141,7 +141,7 @@
                                     //    Note that it pre-includes AALIDDefs.h
 
 #ifdef AAL_LOGGER_INSTANCE          /* Only defined in one file, currently CAALLogger.cpp */
-   #include <aalsdk/CAALLogger.h>   // lots of includes :(, and also using namespace AAL
+   #include <aalsdk/CAALLogger.h>   // lots of includes :(
    AASLIB_API AAL::ILogger & theAALLogger()     // Static singleton of Logger
    {                                // Will only be instantiated if used
       static AAL::CLogger theCLogger;

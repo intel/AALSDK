@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file SWSimCCIv3AFU.h
-/// @brief Definitions for Software Simulated(NLB) CCIv3 AFU Service.
-/// @ingroup SWSimCCIv3AFU
+/// @file SWSimALIAFU.h
+/// @brief Definitions for Software Simulated(NLB) ALI AFU Service.
+/// @ingroup SWSimALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -42,41 +42,41 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __SWSIMCCIV3AFU_H__
-#define __SWSIMCCIV3AFU_H__
-#include <aalsdk/service/CCIv3AFUService.h>
-#include <aalsdk/service/SWSimCCIv3AFUService.h>
-#include <aalsdk/service/ICCIv3AFU.h>
+#ifndef __SWSIMALIAFU_H__
+#define __SWSIMALIAFU_H__
+#include <aalsdk/service/ALIAFUService.h>
+#include <aalsdk/service/SWSimALIAFUService.h>
+#include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aas/AALService.h>
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup SWSimCCIv3AFU
+/// @addtogroup SWSimALIAFU
 /// @{
 
 #if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)           // ignoring this because ICCIv3AFU is purely abstract.
-# pragma warning(disable : 4275) // non dll-interface class 'AAL::ICCIv3AFU' used as base for dll-interface class 'AAL::SWSimCCIv3AFU'
+# pragma warning(push)           // ignoring this because IALIAFU is purely abstract.
+# pragma warning(disable : 4275) // non dll-interface class 'AAL::IALIAFU' used as base for dll-interface class 'AAL::SWSimALIAFU'
 #endif // __AAL_WINDOWS__
 
-/// @brief This is the Delegate of the Strategy pattern used by CCIv3AFU to interact with a
-/// Software Simulation of CCIv3 (Native Loopback).
+/// @brief This is the Delegate of the Strategy pattern used by ALIAFU to interact with a
+/// Software Simulation of ALI (Native Loopback).
 ///
-/// SWSimCCIv3AFU is selected by passing the Named Value pair (CCIV3AFU_NVS_KEY_TARGET, CCIV3AFU_NVS_VAL_TARGET_SWSIM)
-/// in the arguments to IRuntime::allocService when requesting a CCIv3AFU.
-class SWSIMCCIV3AFU_API SWSimCCIv3AFU : public ServiceBase,
-                                        public ICCIv3AFU
+/// SWSimALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_SWSIM)
+/// in the arguments to IRuntime::allocService when requesting a ALIAFU.
+class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase,
+                                        public IALIAFU
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimCCIv3AFU, ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimALIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      SetInterface(        iidCCIv3AFU,      dynamic_cast<ICCIv3AFU *>(this));
-      SetSubClassInterface(iidSWSIMCCIv3AFU, dynamic_cast<ICCIv3AFU *>(this));
+      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
+      SetSubClassInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
    virtual void init(TransactionID const &TranID);
@@ -85,7 +85,7 @@ public:
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
-   // <ICCIv3AFU>
+   // <IALIAFU>
    virtual void WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID);
 
@@ -99,7 +99,7 @@ public:
                                   btCSRValue  Value);
    virtual btBool      CSRWrite64(btCSROffset Offset,
                                   bt64bitCSR  Value);
-   // </ICCIv3AFU>
+   // </IALIAFU>
 
 protected:
    struct WkspcAlloc
@@ -118,7 +118,7 @@ protected:
       btPhysAddr m_Phys;
       btWSSize   m_Size;
    };
-   friend std::ostream & operator << (std::ostream & , const SWSimCCIv3AFU::WkspcAlloc & );
+   friend std::ostream & operator << (std::ostream & , const SWSimALIAFU::WkspcAlloc & );
 
    typedef std::map<btVirtAddr, WkspcAlloc>  virt_to_alloc_map;
    typedef virt_to_alloc_map::iterator       virt_to_alloc_iter;
@@ -145,9 +145,9 @@ protected:
       btCSRValue  m_Value;
       btBool      m_bReadable;
    };
-   friend std::ostream & operator << (std::ostream & , const SWSimCCIv3AFU::CSR & );
+   friend std::ostream & operator << (std::ostream & , const SWSimALIAFU::CSR & );
 
-   typedef std::map<btCSROffset, SWSimCCIv3AFU::CSR> csr_map;
+   typedef std::map<btCSROffset, SWSimALIAFU::CSR> csr_map;
    typedef csr_map::iterator                         csr_iter;
    typedef csr_map::const_iterator                   csr_const_iter;
 
@@ -161,8 +161,8 @@ protected:
 
    btPhysAddr        m_NextPhys;
 #if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)           // ignoring this because these members are not accessed outside SWSimCCIv3AFU.
-# pragma warning(disable : 4251) // needs to have dll-interface to be used by clients of class 'AAL::SWSimCCIv3AFU'
+# pragma warning(push)           // ignoring this because these members are not accessed outside SWSimALIAFU.
+# pragma warning(disable : 4251) // needs to have dll-interface to be used by clients of class 'AAL::SWSimALIAFU'
 #endif // __AAL_WINDOWS__
    virt_to_alloc_map m_VirtMap;
    phys_to_alloc_map m_PhysMap;
@@ -174,7 +174,7 @@ protected:
    btCSRValue        m_PerfCounters[11];
 };
 
-inline std::ostream & operator << (std::ostream &os, const SWSimCCIv3AFU::WkspcAlloc &a)
+inline std::ostream & operator << (std::ostream &os, const SWSimALIAFU::WkspcAlloc &a)
 {
    os << "virt="    << (void *)a.m_Virt <<
          " phys=0x" << std::hex << std::setw(16) << std::setfill('0') << a.m_Phys <<
@@ -182,7 +182,7 @@ inline std::ostream & operator << (std::ostream &os, const SWSimCCIv3AFU::WkspcA
    return os;
 }
 
-inline std::ostream & operator << (std::ostream &os, const SWSimCCIv3AFU::CSR &c)
+inline std::ostream & operator << (std::ostream &os, const SWSimALIAFU::CSR &c)
 {
    os << "offset=0x" << std::hex << std::setw(8) << std::setfill('0') << c.m_Offset
       << " value=0x" << std::setw(8) << c.m_Value
@@ -194,5 +194,5 @@ inline std::ostream & operator << (std::ostream &os, const SWSimCCIv3AFU::CSR &c
 
 END_NAMESPACE(AAL)
 
-#endif // __SWSIMCCIV3AFU_H__
+#endif // __SWSIMALIAFU_H__
 

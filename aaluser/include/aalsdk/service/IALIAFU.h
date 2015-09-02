@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ICCIv3AFU.h
-/// @brief ICCIv3AFU Service definition.
-/// @ingroup ICCIv3AFU
+/// @file IALIAFU.h
+/// @brief IALIAFU Service definition.
+/// @ingroup IALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -42,30 +42,30 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_SERVICE_ICCIV3AFU_H__
-#define __AALSDK_SERVICE_ICCIV3AFU_H__
+#ifndef __AALSDK_SERVICE_IALIAFU_H__
+#define __AALSDK_SERVICE_IALIAFU_H__
 #include <aalsdk/AAL.h>
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup ICCIv3AFU
+/// @addtogroup IALIAFU
 /// @{
 
 /// Key for selecting an AFU delegate.
-#define CCIV3AFU_NVS_KEY_TARGET "CCIv3AFUTarget"
+#define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
 /// Value - selects ASECCIAFU
-# define CCIV3AFU_NVS_VAL_TARGET_ASE   "CCIv3AFUTarget_ASE"
+# define ALIAFU_NVS_VAL_TARGET_ASE   "ALIAFUTarget_ASE"
 /// Value - selects HWCCIAFU
-# define CCIV3AFU_NVS_VAL_TARGET_FPGA  "CCIv3AFUTarget_FPGA"
+# define ALIAFU_NVS_VAL_TARGET_FPGA  "ALIAFUTarget_FPGA"
 /// Value - selects SWSimCCIAFU
-# define CCIV3AFU_NVS_VAL_TARGET_SWSIM "CCIv3AFUTarget_SWSim"
+# define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
 
-/// CCIv3 Service interface.
-/// @brief Defines the functionality available to all CCIv3 AFU's.
-class ICCIv3AFU
+/// ALI Service interface.
+/// @brief Defines the functionality available to all ALI AFU's.
+class IALIAFU
 {
 public:
-   virtual ~ICCIv3AFU() {}
+   virtual ~IALIAFU() {}
 
    /// @brief Allocate a Workspace.
    ///
@@ -136,11 +136,11 @@ public:
    /// @return whether the write was successful.
    virtual btBool CSRWrite64(btCSROffset CSR, bt64bitCSR Value) = 0;
 
-}; // ICCIv3AFU
+}; // IALIAFU
 
 /// @}
 
 END_NAMESPACE(AAL)
 
-#endif // __AALSDK_SERVICE_ICCIV3AFU_H__
+#endif // __AALSDK_SERVICE_IALIAFU_H__
 

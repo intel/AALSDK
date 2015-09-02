@@ -24,8 +24,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file CCIv3AFU.h
-/// @brief Definitions for CCIv3 AFU Service.
+/// @file ALIAFU.h
+/// @brief Definitions for ALI AFU Service.
 /// @ingroup CCIAFUv3
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
@@ -42,10 +42,10 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __CCIV3AFU_H__
-#define __CCIV3AFU_H__
-#include <aalsdk/service/CCIv3AFUService.h>
-#include <aalsdk/service/ICCIv3AFU.h>
+#ifndef __ALIAFU_H__
+#define __ALIAFU_H__
+#include <aalsdk/service/ALIAFUService.h>
+#include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/service/ICCIClient.h>
 #include <aalsdk/aas/AALService.h>
 
@@ -75,8 +75,8 @@ BEGIN_NAMESPACE(AAL)
 /// </ul>
 ///
 /// See @ref cciapp for more details.
-class CCIV3AFU_API CCIv3AFU : public ServiceBase,
-                              public ICCIv3AFU,
+class ALIAFU_API ALIAFU : public ServiceBase,
+                              public IALIAFU,
                               public IServiceClient,
                               public ICCIClient
 {
@@ -85,11 +85,11 @@ class CCIV3AFU_API CCIv3AFU : public ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(CCIv3AFU, ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(ALIAFU, ServiceBase),
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
-      SetSubClassInterface(iidCCIv3AFU, dynamic_cast<ICCIv3AFU *>(this));
+      SetSubClassInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this));
       SetInterface(iidCCIClient,        dynamic_cast<ICCIClient *>(this));
       SetInterface(iidServiceClient,    dynamic_cast<IServiceClient *>(this));
    }
@@ -115,7 +115,7 @@ public:
    // </IServiceClient>
 
 
-   // <ICCIv3AFU>
+   // <IALIAFU>
    virtual void WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID);
 
@@ -129,7 +129,7 @@ public:
                                   btCSRValue  Value);
    virtual btBool      CSRWrite64(btCSROffset CSR,
                                   bt64bitCSR  Value);
-   // </ICCIv3AFU>
+   // </IALIAFU>
 
 
    // <ICCIClient>
@@ -146,8 +146,8 @@ public:
    // </ICCIClient>
 
 protected:
-   ICCIv3AFU    *m_pDelegate;          ///< Pointer to allocated Delegate AFU instance.
-   btcString     m_TargetAFU;          ///< Saved value of CCIV3AFU_NVS_KEY_TARGET. Helps us extract the appropriate Delegate interface.
+   IALIAFU    *m_pDelegate;          ///< Pointer to allocated Delegate AFU instance.
+   btcString     m_TargetAFU;          ///< Saved value of ALIAFU_NVS_KEY_TARGET. Helps us extract the appropriate Delegate interface.
    TransactionID m_TranIDFrominit;     ///< Saved from the call to ServiceBase::init, until the Delegate AFU is allocated.
    TransactionID m_TranIDFromRelease;  ///< Saved from the call to ServiceBase::Release, until the Delegate AFU is freed.
    btTime        m_TimeoutFromRelease; ///< Saved from the call to ServiceBase::Release, until the Delegate AFU is freed.
@@ -159,5 +159,5 @@ protected:
 
 END_NAMESPACE(AAL)
 
-#endif // __CCIV3AFU_H__
+#endif // __ALIAFU_H__
 

@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file SWSimCCIv3AFU.cpp
-/// @brief Implementation of Software Simulated(NLB) CCIv3 AFU Service.
-/// @ingroup SWSimCCIv3AFU
+/// @file SWSimALIAFU.cpp
+/// @brief Implementation of Software Simulated(NLB) ALI AFU Service.
+/// @ingroup SWSimALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -55,7 +55,7 @@
 #include <aalsdk/aas/AALInProcServiceFactory.h>
 
 #include <aalsdk/service/ICCIClient.h>
-#include "SWSimCCIv3AFU.h"
+#include "SWSimALIAFU.h"
 
 #include <aalsdk/utils/NLBVAFU.h>
 
@@ -85,7 +85,7 @@ BEGIN_NAMESPACE(AAL)
 # define CL(x) ((x) * 64)
 #endif // CL
 
-void SWSimCCIv3AFU::init(TransactionID const &TranID)
+void SWSimALIAFU::init(TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
    ASSERT( NULL != pClient );
@@ -128,18 +128,18 @@ void SWSimCCIv3AFU::init(TransactionID const &TranID)
                                                                          TranID) );
 }
 
-btBool SWSimCCIv3AFU::Release(TransactionID const &TranID, btTime timeout)
+btBool SWSimALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool SWSimCCIv3AFU::Release(btTime timeout)
+btBool SWSimALIAFU::Release(btTime timeout)
 {
    return ServiceBase::Release(timeout);
 }
 
 
-btPhysAddr SWSimCCIv3AFU::NextPhys()
+btPhysAddr SWSimALIAFU::NextPhys()
 {
    btPhysAddr p   = m_NextPhys;
    btPhysAddr tmp = p >> LOG2_CL;
@@ -147,7 +147,7 @@ btPhysAddr SWSimCCIv3AFU::NextPhys()
    return p;
 }
 
-void SWSimCCIv3AFU::WorkspaceAllocate(btWSSize             Length,
+void SWSimALIAFU::WorkspaceAllocate(btWSSize             Length,
                                       TransactionID const &TranID)
 {
    AutoLock(this);
@@ -184,7 +184,7 @@ void SWSimCCIv3AFU::WorkspaceAllocate(btWSSize             Length,
                                                                                   a.Size()) );
 }
 
-void SWSimCCIv3AFU::WorkspaceFree(btVirtAddr           Address,
+void SWSimALIAFU::WorkspaceFree(btVirtAddr           Address,
                                   TransactionID const &TranID)
 {
    AutoLock(this);
@@ -221,7 +221,7 @@ void SWSimCCIv3AFU::WorkspaceFree(btVirtAddr           Address,
                                                                               TranID) );
 }
 
-btBool SWSimCCIv3AFU::CSRRead(btCSROffset Offset,
+btBool SWSimALIAFU::CSRRead(btCSROffset Offset,
                               btCSRValue *pValue)
 {
    AutoLock(this);
@@ -230,11 +230,11 @@ btBool SWSimCCIv3AFU::CSRRead(btCSROffset Offset,
 
    ASSERT(m_CSRMap.end() != iter);
    if ( m_CSRMap.end() == iter ) {
-      ERR("Unsupported CSR " << SWSimCCIv3AFU::CSR(Offset, 0, false));
+      ERR("Unsupported CSR " << SWSimALIAFU::CSR(Offset, 0, false));
       return false;
    }
 
-   SWSimCCIv3AFU::CSR csr = (*iter).second;
+   SWSimALIAFU::CSR csr = (*iter).second;
 
    ASSERT(csr.Readable());
    if ( !csr.Readable() ) {
@@ -248,7 +248,7 @@ btBool SWSimCCIv3AFU::CSRRead(btCSROffset Offset,
    return true;
 }
 
-btBool SWSimCCIv3AFU::CSRWrite(btCSROffset Offset,
+btBool SWSimALIAFU::CSRWrite(btCSROffset Offset,
                                btCSRValue  Value)
 {
    AutoLock(this);
@@ -257,7 +257,7 @@ btBool SWSimCCIv3AFU::CSRWrite(btCSROffset Offset,
 
    ASSERT(m_CSRMap.end() != iter);
    if ( m_CSRMap.end() == iter ) {
-      ERR("Unsupported CSR " << SWSimCCIv3AFU::CSR(Offset, 0, false));
+      ERR("Unsupported CSR " << SWSimALIAFU::CSR(Offset, 0, false));
       return false;
    }
 
@@ -269,7 +269,7 @@ btBool SWSimCCIv3AFU::CSRWrite(btCSROffset Offset,
    return true;
 }
 
-btBool SWSimCCIv3AFU::CSRWrite64(btCSROffset Offset,
+btBool SWSimALIAFU::CSRWrite64(btCSROffset Offset,
                                  bt64bitCSR  Value)
 {
    if ( CSRWrite(Offset + 4, Value >> 32) ) {
@@ -278,7 +278,7 @@ btBool SWSimCCIv3AFU::CSRWrite64(btCSROffset Offset,
    return false;
 }
 
-void SWSimCCIv3AFU::SimulatorRead(CSR csr)
+void SWSimALIAFU::SimulatorRead(CSR csr)
 {
    if ( QLP_CSR_ADDR_PERF1 == csr.Offset() ) {
 
@@ -321,7 +321,7 @@ void SWSimCCIv3AFU::SimulatorRead(CSR csr)
    }
 }
 
-void SWSimCCIv3AFU::SimulatorWrite(CSR csr)
+void SWSimALIAFU::SimulatorWrite(CSR csr)
 {
    if ( (QLP_CSR_CIPUCTL == csr.Offset()) ) {
       csr_iter csriter = m_CSRMap.find(QLP_CSR_CAFU_STATUS);
@@ -438,7 +438,7 @@ void SWSimCCIv3AFU::SimulatorWrite(CSR csr)
    }
 }
 
-void SWSimCCIv3AFU::SimLpbk1()
+void SWSimALIAFU::SimLpbk1()
 {
    INFO("LPBK1");
 
@@ -476,7 +476,7 @@ void SWSimCCIv3AFU::SimLpbk1()
    m_PerfCounters[QLP_PERF_CACHE_WR_MISS] += bytes >> LOG2_CL;
 }
 
-void SWSimCCIv3AFU::SimRead()
+void SWSimALIAFU::SimRead()
 {
    INFO("READ");
 
@@ -533,7 +533,7 @@ void SWSimCCIv3AFU::SimRead()
    pAFUDSM->end_overhead   = 1;
 }
 
-void SWSimCCIv3AFU::SimWrite()
+void SWSimALIAFU::SimWrite()
 {
    INFO("WRITE");
 
@@ -590,7 +590,7 @@ void SWSimCCIv3AFU::SimWrite()
    pAFUDSM->end_overhead   = 1;
 }
 
-void SWSimCCIv3AFU::SimTrput()
+void SWSimALIAFU::SimTrput()
 {
    INFO("TRPUT");
 
@@ -689,16 +689,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::SWSimCCIv3AFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::SWSimALIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-SWSIMCCIV3AFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
+SWSIMALIAFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-SWSIMCCIV3AFU_END_SVC_MOD()
+SWSIMALIAFU_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)

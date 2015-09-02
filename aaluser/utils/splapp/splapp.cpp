@@ -57,7 +57,8 @@
 
 #include <aalsdk/kernel/vafu2defs.h>   // AFU structure definitions (brings in spl2defs.h)
 
-using namespace AAL;
+USING_NAMESPACE(std)
+USING_NAMESPACE(AAL)
 
 #ifdef INFO
 # undef INFO

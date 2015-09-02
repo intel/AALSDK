@@ -86,11 +86,6 @@ btBool HWSPLAFU::Release(TransactionID const &TranID, btTime timeout)
    return DeviceServiceBase::Release(TranID, timeout);
 }
 
-btBool HWSPLAFU::Release(btTime timeout)
-{
-   return DeviceServiceBase::Release(timeout);
-}
-
 void HWSPLAFU::WorkspaceAllocate(btWSSize             Length,
                                  TransactionID const &TranID)
 {
@@ -235,14 +230,14 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
    ASSERT(tranevtUIDriverClientEvent == theEvent.SubClassID());
    if ( tranevtUIDriverClientEvent != theEvent.SubClassID() ) {
       AAL_ERR(LM_AFU, __AAL_FUNCSIG__ <<
-                       ": expected tranevtUIDriverClientEvent, got " << theEvent.SubClassID() << endl);
+                       ": expected tranevtUIDriverClientEvent, got " << theEvent.SubClassID() << std::endl);
       goto _SEND_ERR;
    }
 
    // Expect it to be an rspid_AFU_Response; just error check
    ASSERT(rspid_AFU_Response == revt.MessageID());
    if ( rspid_AFU_Response != revt.MessageID() ) {
-      AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": expected rspid_AFU_Response, got " << revt.MessageID() << endl);
+      AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": expected rspid_AFU_Response, got " << revt.MessageID() << std::endl);
       goto _SEND_ERR;
    }
 
@@ -250,7 +245,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
    ASSERT(NULL != pResponse);
    if ( NULL == pResponse ) {
       descr = "No payload in response to Transaction20 message";
-      AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": " << descr << endl);
+      AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": " << descr << std::endl);
       goto _SEND_ERR;
    }
 
@@ -342,7 +337,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
 
       default : {
          descr = "respID not in enumeration: LOGIC ERROR.";
-         AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": " << descr << endl);
+         AAL_ERR(LM_AFU, __AAL_FUNCSIG__ << ": " << descr << std::endl);
          ASSERT(false);
          goto _SEND_ERR;
       } break;

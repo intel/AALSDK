@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file ASECCIv3AFU.cpp
-/// @brief Implementation of ASE CCIv3 AFU Service.
-/// @ingroup ASECCIv3AFU
+/// @file ASEALIAFU.cpp
+/// @brief Implementation of ASE ALI AFU Service.
+/// @ingroup ASEALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -56,16 +56,16 @@
 #include <aalsdk/service/ICCIClient.h>
 #include <aalsdk/ase/ase_common.h>
 
-#include "ASECCIv3AFU.h"
+#include "ASEALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup ASECCIv3AFU
+/// @addtogroup ASEALIAFU
 /// @{
 
-CriticalSection ASECCIv3AFU::sm_ASEMtx;
+CriticalSection ASEALIAFU::sm_ASEMtx;
 
-void ASECCIv3AFU::init(TransactionID const &TranID)
+void ASEALIAFU::init(TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
    ASSERT( NULL != pClient );
@@ -88,20 +88,20 @@ void ASECCIv3AFU::init(TransactionID const &TranID)
                                                                         TranID) );
 }
 
-btBool ASECCIv3AFU::Release(TransactionID const &TranID, btTime timeout)
+btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
   session_deinit();
   return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ASECCIv3AFU::Release(btTime timeout)
+btBool ASEALIAFU::Release(btTime timeout)
 {
   session_deinit();
   return ServiceBase::Release(timeout);
 }
 
 
-void ASECCIv3AFU::WorkspaceAllocate(btWSSize             Length,
+void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
                                     TransactionID const &TranID)
 {
   buffer_t                  buf;
@@ -113,7 +113,7 @@ void ASECCIv3AFU::WorkspaceAllocate(btWSSize             Length,
   buf.memsize = (uint32_t)Length;
 
   {
-     AutoLock(&ASECCIv3AFU::sm_ASEMtx);
+     AutoLock(&ASEALIAFU::sm_ASEMtx);
      allocate_buffer(&buf);
   }
 
@@ -152,7 +152,7 @@ void ASECCIv3AFU::WorkspaceAllocate(btWSSize             Length,
                                                                                       pExcept));
 }
 
-void ASECCIv3AFU::WorkspaceFree(btVirtAddr           Address,
+void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
                                 TransactionID const &TranID)
 {
    btcString descr = NULL;
@@ -174,7 +174,7 @@ void ASECCIv3AFU::WorkspaceFree(btVirtAddr           Address,
       buf = (*iter).second;
 
       {
-         AutoLock(&ASECCIv3AFU::sm_ASEMtx);
+         AutoLock(&ASEALIAFU::sm_ASEMtx);
          deallocate_buffer(&buf);
       }
 
@@ -196,7 +196,7 @@ void ASECCIv3AFU::WorkspaceFree(btVirtAddr           Address,
                                                                                   pExcept));
 }
 
-btBool ASECCIv3AFU::CSRRead(btCSROffset CSR,
+btBool ASEALIAFU::CSRRead(btCSROffset CSR,
                             btCSRValue *pValue)
 {
    if ( __UINTPTR_T_CONST(0x344) == CSR ) {
@@ -204,13 +204,13 @@ btBool ASECCIv3AFU::CSRRead(btCSROffset CSR,
    } else if ( __UINTPTR_T_CONST(0x34c) == CSR ) {
       *pValue = m_Last3cc;
    } else {
-      AutoLock(&ASECCIv3AFU::sm_ASEMtx);
+      AutoLock(&ASEALIAFU::sm_ASEMtx);
       *pValue = (btCSRValue) csr_read(CSR);
    }
    return true;
 }
 
-btBool ASECCIv3AFU::CSRWrite(btCSROffset CSR,
+btBool ASEALIAFU::CSRWrite(btCSROffset CSR,
                              btCSRValue  Value)
 {
    if ( __UINTPTR_T_CONST(0x3c4) == CSR ) {
@@ -218,13 +218,13 @@ btBool ASECCIv3AFU::CSRWrite(btCSROffset CSR,
    } else if ( __UINTPTR_T_CONST(0x3cc) == CSR ) {
       m_Last3cc = Value;
    } else {
-      AutoLock(&ASECCIv3AFU::sm_ASEMtx);
+      AutoLock(&ASEALIAFU::sm_ASEMtx);
       csr_write(CSR, (bt32bitCSR)Value);
    }
    return true;
 }
 
-btBool ASECCIv3AFU::CSRWrite64(btCSROffset CSR,
+btBool ASEALIAFU::CSRWrite64(btCSROffset CSR,
                                bt64bitCSR  Value)
 {
   if ( CSRWrite(CSR + 4, Value >> 32) ) {
@@ -260,16 +260,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ASECCIv3AFU >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ASEALIAFU >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-ASECCIV3AFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
+ASEALIAFU_BEGIN_SVC_MOD(SERVICE_FACTORY)
 /* No commands other than default, at the moment. */
-ASECCIV3AFU_END_SVC_MOD()
+ASEALIAFU_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)

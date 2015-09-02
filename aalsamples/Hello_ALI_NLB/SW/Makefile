@@ -1,4 +1,4 @@
-## Copyright (c) 2015, Intel Corporation
+## Copyright (c) 2005-2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,27 +27,50 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     utils/CCIv3AFU/SWSimCCIv3AFU/Makefile.am
+##     samples/Hello_ALI_NLB/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     07/20/2015    TSW   Initial version
+##     06/09/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-lib_LTLIBRARIES=libSWSimCCIv3AFU.la
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-libSWSimCCIv3AFU_la_SOURCES=\
-SWSimCCIv3AFU.cpp \
-SWSimCCIv3AFU.h
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
 
-libSWSimCCIv3AFU_la_CPPFLAGS=\
--I$(top_srcdir)/include \
--I$(top_builddir)/include
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
+endif
 
-libSWSimCCIv3AFU_la_LDFLAGS=\
--module \
--version-info $(SWSIMCCIV3AFU_VERSION_CURRENT):$(SWSIMCCIV3AFU_VERSION_REVISION):$(SWSIMCCIV3AFU_VERSION_AGE)
+all: helloALInlb
 
-libSWSimCCIv3AFU_la_LIBADD=\
-$(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la
+helloALInlb: HelloALINLB.o
+	$(CXX) -g -O2 -o helloALInlb HelloALINLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+
+HelloALINLB.o: HelloALINLB.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o HelloALINLB.o HelloALINLB.cpp
+
+clean:
+	$(RM) helloALInlb HelloALINLB.o
+
+.PHONY:all clean

@@ -75,8 +75,7 @@
                                        // <sys/time.h>
 #include "aalsdk/CAALLogger.h"         // Includes <AALLogger.h>, <syslog.h>,
                                        // <string>, <sstream>, <AALIDDefs.h>,
-                                       // <fstream>, <map>, <aas/CriticalSection.h>,
-                                       // and using namespace AAL
+                                       // <fstream>, <map>, <aas/CriticalSection.h>
 
 #include "aalsdk/utils/Utilities.h"    // NUM_ELEMENTS()
 #include "aalsdk/OSAL.h"               // GetThreadID(), FindLowestBitSet64()

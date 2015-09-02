@@ -58,6 +58,7 @@
 
 #include <aalsdk/utils/NLBVAFU.h>
 
+USING_NAMESPACE(std)
 USING_NAMESPACE(AAL)
 
 #ifdef INFO

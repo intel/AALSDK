@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HWCCIv3AFU.h
-/// @brief Definitions for CCIv3 Hardware AFU Service.
-/// @ingroup HWCCIv3AFU
+/// @file HWALIAFU.h
+/// @brief Definitions for ALI Hardware AFU Service.
+/// @ingroup HWALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -42,40 +42,40 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __HWCCIV3AFU_H__
-#define __HWCCIV3AFU_H__
-#include <aalsdk/service/CCIv3AFUService.h>
-#include <aalsdk/service/HWCCIv3AFUService.h>
-#include <aalsdk/service/ICCIv3AFU.h>
+#ifndef __HWALIAFU_H__
+#define __HWALIAFU_H__
+#include <aalsdk/service/ALIAFUService.h>
+#include <aalsdk/service/HWALIAFUService.h>
+#include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/service/ICCIClient.h>
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup HWCCIv3AFU
+/// @addtogroup HWALIAFU
 /// @{
 
 #if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)           // ignoring this because ICCIv3AFU is purely abstract.
-# pragma warning(disable : 4275) // non dll-interface class 'AAL::ICCIv3AFU' used as base for dll-interface class 'AAL::HWCCIv3AFU'
+# pragma warning(push)           // ignoring this because IALIAFU is purely abstract.
+# pragma warning(disable : 4275) // non dll-interface class 'AAL::IALIAFU' used as base for dll-interface class 'AAL::HWALIAFU'
 #endif // __AAL_WINDOWS__
 
-/// @brief This is the Delegate of the Strategy pattern used by CCIv3AFU to interact with an FPGA-accelerated
+/// @brief This is the Delegate of the Strategy pattern used by ALIAFU to interact with an FPGA-accelerated
 ///        CCI.
 ///
-/// HWCCIv3AFU is selected by passing the Named Value pair (CCIV3AFU_NVS_KEY_TARGET, CCIV3AFU_NVS_VAL_TARGET_FPGA)
-/// in the arguments to IRuntime::allocService when requesting a CCIv3AFU.
-class HWCCIV3AFU_API HWCCIv3AFU : public HWAFUWkspcDelegate<MASTER_VIRT_MODE>,
-                                  public ICCIv3AFU
+/// HWALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_FPGA)
+/// in the arguments to IRuntime::allocService when requesting a ALIAFU.
+class HWALIAFU_API HWALIAFU : public HWAFUWkspcDelegate<MASTER_VIRT_MODE>,
+                                  public IALIAFU
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 public:
    // <DeviceServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWCCIv3AFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
    {
-      SetInterface(        iidCCIv3AFU,   dynamic_cast<ICCIv3AFU *>(this));
-      SetSubClassInterface(iidHWCCIv3AFU, dynamic_cast<ICCIv3AFU *>(this));
+      SetInterface(        iidALIAFU,   dynamic_cast<IALIAFU *>(this));
+      SetSubClassInterface(iidHWALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
    virtual void init(TransactionID const &TranID);
@@ -84,7 +84,7 @@ public:
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </DeviceServiceBase>
 
-   // <ICCIv3AFU>
+   // <IALIAFU>
    virtual void WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID);
 
@@ -98,12 +98,12 @@ public:
                                   btCSRValue  Value);
    virtual btBool      CSRWrite64(btCSROffset CSR,
                                   bt64bitCSR  Value);
-   // </ICCIv3AFU>
+   // </IALIAFU>
 };
 
 /// @}
 
 END_NAMESPACE(AAL)
 
-#endif // __HWCCIV3AFU_H__
+#endif // __HWALIAFU_H__
 

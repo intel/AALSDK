@@ -113,9 +113,6 @@ public:
    // Called when the service is released
    btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
-   // Quiet Release. Used when Service is unloaded.
-   btBool Release(btTime timeout=AAL_INFINITE_WAIT);
-
    void allocService(IRuntime               *pProxy,
                      IRuntimeClient         *pRuntimClient,
                      IBase                  *pServiceClientBase,

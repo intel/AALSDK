@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file CCIv3AFUService.h
-/// @brief AAL Service Module definitions for CCIv3 AFU
-/// @ingroup CCIv3AFU
+/// @file ALIAFUService.h
+/// @brief AAL Service Module definitions for ALI AFU
+/// @ingroup ALIAFU
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
@@ -36,43 +36,43 @@
 /// WHEN:          WHO:     WHAT:
 /// 07/20/2015     HM       Initial version.@endverbatim
 //****************************************************************************
-#ifndef __SERVICE_CCIV3AFUSERVICE_H__
-#define __SERVICE_CCIV3AFUSERVICE_H__
+#ifndef __SERVICE_ALIAFUSERVICE_H__
+#define __SERVICE_ALIAFUSERVICE_H__
 #include <aalsdk/osal/OSServiceModule.h>
 #include <aalsdk/INTCDefs.h>
 
-/// @addtogroup CCIv3AFU
+/// @addtogroup ALIAFU
 /// @{
 
 #if defined ( __AAL_WINDOWS__ )
-# ifdef CCIV3AFU_EXPORTS
-#    define CCIV3AFU_API __declspec(dllexport)
+# ifdef ALIAFU_EXPORTS
+#    define ALIAFU_API __declspec(dllexport)
 # else
-#    define CCIV3AFU_API __declspec(dllimport)
-# endif // CCIV3AFU_EXPORTS
+#    define ALIAFU_API __declspec(dllimport)
+# endif // ALIAFU_EXPORTS
 #else
 # ifndef __declspec
 #    define __declspec(x)
 # endif // __declspec
-# define CCIV3AFU_API    __declspec(0)
+# define ALIAFU_API    __declspec(0)
 #endif // __AAL_WINDOWS__
 
-#define CCIV3AFU_SVC_MOD         "@CCIV3AFU_SVC_MOD@" AAL_SVC_MOD_EXT
-#define CCIV3AFU_SVC_ENTRY_POINT "@CCIV3AFU_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
+#define ALIAFU_SVC_MOD         "@ALIAFU_SVC_MOD@" AAL_SVC_MOD_EXT
+#define ALIAFU_SVC_ENTRY_POINT "@ALIAFU_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
 
-#define CCIV3AFU_BEGIN_SVC_MOD(__svcfactory) AAL_BEGIN_SVC_MOD(__svcfactory, @CCIV3AFU_SVC_MOD@, CCIV3AFU_API, CCIV3AFU_VERSION, CCIV3AFU_VERSION_CURRENT, CCIV3AFU_VERSION_REVISION, CCIV3AFU_VERSION_AGE)
-#define CCIV3AFU_END_SVC_MOD()               AAL_END_SVC_MOD()
+#define ALIAFU_BEGIN_SVC_MOD(__svcfactory) AAL_BEGIN_SVC_MOD(__svcfactory, @ALIAFU_SVC_MOD@, ALIAFU_API, ALIAFU_VERSION, ALIAFU_VERSION_CURRENT, ALIAFU_VERSION_REVISION, ALIAFU_VERSION_AGE)
+#define ALIAFU_END_SVC_MOD()               AAL_END_SVC_MOD()
 
-AAL_DECLARE_SVC_MOD(@CCIV3AFU_SVC_MOD@, CCIV3AFU_API)
+AAL_DECLARE_SVC_MOD(@ALIAFU_SVC_MOD@, ALIAFU_API)
 
-/// CCIv3 AFU interface ID.
-#define iidCCIv3AFU __INTC_IID(INTC_sysSampleAFU, 0x000e)
+/// ALI AFU interface ID.
+#define iidALIAFU __INTC_IID(INTC_sysSampleAFU, 0x000e)
 
-#define CCIV3AFU_MANIFEST \
+#define ALIAFU_MANIFEST \
 "9 20 ConfigRecordIncluded\n \
 \t10\n \
 \t\t9 17 ServiceExecutable\n \
-\t\t\t9 @CCIV3AFU_SVC_MLEN@ @CCIV3AFU_SVC_MOD@\n \
+\t\t\t9 @ALIAFU_SVC_MLEN@ @ALIAFU_SVC_MOD@\n \
 \t\t9 18 _CreateSoftService\n \
 \t\t0 1\n \
 9 29 ---- End of embedded NVS ----\n \
@@ -80,5 +80,5 @@ AAL_DECLARE_SVC_MOD(@CCIV3AFU_SVC_MOD@, CCIV3AFU_API)
 
 /// @}
 
-#endif // __SERVICE_CCIV3AFUSERVICE_H__
+#endif // __SERVICE_ALIAFUSERVICE_H__
 
