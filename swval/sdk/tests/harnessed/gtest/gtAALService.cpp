@@ -291,3 +291,131 @@ TEST(AALServiceModuleTest, aal0679)
    EXPECT_EQ(pRt, mod.getRuntimeClient());
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(ServiceBaseTest, aal0680)
+{
+   // The ServiceBase constructor sets a SubClass interface of iidService/IAALService * and adds
+   // an interface for iidServiceBase/IServiceBase *. The AALServiceModule * that is passed to the
+   // constructor is available via pAALServiceModule(), a proxy for the IRuntime * via getRuntime(),
+   // the IAALTransport * via recvr() and sender(), the IAALMarshaller via marshall(), and the
+   // IAALUnMarshallar via unmarshal().
+
+   EmptyISvcsFact   factory;
+   AALServiceModule mod(factory);
+
+   EmptyIRuntime    rt;
+   rt.getRuntimeProxyReturnsThisValue(dynamic_cast<IRuntime *>(&rt));
+
+   // new'ing these because ~ServiceBase delete's them.
+   EmptyIAALTransport    *tp      = new EmptyIAALTransport();
+   EmptyIAALMarshaller   *marsh   = new EmptyIAALMarshaller();
+   EmptyIAALUnMarshaller *unmarsh = new EmptyIAALUnMarshaller();
+
+   EmptyServiceBase sb(&mod, &rt, tp, marsh, unmarsh);
+
+   EXPECT_TRUE(sb.IsOK());
+
+   EXPECT_TRUE(sb.Has(iidService));
+   EXPECT_EQ(dynamic_cast<IAALService *>(&sb), sb.Interface(iidService));
+
+   EXPECT_EQ(iidService, sb.SubClassID());
+   EXPECT_EQ(dynamic_cast<IAALService *>(&sb), sb.ISubClass());
+
+   EXPECT_TRUE(sb.Has(iidServiceBase));
+   EXPECT_EQ(dynamic_cast<IServiceBase *>(&sb), sb.Interface(iidServiceBase));
+
+   EXPECT_EQ(&mod, sb.pAALServiceModule());
+   EXPECT_EQ(dynamic_cast<IRuntime *>(&rt), sb.getRuntime());
+
+   EXPECT_TRUE(sb.HasMarshaller());
+   EXPECT_TRUE(sb.HasUnMarshaller());
+   EXPECT_TRUE(sb.HasTransport());
+
+   EXPECT_EQ(dynamic_cast<IAALTransport *>(tp),         &sb.recvr());
+   EXPECT_EQ(dynamic_cast<IAALTransport *>(tp),         &sb.sender());
+   EXPECT_EQ(dynamic_cast<IAALMarshaller *>(marsh),     &sb.marshall());
+   EXPECT_EQ(dynamic_cast<IAALUnMarshaller *>(unmarsh), &sb.unmarshall());
+
+   EXPECT_NULL(sb.getRuntimeClient());
+   EXPECT_NULL(sb.Client());
+   EXPECT_NULL(sb.ClientBase());
+}
+
+TEST(ServiceBaseTest, aal0681)
+{
+   // When the ServiceBase has an IAALTransport, IAALMarshaller, or IAALUnMarshaller, as
+   // determined by HasTransport(), HasMarshaller(), and HasUnMarshaller(), respectively,
+   // those data members are deleted by the ServiceBase destructor.
+
+   class aal0681Transport : public EmptyIAALTransport
+   {
+   public:
+      aal0681Transport(btBool &b) :
+         m_b(b)
+      {}
+      ~aal0681Transport() { m_b = true; }
+
+   protected:
+      btBool &m_b;
+   };
+
+   class aal0681Marshaller : public EmptyIAALMarshaller
+   {
+   public:
+      aal0681Marshaller(btBool &b) :
+         m_b(b)
+      {}
+      ~aal0681Marshaller() { m_b = true; }
+
+   protected:
+      btBool &m_b;
+   };
+
+   class aal0681UnMarshaller : public EmptyIAALUnMarshaller
+   {
+   public:
+      aal0681UnMarshaller(btBool &b) :
+         m_b(b)
+      {}
+      ~aal0681UnMarshaller() { m_b = true; }
+
+   protected:
+      btBool &m_b;
+   };
+
+   EmptyISvcsFact   factory;
+   AALServiceModule mod(factory);
+
+   EmptyIRuntime    rt;
+   rt.getRuntimeProxyReturnsThisValue(dynamic_cast<IRuntime *>(&rt));
+
+   btBool TransportDeleted    = false;
+   btBool MarshallerDeleted   = false;
+   btBool UnMarshallerDeleted = false;
+
+   // new'ing these because ~ServiceBase delete's them.
+   aal0681Transport    *tp      = new aal0681Transport(TransportDeleted);
+   aal0681Marshaller   *marsh   = new aal0681Marshaller(MarshallerDeleted);
+   aal0681UnMarshaller *unmarsh = new aal0681UnMarshaller(UnMarshallerDeleted);
+
+   EmptyServiceBase *sb = new EmptyServiceBase(&mod, &rt, tp, marsh, unmarsh);
+
+   EXPECT_TRUE(sb->IsOK());
+
+   EXPECT_TRUE(sb->HasTransport());
+   EXPECT_TRUE(sb->HasMarshaller());
+   EXPECT_TRUE(sb->HasUnMarshaller());
+
+   EXPECT_FALSE(TransportDeleted);
+   EXPECT_FALSE(MarshallerDeleted);
+   EXPECT_FALSE(UnMarshallerDeleted);
+
+   delete sb;
+
+   EXPECT_TRUE(TransportDeleted);
+   EXPECT_TRUE(MarshallerDeleted);
+   EXPECT_TRUE(UnMarshallerDeleted);
+}
+
+

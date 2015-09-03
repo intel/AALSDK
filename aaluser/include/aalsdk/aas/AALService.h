@@ -185,10 +185,6 @@ public:
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
 
-   /// ServiceBase Copy Constructor.
-   ServiceBase(ServiceBase const &rother);
-
-
    /// ServiceBase Destructor.
    virtual ~ServiceBase();
 
@@ -410,7 +406,8 @@ public:
                      TransactionID const    &rTranID   = TransactionID());
 
 protected:
-   // operator= not allowed
+   // no copies
+   ServiceBase(const ServiceBase & );
    ServiceBase & operator = (const ServiceBase & );
 
    //=============================================================================

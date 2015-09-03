@@ -82,6 +82,8 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_runMDT(false),
    m_pMDT(NULL)
 {
+   AutoLock(this);
+
    if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
       m_bIsOK = false;
       return;
@@ -91,22 +93,6 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       m_bIsOK = false;
       return;
    }
-}
-
-ServiceBase::ServiceBase(ServiceBase const &rother) :
-   CAASBase(),
-   m_optArgs(rother.m_optArgs),
-   m_pclient(rother.m_pclient),
-   m_pcontainer(rother.m_pcontainer),
-   m_Runtime(rother.m_Runtime->getRuntimeProxy(this)),
-   m_ptransport(rother.m_ptransport),
-   m_pmarshaller(rother.m_pmarshaller),
-   m_punmarshaller(rother.m_punmarshaller),
-   m_runMDT(false),
-   m_pMDT(NULL)
-{
-   SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this));
-   m_bIsOK = true;
 }
 
 ServiceBase::~ServiceBase()
@@ -357,6 +343,7 @@ void ServiceBase::messageHandler(const IEvent &rEvent)
 }
 #endif // DEPRECATED
 
+ServiceBase::ServiceBase(const ServiceBase & ) {/*empty*/}
 ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 
 
@@ -426,9 +413,9 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
    // Create the remote side object
    marshall().Empty();  // Just to be sure
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_METHOD,eNew);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE,this);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS,m_optArgs);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_METHOD,       eNew);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE,              this);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS, &m_optArgs);
 
    if ( !sendmsg() ) {
       m_ptransport->disconnect();
