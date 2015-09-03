@@ -963,6 +963,174 @@ IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy1, btBool,         
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,     IRuntimeClient * , m_getRuntimeClient_returns     )
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                 btBool,            m_IsOK_returns                 )
 
+
+EmptyIAALTransport::EmptyIAALTransport() :
+   m_connectremote_returns(true),
+   m_waitforconnect_returns(true),
+   m_disconnect_returns(true),
+   m_getmsg_returns(""),
+   m_putmsg_returns(0)
+{}
+
+btBool  EmptyIAALTransport::connectremote(NamedValueSet const & ) { return m_connectremote_returns;    }
+btBool EmptyIAALTransport::waitforconnect(NamedValueSet const & ) { return m_waitforconnect_returns;   }
+btBool     EmptyIAALTransport::disconnect()                       { return m_disconnect_returns;       }
+btcString      EmptyIAALTransport::getmsg(btWSSize *pSz)          { *pSz = 0; return m_getmsg_returns; }
+int            EmptyIAALTransport::putmsg(btcString , btWSSize )  { return m_putmsg_returns;           }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, connectremote,  btBool,    m_connectremote_returns )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, waitforconnect, btBool,    m_waitforconnect_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, disconnect,     btBool,    m_disconnect_returns    )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, getmsg,         btcString, m_getmsg_returns        )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, putmsg,         int,       m_putmsg_returns        )
+
+
+EmptyIAALMarshaller::EmptyIAALMarshaller() :
+   m_pmsgp_returns(NULL)
+{}
+
+ENamedValues   EmptyIAALMarshaller::Empty()                                              { return m_NVS.Empty();               }
+btBool           EmptyIAALMarshaller::Has(btStringKey Name)                        const { return m_NVS.Has(Name);             }
+ENamedValues  EmptyIAALMarshaller::Delete(btStringKey Name)                              { return m_NVS.Delete(Name);          }
+ENamedValues EmptyIAALMarshaller::GetSize(btStringKey Name,    btWSSize    *pSz)   const { return m_NVS.GetSize(Name, pSz);    }
+ENamedValues    EmptyIAALMarshaller::Type(btStringKey Name,    eBasicTypes *pTy)   const { return m_NVS.Type(Name, pTy);       }
+ENamedValues EmptyIAALMarshaller::GetName(btUnsignedInt index, btStringKey *pName) const { return m_NVS.GetName(index, pName); }
+
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btBool                Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btByte                Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, bt32bitInt            Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btUnsigned32bitInt    Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, bt64bitInt            Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btUnsigned64bitInt    Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btFloat               Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btcString             Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, btObjectType          Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name, const INamedValueSet *Value) { return m_NVS.Add(Name, Value); }
+
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btByteArray             Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      bt32bitIntArray         Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      bt64bitIntArray         Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btFloatArray            Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btStringArray           Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btNumberKey Name,
+                                      btObjectArray           Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btBool                Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btByte                Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, bt32bitInt            Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btUnsigned32bitInt    Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, bt64bitInt            Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btUnsigned64bitInt    Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btFloat               Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btcString             Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, btObjectType          Value) { return m_NVS.Add(Name, Value); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name, const INamedValueSet *Value) { return m_NVS.Add(Name, Value); }
+
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btByteArray             Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      bt32bitIntArray         Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      bt64bitIntArray         Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btFloatArray            Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btStringArray           Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+ENamedValues EmptyIAALMarshaller::Add(btStringKey Name,
+                                      btObjectArray           Value, btUnsigned32bitInt NumElements)
+{ return m_NVS.Add(Name, Value, NumElements); }
+
+char const * EmptyIAALMarshaller::pmsgp(btWSSize *len) { return m_pmsgp_returns; }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALMarshaller, pmsgp, char const *, m_pmsgp_returns)
+
+EmptyIAALUnMarshaller::EmptyIAALUnMarshaller() {}
+
+ENamedValues   EmptyIAALUnMarshaller::Empty()                                              { return m_NVS.Empty();               }
+btBool           EmptyIAALUnMarshaller::Has(btStringKey Name)                        const { return m_NVS.Has(Name);             }
+ENamedValues  EmptyIAALUnMarshaller::Delete(btStringKey Name)                              { return m_NVS.Delete(Name);          }
+ENamedValues EmptyIAALUnMarshaller::GetSize(btStringKey Name,    btWSSize    *pSz)   const { return m_NVS.GetSize(Name, pSz);    }
+ENamedValues    EmptyIAALUnMarshaller::Type(btStringKey Name,    eBasicTypes *pTy)   const { return m_NVS.Type(Name, pTy);       }
+ENamedValues EmptyIAALUnMarshaller::GetName(btUnsignedInt index, btStringKey *pName) const { return m_NVS.GetName(index, pName); }
+
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btBool                  *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btByte                  *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, bt32bitInt              *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btUnsigned32bitInt      *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, bt64bitInt              *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btUnsigned64bitInt      *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btFloat                 *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btcString               *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btObjectType            *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, INamedValueSet const   **pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btByteArray             *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, bt32bitIntArray         *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btUnsigned32bitIntArray *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, bt64bitIntArray         *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btUnsigned64bitIntArray *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btFloatArray            *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btStringArray           *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btNumberKey Name, btObjectArray           *pValue) const { return m_NVS.Get(Name, pValue); }
+
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btBool                  *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btByte                  *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, bt32bitInt              *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btUnsigned32bitInt      *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, bt64bitInt              *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btUnsigned64bitInt      *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btFloat                 *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btcString               *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btObjectType            *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, INamedValueSet const   **pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btByteArray             *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, bt32bitIntArray         *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btUnsigned32bitIntArray *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, bt64bitIntArray         *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btUnsigned64bitIntArray *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btFloatArray            *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btStringArray           *pValue) const { return m_NVS.Get(Name, pValue); }
+ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btObjectArray           *pValue) const { return m_NVS.Get(Name, pValue); }
+
+void EmptyIAALUnMarshaller::importmsg(char const *pmsg, btWSSize len) {}
+
+EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
+                                   IRuntime         *pAALRUNTIME,
+                                   IAALTransport    *ptransport,
+                                   IAALMarshaller   *marshaller,
+                                   IAALUnMarshaller *unmarshaller) :
+   AAL::ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
+{}
+
+void EmptyServiceBase::init(TransactionID const & ) {}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void CallTrackingIServiceClient::serviceAllocated(IBase               *pBase,
@@ -1136,4 +1304,3 @@ btBool CallTrackingIRuntime::IsOK()
    AddToLog("IRuntime::IsOK");
    return EmptyIRuntime::IsOK();
 }
-

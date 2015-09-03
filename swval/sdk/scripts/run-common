@@ -9,6 +9,7 @@ declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && die "no autoreconf?"
 declare -r CAT="`which cat`" 2>/dev/null
 [ "x${CAT}" = x ] && die "no cat?"
+declare -r DISTCC="`which distcc`" 2>/dev/null
 declare -r GIT="`which git`" 2>/dev/null
 [ "x${GIT}" = x ] && die "no git?"
 declare -r MAKE="`which make`" 2>/dev/null
@@ -76,7 +77,13 @@ END
    [ -t 1 ] && printf "\x1b[0m"
 }
 
+# $1 [optional] bool : whether or not the user wants distcc.
 setup() {
+   local wantdistcc=false
+   if [ $# -gt 0 ]; then
+      wantdistcc=$1
+   fi
+
    # This script is located in swval/sdk/scripts
    local -r srcdir="`cd ${PWD}/.. && pwd`"
    local -r reporoot="`cd ${srcdir}/../.. && pwd`"
@@ -135,8 +142,13 @@ setup() {
 
    pushd "${VPATH}" >/dev/null 2>&1
 
-   ${MAKE}
-   ${MAKE} check
+   if ${wantdistcc} && [ "x${DISTCC}" != x ] && [ -d "${HOME}/distcc" ]; then
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} all
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} check
+   else
+      ${MAKE} ${MAKEOPTS:-} all
+      ${MAKE} ${MAKEOPTS:-} check
+   fi
 
    popd >/dev/null 2>&1
 }

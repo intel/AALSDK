@@ -148,224 +148,6 @@ X UniqueIntRand(X *p, btUnsignedInt n, X mod, btUnsigned32bitInt *R)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename I>
-class TIntVerifier
-{
-public:
-   TIntVerifier() {}
-   void expect_eq(I a, I b) { EXPECT_EQ(a, b); }
-   void expect_ne(I a, I b) { EXPECT_NE(a, b); }
-};
-
-template <typename F>
-class TFltVerifier
-{
-public:
-   TFltVerifier() {}
-   void expect_eq(F a, F b) { FAIL(); }
-   void expect_ne(F a, F b) { EXPECT_NE(a, b); }
-};
-
-// specialization for btFloat.
-template <>
-class TFltVerifier<btFloat>
-{
-public:
-   TFltVerifier() {}
-   void expect_eq(btFloat a, btFloat b) { EXPECT_FLOAT_EQ(a, b); }
-};
-
-template <typename S>
-class TStrVerifier
-{
-public:
-   TStrVerifier() {}
-   void expect_eq(S a, S b) { EXPECT_STREQ(a, b); }
-   void expect_ne(S a, S b) { EXPECT_STRNE(a, b); }
-};
-
-class NVSVerifier
-{
-public:
-   NVSVerifier() {}
-   void expect_eq(const INamedValueSet *a, const INamedValueSet *b)
-   {
-      EXPECT_TRUE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
-   }
-   void expect_ne(const INamedValueSet *a, const INamedValueSet *b)
-   {
-      EXPECT_FALSE( a->operator == (*b) ) << *a << "\nvs.\n" << *b;
-   }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-template <typename I>
-class TIntCompare
-{
-public:
-   TIntCompare() {}
-   bool equal(I a, I b) { return a == b; }
-};
-
-template <typename F>
-class TFltCompare
-{
-public:
-   TFltCompare() {}
-   bool equal(F a, F b) { return a == b; }
-};
-
-template <typename S>
-class TStrCompare
-{
-public:
-   TStrCompare() {}
-   bool equal(S a, S b) { return (0 == ::strcmp(a, b)); }
-};
-
-class NVSCompare
-{
-public:
-   NVSCompare() {}
-   bool equal(const INamedValueSet *a, const INamedValueSet *b) { return a->operator == (*b); }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-template <typename X, typename Compare>
-class TValueSequencer
-{
-public:
-   TValueSequencer(const X *pValues, btUnsigned32bitInt Count) :
-      m_pValues(pValues),
-      m_Count(Count),
-      m_i(0),
-      m_Savei(0)
-   {}
-   virtual ~TValueSequencer() {}
-
-   void Snapshot() { m_Savei = m_i; }
-   void Replay()   { m_i = m_Savei; }
-
-   const X & Value()
-   {
-      btUnsigned32bitInt i = m_i;
-      m_i = (m_i + 1) % m_Count;
-      return *(m_pValues + i);
-   }
-
-   const X & ValueOtherThan(const X &x)
-   {
-      Compare            c;
-      btUnsigned32bitInt i;
-      do
-      {
-         i = m_i;
-         m_i = (m_i + 1) % m_Count;
-      }while ( c.equal(*(m_pValues + i), x) );
-      return *(m_pValues + i);
-   }
-
-   btUnsigned32bitInt Count() const { return m_Count; }
-
-   btUnsigned32bitInt Seed(btUnsigned32bitInt ) { return 0; }
-
-   virtual eBasicTypes BasicType() const = 0;
-
-protected:
-   TValueSequencer() {}
-
-   const X                 *m_pValues;
-   const btUnsigned32bitInt m_Count;
-   btUnsigned32bitInt       m_i;
-   btUnsigned32bitInt       m_Savei;
-};
-
-template <typename X, typename Compare>
-class TValueRandomizer
-{
-public:
-   TValueRandomizer(const X *pValues, btUnsigned32bitInt Count) :
-      m_pValues(pValues),
-      m_Count(Count),
-      m_Seed(0),
-      m_SaveSeed(0)
-   {}
-   virtual ~TValueRandomizer() {}
-
-   void Snapshot() { m_SaveSeed = m_Seed;     }
-   void Replay()   { m_Seed     = m_SaveSeed; }
-
-   const X & Value()
-   {
-      btUnsigned32bitInt i = ::GetRand(&m_Seed) % m_Count;
-      return *(m_pValues + i);
-   }
-
-   const X & ValueOtherThan(const X &x)
-   {
-      Compare            c;
-      btUnsigned32bitInt i;
-      do
-      {
-         i = ::GetRand(&m_Seed) % m_Count;
-      }while ( c.equal(*(m_pValues + i), x) );
-      return *(m_pValues + i);
-   }
-
-   btUnsigned32bitInt Count() const { return m_Count; }
-
-   btUnsigned32bitInt Seed(btUnsigned32bitInt s)
-   {
-      btUnsigned32bitInt prev = m_Seed;
-      m_Seed = s;
-      return prev;
-   }
-
-   virtual eBasicTypes BasicType() const = 0;
-
-protected:
-   TValueRandomizer() {}
-
-   const X                 *m_pValues;
-   const btUnsigned32bitInt m_Count;
-   btUnsigned32bitInt       m_Seed;
-   btUnsigned32bitInt       m_SaveSeed;
-};
-
-template <typename ElemT, typename Compare, typename ArrT>
-class TArrayProvider
-{
-public:
-   TArrayProvider(const ArrT pValues, btUnsigned32bitInt Count) :
-      m_pValues(pValues),
-      m_Count(Count)
-   {}
-   virtual ~TArrayProvider() {}
-
-                const ArrT Array() const { return m_pValues; }
-        btUnsigned32bitInt Count() const { return m_Count;   }
-   virtual eBasicTypes BasicType() const = 0;
-
-   const ElemT & ValueOtherThan(const ElemT &x)
-   {
-      Compare            c;
-      btUnsigned32bitInt i = m_Count - 1;
-      do
-      {
-         i = (i + 1) % m_Count;
-      }while( c.equal(*(m_pValues + i), x) );
-      return *(m_pValues + i);
-   }
-
-protected:
-   TArrayProvider() {}
-
-   const ArrT               m_pValues;
-   const btUnsigned32bitInt m_Count;
-};
-
 template <typename S>
 class IOStreamMixin
 {
@@ -836,6 +618,176 @@ protected:
    btBool          m_releaseRuntimeProxy_1_returns;
    IRuntimeClient *m_getRuntimeClient_returns;
    btBool          m_IsOK_returns;
+};
+
+class EmptyIAALTransport : public AAL::IAALTransport
+{
+public:
+   EmptyIAALTransport();
+
+   virtual btBool  connectremote(NamedValueSet const & );
+   virtual btBool waitforconnect(NamedValueSet const & );
+   virtual btBool     disconnect();
+   virtual btcString      getmsg(btWSSize * );
+   virtual int            putmsg(btcString , btWSSize );
+
+   DECLARE_RETVAL_ACCESSORS(connectremote,  btBool    )
+   DECLARE_RETVAL_ACCESSORS(waitforconnect, btBool    )
+   DECLARE_RETVAL_ACCESSORS(disconnect,     btBool    )
+   DECLARE_RETVAL_ACCESSORS(getmsg,         btcString )
+   DECLARE_RETVAL_ACCESSORS(putmsg,         int       )
+
+protected:
+   btBool    m_connectremote_returns;
+   btBool    m_waitforconnect_returns;
+   btBool    m_disconnect_returns;
+   btcString m_getmsg_returns;
+   int       m_putmsg_returns;
+};
+
+class EmptyIAALMarshaller : public AAL::IAALMarshaller
+{
+public:
+   EmptyIAALMarshaller();
+
+   virtual ENamedValues   Empty();
+   virtual btBool           Has(btStringKey )                   const;
+   virtual ENamedValues  Delete(btStringKey );
+   virtual ENamedValues GetSize(btStringKey   , btWSSize    * ) const;
+   virtual ENamedValues    Type(btStringKey   , eBasicTypes * ) const;
+   virtual ENamedValues GetName(btUnsignedInt , btStringKey * ) const;
+
+   virtual ENamedValues Add(btNumberKey Name, btBool                Value);
+   virtual ENamedValues Add(btNumberKey Name, btByte                Value);
+   virtual ENamedValues Add(btNumberKey Name, bt32bitInt            Value);
+   virtual ENamedValues Add(btNumberKey Name, btUnsigned32bitInt    Value);
+   virtual ENamedValues Add(btNumberKey Name, bt64bitInt            Value);
+   virtual ENamedValues Add(btNumberKey Name, btUnsigned64bitInt    Value);
+   virtual ENamedValues Add(btNumberKey Name, btFloat               Value);
+   virtual ENamedValues Add(btNumberKey Name, btcString             Value);
+   virtual ENamedValues Add(btNumberKey Name, btObjectType          Value);
+   virtual ENamedValues Add(btNumberKey Name, const INamedValueSet *Value);
+
+   virtual ENamedValues Add(btNumberKey Name,
+                            btByteArray             Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            bt32bitIntArray         Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            bt64bitIntArray         Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            btFloatArray            Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            btStringArray           Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btNumberKey Name,
+                            btObjectArray           Value, btUnsigned32bitInt NumElements);
+
+   virtual ENamedValues Add(btStringKey Name, btBool                Value);
+   virtual ENamedValues Add(btStringKey Name, btByte                Value);
+   virtual ENamedValues Add(btStringKey Name, bt32bitInt            Value);
+   virtual ENamedValues Add(btStringKey Name, btUnsigned32bitInt    Value);
+   virtual ENamedValues Add(btStringKey Name, bt64bitInt            Value);
+   virtual ENamedValues Add(btStringKey Name, btUnsigned64bitInt    Value);
+   virtual ENamedValues Add(btStringKey Name, btFloat               Value);
+   virtual ENamedValues Add(btStringKey Name, btcString             Value);
+   virtual ENamedValues Add(btStringKey Name, btObjectType          Value);
+   virtual ENamedValues Add(btStringKey Name, const INamedValueSet *Value);
+
+   virtual ENamedValues Add(btStringKey Name,
+                            btByteArray             Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            bt32bitIntArray         Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            bt64bitIntArray         Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            btFloatArray            Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            btStringArray           Value, btUnsigned32bitInt NumElements);
+   virtual ENamedValues Add(btStringKey Name,
+                            btObjectArray           Value, btUnsigned32bitInt NumElements);
+
+   virtual char const * pmsgp(btWSSize *len);
+
+   DECLARE_RETVAL_ACCESSORS(pmsgp, char const *)
+
+protected:
+   const char   *m_pmsgp_returns;
+   NamedValueSet m_NVS;
+};
+
+class EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
+{
+public:
+   EmptyIAALUnMarshaller();
+
+   virtual ENamedValues   Empty();
+   virtual btBool           Has(btStringKey )                   const;
+   virtual ENamedValues  Delete(btStringKey );
+   virtual ENamedValues GetSize(btStringKey   , btWSSize    * ) const;
+   virtual ENamedValues    Type(btStringKey   , eBasicTypes * ) const;
+   virtual ENamedValues GetName(btUnsignedInt , btStringKey * ) const;
+
+   virtual ENamedValues Get(btNumberKey Name, btBool                   *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btByte                   *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, bt32bitInt               *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned32bitInt       *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, bt64bitInt               *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned64bitInt       *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btFloat                  *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btcString                *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btObjectType             *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, INamedValueSet const    **pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btByteArray              *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, bt32bitIntArray          *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray  *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, bt64bitIntArray          *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray  *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btFloatArray             *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btStringArray            *pValue) const;
+   virtual ENamedValues Get(btNumberKey Name, btObjectArray            *pValue) const;
+
+   virtual ENamedValues Get(btStringKey Name, btBool                   *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btByte                   *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, bt32bitInt               *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned32bitInt       *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, bt64bitInt               *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned64bitInt       *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btFloat                  *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btcString                *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btObjectType             *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, INamedValueSet const    **pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btByteArray              *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, bt32bitIntArray          *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray  *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, bt64bitIntArray          *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray  *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btFloatArray             *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btStringArray            *pValue) const;
+   virtual ENamedValues Get(btStringKey Name, btObjectArray            *pValue) const;
+
+   virtual void   importmsg(char const *pmsg, btWSSize len);
+
+protected:
+   NamedValueSet m_NVS;
+};
+
+class EmptyServiceBase : public AAL::ServiceBase
+{
+public:
+   EmptyServiceBase(AALServiceModule *container,
+                    IRuntime         *pAALRUNTIME,
+                    IAALTransport    *ptransport,
+                    IAALMarshaller   *marshaller,
+                    IAALUnMarshaller *unmarshaller);
+
+   virtual void init(TransactionID const &rtid);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
