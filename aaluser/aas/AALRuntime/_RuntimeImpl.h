@@ -228,7 +228,7 @@ private:
 
    IServiceBroker                 *m_pBroker;
    IBase                          *m_pBrokerbase;
-
+   IBase                          *m_pDefaultBrokerbase;
    CSemaphore                      m_sem;
 };
 

@@ -240,6 +240,7 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
    m_pBrokerSvcHost(NULL),
    m_pBroker(NULL),
    m_pBrokerbase(NULL),
+   m_pDefaultBrokerbase(NULL),
    m_state(Stopped)
 {
    m_sem.Create(0);
@@ -718,10 +719,24 @@ void _runtime::serviceAllocated(IBase               *pServiceBase,
 
    switch ( rTranID.ID() ) {
       case Broker : {
-         // Replace the Broker
-         m_pBrokerbase = pServiceBase;
-         m_pBroker     = subclass_ptr<IServiceBroker>(pServiceBase);
-         m_sem.Post(1);
+         // If there is already a broker, Replace it.
+         if(NULL != m_pBrokerbase){
+            // Save a copy of the pointer .
+            //  We cannot Release the default Broker now since that would cause the new Broker and any other Service
+            //  allocated using the default to be Released. Release it later at stop()
+            m_pDefaultBrokerbase = m_pBrokerbase;
+
+            m_pBrokerbase = pServiceBase;
+            m_pBroker     = subclass_ptr<IServiceBroker>(m_pBrokerbase);
+
+
+            m_sem.Post(1);
+         }else {
+            // This is the default broker.
+            m_pBrokerbase = pServiceBase;
+            m_pBroker     = subclass_ptr<IServiceBroker>(pServiceBase);
+            m_sem.Post(1);
+         }
       } break;
 
       default :
@@ -760,6 +775,16 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
 
    switch ( rTranID.ID() ) {
       case Broker : {
+         // If the Default Broker was replaced then release it now.  Next time through we will clean up.
+         if(NULL != m_pDefaultBrokerbase){
+            // Release the Service Broker.
+            dynamic_ptr<IAALService>(iidService, m_pDefaultBrokerbase)->Release(TransactionID(Broker));
+            m_pDefaultBrokerbase = NULL;
+            return;
+         }
+
+         // Shutting down.
+
          // Don't delete here. Taken care of by ServiceBase::Release().
          m_pBroker     = NULL;
          m_pBrokerbase = NULL;
@@ -875,7 +900,8 @@ IRuntimeClient *_runtime::getRuntimeClient()
 _runtime::~_runtime()
 {
    AutoLock(this);
-#if 1
+   std::cerr << "Num Proxies " << m_mClientMap.size() << std::endl;
+#if 0
    // Check for proxies
    if(!m_mClientMap.empty()){
       OSLThreadGroup oneShot;
