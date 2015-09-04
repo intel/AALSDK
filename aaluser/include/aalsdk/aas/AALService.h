@@ -425,6 +425,8 @@ protected:
 
    void Released();
 
+   btUnsigned32bitInt m_Flags;
+#define SERVICEBASE_IS_RELEASED 0x00000001
    IRuntimeClient    *m_RuntimeClient;
    IRuntime          *m_Runtime;
    IServiceClient    *m_pclient;

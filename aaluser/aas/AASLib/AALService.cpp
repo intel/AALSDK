@@ -71,6 +71,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
+   m_Flags(0),
    m_RuntimeClient(NULL),
    m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_pclient(NULL),
@@ -83,6 +84,8 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_pMDT(NULL)
 {
    AutoLock(this);
+
+   ASSERT(NULL != m_pcontainer);
 
    if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
       m_bIsOK = false;
@@ -129,14 +132,7 @@ ServiceBase::~ServiceBase()
       m_pMDT->Join();
    }
 
-   {
-      AutoLock(this);
-
-      if ( m_bIsOK ) {
-         // Not been released yet.
-         Released();
-      }
-   }
+   Released();
 }
 
 btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
@@ -325,8 +321,14 @@ void ServiceBase::allocService(IBase                  *pClient,
 void ServiceBase::Released()
 {
    AutoLock(this);
-   // Mark as not OK before deleting self or it will recurse Releasing
-   m_bIsOK = false;
+
+   if ( flag_is_set(m_Flags, SERVICEBASE_IS_RELEASED) ) {
+      return;
+   }
+
+   // Mark as released so that we don't release multiple times.
+
+   flag_setf(m_Flags, SERVICEBASE_IS_RELEASED);
    m_pcontainer->ServiceReleased(this);
 }
 
