@@ -1,0 +1,140 @@
+// Copyright (c) 2007-2015, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+/// @file AIA.h
+/// @brief Defines Service for the User Mode Application Interface Adapter
+///        (AIA).
+/// @ingroup AIA
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+///
+/// AUTHORS: Joseph Grecco, Intel Corporation.
+///
+/// HISTORY:
+/// WHEN:          WHO:     WHAT:
+/// 8/21/2015      JG       Initial version
+//****************************************************************************
+#ifndef __AALSDK_AIA_INTERNAL_H__
+#define __AALSDK_AIA_INTERNAL_H__
+#include <aalsdk/AALTypes.h>
+#include <aalsdk/AALTransactionID.h>
+#include <aalsdk/osal/OSSemaphore.h>
+#include <aalsdk/osal/CriticalSection.h>
+#include <aalsdk/osal/Thread.h>
+#include <aalsdk/AALBase.h>                        // IBase
+#include <aalsdk/aas/AALServiceModule.h>
+#include <aalsdk/aas/AALService.h>                 // ServiceBase
+#include <aalsdk/uaia/AIA.h>                       // AIA interfaces
+#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
+#include <aalsdk/uaia/uAIASession.h>               // uAIASession
+#include <aalsdk/aas/AALService.h>                 // ServiceBase
+#include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
+
+#include <aalsdk/INTCDefs.h>                       // AIA IDs
+
+#include "UIDriverInterfaceAdapter.h"              // UIDriverInterfaceAdapter
+
+/// @todo Document uAIA and related.
+
+class DeviceServiceBase;
+
+USING_NAMESPACE(AAL);
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////               AIAService                  ///////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//=============================================================================
+//=============================================================================
+
+
+//=============================================================================
+// Name: AIAService
+// Description: Implementation of the AFU Interface Adapter Service
+// Comments:
+//=============================================================================
+class UAIA_API AIAService: public AAL::ServiceBase
+{
+   public:
+
+      DECLARE_AAL_SERVICE_CONSTRUCTOR(AIAService, AAL::ServiceBase),
+         m_uida(),
+         m_Semaphore(),
+         m_pMDT(NULL),
+         m_pShutdownThread(NULL)
+      {
+         SetInterface(iidAIAService, dynamic_cast <AIAService *>(this));
+         m_bIsOK = false;
+      }
+
+      virtual ~AIAService();
+
+      // <IAALService>
+      btBool Release(TransactionID const &rTranID,
+                     btTime timeout = AAL_INFINITE_WAIT);
+
+      // Hook to allow the object to initialize
+      void init(TransactionID const &rtid);
+      // </IAALService>
+
+   protected:
+      void SemWait(void);
+      void SemPost(void);
+
+      void Destroy(void);
+
+      void SendMessage(IAFUTransaction *pMessage);
+
+      void Process_Event();
+
+      static void MessageDeliveryThread(OSLThread *pThread,
+                                        void *pContext);
+      static void ShutdownThread(OSLThread *pThread,
+                                 void *pContext);
+      void WaitForShutdown(ui_shutdownreason_e      reason,
+                           btTime                   waittime,
+                           stTransactionID_t const &rTranID_t);
+
+      IAFUProxy *AFUProxyGet(AIAService *pAIA, NamedValueSet const &OptArgs);      // Allocates a Proxy to the AFU
+
+      btBool IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
+                                        btTime                   timeout);
+
+   protected:
+      // Variables
+      UIDriverInterfaceAdapter   m_uida;                                         // Kernel Mode Driver Interface Adapter
+      CSemaphore                 m_Semaphore;                                    // General synchronization as needed
+      OSLThread                 *m_pMDT;                                         // Message delivery thread
+      OSLThread                 *m_pShutdownThread;                              // Shutdown thread
+};
+
+
+#endif // __AALSDK_AIA_INTERNAL_H__
+

@@ -27,52 +27,40 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     libuAIA: Intel(R) Accelerator Abstraction Layer Library
+##        Accelerator Abstraction Services
+##     aas/uAIA/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     06/27/2013    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_CCI_NLB/SW \
-Hello_SPL_LB/SW \
-Sudoku_SPL/SW \
-LinkedList_SPL/SW \
-Hello_ALI_NLB/SW  \
-AIAService
 
-MFLAGS  =
-ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
-endif
-ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
-endif
+# We _are_ dlopen'ing AASUAIA.
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
-endif
-else
-ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
-endif
-MFLAGS += DESTDIR=$(DESTDIR)
-endif
+lib_LTLIBRARIES=libAASUAIA.la
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+libAASUAIA_la_SOURCES=\
+AALuAIA_Messaging.cpp \
+AALuAIA_UIDriverClient.cpp \
+AFUdev.cpp \
+AFUpkg.cpp \
+uAIA.cpp \
+uAIADllMain.cpp \
+uAIASession.cpp \
+uidrvMessage.cpp \
+FAP10.cpp \
+FAP20.cpp \
+MAFUTransactions.cpp
 
-.PHONY:all clean
+libAASUAIA_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-doc docs: docclean
-	doxygen doc/Doxyfile
+libAASUAIA_la_LDFLAGS=\
+-module \
+-version-info $(AASUAIA_VERSION_CURRENT):$(AASUAIA_VERSION_REVISION):$(AASUAIA_VERSION_AGE)
 
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
-
-.PHONY:doc docs docclean docsclean
+libAASUAIA_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la

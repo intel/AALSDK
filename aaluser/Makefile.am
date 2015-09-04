@@ -283,7 +283,8 @@ include/aalsdk/uaia/uAIADefs.h \
 include/aalsdk/uaia/uAIA.h \
 include/aalsdk/uaia/uAIAService.h \
 include/aalsdk/uaia/uAIASession.h \
-include/aalsdk/uaia/uidrvMessage.h
+include/aalsdk/uaia/uidrvMessage.h \
+include/aalsdk/uaia/IAFUProxy.h
 
 utilshdrs_HEADERS=\
 include/aalsdk/utils/AALEventUtilities.h \

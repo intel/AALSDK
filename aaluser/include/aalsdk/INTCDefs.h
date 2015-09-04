@@ -99,6 +99,10 @@
 #define  INTC_sysFSBAIA                INTC_sysBase(0x0002)    // FSB AIA
 #define  INTC_sysSampleAIA             INTC_sysBase(0x0003)    // SDK Sample AIA
 #define  INTC_sysFSBV1AIA              INTC_sysBase(0x0004)    // FSB Version 1.0 AIA
+#define  INTC_sysAIA                   INTC_sysBase(0x0005)    // Version 4 AIA
+
+#define  iidAIAService                 __AAL_IID(INTC_sysAIA, 0x0001)   // AIA Service interface
+
 
 #define  INTC_sysSampleAFU             INTC_sysBase(0x0005)    // Sample AFU
 
@@ -106,6 +110,8 @@
 
 // Used in samples
 #define  INTC_sysSampleMisc            INTC_sysBase(0x1000)
+
+
 
 
 #if DEPRECATED

@@ -59,6 +59,20 @@
 #include <aalsdk/AALNamedValueSet.h>
 #include <aalsdk/kernel/aalui.h> // uid_msgIDs_e
 
+// Remove once Autotooled and placed in aaldefs.h
+#if defined ( __AAL_WINDOWS__ )
+# ifdef AIASERVICE_SERVICE_EXPORTS
+#    define AIA_API __declspec(dllexport)
+# else
+#    define AIA_API __declspec(dllimport)
+# endif // AIASERVICE_SERVICE_EXPORTS
+#else
+# ifndef __declspec
+#    define __declspec(x)
+# endif // __declspec
+# define AIA_API    __declspec(0)
+#endif // __AAL_WINDOWS__
+
 
 BEGIN_NAMESPACE(AAL)
 

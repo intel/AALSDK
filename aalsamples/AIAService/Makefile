@@ -27,52 +27,59 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     aaluser/AIAService/Makefile
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     08/21/2015    JG   Initial version based on canonical Service makefile
 ##******************************************************************************
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_CCI_NLB/SW \
-Hello_SPL_LB/SW \
-Sudoku_SPL/SW \
-LinkedList_SPL/SW \
-Hello_ALI_NLB/SW  \
-AIAService
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-MFLAGS  =
-ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+ifneq (,$(ndebug)) 
+else
+CPPFLAGS += -DENABLE_DEBUG=1 
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+SOURCES=\
+AIADllMain.cpp\
+AIAService.cpp
+ 
+OBJS=$(SOURCES:.cpp=.o)
 
-.PHONY:all clean
+all: libaia.so libaia.so.0 
 
-doc docs: docclean
-	doxygen doc/Doxyfile
+libaia.so: libaia.so.0.0.0
+	ln -sf libaia.so.0.0.0 libaia.so
 
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
+libaia.so.0: libaia.so.0.0.0
+	ln -sf libaia.so.0.0.0 libaia.so.0
 
-.PHONY:doc docs docclean docsclean
+libaia.so.0.0.0: ${OBJS} 
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libaia.so.0 ${OBJS} $(LDFLAGS) -lOSAL -lAAS -laalrt -o libaia.so.0.0.0
+
+%.o: %.cpp Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o $@ $<
+
+clean:
+	$(RM) libaia.so libaia.so.0 libaia.so.0.0.0 *.o
+
+.PHONY: all clean 

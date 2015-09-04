@@ -95,6 +95,7 @@ void operator() ()
       } break;
       case AllocateFailed : {
          m_pClient->serviceAllocateFailed(*m_pEvent);
+         delete m_pEvent;
       } break;
       case Released : {
          dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase)->Release(0);
@@ -102,6 +103,7 @@ void operator() ()
       } break;
       case ReleaseFailed : {
          m_pClient->serviceReleaseFailed(*m_pEvent);
+         delete m_pEvent;
       } break;
       case Event : {
          m_pClient->serviceEvent(*m_pEvent);
