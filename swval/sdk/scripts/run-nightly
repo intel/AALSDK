@@ -8,8 +8,21 @@ declare -r SCRIPT_NAME='run-nightly'
 . ./run-common
 
 declare -ri REPEAT=200
-declare -r  ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
+declare     ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
 
-setup
-run_nightly ${ARGS} ${1+"$@"}
+declare WANTDISTCC=false
+while [ $# -gt 0 ]; do
+   case $1 in
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup ${WANTDISTCC}
+run_nightly ${ARGS}
 exit $?

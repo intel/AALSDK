@@ -776,7 +776,9 @@ cciv4drv_exit(void)
 void
 cciv4_release_device(struct device *pdev)
 {
+#if ENABLE_DEBUG
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
+#endif // ENABLE_DEBUG
 
    PTRACEIN;
 

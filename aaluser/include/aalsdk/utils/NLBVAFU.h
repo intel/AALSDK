@@ -54,13 +54,18 @@ BEGIN_NAMESPACE(AAL)
 #define MAX_NLB_READ_WKSPC        CL(16384)
 #define MAX_NLB_WRITE_WKSPC       CL(16384)
 #define MAX_NLB_TRPUT_WKSPC       CL(16384)
+#define MAX_NLB_SW_WKSPC          CL(16384)
 #define NLB_DSM_SIZE              MB(4)
+#define NUM_UMSGS				  32
+#define MAX_UMSG_SIZE        	  CL(64*NUM_UMSGS)
+#define MAX_CPU_CACHE_SIZE		  (100*1024*1024) //100 MB
 
 #define QLP_CSR_CIPUCTL           0x280
 #   define CIPUCTL_RESET_BIT      0x01000000
 
 #define QLP_CSR_CAFU_STATUS       0x284
 #   define CAFU_STATUS_READY_BIT  0x80000000
+# define CAFU_CACHE_FLUSH_STATUS  0x00000010
 
 #define QLP_NUM_COUNTERS          11
 #define QLP_CSR_ADDR_PERF1C       0x27c
@@ -71,26 +76,36 @@ BEGIN_NAMESPACE(AAL)
 #   define QLP_PERF_CACHE_WR_MISS 3
 #   define QLP_PERF_EVICTIONS     10
 
-#define CSR_AFU_DSM_BASEL         0x1a00
-#define CSR_AFU_DSM_BASEH         0x1a04
-#define CSR_SRC_ADDR              0x1a20
-#define CSR_DST_ADDR              0x1a24
-#define CSR_NUM_LINES             0x1a28
-#define CSR_CTL                   0x1a2c
-#define CSR_CFG                   0x1a34
-#   define NLB_TEST_MODE_LPBK1    0x000
-#   define NLB_TEST_MODE_WB       0x000
-#   define NLB_TEST_MODE_WT       0x001
-#   define NLB_TEST_MODE_CONT     0x002
-#   define NLB_TEST_MODE_READ     0x004
-#   define NLB_TEST_MODE_WRITE    0x008
-#   define NLB_TEST_MODE_TRPUT    0x00c
-#   define NLB_TEST_MODE_LPBK2    0x014
-#   define NLB_TEST_MODE_LPBK3    0x018
-#   define NLB_TEST_MODE_RDS      0x000
-#   define NLB_TEST_MODE_RDI      0x200
-#   define NLB_TEST_MODE_RDO      0x400
-#   define NLB_TEST_MODE_MASK     0x01c
+#define CSR_AFU_DSM_BASEL         	0x1a00
+#define CSR_AFU_DSM_BASEH         	0x1a04
+#define CSR_SRC_ADDR              	0x1a20
+#define CSR_DST_ADDR              	0x1a24
+#define CSR_NUM_LINES             	0x1a28
+#define CSR_CTL                   	0x1a2c
+#define CSR_CFG                   	0x1a34
+#define CSR_UMSG_BASE				0x03F4
+#define CSR_UMSG_MODE				0x03F8
+#define CSR_CIRBSTAT				0x0278
+#define CSR_SW_NOTICE				0x1B00
+#   define NLB_TEST_MODE_LPBK1    	0x000
+#   define NLB_TEST_MODE_WB       	0x000
+#   define NLB_TEST_MODE_WT       	0x001
+#   define NLB_TEST_MODE_CONT     	0x002
+#   define NLB_TEST_MODE_READ     	0x004
+#   define NLB_TEST_MODE_WRITE    	0x008
+#   define NLB_TEST_MODE_TRPUT    	0x00c
+#   define NLB_TEST_MODE_LPBK2    	0x014
+#   define NLB_TEST_MODE_LPBK3    	0x018
+#   define NLB_TEST_MODE_SW     	0x01c
+#   define NLB_TEST_MODE_MASK     	0x01c
+#   define NLB_TEST_MODE_RDS      	0x000
+#   define NLB_TEST_MODE_RDI      	0x200
+#   define NLB_TEST_MODE_RDO      	0x400
+#	define NLB_TEST_MODE_UMSG_POLL	0x0000000
+#	define NLB_TEST_MODE_CSR_WRITE  0x4000000
+#	define NLB_TEST_MODE_UMSG_DATA  0x8000000
+#	define NLB_TEST_MODE_UMSG_HINT  0xc000000
+
 
 typedef struct _nlb_vafu_dsm
 {

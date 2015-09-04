@@ -77,6 +77,14 @@
 int cciv4_create_sim_Mafu(btVirtAddr,uint ,struct aal_device_id*,struct aal_ipip*,struct list_head *);
 int cciv4_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
 
+#define CCIV4_MMIO_UMSG_TEST 0
+
+#if CCIV4_MMIO_UMSG_TEST
+// Turn on in AFUdev.cpp, as well
+static char mmioafustring[]    = "CCIv4 MMIO test  \n";
+static char umesgafustring[]   = "CCIv4 UMSG test  \n";
+#endif
+
 //=============================================================================
 // nextAFU_addr - Keeps the next available address for new AFUs
 //=============================================================================
@@ -334,6 +342,10 @@ int cciv4_create_sim_afu(btVirtAddr virtAddr,
       return -ENOMEM;
    }
 
+#if CCIV4_MMIO_UMSG_TEST
+   strncpy((char*)ptemp,umesgafustring,strlen(umesgafustring));
+#endif
+
    cciv4_dev_len_afu_umsg(pCCIv4dev) = size;
    cciv4_dev_kvp_afu_umsg(pCCIv4dev) = ptemp;
    cciv4_dev_phys_afu_umsg(pCCIv4dev) = virt_to_phys(ptemp);
@@ -346,6 +358,10 @@ int cciv4_create_sim_afu(btVirtAddr virtAddr,
       cciv4_destroy_device(pCCIv4dev);
       return -ENOMEM;
    }
+
+#if CCIV4_MMIO_UMSG_TEST
+   strncpy((char*)ptemp,mmioafustring,strlen(mmioafustring));
+#endif
 
    cciv4_dev_len_afu_mmio(pCCIv4dev) = size;
    cciv4_dev_kvp_afu_mmio(pCCIv4dev) = ptemp;

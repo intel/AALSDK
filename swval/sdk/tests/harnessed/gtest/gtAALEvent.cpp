@@ -696,7 +696,7 @@ TEST(CAALEventTest, aal0655)
    const IEvent &cr(*pEvent);
    void *Expect = reinterpret_cast<void *>( & const_cast<IEvent &>(cr) );
 
-   CallTrackingServiceClient client;
+   CallTrackingIServiceClient client;
 
    pEvent->setHandler(&client);
 
@@ -722,7 +722,7 @@ TEST(CAALEventTest, aal0656)
    const IEvent &cr(*pEvent);
    void *Expect = reinterpret_cast<void *>( & const_cast<IEvent &>(cr) );
 
-   CallTrackingRuntimeClient client;
+   CallTrackingIRuntimeClient client;
 
    pEvent->setHandler(&client);
 
@@ -1568,8 +1568,8 @@ TEST(ObjectCreatedEventTest, aal0672)
    // the NamedValueSet for later retrieval by GetOptArgs(). On success, a SubClass of
    // tranevtFactoryCreate/IObjectCreatedEvent * is set.
 
-   CallTrackingRuntimeClient rtc;
-   CallTrackingServiceClient svc;
+   CallTrackingIRuntimeClient rtc;
+   CallTrackingIServiceClient svc;
 
    CAASBase      base((btApplicationContext)71);
    TransactionID tid;

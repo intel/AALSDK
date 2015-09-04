@@ -46,7 +46,8 @@ gtEnvVar.cpp \
 gtTimer.cpp \
 gtSleep.cpp \
 gtAASBase.cpp \
-gtAALEvent.cpp
+gtAALEvent.cpp \
+gtAALService.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -80,7 +81,17 @@ main.cpp \
 gtCommon.h \
 gtCommon.cpp \
 gtNVSLegacy.cpp \
-gtNVS.cpp
+gtCValue.cpp \
+gtSeqRand.h \
+gtSeqRand.cpp \
+gtNVSTester.h \
+gtNVSTester.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp
 
 weekly_CPPFLAGS=\
 -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
@@ -92,25 +103,36 @@ CLEANFILES=gtest-all.cc
 else
 
 EXTRA_DIST=\
-main.cpp \
-gtCommon.h \
+gtAALEvent.cpp \
+gtAALService.cpp \
+gtAASBase.cpp \
+gtBarrier.cpp \
 gtCommon.cpp \
+gtCommon.h \
 gtCritSect.cpp \
-gtSem.cpp \
-gtNVSLegacy.cpp \
-gtNVS.cpp \
-gtThread.cpp \
-gtThreadGroup.h \
-gtThreadGroup.cpp \
-gtThreadGroupSR.cpp \
-gtPaths.cpp \
-gtStartupShutdown.cpp \
-gtEnvVar.cpp \
-gtOSServiceModule.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtNVSLegacy.cpp \
+gtCValue.cpp \
+gtSeqRand.h \
+gtSeqRand.cpp \
+gtNVSTester.h \
+gtNVSTester.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp \
+gtOSServiceModule.cpp \
+gtSem.cpp \
+gtSleep.cpp \
+gtThread.cpp \
+gtThreadGroup.cpp \
+gtThreadGroup.h \
+gtThreadGroupSR.cpp \
 gtTimer.cpp \
-gtSleep.cpp
+main.cpp
 
 endif
 

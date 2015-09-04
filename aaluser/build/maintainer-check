@@ -89,13 +89,75 @@ log() {
    if ${VERBOSE} ; then
       printf "$*"
    fi
-#   [ 0 -ne ${LOG_FD} ] && echo -nE "$*" >&${LOG_FD}
    [ 0 -ne ${LOG_FD} ] && printf "$*" >&${LOG_FD}
 }
 
 die() {
    log "die: $@"
    exit 1
+}
+
+declare -r ATTR_BRIGHT='1;'
+declare -r ATTR_DIM='2;'
+
+declare -r FG_RED='31'
+declare -r FG_GREEN='32'
+declare -r FG_BROWN='33'
+declare -r FG_BLUE='34'
+declare -r FG_MAGENTA='35'
+declare -r FG_CYAN='36'
+declare -r FG_GREY='37'
+
+declare OK_COLOR="${ATTR_DIM}${FG_GREEN}"
+
+next_OK_color() {
+   case "${OK_COLOR}" in
+        "${ATTR_DIM}${FG_GREEN}") OK_COLOR="${ATTR_DIM}${FG_BROWN}" ;;
+        "${ATTR_DIM}${FG_BROWN}") OK_COLOR="${ATTR_DIM}${FG_BLUE}" ;;
+         "${ATTR_DIM}${FG_BLUE}") OK_COLOR="${ATTR_DIM}${FG_MAGENTA}" ;;
+      "${ATTR_DIM}${FG_MAGENTA}") OK_COLOR="${ATTR_DIM}${FG_CYAN}" ;;
+         "${ATTR_DIM}${FG_CYAN}") OK_COLOR="${ATTR_DIM}${FG_GREY}" ;;
+
+         "${ATTR_DIM}${FG_GREY}") OK_COLOR="${FG_GREEN}" ;;
+
+        "${FG_GREEN}") OK_COLOR="${FG_BROWN}" ;;
+        "${FG_BROWN}") OK_COLOR="${FG_BLUE}" ;;
+         "${FG_BLUE}") OK_COLOR="${FG_MAGENTA}" ;;
+      "${FG_MAGENTA}") OK_COLOR="${FG_CYAN}" ;;
+         "${FG_CYAN}") OK_COLOR="${FG_GREY}" ;;
+
+         "${FG_GREY}") OK_COLOR="${ATTR_BRIGHT}${FG_GREEN}" ;;
+
+        "${ATTR_BRIGHT}${FG_GREEN}") OK_COLOR="${ATTR_BRIGHT}${FG_BROWN}" ;;
+        "${ATTR_BRIGHT}${FG_BROWN}") OK_COLOR="${ATTR_BRIGHT}${FG_BLUE}" ;;
+         "${ATTR_BRIGHT}${FG_BLUE}") OK_COLOR="${ATTR_BRIGHT}${FG_MAGENTA}" ;;
+      "${ATTR_BRIGHT}${FG_MAGENTA}") OK_COLOR="${ATTR_BRIGHT}${FG_CYAN}" ;;
+         "${ATTR_BRIGHT}${FG_CYAN}") OK_COLOR="${ATTR_BRIGHT}${FG_GREY}" ;;
+
+         "${ATTR_BRIGHT}${FG_GREY}") OK_COLOR="${ATTR_DIM}${FG_GREEN}" ;;
+   esac
+}
+
+OK() {
+   if ${VERBOSE} ; then
+      if [ -t 1 ]; then
+         printf "\x1b[1m[ \x1b[%smOK\x1b[0m\x1b[1m ]\x1b[0m\n" "${OK_COLOR}"
+      else
+         printf "[ OK ]\n"
+      fi
+   fi
+   [ 0 -ne ${LOG_FD} ] && printf "[ OK ]\n" >&${LOG_FD}
+}
+
+FAIL() {
+   if ${VERBOSE} ; then
+      if [ -t 1 ]; then
+         printf "\x1b[1m[\x1b[31mFAIL\x1b[0m\x1b[1m]\x1b[0m\n"
+      else
+         printf "[FAIL]\n"
+      fi
+   fi
+   [ 0 -ne ${LOG_FD} ] && printf "[FAIL]\n" >&${LOG_FD}
 }
 
 declare -r CHOWN="`which chown`" 2>/dev/null
@@ -242,7 +304,7 @@ cmd() {
    res=$?
 
    if [ ${res} -ne 0 ]; then
-      log "[FAIL]\n"
+      FAIL
 
       local line
       local -i out_fd
@@ -262,7 +324,7 @@ cmd() {
 
       res=1
    else
-      log "[ OK ]\n"
+      OK
    fi
 
    if [ ${res} -ne 0 ]; then
@@ -329,7 +391,7 @@ cmd_as_coproc() {
    res=$?
 
    if [ 0 -ne ${res} ]; then
-      log "[FAIL]\n"
+      FAIL
 
       local line
       local -i out_fd
@@ -352,7 +414,7 @@ cmd_as_coproc() {
 
       IFS="${save_IFS}"
    else
-      log "[ OK ]\n"
+      OK
    fi
 
    if [ ${res} -ne 0 ]; then
@@ -642,9 +704,13 @@ run_make() {
 
    local -r vpath="$1"
    local -r target="$2"
+   shift
+   shift
 
    local    mk_opts=''
-   [ $# -ge 3 ] && mk_opts="$3"
+   if [ $# -gt 0 ]; then
+      mk_opts="$*"
+   fi
 
    pushd "${vpath}" &>/dev/null
 
@@ -754,67 +820,196 @@ verify_all_build_targets() {
 ################################################################################
 # Build / packaging
 
+# $1 : (optional) additional config path level.
+# $2 : (optional) additional options for configure.
 build_working_tree_in_tree() {
-   local -r cpath="${WKSPC}/in_working_tree"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r cpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r cpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
    print_title     "in working tree : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'in working tree' "${SRCDIR}" "${cpath}"
 
    [ -d "${SRCDIR}/DESTDIR" ] && cmd ${RM} -rf "${SRCDIR}/DESTDIR"
-   [ -f "${SRCDIR}/${DISTDIR}.tar.gz" ] && cmd ${MV} "${SRCDIR}/${DISTDIR}.tar.gz" "${WKSPC}"
+   [ -f "${SRCDIR}/${DISTDIR}.tar.gz" ] && cmd ${MV} "${SRCDIR}/${DISTDIR}.tar.gz" "${cpath}"
+
+   next_OK_color
 }
 
+# $1 : (optional) additional config path level.
+# $2 : (optional) additional options for configure.
 build_working_tree_vpath() {
-   local -r cpath="${WKSPC}/working_tree_vpath"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r cpath="${WKSPC}/working_tree_vpath/$1"
+      shift
+   else
+      local -r cpath="${WKSPC}/working_tree_vpath"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    local -r vpath="${cpath}/vpath"
    [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
 
    print_title     "working tree VPATH : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "${CONFIGURE}" "${vpath}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${CONFIGURE}" "${vpath}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'working tree VPATH' "${vpath}" "${cpath}"
+   next_OK_color
 }
 
 build_tarball_in_tree() {
-   local -r cpath="${WKSPC}/tarball_in_tree"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r   cpath="${WKSPC}/tarball_in_tree/$1"
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r   cpath="${WKSPC}/tarball_in_tree"
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
 
    print_title     "tarball in tree : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${cpath}/${DISTDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'tarball in tree' "${cpath}/${DISTDIR}" "${cpath}"
+   next_OK_color
 }
 
 build_tarball_vpath() {
-   local -r cpath="${WKSPC}/tarball_vpath"
+   local cfg_opts=''
+
+   if [ $# -gt 0 ]; then
+      local -r   cpath="${WKSPC}/tarball_vpath/$1"
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r   cpath="${WKSPC}/tarball_vpath"
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+   if [ $# -gt 0 ]; then
+      cfg_opts="$*"
+   fi
+
    local -r vpath="${cpath}/vpath"
    [ -d "${vpath}" ] || cmd ${MKDIR} -p "${vpath}"
 
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
 
    print_title     "tarball VPATH : configure"
-   checkpoint      "${cpath}" 'cfg' || run_configure "${cpath}/${DISTDIR}/configure" "${vpath}"
+   checkpoint      "${cpath}" 'cfg' || run_configure "${cpath}/${DISTDIR}/configure" "${vpath}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
 
    verify_all_build_targets 'tarball VPATH' "${vpath}" "${cpath}"
+   next_OK_color
+}
+
+# $1 : the aaluser cpath to use.
+# $2 : (optional) additional config path level.
+# $3 : (optional) additional options for make.
+build_samples() {
+   local -r samplespath="`cd ${SRCDIR}/../aalsamples && pwd`"
+
+   local -r usercpath="$1"
+   shift
+
+   local    mk_opts=''
+   local    chkpt
+   local    tgt
+
+   if [ $# -gt 0 ]; then
+      local -r cpath="${WKSPC}/aalsamples/$1"
+      shift
+   else
+      local -r cpath="${WKSPC}/aalsamples"
+   fi
+
+   if [ $# -gt 0 ]; then
+      mk_opts="$*"
+   fi
+
+   [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
+
+   if [ ! -f "${usercpath}/Makefile" ]; then
+      print_title     "aalsamples (aaluser) : configure"
+      checkpoint      "${cpath}" 'cfg' || run_configure "${usercpath}/configure" "${usercpath}"
+      pass_checkpoint "${cpath}" 'cfg'
+   fi
+
+   tgt='all'
+   chkpt="make_user_${tgt}"
+   print_title     "aalsamples (aaluser) : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${usercpath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='install'
+   chkpt="make_user_${tgt}"
+   print_title     "aalsamples (aaluser) : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${usercpath}" "${tgt}" "DESTDIR=${usercpath}/samplesDESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+
+   tgt='all'
+   chkpt="make_${tgt}"
+   print_title     "aalsamples : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}" ${mk_opts} "DESTDIR=${usercpath}/samplesDESTDIR"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='clean'
+   chkpt="make_${tgt}"
+   print_title     "aalsamples : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='doc'
+   chkpt="make_${tgt}"
+   print_title     "aalsamples : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   tgt='docclean'
+   chkpt="make_${tgt}"
+   print_title     "aalsamples : make ${tgt}"
+   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
+   pass_checkpoint "${cpath}" "${chkpt}"
+
+   next_OK_color
 }
 
 # Build / packaging
@@ -2076,9 +2271,16 @@ verify_copyrights() {
 
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
 
+   if [ $# -gt 0 ]; then
+      local -r tarpath="${WKSPC}/in_working_tree/$1"
+      shift
+   else
+      local -r tarpath="${WKSPC}/in_working_tree"
+   fi
+
    checkpoint "${cpath}" 'tarball' || {
       pushd "${cpath}" >/dev/null 2>&1
-      cmd ${TAR} zxf "${WKSPC}/${DISTDIR}.tar.gz"
+      cmd ${TAR} zxf "${tarpath}/${DISTDIR}.tar.gz"
       popd >/dev/null 2>&1
    }
    pass_checkpoint "${cpath}" 'tarball'
@@ -2102,6 +2304,8 @@ verify_copyrights() {
       checkpoint "${cpath}" "${chkpt}" || copyrights_check_kernel _verify_kernel_copyright _skip_copyright_verification "${SRCDIR}" "${cpath}/${DISTDIR}/dist-file-list"
       pass_checkpoint "${cpath}" "${chkpt}"
    fi
+
+   next_OK_color
 }
 
 # Copyrights
@@ -2112,12 +2316,41 @@ main() {
 
    open_log "${WKSPC}"
 
-   build_working_tree_in_tree
-   build_working_tree_vpath
-   build_tarball_in_tree
-   build_tarball_vpath
+   if [ "${SRCDIR##*/}" = aalkernel ]; then
+      build_working_tree_in_tree dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_working_tree_in_tree dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_working_tree_in_tree dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_working_tree_in_tree dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
 
-   verify_copyrights
+      build_working_tree_vpath   dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_working_tree_vpath   dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_working_tree_vpath   dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_working_tree_vpath   dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      build_tarball_in_tree      dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_tarball_in_tree      dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_tarball_in_tree      dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_tarball_in_tree      dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      build_tarball_vpath        dbg0asrt0 --enable-aal-dbg=0 --enable-aal-assert=0
+      build_tarball_vpath        dbg0asrt1 --enable-aal-dbg=0 --enable-aal-assert=1
+      build_tarball_vpath        dbg1asrt0 --enable-aal-dbg=1 --enable-aal-assert=0
+      build_tarball_vpath        dbg1asrt1 --enable-aal-dbg=1 --enable-aal-assert=1
+
+      verify_copyrights dbg0asrt0
+   else
+      build_working_tree_in_tree
+      build_working_tree_vpath
+      build_tarball_in_tree
+      build_tarball_vpath
+
+      verify_copyrights
+
+      build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg1asrt1 ndebug=0 nassert=0
+      build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg1asrt0 ndebug=0 nassert=1
+      build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg0asrt1 ndebug=1 nassert=0
+      build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg0asrt0 ndebug=1 nassert=1
+   fi
 
    return 0
 }

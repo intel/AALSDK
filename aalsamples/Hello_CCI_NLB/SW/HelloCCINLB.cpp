@@ -421,7 +421,7 @@ btInt HelloCCINLBApp::run()
       //   now we can use it
       //=============================
       MSG("Running Test");
-#if 0
+#if 1
       // Initialize the source and destination buffers
       memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
       memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore

@@ -83,13 +83,13 @@ typedef enum eservice_connection_types
 class AASLIB_API IAALTransport
 {
 public:
-   virtual ~IAALTransport();
+   virtual ~IAALTransport() {}
 
-   virtual btBool    connectremote(NamedValueSet const & )  = 0;
-   virtual btBool    waitforconnect(NamedValueSet const & ) = 0;
-   virtual btBool    disconnect()                           = 0;
-   virtual btcString getmsg(btWSSize *len)                  = 0;
-   virtual int       putmsg(btcString, btWSSize len)        = 0;
+   virtual btBool  connectremote(NamedValueSet const & )   = 0;
+   virtual btBool waitforconnect(NamedValueSet const & )   = 0;
+   virtual btBool     disconnect()                         = 0;
+   virtual btcString      getmsg(btWSSize *len)            = 0;
+   virtual int            putmsg(btcString , btWSSize len) = 0;
 };
 
  //=============================================================================
@@ -99,14 +99,14 @@ public:
 class AASLIB_API IAALMarshalUnMarshallerUtil
 {
 public:
-   virtual ~IAALMarshalUnMarshallerUtil();
+   virtual ~IAALMarshalUnMarshallerUtil() {}
 
-   virtual ENamedValues Empty()                                                    = 0;
-   virtual btBool       Has(btcString Name)                                  const = 0;
-   virtual ENamedValues Delete(btStringKey Name)                                   = 0;
-   virtual ENamedValues GetSize(btStringKey Name, btUnsigned32bitInt *pSize) const = 0;
-   virtual ENamedValues Type(btStringKey Name, eBasicTypes *pType)           const = 0;
-   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName)     const = 0;
+   virtual ENamedValues   Empty()                                              = 0;
+   virtual btBool           Has(btStringKey   Name)                      const = 0;
+   virtual ENamedValues  Delete(btStringKey   Name)                            = 0;
+   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize) const = 0;
+   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType) const = 0;
+   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const = 0;
 };
 
  //=============================================================================
@@ -116,134 +116,136 @@ public:
 class AASLIB_API IAALMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
-   virtual ~IAALMarshaller();
+   virtual ~IAALMarshaller() {}
 
-   virtual ENamedValues Empty()                                                    = 0;
-   virtual btBool       Has(btcString Name)                                  const = 0;
-   virtual ENamedValues Delete(btStringKey Name)                                   = 0;
-   virtual ENamedValues GetSize(btStringKey Name, btUnsigned32bitInt *pSize) const = 0;
-   virtual ENamedValues Type(btStringKey Name, eBasicTypes *pType)           const = 0;
-   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName)     const = 0;
+   virtual ENamedValues   Empty()                                                          = 0;
+   virtual btBool           Has(btStringKey   Name)                        const           = 0;
+   virtual ENamedValues  Delete(btStringKey   Name)                                        = 0;
+   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize      *pSize) const           = 0;
+   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes   *pType) const           = 0;
+   virtual ENamedValues GetName(btUnsignedInt index, btStringKey   *pName) const           = 0;
 
-   virtual ENamedValues Add( btNumberKey  Name,btBool value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btByte value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,bt32bitInt value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btUnsigned32bitInt  value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,bt64bitInt value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btUnsigned64bitInt value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btFloat value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btcString value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,NamedValueSet const &value)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btByteArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,bt32bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btUnsigned32bitIntArray  value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,bt64bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btUnsigned64bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btObjectType value)=0;
+   virtual ENamedValues Add(btNumberKey Name, btBool                Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btByte                Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, bt32bitInt            Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btUnsigned32bitInt    Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, bt64bitInt            Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btUnsigned64bitInt    Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btFloat               Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btcString             Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, btObjectType          Value)                 = 0;
+   virtual ENamedValues Add(btNumberKey Name, const INamedValueSet *Value)                 = 0;
 
-   virtual ENamedValues Add( btNumberKey  Name,btFloatArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btStringArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btNumberKey  Name,btObjectArray value,
-                             btUnsigned32bitInt  NumElements)=0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btByteArray             Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            bt32bitIntArray         Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            bt64bitIntArray         Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btFloatArray            Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btStringArray           Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btNumberKey Name,
+                            btObjectArray           Value, btUnsigned32bitInt NumElements) = 0;
 
-   virtual ENamedValues Add( btStringKey  Name,btBool value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btByte value)=0;
-   virtual ENamedValues Add( btStringKey  Name,bt32bitInt value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btUnsigned32bitInt  value)=0;
-   virtual ENamedValues Add( btStringKey  Name,bt64bitInt value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btUnsigned64bitInt value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btFloat value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btcString value)=0;
-   virtual ENamedValues Add( btStringKey  Name,NamedValueSet const &value)=0;
-   virtual ENamedValues Add( btStringKey  Name,btByteArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,bt32bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,btUnsigned32bitIntArray  value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,bt64bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,btUnsigned64bitIntArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,btObjectType value)=0;
+   virtual ENamedValues Add(btStringKey Name, btBool                Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btByte                Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, bt32bitInt            Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btUnsigned32bitInt    Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, bt64bitInt            Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btUnsigned64bitInt    Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btFloat               Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btcString             Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, btObjectType          Value)                 = 0;
+   virtual ENamedValues Add(btStringKey Name, const INamedValueSet *Value)                 = 0;
 
-   virtual ENamedValues Add( btStringKey  Name,btFloatArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,btStringArray value,
-                             btUnsigned32bitInt NumElements)=0;
-   virtual ENamedValues Add( btStringKey  Name,btObjectArray value,
-                             btUnsigned32bitInt  NumElements)=0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btByteArray             Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            bt32bitIntArray         Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btUnsigned32bitIntArray Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            bt64bitIntArray         Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btUnsigned64bitIntArray Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btFloatArray            Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btStringArray           Value, btUnsigned32bitInt NumElements) = 0;
+   virtual ENamedValues Add(btStringKey Name,
+                            btObjectArray           Value, btUnsigned32bitInt NumElements) = 0;
 
-   virtual char const *pmsgp(btWSSize *len)=0;
+   virtual char const *pmsgp(btWSSize *len)                                                = 0;
 };
 
  //=============================================================================
  // Name: IAALUnMarshaller
  // Description: UnMarshaller class interface
  //=============================================================================
-class AASLIB_API IAALUnMarshaller :public IAALMarshalUnMarshallerUtil
+class AASLIB_API IAALUnMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
-   virtual ~IAALUnMarshaller();
+   virtual ~IAALUnMarshaller() {}
 
-   virtual ENamedValues Empty()                                                    = 0;
-   virtual btBool       Has(btcString Name)                                  const = 0;
-   virtual ENamedValues Delete(btStringKey Name)                                   = 0;
-   virtual ENamedValues GetSize(btStringKey Name, btUnsigned32bitInt *pSize) const = 0;
-   virtual ENamedValues Type(btStringKey Name, eBasicTypes *pType)           const = 0;
-   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName)     const = 0;
+   virtual ENamedValues   Empty()                                                     = 0;
+   virtual btBool           Has(btStringKey   Name)                      const        = 0;
+   virtual ENamedValues  Delete(btStringKey   Name)                                   = 0;
+   virtual ENamedValues GetSize(btStringKey   Name,  btWSSize    *pSize) const        = 0;
+   virtual ENamedValues    Type(btStringKey   Name,  eBasicTypes *pType) const        = 0;
+   virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const        = 0;
 
-   virtual ENamedValues Get( btNumberKey  Name,btBool *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btByte *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,bt32bitInt *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btUnsigned32bitInt  *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,bt64bitInt *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btUnsigned64bitInt *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btFloat *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btcString *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,NamedValueSet const**pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btByteArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,bt32bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btUnsigned32bitIntArray  *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,bt64bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btUnsigned64bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btObjectType *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btFloatArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btStringArray *pValue)const=0;
-   virtual ENamedValues Get( btNumberKey  Name,btObjectArray *pValue)const=0;
+   virtual ENamedValues Get(btNumberKey Name, btBool                   *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btByte                   *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, bt32bitInt               *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned32bitInt       *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, bt64bitInt               *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned64bitInt       *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btFloat                  *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btcString                *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btObjectType             *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, INamedValueSet const    **pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btByteArray              *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, bt32bitIntArray          *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned32bitIntArray  *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, bt64bitIntArray          *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btUnsigned64bitIntArray  *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btFloatArray             *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btStringArray            *pValue) const = 0;
+   virtual ENamedValues Get(btNumberKey Name, btObjectArray            *pValue) const = 0;
 
-   virtual ENamedValues Get( btStringKey  Name,btBool *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btByte *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,bt32bitInt *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btUnsigned32bitInt  *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,bt64bitInt *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btUnsigned64bitInt *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btFloat *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btcString *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,NamedValueSet const**pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btByteArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,bt32bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btUnsigned32bitIntArray  *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,bt64bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btUnsigned64bitIntArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btObjectType *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btFloatArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btStringArray *pValue)const=0;
-   virtual ENamedValues Get( btStringKey  Name,btObjectArray *pValue)const=0;
+   virtual ENamedValues Get(btStringKey Name, btBool                   *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btByte                   *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, bt32bitInt               *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned32bitInt       *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, bt64bitInt               *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned64bitInt       *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btFloat                  *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btcString                *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btObjectType             *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, INamedValueSet const    **pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btByteArray              *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, bt32bitIntArray          *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned32bitIntArray  *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, bt64bitIntArray          *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btUnsigned64bitIntArray  *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btFloatArray             *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btStringArray            *pValue) const = 0;
+   virtual ENamedValues Get(btStringKey Name, btObjectArray            *pValue) const = 0;
 
-   virtual void importmsg(char const * pmsg, btWSSize len)=0;
+   virtual void   importmsg(char const *pmsg, btWSSize len)                           = 0;
 };
 
 
 class AALServiceModule;
-/// AAL Service factory interface.
+
+/// @interface ISvcsFact
+/// @brief AAL Service factory interface.
 ///
 /// The object which implements the ISvcsFact interface understands the intricate
 /// details of the Service being created. ISvcsFact is able to instantiate the specific
@@ -252,7 +254,7 @@ class AASLIB_API ISvcsFact
 {
 public:
    /// ISvcsFact Destructor.
-   virtual ~ISvcsFact();
+   virtual ~ISvcsFact() {}
 
    /// Create an instance of a Service object.
    ///
@@ -264,15 +266,17 @@ public:
    ///
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
-   virtual IBase * CreateServiceObject(AALServiceModule    *container,
-                                       IRuntime            *pRuntime) = 0;
-   virtual btBool InitializeService( IBase               *Client,
-                                     TransactionID const &rtid,
-                                     NamedValueSet const &optArgs) = 0;
+   virtual IBase * CreateServiceObject(AALServiceModule *container,
+                                       IRuntime         *pRuntime) = 0;
+
+   virtual btBool    InitializeService(IBase               *Client,
+                                       TransactionID const &rtid,
+                                       NamedValueSet const &optArgs) = 0;
 };
 
 
-/// Interface of objects which implement the Module entry point and access to Service factory.
+/// @interface IServiceModule
+/// @brief Interface of objects which implement the Module entry point and access to Service factory.
 ///
 /// The Service Module is the object that is dynamically-loaded from the Service executable.
 /// It acts as a container for the concrete ISvcsFact object, which is capable of creating
@@ -282,7 +286,7 @@ class AASLIB_API IServiceModule
 {
 public:
    /// IServiceModule Destructor.
-   virtual ~IServiceModule();
+   virtual ~IServiceModule() {}
 
    /// Uses ISvcsFact to create the Service object.
     ///
@@ -303,20 +307,20 @@ public:
    /// This is an atomic function as once it returns the executable
    ///  will be deleted. The call stack and all threads within this
    ///  modules address space MUST be deleted.
-   virtual void   Destroy() = 0;
+   virtual void Destroy() = 0;
 
-
-   virtual void setRuntime(IRuntime *pRuntime) = 0;
-   virtual IRuntime  *getRuntime() = 0;
+   virtual void       setRuntime(IRuntime *pRuntime) = 0;
+   virtual IRuntime * getRuntime() const             = 0;
 };
 
 
-/// Interface of object notified when a Service instance is destroyed.
+/// @interface IServiceModuleCallback
+/// @brief Interface of object notified when a Service instance is destroyed.
 class AASLIB_API IServiceModuleCallback
 {
 public:
    /// IServiceModuleCallback Destructor.
-   virtual ~IServiceModuleCallback();
+   virtual ~IServiceModuleCallback() {}
    /// Callback invoked by the Service to indicate that it is released.
    /// @param[in]  pService  The Service being released.
    virtual void ServiceReleased(IBase *pService) = 0;
@@ -340,16 +344,18 @@ public:
    /// Constructed with a concrete instance of the ISvcsFact interface within the
    ///  well-known entry point of the dynamically-loaded Service executable.
    AALServiceModule(ISvcsFact &fact);
-   /// AALServiceModule Destructor.
-   virtual ~AALServiceModule();
 
    // <IServiceModule>
 
-    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
-                             IBase               *Client,
-                             TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet());
+   virtual IBase *Construct(IRuntime            *pAALRUNTIME,
+                            IBase               *Client,
+                            TransactionID const &tid = TransactionID(),
+                            NamedValueSet const &optArgs = NamedValueSet());
+
    virtual void Destroy();
+
+   virtual void setRuntime(IRuntime *pRuntime);
+   virtual IRuntime * getRuntime() const;
 
    // </IServiceModule>
 
@@ -359,32 +365,8 @@ public:
 
    // </IServiceModuleCallback>
 
-   void setRuntime(IRuntime *pRuntime)
-   {
-      // Lock
-      m_Runtime = pRuntime;
-   }
-
-   // AAL 4.0 Service Interface
-   IRuntime *getRuntime()
-   {
-      // Lock
-      return m_Runtime;
-   }
-
-   IRuntimeClient *getRuntimeClient()
-   {
-      // Lock
-      return m_RuntimeClient;
-   }
-
-   void setRuntimeClient(IRuntimeClient *pRTC)
-   {
-      // Lock
-      m_RuntimeClient = pRTC;
-      return ;
-   }
-
+   void setRuntimeClient(IRuntimeClient *pRTC);
+   IRuntimeClient * getRuntimeClient() const;
 
 private:
    //=============================================================================
@@ -397,7 +379,7 @@ private:
 
    //=============================================================================
    // Name: RemovefromServiceList
-   // Description: Add servcie to  service list
+   // Description: Add service to  service list
    //      Inputs: pService - IBase of service
    //     Returns: false - was not registered
    //=============================================================================
@@ -405,7 +387,7 @@ private:
 
    //=============================================================================
    // Name: ServiceInstanceRegistered
-   // Description: Determine if a service is already registerd
+   // Description: Determine if a service is already registered
    //      Inputs: pService - IBase of service
    //     Returns: true  - service registered
    //=============================================================================
@@ -420,38 +402,33 @@ private:
    // Description: Send a Release to all services
    //      Inputs: pService - IBase of service
    // Comments: The object remains locked through the loop of Releases to prevent
-   //           Services being removed in the background and corrupting the iter
+   //           Services being removed in the background and corrupting the iter.
    //           The Release() used here is a quiet one. It does not generate an event.
    //           This is to allow the Service to cleanly shutdown for unloading.
    //=============================================================================
    void SendReleaseToAll();
 
 protected:
-   typedef std::map<IBase *, IBase *>                 list_type;
-   typedef std::map<IBase *, IBase *>::const_iterator const_iterator;
+   typedef std::map< IBase *, IBase * > list_type;
+   typedef list_type::const_iterator    const_iterator;
 
-   IBase                *m_pBase;
+   ISvcsFact      &m_SvcsFact;
+   IRuntime       *m_Runtime;
+   IRuntimeClient *m_RuntimeClient;
+   CSemaphore      m_srvcCount;
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4251)
 #endif // _MSC_VER
-   list_type             m_serviceList;
+   list_type       m_serviceList;
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
-   IAALService                            *m_pService;
-   btUnsignedInt                           m_refcount; // TODO use CCountedObject
-
-   IRuntime                               *m_Runtime;
-   IRuntimeClient                         *m_RuntimeClient;
-   ISvcsFact                              &m_SvcsFact;
-   CSemaphore                              m_srvcCount;
 };
-
 
 END_NAMESPACE(AAL)
 
-
+#if DEPRECATED
 //=============================================================================
 // Name: DECLARE_SERVICE_PROVIDER_ACCESSOR
 // Description: Implements the Service Provider accessor for the package.
@@ -496,6 +473,7 @@ __declspec(dllexport) unsigned long _GetServiceProviderVersion()                
 }                                                                                                             \
 }
 
+
 /// Declares an instance of the well-known Service executable entry point.
 ///
 /// AAL Services use this macro to define the well-known entry point.
@@ -514,7 +492,7 @@ __declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::CAASServiceConta
    return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, &theServiceProvider);                          \
 }                                                                                                             \
 }
-
+#endif // DEPRECATED
 
 /// @} group Services
 

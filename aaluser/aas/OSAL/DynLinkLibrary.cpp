@@ -165,7 +165,7 @@ DynLinkLibrary::DynLinkLibrary(const std::string &LibraryName) :
       // TODO use logger here?
       std::cerr << "DynLinkLibrary::DynLinkLibrary() Error";
       if ( NULL != ErrMsg ) {
-         std::cerr << " : " << ErrMsg << "r unresolved symbol in library";
+         std::cerr << " : " << ErrMsg << " (or unresolved symbol in library)";
       }
       std::cerr << std::endl;
       return;
