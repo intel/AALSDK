@@ -84,10 +84,6 @@ btBool HWCCIAFU::Release(TransactionID const &TranID, btTime timeout)
    return DeviceServiceBase::Release(TranID, timeout);
 }
 
-btBool HWCCIAFU::Release(btTime timeout)
-{
-   return DeviceServiceBase::Release(timeout);
-}
 
 void HWCCIAFU::WorkspaceAllocate(btWSSize             Length,
                                  TransactionID const &TranID)

@@ -419,13 +419,6 @@ void _ServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
    }
 }
 
- // Quiet Release. Used when Service is unloaded.
- btBool _ServiceBroker::Release(btTime timeout)
- {
-    return ServiceBase::Release(timeout);
- }
-
-
  //=============================================================================
  // Name: ~_ServiceBroker
  // Description: Destructor

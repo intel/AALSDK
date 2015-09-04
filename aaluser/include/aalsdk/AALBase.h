@@ -196,11 +196,6 @@ public:
    /// @retval  false  An error occurred during destruction.
    virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT) = 0;
 
-   /// Intended to only be used when a service is being forcibly unloaded. (Exceptional case)
-   ///
-   /// This version is blocking and MUST have completed its shutdown before returning.
-   virtual btBool Release(btTime timeout) = 0;
-
    // Used as a method for setting general purpose parameters on a Service
    virtual btBool SetParms(NamedValueSet const &rparms) = 0;
 };

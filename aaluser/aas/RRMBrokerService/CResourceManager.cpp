@@ -371,12 +371,6 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout){
 
 }
 
-// Quiet Release. Used when Service is unloaded.
-btBool CResourceManager::Release(btTime timeout)
-{
-   return ServiceBase::Release(timeout);
-}
-
 
 END_NAMESPACE(AAL)
 

@@ -132,12 +132,26 @@ protected:
 
 
 //=============================================================================
+///  ServiceBase Interface used for framework operations not intended to be
+///  exposed to users.
+///
+///   The ServiceBase class is intended to be inherited by AAL Services.
+///   The purpose is to provide the canonical implementation for the Service.
+//=============================================================================
+class AASLIB_API IServiceBase
+{
+public:
+   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT) =0;
+};
+
+//=============================================================================
 ///   Base class for software-based AAL Services.
 ///
 ///   The ServiceBase class is intended to be inherited by AAL Services.
 ///   The purpose is to provide the canonical implementation for the Service.
 //=============================================================================
 class AASLIB_API ServiceBase : public CAASBase,
+                               public IServiceBase,
                                public IRuntimeClient,
                                public IAALService
 {
@@ -184,7 +198,10 @@ public:
    /// @param[in] rTranID TransactionID if not atomic
    /// @param[in] timeout Timeout
    virtual btBool Release(TransactionID const &rTranID, btTime timeout = AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT);
+
+   // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
+   //   This function destroys the Service object.
+   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
 
    // </IAALService>
 

@@ -123,7 +123,7 @@ public:
    btBool Release(TransactionID const &rTranID,
                   btTime timeout = AAL_INFINITE_WAIT);
    // Quite release
-   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
+   btBool Delete(btTime timeout = AAL_INFINITE_WAIT);
 
    void   Destroy(void);
 
@@ -213,7 +213,7 @@ public:
    btBool Release(TransactionID const &rTranID,
                   btTime timeout=AAL_INFINITE_WAIT) { return true; }
    // Quiet release
-   btBool Release(btTime timeout=AAL_INFINITE_WAIT) { delete this; return true; }
+   btBool Delete(btTime timeout=AAL_INFINITE_WAIT) {getRuntime()->releaseRuntimeProxy(); delete this; return true; }
 
    void SetuAIA(uAIA *puAIA)
    {

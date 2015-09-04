@@ -574,11 +574,6 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
    }
 }
 
- // Quiet Release. Used when Service is unloaded.
- btBool ServiceBroker::Release(btTime timeout)
- {
-    return ServiceBase::Release(timeout);
- }
 
  //=============================================================================
  // Name: messageHandler

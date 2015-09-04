@@ -84,11 +84,6 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
    return DeviceServiceBase::Release(TranID, timeout);
 }
 
-btBool HWALIAFU::Release(btTime timeout)
-{
-   return DeviceServiceBase::Release(timeout);
-}
-
 void HWALIAFU::WorkspaceAllocate(btWSSize             Length,
                                    TransactionID const &TranID)
 {
