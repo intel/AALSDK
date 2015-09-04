@@ -367,8 +367,10 @@ CResourceManager::~CResourceManager()
 // Interface: public
 // Comments:
 //=============================================================================
-btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout){
-
+btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
+{
+   // TODO  - Send the shutdown to the driver and wait until done before issuing this
+   ServiceBase::Release(rTranID, timeout);
 }
 
 
