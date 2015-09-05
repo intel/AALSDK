@@ -539,10 +539,11 @@ void __membfn##ReturnsThisValue(__rettype );
 __rettype __cls::__membfn##ReturnsThisValue() const { return __membvar; } \
 void __cls::__membfn##ReturnsThisValue(__rettype x) { __membvar = x;    }
 
-class EmptyIServiceClient : public AAL::IServiceClient
+class EmptyIServiceClient : public AAL::IServiceClient,
+                            public AAL::CAASBase
 {
 public:
-   EmptyIServiceClient() {}
+   EmptyIServiceClient(btApplicationContext Ctx=NULL);
    virtual void      serviceAllocated(IBase               * ,
                                       TransactionID const & ) {}
    virtual void serviceAllocateFailed(const IEvent & )        {}
@@ -552,10 +553,10 @@ public:
 };
 
 class EmptyIRuntimeClient : public AAL::IRuntimeClient,
-                            public MethodCallLog
+                            public AAL::CAASBase
 {
 public:
-   EmptyIRuntimeClient() {}
+   EmptyIRuntimeClient(btApplicationContext Ctx=NULL);
    virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        {}
    virtual void                  runtimeStarted(IRuntime            * ,
                                                 const NamedValueSet & ) {}
@@ -585,10 +586,11 @@ protected:
    btBool  m_InitializeService_returns;
 };
 
-class EmptyIRuntime : public AAL::IRuntime
+class EmptyIRuntime : public AAL::IRuntime,
+                      public AAL::CAASBase
 {
 public:
-   EmptyIRuntime();
+   EmptyIRuntime(btApplicationContext Ctx=NULL);
 
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop() {}
@@ -792,11 +794,11 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CallTrackingIServiceClient : public AAL::IServiceClient,
+class CallTrackingIServiceClient : public EmptyIServiceClient,
                                    public MethodCallLog
 {
 public:
-   CallTrackingIServiceClient() {}
+   CallTrackingIServiceClient(btApplicationContext Ctx=NULL);
    virtual void      serviceAllocated(IBase               * ,
                                       TransactionID const & );
    virtual void serviceAllocateFailed(const IEvent & );
@@ -805,11 +807,11 @@ public:
    virtual void          serviceEvent(const IEvent & );
 };
 
-class CallTrackingIRuntimeClient : public AAL::IRuntimeClient,
+class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
                                    public MethodCallLog
 {
 public:
-   CallTrackingIRuntimeClient() {}
+   CallTrackingIRuntimeClient(btApplicationContext Ctx=NULL);
    virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
    virtual void                  runtimeStarted(IRuntime            * ,
                                                 const NamedValueSet & );
@@ -838,7 +840,7 @@ class CallTrackingIRuntime : public EmptyIRuntime,
                              public MethodCallLog
 {
 public:
-   CallTrackingIRuntime() {}
+   CallTrackingIRuntime(btApplicationContext Ctx=NULL);
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop();
    virtual void                allocService(IBase                * ,
@@ -850,6 +852,19 @@ public:
    virtual btBool       releaseRuntimeProxy();
    virtual IRuntimeClient *getRuntimeClient();
    virtual btBool                      IsOK();
+};
+
+class CallTrackingServiceBase : public EmptyServiceBase,
+                                public MethodCallLog
+{
+public:
+   CallTrackingServiceBase(AALServiceModule *container,
+                           IRuntime         *pAALRUNTIME,
+                           IAALTransport    *ptransport,
+                           IAALMarshaller   *marshaller,
+                           IAALUnMarshaller *unmarshaller);
+
+   virtual void init(TransactionID const &rtid);
 };
 
 #endif // __GTCOMMON_H__

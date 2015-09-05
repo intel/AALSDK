@@ -180,6 +180,8 @@ IBase * ServiceBase::_init(IBase               *pclient,
 
    AutoLock(this);
 
+   ASSERT(NULL != m_Runtime);
+
    m_pclientbase = pclient;
 
    m_pclient = dynamic_ptr<IServiceClient>(iidServiceClient, pclient);
