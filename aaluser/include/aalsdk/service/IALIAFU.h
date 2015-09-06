@@ -1,3 +1,4 @@
+//****************************************************************************
 // Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -36,11 +37,12 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
-///          
+///          Ananda Ravuri, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/20/2015     HM       Initial version.@endverbatim
+/// 07/20/2015     AR       Initial version derived from CCI
+/// 08/XX/2015     HM       New material@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_SERVICE_IALIAFU_H__
 #define __AALSDK_SERVICE_IALIAFU_H__
@@ -51,92 +53,330 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup IALIAFU
 /// @{
 
-/// Key for selecting an AFU delegate.
-#define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
-/// Value - selects ASECCIAFU
-# define ALIAFU_NVS_VAL_TARGET_ASE   "ALIAFUTarget_ASE"
-/// Value - selects HWCCIAFU
-# define ALIAFU_NVS_VAL_TARGET_FPGA  "ALIAFUTarget_FPGA"
-/// Value - selects SWSimCCIAFU
-# define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
+#define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
+#define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+#define iidALI_UMSG_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+#define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+#define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 
-/// ALI Service interface.
-/// @brief Defines the functionality available to all ALI AFU's.
-class IALIAFU
+
+/// @file
+/// @brief AFU Link Interface (ALI).
+///
+/// Defines the functionality available to ALI AFU's.
+/// ALI Service defines a suite of interfaces. There is no specific separate IALIAFU class.
+///
+/// For example, as a derivative of an IAALService, every ALI AFU Service will
+/// provide an IBase that can be cast to provide the Service's Release function, as in:
+/// @code
+/// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
+///    ASSERT( pServiceBase );         // if false, then Service threw a bad pointer
+///
+///    IAALService *m_pAALService;     // used to call Release on the Service
+///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
+///    ASSERT( m_pAALService );
+/// }
+/// @endcode
+///
+/// All ALI Interface IID's derive from INTC_sysAFULinkInterface, e.g.
+///
+/// An ALI Service will support zero to all of the following Services Interfaces:
+///   iidALI_MMIO_Service           __INTC_IID(INTC_sysAFULinkInterface,0x0001)
+///   iidALI_UMSG_Service           __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+///   iidALI_UMSG_Service_Client    __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+///   iidALI_BUFFER_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+///   iidALI_BUFFER_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+/// <TODO: LIST INTERFACES HERE>
+///
+/// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
+///    that the returned Service pointer supports the needed Interface and take appropriate action,
+///    e.g. possibly failing to start and issuing an appropriate error message, or taking other
+///    corrective action if possible.
+/// For example:
+/// @code
+/// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
+///    ASSERT( pServiceBase );         // if false, then Service threw a bad pointer
+///
+///    IAALService *m_pAALService;     // used to call Release on the Service
+///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
+///    ASSERT( m_pAALService );
+///
+///    IALIMMIO *m_pMMIOService;       // used to call MMIO methods on the Service
+///    m_pMMIOService = dynamic_ptr<IALIMMIO>( iidALI_MMIO_Service, pServiceBase);
+///    ASSERT( m_pMMIOService );
+///
+///    IALIBUFFER *m_pBUFFERService;   // used to call BUFF methods on the Service
+///    m_pBUFFERService = dynamic_ptr<IALIBUFFER>( iidALI_BUFFER_Service, pServiceBase);
+///    ASSERT( m_pBUFFERService );
+///
+///    <TODO: ADD EXAMPLES HERE>
+/// }
+/// @endcode
+
+
+/// @brief  Provide access to the MMIO region exposed by the AFU to the Application.
+/// @note   There is no client for this Service Interface because all of its methods
+///            are synchronous (and fast)
+///
+class IALIMMIO
 {
 public:
-   virtual ~IALIAFU() {}
+   virtual ~IALIMMIO() {}
+
+   /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   virtual btVirtAddr   mmioGetAddress( void ) = 0;
+
+   /// @brief Obtain the user virtual address of the mmapped MMIO region.
+   virtual btCSROffset  mmioGetLength( void ) = 0;
+
+   /// Convenience functions for those who organize an MMIO space as a set of Registers
+
+   /// @brief      Read an MMIO address (or register) as a 32-bit value.
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[in]  Offset Byte offset into the MMIO region at which to read.
+   /// @param[out] pValue Where to place value read.
+   /// @return     True if the read was successful.
+   virtual btBool  mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * const pValue) = 0;
+
+   /// @brief      Write an MMIO address (or register) as a 32-bit value.
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[in]  Offset Byte offset into the MMIO region at which to write.
+   /// @param[in]  Value  Value to write.
+   /// @return     True if the write was successful.
+   virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value) = 0;
+
+   /// @brief      Read an MMIO address (or register) as a 64-bit value.
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[in]  Offset Byte offset into the MMIO region at which to read.
+   /// @param[out] pValue Where to place value read.
+   /// @return     True if the read was successful.
+   virtual btBool  mmioRead64( const btCSROffset Offset, btUnsigned64bitInt * const pValue) = 0;
+
+   /// @brief      Write an MMIO address (or register) as a 64-bit value.
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[in]  Offset Byte offset into the MMIO region at which to write.
+   /// @param[in]  Value  Value to write.
+   /// @return     True if the write was successful.
+   virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
+};
+
+/// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
+/// @note   Consider splitting into two interfaces. Do not need the more complex
+///            Transaction oriented interface for most use cases.
+///
+class IALIUMsg
+{
+public:
+   virtual ~IALIUMsg() {}
+
+   /// @brief     Obtain the number of UMsgs available to this AFU
+   /// @note      Synchronous
+   /// @return    The number of UMsgs available to the AFU.
+   virtual btUnsignedInt umsgGetNumber( void ) = 0;
+
+   /// @brief     Obtain the user virtual address of a particular UMsg.
+   /// @note      Synchronous
+   /// @param[in] Index of UMsg. Index starts from 0 and runs to umsgGetNumber()-1
+   /// @return    The virtual address of the cache line which, if written, sends a UMsg
+   virtual btVirtAddr    umsgGetAddress( const btUnsignedInt UMsgNumber ) = 0;
+
+   /// @brief  Set attributes associated with the UMsg region and/or
+   ///            individual UMsgs, depending on the arguments.
+   /// @note   Placeholder for now. Arguments TBD. E.g., for hint information.
+   ///            Expectation is that hints will be defined for allocService
+   ///            and used there, as well as here. This is only needed for changes.
+   /// @note   #define UMSG_HINT_MASK_KEY       "UMsg-Hint-Mask-Key"
+   ///         #define UMSG_HINT_MASK_DATATYPE  btUnsigned64bitInt
+   ///         Value of bit mask is:
+   ///            1 for hint, 0 for not.
+   ///            Bit 0 = UMsg[0]
+   ///            Bit 1 = UMsg[1]
+   ///            etc.
+   virtual void umsgSetAttributes( NamedValueSet const &nvsArgs,
+                                   TransactionID const &TranID) = 0;
+};
+
+/// @brief  Service Client Interface of IALIUMSG
+///
+class IALIUMsg_Client
+{
+public:
+   virtual ~IALIUMsg_Client() {}
+
+   /// @brief  Set attributes call succeeded.
+   virtual void umsgAttributesSet( TransactionID const &TranID) = 0;
+
+   /// @brief Notification callback for Set attributes failed.
+   ///
+   /// Sent in response to a failed free workspace request (IALIBUFFER::umsgSetAttributes).
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   /// @note   Placeholder for now. Arguments TBD. E.g., for hint information.
+   ///            Expectation is that hints will be defined for allocService
+   ///            and used there, as well as here. This is only needed for changes.
+   /// @note   #define UMSG_HINT_MASK_KEY       "UMsg-Hint-Mask-Key"
+   ///         #define UMSG_HINT_MASK_DATATYPE  btUnsigned64bitInt
+   ///         Value of bit mask is:
+   ///            1 for hint, 0 for not.
+   ///            Bit 0 = UMsg[0]
+   ///            Bit 1 = UMsg[1]
+   ///            etc.
+   /// @note   Probably, the parts of the SetAttributes NVS that failed would be
+   ///            returned, with a bit set for each failure (or success).
+   ///         Also, the ExceptionTransactionEvent would contain a descriptive string
+   ///            of the failure
+   virtual void umsgAttributesSetFailed( const IEvent &Event ) = 0;
+};
+
+/// @brief  Buffer Allocation Service Interface of IALI
+///
+class IALIBuffer
+{
+public:
+   virtual ~IALIBuffer() {}
 
    /// @brief Allocate a Workspace.
    ///
    /// @param[in]  Length   Requested length, in bytes.
    /// @param[in]  TranID   Returned in the notification event.
+   /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
    ///
-   /// On success, the workspace parameters are notified via ICCIClient::OnWorkspaceAllocated.
-   /// On failure, an error notification is sent via ICCIClient::OnWorkspaceAllocateFailed.
-   virtual void WorkspaceAllocate(btWSSize             Length,
-                                  TransactionID const &TranID) = 0;
+   /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
+   /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
+   virtual void bufferAllocate( btWSSize             Length,
+                                TransactionID const &TranID,
+                                NamedValueSet       *pOptArgs = NULL ) = 0;
 
    /// @brief Free a previously-allocated Workspace.
    ///
-   /// The provided workspace Address must have been acquired previously by ICCIAFU::WorkspaceAllocate.
+   /// The provided workspace Address must have been acquired previously by IALIBUFFER::bufferAllocate.
    ///
    /// @param[in]  Address  User virtual address of the workspace.
    /// @param[in]  TranID   Returned in the notification event.
    ///
-   /// On success, a notification is sent via ICCIClient::OnWorkspaceFreed.
-   /// On failure, an error notification is sent via ICCIClient::OnWorkspaceFreeFailed.
-   virtual void WorkspaceFree(btVirtAddr           Address,
-                              TransactionID const &TranID) = 0;
+   /// On success, a notification is sent via IALIBUFFER::bufferFreed.
+   /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
+   virtual void bufferFree( btVirtAddr           Address,
+                            TransactionID const &TranID) = 0;
+};
 
-   /// @brief Read a CCI-attached AFU's CSR.
-   /// @note  Applies only to those CCI AFU CSR's which are noted as read/write.
-   ///
-   /// Synchronous function; no TransactionID. Generally very fast.
-   ///
-   /// @param[in]  CSR    Number of CSR to set, starting at 0. Specifics of indexing are
-   ///                       somewhat platform specific. SPL 1 is always an AFU index.
-   ///                       SPL 2 is currently defined as an index from the beginning of
-   ///                       the global CSR space, e.g. AFU space starts at offset 0xA00,
-   ///                       or index 640 (decimal).
-   /// @param[out] Value  Where to place value read. Returned value will be 32-bit in
-   ///                       QPI and PCI incarnations.
-   ///
-   /// @return whether the read was successful.
-   virtual btBool CSRRead(btCSROffset CSR, btCSRValue *pValue) = 0;
+/// @brief  Buffer Allocation Service Client Interface of IALI
+///
+class IALIBuffer_Client
+{
+public:
+   virtual ~IALIBuffer_Client() {}
 
-   /// @brief Write an AFU's CSR.
+   /// @brief Notification callback for workspace allocation success.
    ///
-   /// Synchronous function; no TransactionID. Generally very fast.
+   /// Sent in response to a successful workspace allocation request (IALIBUFFER::bufferAllocate).
    ///
-   /// @param[in]  CSR    Number of CSR to set, starting at 0. Specifics of indexing are
-   ///                       somewhat platform specific. SPL 1 is always an AFU index.
-   ///                       SPL 2 is currently defined as an index from the beginning of
-   ///                       the global CSR space, e.g. AFU space starts at offset 0xA00,
-   ///                       or index 640 (decimal).
-   /// @param[in]  Value  Value to set it to. QPI/PCIe uses 32-bit CSRs.
+   /// @param[in]  TranID     The transaction ID provided in the call to IALIBUFFER::bufferAllocate.
+   /// @param[in]  WkspcVirt  The user virtual address of the newly-allocated workspace.
+   /// @param[in]  WkspcPhys  The physical address of the newly-allocated workspace.
+   /// @param[in]  WkspcSize  The size in bytes of the allocation.
    ///
-   /// @return whether the write was successful.
-   virtual btBool   CSRWrite(btCSROffset CSR, btCSRValue Value) = 0;
+   virtual void bufferAllocated( TransactionID const &TranID,
+                                 btVirtAddr           WkspcVirt,
+                                 btPhysAddr           WkspcPhys,
+                                 btWSSize             WkspcSize ) = 0;
 
-   /// @brief Write an AFU's 64-bit CSR, upper 4 bytes followed by lower 4 bytes.
-   /// @note This API represents a special hw/sw contract for the targeted CSR by enforcing the
-   ///       ordering of the writes in the manner described. Refer to the description of the CSRs
-   ///       in the hardware documentation for further details.
+   /// @brief Notification callback for workspace free success.
    ///
-   /// Synchronous function; no TransactionID. Generally very fast.
+   /// Sent in response to a successful free workspace request (IALIBUFFER::bufferFree).
    ///
-   /// @param[in]  CSR    Number of CSR to set, starting at 0. Specifics of indexing are
-   ///                       somewhat platform specific. SPL 1 is always an AFU index.
-   ///                       SPL 2 is currently defined as an index from the beginning of
-   ///                       the global CSR space, e.g. AFU space starts at offset 0xA00,
-   ///                       or index 640 (decimal).
-   /// @param[in]  Value  Value to set it to.
+   /// @param[in]  TranID  The transaction ID provided in the call to IALIBUFFER::bufferFree.
    ///
-   /// @return whether the write was successful.
-   virtual btBool CSRWrite64(btCSROffset CSR, bt64bitCSR Value) = 0;
+   virtual void bufferFreed( TransactionID const &TranID ) = 0;
 
-}; // IALIAFU
+   /// @brief Notification callback for workspace allocation failure.
+   ///
+   /// Sent in response to a failed workspace allocation request (IALIBUFFER::bufferAllocate).
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   ///
+   virtual void bufferAllocateFailed( const IEvent &Event ) = 0;
+
+   /// @brief Notification callback for workspace free failure.
+   ///
+   /// Sent in response to a failed free workspace request (IALIBUFFER::bufferFree).
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   ///
+   virtual void bufferFreeFailed( const IEvent &Event ) = 0;
+};
+
+/// @brief  Obtain Global Performance Data (not AFU-specific)
+///
+class IALIPerf
+{
+public:
+   virtual ~IALIPerf() {}
+
+   /// @brief Request the Global Performance Data.
+   ///
+   /// The global performance counters relate to the traffic of all AFUs.
+   /// They are 64-bit wrapping counters, and are read-only. Thus, one can
+   ///    take a snapshot, perform an action, take another snapshot, subtract
+   ///    one from the other (taking into account a possible wrap), and thereby
+   ///    obtain the values associated with that operation (or operations if
+   ///    across multiple AFUs).
+   /// @note One needs to ensure that the operations being measured would not cause
+   ///    a 64-bit wrap.
+   ///
+   /// @param[in]  TranID   Returned in the notification event.
+   /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
+   ///
+   /// Response is via IALIPerf_Client::PeformanceCounters()
+   ///
+   virtual void getPerformanceCounters( TransactionID const &TranID,
+                                        NamedValueSet *pOptArgs = NULL) = 0;
+};
+
+/// @brief  Buffer Allocation Service Client Interface of IALI
+///
+class IALIPerf_Client
+{
+public:
+   virtual ~IALIPerf_Client() {}
+
+   /// @brief Notification callback for getPerformanceCounters.
+   ///
+   /// @note Need a versioning mechanism here as these will change over time.
+   /// TODO: Just provide a structure instead of an NVS? Structure works better now
+   ///         but does not adjust going into the future. OTOH, need versioning
+   ///         anyway, so could just have versioned structures (e.g. a versioned union).
+   ///
+   /// Sent in response to a successful call to getPerformanceCounters
+   ///    (IALIPerf::getPerformanceCounters).
+   ///
+   /// @param[in]  TranID     The transaction ID provided in the call to
+   ///                           IALIPerf::getPerformanceCounters.
+   /// @param[in]  nvsResults Contains a set of named btUnsigned64bitInts
+   ///                           containing the results.
+   ///
+   /// Need constant keys for the following performance counters:
+   ///   Port0_Read_Hit
+   ///   Port0_Write_Hit
+   ///   Port0_Read_Miss
+   ///   Port0_Write_Miss
+   ///   Port0_Evictions
+   ///   Port1_Read_Hit
+   ///   Port1_Write_Hit
+   ///   Port1_Read_Miss
+   ///   Port1_Write_Miss
+   ///   Port1_Evictions
+   /// Need a Version key, and a status result (success/failure)
+   /// TODO: Failure via ExceptionTransactionEvent? Here, or top-level?
+   ///
+   virtual void PerformanceCounters( TransactionID const &TranID,
+                                     NamedValueSet const &nvsResuls) = 0;
+};
+
+// TODO:
+// ResetLink
+// MAFU: Reconfigure (Deactivate, Activate?)
+
 
 /// @} group IALIAFU
 
