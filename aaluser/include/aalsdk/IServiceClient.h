@@ -79,7 +79,7 @@ public:
    /// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
    ///    ASSERT( pServiceBase );        // if false, then Service threw a bad pointer
    ///
-   ///    ISampleAFUPing *m_pAALService; // used to call Release on the Service
+   ///    IAALService *m_pAALService;    // used to call Release on the Service
    ///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
    ///    ASSERT( m_pAALService );
    ///
