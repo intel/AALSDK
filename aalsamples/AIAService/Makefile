@@ -37,6 +37,10 @@ CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
 
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
 ifneq (,$(ndebug)) 
 else
 CPPFLAGS += -DENABLE_DEBUG=1 
@@ -61,7 +65,8 @@ endif
 
 SOURCES=\
 AIADllMain.cpp\
-AIAService.cpp
+AIAService.cpp \
+UIDriverInterfaceAdapter.cpp
  
 OBJS=$(SOURCES:.cpp=.o)
 
@@ -74,10 +79,10 @@ libaia.so.0: libaia.so.0.0.0
 	ln -sf libaia.so.0.0.0 libaia.so.0
 
 libaia.so.0.0.0: ${OBJS} 
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libaia.so.0 ${OBJS} $(LDFLAGS) -lOSAL -lAAS -laalrt -o libaia.so.0.0.0
+	$(CXX) $(CFLAGS) -fPIC -shared -Wl,-soname -Wl,libaia.so.0 ${OBJS} $(LDFLAGS) -lOSAL -lAAS -laalrt -o libaia.so.0.0.0
 
 %.o: %.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
 
 clean:
 	$(RM) libaia.so libaia.so.0 libaia.so.0.0.0 *.o

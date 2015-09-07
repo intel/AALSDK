@@ -82,10 +82,10 @@ class UAIA_API UIDriverInterfaceAdapter : private CriticalSection,
       void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
 
       // Polls for messages and returns when one is available
-      //AAL::btBool GetMessage(uidrvMessage *uidrvMessagep);
+      AAL::btBool GetMessage(/*uidrvMessage *uidrvMessagep*/);
 
       // Sends a message down the UIDriver channel
-      AAL::btBool SendMessage(AAL::btUnsigned64bitInt cmd, struct aalui_ioctlreq *reqp);
+      AAL::btBool SendMessage(AAL::btUnsigned64bitInt cmd, struct AAL::aalui_ioctlreq *reqp);
 
 
 

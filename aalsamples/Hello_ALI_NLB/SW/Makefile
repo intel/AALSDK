@@ -38,6 +38,10 @@ CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
 
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
 ifneq (,$(ndebug))
 else
 CPPFLAGS += -DENABLE_DEBUG=1
@@ -65,10 +69,10 @@ endif
 all: helloALInlb
 
 helloALInlb: HelloALINLB.o
-	$(CXX) -g -O2 -o helloALInlb HelloALINLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) $(CFLAGS) -o helloALInlb HelloALINLB.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
 HelloALINLB.o: HelloALINLB.cpp  Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  -g -O2 -c -o HelloALINLB.o HelloALINLB.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o HelloALINLB.o HelloALINLB.cpp
 
 clean:
 	$(RM) helloALInlb HelloALINLB.o

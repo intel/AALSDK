@@ -42,11 +42,14 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-
-#include "aalsdk/uaia/AALuAIA_UIDriverClient.h"
 #include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/kernel/aalui.h"
 
-btBool UIDriverClient::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
+#include "UIDriverInterfaceAdapter.h"
+
+USING_NAMESPACE(AAL)
+
+btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 {
    ASSERT(NULL != pRet);
 
@@ -95,22 +98,22 @@ btBool UIDriverClient::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 
 }
 
-void UIDriverClient::UnMapWSID(btVirtAddr ptr, btWSSize Size)
+void UIDriverInterfaceAdapter::UnMapWSID(btVirtAddr ptr, btWSSize Size)
 {
 #ifdef __AAL_LINUX__
    munmap(ptr, Size);
 #endif // __AAL_LINUX__
 
 #ifdef __AAL_WINDOWS__
-// TODO UIDriverClient uses munmap - need equiv for Windows.
+// TODO UIDriverInterfaceAdapter uses munmap - need equiv for Windows.
 #endif // __AAL_WINDOWS__
 }
 
 //==========================================================================
-// Name: UIDriverClient
+// Name: UIDriverInterfaceAdapter
 // Description: Constructor
 //==========================================================================
-UIDriverClient::UIDriverClient() :
+UIDriverInterfaceAdapter::UIDriverInterfaceAdapter() :
 #if   defined( __AAL_WINDOWS__ )
    m_hClient(INVALID_HANDLE_VALUE),
 #elif defined( __AAL_LINUX__ )
@@ -120,10 +123,10 @@ UIDriverClient::UIDriverClient() :
 {}
 
 //==========================================================================
-// Name: ~UIDriverClient
+// Name: ~UIDriverInterfaceAdapter
 // Description: Destructor
 //==========================================================================
-UIDriverClient::~UIDriverClient()
+UIDriverInterfaceAdapter::~UIDriverInterfaceAdapter()
 {
 #if   defined( __AAL_WINDOWS__ )
    if ( INVALID_HANDLE_VALUE != m_hClient ) {
@@ -136,24 +139,6 @@ UIDriverClient::~UIDriverClient()
 #endif // OS
 
    m_bIsOK = false;
-}
-
-//==========================================================================
-// Name:  operator <<
-// Description: Defines a manipulator that can take arguments
-//              Since an operator takes at most 1 argument the multiple
-//              arguments must be passed through a function object which
-//              contains the actual manipulator pointer and its args
-//==========================================================================
-UIDriverClient & UIDriverClient::operator << (const UIDriverClient_uidrvManip &m)
-{
-     //Invoke the helper that runs the manipulator
-     return m.m_fop( *this,
-                      m.m_cmd,
-                      m.m_payload,
-                      &m.m_tid,
-                      m.m_mgsRoutep,
-                      m.m_DevObject);
 }
 
 
@@ -272,7 +257,7 @@ static HANDLE OpenFirstDevice(const GUID *pinterface_guid)
 // Name: Open
 // Description: Open the channel to the service
 //==========================================================================
-void UIDriverClient::Open(const char *devName)
+void UIDriverInterfaceAdapter::Open(const char *devName)
 {
    // Open the device
 #if   defined( __AAL_WINDOWS__ )
@@ -312,13 +297,13 @@ void UIDriverClient::Open(const char *devName)
 #endif // OS
 
    m_bIsOK = true;
-}  // UIDriverClient::Open
+}  // UIDriverInterfaceAdapter::Open
 
 //==========================================================================
 // Name: Close
 // Description: lose the channel to the service
 //==========================================================================
-void UIDriverClient::Close() {
+void UIDriverInterfaceAdapter::Close() {
 #if   defined( __AAL_WINDOWS__ )
 
    if ( INVALID_HANDLE_VALUE != m_hClient ) {
@@ -336,15 +321,16 @@ void UIDriverClient::Close() {
    }
 
 #endif // OS
-}  // UIDriverClient::Close
+}  // UIDriverInterfaceAdapter::Close
 
 //==========================================================================
 // Name: GetMessage
 // Description: Polls for messages and returns when one is available
 // Comment:
 //==========================================================================
-btBool UIDriverClient::GetMessage(uidrvMessage *uidrvMessagep)
+btBool UIDriverInterfaceAdapter::GetMessage(/*uidrvMessage *uidrvMessagep*/)
 {
+#if 0
    struct aalui_ioctlreq ioctlMessage;
 
 
@@ -483,29 +469,31 @@ FAILED: // If got here then DeviceIoControl failed.
 
       }
 
-      AAL_VERBOSE(LM_UAIA, "UIDriverClient::GetMessage: About to wait" << std::endl);
+      AAL_VERBOSE(LM_UAIA, "UIDriverInterfaceAdapter::GetMessage: About to wait" << std::endl);
 
       ret = poll(pollfds, 1, -1);
       if ( ret != 1 ) {   // expect a 1 here, generally
-         AAL_DEBUG(LM_UAIA, "UIDriverClient::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << std::endl);
+         AAL_DEBUG(LM_UAIA, "UIDriverInterfaceAdapter::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << std::endl);
       }
 
    // TODO: HM 20090605 Joe and I both think this logic is buggy. Revisit.
    } while( ( 0 == ret ) || ( -EAGAIN != ret ) );
 
 FAILED: // If got here then the poll failed
-   perror("UIDriverClient::GetMessage:poll");
+   perror("UIDriverInterfaceAdapter::GetMessage:poll");
    return false;
 
 #endif // OS
-}  // UIDriverClient::GetMessage
+#endif
+}  // UIDriverInterfaceAdapter::GetMessage
 
 
 //==========================================================================
 // Name: SendMessage
 // Description: Sends a message down RMC connection
 //==========================================================================
-btBool UIDriverClient::SendMessage(btUnsigned64bitInt cmd, struct aalui_ioctlreq *reqp)
+btBool UIDriverInterfaceAdapter::SendMessage(btUnsigned64bitInt cmd,
+                                             struct aalui_ioctlreq *reqp)
 {
 
    AutoLock(this);
@@ -540,24 +528,24 @@ btBool UIDriverClient::SendMessage(btUnsigned64bitInt cmd, struct aalui_ioctlreq
 #elif defined( __AAL_LINUX__ )
 
    if ( -1 == ioctl(m_fdClient, cmd, reqp) ) {
-      perror("UIDriverClient::SendMessage");
+      perror("UIDriverInterfaceAdapter::SendMessage");
       m_bIsOK = false;
    }
 
 #endif // OS
 
    return true;
-}  // UIDriverClient::SendMessage
+}  // UIDriverInterfaceAdapter::SendMessage
 
 
 BEGIN_C_DECLS
-
+#if 0
 //==========================================================================
 // Name: msgMarshaller
 // Description: This function is a helper method that is responsible for
 //              building the appropriate method to send to the RMC. This
 //              is called by the << operator
-// Inputs: rThis  - reference to the instance of this UIDriverClient
+// Inputs: rThis  - reference to the instance of this UIDriverInterfaceAdapter
 //         cmd    - Commmand ID
 //         stTidp - Pointer to transactionID structure
 //         payload - Wrapper for a payload.  Passed by value so that
@@ -572,9 +560,9 @@ BEGIN_C_DECLS
 //            be contiguous. Function creates a single contiguous message
 //            to be sent downsteam.
 //==========================================================================
-UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
+UIDriverInterfaceAdapter & msgMarshaller(UIDriverInterfaceAdapter           &rThis,
                                uid_msgIDs_e              cmd,
-                               UIDriverClient_msgPayload payload,
+                               UIDriverInterfaceAdapter_msgPayload payload,
                                stTransactionID_t const  *stTidp,
                                uidrvMessageRoute        *mgsRoutep,
                                btObjectType              Handle)
@@ -626,10 +614,10 @@ UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
       break;
    }
 
-   UIDriverClient &ret = rThis.Send(ioctlCMD, preq);
+   UIDriverInterfaceAdapter &ret = rThis.Send(ioctlCMD, preq);
    return ret;
-}  // UIDriverClient::msgMarshaller
-
+}  // UIDriverInterfaceAdapter::msgMarshaller
+#endif
 END_C_DECLS
 
 
