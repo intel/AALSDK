@@ -58,6 +58,10 @@ BEGIN_NAMESPACE(AAL)
 #define iidALI_UMSG_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0003)
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
 #define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+#define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+#define iidALI_PERF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0007)
+#define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+#define iidALI_RSET_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 
 
 /// @file
@@ -66,26 +70,18 @@ BEGIN_NAMESPACE(AAL)
 /// Defines the functionality available to ALI AFU's.
 /// ALI Service defines a suite of interfaces. There is no specific separate IALIAFU class.
 ///
-/// For example, as a derivative of an IAALService, every ALI AFU Service will
-/// provide an IBase that can be cast to provide the Service's Release function, as in:
-/// @code
-/// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
-///    ASSERT( pServiceBase );         // if false, then Service threw a bad pointer
-///
-///    IAALService *m_pAALService;     // used to call Release on the Service
-///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
-///    ASSERT( m_pAALService );
-/// }
-/// @endcode
-///
-/// All ALI Interface IID's derive from INTC_sysAFULinkInterface, e.g.
+/// All ALI IID's will derive from Intel-specific sub-system INTC_sysAFULinkInterface.
 ///
 /// An ALI Service will support zero to all of the following Services Interfaces:
-///   iidALI_MMIO_Service           __INTC_IID(INTC_sysAFULinkInterface,0x0001)
-///   iidALI_UMSG_Service           __INTC_IID(INTC_sysAFULinkInterface,0x0002)
-///   iidALI_UMSG_Service_Client    __INTC_IID(INTC_sysAFULinkInterface,0x0003)
-///   iidALI_BUFFER_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
-///   iidALI_BUFFER_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+///   iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
+///   iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+///   iidALI_UMSG_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+///	  iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+///	  iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+///   iidALI_PERF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0007)
+///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+///   iidALI_RSET_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 /// <TODO: LIST INTERFACES HERE>
 ///
 /// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
@@ -162,7 +158,9 @@ public:
 
 /// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
 /// @note   Consider splitting into two interfaces. Do not need the more complex
-///            Transaction oriented interface for most use cases.
+///            Transaction oriented interface for most use cases. Alternatively have
+///            asynchronous response to rarely used umsgSetAttributes call
+///            IServiceClient::serviceEvent().
 ///
 class IALIUMsg
 {
@@ -347,8 +345,7 @@ public:
    ///         but does not adjust going into the future. OTOH, need versioning
    ///         anyway, so could just have versioned structures (e.g. a versioned union).
    ///
-   /// Sent in response to a successful call to getPerformanceCounters
-   ///    (IALIPerf::getPerformanceCounters).
+   /// Sent in response to a call to getPerformanceCounters vi IALIPerf::getPerformanceCounters()
    ///
    /// @param[in]  TranID     The transaction ID provided in the call to
    ///                           IALIPerf::getPerformanceCounters.
@@ -366,15 +363,65 @@ public:
    ///   Port1_Read_Miss
    ///   Port1_Write_Miss
    ///   Port1_Evictions
-   /// Need a Version key, and a status result (success/failure)
-   /// TODO: Failure via ExceptionTransactionEvent? Here, or top-level?
+   /// Need a Version key, and a status result (success/failure), and a datatype key
+   /// TODO: Failure via ExceptionTransactionEvent? if so, then here, or top-level? If not, then via failure code?
+   ///
+   /// @note   #define AALPERF_DATATYPE  		btUnsigned64bitInt
+   ///         #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
+   ///         etc.
    ///
    virtual void PerformanceCounters( TransactionID const &TranID,
                                      NamedValueSet const &nvsResuls) = 0;
 };
 
+/// @brief  Reset the AFU Link Interface to this AFU
+///
+class IALIReset
+{
+public:
+   virtual ~IALIReset() {}
+
+   /// @brief Request the Reset.
+   ///
+   /// Only the Link to this AFU will be reset.
+   /// By resetting the link, all outstanding transactions will quiesce, the
+   ///    processing of memory transactions will be disabled,
+   ///    the AFU will be sent a Reset signal,
+   ///    and transactions will be re-enabled.
+   /// TODO: Is there a positive affirmation of AFU Reset, now that DSM is gone?
+   /// TODO: Check that quiescence is destructive. E.g., one could could not
+   ///       quiesce/enable without destroying state. Thus the need for reset. Correct?
+   /// TODO: Assuming quiesce is destructive, might one not want to split this into
+   ///       two parts; Quiesce+Reset, then Enable Link?
+   ///
+   /// @param[in]  TranID   Returned in the notification event.
+   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   ///
+   /// Response is via IALIReset_Client::()
+   ///
+   virtual void resetAFU( TransactionID const &TranID,
+		                  NamedValueSet *pOptArgs = NULL) = 0;
+};
+
+/// @brief  Reset Service Client Interface of IALI
+///
+class IALIReset_Client
+{
+public:
+   virtual ~IALIReset_Client() {}
+
+   /// @brief Notification callback for resetAFU.
+   ///
+   /// TODO: We have no way to determine an error, so this is just confirmation.
+   ///       But what if in the future there could be an error. Should this be an IEvent, instead?
+   ///
+   virtual void afuReset( TransactionID const &TranID ) = 0;
+};
+
+
+
+
 // TODO:
-// ResetLink
 // MAFU: Reconfigure (Deactivate, Activate?)
 
 
