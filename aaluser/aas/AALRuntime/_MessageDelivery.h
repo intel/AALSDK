@@ -96,6 +96,6 @@ protected:
 
 END_NAMESPACE(AAL)
 
-/// @} group MDS
+/// @}
 
 #endif // __MessageDelivery_H__

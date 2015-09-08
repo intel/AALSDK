@@ -1130,6 +1130,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ cciapp --target=swsim@endcode
 
-@} group cciapp
+@}
 */
 

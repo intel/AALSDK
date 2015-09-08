@@ -63,6 +63,6 @@ public:
 
    virtual ~IDispatchable() {}
 };
-/// @} group Dispatchable
+/// @}
 
 #endif // __IDISPATCHABLE_H__

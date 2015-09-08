@@ -81,8 +81,7 @@ class IHelloAALService
 public:
    /// @brief An illustration of an AFU custom interface.
    ///
-   /// Spawns a worker thread which sends 5 tranevtSampleAFUPing
-   /// messages back to the caller.
+   /// Writes the passed in message and calls the client back.
    ///
    /// @param[in]  sMessage  A message to be received by this AFU.
    /// @param[in]  rTranID   For messages sent back to the caller.
@@ -93,7 +92,7 @@ public:
    virtual ~IHelloAALService() {}
 };
 
-/// @} group hello_service
+/// @}
 
 // Convenience macros for printing messages and errors.
 #ifndef MSG

@@ -80,12 +80,12 @@ public:
 };
 
 
-/// @} group SysEvents
+/// @}
 
 
 //=============================================================================
 // Name: IWorkspce
-// Description: Public Interface class for Workspace
+/// @brief Public Interface class for Workspace
 //=============================================================================
 class UAIA_API IWorkspace
 {

@@ -357,7 +357,7 @@ void ISingleAFUApp<Proprietary>::Wait() { m_Sem.Wait();  }
 template <typename Proprietary>
 void ISingleAFUApp<Proprietary>::Post() { m_Sem.Post(1); }
 
-/// @} group SingleAFUApp
+/// @}
 
 #endif // __AALSDK_UTILS_SINGLEAFUAPP_H__
 

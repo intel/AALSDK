@@ -69,8 +69,8 @@ all clean:
 .PHONY:all clean
 
 doc docs: docclean
+	doc/output/./test.sh
 	doxygen doc/Doxyfile
-
 docclean docsclean:
 	@$(RM) -rf doc/doxygen
 

@@ -120,7 +120,7 @@ public:
 //   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
 };
 
-/// @} group EDS
+/// @}
 
 /// Interface for the Event Delivery System Service.
 class AASEDS_API IMessageDeliveryService

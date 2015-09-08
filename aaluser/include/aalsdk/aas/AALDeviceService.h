@@ -235,8 +235,11 @@ private:
    private:
       DeviceServiceBase * m_pdsb;
    };
-
-
+  /// @brief Perform any post creation initialization including establishing communications.
+  ///
+  ///   This function is virtual to allow the derived class to hook the
+  ///            init() routine. Derived classes should call the base
+  ///           implementation before adding their own functionality.
    void Doinit(TransactionID const &rtid)
    {
       // Get the config record
@@ -359,6 +362,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   ///@brief static Callback Handler
+   ///
+   ///Gets this pointer from the object's context which was provided when we created it.
    static void _EventCallbackHandler(IEvent const &theEvent)
    {
       // Get this pointer from the object's context which was provided when we created it.
@@ -374,6 +380,11 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Delegate callback handler
+   ///
+   ///  Create a session with the AIA which serves as a
+   ///  connection between this object and the kernel
+   ///  services including the device we bind to.
    void EventCallbackHandler(IEvent const &theEvent)
    {
       // TODO check for NULL
@@ -425,6 +436,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Static event handler
+   ///
+   /// The object that generated the event (AIAProxy) has our this as its context
    static void _DefaultAIAHandler(IEvent const &theEvent)
    {
       // The object that generated the event (AIAProxy) has our this as its context
@@ -440,6 +454,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Delegate AIA handler
+   ///
+   /// Delegate AIA handler
    void DefaultAIAHandler(IEvent const &theEvent)
    {
       // Check for exception
@@ -553,7 +570,7 @@ protected:
 };
 
 
-/// @} group UserModeSDK
+/// @}
 
 
 END_NAMESPACE(AAL)

@@ -189,7 +189,7 @@ private:
 };
 
 
-/// @} group OSAL
+/// @}
 
 
 #endif // __AALSDK_OSAL_OSSEMAPHORE_H__

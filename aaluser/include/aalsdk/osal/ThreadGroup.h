@@ -47,43 +47,44 @@
 #include <aalsdk/osal/Barrier.h>
 #include <aalsdk/osal/Thread.h>
 #include <aalsdk/osal/IDispatchable.h>
-
+/// @addtogroup OSAL
+/// @{
 class IThreadGroup
 {
 public:
    virtual ~IThreadGroup() {}
 
-   // Basic status check.
+   /// @brief Basic status check.
    virtual AAL::btBool                   IsOK() const          = 0;
 
-   // Retrieve a snapshot of the current number of threads, which may be less than that originally
-   // in the thread group when created. Threads remove themselves from the group as they exit.
+   /// @brief Retrieve a snapshot of the current number of threads, which may be less than that originally
+   /// in the thread group when created. Threads remove themselves from the group as they exit.
    virtual AAL::btUnsignedInt   GetNumThreads() const          = 0;
 
-   // Retrieve a snapshot of the number of work items in the queue, which is not guaranteed to
-   // be true even upon the return of this call (threads may have consumed more work).
+   /// @brief Retrieve a snapshot of the number of work items in the queue, which is not guaranteed to
+   /// be true even upon the return of this call (threads may have consumed more work).
    virtual AAL::btUnsignedInt GetNumWorkItems() const          = 0;
 
-   // Add a work item to the queue for processing.
-   // returns false, and does not queue the item, if the thread group is stopped or draining.
+   /// @brief  Add a work item to the queue for processing.
+   /// returns false, and does not queue the item, if the thread group is stopped or draining.
    virtual AAL::btBool                    Add(IDispatchable *) = 0;
 
-   // Wait for all worker threads to exit.
+   /// @brief   Wait for all worker threads to exit.
    virtual AAL::btBool                   Join(AAL::btTime )    = 0;
 
-   // Halt the dispatching of all queued work items and prevent new work items from being added.
-   // Any work items residing in the queue at the time of the call are removed and deleted, without
-   // being executed.
+   /// @brief   Halt the dispatching of all queued work items and prevent new work items from being added.
+   /// Any work items residing in the queue at the time of the call are removed and deleted, without
+   /// being executed.
    virtual void                          Stop()                = 0;
 
-   // Resume a Stopped thread group.
-   // returns false if the thread group could not be resumed; otherwise true.
+   /// @brief   Resume a Stopped thread group.
+   /// returns false if the thread group could not be resumed; otherwise true.
    virtual AAL::btBool                  Start()                = 0;
 
-   // Execute all of the work items currently in the work queue, waiting until they are all
-   // complete before returning. Prevent new work items from being added to the thread group
-   // while draining.
-   // return false if the queue could not be drained; otherwise true.
+   /// @brief   Execute all of the work items currently in the work queue, waiting until they are all
+   /// complete before returning. Prevent new work items from being added to the thread group
+   /// while draining.
+   /// return false if the queue could not be drained; otherwise true.
    virtual AAL::btBool                  Drain()                = 0;
 
    virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
@@ -102,11 +103,12 @@ protected:
 // Interface: public
 // Comments: 
 //=============================================================================
+/// @brief Thread pooled functor scheduler
 class OSAL_API OSLThreadGroup : public IThreadGroup,
                                 public CriticalSection
 {
 public:
-   // Default Min thread is to let the TG decide. Max < min then Max == Min
+   ///  Default Min thread is to let the TG decide. Max < min then Max == Min
    OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads=0,
                   AAL::btUnsignedInt        uiMaxThreads=0,
                   OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
@@ -135,10 +137,10 @@ protected:
 
 private:
    //
-   // Object that holds state and semaphores for the
-   //  thread group. This object "lives" outside the
-   //  ThreadGroup object so that Threads may continue to
-   //  clean-up even if the ThreadGroup proper has been destroyed.
+   /// Object that holds state and semaphores for the
+   ///  thread group. This object "lives" outside the
+   ///  ThreadGroup object so that Threads may continue to
+   /// clean-up even if the ThreadGroup proper has been destroyed.
    class ThrGrpState : public IThreadGroup,
                        public CriticalSection
    {
@@ -200,46 +202,46 @@ private:
          DrainManager(ThrGrpState *pTGS);
          virtual ~DrainManager();
 
-         // Registers tid as a participant in the current volley of possibly-nested
-         //  Drain() calls. If m_DrainNestLevel is zero upon entering Begin(), a new Drain()
-         //  operation is started.
-         // The returned Barrier object is NULL if tid is a member of the thread group workers
-         //  (self-referential Drain()). If an external Drain(), then the caller must wait on
-         //  the Barrier until the Drain() is complete.
+         /// Registers tid as a participant in the current volley of possibly-nested
+         ///  Drain() calls. If m_DrainNestLevel is zero upon entering Begin(), a new Drain()
+         ///  operation is started.
+         /// The returned Barrier object is NULL if tid is a member of the thread group workers
+         ///  (self-referential Drain()). If an external Drain(), then the caller must wait on
+         ///  the Barrier until the Drain() is complete.
          Barrier * Begin(AAL::btTID tid, AAL::btUnsignedInt items);
 
-         // Unregisters tid as a participant in the current Drain(). pDrainBarrier must be
-         //  NULL if tid is a member of the thread group workers. Adjust m_DrainNestLevel.
-         //
-         // return true if tid found to be a Drain()'er.
+         /// Unregisters tid as a participant in the current Drain(). pDrainBarrier must be
+         ///  NULL if tid is a member of the thread group workers. Adjust m_DrainNestLevel.
+         ///
+         /// return true if tid found to be a Drain()'er.
          AAL::btBool End(AAL::btTID tid, Barrier *pDrainBarrier);
 
-         // External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
-         // In the case of self-referential Join() and self-referential Destroy(), a worker is
-         //  forced to self-terminate before it can Post() the Barrier object stored within
-         //  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier here so that external
-         //  drainers can resume.
+         /// External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
+         /// In the case of self-referential Join() and self-referential Destroy(), a worker is
+         ///  forced to self-terminate before it can Post() the Barrier object stored within
+         ///  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier here so that external
+         ///  drainers can resume.
          AAL::btBool ReleaseAllDrainers();
 
-         // A thread group worker may execute a self-referential Drain(), and go on to execute
-         //  a self-referential Join() or Destroy(). When this happens, the worker will self-
-         //  terminate within the Join() or Destroy() call, never completing the Drain(). Before
-         //  self-terminating, the worker must check for instances of its tid in m_SelfDrainers
-         //  and forcibly complete the work items matching its tid using this call.
+         /// A thread group worker may execute a self-referential Drain(), and go on to execute
+         ///  a self-referential Join() or Destroy(). When this happens, the worker will self-
+         ///  terminate within the Join() or Destroy() call, never completing the Drain(). Before
+         ///  self-terminating, the worker must check for instances of its tid in m_SelfDrainers
+         ///  and forcibly complete the work items matching its tid using this call.
          void ForciblyCompleteWorkItem();
 
-         // Query the current Drain() nesting level (number of overlapping Drain() calls).
+         /// Query the current Drain() nesting level (number of overlapping Drain() calls).
          AAL::btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
 
-         // Signal that the last participant in the current Drain() is hands-off the thread group.
+         /// Signal that the last participant in the current Drain() is hands-off the thread group.
          void AllDrainersAreDone();
 
-         // Wait for all threads involved in Drain() to be hands-off the object.
+         /// Wait for all threads involved in Drain() to be hands-off the object.
          void WaitForAllDrainersDone();
 
       protected:
 
-         // Functor that signals completion of a call to OSLThreadGroup::Drain().
+         /// Functor that signals completion of a call to OSLThreadGroup::Drain().
          class NestedBarrierPostD : public IDispatchable
          {
          public:
@@ -296,7 +298,7 @@ private:
       void         WorkerHasExited(OSLThread * );
       void WorkerIsSelfTerminating(OSLThread * );
 
-      // returns NULL if tid not in group.
+      /// returns NULL if tid not in group.
       OSLThread * ThreadRunningInThisGroup(AAL::btTID ) const;
 
       eState GetWorkItem(IDispatchable * &pWork);
@@ -306,7 +308,7 @@ private:
       friend class OSLThreadGroup;
    };
 
-   // lpParms is a ThrGrpState.
+   /// lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
    AAL::btBool  m_bDestroyed;
@@ -316,3 +318,4 @@ private:
 
 #endif // __AALSDK_OSAL_THREADGROUP_H__
 
+/// @}

@@ -82,7 +82,7 @@ AAL_DECLARE_SVC_MOD(@HWSPLAFU_SVC_MOD@, HWSPLAFU_API)
 9 11 ServiceName\n \
 \t9 8 HWSPLAFU\n"
 
-/// @} group HWSPLAFU
+/// @}
 
 #endif // __SERVICE_HWSPLAFUSERVICE_H__
 
