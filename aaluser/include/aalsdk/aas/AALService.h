@@ -185,10 +185,6 @@ public:
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
 
-   /// ServiceBase Copy Constructor.
-   ServiceBase(ServiceBase const &rother);
-
-
    /// ServiceBase Destructor.
    virtual ~ServiceBase();
 
@@ -410,7 +406,8 @@ public:
                      TransactionID const    &rTranID   = TransactionID());
 
 protected:
-   // operator= not allowed
+   // no copies
+   ServiceBase(const ServiceBase & );
    ServiceBase & operator = (const ServiceBase & );
 
    //=============================================================================
@@ -427,6 +424,8 @@ protected:
 
    void Released();
 
+   btUnsigned32bitInt m_Flags;
+#define SERVICEBASE_IS_RELEASED 0x00000001
    IRuntimeClient    *m_RuntimeClient;
    IRuntime          *m_Runtime;
    IServiceClient    *m_pclient;

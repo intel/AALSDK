@@ -7,8 +7,21 @@ declare -r SCRIPT_NAME='run-bat'
 
 . ./run-common
 
-declare -r ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
+declare ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
 
-setup
-run_bat ${ARGS} ${1+"$@"}
+declare WANTDISTCC=false
+while [ $# -gt 0 ]; do
+   case $1 in
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup ${WANTDISTCC}
+run_bat ${ARGS}
 exit $?

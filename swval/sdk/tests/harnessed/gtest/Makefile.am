@@ -81,7 +81,17 @@ main.cpp \
 gtCommon.h \
 gtCommon.cpp \
 gtNVSLegacy.cpp \
-gtNVS.cpp
+gtCValue.cpp \
+gtSeqRand.h \
+gtSeqRand.cpp \
+gtNVSTester.h \
+gtNVSTester.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp
 
 weekly_CPPFLAGS=\
 -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
@@ -102,8 +112,18 @@ gtCommon.h \
 gtCritSect.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
-gtNVS.cpp \
 gtNVSLegacy.cpp \
+gtCValue.cpp \
+gtSeqRand.h \
+gtSeqRand.cpp \
+gtNVSTester.h \
+gtNVSTester.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp \
 gtOSServiceModule.cpp \
 gtSem.cpp \
 gtSleep.cpp \

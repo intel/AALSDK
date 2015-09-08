@@ -46,12 +46,6 @@
 
 BEGIN_NAMESPACE(AAL)
 
-
-IAALTransport::~IAALTransport() {}
-IAALMarshalUnMarshallerUtil::~IAALMarshalUnMarshallerUtil() {}
-IAALMarshaller::~IAALMarshaller() {}
-IAALUnMarshaller::~IAALUnMarshaller() {}
-
 AALServiceModule::AALServiceModule(ISvcsFact &fact) :
    m_SvcsFact(fact),
    m_Runtime(NULL),

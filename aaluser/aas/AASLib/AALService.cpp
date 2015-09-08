@@ -71,6 +71,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
                          IAALTransport    *ptransport,
                          IAALMarshaller   *marshaller,
                          IAALUnMarshaller *unmarshaller) :
+   m_Flags(0),
    m_RuntimeClient(NULL),
    m_Runtime(pAALRuntime->getRuntimeProxy(this)),  // Use my own Proxy
    m_pclient(NULL),
@@ -82,6 +83,10 @@ ServiceBase::ServiceBase(AALServiceModule *container,
    m_runMDT(false),
    m_pMDT(NULL)
 {
+   AutoLock(this);
+
+   ASSERT(NULL != m_pcontainer);
+
    if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
       m_bIsOK = false;
       return;
@@ -91,22 +96,6 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       m_bIsOK = false;
       return;
    }
-}
-
-ServiceBase::ServiceBase(ServiceBase const &rother) :
-   CAASBase(),
-   m_optArgs(rother.m_optArgs),
-   m_pclient(rother.m_pclient),
-   m_pcontainer(rother.m_pcontainer),
-   m_Runtime(rother.m_Runtime->getRuntimeProxy(this)),
-   m_ptransport(rother.m_ptransport),
-   m_pmarshaller(rother.m_pmarshaller),
-   m_punmarshaller(rother.m_punmarshaller),
-   m_runMDT(false),
-   m_pMDT(NULL)
-{
-   SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this));
-   m_bIsOK = true;
 }
 
 ServiceBase::~ServiceBase()
@@ -143,14 +132,7 @@ ServiceBase::~ServiceBase()
       m_pMDT->Join();
    }
 
-   {
-      AutoLock(this);
-
-      if ( m_bIsOK ) {
-         // Not been released yet.
-         Released();
-      }
-   }
+   Released();
 }
 
 btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
@@ -197,6 +179,8 @@ IBase * ServiceBase::_init(IBase               *pclient,
    }
 
    AutoLock(this);
+
+   ASSERT(NULL != m_Runtime);
 
    m_pclientbase = pclient;
 
@@ -339,8 +323,14 @@ void ServiceBase::allocService(IBase                  *pClient,
 void ServiceBase::Released()
 {
    AutoLock(this);
-   // Mark as not OK before deleting self or it will recurse Releasing
-   m_bIsOK = false;
+
+   if ( flag_is_set(m_Flags, SERVICEBASE_IS_RELEASED) ) {
+      return;
+   }
+
+   // Mark as released so that we don't release multiple times.
+
+   flag_setf(m_Flags, SERVICEBASE_IS_RELEASED);
    m_pcontainer->ServiceReleased(this);
 }
 
@@ -357,6 +347,7 @@ void ServiceBase::messageHandler(const IEvent &rEvent)
 }
 #endif // DEPRECATED
 
+ServiceBase::ServiceBase(const ServiceBase & ) {/*empty*/}
 ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }
 
 
@@ -426,9 +417,9 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
    // Create the remote side object
    marshall().Empty();  // Just to be sure
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_METHOD,eNew);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE,this);
-   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS,m_optArgs);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_METHOD,       eNew);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE,              this);
+   marshall().Add(AAL_SERVICE_PROXY_INTERFACE_NEW_OPTARGS, &m_optArgs);
 
    if ( !sendmsg() ) {
       m_ptransport->disconnect();

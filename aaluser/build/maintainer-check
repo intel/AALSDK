@@ -997,17 +997,17 @@ build_samples() {
    checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
    pass_checkpoint "${cpath}" "${chkpt}"
 
-   tgt='doc'
-   chkpt="make_${tgt}"
-   print_title     "aalsamples : make ${tgt}"
-   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
-   pass_checkpoint "${cpath}" "${chkpt}"
-
-   tgt='docclean'
-   chkpt="make_${tgt}"
-   print_title     "aalsamples : make ${tgt}"
-   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
-   pass_checkpoint "${cpath}" "${chkpt}"
+#   tgt='doc'
+#   chkpt="make_${tgt}"
+#   print_title     "aalsamples : make ${tgt}"
+#   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
+#   pass_checkpoint "${cpath}" "${chkpt}"
+#
+#   tgt='docclean'
+#   chkpt="make_${tgt}"
+#   print_title     "aalsamples : make ${tgt}"
+#   checkpoint      "${cpath}" "${chkpt}" || run_make "${samplespath}" "${tgt}"
+#   pass_checkpoint "${cpath}" "${chkpt}"
 
    next_OK_color
 }
