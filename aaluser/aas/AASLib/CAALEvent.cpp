@@ -156,38 +156,6 @@ CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
 }
 
 //=============================================================================
-// Name: CAALEvent
-// Description: Copy constructor Constructor
-// Comments:
-//=============================================================================
-CAALEvent::CAALEvent(const CAALEvent &rOther)
-{
-   AutoLock(this);
-
-   // Self register the interface
-   if ( SetInterface(iidCEvent, dynamic_cast<CAALEvent *>(this)) != EObjOK ) {
-      return;
-   }
-
-   // IEvent is the default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidEvent, dynamic_cast<IEvent *>(this)) != EObjOK ) {
-      return;
-   }
-
-   {
-      AutoLock(&rOther);
-
-      m_pObject        = rOther.m_pObject;
-      m_bIsOK          = rOther.m_bIsOK;
-      m_Context        = rOther.m_Context;
-
-      m_pServiceClient = rOther.m_pServiceClient;
-      m_pRuntimeClient = rOther.m_pRuntimeClient;
-      m_pEventHandler  = rOther.m_pEventHandler;
-   }
-}
-
-//=============================================================================
 // Name: CAALEvent::Interface
 // Description: Gets a pointer to the requested interface
 // Interface: public
@@ -484,13 +452,7 @@ btBool CAALEvent::ProcessEventTranID()
 }
 
 CAALEvent::CAALEvent() {/*empty*/}
-CAALEvent & CAALEvent::operator=(const CAALEvent & ) { return *this; }
-
-//=============================================================================
-// Name: CAALEvent
-// Description: Destructor
-//=============================================================================
-CAALEvent::~CAALEvent() {}
+CAALEvent::~CAALEvent() {/*empty*/}
 
 //=============================================================================
 // Name: CTransactionEvent
@@ -503,16 +465,15 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
    CAALEvent(pObject)
 {
    AutoLock(this);
+
    m_TranID = TranID;
 
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
+   // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CTransactionEvent
@@ -529,49 +490,33 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
 
    m_TranID = TranID;
 
-
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
+   // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    // Set the subclass to the one provided
    if ( SetSubClassInterface(SubClassID, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
-      return;
-   }
-
-   m_bIsOK = true;
-}
-
-//=============================================================================
-// Name: CTransactionEvent
-// Description: copy constructor CTransactionEvent base class
-// Comments: Must Initialize base to ensure Interface registration.
-//           Must be constructed with an object and a TranID.
-//=============================================================================
-CTransactionEvent::CTransactionEvent(CTransactionEvent const &rOther) :
-   CAALEvent(rOther)
-{
-   AutoLock(this);
-
-   // ITranEvent is the default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
       m_bIsOK = false;
       return;
    }
-
-   m_TranID = rOther.m_TranID;
 }
 
-//=============================================================================
-// Name: CTransactionEvent
-// Description: Destructor
-//=============================================================================
-CTransactionEvent::~CTransactionEvent() {}
+TransactionID CTransactionEvent::TranID() const
+{
+   AutoLock(this);
+   return m_TranID;
+}
+
+void CTransactionEvent::SetTranID(TransactionID const &TranID)
+{
+   AutoLock(this);
+   m_TranID = TranID;
+}
 
 CTransactionEvent::CTransactionEvent() {/*empty*/}
 CTransactionEvent::CTransactionEvent(IBase * ) {/*empty*/}
-CTransactionEvent & CTransactionEvent::operator=(const CTransactionEvent & ) { return *this; }
 
 //=============================================================================
 // Name: CExceptionEvent
@@ -591,14 +536,12 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
 {
    AutoLock(this);
 
-   // default native subclass interface unless overriden by a subclass
+   // default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CExceptionEvent
@@ -620,46 +563,24 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
 
    // iidExEvent is the default native subclass interface unless overriden by a subclass
    if ( SetInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    // default native subclass interface unless overriden by a subclass
    if ( SetSubClassInterface(SubClassID, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
-      return;
-   }
-
-   m_bIsOK = true;
-}
-
-//=============================================================================
-// Name: CExceptionEvent
-// Description: Copy Constructor
-// Comments: Must Initialize base to ensure Interface registration.
-//           Must be constructed with an object.
-//=============================================================================
-CExceptionEvent::CExceptionEvent(const CExceptionEvent &rOther) :
-   CAALEvent(rOther),
-   m_ExceptionNumber(rOther.m_ExceptionNumber),
-   m_Reason(rOther.m_Reason),
-   m_strDescription(rOther.m_strDescription)
-{
-   AutoLock(this);
-
-   // default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidExEvent, dynamic_cast<IExceptionEvent *>(this)) != EObjOK ) {
       m_bIsOK = false;
       return;
    }
 }
 
-//=============================================================================
-// Name: ~CExceptionEvent
-// Description: Destructor
-//=============================================================================
-CExceptionEvent::~CExceptionEvent() {}
+btString CExceptionEvent::Description() const
+{
+   AutoLock(this);
+   return (btString)(char *)m_strDescription.c_str();
+}
 
-CExceptionEvent::CExceptionEvent() {}
-CExceptionEvent & CExceptionEvent::operator=(const CExceptionEvent & ) { return *this; }
+CExceptionEvent::CExceptionEvent() {/*empty*/}
 
 //=============================================================================
 // Name: CExceptionTransactionEvent
@@ -673,26 +594,24 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        btID                 Reason,
                                                        btcString            Description) :
    CAALEvent(pObject),
+   m_TranID(TranID),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
 {
    AutoLock(this);
 
-   m_TranID = TranID;
-
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
-   // default native subclass interface unless overriden by a subclass
+   // Default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
-
 
 //=============================================================================
 // Name: CExceptionTransactionEvent
@@ -707,89 +626,72 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
                                                        btID                 Reason,
                                                        btcString            Description) :
    CAALEvent(pObject),
+   m_TranID(TranID),
    m_ExceptionNumber(ExceptionNumber),
    m_Reason(Reason),
    m_strDescription(Description)
 {
    AutoLock(this);
 
-   m_TranID = TranID;
-
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
    if ( SetInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
 
-   // default native subclass interface unless overriden by a subclass
+   // Default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(SubClassID, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
       return;
    }
-
-   m_bIsOK = true;
 }
 
-//=============================================================================
-// Name: CExceptionTransactionEvent
-// Description: Copy Constructor
-// Comments: Must Initialize base to ensure Interface registration.
-//           Must be constructed with an object and a TranID.
-//=============================================================================
-CExceptionTransactionEvent::CExceptionTransactionEvent(CExceptionTransactionEvent const &rOther) :
-   CAALEvent(rOther)
+btString CExceptionTransactionEvent::Description() const
 {
    AutoLock(this);
+   return (btString)(char *)m_strDescription.c_str();
+}
 
-   if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   // default native subclass interface unless overriden by a subclass
-   if ( SetSubClassInterface(iidExTranEvent, dynamic_cast<IExceptionTransactionEvent *>(this)) != EObjOK ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   m_TranID          = rOther.m_TranID;
-   m_strDescription  = rOther.m_strDescription;
-   m_Reason          = rOther.m_Reason;
-   m_ExceptionNumber = rOther.m_ExceptionNumber;
- }
-
-//=============================================================================
-// Name: ~CExceptionTransactionEvent
-// Description: Destructor
-//=============================================================================
-CExceptionTransactionEvent::~CExceptionTransactionEvent() {}
+void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
+{
+   AutoLock(this);
+   m_TranID = TranID;
+}
 
 CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}
 CExceptionTransactionEvent::CExceptionTransactionEvent(IBase * ) {/*empty*/}
-CExceptionTransactionEvent & CExceptionTransactionEvent::operator=(const CExceptionTransactionEvent & ) { return *this; }
-
-
 
 //=============================================================================
 // Name: ObjectCreatedEvent
-// Description: XL Runtime Event
+// Description: AAL Runtime Event
 //=============================================================================
-ObjectCreatedEvent::ObjectCreatedEvent( IRuntimeClient       *prtClient,
-                                        IServiceClient       *pClient,
-                                        IBase                *pObject,
-                                        TransactionID         TranID,
-                                        const NamedValueSet  &OptArgs) :
+ObjectCreatedEvent::ObjectCreatedEvent(IRuntimeClient       *prtClient,
+                                       IServiceClient       *pClient,
+                                       IBase                *pObject,
+                                       TransactionID         TranID,
+                                       const NamedValueSet  &OptArgs) :
    CTransactionEvent(pObject, TranID),
    m_OptArgs(OptArgs)
 {
+   AutoLock(this);
+
    m_pServiceClient = pClient;
    m_pRuntimeClient = prtClient;
-   SetSubClassInterface(tranevtFactoryCreate, dynamic_cast<IObjectCreatedEvent *>(this));
+
+   if ( SetSubClassInterface(tranevtFactoryCreate, dynamic_cast<IObjectCreatedEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
 }
 
 void ObjectCreatedEvent::operator()()
 {
+   btBool del = false;
+
    // Notify the Runtime Client first
    if ( m_pRuntimeClient ) {
       m_pRuntimeClient->runtimeAllocateServiceSucceeded(m_pObject, m_TranID);
@@ -798,15 +700,18 @@ void ObjectCreatedEvent::operator()()
    // Now notify the Service Client
    if ( NULL != m_pServiceClient ) {
       m_pServiceClient->serviceAllocated(m_pObject, m_TranID);
-      delete this;
+      del = true;
    } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
    }
+
+   if ( del ) {
+      delete this;
+   }
 }
 
+ObjectCreatedEvent::ObjectCreatedEvent() {/*empty*/}
 
-ObjectCreatedEvent::~ObjectCreatedEvent() {/*empty*/}
-ObjectCreatedEvent::ObjectCreatedEvent()  {/*empty*/}
 
 ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
                                                          IServiceClient     *pClient,
@@ -828,21 +733,25 @@ ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prt
 
 void ObjectCreatedExceptionEvent::operator()()
 {
-   // Notify the Runtime Client
-   if(m_pRuntimeClient){
-      m_pRuntimeClient->runtimeAllocateServiceFailed(*this);
-      delete this;
-   }else if(NULL != m_pServiceClient){
-         m_pServiceClient->serviceAllocateFailed(*this);
-         delete this;
+   btBool del = false;
 
-   } else if(NULL != m_pEventHandler){
+   // Notify the Runtime Client
+   if ( NULL != m_pRuntimeClient ) {
+      m_pRuntimeClient->runtimeAllocateServiceFailed(*this);
+      del = true;
+   } else if ( NULL != m_pServiceClient ) {
+      m_pServiceClient->serviceAllocateFailed(*this);
+      del = true;
+   } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
+   }
+
+   if ( del ) {
+      delete this;
    }
 }
 
-ObjectCreatedExceptionEvent::~ObjectCreatedExceptionEvent() {/*empty*/}
-ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent()  {/*empty*/}
+ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent() {/*empty*/}
 
 CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
                                                                    IBase                *pObject,
@@ -855,25 +764,22 @@ CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClien
    m_Context    = Context;
 }
 
-CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(const CObjectDestroyedTransactionEvent &rOther) :
-   CTransactionEvent(dynamic_cast<CTransactionEvent const&>(rOther))
-{
-   m_SubClassID = tranevtObjectDestroyed;
-   m_Context    = rOther.m_Context;
-}
-
 void CObjectDestroyedTransactionEvent::operator()()
 {
-   if(NULL != m_pServiceClient){
-      m_pServiceClient->serviceReleased(m_TranID);;
-      delete this;
-   }else if(NULL != m_pEventHandler){
+   btBool del = false;
+
+   if ( NULL != m_pServiceClient ) {
+      m_pServiceClient->serviceReleased(m_TranID);
+      del = true;
+   } else if ( NULL != m_pEventHandler ) {
       m_pEventHandler(*this);
    }
+
+   if ( del ) {
+      delete this;
+   }
 }
-CObjectDestroyedTransactionEvent::~CObjectDestroyedTransactionEvent() {/*empty*/}
-CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent()  {/*empty*/}
+
+CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent() {/*empty*/}
 
 END_NAMESPACE(AAL)
-
-

@@ -1,21 +1,6 @@
 #!/bin/bash
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
-declare ARGS=''
-while [ "x$1" != x ]; do
-
-   case $1 in
-      --gtest_*)
-         ARGS="${ARGS} --gtest-opt=$1"
-      ;;
-      *)
-         ARGS="${ARGS} $1"
-      ;;
-   esac
-
-   shift
-done
-
 shopt -o -s nounset
 
 declare -r SCRIPT_NAME='lcov-bat'
@@ -24,19 +9,30 @@ declare -r SCRIPT_NAME='lcov-bat'
 
 declare -r D='bat'
 
-setup "$D"
+declare    ARGS=''
+declare    WANTDISTCC=false
+
+while [ $# -gt 0 ]; do
+   case $1 in
+      --gtest_*)
+         ARGS="${ARGS} --gtest-opt=$1"
+      ;;
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+setup "$D" ${WANTDISTCC}
 
 declare AUTO_COLOR=''
 [ -t 1 ] && AUTO_COLOR='--gtest-opt=--gtest_color=yes'
 
 WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_print_time=0 ${AUTO_COLOR} ${ARGS}"
-
-# GCDA_DIRS=(
-# "--directory ${VPATH}/aas/OSAL/.libs" 
-# "--directory ${VPATH}/aas/AASLib/.libs" 
-# "--directory ${VPATH}/aas/XLRTLib/.libs" 
-# "--directory ${VPATH}/tests/harnessed/gtest"
-# )
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \

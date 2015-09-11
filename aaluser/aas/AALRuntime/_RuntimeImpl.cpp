@@ -68,13 +68,14 @@ static _runtime *pruntime = NULL;
 // Interface: private
 // Inputs: pRuntimeProxy - Pointer to the Runtime Container (Proxy)
 //         pClient - Pointer to the client for this instance.
-// Outputs: pointer to Runtim implementation.
+// Outputs: pointer to Runtime implementation.
 // Comments: The Runtime implementation keeps a map of Proxy to Clients
 //           so that multiple Proxy's can point to the same Runtime and
 //           messages are routed appropriately.
 //=============================================================================
 _runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
-                                  IRuntimeClient *pClient)
+                                  IRuntimeClient *pClient,
+                                  btBool bFirstTime)
 {
 
 
@@ -88,7 +89,7 @@ _runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
 
    // If missing the Proxy fail
    if(NULL == pRuntimeProxy) {
-      // Dispatch the event ourselves, because MDS is no more.
+      // Dispatch the event ourselves, because MDS not available.
       OSLThreadGroup oneShot;
       RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
                                                              pClient,
@@ -105,9 +106,46 @@ _runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
       return NULL;
    }
 
-   // If this is the first create then instantiate
+   // If there is already a runtime then can't be First Time through
+   if((NULL != pruntime) && bFirstTime ){
+      // Tried to instantiate a new Runtime after one was already created.
+      OSLThreadGroup oneShot;
+      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                                             pClient,
+                                                             new CExceptionTransactionEvent( NULL,
+                                                                                             extranevtRuntimeCreateorProxy,
+                                                                                             TransactionID(),
+                                                                                             errCreationFailure,
+                                                                                             reasSingletoneExists,
+                                                                                             "Failed to instantiate Runtime. Cannot instantiate multiple Runtimes. Use getRuntimeProxy()!"));
+
+       // Fire the final event
+      oneShot.Add(pRuntimeStopped);
+      oneShot.Drain();  // Wait for it to be dispatched
+      return NULL;
+   }
+
+   // If there is already a runtime then can't be First Time through
+   if((NULL == pruntime) && !bFirstTime ){
+      // Tried to instantiate a new Runtime after one was already created.
+      OSLThreadGroup oneShot;
+      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                                             pClient,
+                                                             new CExceptionTransactionEvent( NULL,
+                                                                                             extranevtRuntimeCreateorProxy,
+                                                                                             TransactionID(),
+                                                                                             errCreationFailure,
+                                                                                             reasParameterValueInvalid,
+                                                                                             "Failed to instantiate Runtime. No Runtime instance with FirstTime set to true!"));
+
+       // Fire the final event
+      oneShot.Add(pRuntimeStopped);
+      oneShot.Drain();  // Wait for it to be dispatched
+      return NULL;
+   }
+
    if(NULL == pruntime){
-      pruntime = new _runtime(pRuntimeProxy, pClient);
+       pruntime = new _runtime(pRuntimeProxy, pClient);
    }
 
    // Connect this client and proxy to the runtime
@@ -202,6 +240,7 @@ _runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
    m_pBrokerSvcHost(NULL),
    m_pBroker(NULL),
    m_pBrokerbase(NULL),
+   m_pDefaultBrokerbase(NULL),
    m_state(Stopped)
 {
    m_sem.Create(0);
@@ -374,7 +413,26 @@ btBool _runtime::start(Runtime             *pProxy,
    // The Runtime needs a Runtime Proxy because it loads Services "much" like any application
    //  so it requires a RuntimeClient of its own.
    m_pProxy = m_pOwner->getRuntimeProxy(this);
+   if(NULL == m_pProxy){
+      OSLThreadGroup oneShot;
 
+      // Fire the event
+      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
+                                       m_pOwnerClient,
+                                       pProxy,
+                                       rConfigParms,
+                                       new CExceptionTransactionEvent(pProxy,
+                                                                      exttranevtSystemStart,
+                                                                      TransactionID(),
+                                                                      errSysSystemStarted,
+                                                                      reasInitError,
+                                                                      "Unable to create Runtime Proxy")));
+      oneShot.Drain();  // Wait for it to be dispatched
+      m_status = false;
+      return false;
+   }
+
+   // Set the status and continue
    m_status = m_pProxy->IsOK();
 
    if(!InstallDefaults()){
@@ -661,10 +719,24 @@ void _runtime::serviceAllocated(IBase               *pServiceBase,
 
    switch ( rTranID.ID() ) {
       case Broker : {
-         // Replace the Broker
-         m_pBrokerbase = pServiceBase;
-         m_pBroker     = subclass_ptr<IServiceBroker>(pServiceBase);
-         m_sem.Post(1);
+         // If there is already a broker, Replace it.
+         if(NULL != m_pBrokerbase){
+            // Save a copy of the pointer .
+            //  We cannot Release the default Broker now since that would cause the new Broker and any other Service
+            //  allocated using the default to be Released. Release it later at stop()
+            m_pDefaultBrokerbase = m_pBrokerbase;
+
+            m_pBrokerbase = pServiceBase;
+            m_pBroker     = subclass_ptr<IServiceBroker>(m_pBrokerbase);
+
+
+            m_sem.Post(1);
+         }else {
+            // This is the default broker.
+            m_pBrokerbase = pServiceBase;
+            m_pBroker     = subclass_ptr<IServiceBroker>(pServiceBase);
+            m_sem.Post(1);
+         }
       } break;
 
       default :
@@ -703,6 +775,16 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
 
    switch ( rTranID.ID() ) {
       case Broker : {
+         // If the Default Broker was replaced then release it now.  Next time through we will clean up.
+         if(NULL != m_pDefaultBrokerbase){
+            // Release the Service Broker.
+            dynamic_ptr<IAALService>(iidService, m_pDefaultBrokerbase)->Release(TransactionID(Broker));
+            m_pDefaultBrokerbase = NULL;
+            return;
+         }
+
+         // Shutting down.
+
          // Don't delete here. Taken care of by ServiceBase::Release().
          m_pBroker     = NULL;
          m_pBrokerbase = NULL;
@@ -712,7 +794,7 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
          m_state = Stopped;
 
          // Release our Proxy
-         m_pOwner->releaseRuntimeProxy(m_pProxy);
+         m_pProxy->releaseRuntimeProxy();
 
          // Dispatch the event ourselves, because MDS is no more.
          //
@@ -818,7 +900,8 @@ IRuntimeClient *_runtime::getRuntimeClient()
 _runtime::~_runtime()
 {
    AutoLock(this);
-
+   std::cerr << "Num Proxies " << m_mClientMap.size() << std::endl;
+#if 0
    // Check for proxies
    if(!m_mClientMap.empty()){
       OSLThreadGroup oneShot;
@@ -848,7 +931,7 @@ _runtime::~_runtime()
       // Empty the map. We cannot destroy proxy objects.
       m_mClientMap.clear();
    }
-
+#endif
    m_MDS.StopMessageDelivery();
 
    if ( m_pBrokerSvcHost ) {

@@ -34,6 +34,7 @@ testsuite
 *.swp
 
 # eclipse cdt project files
+.autotools
 .cproject
 .project
 .settings

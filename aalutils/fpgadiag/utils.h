@@ -31,10 +31,12 @@
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
+//			Sadruta Chandrashekar, Intel Corporation
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 05/31/2013     TSW      Initial version.@endverbatim
+// 05/31/2013     TSW      Initial version.
+// 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
 #ifndef __HWVAL_UTILS_H__
 #define __HWVAL_UTILS_H__

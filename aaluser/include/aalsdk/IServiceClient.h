@@ -130,4 +130,4 @@ END_NAMESPACE(AAL)
 
 #endif // __AALSDK_ISERVICECLIENT_H__
 
-/// @} group AALRUNTIME
+/// @}

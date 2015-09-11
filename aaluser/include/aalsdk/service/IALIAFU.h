@@ -138,7 +138,7 @@ public:
 
 }; // IALIAFU
 
-/// @} group IALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

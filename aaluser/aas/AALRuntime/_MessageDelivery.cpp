@@ -124,7 +124,7 @@ btBool _MessageDelivery::scheduleMessage( IDispatchable *pDispatchable)
    return m_Dispatcher.Add(pDispatchable);
 }
 
-/// @} group MDS
+/// @}
 
 
 END_NAMESPACE(AAL)

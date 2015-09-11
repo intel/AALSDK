@@ -222,7 +222,7 @@ protected:
    TransactionID m_TranID;
 };
 
-/// @} group ISPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

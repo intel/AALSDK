@@ -270,12 +270,14 @@ public:
       if (!m_bIsOK) return NULL;             //    or serviceAllocateFailed
       return m_pCurrentService;
    }
+
    /// Synchronous version of IAALService::Release()
    void syncRelease(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT)
    {
       m_pAALService->Release( TranID, timeout);
       Wait();                                // Posted in CSyncClient::serviceFreed
    }
+
    ///////////////////////////////////////////////////////////////////////////
 
 protected:
@@ -290,7 +292,7 @@ protected:
                                              //    used for Release.
 }; // CSyncClient
 
-/// @} group CSyncClient
+/// @}
 
 #endif // __AALSDK_UTILS_CSYNCCLIENT_H__
 

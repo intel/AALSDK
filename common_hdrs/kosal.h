@@ -212,6 +212,14 @@ typedef void * kosal_ownermodule;
 #define SPL2_DBG_CMD       ((KOSAL_UINT)1 <<  5)
 #define SPL2_DBG_CFG       ((KOSAL_UINT)1 <<  6)
 
+#define CCIV4_DBG_MOD       ((KOSAL_UINT)1 <<  0)
+#define CCIV4_DBG_DEV       ((KOSAL_UINT)1 <<  1)
+#define CCIV4_DBG_AFU       ((KOSAL_UINT)1 <<  2)
+#define CCIV4_DBG_MAFU      ((KOSAL_UINT)1 <<  3)
+#define CCIV4_DBG_MMAP      ((KOSAL_UINT)1 <<  4)
+#define CCIV4_DBG_CMD       ((KOSAL_UINT)1 <<  5)
+#define CCIV4_DBG_CFG       ((KOSAL_UINT)1 <<  6)
+
 #define FAPDIAG_DBG_MOD    ((KOSAL_UINT)1 <<  0)
 
 
@@ -891,6 +899,12 @@ KOSAL_VIRT _kosal_kmalloc(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
 # undef kosal_kmalloc
 #endif // kosal_kmalloc
 #define kosal_kmalloc(__size) _kosal_kmalloc(__ASSERT_HERE_ARGS __size)
+
+KOSAL_VIRT _kosal_kzmalloc(__ASSERT_HERE_PROTO KOSAL_WSSIZE );
+#ifdef kosal_kzmalloc
+# undef kosal_kzmalloc
+#endif // kosal_kmalloc
+#define kosal_kzmalloc(__size) _kosal_kzmalloc(__ASSERT_HERE_ARGS __size)
 
 void _kosal_kfree(__ASSERT_HERE_PROTO KOSAL_ANY , KOSAL_WSSIZE );
 #ifdef kosal_kfree

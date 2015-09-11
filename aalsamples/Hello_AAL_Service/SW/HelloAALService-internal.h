@@ -58,42 +58,40 @@ using namespace AAL;
 // Interface: IHelloAALService
 // Comments:
 //=============================================================================
+/// @brief Simple AAL Service
 class HelloAALService : public ServiceBase, public IHelloAALService
 {
 public:
 
-   // Macro defines the constructor for a loadable AAL service.
-   //  The first argument is your class name, the second argument is the
-   //  name of the Service base class this service is derived from. In this
-   //  example we use ServiceBase as it is the class that provides the
-   //  support for Software-only devices.  Hardware-supported services might
-   //  use DeviceServiceBase instead.
-   //
-   // Note that initializers can be declared here but are preceded by a comma
-   //  rather than a colon.
-   //
-   // The design pattern is that the constructor does minimal work. Here we are
-   //  registering the interfaces the service implements. The default (Subclass)
-   //  interface is ISampleAFUPing.  ServiceBase provides an init() method that
-   //  can be used where more sophisticated initialization is required. The
-   //  init() method is called by the factory AFTER construction but before use.
+   /// Macro defines the constructor for a loadable AAL service.
+   ///  The first argument is your class name, the second argument is the
+   ///  name of the Service base class this service is derived from. In this
+   ///  example we use ServiceBase as it is the class that provides the
+   ///  support for Software-only devices.  Hardware-supported services might
+   ///  use DeviceServiceBase instead.
+   ///
+   /// Note that initializers can be declared here but are preceded by a comma
+   ///  rather than a colon.
+   ///
+   /// The design pattern is that the constructor does minimal work. Here we are
+   ///  registering the interfaces the service implements. The default (Subclass)
+   ///  interface is ISampleAFUPing.  ServiceBase provides an init() method that
+   ///  can be used where more sophisticated initialization is required. The
+   ///  init() method is called by the factory AFTER construction but before use.
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HelloAALService, ServiceBase),
       m_pSvcClient(NULL),
       m_pClient(NULL)
    {
       SetSubClassInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
    }
-   // Hook to allow the object to initialize
+   /// Hook to allow the object to initialize
    void init(TransactionID const &rtid);
 
    void Hello( btcString            sMessage,
                TransactionID const &rTranID);
 
-   // Called when the service is released
+   /// Called when the service is released
    btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
-
-   // Quiet Release. Used when Service is unloaded.
-   btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
 protected:
    IServiceClient        *m_pSvcClient;
@@ -114,7 +112,7 @@ protected:
    TransactionID const  &m_TranID;
 };
 
-/// @} group hello_service
+/// @}
 
 #endif //__SAMPLEAFU1SERVICE_INT_H__
 

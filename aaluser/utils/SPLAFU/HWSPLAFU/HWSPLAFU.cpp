@@ -86,11 +86,6 @@ btBool HWSPLAFU::Release(TransactionID const &TranID, btTime timeout)
    return DeviceServiceBase::Release(TranID, timeout);
 }
 
-btBool HWSPLAFU::Release(btTime timeout)
-{
-   return DeviceServiceBase::Release(timeout);
-}
-
 void HWSPLAFU::WorkspaceAllocate(btWSSize             Length,
                                  TransactionID const &TranID)
 {
@@ -361,7 +356,7 @@ _SEND_ERR:
                                                                                        pExcept) );
 }
 
-/// @} group HWSPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

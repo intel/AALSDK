@@ -82,7 +82,8 @@ aalbus \
 aalresourcemgr_server \
 aalresourcemgr_client \
 aal_uidriver \
-spl2_pip_dksm
+spl2_pip_dksm \
+cciv4_driver
 
 aalsdkhdrsdir=$(includedir)/aalsdk
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel

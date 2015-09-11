@@ -119,7 +119,7 @@ public:
                                     btTime               Pollrate=0) = 0;
 }; // ISPLAFU
 
-/// @} group ISPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

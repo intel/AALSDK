@@ -88,7 +88,7 @@ typedef std::map<btID, btGenericInterface>::const_iterator IIDINTERFACE_CITR;
 typedef std::map<btID, btGenericInterface>::iterator       IIDINTERFACE_ITR;
 
 /// Concrete base class for objects.
-class AASLIB_API CAASBase : public IBase, public CriticalSection
+class AASLIB_API CAASBase : public IBase, protected CriticalSection
 {
 public:
    /// CAASBase construct with optional btApplicationContext.
@@ -115,6 +115,9 @@ protected:
 
    EOBJECT SetSubClassInterface(btIID              Interface,
                                 btGenericInterface pInterface);
+
+   EOBJECT ReplaceInterface(btIID              Interface,
+                            btGenericInterface pInterface);
 
    btApplicationContext m_Context;
    btBool               m_bIsOK;
@@ -152,7 +155,7 @@ protected:
    btEventHandler m_pEventHandler;
 
 private:
-   // Cannot construct without event handler
+   /// Cannot construct without event handler
    CAALBase();
    // No copying allowed
    CAALBase(const CAALBase & );

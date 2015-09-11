@@ -127,6 +127,20 @@ TransactionID::TransactionID(bt32bitInt intID)
 
 //=============================================================================
 // Name: TransactionID
+// Description: Constructor for a Specified Integer ID
+//=============================================================================
+TransactionID::TransactionID(bt32bitInt intID,
+                             btApplicationContext Ctxt)
+{
+   m_tid.m_ID              = Ctxt;
+   m_tid.m_Handler         = NULL;
+   m_tid.m_IBase           = NULL;
+   m_tid.m_Filter          = true;
+   m_tid.m_intID           = intID;
+}
+
+//=============================================================================
+// Name: TransactionID
 // Description: Copy constructor
 //=============================================================================
 TransactionID::TransactionID(TransactionID const &rOther)

@@ -122,6 +122,14 @@ public:
    TransactionID(bt32bitInt intID);
 
    /// @brief Application specified Context and Handler
+   /// @param intID
+   /// @param ID
+   /// @param EventHandler
+   /// @param Filter
+   TransactionID(bt32bitInt           intID,
+                 btApplicationContext ID);
+
+   /// @brief Application specified Context and Handler
    /// @param ID
    /// @param EventHandler
    /// @param Filter
@@ -236,7 +244,7 @@ private:
 /// TransactionID streamer.
 AASLIB_API std::ostream & operator << (std::ostream &s, const TransactionID &TranID);
 
-/// @} group Events
+/// @}
 
 #endif //__cplusplus
 

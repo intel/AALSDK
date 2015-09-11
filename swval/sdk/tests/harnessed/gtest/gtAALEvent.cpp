@@ -201,6 +201,8 @@ TEST_F(CAALEvent_f_0, aal0625)
    EXPECT_EQ(NULL, Context());
 }
 
+#if 0
+Copies were de-featured.
 TEST_F(CAALEvent_f_0, aal0626)
 {
    // CAALEvent::CAALEvent(const CAALEvent &rOther) sets an interface pointer for iidCEvent,
@@ -232,6 +234,7 @@ TEST_F(CAALEvent_f_0, aal0626)
 
    copy->Delete();
 }
+#endif
 
 TEST_F(CAALEvent_f_0, aal0627)
 {
@@ -693,15 +696,18 @@ TEST(CAALEventTest, aal0655)
    const IEvent &cr(*pEvent);
    void *Expect = reinterpret_cast<void *>( & const_cast<IEvent &>(cr) );
 
-   CallTrackingServiceClient client;
+   CallTrackingIServiceClient client;
 
    pEvent->setHandler(&client);
 
    pEvent->operator()(); // pEvent is deleted.
 
    ASSERT_EQ(1, client.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceEvent", client.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, client.Entry(0).ParamValue(0));
+   EXPECT_STREQ("IServiceClient::serviceEvent", client.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   client.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
 }
 
 TEST(CAALEventTest, aal0656)
@@ -716,15 +722,18 @@ TEST(CAALEventTest, aal0656)
    const IEvent &cr(*pEvent);
    void *Expect = reinterpret_cast<void *>( & const_cast<IEvent &>(cr) );
 
-   CallTrackingRuntimeClient client;
+   CallTrackingIRuntimeClient client;
 
    pEvent->setHandler(&client);
 
    pEvent->operator()(); // pEvent is deleted.
 
    ASSERT_EQ(1, client.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeEvent", client.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, client.Entry(0).ParamValue(0));
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", client.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   client.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
 }
 
 TEST(CAALEventTest, aal0657)
@@ -741,7 +750,892 @@ TEST(CAALEventTest, aal0657)
    e.operator()();
 
    ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
+   EXPECT_STREQ("CAALEventProtected::EventHandler",
+                CAALEventProtected::sm_CallLog.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   CAALEventProtected::sm_CallLog.Entry(0).GetParam("e", &x);
+   EXPECT_EQ(Expect, x);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(CTransactionEventTest, aal0662)
+{
+   // CTransactionEvent(IBase * , TransactionID const & ) constructs CAALEvent with the IBase *,
+   // and stores the TransactionID for later retrieval by TranID(). On success, a SubClass of
+   // iidTranEvent/ITransactionEvent * is set.
+
+   CAASBase      base;
+   TransactionID tid;
+
+   tid.ID(7);
+
+   CTransactionEvent e(&base, tid);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ(7, e.TranID().ID());
+
+   EXPECT_EQ(iidTranEvent, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+TEST(CTransactionEventTest, aal0663)
+{
+   // CTransactionEvent(IBase * , btIID ID, TransactionID const & ) constructs CAALEvent with the
+   // IBase *, and stores the TransactionID for later retrieval by TranID(). On success, a SubClass
+   // of ID/ITransactionEvent * is set. Interface iidTranEvent/ITransactionEvent * is also added.
+
+   CAASBase      base;
+   TransactionID tid;
+
+   tid.ID(7);
+
+   const btIID ID = 998;
+
+   CTransactionEvent e(&base, ID, tid);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ(7, e.TranID().ID());
+
+   EXPECT_EQ(ID, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+#if 0
+Copies were de-featured.
+TEST(CTransactionEventTest, aal0664)
+{
+   // CTransactionEvent(const CTransactionEvent & ) (copy constructor) creates an exact copy
+   // of the given CTransactionEvent.
+
+   CAASBase      baseA((btApplicationContext)71);
+   TransactionID tidA;
+
+   tidA.ID(8);
+
+   CTransactionEvent a(&baseA, tidA);
+
+   a.setHandler(CAALEventProtected::EventHandler);
+   EXPECT_TRUE(a.IsOK());
+
+   CTransactionEvent copyA(PassReturnByValue(a));
+
+   IEvent const &crA(copyA);
+   void *ExpectA = reinterpret_cast<void *>( & const_cast<IEvent &>(crA) );
+
+   EXPECT_TRUE(copyA.Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(&copyA) ), copyA.Interface(iidEvent));
+
+   EXPECT_TRUE(copyA.Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(&copyA) ), copyA.Interface(iidCEvent));
+
+   EXPECT_TRUE(copyA.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&copyA) ), copyA.Interface(iidTranEvent));
+
+   EXPECT_EQ(iidTranEvent, copyA.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&copyA) ), copyA.ISubClass());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), &copyA.Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), copyA.pObject());
+
+   EXPECT_TRUE(copyA.IsOK());
+   EXPECT_EQ((btApplicationContext)71, copyA.Context());
+
+   EXPECT_EQ(8, copyA.TranID().ID());
+
+   EXPECT_TRUE(a == copyA);
+   EXPECT_FALSE(a != copyA);
+
+   EXPECT_TRUE(copyA == a);
+   EXPECT_FALSE(copyA != a);
+
+   ASSERT_EQ(0, CAALEventProtected::sm_CallLog.LogEntries());
+
+   copyA.operator()();
+
+   ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
    EXPECT_STREQ("CAALEventProtected::EventHandler", CAALEventProtected::sm_CallLog.Entry(0).MethodName().c_str());
-   EXPECT_EQ(Expect, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   EXPECT_EQ(ExpectA, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   CAALEventProtected::sm_CallLog.ClearLog();
+
+
+
+   CAASBase      baseB((btApplicationContext)72);
+   TransactionID tidB;
+   const btIID   IDB = 998;
+
+   tidB.ID(9);
+
+   CTransactionEvent b(&baseB, IDB, tidB);
+
+   CallTrackingServiceClient clientB;
+
+   b.setHandler(&clientB);
+   EXPECT_TRUE(b.IsOK());
+
+   // new'ing the event, because operator()() with IServiceClient will delete it.
+   CTransactionEvent *copyB = new CTransactionEvent(PassReturnByValue(b));
+
+   IEvent const &crB(*copyB);
+   void *ExpectB = reinterpret_cast<void *>( & const_cast<IEvent &>(crB) );
+
+   EXPECT_TRUE(copyB->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyB) ), copyB->Interface(iidEvent));
+
+   EXPECT_TRUE(copyB->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyB) ), copyB->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyB->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ), copyB->Interface(iidTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyB->Has(IDB));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ),
+             copyB->Interface(IDB));
+
+   EXPECT_EQ(IDB, copyB->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyB) ),
+             copyB->ISubClass());
+
+   EXPECT_TRUE(b == *copyB);
+   EXPECT_FALSE(b != *copyB);
+
+   EXPECT_TRUE(*copyB == b);
+   EXPECT_FALSE(*copyB != b);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), &copyB->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), copyB->pObject());
+
+   EXPECT_TRUE(copyB->IsOK());
+   EXPECT_EQ((btApplicationContext)72, copyB->Context());
+
+   EXPECT_EQ(9, copyB->TranID().ID());
+
+   ASSERT_EQ(0, clientB.LogEntries());
+
+   copyB->operator()(); // Delete's copyB.
+
+   ASSERT_EQ(1, clientB.LogEntries());
+   EXPECT_STREQ("IServiceClient::serviceEvent", clientB.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectB, clientB.Entry(0).ParamValue(0));
+
+
+
+   CAASBase      baseC((btApplicationContext)73);
+   TransactionID tidC;
+   const btIID   IDC = 999;
+
+   tidC.ID(10);
+
+   CTransactionEvent c(&baseC, IDC, tidC);
+
+   CallTrackingRuntimeClient clientC;
+
+   c.setHandler(&clientC);
+   EXPECT_TRUE(c.IsOK());
+
+   // new'ing the event, because operator()() with IRuntimeClient will delete it.
+   CTransactionEvent *copyC = new CTransactionEvent(PassReturnByValue(c));
+
+   IEvent const &crC(*copyC);
+   void *ExpectC = reinterpret_cast<void *>( & const_cast<IEvent &>(crC) );
+
+   EXPECT_TRUE(copyC->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyC) ), copyC->Interface(iidEvent));
+
+   EXPECT_TRUE(copyC->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyC) ), copyC->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyC->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ), copyC->Interface(iidTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyC->Has(IDC));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ),
+             copyC->Interface(IDC));
+
+   EXPECT_EQ(IDC, copyC->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(copyC) ),
+             copyC->ISubClass());
+
+   EXPECT_TRUE(c == *copyC);
+   EXPECT_FALSE(c != *copyC);
+
+   EXPECT_TRUE(*copyC == c);
+   EXPECT_FALSE(*copyC != c);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), &copyC->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), copyC->pObject());
+
+   EXPECT_TRUE(copyC->IsOK());
+   EXPECT_EQ((btApplicationContext)73, copyC->Context());
+
+   EXPECT_EQ(10, copyC->TranID().ID());
+
+   ASSERT_EQ(0, clientC.LogEntries());
+
+   copyC->operator()(); // Delete's copyC.
+
+   ASSERT_EQ(1, clientC.LogEntries());
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
+}
+#endif
+
+TEST(CTransactionEventTest, aal0665)
+{
+   // CTransactionEvent::SetTranID() mutates the TransactionID that is accessed by
+   // CTransactionEvent::TranID().
+
+   CAASBase      baseA((btApplicationContext)71);
+   TransactionID tidA;
+
+   tidA.ID(8);
+
+   CTransactionEvent a(&baseA, tidA);
+
+   EXPECT_EQ(8, a.TranID().ID());
+
+   TransactionID tidB;
+
+   tidB.ID(9);
+
+   a.SetTranID(tidB);
+
+   EXPECT_EQ(9, a.TranID().ID());
+
+
+   CAASBase baseB((btApplicationContext)72);
+   const btIID IDB = 998;
+
+   tidB.ID(10);
+
+   CTransactionEvent b(&baseB, IDB, tidB);
+
+   EXPECT_EQ(10, b.TranID().ID());
+
+   tidB.ID(11);
+
+   b.SetTranID(tidB);
+   EXPECT_EQ(11, b.TranID().ID());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(CExceptionEventTest, aal0666)
+{
+   // CExceptionEvent(IBase * , btID , btID , btcString ) constructs CAALEvent with the IBase *,
+   // and stores the ExceptionNumber, Reason, and Description for later retrieval by data accessor
+   // member fn's of the same name. On success, a SubClass if iidExEvent/IExceptionEvent * is set.
+
+   CAASBase base((btApplicationContext)101);
+
+   const btID ExNum  = 12;
+   const btID Reason = 13;
+   btcString  Descr  = "aal0666";
+
+   CExceptionEvent e(&base, ExNum, Reason, Descr);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ((btApplicationContext)101, e.Context());
+
+   EXPECT_EQ(ExNum,    e.ExceptionNumber());
+   EXPECT_EQ(Reason,   e.Reason());
+   EXPECT_STREQ(Descr, e.Description());
+
+   EXPECT_EQ(iidExEvent, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+TEST(CExceptionEventTest, aal0667)
+{
+   // CExceptionEvent(IBase * , btIID , btID , btID , btcString ) constructs CAALEvent with the
+   // IBase *, and stores the ExceptionNumber, Reason, and Description for later retrieval by data
+   // accessor member fn's of the same name. On success, a SubClass of ID/IExceptionEvent * is set.
+   // Interface iidExEvent/IExceptionEvent * is also added.
+
+   CAASBase base((btApplicationContext)102);
+
+   const btIID ID     = 14;
+   const btID  ExNum  = 15;
+   const btID  Reason = 16;
+   btcString   Descr  = "aal0667";
+
+   CExceptionEvent e(&base, ID, ExNum, Reason, Descr);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ((btApplicationContext)102, e.Context());
+
+   EXPECT_EQ(ExNum,    e.ExceptionNumber());
+   EXPECT_EQ(Reason,   e.Reason());
+   EXPECT_STREQ(Descr, e.Description());
+
+   EXPECT_EQ(ID, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.Has(iidExEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.Interface(iidExEvent));
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+#if 0
+Copies were de-featured.
+TEST(CExceptionEventTest, aal0668)
+{
+   // CExceptionEvent(const CExceptionEvent& ) (copy constructor) creates an exact copy of the
+   // given CExceptionEvent.
+
+   CAASBase   baseA((btApplicationContext)71);
+   const btID ExNumA  = 10;
+   const btID ReasonA = 11;
+   btcString  DescrA  = "aal0668A";
+
+   CExceptionEvent a(&baseA, ExNumA, ReasonA, DescrA);
+
+   a.setHandler(CAALEventProtected::EventHandler);
+   EXPECT_TRUE(a.IsOK());
+
+   CExceptionEvent copyA(PassReturnByValue(a));
+
+   IEvent const &crA(copyA);
+   void *ExpectA = reinterpret_cast<void *>( & const_cast<IEvent &>(crA) );
+
+   EXPECT_TRUE(copyA.Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(&copyA) ), copyA.Interface(iidEvent));
+
+   EXPECT_TRUE(copyA.Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(&copyA) ), copyA.Interface(iidCEvent));
+
+   EXPECT_TRUE(copyA.Has(iidExEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&copyA) ), copyA.Interface(iidExEvent));
+
+   EXPECT_EQ(iidExEvent, copyA.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&copyA) ), copyA.ISubClass());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), &copyA.Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), copyA.pObject());
+
+   EXPECT_TRUE(copyA.IsOK());
+   EXPECT_EQ((btApplicationContext)71, copyA.Context());
+
+   EXPECT_EQ(ExNumA,    copyA.ExceptionNumber());
+   EXPECT_EQ(ReasonA,   copyA.Reason());
+   EXPECT_STREQ(DescrA, copyA.Description());
+
+   EXPECT_TRUE(a == copyA);
+   EXPECT_FALSE(a != copyA);
+
+   EXPECT_TRUE(copyA == a);
+   EXPECT_FALSE(copyA != a);
+
+   ASSERT_EQ(0, CAALEventProtected::sm_CallLog.LogEntries());
+
+   copyA.operator()();
+
+   ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
+   EXPECT_STREQ("CAALEventProtected::EventHandler", CAALEventProtected::sm_CallLog.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectA, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   CAALEventProtected::sm_CallLog.ClearLog();
+
+
+   CAASBase    baseB((btApplicationContext)72);
+   const btIID IDB     = 998;
+   const btID  ExNumB  = 10;
+   const btID  ReasonB = 11;
+   btcString   DescrB  = "aal0668B";
+
+   CExceptionEvent b(&baseB, IDB, ExNumB, ReasonB, DescrB);
+
+   CallTrackingServiceClient clientB;
+
+   b.setHandler(&clientB);
+   EXPECT_TRUE(b.IsOK());
+
+   // new'ing the event, because operator()() with IServiceClient will delete it.
+   CExceptionEvent *copyB = new CExceptionEvent(PassReturnByValue(b));
+
+   IEvent const &crB(*copyB);
+   void *ExpectB = reinterpret_cast<void *>( & const_cast<IEvent &>(crB) );
+
+   EXPECT_TRUE(copyB->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyB) ), copyB->Interface(iidEvent));
+
+   EXPECT_TRUE(copyB->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyB) ), copyB->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyB->Has(iidExEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyB) ), copyB->Interface(iidExEvent));
+
+#if 0
+   EXPECT_TRUE(copyB->Has(IDB));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyB) ),
+             copyB->Interface(IDB));
+
+   EXPECT_EQ(IDB, copyB->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyB) ),
+             copyB->ISubClass());
+
+   EXPECT_TRUE(b == *copyB);
+   EXPECT_FALSE(b != *copyB);
+
+   EXPECT_TRUE(*copyB == b);
+   EXPECT_FALSE(*copyB != b);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), &copyB->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), copyB->pObject());
+
+   EXPECT_TRUE(copyB->IsOK());
+   EXPECT_EQ((btApplicationContext)72, copyB->Context());
+
+   EXPECT_EQ(ExNumB,    copyB->ExceptionNumber());
+   EXPECT_EQ(ReasonB,   copyB->Reason());
+   EXPECT_STREQ(DescrB, copyB->Description());
+
+   ASSERT_EQ(0, clientB.LogEntries());
+
+   copyB->operator()(); // Delete's copyB.
+
+   ASSERT_EQ(1, clientB.LogEntries());
+   EXPECT_STREQ("IServiceClient::serviceEvent", clientB.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectB, clientB.Entry(0).ParamValue(0));
+
+
+   CAASBase    baseC((btApplicationContext)73);
+   const btIID IDC     = 999;
+   const btID  ExNumC  = 12;
+   const btID  ReasonC = 13;
+   btcString   DescrC  = "aal0668C";
+
+   CExceptionEvent c(&baseC, IDC, ExNumC, ReasonC, DescrC);
+
+   CallTrackingRuntimeClient clientC;
+
+   c.setHandler(&clientC);
+   EXPECT_TRUE(c.IsOK());
+
+   // new'ing the event, because operator()() with IRuntimeClient will delete it.
+   CExceptionEvent *copyC = new CExceptionEvent(PassReturnByValue(c));
+
+   IEvent const &crC(*copyC);
+   void *ExpectC = reinterpret_cast<void *>( & const_cast<IEvent &>(crC) );
+
+   EXPECT_TRUE(copyC->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyC) ), copyC->Interface(iidEvent));
+
+   EXPECT_TRUE(copyC->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyC) ), copyC->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyC->Has(iidExEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyC) ), copyC->Interface(iidExEvent));
+
+#if 0
+   EXPECT_TRUE(copyC->Has(IDC));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyC) ),
+             copyC->Interface(IDC));
+
+   EXPECT_EQ(IDC, copyC->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyC) ), copyC->ISubClass());
+
+   EXPECT_TRUE(c == *copyC);
+   EXPECT_FALSE(c != *copyC);
+
+   EXPECT_TRUE(*copyC == c);
+   EXPECT_FALSE(*copyC != c);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), &copyC->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), copyC->pObject());
+
+   EXPECT_TRUE(copyC->IsOK());
+   EXPECT_EQ((btApplicationContext)73, copyC->Context());
+
+   EXPECT_EQ(ExNumC,    copyC->ExceptionNumber());
+   EXPECT_EQ(ReasonC,   copyC->Reason());
+   EXPECT_STREQ(DescrC, copyC->Description());
+
+   ASSERT_EQ(0, clientC.LogEntries());
+
+   copyC->operator()(); // Delete's copyC.
+
+   ASSERT_EQ(1, clientC.LogEntries());
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(CExceptionTransactionEventTest, aal0669)
+{
+   // CExceptionTransactionEvent(IBase * , TransactionID const & , btID , btID , btcString )
+   // constructs CAALEvent with the IBase *, and stores the ExceptionNumber, Reason, and
+   // Description for later retrieval by data accessor member fn's of the same name. The
+   // TransactionID is saved for later retrieval by TranID(). On success, a SubClass of
+   // iidExTranEvent/IExceptionTransactionEvent * is set, and an interface of
+   // iidTranEvent/ITransactionEvent * is available.
+
+   CAASBase base((btApplicationContext)101);
+
+   TransactionID tid;
+   tid.ID(105);
+
+   const btID ExNum  = 12;
+   const btID Reason = 13;
+   btcString  Descr  = "aal0669";
+
+   CExceptionTransactionEvent e(&base, tid, ExNum, Reason, Descr);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ((btApplicationContext)101, e.Context());
+
+   EXPECT_EQ(ExNum,    e.ExceptionNumber());
+   EXPECT_EQ(Reason,   e.Reason());
+   EXPECT_STREQ(Descr, e.Description());
+
+   EXPECT_EQ(105, e.TranID().ID());
+
+   EXPECT_EQ(iidExTranEvent, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+TEST(CExceptionTransactionEventTest, aal0670)
+{
+   // CExceptionTransactionEvent(IBase * , btIID , TransactionID const & , btID , btID , btcString )
+   // constructs CAALEvent with the IBase *, and stores the ExceptionNumber, Reason, and Description
+   // for later retrieval by data accessor member fn's of the same name. The TransactionID is saved
+   // for later retrieval by TranID(). On success, a SubClass of ID/IExceptionTransactionEvent* is
+   // set. Interfaces iidTranEvent/ITransactionEvent * and
+   // iidExTranEvent/IExceptionTransactionEvent * are also added.
+
+   CAASBase base((btApplicationContext)102);
+
+   const btIID   ID     = 17;
+   TransactionID tid;
+   tid.ID(107);
+   const btID    ExNum  = 18;
+   const btID    Reason = 19;
+   btcString     Descr  = "aal0670";
+
+   CExceptionTransactionEvent e(&base, ID, tid, ExNum, Reason, Descr);
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e.pObject());
+   EXPECT_EQ((btApplicationContext)102, e.Context());
+
+   EXPECT_EQ(ExNum,    e.ExceptionNumber());
+   EXPECT_EQ(Reason,   e.Reason());
+   EXPECT_STREQ(Descr, e.Description());
+
+   EXPECT_EQ(107, e.TranID().ID());
+
+   EXPECT_EQ(ID, e.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&e) ), e.ISubClass());
+
+   EXPECT_TRUE(e.Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
+
+   EXPECT_TRUE(e.Has(iidExTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&e) ), e.Interface(iidExTranEvent));
+
+   EXPECT_TRUE(e.IsOK());
+}
+
+#if 0
+Copies were de-featured.
+TEST(CExceptionTransactionEventTest, aal0671)
+{
+   // CExceptionTransactionEvent(const CExceptionTransactionEvent& ) (copy constructor) creates
+   // an exact copy of the given CExceptionTransactionEvent.
+
+   CAASBase      baseA((btApplicationContext)71);
+   TransactionID tidA;
+   tidA.ID(75);
+   const btID    ExNumA  = 10;
+   const btID    ReasonA = 11;
+   btcString     DescrA  = "aal0671A";
+
+   CExceptionTransactionEvent a(&baseA, tidA, ExNumA, ReasonA, DescrA);
+
+   a.setHandler(CAALEventProtected::EventHandler);
+   EXPECT_TRUE(a.IsOK());
+
+   CExceptionTransactionEvent copyA(PassReturnByValue(a));
+
+   IEvent const &crA(copyA);
+   void *ExpectA = reinterpret_cast<void *>( & const_cast<IEvent &>(crA) );
+
+   EXPECT_TRUE(copyA.Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(&copyA) ), copyA.Interface(iidEvent));
+
+   EXPECT_TRUE(copyA.Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(&copyA) ), copyA.Interface(iidCEvent));
+
+   EXPECT_TRUE(copyA.Has(iidExTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&copyA) ),
+             copyA.Interface(iidExTranEvent));
+
+   EXPECT_EQ(iidExTranEvent, copyA.SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&copyA) ),
+             copyA.ISubClass());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), &copyA.Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseA), copyA.pObject());
+
+   EXPECT_TRUE(copyA.IsOK());
+   EXPECT_EQ((btApplicationContext)71, copyA.Context());
+
+   EXPECT_EQ(ExNumA,    copyA.ExceptionNumber());
+   EXPECT_EQ(ReasonA,   copyA.Reason());
+   EXPECT_STREQ(DescrA, copyA.Description());
+   EXPECT_EQ(75,        copyA.TranID().ID());
+
+   EXPECT_TRUE(a == copyA);
+   EXPECT_FALSE(a != copyA);
+
+   EXPECT_TRUE(copyA == a);
+   EXPECT_FALSE(copyA != a);
+
+   ASSERT_EQ(0, CAALEventProtected::sm_CallLog.LogEntries());
+
+   copyA.operator()();
+
+   ASSERT_EQ(1, CAALEventProtected::sm_CallLog.LogEntries());
+   EXPECT_STREQ("CAALEventProtected::EventHandler", CAALEventProtected::sm_CallLog.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectA, CAALEventProtected::sm_CallLog.Entry(0).ParamValue(0));
+   CAALEventProtected::sm_CallLog.ClearLog();
+
+
+   CAASBase      baseB((btApplicationContext)72);
+   const btIID   IDB     = 998;
+   TransactionID tidB;
+   tidB.ID(76);
+   const btID    ExNumB  = 10;
+   const btID    ReasonB = 11;
+   btcString     DescrB  = "aal0671B";
+
+   CExceptionTransactionEvent b(&baseB, IDB, tidB, ExNumB, ReasonB, DescrB);
+
+   CallTrackingServiceClient clientB;
+
+   b.setHandler(&clientB);
+   EXPECT_TRUE(b.IsOK());
+
+   // new'ing the event, because operator()() with IServiceClient will delete it.
+   CExceptionTransactionEvent *copyB = new CExceptionTransactionEvent(PassReturnByValue(b));
+
+   IEvent const &crB(*copyB);
+   void *ExpectB = reinterpret_cast<void *>( & const_cast<IEvent &>(crB) );
+
+   EXPECT_TRUE(copyB->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyB) ), copyB->Interface(iidEvent));
+
+   EXPECT_TRUE(copyB->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyB) ), copyB->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyB->Has(iidExTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(copyB) ),
+             copyB->Interface(iidExTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyB->Has(IDB));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(copyB) ),
+             copyB->Interface(IDB));
+
+   EXPECT_EQ(IDB, copyB->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(copyB) ),
+             copyB->ISubClass());
+
+   EXPECT_TRUE(b == *copyB);
+   EXPECT_FALSE(b != *copyB);
+
+   EXPECT_TRUE(*copyB == b);
+   EXPECT_FALSE(*copyB != b);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), &copyB->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseB), copyB->pObject());
+
+   EXPECT_TRUE(copyB->IsOK());
+   EXPECT_EQ((btApplicationContext)72, copyB->Context());
+
+   EXPECT_EQ(ExNumB,    copyB->ExceptionNumber());
+   EXPECT_EQ(ReasonB,   copyB->Reason());
+   EXPECT_STREQ(DescrB, copyB->Description());
+   EXPECT_EQ(76,        copyB->TranID().ID());
+
+   ASSERT_EQ(0, clientB.LogEntries());
+
+   copyB->operator()(); // Delete's copyB.
+
+   ASSERT_EQ(1, clientB.LogEntries());
+   EXPECT_STREQ("IServiceClient::serviceEvent", clientB.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectB, clientB.Entry(0).ParamValue(0));
+
+
+   CAASBase      baseC((btApplicationContext)73);
+   const btIID   IDC     = 999;
+   TransactionID tidC;
+   tidC.ID(77);
+   const btID    ExNumC  = 12;
+   const btID    ReasonC = 13;
+   btcString     DescrC  = "aal0671C";
+
+   CExceptionTransactionEvent c(&baseC, IDC, tidC, ExNumC, ReasonC, DescrC);
+
+   CallTrackingRuntimeClient clientC;
+
+   c.setHandler(&clientC);
+   EXPECT_TRUE(c.IsOK());
+
+   // new'ing the event, because operator()() with IRuntimeClient will delete it.
+   CExceptionTransactionEvent *copyC = new CExceptionTransactionEvent(PassReturnByValue(c));
+
+   IEvent const &crC(*copyC);
+   void *ExpectC = reinterpret_cast<void *>( & const_cast<IEvent &>(crC) );
+
+   EXPECT_TRUE(copyC->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(copyC) ), copyC->Interface(iidEvent));
+
+   EXPECT_TRUE(copyC->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(copyC) ), copyC->Interface(iidCEvent));
+
+   EXPECT_TRUE(copyC->Has(iidExTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(copyC) ),
+             copyC->Interface(iidExTranEvent));
+
+#if 0
+   EXPECT_TRUE(copyC->Has(IDC));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(copyC) ),
+             copyC->Interface(IDC));
+
+   EXPECT_EQ(IDC, copyC->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(copyC) ),
+             copyC->ISubClass());
+
+   EXPECT_TRUE(c == *copyC);
+   EXPECT_FALSE(c != *copyC);
+
+   EXPECT_TRUE(*copyC == c);
+   EXPECT_FALSE(*copyC != c);
+#endif
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), &copyC->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&baseC), copyC->pObject());
+
+   EXPECT_TRUE(copyC->IsOK());
+   EXPECT_EQ((btApplicationContext)73, copyC->Context());
+
+   EXPECT_EQ(ExNumC,    copyC->ExceptionNumber());
+   EXPECT_EQ(ReasonC,   copyC->Reason());
+   EXPECT_STREQ(DescrC, copyC->Description());
+   EXPECT_EQ(77,        copyC->TranID().ID());
+
+   ASSERT_EQ(0, clientC.LogEntries());
+
+   copyC->operator()(); // Delete's copyC.
+
+   ASSERT_EQ(1, clientC.LogEntries());
+   EXPECT_STREQ("IRuntimeClient::runtimeEvent", clientC.Entry(0).MethodName().c_str());
+   EXPECT_EQ(ExpectC, clientC.Entry(0).ParamValue(0));
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(ObjectCreatedEventTest, aal0672)
+{
+   // ObjectCreatedEvent(IRuntimeClient * , IServiceClient * , IBase * , TransactionID ,
+   // const NamedValueSet & ) constructs CTransactionEvent with the IBase * and TransactionID,
+   // stores the IRuntimeClient * and IServiceClient * for later use by operator()(), and stores
+   // the NamedValueSet for later retrieval by GetOptArgs(). On success, a SubClass of
+   // tranevtFactoryCreate/IObjectCreatedEvent * is set.
+
+   CallTrackingIRuntimeClient rtc;
+   CallTrackingIServiceClient svc;
+
+   CAASBase      base((btApplicationContext)71);
+   TransactionID tid;
+   tid.ID(32);
+
+   NamedValueSet nvs;
+   nvs.Add((btNumberKey)5, (btcString)"hello");
+
+   // new'ing the event because operator()() will delete it.
+   ObjectCreatedEvent *e = new ObjectCreatedEvent(&rtc, &svc, &base, tid, nvs);
+
+   EXPECT_TRUE(e->IsOK());
+
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), &e->Object());
+   EXPECT_EQ(dynamic_cast<IBase *>(&base), e->pObject());
+
+   EXPECT_EQ((btApplicationContext)71, e->Context());
+
+   EXPECT_EQ(32, e->TranID().ID());
+
+   EXPECT_TRUE(e->Has(iidEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(e) ),
+             e->Interface(iidEvent));
+
+   EXPECT_TRUE(e->Has(iidCEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<CAALEvent *>(e) ),
+             e->Interface(iidCEvent));
+
+   EXPECT_TRUE(e->Has(iidTranEvent));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(e) ),
+             e->Interface(iidTranEvent));
+
+   EXPECT_TRUE(e->Has(tranevtFactoryCreate));
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IObjectCreatedEvent *>(e) ),
+             e->Interface(tranevtFactoryCreate));
+
+   EXPECT_EQ(tranevtFactoryCreate, e->SubClassID());
+   EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IObjectCreatedEvent *>(e) ),
+             e->ISubClass());
+
+   EXPECT_EQ(nvs, e->GetOptArgs());
+
+   // Deletes e.
+   e->operator()();
+
+   ASSERT_EQ(1, rtc.LogEntries());
+   ASSERT_STREQ("IRuntimeClient::runtimeAllocateServiceSucceeded", rtc.Entry(0).MethodName());
+
+   btObjectType x = NULL;
+   rtc.Entry(0).GetParam("pServiceBase", &x);
+   ASSERT_EQ(dynamic_cast<IBase *>(&base), reinterpret_cast<IBase *>(x));
+
+   TransactionID tid2;
+   rtc.Entry(0).GetParam("tid", tid2);
+   EXPECT_EQ(tid.ID(), tid2.ID());
+
+
+   ASSERT_EQ(1, svc.LogEntries());
+   ASSERT_STREQ("IServiceClient::serviceAllocated", svc.Entry(0).MethodName());
+
+   x = NULL;
+   svc.Entry(0).GetParam("pBase", &x);
+   ASSERT_EQ(dynamic_cast<IBase *>(&base), reinterpret_cast<IBase *>(x));
+
+   TransactionID tid3;
+   svc.Entry(0).GetParam("tid", tid3);
+   EXPECT_EQ(tid.ID(), tid3.ID());
 }
 

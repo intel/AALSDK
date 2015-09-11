@@ -58,6 +58,7 @@
 #include <aalsdk/uaia/AALuAIA_Messaging.h>
 #include <aalsdk/uaia/uAIASession.h> // uAIASession{}
 #include <aalsdk/uaia/uAIA.h>        // CAIA{}
+#include <aalsdk/Dispatchables.h>
 
 #include <aalsdk/IServiceClient.h>
 
@@ -123,16 +124,9 @@ public:
 
    btBool Release(TransactionID const &rTranID, btTime timeout)
    {
+
       TransactionID newTID = WrapTransactionID(rTranID);
       m_pSession->UnBind(m_devHandle, newTID);
-      return true;
-   }
-
-   btBool Release(btTime timeout)
-   {
-      m_quietRelease = true;
-      // Call the asynchronous version to cleanup
-      Release(TransactionID(), timeout);
       return true;
    }
 
@@ -241,8 +235,11 @@ private:
    private:
       DeviceServiceBase * m_pdsb;
    };
-
-
+  /// @brief Perform any post creation initialization including establishing communications.
+  ///
+  ///   This function is virtual to allow the derived class to hook the
+  ///            init() routine. Derived classes should call the base
+  ///           implementation before adding their own functionality.
    void Doinit(TransactionID const &rtid)
    {
       // Get the config record
@@ -343,6 +340,7 @@ private:
    void serviceReleased(TransactionID const &rTranID = TransactionID())
    {
       std::cerr << "TODO FREED\n";
+      // AIA Released now Unbind
    }
 
    void serviceReleaseFailed(const IEvent &rEvent)
@@ -364,6 +362,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   ///@brief static Callback Handler
+   ///
+   ///Gets this pointer from the object's context which was provided when we created it.
    static void _EventCallbackHandler(IEvent const &theEvent)
    {
       // Get this pointer from the object's context which was provided when we created it.
@@ -379,6 +380,11 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Delegate callback handler
+   ///
+   ///  Create a session with the AIA which serves as a
+   ///  connection between this object and the kernel
+   ///  services including the device we bind to.
    void EventCallbackHandler(IEvent const &theEvent)
    {
       // TODO check for NULL
@@ -430,6 +436,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Static event handler
+   ///
+   /// The object that generated the event (AIAProxy) has our this as its context
    static void _DefaultAIAHandler(IEvent const &theEvent)
    {
       // The object that generated the event (AIAProxy) has our this as its context
@@ -445,6 +454,9 @@ private:
    // Outputs: none.
    // Comments:
    //=============================================================================
+   /// @brief Delegate AIA handler
+   ///
+   /// Delegate AIA handler
    void DefaultAIAHandler(IEvent const &theEvent)
    {
       // Check for exception
@@ -496,7 +508,7 @@ private:
          case tranevtUnBindAFUDevEvent : {
             // The transaction ID has the original TransactionID as its context
             TransactionID origTID = UnWrapTransactionIDFromEvent(theEvent);
-
+#if 0
             // If it is not a quiet release
             if ( !m_quietRelease ) {
                // Generate the event
@@ -505,22 +517,36 @@ private:
                                                                                               origTID,
                                                                                               Context()));
             }
- 
+#endif
             // Destroy the AIA session
             if ( m_pAIA != NULL ) {
                m_pAIA->DestroyAIASession(m_pSession);
                m_pSession = NULL;
             }
+//DO OPPOSITE OF START UP. Release AIA
 
             m_devHandle = NULL;
 
             // Quiet release for now  TODO perhaps should be regular release
             if ( m_pAIA != NULL ) {
-               m_pAIA->Release();
+               m_pAIA->Delete();
             }
 
-            // MUST call parent Release
-            ServiceBase::Release();
+            // If it is not a quiet release
+            if ( !m_quietRelease ) {
+
+               ServiceBase::Release(origTID, 0);
+/*
+               // Generate the event
+               getRuntime()->schedDispatchable( new ServiceClientCallback( ServiceClientCallback::Released,
+                                                                           Client(),
+                                                                           dynamic_cast<IBase *>(this),
+                                                                           origTID));
+*/
+            }else{
+               // MUST call parent Release
+               ServiceBase::Release();
+            }
          } break;
 
          default:
@@ -544,7 +570,7 @@ protected:
 };
 
 
-/// @} group UserModeSDK
+/// @}
 
 
 END_NAMESPACE(AAL)

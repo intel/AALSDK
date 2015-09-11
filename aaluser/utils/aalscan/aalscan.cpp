@@ -87,7 +87,7 @@ $ aalscan
 0.0.0 libSWSimSPLAFU
 0.0.0 libAALRUNTIME@endverbatim
 
-@} group aalscan
+@}
 */
 //****************************************************************************
 #ifdef HAVE_CONFIG_H

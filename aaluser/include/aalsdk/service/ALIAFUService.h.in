@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(@ALIAFU_SVC_MOD@, ALIAFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group ALIAFU
+/// @}
 
 #endif // __SERVICE_ALIAFUSERVICE_H__
 

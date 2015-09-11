@@ -50,6 +50,21 @@
 
 BEGIN_NAMESPACE(AAL)
 
+//=============================================================================
+/// Constructor of Runtime class
+///
+/// Need to call start() after construction to actually get the
+///   runtime initialized and functional
+//=============================================================================
+Runtime::Runtime(IRuntimeClient *pClient) :
+// : Runtime(pClient, true)  //C++11 only
+m_pImplementation(NULL),
+m_status(false),
+m_pClient(pClient)
+
+{
+   init(pClient, true);
+}
 
 //=============================================================================
 /// Constructor of Runtime class
@@ -57,19 +72,30 @@ BEGIN_NAMESPACE(AAL)
 /// Need to call start() after construction to actually get the
 ///   runtime initialized and functional
 //=============================================================================
-Runtime::Runtime(IRuntimeClient *pClient, Runtime *pParent) :
-   m_pImplementation(NULL),
-   m_pParent(pParent),
-   m_status(false),
-   m_pClient(pClient)
+Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
+// : Runtime(pClient, true)  //C++11 only
+ m_pImplementation(NULL),
+ m_status(false),
+ m_pClient(pClient)
 {
+   init(pClient, bFirstTime);
+}
+
+//=============================================================================
+/// Initializer of Runtime class
+///
+/// Need to call start() after construction to actually get the
+///   runtime initialized and functional
+//=============================================================================
+void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
+ {
    // Must have a RuntimeClient
    if(NULL == pClient){
       return;
    }
 
    // Get the Runtime instance
-   m_pImplementation = _getnewRuntimeInstance(this, pClient);
+   m_pImplementation = _getnewRuntimeInstance(this, pClient, bFirstTime);
 
    // If failed _getnewRuntimeInstance() will generate the message
    if(NULL == m_pImplementation){
@@ -167,20 +193,13 @@ btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 //=============================================================================
 IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 {
-   // Create the new proxy storing this as the parent.
-   Runtime *newProxy = new Runtime(pClient,this);
-
-   // If construction failed Client will be notified if possible.
-   //    we simply return NULL
+   // Create the new proxy storing this as the parent. Last parameter indicates
+   //  that this is not the first time
+   Runtime *newProxy = new Runtime(pClient, false);
    if(!newProxy->IsOK()){
-      delete newProxy;
-      return NULL;
-   }else{
-      // Save the Proxy to clean up later
-      AutoLock(this);
-      m_proxyList.push_back(newProxy);
-      return dynamic_cast<IRuntime*>(newProxy);
+
    }
+   return newProxy;
 }
 
 //=============================================================================
@@ -208,52 +227,8 @@ btBool Runtime::releaseRuntimeProxy()
 {
    AutoLock(this);
 
-   // Release from our parent
-   return m_pParent->releaseRuntimeProxy(this);
-}
-
-//=============================================================================
-/// Get a new pointer to the Runtime
-///
-/// @param[in]    pRuntime - Pointer to Proxy to release
-/// @return       true - Success
-//=============================================================================
-btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
-{
-   AutoLock(this);
-
-   // Deleting self?
-   if(this == pRuntime){
-      return releaseRuntimeProxy();
-   }
-
-   // Look through our the list of Proxies and release the appropriate one.
-   int cnt=0;
-   for(;cnt<m_proxyList.size(); cnt++){
-      if(m_proxyList[cnt] == dynamic_cast<IRuntime*>(pRuntime) ){
-         Runtime *pProxy = m_proxyList[cnt];
-         int childCnt = 0;
-
-         // All Proxies that are children to the Proxy being deleted
-         //   must be shifted up to parent
-         for(;childCnt < pProxy->m_proxyList.size(); childCnt++){
-
-            // Put child on this list and make this the chold's parent
-            m_proxyList.push_back(pProxy->m_proxyList[childCnt]);
-            pProxy->m_proxyList[childCnt]->m_pParent = this;
-         }
-
-         // Delete the proxy instance
-         pProxy->m_proxyList.clear();
-         delete pProxy;
-
-         // Remove it from the list
-         m_proxyList.erase(m_proxyList.begin() + cnt);
-         return true;
-      }
-   }
-   // If we got here we did not find the Proxy
-   return false;
+   delete this;
+   return true;
 }
 
 //=============================================================================
@@ -262,34 +237,12 @@ btBool Runtime::releaseRuntimeProxy(IRuntime *pRuntime)
 //=============================================================================
 Runtime::~Runtime()
 {
-
-    int cnt=0;
-    // If there are any Proxies on the Runtime it is an error!
-    if( 0 != m_proxyList.size()){
-       std::cerr << "~Runtime FAILED " << std::hex <<this << " Num = " << m_proxyList.size() << std::endl;
-       // This exception is generated as an Event to the Runtime Client
-       schedDispatchable(new RuntimeCallback(RuntimeCallback::Event,getRuntimeClient(), new CExceptionEvent(this,
-                                                                                           errProxyDestroy,
-                                                                                           reasInvalidState,
-                                                                                           "Destroying Runtime with Proxies attached. Deleting child Proxies!")));
-       AutoLock(this);
-       // This is badness
-       for(;cnt<m_proxyList.size(); cnt++){
-          if(NULL != m_proxyList[cnt] ){
-             // Delete the proxy instance
-              delete m_proxyList[cnt];
-          }
-       }
-
-       // Free the vector.
-       m_proxyList.clear();
-    }
-    m_pImplementation->releaseRuntimeInstance(this);
+   m_pImplementation->releaseRuntimeInstance(this);
 }
 
 
 END_NAMESPACE(AAL)
 
-/// @} group AALRUNTIME
+/// @}
 
 

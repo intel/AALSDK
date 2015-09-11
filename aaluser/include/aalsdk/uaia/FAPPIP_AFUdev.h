@@ -145,6 +145,13 @@ BEGIN_NAMESPACE(AAL)
          return ( (NULL == _atomicGetCSR) ? false : (this->*_atomicGetCSR)(CSR, Value) );
       }
 
+      btVirtAddr getMMIOR()              { return m_mmiormap; }
+      btUnsigned32bitInt getMMIORsize()  { return m_mmiorsize; }
+
+      btVirtAddr getUMSG()               { return m_umsgmap; }
+      btUnsigned32bitInt getUMSGsize()   { return m_umsgsize; }
+
+
       //Memmap methods
       btBool MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet);
 
@@ -186,6 +193,10 @@ BEGIN_NAMESPACE(AAL)
          btVirtAddr                        m_csrreadmap;
          btUnsigned32bitInt                m_csrreadsize;
          btUnsigned32bitInt                m_csrread_item_size;
+         btVirtAddr                        m_mmiormap;
+         btUnsigned32bitInt                m_mmiorsize;
+         btVirtAddr                        m_umsgmap;
+         btUnsigned32bitInt                m_umsgsize;
    }; // class CAFUDev
 
 

@@ -81,7 +81,7 @@ public:
    virtual void init(TransactionID const &TranID);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
+
    // </DeviceServiceBase>
 
    // <ICCIAFU>
@@ -101,7 +101,7 @@ public:
    // </ICCIAFU>
 };
 
-/// @} group HWCCIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

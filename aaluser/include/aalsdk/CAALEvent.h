@@ -68,6 +68,7 @@
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/CAALBase.h>
 #include <aalsdk/CCountedObject.h>
+#include <aalsdk/CUnCopyable.h>
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/Runtime.h>
@@ -105,6 +106,7 @@ BEGIN_NAMESPACE(AAL)
 /// Concrete implementation of IEvent.
 class AASLIB_API CAALEvent : protected CriticalSection,
                              public    CCountedObject,
+                             private   CUnCopyable,
                              public    IDispatchable,
                              public    IEvent
 {
@@ -113,8 +115,6 @@ public:
    CAALEvent(IBase *pObject);
    /// CAALEvent construct from IBase * and sub-class ID.
    CAALEvent(IBase *pObject, btIID SubClassID);
-   /// CAALEvent Copy Constructor. Sub-class interface id is iidEvent.
-   CAALEvent(const CAALEvent &rOther);
 
    // <IEvent>
    virtual btGenericInterface    Interface(btIID ID)        const;
@@ -156,15 +156,21 @@ public:
    virtual void Delete();
 
 protected:
-   void UpdateContext();   // Update m_Context based on m_pObject
-
+   /// Update m_Context based on m_pObject
+   void UpdateContext();
+   /// Sets an interface pointer on the object.
+   ///
+   /// @param[in]  Interface   The name of the interface to set..
+   /// @param[in]  pInterface  The interface pointer.
+   ///
+   /// Outputs interface pointer
    EOBJECT SetInterface(btIID              Interface,
                         btGenericInterface pInterface);
-
+   /// Processes the transaction ID for Event Handling
    btBool ProcessEventTranID();
 
+   // These are prohibited.
    CAALEvent();
-   CAALEvent & operator = (const CAALEvent & );
    virtual ~CAALEvent();
 
 protected:
@@ -192,7 +198,8 @@ protected:
 /// Concrete implementation of ITransactionEvent.
 ///
 /// CTransactionEvent serves as the base class for all events requiring an event response.
-class AASLIB_API CTransactionEvent : public CAALEvent, public ITransactionEvent
+class AASLIB_API CTransactionEvent : public CAALEvent,
+                                     public ITransactionEvent
 {
 public:
    /// CTransactionEvent Constructor.
@@ -201,7 +208,6 @@ public:
    ///
    /// @param[in]  pObject     An IBase associated with this event.
    /// @param[in]  rTranID     For routing event responses.
-   /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
                      TransactionID const &rTranID);
    /// CTransactionEvent Constructor.
@@ -209,32 +215,25 @@ public:
    /// @param[in]  pObject     An IBase associated with this event.
    /// @param[in]  SubClassID  The native sub-class id for this event.
    /// @param[in]  rTranID     For routing event responses.
-   /// @param[in]  pHandler    For specific routing
    CTransactionEvent(IBase               *pObject,
                      btIID                SubClassID,
                      TransactionID const &rTranID);
-   /// CTransactionEvent Copy Constructor.
-   CTransactionEvent(CTransactionEvent const &rOther);
-   /// CTransactionEvent Destructor.
-   virtual ~CTransactionEvent();
 
    // <ITransactionEvent>
-   TransactionID TranID()                      { return m_TranID;   }
-   void SetTranID(TransactionID const &TranID) { m_TranID = TranID; }
+   TransactionID TranID() const;
+   void       SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 
 protected:
-
-   // These Constructor forms are invalid.
+   // These are prohibited.
    CTransactionEvent();
    CTransactionEvent(IBase * );
-
-   CTransactionEvent & operator = (const CTransactionEvent & );
 };
 
 
 /// Concrete implementation of IExceptionEvent.
-class AASLIB_API CExceptionEvent : public CAALEvent, public IExceptionEvent
+class AASLIB_API CExceptionEvent : public CAALEvent,
+                                   public IExceptionEvent
 {
 public:
    /// CExceptionEvent Constructor.
@@ -263,15 +262,11 @@ public:
                    btID             ExceptionNumber,
                    btID             Reason,
                    btcString        Description);
-   /// CExceptionEvent Copy Constructor.
-   CExceptionEvent(const CExceptionEvent &rOther);
-   /// CExceptionEvent Destructor.
-   virtual ~CExceptionEvent();
 
    // <IExceptionEvent>
-   btID ExceptionNumber() { return m_ExceptionNumber; }
-   btID Reason()          { return m_Reason;          }
-   btString Description() { return (btString)(char *)m_strDescription.c_str(); }
+   btID ExceptionNumber() const { return m_ExceptionNumber; }
+   btID          Reason() const { return m_Reason;          }
+   btString Description() const;
    // </IExceptionEvent>
 
 protected:
@@ -286,16 +281,16 @@ protected:
 # pragma warning(pop)
 #endif // _MSC_VER
 
-   // These Constructor forms are invalid.
+   // These are prohibited.
    CExceptionEvent();
-   CExceptionEvent & operator = (const CExceptionEvent & );
 };
 
 
 /// Concrete implementation of IExceptionTransactionEvent.
 ///
 /// CExceptionTransactionEvent serves as the base class for all exceptions requiring an event response.
-class AASLIB_API CExceptionTransactionEvent : public CAALEvent, public IExceptionTransactionEvent
+class AASLIB_API CExceptionTransactionEvent : public CAALEvent,
+                                              public IExceptionTransactionEvent
 {
 public:
    /// CExceptionTransactionEvent Constructor.
@@ -307,7 +302,6 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionTransactionEvent(IBase               *pObject,
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
@@ -321,27 +315,22 @@ public:
    /// @param[in]  ExceptionNumber  Numeric id for the exception.
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
-   /// @param[in]  pHandler         For specific routing
    CExceptionTransactionEvent(IBase               *pObject,
-                              btID                 SubClassID,
+                              btIID                SubClassID,
                               TransactionID const &rTranID,
                               btID                 ExceptionNumber,
                               btID                 Reason,
                               btcString            Description);
-   /// CExceptionTransactionEvent Copy Constructor.
-   CExceptionTransactionEvent(CExceptionTransactionEvent const &rOther);
-   /// CExceptionTransactionEvent Destructor.
-   virtual ~CExceptionTransactionEvent();
 
    // <IExceptionEvent>
-   btID ExceptionNumber() { return m_ExceptionNumber; }
-   btID Reason()          { return m_Reason;          }
-   btString Description() { return (btString)(char *)m_strDescription.c_str(); }
+   btID ExceptionNumber() const { return m_ExceptionNumber; }
+   btID          Reason() const { return m_Reason;          }
+   btString Description() const;
    // </IExceptionEvent>
 
    // <ITransactionEvent>
-   TransactionID TranID()                      { return m_TranID;   }
-   void SetTranID(TransactionID const &TranID) { m_TranID = TranID; }
+   TransactionID TranID() const { return m_TranID; }
+   void SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 
 protected:
@@ -357,10 +346,9 @@ protected:
 # pragma warning(pop)
 #endif // _MSC_VER
 
-   // These Constructor forms are invalid.
+   // These are prohibited.
    CExceptionTransactionEvent();
    CExceptionTransactionEvent(IBase * );
-   CExceptionTransactionEvent & operator = (const CExceptionTransactionEvent & );
 };
 
 
@@ -380,45 +368,42 @@ protected:
 ///
 /// }
 /// @endcode
-class AASLIB_API ObjectCreatedEvent : public CTransactionEvent, public IObjectCreatedEvent
+class AASLIB_API ObjectCreatedEvent : public CTransactionEvent,
+                                      public IObjectCreatedEvent
 {
 public:
-
    /// ObjectCreatedEvent Constructor.
    ///
    /// The native sub-class interface id is tranevtFactoryCreate.
    ///
-   /// @param[in] prtClient Pointer to Runtime Client
-   /// @param[in]  pClient  ServiceClient.
-   /// @param[in]  pObject  The Service requested by the IFactory::Create call.
-   /// @param[in]  TranID   The original TransactionID from IFactory::Create.
-   /// @param[in]  OptArgs  The NamedValueSet from the IFactory::Create call.
-   ObjectCreatedEvent(IRuntimeClient       *prtClient,
-                      IServiceClient       *pClient,
-                      IBase                *pObject,
-                      TransactionID         TranID,
-                      const NamedValueSet  &OptArgs = NamedValueSet());
+   /// @param[in]  prtClient Pointer to Runtime Client
+   /// @param[in]  pClient   ServiceClient.
+   /// @param[in]  pObject   The Service requested by the IFactory::Create call.
+   /// @param[in]  TranID    The original TransactionID from IFactory::Create.
+   /// @param[in]  OptArgs   The NamedValueSet from the IFactory::Create call.
+   ObjectCreatedEvent(IRuntimeClient      *prtClient,
+                      IServiceClient      *pClient,
+                      IBase               *pObject,
+                      TransactionID        TranID,
+                      const NamedValueSet &OptArgs = NamedValueSet());
 
-   void operator()();
-
-   /// ObjectCreatedEvent Destructor.
-   virtual ~ObjectCreatedEvent();
+   virtual void operator()();
 
    // <IObjectCreatedEvent>
    const NamedValueSet & GetOptArgs() const { return m_OptArgs; }
    // </IObjectCreatedEvent>
 
 protected:
+   // These are prohibited.
    ObjectCreatedEvent();
 
-   NamedValueSet    m_OptArgs;
+   NamedValueSet m_OptArgs;
 };
 
 /// Created in response to a failed IFactory::Create.
 class AASLIB_API ObjectCreatedExceptionEvent : public CExceptionTransactionEvent
 {
 public:
-
    /// ObjectCreatedExceptionEvent Constructor.
    ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
                                IServiceClient     *pClient,
@@ -428,41 +413,30 @@ public:
                                btUnsigned64bitInt  Reason,
                                btcString           Description);
 
-   void operator()();
-
-   /// ObjectCreatedExceptionEvent Destructor.
-   virtual ~ObjectCreatedExceptionEvent();
+   virtual void operator()();
 
 protected:
+   // These are prohibited.
    ObjectCreatedExceptionEvent();
-
 };
 
 /// Created in response to IAALService::Release.
 class AASLIB_API CObjectDestroyedTransactionEvent : public CTransactionEvent
 {
 public:
-
    /// CObjectDestroyedTransactionEvent Constructor.
    CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
                                     IBase                *pObject,
                                     TransactionID const  &TransID,
                                     btApplicationContext  Context);
 
-   void operator()();
-
-   /// CObjectDestroyedTransactionEvent Copy Constructor.
-   CObjectDestroyedTransactionEvent(const CObjectDestroyedTransactionEvent &rOther);
-
-   /// CObjectDestroyedTransactionEvent Destructor.
-   virtual ~CObjectDestroyedTransactionEvent();
+   virtual void operator()();
 
 protected:
    CObjectDestroyedTransactionEvent();
+};
 
- };
-
-/// @} group Events
+/// @}
 
 END_NAMESPACE(AAL)
 
