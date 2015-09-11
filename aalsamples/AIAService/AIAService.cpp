@@ -201,6 +201,9 @@ void AIAService::init( TransactionID const& rtid )
       m_bIsOK = true;
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
+
+   // TODO MAKE ASYNC - If fails it generates AllocateFailed event so that it can give reason
+   AFUProxyGet(this, OptArgs());
 #if 0
    // Create the object
    getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
@@ -281,6 +284,154 @@ void AIAService::SemPost()
    m_Semaphore.Post(1);
 }
 
+//=============================================================================
+// Name: AFUProxyGet()
+// Description: Gets a new Proxy to an AFU
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyGet( AIAService *pAIA,
+                              NamedValueSet const &OptArgs)
+{
+
+}
+
+//=============================================================================
+// Name: AFUProxyRecieved()
+// Description: Callback from AFUProxyGet is successful
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyRecieved(IBase *pAFUbase, TransactionID const &rtid)
+{
+
+   if(NULL != pAFU){
+      if (false == AFUDeviceMapAdd(pAFUbase)){
+         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                                                   Client(),
+                                                                   NULL,
+                                                                   new CExceptionTransactionEvent( NULL,
+                                                                                                  rtid,
+                                                                                                  errCreationFailure,
+                                                                                                  reasCauseUnknown,
+                                                                                                  "AIAService::Init unable to store AFU in list.")));
+         AFUProxyRelease(pAFUbase);
+         return;
+
+      }
+      getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Allocated,
+                                                                Client(),
+                                                                pAFUbase));
+      AFUListAdd(pAFUbase);
+
+   }
+
+}
+
+//=============================================================================
+// Name: AFUProxyFailed()
+// Description: Callback from AFUProxyGet fails
+// Interface: protected
+// Returns: none.
+//=============================================================================
+void AIAService::AFUProxyFailed(IEvent *pEvent)
+{
+   Autolock(this);
+
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                                             Client(),
+                                                             NULL,
+                                                             pEvent));
+
+}
+
+//=============================================================================
+// Name: AFUProxyRelease()
+// Description: Releases Proxy to an AFU
+// Interface: protected
+// Returns: none.
+//=============================================================================
+void AIAService::AFUProxyRelease( IBase *pAFUbase,
+                                  TransactionID const &rtid)
+{
+
+}
+
+//=============================================================================
+// Name: AFUProxyReleased()
+// Description: Callback from AFUProxyRelease is successful
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyReleased(TransactionID const &rtid)
+{
+   Autolock(this);
+   AFUListDel(pAFUbase);
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
+                                                             Client(),
+                                                             pAFUbase));
+}
+
+//=============================================================================
+// Name: AFUProxyFailed()
+// Description: Callback from AFUProxyRelease fails
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyFailed(IEvent *pEvent)
+{
+   Autolock(this);
+
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
+                                                             Client(),
+                                                             NULL,
+                                                             pEvent));
+
+}
+
+
+//=============================================================================
+// Name: AFUListAdd()
+// Description: Add an AFUProxy to the list
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+btBool AIAService::AFUListAdd( IAFUProxy *pAFU)
+{
+   {
+      AutoLock(this);
+
+      // Do not allow duplicates
+      AFUList_itr iter = find(m_mAFUList.begin(), m_mAFUList.end(), pAFU);
+      if( m_mAFUList.end() != iter ) {
+         return false;
+      }
+
+      // Make sure its not already on the list
+      m_mAFUList.push_back(pAFU);
+   }
+
+   return true;
+}
+
+//=============================================================================
+// Name: AFUListDel()
+// Description: Delete an AFUProxy from the list
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+btBool AIAService::AFUListDel(IBase *pAFU)
+{
+   AutoLock(this);
+
+   AFUList_itr iter = find(m_mAFUList.begin(), m_mAFUList.end(), pAFU);
+   if ( m_mAFUList.end() != iter ) {
+      m_mAFUList.erase(iter);
+      return true;
+   }
+
+   return false;;
+}
 
 
 //=============================================================================

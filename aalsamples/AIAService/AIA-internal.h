@@ -104,9 +104,13 @@ class UAIA_API AIAService: public AAL::ServiceBase
       void init(TransactionID const &rtid);
       // </IAALService>
 
+
    protected:
       void SemWait(void);
       void SemPost(void);
+
+      btBool AFUListAdd(IAFUProxy *pAFU);
+      btBool AFUListDel(IAFUProxy *pDev);
 
       void Destroy(void);
 
@@ -122,17 +126,31 @@ class UAIA_API AIAService: public AAL::ServiceBase
                            btTime                   waittime,
                            stTransactionID_t const &rTranID_t);
 
-      IAFUProxy *AFUProxyGet(AIAService *pAIA, NamedValueSet const &OptArgs);      // Allocates a Proxy to the AFU
+      void AFUProxyGet(AIAService *pAIA,
+                       NamedValueSet const &Args,
+                       TransactionID const &rtid);                   // Allocates a Proxy to the AFU
+      void AFUProxyRecieved(IBase *pAFU,TransactionID const &rtid);  // Callback
+      void AFUProxyFailed(IEvent *pEvent);                           // Callback
+
+      void AFUProxyRelease(IBase *pAFUbase,
+                           TransactionID const &rtid);               // Releases a Proxy to the AFU
+      void AFUProxyReleased(IBase *pAFU,TransactionID const &rtid);  // Callback
+      void AFUProxyReleaseFailed(IEvent *pEvent);                    // Callback
+
 
       btBool IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
                                         btTime                   timeout);
 
    protected:
+      typedef std::list<IBase *>    AFUList;
+      typedef AFUList::iterator     AFUList_itr;
+
       // Variables
       UIDriverInterfaceAdapter   m_uida;                                         // Kernel Mode Driver Interface Adapter
       CSemaphore                 m_Semaphore;                                    // General synchronization as needed
       OSLThread                 *m_pMDT;                                         // Message delivery thread
       OSLThread                 *m_pShutdownThread;                              // Shutdown thread
+      AFUList                    m_mAFUList;                                     // Map of Runtime Proxys
 };
 
 
