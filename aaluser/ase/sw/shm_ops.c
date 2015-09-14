@@ -150,7 +150,7 @@ void session_init()
 
   // Creating CSR map 
   printf("  [APP]  Creating CSR map...\n");
-  csr_region = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+  csr_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   csr_region->memsize = CSR_MAP_SIZE;
   csr_region->is_csrmap = 1;
   allocate_buffer(csr_region);
@@ -443,7 +443,7 @@ void deallocate_buffer(struct buffer_t *mem)
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
   char *mq_name;
-  mq_name = malloc (ASE_MQ_NAME_LEN);
+  mq_name = ase_malloc (ASE_MQ_NAME_LEN);
   memset(mq_name, '\0', ASE_MQ_NAME_LEN);
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -524,7 +524,7 @@ void umas_init(uint32_t umsg_mode)
   else
     {
       // Initialize 
-      umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+      umas = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
       umas->memsize = 32 * 1024;
       umas->is_umas = 1;
       allocate_buffer (umas);
@@ -624,8 +624,8 @@ void setup_spl_cxt_pte(struct buffer_t *dsm, struct buffer_t *afu_cxt)
   FUNC_CALL_ENTRY;
 
   // Allocate spaces for shared buffers
-  spl_pt  = (struct buffer_t *)malloc(sizeof(struct buffer_t));
-  spl_cxt = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+  spl_pt  = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  spl_cxt = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
   uint64_t num_2mb_chunks;
   uint64_t *spl_pt_addr;

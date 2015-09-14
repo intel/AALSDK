@@ -67,7 +67,7 @@ void capcm_init()
       printf("SIM-C : CAPCM will use %lu chunks of 0x%lx bytes each \n", capcm_num_buffers, CAPCM_CHUNKSIZE );
       
       // Malloc control structures
-      capcm_buf = (struct buffer_t *)malloc(capcm_num_buffers * sizeof(struct buffer_t));
+      capcm_buf = (struct buffer_t *)ase_malloc(capcm_num_buffers * sizeof(struct buffer_t));
       if (capcm_buf == NULL) 
 	{
 	  printf("SIM-C : CAPCM control structures could not be allocated... EXITING\n");

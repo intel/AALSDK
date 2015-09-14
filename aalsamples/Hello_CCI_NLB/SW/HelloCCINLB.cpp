@@ -63,8 +63,8 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-#define  HWAFU
-// #define  ASEAFU
+// #define  HWAFU
+#define  ASEAFU
 
 using namespace std;
 using namespace AAL;

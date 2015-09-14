@@ -66,7 +66,7 @@ void scope_function()
  */
 void sv2c_config_dex(const char *str)
 {
-  sv2c_config_filepath = malloc(ASE_FILEPATH_LEN);
+  sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(sv2c_config_filepath, str);
 #ifdef ASE_DEBUG
   printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
@@ -92,7 +92,7 @@ void sv2c_config_dex(const char *str)
  */
 void sv2c_script_dex(const char *str)
 {
-  sv2c_script_filepath = malloc(ASE_FILEPATH_LEN);
+  sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(sv2c_script_filepath, str);
 #ifdef ASE_DEBUG
   printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
@@ -249,7 +249,7 @@ int ase_listener()
 	  // buffer_messages ( logger_str );
 
 	  // Flush info to file
-	  fprintf(fp_workspace_log, logger_str);
+	  fprintf(fp_workspace_log, "%s", logger_str);
 	  fflush(fp_workspace_log);
 	}
       
@@ -462,14 +462,14 @@ int ase_init()
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Evaluate PWD
-  ase_run_path = malloc(ASE_FILEPATH_LEN);
+  ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
   // Evaluate Session directory
-  ase_workdir_path = malloc(ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
   sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
@@ -482,7 +482,7 @@ int ase_init()
 
   // Generate timstamp (used as session ID)
   put_timestamp();
-  tstamp_filepath = malloc(ASE_FILEPATH_LEN);
+  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(tstamp_filepath, ase_workdir_path);
   strcat(tstamp_filepath, TSTAMP_FILENAME);
 
@@ -549,14 +549,14 @@ int ase_ready()
   FUNC_CALL_ENTRY;
 
   // App run command
-  app_run_cmd = malloc (ASE_FILEPATH_LEN);
+  app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
   memset (app_run_cmd, '\0', ASE_FILEPATH_LEN);
 
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
 
   // Indicate readiness with .ase_ready file
-  ase_ready_filepath = malloc (ASE_FILEPATH_LEN);
+  ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
   ase_ready_fd = fopen( ase_ready_filepath, "w");
   fprintf(ase_ready_fd, "%d", ase_pid);
@@ -761,10 +761,12 @@ void ase_config_parse(char *filename)
   // int tmp_umsg_log2;
 
   char *ase_cfg_filepath;
-  ase_cfg_filepath = malloc(256);
+  ase_cfg_filepath = ase_malloc(256);
+  memset (ase_cfg_filepath, '\0', 256);
   if ( strlen(sv2c_config_filepath) != 0 )
     {
-      strcpy(ase_cfg_filepath, sv2c_config_filepath);
+      // strcpy(ase_cfg_filepath, sv2c_config_filepath);
+      sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
     }
   else
     {
@@ -772,20 +774,20 @@ void ase_config_parse(char *filename)
     }
 
   // Allocate space to store ASE config
-  cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );
+  cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
   if (cfg == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
       END_RED_FONTCOLOR;
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
+    /* #ifdef SIM_SIDE */
       start_simkill_countdown();
-    #else
-      exit(1);
-    #endif
+    /* #else */
+    /*   exit(1); */
+    /* #endif */
     }
-  line = malloc(sizeof(char) * 80);
+  line = ase_malloc(sizeof(char) * 80);
 
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;

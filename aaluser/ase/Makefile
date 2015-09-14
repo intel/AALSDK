@@ -72,7 +72,9 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall -std=c99 -D_XOPEN_SOURCE=700
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
+CC_OPT+= -Wall -std=c99
+# -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 -pedantic
 endif
@@ -290,6 +292,8 @@ else
 	vsim -view vsim.wlf
   endif
 endif
+
+
 #########################################################################
 #                            Clean all                                  #
 #########################################################################
@@ -304,4 +308,10 @@ distclean: header clean
 	./distclean.sh
 
 
+
+#########################################################################
+#                            Leak Check                                 #
+#########################################################################
+src_check: 
+	scan-build-3.5 make sw_build
 

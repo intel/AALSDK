@@ -276,7 +276,7 @@ void ase_alloc_action(struct buffer_t *mem)
   // fpga_membase_so_far+= mem->memsize;
 
   // Create a buffer and store the information
-  new_buf = malloc(BUFSIZE);
+  new_buf = (struct buffer_t *)ase_malloc(BUFSIZE);
   memcpy(new_buf, mem, BUFSIZE);
 
   // Append to linked list

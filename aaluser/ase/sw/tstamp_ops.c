@@ -180,17 +180,28 @@ char* get_timestamp(int dont_kill)
   unsigned long long readback;
 
   char *tstamp_str;
-  tstamp_str = malloc(20);
-  
+  tstamp_str = ase_malloc(20);
+  if (tstamp_str == NULL)
+    {
+      ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
+    #ifdef SIM_SIDE
+      start_simkill_countdown();
+    #else
+      exit(1);
+    #endif		       
+    }
+
   char *tstamp_filepath;
-  tstamp_filepath = malloc(ASE_FILEPATH_LEN);
+  tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
 
   // Generate tstamp_filepath
   // tstamp_filepath = generate_tstamp_path( TSTAMP_FILENAME );
   memset(tstamp_filepath, '\0', ASE_FILEPATH_LEN);
-  strcpy(tstamp_filepath, ase_workdir_path);
-  strcat(tstamp_filepath, "/");
-  strcat(tstamp_filepath, TSTAMP_FILENAME);  
+  /* strcpy(tstamp_filepath, ase_workdir_path); */
+  /* strcat(tstamp_filepath, "/"); */
+  /* strcat(tstamp_filepath, TSTAMP_FILENAME);   */
+  sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+
 #ifdef ASE_DEBUG
   printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
 #endif

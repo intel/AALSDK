@@ -230,7 +230,7 @@ char* ase_eval_session_directory()
   /* struct stat s; */
   /* int err; */
     
-  workdir_path = malloc (ASE_FILEPATH_LEN);
+  workdir_path = ase_malloc (ASE_FILEPATH_LEN);
   if (!workdir_path) return NULL;
 
   // Evaluate basename location
@@ -279,4 +279,36 @@ char* ase_eval_session_directory()
 //
 //  return workdir_path;
 //}
+
+
+/*
+ * ASE malloc 
+ * Malloc wrapped with ASE closedown if failure accures
+ */
+char* ase_malloc (size_t size)
+{
+  FUNC_CALL_ENTRY;
+
+  char *buffer;
+  buffer = malloc (size);
+  if (buffer == NULL)
+    {
+      ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
+    #ifdef SIM_SIDE
+      printf("SIM-C : Malloc failed\n");
+      start_simkill_countdown();
+    #else
+      printf("  [APP] Malloc failed\n");
+      exit(1);
+    #endif
+    }   
+  else
+    {
+      memset (buffer, '\0', size);
+    }
+
+  FUNC_CALL_EXIT;
+  return buffer;
+}
+
 

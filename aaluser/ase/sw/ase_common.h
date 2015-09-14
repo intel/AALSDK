@@ -304,6 +304,7 @@ void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
 char* ase_eval_session_directory();
+char* ase_malloc (size_t);
 
 // Message queue operations
 void ipc_init();
