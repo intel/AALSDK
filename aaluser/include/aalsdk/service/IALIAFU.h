@@ -55,13 +55,10 @@ BEGIN_NAMESPACE(AAL)
 
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
-#define iidALI_UMSG_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0003)
-#define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
-#define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
-#define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
-#define iidALI_PERF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0007)
-#define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0008)
-#define iidALI_RSET_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+#define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+#define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+#define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+#define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
 
 
 /// @file
@@ -75,13 +72,10 @@ BEGIN_NAMESPACE(AAL)
 /// An ALI Service will support zero to all of the following Services Interfaces:
 ///   iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 ///   iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
-///   iidALI_UMSG_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0003)
-///	  iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0004)
-///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0005)
-///	  iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
-///   iidALI_PERF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0007)
-///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0008)
-///   iidALI_RSET_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+///	  iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+///	  iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
 /// <TODO: LIST INTERFACES HERE>
 ///
 /// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
@@ -108,7 +102,6 @@ BEGIN_NAMESPACE(AAL)
 ///    <TODO: ADD EXAMPLES HERE>
 /// }
 /// @endcode
-
 
 /// @brief  Provide access to the MMIO region exposed by the AFU to the Application.
 /// @note   There is no client for this Service Interface because all of its methods
@@ -180,6 +173,9 @@ public:
 
    /// @brief  Set attributes associated with the UMsg region and/or
    ///            individual UMsgs, depending on the arguments.
+   /// @param[in] nvsArgs Defines the bitmask that will be set. Each bit
+   ///	          in the mask corresponds to a UMsg. If set, then the UMsg has
+   ///            hint as well as data.
    /// @note   Placeholder for now. Arguments TBD. E.g., for hint information.
    ///            Expectation is that hints will be defined for allocService
    ///            and used there, as well as here. This is only needed for changes.
@@ -190,40 +186,10 @@ public:
    ///            Bit 0 = UMsg[0]
    ///            Bit 1 = UMsg[1]
    ///            etc.
-   virtual void umsgSetAttributes( NamedValueSet const &nvsArgs,
-                                   TransactionID const &TranID) = 0;
-};
-
-/// @brief  Service Client Interface of IALIUMSG
-///
-class IALIUMsg_Client
-{
-public:
-   virtual ~IALIUMsg_Client() {}
-
-   /// @brief  Set attributes call succeeded.
-   virtual void umsgAttributesSet( TransactionID const &TranID) = 0;
-
-   /// @brief Notification callback for Set attributes failed.
-   ///
-   /// Sent in response to a failed free workspace request (IALIBUFFER::umsgSetAttributes).
-   ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   /// @note   Placeholder for now. Arguments TBD. E.g., for hint information.
-   ///            Expectation is that hints will be defined for allocService
-   ///            and used there, as well as here. This is only needed for changes.
-   /// @note   #define UMSG_HINT_MASK_KEY       "UMsg-Hint-Mask-Key"
-   ///         #define UMSG_HINT_MASK_DATATYPE  btUnsigned64bitInt
-   ///         Value of bit mask is:
-   ///            1 for hint, 0 for not.
-   ///            Bit 0 = UMsg[0]
-   ///            Bit 1 = UMsg[1]
-   ///            etc.
-   /// @note   Probably, the parts of the SetAttributes NVS that failed would be
-   ///            returned, with a bit set for each failure (or success).
-   ///         Also, the ExceptionTransactionEvent would contain a descriptive string
-   ///            of the failure
-   virtual void umsgAttributesSetFailed( const IEvent &Event ) = 0;
+   /// @note   Implication of synchronous is that the UMsg Device Feature Area
+   ///            must be mapped in to user space.
+   /// @return True of worked. At this point, no reason it would every fail.
+   virtual bool umsgSetAttributes( NamedValueSet const &nvsArgs) = 0;
 };
 
 /// @brief  Buffer Allocation Service Interface of IALI
@@ -256,6 +222,17 @@ public:
    /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
    virtual void bufferFree( btVirtAddr           Address,
                             TransactionID const &TranID) = 0;
+
+   /// @brief Retrieve the location at which the AFU can access the passed in virtual address.
+   ///
+   /// The user virtual address that the application uses to access a buffer may or
+   ///    may not be directly usable by the AFU. The general assumption is that it is not.
+   ///
+   /// @param[in]  Address User virtual address to be converted to AFU-addressable location
+   /// @return     A value that can be passed to the AFU such that when the AFU uses it,
+   ///                the AFU will be accessing the byte at the address that was passed in.
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address) = 0;
+
 };
 
 /// @brief  Buffer Allocation Service Client Interface of IALI
@@ -271,21 +248,11 @@ public:
    ///
    /// @param[in]  TranID     The transaction ID provided in the call to IALIBUFFER::bufferAllocate.
    /// @param[in]  WkspcVirt  The user virtual address of the newly-allocated workspace.
-   /// @param[in]  WkspcPhys  The physical address of the newly-allocated workspace.
    /// @param[in]  WkspcSize  The size in bytes of the allocation.
    ///
-   virtual void bufferAllocated( TransactionID const &TranID,
+   virtual void bufferAllocated( TransactionID const &rTranID,
                                  btVirtAddr           WkspcVirt,
-                                 btPhysAddr           WkspcPhys,
                                  btWSSize             WkspcSize ) = 0;
-
-   /// @brief Notification callback for workspace free success.
-   ///
-   /// Sent in response to a successful free workspace request (IALIBUFFER::bufferFree).
-   ///
-   /// @param[in]  TranID  The transaction ID provided in the call to IALIBUFFER::bufferFree.
-   ///
-   virtual void bufferFreed( TransactionID const &TranID ) = 0;
 
    /// @brief Notification callback for workspace allocation failure.
    ///
@@ -293,7 +260,15 @@ public:
    ///
    /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
    ///
-   virtual void bufferAllocateFailed( const IEvent &Event ) = 0;
+   virtual void bufferAllocateFailed( IEvent const &rEvent ) = 0;
+
+   /// @brief Notification callback for workspace free success.
+   ///
+   /// Sent in response to a successful free workspace request (IALIBUFFER::bufferFree).
+   ///
+   /// @param[in]  TranID  The transaction ID provided in the call to IALIBUFFER::bufferFree.
+   ///
+   virtual void bufferFreed( TransactionID const &rTranID ) = 0;
 
    /// @brief Notification callback for workspace free failure.
    ///
@@ -301,7 +276,7 @@ public:
    ///
    /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
    ///
-   virtual void bufferFreeFailed( const IEvent &Event ) = 0;
+   virtual void bufferFreeFailed( IEvent const &rEvent ) = 0;
 };
 
 /// @brief  Obtain Global Performance Data (not AFU-specific)
@@ -322,37 +297,14 @@ public:
    /// @note One needs to ensure that the operations being measured would not cause
    ///    a 64-bit wrap.
    ///
-   /// @param[in]  TranID   Returned in the notification event.
-   /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[out]  pResult   Returns the Performance Counter Values defined below.
+   /// @param[in]   pOptArgs  Pointer to Optional Arguments if needed. Defaults to NULL.
    ///
-   /// Response is via IALIPerf_Client::PeformanceCounters()
+   /// #define AALPERF_DATATYPE  		btUnsigned64bitInt
+   /// #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
+   ///   etc.
    ///
-   virtual void getPerformanceCounters( TransactionID const &TranID,
-                                        NamedValueSet *pOptArgs = NULL) = 0;
-};
-
-/// @brief  Buffer Allocation Service Client Interface of IALI
-///
-class IALIPerf_Client
-{
-public:
-   virtual ~IALIPerf_Client() {}
-
-   /// @brief Notification callback for getPerformanceCounters.
-   ///
-   /// @note Need a versioning mechanism here as these will change over time.
-   /// TODO: Just provide a structure instead of an NVS? Structure works better now
-   ///         but does not adjust going into the future. OTOH, need versioning
-   ///         anyway, so could just have versioned structures (e.g. a versioned union).
-   ///
-   /// Sent in response to a call to getPerformanceCounters vi IALIPerf::getPerformanceCounters()
-   ///
-   /// @param[in]  TranID     The transaction ID provided in the call to
-   ///                           IALIPerf::getPerformanceCounters.
-   /// @param[in]  nvsResults Contains a set of named btUnsigned64bitInts
-   ///                           containing the results.
-   ///
-   /// Need constant keys for the following performance counters:
+   /// Here is what is known so far:
    ///   Port0_Read_Hit
    ///   Port0_Write_Hit
    ///   Port0_Read_Miss
@@ -363,15 +315,9 @@ public:
    ///   Port1_Read_Miss
    ///   Port1_Write_Miss
    ///   Port1_Evictions
-   /// Need a Version key, and a status result (success/failure), and a datatype key
-   /// TODO: Failure via ExceptionTransactionEvent? if so, then here, or top-level? If not, then via failure code?
    ///
-   /// @note   #define AALPERF_DATATYPE  		btUnsigned64bitInt
-   ///         #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
-   ///         etc.
-   ///
-   virtual void PerformanceCounters( TransactionID const &TranID,
-                                     NamedValueSet const &nvsResuls) = 0;
+   virtual btBool performanceCountersGet ( INamedValueSet *pResult,
+                                           NamedValueSet const *pOptArgs = NULL) = 0;
 };
 
 /// @brief  Reset the AFU Link Interface to this AFU
@@ -381,10 +327,41 @@ class IALIReset
 public:
    virtual ~IALIReset() {}
 
-   /// @brief Request the Reset.
+   /// @brief Initiate a Reset.
    ///
    /// Only the Link to this AFU will be reset.
-   /// By resetting the link, all outstanding transactions will quiesce, the
+   /// By resetting the link, all outstanding transactions will quiesced, the
+   ///    processing of memory transactions will be disabled,
+   ///    the AFU will be sent a Reset signal.
+   ///
+   /// TODO: Making this synchronous requires the mapping into user space of
+   ///          the Reset Device Feature List
+   ///
+   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     True if succeeded, False if not. False would imply that transactions
+   ///                did not quiesce within timeout value.
+   ///
+   virtual void afuDisableAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
+
+   /// @brief Re-enable the AFU after a Reset.
+   ///
+   /// Only the Link to this AFU will be enabled.
+   /// It is an error to do anything other than strictly alternate afuDisableAndReset
+   ///    and afuReEnable.
+   ///
+   /// TODO: Making this synchronous requires the mapping into user space of
+   ///          the Reset Device Feature List
+   ///
+   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     True if succeeded, False if not. False would imply that the alternating
+   ///                state machine was not followed.
+   ///
+   virtual void afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
+
+   /// @brief Request the Reset. Convenience function combining other two.
+   ///
+   /// Only the Link to this AFU will be reset.
+   /// By resetting the link, all outstanding transactions will quiesced, the
    ///    processing of memory transactions will be disabled,
    ///    the AFU will be sent a Reset signal,
    ///    and transactions will be re-enabled.
@@ -394,32 +371,15 @@ public:
    /// TODO: Assuming quiesce is destructive, might one not want to split this into
    ///       two parts; Quiesce+Reset, then Enable Link?
    ///
-   /// @param[in]  TranID   Returned in the notification event.
+   /// TODO: Making this synchronous requires the mapping into user space of
+   ///          the Reset Device Feature List
+   ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
    ///
    /// Response is via IALIReset_Client::()
    ///
-   virtual void resetAFU( TransactionID const &TranID,
-		                  NamedValueSet *pOptArgs = NULL) = 0;
+   virtual void afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
 };
-
-/// @brief  Reset Service Client Interface of IALI
-///
-class IALIReset_Client
-{
-public:
-   virtual ~IALIReset_Client() {}
-
-   /// @brief Notification callback for resetAFU.
-   ///
-   /// TODO: We have no way to determine an error, so this is just confirmation.
-   ///       But what if in the future there could be an error. Should this be an IEvent, instead?
-   ///
-   virtual void afuReset( TransactionID const &TranID ) = 0;
-};
-
-
-
 
 // TODO:
 // MAFU: Reconfigure (Deactivate, Activate?)
