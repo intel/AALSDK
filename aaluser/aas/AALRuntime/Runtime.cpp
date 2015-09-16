@@ -50,6 +50,11 @@
 
 BEGIN_NAMESPACE(AAL)
 
+Runtime::Runtime() :
+   m_pImplementation(NULL),
+   m_pClient(NULL)
+{/*empty*/}
+
 //=============================================================================
 /// Constructor of Runtime class
 ///
@@ -58,68 +63,22 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 Runtime::Runtime(IRuntimeClient *pClient) :
 // : Runtime(pClient, true)  //C++11 only
-m_pImplementation(NULL),
-m_status(false),
-m_pClient(pClient)
-
+   m_pImplementation(NULL),
+   m_pClient(pClient)
 {
-   init(pClient, true);
+   init(m_pClient, true);
 }
 
 //=============================================================================
-/// Constructor of Runtime class
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional
+/// Destructor releases all proxies created though this object and releases
+///   the Runtime Instance
 //=============================================================================
-Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
-// : Runtime(pClient, true)  //C++11 only
- m_pImplementation(NULL),
- m_status(false),
- m_pClient(pClient)
+Runtime::~Runtime()
 {
-   init(pClient, bFirstTime);
-}
-
-//=============================================================================
-/// Initializer of Runtime class
-///
-/// Need to call start() after construction to actually get the
-///   runtime initialized and functional
-//=============================================================================
-void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
- {
-   // Must have a RuntimeClient
-   if(NULL == pClient){
-      return;
+   AutoLock(this);
+   if ( IsOK() ) {
+      m_pImplementation->releaseRuntimeInstance(this);
    }
-
-   // Get the Runtime instance
-   m_pImplementation = _getnewRuntimeInstance(this, pClient, bFirstTime);
-
-   // If failed _getnewRuntimeInstance() will generate the message
-   if(NULL == m_pImplementation){
-      return;
-   }
-   m_status = m_pImplementation != NULL ? true : false;
-
-   // Register interfaces
-   // Add the public interfaces
-   if ( SetSubClassInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
-      m_status = false;
-      return;
-   }
-}
-
-//=============================================================================
-/// Checks status of object
-///
-/// @return       true if functional.
-//=============================================================================
-btBool Runtime::IsOK()
-{
-   // If either are bad return false
-   return m_status && m_pImplementation->IsOK();
 }
 
 //=============================================================================
@@ -132,8 +91,9 @@ btBool Runtime::IsOK()
 ///                  typically start() results in a call back to IRuntimeClient
 ///                  runtimeStarted() or runtimeStartFailed().
 //=============================================================================
-btBool  Runtime::start(const NamedValueSet &rConfigParms)
+btBool Runtime::start(const NamedValueSet &rConfigParms)
 {
+   AutoLock(this);
    // Try and start the system
    if ( IsOK() ) {
       return m_pImplementation->start(this, rConfigParms);
@@ -147,6 +107,7 @@ btBool  Runtime::start(const NamedValueSet &rConfigParms)
 //=============================================================================
 void Runtime::stop()
 {
+   AutoLock(this);
    if ( IsOK() ) {
       m_pImplementation->stop(this);
    }
@@ -162,10 +123,11 @@ void Runtime::stop()
 ///                                 or also the runtime client
 /// @return       void
 //=============================================================================
-void Runtime::allocService( IBase                  *pClient,
-                            NamedValueSet const    &rManifest,
-                            TransactionID const    &rTranID)
+void Runtime::allocService(IBase               *pClient,
+                           NamedValueSet const &rManifest,
+                           TransactionID const &rTranID)
 {
+   AutoLock(this);
    if ( IsOK() ) {
       m_pImplementation->allocService(this, pClient, rManifest, rTranID);
    }
@@ -179,10 +141,11 @@ void Runtime::allocService( IBase                  *pClient,
 //=============================================================================
 btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 {
-   if (IsOK()) {
-      m_pImplementation->schedDispatchable(pdispatchable);
+   AutoLock(this);
+   if ( IsOK() ) {
+      return m_pImplementation->schedDispatchable(pdispatchable);
    }
-
+   return false;
 }
 
 //=============================================================================
@@ -191,7 +154,7 @@ btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 /// @param[in]    pClient - Pointer to client for Proxy
 /// @return       void
 //=============================================================================
-IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
+IRuntime * Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 {
    // Create the new proxy storing this as the parent. Last parameter indicates
    //  that this is not the first time
@@ -200,6 +163,19 @@ IRuntime *Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 
    }
    return newProxy;
+}
+
+//=============================================================================
+/// Get a new pointer to the Runtime
+///
+/// @param[in]    pRuntime - Pointer to Proxy to release
+/// @return       true - Success
+//=============================================================================
+btBool Runtime::releaseRuntimeProxy()
+{
+   // Mustn't AutoLock here.
+   delete this;
+   return true;
 }
 
 //=============================================================================
@@ -218,31 +194,73 @@ IRuntimeClient *Runtime::getRuntimeClient()
 }
 
 //=============================================================================
-/// Get a new pointer to the Runtime
+/// Checks status of object
 ///
-/// @param[in]    pRuntime - Pointer to Proxy to release
-/// @return       true - Success
+/// @return       true if functional.
 //=============================================================================
-btBool Runtime::releaseRuntimeProxy()
+btBool Runtime::IsOK()
 {
    AutoLock(this);
 
-   delete this;
-   return true;
+   // If either m_bIsOK is false or we have no implementation, then return false.
+   ASSERT(NULL != m_pImplementation);
+   if ( NULL == m_pImplementation ) {
+      return false;
+   }
+
+   ASSERT(CAASBase::IsOK());
+   ASSERT(m_pImplementation->IsOK());
+   return CAASBase::IsOK() && m_pImplementation->IsOK();
 }
 
 //=============================================================================
-/// Destructor releases all proxies created though this object and releases
-///   the Runtime Instance
+/// Constructor of Runtime class
+///
+/// Need to call start() after construction to actually get the
+///   runtime initialized and functional
 //=============================================================================
-Runtime::~Runtime()
+Runtime::Runtime(IRuntimeClient *pClient, btBool bFirstTime) :
+// : Runtime(pClient, true)  //C++11 only
+   m_pImplementation(NULL),
+   m_pClient(pClient)
 {
-   m_pImplementation->releaseRuntimeInstance(this);
+   init(m_pClient, bFirstTime);
 }
 
+//=============================================================================
+/// Initializer of Runtime class
+///
+/// Need to call start() after construction to actually get the
+///   runtime initialized and functional
+//=============================================================================
+void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
+{
+   // Must have a RuntimeClient
+   ASSERT(NULL != pClient);
+   if ( NULL == pClient ) {
+      return;
+   }
+
+   AutoLock(this);
+
+   // Call the factory method to get the Runtime instance, passing this as the proxy.
+   m_pImplementation = _getnewRuntimeInstance(this, pClient, bFirstTime);
+
+   // If failed, _getnewRuntimeInstance() will generate the message.
+   if ( NULL == m_pImplementation ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   // Register interfaces
+   // Add the public interfaces
+   if ( SetSubClassInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
+}
 
 END_NAMESPACE(AAL)
 
 /// @}
-
 
