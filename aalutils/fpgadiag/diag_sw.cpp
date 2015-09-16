@@ -212,7 +212,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  {
 		  if(Timer() > timeout )
 		  {
-			  res++;
+			  res++; cout << "Error 1 \n";
 			  break;
 		  }
 	  }
@@ -247,7 +247,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  {
 		  if(Timer() > timeout )
 		  {
-			  res++;
+			  res++;cout << "Error 2 \n";
 			  break;
 		  }
 	  }
@@ -282,11 +282,11 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    // Check the device status
    if ( MaxPoll < 0 ) {
 	   cerr << "The maximum timeout for test stop was exceeded." << endl;
-	   ++res;
+	   ++res;cout << "Error 3 \n";
    }
 
    if ( 0 != pAFUDSM->test_error ) {
-	   ++res;
+	   ++res;cout << "Error 4 \n";
    }
 
    // Clean up..

@@ -291,6 +291,8 @@ protected:
    std::string CalcWriteBandwidth(const NLBCmdLine &cmd);
    std::string         Normalized(const NLBCmdLine &cmd) const throw();
 
+   void EnableCSRPrint(bool bEnable, bool bReplay=true);
+
    CMyApp     *m_pMyApp;
    ICCIAFU    *m_pCCIAFU;
    bt32bitCSR  m_QLPCounters[QLP_NUM_COUNTERS];

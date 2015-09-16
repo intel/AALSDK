@@ -49,7 +49,7 @@ static int
 nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
 
-   if ( 0 == strcmp("--help", option) || 0 == strcmp("--h", option)) {
+   if ( 0 == strcmp("--help", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HELP);
    } else if ( 0 == strcmp("--version", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VERSION);
@@ -503,9 +503,9 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
       fprintf(fp, "   --mode=lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
-      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
-      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "   --mode=trput <TARGET> [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
@@ -525,16 +525,27 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
-              nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   if ( 0 == strcasecmp(test.c_str(), "SW")){
+	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1 );
+   } else{
+	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   }
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL) ) {
       fprintf(fp, "%llu\n", nlbcl->begincls);
    } else {
-      fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
+	  fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
    }
 
-   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
-              nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   if ( 0 == strcasecmp(test.c_str(), "SW")){
+	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
+              nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1);
+   }
+   else{
+	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   }
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL) ) {
       fprintf(fp, "%llu\n", nlbcl->endcls);
    } else {
@@ -735,6 +746,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          return false;
       }
 
+      if ( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_sw") ) {
+    	  if ( cmd.begincls > cmd.defaults.maxcls-1) {
+			   os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls-1 << " cache line";
+			   if ( cmd.defaults.maxcls > 1 ) {
+				  os << 's';
+			   }
+			   os << " for --begin." << endl;
+			   return false;
+			}
+      }
       if ( cmd.begincls > cmd.defaults.maxcls ) {
          os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls << " cache line";
          if ( cmd.defaults.maxcls > 1 ) {
@@ -760,6 +781,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          return false;
       }
 
+      if ( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_sw") ) {
+    	  if ( cmd.endcls > cmd.defaults.maxcls-1 ) {
+			   os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls-1 << " cache line";
+			   if ( cmd.defaults.maxcls > 1 ) {
+				  os << 's';
+			   }
+			   os << " for --end." << endl;
+			   return false;
+			}
+      }
       if ( cmd.endcls > cmd.defaults.maxcls ) {
          os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls << " cache line";
          if ( cmd.defaults.maxcls > 1 ) {

@@ -840,6 +840,15 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    return res;
 }
 
+/*void INLB::EnableCSRPrint(bool bEnable, bool bReplay)
+{
+	IQPILinkProtocol *pQLP = m_pFactory->QLPBackDoor();
+
+	   if ( NULL != pQLP ) {
+	      pQLP->EnableCSRPrint(bEnable, bReplay);
+	   }
+}*/
+
 void INLB::ReadQLPCounters()
 {
    btCSRValue perf[2];
