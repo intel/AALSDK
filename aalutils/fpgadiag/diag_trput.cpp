@@ -95,8 +95,11 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_TRPUT|NLB_TEST_MODE_CONT;
-
+   csr_type cfg = (csr_type)NLB_TEST_MODE_TRPUT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
+     {
+       cfg |= (csr_type)NLB_TEST_MODE_CONT;
+     }
    //EnableCSRPrint(flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_CSRS));
 
    //Check for write through mode and add to CSR_CFG
