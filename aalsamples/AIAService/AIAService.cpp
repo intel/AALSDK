@@ -170,9 +170,9 @@ USING_NAMESPACE(AAL)
 // Comments:  This function may be called more than once per process but the
 //            AIAService and its UIDriverClient are singletons per process.
 //=============================================================================
-void AIAService::init( IBase *pclientBase,
-                       NamedValueSet const &optArgs,
-                       TransactionID const &rtid )
+btBool AIAService::init( IBase *pclientBase,
+                         NamedValueSet const &optArgs,
+                         TransactionID const &rtid )
 {
    AutoLock(this);      // Prevent init() reenterancy
    AAL_INFO(LM_UAIA, "AIAService::init. in\n");
@@ -184,15 +184,22 @@ void AIAService::init( IBase *pclientBase,
       m_uida.Open();
       if (!m_uida.IsOK()) {
          m_bIsOK = false;
+#if 0
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                                   Client(),
+                                                                   ServiceClient(),
                                                                    NULL,
                                                                    new CExceptionTransactionEvent( NULL,
                                                                                                   rtid,
                                                                                                   errCreationFailure,
                                                                                                   reasCauseUnknown,
                                                                                                   "AIAService::Init Failed to open UI Driver")));
-         return;
+#endif
+         initFailed( new CExceptionTransactionEvent( NULL,
+                                                     rtid,
+                                                     errCreationFailure,
+                                                     reasCauseUnknown,
+                                                     "AIAService::Init Failed to open UI Driver"));
+         return true;
       }
 
       // Create the Message delivery thread
@@ -222,7 +229,7 @@ void AIAService::init( IBase *pclientBase,
    TransactionID proxyGettid(reinterpret_cast<btApplicationContext>(new TransactionID(rtid)));
    AFUProxyGet(OptArgs(), proxyGettid);
 
-   return;
+   return true;
 }
 
 //=============================================================================
@@ -311,7 +318,7 @@ void AIAService::AFUProxyGet( NamedValueSet const &OptArgs,
 #if 0
    // TODO - NEED TO TUNNEL ORIGINASL TID
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Allocated,
-                                                             Client(),
+                                                             ServiceClient(),
                                                              pServiceBase,
                                                              TransactionID()));
 #endif
@@ -343,7 +350,7 @@ void AIAService::serviceAllocated( IBase *pServiceBase,
    if(NULL != pServiceBase){
       if (false == AFUListAdd(pServiceBase)){
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                                   Client(),
+                                                                   ServiceClient(),
                                                                    NULL,
                                                                    new CExceptionTransactionEvent( NULL,
                                                                                                    rTranID,
@@ -356,7 +363,7 @@ void AIAService::serviceAllocated( IBase *pServiceBase,
       }
       // TODO - NEED TO TUNNEL ORIGINASL TID
       getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Allocated,
-                                                                Client(),
+                                                                ServiceClient(),
                                                                 pServiceBase,
                                                                 TransactionID()));
       AFUListAdd(pServiceBase);
@@ -376,7 +383,7 @@ void AIAService::serviceAllocateFailed(const IEvent &rEvent)
    AutoLock(this);
 
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                             Client(),
+                                                             ServiceClient(),
                                                              NULL,
                                                              &rEvent));
 
@@ -394,7 +401,7 @@ void AIAService::serviceReleased(TransactionID const &rtid)
 
    // TODO Tunnel TID properly
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                             Client(),
+                                                             ServiceClient(),
                                                              NULL,
                                                              rtid));
 }
@@ -410,7 +417,7 @@ void AIAService::serviceReleaseFailed(const IEvent &rEvent)
    AutoLock(this);
 
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
-                                                             Client(),
+                                                             ServiceClient(),
                                                              NULL,
                                                              &rEvent));
 

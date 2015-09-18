@@ -101,9 +101,9 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
                      btTime timeout = AAL_INFINITE_WAIT);
 
       // Hook to allow the object to initialize
-      void init(IBase *pclientBase,
-                NamedValueSet const &optArgs,
-                TransactionID const &rtid);
+      btBool init( IBase *pclientBase,
+                   NamedValueSet const &optArgs,
+                   TransactionID const &rtid);
       // </IAALService>
 
       void AFUProxyRelease(IBase *pAFU);

@@ -99,23 +99,23 @@ btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
       return false;
    }
 
-   // Initialize the Service. It  will issue serviceAllocated or failure.
-   //   If it fails here we cleanup immediately.
-   if(!m_SvcsFact.InitializeService(pNewService,
-                                    Client,
-                                    tranID,
-                                    optArgs)){
+   // Keep track of outstanding transactions so that
+   //  we don't disappear before they are complete.
+   m_pendingcount++;
 
-      // Use the factory to Destroy the uninitialized object
+   // Initialize the Service. It  will issue serviceAllocated or failure.
+   //   When the Service finishes initalization it will indicate in callback
+   //   whether it was successful or not.
+   if( !m_SvcsFact.InitializeService( pNewService,
+                                      Client,
+                                      tranID,
+                                      optArgs)){
+      // If InitializeService fails then this is a severe failure.
+      // An event was not sent. Let upper layers handle the failure.
       m_SvcsFact.DestroyServiceObject(pNewService);
       return false;
-   }else {
-      // Keep track of outstanding transactions so that
-      //  we don't disappear before they are complete.
-      m_pendingcount++;
    }
-
-   return false;
+   return true;
 }
 
 //=============================================================================
@@ -178,15 +178,20 @@ void AALServiceModule::ServiceReleased(IBase *pService)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void AALServiceModule::ServiceInitialized(IBase *pService)
+void AALServiceModule::ServiceInitialized(IBase *pService, btBool bSuccess)
 {
    AutoLock(this);
 
    // Reduce pending count
    m_pendingcount--;
 
-   // Add Service to the List
-   AddToServiceList(pService);
+   if(true == bSuccess){
+      // Add Service to the List
+      AddToServiceList(pService);
+   }else{
+      // Destroy what we created.  Service should have sent notification.
+      m_SvcsFact.DestroyServiceObject(pService);
+   }
 
 }
 

@@ -119,18 +119,24 @@ AAL_END_SVC_MOD()
 /// @{
 
 //=============================================================================
-// Name:
-// Description:
+// Name: init()
+// Description: Initialize the Service
 // Interface: public
-// Inputs:
+// Inputs: pclientBase - Pointer to the IBase for the Service Client
+//         optArgs - Arguments passed to the Service
+//         rtid - Transaction ID
 // Outputs: none.
-// Comments:
+// Comments: Should only return False in case of severe failure that prevents
+//           sending a response or calling initFailed.
 //=============================================================================
-void HelloAALService::init(TransactionID const &TranID)
+btBool HelloAALService::init( IBase *pclientBase,
+                              NamedValueSet const &optArgs,
+                              TransactionID const &rtid)
 {
-   m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, ClientBase());
+   m_pClient = NULL;//dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, pclientBase);
    ASSERT( NULL != m_pClient ); //QUEUE object failed
    if(NULL == m_pClient){
+#if 0
       /// ObjectCreatedExceptionEvent Constructor.
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                                       Client(),
@@ -139,13 +145,22 @@ void HelloAALService::init(TransactionID const &TranID)
                                                                       errBadParameter,
                                                                       reasMissingInterface,
                                                                       "Client did not publish IHelloAALClient Interface"));
-      return;
+#endif
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish IHelloAALClient Interface"));
+      return true;
    }
-
+#if 0
    getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
                                                            Client(),
                                                            dynamic_cast<IBase *>(this),
                                                            TranID) );
+#endif
+   initComplete(rtid);
+   return true;
 }
 
 //=============================================================================

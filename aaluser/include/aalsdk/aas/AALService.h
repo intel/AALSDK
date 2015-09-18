@@ -198,7 +198,8 @@ public:
                         TransactionID const &rtid) = 0;
 
    // Called once when the Service is done initializing.
-   virtual btBool initComplete(TransactionID const &rtid);
+   btBool initComplete(TransactionID const &rtid);
+   btBool initFailed(IEvent const *ptheEvent);
 
    // @param[in]  pclient       Interface of client of service.
    // @param[in]  rtid          TransactionID for routing event responses.

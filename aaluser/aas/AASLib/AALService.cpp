@@ -177,7 +177,7 @@ btBool ServiceBase::_init( IBase               *pclientBase,
                            CAALEvent           *pcmpltEvent)
 {
    //
-   // Save and set the base meber variables
+   // Save and set the base member variables
    if(NULL == pclientBase){
       return false;
    }
@@ -225,6 +225,23 @@ btBool ServiceBase::initComplete(TransactionID const &rtid)
                                                                      ServiceClient(),
                                                                      dynamic_cast<IBase*>(this),
                                                                      rtid));
+}
+
+btBool ServiceBase::initFailed(IEvent const *ptheEvent)
+{
+   btBool ret;
+   ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                                                    ServiceClient(),
+                                                                    dynamic_cast<IBase*>(this),
+                                                                    ptheEvent));
+
+   // Record this Service with the Service Module if one is present
+   if(NULL != pAALServiceModule()){
+      pAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), false);
+   }
+
+   // Notify the client
+   return ret;
 }
 
 btBool ServiceBase::sendmsg()

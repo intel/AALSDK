@@ -330,7 +330,7 @@ public:
 
    /// Callback invoked by the Service to indicate that it has been initialized.
    /// @param[in]  pService  The Service that has been initialized.
-   virtual void ServiceInitialized(IBase *pService) = 0;
+   virtual void ServiceInitialized(IBase *pService, btBool bSuccess =-true) = 0;
 };
 
 
@@ -366,7 +366,7 @@ public:
 
    // <IServiceModuleCallback>
    virtual void ServiceReleased(IBase *pService);
-   virtual void ServiceInitialized(IBase *pService);
+   virtual void ServiceInitialized(IBase *pService, btBool bSuccess=true);
    // </IServiceModuleCallback>
 
    void setRuntime(IRuntime *pRuntime)
