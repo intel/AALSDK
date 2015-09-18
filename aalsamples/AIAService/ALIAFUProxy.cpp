@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,11 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AFUdev.cpp
-/// @brief Implementation of the FAP PIP AFU Device Class. The AFUDev class
-///          is an abstraction of the AFU engine. For the most part it is a
-///          Proxy to the AFU engine.  It abstracts the transport and provides
-///          the marshaling of C++ objects.
+/// @file AFUProxy.cpp
+/// @brief Implementation of the ALI AFUProxy Class. The AFUProxy class
+///          is an abstraction of the AFU.
 /// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -38,33 +36,37 @@
 /// PURPOSE: 
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/28/2009     JG       moved from FAPPIP_AFUdev.h
-/// 02/05/2010     JG       Added workspace cleanup in Destroy
-/// 12/09/2010     HM       Added debug to atomic CSR functions
-///                         Fix offset problem in CAFUDev::CSRMapHandler()
-/// 09/01/2011     JG       Removed use of Proxys@endverbatim
+/// 09/15/2015     JG       Initial version@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
-
-#include "aalsdk/INTCDefs.h"
-#include "aalsdk/uaia/FAPPIP_AFUdev.h"
-#include "aalsdk/faptrans/FAP10.h"
-#include "aalsdk/kernel/ahmpipdefs.h"
 #include "aalsdk/AALLoggerExtern.h"
+
+#include "ALIAFUProxy.h"
+#include "AIA-internal.h"
+
+//#include "aalsdk/INTCDefs.h"
+
+
+
+
+//#include "aalsdk/uaia/IAFUProxy.h"
+//#include "aalsdk/faptrans/FAP10.h"
+//#include "aalsdk/kernel/ahmpipdefs.h"
+
 
 
 BEGIN_NAMESPACE(AAL)
 
 
 //=============================================================================
-// Name: CAFUDev
+// Name: ALIAFUProxy
 // Description: The AFUDev object is the proxy to the physical AFU engine
 //              implementation on a device. It abstracts a session between the
 //              Host AFU and the device through the AIA.
 //
-//              The CAFUDev send messages to the device through ITransaction
+//              The ALIAFUProxy send messages to the device through ITransaction
 //              objects.
 //
 //              The MessageRoute object of the AIASession contains the default
@@ -77,39 +79,21 @@ BEGIN_NAMESPACE(AAL)
 //           AIA session through the OwnerMessageRoute() method and cached in
 //           object.
 //=============================================================================
-CAFUDev::CAFUDev( void * handle,
-                  IuAIASession *pSession)
-: CAALBase( pSession->OwnerMessageRoute().Handler(),
-            pSession->OwnerMessageRoute().Context()),
-  _atomicSetCSR(NULL),
-  _atomicGetCSR(NULL),
-  m_Handle(handle),
-  m_returnAddress(pSession->OwnerMessageRoute()),
-  m_WSM(),
-  m_pSession(pSession),
-  m_csrwritemap(NULL),
-  m_csrwritesize(0),
-  m_csrwrite_item_size(0),
-  m_csrreadmap(NULL),
-  m_csrreadsize(0),
-  m_csrread_item_size(0)
+ALIAFUProxy::ALIAFUProxy( IBase * pAIAbase)
 {
    m_bIsOK = false;         // CAASBase set it to true
 
-   if(SetInterface(iidCAFUDev,dynamic_cast<CAFUDev*>(this))!= EObjOK) {
+   if(SetInterface(iidALIAFUProxy,dynamic_cast<IAFUProxy*>(this))!= EObjOK) {
       return;
    }
 
-   if(SetSubClassInterface(iidAFUDev,dynamic_cast<IAFUDev*>(this))!= EObjOK) {
-      return;
-   }
 
    // Get the message marshaller
    m_AIAMarshaller = m_pSession->ruAIA().GetMarshaller();
    m_bIsOK = true;
 }
 
-CAFUDev::~CAFUDev() {}
+ALIAFUProxy::~ALIAFUProxy() {}
 
 //=============================================================================
 // Name: Initialize
@@ -118,7 +102,7 @@ CAFUDev::~CAFUDev() {}
 // Outputs: none
 // Comments:
 //=============================================================================
-void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID const &rtid )
+void ALIAFUProxy::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID const &rtid )
 {
     // Store the extended bin parameters (TODO bind parms need to be deep copied)
     m_extBindParms = *extBindParmsp;
@@ -128,17 +112,17 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
        // Need to keep track of number of CSR map transactions to wait for.
        unsigned int *pnumEvents = NULL;
 
-       AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI " << m_extBindParms.m_mappableAPI << std::endl);
+       AAL_VERBOSE(LM_AFU, "ALIAFUProxy::Initialize() : m_mappableAPI " << m_extBindParms.m_mappableAPI << std::endl);
 
        // Create the Transaction
        // Send both transactions in parallel
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_CSRREAD ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Read" << std::endl);
+          AAL_VERBOSE(LM_AFU, "ALIAFUProxy::Initialize() : m_mappableAPI Read" << std::endl);
 
           pnumEvents  = new unsigned;
           *pnumEvents = 1;
 
-          struct CAFUDev::wrapper *preadwrap = new CAFUDev::wrapper(this, WSID_CSRMAP_READAREA, rtid, pnumEvents);
+          struct ALIAFUProxy::wrapper *preadwrap = new ALIAFUProxy::wrapper(this, WSID_CSRMAP_READAREA, rtid, pnumEvents);
           TransactionID rdtid(static_cast<btApplicationContext>(preadwrap), _CSRMapHandler, true );
 
           Sig_MapCSRSpace_AFUTransaction MapReadTran( WSID_CSRMAP_READAREA );
@@ -146,7 +130,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
        }
 
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_CSRWRITE ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI Write" << std::endl);
+          AAL_VERBOSE(LM_AFU, "ALIAFUProxy::Initialize() : m_mappableAPI Write" << std::endl);
 
           if ( NULL == pnumEvents ) {
              pnumEvents = new unsigned;
@@ -155,7 +139,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 
           ++(*pnumEvents);
 
-          struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_CSRMAP_WRITEAREA,rtid, pnumEvents);
+          struct ALIAFUProxy::wrapper *pwriterwrap = new ALIAFUProxy::wrapper(this,WSID_CSRMAP_WRITEAREA,rtid, pnumEvents);
           TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
 
           Sig_MapCSRSpace_AFUTransaction MapWriteTran( WSID_CSRMAP_WRITEAREA );
@@ -164,7 +148,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 
 
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_MMIOR ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI MMIO-R" << std::endl);
+          AAL_VERBOSE(LM_AFU, "ALIAFUProxy::Initialize() : m_mappableAPI MMIO-R" << std::endl);
 
           if ( NULL == pnumEvents ) {
              pnumEvents = new unsigned;
@@ -173,7 +157,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 
           ++(*pnumEvents);
 
-          struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_MAP_MMIOR,rtid, pnumEvents);
+          struct ALIAFUProxy::wrapper *pwriterwrap = new ALIAFUProxy::wrapper(this,WSID_MAP_MMIOR,rtid, pnumEvents);
           TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
 
           Sig_MapMMIO_Space_AFUTransaction MapMMIORTran;
@@ -181,7 +165,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
        }
 
        if( m_extBindParms.m_mappableAPI & AAL_DEV_APIMAP_UMSG ) {
-          AAL_VERBOSE(LM_AFU, "CAFUDev::Initialize() : m_mappableAPI UMSG" << std::endl);
+          AAL_VERBOSE(LM_AFU, "ALIAFUProxy::Initialize() : m_mappableAPI UMSG" << std::endl);
 
           if ( NULL == pnumEvents ) {
              pnumEvents = new unsigned;
@@ -190,7 +174,7 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 
           ++(*pnumEvents);
 
-          struct CAFUDev::wrapper *pwriterwrap = new CAFUDev::wrapper(this,WSID_MAP_UMSG,rtid, pnumEvents);
+          struct ALIAFUProxy::wrapper *pwriterwrap = new ALIAFUProxy::wrapper(this,WSID_MAP_UMSG,rtid, pnumEvents);
           TransactionID wrtid(static_cast<btApplicationContext>(pwriterwrap), _CSRMapHandler, true );
 
           Sig_MapUMSGpace_AFUTransaction MapUMSGTran;
@@ -214,9 +198,9 @@ void CAFUDev::Initialize(struct aalui_extbindargs * extBindParmsp, TransactionID
 // Description: Static Event Handler for CSR Map transactions
 // Inputs: none
 // Outputs: none
-// Comments: calls CAFUDev method
+// Comments: calls ALIAFUProxy method
 //=============================================================================
-void CAFUDev::_CSRMapHandler(IEvent const &theEvent)
+void ALIAFUProxy::_CSRMapHandler(IEvent const &theEvent)
 {
    // Check for exception
    if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
@@ -225,7 +209,7 @@ void CAFUDev::_CSRMapHandler(IEvent const &theEvent)
    }
 
    // Get the wrapper from the context of the event's TransactionID
-   struct CAFUDev::wrapper *pwrapper = reinterpret_cast< struct CAFUDev::wrapper *>(dynamic_ref<ITransactionEvent>(iidTranEvent, theEvent).TranID().Context());
+   struct ALIAFUProxy::wrapper *pwrapper = reinterpret_cast< struct ALIAFUProxy::wrapper *>(dynamic_ref<ITransactionEvent>(iidTranEvent, theEvent).TranID().Context());
 
    pwrapper->pafudev->CSRMapHandler(theEvent, pwrapper->id, pwrapper->tid, pwrapper->pnumEvents);
    delete pwrapper;
@@ -240,7 +224,7 @@ void CAFUDev::_CSRMapHandler(IEvent const &theEvent)
 // Comments:
 //=============================================================================
 void
-CAFUDev::CSRMapHandler(IEvent const        &theEvent,
+ALIAFUProxy::CSRMapHandler(IEvent const        &theEvent,
                        btWSID               id,
                        TransactionID const &rtid,
                        btUnsignedInt       *pnumEvents )
@@ -288,12 +272,12 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
       // QPI/PCIe/CCI
       if ((4 == pResult->wsParms.itemsize) && (4 == pResult->wsParms.itemspacing)) {
-         _atomicSetCSR = &CAFUDev::atomicSetCSR_32x4B;
+         _atomicSetCSR = &ALIAFUProxy::atomicSetCSR_32x4B;
          m_csrwritemap = pResult->wsParms.ptr;
       }
       // FSB
       else if ((8 == pResult->wsParms.itemsize) && (128 == pResult->wsParms.itemspacing)) {
-         _atomicSetCSR = &CAFUDev::atomicSetCSR_64x128B;
+         _atomicSetCSR = &ALIAFUProxy::atomicSetCSR_64x128B;
          m_csrwritemap = pResult->wsParms.ptr;
       }
       else {
@@ -303,7 +287,7 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
       m_csrwritesize       = (btUnsigned32bitInt)pResult->wsParms.size;
       m_csrwrite_item_size = (btUnsigned32bitInt)pResult->wsParms.itemsize;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_WRITEAREA initialized" << std::endl);
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::CSRMapHandler() : WSID_CSRMAP_WRITEAREA initialized" << std::endl);
 
    }  // if (id == WSID_CSRMAP_WRITEAREA)
 
@@ -311,12 +295,12 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
       // CCI
       if ((4 == pResult->wsParms.itemsize) && (4 == pResult->wsParms.itemspacing)) {
-         _atomicGetCSR = &CAFUDev::atomicGetCSR_32x4B;
+         _atomicGetCSR = &ALIAFUProxy::atomicGetCSR_32x4B;
          m_csrreadmap  = pResult->wsParms.ptr;
       }
       // FSB/QPI/PCIe
       else if ((8 == pResult->wsParms.itemsize) && (128 == pResult->wsParms.itemspacing)) {
-         _atomicGetCSR = &CAFUDev::atomicGetCSR_64x128B;
+         _atomicGetCSR = &ALIAFUProxy::atomicGetCSR_64x128B;
          m_csrreadmap  = pResult->wsParms.ptr;
       }
       else {
@@ -326,7 +310,7 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
       m_csrreadsize       = (btUnsigned32bitInt)pResult->wsParms.size;
       m_csrread_item_size = (btUnsigned32bitInt)pResult->wsParms.itemsize;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_CSRMAP_READAREA initialized" << std::endl);
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::CSRMapHandler() : WSID_CSRMAP_READAREA initialized" << std::endl);
 
    }  // if (id == WSID_CSRMAP_READAREA)
 
@@ -336,7 +320,7 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
       m_mmiormap  = pResult->wsParms.ptr;
       m_mmiorsize = (btUnsigned32bitInt)pResult->wsParms.size;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_MMIOR initialized" << std::endl);
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::CSRMapHandler() : WSID_MAP_MMIOR initialized" << std::endl);
 
    }  // if (id == WSID_MAP_MMIOR)
 
@@ -346,7 +330,7 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
       m_umsgmap  = pResult->wsParms.ptr;
       m_umsgsize = (btUnsigned32bitInt)pResult->wsParms.size;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_UMSG initialized" << std::endl);
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::CSRMapHandler() : WSID_MAP_UMSG initialized" << std::endl);
 
    }  // if (id == WSID
 
@@ -376,7 +360,7 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 // Outputs: none
 // Comments:
 //=============================================================================
-btEventHandler CAFUDev::Handler()
+btEventHandler ALIAFUProxy::Handler()
 {
    return m_returnAddress.Handler();
 }
@@ -389,7 +373,7 @@ btEventHandler CAFUDev::Handler()
 // Outputs: true - success
 // Comments:
 //=============================================================================
-btBool CAFUDev::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID const &rtid)
+btBool ALIAFUProxy::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID const &rtid)
 {
    // Wrap the message in a AFUTransaction object and have the AIA
    //  marshal it
@@ -405,7 +389,7 @@ btBool CAFUDev::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID cons
 
 // This provides a Direct Mapping from user space to the AFU's registers - very fast
 // NOT YET IMPLEMENTED - PLACEHOLDER, currently returns NULL
-IAFUCSRMap* CAFUDev::GetCSRMAP() { return NULL; }
+IAFUCSRMap* ALIAFUProxy::GetCSRMAP() { return NULL; }
 
 //=============================================================================
 // Name: atomicSetCSR_64x128B
@@ -417,16 +401,16 @@ IAFUCSRMap* CAFUDev::GetCSRMAP() { return NULL; }
 // Comments:  Hardwired CSR size at the moment - Should come from manifest
 //=============================================================================
 btBool
-CAFUDev::atomicSetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt Value )
+ALIAFUProxy::atomicSetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt Value )
 {
    if ((m_csrwritemap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)) {
-      AAL_WARNING(LM_AFU, "CAFUDev::atomicSetCSR_64x128B Abort: Base Address " << (void*)m_csrwritemap <<
+      AAL_WARNING(LM_AFU, "ALIAFUProxy::atomicSetCSR_64x128B Abort: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR << ", Value " << Value <<
                   std::showbase << std::hex << " " << Value << std::endl);
       return false;
    }
    else {
-      AAL_VERBOSE(LM_AFU, "CAFUDev::atomicSetCSR_64x128B: Base Address " << (void*)m_csrwritemap <<
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::atomicSetCSR_64x128B: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<7) <<
                   ", Value " << Value <<
@@ -446,16 +430,16 @@ CAFUDev::atomicSetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt Value )
 // Comments: On failure the returned value is undefined
 //=============================================================================
 btBool
-CAFUDev::atomicGetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
+ALIAFUProxy::atomicGetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 {
    if ((m_csrreadmap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)) {
-      AAL_WARNING(LM_AFU, "CAFUDev::atomicGetCSR_64x128B Abort: Base Address " << (void*)m_csrreadmap <<
+      AAL_WARNING(LM_AFU, "ALIAFUProxy::atomicGetCSR_64x128B Abort: Base Address " << (void*)m_csrreadmap <<
                   ", CSR Index " << CSR << std::endl);
       return false;
    }
    else {
       *pValue = *(reinterpret_cast <btUnsigned64bitInt*> (m_csrreadmap + (CSR << 7)));
-      AAL_VERBOSE(LM_AFU, "CAFUDev::atomicGetCSR_64x128B: Base Address " << (void*)m_csrreadmap <<
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::atomicGetCSR_64x128B: Base Address " << (void*)m_csrreadmap <<
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<7) <<
                   ", Value " << *pValue <<
@@ -474,19 +458,19 @@ CAFUDev::atomicGetCSR_64x128B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 // Outputs: true - success
 // Comments:  Hardwired CSR size at the moment - Should come from manifest
 //=============================================================================
-btBool CAFUDev::atomicSetCSR_32x4B(btUnsignedInt CSR, btUnsigned64bitInt Value)
+btBool ALIAFUProxy::atomicSetCSR_32x4B(btUnsignedInt CSR, btUnsigned64bitInt Value)
 {
 //   if((m_csrwritemap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)){
 // disabling check for AHMPIP_MAX_AFU_CSR_INDEX for now to enable CCI devices.
    if( m_csrwritemap == NULL ) {
-      AAL_WARNING(LM_AFU, "CAFUDev::atomicSetCSR_32x4B Abort: Base Address " << (void*)m_csrwritemap <<
+      AAL_WARNING(LM_AFU, "ALIAFUProxy::atomicSetCSR_32x4B Abort: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR << ", Value " << Value <<
                   std::showbase << std::hex << " " << Value << std::endl);
 //      cout << "Map "<<m_csrwritemap << "CSR index " <<"CSR" <<endl;
       return false;
    }
    else {
-      AAL_VERBOSE(LM_AFU, "CAFUDev::atomicSetCSR_32x4B: Base Address " << (void*)m_csrwritemap <<
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::atomicSetCSR_32x4B: Base Address " << (void*)m_csrwritemap <<
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<2) <<
                   ", Value " << Value <<
@@ -506,12 +490,12 @@ btBool CAFUDev::atomicSetCSR_32x4B(btUnsignedInt CSR, btUnsigned64bitInt Value)
 // Comments: On failure the returned value is undefined
 //=============================================================================
 btBool
-CAFUDev::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
+ALIAFUProxy::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 {
 //   if ((m_csrreadmap == NULL) || (CSR > AHMPIP_MAX_AFU_CSR_INDEX)) {
 // disabling check for AHMPIP_MAX_AFU_CSR_INDEX for now to enable CCI devices.
    if ( m_csrreadmap == NULL ) {
-      AAL_WARNING(LM_AFU, "CAFUDev::atomicGetCSR_32x4B Abort: Base Address " << (void*)m_csrreadmap <<
+      AAL_WARNING(LM_AFU, "ALIAFUProxy::atomicGetCSR_32x4B Abort: Base Address " << (void*)m_csrreadmap <<
                   ", CSR Index " << CSR << std::endl);
       return false;
    } else {
@@ -519,7 +503,7 @@ CAFUDev::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
       tmp     = *( reinterpret_cast<btUnsigned32bitInt*>(m_csrreadmap + (CSR << 2)) );
       *pValue = (btUnsigned64bitInt)tmp;
 
-      AAL_VERBOSE(LM_AFU, "CAFUDev::atomicGetCSR_32x4B: Base Address " << (void*)m_csrreadmap <<
+      AAL_VERBOSE(LM_AFU, "ALIAFUProxy::atomicGetCSR_32x4B: Base Address " << (void*)m_csrreadmap <<
                   ", CSR Index " << CSR <<
                   ", CSR Offset " << (CSR<<2) <<
                   ", Value " << *pValue <<
@@ -538,7 +522,7 @@ CAFUDev::atomicGetCSR_32x4B( btUnsignedInt CSR, btUnsigned64bitInt *pValue )
 // Outputs: true - success
 // Comments: On failure pRet is undefined
 //=============================================================================
-btBool CAFUDev::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
+btBool ALIAFUProxy::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 {
    return m_pSession->ruAIA().MapWSID(Size, wsid, pRet);
 }
@@ -551,7 +535,7 @@ btBool CAFUDev::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 // Outputs: true - success
 // Comments:
 //=============================================================================
-void CAFUDev::UnMapWSID(btVirtAddr ptr, btWSSize Size, btWSID wsid)
+void ALIAFUProxy::UnMapWSID(btVirtAddr ptr, btWSSize Size, btWSID wsid)
 {
 //   void_proxy_call(m_pSession->pAIAProxy(), UnMapWSID(ptr, Size));
    return m_pSession->ruAIA().UnMapWSID(ptr, Size);
@@ -565,7 +549,7 @@ void CAFUDev::UnMapWSID(btVirtAddr ptr, btWSSize Size, btWSID wsid)
 // Outputs: true - success
 // Comments:
 //=============================================================================
-WorkSpaceMapper & CAFUDev::WSM() { return m_WSM; }
+WorkSpaceMapper & ALIAFUProxy::WSM() { return m_WSM; }
 
 
 //=============================================================================
@@ -575,7 +559,7 @@ WorkSpaceMapper & CAFUDev::WSM() { return m_WSM; }
 // Outputs: true - success
 // Comments:
 //=============================================================================
-void CAFUDev::Destroy(TransactionID const &TranID){
+void ALIAFUProxy::Destroy(TransactionID const &TranID){
    // Free all of the allocated workspace memory
    FreeAllWS();
 
@@ -590,7 +574,7 @@ void CAFUDev::Destroy(TransactionID const &TranID){
 // Outputs: none
 // Comments:
 //=============================================================================
-void CAFUDev::FreeAllWS()
+void ALIAFUProxy::FreeAllWS()
 {
 
    // TODO Use the interation function and free Workspace mapper
@@ -624,7 +608,7 @@ void CAFUDev::FreeAllWS()
 // Outputs: handle
 // Comments:
 //=============================================================================
-void * CAFUDev::Handle()
+void * ALIAFUProxy::Handle()
 {
    return m_Handle;
 }

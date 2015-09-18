@@ -74,7 +74,9 @@ public:
       SetSubClassInterface(iidASECCIAFU, dynamic_cast<ICCIAFU *>(this));
    }
 
-   virtual void init(TransactionID const &TranID);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);

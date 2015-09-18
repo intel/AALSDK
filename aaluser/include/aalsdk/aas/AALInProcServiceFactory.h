@@ -103,31 +103,40 @@ public:
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IRuntime            *pRuntime)
    {
-      m_pService = new I(container,pRuntime);
-      if ( NULL == m_pService ) {
+      I *pService = new(std::nothrow) I(container,pRuntime);
+      if ( NULL == pService ) {
          return NULL;
       }
       // Service MUST be derived from IBase
-      return dynamic_cast<IBase*>(m_pService);
+      return dynamic_cast<IBase*>(pService);
    }
 
 
-   btBool InitializeService(IBase               *Client,
+   btBool InitializeService(IBase               *newService,
+                            IBase               *Client,
                             TransactionID const &rtid,
                             NamedValueSet const &optArgs)
    {
-      // Initialize the service
-      IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
-
-      if( NULL == ptr ) {
-         delete m_pService;
-         m_pService = NULL;
-         return false;
+      // Service MUST be of class template parameter I
+      I * pobj =  dynamic_cast<I *>(newService);
+      if(NULL != pobj){
+         return pobj->_init(Client, rtid, optArgs, NULL);
       }
-      return true;
+       // TODO use loggin
+      std::cerr <<"FAILED to dynamic cast object (USING LOGGING)" <<std::endl;
+      return false;
    }
-protected:
-   I *m_pService;
+
+   virtual void DestroyServiceObject(IBase *pServiceBase)
+   {
+      // Service MUST be of class template parameter I
+      I * pobj =  dynamic_cast<I *>(pServiceBase);
+      if(NULL != pobj){
+         delete pobj;
+      }else{
+         std::cerr <<"FALIED TO DELETE (USING LOGGING)" <<std::endl;
+      }
+   }
 };
 
 
@@ -139,44 +148,52 @@ template <typename I>
 class InProcSingletonSvcsFact : public ISvcsFact
 {
 public:
-   InProcSingletonSvcsFact() :
-      m_pService(NULL)
-   {}
+   InProcSingletonSvcsFact()
+   {m_pService = NULL;}
 
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IRuntime            *pRuntime)
-    {
-       // Only crate the new instance if one does not exist
-       if ( NULL == m_pService ) {
+   {
+      // Only crate the new instance if one does not exist
+      if ( NULL == m_pService ) {
 
-          m_pService = new I(container,pRuntime);
-          if ( NULL == m_pService ) {
-             return NULL;
-          }
-          // Service MUST be derived from IBase
-           return dynamic_cast<IBase*>(m_pService);
+         m_pService = new(std::nothrow) I(container,pRuntime);
+         if ( NULL == m_pService ) {
+            return NULL;
+         }
+         // Service MUST be derived from IBase
+         return dynamic_cast<IBase*>(m_pService);
        }
     }
 
-    btBool InitializeService(IBase               *Client,
-                             TransactionID const &rtid,
-                             NamedValueSet const &optArgs)
-     {
-       // Initialize the service
-       IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
+   btBool InitializeService(IBase               *newService,
+                            IBase               *Client,
+                            TransactionID const &rtid,
+                            NamedValueSet const &optArgs)
+   {
 
-       if ( NULL == ptr ) {
+      // Service MUST be of class template parameter I
+      m_pService =  dynamic_cast<I *>(newService);
+      if(NULL != m_pService){
+         return m_pService->_init(Client, rtid, optArgs, NULL);
+      }
+      // TODO use loggin
+      std::cerr <<"FAILED to dynamic cast object (USING LOGGING)" <<std::endl;
+      return false;
+   }
+
+    virtual void DestroyServiceObject(IBase *pServiceBase)
+    {
+       ASSERT(dynamic_cast<I*>(pServiceBase) == m_pService);
+       if(NULL != m_pService){
           delete m_pService;
           m_pService = NULL;
-          return false;
+       }else{
+          std::cerr <<"FALIED TO DELETE (USING LOGGING)" <<std::endl;
        }
-
-       // Return what the service gives
-       return true;
     }
-
 protected:
-   I *m_pService;
+    static I *m_pService;
 };
 
 

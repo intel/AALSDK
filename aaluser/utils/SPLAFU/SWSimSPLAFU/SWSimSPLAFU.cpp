@@ -91,20 +91,22 @@ BEGIN_NAMESPACE(AAL)
 # define CL(x) ((x) * 64)
 #endif // CL
 
-void SWSimSPLAFU::init(TransactionID const &TranID)
+btBool SWSimSPLAFU::init(IBase *pclientBase,
+                         NamedValueSet const &optArgs,
+                         TransactionID const &TranID)
 {
-   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       this,
                                                                       TranID,
                                                                       errBadParameter,
                                                                       reasMissingInterface,
                                                                       "Client did not publish ISPLClient Interface"));
-      return;
+      return false;
    }
 
    m_NextPhys = __PHYS_ADDR_CONST(1) << LOG2_CL;
@@ -151,14 +153,14 @@ void SWSimSPLAFU::init(TransactionID const &TranID)
    Driver_SetAFUDSM();
 
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         Client(),
+                                                                         ServiceClient(),
                                                                          dynamic_cast<IBase *>(this),
                                                                          TranID) );
-   return;
+   return true;
 
 INIT_FAILED:
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                  Client(),
+                                                                                  ServiceClient(),
                                                                                   dynamic_cast<IBase *>(this),
                                                                                   TranID,
                                                                                   ExceptionNumber,
@@ -178,6 +180,7 @@ INIT_FAILED:
       InternalWkspcFree(m_AFUDSM.Virt(), m_AFUDSM);
       m_AFUDSM = WkspcAlloc();
    }
+   return false;
 }
 
 btBool SWSimSPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -262,14 +265,14 @@ void SWSimSPLAFU::WorkspaceAllocate(btWSSize             Length,
                                                                      errAFUWorkSpace,
                                                                      reasAFUNoMemory,
                                                                      "InternalWkspcAlloc failed");
-      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                           pExcept) );
       return;
    }
 
    INFO("alloc " << a);
 
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                   TranID,
                                                                                   a.Virt(),
                                                                                   a.Phys(),
@@ -320,14 +323,14 @@ void SWSimSPLAFU::WorkspaceFree(btVirtAddr           Address,
                                                                      errAFUWorkSpace,
                                                                      reasAFUNoMemory,
                                                                      "no such allocation");
-      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                       pExcept) );
       return;
    }
 
    INFO("free " << a);
 
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                               TranID) );
 }
 
@@ -413,7 +416,7 @@ void SWSimSPLAFU::StartTransactionContext(TransactionID const &TranID,
    if ( NULL == Address ) {
       // The user wants access to the AFU DSM before starting the transaction.
       // We don't actually start the transaction when Address is NULL.
-      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                      TranID,
                                                                                      m_AFUDSM.Virt(),
                                                                                      m_AFUDSM.Size()) );
@@ -421,7 +424,7 @@ void SWSimSPLAFU::StartTransactionContext(TransactionID const &TranID,
    }
 
    if ( Driver_TransStart(TranID, Address, Pollrate) ) {
-      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                      TranID,
                                                                                      m_AFUDSM.Virt(),
                                                                                      m_AFUDSM.Size()) );
@@ -431,7 +434,7 @@ void SWSimSPLAFU::StartTransactionContext(TransactionID const &TranID,
                                                                      errAFUWorkSpace,
                                                                      reasParameterValueInvalid,
                                                                      "Invalid AFU context workspace");
-      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                     pExcept) );
    }
 }
@@ -444,7 +447,7 @@ void SWSimSPLAFU::StopTransactionContext(TransactionID const &TranID)
    // Reset SPL
    Driver_SPLReset();
 
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                   TranID) );
 }
 
@@ -461,7 +464,7 @@ void SWSimSPLAFU::SetContextWorkspace(TransactionID const &TranID,
       goto _SEND_ERR;
    }
 
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                    TranID) );
 
    if ( Driver_TransStart(TranID, Address, Pollrate) ) {
@@ -474,7 +477,7 @@ _SEND_ERR:
                                                                   exNum,
                                                                   exReas,
                                                                   exDescr);
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionFailed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                  pExcept) );
 }
 

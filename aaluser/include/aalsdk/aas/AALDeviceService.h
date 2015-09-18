@@ -134,45 +134,8 @@ public:
 
 
    // <ServiceBase>
-#if 0
-   // Perform any post creation initialization including establishing communications.
-   //
-   // This function is virtual to allow the derived class to hook the
-   // init() routine. Derived classes should call the base
-   // implementation before adding their own functionality.
-   //
-   //  NOTE: Initializing an AFU may involved a multi-state machine. It
-   //  may be necessary for the derived AFU class to be notified when the object
-   //  created event is being sent (and thus the object is about to be allocated).
-   //  The derived class can capture this event by passing its own TransactionID
-   //  with filtering on when it calls this super class function, overriding the
-   //  default handler. It then must forward the event when ready.
-   virtual IBase * _init(btEventHandler       eventHandler,
-                         btApplicationContext context,
-                         TransactionID const &rtid,
-                         NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL)
-   {
-      // Check to see if this is the direct super class of the most derived class
-      if ( NULL != pcmpltEvent ) {
-         // No - save the completion event and post it when our initialization
-         //  completes
-         m_pcmpltEvent = pcmpltEvent;
-         return this;
-      }
 
-      // Call our direct superclass' _init()
-      //  Our real initialization occurs in Doinit() which will be called
-      //  after ServiceBase initializes
-      ServiceBase::_init(eventHandler,
-                         context,
-                         rtid,
-                         optArgs,
-                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
-      return this;
-   }
-#endif
-   virtual IBase * _init(IBase               *pclient,
+   virtual btBool _init( IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL,
@@ -183,17 +146,16 @@ public:
          // No - save the completion event and post it when our initialization
          //  completes
          m_pcmpltEvent = pcmpltEvent;
-         return this;
+         return true;
       }
 
       // Call our direct superclass' _init()
       //  Our real initialization occurs in Doinit() which will be called
       //  after ServiceBase initializes
-      ServiceBase::_init(pclient,
-                         rtid,
-                         optArgs,
-                         new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
-      return this;
+      return ServiceBase::_init( pclient,
+                                 rtid,
+                                 optArgs,
+                                 new InitComplete<DeviceServiceBase>(this, &DeviceServiceBase::Doinit, rtid));
    }
 
 
@@ -289,12 +251,12 @@ private:
    badparm:
       // Post the object created exception
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                    Client(),
-                                                    dynamic_cast<IBase *>(this),
-                                                    rtid,
-                                                    errCreationFailure,
-                                                    reasMissingParameter,
-                                                    "No AIA specified in Config Record."));
+                                                                      ServiceBase::ServiceClient(),
+                                                                      dynamic_cast<IBase *>(this),
+                                                                      rtid,
+                                                                      errCreationFailure,
+                                                                      reasMissingParameter,
+                                                                      "No AIA specified in Config Record."));
    }
   
 
@@ -384,7 +346,7 @@ private:
          PrintExceptionDescription(theEvent);
          // Send the failure event. Unwrap and return the original TrasnactionID from the event
          ObjectCreatedExceptionEvent *pEvent = new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                               Client(),
+                                                                               ServiceBase::ServiceClient(),
                                                                                dynamic_cast<IBase *>(this),
                                                                                UnWrapTransactionIDFromEvent(theEvent),
                                                                                errCreationFailure,
@@ -479,7 +441,7 @@ private:
             // }else{
 
             // Last superclass before most derived so call init()
-            init(origTID);
+            init(ServiceClientBase(), OptArgs(), origTID);
 
          } break;
 

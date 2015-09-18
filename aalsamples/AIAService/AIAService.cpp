@@ -80,22 +80,25 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "aalsdk/AALTypes.h"
-
-#include "aalsdk/AALTransactionID.h"
-
-#include "aalsdk/uaia/FAPPIP_AFUdev.h"
 #include "aalsdk/AALLoggerExtern.h"
 
-#include "aalsdk/kernel/KernelStructs.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"
-
 #include <aalsdk/osal/OSServiceModule.h>
 
 #include "AIA-internal.h"
 #include "aalsdk/Dispatchables.h"
-#include "UIDriverInterfaceAdapter.h"
-#include "aalsdk/CAALEvent.h"
+
+//#include "aalsdk/AALTypes.h"
+
+//#include "aalsdk/AALTransactionID.h"
+
+//#include "aalsdk/uaia/FAPPIP_AFUdev.h"
+
+
+//#include "aalsdk/kernel/KernelStructs.h"
+
+//#include "UIDriverInterfaceAdapter.h"
+//#include "aalsdk/CAALEvent.h"
 
 
 //========================================
@@ -167,8 +170,11 @@ USING_NAMESPACE(AAL)
 // Comments:  This function may be called more than once per process but the
 //            AIAService and its UIDriverClient are singletons per process.
 //=============================================================================
-void AIAService::init( TransactionID const& rtid )
+void AIAService::init( IBase *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid )
 {
+   AutoLock(this);      // Prevent init() reenterancy
    AAL_INFO(LM_UAIA, "AIAService::init. in\n");
 
    //Singleton service already initialized
@@ -202,14 +208,20 @@ void AIAService::init( TransactionID const& rtid )
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
 
-   // TODO MAKE ASYNC - If fails it generates AllocateFailed event so that it can give reason
-   AFUProxyGet(this, OptArgs());
-#if 0
-   // Create the object
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(pCAIA),rtid));
-#endif
+   // The AIA object is responsible for marshaling messages to and from the kernel. It also acts
+   //  as a factory for the AFUProxy, which is the actual Service object presented to the client.
+   // The AFUProxy is used by the client to send and receive messages to and from the AFU. The proxy uses
+   //  the AIA as a transport.
+   //
+   // Allocate an AFU Proxy. The AFU Proxy appears as a Service so will be returned
+   //  via the AIAService::serviceAllocated(). In order to properly forward the response to the caller of init()
+   //  (the client), the original TransactionID must be preserved.  To do that we can store a copy in our own
+   //  TransactionID() as an ApplicationContext. Our TransactionID will be used whiel creating the AFU. When
+   //   we get the serviceAllocated() we can extract it and use it when we forward the serviceAllocated() to the client.
+
+   TransactionID proxyGettid(reinterpret_cast<btApplicationContext>(new TransactionID(rtid)));
+   AFUProxyGet(OptArgs(), proxyGettid);
+
    return;
 }
 
@@ -288,104 +300,119 @@ void AIAService::SemPost()
 // Name: AFUProxyGet()
 // Description: Gets a new Proxy to an AFU
 // Interface: protected
-// Returns: true - success.
+// Returns: none.
+// Comments: The design of the AIA is such that the AFUProxy could be a
+//           separate AAL Service but is currently implemented as an internal
+//           object.
 //=============================================================================
-void AIAService::AFUProxyGet( AIAService *pAIA,
-                              NamedValueSet const &OptArgs)
+void AIAService::AFUProxyGet( NamedValueSet const &OptArgs,
+                              TransactionID const &rtid)
 {
-
+#if 0
+   // TODO - NEED TO TUNNEL ORIGINASL TID
+   getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Allocated,
+                                                             Client(),
+                                                             pServiceBase,
+                                                             TransactionID()));
+#endif
 }
 
+void AIAService::AFUProxyRelease(IBase *pAFUbase)
+{
+   AutoLock(this);
+   AFUListDel(pAFUbase);
+}
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//                              IServiceClient
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 //=============================================================================
-// Name: AFUProxyRecieved()
+// Name: serviceAllocated()
 // Description: Callback from AFUProxyGet is successful
 // Interface: protected
 // Returns: true - success.
 //=============================================================================
-void AIAService::AFUProxyRecieved(IBase *pAFUbase, TransactionID const &rtid)
+void AIAService::serviceAllocated( IBase *pServiceBase,
+                                   TransactionID const &rTranID)
 {
 
-   if(NULL != pAFU){
-      if (false == AFUDeviceMapAdd(pAFUbase)){
+   if(NULL != pServiceBase){
+      if (false == AFUListAdd(pServiceBase)){
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
                                                                    Client(),
                                                                    NULL,
                                                                    new CExceptionTransactionEvent( NULL,
-                                                                                                  rtid,
-                                                                                                  errCreationFailure,
-                                                                                                  reasCauseUnknown,
-                                                                                                  "AIAService::Init unable to store AFU in list.")));
-         AFUProxyRelease(pAFUbase);
+                                                                                                   rTranID,
+                                                                                                   errCreationFailure,
+                                                                                                   reasCauseUnknown,
+                                                                                                   "AIAService::serviceAllocated unable to store AFU in list.")));
+         // Release the AFUProxyRelease(pServiceBase);
          return;
 
       }
+      // TODO - NEED TO TUNNEL ORIGINASL TID
       getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Allocated,
                                                                 Client(),
-                                                                pAFUbase));
-      AFUListAdd(pAFUbase);
+                                                                pServiceBase,
+                                                                TransactionID()));
+      AFUListAdd(pServiceBase);
 
    }
 
 }
 
 //=============================================================================
-// Name: AFUProxyFailed()
+// Name: serviceAllocateFailed()
 // Description: Callback from AFUProxyGet fails
 // Interface: protected
 // Returns: none.
 //=============================================================================
-void AIAService::AFUProxyFailed(IEvent *pEvent)
+void AIAService::serviceAllocateFailed(const IEvent &rEvent)
 {
-   Autolock(this);
+   AutoLock(this);
 
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
                                                              Client(),
                                                              NULL,
-                                                             pEvent));
+                                                             &rEvent));
 
 }
 
 //=============================================================================
-// Name: AFUProxyRelease()
-// Description: Releases Proxy to an AFU
-// Interface: protected
-// Returns: none.
-//=============================================================================
-void AIAService::AFUProxyRelease( IBase *pAFUbase,
-                                  TransactionID const &rtid)
-{
-
-}
-
-//=============================================================================
-// Name: AFUProxyReleased()
-// Description: Callback from AFUProxyRelease is successful
+// Name: serviceReleased()
+// Description: Callback from AFUProxyRelease if successful
 // Interface: protected
 // Returns: true - success.
 //=============================================================================
-void AIAService::AFUProxyReleased(TransactionID const &rtid)
+void AIAService::serviceReleased(TransactionID const &rtid)
 {
-   Autolock(this);
-   AFUListDel(pAFUbase);
+   AutoLock(this);
+
+   // TODO Tunnel TID properly
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
                                                              Client(),
-                                                             pAFUbase));
+                                                             NULL,
+                                                             rtid));
 }
 
 //=============================================================================
-// Name: AFUProxyFailed()
+// Name: serviceReleaseFailed()
 // Description: Callback from AFUProxyRelease fails
 // Interface: protected
 // Returns: true - success.
 //=============================================================================
-void AIAService::AFUProxyFailed(IEvent *pEvent)
+void AIAService::serviceReleaseFailed(const IEvent &rEvent)
 {
-   Autolock(this);
+   AutoLock(this);
 
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
                                                              Client(),
                                                              NULL,
-                                                             pEvent));
+                                                             &rEvent));
 
 }
 
@@ -396,7 +423,7 @@ void AIAService::AFUProxyFailed(IEvent *pEvent)
 // Interface: protected
 // Returns: true - success.
 //=============================================================================
-btBool AIAService::AFUListAdd( IAFUProxy *pAFU)
+btBool AIAService::AFUListAdd( IBase *pAFU)
 {
    {
       AutoLock(this);

@@ -113,14 +113,16 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void CResourceManager::init(TransactionID const &rtid)
+btBool CResourceManager::init( IBase *pclientBase,
+                               NamedValueSet const &optArgs,
+                               TransactionID const &rtid)
 {
    // Save the client interface
-   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ClientBase());
+   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ServiceClientBase());
    if( NULL == m_pResMgrClient ){
       // Sends a Service Client serviceAllocated callback
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       NULL,
                                                                       rtid,
                                                                       errBadParameter,
@@ -133,13 +135,13 @@ void CResourceManager::init(TransactionID const &rtid)
    if ( !m_RMProxy.Open() ) {
       // Sends a Service Client serviceAllocated callback
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       NULL,
                                                                       rtid,
                                                                       errDevice,
                                                                       reasNoDevice,
                                                                       strNoDevice));
-      return;
+      return false;
    }
 
    // Kick off the polling loop on the Proxy
@@ -149,7 +151,7 @@ void CResourceManager::init(TransactionID const &rtid)
    if(NULL == m_pProxyPoll){
       m_RMProxy.Close();
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       NULL,
                                                                       rtid,
                                                                       errInternal,
@@ -157,10 +159,13 @@ void CResourceManager::init(TransactionID const &rtid)
                                                                       "Could not create RM Proxy Poll thread."));
    }
    // Sends a Service Client serviceAllocated callback
+#if 0
    getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(this),
-                                        rtid));
+                                                          ServiceClient(),
+                                                          dynamic_cast<IBase*>(this),
+                                                          rtid));
+#endif
+   initComplete(rtid);
 }
 
 //=============================================================================

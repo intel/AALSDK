@@ -65,27 +65,30 @@ BEGIN_NAMESPACE(AAL)
 
 CriticalSection ASEALIAFU::sm_ASEMtx;
 
-void ASEALIAFU::init(TransactionID const &TranID)
+btBool ASEALIAFU::init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase());
    ASSERT( NULL != pClient );
    if ( NULL == pClient ) {
       /// ObjectCreatedExceptionEvent Constructor.
       getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                       Client(),
+                                                                       ServiceClient(),
                                                                        this,
                                                                        TranID,
                                                                        errBadParameter,
                                                                        reasMissingInterface,
                                                                        "Client did not publish ICCIClient Interface") );
-      return;
+      return false;
    }
 
   session_init();
   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                        Client(),
+                                                                        ServiceClient(),
                                                                         dynamic_cast<IBase *>(this),
                                                                         TranID) );
+  return true;
 }
 
 btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -135,7 +138,7 @@ void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
     goto _SEND_ERR;
   }
 
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                  TranID,
                                                                                  (btVirtAddr)buf.vbase,
                                                                                  (btPhysAddr)buf.fake_paddr,
@@ -148,7 +151,7 @@ void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
                                                                  errAFUWorkSpace,
                                                                  reasAFUNoMemory,
                                                                  descr);
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                       pExcept));
 }
 
@@ -182,7 +185,7 @@ void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
       m_WkspcMap.erase(iter);
    }
 
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                              TranID) );
   return;
 
@@ -192,7 +195,7 @@ void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
                                                                  errAFUWorkSpace,
                                                                  reasAFUNoMemory,
                                                                  descr);
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                   pExcept));
 }
 

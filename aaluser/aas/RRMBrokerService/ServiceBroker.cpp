@@ -76,7 +76,9 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void ServiceBroker::init(TransactionID const &rtid)
+btBool ServiceBroker::init(IBase *pclientBase,
+                           NamedValueSet const &optArgs,
+                           TransactionID const &rtid)
 {
    // The Resource Manager is implemented as an AAL Service however rather
    //  than going through the AALRUNTIME and default broker to aqcuire it
@@ -97,7 +99,7 @@ void ServiceBroker::init(TransactionID const &rtid)
       // Remove pending transaction
       m_Transactions.erase(tid);
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       this,
                                                                       rtid,
                                                                       errServiceNotFound,
@@ -134,7 +136,7 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
    if ( NULL == m_ResMgr ) {
 
       getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                       Client(),
+                                                                       ServiceClient(),
                                                                        this,
                                                                        origTid,
                                                                        errMethodNotImplemented,
@@ -146,7 +148,7 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
    m_bIsOK = true;
 
    getRuntime()->schedDispatchable( new ObjectCreatedEvent(getRuntimeClient(),
-                                                           Client(),
+                                                           ServiceClient(),
                                                            dynamic_cast<IBase *>(this),
                                                            origTid) );
 }
@@ -168,7 +170,7 @@ void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
 
    // If we were unable to load the ResourceManager then we cannot load.
    getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                    Client(),
+                                                                    ServiceClient(),
                                                                     this,
                                                                     origTid,
                                                                     errServiceNotFound,
@@ -195,7 +197,7 @@ void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 
    // Reasource Manager Proxy is gone. Generate the event
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                             Client(),
+                                                             ServiceClient(),
                                                              this,
                                                              tid));
 
@@ -226,7 +228,7 @@ void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
 
    // Notify the client
    getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
-                                                              Client(),
+                                                              ServiceClient(),
                                                               this,
                                                               pcopyEvent) );
 }

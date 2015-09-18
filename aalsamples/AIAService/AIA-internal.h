@@ -39,19 +39,19 @@
 //****************************************************************************
 #ifndef __AALSDK_AIA_INTERNAL_H__
 #define __AALSDK_AIA_INTERNAL_H__
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/osal/OSSemaphore.h>
-#include <aalsdk/osal/CriticalSection.h>
-#include <aalsdk/osal/Thread.h>
-#include <aalsdk/AALBase.h>                        // IBase
-#include <aalsdk/aas/AALServiceModule.h>
+//#include <aalsdk/AALTypes.h>
+//#include <aalsdk/AALTransactionID.h>
+//#include <aalsdk/osal/OSSemaphore.h>
+//#include <aalsdk/osal/CriticalSection.h>
+//#include <aalsdk/osal/Thread.h>
+//#include <aalsdk/AALBase.h>                        // IBase
+//#include <aalsdk/aas/AALServiceModule.h>
+//#include <aalsdk/aas/AALService.h>                 // ServiceBase
+//#include <aalsdk/uaia/AIA.h>                       // AIA interfaces
+//#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
+//#include <aalsdk/uaia/uAIASession.h>               // uAIASession
 #include <aalsdk/aas/AALService.h>                 // ServiceBase
-#include <aalsdk/uaia/AIA.h>                       // AIA interfaces
-#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
-#include <aalsdk/uaia/uAIASession.h>               // uAIASession
-#include <aalsdk/aas/AALService.h>                 // ServiceBase
-#include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
+//#include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
 
 #include <aalsdk/INTCDefs.h>                       // AIA IDs
 
@@ -80,7 +80,7 @@ USING_NAMESPACE(AAL);
 // Description: Implementation of the AFU Interface Adapter Service
 // Comments:
 //=============================================================================
-class UAIA_API AIAService: public AAL::ServiceBase
+class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
 {
    public:
 
@@ -101,20 +101,21 @@ class UAIA_API AIAService: public AAL::ServiceBase
                      btTime timeout = AAL_INFINITE_WAIT);
 
       // Hook to allow the object to initialize
-      void init(TransactionID const &rtid);
+      void init(IBase *pclientBase,
+                NamedValueSet const &optArgs,
+                TransactionID const &rtid);
       // </IAALService>
 
+      void AFUProxyRelease(IBase *pAFU);
+      void SendMessage(IAFUTransaction *pMessage);
 
    protected:
       void SemWait(void);
       void SemPost(void);
 
-      btBool AFUListAdd(IAFUProxy *pAFU);
-      btBool AFUListDel(IAFUProxy *pDev);
-
       void Destroy(void);
 
-      void SendMessage(IAFUTransaction *pMessage);
+
 
       void Process_Event();
 
@@ -126,17 +127,19 @@ class UAIA_API AIAService: public AAL::ServiceBase
                            btTime                   waittime,
                            stTransactionID_t const &rTranID_t);
 
-      void AFUProxyGet(AIAService *pAIA,
-                       NamedValueSet const &Args,
+      // <IServiceClient> - Used to Get Proc
+      void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID());
+      void serviceAllocateFailed(const IEvent &rEvent);
+      void serviceReleased(TransactionID const &rTranID = TransactionID());
+      void serviceReleaseFailed(const IEvent &rEvent);
+      void serviceEvent(const IEvent &rEvent);
+       // </IServiceClient>
+
+      void AFUProxyGet(NamedValueSet const &Args,
                        TransactionID const &rtid);                   // Allocates a Proxy to the AFU
-      void AFUProxyRecieved(IBase *pAFU,TransactionID const &rtid);  // Callback
-      void AFUProxyFailed(IEvent *pEvent);                           // Callback
 
-      void AFUProxyRelease(IBase *pAFUbase,
-                           TransactionID const &rtid);               // Releases a Proxy to the AFU
-      void AFUProxyReleased(IBase *pAFU,TransactionID const &rtid);  // Callback
-      void AFUProxyReleaseFailed(IEvent *pEvent);                    // Callback
-
+      btBool AFUListAdd(IBase *pAFU);
+      btBool AFUListDel(IBase *pDev);
 
       btBool IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
                                         btTime                   timeout);

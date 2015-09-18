@@ -85,20 +85,22 @@ BEGIN_NAMESPACE(AAL)
 # define CL(x) ((x) * 64)
 #endif // CL
 
-void SWSimCCIAFU::init(TransactionID const &TranID)
+btBool SWSimCCIAFU::init(IBase *pclientBase,
+                         NamedValueSet const &optArgs,
+                         TransactionID const &rtid)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       this,
-                                                                      TranID,
+                                                                      rtid,
                                                                       errBadParameter,
                                                                       reasMissingInterface,
                                                                       "Client did not publish ICCIClient Interface"));
-      return;
+      return false;
    }
 
    btInt i;
@@ -123,9 +125,10 @@ void SWSimCCIAFU::init(TransactionID const &TranID)
    m_CSRMap.insert(std::make_pair(CSR_CFG,             CSR(CSR_CFG,             0, false)));
 
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         Client(),
+                                                                         ServiceClient(),
                                                                          dynamic_cast<IBase *>(this),
-                                                                         TranID) );
+                                                                         rtid) );
+   return true;
 }
 
 btBool SWSimCCIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -160,7 +163,7 @@ void SWSimCCIAFU::WorkspaceAllocate(btWSSize             Length,
                                                                      errAFUWorkSpace,
                                                                      reasAFUNoMemory,
                                                                      "new failed");
-      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                           pExcept) );
       return;
    }
@@ -177,7 +180,7 @@ void SWSimCCIAFU::WorkspaceAllocate(btWSSize             Length,
 
    INFO("alloc " << a);
 
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                   TranID,
                                                                                   a.Virt(),
                                                                                   a.Phys(),
@@ -199,7 +202,7 @@ void SWSimCCIAFU::WorkspaceFree(btVirtAddr           Address,
                                                                      errAFUWorkSpace,
                                                                      reasAFUNoMemory,
                                                                      "no such allocation");
-      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+      getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                                       pExcept) );
       return;
    }
@@ -217,7 +220,7 @@ void SWSimCCIAFU::WorkspaceFree(btVirtAddr           Address,
       m_PhysMap.erase(piter);
    }
 
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                                               TranID) );
 }
 

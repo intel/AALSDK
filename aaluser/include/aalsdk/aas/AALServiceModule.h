@@ -266,7 +266,12 @@ public:
    /// @retval  NULL     On failure.
    virtual IBase * CreateServiceObject(AALServiceModule    *container,
                                        IRuntime            *pRuntime) = 0;
-   virtual btBool InitializeService( IBase               *Client,
+
+   // Used to destroy and uninitialized Service Object
+   virtual void DestroyServiceObject(IBase    *pServiceBase) = 0;
+
+   virtual btBool InitializeService( IBase               *newService,
+                                     IBase               *Client,
                                      TransactionID const &rtid,
                                      NamedValueSet const &optArgs) = 0;
 };
@@ -284,19 +289,21 @@ public:
    /// IServiceModule Destructor.
    virtual ~IServiceModule();
 
-   /// Uses ISvcsFact to create the Service object.
-    ///
-    /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
-    ///   object passed in the call may be queried for the desired Service interfaces.
-    /// @param[in]  tid       Optional TransactionID for the event.
-    /// @param[in]  optArgs   Optional Service-specific arguments.
-    ///
-    /// @retval  IBase *  On success.
-    /// @retval  NULL     On failure.
-    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
-                             IBase               *Client,
-                             TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet()) = 0;
+   /// Uses ISvcsFact to create the Service object. Note that success of this function
+   ///  does not guarantee the object creates successfully. It only indicates that the
+   ///  request is being serviced.  Final response is delivered via callback.
+   ///
+   /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
+   ///   object passed in the call may be queried for the desired Service interfaces.
+   /// @param[in]  tid       Optional TransactionID for the event.
+   /// @param[in]  optArgs   Optional Service-specific arguments.
+   ///
+   /// @retval  IBase *  On success.
+   /// @retval  false     On failure.
+   virtual btBool Construct(IRuntime            *pAALRUNTIME,
+                            IBase               *Client,
+                            TransactionID const &tid = TransactionID(),
+                            NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
    /// Forcefully destroy the Service objects created by this module.
    ///
@@ -318,8 +325,12 @@ public:
    /// IServiceModuleCallback Destructor.
    virtual ~IServiceModuleCallback();
    /// Callback invoked by the Service to indicate that it is released.
-   /// @param[in]  pService  The Service being released.
+   /// @param[in]  pService  The Service that has been released.
    virtual void ServiceReleased(IBase *pService) = 0;
+
+   /// Callback invoked by the Service to indicate that it has been initialized.
+   /// @param[in]  pService  The Service that has been initialized.
+   virtual void ServiceInitialized(IBase *pService) = 0;
 };
 
 
@@ -345,18 +356,17 @@ public:
 
    // <IServiceModule>
 
-    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
-                             IBase               *Client,
-                             TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet());
+    virtual btBool Construct( IRuntime            *pAALRUNTIME,
+                              IBase               *Client,
+                              TransactionID const &tid = TransactionID(),
+                              NamedValueSet const &optArgs = NamedValueSet());
    virtual void Destroy();
 
    // </IServiceModule>
 
    // <IServiceModuleCallback>
-
    virtual void ServiceReleased(IBase *pService);
-
+   virtual void ServiceInitialized(IBase *pService);
    // </IServiceModuleCallback>
 
    void setRuntime(IRuntime *pRuntime)
@@ -430,7 +440,6 @@ protected:
    typedef std::map<IBase *, IBase *>                 list_type;
    typedef std::map<IBase *, IBase *>::const_iterator const_iterator;
 
-   IBase                *m_pBase;
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4251)
@@ -440,7 +449,7 @@ protected:
 # pragma warning(pop)
 #endif // _MSC_VER
    IAALService                            *m_pService;
-   btUnsignedInt                           m_refcount; // TODO use CCountedObject
+   btUnsignedInt                           m_pendingcount;
 
    IRuntime                               *m_Runtime;
    IRuntimeClient                         *m_RuntimeClient;

@@ -274,7 +274,7 @@ void HWAFUWkspcDelegate<mode>::WkspcAlloc(btWSSize             Length,
                                                                      reasAFUNoMemory,
                                                                      "AFUTran validity check failed");
       getRuntime()->schedDispatchable(
-         new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+         new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                             pExcept)
 
              );
@@ -307,7 +307,7 @@ void HWAFUWkspcDelegate<mode>::WkspcFree(btVirtAddr           Address,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
       getRuntime()->schedDispatchable(
-         new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+         new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase()),
                                                         pExcept)
              );
    }
@@ -370,7 +370,7 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory allocation
 
       // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->ServiceClientBase()),
                                                                                            OrigTranID,
                                                                                            pResult->wsParms.ptr,
                                                                                            pResult->wsParms.physptr,
@@ -390,7 +390,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ServiceClientBase()),
                                                                                                                      pExcept) );
 }
 
@@ -451,7 +451,7 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory free
 
       // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ServiceClientBase()),
                                                                                        OrigTranID) );
 
    } else {    // error during free
@@ -468,7 +468,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ServiceClientBase()),
                                                                                          pExcept) );
 }
 

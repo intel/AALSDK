@@ -66,20 +66,22 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup SPLAFU
 /// @{
 
-void SPLAFU::init(TransactionID const &TranID)
+btBool SPLAFU::init( IBase *pclientBase,
+                     NamedValueSet const &optArgs,
+                     TransactionID const &TranID)
 {
-   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
+                                                                      ServiceClient(),
                                                                       this,
                                                                       TranID,
                                                                       errBadParameter,
                                                                       reasMissingInterface,
                                                                       "Client did not publish ISPLClient Interface"));
-      return;
+      return false;
    }
 
    // Default target is hardware AFU.
@@ -101,6 +103,7 @@ void SPLAFU::init(TransactionID const &TranID)
    // TODO Use wrap/unwrap utils.
    m_TranIDFrominit = TranID;
    allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID());
+   return true;
 }
 
 btBool SPLAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -150,7 +153,7 @@ void SPLAFU::serviceAllocated(IBase               *pServiceBase,
    }
 
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         Client(),
+                                                                         ServiceClient(),
                                                                          dynamic_cast<IBase *>(this),
                                                                          m_TranIDFrominit) );
 }
@@ -160,7 +163,7 @@ void SPLAFU::serviceAllocateFailed(const IEvent &Event)
    // Reflect the error to the outer client.
    // TODO extract the Exception info and put in this event
    getRuntime()->schedDispatchable( new (std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                   Client(),
+                                                                                   ServiceClient(),
                                                                                    dynamic_cast<IBase *>(this),
                                                                                    m_TranIDFrominit,
                                                                                    errInternal,
@@ -180,7 +183,7 @@ void SPLAFU::serviceReleaseFailed(const IEvent &Event)
    // Reflect the error to the outer client.
    // TODO extract the Exception info and put in this event
    getRuntime()->schedDispatchable( new (std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                   Client(),
+                                                                                   ServiceClient(),
                                                                                    dynamic_cast<IBase *>(this),
                                                                                    m_TranIDFrominit,
                                                                                    errInternal,
@@ -192,7 +195,7 @@ void SPLAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
    getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
-                                                                            Client(),
+                                                                            ServiceClient(),
                                                                             dynamic_cast<IBase *>(this),
                                                                             &Event) );
 }
@@ -255,7 +258,7 @@ void SPLAFU::OnWorkspaceAllocated(TransactionID const &TranID,
                                   btWSSize             WkspcSize)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                   TranID,
                                                                                   WkspcVirt,
                                                                                   WkspcPhys,
@@ -265,7 +268,7 @@ void SPLAFU::OnWorkspaceAllocated(TransactionID const &TranID,
 void SPLAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase());
    ASSERT(NULL != pClient);
    if ( NULL != pClient ) {
       pClient->OnWorkspaceAllocateFailed(Event);
@@ -275,14 +278,14 @@ void SPLAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 void SPLAFU::OnWorkspaceFreed(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                               TranID) );
 }
 
 void SPLAFU::OnWorkspaceFreeFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase());
    ASSERT(NULL != pClient);
    if ( NULL != pClient ) {
       pClient->OnWorkspaceFreeFailed(Event);
@@ -294,7 +297,7 @@ void SPLAFU::OnTransactionStarted(TransactionID const &TranID,
                                   btWSSize             AFUDSMSize)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStarted(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                   TranID,
                                                                                   AFUDSM,
                                                                                   AFUDSMSize) );
@@ -303,14 +306,14 @@ void SPLAFU::OnTransactionStarted(TransactionID const &TranID,
 void SPLAFU::OnContextWorkspaceSet(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientContextWorkspaceSet(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                    TranID) );
 }
 
 void SPLAFU::OnTransactionFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase());
+   ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase());
    ASSERT(NULL != pClient);
    if ( NULL != pClient ) {
       pClient->OnTransactionFailed(Event);
@@ -320,14 +323,14 @@ void SPLAFU::OnTransactionFailed(const IEvent &Event)
 void SPLAFU::OnTransactionComplete(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionComplete(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionComplete(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                    TranID) );
 }
 
 void SPLAFU::OnTransactionStopped(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) SPLClientTransactionStopped(dynamic_ptr<ISPLClient>(iidSPLClient, ServiceClientBase()),
                                                                                   TranID) );
 }
 

@@ -25,7 +25,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file AALServiceModule.cpp
-/// @brief AALServiceModule implementation.
+/// @brief AALServiceModule implementation.  The AAL Service Module is an
+///        object embedded in the Service Library that:
+///        - Implements interface to outside for Service Construction
+///        - Keeps track of all Services constructed through it.
+///        - NOTE: Some Services may expose more objects than are tracked by
+///                the ServiceModule. For example a singleton Service may
+///                expose smart pointers or Proxies to allow the singleton to
+///                to be shared. This type service may appear as 1 Service.
+///                It is up to the Service to track these sub-objects.
 /// @ingroup Services
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -35,7 +43,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 01/22/2013     TSW      Moving C++ inlined definitions to .cpp file@endverbatim
+/// 01/22/2013     TSW      Moving C++ inlined definitions to .cpp file
+/// 09/15/2015     JG       Redesigned to fix flow bugs@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -55,46 +64,68 @@ ISvcsFact::~ISvcsFact() {}
 IServiceModule::~IServiceModule() {}
 IServiceModuleCallback::~IServiceModuleCallback() {}
 
+//=============================================================================
+// Name: AALServiceModule()
+// Description: Constructor
+//=============================================================================
 AALServiceModule::AALServiceModule(ISvcsFact &fact) :
    CAASBase(),
-   m_pBase(NULL),
    m_pService(NULL),
-   m_refcount(0),
+   m_pendingcount(0),
    m_SvcsFact(fact)
 {
    SetInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this));
 }
 
+//=============================================================================
+// Name: ~AALServiceModule()
+// Description: Destructor
+//=============================================================================
 AALServiceModule::~AALServiceModule() {}
 
-IBase *AALServiceModule::Construct(IRuntime           *pAALRuntime,
+btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
                                    IBase              *Client,
                                    TransactionID const &tranID,
                                    NamedValueSet const &optArgs)
 {
-   // Add this one to the list of objects this container holds.
-   //  It's up to the factory to enforce singletons.
-   // Add the Service to the Module List before the Service can start
 
-   AutoLock(this);      // Lock to protect the AddtoList.  The serviceAllocated can come at anytime
+   AutoLock(this);
 
-   m_pBase = m_SvcsFact.CreateServiceObject(this,
-                                            pAALRuntime);
+   // Create the actual object
+   IBase *pNewService = m_SvcsFact.CreateServiceObject( this,
+                                                        pAALRuntime);
    // Add the service to the list of services the module
-   if ( NULL != m_pBase ) {
-      AddToServiceList(m_pBase);
-
-      // Service will issue serviceAllocated now or fail
-      if(!m_SvcsFact.InitializeService(Client,
-                                       tranID,
-                                       optArgs)){
-         RemovefromServiceList(m_pBase);
-         m_pBase = NULL;
-      }
+   if ( NULL == pNewService ) {
+      return false;
    }
-   return m_pBase;
+
+   // Initialize the Service. It  will issue serviceAllocated or failure.
+   //   If it fails here we cleanup immediately.
+   if(!m_SvcsFact.InitializeService(pNewService,
+                                    Client,
+                                    tranID,
+                                    optArgs)){
+
+      // Use the factory to Destroy the uninitialized object
+      m_SvcsFact.DestroyServiceObject(pNewService);
+      return false;
+   }else {
+      // Keep track of outstanding transactions so that
+      //  we don't disappear before they are complete.
+      m_pendingcount++;
+   }
+
+   return false;
 }
 
+//=============================================================================
+// Name: Destroy()
+// Description: Destroy all registered Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
 void AALServiceModule::Destroy()
 {
    // Protect the counter calculation
@@ -124,12 +155,49 @@ void AALServiceModule::Destroy()
    m_srvcCount.Wait();
 }
 
+//=============================================================================
+// Name: ServiceReleased()
+// Description: Callback invoked when a Servcie has been released
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
 void AALServiceModule::ServiceReleased(IBase *pService)
 {
    AutoLock(this);
    RemovefromServiceList(pService);
 }
 
+//=============================================================================
+// Name: ServiceInitialized()
+// Description: Callback invoked when the Service has been successfully
+//              initialized
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
+void AALServiceModule::ServiceInitialized(IBase *pService)
+{
+   AutoLock(this);
+
+   // Reduce pending count
+   m_pendingcount--;
+
+   // Add Service to the List
+   AddToServiceList(pService);
+
+}
+
+//=============================================================================
+// Name: AddToServiceList()
+// Description: Add a Service to the list of constructed Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
 btBool AALServiceModule::AddToServiceList(IBase *pService)
 {
    AutoLock(this);
@@ -142,6 +210,14 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
    return true;
 }
 
+//=============================================================================
+// Name: RemovefromServiceList()
+// Description: Remove a Released Service
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
 btBool AALServiceModule::RemovefromServiceList(IBase *pService)
 {
    AutoLock(this);
@@ -158,6 +234,14 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    return true;
 }
 
+//=============================================================================
+// Name: ServiceInstanceRegistered()
+// Description: Determine if the Service has already been registered
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
 btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 {
    AutoLock(this);
@@ -172,6 +256,14 @@ btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
    return true;
 }
 
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
 void AALServiceModule::SendReleaseToAll()
 {
    AutoLock(this);   // Lock until done issuing releases

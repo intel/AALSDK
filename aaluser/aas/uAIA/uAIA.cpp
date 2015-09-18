@@ -217,7 +217,9 @@ UIDriverClientEvent & UIDriverClientEvent::operator = (const UIDriverClientEvent
 // Comments:  This function may be called more than once per process but the
 //            uAIA and its UIDriverClient are singletons per process.
 //=============================================================================
-void uAIA::init( TransactionID const& rtid )
+btBool uAIA::init(IBase *pclientBase,
+                  NamedValueSet const &optArgs,
+                  TransactionID const &rtid)
 {
    AAL_INFO(LM_UAIA, "uAIA::Create. in\n");
 
@@ -226,7 +228,7 @@ void uAIA::init( TransactionID const& rtid )
    pCAIA->SetuAIA(this);
 
    //pCAIA->_init(Handler(), Context(), rtid, OptArgs());
-   pCAIA->init(rtid);
+   pCAIA->init(pclientBase,optArgs,rtid);
 
    //Singleton service already initialized
    if(!m_bIsOK){
@@ -238,14 +240,14 @@ void uAIA::init( TransactionID const& rtid )
       if (!m_pUIDC->IsOK()) {
          m_bIsOK = false;
          getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                        Client(),
+                                                        ServiceClient(),
                                                         dynamic_cast<IBase*>(this),
                                                         rtid,
                                                         errCreationFailure,
                                                         reasCauseUnknown,
                                                         "Failed to open UI Driver"));
 
-         return;
+         return false;
       }
 
       // Create the Message delivery thread
@@ -262,9 +264,9 @@ void uAIA::init( TransactionID const& rtid )
    }
    // Create the object
    getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
+                                        ServiceClient(),
                                         dynamic_cast<IBase*>(pCAIA),rtid));
-   return;
+   return true;
 }
 
 //=============================================================================

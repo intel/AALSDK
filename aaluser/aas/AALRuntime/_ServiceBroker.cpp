@@ -79,13 +79,11 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void _ServiceBroker::init(TransactionID const &rtid)
+btBool _ServiceBroker::init( IBase *pclientBase,
+                             NamedValueSet const &optArgs,
+                             TransactionID const &rtid)
 {
-   // Sends a Service Client serviceAllocated callback
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
-                                                           Client(),
-                                                           dynamic_cast<IBase*>(this),
-                                                           rtid));
+   return initComplete(rtid);
 }
 
 //=============================================================================
@@ -370,7 +368,7 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
       } else {
          // Generate the callback and finish the cleanup (performed in the Dispatchable)
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                   Client(),
+                                                                   ServiceClient(),
                                                                    this,
                                                                    rTranID));
 
