@@ -297,27 +297,33 @@ public:
    /// @note One needs to ensure that the operations being measured would not cause
    ///    a 64-bit wrap.
    ///
-   /// @param[out]  pResult   Returns the Performance Counter Values defined below.
+   /// @param[out]  ppResult  Returns the Performance Counter Values defined below.
+   ///                           NULL if a problem.
    /// @param[in]   pOptArgs  Pointer to Optional Arguments if needed. Defaults to NULL.
    ///
-   /// #define AALPERF_DATATYPE  		btUnsigned64bitInt
-   /// #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
-   ///   etc.
+   #define AALPERF_DATATYPE         btUnsigned64bitInt
+   #define AALPERF_VERSION          "Version"           // Start with Version 0
+   #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
+   #define AALPERF_PORT0_WRITE_HIT  "Port0_Write_Hit"
+   #define AALPERF_PORT0_READ_MISS  "Port0_Read_Miss"
+   #define AALPERF_PORT0_WRITE_MISS "Port0_Write_Miss"
+   #define AALPERF_PORT0_EVICTIONS  "Port0_Evictions"
+   #define AALPERF_PORT1_READ_HIT   "Port1_Read_Hit"
+   #define AALPERF_PORT1_WRITE_HIT  "Port1_Write_Hit"
+   #define AALPERF_PORT1_READ_MISS  "Port1_Read_Miss"
+   #define AALPERF_PORT1_WRITE_MISS "Port1_Write_Miss"
+   #define AALPERF_PORT1_EVICTIONS  "Port1_Evictions"
    ///
-   /// Here is what is known so far:
-   ///   Port0_Read_Hit
-   ///   Port0_Write_Hit
-   ///   Port0_Read_Miss
-   ///   Port0_Write_Miss
-   ///   Port0_Evictions
-   ///   Port1_Read_Hit
-   ///   Port1_Write_Hit
-   ///   Port1_Read_Miss
-   ///   Port1_Write_Miss
-   ///   Port1_Evictions
-   ///
-   virtual btBool performanceCountersGet ( INamedValueSet *pResult,
-                                           NamedValueSet const *pOptArgs = NULL) = 0;
+   /// @code
+   /// INamedValueSet const *pResult = NULL;
+   /// performanceCountersGet( &pResult );
+   /// if ( NULL != pResult ) {
+   ///    // retrieve results
+   /// }
+   /// @endcode
+
+   virtual void performanceCountersGet ( INamedValueSet const **ppResult,
+                                         NamedValueSet const  *pOptArgs = NULL) = 0;
 };
 
 /// @brief  Reset the AFU Link Interface to this AFU
@@ -358,18 +364,18 @@ public:
    ///
    virtual void afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
 
-   /// @brief Request the Reset. Convenience function combining other two.
+   /// @brief Request a complete Reset. Convenience function combining other two.
    ///
-   /// Only the Link to this AFU will be reset.
+   /// The Link to this AFU will be reset.
    /// By resetting the link, all outstanding transactions will quiesced, the
    ///    processing of memory transactions will be disabled,
    ///    the AFU will be sent a Reset signal,
    ///    and transactions will be re-enabled.
-   /// TODO: Is there a positive affirmation of AFU Reset, now that DSM is gone?
+   /// TODO: Is there a positive affirmation of AFU Reset, now that DSM is gone? [Yes]
    /// TODO: Check that quiescence is destructive. E.g., one could could not
-   ///       quiesce/enable without destroying state. Thus the need for reset. Correct?
+   ///       quiesce/enable without destroying state. Thus the need for reset. Correct? [Yes]
    /// TODO: Assuming quiesce is destructive, might one not want to split this into
-   ///       two parts; Quiesce+Reset, then Enable Link?
+   ///       two parts; Quiesce+Reset, then Enable Link? [Yes]
    ///
    /// TODO: Making this synchronous requires the mapping into user space of
    ///          the Reset Device Feature List
