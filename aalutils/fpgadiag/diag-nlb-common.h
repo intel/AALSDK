@@ -48,11 +48,12 @@ BEGIN_C_DECLS
 
 #define HIGH 0xffffffff
 
-# define NLB_TESTMODE_LPBK1 "TestMode_lpbk1"
-# define NLB_TESTMODE_READ  "TestMode_read"
-# define NLB_TESTMODE_WRITE "TestMode_write"
-# define NLB_TESTMODE_TRPUT "TestMode_trput"
-# define NLB_TESTMODE_SW    "TestMode_sw"
+# define NLB_TESTMODE_LPBK1 	 "TestMode_lpbk1"
+# define NLB_TESTMODE_READ  	 "TestMode_read"
+# define NLB_TESTMODE_WRITE 	 "TestMode_write"
+# define NLB_TESTMODE_TRPUT 	 "TestMode_trput"
+# define NLB_TESTMODE_SW    	 "TestMode_sw"
+# define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
 
 struct NLBDefaults
 {
@@ -90,6 +91,11 @@ struct NLBDefaults
    const char     *csr_write;
    const char     *umsg_data;
    const char     *umsg_hint;
+
+   const char     *auto_ch;
+   const char     *qpi;
+   const char     *pcie0;
+   const char     *pcie1;
 };
 
 struct NLBBandwidth
@@ -114,7 +120,7 @@ struct NLBBandwidth
 struct NLBCmdLine
 {
    const char              *copyright;
-   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "LPBK2", "LPBK3", "SW1"
+   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "LPBK2", "LPBK3", "SW1", "CCIP-LPBK1"
    const char              *title;
    u64_type                 cmdflags;
 #define NLB_CMD_PARSE_ERROR       		(u64_type)0x00000001  /* Command parser error, invalid option, etc.                       */
@@ -168,6 +174,11 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  /* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	  */
 
 #define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							      */
+
+#define NLB_CMD_FLAG_AUTO_CH			(u64_type)0x2000000000 /* --auto-ch			Distribute data among QPI, PCIe0 and PCIe1 channels    */
+#define NLB_CMD_FLAG_QPI				(u64_type)0x4000000000 /* --qpi			    Data transferred on QPI channel						   */
+#define NLB_CMD_FLAG_PCIE0				(u64_type)0x8000000000 /* --pcie0		    Data transferred on PCIe0  channel					   */
+#define NLB_CMD_FLAG_PCIE1				(u64_type)0x10000000000/* --pcie1		    Data transferred on PCIe1  channel			   	       */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */
