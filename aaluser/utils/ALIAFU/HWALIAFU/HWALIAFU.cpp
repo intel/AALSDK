@@ -259,22 +259,17 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 //
 // mmioGetAddress. Return address of MMIO space.
 //
-// FIXME: not implemented
-//
 btVirtAddr HWALIAFU::mmioGetAddress( void )
 {
-	return NULL;	// FIXME
+	return AFUDev().getMMIOR();
 }
 
 //
 // mmioGetLength. Return length of MMIO space.
 //
-// FIXME: not implemented
-//
 btCSROffset HWALIAFU::mmioGetLength( void )
 {
-	return 0;	// FIXME
-
+	return AFUDev().getMMIORsize();
 }
 
 //
@@ -416,7 +411,7 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
 }
 
 //
-// bufferGetIOVA. Retrieve IO Virtual Address from a virtual address.
+// bufferGetIOVA. Retrieve IO Virtual Address for a virtual address.
 //
 // FIXME: not implemented.
 //
