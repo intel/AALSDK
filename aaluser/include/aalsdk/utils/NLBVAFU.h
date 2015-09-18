@@ -50,11 +50,12 @@
 
 BEGIN_NAMESPACE(AAL)
 
-#define MAX_NLB_LPBK1_WKSPC       CL(16384)
-#define MAX_NLB_READ_WKSPC        CL(16384)
-#define MAX_NLB_WRITE_WKSPC       CL(16384)
-#define MAX_NLB_TRPUT_WKSPC       CL(16384)
-#define MAX_NLB_SW_WKSPC          CL(16384)
+#define MAX_NLB_LPBK1_WKSPC       CL(65536)
+#define MAX_NLB_READ_WKSPC        CL(65536)
+#define MAX_NLB_WRITE_WKSPC       CL(65536)
+#define MAX_NLB_TRPUT_WKSPC       CL(65536)
+#define MAX_NLB_SW_WKSPC          CL(65535)
+#define MAX_NLB_CCIP_LPBK1_WKSPC  CL(65535)
 #define NLB_DSM_SIZE              MB(4)
 #define NUM_UMSGS				  32
 #define MAX_UMSG_SIZE        	  CL(64*NUM_UMSGS)
@@ -105,6 +106,10 @@ BEGIN_NAMESPACE(AAL)
 #	define NLB_TEST_MODE_CSR_WRITE  0x4000000
 #	define NLB_TEST_MODE_UMSG_DATA  0x8000000
 #	define NLB_TEST_MODE_UMSG_HINT  0xc000000
+#	define NLB_TEST_MODE_AUTO_CH	0x0000
+#	define NLB_TEST_MODE_QPI		0x1000
+#	define NLB_TEST_MODE_PCIE0		0x2000
+#	define NLB_TEST_MODE_PCIE1		0x3000
 
 
 typedef struct _nlb_vafu_dsm

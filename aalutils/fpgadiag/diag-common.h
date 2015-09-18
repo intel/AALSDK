@@ -244,7 +244,7 @@ public:
 
 protected:
    std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
-   std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT or SW).
+   std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
    CMyCCIClient m_CCIClient; ///< The ICCIClient used to communicate with the allocated Service.
    IRuntime    *m_pRuntime;
    IAALService *m_pAALService;
@@ -348,7 +348,17 @@ class CNLBSW : public INLB
 public:
 	CNLBSW(CMyApp *pMyApp) :
       INLB(pMyApp)
-   {}
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
+
+class CNLBCcipLpbk1 : public INLB
+{
+public:
+	CNLBCcipLpbk1(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
    virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
