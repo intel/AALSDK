@@ -44,10 +44,14 @@
 //****************************************************************************
 #ifndef __HWALIAFU_H__
 #define __HWALIAFU_H__
+#include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/HWALIAFUService.h>
+#include <aalsdk/aas/AALDeviceService.h>
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ICCIClient.h>
+#include <aalsdk/faptrans/FAP10.h>              // WkSp_Single_Allocate_AFUTransaction
+#include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
+#include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
 
 BEGIN_NAMESPACE(AAL)
 
@@ -64,41 +68,70 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// HWALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_FPGA)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class HWALIAFU_API HWALIAFU : public HWAFUWkspcDelegate<MASTER_VIRT_MODE>,
-                                  public IALIAFU
+class HWALIAFU_API HWALIAFU : public DeviceServiceBase,
+                              public IALIMMIO,
+                              public IALIBuffer,
+                              public IALIUMsg,
+                              public IALIReset/*
+                              public IALIPerf*/
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 public:
    // <DeviceServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, DeviceServiceBase)
    {
-      SetInterface(        iidALIAFU,   dynamic_cast<IALIAFU *>(this));
-      SetSubClassInterface(iidHWALIAFU, dynamic_cast<IALIAFU *>(this));
+	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
+      SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
+      SetInterface(        iidALI_UMSG_Service,   dynamic_cast<IALIUMsg *>(this));
+      SetInterface(        iidALI_BUFF_Service,   dynamic_cast<IALIBuffer *>(this));
+//      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
+      SetInterface(        iidALI_RSET_Service,   dynamic_cast<IALIReset *>(this));
+//      SetSubClassInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this));	// FIXME: subclass interfaces deprecated
    }
 
    virtual void init(TransactionID const &TranID);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
+//   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </DeviceServiceBase>
 
-   // <IALIAFU>
-   virtual void WorkspaceAllocate(btWSSize             Length,
-                                  TransactionID const &TranID);
+   // <IALIMMIO>
+   virtual btVirtAddr   mmioGetAddress( void );
+   virtual btCSROffset  mmioGetLength( void );
 
-   virtual void     WorkspaceFree(btVirtAddr           Address,
-                                  TransactionID const &TranID);
+   virtual btBool   mmioRead32( const btCSROffset Offset,       btUnsigned32bitInt * const pValue);
+   virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
+   virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
+   virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   // </IALIMMIO>
 
-   virtual btBool         CSRRead(btCSROffset CSR,
-                                  btCSRValue *pValue);
+   // <IALIBuffer>
+   virtual void bufferAllocate( btWSSize             Length,
+                                TransactionID const &TranID,
+                                NamedValueSet       *pOptArgs = NULL );
+   virtual void     bufferFree( btVirtAddr           Address,
+                                TransactionID const &TranID);
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
+   // </IALIBuffer>
 
-   virtual btBool        CSRWrite(btCSROffset CSR,
-                                  btCSRValue  Value);
-   virtual btBool      CSRWrite64(btCSROffset CSR,
-                                  bt64bitCSR  Value);
-   // </IALIAFU>
+   // <IALIUMsg>
+   virtual btUnsignedInt umsgGetNumber( void );
+   virtual btVirtAddr    umsgGetAddress( const btUnsignedInt UMsgNumber );
+   virtual bool umsgSetAttributes( NamedValueSet const &nvsArgs);
+   // </IALIUMsg>
+
+   // <IALIReset>
+   virtual void afuDisableAndReset( NamedValueSet const *pOptArgs = NULL);
+   virtual void afuReEnable( NamedValueSet const *pOptArgs = NULL);
+   virtual void afuReset( NamedValueSet const *pOptArgs = NULL);
+   // </IALIReset>
+
+protected:
+   static void AllocateBufferHandler(IEvent const & );
+   static void FreeBufferHandler(IEvent const & );
+
 };
 
 /// @} group HWALIAFU

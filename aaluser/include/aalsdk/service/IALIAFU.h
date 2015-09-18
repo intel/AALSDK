@@ -95,8 +95,8 @@ BEGIN_NAMESPACE(AAL)
 ///    m_pMMIOService = dynamic_ptr<IALIMMIO>( iidALI_MMIO_Service, pServiceBase);
 ///    ASSERT( m_pMMIOService );
 ///
-///    IALIBUFFER *m_pBUFFERService;   // used to call BUFF methods on the Service
-///    m_pBUFFERService = dynamic_ptr<IALIBUFFER>( iidALI_BUFFER_Service, pServiceBase);
+///    IALIBUFFER *m_pBufferService;   // used to call BUFF methods on the Service
+///    m_pBUFFERService = dynamic_ptr<IALIBuffer>( iidALI_BUFFER_Service, pServiceBase);
 ///    ASSERT( m_pBUFFERService );
 ///
 ///    <TODO: ADD EXAMPLES HERE>

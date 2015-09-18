@@ -61,8 +61,8 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// ASEALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_ASE)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class ASEALIAFU_API ASEALIAFU : public ServiceBase,
-                                    public IALIAFU
+class ASEALIAFU_API ASEALIAFU : public ServiceBase/*,
+                                    public IALIAFU   // FIXME: there is no single IALIAFU */
 {
 public:
    // <ServiceBase>
@@ -70,8 +70,8 @@ public:
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-      SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
-      SetSubClassInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
+/*      SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
+      SetSubClassInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));*/
    }
 
    virtual void init(TransactionID const &TranID);
