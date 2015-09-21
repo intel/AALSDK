@@ -133,19 +133,9 @@ btBool HelloAALService::init( IBase *pclientBase,
                               NamedValueSet const &optArgs,
                               TransactionID const &rtid)
 {
-   m_pClient = NULL;//dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, pclientBase);
+   m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, pclientBase);
    ASSERT( NULL != m_pClient ); //QUEUE object failed
    if(NULL == m_pClient){
-#if 0
-      /// ObjectCreatedExceptionEvent Constructor.
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish IHelloAALClient Interface"));
-#endif
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
@@ -153,12 +143,6 @@ btBool HelloAALService::init( IBase *pclientBase,
                                                  "Client did not publish IHelloAALClient Interface"));
       return true;
    }
-#if 0
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
-                                                           Client(),
-                                                           dynamic_cast<IBase *>(this),
-                                                           TranID) );
-#endif
    initComplete(rtid);
    return true;
 }

@@ -51,11 +51,12 @@
 //#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
 //#include <aalsdk/uaia/uAIASession.h>               // uAIASession
 #include <aalsdk/aas/AALService.h>                 // ServiceBase
-//#include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
+#include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
 
 #include <aalsdk/INTCDefs.h>                       // AIA IDs
 
 #include "UIDriverInterfaceAdapter.h"              // UIDriverInterfaceAdapter
+#include "AIATransactions.h"
 
 /// @todo Document uAIA and related.
 
@@ -73,14 +74,14 @@ USING_NAMESPACE(AAL);
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
-
+#define AIA_SERVICE_BASE_INTERFACE "AIA_Service_Base_Interface"
 
 //=============================================================================
 // Name: AIAService
 // Description: Implementation of the AFU Interface Adapter Service
 // Comments:
 //=============================================================================
-class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
+class UAIA_API AIAService: public AAL::ServiceBase//, public AAL::IServiceClient
 {
    public:
 
@@ -105,9 +106,12 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
                    NamedValueSet const &optArgs,
                    TransactionID const &rtid);
       // </IAALService>
+// TODO THESE COULD BE MADE INTO AN IAIA  SO THAT THE PROXY DOES NOT SEE Release() METHOD ABOVE
+      void AFUProxyRelease(IBase *pAFUProxy);
 
-      void AFUProxyRelease(IBase *pAFU);
-      void SendMessage(IAFUTransaction *pMessage);
+      void AFUProxyAdd(IBase *pAFUProxy);
+
+      void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
 
    protected:
       void SemWait(void);
@@ -126,7 +130,7 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       void WaitForShutdown(ui_shutdownreason_e      reason,
                            btTime                   waittime,
                            stTransactionID_t const &rTranID_t);
-
+#if 0
       // <IServiceClient> - Used to Get Proc
       void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID());
       void serviceAllocateFailed(const IEvent &rEvent);
@@ -134,9 +138,10 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       void serviceReleaseFailed(const IEvent &rEvent);
       void serviceEvent(const IEvent &rEvent);
        // </IServiceClient>
-
-      void AFUProxyGet(NamedValueSet const &Args,
-                       TransactionID const &rtid);                   // Allocates a Proxy to the AFU
+#endif
+      void AFUProxyGet( IBase *pServiceClient,
+                        NamedValueSet const &Args,
+                        TransactionID const &rtid);         // Allocates a Proxy to the AFU
 
       btBool AFUListAdd(IBase *pAFU);
       btBool AFUListDel(IBase *pDev);

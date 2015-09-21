@@ -51,7 +51,8 @@
 #include <aalsdk/AALTransactionID.h>
 #include <aalsdk/uaia/uidrvMessage.h>      // uidrvMessage, uidrvMessageRoute
 #include <aalsdk/uaia/AALuAIA_Messaging.h> // UIDriverClient_msgPayload, UIDriverClient_uidrvManip
-
+#include "AIATransactions.h"
+#include "aalsdk/uaia/IAFUProxy.h"
 
 #ifdef __AAL_UNKNOWN_OS__
 # error Define UIDriverInterfaceAdapter IPC for unknown OS.
@@ -85,7 +86,9 @@ class UAIA_API UIDriverInterfaceAdapter : private CriticalSection,
       AAL::btBool GetMessage(/*uidrvMessage *uidrvMessagep*/);
 
       // Sends a message down the UIDriver channel
-      AAL::btBool SendMessage(AAL::btUnsigned64bitInt cmd, struct AAL::aalui_ioctlreq *reqp);
+      AAL::btBool SendMessage( AAL::btHANDLE devHandle,
+                               IAIATransaction *pMessage,
+                               IAFUProxyClient *pProxyClient);
 
 
 

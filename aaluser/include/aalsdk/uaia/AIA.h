@@ -58,6 +58,7 @@
 #include <aalsdk/AALTransactionID.h>
 #include <aalsdk/AALNamedValueSet.h>
 #include <aalsdk/kernel/aalui.h> // uid_msgIDs_e
+#include <aalsdk/CUnCopyable.h>
 
 // Remove once Autotooled and placed in aaldefs.h
 #if defined ( __AAL_WINDOWS__ )
@@ -73,6 +74,21 @@
 # define AIA_API    __declspec(0)
 #endif // __AAL_WINDOWS__
 
+//=============================================================================
+// Name: IAIATransaction
+// Description: Interface to IAIATransaction object which abstracts the
+//              and AIA downstream message.
+// Comments:
+//=============================================================================
+class UAIA_API IAIATransaction : public CUnCopyable
+{
+public:
+   virtual ~IAIATransaction();
+   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
+   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
+   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
+   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
+};
 
 BEGIN_NAMESPACE(AAL)
 
@@ -84,7 +100,7 @@ BEGIN_NAMESPACE(AAL)
 // Comments: Because the structure of the message is AFU/PIP specific the
 //           interface does not define nor expose any details.
 //=============================================================================
-class UAIA_API IAFUTransaction
+class UAIA_API IAFUTransaction : public CUnCopyable
 {
 public:
    virtual ~IAFUTransaction();

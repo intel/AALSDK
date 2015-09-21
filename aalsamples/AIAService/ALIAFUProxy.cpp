@@ -46,6 +46,8 @@
 #include "ALIAFUProxy.h"
 #include "AIA-internal.h"
 
+#include "AIATransactions.h"
+
 //#include "aalsdk/INTCDefs.h"
 
 
@@ -55,10 +57,7 @@
 //#include "aalsdk/faptrans/FAP10.h"
 //#include "aalsdk/kernel/ahmpipdefs.h"
 
-
-
-BEGIN_NAMESPACE(AAL)
-
+USING_NAMESPACE(AAL);
 
 //=============================================================================
 // Name: ALIAFUProxy
@@ -66,35 +65,108 @@ BEGIN_NAMESPACE(AAL)
 //              implementation on a device. It abstracts a session between the
 //              Host AFU and the device through the AIA.
 //
-//              The ALIAFUProxy send messages to the device through ITransaction
-//              objects.
-//
-//              The MessageRoute object of the AIASession contains the default
-//              callback and the context when the device send message back
-//              up through the AIA.
-//  Inputs: handle   - AAL handle to device this object proxies
-//          pSession - Pointer to the  Universal AIA interface (proxy)
-// Comments: The uidrvMessage::uidrvMessageRoute contains the default event
-//           handler and context for this AIA session and is extracted from the
-//           AIA session through the OwnerMessageRoute() method and cached in
-//           object.
+//              The ALIAFUProxy sends messages to the device through
+//              ITransaction objects.
+// Comments:
 //=============================================================================
-ALIAFUProxy::ALIAFUProxy( IBase * pAIAbase)
-{
-   m_bIsOK = false;         // CAASBase set it to true
 
-   if(SetInterface(iidALIAFUProxy,dynamic_cast<IAFUProxy*>(this))!= EObjOK) {
-      return;
+// Destructor
+ALIAFUProxy::~ALIAFUProxy() {}
+
+//=============================================================================
+// Name: init
+// Description: Initialize the Proxy
+// Inputs: none
+// Outputs: none
+// Comments:
+//=============================================================================
+btBool ALIAFUProxy::init( IBase *pclientBase,
+                          NamedValueSet const &optArgs,
+                          TransactionID const &rtid)
+{
+   // Make sure the AIA passed in its interface
+   ASSERT( true == optArgs.Has(AIA_SERVICE_BASE_INTERFACE) );
+   if(true != optArgs.Has(AIA_SERVICE_BASE_INTERFACE)){
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Did not get AIA interface for proxy"));
+      return true;
    }
 
 
-   // Get the message marshaller
-   m_AIAMarshaller = m_pSession->ruAIA().GetMarshaller();
-   m_bIsOK = true;
+   // Get the AIA pointer
+   if( ENamedValuesOK != optArgs.Get(AIA_SERVICE_BASE_INTERFACE, static_cast<btAny*>(static_cast<btAny>(&m_pAIABase)) )){
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "FATAL Error: Manifest said AIA interface present but could not be acquired!"));
+      return true;
+   }
+   m_pAIA = dynamic_ptr<AIAService>(iidAIAService, m_pAIABase);
+
+   // Bind the AFU device to complete transfer of ownership
+   // Get the device handle if there is one
+   if( optArgs.Has(keyRegHandle) ) {
+      optArgs.Get(keyRegHandle, &m_devHandle);
+   }else {
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                rtid,
+                                                errBadParameter,
+                                                reasNoDevice,
+                                                "No device handle in Configuration Record!"));
+      return true;
+    }
+
+   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(), this );
+
+   // TODO BIND DEVICE
+#if 0
+   m_pAIA->AFUProxyAdd(this);
+   initComplete(rtid);
+#endif
+
 }
 
-ALIAFUProxy::~ALIAFUProxy() {}
+//=============================================================================
+// Name: SendTransaction
+// Description: Send a message to the device
+// Inputs: pAFUmessage - Transaction object
+//         rtid - Transaction ID
+// Outputs: true - success
+// Comments:
+//=============================================================================
+btBool ALIAFUProxy::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID const &rtid)
+{
+#if 0
+   // Wrap the message in a AFUTransaction object and have the AIA
+   //  marshal it
+   m_pSession->ruAIA().SendMessage( AFUTransaction( m_AIAMarshaller,
+                                                    this,
+                                                    m_Handle,
+                                                    pAFUmessage,
+                                                    rtid,
+                                                    &m_returnAddress));
+#endif
+   return true;  /// SendMessage is a void TDO cleanup
+}
 
+//=============================================================================
+// Name: AFUEvent
+// Description: Callback when an upstream messsage is received
+// Inputs: theEvent - AIA message event
+// Outputs: true - success
+// Comments:
+//=============================================================================
+void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
+{
+
+}
+
+
+#if 0
 //=============================================================================
 // Name: Initialize
 // Description: Initialize the CAFUdev
@@ -364,29 +436,9 @@ btEventHandler ALIAFUProxy::Handler()
 {
    return m_returnAddress.Handler();
 }
+#endif
 
-//=============================================================================
-// Name: SendTransaction
-// Description: Send a message to the device
-// Inputs: pAFUmessage - Transaction object
-//         rtid - Transaction ID
-// Outputs: true - success
-// Comments:
-//=============================================================================
-btBool ALIAFUProxy::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID const &rtid)
-{
-   // Wrap the message in a AFUTransaction object and have the AIA
-   //  marshal it
-   m_pSession->ruAIA().SendMessage( AFUTransaction( m_AIAMarshaller,
-                                                    this,
-                                                    m_Handle,
-                                                    pAFUmessage,
-                                                    rtid,
-                                                    &m_returnAddress));
-
-   return true;  /// SendMessage is a void TDO cleanup
-}
-
+#if 0
 // This provides a Direct Mapping from user space to the AFU's registers - very fast
 // NOT YET IMPLEMENTED - PLACEHOLDER, currently returns NULL
 IAFUCSRMap* ALIAFUProxy::GetCSRMAP() { return NULL; }
@@ -613,7 +665,7 @@ void * ALIAFUProxy::Handle()
    return m_Handle;
 }
 
+#endif
 
-END_NAMESPACE(AAL)
 
 

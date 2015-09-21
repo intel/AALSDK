@@ -492,18 +492,60 @@ FAILED: // If got here then the poll failed
 // Name: SendMessage
 // Description: Sends a message down RMC connection
 //==========================================================================
-btBool UIDriverInterfaceAdapter::SendMessage(btUnsigned64bitInt cmd,
-                                             struct aalui_ioctlreq *reqp)
+btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
+                                             IAIATransaction *pMessage,
+                                             IAFUProxyClient *pProxyClient)
 {
+
+#if   defined( __AAL_WINDOWS__ )
+   DWORD cmd;
+#elif defined( __AAL_LINUX__ )
+   int cmd;
+#endif
 
    AutoLock(this);
 
    if ( !IsOK() ) {
-      return true;
+      return false;
    }
 
-#if   defined( __AAL_WINDOWS__ )
+   // Build the low level message
+   struct aalui_ioctlreq *reqp = reinterpret_cast<struct aalui_ioctlreq *> (new char[ sizeof(struct aalui_ioctlreq) + pMessage->getPayloadSize() ]);
 
+   reqp->id = pMessage->getMsgID();
+   reqp->tranID = pMessage->getTranID();
+   memcpy(aalui_ioctlPayload(reqp), pMessage->getPayloadPtr(), pMessage->getPayloadSize());
+
+   // Determine which low-level command should be used to send down the stack
+   switch ( pMessage->getMsgID() ) {
+
+    case reqid_UID_Bind:
+    case reqid_UID_ExtendedBindInfo:
+    case reqid_UID_UnBind:
+       cmd = AALUID_IOCTL_BINDDEV;
+       break;
+
+    case reqid_UID_Activate:
+       cmd = AALUID_IOCTL_ACTIVATEDEV;
+       break;
+
+    case reqid_UID_Deactivate:
+       cmd = AALUID_IOCTL_DEACTIVATEDEV;
+       break;
+
+    case reqid_UID_SendAFU:
+    case reqid_UID_SendPIP:
+    case reqid_UID_SendWSM:
+       cmd = AALUID_IOCTL_SENDMSG;
+       break;
+     default:
+       std::cerr << "UIDRV: Unknown command class" << std::endl;
+       return false;
+       break;
+    }
+
+
+#if   defined( __AAL_WINDOWS__ )
    DWORD      bytes,bytes_to_send;
    btHANDLE  hEvent;
    OVERLAPPED overlappedIO;
@@ -526,7 +568,6 @@ btBool UIDriverInterfaceAdapter::SendMessage(btUnsigned64bitInt cmd,
    CloseHandle(hEvent);
 
 #elif defined( __AAL_LINUX__ )
-
    if ( -1 == ioctl(m_fdClient, cmd, reqp) ) {
       perror("UIDriverInterfaceAdapter::SendMessage");
       m_bIsOK = false;

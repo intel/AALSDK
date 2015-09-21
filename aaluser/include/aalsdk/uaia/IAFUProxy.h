@@ -44,11 +44,11 @@
 //#include <aalsdk/AALEvent.h>                    // IEvent
 //#include <aalsdk/AALTransactionID.h>
 //#include <aalsdk/uaia/uidrvMessage.h>           // uidrvMessageRoute
-//#include <aalsdk/uaia/AIA.h>                    // IAFUDev, IAFUTransaction, IAFUCSRMap
+#include <aalsdk/uaia/AIA.h>                      // IAFUDev, IAFUTransaction, IAFUCSRMap
 //#include <aalsdk/uaia/IUAIASession.h>           // IuAIASession
 //#include <aalsdk/uaia/AALuAIA_Messaging.h>      // UIDriverClient_uidrvMarshaler_t
 
-//#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
+#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
 
 //#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
 
@@ -98,7 +98,7 @@ public:
    // Send a message to the device
    virtual AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage,
                                         AAL::TransactionID const &rtid)       = 0;
-
+#if 0
    // Accessors to memory mapped regions
    virtual AAL::btVirtAddr getCSRBase()                                       = 0;
 
@@ -107,7 +107,7 @@ public:
 
    virtual AAL::btVirtAddr getUMSGBase()                                      = 0;
    virtual AAL::btUnsigned32bitInt getUMSGsize()                              = 0;
-
+#endif
 }; // class CAFUDev
 
 #endif //__AALSDK_IAFUPROXY_H__
