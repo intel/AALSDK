@@ -57,8 +57,8 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALTransactionID.h>
 #include <aalsdk/AALNamedValueSet.h>
-#include <aalsdk/kernel/aalui.h> // uid_msgIDs_e
-
+#include <aalsdk/kernel/aalui.h> 				// uid_msgIDs_e
+#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
 
 BEGIN_NAMESPACE(AAL)
 
@@ -127,6 +127,10 @@ public:
    virtual btVirtAddr getUMSG()                                    = 0;
    virtual btUnsigned32bitInt getUMSGsize()                        = 0;
    virtual void Destroy(TransactionID const & ) = 0;
+
+   // Temporary extension to give HWALIAFU service access to workspace mapper
+   // Will be replaced by different method on redesign of AFUDev
+   virtual WorkSpaceMapper & WSM()                                         = 0;
 };
 
 

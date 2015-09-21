@@ -563,14 +563,14 @@ void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
          m_DSMVirt = WkspcVirt;
 //         m_DSMPhys = WkspcPhys;
          m_DSMSize = WkspcSize;
-         MSG("Got DSM");
+         MSG("Got DSM. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
          m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
 //         m_InputPhys = WkspcPhys;
          m_InputSize = WkspcSize;
-         MSG("Got Input Workspace");
+         MSG("Got Input Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
 
          // Now get Output workspace
          m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
@@ -580,7 +580,7 @@ void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
 //         m_OutputPhys = WkspcPhys;
          m_OutputSize = WkspcSize;
 
-         MSG("Got Output Workspace");
+         MSG("Got Output Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
 
          // Got all workspaces so unblock the Run() thread
          m_Sem.Post(1);
@@ -614,7 +614,7 @@ void HelloALINLBApp::bufferFreed(TransactionID const &TranID)
 
 void HelloALINLBApp::bufferFreeFailed(const IEvent &rEvent)
 {
-   ERR("OnWorkspaceAllocateFailed");
+   ERR("OnWorkspaceFreeFailed");
    PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
    m_Sem.Post(1);

@@ -413,11 +413,24 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
 //
 // bufferGetIOVA. Retrieve IO Virtual Address for a virtual address.
 //
-// FIXME: not implemented.
-//
 btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 {
-	return 0;
+	WorkSpaceMapper &wsm = AFUDev().WSM();
+	WorkSpaceMapper::pcWkSp_t pWkSp;	// workspace
+	WorkSpaceMapper::eWSM_Ret eRet = wsm.GetWkSp(Address, &pWkSp);
+
+	switch(eRet) {
+		case WorkSpaceMapper::FOUND_EXACT:
+			return pWkSp->m_phys_ptr;			// converted address is beginning of workspace
+
+		case WorkSpaceMapper::FOUND_INCLUDED:
+		case WorkSpaceMapper::FOUND:
+			return pWkSp->m_phys_ptr + (Address - pWkSp->m_ptr);	// beginning of workspace + offset
+
+		case WorkSpaceMapper::NOT_FOUND:
+		default:
+			return 0;
+	}
 }
 
 //
