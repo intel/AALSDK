@@ -62,7 +62,7 @@ BEGIN_NAMESPACE(AAL)
 #if DEPRECATED
    //=============================================================================
    // Name: AFUExceptionTransactionEvent
-   // Description: Object Created exception Event
+   /// @brief Object Created exception Event
    //=============================================================================
    class AFUExceptionTransactionEvent
             : public CExceptionTransactionEvent
@@ -91,7 +91,7 @@ BEGIN_NAMESPACE(AAL)
 
    //=============================================================================
    // Name: AFUTransactionEvent
-   // Description: AFU Event
+   /// @brief AFU Event
    //=============================================================================
    class AFUTransactionEvent
             : public CTransactionEvent
@@ -116,7 +116,7 @@ BEGIN_NAMESPACE(AAL)
 
    //=============================================================================
    // Name: AFUWorkSpaceAllocatedExceptionTransactionEvent
-   // Description: Workspace allocated exception Event
+   /// @brief Workspace allocated exception Event
    //=============================================================================
    class AFUWorkSpaceAllocatedExceptionTransactionEvent
    : public CExceptionTransactionEvent
@@ -146,7 +146,7 @@ BEGIN_NAMESPACE(AAL)
 
     //=============================================================================
    // Name: AFUWorkSpaceFreeTransactionEvent
-   // Description: AFU Workspace Allocated Event
+   /// @brief AFU Workspace Allocated Event
    //=============================================================================
    class AFUWorkSpaceFreeTransactionEvent
    : public CExceptionTransactionEvent
@@ -260,7 +260,7 @@ public:
 
    //=============================================================================
    // Name: CAFUProcessMessageTransactionEvent
-   // Description: Workspace exception Event
+   /// @brief Workspace exception Event
    //=============================================================================
 class UAIA_API CAFUProcessMessageTransactionEvent : public CTransactionEvent
 {
@@ -278,7 +278,7 @@ protected:
 
 //=============================================================================
 // Name: CAFUProcessMessageTransactionExceptionEvent
-// Description: AFU Workspace Event
+/// @brief AFU Workspace Event
 //=============================================================================
 class UAIA_API CAFUProcessMessageTransactionExceptionEvent : public CExceptionTransactionEvent
 {
@@ -296,12 +296,12 @@ protected:
    CAFUProcessMessageTransactionExceptionEvent(IBase * );
 };
 
-/// @} group SysEvents
+/// @}
 
 
 //=============================================================================
 // Name: IAFUFactory
-// Description: Interface to AFUPackage's AFU Factory
+/// @brief Interface to AFUPackage's AFU Factory
 //=============================================================================
 class UAIA_API IAFUFactory
 {

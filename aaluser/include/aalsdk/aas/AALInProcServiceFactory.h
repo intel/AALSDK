@@ -111,7 +111,7 @@ public:
       return dynamic_cast<IBase*>(m_pService);
    }
 
-
+  /// @Initilizes the service and returns what the service gives
    btBool InitializeService(IBase               *Client,
                             TransactionID const &rtid,
                             NamedValueSet const &optArgs)
@@ -157,7 +157,7 @@ public:
            return dynamic_cast<IBase*>(m_pService);
        }
     }
-
+   /// @Initilizes the service and returns what the service gives
     btBool InitializeService(IBase               *Client,
                              TransactionID const &rtid,
                              NamedValueSet const &optArgs)
@@ -180,7 +180,7 @@ protected:
 };
 
 
-/// @} group InProcFactory
+/// @}
 
 END_NAMESPACE(AAL)
 

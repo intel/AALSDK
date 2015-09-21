@@ -134,7 +134,7 @@ protected:
 
 };
 
-/// @} group HWALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

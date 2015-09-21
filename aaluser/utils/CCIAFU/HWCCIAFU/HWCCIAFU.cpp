@@ -122,7 +122,7 @@ btBool HWCCIAFU::CSRWrite64(btCSROffset CSR,
    return false;
 }
 
-/// @} group HWCCIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

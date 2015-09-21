@@ -390,7 +390,7 @@ public:
 // MAFU: Reconfigure (Deactivate, Activate?)
 
 
-/// @} group IALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

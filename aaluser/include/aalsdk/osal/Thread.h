@@ -86,7 +86,7 @@ OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage);
 
 
 //
-// Object representing current thread's ID. Cast as btTID to get value.
+///@brief  Object representing current thread's ID. Cast as btTID to get value.
 class CurrentThreadID
 {
 public:
@@ -197,7 +197,7 @@ private:
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
 */
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_THREAD_H__
 

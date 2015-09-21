@@ -207,7 +207,7 @@ inline std::ostream & operator << (std::ostream &os, const SWSimSPLAFU::CSR &c)
    return os;
 }
 
-/// @} group SWSimSPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

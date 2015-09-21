@@ -114,7 +114,7 @@ protected:
    static void TransactionHandler(const IEvent & );
 };
 
-/// @} group HWSPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

@@ -359,6 +359,6 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
    return res;
 }
 
-/// @} group ServiceModule
+/// @}
 
 

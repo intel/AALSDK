@@ -174,7 +174,7 @@ struct VAFU2_CNTXT {
 }; // struct VAFU2_CNTXT
 //CASSERT(sizeof(struct VAFU2_CNTXT) == 64);       // no longer true
 
-/// @} group AALCore
+/// @}
 
 END_NAMESPACE(AAL)
 

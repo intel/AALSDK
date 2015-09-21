@@ -78,7 +78,7 @@ $ data_model
 lp64
 The compiler defines __LP64__@endverbatim
 
-@} group data_model
+@}
 */
 //****************************************************************************
 #include <stdio.h>

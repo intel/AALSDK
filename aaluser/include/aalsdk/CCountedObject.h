@@ -67,7 +67,7 @@ protected:
    AAL::btUnsigned32bitInt m_RefCnt;
 };
 
-/// @} group AASUtils
+/// @}
 
 #endif // __AALSDK_CCOUNTEDOBJECT_H__
 

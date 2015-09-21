@@ -87,7 +87,7 @@ AAL_DECLARE_SVC_MOD(@HWALIAFU_SVC_MOD@, HWALIAFU_API)
 9 11 ServiceName\n \
 \t9 10 HWALIAFU\n"
 
-/// @} group HWALIAFU
+/// @}
 
 #endif // __SERVICE_HWALIAFUSERVICE_H__
 

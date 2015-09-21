@@ -1,0 +1,307 @@
+// Copyright (c) 2012-2015, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+/// @file aalclp.h
+/// @brief Interface to the generic Linux/Windows AAL Command Line Parser.
+/// @ingroup aalclp
+///
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+///
+///    This application is for example purposes only.
+///    It is not intended to represent a model for developing commercially-deployable applications.
+///    It is designed to show working examples of the AAL programming model and APIs.
+///
+/// AUTHOR: Tim Whisonant, Intel Corporation
+///
+/// WHEN          WHO    WHAT
+/// ==========    ===    ====
+/// 07/19/2013    TSW    Original version.@endverbatim
+//****************************************************************************
+#ifndef __AALCLP_AALCLP_H__
+#define __AALCLP_AALCLP_H__
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef WIN32
+# ifdef AALCLP_EXPORTS
+#    define AALCLP_API __declspec(dllexport)
+# else
+#    define AALCLP_API __declspec(dllimport)
+# endif // FAPTRANS1_EXPORTS
+#else
+# define __declspec(x)
+# define AALCLP_API    __declspec(0)
+#endif // WIN32
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
+
+#ifndef YY_EXTRA_TYPE
+#define YY_EXTRA_TYPE void *
+#endif
+
+/// @addtogroup aalclp
+/// @{
+
+#define AALCLP_USER_DEFINED YY_EXTRA_TYPE
+
+typedef struct AALCLP_API _aalclp_links
+{
+   struct _aalclp_links *prev;
+   struct _aalclp_links *next;
+} aalclp_links;
+
+#define AALCLP_CB_STRUCT(__x)    \
+typedef struct AALCLP_API _##__x \
+{                                \
+   __x##_cb            cb;       \
+   AALCLP_USER_DEFINED user;     \
+   aalclp_links        links;    \
+} __x
+
+
+typedef int (*aalclp_option_only_cb)(AALCLP_USER_DEFINED user, const char *option);
+AALCLP_CB_STRUCT(aalclp_option_only);
+
+typedef int (*aalclp_option_cb)(AALCLP_USER_DEFINED user, const char *option, const char *value);
+AALCLP_CB_STRUCT(aalclp_option);
+
+typedef int (*aalclp_dash_only_cb)(AALCLP_USER_DEFINED user);
+AALCLP_CB_STRUCT(aalclp_dash_only);
+
+typedef int (*aalclp_non_option_cb)(AALCLP_USER_DEFINED user, const char *nonoption);
+AALCLP_CB_STRUCT(aalclp_non_option);
+
+typedef int (*aalclp_invalid_cb)(AALCLP_USER_DEFINED user, const char *invalid, size_t len);
+AALCLP_CB_STRUCT(aalclp_invalid);
+
+typedef struct AALCLP_API _aalclp_callbacks
+{
+   aalclp_option_only listhead_nix_long_option_only;  /* --option                       */
+   aalclp_option      listhead_nix_long_option;       /* --option value, --option=value */
+   aalclp_option_only listhead_nix_short_option_only; /* -o                             */
+   aalclp_option      listhead_nix_short_option;      /* -o value                       */
+
+   aalclp_dash_only   listhead_dash_only;             /* -                              */
+   aalclp_dash_only   listhead_dash_dash_only;        /* --                             */
+
+   aalclp_option_only listhead_win_long_option_only;  /* /option                        */
+   aalclp_option      listhead_win_long_option;       /* /option value                  */
+   aalclp_option_only listhead_win_short_option_only; /* /o                             */
+   aalclp_option      listhead_win_short_option;      /* /o value                       */
+
+   aalclp_non_option  listhead_non_option;            /* file.c                         */
+
+   aalclp_invalid     listhead_invalid;               /* internal scan error            */
+} aalclp_callbacks;
+
+typedef struct AALCLP_API _aalclp
+{
+   yyscan_t         scanner;   /* the reentrant scanner object */
+   aalclp_callbacks callbacks;
+} aalclp;
+
+
+
+/// @brief Initialize a Command Line Parser object.
+/// @param[in,out]  scanner  pointer to storage for the object.
+/// @return Non-zero on failure.
+///
+/// usage:
+/// @code
+/// aalclp pars;
+///
+/// if ( aalclp_init(&pars) ) {
+///    // handle init error condition
+/// }
+/// @endcode
+extern AALCLP_API int
+aalclp_init(aalclp *scanner);
+
+extern AALCLP_API int
+aalclp_destroy(aalclp *scanner);
+
+
+
+extern AALCLP_API int
+aalclp_add_nix_long_option_only(aalclp *scanner, aalclp_option_only *node);
+extern AALCLP_API int
+aalclp_add_nix_long_option(aalclp *scanner, aalclp_option *node);
+
+extern AALCLP_API int
+aalclp_add_nix_short_option_only(aalclp *scanner, aalclp_option_only *node);
+extern AALCLP_API int
+aalclp_add_nix_short_option(aalclp *scanner, aalclp_option *node);
+
+extern AALCLP_API int
+aalclp_add_dash_only(aalclp *scanner, aalclp_dash_only *node);
+extern AALCLP_API int
+aalclp_add_dash_dash_only(aalclp *scanner, aalclp_dash_only *node);
+
+extern AALCLP_API int
+aalclp_add_win_long_option_only(aalclp *scanner, aalclp_option_only *node);
+extern AALCLP_API int
+aalclp_add_win_long_option(aalclp *scanner, aalclp_option *node);
+
+extern AALCLP_API int
+aalclp_add_win_short_option_only(aalclp *scanner, aalclp_option_only *node);
+extern AALCLP_API int
+aalclp_add_win_short_option(aalclp *scanner, aalclp_option *node);
+
+extern AALCLP_API int
+aalclp_add_non_option(aalclp *scanner, aalclp_non_option *node);
+
+extern AALCLP_API int
+aalclp_add_invalid(aalclp *scanner, aalclp_invalid *node);
+
+
+/// @brief Perform the parse.
+/// @param[in]  scanner  Parser object, already initialized.
+/// @param[in]  argc     Number of command line args.
+/// @param[in]  argv     Command line args.
+/// @return Non-zero on failure.
+///
+/// usage:
+/// @code
+/// int main(int argc, char *argv[])
+/// {
+///    aalclp pars;
+///
+///    if ( aalclp_init(&pars) ) {
+///       // handle init error condition
+///    } else if ( aalclp_scan_argv(&pars, argc, argv) ) {
+///       // handle parse error condition
+///    } else if ( aalclp_destroy(&pars) ) {
+///       // handle destroy error condition
+///    }
+/// @endcode
+extern AALCLP_API int
+aalclp_scan_argv(aalclp *scanner, int argc, char *argv[]);
+
+
+extern AALCLP_API int
+aalclp_scan_file(aalclp *scanner, FILE *in, FILE *out);
+
+
+
+struct AALCLP_API _aalclp_gcs_compliance_data;
+typedef void (*aalclp_help_message_cb)(FILE * , struct _aalclp_gcs_compliance_data * );
+
+typedef struct AALCLP_API _aalclp_gcs_compliance_data
+{
+   const char             *application;
+   const char             *app_version;
+   const char             *package;
+   const char             *pkg_version;
+   const char             *copyright;
+   const char             *license;
+   const char             *bugreport;
+   const char             *url;
+   const char             *commit_id;
+   aalclp_help_message_cb  help_cb;
+   AALCLP_USER_DEFINED     user;
+   aalclp_option_only      node;
+} aalclp_gcs_compliance_data;
+
+#define AALCLP_DECLARE_GCS_COMPLIANT(__pr, __app, __appver, __lic, __helpcb, __user) \
+static int                                                                           \
+_aalclp_on_gcs_compliance(AALCLP_USER_DEFINED user, const char *option) {            \
+   aalclp_gcs_compliance_data *gcs =                                                 \
+      (aalclp_gcs_compliance_data *)user;                                            \
+   if ( 0 == strncmp("--version", option, 9) ) {                                     \
+      if ( 0 == strcmp(gcs->application, gcs->package) ) {                           \
+         fprintf(__pr, "%s %s\n", gcs->package, gcs->pkg_version);                   \
+      } else if ( 0 == strcmp(gcs->app_version, gcs->pkg_version) ) {                \
+         fprintf(__pr, "%s (%s) %s\n",                                               \
+                    gcs->application, gcs->package, gcs->app_version);               \
+      } else {                                                                       \
+         fprintf(__pr, "%s (%s %s) %s\n",                                            \
+                    gcs->application, gcs->package,                                  \
+                    gcs->pkg_version, gcs->app_version);                             \
+      }                                                                              \
+      if ( ( NULL != gcs->copyright ) && ( 0 != *gcs->copyright ) ) {                \
+         fprintf(__pr, "%s\n", gcs->copyright);                                      \
+      }                                                                              \
+      if ( ( NULL != gcs->license ) && ( 0 != *gcs->license ) ) {                    \
+         fprintf(__pr, "%s\n", gcs->license);                                        \
+      }                                                                              \
+      if ( ( NULL != gcs->commit_id ) &&                                             \
+           ( 0 != strcmp("unknown", gcs->commit_id) ) ) {                            \
+         fprintf(__pr, "%s\n", gcs->commit_id);                                      \
+      }                                                                              \
+      fprintf(__pr, "\n");                                                           \
+   } else if ( 0 == strncmp("--help", option, 6) ) {                                 \
+      if ( NULL != gcs->help_cb ) {                                                  \
+         gcs->help_cb(__pr, gcs);                                                    \
+      }                                                                              \
+      if ( ( NULL != gcs->bugreport ) && ( 0 != *gcs->bugreport ) ) {                \
+         fprintf(__pr, "Report bugs to: %s\n", gcs->bugreport);                      \
+      }                                                                              \
+      if ( ( NULL != gcs->url ) && ( 0 != *gcs->url ) ) {                            \
+         fprintf(__pr, "%s home page: <%s>\n", gcs->package, gcs->url);              \
+      }                                                                              \
+      /* fprintf(__pr, "General help using GNU software: <%s>\n", */                 \
+      /*            "http://www.gnu.org/gethelp/");               */                 \
+      fprintf(__pr, "\n");                                                           \
+   }                                                                                 \
+   return 0;                                                                         \
+}                                                                                    \
+static aalclp_gcs_compliance_data _aalclp_gcs_data =                                 \
+{                                                                                    \
+   __app,                                                                            \
+   __appver,                                                                         \
+   "aalsdk",           \
+   "4.1.7",   \
+   "Copyright (c) 2003-2015 Intel Corporation",  \
+   __lic,                                                                            \
+   "joe.grecco@intel.com", \
+   "",       \
+   "ce5696ea6be7444e0d16bf3cdf4f2e06092afb61 (HEAD, lkoppaka)",     \
+   __helpcb,                                                                         \
+   __user,                                                                           \
+   { _aalclp_on_gcs_compliance, &_aalclp_gcs_data, }                                 \
+};
+
+
+#define aalclp_add_gcs_compliance(__sc) \
+aalclp_add_nix_long_option_only(__sc, &_aalclp_gcs_data.node)
+
+/// @}
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
+
+#endif /* __AALCLP_AALCLP_H__ */
+

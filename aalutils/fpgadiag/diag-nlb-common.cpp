@@ -49,7 +49,7 @@ static int
 nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)user;
 
-   if ( 0 == strcmp("--help", option) ) {
+   if ( (0 == strcmp("--help", option)) || (0 == strcmp("--h", option)) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_HELP);
    } else if ( 0 == strcmp("--version", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VERSION);
@@ -89,6 +89,14 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
    } else if ((0 == strcmp("--umsg-hint", option)) || (0 == strcmp("--uh", option))) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
+   } else if ( 0 == strcmp("--auto-ch", option) ) {
+   	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_AUTO_CH);
+   } else if ( 0 == strcmp("--qpi", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_QPI);
+   } else if ( 0 == strcmp("--pcie0", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE0);
+   } else if ( 0 == strcmp("--pcie1", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE1);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
@@ -134,6 +142,8 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
 			 nlbcl->TestMode = std::string(NLB_TESTMODE_TRPUT);
           } else if ( 0 == strcasecmp("sw", value) ) {
 			 nlbcl->TestMode = std::string(NLB_TESTMODE_SW);
+          } else if ( 0 == strcasecmp("ccip-lpbk1", value) ) {
+			nlbcl->TestMode = std::string(NLB_TESTMODE_CCIP_LPBK1);
           } else {
              cout << "Invalid value for --mode : " << value << endl;
              return 4;
@@ -496,27 +506,29 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)gcs->user;
 
 	string test;
-	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW]" << endl;
+	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [CCIP-LPBK1]" << endl;
 	cin >> test;
    fprintf(fp, "Usage:\n");
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
       fprintf(fp, "   --mode=lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "READ") ) {
-      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "WRITE") ) {
-      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<PREFILL>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "READ") ) {
+      fprintf(fp, "   --mode=read <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "WRITE") ) {
+      fprintf(fp, "   --mode=write <TARGET> [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "   --mode=trput <TARGET> [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [<OUTPUT>]");
-   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "   --mode=sw <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
+	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<BEGIN>] [<END>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
    }
 
    fprintf(fp, "\n\n");
 
    fprintf(fp, "      <TARGET>    = --target=one of { fpga ase swsim } OR --t=one of { fpga ase swsim }\n");
-   if ( 0 != strcmp(test.c_str(), "LPBK1") &&
-		0 != strcmp(test.c_str(), "SW")) {
+   if ( 0 != strcasecmp(test.c_str(), "LPBK1") &&
+		0 != strcasecmp(test.c_str(), "SW")) {
       fprintf(fp, "      <BANDWIDTH> = --no-bw,                      suppress bandwidth calculations,                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
          fprintf(fp, "Default=%s\n", nlbcl->defaults.nobw);
@@ -525,24 +537,35 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
-              nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   if ( 0 == strcasecmp(test.c_str(), "SW")){
+	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1 );
+   } else{
+	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   }
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL) ) {
       fprintf(fp, "%llu\n", nlbcl->begincls);
    } else {
-      fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
+	  fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
    }
 
-   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
-              nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   if ( 0 == strcasecmp(test.c_str(), "SW")){
+	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
+              nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1);
+   }
+   else{
+	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
+			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+   }
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL) ) {
       fprintf(fp, "%llu\n", nlbcl->endcls);
    } else {
       fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
    }
 
-   if ( 0 == strcmp(test.c_str(), "READ") ||
-        0 == strcmp(test.c_str(), "WRITE") ) {
+   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+        0 == strcasecmp(test.c_str(), "WRITE") ) {
       fprintf(fp, "      <FPGA-CACHE>= --warm-fpga-cache OR --wfc,   attempt to prime the cache with hits,           ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE) ) {
          fprintf(fp, "yes\n");
@@ -565,10 +588,11 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "WRITE") ||
-        0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "WRITE") ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+        0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <WRITES>    = --wt,                         write-through cache behavior,                   ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WT) ) {
          fprintf(fp, "on\n");
@@ -584,11 +608,11 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ) {
 	  fprintf(fp, "      <CONT>                   (LPBK1 is a non-continuous mode-only test)                         off\n");
-   } else if ( 0 == strcmp(test.c_str(), "TRPUT") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "TRPUT") ) {
       fprintf(fp, "      <CONT>                   (TRPUT is a continuous mode-only test)                             on\n");
-   } else if ( 0 == strcmp(test.c_str(), "SW") ) {
+   } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
 	  fprintf(fp, "      <CONT>                   (SW is a non-continuous mode-only test)                            off\n");
    } else {
       fprintf(fp, "      <CONT>      = --cont,                       continuous mode,                                ");
@@ -601,9 +625,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 
    fprintf(fp, "      <FREQ>      = --clock-freq=T    OR --f=T,   Clock frequency in Hz,                          Default=200 MHz\n");
 
-   if ( 0 == strcmp(test.c_str(), "READ") ||
-	    0 == strcmp(test.c_str(), "WRITE") ||
-	    0 == strcmp(test.c_str(), "TRPUT") ) {
+   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+	    0 == strcasecmp(test.c_str(), "WRITE") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+	    0 == strcasecmp(test.c_str(), "TRPUT") ) {
 
 	   fprintf(fp, "      <TIMEOUT>   = --timeout-nsec=T  OR --tn=T,  timeout for --cont mode (nanoseconds portion),  ");
 	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC) ) {
@@ -655,10 +680,11 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	  fprintf(fp, "Default=%s\n", nlbcl->defaults.suppresshdr);
    }
 
-   if ( 0 == strcmp(test.c_str(), "LPBK1") ||
-        0 == strcmp(test.c_str(), "READ")  ||
-        0 == strcmp(test.c_str(), "TRPUT") ||
-        0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "LPBK1") ||
+        0 == strcasecmp(test.c_str(), "READ")  ||
+        0 == strcasecmp(test.c_str(), "TRPUT") ||
+        0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+        0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <RDSEL>     = --rds,                        readline-shared,                                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDS) ) {
          fprintf(fp, "yes\n");
@@ -681,7 +707,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	 }
    }
 
-   if ( 0 == strcmp(test.c_str(), "SW") ) {
+   if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <NOTICE>    = --poll            OR --p,     Polling-method,                                 ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_POLL) ) {
          fprintf(fp, "yes\n");
@@ -710,6 +736,36 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 		 fprintf(fp, "Default=%s\n", nlbcl->defaults.umsg_hint);
 	  }
    }
+
+   if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
+	  fprintf(fp, "      <CH-SELECT> = --auto-ch,                    Arbitrary Channel,                              ");
+	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_AUTO_CH) ) {
+		fprintf(fp, "yes\n");
+	 }  else {
+		fprintf(fp, "Default=%s\n", nlbcl->defaults.auto_ch);
+	 }
+
+      fprintf(fp, "                  = --qpi,                        QPI Channel,                                    ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_QPI) ) {
+   	     fprintf(fp, "yes\n");
+   	  } else {
+   	     fprintf(fp, "Default=%s\n", nlbcl->defaults.qpi);
+   	  }
+
+   	  fprintf(fp, "                  = --pcie0,                      PCIe0 Channel,                                  ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE0) ) {
+   		 fprintf(fp, "yes\n");
+   	  } else {
+   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.pcie0);
+   	  }
+
+   	  fprintf(fp, "                  = --pcie1,                      PCIe1 Channel,                                  ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE1) ) {
+   		 fprintf(fp, "yes\n");
+   	  } else {
+   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.pcie1);
+   	  }
+      }
    fprintf(fp, "\n");
 }
 
@@ -735,6 +791,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          return false;
       }
 
+      if ( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_sw") ) {
+    	  if ( cmd.begincls > cmd.defaults.maxcls-1) {
+			   os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls-1 << " cache line";
+			   if ( cmd.defaults.maxcls > 1 ) {
+				  os << 's';
+			   }
+			   os << " for --begin." << endl;
+			   return false;
+			}
+      }
       if ( cmd.begincls > cmd.defaults.maxcls ) {
          os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls << " cache line";
          if ( cmd.defaults.maxcls > 1 ) {
@@ -760,6 +826,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          return false;
       }
 
+      if ( 0 == strcmp(cmd.TestMode.c_str(), "TestMode_sw") ) {
+    	  if ( cmd.endcls > cmd.defaults.maxcls-1 ) {
+			   os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls-1 << " cache line";
+			   if ( cmd.defaults.maxcls > 1 ) {
+				  os << 's';
+			   }
+			   os << " for --end." << endl;
+			   return false;
+			}
+      }
       if ( cmd.endcls > cmd.defaults.maxcls ) {
          os << cmd.TestMode << " allows at most " << cmd.defaults.maxcls << " cache line";
          if ( cmd.defaults.maxcls > 1 ) {
@@ -797,7 +873,7 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
 	  return false;
    }
 
-   // --rdi, --rds, --rdo
+   // --poll, --csr-write, --umsg-data, --umsg-hint
 
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_CSR_WRITE) ||
    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_POLL|NLB_CMD_FLAG_UMSG_DATA) ||
@@ -810,6 +886,18 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
    return false;
    }
 
+   // --auto-ch, --qpi, --pcie0, --pcie1
+
+    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_QPI) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_PCIE0) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_PCIE1) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_QPI|NLB_CMD_FLAG_PCIE0) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_QPI|NLB_CMD_FLAG_PCIE1) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0|NLB_CMD_FLAG_PCIE1)
+    ) {
+    os << "--auto-ch, --qpi, --pcie0 and --pcie1 are mutually exclusive." << endl;
+    return false;
+    }
 
    // --wt, --wb, --pwr
 

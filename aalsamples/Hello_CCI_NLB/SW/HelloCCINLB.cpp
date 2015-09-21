@@ -108,7 +108,8 @@ using namespace AAL;
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x1a00
 #define CSR_AFU_DSM_BASEH        0x1a04
-
+// hack to generate correct Class diagrams
+#define RuntimeClient HelloCCINLBRuntimeClient
 /// @addtogroup HelloCCINLB
 /// @{
 
@@ -122,14 +123,23 @@ class RuntimeClient : public CAASBase,
                       public IRuntimeClient
 {
 public:
-   RuntimeClient();
+    RuntimeClient();
    ~RuntimeClient();
 
+   /// @brief Synchronous wrapper for stopping the Runtime.
    void end();
-
+   /// @brief Accessor for pointer to IRuntime stored in Runtime Client
+   ///
+   /// This pointer is used to allocate Service. 
    IRuntime* getRuntime();
 
-   btBool isOK();
+   /// @brief Checks that the object is in an internally consistent state
+   ///
+   /// The general paradigm in AAL is for an object to track its internal state for subsequent query,
+   /// as opposed to throwing exceptions or having to constantly check return codes.
+   /// We implement this to check if the status of the service allocated.
+   /// In this case, isOK can be false for many reasons, but those reasons will already have been indicated by logging output.
+  btBool isOK();
 
    // <begin IRuntimeClient interface>
    void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
@@ -623,7 +633,7 @@ void HelloCCINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
 }
 // <end IServiceClient interface>
 
-/// @} group HelloCCINLB
+/// @}
 
 
 //=============================================================================

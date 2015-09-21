@@ -284,7 +284,7 @@ protected:
 };
 #endif // DEPRECATED
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_CRITICALSECTION_H__
 

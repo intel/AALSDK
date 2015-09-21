@@ -118,14 +118,10 @@ AAL_END_SVC_MOD()
 /// @addtogroup hello_service
 /// @{
 
-//=============================================================================
-// Name:
-// Description:
-// Interface: public
-// Inputs:
-// Outputs: none.
-// Comments:
-//=============================================================================
+/// @brief Called by framework when Service is being initialized.
+/// @param[in] TransactionID passed in by Client in call to allocService. 
+///            Return it to client when done with initialization in ObjectCreatedEvent
+/// @return void
 void HelloAALService::init(TransactionID const &TranID)
 {
    m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, ClientBase());
@@ -148,24 +144,13 @@ void HelloAALService::init(TransactionID const &TranID)
                                                            TranID) );
 }
 
-//=============================================================================
-// Name: Ping
-// Description: Ping method send 5 replies
-// Interface: public
-// Inputs: Message - Message to send
-//         pTranID
-// Outputs: none.
-// Comments:
-//=============================================================================
 void HelloAALService::Hello(btcString sMessage, TransactionID const &rTranID)
 {
    AutoLock(this);
 
    MSG("Received a hello from '"<< sMessage << "'. Saying hello back.");
    getRuntime()->schedDispatchable(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
-
 }
-
 
 btBool HelloAALService::Release(TransactionID const &rTranID, btTime timeout)
 {
@@ -186,6 +171,6 @@ void HelloAppDispatchable::operator() ()
    delete this;
 }
 
-/// @} group hello_service
+/// @}
 
 

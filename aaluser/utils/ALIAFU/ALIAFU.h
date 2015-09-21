@@ -154,7 +154,7 @@ protected:
 };
 
 
-/// @} group ALIAFU
+/// @}
 
 
 END_NAMESPACE(AAL)

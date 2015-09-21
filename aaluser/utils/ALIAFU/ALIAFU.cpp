@@ -260,7 +260,7 @@ void ALIAFU::OnWorkspaceFreeFailed(const IEvent &Event)
    }
 }
 
-/// @} group ALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 
