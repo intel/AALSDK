@@ -316,6 +316,18 @@ private:
    ThrGrpState *m_pState;
 };
 
+AAL::btBool FireAndWait(IDispatchable            *pDisp,
+                        AAL::btUnsignedInt        MinThrs=0,
+                        AAL::btUnsignedInt        MaxThrs=0,
+                        OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                        AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+
+AAL::btBool FireAndForget(IDispatchable            *pDisp,
+                          AAL::btUnsignedInt        MinThrs=0,
+                          AAL::btUnsignedInt        MaxThrs=0,
+                          OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                          AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+
 #endif // __AALSDK_OSAL_THREADGROUP_H__
 
 /// @}

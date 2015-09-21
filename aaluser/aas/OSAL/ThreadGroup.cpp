@@ -947,8 +947,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Join(AAL::btTime Timeout)
    }
 
    if ( NULL != pThread ) {
-      // self-destruct. This thread terminates.
+      // self-destruct.
       delete pThread;
+
+      // terminate this thread
+      ExitCurrentThread(0);
 
       // We must not return from this call.
       ASSERT(false);
@@ -1014,8 +1017,11 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
       // Self-referential Destroy().
       delete this;
 
-      // self-destruct - this thread will terminate.
+      // self-destruct
       delete pThread;
+
+      // terminate this thread
+      ExitCurrentThread(0);
 
       // We must not return from this fn.
       ASSERT(false);
@@ -1028,3 +1034,107 @@ AAL::btBool OSLThreadGroup::ThrGrpState::Destroy(AAL::btTime Timeout)
    return true;
 }
 
+AAL::btBool FireAndWait(IDispatchable            *pDisp,
+                        AAL::btUnsignedInt        MinThrs,
+                        AAL::btUnsignedInt        MaxThrs,
+                        OSLThread::ThreadPriority ThrPriority,
+                        AAL::btTime               JoinTimeout)
+{
+   // ~OSLThreadGroup() waits for all items to dispatch, prior to returning.
+   OSLThreadGroup ThrGrp(MinThrs, MaxThrs, ThrPriority, JoinTimeout);
+
+   const AAL::btBool fire_and_wait_thread_group_ok = ThrGrp.IsOK();
+
+   ASSERT(fire_and_wait_thread_group_ok);
+   if ( !fire_and_wait_thread_group_ok ) {
+      return false;
+   }
+
+   const AAL::btBool fire_and_wait_thread_group_added_disp = ThrGrp.Add(pDisp);
+
+   ASSERT(fire_and_wait_thread_group_added_disp);
+   if ( !fire_and_wait_thread_group_added_disp ) {
+      return false;
+   }
+
+   const AAL::btBool fire_and_wait_thread_group_drained = ThrGrp.Drain();
+
+   ASSERT(fire_and_wait_thread_group_drained);
+   return fire_and_wait_thread_group_drained;
+}
+
+namespace FAF {
+
+   struct Parms
+   {
+      Parms(OSLThreadGroup           *pThrGrp,
+            OSLThread::ThreadPriority ThrPriority,
+            AAL::btTime               JoinTimeout) :
+         m_pThrGrp(pThrGrp),
+         m_ThrPriority(ThrPriority),
+         m_JoinTimeout(JoinTimeout)
+      {}
+      OSLThreadGroup           *m_pThrGrp;
+      OSLThread::ThreadPriority m_ThrPriority;
+      AAL::btTime               m_JoinTimeout;
+   };
+
+   static void FireAndForgetDelete(OSLThread *pThread, void *lpParms)
+   {
+      Parms *p = reinterpret_cast<Parms *>(lpParms);
+      ASSERT(NULL != p);
+
+      p->m_pThrGrp->Destroy(p->m_JoinTimeout); // deletes OSLThreadGroup::m_pState
+      delete p->m_pThrGrp;                     // deletes OSLThreadGroup
+      delete p;                                // deletes FAF::Parms
+      delete pThread;                          // deletes pThread. d'tor runs to completion.
+
+      ExitCurrentThread(0);
+   }
+
+} // FAF
+
+AAL::btBool FireAndForget(IDispatchable            *pDisp,
+                          AAL::btUnsignedInt        MinThrs,
+                          AAL::btUnsignedInt        MaxThrs,
+                          OSLThread::ThreadPriority ThrPriority,
+                          AAL::btTime               JoinTimeout)
+{
+   OSLThreadGroup *pThrGrp = NULL;
+   FAF::Parms     *pParms  = NULL;
+   OSLThread      *pThr    = NULL;
+   AAL::btBool     fire_and_forget_add_ok;
+
+   pThrGrp = new(std::nothrow) OSLThreadGroup(MinThrs, MaxThrs, ThrPriority, JoinTimeout);
+
+   ASSERT(NULL != pThrGrp);
+   if ( NULL == pThrGrp ) {
+      return false;
+   }
+
+   pParms = new(std::nothrow) FAF::Parms(pThrGrp, ThrPriority, JoinTimeout);
+
+   ASSERT(NULL != pParms);
+   if ( NULL == pParms ) {
+      goto _CLEANUP;
+   }
+
+   fire_and_forget_add_ok = pThrGrp->Add(pDisp);
+   ASSERT(fire_and_forget_add_ok);
+
+   pThr = new(std::nothrow) OSLThread(FAF::FireAndForgetDelete, ThrPriority, pParms);
+
+   // The thread cleans up after itself.
+
+   ASSERT(NULL != pThr);
+   return NULL != pThr;
+
+_CLEANUP:
+   if ( NULL != pParms ) {
+      delete pParms;
+   }
+   if ( NULL != pThrGrp ) {
+      delete pThrGrp;
+   }
+   return false;
+}
