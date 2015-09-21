@@ -103,6 +103,7 @@
 
 #define  iidAIAService                 __AAL_IID(INTC_sysAIA, 0x0001)   // AIA Service interface
 #define  iidAFUProxy                   __INTC_IID(AAL_sysUAIA, 0x0002)  // AIA Proxy interface
+#define  iidAFUProxyClient             __INTC_IID(AAL_sysUAIA, 0x0003)  // AIA Proxy interface
 
 #define  INTC_sysSampleAFU             INTC_sysBase(0x0005)    // Sample AFU
 
