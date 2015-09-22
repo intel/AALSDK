@@ -121,7 +121,7 @@ btBool HWALIAFU::CSRWrite64(btCSROffset CSR,
    return false;
 }
 
-/// @} group HWALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(@ASESPLAFU_SVC_MOD@, ASESPLAFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group ASESPLAFU
+/// @}
 
 #endif // __SERVICE_ASESPLAFUSERVICE_H__
 

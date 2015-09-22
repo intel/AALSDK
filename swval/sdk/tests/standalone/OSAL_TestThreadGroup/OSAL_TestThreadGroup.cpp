@@ -58,6 +58,8 @@ USING_NAMESPACE(AAL)
 
 CSemaphore           TestSem;
 
+BEGIN_NAMESPACE(TestThreadGroup)
+
 // Functors
 class FireAndForget: public IDispatchable
 {
@@ -97,7 +99,7 @@ protected:
   int             m_x;
 };
 
-
+END_NAMESPACE(TestThreadGroup)
 
 
 //=============================================================================
@@ -138,7 +140,7 @@ int main(int argc, char* argv[])
 		  exit(1);
 	  }
  
-     (new FireAndForget(&TestSem))->Fire();
+     (new TestThreadGroup::FireAndForget(&TestSem))->Fire();
 
 
       // Wait forever
@@ -158,7 +160,7 @@ int main(int argc, char* argv[])
       OSLThreadGroup tg;
       TestSem.Reset(-(10));
       for(int x=1; x<= 10; x++){
-         tg.Add(new Numbered(&TestSem, x));
+         tg.Add(new TestThreadGroup::Numbered(&TestSem, x));
       }
 
       if(false == TestSem.Wait(10000)){

@@ -157,7 +157,11 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_POLL,
       DEFAULT_CSR_WRITE,
       DEFAULT_UMSG_DATA,
-      DEFAULT_UMSG_HINT
+      DEFAULT_UMSG_HINT,
+      DEFAULT_AUTO_CH,
+      DEFAULT_QPI,
+      DEFAULT_PCIE0,
+      DEFAULT_PCIE1
    },
    0,
    {
@@ -685,6 +689,21 @@ int main(int argc, char *argv[])
 	   cout << NORMAL << endl
 			<< endl;
    }
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   {
+		// Run NLB ccip test, which performs sw data verification.
+		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
+
+		cout << " * Data Copy - CCIP LPBK1" << flush;
+		res = nlbccip_lpbk1.RunTest(gCmdLine, MAX_NLB_CCIP_LPBK1_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+   }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
@@ -839,6 +858,15 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    return res;
 }
+
+/*void INLB::EnableCSRPrint(bool bEnable, bool bReplay)
+{
+	IQPILinkProtocol *pQLP = m_pFactory->QLPBackDoor();
+
+	   if ( NULL != pQLP ) {
+	      pQLP->EnableCSRPrint(bEnable, bReplay);
+	   }
+}*/
 
 void INLB::ReadQLPCounters()
 {
@@ -1130,6 +1158,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ cciapp --target=swsim@endcode
 
-@} group cciapp
+@}
 */
 

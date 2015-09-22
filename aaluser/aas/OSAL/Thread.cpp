@@ -291,8 +291,9 @@ OSLThread::~OSLThread()
    }
 
    if ( IsThisThread( GetThreadID() ) ) {
-      // self-destruct
-      ExitCurrentThread(0);
+      // When self-destructing, allow the thread to return from the d'tor so that
+      // the C++ runtime releases the memory allocated for this.
+      ;
    } else {
 
       Cancel();  // Mark the thread for termination at the next cancellation point.

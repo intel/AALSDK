@@ -233,7 +233,7 @@ btBool ASEALIAFU::CSRWrite64(btCSROffset CSR,
   return false;
 }
 
-/// @} group ASEALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

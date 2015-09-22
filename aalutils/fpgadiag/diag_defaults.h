@@ -30,6 +30,10 @@
 #define DEFAULT_CSR_WRITE  		"off"
 #define DEFAULT_UMSG_DATA  		"off"
 #define DEFAULT_UMSG_HINT  		"off"
+#define DEFAULT_AUTO_CH			"on"
+#define DEFAULT_QPI				"off"
+#define DEFAULT_PCIE0			"off"
+#define DEFAULT_PCIE1			"off"
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
 
 #endif

@@ -77,13 +77,15 @@ docclean docsclean: $(DOXYGEN_CLEAN)
 
 if AAL_COND_MAINTAINER
 
+WITH_DISTCC ?= n
 MAINTAINER_CHECK=maintainer-check
 maintainer-check:
 	@+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
 --conf='$(abs_top_srcdir)/configure' \
 --srcdir='$(abs_top_srcdir)' \
 --distdir='$(distdir)' \
---wkspc='$(abs_top_builddir)/maintainer-check''
+--wkspc='$(abs_top_builddir)/maintainer-check' \
+--distcc='$(WITH_DISTCC)''
 
 endif
 .PHONY: $(MAINTAINER_CHECK)

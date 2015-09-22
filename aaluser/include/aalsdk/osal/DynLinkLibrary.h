@@ -71,7 +71,7 @@ private:
    DynLinkLibrary & operator = (const DynLinkLibrary & );
 };
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_DYNLINKLIBRARY_H__
 

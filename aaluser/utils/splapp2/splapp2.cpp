@@ -408,7 +408,7 @@ protected:
    btBool               m_bDeepScrub;     ///< Whether to run permutation testing or basic testing.
 }; //CMyApp
 
-/// @} group splapp2
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
@@ -701,7 +701,7 @@ void Show2CLs( void          *pCLExpected, // pointer to cache-line expected
 //   oss << "\n";    /* no terminating linefeed, macro at end will add it. */
 }  // _DumpCL
 
-/// @} group splapp2
+/// @}
 
 // End Utility functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -1250,7 +1250,7 @@ btInt SPLTest(CMyApp *p)
    return res;
 }
 
-/// @} group splapp2
+/// @}
 
 
 #if defined ( __AAL_WINDOWS__ )
@@ -1470,7 +1470,7 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ splapp2 --target=swsim@endcode
 
-@} group splapp2
+@}
 */
 
 

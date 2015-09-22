@@ -42,7 +42,8 @@
 #ifndef __AALSDK_OSAL_TIMER_H__
 #define __AALSDK_OSAL_TIMER_H__
 #include <aalsdk/AALTypes.h>
-
+/// @addtogroup OSAL
+/// @{
 class OSAL_API Timer
 {
 public:
@@ -170,4 +171,4 @@ double OSAL_API GetRTPTime();
 #endif // DEPRECATED
 
 #endif // __AALSDK_OSAL_TIMER_H__
-
+/// @}

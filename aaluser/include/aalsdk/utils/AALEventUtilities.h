@@ -127,7 +127,7 @@ AASLIB_API void UnWrapAndReThrow(IBase              *This,
                                  IRuntime           *pDispatcher,
                                  btEventHandler      Handler);
 
-/// @} group EventUtils
+/// @}
 
 END_NAMESPACE(AAL)
 

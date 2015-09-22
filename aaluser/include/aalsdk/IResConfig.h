@@ -56,11 +56,13 @@ public:
 
    /// @brief Notification callback for IResConfigServce::Configure().
    ///
-   /// Sent in response to a successful completion of teh Resource Configuration)
+   /// Sent in response to a successful completion of the Resource Configuration)
    ///
    /// @param[in]  TranID      The transaction ID provided in the call to ISPLAFU::StartTransactionContext.
    virtual void  configureComplete(TransactionID const &TranID) = 0;
-
+   /// @brief  Notification callback for IResConfigServce::Configure().
+   ///
+   /// Sent in response to failure of completion of Resource Configuration.
    virtual void  configureFailed(const IEvent &theEvent) = 0;
 
 };
@@ -87,7 +89,7 @@ public:
 };
 
 
-/// @} group IResConfig
+/// @}
 
 END_NAMESPACE(AAL)
 

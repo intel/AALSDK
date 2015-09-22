@@ -78,7 +78,7 @@ AAL_DECLARE_SVC_MOD(@SWSIMSPLAFU_SVC_MOD@, SWSIMSPLAFU_API)
 9 29 ---- End of embedded NVS ----\n \
 9999\n"
 
-/// @} group SWSimSPLAFU
+/// @}
 
 #endif // __SERVICE_SWSIMSPLAFUSERVICE_H__
 

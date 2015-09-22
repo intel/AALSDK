@@ -116,6 +116,8 @@ BEGIN_NAMESPACE(AAL)
 // Description: Class provides the implementation of the AAL Service
 //              TCP/IP IPC transport.
 //=============================================================================
+/// @brief Class provides the implementation of the AAL Service
+///              TCP/IP IPC transport.
 class TCPIPxport : public IAALTransport
 {
 public:
@@ -148,6 +150,9 @@ public:
    // Description: Connect to the remote server
    // Inputs optArgs - named ValueSet contains connection arguments
    //=============================================================================
+   /// @brief Connects to the remote server
+   ///
+   /// @param[in] optArgs - named ValueSet contains connection arguments
    btBool connectremote(NamedValueSet const &optArgs)
    {
       btcString host;
@@ -271,6 +276,9 @@ public:
    // Description: Wait for a connection from a client
    // Inputs optArgs - named ValueSet contains connection arguments
    //=============================================================================
+   /// @brief Wait for a connection from a client
+   ///
+   /// @param[in] optArgs named ValueSet contains connection arguments
    btBool waitforconnect(NamedValueSet const &optArgs)
    {
 
@@ -390,6 +398,9 @@ err:
    // Description: Disconnect remote party and destroy channel
    // Inputs optArgs - named ValueSet contains connection arguments
    //=============================================================================
+   /// @brief Disconnect remote party and destroy channel
+   ///
+   ///@param[in] optArgs named ValueSet contains connection arguments
    btBool disconnect(void)
    {
 
@@ -414,6 +425,11 @@ err:
    // Outputs: length of message (-1) in case of error, 0 means EOF (remote close)
    // Returns: pointer to message (NULL in case of error or EOF)
    //=============================================================================
+   /// @brief Gets a message from remote end
+   ///
+   ///Returns a pointer to message (NULL in case of error or EOF)
+   ///@param[in] *len pointer of where to return message length
+   ///@param[out] length of message (-1) in case of error, 0 means EOF (remote close)
    btcString getmsg(btWSSize *len)
    {
       // Get the length of the message as a string for portability
@@ -599,7 +615,7 @@ public:
    }
 };
 
-/// @} group InProcFactory
+/// @}
 
 END_NAMESPACE(AAL)
 

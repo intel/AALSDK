@@ -8,8 +8,18 @@ declare -r SCRIPT_NAME='lcov-standalone'
 . ./lcov-common
 
 declare -r D='standalone'
+declare    WANTDISTCC=false
 
-setup "$D"
+while [ $# -gt 0 ]; do
+   case $1 in
+      --distcc)
+         WANTDISTCC=true
+      ;;
+   esac
+   shift
+done
+
+setup "$D" ${WANTDISTCC}
 
 WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --standalone"
 

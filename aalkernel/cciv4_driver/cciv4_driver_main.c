@@ -456,7 +456,10 @@ cciv4_pci_remove_and_rescan(unsigned index)
             // Save the address so it can be restored
             rescanned_address = aaldev_devaddr(paaldev);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
+#if !defined(RHEL_RELEASE_VERSION)
+#define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
+#endif
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0) && !defined(RHEL_RELEASE_CODE)) || (defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 7))
             pci_stop_bus_device(pcidev);
             pci_remove_bus_device(pcidev);
 #else

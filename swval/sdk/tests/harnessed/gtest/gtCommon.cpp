@@ -921,6 +921,26 @@ void MethodCallLog::ClearLog()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+EmptyIServiceClient::EmptyIServiceClient(btApplicationContext Ctx) :
+   CAASBase(Ctx)
+{
+   if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+EmptyIRuntimeClient::EmptyIRuntimeClient(btApplicationContext Ctx) :
+   CAASBase(Ctx)
+{
+   if ( EObjOK != SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 EmptyISvcsFact::EmptyISvcsFact() :
    m_CreateServiceObject_returns(NULL),
    m_InitializeService_returns(true)
@@ -937,7 +957,8 @@ IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, CreateServiceObject, IBase * , m_Crea
 IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, InitializeService,   btBool ,  m_InitializeService_returns)
 
 
-EmptyIRuntime::EmptyIRuntime() :
+EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
+   CAASBase(Ctx),
    m_start_returns(true),
    m_schedDispatchable_returns(true),
    m_getRuntimeProxy_returns(NULL),
@@ -945,7 +966,11 @@ EmptyIRuntime::EmptyIRuntime() :
    m_releaseRuntimeProxy_1_returns(true),
    m_getRuntimeClient_returns(NULL),
    m_IsOK_returns(true)
-{}
+{
+   if ( EObjOK != SetInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
 
 btBool                      EmptyIRuntime::start(const NamedValueSet & ) { return m_start_returns;                 }
 btBool          EmptyIRuntime::schedDispatchable(IDispatchable * )       { return m_schedDispatchable_returns;     }
@@ -1126,12 +1151,16 @@ EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
                                    IAALTransport    *ptransport,
                                    IAALMarshaller   *marshaller,
                                    IAALUnMarshaller *unmarshaller) :
-   AAL::ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
+   ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
 {}
 
 void EmptyServiceBase::init(TransactionID const & ) {}
 
 ////////////////////////////////////////////////////////////////////////////////
+
+CallTrackingIServiceClient::CallTrackingIServiceClient(btApplicationContext Ctx) :
+   EmptyIServiceClient(Ctx)
+{}
 
 void CallTrackingIServiceClient::serviceAllocated(IBase               *pBase,
                                                   TransactionID const &tid)
@@ -1166,6 +1195,9 @@ void CallTrackingIServiceClient::serviceEvent(const IEvent &e)
 }
 
 
+CallTrackingIRuntimeClient::CallTrackingIRuntimeClient(btApplicationContext Ctx) :
+   EmptyIRuntimeClient(Ctx)
+{}
 
 void CallTrackingIRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &e)
 {
@@ -1242,6 +1274,9 @@ btBool CallTrackingISvcsFact::InitializeService(IBase               *Client,
 }
 
 
+CallTrackingIRuntime::CallTrackingIRuntime(btApplicationContext Ctx) :
+   EmptyIRuntime(Ctx)
+{}
 
 btBool CallTrackingIRuntime::start(const NamedValueSet &rconfigParms)
 {
@@ -1263,7 +1298,6 @@ void CallTrackingIRuntime::allocService(IBase               *pClient,
    l->AddParam("pClient",   reinterpret_cast<btObjectType>(pClient));
    l->AddParam("rManifest", dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(rManifest) ) );
    l->AddParam("rTranID",   rTranID);
-   return EmptyIRuntime::allocService(pClient, rManifest, rTranID);
 }
 
 btBool CallTrackingIRuntime::schedDispatchable(IDispatchable *pDisp)
@@ -1303,4 +1337,19 @@ btBool CallTrackingIRuntime::IsOK()
 {
    AddToLog("IRuntime::IsOK");
    return EmptyIRuntime::IsOK();
+}
+
+
+CallTrackingServiceBase::CallTrackingServiceBase(AALServiceModule *container,
+                                                 IRuntime         *pAALRUNTIME,
+                                                 IAALTransport    *ptransport,
+                                                 IAALMarshaller   *marshaller,
+                                                 IAALUnMarshaller *unmarshaller) :
+   EmptyServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
+{}
+
+void CallTrackingServiceBase::init(TransactionID const &rtid)
+{
+   MethodCallLogEntry *l = AddToLog("ServiceBase::init");
+   l->AddParam("rtid", rtid);
 }

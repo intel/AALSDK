@@ -8,15 +8,25 @@ declare -r SCRIPT_NAME='lcov-everything'
 . ./lcov-common
 
 declare -r D='everything'
+declare    WANTDISTCC=false
 
-setup "$D"
+while [ $# -gt 0 ]; do
+   case $1 in
+      --distcc)
+         WANTDISTCC=true
+      ;;
+   esac
+   shift
+done
+
+setup "$D" ${WANTDISTCC}
 
 WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-opt=--gtest_color=yes --nightly --weekly --standalone"
 
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
 "--directory ${VPATH}/aas/AASLib/.libs" \
-"--directory ${VPATH}/aas/XLRTLib/.libs" \
+"--directory ${VPATH}/aas/AALRuntime/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestSem" \
 "--directory ${VPATH}/tests/standalone/OSAL_TestThreadGroup"\

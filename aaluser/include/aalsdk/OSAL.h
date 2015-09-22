@@ -105,7 +105,7 @@ inline long InterlockedDecrement (volatile long * pCounter)
 /// @param[in] value is input bitmask
 OSAL_API unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value);
 
-/// @} group OSAL
+/// @}
 
 
 # include <aalsdk/osal/Timer.h>

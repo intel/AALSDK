@@ -473,7 +473,7 @@ enum CCIDeviceImplementation
 /// @retval  NULL  When the desired CCI Device Factory can not be allocated.
 ICCIDeviceFactory * GetCCIDeviceFactory(CCIDeviceImplementation Impl);
 
-/// @} group CCILib
+/// @}
 
 END_NAMESPACE(CCILib)
 
