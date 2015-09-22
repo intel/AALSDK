@@ -52,6 +52,8 @@
 
 #include "aalsdk/aas/AALServiceModule.h"
 
+#include "aalsdk/aas/AALService.h"
+#include "aalsdk/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -81,7 +83,9 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
 // Name: ~AALServiceModule()
 // Description: Destructor
 //=============================================================================
-AALServiceModule::~AALServiceModule() {}
+AALServiceModule::~AALServiceModule()
+{
+}
 
 btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
                                    IBase              *Client,
@@ -178,21 +182,70 @@ void AALServiceModule::ServiceReleased(IBase *pService)
 // Outputs: none.
 // Comments:
 //=============================================================================
-void AALServiceModule::ServiceInitialized(IBase *pService, btBool bSuccess)
+btBool AALServiceModule::ServiceInitialized( IBase *pService,
+                                             TransactionID const &rtid)
 {
    AutoLock(this);
 
    // Reduce pending count
    m_pendingcount--;
 
-   if(true == bSuccess){
-      // Add Service to the List
-      AddToServiceList(pService);
-   }else{
-      // Destroy what we created.  Service should have sent notification.
-      m_SvcsFact.DestroyServiceObject(pService);
+   ASSERT(NULL != pService);
+   IServiceBase *pServiceBase = dynamic_ptr<IServiceBase>(iidServiceBase, pService);
+
+   ASSERT(NULL != pServiceBase);
+   if(NULL == pServiceBase ){
+      return false;
    }
 
+   // Add Service to the List
+   btBool ret = AddToServiceList(pService);
+   ASSERT(true == ret);
+   if(false == ret){
+      return ret;
+   }
+
+   // Notify the Service client on behalf of the Service
+   return pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
+                                                                                   pServiceBase->ServiceClient(),
+                                                                                   pService,
+                                                                                   rtid));
+
+
+}
+
+//=============================================================================
+// Name: ServiceInitFailed()
+// Description: Callback invoked when the Service failed to initialize.
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: Once the Service calls this it will be destroyed!! The Service
+//           MUST return immediately with the return code.
+//=============================================================================
+btBool AALServiceModule::ServiceInitFailed(IBase *pService,
+                                           IEvent const *pEvent)
+{
+   AutoLock(this);
+   btBool ret = false;
+
+   m_pendingcount--;
+
+   ASSERT(NULL != pService);
+   IServiceBase *pServiceBase = dynamic_ptr<IServiceBase>(iidServiceBase, pService);
+
+   ASSERT(NULL != pServiceBase);
+   if(NULL == pServiceBase ){
+      return false;
+   }
+   // Notify the Service client on behalf of the Service
+   ret = pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                                                                  pServiceBase->ServiceClient(),
+                                                                                  pService,
+                                                                                  pEvent));
+   // Destroy the Service
+   m_SvcsFact.DestroyServiceObject(pService);
+   return ret;
 }
 
 //=============================================================================

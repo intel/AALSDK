@@ -728,5 +728,7 @@ btBool AIAService::Release(TransactionID const &rTranID,
    DEBUG_CERR(__AAL_FUNC__ << ": Goodbye.\n");
    AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Goodbye.\n");
 #endif
-   return (m_pShutdownThread != NULL);
+   ServiceBase::Release(rTranID, timeout);
+   return true;
+   //return (m_pShutdownThread != NULL);
 }

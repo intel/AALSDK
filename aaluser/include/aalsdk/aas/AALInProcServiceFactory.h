@@ -193,7 +193,7 @@ public:
        }
     }
 protected:
-    static I *m_pService;
+    I *m_pService;
 };
 
 

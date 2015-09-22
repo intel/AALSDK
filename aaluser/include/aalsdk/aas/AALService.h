@@ -141,7 +141,30 @@ protected:
 class AASLIB_API IServiceBase
 {
 public:
-   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT) =0;
+
+   // Called once when the Service is done initializing.
+   virtual btBool initComplete(TransactionID const &rtid)      = 0;
+   virtual btBool initFailed(IEvent const *ptheEvent)          = 0;
+
+   // Final release
+   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT)  = 0;
+
+   virtual NamedValueSet const &OptArgs()                      = 0;
+
+   /// Accessor to pointer to the Service's Client's Interface
+    virtual IServiceClient *ServiceClient()                    = 0;
+
+    /// Accessor to pointer to the Service's Client's IBase Interface
+    virtual IBase          *ServiceClientBase()                = 0;
+
+    /// Accessor to pointer to the Runtime to be used in ObjectCreated
+    virtual IRuntime *getRuntime()                             = 0;
+
+    /// Accessor to pointer to the Runtime Client
+    virtual IRuntimeClient * getRuntimeClient()                = 0;
+
+    /// Accessor to this Services Service Module
+    virtual AALServiceModule     * pAALServiceModule()         = 0;
 };
 
 //=============================================================================
@@ -197,9 +220,6 @@ public:
                         NamedValueSet const &optArgs,
                         TransactionID const &rtid) = 0;
 
-   // Called once when the Service is done initializing.
-   btBool initComplete(TransactionID const &rtid);
-   btBool initFailed(IEvent const *ptheEvent);
 
    // @param[in]  pclient       Interface of client of service.
    // @param[in]  rtid          TransactionID for routing event responses.
@@ -212,6 +232,28 @@ public:
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL);
+
+   // <IAALService> - Empty defaults
+
+   /// @brief     Called to release Service and free its resources
+   ///
+   /// Services derived from ServiceBase are expected to call the base class implementation
+   ///  AFTER completing their Release() implementation to insure proper clean-up
+   /// @param[in] rTranID TransactionID if not atomic
+   /// @param[in] timeout Timeout
+   virtual btBool Release(TransactionID const &rTranID, btTime timeout = AAL_INFINITE_WAIT);
+
+   // </IAALService>
+
+   // <IServiceBase>
+
+   // Called once when the Service is done initializing.
+   btBool initComplete(TransactionID const &rtid);
+   btBool initFailed(IEvent const *ptheEvent);
+
+   // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
+   //   This function destroys the Service object.
+   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
 
    /// Accessor to optional arguments passed during allocateService
    ///
@@ -233,22 +275,7 @@ public:
    /// Accessor to this Services Service Module
    AALServiceModule     * pAALServiceModule()   { return m_pcontainer; }
 
-   // <IAALService> - Empty defaults
-
-   /// @brief     Called to release Service and free its resources
-   ///
-   /// Services derived from ServiceBase are expected to call the base class implementation
-   ///  AFTER completing their Release() implementation to insure proper clean-up
-   /// @param[in] rTranID TransactionID if not atomic
-   /// @param[in] timeout Timeout
-   virtual btBool Release(TransactionID const &rTranID, btTime timeout = AAL_INFINITE_WAIT);
-
-   // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
-   //   This function destroys the Service object.
-   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
-
-   // </IAALService>
-
+   // </IServiceBase>
 
    // <IRuntimeClient>
    /// @brief     Called by a Runtime object to indicate that it failed to

@@ -215,32 +215,38 @@ btBool ServiceBase::_init( IBase               *pclientBase,
 
 btBool ServiceBase::initComplete(TransactionID const &rtid)
 {
+   btBool ret = true;
+
    // Record this Service with the Service Module if one is present
    if(NULL != pAALServiceModule()){
-      pAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this));
+      ret = pAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), rtid);
+   }else {
+      // TODO IS THIS A VALID PATH
+      ASSERT(false);
+      ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
+                                                                       ServiceClient(),
+                                                                       dynamic_cast<IBase*>(this),
+                                                                       rtid));
    }
-
-   // Notify the client
-   return getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
-                                                                     ServiceClient(),
-                                                                     dynamic_cast<IBase*>(this),
-                                                                     rtid));
+   return ret;
 }
 
 btBool ServiceBase::initFailed(IEvent const *ptheEvent)
 {
-   btBool ret;
-   ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                                    ServiceClient(),
-                                                                    dynamic_cast<IBase*>(this),
-                                                                    ptheEvent));
+   btBool ret = true;
 
    // Record this Service with the Service Module if one is present
    if(NULL != pAALServiceModule()){
-      pAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), false);
+      ret = pAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase*>(this), ptheEvent);
+   }else {
+      // TODO IS THIS A VALID PATH
+      ASSERT(false);
+      ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                                                       ServiceClient(),
+                                                                       dynamic_cast<IBase*>(this),
+                                                                       ptheEvent));
    }
 
-   // Notify the client
    return ret;
 }
 

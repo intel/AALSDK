@@ -98,6 +98,7 @@ btBool ServiceBroker::init(IBase *pclientBase,
                                            dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
+#if 0
       getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                                       ServiceClient(),
                                                                       this,
@@ -105,7 +106,16 @@ btBool ServiceBroker::init(IBase *pclientBase,
                                                                       errServiceNotFound,
                                                                       reasUnknown,
                                                                       "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
-  }
+#endif
+      initFailed( new CExceptionTransactionEvent( NULL,
+                                                  rtid,
+                                                  errServiceNotFound,
+                                                  reasUnknown,
+                                                  "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
+      return false;
+   }
+   return true;
+
 }
 
 //
@@ -134,7 +144,12 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
    m_ResMgrBase = pServiceBase;
    m_ResMgr     = subclass_ptr<IResourceManager>(pServiceBase);
    if ( NULL == m_ResMgr ) {
-
+      initFailed( new CExceptionTransactionEvent( NULL,
+                                                  origTid,
+                                                  errMethodNotImplemented,
+                                                  reasNotImplemented,
+                                                  "Service does not support IResourceManager") );
+#if 0
       getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
                                                                        ServiceClient(),
                                                                        this,
@@ -142,15 +157,19 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
                                                                        errMethodNotImplemented,
                                                                        reasNotImplemented,
                                                                        "Service does not support IResourceManager") );
+#endif
       return;
    }
 
    m_bIsOK = true;
-
+#if 0
    getRuntime()->schedDispatchable( new ObjectCreatedEvent(getRuntimeClient(),
                                                            ServiceClient(),
                                                            dynamic_cast<IBase *>(this),
                                                            origTid) );
+#endif
+   initComplete(origTid);
+   return;
 }
 
 //=============================================================================

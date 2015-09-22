@@ -312,9 +312,6 @@ public:
    ///  modules address space MUST be deleted.
    virtual void   Destroy() = 0;
 
-
-   virtual void setRuntime(IRuntime *pRuntime) = 0;
-   virtual IRuntime  *getRuntime() = 0;
 };
 
 
@@ -324,13 +321,16 @@ class AASLIB_API IServiceModuleCallback
 public:
    /// IServiceModuleCallback Destructor.
    virtual ~IServiceModuleCallback();
+
    /// Callback invoked by the Service to indicate that it is released.
    /// @param[in]  pService  The Service that has been released.
    virtual void ServiceReleased(IBase *pService) = 0;
 
    /// Callback invoked by the Service to indicate that it has been initialized.
    /// @param[in]  pService  The Service that has been initialized.
-   virtual void ServiceInitialized(IBase *pService, btBool bSuccess =-true) = 0;
+   virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid) = 0;
+
+   virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent) = 0;
 };
 
 
@@ -356,7 +356,7 @@ public:
 
    // <IServiceModule>
 
-    virtual btBool Construct( IRuntime            *pAALRUNTIME,
+    virtual btBool Construct( IRuntime            *pRuntime,
                               IBase               *Client,
                               TransactionID const &tid = TransactionID(),
                               NamedValueSet const &optArgs = NamedValueSet());
@@ -366,35 +366,9 @@ public:
 
    // <IServiceModuleCallback>
    virtual void ServiceReleased(IBase *pService);
-   virtual void ServiceInitialized(IBase *pService, btBool bSuccess=true);
+   virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid);
+   virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent);
    // </IServiceModuleCallback>
-
-   void setRuntime(IRuntime *pRuntime)
-   {
-      // Lock
-      m_Runtime = pRuntime;
-   }
-
-   // AAL 4.0 Service Interface
-   IRuntime *getRuntime()
-   {
-      // Lock
-      return m_Runtime;
-   }
-
-   IRuntimeClient *getRuntimeClient()
-   {
-      // Lock
-      return m_RuntimeClient;
-   }
-
-   void setRuntimeClient(IRuntimeClient *pRTC)
-   {
-      // Lock
-      m_RuntimeClient = pRTC;
-      return ;
-   }
-
 
 private:
    //=============================================================================
@@ -451,8 +425,8 @@ protected:
    IAALService                            *m_pService;
    btUnsignedInt                           m_pendingcount;
 
-   IRuntime                               *m_Runtime;
-   IRuntimeClient                         *m_RuntimeClient;
+//   IRuntime                               *m_Runtime;
+//   IRuntimeClient                         *m_RuntimeClient;
    ISvcsFact                              &m_SvcsFact;
    CSemaphore                              m_srvcCount;
 };

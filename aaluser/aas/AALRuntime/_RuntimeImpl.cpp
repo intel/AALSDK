@@ -221,6 +221,12 @@ void _runtime::releaseRuntimeInstance( Runtime *pRuntimeProxy)
       // Stop and clean up properly  TODO
    }
 
+   if(m_mClientMap.size() >1){
+      std::cerr << "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl;
+   }else{
+      // Take owner off of Proxy list
+      m_mClientMap.erase(m_pOwner);
+   }
    delete this;
 }
 
@@ -517,6 +523,7 @@ void _runtime::addProxy( Runtime *pRuntimeProxy,
 
    // Save in map
    m_mClientMap[pRuntimeProxy] = pClient;
+   std::cerr << "addProxy: Num Proxies " << m_mClientMap.size() << std::endl;
 
 }
 
@@ -544,7 +551,7 @@ void _runtime::removeProxy( Runtime *pRuntimeProxy)
       return;
    }
    m_mClientMap.erase(cmItr);
-
+   std::cerr << "removeProxy: Num Proxies " << m_mClientMap.size() << std::endl;
 }
 
 //=============================================================================
@@ -900,6 +907,7 @@ IRuntimeClient *_runtime::getRuntimeClient()
 _runtime::~_runtime()
 {
    AutoLock(this);
+
    std::cerr << "Num Proxies " << m_mClientMap.size() << std::endl;
 #if 0
    // Check for proxies

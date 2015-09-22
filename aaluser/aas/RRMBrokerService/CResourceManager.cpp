@@ -307,6 +307,48 @@ void CResourceManager::ProcessRMMessages()
    }
 }  // CResourceManager::ProcessRMMessages()
 
+
+//=============================================================================
+// Name: ~CResourceManagerClientService
+// Description: Destructor
+// Interface: public
+// Inputs: none.
+// Outputs: none.
+// Comments:
+//=============================================================================
+void CResourceManager::StopMessagePump()
+{
+
+   // Shutdown the message pump by putting in a reqid_Shutdown to force a
+   //    wake-up and let the kernel know it is going down.
+
+   DEBUG_CERR("~StopMessagePump: sending reqid_Shutdown.\n");
+
+   m_RMProxy.SendStop();
+
+   // if message pump thread is running, need to wait for it to terminate
+   if ( NULL != m_pProxyPoll ) {
+      // Wait for the Message delivery thread to terminate
+      DEBUG_CERR("~CResourceManagerClientService: waiting for Receive Thread to Join. 2 of 5\n");
+
+      m_pProxyPoll->Join();
+
+      DEBUG_CERR("~StopMessagePump: Receive Thread has Joined.\n");
+
+      delete m_pProxyPoll;
+      m_pProxyPoll = NULL;
+   }
+
+   // Close the physical device
+   DEBUG_CERR("~StopMessagePump: shutting down UI Client file.\n");
+
+   // Close the channel
+   m_RMProxy.Close();
+
+   DEBUG_CERR("~StopMessagePump: done.\n");
+
+}
+
 //=============================================================================
 // Name: ~CResourceManagerClientService
 // Description: Destructor
@@ -317,53 +359,7 @@ void CResourceManager::ProcessRMMessages()
 //=============================================================================
 CResourceManager::~CResourceManager()
 {
-#if 0
-   // Shutdown the message pump by putting in a reqid_Shutdown to force a
-   //    wake-up and let the kernel know it is going down.
-   if ( m_RMC.IsOK() ) {
-      DEBUG_CERR("~CResourceManagerClientService: sending reqid_Shutdown. 1 of 5\n");
 
-      struct aalrm_ioctlreq req;
-      memset(&req, 0, sizeof(req));
-
-      req.id      = reqid_Shutdown;
-      req.size    = 0;
-      req.payload = NULL;
-      req.tranID  = (stTransactionID_t &) TransactionID(123456);
-      req.context = (void *) 67890;
-
-      m_RMC.Send( &req);
-
-   } else {
-      DEBUG_CERR("~CResourceManagerClientService: Channel already closed. Unexpected.\n");
-   }
-
-   // if message pump thread is running, need to wait for it to terminate
-   if ( NULL != m_pMDT ) {
-      // Wait for the Message delivery thread to terminate
-      DEBUG_CERR("~CResourceManagerClientService: waiting for Receive Thread to Join. 2 of 5\n");
-
-#if defined( __AAL_WINDOWS__ )
-// ** short-term hack to enable SPL2 Windows port.
-      m_RMC.m_HeinousHackSpin = false;
-#endif // __AAL_WINDOWS__
-
-      m_pMDT->Join();
-
-      DEBUG_CERR("~CResourceManagerClientService: Receive Thread has Joined. 3 of 5\n");
-
-      delete m_pMDT;
-      m_pMDT = NULL;
-   }
-
-   // Close the physical device
-   DEBUG_CERR("~CResourceManagerClientService: shutting down UI Client file. 4 of 5\n");
-
-   // Close the channel
-   m_RMC.Close();
-
-   DEBUG_CERR("~CResourceManagerClientService: done. 5 of 5\n");
-#endif
 } // End of CResourceManagerClientService::~CResourceManagerClientService
 
 //=============================================================================
@@ -374,7 +370,11 @@ CResourceManager::~CResourceManager()
 //=============================================================================
 btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
-   // TODO  - Send the shutdown to the driver and wait until done before issuing this
+   // Send the shutdown to the driver and wait until done before issuing this
+
+   // This function blocks until pump is stopped.
+   StopMessagePump();
+
    ServiceBase::Release(rTranID, timeout);
 }
 

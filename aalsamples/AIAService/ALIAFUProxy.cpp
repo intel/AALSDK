@@ -107,6 +107,12 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
    }
    m_pAIA = dynamic_ptr<AIAService>(iidAIAService, m_pAIABase);
 
+   //
+   // Check Client for proper interface
+
+   // TODO
+
+
    // Bind the AFU device to complete transfer of ownership
    // Get the device handle if there is one
    if( optArgs.Has(keyRegHandle) ) {
@@ -165,6 +171,11 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
 
 }
 
+AAL::btBool ALIAFUProxy::Release(AAL::TransactionID const &rTranID, AAL::btTime timeout)
+{
+   return ServiceBase::Release(rTranID, timeout);
+
+}
 
 #if 0
 //=============================================================================

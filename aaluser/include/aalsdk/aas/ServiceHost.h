@@ -55,7 +55,7 @@ public:
    ServiceHost( AALSvcEntryPoint EP);
 
    btBool IsOK() const {return m_bIsOK;}
-   ~ServiceHost(){}
+   ~ServiceHost();
 
    btBool InstantiateService( IRuntime            *pRuntime,
                               IBase               *pClient,

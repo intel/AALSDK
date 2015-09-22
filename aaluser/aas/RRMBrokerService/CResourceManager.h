@@ -111,6 +111,8 @@ public:
    // Request a resource.
    void RequestResource( NamedValueSet const &nvsManifest,
                          TransactionID const &tid);
+protected:
+   void StopMessagePump();
 
 private:
    static void ProxyPollThread( OSLThread *pThread,

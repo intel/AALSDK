@@ -123,6 +123,21 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
 }
 
 //=============================================================================
+// Name: ~ServiceHost
+// Description: Destructor
+// Interface: public
+// Comments: Unloads the Service Library.
+//=============================================================================
+ServiceHost::~ServiceHost()
+{
+   if ( NULL != m_pDynLinkLib ) {
+       delete m_pDynLinkLib;
+       m_pDynLinkLib = NULL;
+    }
+    return;
+}
+
+//=============================================================================
 // Name: InstantiateService
 // Description: Allocate an instance of the Service
 // Interface: public
