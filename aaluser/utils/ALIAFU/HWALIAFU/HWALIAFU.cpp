@@ -602,16 +602,27 @@ _SEND_ERR:
 // IALIUMsg interface implementation
 // ---------------------------------------------------------------------------
 
+//
+// umsgGetNumber. Return number of UMSGs.
+//
 btUnsignedInt HWALIAFU::umsgGetNumber( void )
 {
-	return 0;
+	return AFUDev().getUMSGsize();
 }
 
+//
+// umsgGetAddress. Get address of specific UMSG.
+//
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-	return NULL;
+	return AFUDev().getUMSG() + (UMsgNumber << 2);	// assumes 32 bit UMSGs
 }
 
+//
+// umsgSetAttributes. Set UMSG attributes.
+//
+// FIXME: not implemented
+//
 bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
 	return false;
