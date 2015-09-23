@@ -263,7 +263,7 @@ void CCIAFU::OnWorkspaceFreeFailed(const IEvent &Event)
    }
 }
 
-/// @} group CCIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

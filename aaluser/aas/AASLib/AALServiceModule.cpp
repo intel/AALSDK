@@ -57,26 +57,19 @@
 
 BEGIN_NAMESPACE(AAL)
 
-
-IAALTransport::~IAALTransport() {}
-IAALMarshalUnMarshallerUtil::~IAALMarshalUnMarshallerUtil() {}
-IAALMarshaller::~IAALMarshaller() {}
-IAALUnMarshaller::~IAALUnMarshaller() {}
-ISvcsFact::~ISvcsFact() {}
-IServiceModule::~IServiceModule() {}
-IServiceModuleCallback::~IServiceModuleCallback() {}
-
 //=============================================================================
 // Name: AALServiceModule()
 // Description: Constructor
 //=============================================================================
 AALServiceModule::AALServiceModule(ISvcsFact &fact) :
-   CAASBase(),
-   m_pService(NULL),
-   m_pendingcount(0),
-   m_SvcsFact(fact)
+   m_SvcsFact(fact),
+   m_RuntimeClient(NULL),
+   m_pendingcount(0)
 {
-   SetInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this));
+   if ( SetSubClassInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
 }
 
 //=============================================================================
@@ -86,11 +79,10 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
 AALServiceModule::~AALServiceModule()
 {
 }
-
 btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
-                                   IBase              *Client,
-                                   TransactionID const &tranID,
-                                   NamedValueSet const &optArgs)
+                                    IBase               *Client,
+                                    TransactionID const &tranID,
+                                    NamedValueSet const &optArgs)
 {
 
    AutoLock(this);
@@ -147,15 +139,16 @@ void AALServiceModule::Destroy()
       //  count to a negative number.
       //  The waiter will block until the semaphore
       //  counts up to zero.
+      btBool res =
       m_srvcCount.Create( - static_cast<btInt>(size) );
 
-      // TODO CHECK RETURN
+      ASSERT(res);
 
       // Loop through all services and shut them down
       SendReleaseToAll();
    }
 
-   // Wait for all to complete.
+   // Wait for all to complete. Unlock before waiting.
    m_srvcCount.Wait();
 }
 
@@ -265,6 +258,7 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
    }
 
    m_serviceList[pService] = pService;
+
    return true;
 }
 
@@ -289,6 +283,7 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    // Post to the count up semaphore
    //  in case the service is shutting down
    m_srvcCount.Post(1);
+
    return true;
 }
 
@@ -303,15 +298,7 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
 btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 {
    AutoLock(this);
-
-   const_iterator itr = m_serviceList.end();
-
-   // Find the named value pair
-   if ( m_serviceList.find(pService) == itr ) {
-      return false;
-   }
-
-   return true;
+   return m_serviceList.end() != m_serviceList.find(pService);
 }
 
 //=============================================================================
@@ -342,7 +329,4 @@ void AALServiceModule::SendReleaseToAll()
    }
 }
 
-
 END_NAMESPACE(AAL)
-
-

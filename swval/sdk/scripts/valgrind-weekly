@@ -7,12 +7,24 @@ declare -r SCRIPT_NAME='valgrind-weekly'
 
 . ./valgrind-common
 
-if [ $# -gt 0 ]; then
-   if [ "$1" = 'clean' ]; then
-      clean_valgrind_all "tests/harnessed/gtest/.libs/weekly"
-      exit 0
-   fi
-fi
+declare ARGS=''
 
-run_valgrind_all "tests/harnessed/gtest/.libs/weekly" ${1+"$@"}
+declare WANTDISTCC=false
+while [ $# -gt 0 ]; do
+   case $1 in
+      --clean)
+         clean_valgrind_all "tests/harnessed/gtest/.libs/weekly"
+         exit 0
+      ;;
+      --distcc)
+         WANTDISTCC=true
+      ;;
+      *)
+         ARGS="${ARGS} $1"
+      ;;
+   esac
+   shift
+done
+
+run_valgrind_all ${WANTDISTCC} "tests/harnessed/gtest/.libs/weekly" ${ARGS}
 exit $?

@@ -7,6 +7,7 @@ die() {
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r DISTCC="`which distcc`" 2>/dev/null
 declare -r FIND="`which find`" 2>/dev/null
 [ "x${FIND}" = x ] && die "no find?"
 declare -r GIT="`which git`" 2>/dev/null
@@ -60,8 +61,15 @@ on_sigint() {
 trap 'on_sigint' SIGINT
 
 # $1 : name of the application binary for which coverage is to be collected.
+# $2 (optional) : whether distcc is requested.
 setup() {
    local -r app="$1"
+   shift
+   local    wantdistcc=false
+
+   if [ $# -gt 0 ]; then
+      wantdistcc=$1
+   fi
 
    # This script is located in swval/sdk/scripts
    local -r srcdir="`cd ${PWD}/.. && pwd`"
@@ -105,8 +113,13 @@ setup() {
 
    pushd "${VPATH}" >/dev/null 2>&1
 
-   ${MAKE}
-   ${MAKE} check
+   if ${wantdistcc} && [ "x${DISTCC}" != x ] && [ -d "${HOME}/distcc" ]; then
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} all
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} check
+   else
+      ${MAKE} ${MAKEOPTS:-} all
+      ${MAKE} ${MAKEOPTS:-} check
+   fi
 
    popd >/dev/null 2>&1
 

@@ -156,6 +156,9 @@ AAS_END_MOD()
    /// @defgroup CommonBase Common Base Class
    /// @ingroup AALCore
 
+   /// @defgroup Runtime Runtime Objects
+   /// @ingroup AALCore
+
    /// @defgroup AALRUNTIME AAL Run Time Framework
    /// @ingroup AALCore
 
@@ -386,6 +389,7 @@ AAS_END_MOD()
       <li>@ref BasicTypes "Basic Data Types"</li>
       <li>@ref OSAL       "OS Abstraction Layer"</li>
       <li>@ref CommonBase "Common Base Class"</li>
+      <li>@ref Runtime    "Runtime Objects"</li>
       <li>@ref AALRUNTIME  "AAL Run Time Framework"</li>
       <li>@ref Events     "Event Infrastructure"</li>
         <ul>

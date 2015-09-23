@@ -67,7 +67,8 @@ public:
    {
       WKSPC_DSM, ///< Device Status Memory
       WKSPC_IN,  ///< Input workspace
-      WKSPC_OUT  ///< Output workspace
+      WKSPC_OUT,  ///< Output workspace
+      WKSPC_UMSG  ///< UMsg workspace
    };
 
    CMyCCIClient();
@@ -88,14 +89,18 @@ public:
    btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.
    btVirtAddr InputVirt()  const { return m_InputVirt;  } ///< Accessor for the Input workspace.
    btVirtAddr OutputVirt() const { return m_OutputVirt; } ///< Accessor for the Output workspace.
+   btVirtAddr UMsgVirt() const { return m_UMsgVirt; 	} ///< Accessor for the UMsg workspace.
 
    btPhysAddr DSMPhys()    const { return m_DSMPhys;    } ///< Accessor for the DSM workspace.
    btPhysAddr InputPhys()  const { return m_InputPhys;  } ///< Accessor for the Input workspace.
    btPhysAddr OutputPhys() const { return m_OutputPhys; } ///< Accessor for the Output workspace.
+   btPhysAddr UMsgPhys()   const { return m_UMsgPhys; 	} ///< Accessor for the UMsg workspace.
 
    btWSSize   DSMSize()    const { return m_DSMSize;    } ///< Accessor for the DSM workspace.
    btWSSize   InputSize()  const { return m_InputSize;  } ///< Accessor for the Input workspace.
    btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
+   btWSSize   UMsgSize()   const { return m_UMsgSize; 	} ///< Accessor for the UMsg workspace.
+
 
    /// @brief Wait on the client's internal semaphore.
    void ClientWait();
@@ -128,6 +133,14 @@ protected:
       m_OutputSize = s;
    }
 
+   /// @brief Mutator for the Output workspace.
+   void UMsg(btVirtAddr v, btPhysAddr p, btWSSize s)
+   {
+	  m_UMsgVirt = v;
+	  m_UMsgPhys = p;
+	  m_UMsgSize = s;
+   }
+
    btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
    btPhysAddr m_DSMPhys;    ///< DSM workspace physical address.
    btWSSize   m_DSMSize;    ///< DSM workspace size in bytes.
@@ -137,6 +150,9 @@ protected:
    btVirtAddr m_OutputVirt; ///< Output workspace virtual address.
    btPhysAddr m_OutputPhys; ///< Output workspace physical address.
    btWSSize   m_OutputSize; ///< Output workspace size in bytes.
+   btVirtAddr m_UMsgVirt;   ///< UMsg workspace virtual address.
+   btPhysAddr m_UMsgPhys;   ///< UMsg workspace physical address.
+   btWSSize   m_UMsgSize;   ///< UMsg workspace size in bytes.
    btInt      m_Wkspcs;     ///< current number of workspaces allocated.
    CSemaphore m_Sem;        ///< client's internal semaphore.
 };
@@ -144,6 +160,9 @@ protected:
 /// The default CCIAFU Delegate.
 #define DEFAULT_TARGET_AFU CCIAFU_NVS_VAL_TARGET_FPGA
 
+
+/// The default Test Mode.
+#define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
 
 ////////////////////////////////////////////////////////////////////////////////
 // CMyApp
@@ -169,6 +188,8 @@ public:
    virtual void     runtimeAllocateServiceSucceeded(IBase *,
                                                     TransactionID const & );
    virtual void     runtimeEvent(const IEvent & );
+   virtual void 	runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+   virtual void 	runtimeStopFailed(const IEvent &rEvent);
    // </IRuntimeClient>
 
    // <IServiceClient>
@@ -177,6 +198,8 @@ public:
    virtual void serviceAllocateFailed(const IEvent &);
    virtual void          serviceFreed(TransactionID const & = TransactionID());
    virtual void          serviceEvent(const IEvent &);
+   virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void  serviceReleaseFailed(const IEvent &rEvent);
    // </IServiceClient>
 
    void Wait() { m_Sem.Wait();  }
@@ -188,6 +211,11 @@ public:
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
    std::string AFUTarget() const             { return m_AFUTarget;   }
 
+   /// @brief Mutator for setting the test mode.
+   void TestMode(const std::string &mode) { m_TestMode = mode; }
+   /// @brief Accessor for the test mode.
+   std::string TestMode() const             { return m_TestMode;   }
+
    /// @brief Wait on the m_CCIClient's internal semaphore.
    void ClientWait()       { m_CCIClient.ClientWait();  }
    /// @brief Determine m_CCIClient's status.
@@ -196,14 +224,19 @@ public:
    btVirtAddr DSMVirt()    const { return m_CCIClient.DSMVirt();    } ///< Accessor for the DSM workspace.
    btVirtAddr InputVirt()  const { return m_CCIClient.InputVirt();  } ///< Accessor for the Input workspace.
    btVirtAddr OutputVirt() const { return m_CCIClient.OutputVirt(); } ///< Accessor for the Output workspace.
+   btVirtAddr UMsgVirt()   const { return m_CCIClient.UMsgVirt(); 	} ///< Accessor for the UMsg workspace.
 
    btPhysAddr DSMPhys()    const { return m_CCIClient.DSMPhys();    } ///< Accessor for the DSM workspace.
    btPhysAddr InputPhys()  const { return m_CCIClient.InputPhys();  } ///< Accessor for the Input workspace.
    btPhysAddr OutputPhys() const { return m_CCIClient.OutputPhys(); } ///< Accessor for the Output workspace.
+   btPhysAddr UMsgPhys()   const { return m_CCIClient.UMsgPhys(); 	} ///< Accessor for the UMsg workspace.
 
    btWSSize   DSMSize()    const { return m_CCIClient.DSMSize();    } ///< Accessor for the DSM workspace.
    btWSSize   InputSize()  const { return m_CCIClient.InputSize();  } ///< Accessor for the Input workspace.
    btWSSize   OutputSize() const { return m_CCIClient.OutputSize(); } ///< Accessor for the Output workspace.
+   btWSSize   UMsgSize()   const { return m_CCIClient.UMsgSize(); 	} ///< Accessor for the UMsg workspace.
+
+
 
    operator IAALService * () { return m_pAALService;  }
 
@@ -211,6 +244,7 @@ public:
 
 protected:
    std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
+   std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
    CMyCCIClient m_CCIClient; ///< The ICCIClient used to communicate with the allocated Service.
    IRuntime    *m_pRuntime;
    IAALService *m_pAALService;
@@ -220,7 +254,7 @@ protected:
 
 
 
-/// @} group cciapp
+/// @}
 ////////////////////////////////////////////////////////////////////////////////
 class INLB
 {
@@ -256,6 +290,8 @@ protected:
    std::string  CalcReadBandwidth(const NLBCmdLine &cmd);
    std::string CalcWriteBandwidth(const NLBCmdLine &cmd);
    std::string         Normalized(const NLBCmdLine &cmd) const throw();
+
+   void EnableCSRPrint(bool bEnable, bool bReplay=true);
 
    CMyApp     *m_pMyApp;
    ICCIAFU    *m_pCCIAFU;
@@ -297,7 +333,6 @@ public:
 
 
 class CNLBTrput : public INLB
-				  // , public PrintFormatter
 {
 public:
    CNLBTrput(CMyApp *pMyApp) :
@@ -308,6 +343,25 @@ public:
 };
 
 
+class CNLBSW : public INLB
+{
+public:
+	CNLBSW(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
+
+class CNLBCcipLpbk1 : public INLB
+{
+public:
+	CNLBCcipLpbk1(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 
 /*class PrintFormatter : public INLB
 {

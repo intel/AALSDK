@@ -334,7 +334,7 @@ void SPLAFU::OnTransactionStopped(TransactionID const &TranID)
                                                                                   TranID) );
 }
 
-/// @} group SPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

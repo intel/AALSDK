@@ -1,3 +1,49 @@
+// Copyright (c) 2013-2014, Intel Corporation
+//
+// Redistribution  and  use  in source  and  binary  forms,  with  or  without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of  source code  must retain the  above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name  of Intel Corporation  nor the names of its contributors
+//   may be used to  endorse or promote  products derived  from this  software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE
+// IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE
+// LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
+// CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF
+// SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS
+// INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN
+// CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
+// @file diag_trput.cpp
+// @brief NLB VAFU template application file.
+// @ingroup
+// @verbatim
+// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+//
+// AUTHORS: Tim Whisonant, Intel Corporation
+//			Sadruta Chandrashekar, Intel Corporation
+//
+// HISTORY:
+// WHEN:          WHO:     WHAT:
+// 05/30/2013     TSW      Initial version.
+// 07/30/2105     SC	   fpgadiag version@endverbatim
+//****************************************************************************
+
+//TRPUT: This test combines the read and write streams. There is no data checking
+//and no dependency between read and writes. It reads CSR_NUM_LINES starting from
+//CSR_SRC_ADDR location and writes CSR_NUM_LINS to CSR_DST_ADDR. It is also used
+//to measure 50% read + 50% write bandwidth.
+
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -49,8 +95,12 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-   csr_type cfg = (csr_type)NLB_TEST_MODE_TRPUT|NLB_TEST_MODE_CONT;
-   //m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_TRPUT|NLB_TEST_MODE_CONT);
+   csr_type cfg = (csr_type)NLB_TEST_MODE_TRPUT;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
+     {
+       cfg |= (csr_type)NLB_TEST_MODE_CONT;
+     }
+   //EnableCSRPrint(flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_CSRS));
 
    //Check for write through mode and add to CSR_CFG
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
@@ -58,12 +108,27 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
      cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
 
+   // Set the read type flags of the CSR_Config.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
+   {
+	cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   }
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
+   {
+    cfg |= (csr_type)NLB_TEST_MODE_RDO;
+   }
+
    m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
+
+   /*if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CSRS))
+   {
+	   cout << "CSR Write:\t" << std::hex << CSR_CFG << "\t" << cfg << endl;
+   }*/
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
 			 //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Ticks(@"
+	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
 		   << Normalized(cmd)  << ")'";
 
 	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
@@ -78,37 +143,57 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 #error TODO
 #elif defined( __AAL_LINUX__ )
    struct timespec ts       = cmd.timeout;
-   const Timer     absolute = Timer() + Timer(&ts);
+   Timer     absolute = Timer() + Timer(&ts);
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+
+
    while ( sz <= CL(cmd.endcls) )
       {
+	   	   // Assert Device Reset
+	   	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+
+	   	   // Clear the DSM status fields
+	   	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+	   	   // De-assert Device Reset
+	   	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
 	   	   // Set the number of cache lines for the test
-	      m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	       m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 		   // Start the test
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 
 		   // Wait for test completion
-		   while ( ( 0 == pAFUDSM->test_complete ) &&
-				   ( Timer() < absolute ) ) {
-
+		   while ( ( 0 == pAFUDSM->test_complete ))
+		   {
+			   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
+			   {
+				   absolute = Timer() + Timer(&ts);
+				   break;
+			   }
 			   SleepNano(10);
 		   }
+
+		   // Stop the device
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
 		   ReadQLPCounters();
 
 		   PrintOutput(cmd, (sz / CL(1)));
 
 		   SaveQLPCounters();
+
+		   // Increment number of cachelines and update Timer
 		   sz += CL(1);
        }
-   // Stop the device
-   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
+
+   //Wait until test completes or times out.
    while ( ( 0 == pAFUDSM->test_complete ) &&
            ( MaxPoll >= 0 ) ) {
       MaxPoll -= 500;

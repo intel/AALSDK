@@ -183,7 +183,7 @@ protected:
    btTime         m_TimeoutFromRelease; ///< Saved from the call to ServiceBase::Release, until the Delegate AFU is freed.
 };
 
-/// @} group SPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

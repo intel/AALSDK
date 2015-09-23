@@ -236,7 +236,7 @@ btBool ASECCIAFU::CSRWrite64(btCSROffset CSR,
   return false;
 }
 
-/// @} group ASECCIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

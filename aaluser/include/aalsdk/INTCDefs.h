@@ -71,6 +71,7 @@
 #define __INTC_ExTranEvt(sys, Num)   AAL_ExceptionTransactionEvent( AAL_vendINTC, (sys), (Num))
 #define __INTC_ErrNum(sys, Num)      AAL_ExceptionCode( AAL_vendINTC, (sys), (Num))
 #define __INTC_ReasCode(sys, Num)    AAL_ReasonCode( AAL_vendINTC, (sys), (Num))
+#define __INTC_RegistrarKey(sys,Num) AAL_RegistrarKey( AAL_vendINTC, (sys), (Num))
 
 /// CAASBase interface id.
 #define iidCBase                     __INTC_IID(AAL_sysAAL, 0x0001)
@@ -106,6 +107,7 @@
 #define  iidAFUProxyClient             __INTC_IID(AAL_sysUAIA, 0x0003)  // AIA Proxy interface
 
 #define  INTC_sysSampleAFU             INTC_sysBase(0x0005)    // Sample AFU
+#define  INTC_sysAFULinkInterface      INTC_sysBase(0x0006)    // AFU Link Interface & derivatives
 
 #define  INTC_sysNext                  0x0009
 

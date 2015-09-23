@@ -41,4 +41,4 @@
 #define NLB_TITLE           "NLB Loopback 1"
 #define NLB_CREATE_WKLD     CreateNLBLpbk1Workload
 #define NLB_MIN_CL          1
-#define NLB_MAX_CL          0x4000
+#define NLB_MAX_CL          0x10000

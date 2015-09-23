@@ -111,7 +111,7 @@ public:
       return dynamic_cast<IBase*>(pService);
    }
 
-
+  /// @Initilizes the service and returns what the service gives
    btBool InitializeService(IBase               *newService,
                             IBase               *Client,
                             TransactionID const &rtid,
@@ -165,7 +165,7 @@ public:
          return dynamic_cast<IBase*>(m_pService);
        }
     }
-
+   /// @Initilizes the service and returns what the service gives
    btBool InitializeService(IBase               *newService,
                             IBase               *Client,
                             TransactionID const &rtid,
@@ -197,7 +197,7 @@ protected:
 };
 
 
-/// @} group InProcFactory
+/// @}
 
 END_NAMESPACE(AAL)
 

@@ -156,7 +156,7 @@ protected:
 };
 
 
-/// @} group CCIAFU
+/// @}
 
 
 END_NAMESPACE(AAL)

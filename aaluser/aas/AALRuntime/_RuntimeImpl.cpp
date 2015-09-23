@@ -57,10 +57,11 @@
 
 BEGIN_NAMESPACE(AAL)
 
-
 BEGIN_C_DECLS
+
 // Singleton Runtime implementation
-static _runtime *pruntime = NULL;
+static _runtime       *pTheRuntime = NULL;
+static CriticalSection TheRuntimeMtx;
 
 //=============================================================================
 // Name: _getnewRuntimeInstance
@@ -73,162 +74,104 @@ static _runtime *pruntime = NULL;
 //           so that multiple Proxy's can point to the same Runtime and
 //           messages are routed appropriately.
 //=============================================================================
-_runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
+_runtime * _getnewRuntimeInstance(Runtime        *pRuntimeProxy,
                                   IRuntimeClient *pClient,
-                                  btBool bFirstTime)
+                                  btBool          bFirstTime)
 {
-
-
    // If There is no client then there isn't much
    //  to do but silently fail.
-   if(NULL == pClient){
-      ASSERT(NULL != pClient);
+   ASSERT(NULL != pClient);
+   if ( NULL == pClient ) {
       AAL_ERR(LM_AAS, "Missing IRuntimeClient on Runtime construction");
       return NULL;
    }
 
+   IDispatchable *pDisp = NULL;
+
    // If missing the Proxy fail
-   if(NULL == pRuntimeProxy) {
+   ASSERT(NULL != pRuntimeProxy);
+   if ( NULL == pRuntimeProxy ) {
+      // Fire the final event, waiting for it to dispatch.
       // Dispatch the event ourselves, because MDS not available.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
-                                                             pClient,
-                                                             new CExceptionTransactionEvent( NULL,
-                                                                                             extranevtRuntimeCreateorProxy,
-                                                                                             TransactionID(),
-                                                                                             errCreationFailure,
-                                                                                             reasMissingParameter,
-                                                                                             "Failed to instantiate Runtime"));
 
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return NULL;
+      pDisp = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                       pClient,
+                                       new CExceptionTransactionEvent(NULL,
+                                                                      extranevtRuntimeCreateorProxy,
+                                                                      TransactionID(),
+                                                                      errCreationFailure,
+                                                                      reasMissingParameter,
+                                                                      "Failed to instantiate Runtime"));
+      goto _DISP;
    }
 
-   // If there is already a runtime then can't be First Time through
-   if((NULL != pruntime) && bFirstTime ){
-      // Tried to instantiate a new Runtime after one was already created.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
-                                                             pClient,
-                                                             new CExceptionTransactionEvent( NULL,
-                                                                                             extranevtRuntimeCreateorProxy,
-                                                                                             TransactionID(),
-                                                                                             errCreationFailure,
-                                                                                             reasSingletoneExists,
-                                                                                             "Failed to instantiate Runtime. Cannot instantiate multiple Runtimes. Use getRuntimeProxy()!"));
+   {
+      AutoLock(&TheRuntimeMtx);
 
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return NULL;
+      // If there is already a runtime then can't be First Time through
+      if ( ( NULL != pTheRuntime ) && bFirstTime ) {
+         // Tried to instantiate a new Runtime after one was already created.
+
+         pDisp = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                     pClient,
+                                     new CExceptionTransactionEvent(NULL,
+                                                                    extranevtRuntimeCreateorProxy,
+                                                                    TransactionID(),
+                                                                    errCreationFailure,
+                                                                    reasSingletoneExists,
+                                                                    "Failed to instantiate Runtime. Cannot instantiate multiple Runtimes. Use getRuntimeProxy()!"));
+         goto _DISP;
+      }
+
+      // If there is already a runtime then can't be First Time through
+      if ( ( NULL == pTheRuntime ) && !bFirstTime ) {
+         // Tried to instantiate a new Runtime after one was already created.
+
+         pDisp = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                     pClient,
+                                     new CExceptionTransactionEvent(NULL,
+                                                                    extranevtRuntimeCreateorProxy,
+                                                                    TransactionID(),
+                                                                    errCreationFailure,
+                                                                    reasParameterValueInvalid,
+                                                                    "Failed to instantiate Runtime. No Runtime instance with FirstTime set to true!"));
+         goto _DISP;
+      }
+
+      if ( NULL == pTheRuntime ) {
+         pTheRuntime = new _runtime(pRuntimeProxy, pClient);
+      }
+
+      // Connect this client and proxy to the runtime
+      pTheRuntime->addProxy(pRuntimeProxy, pClient);
+
+      if ( !pTheRuntime->IsOK() ) {
+         // Dispatch the event ourselves, because MDS is no more.
+
+         pDisp = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                     pClient,
+                                     new CExceptionTransactionEvent(NULL,
+                                                                    extranevtRuntimeCreateorProxy,
+                                                                    TransactionID(),
+                                                                    errCreationFailure,
+                                                                    reasCauseUnknown,
+                                                                    "Failed to instantiate Runtime"));
+         goto _DISP;
+      }
+
+      return pTheRuntime;
    }
 
-   // If there is already a runtime then can't be First Time through
-   if((NULL == pruntime) && !bFirstTime ){
-      // Tried to instantiate a new Runtime after one was already created.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
-                                                             pClient,
-                                                             new CExceptionTransactionEvent( NULL,
-                                                                                             extranevtRuntimeCreateorProxy,
-                                                                                             TransactionID(),
-                                                                                             errCreationFailure,
-                                                                                             reasParameterValueInvalid,
-                                                                                             "Failed to instantiate Runtime. No Runtime instance with FirstTime set to true!"));
-
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return NULL;
+_DISP:
+   ASSERT(NULL != pDisp);
+   if ( NULL != pDisp ) {
+      // Fire the final event, waiting for it to dispatch.
+      FireAndWait(pDisp);
    }
-
-   if(NULL == pruntime){
-       pruntime = new _runtime(pRuntimeProxy, pClient);
-   }
-
-   // Connect this client and proxy to the runtime
-   pruntime->addProxy(pRuntimeProxy, pClient);
-
-   if(!pruntime->IsOK()){
-      // Dispatch the event ourselves, because MDS is no more.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
-                                                             pClient,
-                                                             new CExceptionTransactionEvent( NULL,
-                                                                                             extranevtRuntimeCreateorProxy,
-                                                                                             TransactionID(),
-                                                                                             errCreationFailure,
-                                                                                             reasCauseUnknown,
-                                                                                             "Failed to instantiate Runtime"));
-
-       // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return NULL;
-   }
-
-   return pruntime;
+   return NULL;
 }
+
 END_C_DECLS
-
-//=============================================================================
-// Name: _releasRuntimeInstance
-// Description: Releases a Runtime instance
-// Interface: private
-// Inputs: pRuntimeProxy - Pointer to the Runtime Container (Proxy)
-//         pRuntime - Pointer to the Runtime
-// Outputs: pointer to Runtim implementation.
-// Comments: The Runtime implementation keeps a map of Proxy to Clients
-//           so that multiple Proxy's can point to the same Runtime and
-//           messages are routed appropriately.
-//=============================================================================
-void _runtime::releaseRuntimeInstance( Runtime *pRuntimeProxy)
-{
-
-   if( NULL == pruntime ){
-      AAL_ERR(LM_AAS, "releaseRuntimeInstance() called with no Runtime present");
-      return;
-   }
-
-   // If missing the Proxy fail
-   if(NULL == pRuntimeProxy) {
-      // Dispatch the event ourselves, because MDS is no more.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeRelease = new RuntimeCallback(RuntimeCallback::Event,
-                                                             m_pClient,
-                                                             new CExceptionTransactionEvent( NULL,
-                                                                                             extranevtRuntimeDestroyorRelease,
-                                                                                             TransactionID(),
-                                                                                             errReleaseFailure,
-                                                                                             reasMissingParameter,
-                                                                                             "Failed to release Runtime"));
-
-       // Fire the final event
-      oneShot.Add(pRuntimeRelease);
-      oneShot.Drain();  // Wait for it to be dispatched
-      return;
-   }
-
-   // If its not the owner then just removes this proxy
-   if(pRuntimeProxy != m_pOwner){
-      removeProxy(pRuntimeProxy);
-      return;
-   }
-
-   if ( IsOK() && (m_state !=Stopped) ) {
-      // Stop and clean up properly  TODO
-   }
-
-   if(m_mClientMap.size() >1){
-      std::cerr << "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl;
-   }else{
-      // Take owner off of Proxy list
-      m_mClientMap.erase(m_pOwner);
-   }
-   delete this;
-}
 
 //=============================================================================
 // Name: _runtime
@@ -237,132 +180,25 @@ void _runtime::releaseRuntimeInstance( Runtime *pRuntimeProxy)
 // Outputs: none.
 // Comments:
 //=============================================================================
-_runtime::_runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient) :
+_runtime::_runtime(Runtime *pRuntimeProxy, IRuntimeClient *pClient) :
    CAASBase(),
-   m_status(false),
+   m_state(Stopped),
+   m_pClient(this),              // Must be our own client for internal services
    m_pOwner(pRuntimeProxy),
    m_pOwnerClient(pClient),
-   m_pClient(this),              // Must be our own client for internal services
+   m_pProxy(NULL),
    m_pBrokerSvcHost(NULL),
    m_pBroker(NULL),
    m_pBrokerbase(NULL),
-   m_pDefaultBrokerbase(NULL),
-   m_state(Stopped)
+   m_pDefaultBrokerbase(NULL)
 {
    m_sem.Create(0);
 
    // Register interfaces
    // Add the public interfaces
-   if ( SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) != EObjOK ) {
+   if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
+      m_bIsOK = false;
       return;
-   }
-   m_status = true;
-
-}
-
-//=============================================================================
-// Name: InstallDefaults
-// Description: Install Default Services
-// Interface: public
-// Outputs: none.
-// Comments:
-//=============================================================================
-btBool _runtime::InstallDefaults()
-{
-   // Message Delivery Service
-
-   // Service Broker. The m_Proxy is _runtime's Proxy which has a pointer to _runtime's IRuntimeClient
-   m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
-   m_pBrokerSvcHost->InstantiateService( m_pProxy, dynamic_cast<IBase*>(this), NamedValueSet(), TransactionID(Broker));
-   m_sem.Wait(); // for the local Broker
-
-   if(false == m_status){
-       // Dispatch the event ourselves, because MDS is no more.
-       OSLThreadGroup oneShot;
-       RuntimeCallback *pRuntimeFailed = new RuntimeCallback( RuntimeCallback::CreateorGetProxyFailed,
-                                                              m_pOwnerClient,
-                                                              new CExceptionTransactionEvent( m_pOwner,
-                                                                                              extranevtRuntimeCreateorProxy,
-                                                                                              TransactionID(),
-                                                                                              errCreationFailure,
-                                                                                              reasSubModuleFailed,
-                                                                                              "Failed to load Broker Service"));
-
-        // Fire the final event
-       oneShot.Add(pRuntimeFailed);
-       oneShot.Drain();  // Wait for it to be dispatched
-       return false;
-   }
-   return true;
-}
-
-//=============================================================================
-// Name: IsOK
-// Description: Is the object functional
-// Interface: public
-// returns: true if functional.
-// Comments:
-//=============================================================================
-btBool _runtime::IsOK()
-{
-   return m_status;
-}
-
-
-//=============================================================================
-// Name: stop
-// Description: Stop the runtime
-// Interface: public
-// Comments:
-//=============================================================================
-void _runtime::stop(Runtime* pProxy)
-{
-   if(NULL == pProxy){
-      // Bad Parameter   TODO Check Return code
-      schedDispatchable(new RuntimeCallback(RuntimeCallback::Event,
-                                            m_pOwnerClient,
-                                            new CExceptionTransactionEvent(m_pOwner,
-                                                                           exttranevtSystemStop,
-                                                                           TransactionID(),
-                                                                           errBadParameter,
-                                                                           reasMissingParameter,
-                                                                           "NULL Proxy")));
-      return;
-   }
-
-   AutoLock(this);
-
-   if(m_pOwner != pProxy ){
-      // Runtime Failed to stop. Can only stop original
-      schedDispatchable(new RuntimeCallback(RuntimeCallback::StopFailed,
-                                            m_pOwnerClient,
-                                            new CExceptionTransactionEvent(pProxy,
-                                                                           exttranevtSystemStop,
-                                                                           TransactionID(),
-                                                                           errSysSystemPermission,
-                                                                           reasNotOwner,
-                                                                           "Not using original Runtime")));
-      return;
-
-   }
-   // If the runtime is OK but is NOT stopped
-   if ( IsOK() && (m_state != Stopped) ) {
-
-      // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
-      m_sem.Reset(0);
-
-      // Release the Service Broker.
-      dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
-
-   }else{
-      // Dispatch the event ourselves, because we may not have working MDS.
-      OSLThreadGroup oneShot;
-      RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
-                                                             m_pOwnerClient,
-                                                             pProxy);
-      // Fire the final event
-      oneShot.Add(pRuntimeStopped);
-      oneShot.Drain();  // Wait for it to be dispatched
    }
 }
 
@@ -378,116 +214,112 @@ void _runtime::stop(Runtime* pProxy)
 btBool _runtime::start(Runtime             *pProxy,
                        const NamedValueSet &rConfigParms)
 {
-   if(m_pOwner != pProxy){
-      // Dispatch the event ourselves, because MDS Does not exist.
-      OSLThreadGroup oneShot;
+   IDispatchable *pDisp = NULL;
 
-      // Fire the event
-      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
-                                       m_pOwnerClient,
-                                       pProxy,
-                                       rConfigParms,
-                                       new CExceptionTransactionEvent(pProxy,
-                                                                      exttranevtSystemStart,
-                                                                      TransactionID(),
-                                                                      errSysSystemStarted,
-                                                                      reasNotOwner,
-                                                                      "Not using original Runtime")));
-      oneShot.Drain();  // Wait for it to be dispatched
-      return false;
-   }
-   if( Started == m_state  ){
-      // Dispatch the event ourselves, because MDS Does not exist.
-      OSLThreadGroup oneShot;
+   {
+      AutoLock(this);
 
-      // Fire the event
-      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
-                                       m_pOwnerClient,
-                                       pProxy,
-                                       rConfigParms,
-                                       new CExceptionTransactionEvent(pProxy,
-                                                                      exttranevtSystemStart,
-                                                                      TransactionID(),
-                                                                      errSysSystemStarted,
-                                                                      reasSystemAlreadyStarted,
-                                                                      strSystemAlreadyStarted)));
-      oneShot.Drain();  // Wait for it to be dispatched
-      return false;
+      if ( m_pOwner != pProxy ) {
+         // Dispatch the event ourselves, because MDS Does not exist.
+         pDisp = new RuntimeCallback(RuntimeCallback::StartFailed,
+                                     m_pOwnerClient,
+                                     pProxy,
+                                     rConfigParms,
+                                     new CExceptionTransactionEvent(pProxy,
+                                                                    exttranevtSystemStart,
+                                                                    TransactionID(),
+                                                                    errSysSystemStarted,
+                                                                    reasNotOwner,
+                                                                    "Not using original Runtime"));
+         goto _DISP;
+      }
 
-   }
+      if ( Started == m_state  ) {
+         // Dispatch the event ourselves, because MDS Does not exist.
+         pDisp = new RuntimeCallback(RuntimeCallback::StartFailed,
+                                     m_pOwnerClient,
+                                     pProxy,
+                                     rConfigParms,
+                                     new CExceptionTransactionEvent(pProxy,
+                                                                    exttranevtSystemStart,
+                                                                    TransactionID(),
+                                                                    errSysSystemStarted,
+                                                                    reasSystemAlreadyStarted,
+                                                                    strSystemAlreadyStarted));
+         goto _DISP;
+      }
 
-   // The Runtime needs a Runtime Proxy because it loads Services "much" like any application
-   //  so it requires a RuntimeClient of its own.
-   m_pProxy = m_pOwner->getRuntimeProxy(this);
-   if(NULL == m_pProxy){
-      OSLThreadGroup oneShot;
+      // The Runtime needs a Runtime Proxy because it loads Services "much" like any application
+      //  so it requires a RuntimeClient of its own.
+      m_pProxy = m_pOwner->getRuntimeProxy(this);
 
-      // Fire the event
-      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
-                                       m_pOwnerClient,
-                                       pProxy,
-                                       rConfigParms,
-                                       new CExceptionTransactionEvent(pProxy,
-                                                                      exttranevtSystemStart,
-                                                                      TransactionID(),
-                                                                      errSysSystemStarted,
-                                                                      reasInitError,
-                                                                      "Unable to create Runtime Proxy")));
-      oneShot.Drain();  // Wait for it to be dispatched
-      m_status = false;
-      return false;
-   }
+      if ( NULL == m_pProxy ) {
+         // Fire the event and wait for it to be dispatched.
+         pDisp = new RuntimeCallback(RuntimeCallback::StartFailed,
+                                     m_pOwnerClient,
+                                     pProxy,
+                                     rConfigParms,
+                                     new CExceptionTransactionEvent(pProxy,
+                                                                    exttranevtSystemStart,
+                                                                    TransactionID(),
+                                                                    errSysSystemStarted,
+                                                                    reasInitError,
+                                                                    "Unable to create Runtime Proxy"));
+         m_bIsOK = false;
+         goto _DISP;
+      }
 
-   // Set the status and continue
-   m_status = m_pProxy->IsOK();
+      // Set the status and continue
+      if ( !m_pProxy->IsOK() ) {
+         m_bIsOK = false;
+      }
 
-   if(!InstallDefaults()){
-      OSLThreadGroup oneShot;
-
-      // Fire the event
-      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
-                                       m_pOwnerClient,
-                                       pProxy,
-                                       rConfigParms,
-                                       new CExceptionTransactionEvent(pProxy,
-                                                                      exttranevtSystemStart,
-                                                                      TransactionID(),
-                                                                      errSysSystemStarted,
-                                                                      reasInitError,
-                                                                      "Unable to load default Services")));
-      oneShot.Drain();  // Wait for it to be dispatched
-      return false;
    }
 
-   // Process the configuration parameters
+   // InstallDefaults() will wait for a notification. Don't wait while locked..
+   if ( !InstallDefaults() ) {
+      // Fire the event and wait for it to be dispatched.
+      pDisp = new RuntimeCallback(RuntimeCallback::StartFailed,
+                                  m_pOwnerClient,
+                                  pProxy,
+                                  rConfigParms,
+                                  new CExceptionTransactionEvent(pProxy,
+                                                                 exttranevtSystemStart,
+                                                                 TransactionID(),
+                                                                 errSysSystemStarted,
+                                                                 reasInitError,
+                                                                 "Unable to load default Services"));
+      goto _DISP;
+   }
+
+   // Process the configuration parameters will wait for a notification. Don't wait while locked..
    if ( !ProcessConfigParms(rConfigParms) ) {
-      OSLThreadGroup oneShot;
-
-      // Fire the event
-      oneShot.Add(new RuntimeCallback( RuntimeCallback::StartFailed,
-                                       m_pOwnerClient,
-                                       pProxy,
-                                       rConfigParms,
-                                       new CExceptionTransactionEvent(pProxy,
-                                                                      exttranevtSystemStart,
-                                                                      TransactionID(),
-                                                                      errSysSystemStarted,
-                                                                      reasInitError,
-                                                                      "Unable to process Runtime configuration parameters")));
-      oneShot.Drain();  // Wait for it to be dispatched
-      return false;
+      pDisp = new RuntimeCallback(RuntimeCallback::StartFailed,
+                                  m_pOwnerClient,
+                                  pProxy,
+                                  rConfigParms,
+                                  new CExceptionTransactionEvent(pProxy,
+                                                                 exttranevtSystemStart,
+                                                                 TransactionID(),
+                                                                 errSysSystemStarted,
+                                                                 reasInitError,
+                                                                 "Unable to process Runtime configuration parameters"));
+      goto _DISP;
    }
-
 
    if ( IsOK() ) {
+
       m_state = Started;
+
       schedDispatchable(new RuntimeCallback(RuntimeCallback::Started,
                                             m_pOwnerClient,
                                             pProxy,
                                             rConfigParms));
+
       return true;
    } else {
       // Runtime Failed to start
+
       schedDispatchable(new RuntimeCallback(RuntimeCallback::StartFailed,
                                             m_pOwnerClient,
                                             pProxy,
@@ -500,141 +332,78 @@ btBool _runtime::start(Runtime             *pProxy,
                                                                            "AAL Runtime Failed to start")));
       return false;
    }
+
+_DISP:
+   ASSERT(NULL != pDisp);
+   if ( NULL != pDisp ) {
+      // Fire the event and wait for it to be dispatched.
+      FireAndWait(pDisp);
+   }
+   return false;
 }
 
 //=============================================================================
-// Name: addProxy
-// Description: Adds a Client to the Runtime instance by recording the Proxy
-//              and client.
+// Name: stop
+// Description: Stop the runtime
 // Interface: public
-// Inputs: pRuntimeProxy - Pointer to Proxy Runtime
-//         pClient - Client for the proxy
-// Outputs: none.
 // Comments:
 //=============================================================================
-void _runtime::addProxy( Runtime *pRuntimeProxy,
-                         IRuntimeClient *pClient)
+void _runtime::stop(Runtime *pProxy)
 {
-   AutoLock(this);
-   if( (NULL == pRuntimeProxy) || (NULL == pClient) ){
-      AAL_ERR(LM_AAS, "addProxy: NULL Proxy or Client");
-      return;
-   }
+   {
+      AutoLock(this);
 
-   // Save in map
-   m_mClientMap[pRuntimeProxy] = pClient;
-   std::cerr << "addProxy: Num Proxies " << m_mClientMap.size() << std::endl;
-
-}
-
-//=============================================================================
-// Name: removeProxy
-// Description: Removes a Client from the Runtime instance.
-// Interface: public
-// Inputs: pRuntimeProxy - Pointer to Proxy Runtime
-// Outputs: none.
-// Comments:
-//=============================================================================
-void _runtime::removeProxy( Runtime *pRuntimeProxy)
-{
-   AutoLock(this);
-
-   if(NULL == pRuntimeProxy){
-      AAL_ERR(LM_AAS, "removeProxy: NULL Proxy.");
-      return;
-   }
-
-   // Erase it
-   ClientMap_itr     cmItr = m_mClientMap.find(pRuntimeProxy);
-   if( m_mClientMap.end() == cmItr ){
-      AAL_ERR(LM_AAS, "removeProxy: Proxy not found.");
-      return;
-   }
-   m_mClientMap.erase(cmItr);
-   std::cerr << "removeProxy: Num Proxies " << m_mClientMap.size() << std::endl;
-}
-
-//=============================================================================
-// Name: ProcessConfigParms
-// Description: Process config parms for Runtime configuration record
-// Interface: public
-// Inputs: rConfigParms - Config parms
-// Outputs: none.
-// Comments:
-//=============================================================================
-btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
-{
-   INamedValueSet const *pConfigRecord = NULL;
-   btcString             sName         = NULL;
-   std::string           strSname;
-  // Environment          env;
-
-   //
-   // First check environment
-   if( false == (Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname)) ){
-
-      // Not in Evironment so check config parameters
-      if ( ENamedValuesOK != rConfigParms.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
-         // No Config Parms
-         return true;
+      if ( NULL == pProxy ) {
+         // Bad Parameter   TODO Check Return code
+         schedDispatchable(new RuntimeCallback(RuntimeCallback::Event,
+                                               m_pOwnerClient,
+                                               new CExceptionTransactionEvent(m_pOwner,
+                                                                              exttranevtSystemStop,
+                                                                              TransactionID(),
+                                                                              errBadParameter,
+                                                                              reasMissingParameter,
+                                                                              "NULL Proxy")));
+         return;
       }
-      // See if th3 Broker is being overridden
-      if ( ENamedValuesOK == pConfigRecord->Get(AALRUNTIME_CONFIG_BROKER_SERVICE, &sName) ) {
-         // No default Broker so we can't load ANY new Services
-         if ( NULL == m_pBrokerbase ) {
-            // Runtime Failed to start
-            schedDispatchable(new RuntimeCallback(RuntimeCallback::StartFailed,
-                                                  m_pOwnerClient,
-                                                  m_pOwner,
-                                                  rConfigParms,
-                                                  new CExceptionTransactionEvent(m_pOwner,
-                                                                                 exttranevtServiceShutdown,
-                                                                                 TransactionID(),
-                                                                                 errSysSystemStarted,
-                                                                                 reasInitError,
-                                                                                 "AAL Runtime Failed to start - No Broker")));
-             return false;
-         }
+
+      if ( m_pOwner != pProxy ) {
+         // Runtime Failed to stop. Can only stop original
+         schedDispatchable(new RuntimeCallback(RuntimeCallback::StopFailed,
+                                               m_pOwnerClient,
+                                               new CExceptionTransactionEvent(pProxy,
+                                                                              exttranevtSystemStop,
+                                                                              TransactionID(),
+                                                                              errSysSystemPermission,
+                                                                              reasNotOwner,
+                                                                              "Not using original Runtime")));
+         return;
       }
+
+      // If the runtime is OK but is NOT stopped
+      if ( IsOK() && ( Stopped != m_state ) ) {
+
+         // Prepare our sem. We will wait for notification from serviceReleased() before continuing.
+         // (Don't wait while locked.)
+         m_sem.Reset(0);
+
+         // Release the Service Broker.
+         goto _REL;
+      }
+
+      // Dispatch the event ourselves, because we may not have working MDS.
+      goto _DISP;
    }
 
-   if(NULL != sName){
-      // Create the Service Request
-      NamedValueSet ConfigRecord;
-      NamedValueSet optArgs;
+_REL:
+   dynamic_ptr<IAALService>(iidService, m_pBrokerbase)->Release(TransactionID(Broker));
+   return;
 
-      // Using back door because thats all we know.
-      ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, sName);
-      optArgs.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
-      // Allocate the service.
-      allocService(this, optArgs, TransactionID(Broker));
-      m_sem.Wait();
-   }
-   return true;
-}
-
-//=============================================================================
-// Name: allocService
-// Description: Request to have a Service Allocated internally
-// Interface: public
-// Inputs: pClient - Pointer to client's callback interface
-//         rManifest - Manifest describing Service
-//         rTranID - Optional TransactionID
-//         ThisThread - btBool indicating if proc should run in this thread
-// Outputs: none.
-// Comments:
-//=============================================================================
-void _runtime::allocService(IBase                  *pClient,
-                            NamedValueSet const    &rManifest,
-                            TransactionID const    &rTranID)
-{
-   AutoLock(this);
-   if ( IsOK() ) {
-      // Used for internal allocations, this object is the Runtime and the RuntimeClient
-      //  (first 2 arguments)
-      m_pBroker->allocService(m_pProxy, this, pClient, rManifest, rTranID);
-   }
+_DISP:
+   // Fire the final event and wait for it to be dispatched.
+   FireAndWait( new RuntimeCallback(RuntimeCallback::Stopped,
+                                    m_pOwnerClient,
+                                    pProxy) );
+   return;
 }
 
 //=============================================================================
@@ -648,45 +417,75 @@ void _runtime::allocService(IBase                  *pClient,
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _runtime::allocService(  Runtime                *pProxy,
-                              IBase                  *pServiceClient,
-                              NamedValueSet const    &rManifest,
-                              TransactionID const    &rTranID)
+void _runtime::allocService(Runtime             *pProxy,
+                            IBase               *pServiceClient,
+                            NamedValueSet const &rManifest,
+                            TransactionID const &rTranID)
 {
+   IDispatchable *pDisp = NULL;
+
    AutoLock(this);
 
    // Make sure the Proxy is valid
    ClientMap_itr cmItr = m_mClientMap.find(pProxy);
-   if(cmItr == m_mClientMap.end()){
-      schedDispatchable(new RuntimeCallback(RuntimeCallback::AllocateFailed,
-                                            m_pOwnerClient,
-                                            new CExceptionTransactionEvent(NULL,
-                                                                           extranevtServiceAllocateFailed,
-                                                                           rTranID,
-                                                                           errBadParameter,
-                                                                           reasInvalidParameter,
-                                                                           "Runtime Proxy invalid")));
-      return;
 
+   if ( m_mClientMap.end() == cmItr ) {
+      pDisp = new RuntimeCallback(RuntimeCallback::AllocateFailed,
+                                  m_pOwnerClient,
+                                  new CExceptionTransactionEvent(NULL,
+                                                                 extranevtServiceAllocateFailed,
+                                                                 rTranID,
+                                                                 errBadParameter,
+                                                                 reasInvalidParameter,
+                                                                 "Runtime Proxy invalid"));
+      goto _SCHED;
    }
 
-   // Get the Runtime Client associated with the Runtime Proxy used to issue this request.
-   //   Runtime messages will be sent to this Client.
-   IRuntimeClient *pRuntimeClient = cmItr->second;
+   if ( !IsOK() ) {
+      pDisp = new RuntimeCallback(RuntimeCallback::AllocateFailed,
+                                  m_pOwnerClient,
+                                  new CExceptionTransactionEvent(NULL,
+                                                                 extranevtServiceAllocateFailed,
+                                                                 rTranID,
+                                                                 errInternal,
+                                                                 reasCauseUnknown,
+                                                                 "Runtime not OK"));
+      goto _SCHED;
+   }
 
+   // cmItr->second is the Runtime Client associated with the Runtime Proxy used to issue this request.
+
+   // Send the Broker the allocation request
+   m_pBroker->allocService(pProxy, cmItr->second, pServiceClient, rManifest, rTranID);
+   return;
+
+_SCHED:
+   ASSERT(NULL != pDisp);
+   if ( NULL != pDisp ) {
+      schedDispatchable(pDisp);
+   }
+}
+
+//=============================================================================
+// Name: allocService
+// Description: Request to have a Service Allocated internally
+// Interface: public
+// Inputs: pClient - Pointer to client's callback interface
+//         rManifest - Manifest describing Service
+//         rTranID - Optional TransactionID
+//         ThisThread - btBool indicating if proc should run in this thread
+// Outputs: none.
+// Comments:
+//=============================================================================
+void _runtime::allocService(IBase               *pClient,
+                            NamedValueSet const &rManifest,
+                            TransactionID const &rTranID)
+{
+   AutoLock(this);
    if ( IsOK() ) {
-      // Send the Broker the allocation request
-      m_pBroker->allocService(pProxy, pRuntimeClient, pServiceClient, rManifest, rTranID);
-   }else{
-      schedDispatchable(new RuntimeCallback(RuntimeCallback::AllocateFailed,
-                                            m_pOwnerClient,
-                                            new CExceptionTransactionEvent(NULL,
-                                                                           extranevtServiceAllocateFailed,
-                                                                           rTranID,
-                                                                           errInternal,
-                                                                           reasCauseUnknown,
-                                                                           "Runtime not OK")));
-       return;
+      // Used for internal allocations, this object is the Runtime and the RuntimeClient
+      //  (first 2 arguments)
+      m_pBroker->allocService(m_pProxy, this, pClient, rManifest, rTranID);
    }
 }
 
@@ -703,6 +502,305 @@ btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
    return m_MDS.scheduleMessage(pDispatchable);
 }
 
+//=============================================================================
+// Name: getRuntimeClient
+// Description: return the Runtime's Client's Interface
+// Interface: public
+// Outputs: Pointer to client interface.
+// Comments:
+//=============================================================================
+IRuntimeClient *_runtime::getRuntimeClient()
+{
+   AutoLock(this);
+   return m_pClient;
+}
+
+//=============================================================================
+// Name: IsOK
+// Description: Is the object functional
+// Interface: public
+// returns: true if functional.
+// Comments:
+//=============================================================================
+btBool _runtime::IsOK()
+{
+   return CAASBase::IsOK();
+}
+
+//=============================================================================
+// Name: addProxy
+// Description: Adds a Client to the Runtime instance by recording the Proxy
+//              and client.
+// Interface: public
+// Inputs: pRuntimeProxy - Pointer to Proxy Runtime
+//         pClient - Client for the proxy
+// Outputs: none.
+// Comments:
+//=============================================================================
+void _runtime::addProxy(Runtime        *pRuntimeProxy,
+                        IRuntimeClient *pClient)
+{
+   if ( ( NULL == pRuntimeProxy ) || ( NULL == pClient ) ) {
+      AAL_ERR(LM_AAS, "addProxy: NULL Proxy or Client");
+      return;
+   }
+
+   AutoLock(this);
+
+   // Save in map
+   m_mClientMap[pRuntimeProxy] = pClient;
+   std::cerr << "addProxy: Num Proxies " << m_mClientMap.size() << std::endl;
+}
+
+//=============================================================================
+// Name: removeProxy
+// Description: Removes a Client from the Runtime instance.
+// Interface: public
+// Inputs: pRuntimeProxy - Pointer to Proxy Runtime
+// Outputs: none.
+// Comments:
+//=============================================================================
+void _runtime::removeProxy(Runtime *pRuntimeProxy)
+{
+   ASSERT(NULL != pRuntimeProxy);
+   if ( NULL == pRuntimeProxy ) {
+      return;
+   }
+
+   AutoLock(this);
+
+   // Erase it
+   ClientMap_itr cmItr = m_mClientMap.find(pRuntimeProxy);
+
+   ASSERT(m_mClientMap.end() != cmItr);
+   if ( m_mClientMap.end() != cmItr ) {
+      m_mClientMap.erase(cmItr);
+   }
+}
+
+//=============================================================================
+// Name: _releasRuntimeInstance
+// Description: Releases a Runtime instance
+// Interface: private
+// Inputs: pRuntimeProxy - Pointer to the Runtime Container (Proxy)
+//         pRuntime - Pointer to the Runtime
+// Outputs: pointer to Runtim implementation.
+// Comments: The Runtime implementation keeps a map of Proxy to Clients
+//           so that multiple Proxy's can point to the same Runtime and
+//           messages are routed appropriately.
+//=============================================================================
+void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
+{
+   IDispatchable *pDisp = NULL;
+
+   {
+      AutoLock(&TheRuntimeMtx);
+
+      if ( NULL == pTheRuntime ) {
+         AAL_ERR(LM_AAS, "releaseRuntimeInstance() called with no Runtime present");
+         return;
+      }
+   std::cerr << "removeProxy: Num Proxies " << m_mClientMap.size() << std::endl;
+      // If missing the Proxy fail
+      if ( NULL == pRuntimeProxy ) {
+         // Dispatch the event ourselves, because MDS is no more.
+         pDisp = new RuntimeCallback(RuntimeCallback::Event,
+                                     m_pClient,
+                                     new CExceptionTransactionEvent(NULL,
+                                                                    extranevtRuntimeDestroyorRelease,
+                                                                    TransactionID(),
+                                                                    errReleaseFailure,
+                                                                    reasMissingParameter,
+                                                                    "Failed to release Runtime"));
+         goto _DISP;
+      }
+
+      // If it's not the owner, then just removes this proxy.
+      if ( pRuntimeProxy != m_pOwner ) {
+         removeProxy(pRuntimeProxy);
+         return;
+      }
+
+      if ( IsOK() && ( Stopped != m_state ) ) {
+         // Stop and clean up properly  TODO
+      }
+
+      if(m_mClientMap.size() >1){
+          std::cerr << "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl;
+      }else{
+          // Take owner off of Proxy list
+         m_mClientMap.erase(m_pOwner);
+      }
+      delete this;
+
+      pTheRuntime = NULL;
+   }
+
+   return;
+
+_DISP:
+
+   ASSERT(NULL != pDisp);
+   if ( NULL != pDisp ) {
+      // Fire the final event and wait for it to be dispatched.
+      FireAndWait(pDisp);
+   }
+}
+
+_runtime::_runtime() {/*empty*/}
+
+//=============================================================================
+// Name: ~_runtime
+// Description: Destructor
+// Interface: public
+// Inputs:
+// Outputs: none.
+// Comments:
+//=============================================================================
+_runtime::~_runtime()
+{
+   AutoLock(this);
+
+#if ENABLE_DEBUG
+   std::cerr << "Num Proxies: " << m_mClientMap.size() << std::endl;
+#endif // ENABLE_DEBUG
+
+#if 0
+   // Check for proxies
+   if(!m_mClientMap.empty()){
+      OSLThreadGroup oneShot;
+      ClientMap_itr cmIntr = m_mClientMap.begin();
+
+      // Remove all Proxies, notfying them of the destruction if needed
+      while( cmIntr != m_mClientMap.end()){
+         // The owner (creator) of the runtime does not need to be notified
+         if(cmIntr->first != m_pOwner){
+            // Notify the Proxy owner that the proxy is dead.  NOTE that this is presented as an Event.
+             RuntimeCallback *pRuntimeRelease = new RuntimeCallback(RuntimeCallback::Event,
+                                                                    cmIntr->second,
+                                                                    new CExceptionTransactionEvent( cmIntr->first,            // The Proxy is in the event
+                                                                                                    extranevtProxyStopped,
+                                                                                                    TransactionID(),
+                                                                                                    errProxyInvalid,
+                                                                                                    reasParentReleased,
+                                                                                                    "Parent Runtime destroyed while proxy still outstanding!"));
+
+             oneShot.Add(pRuntimeRelease);
+          }
+          ++cmIntr;
+      }
+
+      oneShot.Drain();  // Wait for them to be dispatched
+
+      // Empty the map. We cannot destroy proxy objects.
+      m_mClientMap.clear();
+   }
+#endif
+
+   m_MDS.StopMessageDelivery();
+
+   if ( NULL != m_pBrokerSvcHost ) {
+      delete m_pBrokerSvcHost;
+      m_pBrokerSvcHost = NULL;
+   }
+}
+
+//=============================================================================
+// Name: InstallDefaults
+// Description: Install Default Services
+// Interface: public
+// Outputs: none.
+// Comments:
+//=============================================================================
+btBool _runtime::InstallDefaults()
+{
+   // Message Delivery Service
+
+   // Service Broker. The m_Proxy is _runtime's Proxy which has a pointer to _runtime's IRuntimeClient
+   m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
+   m_pBrokerSvcHost->InstantiateService(m_pProxy, dynamic_cast<IBase *>(this), NamedValueSet(), TransactionID(Broker));
+
+   m_sem.Wait(); // for the local Broker
+
+   if ( IsOK() ) {
+      return true;
+   }
+
+   // Dispatch the event ourselves, because MDS is no more.
+
+   // Fire the final event and wait for it to be dispatched.
+   FireAndWait( new RuntimeCallback(RuntimeCallback::CreateorGetProxyFailed,
+                                    m_pOwnerClient,
+                                    new CExceptionTransactionEvent(m_pOwner,
+                                                                   extranevtRuntimeCreateorProxy,
+                                                                   TransactionID(),
+                                                                   errCreationFailure,
+                                                                   reasSubModuleFailed,
+                                                                   "Failed to load Broker Service")) );
+   return false;
+}
+
+//=============================================================================
+// Name: ProcessConfigParms
+// Description: Process config parms for Runtime configuration record
+// Interface: public
+// Inputs: rConfigParms - Config parms
+// Outputs: none.
+// Comments:
+//=============================================================================
+btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
+{
+   INamedValueSet const *pConfigRecord = NULL;
+   btcString             sName         = NULL;
+   std::string           strSname;
+
+   // First check environment
+   if ( Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname) ) {
+      sName = strSname.c_str();
+   } else {
+      // Not in environment so check config parameters
+
+      if ( ENamedValuesOK != rConfigParms.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
+         // Not in Environment and no Config Parms.
+         return true;
+      }
+
+      // See if the Broker is being overridden
+      if ( ENamedValuesOK == pConfigRecord->Get(AALRUNTIME_CONFIG_BROKER_SERVICE, &sName) ) {
+         // No default Broker so we can't load ANY new Services
+         if ( NULL == m_pBrokerbase ) {
+            // Runtime Failed to start
+            schedDispatchable(new RuntimeCallback(RuntimeCallback::StartFailed,
+                                                  m_pOwnerClient,
+                                                  m_pOwner,
+                                                  rConfigParms,
+                                                  new CExceptionTransactionEvent(m_pOwner,
+                                                                                 exttranevtServiceShutdown,
+                                                                                 TransactionID(),
+                                                                                 errSysSystemStarted,
+                                                                                 reasInitError,
+                                                                                 "AAL Runtime Failed to start - No Broker")));
+            return false;
+         }
+      }
+   }
+
+   if ( NULL != sName ) {
+      // Create the Service Request
+      NamedValueSet ConfigRecord;
+      NamedValueSet optArgs;
+
+      // Using back door because thats all we know.
+      ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, sName);
+      optArgs.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+      // Allocate the service.
+      allocService(this, optArgs, TransactionID(Broker));
+      m_sem.Wait();
+   }
+
+   return true;
+}
 
 //
 // IServiceClient Interface
@@ -720,30 +818,24 @@ btBool _runtime::schedDispatchable(IDispatchable *pDispatchable)
 // Comments:
 //=============================================================================
 void _runtime::serviceAllocated(IBase               *pServiceBase,
-                                TransactionID const &rTranID )
+                                TransactionID const &rTranID)
 {
    AutoLock(this);
 
    switch ( rTranID.ID() ) {
       case Broker : {
          // If there is already a broker, Replace it.
-         if(NULL != m_pBrokerbase){
+         if ( NULL != m_pBrokerbase ) {
             // Save a copy of the pointer .
             //  We cannot Release the default Broker now since that would cause the new Broker and any other Service
             //  allocated using the default to be Released. Release it later at stop()
             m_pDefaultBrokerbase = m_pBrokerbase;
-
-            m_pBrokerbase = pServiceBase;
-            m_pBroker     = subclass_ptr<IServiceBroker>(m_pBrokerbase);
-
-
-            m_sem.Post(1);
-         }else {
-            // This is the default broker.
-            m_pBrokerbase = pServiceBase;
-            m_pBroker     = subclass_ptr<IServiceBroker>(pServiceBase);
-            m_sem.Post(1);
          }
+
+         m_pBrokerbase = pServiceBase;
+         m_pBroker     = subclass_ptr<IServiceBroker>(m_pBrokerbase);
+
+         m_sem.Post(1);
       } break;
 
       default :
@@ -761,9 +853,10 @@ void _runtime::serviceAllocated(IBase               *pServiceBase,
 // Outputs: none.
 // Comments:
 //=============================================================================
-void _runtime::serviceAllocateFailed(const IEvent        &rEvent)
+void _runtime::serviceAllocateFailed(const IEvent &rEvent)
 {
-   m_status = false;
+   AutoLock(this);
+   m_bIsOK = false;
    m_sem.Post(1);
 }
 
@@ -783,7 +876,7 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
    switch ( rTranID.ID() ) {
       case Broker : {
          // If the Default Broker was replaced then release it now.  Next time through we will clean up.
-         if(NULL != m_pDefaultBrokerbase){
+         if ( NULL != m_pDefaultBrokerbase ) {
             // Release the Service Broker.
             dynamic_ptr<IAALService>(iidService, m_pDefaultBrokerbase)->Release(TransactionID(Broker));
             m_pDefaultBrokerbase = NULL;
@@ -804,15 +897,11 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
          m_pProxy->releaseRuntimeProxy();
 
          // Dispatch the event ourselves, because MDS is no more.
-         //
-         OSLThreadGroup oneShot;
-         RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
-                                                                m_pOwnerClient,
-                                                                m_pOwner);
 
-         // Fire the final event
-         oneShot.Add(pRuntimeStopped);
-         oneShot.Drain();  // Wait for it to be dispatched
+         // Fire and final event and wait for it to be dispatched.
+         FireAndWait( new RuntimeCallback(RuntimeCallback::Stopped,
+                                          m_pOwnerClient,
+                                          m_pOwner) );
       } break;
 
       default :
@@ -849,22 +938,21 @@ void _runtime::serviceReleaseFailed(const IEvent &rEvent)
                                                                            pExevent->Description());
 
    // Dispatch the event ourselves, because MDS is no more.
-   OSLThreadGroup oneShot(1,1);  // Make sure we use a single thread to serialize the events
-   RuntimeCallback *pRuntimeException = new RuntimeCallback(RuntimeCallback::Event,
-                                                            m_pOwnerClient,
-                                                            pcopyEvent);
+
+   // Make sure to serialize the events.
+   FireAndWait(new RuntimeCallback(RuntimeCallback::Event,
+                                   m_pOwnerClient,
+                                   pcopyEvent),
+               1,
+               1);
 
 
-   RuntimeCallback *pRuntimeStopped = new RuntimeCallback(RuntimeCallback::Stopped,
-                                                          m_pOwnerClient,
-                                                          m_pOwner);
-   // Fire the final events
-   oneShot.Add(pRuntimeException);
-   oneShot.Add(pRuntimeStopped);
-
-   oneShot.Drain();  // Wait for it to be dispatched
+   FireAndWait(new RuntimeCallback(RuntimeCallback::Stopped,
+                                   m_pOwnerClient,
+                                   m_pOwner),
+               1,
+               1);
 }
-
 
 //=============================================================================
 // Name: messageHandler
@@ -881,71 +969,6 @@ void _runtime::serviceEvent(const IEvent &rEvent)
 {
    // TODO
    ASSERT(false);
-}
-
-//=============================================================================
-// Name: getRuntimeClient
-// Description: return the Runtime's Client's Interface
-// Interface: public
-// Outputs: Pointer to client interface.
-// Comments:
-//=============================================================================
-IRuntimeClient *_runtime::getRuntimeClient()
-{
-   AutoLock(this);
-   return m_pClient;
-}
-
-//=============================================================================
-// Name: ~_runtime
-// Description: Destructor
-// Interface: public
-// Inputs:
-// Outputs: none.
-// Comments:
-//=============================================================================
-_runtime::~_runtime()
-{
-   AutoLock(this);
-
-   std::cerr << "Num Proxies " << m_mClientMap.size() << std::endl;
-#if 0
-   // Check for proxies
-   if(!m_mClientMap.empty()){
-      OSLThreadGroup oneShot;
-      ClientMap_itr cmIntr = m_mClientMap.begin();
-
-      // Remove all Proxies, notfying them of the destruction if needed
-      while( cmIntr != m_mClientMap.end()){
-         // The owner (creator) of the runtime does not need to be notified
-         if(cmIntr->first != m_pOwner){
-            // Notify the Proxy owner that the proxy is dead.  NOTE that this is presented as an Event.
-             RuntimeCallback *pRuntimeRelease = new RuntimeCallback(RuntimeCallback::Event,
-                                                                    cmIntr->second,
-                                                                    new CExceptionTransactionEvent( cmIntr->first,            // The Proxy is in the event
-                                                                                                    extranevtProxyStopped,
-                                                                                                    TransactionID(),
-                                                                                                    errProxyInvalid,
-                                                                                                    reasParentReleased,
-                                                                                                    "Parent Runtime destroyed while proxy still outstanding!"));
-
-             oneShot.Add(pRuntimeRelease);
-          }
-          ++cmIntr;
-      }
-
-      oneShot.Drain();  // Wait for them to be dispatched
-
-      // Empty the map. We cannot destroy proxy objects.
-      m_mClientMap.clear();
-   }
-#endif
-   m_MDS.StopMessageDelivery();
-
-   if ( m_pBrokerSvcHost ) {
-      delete m_pBrokerSvcHost;
-      m_pBrokerSvcHost = NULL;
-   }
 }
 
 

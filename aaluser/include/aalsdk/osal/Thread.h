@@ -61,16 +61,16 @@ class OSLThread;
 typedef void (*ThreadProc)(OSLThread *pThread, void *pContext);
 
 /// Retrieve the OS process id of the current process.
-OSAL_API AAL::btPID GetProcessID();
+OSAL_API AAL::btPID   GetProcessID();
 
 /// Retrieve the OS thread id of the current thread.
-OSAL_API AAL::btTID GetThreadID();
+OSAL_API AAL::btTID    GetThreadID();
 
 /// Compare the two OS thread id's, returning true if they identify the same thread.
 OSAL_API AAL::btBool ThreadIDEqual(AAL::btTID , AAL::btTID );
 
 /// Cause the calling thread to exit immediately, passing ExitStatus back to the OS.
-OSAL_API void ExitCurrentThread(AAL::btUIntPtr ExitStatus);
+OSAL_API void    ExitCurrentThread(AAL::btUIntPtr ExitStatus);
 
 /*
 /// Retrieve the number of CPUs.
@@ -86,7 +86,7 @@ OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage);
 
 
 //
-// Object representing current thread's ID. Cast as btTID to get value.
+///@brief  Object representing current thread's ID. Cast as btTID to get value.
 class CurrentThreadID
 {
 public:
@@ -94,7 +94,7 @@ public:
       m_tid(GetThreadID())
    {}
 
-   AAL::btTID getTID ()   { return m_tid; }
+   AAL::btTID   getTID () { return m_tid; }
    operator AAL::btTID () { return m_tid; }
 private:
    AAL::btTID m_tid;
@@ -138,27 +138,27 @@ public:
    /// OSLThread Destructor.
 	virtual ~OSLThread();
 	/// Internal state check.
-   AAL::btBool IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
+   AAL::btBool         IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
    /// Send a kill signal to a thread to unblock a system call.
-   void Unblock();
+   void             Unblock();
    /// Post one count to the thread's local synchronization object.
-   void Signal();
+   void              Signal();
    /// Wait for the thread's local synchronization object for a given time.
-   void Wait(AAL::btTime ulMilliseconds);
+   void                Wait(AAL::btTime ulMilliseconds);
    /// Wait for the thread's local synchronization object.
-   void Wait();
+   void                Wait();
    /// Wait for the thread to exit.
-   void Join();
+   void                Join();
    /// The underlying thread resource will never be join()'ed.
-   void Detach();
+   void              Detach();
    /// The non-Windows implementation of this member function issues a pthread_cancel to the thread.
    ///
    /// @note There is currently no Windows implementation.
-   void Cancel();
+   void              Cancel();
    /// Compare this thread's identifier with id.
    AAL::btBool IsThisThread(AAL::btID id) const;
    /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
-   AAL::btTID tid();
+   AAL::btTID           tid();
 
 
    static const AAL::btInt sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORITY_COUNT];
@@ -197,7 +197,7 @@ private:
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
 */
 
-/// @} group OSAL
+/// @}
 
 #endif // __AALSDK_OSAL_THREAD_H__
 

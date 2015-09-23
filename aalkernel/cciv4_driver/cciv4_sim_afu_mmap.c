@@ -72,7 +72,6 @@
 #include "aalsdk/kernel/spl2defs.h"
 #include "aalsdk/kernel/fappip.h"
 
-//////////////////////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,21 +137,22 @@ static struct vm_operations_struct csr_vma_ops =
 //=============================================================================
 int
 cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid            *wsidp,
-               btAny                       os_specific)
+               struct aal_wsid *wsidp,
+               btAny os_specific)
 {
-   struct vm_area_struct   *pvma = (struct vm_area_struct *)os_specific;
 
-   struct cciv4_PIPsession  *pSess        = NULL;
-   struct cciv4_device      *pdev         = NULL;
-   unsigned long            max_length    = 0; // mmap length requested by user
-   int                      res           = -EINVAL;
+   struct vm_area_struct     *pvma = (struct vm_area_struct *) os_specific;
+
+   struct cciv4_PIPsession   *pSess = NULL;
+   struct cciv4_device       *pdev = NULL;
+   unsigned long              max_length = 0; // mmap length requested by user
+   int                        res = -EINVAL;
 
    ASSERT(pownerSess);
    ASSERT(wsidp);
 
    // Get the spl2 aal_device and the memory manager session
-   pSess = (struct cciv4_PIPsession *)aalsess_pipHandle(pownerSess);
+   pSess = (struct cciv4_PIPsession *) aalsess_pipHandle(pownerSess);
    ASSERT(pSess);
    if ( NULL == pSess ) {
       PDEBUG("CCIV4 Simulator mmap: no Session");
@@ -173,18 +173,18 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
    // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
    // CSR region, then satisfy the request by mapping PCIe BAR 0.
    if ( WSM_TYPE_CSR == wsidp->m_type ) {
-      void  *ptr;
+      void *ptr;
       size_t size;
-      switch(wsidp->m_id)
+      switch ( wsidp->m_id )
       {
          case WSID_CSRMAP_WRITEAREA:
-         case WSID_CSRMAP_READAREA:
-         case WSID_MAP_MMIOR:
-         case WSID_MAP_UMSG:
+            case WSID_CSRMAP_READAREA:
+            case WSID_MAP_MMIOR:
+            case WSID_MAP_UMSG:
             break;
          default:
-              PERR("Attempt to map invalid WSID type %d\n", (int)wsidp->m_id);
-              goto ERROR;
+            PERR("Attempt to map invalid WSID type %d\n", (int) wsidp->m_id);
+            goto ERROR;
       }
 
       // Verify that we can fulfill the request - we set flags at create time.
@@ -206,55 +206,118 @@ cciv4_sim_mmap(struct aaldev_ownerSession *pownerSess,
          }
       }
 
+      if ( WSID_MAP_MMIOR == wsidp->m_id )
+      {
+         if ( !cciv4_dev_allow_map_mmior_space(pdev) ) {
+            PERR("Denying request to map cciv4_dev_allow_map_mmior_space Read space for device 0x%p.\n", pdev);
+            goto ERROR;
+         }
+
+         ptr = (void *) cciv4_dev_phys_afu_mmio(pdev);
+         size = cciv4_dev_len_afu_mmio(pdev);
+
+         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
+            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
+            ptr,
+            size,
+            (void *)pvma->vm_start);
+
+         // Map the region to user VM
+         res = remap_pfn_range(pvma,               // Virtual Memory Area
+            pvma->vm_start,                        // Start address of virtual mapping
+            ((unsigned long) ptr) >> PAGE_SHIFT,   // Pointer in Pages (Page Frame Number)
+            size,
+            pvma->vm_page_prot);
+
+         if ( unlikely(0 != res) ) {
+            PERR("remap_pfn_range error at CSR mmap %d\n", res);
+            goto ERROR;
+         }
+
+         // Successfully mapped MMR region.
+         return 0;
+      }
+
+      if ( WSID_MAP_UMSG == wsidp->m_id )
+      {
+         if ( !cciv4_dev_allow_map_umsg_space(pdev) ) {
+            PERR("Denying request to map cciv4_dev_allow_map_umsg_space Read space for device 0x%p.\n", pdev);
+            goto ERROR;
+         }
+
+         ptr = (void *) cciv4_dev_phys_afu_umsg(pdev);
+         size = cciv4_dev_len_afu_umsg(pdev);
+
+         PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
+            ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
+            ptr,
+            size,
+            (void *)pvma->vm_start);
+
+         // Map the region to user VM
+         res = remap_pfn_range(pvma,                             // Virtual Memory Area
+            pvma->vm_start,                   // Start address of virtual mapping
+            ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
+            size,
+            pvma->vm_page_prot);
+
+         if ( unlikely(0 != res) ) {
+            PERR("remap_pfn_range error at CSR mmap %d\n", res);
+            goto ERROR;
+         }
+
+         // Successfully mapped UMSG region.
+         return 0;
+      }
+
       // TO REST OF CHECKS
 
       // Map the PCIe BAR as the CSR region.
-      ptr  = (void *)cciv4_dev_phys_cci_csr(pdev);
+      ptr = (void *) cciv4_dev_phys_cci_csr(pdev);
       size = cciv4_dev_len_cci_csr(pdev);
 
       PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
-                  ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
-                  ptr,
-                  size,
-                  (void *)pvma->vm_start);
+         ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
+         ptr,
+         size,
+         (void *)pvma->vm_start);
 
       // Map the region to user VM
-      res =  remap_pfn_range(pvma,                             // Virtual Memory Area
-                             pvma->vm_start,                   // Start address of virtual mapping
-                             ((unsigned long)ptr)>>PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
-                             size,
-                             pvma->vm_page_prot);
+      res = remap_pfn_range(pvma,                             // Virtual Memory Area
+         pvma->vm_start,                   // Start address of virtual mapping
+         ((unsigned long) ptr) >> PAGE_SHIFT, // Pointer in Pages (Page Frame Number)
+         size,
+         pvma->vm_page_prot);
 
-       if ( unlikely(0 != res) ) {
+      if ( unlikely(0 != res) ) {
          PERR("remap_pfn_range error at CSR mmap %d\n", res);
          goto ERROR;
-       }
+      }
 
-       // Successfully mapped CSR region.
-       return 0;
+      // Successfully mapped CSR region.
+      return 0;
    }
-
 
    //------------------------
    // Map normal workspace
    //------------------------
 
-   max_length = min(wsidp->m_size,(btWSSize)(pvma->vm_end - pvma->vm_start));
+   max_length = min(wsidp->m_size, (btWSSize)(pvma->vm_end - pvma->vm_start));
 
    PVERBOSE( "MMAP: start 0x%lx, end 0x%lx, KVP 0x%p, size=%" PRIu64 " 0x%" PRIx64 " max_length=%ld flags=0x%lx\n",
-              pvma->vm_start, pvma->vm_end, (btVirtAddr)wsidp->m_id, wsidp->m_size, wsidp->m_size, max_length, pvma->vm_flags);
+      pvma->vm_start, pvma->vm_end, (btVirtAddr)wsidp->m_id, wsidp->m_size, wsidp->m_size, max_length, pvma->vm_flags);
 
-    res = remap_pfn_range(pvma,                              // Virtual Memory Area
-                          pvma->vm_start,                    // Start address of virtual mapping, from OS
-                          (kosal_virt_to_phys((btVirtAddr)wsidp->m_id)>>PAGE_SHIFT),   // physical memory backing store in pfn
-                          max_length,                        // size in bytes
-                          pvma->vm_page_prot);               // provided by OS
-    if ( unlikely(0 != res) ) {
+   res = remap_pfn_range(pvma,                              // Virtual Memory Area
+      pvma->vm_start,                    // Start address of virtual mapping, from OS
+      (kosal_virt_to_phys((btVirtAddr) wsidp->m_id) >> PAGE_SHIFT),   // physical memory backing store in pfn
+      max_length,                        // size in bytes
+      pvma->vm_page_prot);               // provided by OS
+   if ( unlikely(0 != res) ) {
       PERR("remap_pfn_range error at workspace mmap %d\n", res);
       goto ERROR;
-    }
+   }
 
-ERROR:
+   ERROR:
    return res;
 }
 

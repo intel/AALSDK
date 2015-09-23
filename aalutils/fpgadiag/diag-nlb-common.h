@@ -24,25 +24,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-// @file nlb-common.h
+// @file diag-nlb-common.h
 // @brief Functionality common to all NLB utils.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
 // AUTHORS: Tim Whisonant, Intel Corporation
+// 			Sadruta Chandrashekar, Intel Corporation
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 06/09/2013     TSW      Initial version.@endverbatim
+// 06/09/2013     TSW      Initial version.
+// 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
-#ifndef __NLB_COMMON_H__
-#define __NLB_COMMON_H__
+#ifndef __DIAG_NLB_COMMON_H__
+#define __DIAG_NLB_COMMON_H__
 #include <aalsdk/aalclp/aalclp.h>
 
 #include "utils.h"
 //#include "nlb-inner.h"
 BEGIN_C_DECLS
+
+#define HIGH 0xffffffff
+
+# define NLB_TESTMODE_LPBK1 	 "TestMode_lpbk1"
+# define NLB_TESTMODE_READ  	 "TestMode_read"
+# define NLB_TESTMODE_WRITE 	 "TestMode_write"
+# define NLB_TESTMODE_TRPUT 	 "TestMode_trput"
+# define NLB_TESTMODE_SW    	 "TestMode_sw"
+# define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
 
 struct NLBDefaults
 {
@@ -54,14 +65,17 @@ struct NLBDefaults
    phys_type       srcphys;
    phys_type       dstphys;
    freq_type       clkfreq;
-   const char     *prefillhits;
-   const char     *prefillmiss;
+   const char     *warmfpgacache;
+   const char     *coolfpgacache;
+   const char	  *coolcpucache;
    const char     *nobw;
    const char     *tabular;
    const char     *suppresshdr;
    const char     *wt;
    const char     *wb;
-   const char     *pwr;
+   const char     *rds;
+   const char     *rdi;
+   const char     *rdo;
    const char     *cont;
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -73,10 +87,15 @@ struct NLBDefaults
    timespec_type   to_min;
    timespec_type   to_hour;
 #endif // OS
-   const char     *nogui;
-   const char     *demo;
-   const char     *nohist;
-   const char     *histdata;
+   const char     *poll;
+   const char     *csr_write;
+   const char     *umsg_data;
+   const char     *umsg_hint;
+
+   const char     *auto_ch;
+   const char     *qpi;
+   const char     *pcie0;
+   const char     *pcie1;
 };
 
 struct NLBBandwidth
@@ -101,57 +120,68 @@ struct NLBBandwidth
 struct NLBCmdLine
 {
    const char              *copyright;
-   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "LPBK2", "LPBK3", "SW1"
+   const char              *mode;    // "LPBK1", "READ", "WRITE", "TRPUT", "LPBK2", "LPBK3", "SW1", "CCIP-LPBK1"
    const char              *title;
    u64_type                 cmdflags;
-#define NLB_CMD_PARSE_ERROR       (u64_type)0x00000001  /* Command parser error, invalid option, etc.                       */
-#define NLB_CMD_FLAG_HELP         (u64_type)0x00000002  /* --help                                                           */
-#define NLB_CMD_FLAG_VERSION      (u64_type)0x00000004  /* --version                                                        */
+#define NLB_CMD_PARSE_ERROR       		(u64_type)0x00000001  /* Command parser error, invalid option, etc.                       */
+#define NLB_CMD_FLAG_HELP         		(u64_type)0x00000002  /* --help                                                           */
+#define NLB_CMD_FLAG_VERSION      		(u64_type)0x00000004  /* --version                                                        */
 
-#define NLB_CMD_FLAG_TABULAR      (u64_type)0x00000008  /* --tabular         (show tabular output, like legacy NLBTest)     */
-#define NLB_CMD_FLAG_SUPPRESSHDR  (u64_type)0x00000010  /* --suppress-hdr    (don't show column headers in text mode)       */
-#define NLB_CMD_FLAG_BANDWIDTH    (u64_type)0x00000020  /* --no-bw           (don't calculate bandwidth numbers when clear) */
+#define NLB_CMD_FLAG_TABULAR      		(u64_type)0x00000008  /* --tabular         (show tabular output, like legacy NLBTest)     */
+#define NLB_CMD_FLAG_SUPPRESSHDR  		(u64_type)0x00000010  /* --suppress-hdr    (don't show column headers in text mode)       */
+#define NLB_CMD_FLAG_BANDWIDTH    		(u64_type)0x00000020  /* --no-bw           (don't calculate bandwidth numbers when clear) */
 
-#define NLB_CMD_FLAG_DSM_PHYS     (u64_type)0x00000040  /* --dsm-phys  X     (physical address of device status workspace)  */
-#define NLB_CMD_FLAG_SRC_PHYS     (u64_type)0x00000080  /* --src-phys  X     (physical address of source workspace)         */
-#define NLB_CMD_FLAG_DST_PHYS     (u64_type)0x00000100  /* --dest-phys X     (physical address of destination workspace)    */
+#define NLB_CMD_FLAG_DSM_PHYS     		(u64_type)0x00000040  /* --dsm-phys  X     (physical address of device status workspace)  */
+#define NLB_CMD_FLAG_SRC_PHYS     		(u64_type)0x00000080  /* --src-phys  X     (physical address of source workspace)         */
+#define NLB_CMD_FLAG_DST_PHYS     		(u64_type)0x00000100  /* --dest-phys X     (physical address of destination workspace)    */
 
-#define NLB_CMD_FLAG_SRC_CAPCM    (u64_type)0x00000200  /* --src-capcm  X    (CA PCM offset of source workspace)            */
-#define NLB_CMD_FLAG_DST_CAPCM    (u64_type)0x00000400  /* --dest-capcm X    (CA PCM offset of destination workspace)       */
+#define NLB_CMD_FLAG_SRC_CAPCM    		(u64_type)0x00000200  /* --src-capcm  X    (CA PCM offset of source workspace)            */
+#define NLB_CMD_FLAG_DST_CAPCM    		(u64_type)0x00000400  /* --dest-capcm X    (CA PCM offset of destination workspace)       */
 
-#define NLB_CMD_FLAG_BEGINCL      (u64_type)0x00000800  /* --begin X         (number of cache lines)                        */
-#define NLB_CMD_FLAG_ENDCL        (u64_type)0x00001000  /* --end X           (number of cache lines)                        */
-#define NLB_CMD_FLAG_WT           (u64_type)0x00002000  /* --wt              (write-through caching)                        */
-#define NLB_CMD_FLAG_WB           (u64_type)0x00004000  /* --wb              (write-back caching)                           */
-#define NLB_CMD_FLAG_PWR          (u64_type)0x00008000  /* --pwr             (posted writes)                                */
-#define NLB_CMD_FLAG_CONT         (u64_type)0x00010000  /* --cont            (continuous mode)                              */
-#define NLB_CMD_FLAG_TONSEC       (u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
-#define NLB_CMD_FLAG_TOUSEC       (u64_type)0x00040000  /* --timeout-usec X  (microsecond timeout for continuous mode)      */
-#define NLB_CMD_FLAG_TOMSEC       (u64_type)0x00080000  /* --timeout-msec X  (millisecond timeout for continuous mode)      */
-#define NLB_CMD_FLAG_TOSEC        (u64_type)0x00100000  /* --timeout-sec  X  (second timeout for continuous mode)           */
-#define NLB_CMD_FLAG_TOMIN        (u64_type)0x00200000  /* --timeout-min  X  (minute timeout for continuous mode)           */
-#define NLB_CMD_FLAG_TOHOUR       (u64_type)0x00400000  /* --timeout-hour X  (hour timeout for continuous mode)             */
-#define NLB_CMD_FLAG_CLKFREQ      (u64_type)0x00800000  /* --clock-freq X    (fpga clock frequency, default=200 MHz)        */
+#define NLB_CMD_FLAG_BEGINCL      		(u64_type)0x00000800  /* --begin X         (number of cache lines)                        */
+#define NLB_CMD_FLAG_ENDCL        		(u64_type)0x00001000  /* --end X           (number of cache lines)                        */
+#define NLB_CMD_FLAG_WT           		(u64_type)0x00002000  /* --wt              (write-through caching)                        */
+#define NLB_CMD_FLAG_WB           		(u64_type)0x00004000  /* --wb              (write-back caching)                           */
+#define NLB_CMD_FLAG_PWR          		(u64_type)0x00008000  /* --pwr             (posted writes)                                */
+#define NLB_CMD_FLAG_CONT         		(u64_type)0x00010000  /* --cont            (continuous mode)                              */
+#define NLB_CMD_FLAG_TONSEC       		(u64_type)0x00020000  /* --timeout-nsec X  (nanosecond timeout for continuous mode)       */
+#define NLB_CMD_FLAG_TOUSEC       		(u64_type)0x00040000  /* --timeout-usec X  (microsecond timeout for continuous mode)      */
+#define NLB_CMD_FLAG_TOMSEC       		(u64_type)0x00080000  /* --timeout-msec X  (millisecond timeout for continuous mode)      */
+#define NLB_CMD_FLAG_TOSEC        		(u64_type)0x00100000  /* --timeout-sec  X  (second timeout for continuous mode)           */
+#define NLB_CMD_FLAG_TOMIN        		(u64_type)0x00200000  /* --timeout-min  X  (minute timeout for continuous mode)           */
+#define NLB_CMD_FLAG_TOHOUR       		(u64_type)0x00400000  /* --timeout-hour X  (hour timeout for continuous mode)             */
+#define NLB_CMD_FLAG_CLKFREQ      		(u64_type)0x00800000  /* --clock-freq X    (fpga clock frequency, default=200 MHz)        */
 
-#define NLB_CMD_FLAGS_TO          (NLB_CMD_FLAG_TONSEC | \
-                                   NLB_CMD_FLAG_TOUSEC | \
-                                   NLB_CMD_FLAG_TOMSEC | \
-                                   NLB_CMD_FLAG_TOSEC  | \
-                                   NLB_CMD_FLAG_TOMIN  | \
-                                   NLB_CMD_FLAG_TOHOUR)
+#define NLB_CMD_FLAGS_TO          		(NLB_CMD_FLAG_TONSEC | \
+										 NLB_CMD_FLAG_TOUSEC | \
+										 NLB_CMD_FLAG_TOMSEC | \
+										 NLB_CMD_FLAG_TOSEC  | \
+										 NLB_CMD_FLAG_TOMIN  | \
+										 NLB_CMD_FLAG_TOHOUR)
 
-#define NLB_CMD_FLAG_CSRS         (u64_type)0x01000000  /* --csrs            (show CSR read/write)                          */
+#define NLB_CMD_FLAG_CSRS         		(u64_type)0x01000000  /* --csrs            (show CSR read/write)                          */
 
-#define NLB_CMD_FLAG_PREFILL_HITS (u64_type)0x02000000  /* --prefill-hits    (attempt to load the cache with hits at init)  */
-#define NLB_CMD_FLAG_PREFILL_MISS (u64_type)0x04000000  /* --prefill-misses  (" misses)                                     */
+#define NLB_CMD_FLAG_WARM_FPGA_CACHE 	(u64_type)0x02000000  /* --warm-fpga-cache (attempt to load the cache with hits at init)  */
+#define NLB_CMD_FLAG_COOL_FPGA_CACHE 	(u64_type)0x04000000  /* --cool-fpga-cache (attempt to load the cache with misses at init)*/
 
-#define NLB_CMD_FLAG_NOGUI        (u64_type)0x08000000  /* --no-gui          (force text mode)                              */
-#define NLB_CMD_FLAG_DEMO         (u64_type)0x10000000  /* --demo            (use settings desirable for GUI demos)         */
-#define NLB_CMD_FLAG_NOHIST       (u64_type)0x20000000  /* --no-hist         (don't display the histogram)                  */
-#define NLB_CMD_FLAG_HISTDATA     (u64_type)0x40000000  /* --hist-data       (dump the histogram data points, post test)    */
+#define NLB_CMD_FLAG_RDS          		(u64_type)0x08000000  /* --rds             (readline - shared)                            */
+#define NLB_CMD_FLAG_RDI          		(u64_type)0x10000000  /* --rdi             (readline - invalidate)                        */
+#define NLB_CMD_FLAG_RDO         		(u64_type)0x20000000  /* --rdo             (readline - ownership)                         */
 
-#define NLB_CMD_FLAG_FEATURE0     (u64_type)0x80000000  /* --0 */
-#define NLB_CMD_FLAG_FEATURE1     (u64_type)0x100000000 /* --1 */
+#define NLB_CMD_FLAG_POLL         		(u64_type)0x40000000   /* --poll            notice sent from CPU to FPGA via poll         */
+#define NLB_CMD_FLAG_CSR_WRITE    		(u64_type)0x200000000  /* --csr-write       notice sent from CPU to FPGA via csr-write    */
+#define NLB_CMD_FLAG_UMSG_DATA    		(u64_type)0x400000000  /* --umsg-data       notice sent from CPU to FPGA via umsg-data    */
+#define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  /* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	  */
+
+#define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							      */
+
+#define NLB_CMD_FLAG_AUTO_CH			(u64_type)0x2000000000 /* --auto-ch			Distribute data among QPI, PCIe0 and PCIe1 channels    */
+#define NLB_CMD_FLAG_QPI				(u64_type)0x4000000000 /* --qpi			    Data transferred on QPI channel						   */
+#define NLB_CMD_FLAG_PCIE0				(u64_type)0x8000000000 /* --pcie0		    Data transferred on PCIe0  channel					   */
+#define NLB_CMD_FLAG_PCIE1				(u64_type)0x10000000000/* --pcie1		    Data transferred on PCIe1  channel			   	       */
+
+#define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
+#define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */
 
    uint_type                dispflags;
    uint_type                iter;
@@ -181,6 +211,7 @@ struct NLBCmdLine
    #define MY_CMD_FLAG_HELP    0x00000001
    #define MY_CMD_FLAG_VERSION 0x00000002
    std::string      AFUTarget;
+   std::string      TestMode;
    AAL::btInt       LogLevel;
 };
 
@@ -251,106 +282,8 @@ void MyNLBShowHelp(FILE * , aalclp_gcs_compliance_data * );
 
 END_C_DECLS
 
-/*class NLBConfig
-{
-public:
-   NLBConfig(bool                    bAsynchronous=true,
-             wkspc_size_type         SizeInBytes=DEFAULT_NLB_WKSPC_SIZE,
-             Workspace               SrcWkspc=NULLWorkspace,
-             Workspace               DestWkspc=NULLWorkspace,
-             Workspace               DevStatusWkspc=NULLWorkspace,
-             INLBVAFU::eNLBCacheInit CacheInit=DEFAULT_NLB_CACHE_INIT,
-             INLBVAFU::eNLBWriteType WriteType=DEFAULT_NLB_WRITE_TYPE,
-             bool                    bPostedWrites=DEFAULT_NLB_POSTED_WRITES,
-             bool                    bContinuousMode=false,
-             freq_type               FPGAClkFreqHz=200000000ULL/*TODO DEFAULT_FPGA_CLK_FREQ.Hertz()*//*) throw() :
-      m_bAsynchronous(bAsynchronous),
-      m_SizeInBytes(SizeInBytes),
-      m_SrcWkspc(SrcWkspc),
-      m_DestWkspc(DestWkspc),
-      m_DevStatusWkspc(DevStatusWkspc),
-      m_CacheInit(CacheInit),
-      m_WriteType(WriteType),
-      m_bPostedWrites(bPostedWrites),
-      m_bContinuousMode(bContinuousMode),
-      m_FPGAClkFreqHz(FPGAClkFreqHz)
-   {
-#if   defined( __AAL_WINDOWS__ )
-# error TODO
-#elif defined( __AAL_LINUX__ )
-      struct timespec ts = { DEFAULT_NLB_CONT_TIMEOUT_SEC, DEFAULT_NLB_CONT_TIMEOUT_NS };
-      m_ContModeTimeout  = ts;
-#endif // OS
-   }
-
-   void SetAsynchronous(bool bAsync)                   throw() { m_bAsynchronous = bAsync;    }
-   bool GetAsynchronous()                        const throw() { return m_bAsynchronous;      }
-
-   void            SetSizeInBytes(wkspc_size_type sz)  throw() { m_SizeInBytes = sz;          }
-   wkspc_size_type GetSizeInBytes()              const throw() { return m_SizeInBytes;        }
-
-   void      SetSrcWkspc(const Workspace &wkspc)       throw()
-   {
-      m_SrcWkspc = wkspc;
-      if ( 0 != m_SrcWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_SrcWkspc.TagName() = "NLB Src";
-      }
-   }
-   Workspace GetSrcWkspc()                       const throw() { return m_SrcWkspc;           }
-
-   void      SetDestWkspc(const Workspace &wkspc)      throw()
-   {
-      m_DestWkspc = wkspc;
-      if ( 0 != m_DestWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_DestWkspc.TagName() = "NLB Dst";
-      }
-   }
-   Workspace GetDestWkspc()                      const throw() { return m_DestWkspc;          }
-
-   void      SetDevStatusWkspc(const Workspace &wkspc) throw()
-   {
-      m_DevStatusWkspc = wkspc;
-      if ( 0 != m_DevStatusWkspc.TagName().compare(NULL_WKSPC_TAGNAME) ) {
-         m_DevStatusWkspc.TagName() = "NLB DSM";
-      }
-   }
-   Workspace GetDevStatusWkspc()                 const throw() { return m_DevStatusWkspc;     }
-
-   void SetCacheInit(INLBVAFU::eNLBCacheInit init)     throw() { m_CacheInit = init;          }
-   INLBVAFU::eNLBCacheInit GetCacheInit()        const throw() { return m_CacheInit;          }
-
-   void SetWriteType(INLBVAFU::eNLBWriteType type)     throw() { m_WriteType = type;          }
-   INLBVAFU::eNLBWriteType GetWriteType()        const throw() { return m_WriteType;          }
-
-   void SetPostedWrites(bool bPostedWr)                throw() { m_bPostedWrites = bPostedWr; }
-   bool GetPostedWrites()                        const throw() { return m_bPostedWrites;      }
-
-   void SetContinuous(bool bCont)                      throw() { m_bContinuousMode = bCont;   }
-   bool GetContinuous()                          const throw() { return m_bContinuousMode;    }
-
-   void SetFPGAClkFreqHz(freq_type FreqHz)             throw() { m_FPGAClkFreqHz = FreqHz;    }
-   freq_type GetFPGAClkFreqHz()                  const throw() { return m_FPGAClkFreqHz;      }
-
-   void SetContModeTimeout(const Timer &t)             throw() { m_ContModeTimeout = t;       }
-   Timer GetContModeTimeout()                    const throw() { return m_ContModeTimeout;    }
-
-protected:
-   bool                    m_bAsynchronous;
-   wkspc_size_type         m_SizeInBytes;    // size of Src / Dest Workspaces
-   Workspace               m_SrcWkspc;
-   Workspace               m_DestWkspc;
-   Workspace               m_DevStatusWkspc;
-   INLBVAFU::eNLBCacheInit m_CacheInit;
-   INLBVAFU::eNLBWriteType m_WriteType;
-   bool                    m_bPostedWrites;
-   bool                    m_bContinuousMode;
-   freq_type               m_FPGAClkFreqHz;
-   Timer                   m_ContModeTimeout;
-};*/
-
 bool         NLBVerifyCmdLine(NLBCmdLine       & ,
                               std::ostream     & ) throw();
-std::string     NLBCmdLineFor(const NLBCmdLine & ) throw();
 
 
 BEGIN_C_DECLS
@@ -389,5 +322,5 @@ END_C_DECLS
 
 
 
-#endif // __NLB_COMMON_H__
+#endif // __DIAG_NLB_COMMON_H__
 

@@ -441,7 +441,7 @@ void CMyApp::OnServiceEvent(const IEvent &e)
    Post();
 }
 
-/// @} group cciapp
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
@@ -801,7 +801,7 @@ btInt NLBLpbk1(CMyApp *app)
    return res;
 }
 
-/// @} group cciapp
+/// @}
 
 
 btInt RunTest(CMyApp *p)
@@ -1007,6 +1007,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ cciapp --target=swsim@endcode
 
-@} group cciapp
+@}
 */
 

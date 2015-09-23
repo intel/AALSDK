@@ -340,7 +340,7 @@ void ASESPLAFU::SetContextWorkspace(TransactionID const &TranID,
                                                                                    TranID) );
 }
 
-/// @} group ASESPLAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

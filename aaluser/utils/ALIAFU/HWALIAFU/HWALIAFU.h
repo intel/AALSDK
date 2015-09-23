@@ -103,7 +103,7 @@ public:
    // </IALIAFU>
 };
 
-/// @} group HWALIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

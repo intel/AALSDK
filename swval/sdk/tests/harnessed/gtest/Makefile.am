@@ -30,23 +30,25 @@ nightly \
 weekly
 
 bat_SOURCES=\
-main.cpp \
-gtCommon.h \
-gtCommon.cpp \
-gtCritSect.cpp \
-gtSem.cpp \
+gtAALEvent.cpp \
+gtAALService.cpp \
+gtAASBase.cpp \
 gtBarrier.cpp \
-gtThread.cpp \
-gtThreadGroup.h \
-gtThreadGroup.cpp \
-gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp \
+gtCommon.cpp \
+gtCommon.h \
+gtCritSect.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
-gtTimer.cpp \
+gtOSServiceModule.cpp \
+gtRuntime.cpp \
+gtSem.cpp \
 gtSleep.cpp \
-gtAASBase.cpp \
-gtAALEvent.cpp
+gtThread.cpp \
+gtThreadGroup.cpp \
+gtThreadGroup.h \
+gtThreadGroupSR.cpp \
+gtTimer.cpp \
+main.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -55,17 +57,17 @@ bat_LDADD=$(COMMON_LDADD)
 
 
 nightly_SOURCES=\
-main.cpp \
-gtCommon.h \
 gtCommon.cpp \
+gtCommon.h \
 gtCritSect.cpp \
+gtDynLinkLibrary.cpp \
+gtOSServiceModule.cpp \
 gtSem.cpp \
 gtThread.cpp \
-gtThreadGroup.h \
 gtThreadGroup.cpp \
+gtThreadGroup.h \
 gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp \
-gtDynLinkLibrary.cpp
+main.cpp
 
 
 
@@ -76,11 +78,21 @@ nightly_LDADD=$(COMMON_LDADD)
 
 
 weekly_SOURCES=\
-main.cpp \
-gtCommon.h \
+gtCValue.cpp \
 gtCommon.cpp \
+gtCommon.h \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp \
 gtNVSLegacy.cpp \
-gtNVS.cpp
+gtNVSTester.cpp \
+gtNVSTester.h \
+gtSeqRand.cpp \
+gtSeqRand.h \
+main.cpp
 
 weekly_CPPFLAGS=\
 -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
@@ -92,25 +104,37 @@ CLEANFILES=gtest-all.cc
 else
 
 EXTRA_DIST=\
-main.cpp \
-gtCommon.h \
+gtAALEvent.cpp \
+gtAALService.cpp \
+gtAASBase.cpp \
+gtBarrier.cpp \
+gtCValue.cpp \
 gtCommon.cpp \
+gtCommon.h \
 gtCritSect.cpp \
-gtSem.cpp \
-gtNVSLegacy.cpp \
-gtNVS.cpp \
-gtThread.cpp \
-gtThreadGroup.h \
-gtThreadGroup.cpp \
-gtThreadGroupSR.cpp \
-gtPaths.cpp \
-gtStartupShutdown.cpp \
-gtEnvVar.cpp \
-gtOSServiceModule.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtNVS0.cpp \
+gtNVS1.cpp \
+gtNVS2.cpp \
+gtNVS3.cpp \
+gtNVS4.cpp \
+gtNVS5.cpp \
+gtNVSLegacy.cpp \
+gtNVSTester.cpp \
+gtNVSTester.h \
+gtOSServiceModule.cpp \
+gtRuntime.cpp \
+gtSem.cpp \
+gtSeqRand.cpp \
+gtSeqRand.h \
+gtSleep.cpp \
+gtThread.cpp \
+gtThreadGroup.cpp \
+gtThreadGroup.h \
+gtThreadGroupSR.cpp \
 gtTimer.cpp \
-gtSleep.cpp
+main.cpp
 
 endif
 

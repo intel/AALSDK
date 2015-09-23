@@ -44,8 +44,8 @@
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
-/// @class        IServiceClient
-/// @brief        Client Interface for any Service object in the AAL AALRUNTIME.
+/// @interface IServiceClient
+/// @brief     Client Interface for any Service object in the AAL AALRUNTIME.
 ///
 ///   An object that
 ///   wants to use a Service in the XL Runtime instantiates an instance of this class,
@@ -55,8 +55,7 @@ BEGIN_NAMESPACE(AAL)
 ///   it back. This mechanism establishes a binding between the two objects so that
 ///   each object can communicate with the other.
 //=============================================================================
-
-class IServiceClient
+class AALRUNTIME_API IServiceClient
 {
 public:
    /// @brief     Called by a Runtime object to indicate that it
@@ -88,8 +87,8 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void      serviceAllocated(IBase               *pServiceBase,
-                                      TransactionID const &rTranID = TransactionID()) = 0;
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID()) = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully allocate a service after a call to
@@ -97,14 +96,14 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void      serviceAllocateFailed(const IEvent &rEvent) = 0;
+   virtual void serviceAllocateFailed(const IEvent &rEvent)                      = 0;
 
    /// @brief     Called by a Service object to indicate that it has stopped successfully
    ///               and been Released after a call to IAALService.Release().
    /// @param[in] rTranID is reference to the TransactionID that was passed to
    ///               IAALService.Release().
    /// @return    void
-   virtual void      serviceReleased(TransactionID const &rTranID = TransactionID()) = 0;
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID())  = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully Release a service after a call to
@@ -112,16 +111,16 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void      serviceReleaseFailed(const IEvent &rEvent) = 0;
+   virtual void serviceReleaseFailed(const IEvent &rEvent)                       = 0;
 
    /// @brief     Called by a Service object to pass exceptions and other
    ///               unsolicited messages.
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
    /// @return    void
-   virtual void      serviceEvent(const IEvent &rEvent) = 0;
+   virtual void serviceEvent(const IEvent &rEvent)                               = 0;
 
-   /// @brief     Destructor
+   /// @brief Destructor
    virtual ~IServiceClient() {}
 };
 
@@ -130,4 +129,4 @@ END_NAMESPACE(AAL)
 
 #endif // __AALSDK_ISERVICECLIENT_H__
 
-/// @} group AALRUNTIME
+/// @}

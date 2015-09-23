@@ -296,7 +296,7 @@ protected:
 };
 #endif // DEPRECATED
 
-/// @} group AASUtils
+/// @}
 
 #endif // __AALSDK_UTILS_UTILITIES_H__
 

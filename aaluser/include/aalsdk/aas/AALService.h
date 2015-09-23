@@ -119,20 +119,21 @@ public:
       (m_That->*m_ptr)(m_rtid);
    }
 
-   virtual void  operator()()
+   virtual void operator()()
    {
       (m_That->*m_ptr)(m_rtid);
    }
 
 protected:
-   T             *m_That;
-   void          (T::*m_ptr)(TransactionID const &);
+   T                  *m_That;
+   void           (T::*m_ptr)(TransactionID const &);
    TransactionID const m_rtid;
 };
 
 
 //=============================================================================
-///  ServiceBase Interface used for framework operations not intended to be
+/// @interface IServiceBase
+/// @brief ServiceBase Interface used for framework operations not intended to be
 ///  exposed to users.
 ///
 ///   The ServiceBase class is intended to be inherited by AAL Services.
@@ -141,34 +142,36 @@ protected:
 class AASLIB_API IServiceBase
 {
 public:
+   virtual ~IServiceBase() {}
 
    // Called once when the Service is done initializing.
    virtual btBool initComplete(TransactionID const &rtid)      = 0;
    virtual btBool initFailed(IEvent const *ptheEvent)          = 0;
 
    // Final release
-   virtual btBool Release(btTime timeout = AAL_INFINITE_WAIT)  = 0;
+   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT)    = 0;
 
-   virtual NamedValueSet const &OptArgs()                      = 0;
+   virtual NamedValueSet const &OptArgs() const                = 0;
 
    /// Accessor to pointer to the Service's Client's Interface
-    virtual IServiceClient *ServiceClient()                    = 0;
+    virtual IServiceClient *ServiceClient() const              = 0;
 
     /// Accessor to pointer to the Service's Client's IBase Interface
-    virtual IBase          *ServiceClientBase()                = 0;
+    virtual IBase          *ServiceClientBase() const          = 0;
 
     /// Accessor to pointer to the Runtime to be used in ObjectCreated
-    virtual IRuntime *getRuntime()                             = 0;
+    virtual IRuntime *getRuntime() const                       = 0;
 
     /// Accessor to pointer to the Runtime Client
-    virtual IRuntimeClient * getRuntimeClient()                = 0;
+    virtual IRuntimeClient * getRuntimeClient() const          = 0;
 
     /// Accessor to this Services Service Module
-    virtual AALServiceModule     * pAALServiceModule()         = 0;
+    virtual AALServiceModule     * pAALServiceModule() const   = 0;
 };
 
 //=============================================================================
-///   Base class for software-based AAL Services.
+/// @interface ServiceBase
+/// @brief Base class for software-based AAL Services.
 ///
 ///   The ServiceBase class is intended to be inherited by AAL Services.
 ///   The purpose is to provide the canonical implementation for the Service.
@@ -184,11 +187,11 @@ public:
 /// @param[in]  C  The name of the class being constructed.
 /// @param[in]  P  The name of the parent class being implemented, ie ServiceBase, DeviceServiceBase, etc.
 #define DECLARE_AAL_SERVICE_CONSTRUCTOR(C, P) C(AAL::AALServiceModule *container,                             \
-                                                AAL::IRuntime         *pAALRUNTIME,                            \
+                                                AAL::IRuntime         *pAALRUNTIME,                           \
                                                 AAL::IAALTransport    *ptransport   = NULL,                   \
                                                 AAL::IAALMarshaller   *marshaller   = NULL,                   \
                                                 AAL::IAALUnMarshaller *unmarshaller = NULL) : P(container,    \
-                                                                                                pAALRUNTIME,   \
+                                                                                                pAALRUNTIME,  \
                                                                                                 ptransport,   \
                                                                                                 marshaller,   \
                                                                                                 unmarshaller)
@@ -204,10 +207,6 @@ public:
                IAALTransport    *ptransport   = NULL,
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
-
-   /// ServiceBase Copy Constructor.
-   ServiceBase(ServiceBase const &rother);
-
 
    /// ServiceBase Destructor.
    virtual ~ServiceBase();
@@ -241,7 +240,7 @@ public:
    ///  AFTER completing their Release() implementation to insure proper clean-up
    /// @param[in] rTranID TransactionID if not atomic
    /// @param[in] timeout Timeout
-   virtual btBool Release(TransactionID const &rTranID, btTime timeout = AAL_INFINITE_WAIT);
+   virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
    // </IAALService>
 
@@ -253,27 +252,27 @@ public:
 
    // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
    //   This function destroys the Service object.
-   btBool Release(btTime timeout = AAL_INFINITE_WAIT);
+   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
 
    /// Accessor to optional arguments passed during allocateService
    ///
-   NamedValueSet const &OptArgs()               { return m_optArgs; }
+   NamedValueSet const &OptArgs() const;
 
    /// Accessor to pointer to the Service's Client's Interface
-   IServiceClient *ServiceClient()              { return m_pclient; }
+   IServiceClient *ServiceClient() const;
 
    /// Accessor to pointer to the Service's Client's IBase Interface
-   IBase          *ServiceClientBase()          { return m_pclientbase;    }
+   IBase          *ServiceClientBase() const;
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
-   IRuntime * getRuntime()                      { return m_Runtime; }
+   IRuntime * getRuntime() const;
 
    /// Accessor to pointer to the Runtime Client
-   IRuntimeClient * getRuntimeClient()          { return m_RuntimeClient; }
+   IRuntimeClient * getRuntimeClient() const;
 
    /// Accessor to this Services Service Module
-   AALServiceModule     * pAALServiceModule()   { return m_pcontainer; }
+   AALServiceModule     * pAALServiceModule()  const;
 
    // </IServiceBase>
 
@@ -283,8 +282,7 @@ public:
    ///               after a call to Runtime() or getRuntimeProxy().
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent) {};
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const & ) {/*to be implemented by the service*/}
 
 
    /// @brief     Called by a Runtime object to indicate that it started successfully
@@ -294,17 +292,15 @@ public:
    ///               Runtime.start() was called.
    /// @param[in] rConfigParms Copy of the configuration parameters passed in to
    ///               Runtime.start() call.
-   /// @return    void
-   virtual void runtimeStarted(IRuntime            *pRuntime,
-                               const NamedValueSet &rConfigParms) {};
+   virtual void runtimeStarted(IRuntime            * ,
+                               const NamedValueSet & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it has stopped successfully
    ///               after a call to Runtime.stop()
    /// @param[in] pRuntime Pointer to the Runtime object that is calling back
    ///               indicating that it has stopped successfully after
    ///               Runtime.stop() was called.
-   /// @return    void
-   virtual void runtimeStopped(IRuntime *pRuntime){};
+   virtual void runtimeStopped(IRuntime * ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to start
    ///               successfully after a call to Runtime.start().
@@ -313,8 +309,7 @@ public:
    ///               allocated will still need to be freed.
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeStartFailed(const IEvent &rEvent){};
+   virtual void runtimeStartFailed(const IEvent & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to stop
    ///               successfully after a call to Runtime.stop().
@@ -323,16 +318,14 @@ public:
    ///
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeStopFailed(const IEvent &rEvent){};
+   virtual void runtimeStopFailed(const IEvent & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully allocate a service after a call to
    ///               Runtime.allocService().
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
-   /// @return    void
-   virtual void runtimeAllocateServiceFailed( IEvent const &rEvent){};
+   virtual void runtimeAllocateServiceFailed(IEvent const & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to indicate that it
    ///               successfully allocated a service after a call to
@@ -348,7 +341,6 @@ public:
    ///               Release() will need to be called.
    /// @param[in] rTranID is reference to the TransactionID that was passed to
    ///               Runtime.allocService().
-   /// @return    void
    ///
    /// @code
    /// void runtimeAllocateServiceSucceeded( IBase *pServiceBase,
@@ -364,94 +356,83 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void runtimeAllocateServiceSucceeded( IBase               *pServiceBase,
-                                                 TransactionID const &rTranID){};
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & ) {/*to be implemented by the service*/}
 
    /// @brief     Called by a Runtime object to pass exceptions and other
    ///               unsolicited messages.
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
-   /// @return    void
-   virtual void runtimeEvent(const IEvent &rEvent){};
+   virtual void runtimeEvent(const IEvent & ) {/*to be implemented by the service*/}
    // </IRuntimeClient>
 
 
 
 
 #if DEPRECATED
-   // TODO
-   virtual void   Destroy(void){}
-#endif // DEPRECATED
-
-   //
-   // IServiceClient - For backward compatibility with < version 4.0
+   //@brief  IServiceClient - For backward compatibility with < version 4.0
    void messageHandler(const IEvent &rEvent);
-
-   // Accessors for marshalers and transport
-   IAALMarshaller   & marshall()   { return *m_pmarshaller;   }
-   IAALUnMarshaller & unmarshall() { return *m_punmarshaller; }
-   IAALTransport    & recvr()      { return *m_ptransport;    }
-   IAALTransport    & sender()     { return *m_ptransport;    }
-
+#endif // DEPRECATED
 
    //=============================================================================
    // Name: sendmsg
-   // @brief Convenience function for sending the message currently carried
-   //              by the marshaler.
+   /// @brief Convenience function for sending the message currently carried
+   ///              by the marshaler.
    //
    //
-   // Comments: This is a destructive send. It empties the marshaler once sent.
+   /// Comments: This is a destructive send. It empties the marshaler once sent.
    //=============================================================================
    btBool sendmsg();
 
    //=============================================================================
    // Name:        getmsg
-   // @brief Convenience function for getting the next message into
-   //              unmarshaller
+   /// @brief Convenience function for getting the next message into
+   ///              unmarshaller
    //
-   // Comments:    This is a destructive get. It empties the unmarshaller before
-   //              getting.
-   // @return      true if data in unmarshaller, false if not
+   /// Comments:    This is a destructive get. It empties the unmarshaller before
+   ///              getting.
+   /// @return      true if data in unmarshaller, false if not
    //=============================================================================
    btBool getmsg();
 
    //=============================================================================
    // Name: processmsg
-   // @brief Process a single received message
+   /// @brief Process a single received message
    //
-   // Comments This will be called by some scheduling entity dependent on the
-   //           container
+   /// Comments This will be called by some scheduling entity dependent on the
+   ///           container
    //=============================================================================
    // TODO
-   virtual void processmsg() {}
+   virtual void processmsg() {/*to be implemented by the service*/}
 
    //=============================================================================
    // Name: startMDS
-   // @brief   Starts the message deliver system.
+   /// @brief   Starts the message deliver system.
    //
    //
-   // Comments: Used by objects that implement asynchronous message delivery.
-   //           This starts a thread that continuously polls the receiver and
-   //           when a message is available calls proceemsg().
+   /// Comments: Used by objects that implement asynchronous message delivery.
+   ///           This starts a thread that continuously polls the receiver and
+   ///           when a message is available calls proceemsg().
    //=============================================================================
    virtual btBool startMDS();
-
-   //=============================================================================
-   // Name: MessageSeliveryThread
-   // Description: polls message queue and  dispatches
-   //=============================================================================
-   static void _MessageDeliveryThread(OSLThread *pThread, void *pContext);
-   void MessageDeliveryThread();
 
    //--------------------------------------------------
    //                   Utilities
    //--------------------------------------------------
-   btBool HasMarshaller()   { return NULL != m_pmarshaller;   }
-   btBool HasUnMarshaller() { return NULL != m_punmarshaller; }
-   btBool HasTransport()    { return NULL != m_ptransport;    }
 
-   // Hook to allow Services to expose parameters. Default is not supported
-   virtual btBool SetParms(NamedValueSet const &rparms){return false;}
+   // Accessors for marshalers and transport
+   IAALMarshaller   &   marshall();
+   IAALUnMarshaller & unmarshall();
+   IAALTransport    &      recvr();
+   IAALTransport    &     sender();
+
+   btBool          HasMarshaller() const;
+   btBool        HasUnMarshaller() const;
+   btBool           HasTransport() const;
+
+   ///@brief Hook to allow Services to expose parameters.
+   /// Default is to not support parameters (Services can override to implement parameters).
+   virtual btBool SetParms(NamedValueSet const & ) { return false; }
 
    //---------------------------------
    //  Accessors to utility functions
@@ -462,25 +443,35 @@ public:
                      NamedValueSet const    &rManifest = NamedValueSet(),
                      TransactionID const    &rTranID   = TransactionID());
 
-   void Released();
-
 protected:
-   // operator= not allowed
+   // no copies
+   ServiceBase(const ServiceBase & );
    ServiceBase & operator = (const ServiceBase & );
 
+   //=============================================================================
+   // Name: MessageDeliveryThread
+   /// @brief polls message queue and dispatches
+   static void _MessageDeliveryThread(OSLThread *pThread, void *pContext);
+   void MessageDeliveryThread();
 
-   NamedValueSet                     m_optArgs;
-   IRuntimeClient                   *m_RuntimeClient;
-   IRuntime                         *m_Runtime;
-   IServiceClient                   *m_pclient;
-   IBase                            *m_pclientbase;
-   AALServiceModule                 *m_pcontainer;
-   IAALTransport                    *m_ptransport;
-   IAALMarshaller                   *m_pmarshaller;
-   IAALUnMarshaller                 *m_punmarshaller;
-   btBool                            m_runMDT;
-   OSLThread                        *m_pMDT;
-   };
+   //=============================================================================
+
+   void Released();
+
+   btUnsigned32bitInt m_Flags;
+#define SERVICEBASE_IS_RELEASED 0x00000001
+   IRuntimeClient    *m_RuntimeClient;
+   IRuntime          *m_Runtime;
+   IServiceClient    *m_pclient;
+   IBase             *m_pclientbase;
+   AALServiceModule  *m_pcontainer;
+   IAALTransport     *m_ptransport;
+   IAALMarshaller    *m_pmarshaller;
+   IAALUnMarshaller  *m_punmarshaller;
+   btBool             m_runMDT;
+   OSLThread         *m_pMDT;
+   NamedValueSet      m_optArgs;
+};
 
 
 // Standard messsage keys
@@ -505,7 +496,7 @@ enum aal_service_method_id
 
 //=============================================================================
 // Name: ServiceProxyBase
-// Description: Base class for all services
+/// @brief Base class for all services
 //=============================================================================
 class AASLIB_API ServiceProxyBase: public ServiceBase
 {
@@ -518,14 +509,15 @@ public:
 
    //=============================================================================
    // Name: _init
-   // Description: Perform any post creation initialization including establishing
-   //               communications.
-   // Comments: Only base classes have  _init(). This function is designed to be
-   //           called by the factory to perform canonical initialization. The 
-   //           factory will call the most derived base class' (super base class)
-   //           _init() function.  It is the responsibility of the base class to
-   //           call its direct ancestor's _init() FIRST to ensure that the class
-   //           hiearchy _init() called.
+   /// @brief Perform any post creation initialization including establishing
+   ///               communications.
+   ///
+   ///           Only base classes have  _init(). This function is designed to be
+   ///           called by the factory to perform canonical initialization. The
+   ///           factory will call the most derived base class' (super base class)
+   ///           _init() function.  It is the responsibility of the base class to
+   ///           call its direct ancestor's _init() FIRST to ensure that the class
+   ///           hiearchy _init() called.
    //=============================================================================
    virtual btBool _init( IBase                   *pclient,
                          TransactionID const      &rtid,
@@ -534,7 +526,7 @@ public:
 private:
     //=============================================================================
     // Name: Doinit
-    // Description: Real initialization function
+    /// @brief Real initialization function
     // Comments:
     //=============================================================================
     void Doinit(TransactionID const &rtid);
@@ -544,7 +536,7 @@ private:
 
 //=============================================================================
 // Name: ServiceStubBase
-// Description: Base class for all service stubs
+/// @brief Base class for all service stubs
 //=============================================================================
 class AASLIB_API ServiceStubBase: public ServiceBase
 {
@@ -557,14 +549,14 @@ public:
 
    //=============================================================================
    // Name: init
-   // Description: Perform any post creation initialization including establishing
-   //               communications.
-   // Comments: Only base classes have  _init(). This function is designed to be
-   //           called by the factory to perform canonical initialization. The 
-   //           factory will call the most derived base class' (super base class)
-   //           _init() function.  It is the responsibility of the base class to
-   //           call its direct ancestor's _init() FIRST to ensure that the class
-   //           hiearchy _init() called.
+   /// @brief Perform any post creation initialization including establishing
+   ///               communications.
+   ///           Only base classes have  _init(). This function is designed to be
+   ///           called by the factory to perform canonical initialization. The
+   ///           factory will call the most derived base class' (super base class)
+   ///           _init() function.  It is the responsibility of the base class to
+   ///           call its direct ancestor's _init() FIRST to ensure that the class
+   ///           hiearchy _init() called.
    //=============================================================================
    virtual btBool _init( IBase               *pclient,
                          TransactionID const &rtid,
@@ -574,7 +566,7 @@ public:
 private:
    //=============================================================================
    // Name: Doinit
-   // Description: Real initialization function
+   /// @brief Real initialization function
    // Comments:
    //=============================================================================
    void Doinit(TransactionID const &rtid);
@@ -582,7 +574,7 @@ private:
    CAALEvent *m_pcmpltEvent;
 };
 
-/// @} group Services
+/// @}
 
 END_NAMESPACE(AAL)
 

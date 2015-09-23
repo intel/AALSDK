@@ -192,7 +192,7 @@ inline std::ostream & operator << (std::ostream &os, const SWSimCCIAFU::CSR &c)
    return os;
 }
 
-/// @} group SWSimCCIAFU
+/// @}
 
 END_NAMESPACE(AAL)
 

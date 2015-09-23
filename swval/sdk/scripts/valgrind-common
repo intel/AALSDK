@@ -9,6 +9,7 @@ die() {
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r DISTCC="`which distcc`" 2>/dev/null
 declare -r FIND="`which find`" 2>/dev/null
 [ "x${FIND}" = x ] && die "no find?"
 declare -r GIT="`which git`" 2>/dev/null
@@ -69,9 +70,15 @@ trap 'on_sigint' SIGINT
 
 # $1 : name of the application binary to be analyzed.
 # $2 : the valgrind analysis requested.
+# $3 (optional) : whether distcc is requested.
 setup() {
    local -r app="$1"
    local -r analysis="$2"
+   local    wantdistcc=false
+
+   if [ $# -gt 2 ]; then
+      wantdistcc=$3
+   fi
 
    # This script is located in swval/sdk/scripts
    local -r srcdir="`cd ${PWD}/.. && pwd`"
@@ -115,9 +122,15 @@ setup() {
 
    pushd "${VPATH}/${analysis}" >/dev/null 2>&1
 
-   ${MAKE}
-   ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" install
-   ${MAKE} check
+   if ${wantdistcc} && [ "x${DISTCC}" != x ] && [ -d "${HOME}/distcc" ]; then
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} all
+      ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" ${MAKEOPTS:-} install
+      PATH="${HOME}/distcc:${PATH}" ${MAKE} -j 250 ${MAKEOPTS:-} check
+   else
+      ${MAKE} ${MAKEOPTS:-} all
+      ${MAKE} DESTDIR="${VPATH}/${analysis}/myinst" ${MAKEOPTS:-} install
+      ${MAKE} ${MAKEOPTS:-} check
+   fi
 
    popd >/dev/null 2>&1
 
@@ -395,58 +408,61 @@ run_valgrind_sgcheck() {
                ${exe} ${1+"$@"}
 }
 
-# $1 : app to analyze
+# $1 : distcc requested?
+# $2 : app to analyze
 # ... app arguments
 run_valgrind_all() {
+   local -r wantdistcc=$1
+   shift
    local -r exe="$1"
    shift
 
    local tool
 
    tool='memcheck'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_memcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='massif'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='helgrind'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_helgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='drd'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_drd "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='dhat'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_dhat "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='cachegrind'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='callgrind'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='sgcheck'
-   setup "${exe##*/}" "${tool}"
+   setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
    LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_sgcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
    popd >/dev/null 2>&1

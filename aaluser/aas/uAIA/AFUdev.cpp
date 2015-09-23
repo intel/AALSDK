@@ -54,6 +54,9 @@
 #include "aalsdk/kernel/ahmpipdefs.h"
 #include "aalsdk/AALLoggerExtern.h"
 
+#define CCIV4_MMIO_UMSG_TEST 0
+// Turn on in cciv4_simulator.c, as well, if want the mmio and umsg debuggings
+
 
 BEGIN_NAMESPACE(AAL)
 
@@ -338,6 +341,10 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
       AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_MMIOR initialized" << std::endl);
 
+      #if CCIV4_MMIO_UMSG_TEST
+      std::cout <<"WSID_MAP_MMIOR pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
+      #endif
+
    }  // if (id == WSID_MAP_MMIOR)
 
    if ( WSID_MAP_UMSG == id ) {
@@ -348,6 +355,9 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
 
       AAL_VERBOSE(LM_AFU, "CAFUDev::CSRMapHandler() : WSID_MAP_UMSG initialized" << std::endl);
 
+      #if CCIV4_MMIO_UMSG_TEST
+      std::cout <<"WSID_MAP_UMSG pResult->wsParms.ptr:"<< pResult->wsParms.ptr <<std::endl;
+      #endif
    }  // if (id == WSID
 
    // Lock this critical region since multiple transactions are in flight simultaneously

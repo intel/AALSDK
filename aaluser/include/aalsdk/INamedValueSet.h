@@ -402,35 +402,31 @@ public:
 
 #ifdef NVSFileIO
 
-   // Reads an open (binary) file and creates an NVS from it.
+   /// @brief  Reads an open (binary) file and creates an NVS from it.
    virtual ENamedValues  Read(FILE * )                                               = 0;
    virtual ENamedValues Write(FILE * )               const                           = 0;
    virtual ENamedValues Write(FILE * , unsigned )    const                           = 0;
-   // Serialize NVS with ending demarcation
+   /// @brief Serialize NVS with ending demarcation
    virtual ENamedValues WriteOne(FILE * , unsigned ) const                           = 0;
 
 #endif // NVSFileIO
 
-   //=============================================================================
-   // Name:          NVSMerge
-   // Description:   Merge one NamedValueSet into another
-   // Interface:     public
-   // Inputs:        nvsInput and nvsOutput will be merged together
-   // Outputs:       nvsOutput will contain the merged results
-   // Returns:       ENamedValuesOK for success, appropriate value otherwise
-   // Comments:      If there are duplicate names, the original value in the
-   //                   nvsOutput takes precedence and there is no error
-   //=============================================================================
+
+   /// @brief Merges one NamedValueSet into another
+   ///
+   /// @param[in] INamedValueSet nvsInput and nvsOutput will be merged together
+   /// @return ENamedValuesOK for success, appropriate value otherwise
+   ///
+   /// If there are duplicate names, the original value in the
+   ///                   nvsOutput takes precedence and there is no error
    virtual ENamedValues Merge(const INamedValueSet & )                               = 0;
 
-   //=============================================================================
-   // Name:        NamedValueSetFromStdString
-   // Description: Convert a std::string length into an NVS
-   // Interface:   public
-   // Inputs:      std::string containing the serialized representation of the
-   //              NamedValueSet.
-   // Outputs:     nvs is a non-const reference to the returned NamedValueSet
-   //=============================================================================
+
+   /// @brief Converts a std::string length into an NamedValueSet
+   ///
+   /// @param[in] std::string & containing the serialized representation of the NamedValueSet
+   ///
+   /// output nvs is a non-constant reference to the returned NamedValueSet
    virtual ENamedValues FromStr(const std::string & )                                = 0;
 
    //=============================================================================
@@ -443,6 +439,8 @@ public:
    //              NULL-terminated string
    // Outputs:     nvs is a non-const reference to the returned NamedValueSet
    //=============================================================================
+   /// @brief converts a char* + length into an NVS
+   ///
    virtual ENamedValues FromStr(void * , btWSSize )                                  = 0;
 
    //=============================================================================
@@ -455,6 +453,7 @@ public:
    //              the buffer.
    // NOTE:        See CharFromString for important usage note
    //=============================================================================
+   /// @brief Returns a std::string containing the serialized NamedValueSet
    virtual std::string ToStr() const                                                 = 0;
 
 protected:
@@ -602,7 +601,7 @@ public:
 
 #endif // __cplusplus
 
-/// @} group BasicTypes
+/// @}
 
 END_NAMESPACE(AAL)
 

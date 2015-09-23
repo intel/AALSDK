@@ -297,7 +297,7 @@ static aalclp_gcs_compliance_data _aalclp_gcs_data =                            
 #define aalclp_add_gcs_compliance(__sc) \
 aalclp_add_nix_long_option_only(__sc, &_aalclp_gcs_data.node)
 
-/// @} group aalclp
+/// @}
 
 #ifdef __cplusplus
 }

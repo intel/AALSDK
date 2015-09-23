@@ -185,6 +185,6 @@ void HelloAppDispatchable::operator() ()
    delete this;
 }
 
-/// @} group hello_service
+/// @}
 
 

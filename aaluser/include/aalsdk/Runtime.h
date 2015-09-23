@@ -69,21 +69,18 @@ BEGIN_NAMESPACE(AAL)
 #define extranevtProxyStopped             __AAL_ExTranEvt(AAL_sysAAL, 0x0103)
 #define extranevtServiceAllocateFailed    __AAL_ExTranEvt(AAL_sysAAL, 0x0104)
 
-#define reasNotOwner                     AAL_ReasCode(0x0100)
-#define reasInitError                    AAL_ReasCode(0x0101)
+#define reasNotOwner                      AAL_ReasCode(0x0100)
+#define reasInitError                     AAL_ReasCode(0x0101)
 
-
-class  IRuntime;
-
-#define AALRUNTIME_CONFIG_RECORD "AALRUNTIME_CONFIG_RECORD"
+#define AALRUNTIME_CONFIG_RECORD          "AALRUNTIME_CONFIG_RECORD"
 #define AALRUNTIME_CONFIG_BROKER_SERVICE  "AALRUNTIME_CONFIG_BROKER_SERVICE"
 
 
-
+class IRuntime;
 
 //=============================================================================
-/// @class        IRuntimeClient
-/// @brief        Public Interface class for the AAL AALRUNTIME Client object.
+/// @interface IRuntimeClient
+/// @brief Public Interface class for the AAL AALRUNTIME Client object.
 ///
 ///   An object that
 ///   wants to use the XL Runtime instantiates an instance of this class,
@@ -92,8 +89,7 @@ class  IRuntime;
 ///   That establishes a binding between the two objects so that the Runtime
 ///   object can call this object when the Runtime needs to notify its client.
 //=============================================================================
-
-class IRuntimeClient
+class AALRUNTIME_API IRuntimeClient
 {
 public:
    /// @brief     Called by a Runtime object to indicate that it failed to
@@ -102,7 +98,7 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent) = 0;
+   virtual void runtimeCreateOrGetProxyFailed(IEvent const &rEvent)           = 0;
 
 
    /// @brief     Called by a Runtime object to indicate that it started successfully
@@ -114,7 +110,7 @@ public:
    ///               Runtime.start() call.
    /// @return    void
    virtual void runtimeStarted(IRuntime            *pRuntime,
-                               const NamedValueSet &rConfigParms) = 0;
+                               const NamedValueSet &rConfigParms)             = 0;
 
    /// @brief     Called by a Runtime object to indicate that it has stopped successfully
    ///               after a call to Runtime.stop()
@@ -122,7 +118,7 @@ public:
    ///               indicating that it has stopped successfully after
    ///               Runtime.stop() was called.
    /// @return    void
-   virtual void runtimeStopped(IRuntime *pRuntime) = 0;
+   virtual void runtimeStopped(IRuntime *pRuntime)                            = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to start
    ///               successfully after a call to Runtime.start().
@@ -132,7 +128,7 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void runtimeStartFailed(const IEvent &rEvent) = 0;
+   virtual void runtimeStartFailed(const IEvent &rEvent)                      = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to stop
    ///               successfully after a call to Runtime.stop().
@@ -142,7 +138,7 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void runtimeStopFailed(const IEvent &rEvent) = 0;
+   virtual void runtimeStopFailed(const IEvent &rEvent)                       = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully allocate a service after a call to
@@ -150,7 +146,7 @@ public:
    /// @param[in] rEvent will be an exception event that can be parsed to determine
    ///               the error that occurred.
    /// @return    void
-   virtual void runtimeAllocateServiceFailed( IEvent const &rEvent) = 0;
+   virtual void runtimeAllocateServiceFailed(IEvent const &rEvent)            = 0;
 
    /// @brief     Called by a Runtime object to indicate that it
    ///               successfully allocated a service after a call to
@@ -182,23 +178,23 @@ public:
    ///    ASSERT( m_pPingAFU );
    /// }
    /// @endcode
-   virtual void runtimeAllocateServiceSucceeded( IBase               *pServiceBase,
-                                                 TransactionID const &rTranID) = 0;
+   virtual void runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
+                                                TransactionID const &rTranID) = 0;
 
    /// @brief     Called by a Runtime object to pass exceptions and other
    ///               unsolicited messages.
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
    /// @return    void
-   virtual void runtimeEvent(const IEvent &rEvent) = 0;
+   virtual void runtimeEvent(const IEvent &rEvent)                            = 0;
 
    /// @brief     Destructor
    virtual ~IRuntimeClient() {}
 };
 
 //=============================================================================
-/// @class IRuntime
-/// Public pure virtual interface class the AAL AALRUNTIME object.
+/// @interface IRuntime
+/// @brief Public pure virtual interface class the AAL AALRUNTIME object.
 ///
 /// NOTE: Although one can directly instantiate a Runtime object for convenience,
 ///   the framework is designed to use pointers to interfaces, which for Runtime
@@ -210,26 +206,26 @@ public:
    /// @brief     Starts the Runtime and all internal Services.
    /// @param[in] rconfigParms provides configuration parameters for this instance
    /// @return    true = success.  IRuntime client also receives callback.
-   virtual btBool start(const NamedValueSet &rconfigParms)                       = 0;
+   virtual btBool                      start(const NamedValueSet &rconfigParms)                 = 0;
 
    /// @brief     Stops the Runtime. releases any resources and shutsdown all
    ///               Services.
    /// @return    void
-   virtual void   stop()                                                         = 0;
+   virtual void                         stop()                                                  = 0;
 
    /// @brief     Allocates a Service
    /// @param[in] pClient - IBase of client object.
    ///            rManifest - reference to a Manifest describing teh Service desired
    ///            rTranID - Transaction ID
    /// @return    void
-   virtual void allocService(IBase                *pClient,
-                             NamedValueSet const  &rManifest = NamedValueSet(),
-                             TransactionID const  &rTranID   = TransactionID())  = 0;
+   virtual void                 allocService(IBase                *pClient,
+                                             NamedValueSet const  &rManifest = NamedValueSet(),
+                                             TransactionID const  &rTranID   = TransactionID()) = 0;
 
    /// @brief     Schedule a Dispatchable
    /// @param[in] pdispatchable - Pointer Dispatchable to schedule.
    /// @return    void
-   virtual btBool schedDispatchable(IDispatchable *pdispatchable)                = 0;
+   virtual btBool          schedDispatchable(IDispatchable *pdispatchable)                      = 0;
 
    /// @brief     Returns a unique pointer to the Runtime. This enables subordinate
    ///               objects to use the Runtime independently. Note that this pointer
@@ -237,20 +233,20 @@ public:
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
    /// @return    void
-   virtual IRuntime *getRuntimeProxy(IRuntimeClient *pClient)                    = 0;
+   virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient)                           = 0;
 
 
    /// @brief     Releases pointer to the Runtime acquired from getRuntimeProxy.
    /// @return    true - success;
-   virtual btBool releaseRuntimeProxy()                                          = 0;
+   virtual btBool        releaseRuntimeProxy()                                                  = 0;
 
    /// @brief     Gets the pointer to the Runtime interface attached to this Proxy.
    /// @return    Client Pointer
-   virtual IRuntimeClient *getRuntimeClient()                                    = 0;
+   virtual IRuntimeClient * getRuntimeClient()                                                  = 0;
 
    /// @brief     Returns status of Runtime
    /// @return    void
-   virtual btBool IsOK()                                                         = 0;
+   virtual btBool IsOK()                                                                        = 0;
 
 protected:
    // Only Runtime can be destroyed. Interface may be to a proxy.
@@ -259,53 +255,49 @@ protected:
 
 //=============================================================================
 /// @class Runtime
-/// Public wrapper class for the AAL AALRUNTIME object.
+/// @brief Public wrapper class for the AAL AALRUNTIME object.
 ///
-/// Instantiate this object
-///   and one has access to the service allocation and asynchronous eventing
-///   system of the AALRUNTIME.
+/// Instantiate this object and one has access to the service allocation and
+/// asynchronous event passing system of the AALRUNTIME.
 //=============================================================================
 class _runtime; //Forward reference
 
-class AALRUNTIME_API Runtime : private CUnCopyable, public CAASBase, public IRuntime
+class AALRUNTIME_API Runtime : private CUnCopyable,
+                               public  CAASBase,
+                               public  IRuntime
 {
 public:
    Runtime(IRuntimeClient *pClient);
-
-   virtual btBool start(const NamedValueSet &rconfigParms);
-   virtual void   stop();
-
-   virtual void allocService( IBase               *pClient,
-                              const NamedValueSet &rManifest = NamedValueSet(),
-                              TransactionID const &rTranID   = TransactionID() );
-
-   virtual btBool schedDispatchable(IDispatchable *pdispatchable);
-
-   IRuntime *getRuntimeProxy(IRuntimeClient *pClient);
-
-   btBool releaseRuntimeProxy();
-
-   IRuntimeClient *getRuntimeClient();
-
-   btBool IsOK();
-
    virtual ~Runtime();
 
+   // <IRuntime>
+   virtual btBool                      start(const NamedValueSet &rconfigParms);
+   virtual void                         stop();
+   virtual void                 allocService(IBase               *pClient,
+                                             NamedValueSet const &rManifest = NamedValueSet(),
+                                             TransactionID const &rTranID   = TransactionID());
+   virtual btBool          schedDispatchable(IDispatchable *pdispatchable);
+   virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient);
+   virtual btBool        releaseRuntimeProxy();
+   virtual IRuntimeClient * getRuntimeClient();
+   virtual btBool                       IsOK();
+   // </IRuntime>
+
 protected:
+   Runtime(IRuntimeClient *pClient,
+           btBool          bFirstTime);
    void init(IRuntimeClient *pClient, btBool bFirstTime);
-   Runtime(IRuntimeClient *pClient, btBool bFirstTime);
 
 private:
-   Runtime();                                 // No empty construction
-   _runtime              *m_pImplementation;  // Implementation of runtime
-   btBool                 m_status;           // OK or not
-   IRuntimeClient        *m_pClient;
+   Runtime();                          // No empty construction
+   _runtime       *m_pImplementation;  // Implementation of runtime
+   IRuntimeClient *m_pClient;
 };
 
 
 END_NAMESPACE(AAL)
 
-/// @} group Runtime
+/// @}
 
 #endif // __AAL_RUNTIME_H__
 

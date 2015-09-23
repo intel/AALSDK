@@ -43,7 +43,7 @@
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 7/21/2014      TSW      Initial version(fpgasane).
-/// 5/28/2015      SC       fapdiag version.@endverbatim
+/// 5/28/2015      SC       fpgadiag version.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
@@ -110,7 +110,7 @@ struct NLBCmdLine gCmdLine =
    DEFAULT_DSMPHYS,
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
-   200000000ULL, // TODO - Add as DEFAULT_FPGA_CLK_FREQ.Hertz(), - But this is hardcoded as well
+   DEFAULT_FPGA_CLK_FREQ,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
 #elif defined( __AAL_LINUX__ )
@@ -131,15 +131,18 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_DSMPHYS,
       DEFAULT_SRCPHYS,
       DEFAULT_DSTPHYS,
-      200000000ULL, // TODO - Add as DEFAULT_FPGA_CLK_FREQ.Hertz(), - But this is hardcoded as well
-      DEFAULT_PREFILLHITS,
-      DEFAULT_PREFILLMISS,
+      DEFAULT_FPGA_CLK_FREQ,
+      DEFAULT_WARMFPGACACHE,
+      DEFAULT_COOLFPGACACHE,
+      DEFAULT_COOLCPUCACHE,
       DEFAULT_NOBW,
       DEFAULT_TABULAR,
       DEFAULT_SUPPRESSHDR,
       DEFAULT_WT,
       DEFAULT_WB,
-      DEFAULT_PWR,
+      DEFAULT_RDS,
+      DEFAULT_RDI,
+      DEFAULT_RDO,
       DEFAULT_CONT,
 #if   defined( __AAL_WINDOWS__ )
 # error TODO
@@ -151,10 +154,14 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_TOMIN,
       DEFAULT_TOHOUR,
 #endif // OS
-      DEFAULT_NOGUI,
-      DEFAULT_DEMO,
-      DEFAULT_NOHIST,
-      DEFAULT_HISTDATA
+      DEFAULT_POLL,
+      DEFAULT_CSR_WRITE,
+      DEFAULT_UMSG_DATA,
+      DEFAULT_UMSG_HINT,
+      DEFAULT_AUTO_CH,
+      DEFAULT_QPI,
+      DEFAULT_PCIE0,
+      DEFAULT_PCIE1
    },
    0,
    {
@@ -169,6 +176,7 @@ struct NLBCmdLine gCmdLine =
    },
    0,
    std::string(DEFAULT_TARGET_AFU),
+   std::string(DEFAULT_TEST_MODE),
    0
 };
 
@@ -178,34 +186,9 @@ END_C_DECLS
 ////////////////////////////////////////////////////////////////////////////////
 BEGIN_C_DECLS
 
-/*struct CMyCmdLine
-{
-   btUIntPtr   flags;
-#define MY_CMD_FLAG_HELP    0x00000001
-#define MY_CMD_FLAG_VERSION 0x00000002
-
-   std::string AFUTarget;
-   btInt       LogLevel;
-};*/
-
-/*struct CMyCmdLine gMyCmdLine =
-{
-   0,
-   std::string(DEFAULT_TARGET_AFU),
-   0
-};*/
-
-/*int my_on_nix_long_option_only(AALCLP_USER_DEFINED , const char * );
-int my_on_nix_long_option(AALCLP_USER_DEFINED , const char * , const char * );
-
-aalclp_option_only my_nix_long_option_only = { my_on_nix_long_option_only, };
-aalclp_option      my_nix_long_option      = { my_on_nix_long_option,      };
-
-void help_msg_callback(FILE * , struct _aalclp_gcs_compliance_data * );
-void showhelp(FILE * , struct _aalclp_gcs_compliance_data * );*/
 
 AALCLP_DECLARE_GCS_COMPLIANT(stdout,
-                             "fpgasane",
+                             "fpgadiag",
                              "0.0.0",
                              "",
                              nlb_help_message_callback,
@@ -333,6 +316,26 @@ void CMyApp::runtimeEvent(const IEvent &e)
      Post();
 }
 
+void CMyApp::runtimeStopFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   INFO("Runtime Stop Failed");
+   Post();
+}
+
+void CMyApp::runtimeCreateOrGetProxyFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   INFO("Runtime Create or Get Proxy Failed");
+   Post();
+}
+
 void CMyApp::serviceAllocated(IBase               *pServiceBase,
 							  TransactionID const &tid)
 {
@@ -359,20 +362,35 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
 void CMyApp::serviceFreed(TransactionID const &tid)
 {
 	INFO("Service Freed");
-   Post();
+	Post();
 }
 
 void CMyApp::serviceEvent(const IEvent &e)
 {
-	  if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
-	      PrintExceptionDescription(e);
-	      m_bIsOK = false;
-	      Post();
-	      return;
-	   }
+  if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+	  PrintExceptionDescription(e);
+	  m_bIsOK = false;
+	  Post();
+	  return;
+   }
 
-	   INFO("Unknown event");
-	   Post();
+   INFO("Unknown event");
+   Post();
+}
+
+void CMyApp::serviceReleased(TransactionID const &tid)
+{
+	INFO("Service Released");
+    Post();
+}
+void CMyApp::serviceReleaseFailed(const IEvent &e)
+{
+   if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
+      PrintExceptionDescription(e);
+   }
+   m_bIsOK = false;
+   ERR("Service Release Failed");
+   Post();
 }
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -386,6 +404,9 @@ CMyCCIClient::CMyCCIClient() :
    m_OutputVirt(NULL),
    m_OutputPhys(0),
    m_OutputSize(0),
+   m_UMsgVirt(NULL),
+   m_UMsgPhys(0),
+   m_UMsgSize(0),
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
@@ -413,6 +434,10 @@ void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
          Output(WkspcVirt, WkspcPhys, WkspcSize);
          INFO("Got Output Workspace");
       } break;
+      case WKSPC_UMSG: {
+		   UMsg(WkspcVirt, WkspcPhys, WkspcSize);
+		   INFO("Got UMsg Workspace");
+		} break;
       default : {
          GotOne = false;
          ERR("Invalid workspace type: " << TranID.ID());
@@ -452,6 +477,10 @@ void CMyCCIClient::OnWorkspaceFreed(TransactionID const &TranID)
          Output(NULL, 0, 0);
          INFO("Freed Output Workspace");
       } break;
+      case WKSPC_UMSG : {
+		  Output(NULL, 0, 0);
+		  INFO("Freed UMsg Workspace");
+	   } break;
       default : {
          FreedOne = false;
          ERR("Invalid workspace type");
@@ -512,15 +541,6 @@ int main(int argc, char *argv[])
    btInt res      = 0;
    btInt totalres = 0;
 
-   // NLBConfig          cfg;
-   /*uint_type          i;
-   uint_type          NumCacheLines;
-   wkspc_size_type    sz;
-   std::ostringstream oss;
-   Workspace          DSMWkspc;
-   Workspace          SrcWkspc(NULLWorkspace);
-   Workspace          DestWkspc(NULLWorkspace);*/
-
    if ( argc < 2 ) {
 	   MyNLBShowHelp(stdout, &_aalclp_gcs_data);
 	   return 1;
@@ -533,8 +553,12 @@ int main(int argc, char *argv[])
       return 3;
    }
 
+   if ( flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_HELP) ) {
+       return 0; // Exit after displaying the help menu
+      }
+
    cout << endl
-        << "FpgaDiag - Intel QuickAssist FPGA Installation Test:" << endl;
+        << "FpgaDiag - Intel QuickAssist FPGA Diagnostics Test:" << endl;
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;
@@ -555,21 +579,22 @@ int main(int argc, char *argv[])
 
    CMyApp        myapp;
    NamedValueSet args;
-   Runtime       aal;
+   Runtime       aal(&myapp);
 
    myapp.AFUTarget(gCmdLine.AFUTarget);
+   myapp.TestMode(gCmdLine.TestMode);
 
    if ( (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_SWSIM)) ) {
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
-      ConfigRecord.Add(XLRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-      args.Add(XLRUNTIME_CONFIG_RECORD, ConfigRecord);
+      ConfigRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+      args.Add(AALRUNTIME_CONFIG_RECORD, &ConfigRecord);
    }
 
    INFO("Starting the AAL Runtime");
-   if ( aal.start(&myapp, args) ) {
+   if ( aal.start(args) ) {
       myapp.Wait(); // For service allocated notification.
    } else {
       ERR("AAL Runtime start failed");
@@ -581,64 +606,104 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   // Run NLB Lpbk1, which performs sw data verification.
-   CNLBLpbk1 nlblpbk1(&myapp);
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
+   {
+	   // Run NLB Lpbk1, which performs sw data verification.
+	   CNLBLpbk1 nlblpbk1(&myapp);
 
-   cout << " * Data Copy " << flush;
-   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << "VERIFIED";
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Data Copy " << flush;
+	   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_READ)))
+   {
+	   // Run an NLB Read bandwidth measurement..
+	   // * cold cache (a la, --prefill-misses)
+	   // * report read bandwidth in GiB/s
+	   CNLBRead nlbread(&myapp);
 
-   // Run an NLB Read bandwidth measurement..
-   // * cold cache (a la, --prefill-misses)
-   // * report read bandwidth in GiB/s
-   CNLBRead nlbread(&myapp);
-
-   cout << " * Read Bandwidth from Memory " << flush;
-   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbread.ReadBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Read Bandwidth from Memory " << flush;
+	   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_WRITE)))
+   {
+	   // Run an NLB Write bandwidth measurement..
+	   // * cold cache (a la, --prefill-misses)
+	   // * report write bandwidth in GiB/s
+	   CNLBWrite nlbwrite(&myapp);
 
-   // Run an NLB Write bandwidth measurement..
-   // * cold cache (a la, --prefill-misses)
-   // * report write bandwidth in GiB/s
-   CNLBWrite nlbwrite(&myapp);
-
-   cout << " * Write Bandwidth to Memory " << flush;
-   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbwrite.WriteBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Write Bandwidth to Memory " << flush;
+	   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl;
    }
-   cout << NORMAL << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_TRPUT)))
+   {
+	   // Run an NLB Trput measurement..
+	   // * report bandwidth in GiB/s
+	   CNLBTrput nlbtrput(&myapp);
 
-   // Run an NLB Trput measurement..
-   // * report bandwidth in GiB/s
-   CNLBTrput nlbtrput(&myapp);
-
-   cout << " * Simultaneous Read/Write Bandwidth " << flush;
-   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
-   totalres += res;
-   if ( 0 == res ) {
-      cout << PASS << nlbtrput.ReadBandwidth() << " / " << nlbtrput.WriteBandwidth();
-   } else {
-      cout << FAIL << "ERROR";
+	   cout << " * Simultaneous Read/Write Bandwidth " << flush;
+	   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
    }
-   cout << NORMAL << endl
-        << endl;
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_SW)))
+   {
+	   // Run an SW Test..
+	   // * report bandwidth in GiB/s
+	   CNLBSW nlbsw(&myapp);
 
+	   cout << " * SW test " << flush;
+	   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
+   }
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   {
+		// Run NLB ccip test, which performs sw data verification.
+		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
+
+		cout << " * Data Copy - CCIP LPBK1" << flush;
+		res = nlbccip_lpbk1.RunTest(gCmdLine, MAX_NLB_CCIP_LPBK1_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+   }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
@@ -794,6 +859,15 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    return res;
 }
 
+/*void INLB::EnableCSRPrint(bool bEnable, bool bReplay)
+{
+	IQPILinkProtocol *pQLP = m_pFactory->QLPBackDoor();
+
+	   if ( NULL != pQLP ) {
+	      pQLP->EnableCSRPrint(bEnable, bReplay);
+	   }
+}*/
+
 void INLB::ReadQLPCounters()
 {
    btCSRValue perf[2];
@@ -857,12 +931,17 @@ std::string INLB::CalcReadBandwidth(const NLBCmdLine &cmd)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
    bt32bitCSR rds          = pAFUDSM->num_reads;
+   bt64bitCSR ticks;
 
-   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
 
-   // cont mode
-   bt64bitCSR ticks = rawticks - startpenalty;
-
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))// cont mode
+   {
+	   ticks = rawticks - startpenalty;
+   }
+   else //non-cont mode
+   {
+	   ticks = rawticks - (startpenalty + endpenalty);
+   }
    const double Rds   = (double)rds;
    const double Ticks = (double)ticks;
    const double Hz    = (double)clockfreq;
@@ -892,11 +971,15 @@ std::string INLB::CalcWriteBandwidth(const NLBCmdLine &cmd)
    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
    bt32bitCSR wrs          = pAFUDSM->num_writes;
-
-   //bt64bitCSR ticks = rawticks - (startpenalty + endpenalty);
-
-   // cont mode
-   bt64bitCSR ticks = rawticks - startpenalty;
+   bt64bitCSR ticks;
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))// cont mode
+   {
+	   ticks = rawticks - startpenalty;
+   }
+   else //non-cont mode
+   {
+	   ticks = rawticks - (startpenalty + endpenalty);
+   }
 
    const double Wrs   = (double)wrs;
    const double Ticks = (double)ticks;
@@ -940,68 +1023,12 @@ std::string INLB::Normalized(const NLBCmdLine &cmd ) const throw()
 
 }
 
-
-
-
 #if defined ( __AAL_WINDOWS__ )
 # define strcasecmp _stricmp
 #endif // __AAL_WINDOWS__
 
 
 BEGIN_C_DECLS
-
-/*int my_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option)
-{
-   struct CMyCmdLine *cl = (struct CMyCmdLine *)user;
-
-   if ( 0 == strcmp("--help", option) ) {
-      flag_setf(cl->flags, MY_CMD_FLAG_HELP);
-   } else if ( 0 == strcmp("--version", option) ) {
-      flag_setf(cl->flags, MY_CMD_FLAG_VERSION);
-   }
-
-   return 0;
-}
-
-int my_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char *value)
-{
-   struct CMyCmdLine *cl = (struct CMyCmdLine *)user;
-
-   if ( 0 == strcmp("--target", option) ) {
-      if ( 0 == strcasecmp("fpga", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_FPGA);
-      } else if ( 0 == strcasecmp("ase", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_ASE);
-      } else if ( 0 == strcasecmp("swsim", value) ) {
-         cl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_SWSIM);
-      } else {
-         cout << "Invalid value for --target : " << value << endl;
-         return 4;
-      }
-   } else if ( 0 == strcmp("--log", option) ) {
-      char *endptr = NULL;
-
-      cl->LogLevel = (btInt)strtol(value, &endptr, 0);
-      if ( endptr != value + strlen(value) ) {
-         cl->LogLevel = 0;
-      } else if ( cl->LogLevel < 0) {
-         cl->LogLevel = 0;
-      } else if ( cl->LogLevel > 8) {
-         cl->LogLevel = 8;
-      }
-   }
-   return 0;
-}
-
-void help_msg_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   fprintf(fp, "fpgasane takes no command arguments.\n");
-}
-
-void showhelp(FILE *fp, struct _aalclp_gcs_compliance_data *gcs)
-{
-   help_msg_callback(fp, gcs);
-}*/
 
 int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
 {
@@ -1014,12 +1041,6 @@ int ParseCmds(struct NLBCmdLine *nlbcl, int argc, char *argv[])
       cerr << "aalclp_init() failed : " << res << ' ' << strerror(res) << endl;
       return res;
    }
-
-  /* my_nix_long_option_only.user = cl;
-   aalclp_add_nix_long_option_only(&clp, &my_nix_long_option_only);
-
-   my_nix_long_option.user = cl;
-   aalclp_add_nix_long_option(&clp, &my_nix_long_option);*/
 
    NLBSetupCmdLineParser(&clp, nlbcl);
 
@@ -1047,10 +1068,6 @@ CLEANUP:
    return res;
 }
 
-/*int verifycmds(struct NLBCmdLine *cl)
-{
-   return 0;
-}*/
 
 END_C_DECLS
 
@@ -1141,6 +1158,6 @@ Prerequisites for running the sample with Software Simulation:
 @code
 $ cciapp --target=swsim@endcode
 
-@} group cciapp
+@}
 */
 
