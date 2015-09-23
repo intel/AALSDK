@@ -615,7 +615,7 @@ btUnsignedInt HWALIAFU::umsgGetNumber( void )
 //
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-	return AFUDev().getUMSG() + (UMsgNumber << 2);	// assumes 32 bit UMSGs
+	return AFUDev().getUMSG() + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs
 }
 
 //
