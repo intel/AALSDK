@@ -34,8 +34,8 @@
 // WHEN:          WHO:     WHAT:
 // 06/25/2015     JG       Removed XL from name
 //****************************************************************************///
-#ifndef __RUNTIMEIMPL_H__
-#define __RUNTIMEIMPL_H__
+#ifndef __AALSDK_RUNTIMEIMPL_H__
+#define __AALSDK_RUNTIMEIMPL_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/Runtime.h>
@@ -54,10 +54,9 @@
 
 #include "_MessageDelivery.h"
 
-#include <map>
-
 
 BEGIN_NAMESPACE(AAL)
+
 class _runtime;
 
 //=============================================================================
@@ -66,83 +65,24 @@ class _runtime;
 // Comments:
 //=============================================================================
 BEGIN_C_DECLS
-_runtime *_getnewRuntimeInstance( Runtime *pRuntimeProxy,
+_runtime * _getnewRuntimeInstance(Runtime        *pRuntimeProxy,
                                   IRuntimeClient *pClient,
-                                  btBool bFirstTime=true);
+                                  btBool          bFirstTime=true);
 END_C_DECLS
 
 
 //=============================================================================
-// Name: _runtime
-// Description: Class implements the internal AAL Runtime system.
-// Comments:
+/// @class _runtime
+/// @brief Class implements the internal AAL Runtime system.
 //=============================================================================
 class _runtime : public  CAASBase,
                  public  IRuntime,
                  private CUnCopyable,
-                 private IServiceClient,        // For internal Services
-                 private IRuntimeClient         // _runtime uses a Runtime Proxy
+                 private IServiceClient, // For internal Services
+                 private IRuntimeClient  // _runtime uses a Runtime Proxy
 {
 public:
-   typedef std::map<Runtime *, IRuntimeClient *> ClientMap;
-   typedef ClientMap::iterator                 ClientMap_itr;
-
-   _runtime(Runtime* pRuntimeProxy, IRuntimeClient*pClient);
-   void releaseRuntimeInstance( Runtime *pRuntimeProxy);
-
-
-   // Start: Start the runtime
-   // Input: pProxy - Pointer to Proxy for the IRuntimeClient callback.
-   //           rconfigParms - Reference to configuration parameters.
-   btBool start( Runtime *pProxy,
-                 const NamedValueSet &rconfigParms );
-   // Stop: Stop the runtime
-   void stop(Runtime* pProxy);
-
-   //  allocService: This variant takes a proxy pointer so that the RuntimeClient
-   //                responses go to teh correct place.
-   //    Input: pProxy - Pointer to Runtime Proxy.
-   //           pClient - Pointer to an IBase containing and IServiceClient interface.
-   //           rManifest - Reference to manifest containing Service
-   //                       description and any configuration parameters.
-   void allocService( Runtime                 *pProxy,
-                      IBase                   *pClient,
-                      NamedValueSet const     &rManifest = NamedValueSet(),
-                      TransactionID const     &rTranID   = TransactionID());
-
-   // IRuntime - Needed so that internal services can use the Runtime
-   //            without involving Application's Runtime Proxy.  Can't use
-   //            a Proxy since the Runtime is not instantiated yet.
-   //            Some of the functions are not supported.
-   btBool start(const NamedValueSet &rconfigParms) {return false;};
-   void   stop() {return;};
-   IRuntime *getRuntimeProxy(IRuntimeClient *pClient){return NULL;};
-
-   btBool releaseRuntimeProxy(IRuntime *pRuntime){return false;};
-   btBool releaseRuntimeProxy(){return false;};
-
-   IRuntimeClient *getRuntimeClient();
-
-   btBool IsOK();
-
-   //  allocService: Allocates a Service to the client
-   //    Input: pClient - Pointer to an IBase containing and IServiceClient interface.
-   //           rManifest - Reference to manifest containing Service
-   //                       description and any configuration parameters.
-   void allocService( IBase                   *pClient,
-                      NamedValueSet const     &rManifest = NamedValueSet(),
-                      TransactionID const     &rTranID   = TransactionID());
-
-   btBool schedDispatchable(IDispatchable *pdispatchable);
-   // </IRuntime>
-
-
-   // Returns a proxy pointer to the singleton Runtime
-   void addProxy(Runtime *pRuntimeProxy,
-                 IRuntimeClient *pClient);
-
-   // Returns a proxy pointer to the singleton Runtime
-   void removeProxy(Runtime *pRuntimeProxy);
+   _runtime(Runtime *pRuntimeProxy, IRuntimeClient *pClient);
 
    // IAALRUNTIMEServices
 //   IBase      *getMessageDeliveryService();
@@ -150,67 +90,111 @@ public:
 //   btBool      SendMsg(IDispatchable *pobject, btObjectType parm);
 
 
-   btBool InstallDefaults();
-   //
-   // IServiceClient Interface
-   //-------------------------
-   void  serviceAllocated(IBase               *pServiceBase,
-                              TransactionID const &rTranID = TransactionID());
-   void  serviceReleased(TransactionID const &rTranID = TransactionID());
-   void  serviceReleaseFailed(const IEvent &rEvent);
-   void  serviceAllocateFailed(const IEvent &rEvent);
+   // Start: Start the runtime
+   // Input: pProxy - Pointer to Proxy for the IRuntimeClient callback.
+   //           rconfigParms - Reference to configuration parameters.
+   btBool start(Runtime             *pProxy,
+                const NamedValueSet &rconfigParms);
+
+   // Stop: Stop the runtime
+   void    stop(Runtime *pProxy);
+
+   //  allocService: This variant takes a proxy pointer so that the RuntimeClient
+   //                responses go to teh correct place.
+   //    Input: pProxy - Pointer to Runtime Proxy.
+   //           pClient - Pointer to an IBase containing and IServiceClient interface.
+   //           rManifest - Reference to manifest containing Service
+   //                       description and any configuration parameters.
+   void allocService(Runtime                 *pProxy,
+                     IBase                   *pClient,
+                     NamedValueSet const     &rManifest = NamedValueSet(),
+                     TransactionID const     &rTranID   = TransactionID());
+
+   // <IRuntime> - Needed so that internal services can use the Runtime
+   //              without involving Application's Runtime Proxy.  Can't use
+   //              a Proxy since the Runtime is not instantiated yet.
+   //              Some of the functions are not supported.
+   virtual btBool                      start(const NamedValueSet & ) {/*unsupported*/ ASSERT(false); return false; }
+   virtual void                         stop()                       {/*unsupported*/ ASSERT(false);               }
+   //  allocService: Allocates a Service to the client
+   //    Input: pClient - Pointer to an IBase containing and IServiceClient interface.
+   //           rManifest - Reference to manifest containing Service
+   //                       description and any configuration parameters.
+   virtual void                 allocService(IBase               *pClient,
+                                             NamedValueSet const &rManifest = NamedValueSet(),
+                                             TransactionID const &rTranID   = TransactionID());
+   virtual btBool          schedDispatchable(IDispatchable *pdispatchable);
+   virtual IRuntime *        getRuntimeProxy(IRuntimeClient * )      {/*unsupported*/ ASSERT(false); return NULL;  }
+   virtual btBool        releaseRuntimeProxy()                       {/*unsupported*/ ASSERT(false); return false; }
+   virtual IRuntimeClient * getRuntimeClient();
+   virtual btBool                       IsOK();
+   // </IRuntime>
+
+   // Returns a proxy pointer to the singleton Runtime
+   void    addProxy(Runtime        *pRuntimeProxy,
+                    IRuntimeClient *pClient);
+
+   // Returns a proxy pointer to the singleton Runtime
+   void removeProxy(Runtime *pRuntimeProxy);
+
+   void releaseRuntimeInstance(Runtime *pRuntimeProxy);
+
+private:
+   // prevent empty construction.
+   _runtime();
+
+   ~_runtime();
+
+   btBool    InstallDefaults();
+   btBool ProcessConfigParms(const NamedValueSet &rConfigParms);
+
+   // <IServiceClient>
+   virtual void       serviceAllocated(IBase               *pServiceBase,
+                                       TransactionID const &rTranID=TransactionID());
+   virtual void  serviceAllocateFailed(const IEvent &rEvent);
+   virtual void        serviceReleased(TransactionID const &rTranID=TransactionID());
+   virtual void   serviceReleaseFailed(const IEvent &rEvent);
    // Message Handler
    //   Input: rEvent - Event contains message/event.  Typically used for
    //          exceptions or events for which no standard callback is defined.
-   void serviceEvent(const IEvent &rEvent);
+   virtual void           serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
 
-   // IRuntimeClient
-   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};
+   // <IRuntimeClient>
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        { ASSERT(false); /*empty*/}
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & ) { ASSERT(false); /*empty*/}
+   virtual void                  runtimeStopped(IRuntime * )            { ASSERT(false); /*empty*/}
+   virtual void              runtimeStartFailed(const IEvent & )        { ASSERT(false); /*empty*/}
+   virtual void               runtimeStopFailed(const IEvent & )        { ASSERT(false); /*empty*/}
+   virtual void    runtimeAllocateServiceFailed(IEvent const & )        { ASSERT(false); /*empty*/}
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & ) { ASSERT(false); /*empty*/}
+   virtual void                    runtimeEvent(const IEvent & )        { ASSERT(false); /*empty*/}
+   // </IRuntimeClient>
 
-    void runtimeStarted(IRuntime            *pRuntime,
-                        const NamedValueSet &rConfigParms){};
+   // Maps proxy's to runtime clients.
+   typedef std::map< Runtime * , IRuntimeClient * > ClientMap;
+   typedef ClientMap::iterator                      ClientMap_itr;
 
-    void runtimeStopped(IRuntime *pRuntime){};
-
-    void runtimeStartFailed(const IEvent &rEvent){};
-
-    void runtimeStopFailed(const IEvent &rEvent){};
-
-    void runtimeAllocateServiceFailed( IEvent const &rEvent){};
-
-    void runtimeAllocateServiceSucceeded(IBase               *pClient,
-                                         TransactionID const &rTranID){};
-
-    void runtimeEvent(const IEvent &rEvent){};
-    // </IRuntimeClient>
-   // Internal interfaces
-   btBool ProcessConfigParms(const NamedValueSet &rConfigParms);
-
-private:
-   _runtime();
-   ~_runtime();
-
-   enum Services{
+   enum Services {
       MDS = 1,
       Broker
    };
 
-   enum State{
+   enum State {
       Stopped = 1,
       Started
    };
 
-   btBool                         m_status;
-   enum State                     m_state;
-   IRuntimeClient                *m_pClient;       // Client used by internal services
+   enum State        m_state;
+   IRuntimeClient   *m_pClient;       // Client used by internal services
 
    // Clients of the Runtime
-   Runtime                       *m_pOwner;        // Creator Runtime Proxy
-   IRuntimeClient                *m_pOwnerClient;  // Creator's Client
+   Runtime          *m_pOwner;        // Creator Runtime Proxy
+   IRuntimeClient   *m_pOwnerClient;  // Creator's Client
 
-   ClientMap                      m_mClientMap;    // Map of Runtime Proxys
-
-   IRuntime                      *m_pProxy;        // Runtime Proxy for _Runtime's Services
+   IRuntime         *m_pProxy;        // Runtime Proxy for _Runtime's Services
 
    // Core Facilities: Implemented as built-in plug-in Services
    //  each will have an Entry Point (module commands handler), IServiceModule (Factory)
@@ -218,22 +202,22 @@ private:
 
    // Default MDS Host container
 //   ServiceHost                    *m_pMDSSvcHost;
-   // Active core services
-   _MessageDelivery                 m_MDS;
-
 
    //Default Service Broker Host Container
-   ServiceHost                    *m_pBrokerSvcHost;
+   ServiceHost      *m_pBrokerSvcHost;
 
+   IServiceBroker   *m_pBroker;
+   IBase            *m_pBrokerbase;
+   IBase            *m_pDefaultBrokerbase;
 
-   IServiceBroker                 *m_pBroker;
-   IBase                          *m_pBrokerbase;
-   IBase                          *m_pDefaultBrokerbase;
-   CSemaphore                      m_sem;
+   ClientMap         m_mClientMap;    // Map of Runtime Proxys
+   CSemaphore        m_sem;
+   // Active core services
+   _MessageDelivery  m_MDS;
 };
 
 END_NAMESPACE(AAL)
 
 
-#endif // __AALRUNTIMEIMPL_H__
+#endif // __AALSDK_RUNTIMEIMPL_H__
 

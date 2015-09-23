@@ -156,12 +156,21 @@ btBool Runtime::schedDispatchable(IDispatchable *pdispatchable)
 //=============================================================================
 IRuntime * Runtime::getRuntimeProxy(IRuntimeClient *pClient)
 {
-   // Create the new proxy storing this as the parent. Last parameter indicates
-   //  that this is not the first time
-   Runtime *newProxy = new Runtime(pClient, false);
-   if(!newProxy->IsOK()){
-
+   if ( NULL == pClient ) {
+      return NULL;
    }
+
+   // Create the new proxy storing the given client.
+   // Last parameter indicates that this is not the first time acquiring the concrete singleton.
+   Runtime *newProxy = new(std::nothrow) Runtime(pClient, false);
+
+   ASSERT(NULL != newProxy);
+   if ( NULL == newProxy ) {
+      return NULL;
+   }
+
+   ASSERT(newProxy->IsOK());
+
    return newProxy;
 }
 
