@@ -747,11 +747,13 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
    std::string           strSname;
 
    // First check environment
-   if ( !Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname) ) {
-
+   if ( Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname) ) {
+      sName = strSname.c_str();
+   } else {
       // Not in environment so check config parameters
+
       if ( ENamedValuesOK != rConfigParms.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
-         // No Config Parms
+         // Not in Environment and no Config Parms.
          return true;
       }
 
