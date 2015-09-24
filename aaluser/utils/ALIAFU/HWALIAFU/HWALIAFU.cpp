@@ -261,6 +261,7 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 //
 btVirtAddr HWALIAFU::mmioGetAddress( void )
 {
+	// FIXME: might want to cache this
 	return AFUDev().getMMIOR();
 }
 
@@ -273,63 +274,67 @@ btCSROffset HWALIAFU::mmioGetLength( void )
 }
 
 //
-// mmioRead32. Read 32bit CSR.
+// mmioRead32. Read 32bit CSR. Offset given in bytes.
 //
-// FIXME: some confusion around size of btCSRValue as used by AFUDev
-//
-btBool HWALIAFU::mmioRead32( const btCSROffset Offset,       btUnsigned32bitInt * const pValue)
+btBool HWALIAFU::mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
-	// FIXME: hack around btCSRValue being 64 bits
-	btCSRValue val;
-	// Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
-	if (AFUDev().atomicGetCSR(Offset >> 2, &val)) {
-		*pValue = val & 0xFFFFFFFF;
-		return true;
-	} else {
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
 		return false;
 	}
+
+	*pValue = *( (btUnsigned32bitInt*)(pMMIOBase + Offset) );
+
+	return true;
 }
 
 //
-// mmioWrite32. Write 32bit CSR.
-//
-// FIXME: some confusion around size of btCSRValue as used by AFUDev
+// mmioWrite32. Write 32bit CSR. Offset given in bytes.
 //
 btBool HWALIAFU::mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
-	// Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
-	return AFUDev().atomicSetCSR(Offset >> 2, Value);
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
+	}
+
+	*( (btUnsigned32bitInt*)(pMMIOBase + Offset) ) = Value;
+
+	return true;
 }
 
 //
-// mmioRead64. Read 64bit CSR.
-//
-// Assembles final value from two mmioRead32 calls.
-// FIXME: some confusion around size of btCSRValue as used by AFUDev
+// mmioRead64. Read 64bit CSR. Offset given in bytes.
 //
 btBool HWALIAFU::mmioRead64( const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
-	// NOTE: this might change pValue even when read fails
-	btUnsigned32bitInt *pResult = (btUnsigned32bitInt *)pValue;
+	btVirtAddr pMMIOBase = mmioGetAddress();
 
-	if ( mmioRead32(Offset + 4, pResult+1) ) {
-		return mmioRead32(Offset, pResult);
+	if (pMMIOBase == NULL) {
+		return false;
 	}
-	return false;
+
+	*pValue = *( (btUnsigned64bitInt*)(pMMIOBase + Offset) );
+
+	return true;
 }
 
 //
-// mmioWrite64. Write 64bit CSR.
-//
-// Issues two mmioWrite32 calls.
-// FIXME: some confusion around size of btCSRValue as used by AFUDev
+// mmioWrite64. Write 64bit CSR. Offset given in bytes.
 //
 btBool HWALIAFU::mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
-	if ( mmioWrite32(Offset + 4, Value >> 32) ) {
-		return mmioWrite32(Offset, Value & 0xffffffff);
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
 	}
-	return false;
+
+	*( (btUnsigned64bitInt*)(pMMIOBase + Offset) ) = Value;
+
+	return true;
 }
 
 // ---------------------------------------------------------------------------
