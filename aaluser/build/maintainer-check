@@ -21,7 +21,11 @@ declare -r DEF_WKSPC='maintainer-check'
 declare    WKSPC="${SCRIPT_NONE}"
 
 declare -r CONFIGURE_OPTS='--disable-dependency-tracking'
-declare -r MAKE_OPTS='-j 8 V=0'
+
+declare -r MAKEOPTS="${MAKEOPTS:--j 8 V=0}"
+
+declare    WANT_DISTCC=false
+declare -r DISTCC_MAKEOPTS="${DISTCC_MAKEOPTS:--j 250 V=0}"
 
 ################################################################################
 
@@ -166,6 +170,7 @@ declare -r CP="`which cp`" 2>/dev/null
 [ "x${CP}" = "x" ] && die "No cp?"
 declare -r DATE="`which date`" 2>/dev/null
 [ "x${DATE}" = "x" ] && die "No date?"
+declare -r DISTCC="`which distcc`" 2>/dev/null
 declare -r EGREP="`which egrep`" 2>/dev/null
 [ "x${EGREP}" = "x" ] && die "No egrep?"
 declare -r FIND="`which find`" 2>/dev/null
@@ -504,6 +509,14 @@ process_args() {
                #printf "got --distdir\n"
             fi
          ;;
+         "--distcc")
+            if [ "${val}" != "${SCRIPT_NONE}" ]; then
+               if [ "x${val}" = xy ] || [ "x${val}" = xY ] || [ "x${val}" = x1 ]; then
+                  WANT_DISTCC=true
+               fi
+               #printf "got --distcc\n"
+            fi
+         ;;
 
       esac
 
@@ -714,7 +727,11 @@ run_make() {
 
    pushd "${vpath}" &>/dev/null
 
-   cmd_as_coproc ${MAKE} ${MAKE_OPTS} ${mk_opts} ${target}
+   if ${WANT_DISTCC} && [ "x${DISTCC}" != x ] && [ -d "${HOME}/distcc" ]; then
+      PATH="${HOME}/distcc:${PATH}" cmd_as_coproc ${MAKE} ${DISTCC_MAKEOPTS} ${mk_opts} ${target}
+   else
+      cmd_as_coproc ${MAKE} ${MAKEOPTS} ${mk_opts} ${target}
+   fi
 
    popd &>/dev/null
 
@@ -732,7 +749,7 @@ sudo_run_make() {
 
    pushd "${vpath}" &>/dev/null
 
-   cmd_as_coproc ${SUDO} ${MAKE} ${MAKE_OPTS} ${mk_opts} ${target}
+   cmd_as_coproc ${SUDO} ${MAKE} ${MAKEOPTS} ${mk_opts} ${target}
 
    popd &>/dev/null
 
