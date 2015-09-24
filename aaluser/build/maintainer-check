@@ -526,7 +526,7 @@ process_args() {
 
 show_help() {
    cat <<END
-Usage: ${SCRIPT} --conf=CONF --srcdir=SRCDIR --distdir=DISTDIR [--wkspc=WORKSPACE]
+Usage: ${SCRIPT} --conf=CONF --srcdir=SRCDIR --distdir=DISTDIR [--wkspc=WORKSPACE] [--distcc=y/n]
 
           CONF      : full path to configure corresponding to srcdir
           SRCDIR    : full path to source built by make as a result of configure
@@ -2327,6 +2327,29 @@ verify_copyrights() {
 
 # Copyrights
 ################################################################################
+# Template Substitutions
+
+# Make sure there are no template-substituted files hanging around in ${SRCDIR}
+remove_template_substitutions() {
+   local subst
+
+   print_title "Removing template substitutions"
+
+   for f in `${FIND} ${SRCDIR} -iname '*.in'` ; do
+      # Skip files in ${WKSPC}
+      if [ "${f##${WKSPC}/}" != "$f" ]; then
+         continue
+      fi
+
+      subst="${f%.in}"
+      if [ -e "${subst}" ]; then
+         cmd ${RM} -f "${subst}"
+      fi
+   done
+}
+
+# Template Substitutions
+################################################################################
 
 main() {
    setup "${SRCDIR}" WKSPC
@@ -2368,6 +2391,8 @@ main() {
       build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg0asrt1 ndebug=1 nassert=0
       build_samples "${WKSPC}/tarball_in_tree/${DISTDIR}" dbg0asrt0 ndebug=1 nassert=1
    fi
+
+   remove_template_substitutions
 
    return 0
 }
