@@ -53,7 +53,7 @@
 #ifndef __AALSDK_RM_CAASRESOURCEMANAGER_H__
 #define __AALSDK_RM_CAASRESOURCEMANAGER_H__
 
-//#define NEW_INST_RECS                     // Turn on the new Instance Record processing
+//#define NEW_INST_RECS                   // Turn on the new Instance Record processing
                                           //    while preserving the old code
 
 #include <aalsdk/AALTypes.h>
@@ -62,12 +62,11 @@
 #include <aalsdk/rm/RegDBSkeleton.h>      // Brings in the skeleton, which brings in the database
 #include <aalsdk/rm/InstanceRecord.h>     // InstRecMap
 
-#include <aalsdk/AAL.h>
-#include <aalsdk/aas/AALServiceModule.h>
-// for service declaration
-#include <aalsdk/aas/AALService.h>
-#include <aalsdk/IServiceClient.h>
-#include <aalsdk/osal/IDispatchable.h>
+#include <aalsdk/AAL.h>                   // for service declaration
+#include <aalsdk/aas/AALServiceModule.h>  //
+#include <aalsdk/aas/AALService.h>        //
+#include <aalsdk/IServiceClient.h>        //
+#include <aalsdk/osal/IDispatchable.h>    //
 
 /// @todo Document CResMgr and related.
 
@@ -102,23 +101,23 @@ public:
 
 
 /*
- * IResMgr service interface - FIXME: name collision with interface for CResourceManager (remote resource manager)
+ * IResMgr service interface - FIXME: name collision with interface for
+ *                             CResourceManager (remote resource manager)
  */
 #define iidResMgrService __INTC_IID(AAL_sysResMgr,0x0001)
 
 class IResMgrService
 {
 public:
-	virtual int start(const TransactionID &rtid) = 0;
-	virtual int fdServer() = 0;
-	virtual ~IResMgrService() {};
+    virtual int start(const TransactionID &rtid) = 0;
+    virtual int fdServer() = 0;
+    virtual ~IResMgrService() {};
 };
 
 
 /*
 * CResMgr object itself
 */
-
 enum CResMgrState { eCRMS_Starting, eCRMS_Running, eCRMS_Stopping, eCRMS_Stopped };
 //=============================================================================
 // Name: CResMgr
@@ -167,24 +166,24 @@ public:
    // End of Should be private
 
 public:
+// TODO: Figure out how to pass parameters to service
 //   CResMgr(NamedValueSet     *pOptArgs = NULL,
 //           const std::string &sDevName = "/dev/aalrms");
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(CResMgr, ServiceBase),
-		   m_sResMgrDevName  ("/dev/aalrms"),
-		         m_pRegDBSkeleton  (NULL),
-		         m_pIoctlReq       (NULL),
-		         m_fdServer        (-1),
-		         m_bIsOK           (false),
-		         m_pOptArgs        (NULL),		// FIXME: how to pass into service?
-		         m_sDatabasePath   (),               // Will be initialized below
-		         m_state           (eCRMS_Starting),
-		         m_InstRecMap      (),
-		         m_mydevice        (0),
-		   	  m_pAALServiceClient(NULL)
-   {
-	   SetSubClassInterface(iidResMgrService, dynamic_cast<IResMgrService *>(this));
-
-   }
+    DECLARE_AAL_SERVICE_CONSTRUCTOR(CResMgr, ServiceBase),
+        m_sResMgrDevName ("/dev/aalrms"),
+        m_pRegDBSkeleton (NULL),
+        m_pIoctlReq (NULL),
+        m_fdServer (-1),
+        m_bIsOK (false),
+        m_pOptArgs (NULL),		// FIXME: how to pass into service?
+        m_sDatabasePath (),// Will be initialized below
+        m_state (eCRMS_Starting),
+        m_InstRecMap (),
+        m_mydevice (0),
+        m_pAALServiceClient(NULL)
+    {
+        SetSubClassInterface(iidResMgrService, dynamic_cast<IResMgrService *>(this));
+    }
 
 
 
