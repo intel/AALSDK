@@ -96,77 +96,43 @@
 
 BEGIN_NAMESPACE(AAL)
 
-CResMgr::CResMgr(const CResMgr & ) {/*empty*/}
+
+
+
+#ifndef RESMGRSERVICE_VERSION_CURRENT
+# define RESMGRSERVICE_VERSION_CURRENT  1
+#endif // RESMGRSERVICE_VERSION_CURRENT
+#ifndef RESMGRSERVICE_VERSION_REVISION
+# define RESMGRSERVICE_VERSION_REVISION 0
+#endif // RESMGRSERVICE_VERSION_REVISION
+#ifndef RESMGRSERVICE_VERSION_AGE
+# define RESMGRSERVICE_VERSION_AGE      0
+#endif // RESMGRSERVICE_VERSION_AGE
+#ifndef RESMGRSERVICE_VERSION
+# define RESMGRSERVICE_VERSION          "1.0.0"
+#endif // RESMGRSERVICE_VERSION
+
+#ifndef __declspec
+#   define __declspec(x)
+#endif // __declspec
+#define RESMGR_SERVICE_API    __declspec(0)
+
+// FIXME: left out Windows-specific defines (lazy me)
+
+#define SERVICE_FACTORY AAL::InProcSvcsFact< CResMgr >
+
+AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libAASResMgr, RESMGR_SERVICE_API, RESMGRSERVICE_VERSION, RESMGRSERVICE_VERSION_CURRENT, RESMGRSERVICE_VERSION_REVISION, RESMGRSERVICE_VERSION_AGE)
+   /* No commands other than default, at the moment. */
+AAL_END_SVC_MOD()
+
+
+
+const unsigned maxErrors =  10;           // abort (or in the future reset, perhaps) after this many errors have been seen
+                                          //    The value 0 means do not test
+
+
+//CResMgr::CResMgr(const CResMgr & ) {/*empty*/}
 CResMgr & CResMgr::operator=(const CResMgr & ) { return *this; }
-
-
-//=============================================================================
-// Name:          CResMgr::CResMgr
-// Description:   Constructor
-//                All parameters are defaulted in the declaration
-// Interface:     public
-// Inputs:        btBool dDebug, true for run-time debugging, defaults to true
-// Outputs:       none
-// Comments:
-//=============================================================================
-CResMgr::CResMgr(NamedValueSet *pOptArgs, const std::string &sDevName)
-   :  m_sResMgrDevName  (sDevName),
-      m_pRegDBSkeleton  (NULL),
-      m_pIoctlReq       (NULL),
-      m_fdServer        (-1),
-      m_bIsOK           (false),
-      m_pOptArgs        (pOptArgs),
-      m_sDatabasePath   (),               // Will be initialized below
-      m_state           (eCRMS_Starting),
-      m_InstRecMap      (),
-      m_mydevice        (0)
-{
-   // Set global file handle
-   if (-1 != globalRMFileDescriptor) {
-      AAL_ERR(LM_ResMgr,"CResMgr::CResMgr sees globalRMFileDescriptor set, will reset and lose file\n");
-      globalRMFileDescriptor = -1;
-   }
-
-   // Have a path, get the database up
-   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
-   if (m_pRegDBSkeleton) {
-      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << std::endl);
-   } else {
-      AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
-      goto getout_1;
-   }
-
-   // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
-   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
-   if( m_pIoctlReq ){
-      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << std::endl);
-   } else {
-      AAL_ERR(LM_ResMgr,"CResMgr could not create an aalrm_ioctlreq\n");
-      goto getout_2;
-   }
-
-   globalRMFileDescriptor = m_fdServer = open (m_sResMgrDevName.c_str(), O_RDWR);
-   if (m_fdServer >= 0){                                      // success
-      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << std::endl);
-   } else {
-      int saverr = errno;
-      AAL_ERR(LM_ResMgr,"CResMgr open of " << m_sResMgrDevName << " failed with error code " << saverr
-                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
-      goto getout_3;
-   }
-
-   // Don't use one of these objects unless bIsOK returns true
-   m_bIsOK = m_pRegDBSkeleton->IsOK();
-   m_state = eCRMS_Running;
-   return;
-
-getout_3:
-   delete m_pIoctlReq; m_pIoctlReq = NULL;
-getout_2:
-   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
-getout_1:
-   return;
-}  // end of CResMgr::CResMgr
 
 //=============================================================================
 // Name:          CResMgr::~CResMgr
@@ -186,7 +152,7 @@ CResMgr::~CResMgr()
    // popping out of the poll here via a special ioctl.
    if( m_fdServer >= 0 ) {
       close (m_fdServer);
-      m_fdServer = globalRMFileDescriptor = -1;
+      m_fdServer = -1;
    }
    if( m_pIoctlReq ){
       delete m_pIoctlReq;
@@ -902,6 +868,175 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
    nvs.Add(enumRegRecordType_Key,      enumRegRecordType_Instance);
 
 }  // end of CResMgr::NVSFromConfigUpdate
+
+
+
+// ServiceBase
+void CResMgr::init(const TransactionID &rtid)
+{
+
+		m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, ClientBase());
+		ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
+		if(NULL == m_pAALServiceClient)
+		{
+			getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+	                                                                      Client(),
+	                                                                      this,
+	                                                                      rtid,
+	                                                                      errBadParameter,
+	                                                                      reasMissingInterface,
+	                                                                      "Client did not publish IServiceClient Interface"));
+	    	return;
+	    }
+
+	// TODO: how to pass parameters into service?
+
+	   // Set global file handle
+	   if (-1 != m_fdServer) {
+	      AAL_ERR(LM_ResMgr,"CResMgr::CResMgr sees m_fdServer set, will reset and lose file\n");
+	      m_fdServer = -1;
+	   }
+
+	   // Have a path, get the database up
+	   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
+	   if (m_pRegDBSkeleton) {
+	      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << std::endl);
+	   } else {
+	      AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
+	      goto getout_1;
+	   }
+
+	   // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
+	   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
+	   if( m_pIoctlReq ){
+	      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << std::endl);
+	   } else {
+	      AAL_ERR(LM_ResMgr,"CResMgr could not create an aalrm_ioctlreq\n");
+	      goto getout_2;
+	   }
+
+	   m_fdServer = open (m_sResMgrDevName.c_str(), O_RDWR);
+	   if (m_fdServer >= 0){                                      // success
+	      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << std::endl);
+	   } else {
+	      int saverr = errno;
+	      AAL_ERR(LM_ResMgr,"CResMgr open of " << m_sResMgrDevName << " failed with error code " << saverr
+	                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
+	      goto getout_3;
+	   }
+
+	   // Don't use one of these objects unless bIsOK returns true
+	   m_bIsOK = m_pRegDBSkeleton->IsOK();
+	   m_state = eCRMS_Running;
+
+
+	// schedule service allocated callback
+	getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
+	    												   Client(),
+														   dynamic_cast<IBase *>(this),
+														   rtid));
+
+	return;
+
+
+	getout_3:
+	   delete m_pIoctlReq; m_pIoctlReq = NULL;
+	getout_2:
+	   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
+	getout_1:
+	   return;
+}
+
+// IResMgr
+int CResMgr::start(const TransactionID &rtid) {
+
+	   int                     gmRetVal = 0;     // Get_AALRMS_Msg return code
+	   int                     pmRetVal = 0;     // Parse_AALRMS_Msg return code
+	   unsigned                numErrors = 0;    // Incremental count of errors encountered
+	   struct aalrm_ioctlreq *pIoctlReq;         // malloc'd ioctlreq
+
+
+		// Start up configuration updates
+		// FIXME: check for errors
+		EnableConfigUpdates( m_fdServer, m_pIoctlReq );
+
+	   do {
+
+	      // Get an ioctlreq and load it from the kernel
+
+	      pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
+
+	      if (pIoctlReq) {
+	         gmRetVal = Get_AALRMS_Msg ( fdServer(), pIoctlReq );
+	      } else {
+	         AAL_ERR(LM_ResMgr,"AASResourceManager[" << ++numErrors << "]::new struct aalrm_ioctlreq failed, out of memory.");
+	         if (maxErrors && (numErrors >= maxErrors)) {
+	            AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << " exceeded, aborting with status 3.\n");
+	            // FIXME: do proper cleanup before returning!
+	            //delete pResMgr;         // clean up and get out
+	            //exit (3);
+	            return 3;
+	         } else {
+	            AAL_ERR(LM_ResMgr,"AASResourceManager: Pausing and retrying.\n");
+	            sleep(1);
+	            continue;
+	         }
+	      }
+
+	      // If success, do something with the loaded ioctlreq, otherwise to error handling
+
+	      if( 0 == gmRetVal ){          // Successful retrieval of message, now handle it
+	         pmRetVal = Parse_AALRMS_Msg ( fdServer(), pIoctlReq );
+	         if (0 == pmRetVal) {       // Success, just clean up
+	                                    // Clean up pIoctlReq? Depends on the message pump model. For now, yes.
+	            pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
+	         }
+	         else {
+	            AAL_ERR(LM_ResMgr, "AASResourceManager[" << numErrors
+	                                 << "]::Parse_AALRMS_Msg failed with standard error code of " << gmRetVal
+	                                 << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal)
+	                                 << std::endl);
+	            pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
+	            if (maxErrors && (numErrors >= maxErrors)) {
+	               AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 4.\n");
+		            // FIXME: do proper cleanup before returning!
+	               //delete pResMgr;         // clean up and get out
+	               //exit (4);
+	               return 4;
+	            }
+	         }
+	      }
+	      else {                      // Something else (Bad) happened - during message retrieval, try to handle it
+	         ++numErrors;
+	         if( gmRetVal > 0 ){        // standard error (e.g. EINTR)
+	            if (EINTR == gmRetVal) {
+	               AAL_DEBUG(LM_ResMgr, "AASResourceManager[" << numErrors
+	                                  << "]::GetMsg returned EINTR due to handling Signal. Continuing.\n");
+	            } else {
+	               AAL_ERR(LM_ResMgr, "AASResourceManager[" << numErrors
+	                                  << "]::GetMsg failed with standard error code of " << gmRetVal
+	                                  << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal)
+	                                  << std::endl);
+	            }
+	         } else {                   // something completely unexpected happened
+	            AAL_ERR(LM_ResMgr,"AASResourceManager[" << numErrors
+	                  << "]::GetMsg returned completely unexpected (NEGATIVE) error code " << gmRetVal << std::endl);
+	         }
+	         pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
+	         if (maxErrors && (numErrors >= maxErrors)) {
+	            AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 5.\n");
+	            // FIXME: do proper cleanup before returning!
+	            //delete pResMgr;         // clean up and get out
+	            //exit (5);
+	            return 5;
+	         }
+	      }  // end of else of if ( 0 == gmRetVal ), that is, end of the Get_AALRMS_Msg error handling clause
+
+	   } while (eCRMS_Running == state());       // Loop until turned off elsewhere by modifying the state
+
+	   return 0;
+}
+
 
 
 END_NAMESPACE(AAL)

@@ -58,19 +58,20 @@
 
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/ResMgr.h>                // Definitions for user mode RM users
+#include <aalsdk/IServiceClient.h>        // IServiceClient
 #include <aalsdk/rm/RegDBSkeleton.h>      // Brings in the skeleton, which brings in the database
 #include <aalsdk/rm/InstanceRecord.h>     // InstRecMap
 
+#include <aalsdk/AAL.h>
+#include <aalsdk/aas/AALServiceModule.h>
+// for service declaration
+#include <aalsdk/aas/AALService.h>
+#include <aalsdk/IServiceClient.h>
+#include <aalsdk/osal/IDispatchable.h>
 
 /// @todo Document CResMgr and related.
 
 BEGIN_NAMESPACE(AAL)
-
-/*
-* Global Resource Manager Server file descriptor, used only for the signal handler, always
-* kept in synch with CResMgr's file descriptor, by CResMgr. Defined in AASResourceManager.cpp.
-*/
-extern int globalRMFileDescriptor;
 
 /*
 * Data structures for maps
@@ -99,6 +100,21 @@ public:
    //~nvsList();                    // default dtor should clean up, as all items in list are destructed and then the list
 };
 
+
+/*
+ * IResMgr service interface - FIXME: name collision with interface for CResourceManager (remote resource manager)
+ */
+#define iidResMgrService __INTC_IID(AAL_sysResMgr,0x0001)
+
+class IResMgrService
+{
+public:
+	virtual int start(const TransactionID &rtid) = 0;
+	virtual int fdServer() = 0;
+	virtual ~IResMgrService() {};
+};
+
+
 /*
 * CResMgr object itself
 */
@@ -107,8 +123,9 @@ enum CResMgrState { eCRMS_Starting, eCRMS_Running, eCRMS_Stopping, eCRMS_Stopped
 //=============================================================================
 // Name: CResMgr
 // Description: Hold kernel-related interface guts to run the server pump.
+//              Also a regular allocateable AAL service for modularity.
 //=============================================================================
-class CResMgr /* not derived from : public CAASBase, TODO: derive from CAASBase */
+class CResMgr : public ServiceBase, public IResMgrService
 {
 private:
    std::string             m_sResMgrDevName;    // name of the generic pipe this server is servicing
@@ -123,6 +140,7 @@ private:
 
                                                 // To hold a device handle
    void                   *m_mydevice;          // TODO: replace with proper list of devices
+   IServiceClient         *m_pAALServiceClient; // AAL Service client
    // Accessors & Mutators not yet used externally
    const std::string       sResMgrDevName()     { return m_sResMgrDevName; }
    RegDBSkeleton *         pRegDBSkeleton()     { return m_pRegDBSkeleton; }
@@ -149,8 +167,27 @@ public:
    // End of Should be private
 
 public:
-   CResMgr(NamedValueSet     *pOptArgs = NULL,
-           const std::string &sDevName = "/dev/aalrms");
+//   CResMgr(NamedValueSet     *pOptArgs = NULL,
+//           const std::string &sDevName = "/dev/aalrms");
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(CResMgr, ServiceBase),
+		   m_sResMgrDevName  ("/dev/aalrms"),
+		         m_pRegDBSkeleton  (NULL),
+		         m_pIoctlReq       (NULL),
+		         m_fdServer        (-1),
+		         m_bIsOK           (false),
+		         m_pOptArgs        (NULL),		// FIXME: how to pass into service?
+		         m_sDatabasePath   (),               // Will be initialized below
+		         m_state           (eCRMS_Starting),
+		         m_InstRecMap      (),
+		         m_mydevice        (0),
+		   	  m_pAALServiceClient(NULL)
+   {
+	   SetSubClassInterface(iidResMgrService, dynamic_cast<IResMgrService *>(this));
+
+   }
+
+
+
    virtual ~CResMgr();
    // Accessors & Mutators
    btBool                  bIsOK()              { return m_bIsOK;     }
@@ -170,6 +207,11 @@ public:
    int                     DoShutdown           (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoRestart            (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoConfigUpdate       (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
+
+   // ServiceBase
+   void init(const TransactionID &rtid);
+   // IResMgr
+   int start(const TransactionID &rtid);
 
 }; // class CResMgr
 

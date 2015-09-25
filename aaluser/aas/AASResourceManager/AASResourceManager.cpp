@@ -80,7 +80,8 @@
 #include "aalsdk/rm/CAASResourceManager.h" // Brings in the skeleton, which brings
                                            // in the database, the proxy, and <string>
 #include "aalsdk/kernel/KernelStructs.h"   // for print kernel structs and enums
-
+#include <aalsdk/AAL.h>
+#include <aalsdk/Runtime.h>
 
 //#include <aas/ResMgrUtilities.h>        // TEST CODE
 //#include <aas/Utilities.h>              // TEST CODE
@@ -89,13 +90,22 @@
 //#include <aas/AALRMUser.h>              // Definitions for user mode RM users
 //#include <aas/CAALObjectFactory.h>      // for AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED - TEST CODE
 
-int AAL::globalRMFileDescriptor = -1;     // declared here, only touched by CResMgr in its file descriptor code
-                                          //    used by signal handler
+AAL::IResMgrService *pResMgr;				  // used by signal handler to retrieve file descriptor
 const unsigned maxErrors =  10;           // abort (or in the future reset, perhaps) after this many errors have been seen
                                           //    The value 0 means do not test
 
 USING_NAMESPACE(std)
 USING_NAMESPACE(AAL)
+
+
+// Convenience macros for printing messages and errors.
+#ifndef MSG
+# define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#endif // MSG
+#ifndef ERR
+# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
+#endif // ERR
+
 
 /*
  * Forward declarations for test hooks for various things that are convenient
@@ -120,17 +130,276 @@ void signal_handler(int signo, siginfo_t *info, void *ctx)
    req.result_code = rms_resultOK;
    req.data = rms_shutdownReasonMaint;
 
-   if (globalRMFileDescriptor != -1) {
-      AAL_INFO(LM_ResMgr,"Signal Handler: sending shutdown command\n");
-      if (ioctl (globalRMFileDescriptor, AALRM_IOCTL_SENDMSG, &req) == -1){
-          perror ("Send Shutdown message from AASResourceManager to itself, failed");
-      } else {
-         AAL_INFO(LM_ResMgr,"Signal Handler: sent shutdown command\n");
-      }
+   if (pResMgr) {
+	   if (pResMgr->fdServer() != -1) {
+		  AAL_INFO(LM_ResMgr,"Signal Handler: sending shutdown command\n");
+		  if (ioctl (pResMgr->fdServer(), AALRM_IOCTL_SENDMSG, &req) == -1){
+			  perror ("Send Shutdown message from AASResourceManager to itself, failed");
+		  } else {
+			 AAL_INFO(LM_ResMgr,"Signal Handler: sent shutdown command\n");
+		  }
+	   } else {
+		  AAL_WARNING(LM_ResMgr,"Signal Handler: file not open, no way to send shutdown command\n");
+	   }
    } else {
-      AAL_WARNING(LM_ResMgr,"Signal Handler: file not open, no way to send shutdown command\n");
+	   AAL_WARNING(LM_ResMgr,"Signal Handler: can't see resource manager, no way to send shutdown command\n");
    }
 }  // end of signal_handler
+
+
+//=============================================================================
+// Name:          AASResourceManagerDaemon
+// Description:   Application class for Resource Manager Service daemon
+// Interface:     public
+// Inputs:
+// Outputs:       none
+// Comments:      wraps runtime client and service client implementations
+//                for allocating and running a Resource Manager Service
+//                (CResMgr via IResMgr).
+//=============================================================================
+class AASResourceManagerDaemon : public CAASBase,
+								 public IRuntimeClient, public IServiceClient
+{
+public:
+	AASResourceManagerDaemon();
+
+
+	~AASResourceManagerDaemon();
+
+	// <IRuntimeClient>
+	void runtimeCreateOrGetProxyFailed(const IEvent &rEvent);
+	void runtimeStarted(IRuntime            *pRuntime,
+						const NamedValueSet &rConfigParms);
+	void runtimeStopped(IRuntime *pRuntime);
+	void runtimeStartFailed(const IEvent &rEvent);
+	void runtimeStopFailed(const IEvent &rEvent);
+	void runtimeAllocateServiceFailed(const IEvent &rEvent);
+	void runtimeAllocateServiceSucceeded(IBase *pClient, const TransactionID &rTranID);
+	void runtimeEvent(const IEvent &rEvent);
+
+	// IServiceClient interface
+	void serviceAllocated(IBase *pServiceBase, const TransactionID &rTranID);
+	void serviceAllocateFailed(const IEvent &rEvent);
+	void serviceReleaseFailed(const AAL::IEvent&);
+    void serviceReleased(TransactionID const &rTranID);
+	void serviceEvent(const IEvent &rEvent);
+
+	// Class-specific methods
+	// Start application and block until complete
+	btBool start();
+	btBool isOK() { return m_isOK; };
+
+protected:
+	IBase 			*m_pAALService;		// Generic AAL service interface ***
+	IResMgrService 	*m_pResMgrService;	// Service-specific interface
+	Runtime 		m_Runtime;			// Runtime object
+	IRuntime 		*m_pRuntime;		// Pointer to our Runtime instance
+	CSemaphore 		m_Sem;				// used to block main(), sync with callbacks
+	btBool			m_isOK;				// Signal OK status
+};
+
+
+/*
+ * Daemon c'tor
+ */
+AASResourceManagerDaemon::AASResourceManagerDaemon() : m_pAALService(NULL),
+					 m_pResMgrService(NULL),
+					 m_pRuntime(NULL),
+					 m_Runtime(this),
+					 m_Sem(),
+					 m_isOK(false)
+{
+	// Register interfaces with our IBase
+	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
+	SetInterface(iidServiceClient, dynamic_cast<IRuntimeClient*>(this));
+	// there is no IResMgrClient yet
+
+	// Initialize semaphore used to block start()
+	m_Sem.Create(0, 1);
+	m_isOK = true;
+}
+
+
+AASResourceManagerDaemon::~AASResourceManagerDaemon()
+{
+	m_Sem.Destroy();
+}
+
+
+/*
+ * Main body of application, run from main thread.
+ *
+ * Starts runtime and then runs the service
+ */
+btBool AASResourceManagerDaemon::start()
+{
+	NamedValueSet runtimeConfigArgs;
+	NamedValueSet Manifest;
+	NamedValueSet ConfigRecord;
+
+	ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libAASResMgr");
+	ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AASResourceManager");
+
+	MSG("Starting runtime");
+
+	m_isOK = false;
+	m_Runtime.start(runtimeConfigArgs);
+
+	// Block on semaphore (wait for Runtime to be started)
+	m_Sem.Wait();
+	if (!isOK())
+	{
+		ERR("Runtime failed to start");
+		exit(1);
+	}
+
+	MSG("Allocating Resource Manager service");
+
+	m_pRuntime->allocService(dynamic_cast<IBase *>(this), Manifest);
+
+	// Block on semaphore again (wait for service to be allocated and run)
+	m_Sem.Wait();
+
+	m_Runtime.stop();
+
+	// Block on semaphore again (wait for runtime to end)
+	m_Sem.Wait();
+	return true;
+
+}
+
+//-------------------------------------------------------------------------
+// IRuntimeClient interface
+//-------------------------------------------------------------------------
+
+void AASResourceManagerDaemon::runtimeCreateOrGetProxyFailed(IEvent const &rEvent)
+{
+   MSG("Runtime Create or Get Proxy failed");
+   m_isOK = false;
+   m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::runtimeStarted(IRuntime *pRuntime,
+                                   const NamedValueSet &rConfigParms)
+{
+   // Save a copy of our runtime interface instance.
+	MSG("Runtime started.");
+   m_pRuntime = pRuntime;
+   m_isOK = true;
+   m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::runtimeStopped(IRuntime *pRuntime)
+{
+   MSG("Runtime stopped");
+   m_isOK = false;
+   m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::runtimeStartFailed(const IEvent &rEvent)
+{
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime start failed");
+   ERR(pExEvent->Description());
+}
+
+void AASResourceManagerDaemon::runtimeStopFailed(const IEvent &rEvent)
+{
+    MSG("Runtime stop failed");
+}
+
+void AASResourceManagerDaemon::runtimeAllocateServiceFailed( IEvent const &rEvent)
+{
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Runtime AllocateService failed");
+   ERR(pExEvent->Description());
+}
+
+void AASResourceManagerDaemon::runtimeAllocateServiceSucceeded(IBase *pClient,
+                                                    TransactionID const &rTranID)
+{
+   TransactionID const * foo = &rTranID;
+   MSG("Runtime Allocate Service Succeeded");
+}
+
+void AASResourceManagerDaemon::runtimeEvent(const IEvent &rEvent)
+{
+   MSG("Generic message handler (AASResourceManagerDaemon)");
+}
+
+
+//-------------------------------------------------------------------------
+// IServiceClient interface
+//-------------------------------------------------------------------------
+
+void AASResourceManagerDaemon::serviceAllocated(IBase *pServiceBase,
+                                   TransactionID const &rTranID)
+{
+   int theErrorCode;
+
+   m_pAALService = pServiceBase;
+   ASSERT(NULL != m_pAALService);
+
+   IResMgrService *ptheService = subclass_ptr<IResMgrService>(pServiceBase);
+
+   ASSERT(NULL != ptheService);
+   if ( NULL == ptheService ) {
+      return;
+   }
+
+   // save reference to service in global variable
+   // to be used by signal handler
+   pResMgr = ptheService;
+
+   MSG("Service Allocated");
+
+   // We have the Service, now start it
+   // Resource Manager will be run in main thread
+   theErrorCode = ptheService->start(TransactionID());
+   if (theErrorCode != 0) {
+	   AAL_ERR(LM_ResMgr,"AASResourceManager::message pump bailed with error code " << theErrorCode << ". Attempting to shut down.\n");
+	   // do we need to do something special?
+   } else {
+	   AAL_INFO(LM_ResMgr,"AASResourceManager::Exited message pump cleanly. Attempting to shut down.\n");
+   }
+
+   // on return, release service
+   MSG("Releasing service");
+   pResMgr = NULL;	// delete reference for signal handler
+   IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+   ASSERT(pIAALService);
+   pIAALService->Release(TransactionID());
+
+
+}
+
+void AASResourceManagerDaemon::serviceAllocateFailed(const IEvent &rEvent)
+{
+   IExceptionTransactionEvent * pExEvent = dynamic_ptr<IExceptionTransactionEvent>(iidExTranEvent, rEvent);
+   ERR("Failed to allocate a Service");
+   ERR(pExEvent->Description());
+   m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::serviceReleaseFailed(const IEvent &rEvent)
+{
+    MSG("Failed to Release a Service");
+    m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::serviceReleased(TransactionID const &rTranID)
+{
+    MSG("Service Released");
+   m_Sem.Post(1);
+}
+
+void AASResourceManagerDaemon::serviceEvent(const IEvent &rEvent)
+{
+   ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+}
 
 //=============================================================================
 // Name:          main
@@ -142,10 +411,6 @@ void signal_handler(int signo, siginfo_t *info, void *ctx)
 //=============================================================================
 int main (int argc, char **argv)
 {
-   int                     gmRetVal = 0;     // Get_AALRMS_Msg return code
-   int                     pmRetVal = 0;     // Parse_AALRMS_Msg return code
-   unsigned                numErrors = 0;    // Incremental count of errors encountered
-   struct aalrm_ioctlreq *pIoctlReq;         // malloc'd ioctlreq
 
    // Set up the logger
 // pAALLogger()->AddToMask(LM_ResMgr,LOG_INFO);
@@ -162,28 +427,6 @@ int main (int argc, char **argv)
    pAALLogger()->SetDestination(ILogger::COUT);
 
    testcode0();      // generally, do nothing
-
-// AAL_DEBUG(LM_ResMgr,"AASResourceManager argv[0] is " << argv[0] << endl);
-
-   // TODO: parse for demon status, other?
-
-   // Get an object to keep all the Resource Manager global data in. Must be a singleton.
-   // Also initializes database and opens the kernel device
-   CResMgr* pResMgr = new(nothrow) CResMgr();
-   if (pResMgr && pResMgr->bIsOK()) {
-      AAL_DEBUG(LM_ResMgr,"AASResourceManager created a CResMgr at " << pResMgr << endl);
-   }
-   if (!pResMgr) {
-      AAL_ERR(LM_ResMgr,"AASResourceManager could not create a CResMgr, exiting with status 1\n");
-      exit (1);
-   }
-   if (!pResMgr->bIsOK()) {
-      AAL_ERR(LM_ResMgr,"AASResourceManager created a CResMgr, but ctor failed, exiting with status 2\n");
-      delete pResMgr;
-      exit (2);
-   }
-
-   testcode1();         // Generally, do nothing
 
    /*
     * set up signal handler
@@ -202,83 +445,33 @@ int main (int argc, char **argv)
    // TODO: when a daemon, will want to respond to SIGHUP by cleaning up, reloading the configuration file and
    // restarting with the new values.
 
-   // Start up configuration updates
-   pResMgr->EnableConfigUpdates( pResMgr->fdServer(), pResMgr->pIoctlReq());
 
-   do {
+// AAL_DEBUG(LM_ResMgr,"AASResourceManager argv[0] is " << argv[0] << endl);
 
-      // Get an ioctlreq and load it from the kernel
+   // TODO: parse for demon status, other?
 
-      pIoctlReq = new(nothrow) struct aalrm_ioctlreq;
+   AASResourceManagerDaemon *app = new(nothrow) AASResourceManagerDaemon();
 
-      if (pIoctlReq) {
-         gmRetVal = pResMgr->Get_AALRMS_Msg ( pResMgr->fdServer(), pIoctlReq );
-      } else {
-         AAL_ERR(LM_ResMgr,"AASResourceManager[" << ++numErrors << "]::new struct aalrm_ioctlreq failed, out of memory.");
-         if (maxErrors && (numErrors >= maxErrors)) {
-            AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << " exceeded, aborting with status 3.\n");
-            delete pResMgr;         // clean up and get out
-            exit (3);
-         } else {
-            AAL_ERR(LM_ResMgr,"AASResourceManager: Pausing and retrying.\n");
-            sleep(1);
-            continue;
-         }
-      }
+   if (!app) {
+      AAL_ERR(LM_ResMgr,"Could not create a AASResourceManagerDaemon (insufficient memory?), exiting with status 1\n");
+      exit (1);
+   }
 
-      // If success, do something with the loaded ioctlreq, otherwise to error handling
+   if (!app->isOK()) {
+	   AAL_ERR(LM_ResMgr,"AASResourceManagerDaemon failed to start (ctor failed), exiting with status 2\n");
+	   exit(2);
+   }
 
-      if( 0 == gmRetVal ){          // Successful retrieval of message, now handle it
-         pmRetVal = pResMgr->Parse_AALRMS_Msg ( pResMgr->fdServer(), pIoctlReq );
-         if (0 == pmRetVal) {       // Success, just clean up
-                                    // Clean up pIoctlReq? Depends on the message pump model. For now, yes.
-            pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
-         }
-         else {
-            AAL_ERR(LM_ResMgr, "AASResourceManager[" << numErrors
-                                 << "]::Parse_AALRMS_Msg failed with standard error code of " << gmRetVal
-                                 << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal)
-                                 << endl);
-            pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
-            if (maxErrors && (numErrors >= maxErrors)) {
-               AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 4.\n");
-               delete pResMgr;         // clean up and get out
-               exit (4);
-            }
-         }
-      }
-      else {                      // Something else (Bad) happened - during message retrieval, try to handle it
-         ++numErrors;
-         if( gmRetVal > 0 ){        // standard error (e.g. EINTR)
-            if (EINTR == gmRetVal) {
-               AAL_DEBUG(LM_ResMgr, "AASResourceManager[" << numErrors
-                                  << "]::GetMsg returned EINTR due to handling Signal. Continuing.\n");
-            } else {
-               AAL_ERR(LM_ResMgr, "AASResourceManager[" << numErrors
-                                  << "]::GetMsg failed with standard error code of " << gmRetVal
-                                  << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal)
-                                  << endl);
-            }
-         } else {                   // something completely unexpected happened
-            AAL_ERR(LM_ResMgr,"AASResourceManager[" << numErrors
-                  << "]::GetMsg returned completely unexpected (NEGATIVE) error code " << gmRetVal << endl);
-         }
-         pIoctlReq = DestroyRMIoctlReq (pIoctlReq);  // pIoctlReq is now Null
-         if (maxErrors && (numErrors >= maxErrors)) {
-            AAL_ERR(LM_ResMgr,"AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 5.\n");
-            delete pResMgr;         // clean up and get out
-            exit (5);
-         }
-      }  // end of else of if ( 0 == gmRetVal ), that is, end of the Get_AALRMS_Msg error handling clause
+   app->start();
 
-   } while (eCRMS_Running == pResMgr->state());       // Loop until turned off elsewhere by modifying the state
+   testcode1();         // Generally, do nothing
 
-   AAL_INFO(LM_ResMgr,"AASResourceManager::Exited message pump cleanly. Attempting to shut down.\n");
+   AAL_INFO(LM_ResMgr, "AASResourceManagerDaemon done, deleting.");
+   delete app;
 
-   delete pResMgr;                                    // clean up and get out
-   AAL_INFO(LM_ResMgr,"AASResourceManager::Shutdown completed. Exiting now.\n");
+   AAL_INFO(LM_ResMgr,"Shutdown completed. Exiting now.\n");
 
-   exit (0);
+   exit(0);
 
 }  // end of main()
 
