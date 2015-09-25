@@ -27,6 +27,8 @@ declare -r MAKEOPTS="${MAKEOPTS:--j 8 V=0}"
 declare    WANT_DISTCC=false
 declare -r DISTCC_MAKEOPTS="${DISTCC_MAKEOPTS:--j 250 V=0}"
 
+declare -i NON_FATAL_ERRORS=0
+
 ################################################################################
 
 declare -r LOG_FILE_NAME='LOG'
@@ -96,11 +98,6 @@ log() {
    [ 0 -ne ${LOG_FD} ] && printf "$*" >&${LOG_FD}
 }
 
-die() {
-   log "die: $@"
-   exit 1
-}
-
 declare -r ATTR_BRIGHT='1;'
 declare -r ATTR_DIM='2;'
 
@@ -142,6 +139,30 @@ next_OK_color() {
    esac
 }
 
+die() {
+   if [ -t 1 ]; then
+      printf "\x1b[%smdie:\x1b[0m $*\n" "${ATTR_BRIGHT}${FG_RED}"
+   else
+      printf "die: $*\n"
+   fi
+
+   [ 0 -ne ${LOG_FD} ] && printf "die: $*" >&${LOG_FD}
+
+   exit 1
+}
+
+non_fatal() {
+   if [ -t 1 ]; then
+      printf "\x1b[%smerror:\x1b[0m $*\n" "${ATTR_BRIGHT}${FG_BROWN}"
+   else
+      printf "error: $*\n"
+   fi
+
+   [ 0 -ne ${LOG_FD} ] && printf "error: $*" >&${LOG_FD}
+
+   let $(( ++NON_FATAL_ERRORS ))
+}
+
 OK() {
    if ${VERBOSE} ; then
       if [ -t 1 ]; then
@@ -153,15 +174,31 @@ OK() {
    [ 0 -ne ${LOG_FD} ] && printf "[ OK ]\n" >&${LOG_FD}
 }
 
-FAIL() {
-   if ${VERBOSE} ; then
-      if [ -t 1 ]; then
-         printf "\x1b[1m[\x1b[31mFAIL\x1b[0m\x1b[1m]\x1b[0m\n"
-      else
-         printf "[FAIL]\n"
-      fi
+FAIL_IN_BRACKETS() {
+   if [ -t 1 ]; then
+      printf "\x1b[1m[\x1b[%smFAIL\x1b[0m\x1b[1m]\x1b[0m\n" "${FG_RED}"
+   else
+      printf "[FAIL]\n"
    fi
    [ 0 -ne ${LOG_FD} ] && printf "[FAIL]\n" >&${LOG_FD}
+}
+
+PASS() {
+   if [ -t 1 ]; then
+      printf "\x1b[%smPASS\x1b[0m\n" "${ATTR_BRIGHT}${FG_GREEN}"
+   else
+      printf "PASS\n"
+   fi
+   [ 0 -ne ${LOG_FD} ] && printf "PASS\n" >&${LOG_FD}
+}
+
+FAIL() {
+   if [ -t 1 ]; then
+      printf "\x1b[%smFAIL\x1b[0m\n" "${ATTR_BRIGHT}${FG_RED}"
+   else
+      printf "FAIL\n"
+   fi
+   [ 0 -ne ${LOG_FD} ] && printf "FAIL\n" >&${LOG_FD}
 }
 
 declare -r CHOWN="`which chown`" 2>/dev/null
@@ -309,7 +346,7 @@ cmd() {
    res=$?
 
    if [ ${res} -ne 0 ]; then
-      FAIL
+      FAIL_IN_BRACKETS
 
       local line
       local -i out_fd
@@ -396,7 +433,7 @@ cmd_as_coproc() {
    res=$?
 
    if [ 0 -ne ${res} ]; then
-      FAIL
+      FAIL_IN_BRACKETS
 
       local line
       local -i out_fd
@@ -1515,6 +1552,7 @@ _verify_user_copyright() {
    str="${str##*-}"
 
    if [ "${str}" != "${THIS_YEAR}" ]; then
+      non_fatal "updating copyright statement in '$f'."
       copyright_user_adjust_date "$f"
    fi
 }
@@ -2206,6 +2244,7 @@ _verify_kernel_copyright() {
    fi
 
    if [ "${date1}" != "${THIS_YEAR}" ] || [ "${date2}" != "${THIS_YEAR}" ]; then
+      non_fatal "updating copyright statement in '$f'."
       copyright_kernel_adjust_date "$f"
    fi
 }
@@ -2343,6 +2382,7 @@ remove_template_substitutions() {
 
       subst="${f%.in}"
       if [ -e "${subst}" ]; then
+         non_fatal "removing substituted template file '${subst}'."
          cmd ${RM} -f "${subst}"
       fi
    done
@@ -2394,7 +2434,7 @@ main() {
 
    remove_template_substitutions
 
-   return 0
+   return ${NON_FATAL_ERRORS}
 }
 
 declare -i res
@@ -2402,6 +2442,11 @@ declare -i res
 main
 res=$?
 
-( [ 0 -eq ${res} ] && log "PASS\n" ) || log "FAIL\n"
+if [ 0 -eq ${res} ]; then
+   PASS
+else
+   FAIL
+fi
+
 exit ${res}
 
