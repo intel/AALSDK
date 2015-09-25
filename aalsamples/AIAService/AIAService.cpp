@@ -203,6 +203,12 @@ btBool AIAService::init( IBase *pclientBase,
       //  indicating that it has started
       SemWait();
       m_bIsOK = true;
+
+      // The AIA does not report itself up to the requester through initComplete()
+      //  since it is really the factory and transport for the AFUProxies which are
+      //  the actual Services. Since it is initComplete() that normally registers the
+      //  Service with the ServiceModule we must register directly.  No event is generated.
+      pAALServiceModule()->AddToServiceList(this);
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
 

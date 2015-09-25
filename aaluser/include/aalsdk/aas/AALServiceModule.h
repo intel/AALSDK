@@ -375,31 +375,31 @@ public:
    virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent);
    // </IServiceModuleCallback>
 
-private:
+
    //=============================================================================
    // Name: AddToServiceList
    /// @brief Adds service to  service list
-   ///   @param[in] pService  IBase of service
-   ///    @return false service already registered
+   /// @param[in] pService  IBase of service
+   /// @return false service already registered
    //=============================================================================
    btBool AddToServiceList(IBase *pService);
 
    //=============================================================================
    // Name: RemovefromServiceList
    /// @brief  Remove service from service list
-   ///      @param[in] pService - IBase of service
-   ///     @return false - was not registered
+   /// @param[in] pService - IBase of service
+   /// @return false - was not registered
    //=============================================================================
    btBool RemovefromServiceList(IBase *pService);
 
    //=============================================================================
    // Name: ServiceInstanceRegistered
-   /// @brief Determines if a service is already registerd
+   /// @brief Determines if a service is already registered
    /// @param[in]   pService IBase of service
-   ///     @return true if service registered
+   /// @return true if service registered
    //=============================================================================
    btBool ServiceInstanceRegistered(IBase *pService);
-
+private:
    ////////////////////////////////////////////////////////////////////////////
    ////                          Shutdown                                  ////
    ////////////////////////////////////////////////////////////////////////////

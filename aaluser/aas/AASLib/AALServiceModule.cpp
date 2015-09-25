@@ -51,6 +51,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/aas/AALServiceModule.h"
+#include "aalsdk/osal/ThreadGroup.h"
 
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/Dispatchables.h"
@@ -231,13 +232,25 @@ btBool AALServiceModule::ServiceInitFailed(IBase *pService,
    if(NULL == pServiceBase ){
       return false;
    }
+
+   // Create the distachable for the Service allocate failed callback
+   ServiceClientCallback * pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                                              pServiceBase->ServiceClient(),
+                                                              pService,
+                                                              pEvent);
+
+   // Destroy the failed Service
+   m_SvcsFact.DestroyServiceObject(pService);
+
    // Notify the Service client on behalf of the Service
+   FireAndForget(pDisp);
+# if 0
    ret = pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
                                                                                   pServiceBase->ServiceClient(),
                                                                                   pService,
                                                                                   pEvent));
-   // Destroy the Service
-   m_SvcsFact.DestroyServiceObject(pService);
+#endif
+
    return ret;
 }
 

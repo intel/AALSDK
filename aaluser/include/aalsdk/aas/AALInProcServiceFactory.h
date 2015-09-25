@@ -178,18 +178,18 @@ public:
          return m_pService->_init(Client, rtid, optArgs, NULL);
       }
       // TODO use loggin
-      std::cerr <<"FAILED to dynamic cast object (USING LOGGING)" <<std::endl;
+      std::cerr <<"FAILED to dynamic cast object (USE LOGGING)" <<std::endl;
       return false;
    }
 
     virtual void DestroyServiceObject(IBase *pServiceBase)
     {
-       ASSERT(dynamic_cast<I*>(pServiceBase) == m_pService);
-       if(NULL != m_pService){
-          delete m_pService;
-          m_pService = NULL;
+
+       if(NULL != pServiceBase){
+          delete pServiceBase;
+          pServiceBase = NULL;
        }else{
-          std::cerr <<"FALIED TO DELETE (USING LOGGING)" <<std::endl;
+          std::cerr <<"FALIED TO DELETE (USE LOGGING)" <<std::endl;
        }
     }
 protected:
