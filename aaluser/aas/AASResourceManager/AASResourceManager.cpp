@@ -211,7 +211,7 @@ AASResourceManagerDaemon::AASResourceManagerDaemon() : m_pAALService(NULL),
 {
 	// Register interfaces with our IBase
 	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient*>(this));
-	SetInterface(iidServiceClient, dynamic_cast<IRuntimeClient*>(this));
+	SetInterface(iidServiceClient, dynamic_cast<IServiceClient*>(this));
 	// there is no IResMgrClient yet
 
 	// Initialize semaphore used to block start()
