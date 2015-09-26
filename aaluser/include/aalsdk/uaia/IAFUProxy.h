@@ -61,12 +61,13 @@
  class UAIA_API IUIDriverEvent
  {
  public:
-    virtual ~IUIDriverEvent();
-    virtual AAL::btObjectType              DevHandle()  const              = 0;
+    virtual ~IUIDriverEvent(){};
+    virtual AAL::btHANDLE                  DevHandle()  const              = 0;
     virtual AAL::uid_msgIDs_e              MessageID()  const              = 0;
     virtual AAL::btVirtAddr                Payload()    const              = 0;
     virtual AAL::btWSSize                  PayloadLen() const              = 0;
     virtual AAL::stTransactionID_t const & msgTranID()  const              = 0;
+    virtual AAL::btObjectType              Context()    const              = 0;
     virtual AAL::uid_errnum_e              ResultCode() const              = 0;
     virtual void                           ResultCode(AAL::uid_errnum_e e) = 0;
  };
@@ -80,6 +81,8 @@
 //=============================================================================
 class IAFUProxyClient
 {
+public:
+   virtual ~IAFUProxyClient(){}
    virtual void AFUEvent( AAL::IEvent const &theEvent) = 0;
 };
 
@@ -94,7 +97,7 @@ class IAFUProxyClient
 class UAIA_API IAFUProxy
 {
 public:
-
+   ~IAFUProxy(){};
    // Send a message to the device
    virtual AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage,
                                         AAL::TransactionID const &rtid)       = 0;

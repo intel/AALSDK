@@ -41,6 +41,8 @@
 //****************************************************************************
 #ifndef __AALSDK_AAS_AALINPROCSERVICEFACTORY_H__
 #define __AALSDK_AAS_AALINPROCSERVICEFACTORY_H__
+#include "aalsdk/AALLoggerExtern.h"
+
 #include <aalsdk/aas/AALServiceModule.h>
 
 
@@ -122,8 +124,7 @@ public:
       if(NULL != pobj){
          return pobj->_init(Client, rtid, optArgs, NULL);
       }
-       // TODO use loggin
-      std::cerr <<"FAILED to dynamic cast object (USING LOGGING)" <<std::endl;
+      AAL_DEBUG(LM_AAS,"InProcSvcsFact:FAILED to dynamic cast object\n");
       return false;
    }
 
@@ -134,7 +135,7 @@ public:
       if(NULL != pobj){
          delete pobj;
       }else{
-         std::cerr <<"FALIED TO DELETE (USING LOGGING)" <<std::endl;
+         AAL_DEBUG(LM_AAS,"InProcSvcsFact::DestroyServiceObject object is NULL\n");
       }
    }
 };
@@ -178,7 +179,7 @@ public:
          return m_pService->_init(Client, rtid, optArgs, NULL);
       }
       // TODO use loggin
-      std::cerr <<"FAILED to dynamic cast object (USE LOGGING)" <<std::endl;
+      AAL_DEBUG(LM_AAS,"InProcSingletonSvcsFact:FAILED to dynamic cast object\n");
       return false;
    }
 
@@ -189,7 +190,7 @@ public:
           delete pServiceBase;
           pServiceBase = NULL;
        }else{
-          std::cerr <<"FALIED TO DELETE (USE LOGGING)" <<std::endl;
+          AAL_DEBUG(LM_AAS,"InProcSingletonSvcsFact::DestroyServiceObject object is NULL\n");
        }
     }
 protected:

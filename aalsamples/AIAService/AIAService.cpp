@@ -81,6 +81,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/uaia/AIA.h"
 
 #include "aalsdk/aas/AALInProcServiceFactory.h"
 #include <aalsdk/osal/OSServiceModule.h>
@@ -160,6 +161,48 @@ USING_NAMESPACE(AAL)
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
+
+//=============================================================================
+// Name: UIDClientEvent
+// Description: Constructor
+// Interface: public
+// Inputs: - Class name.
+// Outputs: Pointer to factory.
+// Comments:
+//=============================================================================
+class UIDriverEvent : public IUIDriverEvent,
+                      public CAALEvent
+{
+public:
+   UIDriverEvent( IBase *pObject,
+                  uidrvMessage *pmessage)
+   : CAALEvent(pObject),
+     m_pmessage(pmessage)
+   {
+      SetSubClassInterface(tranevtUIDriverClientEvent,
+                           dynamic_cast<IUIDriverEvent*>(this));
+
+   }
+
+   btHANDLE                  DevHandle()  const { return m_pmessage->handle();   }
+   uid_msgIDs_e              MessageID()  const { return m_pmessage->id();       }
+   btVirtAddr                Payload()    const { return m_pmessage->payload();  }
+   btWSSize                  PayloadLen() const { return m_pmessage->size();     }
+   stTransactionID_t const & msgTranID()  const { return m_pmessage->tranID();   }
+   btObjectType              Context()   const { return m_pmessage->context(); }
+
+   // HM 20081213
+   uid_errnum_e              ResultCode() const { return m_pmessage->result_code(); }
+   void                      ResultCode(uid_errnum_e e) { return m_pmessage->result_code(e); }
+
+
+   virtual ~UIDriverEvent() { if(m_pmessage != NULL) delete m_pmessage; }
+
+protected:
+   uidrvMessage *m_pmessage;
+
+   UIDriverEvent(){};
+ };
 
 
 //=============================================================================
@@ -425,7 +468,7 @@ void AIAService::SendMessage( AAL::btHANDLE devHandle,
 void AIAService::MessageDeliveryThread(OSLThread *pThread,
                                        void *pContext)
 {
-#if 0
+
    //Get a pointer to this objects context
    AIAService *This = (AIAService*)pContext;
 
@@ -438,20 +481,20 @@ void AIAService::MessageDeliveryThread(OSLThread *pThread,
    This->Process_Event();
 
    // Message pump exited, so AIAService shutting down. Signal that by setting flag.
-   This->m_pUIDC->IsOK(false);
+   This->m_uida.IsOK(false);
 
    // cerr << "AIAService::~AIAService: shutting down UI Client file\n";
    AAL_DEBUG(LM_UAIA,"AIAService::MessageDeliveryThread: shutting down UI Client file\n");
 
    // Close the channel
-   This->m_pUIDC->Close();
+   This->m_uida.Close();
 
    // cout << "AIAService::~AIAService: done\n";
    AAL_INFO(LM_UAIA, "AIAService::MessageDeliveryThread: done\n");
 
    // Final release
    This->Released();
-#endif
+
 
 }  // AIAService::MessageDeliveryThread
 
@@ -466,11 +509,11 @@ void AIAService::MessageDeliveryThread(OSLThread *pThread,
 void
 AIAService::Process_Event()
 {
-#if 0
+
    uidrvMessage *pMessage = new uidrvMessage;
    AAL_INFO(LM_UAIA, "AIAService::Process_Event. in\n");
 
-   while (m_pUIDC->GetMessage(pMessage) != false) {
+   while(m_uida.GetMessage(pMessage) != false) {
       AAL_DEBUG(LM_UAIA, "AIAService::Process_Event: GetMessage Returned\n");
       if (pMessage->result_code() != uid_errnumOK) {
          AAL_WARNING(LM_UAIA, "AIAService::Process_Event: pMessage->result_code() is not uid_errnumOK, but is " <<
@@ -495,17 +538,12 @@ AIAService::Process_Event()
       }else {
 
          // Generate the event - No need to destroy message as it being passed to event and will be
-         // destroyed there.  TODO - Consider cleaner memory management - Try to avoid copies
-         uidrvMessageRoute const &msgroute = pMessage->msgRoute();
-         IBase *proxybase = pMessage->msgRoute().AIAProxybasep();
-         btEventHandler handler = pMessage->msgRoute().Handler();
+         // destroyed there.  TODO - Object should be Proxy not the AIA
          TransactionID tranID = pMessage->tranID();
 
-         UIDriverClientEvent *pEvent = new UIDriverClientEvent(proxybase,
-                                                              pMessage,
-                                                              tranID);
-         pEvent->setHandler(handler);
-         getRuntime()->schedDispatchable(pEvent);
+         AFUProxyCallback *pDisp = new AFUProxyCallback(static_cast<IAFUProxyClient *>(pMessage->context()),
+                                                        new UIDriverEvent(this,pMessage));
+         getRuntime()->schedDispatchable(pDisp);
 
          pMessage = new uidrvMessage;
 
@@ -514,7 +552,7 @@ AIAService::Process_Event()
 
    // catastrophic failure.  try to clean up after ourself.
    delete pMessage;
-#endif
+
 } // AIAService::Process_Event
 
 

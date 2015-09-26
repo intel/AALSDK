@@ -41,27 +41,11 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "aalsdk/uaia/uidrvMessage.h"
+#include "uidrvMessage.h"
 #include "aalsdk/AALBase.h" // IBase
 
 
-BEGIN_NAMESPACE(AAL)
-
-
-uidrvMessageRoute::uidrvMessageRoute(IBase               *pAIAProxybase,
-                                     btEventHandler       EventHandler,
-                                     btApplicationContext Context) :
-   m_pAIAProxybase(pAIAProxybase),
-   m_Context(Context),
-   m_EventHandler(EventHandler)
-{}
-
-uidrvMessageRoute::uidrvMessageRoute(const uidrvMessageRoute &rother)
-{
-   m_pAIAProxybase = rother.m_pAIAProxybase;
-   m_Context       = rother.m_Context;
-   m_EventHandler  = rother.m_EventHandler;
-}
+USING_NAMESPACE(AAL)
 
 uidrvMessage::uidrvMessage() :
    m_pmessage(NULL)
@@ -85,8 +69,4 @@ void uidrvMessage::size(btWSSize PayloadSize)
    memset(m_pmessage, 0, m_msgsize);
    m_pmessage->m_ioctlreq.size = PayloadSize;
 }
-
-
-END_NAMESPACE(AAL)
-
 

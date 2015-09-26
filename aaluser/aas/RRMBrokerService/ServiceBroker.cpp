@@ -303,9 +303,13 @@ void ServiceBroker::allocService(IRuntime               *pProxy,
       return;
    }
 
+   // Determine whether we need to consult Resource Manager
+   btBool SWService = false;
+   if ( ConfigRecord->Has(AAL_FACTORY_CREATE_SOFTWARE_SERVICE) ){
+      ConfigRecord->Get(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, &SWService);
+   }
    // If this Service is not pure software then use Resource Manager
-   if ( !ConfigRecord->Has(AAL_FACTORY_CREATE_SOFTWARE_SERVICE) ) {
-
+   if(false == SWService){
       if ( NULL != m_ResMgr ) {
 
          // Need to save the Runtime Proxy and Client interfaces to be able to generate the final event

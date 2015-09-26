@@ -328,9 +328,9 @@ void UIDriverInterfaceAdapter::Close() {
 // Description: Polls for messages and returns when one is available
 // Comment:
 //==========================================================================
-btBool UIDriverInterfaceAdapter::GetMessage(/*uidrvMessage *uidrvMessagep*/)
+btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 {
-#if 0
+
    struct aalui_ioctlreq ioctlMessage;
 
 
@@ -484,7 +484,7 @@ FAILED: // If got here then the poll failed
    return false;
 
 #endif // OS
-#endif
+
 }  // UIDriverInterfaceAdapter::GetMessage
 
 
@@ -514,6 +514,9 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
 
    reqp->id = pMessage->getMsgID();
    reqp->tranID = pMessage->getTranID();
+   reqp->handle = devHandle;
+   reqp->context = pProxyClient;
+
    memcpy(aalui_ioctlPayload(reqp), pMessage->getPayloadPtr(), pMessage->getPayloadSize());
 
    // Determine which low-level command should be used to send down the stack

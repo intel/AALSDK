@@ -76,6 +76,39 @@ USING_NAMESPACE(AAL);
 //=============================================================================
 #define AIA_SERVICE_BASE_INTERFACE "AIA_Service_Base_Interface"
 
+//============================================================================
+// AAL Service Client
+//============================================================================
+class AFUProxyCallback : public IDispatchable
+{
+public:
+
+   AFUProxyCallback(IAFUProxyClient        *pClient,
+                         const IEvent           *pEvent) :
+   m_pClient(pClient),
+   m_pEvent(pEvent)
+   {
+      ASSERT(NULL != pClient);
+      ASSERT(NULL != pEvent);
+   }
+
+
+void operator() ()
+{
+   {  m_pClient->AFUEvent(*m_pEvent);
+      delete m_pEvent;
+   }
+   delete this;
+}
+
+virtual ~AFUProxyCallback() {}
+
+protected:
+   IAFUProxyClient         *m_pClient;
+   IEvent const            *m_pEvent;
+};
+
+
 //=============================================================================
 // Name: AIAService
 // Description: Implementation of the AFU Interface Adapter Service

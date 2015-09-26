@@ -549,7 +549,8 @@ void _runtime::addProxy(Runtime        *pRuntimeProxy,
 
    // Save in map
    m_mClientMap[pRuntimeProxy] = pClient;
-   std::cerr << "addProxy: Num Proxies " << m_mClientMap.size() << std::endl;
+   AAL_DEBUG(LM_AAS, "addProxy: Num Proxies " << m_mClientMap.size() << std::endl);
+
 }
 
 //=============================================================================
@@ -575,6 +576,7 @@ void _runtime::removeProxy(Runtime *pRuntimeProxy)
    ASSERT(m_mClientMap.end() != cmItr);
    if ( m_mClientMap.end() != cmItr ) {
       m_mClientMap.erase(cmItr);
+      AAL_DEBUG(LM_AAS, "removeProxy: Num Proxies " << m_mClientMap.size() << std::endl);
    }
 }
 
@@ -600,7 +602,7 @@ void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
          AAL_ERR(LM_AAS, "releaseRuntimeInstance() called with no Runtime present");
          return;
       }
-   std::cerr << "removeProxy: Num Proxies " << m_mClientMap.size() << std::endl;
+
       // If missing the Proxy fail
       if ( NULL == pRuntimeProxy ) {
          // Dispatch the event ourselves, because MDS is no more.
@@ -626,10 +628,11 @@ void _runtime::releaseRuntimeInstance(Runtime *pRuntimeProxy)
       }
 
       if(m_mClientMap.size() >1){
-          std::cerr << "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl;
+          AAL_DEBUG(LM_AAS, "Unclean destroy of primary Runtime. Num Proxies " << m_mClientMap.size() << std::endl);
       }else{
           // Take owner off of Proxy list
          m_mClientMap.erase(m_pOwner);
+         AAL_DEBUG(LM_AAS, "releaseRuntimeInstance: Num Proxies " << m_mClientMap.size() << std::endl);
       }
       delete this;
 
@@ -661,41 +664,10 @@ _runtime::~_runtime()
 {
    AutoLock(this);
 
+
 #if ENABLE_DEBUG
-   std::cerr << "Num Proxies: " << m_mClientMap.size() << std::endl;
+   AAL_DEBUG(LM_AAS, "~_runtime: Num Proxies " << m_mClientMap.size() << std::endl);
 #endif // ENABLE_DEBUG
-
-#if 0
-   // Check for proxies
-   if(!m_mClientMap.empty()){
-      OSLThreadGroup oneShot;
-      ClientMap_itr cmIntr = m_mClientMap.begin();
-
-      // Remove all Proxies, notfying them of the destruction if needed
-      while( cmIntr != m_mClientMap.end()){
-         // The owner (creator) of the runtime does not need to be notified
-         if(cmIntr->first != m_pOwner){
-            // Notify the Proxy owner that the proxy is dead.  NOTE that this is presented as an Event.
-             RuntimeCallback *pRuntimeRelease = new RuntimeCallback(RuntimeCallback::Event,
-                                                                    cmIntr->second,
-                                                                    new CExceptionTransactionEvent( cmIntr->first,            // The Proxy is in the event
-                                                                                                    extranevtProxyStopped,
-                                                                                                    TransactionID(),
-                                                                                                    errProxyInvalid,
-                                                                                                    reasParentReleased,
-                                                                                                    "Parent Runtime destroyed while proxy still outstanding!"));
-
-             oneShot.Add(pRuntimeRelease);
-          }
-          ++cmIntr;
-      }
-
-      oneShot.Drain();  // Wait for them to be dispatched
-
-      // Empty the map. We cannot destroy proxy objects.
-      m_mClientMap.clear();
-   }
-#endif
 
    m_MDS.StopMessageDelivery();
 

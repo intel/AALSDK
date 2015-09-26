@@ -47,12 +47,11 @@
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/CUnCopyable.h>
 
-
 #include <aalsdk/AALTransactionID.h>
-#include <aalsdk/uaia/uidrvMessage.h>      // uidrvMessage, uidrvMessageRoute
-#include <aalsdk/uaia/AALuAIA_Messaging.h> // UIDriverClient_msgPayload, UIDriverClient_uidrvManip
+
 #include "AIATransactions.h"
 #include "aalsdk/uaia/IAFUProxy.h"
+#include "uidrvMessage.h"
 
 #ifdef __AAL_UNKNOWN_OS__
 # error Define UIDriverInterfaceAdapter IPC for unknown OS.
@@ -83,7 +82,7 @@ class UAIA_API UIDriverInterfaceAdapter : private CriticalSection,
       void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
 
       // Polls for messages and returns when one is available
-      AAL::btBool GetMessage(/*uidrvMessage *uidrvMessagep*/);
+      AAL::btBool GetMessage(uidrvMessage *uidrvMessagep);
 
       // Sends a message down the UIDriver channel
       AAL::btBool SendMessage( AAL::btHANDLE devHandle,

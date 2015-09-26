@@ -92,7 +92,6 @@ public:
 
 BEGIN_NAMESPACE(AAL)
 
-
 //=============================================================================
 // Name: IAFUTransaction
 // Description: Interface to IAFUTransaction object which abstracts the

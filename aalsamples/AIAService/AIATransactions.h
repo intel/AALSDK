@@ -45,7 +45,7 @@
 
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/osal/OSServiceModule.h>
-#include <aalsdk/uAIALib.h>
+
 #include <aalsdk/uaia/AIA.h>
 
 ///////////////////////////////////////////////////////////////////////////////
