@@ -131,7 +131,9 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
             cout << "Invalid value for --target : " << value << endl;
             return 4;
          }
-      }else if ( (0 == strcmp("--mode", option)) || (0 == strcmp("--m", option)) ) {
+      }else if ( (0 == strcmp("--device", option)) || (0 == strcmp("--d", option))) {
+         	 nlbcl->DevTarget = value;
+       }else if ( (0 == strcmp("--mode", option)) || (0 == strcmp("--m", option)) ) {
           if ( 0 == strcasecmp("lpbk1", value) ) {
          	 nlbcl->TestMode = std::string(NLB_TESTMODE_LPBK1);
           } else if ( 0 == strcasecmp("read", value) ) {

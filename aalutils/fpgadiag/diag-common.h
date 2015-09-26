@@ -160,6 +160,8 @@ protected:
 /// The default CCIAFU Delegate.
 #define DEFAULT_TARGET_AFU CCIAFU_NVS_VAL_TARGET_FPGA
 
+/// The default Sub-Device ID.
+#define DEFAULT_TARGET_DEV "1"
 
 /// The default Test Mode.
 #define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
@@ -211,6 +213,11 @@ public:
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
    std::string AFUTarget() const             { return m_AFUTarget;   }
 
+   /// @brief Mutator for setting the NVS value that selects the AFU Delegate.
+   void DevTarget(const std::string &target) { m_DevTarget = target; }
+   /// @brief Accessor for the NVS value that selects the AFU Delegate.
+   std::string DevTarget() const             { return m_DevTarget;   }
+
    /// @brief Mutator for setting the test mode.
    void TestMode(const std::string &mode) { m_TestMode = mode; }
    /// @brief Accessor for the test mode.
@@ -244,6 +251,7 @@ public:
 
 protected:
    std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
+   std::string  m_DevTarget; ///< The NVS value used to select the Sub Device.
    std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
    CMyCCIClient m_CCIClient; ///< The ICCIClient used to communicate with the allocated Service.
    IRuntime    *m_pRuntime;
@@ -254,7 +262,7 @@ protected:
 
 
 
-/// @} group cciapp
+/// @}
 ////////////////////////////////////////////////////////////////////////////////
 class INLB
 {
