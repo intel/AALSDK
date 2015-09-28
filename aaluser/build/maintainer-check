@@ -2371,12 +2371,15 @@ verify_copyrights() {
 # Make sure there are no template-substituted files hanging around in ${SRCDIR}
 remove_template_substitutions() {
    local subst
+   local tmp
+   local -r regex='.*/maintainer-check/.*'
 
    print_title "Removing template substitutions"
 
    for f in `${FIND} ${SRCDIR} -iname '*.in'` ; do
       # Skip files in ${WKSPC}
-      if [ "${f##${WKSPC}/}" != "$f" ]; then
+      tmp="$f"
+      if [[ ${tmp} =~ ${regex} ]]; then
          continue
       fi
 
