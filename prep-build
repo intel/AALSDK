@@ -2,18 +2,103 @@
 # INTEL CONFIDENTIAL - For Intel Internal Use Only
 
 shopt -o -s nounset
+set -e
+
+declare -r SCRIPT_NAME='prep-build'
+
+declare -r CONFIGUREOPTS="${CONFIGUREOPTS:---disable-dependency-tracking}"
+declare -r MAKEOPTS="${MAKEOPTS:-}"
+
+declare    WANT_DISTCC=false
+declare    MAINTAINER_CHECK=false
 
 die() {
-   printf "%s\n" ${1+"$@"}
+   if [ -t 1 ]; then
+      printf "\x1b[1;31mdie:\x1b[0m $*\n"
+   else
+      printf "die: $*\n"
+   fi
    exit 13
 }
 
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" != x ] || die "no autoreconf?"
+declare -r DISTCC="`which distcc`" 2>/dev/null
 declare -r LN="`which ln`" 2>/dev/null
 [ "x${LN}" != x ] || die "no ln?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" != x ] || die "no make?"
+declare -r MKTEMP="`which mktemp`" 2>/dev/null
+[ "x${MKTEMP}" != x ] || die "no mktemp?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" != x ] || die "no rm?"
 
-set -e
+declare TMPDIR=''
+on_exit() {
+   set +e
+   if [ "x${TMPDIR}" != x ]; then
+      if [ -d "${TMPDIR}" ]; then
+         popd >/dev/null 2>&1
+         ${RM} -rf "${TMPDIR}"
+      fi
+   fi
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+while [ $# -gt 0 ]; do
+   case "$1" in
+      --mc|--maintainer-check)
+         MAINTAINER_CHECK=true
+      ;;
+      --distcc)
+         WANT_DISTCC=true
+      ;;
+   esac
+   shift
+done
+
+################################################################################
+
+do_maintainer_check() {
+   local -r d="${PWD}"
+
+   TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.k.XXXXXXXXXX"`"
+
+   pushd "${TMPDIR}" >/dev/null 2>&1
+
+   $d/aalkernel/configure ${CONFIGUREOPTS}
+
+   ${MAKE} ${MAKEOPTS} maintainer-check
+
+   popd >/dev/null 2>&1
+
+   ${RM} -rf "${TMPDIR}"
+
+
+   TMPDIR="`${MKTEMP} -d --tmpdir "${SCRIPT_NAME}.u.XXXXXXXXXX"`"
+
+   pushd "${TMPDIR}" >/dev/null 2>&1
+
+   $d/aaluser/configure ${CONFIGUREOPTS}
+
+   if ${WANT_DISTCC} && [ "x${DISTCC}" != x ] && [ -d "${HOME}/distcc" ]; then
+      WITH_DISTCC=y ${MAKE} ${MAKEOPTS} maintainer-check
+   else
+      ${MAKE} ${MAKEOPTS} maintainer-check
+   fi
+
+   popd >/dev/null 2>&1
+
+   ${RM} -rf "${TMPDIR}"
+}
+
+################################################################################
 
 main() {
    local -r d="${PWD}"
@@ -46,6 +131,10 @@ main() {
       fi
 
    done
+
+   if ${MAINTAINER_CHECK} ; then
+      do_maintainer_check
+   fi
 }
 main
 
