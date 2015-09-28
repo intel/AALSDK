@@ -109,7 +109,7 @@ public:
 class IResMgrService
 {
 public:
-    virtual int start(const TransactionID &rtid) = 0;
+    virtual int start(const TransactionID &rtid, btBool spawnThread = true) = 0;
     virtual int fdServer() = 0;
     virtual ~IResMgrService() {};
 };
@@ -140,6 +140,15 @@ private:
                                                 // To hold a device handle
    void                   *m_mydevice;          // TODO: replace with proper list of devices
    IServiceClient         *m_pAALServiceClient; // AAL Service client
+
+   OSLThread              *m_pResMgrThread;     // Thread executing resource manager
+   int                    m_resMgrRetVal;       // Return value of resource manager thread
+
+   // internal thread entry point
+   static void             _resMgrThread(OSLThread *pThread, void *pContext);
+   // main event loop
+   int                     _run();
+
    // Accessors & Mutators not yet used externally
    const std::string       sResMgrDevName()     { return m_sResMgrDevName; }
    RegDBSkeleton *         pRegDBSkeleton()     { return m_pRegDBSkeleton; }
@@ -192,7 +201,7 @@ public:
    btBool                  bIsOK()              { return m_bIsOK;     }
    struct aalrm_ioctlreq*  pIoctlReq()          { return m_pIoctlReq; }
    int                     fdServer()           { return m_fdServer;  }
-   CResMgrState            state()              { return m_state;     }
+   CResMgrState            state()              { AutoLock(this); return m_state;     }
    // Core Functionality
    int                     Get_AALRMS_Msg       (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     Parse_AALRMS_Msg     (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
@@ -207,10 +216,12 @@ public:
    int                     DoRestart            (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
    int                     DoConfigUpdate       (int fdServer, struct aalrm_ioctlreq *pIoctlReq);
 
+
    // ServiceBase
-   void init(const TransactionID &rtid);
+   void                    init                 (const TransactionID &rtid);
    // IResMgr
-   int start(const TransactionID &rtid);
+   int                     start                (const TransactionID &rtid, btBool spawnThread = true);
+   btBool                  Release              (TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
 }; // class CResMgr
 

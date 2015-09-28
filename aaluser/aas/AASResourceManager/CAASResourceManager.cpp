@@ -631,8 +631,11 @@ int CResMgr::DoShutdown(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 {
    AAL_DEBUG(LM_ResMgr,"CResMgr::DoShutdown\n");
    m_pRegDBSkeleton->Database()->Close();
-   m_state = eCRMS_Stopping;                 // Signal main loop to shut down
-   // TODO - DoShutdown code
+   {
+       AutoLock(this);
+       m_state = eCRMS_Stopping;                 // Signal main loop to shut down
+       // TODO - DoShutdown code
+   }
    return 0;
 } // CResMgr::DoShutdown
 
@@ -930,6 +933,10 @@ void CResMgr::init(const TransactionID &rtid)
 	   m_bIsOK = m_pRegDBSkeleton->IsOK();
 	   m_state = eCRMS_Running;
 
+	    // Start up configuration updates
+	    // FIXME: check for errors
+	    EnableConfigUpdates(m_fdServer, m_pIoctlReq);
+
 
 	// schedule service allocated callback
 	getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
@@ -949,19 +956,15 @@ void CResMgr::init(const TransactionID &rtid)
 }
 
 /*
- * Start event capture and processing
+ * Event capture and processing loop
  */
-int CResMgr::start(const TransactionID &rtid)
+int CResMgr::_run()
 {
 
     int gmRetVal = 0;          // Get_AALRMS_Msg return code
     int pmRetVal = 0;          // Parse_AALRMS_Msg return code
     unsigned numErrors = 0;    // Incremental count of errors encountered
     struct aalrm_ioctlreq *pIoctlReq;         // malloc'd ioctlreq
-
-    // Start up configuration updates
-    // FIXME: check for errors
-    EnableConfigUpdates(m_fdServer, m_pIoctlReq);
 
     do {
 
@@ -1038,6 +1041,68 @@ int CResMgr::start(const TransactionID &rtid)
 
     return 0;
 }
+
+/*
+ * Internal thread entry point
+ */
+void CResMgr::_resMgrThread(OSLThread *pThread, void *pContext)
+{
+    CResMgr *This = static_cast<CResMgr *>(pContext);
+    This->m_resMgrRetVal = This->_run();
+}
+
+/*
+ * Start resource manager processing.
+ */
+int CResMgr::start(const TransactionID &rtid, btBool spawnThread)
+{
+    if (spawnThread) {
+        AutoLock(this);
+        m_pResMgrThread = new OSLThread(CResMgr::_resMgrThread, OSLThread::THREADPRIORITY_NORMAL, this);
+        return 0;   // FIXME: return value is discarded
+    } else {
+        return _run();
+    }
+}
+
+/*
+ * Release service, send shutdown message, if necessary.
+ */
+btBool CResMgr::Release(TransactionID const &rTranID, btTime timeout)
+{
+    struct aalrm_ioctlreq req;
+    memset(&req, 0, sizeof(req));
+    req.id = reqid_Shutdown;
+    req.result_code = rms_resultOK;
+    req.data = rms_shutdownReasonMaint;
+
+    // If client explicitly released service, we still need to shut down.
+    // If we're cleaning up (e.g. because shutdown was initiated externally),
+    // we don't need to send the shutdown message again (in fact, we shouldn't,
+    // as this might cause us to loop).
+    if (m_state != eCRMS_Running) {
+        AAL_INFO(LM_ResMgr, "CResMgr::Release(): Resource Manager Service not "
+                            "running, skipping shutdown message.\n");
+    } else if (fdServer() != -1) {
+        AAL_INFO(LM_ResMgr, "CResMgr::Release(): sending shutdown command\n");
+        if (ioctl(fdServer(), AALRM_IOCTL_SENDMSG, &req) == -1) {
+            perror(
+                    "Send Shutdown message from AASResourceManager to itself, failed");
+        } else {
+            AAL_INFO(LM_ResMgr, "CResMgr::Release(): sent shutdown command\n");
+        }
+    } else {
+        AAL_WARNING(LM_ResMgr,
+                "CResMgr::Release(): file not open, no way to send shutdown command\n");
+    }
+    // Wait for actual shutdown
+    while (m_state != eCRMS_Stopping) {
+        SleepMilli(10);
+    }
+    // call parent release method
+    return ServiceBase::Release(rTranID, timeout);
+}
+
 
 
 

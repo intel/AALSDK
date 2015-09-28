@@ -365,7 +365,7 @@ void AASResourceManagerDaemon::serviceAllocated(IBase *pServiceBase,
 
     // We have the Service, now start it
     // Resource Manager will be run in main thread
-    theErrorCode = ptheService->start(TransactionID());
+    theErrorCode = ptheService->start(TransactionID(), false);
     if (theErrorCode != 0) {
         AAL_ERR(LM_ResMgr,
                 "AASResourceManager::message pump bailed with error code " <<
