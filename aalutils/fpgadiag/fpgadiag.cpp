@@ -176,7 +176,7 @@ struct NLBCmdLine gCmdLine =
    },
    0,
    std::string(DEFAULT_TARGET_AFU),
-   std::string(DEFAULT_TARGET_DEV),
+   DEFAULT_TARGET_DEV,
    std::string(DEFAULT_TEST_MODE),
    0
 };
@@ -266,8 +266,7 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
         ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
         ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
         Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-        cout << "\nDEV TARGET IS: " << DevTarget().c_str() <<endl;
-        Manifest.Add(keyRegChannelNumber, 5);//TODO read from cmd line option
+        ConfigRecord.Add(keyRegChannelNumber, DevTarget());
      }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_ASE") ) {         /* Use ASE based RTL simulation */
         Manifest.Add(keyRegHandle, 20);
 
