@@ -48,6 +48,11 @@ public:
 #endif // OS
    }
 
+   AAL::btUnsigned32bitInt RandSeed() const
+   {
+      return (AAL::btUnsigned32bitInt) ::testing::UnitTest::GetInstance()->random_seed();
+   }
+
 protected:
    GlobalTestConfig();
    virtual ~GlobalTestConfig();
