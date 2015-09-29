@@ -11,6 +11,7 @@ declare -r MAKEOPTS="${MAKEOPTS:-}"
 
 declare    WANT_DISTCC=false
 declare    MAINTAINER_CHECK=false
+declare    DEEP_CLEAN=false
 
 die() {
    if [ -t 1 ]; then
@@ -24,6 +25,8 @@ die() {
 declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
 [ "x${AUTORECONF}" != x ] || die "no autoreconf?"
 declare -r DISTCC="`which distcc`" 2>/dev/null
+declare -r FIND="`which find`" 2>/dev/null
+[ "x${FIND}" != x ] || die "no find?"
 declare -r LN="`which ln`" 2>/dev/null
 [ "x${LN}" != x ] || die "no ln?"
 declare -r MAKE="`which make`" 2>/dev/null
@@ -32,6 +35,8 @@ declare -r MKTEMP="`which mktemp`" 2>/dev/null
 [ "x${MKTEMP}" != x ] || die "no mktemp?"
 declare -r RM="`which rm`" 2>/dev/null
 [ "x${RM}" != x ] || die "no rm?"
+declare -r SORT="`which sort`" 2>/dev/null
+[ "x${SORT}" != x ] || die "no sort?"
 
 declare TMPDIR=''
 on_exit() {
@@ -58,6 +63,9 @@ while [ $# -gt 0 ]; do
       ;;
       --distcc)
          WANT_DISTCC=true
+      ;;
+      --deep-clean)
+         DEEP_CLEAN=true
       ;;
    esac
    shift
@@ -96,6 +104,78 @@ do_maintainer_check() {
    popd >/dev/null 2>&1
 
    ${RM} -rf "${TMPDIR}"
+
+   TMPDIR=''
+}
+
+################################################################################
+
+do_deep_clean() {
+   local -r d="${PWD}"
+
+   pushd "$d/aalkernel" >/dev/null 2>&1
+   ./configure ${CONFIGUREOPTS}
+   ${MAKE} ${MAKEOPTS} distclean
+   popd >/dev/null 2>&1
+
+   pushd "$d/aaluser" >/dev/null 2>&1
+   ./configure ${CONFIGUREOPTS}
+   ${MAKE} ${MAKEOPTS} distclean
+   popd >/dev/null 2>&1
+
+   pushd "$d/aalsamples" >/dev/null 2>&1
+   ${MAKE} ${MAKEOPTS} clean
+   popd >/dev/null 2>&1
+
+   local     x f D
+   local -ra dirs_to_remove=(\
+autom4te.cache \
+gtest-1.6.0 \
+gtest-1.7.0 \
+mybuild \
+myinst \
+__pycache__\
+)
+
+   for x in ${dirs_to_remove[@]} ; do
+      ${FIND} "$d" -type d -name "$x" | ${SORT} -r | {
+         while read D ; do
+            ${RM} -rf "$D"
+         done
+      }
+   done
+
+   local -ra files_to_remove=(\
+Makefile.in \
+aclocal.m4 \
+ar-lib \
+autom4te.cache \
+compile \
+config.guess \
+config.h.in \
+config.h.in~ \
+config.sub \
+configure \
+depcomp \
+install-sh \
+libtool.m4 \
+ltmain.sh \
+ltoptions.m4 \
+ltsugar.m4 \
+ltversion.m4 \
+lt~obsolete.m4 \
+missing \
+test-driver \
+ylwrap\
+)
+
+   for x in ${files_to_remove[@]} ; do
+      ${FIND} "$d" -type f -name "$x" | {
+         while read f ; do
+            ${RM} -f "$f"
+         done
+      }
+   done
 }
 
 ################################################################################
@@ -134,6 +214,10 @@ main() {
 
    if ${MAINTAINER_CHECK} ; then
       do_maintainer_check
+   fi
+
+   if ${DEEP_CLEAN} ; then
+      do_deep_clean
    fi
 }
 main
