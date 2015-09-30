@@ -176,6 +176,7 @@ struct NLBCmdLine gCmdLine =
    },
    0,
    std::string(DEFAULT_TARGET_AFU),
+   DEFAULT_TARGET_DEV,
    std::string(DEFAULT_TEST_MODE),
    0
 };
@@ -203,6 +204,7 @@ END_C_DECLS
 
 CMyApp::CMyApp() :
    m_AFUTarget(DEFAULT_TARGET_AFU),
+   m_DevTarget(DEFAULT_TARGET_DEV),
    m_pRuntime(NULL),
    m_pAALService(NULL),
    m_pProprietary(NULL)
@@ -254,8 +256,31 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
      // NOTE: This example is bypassing the Resource Manager's configuration record lookup
      //  mechanism.  This code is workaround code and is subject to change.
 
-     NamedValueSet Manifest(CCIAFU_MANIFEST);
+     //NamedValueSet Manifest(CCIAFU_MANIFEST);
+     NamedValueSet Manifest;
+     NamedValueSet ConfigRecord;
 
+     if ( 0 == strcmp(AFUTarget().c_str(), "CCIAFUTarget_FPGA") ) {      /* Use FPGA hardware */
+
+        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
+        ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+        Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+        ConfigRecord.Add(keyRegChannelNumber, DevTarget());
+     }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_ASE") ) {         /* Use ASE based RTL simulation */
+        Manifest.Add(keyRegHandle, 20);
+
+        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
+        ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+     }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_SWSIM") ) {       /* default is Software Simulator */
+
+        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
+        ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+     }
+
+     Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
      Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
      Manifest.Add(CCIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
 
@@ -582,6 +607,7 @@ int main(int argc, char *argv[])
    Runtime       aal(&myapp);
 
    myapp.AFUTarget(gCmdLine.AFUTarget);
+   myapp.DevTarget(gCmdLine.DevTarget);
    myapp.TestMode(gCmdLine.TestMode);
 
    if ( (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_ASE)) ||
