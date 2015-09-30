@@ -64,11 +64,11 @@ LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
 SOURCES=\
-AIADllMain.cpp\
 AIAService.cpp \
 UIDriverInterfaceAdapter.cpp \
 ALIAFUProxy.cpp \
-AIATransactions.cpp
+AIATransactions.cpp \
+uidrvMessage.cpp
  
 OBJS=$(SOURCES:.cpp=.o)
 
@@ -93,6 +93,9 @@ AIATransactions.o: AIATransactions.cpp AIATransactions.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
 	
 UIDriverInterfaceAdapter.o: UIDriverInterfaceAdapter.cpp UIDriverInterfaceAdapter.h AIATransactions.h Makefile 
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
+	
+uidrvMessage.o: uidrvMessage.cpp uidrvMessage.h Makefile	
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
 	
 %.o: %.cpp Makefile

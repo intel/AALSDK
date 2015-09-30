@@ -126,7 +126,7 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
       return true;
     }
 
-   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(), this );
+   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(rtid), dynamic_cast<IAFUProxyClient*>(this) );
 
    // TODO BIND DEVICE
 #if 0
@@ -168,6 +168,29 @@ btBool ALIAFUProxy::SendTransaction(IAFUTransaction *pAFUmessage, TransactionID 
 //=============================================================================
 void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
 {
+   IUIDriverEvent * puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                            theEvent);
+
+   ASSERT(NULL != puidEvent);
+
+   switch(puidEvent->MessageID())
+   {
+      case rspid_UID_Shutdown:
+      {
+         std::cerr<<"Got rspid_UID_Shutdown event" << std::endl;
+      }
+      break;
+      case rspid_UID_UnbindComplete:
+      {
+         std::cerr<<"Got rspid_UID_UnbindComplete event" << std::endl;
+      }
+      break;
+      case rspid_UID_BindComplete:
+      {
+         initComplete(puidEvent->msgTranID());
+      }
+      break;
+   }
 
 }
 

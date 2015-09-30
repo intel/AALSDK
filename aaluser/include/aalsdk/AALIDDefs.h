@@ -604,7 +604,8 @@
 /******************************************************************************
 * Define Universal AIA Service Specific Macros
 ******************************************************************************/
-#define __AAL_UAIAExEvt(Num)           __AAL_ExEvt  (AAL_sysUAIA, Num)
+#define __AAL_UAIAEvt(Num)             __AAL_Evt      (AAL_sysUAIA, Num)
+#define __AAL_UAIAExEvt(Num)           __AAL_ExEvt    (AAL_sysUAIA, Num)
 #define __AAL_UAIATranEvt(Num)         __AAL_TranEvt  (AAL_sysUAIA, Num)
 #define __AAL_UAIAExTranEvt(Num)       __AAL_ExTranEvt(AAL_sysUAIA, Num)
 #define __AAL_UAIAErrNum(Num)          __AAL_ErrNum   (AAL_sysUAIA, Num)
@@ -613,8 +614,9 @@
 /// @addtogroup uAIA
 /// @{
 
-#define extevtUIDriverClientEvent      __AAL_UAIAExEvt         (0x0001)
+#define evtUIDriverClientEvent         __AAL_UAIAEvt           (0x0001)
 
+#define evtUIDriverClientEvent         __AAL_UAIAEvt           (0x0001)
 #define tranevtUIDriverClientEvent     __AAL_UAIATranEvt       (0x0001)
 #define exttranevtUIDriverClientEvent  __AAL_UAIAExTranEvt     (0x0001)
 

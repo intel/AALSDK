@@ -179,8 +179,8 @@ public:
    : CAALEvent(pObject),
      m_pmessage(pmessage)
    {
-      SetSubClassInterface(tranevtUIDriverClientEvent,
-                           dynamic_cast<IUIDriverEvent*>(this));
+      SetInterface( evtUIDriverClientEvent,
+                    dynamic_cast<IUIDriverEvent*>(this));
 
    }
 
@@ -539,8 +539,6 @@ AIAService::Process_Event()
 
          // Generate the event - No need to destroy message as it being passed to event and will be
          // destroyed there.  TODO - Object should be Proxy not the AIA
-         TransactionID tranID = pMessage->tranID();
-
          AFUProxyCallback *pDisp = new AFUProxyCallback(static_cast<IAFUProxyClient *>(pMessage->context()),
                                                         new UIDriverEvent(this,pMessage));
          getRuntime()->schedDispatchable(pDisp);
