@@ -38,6 +38,59 @@ declare -r RM="`which rm`" 2>/dev/null
 declare -r SORT="`which sort`" 2>/dev/null
 [ "x${SORT}" != x ] || die "no sort?"
 
+show_help() {
+   cat <<END
+Usage: ${SCRIPT_NAME} [[--maintainer-check|--mc] [--distcc]]
+                  [--deep-clean]
+                  [--help]
+
+   This script must be run from the root directory of the aalsdk repository,
+   where the script is stored.
+
+     (without parameters)     : Link aalkernel/include/aalsdk/kernel and
+                                aaluser/include/aalsdk/kernel to common_hdrs
+                                then run autoreconf on both projects.
+     --maintainer-check, --mc : Use VPATHs rooted in /tmp to configure and then
+                                run 'make maintainer-check' on aalkernel then
+                                aaluser (which checks aalsamples build targets).
+                                The VPATHs are removed on exit.
+     --distcc                 : Request distcc during 'make maintainer-check'.
+     --deep-clean             : configure and then run 'make distclean' in-tree
+                                for aalkernel then aaluser. Run 'make clean' in
+                                aalsamples. Manually seek and destroy Autotools
+                                intermediate files and directories.
+     --help                   : Display this output and exit.
+
+   Options may be combined. eg,
+
+     $ ./prep-build --maintainer-check --distcc --deep-clean
+
+     * Creates the symlinks, if needed.
+     * Runs autoreconf, if needed.
+     * Runs 'make maintainer-check' on aalkernel then aaluser.
+     * Cleans the working tree.
+END
+}
+
+while [ $# -gt 0 ]; do
+   case "$1" in
+      --mc|--maintainer-check)
+         MAINTAINER_CHECK=true
+      ;;
+      --distcc)
+         WANT_DISTCC=true
+      ;;
+      --deep-clean)
+         DEEP_CLEAN=true
+      ;;
+      --help)
+         show_help
+         exit 2
+      ;;
+   esac
+   shift
+done
+
 declare TMPDIR=''
 on_exit() {
    set +e
@@ -55,21 +108,6 @@ on_sigint() {
    exit 99
 }
 trap 'on_sigint' SIGINT
-
-while [ $# -gt 0 ]; do
-   case "$1" in
-      --mc|--maintainer-check)
-         MAINTAINER_CHECK=true
-      ;;
-      --distcc)
-         WANT_DISTCC=true
-      ;;
-      --deep-clean)
-         DEEP_CLEAN=true
-      ;;
-   esac
-   shift
-done
 
 ################################################################################
 
