@@ -55,8 +55,6 @@
 
 BEGIN_NAMESPACE(AAL)
 
-class _MessageDelivery;
-
 //=============================================================================
 // Name: _MessageDelivery
 // Description: Default message delivery facility
@@ -69,30 +67,22 @@ class _MessageDelivery :// public ServiceBase,
                          public IMessageDeliveryService
 {
 public:
-   // Loadable Service
-
-   _MessageDelivery() : m_Dispatcher()
-   {
-      // Default is a simple single threaded scheduler.
-       SetSubClassInterface(iidMDS,
-                            dynamic_cast<IMessageDeliveryService *>(this));
-   }
-
-   //
-   // IMessageDeliveryService
-   EDS_Status Schedule();
-
-   void StartMessageDelivery();
-   void StopMessageDelivery();
-
-   btBool scheduleMessage( IDispatchable *);
-
+   _MessageDelivery();
    ~_MessageDelivery();
+
+   // <IMessageDeliveryService>
+   virtual void StartMessageDelivery();
+   virtual void  StopMessageDelivery();
+   virtual btBool    scheduleMessage(IDispatchable * );
+   // </IMessageDeliveryService>
+
+#if DEPRECATED
+   EDS_Status Schedule();
+#endif // DEPRECATED
 
 protected:
    OSLThreadGroup m_Dispatcher;
 };
-
 
 END_NAMESPACE(AAL)
 
