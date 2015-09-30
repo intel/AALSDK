@@ -42,6 +42,7 @@ gtEnvVar.cpp \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
 gtSem.cpp \
+gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \
@@ -128,6 +129,7 @@ gtRuntime.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
+gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \
