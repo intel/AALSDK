@@ -53,6 +53,8 @@
 #include "aalsdk/AALLoggerExtern.h"          // Logger
 #include "aalsdk/osal/Thread.h"
 
+#include "aalsdk/osal/Env.h"
+
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)
 //   #pragma warning(disable:68)       // warning: integer conversion resulted in a change of sign.
@@ -115,6 +117,9 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 void CResourceManager::init(TransactionID const &rtid)
 {
+   std::string strBuf;                  // for reading environment variables
+   btBool      bRunRRMinProc = false;
+
    // Save the client interface
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ClientBase());
    if( NULL == m_pResMgrClient ){
@@ -127,6 +132,50 @@ void CResourceManager::init(TransactionID const &rtid)
                                                                       reasInvalidParameter,
                                                                       strInvalidParameter));
 
+   }
+
+   // Allocate remote resource manager service, if we need one
+   // We need a RRM when instantiating a service that's not pure software.
+   // Need is currently determined through environment variable
+
+   // Check environment
+   if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strBuf) ) {
+      bRunRRMinProc = true;
+   } else {
+      if ( ENamedValuesOK != OptArgs().Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &bRunRRMinProc) ) {
+              // Not in Environment and no Config Parms.
+              bRunRRMinProc = false;
+      }
+   }
+
+   // Allocate and run remote resource manager in process (separate thread)
+   if (bRunRRMinProc) {
+      NamedValueSet ResMgrManifest;
+      NamedValueSet ResMgrConfigRecord;
+
+      // Construct config record and manifest
+      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
+                       "libAASResMgr");
+      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+      ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
+      ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
+
+      // allocate service
+      getRuntime()->allocService(dynamic_cast<IBase *>(this), ResMgrManifest);
+
+      // wait for service to be allocated and run
+      m_sem.Wait();
+      if (!IsOK()) {
+         getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
+                                                                               Client(),
+                                                                               NULL,
+                                                                               rtid,
+                                                                               errInternal,
+                                                                               reasCauseUnknown,
+                                                                               "Could not create RRM Service (in proc)."));
+         return;
+      }
    }
 
    // Create an open channel to the remote resource manager
@@ -369,10 +418,66 @@ CResourceManager::~CResourceManager()
 //=============================================================================
 btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
+   if (m_pRRMAALService) {
+      m_pRRMAALService->Release(rTranID, timeout);
+      m_sem.Wait();
+      // TODO: check for failure
+   }
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
    ServiceBase::Release(rTranID, timeout);
 }
 
+
+/*
+ * IServiceClient methods
+ */
+
+// Service allocated callback
+void CResourceManager::serviceAllocated(IBase               *pServiceBase,
+                              TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_pRRMService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
+   if (!m_pRRMService) {
+      // TODO: handle error
+      return;
+   }
+
+   // Store AAL service pointer
+   m_pRRMAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   ASSERT(NULL != m_pRRMAALService);
+
+   // run remote resource manager in separate thread
+   m_pRRMService->start(TransactionID());
+   // FIXME: wait a second...
+   SleepSec(1);
+   // unblock init()
+   m_sem.Post(1);
+   return;
+}
+
+// Service allocated failed callback
+void CResourceManager::serviceAllocateFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   m_sem.Post(1);
+}
+
+// Service released callback
+void CResourceManager::serviceReleased(TransactionID const &rTranID) {
+   m_sem.Post(1);    // let Release() know.
+}
+
+// Service released failed callback
+void CResourceManager::serviceReleaseFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   m_sem.Post(1);    // let Release() know.
+}
+
+// Callback for generic events
+void CResourceManager::serviceEvent(const IEvent &rEvent) {
+   // TODO: handle unexpected events
+   ASSERT(false);
+}
 
 END_NAMESPACE(AAL)
 

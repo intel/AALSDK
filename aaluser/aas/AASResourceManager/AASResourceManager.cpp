@@ -83,6 +83,8 @@
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
 
+#include "aalsdk/osal/Env.h"               // for checking environment vars
+
 //#include <aas/ResMgrUtilities.h>        // TEST CODE
 //#include <aas/Utilities.h>              // TEST CODE
 //#include <fstream>                      // TEST CODE
@@ -461,19 +463,28 @@ int main(int argc, char **argv)
 
     // TODO: parse for demon status, other?
 
+    // Check for conflicting environment
+    std::string strBuf;
+    if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strBuf) ) {
+       std::cerr << "AAL_RESOURCEMANAGER_CONFIG_INPROC environment variable is "
+                    "set.\nRefusing to start Resource Manager Daemon." <<
+                    std::endl;
+       exit(1);
+    }
+
     AASResourceManagerDaemon *app = new (nothrow) AASResourceManagerDaemon();
 
     if (!app) {
-        AAL_ERR(LM_ResMgr,
+        std::cerr <<
                 "Could not create a AASResourceManagerDaemon (insufficient "
-                "memory?), exiting with status 1\n");
+                "memory?), exiting with status 1\n" << std::endl;
         exit(1);
     }
 
     if (!app->isOK()) {
-        AAL_ERR(LM_ResMgr,
+       std::cerr <<
                 "AASResourceManagerDaemon failed to start (ctor failed), "
-                "exiting with status 2\n");
+                "exiting with status 2\n" << std::endl;
         exit(2);
     }
 
