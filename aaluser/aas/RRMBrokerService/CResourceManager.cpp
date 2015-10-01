@@ -449,8 +449,6 @@ void CResourceManager::serviceAllocated(IBase               *pServiceBase,
 
    // run remote resource manager in separate thread
    m_pRRMService->start(TransactionID());
-   // FIXME: wait a second...
-   SleepSec(1);
    // unblock init()
    m_sem.Post(1);
    return;
