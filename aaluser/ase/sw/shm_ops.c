@@ -265,7 +265,7 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   printf("  [APP]  CSR Write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
   END_YELLOW_FONTCOLOR;
   
-  usleep(100);
+  //  usleep(100);
   
   FUNC_CALL_EXIT;
 }
@@ -449,7 +449,7 @@ void deallocate_buffer(struct buffer_t *mem)
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory region %s ...", mem->memname);
   END_YELLOW_FONTCOLOR;
-  usleep(50000);                                   // Short duration wait for sanity
+  // usleep(50000);                                   // Short duration wait for sanity
 
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ
   mem->metadata = HDR_MEM_DEALLOC_REQ;

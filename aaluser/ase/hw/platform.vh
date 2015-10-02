@@ -21,7 +21,7 @@ parameter AFU_CSR_LO_BOUND   = 16'h1000;
  * QPI_JKT = QPI Jaketown platform
  * 
  */ 
- `define GENERIC
+ `define BDX_FPGA
 
 
 /*
@@ -45,9 +45,17 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  `define UMSG_MAX_MSG_LOG2             5
  `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
 
+/* OME5 */
+ `ifdef BDX_FPGA
+  `define INITIAL_SYSTEM_RESET_DURATION         20
+  `define CLK_64UI_TIME                         10000ps
+  `define CLK_32UI_TIME                         5000ps
+  `define CLK_16UI_TIME                         2500ps
+  `define CLK_8UI_TIME                          1250ps
+  `define LP_INITDONE_READINESS_LATENCY         5
 
 /* QPI Ivytown */
- `ifdef QPI_IVT
+ `elsif OME2
   `define INITIAL_SYSTEM_RESET_DURATION         20
   `define CLK_32UI_TIME                         5000ps
   `define CLK_16UI_TIME                         2500ps

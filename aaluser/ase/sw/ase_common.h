@@ -76,7 +76,7 @@
  * SYSTEM FACTS
  * 
  * *******************************************************************************/
-#define FPGA_ADDR_WIDTH       38
+#define FPGA_ADDR_WIDTH       48
 #define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
 #define CL_ALIGN_SHIFT        6
 
@@ -226,7 +226,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |    
-  int is_csrmap;                  // Flag memory as DSM              |   
+  int is_csrmap;                  // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
@@ -281,7 +281,7 @@ struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
 
 // Mem-ops functions
-void ase_mqueue_setup();
+// void ase_mqueue_setup();
 void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
@@ -367,20 +367,6 @@ extern "C" {
  * MESSAGING IPC
  *
  * ********************************************************************/
-// Buffer exchange messages
-/* #define APP2SIM_SMQ_PREFIX          "app2sim_bufping_smq." */
-/* #define SIM2APP_SMQ_PREFIX          "sim2app_bufpong_smq." */
-/* // CSR write messages */
-/* #define APP2SIM_CSR_WR_SMQ_PREFIX   "app2sim_csr_wr_smq." */
-/* // UMSG control messages from APP to SIM */
-/* #define APP2SIM_UMSG_SMQ_PREFIX     "app2sim_umsg_smq." */
-/* // Interrupt message from SIM to APP */
-/* #if 0 */
-/* #define SIM2APP_INTR_SMQ_PREFIX     "sim2app_intr_smq." */
-/* #endif */
-/* // Simkill control messages */
-/* #define APP2SIM_SIMKILL_SMQ_PREFIX  "app2sim_simkill_smq." */
-
 // Message Queue establishment status
 #define MQ_NOT_ESTABLISHED 0x0
 #define MQ_ESTABLISHED     0xCAFE

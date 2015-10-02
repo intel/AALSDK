@@ -59,6 +59,7 @@ int self_destruct_in_progress = 0;
 // ase_mqueue_setup() : Set up DPI message queues
 // Set up app2sim_rx, sim2app_tx and app2sim_csr_wr_rx message queues
 // ---------------------------------------------------------------------
+#if 0
 void ase_mqueue_setup()
 {
   FUNC_CALL_ENTRY;
@@ -83,7 +84,7 @@ void ase_mqueue_setup()
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 // ---------------------------------------------------------------------
 // ase_mqueue_teardown(): Teardown DPI message queues
@@ -102,18 +103,6 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_intr_tx);       
 #endif
   mqueue_close(app2sim_simkill_rx);
-
-#if 0
-  // Unlink message queues
-  mqueue_destroy(APP2SIM_SMQ_PREFIX);       
-  mqueue_destroy(SIM2APP_SMQ_PREFIX);       
-  mqueue_destroy(APP2SIM_CSR_WR_SMQ_PREFIX);
-  mqueue_destroy(APP2SIM_UMSG_SMQ_PREFIX);
-#if 0 
-  mqueue_destroy(SIM2APP_INTR_SMQ_PREFIX);
-#endif
-  mqueue_destroy(APP2SIM_SIMKILL_SMQ_PREFIX);
-#endif
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -243,37 +232,12 @@ void ase_alloc_action(struct buffer_t *mem)
     }
   ftruncate(mem->fd_ase, (off_t)mem->memsize);
 
-  // CALCULATE A FAKE PHYSICAL ADDRESS
-  // Use the random number to generate a CSR pin 
-  // Generate a fake_paddr based on this and an offset using memsize(s)
-  /* if(mem->index == 0) */
-  /*   { */
-  /*     // Generate a pin address 38 bits wide and is 2MB aligned */
-  /*      csr_fake_pin = abs((rand() << 21) & 0x0000001FFFFFFFFF); */
-  /*     BEGIN_YELLOW_FONTCOLOR; */
-  /*     printf("SIM-C : CSR pinned fake_paddr = %p\n",(uint32_t*)csr_fake_pin); */
-  /*     END_YELLOW_FONTCOLOR; */
-      
-  /*     // Record DPI side CSR region virtual address */
-  /*     ase_csr_base = (uint32_t*)mem->pbase; */
-  /*   } */
-
   // Record fake address
-  mem->fake_paddr = get_range_checked_physaddr(mem->memsize); // csr_fake_pin + fpga_membase_so_far;
+  mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
   mem->fake_paddr_hi = mem->fake_paddr + (uint64_t)mem->memsize;
-
-  // Generate a fake offset
-  /* mem->fake_off_lo = fake_off_low_bound; */
-  /* mem->fake_off_hi = fpga_membase_so_far + mem->memsize; */
-
-  // Calculate next low bound
-  // fake_off_low_bound = fake_off_low_bound + mem->memsize;
 
   // Received buffer is valid
   mem->valid = ASE_BUFFER_VALID;
-
-  // Aggregate all memory offsets so far
-  // fpga_membase_so_far+= mem->memsize;
 
   // Create a buffer and store the information
   new_buf = (struct buffer_t *)ase_malloc(BUFSIZE);

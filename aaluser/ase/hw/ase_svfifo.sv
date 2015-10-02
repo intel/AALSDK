@@ -24,47 +24,77 @@ module ase_svfifo
     output logic 		  underflow
     );
 
-   localparam FIFO_DEPTH = 2**DEPTH_BASE2;  
-   
+   localparam FIFO_DEPTH = 2**DEPTH_BASE2;
+
    logic [DATA_WIDTH-1:0] 	  my_queue[$:FIFO_DEPTH-1];
-  
+   logic 			  internal_rden;
+   logic 			  internal_rden_reg;
+   logic [DATA_WIDTH-1:0] 	  data_pipeout;
+   logic 			  data_pipeout_v;
+   logic 			  fifo_empty;
+
+
    always @(posedge clk) begin : wr_proc
       if (wr_en) begin
    	 my_queue.push_back(data_in);
       end
    end
 
-   always @(posedge clk) begin : rd_proc
-      if (rd_en) begin
-   	 data_out <= my_queue.pop_front();
+   // always @(posedge clk) begin : rd_proc
+   //    if (rd_en) begin
+   // 	 data_out <= my_queue.pop_front();
+   //    end
+   // end
+
+   always @(posedge clk) begin : int_rd_proc
+      if (internal_rden) begin
+	 data_pipeout <= my_queue.pop_front();
       end
    end
-      
+
+   // Pipeout_valid
+   always @(posedge clk) begin
+      if (rst) begin
+	 data_pipeout_v <= 0;	 
+      end
+      else begin
+	 if (internal_rden)
+	   data_pipeout_v <= 1;
+	 else
+	   data_pipeout_v <= 0;
+      end
+   end
+
    always @(posedge clk) begin : ctr_proc
       if (rst) begin
-   	 count <= 0;	 
+   	 count <= 0;
       end
       else begin
    	 case ({wr_en, rd_en})
    	   2'b10   : count <= count + 1;
    	   2'b01   : count <= count - 1;
-   	   default : count <= count ;	   
+   	   default : count <= count ;
    	 endcase // case ({wr_en, rd_en})
       end
-   end 
-   
+   end
+
    always @(posedge clk) begin : status_proc
-      data_out_v <= rd_en && ~empty;
+      internal_rden_reg <= internal_rden;
+      // data_out_v <= rd_en && ~empty;
       overflow   <= full && wr_en;
       underflow  <= empty && rd_en;
    end
 
-   always @(*) begin : empty_proc
-      if (count == 0)
-   	empty <= 1;
-      else
-   	empty <= 0;
+   always @(*) begin : fifoempty_proc
+      if (count == 0) begin
+   	 fifo_empty <= 1;
+      end
+      else begin
+   	 fifo_empty <= 0;
+      end
    end
+
+   assign empty = fifo_empty && ~data_pipeout_v;
 
    always @(*) begin : full_proc
       if (count == FIFO_DEPTH)
@@ -78,6 +108,24 @@ module ase_svfifo
    	alm_full <= 1;
       else
    	alm_full <= 0;
+   end
+
+   assign data_out = data_pipeout;
+   assign data_out_v = data_pipeout_v && rd_en;
+
+   always @(posedge clk) begin
+      if (rst) begin
+	 internal_rden <= 0;	 
+      end
+      else begin
+	 case ({rd_en, empty})
+	   2'b00: internal_rden <= 0;
+	   2'b01: internal_rden <= 1;
+	   2'b10: internal_rden <= 1;
+	   2'b11: internal_rden <= 0;
+	   default: internal_rden <= 0;
+	 endcase // case ({rd_en, empty})
+      end
    end
 
 endmodule

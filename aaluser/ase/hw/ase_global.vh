@@ -58,72 +58,76 @@
 
 
 // Address widths
- `define PHYSADDR_WIDTH       38
- `define PHYSCLADDR_WIDTH     32
+// `define PHYSADDR_WIDTH       38
+ `define PHYSCLADDR_WIDTH     42
 
 /*
  * CCI Transactions
  */
-// TX0 channel
- `define ASE_TX0_RDLINE       4'h4  // To be deprecated
+// Read Request
  `define ASE_TX0_RDLINE_S     4'h4
  `define ASE_TX0_RDLINE_I     4'h6
- `define ASE_TX0_RDLINE_O     4'h7
-// TX1 channel
- `define ASE_TX1_WRTHRU       4'h1
- `define ASE_TX1_WRLINE       4'h2
+ `define ASE_TX0_RDLINE_E     4'h7
+// Write request
+ `define ASE_TX1_WRLINE_I     4'h1
+ `define ASE_TX1_WRLINE_M     4'h2
  `define ASE_TX1_WRFENCE      4'h5
+// MSI-X request
  `define ASE_TX1_INTRVALID    4'h8  // Implemented as hidden feature
-// RX0 channel
+
+// CSR Write
  `define ASE_RX0_CSR_WRITE    4'h0
+// Write Response
  `define ASE_RX0_WR_RESP      4'h1
- `define ASE_RX0_RD_RESP      4'h4
- `define ASE_RX0_INTR_CMPLT   4'h8  // Implemented as hidden feature
- `define ASE_RX0_UMSG         4'hF
-// RX1 channel
  `define ASE_RX1_WR_RESP      4'h1
- `define ASE_RX1_INTR_CMPLT   4'h8  // Implemented as hidden feature
+// Read Response
+ `define ASE_RX0_RD_RESP      4'h4
+// MSI-X response // TBD
+ `define ASE_RX0_INTR_CMPLT   4'h8 
+ `define ASE_RX1_INTR_CMPLT   4'h8 
+// UMsg // TBD
+ `define ASE_RX0_UMSG         4'hF
 
 
 /*
  * CCI specifications
  */
- `define CCI_TX_HDR_WIDTH           61
- `define ASE_CCI_RX_HDR_WIDTH           18
+ `define CCI_TX_HDR_WIDTH           74
+ `define ASE_CCI_RX_HDR_WIDTH       28
  `define CCI_DATA_WIDTH             512
- `define CCI_CSR_WIDTH              32
- `define CCI_META_WIDTH             14
+// `define CCI_CSR_WIDTH              32
+// `define CCI_META_WIDTH             14
  `define CCI_UMSG_BITINDEX          12
 
 /*
  * SPL specifications
  */
- `define SPL_TX_HDR_WIDTH           99
- `define SPL_RX_HDR_WIDTH           18
- `define SPL_DATA_WIDTH             512
- `define SPL_CSR_WIDTH              32
+ // `define SPL_TX_HDR_WIDTH           99
+ // `define SPL_RX_HDR_WIDTH           18
+ // `define SPL_DATA_WIDTH             512
+ // `define SPL_CSR_WIDTH              32
 
 
 /*
  * TX header deconstruction
  */
 // SPL (CCI-extended additions)
- `define TX_HDR_NUMCL_BITRANGE      98:93
- `define TX_HDR_CLADDR_BITRANGE     92:67
- `define TX_HDR_PV_BIT              66
+ // `define TX_HDR_NUMCL_BITRANGE      98:93
+ // `define TX_HDR_CLADDR_BITRANGE     92:67
+ // `define TX_HDR_PV_BIT              66
 // CCI only
- `define TX_META_TYPERANGE          55:52
- `define TX_MDATA_BITRANGE          13:0
- `define TX_CLADDR_BITRANGE         45:14
+ `define TX_META_TYPERANGE          67:64
+ `define TX_CLADDR_BITRANGE         57:16
+ `define TX_MDATA_BITRANGE          15:0
 
 /*
  * RX header deconstruction
  */
 // RX header (SPL/CCI common response)
- `define RX_META_TYPERANGE          17:14
- `define RX_MDATA_BITRANGE          13:0
+ `define RX_META_TYPERANGE          19:16
+ `define RX_MDATA_BITRANGE          15:0
  `define RX_CSR_BITRANGE            13:0
- `define RX_CSR_DATARANGE           31:0
+ `define RX_CSR_DATARANGE           64:0
 
 
 /*
@@ -204,6 +208,7 @@ ase_cfg_t cfg;
 /*
  * UMSG Hint/Data state machine
  */
+
 // UMSG control states
 typedef enum {UMsg_Idle, UMsg_ChangeOccured, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
 	     UMsg_StateEnum;
@@ -260,6 +265,45 @@ function automatic void pack_vector_to_ccipkt (input [511:0] vec, ref cci_pkt pk
       pkt.qword[7] =  vec[ 511:448 ];
    end
 endfunction
+
+
+/* ***********************************************************
+ * CCI-P headers
+ * RxHdr, TxHdr, CCIP Packets
+ * ***********************************************************/ 
+
+// Widths
+parameter int CCIP_DATA_WIDTH = 512;
+parameter int CCIP_CFG_HDR_WIDTH = 18;
+parameter int CCIP_CFG_RDDATA_WIDTH = 64;
+parameter int CCIP_RX_HDR_WIDTH = 28;
+parameter int CCIP_TX_HDR_WIDTH = 74;
+
+// RxHdr
+typedef struct {
+   logic [1:0] vc;       // 27:26
+   logic       poison;   // 25
+   logic       hitmiss;  // 24
+   logic       format;   // 23
+   logic       rsvd22;   // 22
+   logic [1:0] clnum;    // 21:20
+   logic [3:0] resptype; // 19:16
+   logic [15:0] mdata;   // 15:0  
+} RxHdr_t;
+
+
+// TxHdr
+typedef struct {
+   logic [1:0] vc;       // 73:72
+   logic       sop;      // 71
+   logic       rsvd70;   // Reserved bit(s)    // 70
+   logic [1:0] len;      // 69:68
+   logic [3:0] reqtype;  // 67:64
+   logic       rsvd63_58;// Reserved bit(s)    // 63:58
+   logic [41:0] addr;    // 57:16
+   logic [15:0] mdata;   // 15:0
+} TxHdr_t;
+
 
 
 `endif //  `ifndef _ASE_GLOBAL_VH_

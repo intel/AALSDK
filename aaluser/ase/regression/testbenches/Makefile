@@ -9,14 +9,19 @@ latency_scoreboard:
 	tb_latency_scoreboard.sv \
 	../../hw/stream_checker.sv \
 	../../hw/latency_scoreboard.sv \
-	../../hw/ase_fifo.sv \
-	../../hw/sdp_ram.sv
+	../../hw/ase_svfifo.sv \
 
 ase_fifo:
 	vcs -j 4 -full64 -nc  -sverilog -override_timescale=10ps/10ps \
 	+incdir+../../hw/ -debug_all \
 	../../hw/ase_fifo.sv \
 	../../hw/sdp_ram.sv \
+	tb_ase_fifo.sv
+
+ase_svfifo:
+	vcs -j 4 -full64 -nc  -sverilog -override_timescale=10ps/10ps \
+	+incdir+../../hw/ -debug_all \
+	../../hw/ase_svfifo.sv \
 	tb_ase_fifo.sv
 
 prng:
@@ -29,9 +34,11 @@ prng:
 
 
 ################################################
+all: ase_svfifo
+
 sim:
 	./simv -l run.log -ucli -do run.tcl -cm line+fsm+cond+tgl+branch
-	urg -dir work/coverage.vdb -format both
+#	urg -dir work/coverage.vdb -format both
 #	dve -vpd inter.vpd -session session.tcl
 
 ################################################

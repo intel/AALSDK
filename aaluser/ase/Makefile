@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 4.1.7
+ASE_VERSION = 4.1.7-CCIP
 
 # ASE Debug
 ASE_DEBUG = 1
@@ -73,7 +73,7 @@ endif
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
-CC_OPT+= -Wall -std=c99
+CC_OPT+= -Wall -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 -pedantic
@@ -114,6 +114,7 @@ ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
@@ -222,13 +223,13 @@ vcs_build:
 	@echo "#                                                          #"
 	@echo "############################################################"
 	make sw_build
+	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
 ifdef DUT_VHD_SRC_LIST
 	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST) 
 endif
 ifdef DUT_VLOG_SRC_LIST
 	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST)
 endif
-	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
 ifeq ($(CC), gcc)
 	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
 endif

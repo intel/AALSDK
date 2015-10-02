@@ -2,8 +2,8 @@
 
 module tb_latency_scoreboard();
 
-   parameter DATA_WIDTH = 64;
-   parameter HDR_WIDTH = 64;
+   parameter DATA_WIDTH = 72;
+   parameter HDR_WIDTH = 72;
       
    logic clk, rst, full, empty, valid_in, valid_out, read_en;     
    logic [DATA_WIDTH-1:0] data_in, data_out;
@@ -46,13 +46,13 @@ module tb_latency_scoreboard();
 	 valid_in <= 0;
 	 wr_iter <= 0;
 	 data_in <= 0;	 
-	 meta_in <= 64'h00500000_00000000;	 
+	 meta_in <= 72'h00_00000000_00000000;	 
       end
       else begin
 	 if ((~full) && (wr_iter < 10)) begin
 	    $display(wr_iter);	    
 	    wr_iter <= wr_iter + 1;
-	    meta_in <= meta_in + 64'h00000000_11111111;
+	    meta_in <= meta_in + 72'h01_00000000_00000000;
 	    valid_in <= 1;	    
 	 end
 	 else begin
@@ -67,7 +67,7 @@ module tb_latency_scoreboard();
    // int checker_meta[*];
    
    initial begin
-      #10_0000;
+      #5000;
 // `ifdef ASE_DEBUG
       $display (buffer.checkunit.check_array);
 // `endif

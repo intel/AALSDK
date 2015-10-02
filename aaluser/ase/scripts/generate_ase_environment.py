@@ -34,7 +34,7 @@ else:
 
 ### Supported file extensions
 # USERs may modify this if needed
-VLOG_EXTENSIONS = [ ".sv", ".vs", ".v" ] 
+VLOG_EXTENSIONS = [ ".svh", ".sv", ".vs", ".v" ] 
 VHD_EXTENSIONS = [ ".vhd" ]
 
 VHDL_FILE_LIST = "vhdl_files.list"
