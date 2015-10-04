@@ -201,7 +201,8 @@ btBool AALServiceModule::ServiceInitialized( IBase *pService,
 
    // Notify the Service client on behalf of the Service
    return pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
-                                                                                   pServiceBase->ServiceClient(),
+                                                                                   pServiceBase->getServiceClient(),
+                                                                                   pServiceBase->getRuntimeClient(),
                                                                                    pService,
                                                                                    rtid));
 
@@ -233,9 +234,10 @@ btBool AALServiceModule::ServiceInitFailed(IBase *pService,
       return false;
    }
 
-   // Create the distachable for the Service allocate failed callback
+   // Create the dispachable for the Service allocate failed callback
    ServiceClientCallback * pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                              pServiceBase->ServiceClient(),
+                                                              pServiceBase->getServiceClient(),
+                                                              pServiceBase->getRuntimeClient(),
                                                               pService,
                                                               pEvent);
 
@@ -325,21 +327,105 @@ btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 void AALServiceModule::SendReleaseToAll()
 {
    AutoLock(this);   // Lock until done issuing releases
+   CSemaphore     srvcCount;
 
-   const_iterator iter = m_serviceList.begin();
+   const_iterator iter = m_serviceList.end();
 
-   while ( m_serviceList.end() != iter ) {
+   btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_serviceList.size());
+   if ( 0 == size ) {
+      return;
+   }
+
+   //  count to a negative number.
+   //  The waiter will block until the semaphore
+   //  counts up to zero.
+   if(!m_srvcCount.Reset( - static_cast<btInt>(size))){
+      return;
+   }
+
+   while ( m_serviceList.begin() != iter ) {
 
       // Get the IAALService from the IBase
       IAALService *pService = dynamic_ptr<IAALService>(iidService, (*iter).second);
 
-      if ( NULL != pService ) {
-         // Release with no event. Service will call Released() as a notification
-         pService->Release(AAL_INFINITE_WAIT);
-      }
+      iter--;
 
-      iter++;
+      if ( NULL != pService ) {
+         // Release the Service overriding the default delivery
+         pService->Release(TransactionID(dynamic_cast<IBase*>(this),true));
+      }
    }
+   m_srvcCount.Wait(10000);  // TODO Make this a reasonable timeout
 }
+
+// <IServiceClient>
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
+void AALServiceModule::serviceAllocated(IBase               *pServiceBase,
+                                        TransactionID const &rTranID )
+{
+
+}
+
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
+void AALServiceModule::serviceAllocateFailed(const IEvent &rEvent)
+{
+
+}
+
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
+void AALServiceModule::serviceReleased(TransactionID const &rTranID )
+{
+
+   m_srvcCount.Post(1);
+}
+
+
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
+void AALServiceModule::serviceReleaseFailed(const IEvent &rEvent)
+{
+
+}
+
+//=============================================================================
+// Name: SendReleaseToAll()
+// Description: Broadcast a hard Release to all Services
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+//=============================================================================
+void AALServiceModule::serviceEvent(const IEvent &rEvent)
+{
+
+}
+
 
 END_NAMESPACE(AAL)

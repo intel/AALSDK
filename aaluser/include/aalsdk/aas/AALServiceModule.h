@@ -346,6 +346,7 @@ public:
 /// Used in conjunction with DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR and ISvcsFact to
 /// implement the means of Constructing and Destroying an AAL Service.
 class AASLIB_API AALServiceModule : public CAASBase,
+                                    public IServiceClient,
                                     public IServiceModule,
                                     public IServiceModuleCallback
 {
@@ -375,6 +376,14 @@ public:
    virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent);
    // </IServiceModuleCallback>
 
+   // <IServiceClient>
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID());
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseFailed(const IEvent &rEvent);
+   virtual void serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
 
    //=============================================================================
    // Name: AddToServiceList
@@ -416,6 +425,7 @@ private:
    void SendReleaseToAll();
 
 protected:
+
    typedef std::map< IBase *, IBase * > list_type;
    typedef list_type::const_iterator    const_iterator;
 
@@ -436,74 +446,6 @@ protected:
 };
 
 END_NAMESPACE(AAL)
-
-#if DEPRECATED
-//=============================================================================
-// Name: DECLARE_SERVICE_PROVIDER_ACCESSOR
-/// @brief Implements the Service Provider accessor for the package.
-///              Add this macro to the Service Package source module to enable
-///              loading by factory.
-// Interface: public
-/// @param[in] _CLASSNAME_ - Class name.
-/// @param[out] Pointer to the service provider.
-///
-///           Macro expands to generate code for type _CLASSNAME_.
-///           _CLASSNAME must be the exact name of the Factory class.
-///           The _CLASSNAME_ provider MUST be derived from IBase and must be a
-///           fully implemented IBase (e.g., CAASBase). The _CLASSNAME_ provider
-///           MAY implement IServiceModule as an aggregated object.
-///           Note that dynamic_cast<> is used on the provider object to get the
-///           IBase interface pointer but dynamic_ptr<> is used to get
-//           IServiceModule.
-//=============================================================================
-
-#define DECLARE_SERVICE_PROVIDER_ACCESSOR "_ServiceModule"
-
-#define DEFINE_SERVICE_PROVIDER_ACCESSOR(_CLASSNAME_) extern "C" {                                            \
-__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::btEventHandler         eventHandler,          \
-                                                           AAL::TransactionID const   &tranID,                \
-                                                           AAL::btApplicationContext   context,               \
-                                                           AAL::CAASServiceContainer  *ServiceContainer,      \
-                                                           AAL::IBase                **ppService,             \
-                                                           AAL::NamedValueSet const   &optArgs)               \
-{                                                                                                             \
-   static _CLASSNAME_ theServiceProvider;                                                                     \
-   theServiceProvider.Construct(eventHandler, tranID, context);                                               \
-   if ( !theServiceProvider.IsOK() ) {                                                                        \
-      return NULL;                                                                                            \
-   }                                                                                                          \
-   theServiceProvider.ServiceContainer(ServiceContainer);                                                     \
-   *ppService = dynamic_cast<IBase *>(&theServiceProvider);                                                   \
-   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, *ppService);                                   \
-}                                                                                                             \
-                                                                                                              \
-__declspec(dllexport) unsigned long _GetServiceProviderVersion()                                              \
-{                                                                                                             \
-   return AAL_Proxy_Interface_Version;                                                                        \
-}                                                                                                             \
-}
-
-
-/// Declares an instance of the well-known Service executable entry point.
-///
-/// AAL Services use this macro to define the well-known entry point.
-///
-/// @param[in]  N  The type of Service factory used by the module. N must be a type derived from
-///   ISvcsFact.
-#define DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR(N) extern "C" {                                                  \
-static N ServiceFactory;                                                                                      \
-__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::CAASServiceContainer *AASServiceContainer)    \
-{                                                                                                             \
-   static AAL::AALServiceModule theServiceProvider(ServiceFactory);                                           \
-   if ( !theServiceProvider.IsOK() ) {                                                                        \
-      return NULL;                                                                                            \
-   }                                                                                                          \
-   theServiceProvider.ServiceContainer(AASServiceContainer);                                                  \
-   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, &theServiceProvider);                          \
-}                                                                                                             \
-}
-#endif // DEPRECATED
-
 /// @}
 
 

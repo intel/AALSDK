@@ -59,8 +59,8 @@
 //=============================================================================
 // Name:          BindAFUDevice
 // Description:   Send a Bind operation to the Driver stack
-// Input: devHandl - Device Handle recieved from Resource Manager
-//        tranID   - Trasnaction ID
+// Input: devHandl - Device Handle received from Resource Manager
+//        tranID   - Transaction ID
 // Comments:
 //=============================================================================
 class UAIA_API BindAFUDevice : public IAIATransaction
@@ -83,7 +83,60 @@ private:
 
 }; // class BindAFUDevice
 
+//=============================================================================
+// Name:          UnBindAFUDevice
+// Description:   Send a UnBind operation to the Driver stack
+// Input: devHandl - Device Handle received from Resource Manager
+//        tranID   - Transaction ID
+// Comments:
+//=============================================================================
+class UAIA_API UnBindAFUDevice : public IAIATransaction
+{
+public:
+   // Used by the AFU Proxy to bind to AFU device
+   UnBindAFUDevice( AAL::TransactionID const &tranID = AAL::TransactionID() );
 
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+
+}; // class BindAFUDevice
+
+//=============================================================================
+// Name:          ShutdownMDT
+// Description:   Send a shutdown message to UIDrv to kill MDT
+// Comments:
+//=============================================================================
+class UAIA_API ShutdownMDT : public IAIATransaction
+{
+public:
+   // Used by the AFU Proxy to bind to AFU device
+   ShutdownMDT(AAL::TransactionID const &tranID = AAL::TransactionID(), AAL::btTime timeout = 0);
+
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btTime                   m_timeout;
+
+}; // class BindAFUDevice
 
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

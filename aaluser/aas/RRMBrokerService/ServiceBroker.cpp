@@ -188,13 +188,11 @@ void ServiceBroker::serviceAllocateFailed(const IEvent &rEvent)
    m_Transactions.erase(TranID);
 
    // If we were unable to load the ResourceManager then we cannot load.
-   getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                    ServiceClient(),
-                                                                    this,
-                                                                    origTid,
-                                                                    errServiceNotFound,
-                                                                    reasInvalidService,
-                                                                    strInvalidService) );
+   initFailed( new CExceptionTransactionEvent( this,
+                                               origTid,
+                                               errServiceNotFound,
+                                               reasInvalidService,
+                                               strInvalidService) );
 
 }
 
@@ -216,7 +214,8 @@ void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 
    // Reasource Manager Proxy is gone. Generate the event
    getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                             ServiceClient(),
+                                                             getServiceClient(),
+                                                             getRuntimeClient(),
                                                              this,
                                                              tid));
 
@@ -247,7 +246,8 @@ void ServiceBroker::serviceReleaseFailed(const IEvent &rEvent)
 
    // Notify the client
    getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::ReleaseFailed,
-                                                              ServiceClient(),
+                                                              getServiceClient(),
+                                                              getRuntimeClient(),
                                                               this,
                                                               pcopyEvent) );
 }

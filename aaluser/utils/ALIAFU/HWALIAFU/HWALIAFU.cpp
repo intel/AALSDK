@@ -61,24 +61,19 @@ btBool HWALIAFU::init(IBase *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ServiceClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
    if ( NULL == pClient ) {
       /// ObjectCreatedExceptionEvent Constructor.
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceBase::ServiceClient(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish ICCIClient Interface"));
+      initFailed(new CExceptionTransactionEvent( this,
+                                                 TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish ICCIClient Interface"));
       return false;
    }
 
-   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         ServiceBase::ServiceClient(),
-                                                                         dynamic_cast<IBase *>(this),
-                                                                         TranID) );
+   initComplete(TranID);
    return true;
 }
 

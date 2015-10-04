@@ -60,11 +60,6 @@
 
 /// @todo Document uAIA and related.
 
-class DeviceServiceBase;
-
-USING_NAMESPACE(AAL);
-
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -83,8 +78,8 @@ class AFUProxyCallback : public IDispatchable
 {
 public:
 
-   AFUProxyCallback(IAFUProxyClient        *pClient,
-                         const IEvent           *pEvent) :
+   AFUProxyCallback(IAFUProxyClient          *pClient,
+                    AAL::IEvent const        *pEvent) :
    m_pClient(pClient),
    m_pEvent(pEvent)
    {
@@ -105,7 +100,7 @@ virtual ~AFUProxyCallback() {}
 
 protected:
    IAFUProxyClient         *m_pClient;
-   IEvent const            *m_pEvent;
+   AAL::IEvent const       *m_pEvent;
 };
 
 
@@ -114,7 +109,7 @@ protected:
 // Description: Implementation of the AFU Interface Adapter Service
 // Comments:
 //=============================================================================
-class UAIA_API AIAService: public AAL::ServiceBase//, public AAL::IServiceClient
+class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
 {
    public:
 
@@ -122,27 +117,31 @@ class UAIA_API AIAService: public AAL::ServiceBase//, public AAL::IServiceClient
          m_uida(),
          m_Semaphore(),
          m_pMDT(NULL),
-         m_pShutdownThread(NULL)
+         m_pShutdownThread(NULL),
+         m_state(Uninitialized)
       {
          SetInterface(iidAIAService, dynamic_cast <AIAService *>(this));
+         if(!m_Semaphore.Create(1)){
+            return;
+         }
          m_bIsOK = false;
       }
 
       virtual ~AIAService();
 
       // <IAALService>
-      btBool Release(TransactionID const &rTranID,
-                     btTime timeout = AAL_INFINITE_WAIT);
+      btBool Release( AAL::TransactionID const &rTranID,
+                      AAL::btTime timeout = AAL_INFINITE_WAIT);
 
       // Hook to allow the object to initialize
-      btBool init( IBase *pclientBase,
-                   NamedValueSet const &optArgs,
-                   TransactionID const &rtid);
+      btBool init( AAL::IBase *pclientBase,
+                   AAL::NamedValueSet const &optArgs,
+                   AAL::TransactionID const &rtid);
       // </IAALService>
 // TODO THESE COULD BE MADE INTO AN IAIA  SO THAT THE PROXY DOES NOT SEE Release() METHOD ABOVE
-      void AFUProxyRelease(IBase *pAFUProxy);
+      void AFUProxyRelease(AAL::IBase *pAFUProxy);
 
-      void AFUProxyAdd(IBase *pAFUProxy);
+      void AFUProxyAdd(AAL::IBase *pAFUProxy);
 
       void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
 
@@ -158,20 +157,20 @@ class UAIA_API AIAService: public AAL::ServiceBase//, public AAL::IServiceClient
 
       static void MessageDeliveryThread(OSLThread *pThread,
                                         void *pContext);
-      static void ShutdownThread(OSLThread *pThread,
-                                 void *pContext);
-      void WaitForShutdown(ui_shutdownreason_e      reason,
-                           btTime                   waittime,
-                           stTransactionID_t const &rTranID_t);
-#if 0
-      // <IServiceClient> - Used to Get Proc
+
+      void WaitForShutdown(TransactionID const &rtid,
+                           btTime timeout);
+
+
+      // <IServiceClient> - Used only for serviceReleased and only so we can trap the Releases without
+      //                    them going to real client
       void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID());
       void serviceAllocateFailed(const IEvent &rEvent);
       void serviceReleased(TransactionID const &rTranID = TransactionID());
       void serviceReleaseFailed(const IEvent &rEvent);
       void serviceEvent(const IEvent &rEvent);
        // </IServiceClient>
-#endif
+
       void AFUProxyGet( IBase *pServiceClient,
                         NamedValueSet const &Args,
                         TransactionID const &rtid);         // Allocates a Proxy to the AFU
@@ -179,19 +178,40 @@ class UAIA_API AIAService: public AAL::ServiceBase//, public AAL::IServiceClient
       btBool AFUListAdd(IBase *pAFU);
       btBool AFUListDel(IBase *pDev);
 
-      btBool IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
-                                        btTime                   timeout);
-
    protected:
-      typedef std::list<IBase *>    AFUList;
-      typedef AFUList::iterator     AFUList_itr;
+
+      class ShutdownDisp : public IDispatchable
+      {
+      public:
+         ShutdownDisp(AIAService *pAIA, btTime time, TransactionID const &tid);
+         void operator() ();
+         void ReleaseChildren();
+      private:
+         AIAService                 *m_pAIA;
+         AAL::btTime                 m_timeout;
+         AAL::TransactionID const   &m_tid;
+      };
+
 
       // Variables
       UIDriverInterfaceAdapter   m_uida;                                         // Kernel Mode Driver Interface Adapter
       CSemaphore                 m_Semaphore;                                    // General synchronization as needed
       OSLThread                 *m_pMDT;                                         // Message delivery thread
       OSLThread                 *m_pShutdownThread;                              // Shutdown thread
+
+      typedef std::list<IBase *>          AFUList;
+      typedef AFUList::iterator           AFUList_itr;
+      typedef AFUList::const_iterator     AFUList_citr;
+
       AFUList                    m_mAFUList;                                     // Map of Runtime Proxys
+
+      enum state {
+         Uninitialized,
+         Initialized,
+         Shuttingdown
+      };
+
+      enum state                 m_state;
 };
 
 

@@ -97,8 +97,7 @@ public:
    //</ServiceBase>
 
    // Send a message to the device
-   AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage,
-                                AAL::TransactionID const &rtid);
+   AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage);
 
 
 #if 0

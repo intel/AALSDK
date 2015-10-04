@@ -154,10 +154,10 @@ public:
    virtual NamedValueSet const &OptArgs() const                = 0;
 
    /// Accessor to pointer to the Service's Client's Interface
-    virtual IServiceClient *ServiceClient() const              = 0;
+    virtual IServiceClient *getServiceClient() const           = 0;
 
     /// Accessor to pointer to the Service's Client's IBase Interface
-    virtual IBase          *ServiceClientBase() const          = 0;
+    virtual IBase          *getServiceClientBase() const       = 0;
 
     /// Accessor to pointer to the Runtime to be used in ObjectCreated
     virtual IRuntime *getRuntime() const                       = 0;
@@ -166,7 +166,7 @@ public:
     virtual IRuntimeClient * getRuntimeClient() const          = 0;
 
     /// Accessor to this Services Service Module
-    virtual AALServiceModule     * pAALServiceModule() const   = 0;
+    virtual AALServiceModule     * getAALServiceModule() const = 0;
 };
 
 //=============================================================================
@@ -259,10 +259,10 @@ public:
    NamedValueSet const &OptArgs() const;
 
    /// Accessor to pointer to the Service's Client's Interface
-   IServiceClient *ServiceClient() const;
+   IServiceClient *getServiceClient() const;
 
    /// Accessor to pointer to the Service's Client's IBase Interface
-   IBase          *ServiceClientBase() const;
+   IBase          *getServiceClientBase() const;
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
@@ -272,7 +272,7 @@ public:
    IRuntimeClient * getRuntimeClient() const;
 
    /// Accessor to this Services Service Module
-   AALServiceModule     * pAALServiceModule()  const;
+   AALServiceModule     * getAALServiceModule()  const;
 
    // </IServiceBase>
 

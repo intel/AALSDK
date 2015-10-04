@@ -84,7 +84,8 @@
 #include "aalsdk/uaia/AIA.h"
 
 #include "aalsdk/aas/AALInProcServiceFactory.h"
-#include <aalsdk/osal/OSServiceModule.h>
+#include "aalsdk/osal/OSServiceModule.h"
+#include "aalsdk/osal/ThreadGroup.h"
 
 #include "AIA-internal.h"
 #include "aalsdk/Dispatchables.h"
@@ -174,8 +175,7 @@ class UIDriverEvent : public IUIDriverEvent,
                       public CAALEvent
 {
 public:
-   UIDriverEvent( IBase *pObject,
-                  uidrvMessage *pmessage)
+   UIDriverEvent( IBase *pObject, uidrvMessage * pmessage)
    : CAALEvent(pObject),
      m_pmessage(pmessage)
    {
@@ -219,6 +219,14 @@ btBool AIAService::init( IBase *pclientBase,
                          TransactionID const &rtid )
 {
    AutoLock(this);      // Prevent init() reenterancy
+   if(Shuttingdown == m_state){
+      initFailed( new CExceptionTransactionEvent( NULL,
+                                                  rtid,
+                                                  errCreationFailure,
+                                                  reasInvalidState,
+                                                  "AIAService::Init Shutting down"));
+      return true;  // Ignore requests while we are shuttingdown
+   }
    AAL_INFO(LM_UAIA, "AIAService::init. in\n");
 
    //Singleton service already initialized
@@ -236,6 +244,8 @@ btBool AIAService::init( IBase *pclientBase,
          return true;
       }
 
+      m_Semaphore.Reset(0);
+
       // Create the Message delivery thread
       m_pMDT = new OSLThread(AIAService::MessageDeliveryThread,
                              OSLThread::THREADPRIORITY_NORMAL,
@@ -251,7 +261,7 @@ btBool AIAService::init( IBase *pclientBase,
       //  since it is really the factory and transport for the AFUProxies which are
       //  the actual Services. Since it is initComplete() that normally registers the
       //  Service with the ServiceModule we must register directly.  No event is generated.
-      pAALServiceModule()->AddToServiceList(this);
+      getAALServiceModule()->AddToServiceList(this);
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
 
@@ -360,7 +370,7 @@ void AIAService::AFUProxyGet( IBase *pServiceClient,
    Manifest.Add(AIA_SERVICE_BASE_INTERFACE, static_cast<btAny>(dynamic_cast<IBase*>(this)));
 
    // Construct the new AFUProxy
-   ALIAFUProxy *pnewProxy = new ALIAFUProxy(pAALServiceModule(), getRuntime());
+   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime());
 
    // Initialize the Service.  The Service will register with the AIA.
    pnewProxy->_init(pServiceClient, rtid, Manifest, NULL);
@@ -433,6 +443,13 @@ btBool AIAService::AFUListDel(IBase *pAFU)
    AFUList_itr iter = find(m_mAFUList.begin(), m_mAFUList.end(), pAFU);
    if ( m_mAFUList.end() != iter ) {
       m_mAFUList.erase(iter);
+
+      // If we are shutting down we will be counting releases
+      //  using this semaphore as a count-up
+      if(Shuttingdown == m_state){
+         SemPost();
+      }
+
       return true;
    }
 
@@ -492,10 +509,6 @@ void AIAService::MessageDeliveryThread(OSLThread *pThread,
    // cout << "AIAService::~AIAService: done\n";
    AAL_INFO(LM_UAIA, "AIAService::MessageDeliveryThread: done\n");
 
-   // Final release
-   This->Released();
-
-
 }  // AIAService::MessageDeliveryThread
 
 //=============================================================================
@@ -521,18 +534,7 @@ AIAService::Process_Event()
       }
 
       if (rspid_UID_Shutdown == pMessage->id()) { // Are we done?
-         // Important to Lock here to make sure the m_pShutdownThread has been set
-         {
-            AutoLock(this);
-
-            AAL_INFO(LM_UAIA, "AIAService::Process_Event: Shutdown Seen\n");
-
-            //Shutdown complete
-            ASSERT(NULL != m_pShutdownThread);
-            if ( NULL != m_pShutdownThread ) {
-               m_pShutdownThread->Join();
-            }
-         }
+         AAL_INFO(LM_UAIA, "AIAService::Process_Event: Shutdown Seen\n");
          delete pMessage;
          return;
       }else {
@@ -563,169 +565,6 @@ AIAService::Process_Event()
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
-//=============================================================================
-// Name: ShutdownThread
-// Description: Thread responsible for ordered shutdown
-// Interface: public
-// Inputs: pThread - thread object
-//         pContext - context
-// Outputs: none.
-// Comments: Opens rmc device an dispatches events
-//=============================================================================
-void AIAService::ShutdownThread(OSLThread *pThread,
-                                void *pContext)
-{
-#if 0
-   struct shutdownparms_s *pParms = static_cast<struct shutdownparms_s*>(pContext);
-
-   pParms->pAIA->WaitForShutdown( ui_shutdownReasonNormal,
-                                  pParms->shutdowntime,
-                                  pParms->tid_t);
-
-   delete pParms;
-#endif
-   }
-
-
-//=============================================================================
-// Name: WaitForShutdown()
-// Description: Waits for all resources to release the AIA.
-// Inputs: reason - Reason the service was brought down
-//         waittime - amount of time to wait
-// Interface: public
-// Outputs: none.
-//=============================================================================
-void AIAService::WaitForShutdown(ui_shutdownreason_e      reason,
-                           btTime                   waittime,
-                           stTransactionID_t const &rTranID_t)
-{
-#if 0
-   btBool     notimeout = true;
-   btBool     DoWait    = false;
-   CAALEvent *pTheEvent = NULL;
-
-   {
-      AutoLock(this);
-
-      DEBUG_CERR("AIAService::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
-      AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
-
-      // If the refcount is not zero setup a count up
-      // semaphore to wait until all resources release
-      if ( m_refcount ) {
-         DEBUG_CERR("AIAService::WaitForShutdown() refcount is non-zero. 2 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount is non-zero. 2 of 3\n");
-
-         m_pShutdownSem = new CSemaphore();
-         // Negative count means the semaphore counts up
-         m_pShutdownSem->Create(-m_refcount, 1);
-
-         DoWait = true;
-
-      } else {
-         DEBUG_CERR("AIAService::WaitForShutdown() refcount was 0. 2 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount was 0. 2 of 3\n");
-      }
-
-   }
-
-   if ( DoWait ) {
-
-      // The semaphore returns true if it unblocked with no timeout
-      if ( AAL_INFINITE_WAIT == waittime ) {
-         notimeout = m_pShutdownSem->Wait();
-      } else {
-         notimeout = m_pShutdownSem->Wait(waittime);
-      }
-
-      {
-         AutoLock(this);
-         delete m_pShutdownSem;
-         m_pShutdownSem = NULL;
-      }
-   }
-
-   // Generate an event if the shutdown was called by the quite version of Release()
-   //  This is the normal case for this service.  This code may be capable of being
-   //  simplified as the event version is no longer used. It remains implemented as the
-   //  IAALService interface musst define both types of Release()
-   if ( !m_quietRelease ) {
-      // Send the event
-      if(true == notimeout){
-         pTheEvent = new CTransactionEvent(dynamic_cast<IBase*>(this),
-                                           tranevtServiceShutdown,
-                                           TransactionID(rTranID_t));
-      }else{
-           // Timeout event
-         pTheEvent= new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                   exttranevtServiceShutdown,
-                                                   TransactionID(rTranID_t),
-                                                   errSystemTimeout,
-                                                   reasSystemTimeout,
-                                                   const_cast<btString>(strSystemTimeout));
-      }
-
-      if(pTheEvent){
-         //Shutdown complete
-         pTheEvent->setHandler(m_Listener);
-         getRuntime()->schedDispatchable(pTheEvent);
-         DEBUG_CERR("AIAService::WaitForShutdown() exiting. 3 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() exiting. 3 of 3\n");
-      }else{
-         DEBUG_CERR("AIAService::WaitForShutdown() FATAL ERROR. CANNOT CREATE EVENT\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() FATAL ERROR. CANNOT CREATE EVENT\n");
-      }
-   }
-
-   // TODO timeout should be adjusted for above waitimes elapsed
-   IssueShutdownMessageWorker(rTranID_t, waittime );
-#endif
-   return;
-}
-
-//=============================================================================
-// Name:        IssueShutdownMessageWorker()
-// Description: Worker function called from several places. Creates and sends
-//                 shutdown message to the kernel
-// Interface:   public
-// Inputs:      rTrabID_t - reference to a transaction ID structure
-//              timeout - timeout to wait
-// Outputs:     none
-// Comments:    Encapsulates the fields of a reqid_UID_Shutdown message
-//=============================================================================
-btBool AIAService::IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
-                                        btTime                   timeout)
-{
-#if 0
-   if (m_pUIDC->IsOK()) {
-      DEBUG_CERR("IssueShutdownMessageWorker: sending reqid_UID_Shutdown via IssueShutdownMessageWorker. 1 of 1\n");
-      AAL_DEBUG(LM_Shutdown,"IssueShutdownMessageWorker: sending reqid_UID_Shutdown via IssueShutdownMessageWorker. 1 of 1\n");
-
-      struct big {
-         struct aalui_ioctlreq  req;
-         struct aalui_Shutdown  shutdown;
-      };
-      struct big message;
-      memset( &message, 0, sizeof( message));
-      message.req.id = reqid_UID_Shutdown;
-      message.req.tranID = rTranID_t;
-
-      message.req.size           = sizeof( message.shutdown );
-      message.shutdown.m_reason  = ui_shutdownReasonNormal;
-      message.shutdown.m_timeout = timeout;
-
-      m_pUIDC->SendMessage( AALUID_IOCTL_SENDMSG, &message.req);
-      return true;
-   }
-   else {
-      DEBUG_CERR("IssueShutdownMessageWorker: no reqid_UID_Shutdown sent, UIDC already gone. 1 of 1\n");
-      AAL_DEBUG(LM_Shutdown, "IssueShutdownMessageWorker: no reqid_UID_Shutdown sent, UIDC already gone. 1 of 1\n");
-      return false;
-   }
-#endif
-}  // IssueShutdownMessageWorker
-
-
 
 //=============================================================================
 // Name: Release
@@ -741,36 +580,108 @@ btBool AIAService::IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t
 btBool AIAService::Release(TransactionID const &rTranID,
                            btTime               timeout)
 {
-#if 0
-   DEBUG_CERR(__AAL_FUNC__ << ": Hello.\n");
-   AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Hello.\n");
+
+   AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Releasing.\n");
+   {
+      AutoLock(this);
+      m_state = Shuttingdown;
+   }
 
    //--------------------------------------------------------------
    // The shutdown process involves a thread ShutdownThread
    //   that waits for all resources currently using the AIA to
    //   release or until a timeout occurs.  At that point the
    //   message delivery engine is shutdown and the AIA is done.
+   //   This operations is performed in a dispatchable.
    //--------------------------------------------------------------
-   struct shutdownparms_s *pParms = new struct shutdownparms_s(this,timeout,rTranID);
+   IDispatchable * pDisp = new (std::nothrow) ShutdownDisp(this, timeout, rTranID );
+   ASSERT(NULL != pDisp);
+   FireAndForget(pDisp);
+   return true;
+}
 
-   //Important to lock here and not unlock until after the assignment are  the Shutdown
-   //  thread can come and go before the assignment, resulting in the join off of m_pShutdownThread
-   //  being off of a NULL pointer.
+//=============================================================================
+// Name: WaitForShutdown()
+// Description: Waits for all Driver stack to shutdown and then competes
+//                release.
+// Inputs: rtid - TransactionID
+//         waittime - amount of time to wait
+// Interface: public
+// Outputs: none.
+//=============================================================================
+void AIAService::WaitForShutdown(TransactionID const &rtid,
+                                 btTime timeout)
+{
+   m_pMDT->Join();
+   delete m_pMDT;
+   m_pMDT = NULL;
 
-   {
-      AutoLock(this);
+   AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Done Releasing.\n");
 
-      // Create the Shutdown thread
-      m_pShutdownThread = new(std::nothrow) OSLThread(AIAService::ShutdownThread,
-                                                      OSLThread::THREADPRIORITY_NORMAL,
-                                                      pParms);
-      ASSERT(NULL != m_pShutdownThread);
+   ServiceBase::Release(rtid, timeout);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////             AIA DISPATCHABLES             ///////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//=============================================================================
+//=============================================================================
+AIAService::ShutdownDisp::ShutdownDisp(AIAService *pAIA,
+                                       btTime time,
+                                       TransactionID const &tid)
+: m_pAIA(pAIA),
+  m_timeout(time),
+  m_tid(tid)
+{}
+
+void AIAService::ShutdownDisp::operator() ()
+{
+   ReleaseChildren();
+
+   ShutdownMDT * pShutdownTrans = new (std::nothrow) ShutdownMDT(m_tid,m_timeout);
+   ASSERT(pShutdownTrans->IsOK());
+
+   if(!pShutdownTrans->IsOK()){
+      delete this;
+      return;
    }
 
-   DEBUG_CERR(__AAL_FUNC__ << ": Goodbye.\n");
-   AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Goodbye.\n");
-#endif
-   ServiceBase::Release(rTranID, timeout);
-   return true;
-   //return (m_pShutdownThread != NULL);
+   m_pAIA->SendMessage(NULL, pShutdownTrans, NULL);
+
+   m_pAIA->WaitForShutdown(m_tid, m_timeout);
+
+   delete this;
 }
+
+void AIAService::ShutdownDisp::ReleaseChildren()
+{
+   AFUList_citr iter = m_pAIA->m_mAFUList.end();
+
+   btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_pAIA->m_mAFUList.size());
+   if ( 0 == size ) {
+      return;
+   }
+
+   // Set the count up semaphore
+   m_pAIA->m_Semaphore.Reset( - size);
+
+   while ( m_pAIA->m_mAFUList.begin() != iter ) {
+
+      // Get the IAALService from the IBase
+
+      IAALService *pService = dynamic_ptr<IAALService>(iidService, (*iter));
+
+      iter--;
+
+      if ( NULL != pService ) {
+         // Release the Service overriding the default delivery
+         pService->Release(TransactionID(dynamic_cast<IBase*>(this),true));
+      }
+   }
+}
+

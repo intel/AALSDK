@@ -158,7 +158,8 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
    //  just before dispatching the callback thus insuring that the final cleanup is executed
    //  before notification is received.
    return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                     ServiceClient(),
+                                                                     getServiceClient(),
+                                                                     getRuntimeClient(),
                                                                      this,
                                                                      rTranID));
  
@@ -230,13 +231,14 @@ btBool ServiceBase::initComplete(TransactionID const &rtid)
    btBool ret = true;
 
    // Record this Service with the Service Module if one is present
-   if(NULL != pAALServiceModule()){
-      ret = pAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), rtid);
+   if(NULL != getAALServiceModule()){
+      ret = getAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), rtid);
    }else {
       // TODO IS THIS A VALID PATH
       ASSERT(false);
       ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
-                                                                       ServiceClient(),
+                                                                       getServiceClient(),
+                                                                       getRuntimeClient(),
                                                                        dynamic_cast<IBase*>(this),
                                                                        rtid));
    }
@@ -248,13 +250,14 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
    btBool ret = true;
 
    // Record this Service with the Service Module if one is present
-   if(NULL != pAALServiceModule()){
-      ret = pAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase*>(this), ptheEvent);
+   if(NULL != getAALServiceModule()){
+      ret = getAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase*>(this), ptheEvent);
    }else {
       // TODO IS THIS A VALID PATH
       ASSERT(false);
       ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                                       ServiceClient(),
+                                                                       getServiceClient(),
+                                                                       getRuntimeClient(),
                                                                        dynamic_cast<IBase*>(this),
                                                                        ptheEvent));
    }
@@ -359,12 +362,12 @@ btBool   ServiceBase::HasMarshaller()  const { AutoLock(this); return NULL != m_
 btBool ServiceBase::HasUnMarshaller()  const { AutoLock(this); return NULL != m_punmarshaller; }
 btBool    ServiceBase::HasTransport()  const { AutoLock(this); return NULL != m_ptransport;    }
 
-NamedValueSet const &               ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;       }
-IServiceClient *              ServiceBase::ServiceClient() const { AutoLock(this); return m_pclient;       }
-IBase *                   ServiceBase::ServiceClientBase() const { AutoLock(this); return m_pclientbase;   }
-IRuntime *                       ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;       }
-IRuntimeClient *           ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient; }
-AALServiceModule *        ServiceBase::pAALServiceModule() const { AutoLock(this); return m_pcontainer;    }
+NamedValueSet const &               ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;           }
+IServiceClient *              ServiceBase::getServiceClient() const { AutoLock(this); return m_pclient;        }
+IBase *                   ServiceBase::getServiceClientBase() const { AutoLock(this); return m_pclientbase;    }
+IRuntime *                       ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;           }
+IRuntimeClient *           ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient;     }
+AALServiceModule *        ServiceBase::getAALServiceModule() const { AutoLock(this); return m_pcontainer;      }
 
 void ServiceBase::allocService(IBase                  *pClient,
                                NamedValueSet const    &rManifest,
@@ -450,13 +453,11 @@ btBool ServiceProxyBase::_init( IBase               *pclient,
 void ServiceProxyBase::Doinit(TransactionID const &rtid)
 {
    if ( !HasTransport() ) {
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      dynamic_cast<IBase *>(this),
-                                                                      rtid,
-                                                                      errCreationFailure,
-                                                                      reasNoDevice,
-                                                                      "No transport provided to proxy class"));
+      initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
+                                                 rtid,
+                                                 errCreationFailure,
+                                                 reasNoDevice,
+                                                 "No transport provided to proxy class"));
       return;
    }
 
@@ -471,13 +472,11 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
 
    if ( !sendmsg() ) {
       m_ptransport->disconnect();
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      dynamic_cast<IBase *>(this),
-                                                                      rtid,
-                                                                      errCreationFailure,
-                                                                      reasInternalError,
-                                                                      "Failed to send NEW message to server"));
+      initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
+                                                 rtid,
+                                                 errCreationFailure,
+                                                 reasInternalError,
+                                                 "Failed to send NEW message to server"));
 
       return;
    }
@@ -497,7 +496,7 @@ void ServiceProxyBase::Doinit(TransactionID const &rtid)
       getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
-      init(ServiceClientBase(), OptArgs(), rtid);
+      init(getServiceClientBase(), OptArgs(), rtid);
    }
 }
 
@@ -539,13 +538,11 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
 {
    // If there
    if ( !HasTransport() ) {
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      dynamic_cast<IBase *>(this),
-                                                                      rtid,
-                                                                      errCreationFailure,
-                                                                      reasNoDevice,
-                                                                      "No transport provided to stub class"));
+      initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
+                                                 rtid,
+                                                 errCreationFailure,
+                                                 reasNoDevice,
+                                                 "No transport provided to stub class"));
       return;
    }
 
@@ -567,7 +564,7 @@ void ServiceStubBase::Doinit(TransactionID const &rtid)
       getRuntime()->schedDispatchable(m_pcmpltEvent);
    } else {
       // Last superclass before most derived so call init()
-      init(ServiceClientBase(), OptArgs(), rtid);
+      init(getServiceClientBase(), OptArgs(), rtid);
    }
 }
 

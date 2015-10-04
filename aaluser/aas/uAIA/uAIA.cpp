@@ -239,13 +239,11 @@ btBool uAIA::init(IBase *pclientBase,
       m_pUIDC->Open();
       if (!m_pUIDC->IsOK()) {
          m_bIsOK = false;
-         getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                        ServiceClient(),
-                                                        dynamic_cast<IBase*>(this),
-                                                        rtid,
-                                                        errCreationFailure,
-                                                        reasCauseUnknown,
-                                                        "Failed to open UI Driver"));
+         initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase*>(this),
+                                                    rtid,
+                                                    errCreationFailure,
+                                                    reasCauseUnknown,
+                                                    "Failed to open UI Driver"));
 
          return false;
       }
@@ -263,9 +261,7 @@ btBool uAIA::init(IBase *pclientBase,
       AAL_INFO(LM_UAIA, "uAIA::Create, out\n");
    }
    // Create the object
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        ServiceClient(),
-                                        dynamic_cast<IBase*>(pCAIA),rtid));
+   initComplete(rtid);
    return true;
 }
 

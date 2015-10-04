@@ -118,29 +118,25 @@ btBool CResourceManager::init( IBase *pclientBase,
                                TransactionID const &rtid)
 {
    // Save the client interface
-   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ServiceClientBase());
+   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
    if( NULL == m_pResMgrClient ){
       // Sends a Service Client serviceAllocated callback
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errBadParameter,
-                                                                      reasInvalidParameter,
-                                                                      strInvalidParameter));
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasInvalidParameter,
+                                                 strInvalidParameter));
 
    }
 
    // Create an open channel to the remote resource manager
    if ( !m_RMProxy.Open() ) {
       // Sends a Service Client serviceAllocated callback
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errDevice,
-                                                                      reasNoDevice,
-                                                                      strNoDevice));
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errDevice,
+                                                 reasNoDevice,
+                                                 strNoDevice));
       return false;
    }
 
@@ -150,21 +146,13 @@ btBool CResourceManager::init( IBase *pclientBase,
                                  this);
    if(NULL == m_pProxyPoll){
       m_RMProxy.Close();
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errInternal,
-                                                                      reasCauseUnknown,
-                                                                      "Could not create RM Proxy Poll thread."));
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errInternal,
+                                                 reasCauseUnknown,
+                                                 "Could not create RM Proxy Poll thread."));
    }
    // Sends a Service Client serviceAllocated callback
-#if 0
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                                          ServiceClient(),
-                                                          dynamic_cast<IBase*>(this),
-                                                          rtid));
-#endif
    initComplete(rtid);
 }
 

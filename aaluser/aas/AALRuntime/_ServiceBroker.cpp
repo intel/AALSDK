@@ -368,7 +368,8 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
       } else {
          // Generate the callback and finish the cleanup (performed in the Dispatchable)
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                   ServiceClient(),
+                                                                   getServiceClient(),
+                                                                   getRuntimeClient(),
                                                                    this,
                                                                    rTranID));
 

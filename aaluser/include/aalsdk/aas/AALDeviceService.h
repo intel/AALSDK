@@ -253,13 +253,11 @@ private:
 
    badparm:
       // Post the object created exception
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceBase::ServiceClient(),
-                                                                      dynamic_cast<IBase *>(this),
-                                                                      rtid,
-                                                                      errCreationFailure,
-                                                                      reasMissingParameter,
-                                                                      "No AIA specified in Config Record."));
+      initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase *>(this),
+                                                 rtid,
+                                                 errCreationFailure,
+                                                 reasMissingParameter,
+                                                 "No AIA specified in Config Record."));
    }
   
 
@@ -356,14 +354,11 @@ private:
          //Print the description string.
          PrintExceptionDescription(theEvent);
          // Send the failure event. Unwrap and return the original TrasnactionID from the event
-         ObjectCreatedExceptionEvent *pEvent = new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                               ServiceBase::ServiceClient(),
-                                                                               dynamic_cast<IBase *>(this),
-                                                                               UnWrapTransactionIDFromEvent(theEvent),
-                                                                               errCreationFailure,
-                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
-                                                                               dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description());
-         m_pAIA->getRuntime()->schedDispatchable(pEvent);
+         initFailed( new CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                    UnWrapTransactionIDFromEvent(theEvent),
+                                                    errCreationFailure,
+                                                    dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Reason(),
+                                                    dynamic_ref<IExceptionTransactionEvent>(iidTranEvent, theEvent).Description()));
          return;
       }
 
@@ -458,7 +453,7 @@ private:
             // }else{
 
             // Last superclass before most derived so call init()
-            init(ServiceClientBase(), OptArgs(), origTID);
+            init(getServiceClientBase(), OptArgs(), origTID);
 
          } break;
 
