@@ -41,14 +41,12 @@
 /// WHEN:          WHO:     WHAT:
 /// 03/13/2014     JG       Initial version@endverbatim
 //****************************************************************************
-#ifndef __MessageDelivery_H__
-#define __MessageDelivery_H__
+#ifndef __AALSDK_AALRUNTIME__MESSAGEDELIVERY_H__
+#define __AALSDK_AALRUNTIME__MESSAGEDELIVERY_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALIDDefs.h>
 #include <aalsdk/eds/AASEventDeliveryService.h>
-#include <aalsdk/aas/AALService.h>
 #include <aalsdk/osal/ThreadGroup.h>
-//#include <aalsdk/osal/OSServiceModule.h>
 
 /// @addtogroup MDS
 /// @{
@@ -62,8 +60,7 @@ BEGIN_NAMESPACE(AAL)
 // Comments:  This object is operational and meets its minimum functional
 //            requirements pior to init()
 //=============================================================================
-class _MessageDelivery :// public ServiceBase,
-                         public CAASBase,
+class _MessageDelivery : public CAASBase,
                          public IMessageDeliveryService
 {
 public:
@@ -88,4 +85,4 @@ END_NAMESPACE(AAL)
 
 /// @}
 
-#endif // __MessageDelivery_H__
+#endif // __AALSDK_AALRUNTIME__MESSAGEDELIVERY_H__

@@ -44,6 +44,7 @@ gtMDS.cpp \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
 gtSem.cpp \
+gtServiceBroker.cpp \
 gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
@@ -132,6 +133,7 @@ gtRuntime.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
+gtServiceBroker.cpp \
 gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
