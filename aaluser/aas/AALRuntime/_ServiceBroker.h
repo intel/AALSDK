@@ -34,14 +34,12 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-#ifndef ___ServiceBroker_H__
-#define ___ServiceBroker_H__
+#ifndef __AALSDK_AALRUNTIME__SERVICEBROKER_H__
+#define __AALSDK_AALRUNTIME__SERVICEBROKER_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/aas/IServiceBroker.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/osal/OSServiceModule.h>
-
-#include <map>
 
 //=============================================================================
 // Name: AAL_DECLARE_SVC_MOD
@@ -54,44 +52,47 @@ BEGIN_NAMESPACE(AAL)
 
 
 class _ServiceBroker : public  ServiceBase,
-                         private CUnCopyable,
-                         public  IServiceBroker
+                       private CUnCopyable,
+                       public  IServiceBroker
 {
 public:
-   typedef std::map<std::string, ServiceHost *> ServiceMap;
-   typedef ServiceMap::iterator                 Servicemap_itr;
-
-
    // Loadable Service
    DECLARE_AAL_SERVICE_CONSTRUCTOR(_ServiceBroker, ServiceBase),
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
-      SetSubClassInterface(iidServiceBroker,
-                           dynamic_cast<IServiceBroker *>(this));
+      if ( EObjOK != SetSubClassInterface(iidServiceBroker,
+                                          dynamic_cast<IServiceBroker *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
+
+   // <ServiceBase>
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   btBool init( IBase *pclientBase,
-                NamedValueSet const &optArgs,
-                TransactionID const &rtid);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    // Called when the service is released
-   btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
+   virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
+   // </ServiceBase>
 
-   void allocService(IRuntime                 *pProxy,
-                     IRuntimeClient           *pRuntimeClient,
-                     IBase                    *pServiceClientBase,
-                     const NamedValueSet      &rManifest,
-                     TransactionID const      &rTranID);
-
-
-   ~_ServiceBroker();
+   // <IServiceBroker>
+   virtual void allocService(IRuntime            *pProxy,
+                             IRuntimeClient      *pRuntimeClient,
+                             IBase               *pServiceClientBase,
+                             const NamedValueSet &rManifest,
+                             TransactionID const &rTranID);
+   // </IServiceBroker>
 
 protected:
-   ServiceHost *findServiceHost(std::string const &sName);
+   typedef std::map<std::string, ServiceHost *> ServiceMap;
+   typedef ServiceMap::iterator                 Servicemap_itr;
+
+   ServiceHost * findServiceHost(std::string const &sName);
 
    // Used by Release
    static void ShutdownThread(OSLThread           *pThread, void  *pContext);
@@ -100,14 +101,13 @@ protected:
    static void ShutdownHandlerThread(OSLThread   *pThread,  void       *pContext);
    void              ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt);
 
-protected:
-   ServiceMap          m_ServiceMap;
    OSLThread          *m_pShutdownThread;
    btUnsigned32bitInt  m_servicecount;
+   ServiceMap          m_ServiceMap;
 };
 
 
 END_NAMESPACE(AAL)
 
 
-#endif // ___ServiceBroker_H__
+#endif // __AALSDK_AALRUNTIME__SERVICEBROKER_H__

@@ -888,7 +888,7 @@ void MethodCallLogEntry::GetParam(btcString name, TransactionID &tid) const
    tid = tidStruct;
 }
 
-MethodCallLogEntry * MethodCallLog::AddToLog(btcString method)
+MethodCallLogEntry * MethodCallLog::AddToLog(btcString method) const
 {
    AutoLock(this);
 
@@ -1156,6 +1156,24 @@ EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
 
 void EmptyServiceBase::init(TransactionID const & ) {}
 
+
+EmptyServiceModule::EmptyServiceModule() :
+   m_Construct_returns(NULL),
+   m_getRuntime_returns(NULL)
+{}
+
+IBase * EmptyServiceModule::Construct(IRuntime            *pAALRUNTIME,
+                                      IBase               *Client,
+                                      TransactionID const &tid,
+                                      NamedValueSet const &optArgs) { return m_Construct_returns; }
+void          EmptyServiceModule::Destroy()            {}
+void       EmptyServiceModule::setRuntime(IRuntime * ) {}
+IRuntime * EmptyServiceModule::getRuntime()      const { return m_getRuntime_returns; }
+void  EmptyServiceModule::ServiceReleased(IBase * )    {}
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, Construct,  IBase *,    m_Construct_returns )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, getRuntime, IRuntime *, m_getRuntime_returns)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 CallTrackingIServiceClient::CallTrackingIServiceClient(btApplicationContext Ctx) :
@@ -1352,4 +1370,44 @@ void CallTrackingServiceBase::init(TransactionID const &rtid)
 {
    MethodCallLogEntry *l = AddToLog("ServiceBase::init");
    l->AddParam("rtid", rtid);
+}
+
+
+CallTrackingServiceModule::CallTrackingServiceModule() {}
+
+IBase * CallTrackingServiceModule::Construct(IRuntime            *pAALRUNTIME,
+                                             IBase               *Client,
+                                             TransactionID const &tid,
+                                             NamedValueSet const &optArgs)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceModule::Construct");
+   l->AddParam("pAALRUNTIME", reinterpret_cast<btObjectType>(pAALRUNTIME));
+   l->AddParam("Client", reinterpret_cast<btObjectType>(Client));
+   l->AddParam("tid", tid);
+   l->AddParam("optArgs", dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(optArgs)) );
+
+   return EmptyServiceModule::Construct(pAALRUNTIME, Client, tid, optArgs);
+}
+
+void CallTrackingServiceModule::Destroy()
+{
+   AddToLog("IServiceModule::Destroy");
+}
+
+void CallTrackingServiceModule::setRuntime(IRuntime *pRuntime)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceModule::setRuntime");
+   l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
+}
+
+IRuntime * CallTrackingServiceModule::getRuntime() const
+{
+   AddToLog("IServiceModule::getRuntime");
+   return EmptyServiceModule::getRuntime();
+}
+
+void CallTrackingServiceModule::ServiceReleased(IBase *pService)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceModuleCallback::ServiceReleased");
+   l->AddParam("pService", reinterpret_cast<btObjectType>(pService));
 }

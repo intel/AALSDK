@@ -4,6 +4,16 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
+#if 0
+TEST(Runtime, Runtime_start)
+{
+   CallTrackingIRuntimeClient rtc;
+   Runtime                    rt(&rtc);
+
+   rt.start(NamedValueSet());
+}
+#endif
+
 TEST(Runtime, aal0693)
 {
    // When constructed with a NULL IRuntimeClient *, Runtime::Runtime() aborts construction.
