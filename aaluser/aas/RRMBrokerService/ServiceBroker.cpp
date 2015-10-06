@@ -45,7 +45,7 @@
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
 
 #include "ServiceBroker.h"
-
+#include "aalsdk/osal/Sleep.h"
 
 #define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::ServiceBroker >
 
@@ -98,15 +98,6 @@ btBool ServiceBroker::init(IBase *pclientBase,
                                            dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
-#if 0
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      ServiceClient(),
-                                                                      this,
-                                                                      rtid,
-                                                                      errServiceNotFound,
-                                                                      reasUnknown,
-                                                                      "Could not allocate ResourceManager.  Possible bad argument or missing client interface.") );
-#endif
       initFailed( new CExceptionTransactionEvent( NULL,
                                                   rtid,
                                                   errServiceNotFound,
@@ -116,6 +107,28 @@ btBool ServiceBroker::init(IBase *pclientBase,
    }
    return true;
 
+}
+
+//=============================================================================
+// Name: ~ServiceBroker
+// Description: IDestructor
+// Interface: public
+// Comments:
+//   Delete any Service Hosts. They won't be used anymore
+//=============================================================================
+ServiceBroker::~ServiceBroker()
+{
+   Servicemap_itr itr;
+
+   btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_ServiceMap.size());
+   if ( 0 == size ) {
+      return;
+   }
+
+   for ( itr = m_ServiceMap.begin() ; size ; size--, itr++ ) {
+      // If the IServiceModule is present
+      delete ( *itr ).second;
+   }
 }
 
 //
@@ -149,25 +162,10 @@ void ServiceBroker::serviceAllocated(IBase               *pServiceBase,
                                                   errMethodNotImplemented,
                                                   reasNotImplemented,
                                                   "Service does not support IResourceManager") );
-#if 0
-      getRuntime()->schedDispatchable( new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                       ServiceClient(),
-                                                                       this,
-                                                                       origTid,
-                                                                       errMethodNotImplemented,
-                                                                       reasNotImplemented,
-                                                                       "Service does not support IResourceManager") );
-#endif
       return;
    }
 
    m_bIsOK = true;
-#if 0
-   getRuntime()->schedDispatchable( new ObjectCreatedEvent(getRuntimeClient(),
-                                                           ServiceClient(),
-                                                           dynamic_cast<IBase *>(this),
-                                                           origTid) );
-#endif
    initComplete(origTid);
    return;
 }
@@ -553,9 +551,6 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
          // Now release the Resource Manager. Final Release event sent in Released() callback
          dynamic_ptr<IAALService>(iidService, m_ResMgrBase)->Release(TransactionID(reinterpret_cast<btApplicationContext>(new TransactionID(rTranID)) ));
 
-         // Clear the map now
-         m_ServiceMap.clear();
-
          return true;
       }
    }
@@ -595,8 +590,8 @@ void ServiceBroker::ShutdownHandler(Servicemap_itr itr, CSemaphore &cnt)
 
       // Delete the service which unloads the plug-in (e.g.,so or dll)
       //DEBUG_CERR("ServiceBroker::ShutdownHandler: pLibrary = " << (void*)(( *itr ).second.pLibrary) << endl);
-
-      delete (*itr).second;
+      (*itr).second->freeProvider();
+      //delete (*itr).second;
       m_servicecount--;
       cnt.Post(1);
    }

@@ -288,43 +288,8 @@ btBool AIAService::init( IBase *pclientBase,
 AIAService::~AIAService(void)
 {
    AAL_INFO(LM_UAIA, "AIAService::~AIAService. in\n");
-   Destroy();
 }
 
-//=============================================================================
-// Name: Destroy()
-// Description: Method invoked for destroying the AIA prior to unload,
-// Interface: public
-// Outputs: none.
-//=============================================================================
-void AIAService::Destroy(void)
-{
-   // Shutdown the message pump by putting in a reqid_Shutdown to force a
-   //    wake-up and let the kernel know it is going down.
-#if 0
-   char szFunc[] = "AIAService::Destroy";
-//   IssueShutdownMessageWorker( szFunc);
-
-   // if message pump thread is running, need to wait for it to terminate
-   if ( m_pMDT ) {
-
-      DEBUG_CERR(szFunc << ": waiting for Receive Thread to Join. 1 of 2\n");
-      AAL_DEBUG(LM_Shutdown, szFunc << ": waiting for Receive Thread to Join. 1 of 2\n");
-
-      // Wait for the Message delivery thread to terminate
-      m_pMDT->Join();
-
-      DEBUG_CERR(szFunc << ": Receive Thread has Joined. 2 of 2\n");
-      AAL_DEBUG(LM_Shutdown, szFunc << ": Receive Thread has Joined. 2 of 2\n");
-
-      delete m_pMDT;
-      m_pMDT = NULL;
-      delete m_pUIDC;
-   }
-#endif
-   m_bIsOK = false;
-
-}  // AIAService::Destroy
 
 //=============================================================================
 // Name: SemWait()
@@ -402,7 +367,7 @@ void AIAService::AFUProxyAdd( IBase *pAFUProxy )
 {
 
    // Bug in AFU Proxy
-   ASSERT(NULL==pAFUProxy);
+   ASSERT( NULL!=pAFUProxy );
    AFUListAdd(pAFUProxy);
 }
 
@@ -594,7 +559,9 @@ btBool AIAService::Release(TransactionID const &rTranID,
    //   message delivery engine is shutdown and the AIA is done.
    //   This operations is performed in a dispatchable.
    //--------------------------------------------------------------
-   IDispatchable * pDisp = new (std::nothrow) ShutdownDisp(this, timeout, rTranID );
+   IDispatchable * pDisp = new (std::nothrow) ShutdownDisp( this,
+                                                            timeout,
+                                                            TransactionID(dynamic_cast<IBase*>(this),true) );
    ASSERT(NULL != pDisp);
    FireAndForget(pDisp);
    return true;
@@ -612,13 +579,26 @@ btBool AIAService::Release(TransactionID const &rTranID,
 void AIAService::WaitForShutdown(TransactionID const &rtid,
                                  btTime timeout)
 {
+   // Wait for any children
+   SemWait();
    m_pMDT->Join();
    delete m_pMDT;
    m_pMDT = NULL;
 
    AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Done Releasing.\n");
 
-   ServiceBase::Release(rtid, timeout);
+   //ServiceBase::Release(rtid, timeout);
+   ServiceBase::ReleaseComplete();
+}
+
+void AIAService::serviceReleased(TransactionID const &rTranID )
+{
+   SemPost();
+}
+
+void AIAService::serviceReleaseFailed(const IEvent &rEvent)
+{
+   SemPost();
 }
 
 
@@ -641,7 +621,10 @@ AIAService::ShutdownDisp::ShutdownDisp(AIAService *pAIA,
 
 void AIAService::ShutdownDisp::operator() ()
 {
-   ReleaseChildren();
+   // Assume no children so we will not wait
+   m_pAIA->m_Semaphore.Reset(1);
+
+   ReleaseChildren(m_tid);
 
    ShutdownMDT * pShutdownTrans = new (std::nothrow) ShutdownMDT(m_tid,m_timeout);
    ASSERT(pShutdownTrans->IsOK());
@@ -658,7 +641,7 @@ void AIAService::ShutdownDisp::operator() ()
    delete this;
 }
 
-void AIAService::ShutdownDisp::ReleaseChildren()
+void AIAService::ShutdownDisp::ReleaseChildren(TransactionID const &tid)
 {
    AFUList_citr iter = m_pAIA->m_mAFUList.end();
 
@@ -680,7 +663,7 @@ void AIAService::ShutdownDisp::ReleaseChildren()
 
       if ( NULL != pService ) {
          // Release the Service overriding the default delivery
-         pService->Release(TransactionID(dynamic_cast<IBase*>(this),true));
+         pService->Release(tid);
       }
    }
 }

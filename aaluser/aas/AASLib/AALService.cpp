@@ -152,8 +152,6 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
 {
    AutoLock(this);
 
-   Released();
-
    // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
    //  just before dispatching the callback thus insuring that the final cleanup is executed
    //  before notification is received.
@@ -165,16 +163,17 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
  
 }
 
-btBool ServiceBase::Release(btTime timeout)
+btBool ServiceBase::ReleaseComplete()
 {
    {
-      AutoLock(this);
-
-      Released();
+//      AutoLock(this);
 
       // Release the Proxy
       getRuntime()->releaseRuntimeProxy();
       m_Runtime = NULL;
+
+      // Object should not access anything after this call
+      Released();
    }
 
    // We must constrain the scope of the AutoLock above to prevent dereferencing

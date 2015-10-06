@@ -148,8 +148,8 @@ public:
    virtual btBool initComplete(TransactionID const &rtid)      = 0;
    virtual btBool initFailed(IEvent const *ptheEvent)          = 0;
 
-   // Final release
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT)    = 0;
+   // Final step for release
+   virtual btBool ReleaseComplete()                                    = 0;
 
    virtual NamedValueSet const &OptArgs() const                = 0;
 
@@ -252,7 +252,7 @@ public:
 
    // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
    //   This function destroys the Service object.
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
+   virtual btBool ReleaseComplete();
 
    /// Accessor to optional arguments passed during allocateService
    ///

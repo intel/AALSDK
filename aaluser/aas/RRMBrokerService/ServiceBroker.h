@@ -106,6 +106,8 @@ public:
 
    }
 
+   ~ServiceBroker();
+
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
    btBool init(IBase *pclientBase,

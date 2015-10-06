@@ -426,8 +426,9 @@ private:
 
 protected:
 
-   typedef std::map< IBase *, IBase * > list_type;
-   typedef list_type::const_iterator    const_iterator;
+   typedef std::list< IBase * > list_type;
+   typedef list_type::iterator          list_iter;
+   typedef list_type::const_iterator    list_citer;
 
    ISvcsFact           &m_SvcsFact;
 //   IRuntime       *m_Runtime;

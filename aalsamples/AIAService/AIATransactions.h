@@ -121,7 +121,7 @@ public:
    // Used by the AFU Proxy to bind to AFU device
    ShutdownMDT(AAL::TransactionID const &tranID = AAL::TransactionID(), AAL::btTime timeout = 0);
 
-   AAL::btBool                IsOK() const;
+   AAL::btBool                    IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;
    AAL::btWSSize                  getPayloadSize() const;

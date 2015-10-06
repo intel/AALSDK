@@ -117,10 +117,10 @@ ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) 
 
    puiShutdown->m_reason = ui_shutdownReasonNormal;
    puiShutdown->m_timeout = m_timeout;
-
+   m_bIsOK = true;
 
 }
-
+AAL::btBool                    ShutdownMDT::IsOK() const {return m_bIsOK;}
 AAL::btVirtAddr                ShutdownMDT::getPayloadPtr()const {return m_payload;}
 AAL::btWSSize                  ShutdownMDT::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   ShutdownMDT::getTranID()const {return m_tid_t;}

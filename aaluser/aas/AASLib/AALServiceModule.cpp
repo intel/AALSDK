@@ -140,9 +140,7 @@ void AALServiceModule::Destroy()
       //  count to a negative number.
       //  The waiter will block until the semaphore
       //  counts up to zero.
-      btBool res =
-      m_srvcCount.Create( - static_cast<btInt>(size) );
-
+      btBool res = m_srvcCount.Create( - static_cast<btInt>(size) );
       ASSERT(res);
 
       // Loop through all services and shut them down
@@ -246,13 +244,6 @@ btBool AALServiceModule::ServiceInitFailed(IBase *pService,
 
    // Notify the Service client on behalf of the Service
    FireAndForget(pDisp);
-# if 0
-   ret = pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                                                  pServiceBase->ServiceClient(),
-                                                                                  pService,
-                                                                                  pEvent));
-#endif
-
    return ret;
 }
 
@@ -272,7 +263,7 @@ btBool AALServiceModule::AddToServiceList(IBase *pService)
       return false;
    }
 
-   m_serviceList[pService] = pService;
+   m_serviceList.push_front(pService);
 
    return true;
 }
@@ -292,8 +283,8 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
    if ( !ServiceInstanceRegistered(pService) ) {
       return false;
    }
-
-   m_serviceList.erase(pService);
+   list_iter itr = find(m_serviceList.begin(), m_serviceList.end(), pService);
+   m_serviceList.erase(itr);
 
    // Post to the count up semaphore
    //  in case the service is shutting down
@@ -313,23 +304,24 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
 btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 {
    AutoLock(this);
-   return m_serviceList.end() != m_serviceList.find(pService);
+   return m_serviceList.end() != find(m_serviceList.begin(), m_serviceList.end(), pService);
 }
 
 //=============================================================================
 // Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Description: Broadcast a Release to all Services
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments: calls Release in reverse order
 //=============================================================================
 void AALServiceModule::SendReleaseToAll()
 {
    AutoLock(this);   // Lock until done issuing releases
    CSemaphore     srvcCount;
 
-   const_iterator iter = m_serviceList.end();
+
+   list_iter iter = m_serviceList.begin();
 
    btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_serviceList.size());
    if ( 0 == size ) {
@@ -343,19 +335,18 @@ void AALServiceModule::SendReleaseToAll()
       return;
    }
 
-   while ( m_serviceList.begin() != iter ) {
+   while ( m_serviceList.end() != iter ) {
 
       // Get the IAALService from the IBase
-      IAALService *pService = dynamic_ptr<IAALService>(iidService, (*iter).second);
+      IAALService *pService = dynamic_ptr<IAALService>(iidService, *iter);
 
-      iter--;
+      iter++;
 
       if ( NULL != pService ) {
          // Release the Service overriding the default delivery
          pService->Release(TransactionID(dynamic_cast<IBase*>(this),true));
       }
    }
-   m_srvcCount.Wait(10000);  // TODO Make this a reasonable timeout
 }
 
 // <IServiceClient>

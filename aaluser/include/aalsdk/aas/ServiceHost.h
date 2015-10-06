@@ -66,6 +66,7 @@ public:
    IBase *  getIBase()const             { return m_base;      }
    operator IBase * ()const             { return m_base;      }
    IServiceModule * getProvider()const  { return m_pProvider; }
+   void freeProvider();
 
 private:
    ServiceHost() {}

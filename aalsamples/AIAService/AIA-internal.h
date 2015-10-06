@@ -149,10 +149,6 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       void SemWait(void);
       void SemPost(void);
 
-      void Destroy(void);
-
-
-
       void Process_Event();
 
       static void MessageDeliveryThread(OSLThread *pThread,
@@ -164,11 +160,11 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
 
       // <IServiceClient> - Used only for serviceReleased and only so we can trap the Releases without
       //                    them going to real client
-      void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID());
-      void serviceAllocateFailed(const IEvent &rEvent);
+      void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID()){};
+      void serviceAllocateFailed(const IEvent &rEvent){};
       void serviceReleased(TransactionID const &rTranID = TransactionID());
       void serviceReleaseFailed(const IEvent &rEvent);
-      void serviceEvent(const IEvent &rEvent);
+      void serviceEvent(const IEvent &rEvent){};
        // </IServiceClient>
 
       void AFUProxyGet( IBase *pServiceClient,
@@ -185,7 +181,7 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       public:
          ShutdownDisp(AIAService *pAIA, btTime time, TransactionID const &tid);
          void operator() ();
-         void ReleaseChildren();
+         void ReleaseChildren(TransactionID const &tid);
       private:
          AIAService                 *m_pAIA;
          AAL::btTime                 m_timeout;

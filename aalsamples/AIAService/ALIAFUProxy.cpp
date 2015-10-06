@@ -138,7 +138,7 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
 // Outputs: true - success
 // Comments:
 //=============================================================================
-btBool ALIAFUProxy::SendTransaction(IAFUTransaction *pAFUmessage)
+btBool ALIAFUProxy::SendTransaction(IAIATransaction *pAFUmessage)
 {
    m_pAIA->SendMessage(m_devHandle, pAFUmessage, m_pClient);
    return true;  /// SendMessage is a void TDO cleanup
@@ -169,7 +169,8 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
       {
          std::cerr<<"Got rspid_UID_UnbindComplete event" << std::endl;
          m_pAIA->AFUProxyRelease(this);
-         ServiceBase::Release(TransactionID(msgTranID()), AAL_INFINITE_WAIT);
+         ServiceBase::Release( TransactionID(puidEvent->msgTranID()),
+                               AAL_INFINITE_WAIT);
       }
       break;
 
@@ -178,6 +179,7 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
       {
          // Initialization is complete
          // TODO - Save Bind Parms.
+         m_pAIA->AFUProxyAdd(this);
          initComplete(puidEvent->msgTranID());
       }
       break;

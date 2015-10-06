@@ -107,12 +107,12 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
 {
    m_modparms.entry_point_fn = EntryPoint;
 
-   if ( ( NULL == m_modparms.entry_point_fn ) ||
+   if( ( NULL == m_modparms.entry_point_fn ) ||
         ( 0 != m_modparms.entry_point_fn(AAL_SVC_CMD_GET_PROVIDER, &m_pProvider) ) ||
         ( NULL == m_pProvider ) ) {
 
       // TODO this is always going to be NULL (see above).
-      if ( NULL != m_pDynLinkLib ) {
+      if( NULL != m_pDynLinkLib ) {
          delete m_pDynLinkLib;
          m_pDynLinkLib = NULL;
       }
@@ -123,6 +123,21 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
 }
 
 //=============================================================================
+// Name: freeProvider
+// Description: Frees the provider in eth Servcie Library
+// Interface: public
+// Comments:
+//=============================================================================
+void ServiceHost::freeProvider()
+{
+   ASSERT(NULL != m_modparms.entry_point_fn);
+
+   if( NULL != m_modparms.entry_point_fn ) {
+      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL );
+   }
+}
+
+//=============================================================================
 // Name: ~ServiceHost
 // Description: Destructor
 // Interface: public
@@ -130,7 +145,13 @@ ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
 //=============================================================================
 ServiceHost::~ServiceHost()
 {
-   if ( NULL != m_pDynLinkLib ) {
+   ASSERT(NULL != m_modparms.entry_point_fn);
+
+   if( NULL != m_modparms.entry_point_fn ) {
+      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL );
+   }
+
+   if( NULL != m_pDynLinkLib ) {
        delete m_pDynLinkLib;
        m_pDynLinkLib = NULL;
     }

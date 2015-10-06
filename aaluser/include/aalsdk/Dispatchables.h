@@ -97,7 +97,7 @@ public:
 
       // If this is a Release. Complete the release before any callbacks
       if(Released == m_type ){
-         dynamic_ptr<IServiceBase>(iidServiceBase, m_pBase)->Release(0);
+         dynamic_ptr<IServiceBase>(iidServiceBase, m_pBase)->ReleaseComplete();
       }
       // First Process the TramsactionID
       btBool bProcessed = ProcessTranID();

@@ -502,7 +502,7 @@ private:
 */
             }else{
                // MUST call parent Release
-               ServiceBase::Release();
+               ServiceBase::ReleaseComplete();
             }
          } break;
 

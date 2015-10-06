@@ -99,8 +99,7 @@ class UAIA_API IAFUProxy
 public:
    ~IAFUProxy(){};
    // Send a message to the device
-   virtual AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage,
-                                        AAL::TransactionID const &rtid)       = 0;
+   virtual AAL::btBool SendTransaction( IAIATransaction *pAFUmessage )       = 0;
 #if 0
    // Accessors to memory mapped regions
    virtual AAL::btVirtAddr getCSRBase()                                       = 0;

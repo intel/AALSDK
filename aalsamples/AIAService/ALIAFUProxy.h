@@ -53,9 +53,10 @@
 #include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
 #endif
 
-#include "aalsdk/aas/AALService.h"
-#include "aalsdk/INTCDefs.h"
-#include "aalsdk/uaia/IAFUProxy.h"
+#include <aalsdk/uaia/AIA.h>
+#include <aalsdk/aas/AALService.h>
+#include <aalsdk/INTCDefs.h>
+#include <aalsdk/uaia/IAFUProxy.h>
 
 #include "AIA-internal.h"
 
@@ -97,7 +98,7 @@ public:
    //</ServiceBase>
 
    // Send a message to the device
-   AAL::btBool SendTransaction( AAL::IAFUTransaction *pAFUmessage);
+   AAL::btBool SendTransaction( IAIATransaction *pAFUmessage);
 
 
 #if 0
