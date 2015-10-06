@@ -48,6 +48,11 @@ public:
 #endif // OS
    }
 
+   AAL::btUnsigned32bitInt RandSeed() const
+   {
+      return (AAL::btUnsigned32bitInt) ::testing::UnitTest::GetInstance()->random_seed();
+   }
+
 protected:
    GlobalTestConfig();
    virtual ~GlobalTestConfig();
@@ -516,9 +521,9 @@ class MethodCallLog : public CriticalSection
 public:
    MethodCallLog() {}
 
-   MethodCallLogEntry *    AddToLog(btcString method);
-   unsigned              LogEntries()           const;
-   const MethodCallLogEntry & Entry(unsigned i) const;
+   MethodCallLogEntry *    AddToLog(btcString method) const;
+   unsigned              LogEntries()                 const;
+   const MethodCallLogEntry & Entry(unsigned i)       const;
    void                    ClearLog();
 
 protected:
@@ -526,7 +531,7 @@ protected:
    typedef LogList::iterator             iterator;
    typedef LogList::const_iterator       const_iterator;
 
-   LogList m_LogList;
+   mutable LogList m_LogList;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -792,6 +797,30 @@ public:
    virtual void init(TransactionID const &rtid);
 };
 
+class EmptyServiceModule : public AAL::IServiceModule,
+                           public AAL::IServiceModuleCallback
+{
+public:
+   EmptyServiceModule();
+
+   virtual IBase *     Construct(IRuntime            *pAALRUNTIME,
+                                 IBase               *Client,
+                                 TransactionID const &tid = TransactionID(),
+                                 NamedValueSet const &optArgs = NamedValueSet());
+   virtual void          Destroy();
+   virtual void       setRuntime(IRuntime *pRuntime);
+   virtual IRuntime * getRuntime() const;
+
+   virtual void  ServiceReleased(IBase *pService);
+
+   DECLARE_RETVAL_ACCESSORS(Construct,  IBase *    )
+   DECLARE_RETVAL_ACCESSORS(getRuntime, IRuntime * )
+
+protected:
+   IBase    *m_Construct_returns;
+   IRuntime *m_getRuntime_returns;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class CallTrackingIServiceClient : public EmptyIServiceClient,
@@ -865,6 +894,23 @@ public:
                            IAALUnMarshaller *unmarshaller);
 
    virtual void init(TransactionID const &rtid);
+};
+
+class CallTrackingServiceModule : public EmptyServiceModule,
+                                  public MethodCallLog
+{
+public:
+   CallTrackingServiceModule();
+
+   virtual IBase *     Construct(IRuntime            *pAALRUNTIME,
+                                 IBase               *Client,
+                                 TransactionID const &tid = TransactionID(),
+                                 NamedValueSet const &optArgs = NamedValueSet());
+   virtual void          Destroy();
+   virtual void       setRuntime(IRuntime *pRuntime);
+   virtual IRuntime * getRuntime() const;
+
+   virtual void  ServiceReleased(IBase *pService);
 };
 
 #endif // __GTCOMMON_H__

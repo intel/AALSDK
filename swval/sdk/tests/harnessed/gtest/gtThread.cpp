@@ -49,7 +49,7 @@ ensure that we're calling the RNG correctly.
 */
    const int          count = 50;
    btUnsigned32bitInt randoms[count];
-   btUnsigned32bitInt seed = 1234;
+   btUnsigned32bitInt seed = GlobalTestConfig::GetInstance().RandSeed();
 
    // We should have no repeated values in count calls to the RNG.
    int i;
@@ -75,7 +75,7 @@ Another difficult problem to solve completely. Looking for a basic sanity check 
 
    const int          count = 50;
    btUnsigned32bitInt randoms[count];
-   btUnsigned32bitInt seed = 1234;
+   btUnsigned32bitInt seed = GlobalTestConfig::GetInstance().RandSeed();
    btUnsigned32bitInt save_seed = seed;
 
    int i;

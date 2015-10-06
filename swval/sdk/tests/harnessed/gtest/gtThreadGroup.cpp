@@ -775,7 +775,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
    memset(x, 0, sizeof(x));
    memset(y, 0, sizeof(y));
 
-   AAL::btUnsigned32bitInt r = 123;
+   AAL::btUnsigned32bitInt r = GlobalTestConfig::GetInstance().RandSeed();
 
    for ( i = 0 ; i < ItemsToAdd ; ++i ) {
 

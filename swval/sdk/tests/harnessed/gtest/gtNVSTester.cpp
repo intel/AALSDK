@@ -10,8 +10,8 @@
 
 CNVSRandomizer::CNVSRandomizer() :
    m_Count(5),
-   m_Seed(0),
-   m_SaveSeed(0)
+   m_Seed(GlobalTestConfig::GetInstance().RandSeed()),
+   m_SaveSeed(m_Seed)
 {}
 
 CNVSRandomizer::~CNVSRandomizer()
@@ -78,8 +78,11 @@ void CNVSRandomizer::ClearList()
 
 INamedValueSet * CNVSRandomizer::Zero()
 {
-   // An empty NVS.
-   return Alloc();
+   INamedValueSet *nvs = Alloc();
+
+   EXPECT_EQ(ENamedValuesOK, nvs->Add((btNumberKey)3, (btByte)1));
+
+   return nvs;
 }
 
 INamedValueSet * CNVSRandomizer::One()
@@ -266,14 +269,4 @@ INamedValueSet * CNVSRandomizer::Four()
 
    return nvs;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-
-
 

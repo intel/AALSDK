@@ -7,7 +7,7 @@ declare -r SCRIPT_NAME='valgrind-nightly'
 
 . ./valgrind-common
 
-declare ARGS=''
+declare ARGS='--gtest_print_time=0'
 
 declare WANTDISTCC=false
 while [ $# -gt 0 ]; do

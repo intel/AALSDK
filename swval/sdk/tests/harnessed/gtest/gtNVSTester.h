@@ -1155,9 +1155,13 @@ void TNVSTester<V, Verifier, GivesValues, GivesNumKeys, GivesStringKeys>::Equali
 
       EXPECT_EQ(ENamedValuesOK, c.Add(k, w));
 
-      EXPECT_FALSE(c == *nvs) << c << "\nvs.\n\n" << *nvs;
-      EXPECT_FALSE(c.Subset(*nvs));
-      EXPECT_FALSE(nvs->Subset(c));
+      // c is the same as nvs, except that..
+      //  * in nvs, 'k' maps to 'v'.
+      //  * in c,   'k' maps to 'w'.
+
+      EXPECT_FALSE(c == *nvs)      << "k=" << k << "\n" << c << "\nvs.\n\n" << *nvs;
+      EXPECT_FALSE(c.Subset(*nvs)) << "k=" << k << "\n" << c << "\nvs.\n\n" << *nvs;
+      EXPECT_FALSE(nvs->Subset(c)) << "k=" << k << "\n" << c << "\nvs.\n\n" << *nvs;
    }
 }
 
