@@ -201,6 +201,7 @@ btBool CResourceManager::init( IBase *pclientBase,
    }
    // Sends a Service Client serviceAllocated callback
    initComplete(rtid);
+   return true;
 }
 
 //=============================================================================
