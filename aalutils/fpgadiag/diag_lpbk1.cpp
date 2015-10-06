@@ -72,13 +72,13 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    // volatile, because the FPGA will be updating the buffers, too.
    volatile btVirtAddr pInputUsrVirt = m_pMyApp->InputVirt();
 
-   const    btUnsigned32bitInt  InputData = 0xdecafbad;
+   volatile btUnsigned32bitInt  InputData = 0x00000000;
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
                                      (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
    for ( ; pInput < pEndInput ; ++pInput ) {
-      *pInput = InputData;
+      *pInput = InputData++;
    }
 
    volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
