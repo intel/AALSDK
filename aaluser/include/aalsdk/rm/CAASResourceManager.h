@@ -218,7 +218,9 @@ public:
 
 
    // ServiceBase
-   void                    init                 (const TransactionID &rtid);
+   btBool                  init                 (IBase *pclientBase,
+                                                 NamedValueSet const &optArgs,
+                                                 TransactionID const &rtid);
    // IResMgr
    int                     start                (const TransactionID &rtid, btBool spawnThread = true);
    btBool                  Release              (TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);

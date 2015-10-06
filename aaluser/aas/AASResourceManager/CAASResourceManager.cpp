@@ -876,21 +876,21 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
 /*
  * Service initialization.
  */
-void CResMgr::init(const TransactionID &rtid)
+btBool CResMgr::init( IBase *pclientBase,
+                      NamedValueSet const &optArgs,
+                      TransactionID const &rtid)
 {
 
-		m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, ClientBase());
+		m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
 		ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
 		if(NULL == m_pAALServiceClient)
 		{
-			getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-	                                                                      Client(),
-	                                                                      this,
-	                                                                      rtid,
-	                                                                      errBadParameter,
-	                                                                      reasMissingInterface,
-	                                                                      "Client did not publish IServiceClient Interface"));
-	    	return;
+         initFailed(new CExceptionTransactionEvent( this,
+                                                    rtid,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish IServiceClient Interface" ) );
+	    	return false;
 	    }
 
 	// TODO: how to pass parameters into service?
@@ -939,12 +939,9 @@ void CResMgr::init(const TransactionID &rtid)
 
 
 	// schedule service allocated callback
-	getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-	    												   Client(),
-														   dynamic_cast<IBase *>(this),
-														   rtid));
+	initComplete(rtid);
 
-	return;
+	return true;
 
 
 	getout_3:
@@ -952,7 +949,7 @@ void CResMgr::init(const TransactionID &rtid)
 	getout_2:
 	   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
 	getout_1:
-	   return;
+	   return false;
 }
 
 /*
