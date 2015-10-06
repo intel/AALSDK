@@ -587,15 +587,39 @@ void AIAService::WaitForShutdown(TransactionID const &rtid,
 
    AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Done Releasing.\n");
 
-   //ServiceBase::Release(rtid, timeout);
+   // Since we are a singleton that never presented to a
+   //  client we don't do a ServiceBase::Release just complete now.
    ServiceBase::ReleaseComplete();
 }
 
+//=============================================================================
+// Name: serviceReleased()
+// Description: During a shutdown where AFUProxies were not released we Release
+//              them. But because the application is shutting down we don't let
+//              the events go to the normal client. We override with TranID and
+//              eat the event.  We also decrement a count so we know when we
+//              are done.
+// Inputs: rtid - TransactionID
+// Interface: public
+// Outputs: none.
+//=============================================================================
 void AIAService::serviceReleased(TransactionID const &rTranID )
 {
    SemPost();
 }
 
+//=============================================================================
+// Name: serviceReleaseFailed()
+// Description: During a shutdown where AFUProxies were not released we Release
+//              them. But because the application is shutting down we don't let
+//              the events go to the normal client. We override with TranID and
+//              eat the event.  We also decrement a count so we know when we
+//              are done.
+// Inputs: rtid - TransactionID
+// Interface: public
+// Outputs: none.
+// Comments: Would not expect this to happen
+//=============================================================================
 void AIAService::serviceReleaseFailed(const IEvent &rEvent)
 {
    SemPost();
