@@ -34,7 +34,6 @@ module inorder_wrf_channel
    parameter int 		  FIFO_WIDTH = TID_WIDTH + HDR_WIDTH + DATA_WIDTH;
 
    // Tracking ID
-   logic [TID_WIDTH-1:0] 	  tid_counter;
    logic [TID_WIDTH-1:0] 	  tid_in;
    logic [TID_WIDTH-1:0] 	  tid_out;
 
@@ -51,7 +50,6 @@ module inorder_wrf_channel
    logic [TID_WIDTH-1:0] 	  inff_tid;
    logic 			  inff_valid;
    logic 			  inff_empty;
-//   logic 			  inff_full;
    logic 			  inff_pop;
    logic [VISIBLE_DEPTH_BASE2:0]  inff_count;
 
