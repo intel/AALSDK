@@ -115,22 +115,22 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void CResourceManager::init(TransactionID const &rtid)
+btBool CResourceManager::init( IBase *pclientBase,
+                               NamedValueSet const &optArgs,
+                               TransactionID const &rtid)
 {
    std::string strBuf;                  // for reading environment variables
    btBool      bRunRRMinProc = false;
 
    // Save the client interface
-   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, ClientBase());
+   m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
    if( NULL == m_pResMgrClient ){
       // Sends a Service Client serviceAllocated callback
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errBadParameter,
-                                                                      reasInvalidParameter,
-                                                                      strInvalidParameter));
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasInvalidParameter,
+                                                 strInvalidParameter));
 
    }
 
@@ -167,28 +167,24 @@ void CResourceManager::init(TransactionID const &rtid)
       // wait for service to be allocated and run
       m_sem.Wait();
       if (!IsOK()) {
-         getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                               Client(),
-                                                                               NULL,
-                                                                               rtid,
-                                                                               errInternal,
-                                                                               reasCauseUnknown,
-                                                                               "Could not create RRM Service (in proc)."));
-         return;
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    rtid,
+                                                    errInternal,
+                                                    reasCauseUnknown,
+                                                    "Could not create RRM Service (in proc)."));
+         return false;
       }
    }
 
    // Create an open channel to the remote resource manager
    if ( !m_RMProxy.Open() ) {
       // Sends a Service Client serviceAllocated callback
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errDevice,
-                                                                      reasNoDevice,
-                                                                      strNoDevice));
-      return;
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errDevice,
+                                                 reasNoDevice,
+                                                 strNoDevice));
+      return false;
    }
 
    // Kick off the polling loop on the Proxy
@@ -197,19 +193,14 @@ void CResourceManager::init(TransactionID const &rtid)
                                  this);
    if(NULL == m_pProxyPoll){
       m_RMProxy.Close();
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      NULL,
-                                                                      rtid,
-                                                                      errInternal,
-                                                                      reasCauseUnknown,
-                                                                      "Could not create RM Proxy Poll thread."));
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errInternal,
+                                                 reasCauseUnknown,
+                                                 "Could not create RM Proxy Poll thread."));
    }
    // Sends a Service Client serviceAllocated callback
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(this),
-                                        rtid));
+   initComplete(rtid);
 }
 
 //=============================================================================
@@ -351,6 +342,48 @@ void CResourceManager::ProcessRMMessages()
    }
 }  // CResourceManager::ProcessRMMessages()
 
+
+//=============================================================================
+// Name: ~CResourceManagerClientService
+// Description: Destructor
+// Interface: public
+// Inputs: none.
+// Outputs: none.
+// Comments:
+//=============================================================================
+void CResourceManager::StopMessagePump()
+{
+
+   // Shutdown the message pump by putting in a reqid_Shutdown to force a
+   //    wake-up and let the kernel know it is going down.
+
+   DEBUG_CERR("~StopMessagePump: sending reqid_Shutdown.\n");
+
+   m_RMProxy.SendStop();
+
+   // if message pump thread is running, need to wait for it to terminate
+   if ( NULL != m_pProxyPoll ) {
+      // Wait for the Message delivery thread to terminate
+      DEBUG_CERR("~CResourceManagerClientService: waiting for Receive Thread to Join. 2 of 5\n");
+
+      m_pProxyPoll->Join();
+
+      DEBUG_CERR("~StopMessagePump: Receive Thread has Joined.\n");
+
+      delete m_pProxyPoll;
+      m_pProxyPoll = NULL;
+   }
+
+   // Close the physical device
+   DEBUG_CERR("~StopMessagePump: shutting down UI Client file.\n");
+
+   // Close the channel
+   m_RMProxy.Close();
+
+   DEBUG_CERR("~StopMessagePump: done.\n");
+
+}
+
 //=============================================================================
 // Name: ~CResourceManagerClientService
 // Description: Destructor
@@ -361,53 +394,7 @@ void CResourceManager::ProcessRMMessages()
 //=============================================================================
 CResourceManager::~CResourceManager()
 {
-#if 0
-   // Shutdown the message pump by putting in a reqid_Shutdown to force a
-   //    wake-up and let the kernel know it is going down.
-   if ( m_RMC.IsOK() ) {
-      DEBUG_CERR("~CResourceManagerClientService: sending reqid_Shutdown. 1 of 5\n");
 
-      struct aalrm_ioctlreq req;
-      memset(&req, 0, sizeof(req));
-
-      req.id      = reqid_Shutdown;
-      req.size    = 0;
-      req.payload = NULL;
-      req.tranID  = (stTransactionID_t &) TransactionID(123456);
-      req.context = (void *) 67890;
-
-      m_RMC.Send( &req);
-
-   } else {
-      DEBUG_CERR("~CResourceManagerClientService: Channel already closed. Unexpected.\n");
-   }
-
-   // if message pump thread is running, need to wait for it to terminate
-   if ( NULL != m_pMDT ) {
-      // Wait for the Message delivery thread to terminate
-      DEBUG_CERR("~CResourceManagerClientService: waiting for Receive Thread to Join. 2 of 5\n");
-
-#if defined( __AAL_WINDOWS__ )
-// ** short-term hack to enable SPL2 Windows port.
-      m_RMC.m_HeinousHackSpin = false;
-#endif // __AAL_WINDOWS__
-
-      m_pMDT->Join();
-
-      DEBUG_CERR("~CResourceManagerClientService: Receive Thread has Joined. 3 of 5\n");
-
-      delete m_pMDT;
-      m_pMDT = NULL;
-   }
-
-   // Close the physical device
-   DEBUG_CERR("~CResourceManagerClientService: shutting down UI Client file. 4 of 5\n");
-
-   // Close the channel
-   m_RMC.Close();
-
-   DEBUG_CERR("~CResourceManagerClientService: done. 5 of 5\n");
-#endif
 } // End of CResourceManagerClientService::~CResourceManagerClientService
 
 //=============================================================================
@@ -424,6 +411,10 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
       // TODO: check for failure
    }
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
+
+   // This function blocks until pump is stopped.
+   StopMessagePump();
+
    ServiceBase::Release(rTranID, timeout);
 }
 

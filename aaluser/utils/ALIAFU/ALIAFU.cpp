@@ -60,20 +60,20 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup ALIAFU
 /// @{
 
-void ALIAFU::init(TransactionID const &TranID)
+btBool ALIAFU::init( IBase *pclientBase,
+                     NamedValueSet const &optArgs,
+                     TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish ICCIClient Interface"));
-      return;
+     initFailed(new CExceptionTransactionEvent( this,
+                                                 TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish ICCIClient Interface"));
+      return false;
    }
 
    // Default target is hardware AFU.
@@ -95,6 +95,7 @@ void ALIAFU::init(TransactionID const &TranID)
    // TODO Use wrap/unwrap utils.
    m_TranIDFrominit = TranID;
    allocService(dynamic_ptr<IBase>(iidBase, this), manifest, TransactionID());
+   return true;
 }
 
 btBool ALIAFU::Release(TransactionID const &TranID, btTime timeout)
@@ -141,23 +142,18 @@ void ALIAFU::serviceAllocated(IBase               *pServiceBase,
       SetInterface(iidHWALIAFU, dynamic_ptr<IALIAFU>(iidHWALIAFU, pServiceBase));
    }
 
-   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         Client(),
-                                                                         dynamic_cast<IBase *>(this),
-                                                                         m_TranIDFrominit) );
+   initComplete(m_TranIDFrominit);
 }
 
 void ALIAFU::serviceAllocateFailed(const IEvent &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                  Client(),
-                                                                                  NULL,
-                                                                                  m_TranIDFrominit,
-                                                                                  errInternal,
-                                                                                  reasCauseUnknown,
-                                                                                  "Allocate Failed") );
+   initFailed( new(std::nothrow) CExceptionTransactionEvent( NULL,
+                                                             m_TranIDFrominit,
+                                                             errInternal,
+                                                             reasCauseUnknown,
+                                                             "Allocate Failed") );
 }
 
 void ALIAFU::serviceReleased(TransactionID const &TranID)
@@ -171,7 +167,7 @@ void ALIAFU::serviceReleaseFailed(const IEvent &Event)
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
    getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                  Client(),
+                                                                                  getServiceClient(),
                                                                                   NULL,
                                                                                   m_TranIDFrominit,
                                                                                   errInternal,
@@ -183,7 +179,8 @@ void ALIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
    getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
-                                                                            Client(),
+                                                                            getServiceClient(),
+                                                                            getRuntimeClient(),
                                                                             dynamic_cast<IBase *>(this),
                                                                             &Event) );
 }
@@ -226,7 +223,7 @@ void ALIAFU::OnWorkspaceAllocated(TransactionID const &TranID,
                                     btWSSize             WkspcSize)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
                                                                                   TranID,
                                                                                   WkspcVirt,
                                                                                   WkspcPhys,
@@ -236,7 +233,7 @@ void ALIAFU::OnWorkspaceAllocated(TransactionID const &TranID,
 void ALIAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT(NULL != pClient);
    if ( NULL != pClient ) {
       pClient->OnWorkspaceAllocateFailed(Event);
@@ -246,14 +243,14 @@ void ALIAFU::OnWorkspaceAllocateFailed(const IEvent &Event)
 void ALIAFU::OnWorkspaceFreed(TransactionID const &TranID)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+   getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
                                                                               TranID) );
 }
 
 void ALIAFU::OnWorkspaceFreeFailed(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT(NULL != pClient);
    if ( NULL != pClient ) {
       pClient->OnWorkspaceFreeFailed(Event);

@@ -57,26 +57,24 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup HWCCIAFU
 /// @{
 
-void HWCCIAFU::init(TransactionID const &TranID)
+btBool HWCCIAFU::init( IBase *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
       /// ObjectCreatedExceptionEvent Constructor.
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish ICCIClient Interface"));
-      return;
+      initFailed(new CExceptionTransactionEvent( this,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish ICCIClient Interface"));
+      return false;
    }
 
-   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                         Client(),
-                                                                         dynamic_cast<IBase *>(this),
-                                                                         TranID) );
+   initComplete(rtid);
+   return true;
 }
 
 btBool HWCCIAFU::Release(TransactionID const &TranID, btTime timeout)

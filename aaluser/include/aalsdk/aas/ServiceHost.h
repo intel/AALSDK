@@ -51,21 +51,21 @@ BEGIN_NAMESPACE(AAL)
 class AALRUNTIME_API ServiceHost : private CUnCopyable
 {
 public:
-   ServiceHost( btcString root_name );
-   ServiceHost( AALSvcEntryPoint EP);
+   ServiceHost(btcString root_name);
+   ServiceHost(AALSvcEntryPoint EP);
 
-   btBool IsOK() const {return m_bIsOK;}
-   ~ServiceHost(){}
+   ~ServiceHost();
+   btBool InstantiateService(IRuntime            *pRuntime,
+                             IBase               *pClient,
+                             NamedValueSet const &rManifest = NamedValueSet(),
+                             TransactionID const &rTranID   = TransactionID());
 
-   btBool InstantiateService( IRuntime            *pRuntime,
-                              IBase               *pClient,
-                              NamedValueSet const &rManifest = NamedValueSet(),
-                              TransactionID const &rTranID = TransactionID());
-
-   std::string const &getName() const   { return m_name;      }
-   IBase *  getIBase()const             { return m_base;      }
-   operator IBase * ()const             { return m_base;      }
-   IServiceModule * getProvider()const  { return m_pProvider; }
+   btBool                  IsOK() const { return m_bIsOK;     }
+   std::string const &  getName() const { return m_name;      }
+   IBase *             getIBase() const { return m_base;      }
+              operator IBase * () const { return m_base;      }
+   IServiceModule * getProvider() const { return m_pProvider; }
+   void freeProvider();
 
 private:
    ServiceHost() {}

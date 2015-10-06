@@ -41,6 +41,8 @@
 //****************************************************************************
 #ifndef __AALSDK_AAS_AALINPROCSERVICEFACTORY_H__
 #define __AALSDK_AAS_AALINPROCSERVICEFACTORY_H__
+#include "aalsdk/AALLoggerExtern.h"
+
 #include <aalsdk/aas/AALServiceModule.h>
 
 
@@ -103,31 +105,39 @@ public:
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IRuntime            *pRuntime)
    {
-      m_pService = new I(container,pRuntime);
-      if ( NULL == m_pService ) {
+      I *pService = new(std::nothrow) I(container,pRuntime);
+      if ( NULL == pService ) {
          return NULL;
       }
       // Service MUST be derived from IBase
-      return dynamic_cast<IBase*>(m_pService);
+      return dynamic_cast<IBase*>(pService);
    }
 
   /// @Initilizes the service and returns what the service gives
-   btBool InitializeService(IBase               *Client,
+   btBool InitializeService(IBase               *newService,
+                            IBase               *Client,
                             TransactionID const &rtid,
                             NamedValueSet const &optArgs)
    {
-      // Initialize the service
-      IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
-
-      if( NULL == ptr ) {
-         delete m_pService;
-         m_pService = NULL;
-         return false;
+      // Service MUST be of class template parameter I
+      I * pobj =  dynamic_cast<I *>(newService);
+      if(NULL != pobj){
+         return pobj->_init(Client, rtid, optArgs, NULL);
       }
-      return true;
+      AAL_DEBUG(LM_AAS,"InProcSvcsFact:FAILED to dynamic cast object\n");
+      return false;
    }
-protected:
-   I *m_pService;
+
+   virtual void DestroyServiceObject(IBase *pServiceBase)
+   {
+      // Service MUST be of class template parameter I
+      I * pobj =  dynamic_cast<I *>(pServiceBase);
+      if(NULL != pobj){
+         delete pobj;
+      }else{
+         AAL_DEBUG(LM_AAS,"InProcSvcsFact::DestroyServiceObject object is NULL\n");
+      }
+   }
 };
 
 
@@ -139,44 +149,52 @@ template <typename I>
 class InProcSingletonSvcsFact : public ISvcsFact
 {
 public:
-   InProcSingletonSvcsFact() :
-      m_pService(NULL)
-   {}
+   InProcSingletonSvcsFact()
+   {m_pService = NULL;}
 
    IBase * CreateServiceObject(AALServiceModule    *container,
                                IRuntime            *pRuntime)
-    {
-       // Only crate the new instance if one does not exist
-       if ( NULL == m_pService ) {
+   {
+      // Only crate the new instance if one does not exist
+      if ( NULL == m_pService ) {
 
-          m_pService = new I(container,pRuntime);
-          if ( NULL == m_pService ) {
-             return NULL;
-          }
-          // Service MUST be derived from IBase
-           return dynamic_cast<IBase*>(m_pService);
+         m_pService = new(std::nothrow) I(container,pRuntime);
+         if ( NULL == m_pService ) {
+            return NULL;
+         }
+         // Service MUST be derived from IBase
+         return dynamic_cast<IBase*>(m_pService);
        }
     }
    /// @Initilizes the service and returns what the service gives
-    btBool InitializeService(IBase               *Client,
-                             TransactionID const &rtid,
-                             NamedValueSet const &optArgs)
-     {
-       // Initialize the service
-       IBase *ptr = m_pService->_init(Client, rtid, optArgs, NULL);
+   btBool InitializeService(IBase               *newService,
+                            IBase               *Client,
+                            TransactionID const &rtid,
+                            NamedValueSet const &optArgs)
+   {
 
-       if ( NULL == ptr ) {
-          delete m_pService;
-          m_pService = NULL;
-          return false;
+      // Service MUST be of class template parameter I
+      m_pService =  dynamic_cast<I *>(newService);
+      if(NULL != m_pService){
+         return m_pService->_init(Client, rtid, optArgs, NULL);
+      }
+      // TODO use loggin
+      AAL_DEBUG(LM_AAS,"InProcSingletonSvcsFact:FAILED to dynamic cast object\n");
+      return false;
+   }
+
+    virtual void DestroyServiceObject(IBase *pServiceBase)
+    {
+
+       if(NULL != pServiceBase){
+          delete pServiceBase;
+          pServiceBase = NULL;
+       }else{
+          AAL_DEBUG(LM_AAS,"InProcSingletonSvcsFact::DestroyServiceObject object is NULL\n");
        }
-
-       // Return what the service gives
-       return true;
     }
-
 protected:
-   I *m_pService;
+    I *m_pService;
 };
 
 

@@ -37,6 +37,7 @@ WHAT_TO_MEASURE="${PWD}/../tests/testsuite -v -C ${VPATH}/tests --bat --gtest-op
 GCDA_DIRS=(\
 "--directory ${VPATH}/aas/OSAL/.libs" \
 "--directory ${VPATH}/aas/AASLib/.libs" \
+"--directory ${VPATH}/aas/AALRuntime/.libs" \
 "--directory ${VPATH}/tests/harnessed/gtest"\
 )
 

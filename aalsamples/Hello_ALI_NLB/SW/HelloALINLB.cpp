@@ -63,7 +63,7 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-//#define  HWAFU
+#define  HWAFU
 //#define  ASEAFU
 
 using namespace std;
@@ -383,9 +383,11 @@ btInt HelloALINLBApp::run()
 
 #if defined( HWAFU )                /* Use FPGA hardware */
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+//   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   //ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
    Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
