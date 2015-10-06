@@ -48,15 +48,6 @@
 
 #include "AIATransactions.h"
 
-//#include "aalsdk/INTCDefs.h"
-
-
-
-
-//#include "aalsdk/uaia/IAFUProxy.h"
-//#include "aalsdk/faptrans/FAP10.h"
-//#include "aalsdk/kernel/ahmpipdefs.h"
-
 USING_NAMESPACE(AAL);
 
 //=============================================================================

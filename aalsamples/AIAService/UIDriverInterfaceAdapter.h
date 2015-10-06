@@ -40,8 +40,6 @@
 #define __UIDRVERINTERFACEADAPTER_H__
 #include <aalsdk/kernel/aalui.h>  // uid_msgIDs_e, uid_errnum_e, aalui_ioctlreq
 
-
-
 #include <aalsdk/AALTypes.h>
 
 #include <aalsdk/osal/CriticalSection.h>

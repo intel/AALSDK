@@ -37,7 +37,8 @@
 /// 06/20/09       JG       Pulled from AALuAIA_UIDriverClient.h
 /// 08/02/09       AC       Fixed a bug to initialize m_message to '0'
 /// 06/17/10       AC       Fixed valgrind error to initialize m_payload to '0'
-/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq@endverbatim
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AIA_UIDRVMESSAGE_H__
 #define __AALSDK_AIA_UIDRVMESSAGE_H__

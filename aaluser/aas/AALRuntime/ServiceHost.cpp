@@ -24,14 +24,19 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: ServiceHost.cpp
-//     CREATED: Mar 22, 2014
-//      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
-//
-// PURPOSE:   Wrapper class for Service Host plug-ins
-// HISTORY:
-// COMMENTS:
-// WHEN:          WHO:     WHAT:
+///        @file: ServiceHost.cpp
+///     CREATED: Mar 22, 2014
+///      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
+///
+// /@brief:   Wrapper class for Service Host plug-ins
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+///
+/// AUTHORS: Joseph Grecco, Intel Corporation.
+/// HISTORY:
+/// COMMENTS:
+/// WHEN:          WHO:     WHAT:
+/// 09/5/2015      JG       Added Provider Release. Changed for 4.x@endverbatim
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -182,9 +187,7 @@ btBool ServiceHost::InstantiateService(IRuntime            *pRuntime,
       return false;
    }
 
-   m_base = m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);
-
-   return NULL != m_base;
+   return m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);;
 }
 
 END_NAMESPACE(AAL)

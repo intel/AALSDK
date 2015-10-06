@@ -38,21 +38,7 @@
 //****************************************************************************
 #ifndef __AALSDK_ALIAFUPROXY_H__
 #define __AALSDK_ALIAFUPROXY_H__
-#if 0
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/CAALBase.h>                    // CAALBase
-#include <aalsdk/AALEvent.h>                    // IEvent
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/uaia/uidrvMessage.h>           // uidrvMessageRoute
-#include <aalsdk/uaia/AIA.h>                    // IAFUDev, IAFUTransaction, IAFUCSRMap
-#include <aalsdk/uaia/IUAIASession.h>           // IuAIASession
-#include <aalsdk/uaia/AALuAIA_Messaging.h>      // UIDriverClient_uidrvMarshaler_t
-
-#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
-
-#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
-#endif
-
+#
 #include <aalsdk/uaia/AIA.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/INTCDefs.h>
@@ -100,17 +86,6 @@ public:
    // Send a message to the device
    AAL::btBool SendTransaction( IAIATransaction *pAFUmessage);
 
-
-#if 0
-   // Accessors to memory mapped regions
-   AAL::btVirtAddr getCSRBase();
-
-   AAL::btVirtAddr getMMIORBase();
-   AAL::btUnsigned32bitInt getMMIORsize();
-
-   AAL::btVirtAddr getUMSGBase();
-   AAL::btUnsigned32bitInt getUMSGsize();
-#endif
 protected:
    void AFUEvent( AAL::IEvent const &theEvent);
 

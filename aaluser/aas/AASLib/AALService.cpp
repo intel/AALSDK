@@ -41,7 +41,8 @@
 /// 01/21/2013     TSW      Moving C++ inlined definitions to .cpp file
 /// 03/12/2014     JG       Added support for client callback interface
 ///                         Fixed a bug in copy constructor where copy was
-///                          incomplete.@endverbatim
+///                          incomplete.
+/// 09/05/2015     JG       Modifed for 4.x@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -388,14 +389,6 @@ void ServiceBase::Released()
    flag_setf(m_Flags, SERVICEBASE_IS_RELEASED);
    m_pcontainer->ServiceReleased(this);
 }
-
-#if DEPRECATED
-void ServiceBase::messageHandler(const IEvent &rEvent)
-{
-   // Forward the event to the static event handler
-   ASSERT(false);
-}
-#endif // DEPRECATED
 
 ServiceBase::ServiceBase(const ServiceBase & ) {/*empty*/}
 ServiceBase & ServiceBase::operator = (const ServiceBase & ) { return *this; }

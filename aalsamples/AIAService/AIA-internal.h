@@ -39,17 +39,7 @@
 //****************************************************************************
 #ifndef __AALSDK_AIA_INTERNAL_H__
 #define __AALSDK_AIA_INTERNAL_H__
-//#include <aalsdk/AALTypes.h>
-//#include <aalsdk/AALTransactionID.h>
-//#include <aalsdk/osal/OSSemaphore.h>
-//#include <aalsdk/osal/CriticalSection.h>
-//#include <aalsdk/osal/Thread.h>
-//#include <aalsdk/AALBase.h>                        // IBase
-//#include <aalsdk/aas/AALServiceModule.h>
-//#include <aalsdk/aas/AALService.h>                 // ServiceBase
-//#include <aalsdk/uaia/AIA.h>                       // AIA interfaces
-//#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
-//#include <aalsdk/uaia/uAIASession.h>               // uAIASession
+
 #include <aalsdk/aas/AALService.h>                 // ServiceBase
 #include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
 

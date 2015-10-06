@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -31,50 +31,11 @@
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
-///          Alvin Chen, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 11/25/2008     JG       Added the CAFUDev implementation
-/// 12/02/2008     HM       Moved using namespaces above
-///                            DEFINE_SERVICE_FACTORY_ACCESSOR(AIAService) because
-///                            of Namespacing change in AIAService.h
-/// 12/10/2008     HM       Added Logger
-/// 12/14/2008     HM       Added result_code accessor / mutator
-/// 01/04/2009     HM       Updated Copyright
-/// 02/01/2009     HM       Put "Returned" in Logger
-/// 02/14/2009     HM       Modified UnBind, and expanded MessageHandler
-/// 02/20/2009     HM       Added AALLogger messages to
-///                            AIAServiceMangement::MessageHandler
-/// 05/18/2009     HM       Process_Event() now forwards messages with error
-///                            codes on up the stack
-/// 06/06/2009     HM       Message pump shutdown
-/// 06/07/2009     HM       Calls to AALLogger in ~AIAService currently execute after
-///                            exit() from main(). By that time the Logger is
-///                            gone, segfault. Removed Logging calls from dtor.
-///                         Will reinstate once SystemStop() correctly shuts
-///                            down AIAService before exiting.
-/// 06/22/2009     JG       Massive changes to support new proxy mechanism and
-///                            to fix build dependencies that required external
-///                            linking to the module, breaking plug-in model.
-/// 07/06/2009     HM/JG    Fixed double-destruction of AIAService. Refined AIAService shut-
-///                            down code a bit more.
-///                         Added IssueShutdownMessageWorker().
-/// 07/15/2009     HM       Instrumented Shutdown code
-/// 07/16/2009     HM       Fixed a bug for Shutdown more than once in the same process
-/// 07/31/2009     AC       Fixed a leakage issue of the UIDriverClientEvent
-/// 08/16/2009     HM       Added debug statements to BindProxy() and Release()
-/// 08/16/2009     HM       Backed down the debugs from DEBUG to VERBOSE
-/// 06/02/2010     JG       Modified AIA for asynchronous shutdown of clients.
-///                            prior the MDP was shutdown first preventing
-///                            AFUs from cleaning up.
-///                         Added support for a default handler.
-/// 06/02/2011     JG       Added NamedValueSet to Initialize for Service 2.0
-/// 09/01/2011     JG       Redesigned AIA to use Service 2.0 framework.
-///                         Eliminated Proxys.  Simplified class hierarchy.
-/// 10/26/2011     JG       Added back proxy in the form of CAIA to properly
-///                           handle singletons with cotext
-/// 01/16/2012     JG       Fixed init() for latest SDK change@endverbatim
+//  8/21/2015      JG       Initial vesions
+///                @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -90,18 +51,6 @@
 #include "AIA-internal.h"
 #include "aalsdk/Dispatchables.h"
 #include "ALIAFUProxy.h"
-
-//#include "aalsdk/AALTypes.h"
-
-//#include "aalsdk/AALTransactionID.h"
-
-//#include "aalsdk/uaia/FAPPIP_AFUdev.h"
-
-
-//#include "aalsdk/kernel/KernelStructs.h"
-
-//#include "UIDriverInterfaceAdapter.h"
-//#include "aalsdk/CAALEvent.h"
 
 
 //========================================
