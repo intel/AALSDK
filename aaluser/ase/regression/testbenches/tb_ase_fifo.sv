@@ -11,7 +11,7 @@ module tb_ase_fifo();
    int 			  wr_iter;
    int 			  rd_iter;
 
-    ase_svfifo inst_fifo (clk, rst, valid_in, data_in, read_en, data_out, valid_out, full, , empty, count, , );
+    ase_fifo inst_fifo (clk, rst, valid_in, data_in, read_en, data_out, valid_out, full, , empty, count, , );
 
    //clk
    initial begin

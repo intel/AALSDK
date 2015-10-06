@@ -2,8 +2,8 @@
 
 module tb_latency_scoreboard();
 
-   parameter DATA_WIDTH = 72;
-   parameter HDR_WIDTH = 72;
+   parameter DATA_WIDTH = 64;
+   parameter HDR_WIDTH = 80;
       
    logic clk, rst, full, empty, valid_in, valid_out, read_en;     
    logic [DATA_WIDTH-1:0] data_in, data_out;
@@ -12,7 +12,7 @@ module tb_latency_scoreboard();
    logic 		  overflow, underflow;
    
    // Buffer
-   latency_scoreboard 
+   inorder_wrf_channel
      #(
        .NUM_TRANSACTIONS (4),
        .HDR_WIDTH  (HDR_WIDTH), 
@@ -45,8 +45,8 @@ module tb_latency_scoreboard();
       if (rst) begin
 	 valid_in <= 0;
 	 wr_iter <= 0;
-	 data_in <= 0;	 
-	 meta_in <= 72'h00_00000000_00000000;	 
+	 data_in <= 64'hCAFEBABE_BEBAFECA;	 
+	 meta_in <= 72'h01_00000000_00000000;	 
       end
       else begin
 	 if ((~full) && (wr_iter < 10)) begin
