@@ -70,7 +70,7 @@ public:
       m_Last3cc(0xffffffff)
    {
       SetInterface(        iidSPLAFU,    dynamic_cast<ISPLAFU *>(this));
-      SetSubClassInterface(iidASESPLAFU, dynamic_cast<ISPLAFU *>(this));
+      SetInterface(iidASESPLAFU, dynamic_cast<ISPLAFU *>(this));
    }
 
    virtual btBool init( IBase *pclientBase,

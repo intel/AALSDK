@@ -199,7 +199,7 @@ void SPL2_Start_AFUTransaction::AFUDSMMappingHandler(IEvent const &theEvent)
    //////////////////////////////////////////////////////////////////////////////////////
 
    // This Event is a IUIDriverClientEvent. Get the results from the call.
-   IUIDriverClientEvent *pevt = subclass_ptr<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent *pevt = dynamic_ptr<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
    ASSERT(pevt);
 
    if ( uid_errnumOK == pevt->ResultCode() ) {

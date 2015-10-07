@@ -179,7 +179,6 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
-                 include/aalsdk/eds/AASEDSService.h
                  include/aalsdk/registrar/AASRegistrarService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h

@@ -93,8 +93,8 @@ public:
       m_RMProxy(),
       m_pProxyPoll(NULL)
    {
-      SetSubClassInterface( iidResMgr,
-                            dynamic_cast<IResourceManager *>(this));
+      SetInterface( iidResMgr,
+                    dynamic_cast<IResourceManager *>(this));
    }
 
    ~CResourceManager();

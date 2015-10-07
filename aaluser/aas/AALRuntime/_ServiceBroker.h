@@ -61,8 +61,8 @@ public:
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
-      if ( EObjOK != SetSubClassInterface(iidServiceBroker,
-                                          dynamic_cast<IServiceBroker *>(this)) ) {
+      if ( EObjOK != SetInterface(iidServiceBroker,
+                                  dynamic_cast<IServiceBroker *>(this)) ) {
          m_bIsOK = false;
       }
    }

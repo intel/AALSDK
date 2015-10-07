@@ -137,7 +137,7 @@ btBool CResourceManager::init( IBase *pclientBase,
                                                  errDevice,
                                                  reasNoDevice,
                                                  strNoDevice));
-      return false;
+      return true;
    }
 
    // Kick off the polling loop on the Proxy
@@ -154,6 +154,7 @@ btBool CResourceManager::init( IBase *pclientBase,
    }
    // Sends a Service Client serviceAllocated callback
    initComplete(rtid);
+   return true;
 }
 
 //=============================================================================

@@ -67,7 +67,7 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
    m_RuntimeClient(NULL),
    m_pendingcount(0)
 {
-   if ( SetSubClassInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this)) != EObjOK ) {
+   if ( SetInterface(iidServiceProvider, dynamic_cast<IServiceModule *>(this)) != EObjOK ) {
       m_bIsOK = false;
       return;
    }

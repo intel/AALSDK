@@ -75,7 +75,7 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWSPLAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
    {
       SetInterface(        iidSPLAFU,   dynamic_cast<ISPLAFU *>(this));
-      SetSubClassInterface(iidHWSPLAFU, dynamic_cast<ISPLAFU *>(this));
+      SetInterface(iidHWSPLAFU, dynamic_cast<ISPLAFU *>(this));
    }
 
    virtual btBool init( IBase *pclientBase,

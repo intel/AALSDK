@@ -89,7 +89,7 @@ public:
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
-      SetSubClassInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this));
+      SetInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this));
       SetInterface(iidCCIClient,      dynamic_cast<ICCIClient *>(this));
       SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
    }

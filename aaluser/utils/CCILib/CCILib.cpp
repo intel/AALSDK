@@ -347,7 +347,7 @@ protected:
    {
       SetSynchronizer(pSync);
       m_Sem.Create(0, INT_MAX);
-      SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+      SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
    }
    ~CCCIDevice() throw() { m_Sem.Destroy(); }
 
@@ -492,7 +492,7 @@ protected:
       m_AALRuntime(this),
       m_AFUTarget(AFUTarget)
    {
-      SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+      SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
 
       NamedValueSet args;
 

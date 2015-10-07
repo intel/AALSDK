@@ -211,7 +211,10 @@ public:
    void SendMessage(UIDriverClient_uidrvManip fncObj)           { m_AIA->SendMessage(fncObj);  }
    btBool init( IBase *pclientBase,
                 NamedValueSet const &optArgs,
-                TransactionID const &rtid) {}
+                TransactionID const &rtid)
+   {
+      initComplete(rtid);
+   }
 
    // IService
    btBool Release(TransactionID const &rTranID,

@@ -805,7 +805,7 @@ void _runtime::serviceAllocated(IBase               *pServiceBase,
          }
 
          m_pBrokerbase = pServiceBase;
-         m_pBroker     = subclass_ptr<IServiceBroker>(m_pBrokerbase);
+         m_pBroker     = dynamic_ptr<IServiceBroker>(iidServiceBroker, m_pBrokerbase);
 
          m_sem.Post(1);
       } break;

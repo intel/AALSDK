@@ -191,7 +191,7 @@ private:
    public:
       ServiceClient( DeviceServiceBase *pdsb): m_pdsb(pdsb)
    {
-      SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(m_pdsb));
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(m_pdsb));
    }
 
    private:
@@ -428,7 +428,7 @@ private:
          // Device has been bound to this process. The kernel device (PIP) is
          // is abstsacted via the CAFUdev class
          case tranevtBindAFUDevEvent : {
-            IBindAFUDevEvent &revt = subclass_ref<IBindAFUDevEvent>(theEvent);
+            IBindAFUDevEvent &revt = dynamic_ref<IBindAFUDevEvent>(tranevtBindAFUDevEvent, theEvent);
 
             // Obtain the AFUDev, which represents the device handle, and which will be used subsequently
             //    for communication with the device and its workspace.
