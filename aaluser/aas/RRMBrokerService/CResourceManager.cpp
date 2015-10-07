@@ -90,6 +90,7 @@ AAL_END_SVC_MOD()
 
 BEGIN_NAMESPACE(AAL)
 
+enum RRMStartupMode { always, automatic, never };
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,8 +120,9 @@ btBool CResourceManager::init( IBase *pclientBase,
                                NamedValueSet const &optArgs,
                                TransactionID const &rtid)
 {
-   std::string strBuf;                  // for reading environment variables
-   btBool      bRunRRMinProc = false;
+   std::string       strStartupMode;              // for reading environment
+   btcString         sStartupMode   = NULL;       // for parsing environment
+   RRMStartupMode    startupMode    = automatic;  // default startup mode
 
    // Save the client interface
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
@@ -139,41 +141,58 @@ btBool CResourceManager::init( IBase *pclientBase,
    // Need is currently determined through environment variable
 
    // Check environment
-   if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strBuf) ) {
-      bRunRRMinProc = true;
+   if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strStartupMode) ) {
+      sStartupMode = strStartupMode.c_str();
    } else {
-      if ( ENamedValuesOK != OptArgs().Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &bRunRRMinProc) ) {
+      if ( ENamedValuesOK != OptArgs().Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &sStartupMode) ) {
               // Not in Environment and no Config Parms.
-              bRunRRMinProc = false;
+              sStartupMode = NULL;
       }
    }
 
-   // Allocate and run remote resource manager in process (separate thread)
-   if (bRunRRMinProc) {
-      NamedValueSet ResMgrManifest;
-      NamedValueSet ResMgrConfigRecord;
-
-      // Construct config record and manifest
-      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
-                       "libAASResMgr");
-      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
-
-      ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
-      ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
-
-      // allocate service
-      getRuntime()->allocService(dynamic_cast<IBase *>(this), ResMgrManifest);
-
-      // wait for service to be allocated and run
-      m_sem.Wait();
-      if (!IsOK()) {
-         initFailed(new CExceptionTransactionEvent( NULL,
-                                                    rtid,
-                                                    errInternal,
-                                                    reasCauseUnknown,
-                                                    "Could not create RRM Service (in proc)."));
-         return false;
+   // Parse envvar string, set startupMode accordingly (or leave at default)
+   if (NULL != sStartupMode) {
+      if (strcmp("always", sStartupMode) == 0) {
+         startupMode = always;
+      } else if (strcmp("never", sStartupMode) == 0) {
+         startupMode = never;
       }
+   }
+
+   switch (startupMode)
+   {
+   case automatic:
+      if (isRRMPresent()) break;
+   case always:
+      {
+         NamedValueSet ResMgrManifest;
+         NamedValueSet ResMgrConfigRecord;
+
+         // Construct config record and manifest
+         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
+                          "libAASResMgr");
+         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+         ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
+         ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
+
+         // allocate service
+         getRuntime()->allocService(dynamic_cast<IBase *>(this), ResMgrManifest);
+
+         // wait for service to be allocated and run
+         m_sem.Wait();
+         if (!IsOK()) {
+            initFailed(new CExceptionTransactionEvent( NULL,
+                                                       rtid,
+                                                       errInternal,
+                                                       reasCauseUnknown,
+                                                       "Could not create RRM Service (in proc)."));
+            return false;
+         }
+      }
+      break;
+   case never:
+      break;
    }
 
    // Create an open channel to the remote resource manager
@@ -468,6 +487,32 @@ void CResourceManager::serviceEvent(const IEvent &rEvent) {
    // TODO: handle unexpected events
    ASSERT(false);
 }
+
+// check if remote resource manager is already running by trying to open
+// its device file
+// TODO: if successful, might want to keep file open and pass fd to
+//       service construction. Otherwise, something might happen between our
+//       close() and the service's open().
+btBool CResourceManager::isRRMPresent()
+{
+   int fd = open("/dev/aalrms", O_RDWR);
+   if (fd == -1) {
+      // Could not open file, check reason
+      if (errno == EBUSY) {
+         // EBUSY probably means RRM is running
+         return true;
+      } else {
+         // Unexpected error code
+         AAL_ERR(LM_ResMgr, "open of /dev/aalrms failed unexpectedly with errno " << errno << "(" << strerror(errno) << ")");
+         return false;
+      }
+   } else {
+      // Could open file, no RRM present
+      close(fd);
+      return false;
+   }
+}
+
 
 END_NAMESPACE(AAL)
 

@@ -134,6 +134,9 @@ private:
                                 void      *pContext);
    void ProcessRMMessages();
 
+   // check if remote resource manager is already running
+   btBool                         isRRMPresent();
+
    IResourceManagerClient        *m_pResMgrClient;
    CResourceManagerProxy          m_RMProxy;
    OSLThread                     *m_pProxyPoll;
