@@ -54,6 +54,7 @@ public:
    ServiceHost(btcString root_name);
    ServiceHost(AALSvcEntryPoint EP);
 
+   ~ServiceHost();
    btBool InstantiateService(IRuntime            *pRuntime,
                              IBase               *pClient,
                              NamedValueSet const &rManifest = NamedValueSet(),
@@ -64,6 +65,7 @@ public:
    IBase *             getIBase() const { return m_base;      }
               operator IBase * () const { return m_base;      }
    IServiceModule * getProvider() const { return m_pProvider; }
+   void freeProvider();
 
 private:
    ServiceHost() {}

@@ -143,7 +143,30 @@ class AASLIB_API IServiceBase
 {
 public:
    virtual ~IServiceBase() {}
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT) = 0;
+
+   // Called once when the Service is done initializing.
+   virtual btBool initComplete(TransactionID const &rtid)      = 0;
+   virtual btBool initFailed(IEvent const *ptheEvent)          = 0;
+
+   // Final step for release
+   virtual btBool ReleaseComplete()                                    = 0;
+
+   virtual NamedValueSet const &OptArgs() const                = 0;
+
+   /// Accessor to pointer to the Service's Client's Interface
+    virtual IServiceClient *getServiceClient() const           = 0;
+
+    /// Accessor to pointer to the Service's Client's IBase Interface
+    virtual IBase          *getServiceClientBase() const       = 0;
+
+    /// Accessor to pointer to the Runtime to be used in ObjectCreated
+    virtual IRuntime *getRuntime() const                       = 0;
+
+    /// Accessor to pointer to the Runtime Client
+    virtual IRuntimeClient * getRuntimeClient() const          = 0;
+
+    /// Accessor to this Services Service Module
+    virtual AALServiceModule     * getAALServiceModule() const = 0;
 };
 
 //=============================================================================
@@ -180,13 +203,34 @@ public:
    /// @param[in] marshaller Marshaller if not in-proc
    /// @param[in] unmarshaller Unmarshaller if not in-proc
    ServiceBase(AALServiceModule *container,
-               IRuntime         *pAALRUNTIME,
+               IRuntime         *pAALRuntime,
                IAALTransport    *ptransport   = NULL,
                IAALMarshaller   *marshaller   = NULL,
                IAALUnMarshaller *unmarshaller = NULL);
 
    /// ServiceBase Destructor.
    virtual ~ServiceBase();
+
+   /// Hook for derived classes to perform any post-creation initialization.
+   ///
+   /// This function is called by the factory AFTER _init(), insuring
+   /// that base class initialization has occurred by the time this is called.
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid) = 0;
+
+
+   // @param[in]  pclient       Interface of client of service.
+   // @param[in]  rtid          TransactionID for routing event responses.
+   // @param[in]  optArgs       Optional arguments.
+   // @param[in]  pcmpltEvent   Optional completion event. Used internally to
+   //  traverse the inheritance hierarchy during initialization.
+   //
+   //  Client is using callback interface method of signaling
+   virtual btBool _init( IBase               *pclientBase,
+                         TransactionID const &rtid,
+                         NamedValueSet const &optArgs,
+                         CAALEvent           *pcmpltEvent = NULL);
 
    // <IAALService> - Empty defaults
 
@@ -198,12 +242,39 @@ public:
    /// @param[in] timeout Timeout
    virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
-   // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
-   //   This function destroys the Service object.
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
-
    // </IAALService>
 
+   // <IServiceBase>
+
+   // Called once when the Service is done initializing.
+   btBool initComplete(TransactionID const &rtid);
+   btBool initFailed(IEvent const *ptheEvent);
+
+   // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
+   //   This function destroys the Service object.
+   virtual btBool ReleaseComplete();
+
+   /// Accessor to optional arguments passed during allocateService
+   ///
+   NamedValueSet const &OptArgs() const;
+
+   /// Accessor to pointer to the Service's Client's Interface
+   IServiceClient *getServiceClient() const;
+
+   /// Accessor to pointer to the Service's Client's IBase Interface
+   IBase          *getServiceClientBase() const;
+
+   /// Accessor to pointer to the Runtime to be used in ObjectCreated
+   ///
+   IRuntime * getRuntime() const;
+
+   /// Accessor to pointer to the Runtime Client
+   IRuntimeClient * getRuntimeClient() const;
+
+   /// Accessor to this Services Service Module
+   AALServiceModule     * getAALServiceModule()  const;
+
+   // </IServiceBase>
 
    // <IRuntimeClient>
    /// @brief     Called by a Runtime object to indicate that it failed to
@@ -295,23 +366,8 @@ public:
    virtual void runtimeEvent(const IEvent & ) {/*to be implemented by the service*/}
    // </IRuntimeClient>
 
-   /// @param[in]  pclient       Interface of client of service.
-   /// @param[in]  rtid          TransactionID for routing event responses.
-   /// @param[in]  optArgs       Optional arguments.
-   /// @param[in]  pcmpltEvent   Optional completion event. Used internally to
-   ///  traverse the inheritance hierarchy during initialization.
-   ///
-   ///  Client is using callback interface method of signaling
-   virtual IBase * _init(IBase               *pclient,
-                         TransactionID const &rtid,
-                         NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL);
 
-   /// Hook for derived classes to perform any post-creation initialization.
-   ///
-   /// This function is called by the factory AFTER _init(), insuring
-   /// that base class initialization has occurred by the time this is called.
-   virtual void init(TransactionID const &rtid) = 0;
+
 
 #if DEPRECATED
    //@brief  IServiceClient - For backward compatibility with < version 4.0
@@ -378,24 +434,6 @@ public:
    /// Default is to not support parameters (Services can override to implement parameters).
    virtual btBool SetParms(NamedValueSet const & ) { return false; }
 
-   /// Accessor to optional arguments passed during allocateService
-   NamedValueSet const &        OptArgs() const;
-
-   /// Accessor to pointer to the Service's Client's Interface
-   IServiceClient *              Client() const;
-
-   /// Accessor to pointer to the Service's Client's IBase Interface
-   IBase *                   ClientBase() const;
-
-   /// Accessor to pointer to the Runtime to be used in ObjectCreated
-   IRuntime *                getRuntime() const;
-
-   /// Accessor to pointer to the Runtime Client
-   IRuntimeClient *    getRuntimeClient() const;
-
-   /// Accessor to this Services Service Module
-   AALServiceModule * pAALServiceModule() const;
-
    //---------------------------------
    //  Accessors to utility functions
    //---------------------------------
@@ -417,10 +455,6 @@ protected:
    void MessageDeliveryThread();
 
    //=============================================================================
-   // Name: initComplete
-   // Description:
-   //=============================================================================
-   void initComplete(TransactionID const &rtid);
 
    void Released();
 
@@ -485,10 +519,10 @@ public:
    ///           call its direct ancestor's _init() FIRST to ensure that the class
    ///           hiearchy _init() called.
    //=============================================================================
-   virtual IBase * _init(IBase                   *pclient,
-                          TransactionID const      &rtid,
-                          NamedValueSet const      &optArgs,
-                          CAALEvent                *pcmpltEvent = NULL);
+   virtual btBool _init( IBase                   *pclient,
+                         TransactionID const      &rtid,
+                         NamedValueSet const      &optArgs,
+                         CAALEvent                *pcmpltEvent = NULL);
 private:
     //=============================================================================
     // Name: Doinit
@@ -524,7 +558,7 @@ public:
    ///           call its direct ancestor's _init() FIRST to ensure that the class
    ///           hiearchy _init() called.
    //=============================================================================
-   virtual IBase * _init(IBase               *pclient,
+   virtual btBool _init( IBase               *pclient,
                          TransactionID const &rtid,
                          NamedValueSet const &optArgs,
                          CAALEvent           *pcmpltEvent = NULL);

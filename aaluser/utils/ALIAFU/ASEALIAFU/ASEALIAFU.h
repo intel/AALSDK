@@ -71,10 +71,12 @@ public:
       m_Last3cc(0xffffffff)
    {
       SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
-      SetSubClassInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
+      SetInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
-   virtual void init(TransactionID const &TranID);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);

@@ -82,10 +82,12 @@ public:
       m_pSvcClient(NULL),
       m_pClient(NULL)
    {
-      SetSubClassInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
+      SetInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
    }
    /// Hook to allow the object to initialize
-   void init(TransactionID const &rtid);
+   btBool init( IBase *pclientBase,
+                NamedValueSet const &optArgs,
+                TransactionID const &rtid);
 
    void Hello( btcString            sMessage,
                TransactionID const &rTranID);

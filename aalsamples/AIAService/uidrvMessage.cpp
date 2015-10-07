@@ -25,43 +25,30 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file uidrvMessaging.cpp
-/// @brief Implementation of classes uidrvMessageRoute{} and uidrvMessage{}.
+/// @brief Implementation uidrvMessage class. This is an abstraction of the low
+///        level message structure used by the driver interface.
 /// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
 /// AUTHOR: Tim Whisonant, Intel Corporation.
+///         Joseph Grecco, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
-/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq@endverbatim
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "aalsdk/uaia/uidrvMessage.h"
+#include "uidrvMessage.h"
 #include "aalsdk/AALBase.h" // IBase
 
 
-BEGIN_NAMESPACE(AAL)
-
-
-uidrvMessageRoute::uidrvMessageRoute(IBase               *pAIAProxybase,
-                                     btEventHandler       EventHandler,
-                                     btApplicationContext Context) :
-   m_pAIAProxybase(pAIAProxybase),
-   m_Context(Context),
-   m_EventHandler(EventHandler)
-{}
-
-uidrvMessageRoute::uidrvMessageRoute(const uidrvMessageRoute &rother)
-{
-   m_pAIAProxybase = rother.m_pAIAProxybase;
-   m_Context       = rother.m_Context;
-   m_EventHandler  = rother.m_EventHandler;
-}
+USING_NAMESPACE(AAL)
 
 uidrvMessage::uidrvMessage() :
    m_pmessage(NULL)
@@ -85,8 +72,4 @@ void uidrvMessage::size(btWSSize PayloadSize)
    memset(m_pmessage, 0, m_msgsize);
    m_pmessage->m_ioctlreq.size = PayloadSize;
 }
-
-
-END_NAMESPACE(AAL)
-
 

@@ -61,8 +61,8 @@ public:
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
-      if ( EObjOK != SetSubClassInterface(iidServiceBroker,
-                                          dynamic_cast<IServiceBroker *>(this)) ) {
+      if ( EObjOK != SetInterface(iidServiceBroker,
+                                  dynamic_cast<IServiceBroker *>(this)) ) {
          m_bIsOK = false;
       }
    }
@@ -71,7 +71,9 @@ public:
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   virtual void init(TransactionID const &rtid);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    // Called when the service is released
    virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);

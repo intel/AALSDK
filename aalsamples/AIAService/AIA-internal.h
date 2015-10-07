@@ -39,30 +39,16 @@
 //****************************************************************************
 #ifndef __AALSDK_AIA_INTERNAL_H__
 #define __AALSDK_AIA_INTERNAL_H__
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/osal/OSSemaphore.h>
-#include <aalsdk/osal/CriticalSection.h>
-#include <aalsdk/osal/Thread.h>
-#include <aalsdk/AALBase.h>                        // IBase
-#include <aalsdk/aas/AALServiceModule.h>
-#include <aalsdk/aas/AALService.h>                 // ServiceBase
-#include <aalsdk/uaia/AIA.h>                       // AIA interfaces
-#include <aalsdk/uaia/AALuAIA_Messaging.h>         // UIDriverClient_uidrvManip, UIDriverClient_uidrvMarshaler_t
-#include <aalsdk/uaia/uAIASession.h>               // uAIASession
+
 #include <aalsdk/aas/AALService.h>                 // ServiceBase
 #include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
 
 #include <aalsdk/INTCDefs.h>                       // AIA IDs
 
 #include "UIDriverInterfaceAdapter.h"              // UIDriverInterfaceAdapter
+#include "AIATransactions.h"
 
 /// @todo Document uAIA and related.
-
-class DeviceServiceBase;
-
-USING_NAMESPACE(AAL);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,6 +59,39 @@ USING_NAMESPACE(AAL);
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
+#define AIA_SERVICE_BASE_INTERFACE "AIA_Service_Base_Interface"
+
+//============================================================================
+// AAL Service Client
+//============================================================================
+class AFUProxyCallback : public IDispatchable
+{
+public:
+
+   AFUProxyCallback(IAFUProxyClient          *pClient,
+                    AAL::IEvent const        *pEvent) :
+   m_pClient(pClient),
+   m_pEvent(pEvent)
+   {
+      ASSERT(NULL != pClient);
+      ASSERT(NULL != pEvent);
+   }
+
+
+void operator() ()
+{
+   {  m_pClient->AFUEvent(*m_pEvent);
+      delete m_pEvent;
+   }
+   delete this;
+}
+
+virtual ~AFUProxyCallback() {}
+
+protected:
+   IAFUProxyClient         *m_pClient;
+   AAL::IEvent const       *m_pEvent;
+};
 
 
 //=============================================================================
@@ -80,7 +99,7 @@ USING_NAMESPACE(AAL);
 // Description: Implementation of the AFU Interface Adapter Service
 // Comments:
 //=============================================================================
-class UAIA_API AIAService: public AAL::ServiceBase
+class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
 {
    public:
 
@@ -88,51 +107,97 @@ class UAIA_API AIAService: public AAL::ServiceBase
          m_uida(),
          m_Semaphore(),
          m_pMDT(NULL),
-         m_pShutdownThread(NULL)
+         m_pShutdownThread(NULL),
+         m_state(Uninitialized)
       {
          SetInterface(iidAIAService, dynamic_cast <AIAService *>(this));
+         if(!m_Semaphore.Create(1)){
+            return;
+         }
          m_bIsOK = false;
       }
 
       virtual ~AIAService();
 
       // <IAALService>
-      btBool Release(TransactionID const &rTranID,
-                     btTime timeout = AAL_INFINITE_WAIT);
+      btBool Release( AAL::TransactionID const &rTranID,
+                      AAL::btTime timeout = AAL_INFINITE_WAIT);
 
       // Hook to allow the object to initialize
-      void init(TransactionID const &rtid);
+      btBool init( AAL::IBase *pclientBase,
+                   AAL::NamedValueSet const &optArgs,
+                   AAL::TransactionID const &rtid);
       // </IAALService>
+// TODO THESE COULD BE MADE INTO AN IAIA  SO THAT THE PROXY DOES NOT SEE Release() METHOD ABOVE
+      void AFUProxyRelease(AAL::IBase *pAFUProxy);
+
+      void AFUProxyAdd(AAL::IBase *pAFUProxy);
+
+      void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
 
    protected:
       void SemWait(void);
       void SemPost(void);
 
-      void Destroy(void);
-
-      void SendMessage(IAFUTransaction *pMessage);
-
       void Process_Event();
 
       static void MessageDeliveryThread(OSLThread *pThread,
                                         void *pContext);
-      static void ShutdownThread(OSLThread *pThread,
-                                 void *pContext);
-      void WaitForShutdown(ui_shutdownreason_e      reason,
-                           btTime                   waittime,
-                           stTransactionID_t const &rTranID_t);
 
-      IAFUProxy *AFUProxyGet(AIAService *pAIA, NamedValueSet const &OptArgs);      // Allocates a Proxy to the AFU
+      void WaitForShutdown(TransactionID const &rtid,
+                           btTime timeout);
 
-      btBool IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
-                                        btTime                   timeout);
+
+      // <IServiceClient> - Used only for serviceReleased and only so we can trap the Releases without
+      //                    them going to real client
+      void serviceAllocated(IBase *pServiceBase,TransactionID const &rTranID = TransactionID()){};
+      void serviceAllocateFailed(const IEvent &rEvent){};
+      void serviceReleased(TransactionID const &rTranID = TransactionID());
+      void serviceReleaseFailed(const IEvent &rEvent);
+      void serviceEvent(const IEvent &rEvent){};
+       // </IServiceClient>
+
+      void AFUProxyGet( IBase *pServiceClient,
+                        NamedValueSet const &Args,
+                        TransactionID const &rtid);         // Allocates a Proxy to the AFU
+
+      btBool AFUListAdd(IBase *pAFU);
+      btBool AFUListDel(IBase *pDev);
 
    protected:
+
+      class ShutdownDisp : public IDispatchable
+      {
+      public:
+         ShutdownDisp(AIAService *pAIA, btTime time, TransactionID const &tid);
+         void operator() ();
+         void ReleaseChildren(TransactionID const &tid);
+      private:
+         AIAService                 *m_pAIA;
+         AAL::btTime                 m_timeout;
+         AAL::TransactionID const   &m_tid;
+      };
+
+
       // Variables
       UIDriverInterfaceAdapter   m_uida;                                         // Kernel Mode Driver Interface Adapter
       CSemaphore                 m_Semaphore;                                    // General synchronization as needed
       OSLThread                 *m_pMDT;                                         // Message delivery thread
       OSLThread                 *m_pShutdownThread;                              // Shutdown thread
+
+      typedef std::list<IBase *>          AFUList;
+      typedef AFUList::iterator           AFUList_itr;
+      typedef AFUList::const_iterator     AFUList_citr;
+
+      AFUList                    m_mAFUList;                                     // Map of Runtime Proxys
+
+      enum state {
+         Uninitialized,
+         Initialized,
+         Shuttingdown
+      };
+
+      enum state                 m_state;
 };
 
 

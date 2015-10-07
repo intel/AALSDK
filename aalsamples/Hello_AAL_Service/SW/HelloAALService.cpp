@@ -118,39 +118,53 @@ AAL_END_SVC_MOD()
 /// @addtogroup hello_service
 /// @{
 
-/// @brief Called by framework when Service is being initialized.
-/// @param[in] TransactionID passed in by Client in call to allocService. 
-///            Return it to client when done with initialization in ObjectCreatedEvent
-/// @return void
-void HelloAALService::init(TransactionID const &TranID)
+//=============================================================================
+// Name: init()
+// Description: Initialize the Service
+// Interface: public
+// Inputs: pclientBase - Pointer to the IBase for the Service Client
+//         optArgs - Arguments passed to the Service
+//         rtid - Transaction ID
+// Outputs: none.
+// Comments: Should only return False in case of severe failure that prevents
+//           sending a response or calling initFailed.
+//=============================================================================
+btBool HelloAALService::init( IBase *pclientBase,
+                              NamedValueSet const &optArgs,
+                              TransactionID const &rtid)
 {
-   m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, ClientBase());
+   m_pClient = dynamic_ptr<IHelloAALClient>(iidSampleHelloAALClient, pclientBase);
    ASSERT( NULL != m_pClient ); //QUEUE object failed
    if(NULL == m_pClient){
-      /// ObjectCreatedExceptionEvent Constructor.
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish IHelloAALClient Interface"));
-      return;
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish IHelloAALClient Interface"));
+      return true;
    }
-
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
-                                                           Client(),
-                                                           dynamic_cast<IBase *>(this),
-                                                           TranID) );
+   initComplete(rtid);
+   return true;
 }
 
+//=============================================================================
+// Name: Ping
+// Description: Ping method send 5 replies
+// Interface: public
+// Inputs: Message - Message to send
+//         pTranID
+// Outputs: none.
+// Comments:
+//=============================================================================
 void HelloAALService::Hello(btcString sMessage, TransactionID const &rTranID)
 {
    AutoLock(this);
 
    MSG("Received a hello from '"<< sMessage << "'. Saying hello back.");
    getRuntime()->schedDispatchable(new HelloAppDispatchable(m_pClient, (IBase *)this, rTranID));
+
 }
+
 
 btBool HelloAALService::Release(TransactionID const &rTranID, btTime timeout)
 {

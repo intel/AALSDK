@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -31,71 +31,26 @@
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
-///          Alvin Chen, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 11/25/2008     JG       Added the CAFUDev implementation
-/// 12/02/2008     HM       Moved using namespaces above
-///                            DEFINE_SERVICE_FACTORY_ACCESSOR(AIAService) because
-///                            of Namespacing change in AIAService.h
-/// 12/10/2008     HM       Added Logger
-/// 12/14/2008     HM       Added result_code accessor / mutator
-/// 01/04/2009     HM       Updated Copyright
-/// 02/01/2009     HM       Put "Returned" in Logger
-/// 02/14/2009     HM       Modified UnBind, and expanded MessageHandler
-/// 02/20/2009     HM       Added AALLogger messages to
-///                            AIAServiceMangement::MessageHandler
-/// 05/18/2009     HM       Process_Event() now forwards messages with error
-///                            codes on up the stack
-/// 06/06/2009     HM       Message pump shutdown
-/// 06/07/2009     HM       Calls to AALLogger in ~AIAService currently execute after
-///                            exit() from main(). By that time the Logger is
-///                            gone, segfault. Removed Logging calls from dtor.
-///                         Will reinstate once SystemStop() correctly shuts
-///                            down AIAService before exiting.
-/// 06/22/2009     JG       Massive changes to support new proxy mechanism and
-///                            to fix build dependencies that required external
-///                            linking to the module, breaking plug-in model.
-/// 07/06/2009     HM/JG    Fixed double-destruction of AIAService. Refined AIAService shut-
-///                            down code a bit more.
-///                         Added IssueShutdownMessageWorker().
-/// 07/15/2009     HM       Instrumented Shutdown code
-/// 07/16/2009     HM       Fixed a bug for Shutdown more than once in the same process
-/// 07/31/2009     AC       Fixed a leakage issue of the UIDriverClientEvent
-/// 08/16/2009     HM       Added debug statements to BindProxy() and Release()
-/// 08/16/2009     HM       Backed down the debugs from DEBUG to VERBOSE
-/// 06/02/2010     JG       Modified AIA for asynchronous shutdown of clients.
-///                            prior the MDP was shutdown first preventing
-///                            AFUs from cleaning up.
-///                         Added support for a default handler.
-/// 06/02/2011     JG       Added NamedValueSet to Initialize for Service 2.0
-/// 09/01/2011     JG       Redesigned AIA to use Service 2.0 framework.
-///                         Eliminated Proxys.  Simplified class hierarchy.
-/// 10/26/2011     JG       Added back proxy in the form of CAIA to properly
-///                           handle singletons with cotext
-/// 01/16/2012     JG       Fixed init() for latest SDK change@endverbatim
+//  8/21/2015      JG       Initial vesions
+///                @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "aalsdk/AALTypes.h"
-
-#include "aalsdk/AALTransactionID.h"
-
-#include "aalsdk/uaia/FAPPIP_AFUdev.h"
 #include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/uaia/AIA.h"
 
-#include "aalsdk/kernel/KernelStructs.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"
-
-#include <aalsdk/osal/OSServiceModule.h>
+#include "aalsdk/osal/OSServiceModule.h"
+#include "aalsdk/osal/ThreadGroup.h"
 
 #include "AIA-internal.h"
 #include "aalsdk/Dispatchables.h"
-#include "UIDriverInterfaceAdapter.h"
-#include "aalsdk/CAALEvent.h"
+#include "ALIAFUProxy.h"
 
 
 //========================================
@@ -157,6 +112,47 @@ USING_NAMESPACE(AAL)
 //=============================================================================
 //=============================================================================
 
+//=============================================================================
+// Name: UIDClientEvent
+// Description: Constructor
+// Interface: public
+// Inputs: - Class name.
+// Outputs: Pointer to factory.
+// Comments:
+//=============================================================================
+class UIDriverEvent : public IUIDriverEvent,
+                      public CAALEvent
+{
+public:
+   UIDriverEvent( IBase *pObject, uidrvMessage * pmessage)
+   : CAALEvent(pObject),
+     m_pmessage(pmessage)
+   {
+      SetInterface( evtUIDriverClientEvent,
+                    dynamic_cast<IUIDriverEvent*>(this));
+
+   }
+
+   btHANDLE                  DevHandle()  const { return m_pmessage->handle();   }
+   uid_msgIDs_e              MessageID()  const { return m_pmessage->id();       }
+   btVirtAddr                Payload()    const { return m_pmessage->payload();  }
+   btWSSize                  PayloadLen() const { return m_pmessage->size();     }
+   stTransactionID_t const & msgTranID()  const { return m_pmessage->tranID();   }
+   btObjectType              Context()   const { return m_pmessage->context(); }
+
+   // HM 20081213
+   uid_errnum_e              ResultCode() const { return m_pmessage->result_code(); }
+   void                      ResultCode(uid_errnum_e e) { return m_pmessage->result_code(e); }
+
+
+   virtual ~UIDriverEvent() { if(m_pmessage != NULL) delete m_pmessage; }
+
+protected:
+   uidrvMessage *m_pmessage;
+
+   UIDriverEvent(){};
+ };
+
 
 //=============================================================================
 // Name: init()
@@ -167,8 +163,19 @@ USING_NAMESPACE(AAL)
 // Comments:  This function may be called more than once per process but the
 //            AIAService and its UIDriverClient are singletons per process.
 //=============================================================================
-void AIAService::init( TransactionID const& rtid )
+btBool AIAService::init( IBase *pclientBase,
+                         NamedValueSet const &optArgs,
+                         TransactionID const &rtid )
 {
+   AutoLock(this);      // Prevent init() reenterancy
+   if(Shuttingdown == m_state){
+      initFailed( new CExceptionTransactionEvent( NULL,
+                                                  rtid,
+                                                  errCreationFailure,
+                                                  reasInvalidState,
+                                                  "AIAService::Init Shutting down"));
+      return true;  // Ignore requests while we are shuttingdown
+   }
    AAL_INFO(LM_UAIA, "AIAService::init. in\n");
 
    //Singleton service already initialized
@@ -178,16 +185,15 @@ void AIAService::init( TransactionID const& rtid )
       m_uida.Open();
       if (!m_uida.IsOK()) {
          m_bIsOK = false;
-         getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                                   Client(),
-                                                                   NULL,
-                                                                   new CExceptionTransactionEvent( NULL,
-                                                                                                  rtid,
-                                                                                                  errCreationFailure,
-                                                                                                  reasCauseUnknown,
-                                                                                                  "AIAService::Init Failed to open UI Driver")));
-         return;
+         initFailed( new CExceptionTransactionEvent( NULL,
+                                                     rtid,
+                                                     errCreationFailure,
+                                                     reasCauseUnknown,
+                                                     "AIAService::Init Failed to open UI Driver"));
+         return true;
       }
+
+      m_Semaphore.Reset(0);
 
       // Create the Message delivery thread
       m_pMDT = new OSLThread(AIAService::MessageDeliveryThread,
@@ -199,15 +205,26 @@ void AIAService::init( TransactionID const& rtid )
       //  indicating that it has started
       SemWait();
       m_bIsOK = true;
+
+      // The AIA does not report itself up to the requester through initComplete()
+      //  since it is really the factory and transport for the AFUProxies which are
+      //  the actual Services. Since it is initComplete() that normally registers the
+      //  Service with the ServiceModule we must register directly.  No event is generated.
+      getAALServiceModule()->AddToServiceList(this);
       AAL_INFO(LM_UAIA, "AIAService::Create, out\n");
    }
-#if 0
-   // Create the object
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(pCAIA),rtid));
-#endif
-   return;
+
+   // The AIA object is responsible for marshaling messages to and from the kernel. It also acts
+   //  as a factory for the AFUProxy, which is the actual Service object presented to the client.
+   // The AFUProxy is used by the client to send and receive messages to and from the AFU. The proxy uses
+   //  the AIA as a transport.
+   //
+   // Allocate an AFU Proxy. The AFU Proxy appears as a Service so will be returned
+   //  via  serviceAllocated() to the caller of init(). The ServiceClient (owner) will be the caller of init()
+   //  NOT the AIA. The AIA does have to keep a reference count of AFUProxies to properly shutdown.
+   AFUProxyGet(pclientBase, OptArgs(), rtid);
+
+   return true;
 }
 
 //=============================================================================
@@ -220,43 +237,8 @@ void AIAService::init( TransactionID const& rtid )
 AIAService::~AIAService(void)
 {
    AAL_INFO(LM_UAIA, "AIAService::~AIAService. in\n");
-   Destroy();
 }
 
-//=============================================================================
-// Name: Destroy()
-// Description: Method invoked for destroying the AIA prior to unload,
-// Interface: public
-// Outputs: none.
-//=============================================================================
-void AIAService::Destroy(void)
-{
-   // Shutdown the message pump by putting in a reqid_Shutdown to force a
-   //    wake-up and let the kernel know it is going down.
-#if 0
-   char szFunc[] = "AIAService::Destroy";
-//   IssueShutdownMessageWorker( szFunc);
-
-   // if message pump thread is running, need to wait for it to terminate
-   if ( m_pMDT ) {
-
-      DEBUG_CERR(szFunc << ": waiting for Receive Thread to Join. 1 of 2\n");
-      AAL_DEBUG(LM_Shutdown, szFunc << ": waiting for Receive Thread to Join. 1 of 2\n");
-
-      // Wait for the Message delivery thread to terminate
-      m_pMDT->Join();
-
-      DEBUG_CERR(szFunc << ": Receive Thread has Joined. 2 of 2\n");
-      AAL_DEBUG(LM_Shutdown, szFunc << ": Receive Thread has Joined. 2 of 2\n");
-
-      delete m_pMDT;
-      m_pMDT = NULL;
-      delete m_pUIDC;
-   }
-#endif
-   m_bIsOK = false;
-
-}  // AIAService::Destroy
 
 //=============================================================================
 // Name: SemWait()
@@ -281,6 +263,112 @@ void AIAService::SemPost()
    m_Semaphore.Post(1);
 }
 
+//=============================================================================
+// Name: AFUProxyGet()
+// Description: Gets a new Proxy to an AFU
+// Interface: protected
+// Returns: none.
+// Comments: The design of the AIA is such that the AFUProxy could be a
+//           separate AAL Service but is currently implemented as an internal
+//           object.
+//=============================================================================
+void AIAService::AFUProxyGet( IBase *pServiceClient,
+                              NamedValueSet const &OptArgs,
+                              TransactionID const &rtid)
+{
+   // Make a copy of the Optargs so we can add a field
+   NamedValueSet Manifest(OptArgs);
+
+   // Proxy will need access to the AIA.  Passing as a Manifest argument will make
+   //  it easier to change the Proxy to a proper AAL Service in the future
+   Manifest.Add(AIA_SERVICE_BASE_INTERFACE, static_cast<btAny>(dynamic_cast<IBase*>(this)));
+
+   // Construct the new AFUProxy
+   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime());
+
+   // Initialize the Service.  The Service will register with the AIA.
+   pnewProxy->_init(pServiceClient, rtid, Manifest, NULL);
+
+}
+
+//=============================================================================
+// Name: AFUProxyRelease()
+// Description: De-register an AFU Proxy
+// Inputs: pAFUbase - IBase of AFU Proxy
+// Interface: public
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyRelease(IBase *pAFUbase)
+{
+   AutoLock(this);
+   AFUListDel(pAFUbase);
+}
+
+
+//=============================================================================
+// Name: AFUProxyAdd()
+// Description: Register an initialized AFU Proxy
+// Inputs: pAFUbase - IBase of AFU Proxy
+// Interface: public
+// Returns: true - success.
+//=============================================================================
+void AIAService::AFUProxyAdd( IBase *pAFUProxy )
+{
+
+   // Bug in AFU Proxy
+   ASSERT( NULL!=pAFUProxy );
+   AFUListAdd(pAFUProxy);
+}
+
+//=============================================================================
+// Name: AFUListAdd()
+// Description: Add an AFUProxy to the list
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+btBool AIAService::AFUListAdd( IBase *pAFU)
+{
+   {
+      AutoLock(this);
+
+      // Do not allow duplicates
+      AFUList_itr iter = find(m_mAFUList.begin(), m_mAFUList.end(), pAFU);
+      if( m_mAFUList.end() != iter ) {
+         return false;
+      }
+
+      // Make sure its not already on the list
+      m_mAFUList.push_back(pAFU);
+   }
+
+   return true;
+}
+
+//=============================================================================
+// Name: AFUListDel()
+// Description: Delete an AFUProxy from the list
+// Interface: protected
+// Returns: true - success.
+//=============================================================================
+btBool AIAService::AFUListDel(IBase *pAFU)
+{
+   AutoLock(this);
+
+   AFUList_itr iter = find(m_mAFUList.begin(), m_mAFUList.end(), pAFU);
+   if ( m_mAFUList.end() != iter ) {
+      m_mAFUList.erase(iter);
+
+      // If we are shutting down we will be counting releases
+      //  using this semaphore as a count-up
+      if(Shuttingdown == m_state){
+         SemPost();
+      }
+
+      return true;
+   }
+
+   return false;;
+}
 
 
 //=============================================================================
@@ -289,11 +377,13 @@ void AIAService::SemPost()
 // Interface: public
 // Outputs: none.
 //=============================================================================
-void AIAService::SendMessage(IAFUTransaction *pMessage)
+void AIAService::SendMessage( AAL::btHANDLE devHandle,
+                              IAIATransaction *pMessage,
+                              IAFUProxyClient *pProxyClient)
 {
-#if 0
-   (*m_pUIDC) << fncObj;
-#endif
+
+   // Pass it to the low level transport
+   m_uida.SendMessage(devHandle, pMessage, pProxyClient);
 
 }
 
@@ -309,7 +399,7 @@ void AIAService::SendMessage(IAFUTransaction *pMessage)
 void AIAService::MessageDeliveryThread(OSLThread *pThread,
                                        void *pContext)
 {
-#if 0
+
    //Get a pointer to this objects context
    AIAService *This = (AIAService*)pContext;
 
@@ -322,20 +412,16 @@ void AIAService::MessageDeliveryThread(OSLThread *pThread,
    This->Process_Event();
 
    // Message pump exited, so AIAService shutting down. Signal that by setting flag.
-   This->m_pUIDC->IsOK(false);
+   This->m_uida.IsOK(false);
 
    // cerr << "AIAService::~AIAService: shutting down UI Client file\n";
    AAL_DEBUG(LM_UAIA,"AIAService::MessageDeliveryThread: shutting down UI Client file\n");
 
    // Close the channel
-   This->m_pUIDC->Close();
+   This->m_uida.Close();
 
    // cout << "AIAService::~AIAService: done\n";
    AAL_INFO(LM_UAIA, "AIAService::MessageDeliveryThread: done\n");
-
-   // Final release
-   This->Released();
-#endif
 
 }  // AIAService::MessageDeliveryThread
 
@@ -350,11 +436,11 @@ void AIAService::MessageDeliveryThread(OSLThread *pThread,
 void
 AIAService::Process_Event()
 {
-#if 0
+
    uidrvMessage *pMessage = new uidrvMessage;
    AAL_INFO(LM_UAIA, "AIAService::Process_Event. in\n");
 
-   while (m_pUIDC->GetMessage(pMessage) != false) {
+   while(m_uida.GetMessage(pMessage) != false) {
       AAL_DEBUG(LM_UAIA, "AIAService::Process_Event: GetMessage Returned\n");
       if (pMessage->result_code() != uid_errnumOK) {
          AAL_WARNING(LM_UAIA, "AIAService::Process_Event: pMessage->result_code() is not uid_errnumOK, but is " <<
@@ -362,34 +448,16 @@ AIAService::Process_Event()
       }
 
       if (rspid_UID_Shutdown == pMessage->id()) { // Are we done?
-         // Important to Lock here to make sure the m_pShutdownThread has been set
-         {
-            AutoLock(this);
-
-            AAL_INFO(LM_UAIA, "AIAService::Process_Event: Shutdown Seen\n");
-
-            //Shutdown complete
-            ASSERT(NULL != m_pShutdownThread);
-            if ( NULL != m_pShutdownThread ) {
-               m_pShutdownThread->Join();
-            }
-         }
+         AAL_INFO(LM_UAIA, "AIAService::Process_Event: Shutdown Seen\n");
          delete pMessage;
          return;
       }else {
 
          // Generate the event - No need to destroy message as it being passed to event and will be
-         // destroyed there.  TODO - Consider cleaner memory management - Try to avoid copies
-         uidrvMessageRoute const &msgroute = pMessage->msgRoute();
-         IBase *proxybase = pMessage->msgRoute().AIAProxybasep();
-         btEventHandler handler = pMessage->msgRoute().Handler();
-         TransactionID tranID = pMessage->tranID();
-
-         UIDriverClientEvent *pEvent = new UIDriverClientEvent(proxybase,
-                                                              pMessage,
-                                                              tranID);
-         pEvent->setHandler(handler);
-         getRuntime()->schedDispatchable(pEvent);
+         // destroyed there.  TODO - Object should be Proxy not the AIA
+         AFUProxyCallback *pDisp = new AFUProxyCallback(static_cast<IAFUProxyClient *>(pMessage->context()),
+                                                        new UIDriverEvent(this,pMessage));
+         getRuntime()->schedDispatchable(pDisp);
 
          pMessage = new uidrvMessage;
 
@@ -398,7 +466,7 @@ AIAService::Process_Event()
 
    // catastrophic failure.  try to clean up after ourself.
    delete pMessage;
-#endif
+
 } // AIAService::Process_Event
 
 
@@ -411,169 +479,6 @@ AIAService::Process_Event()
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
-//=============================================================================
-// Name: ShutdownThread
-// Description: Thread responsible for ordered shutdown
-// Interface: public
-// Inputs: pThread - thread object
-//         pContext - context
-// Outputs: none.
-// Comments: Opens rmc device an dispatches events
-//=============================================================================
-void AIAService::ShutdownThread(OSLThread *pThread,
-                                void *pContext)
-{
-#if 0
-   struct shutdownparms_s *pParms = static_cast<struct shutdownparms_s*>(pContext);
-
-   pParms->pAIA->WaitForShutdown( ui_shutdownReasonNormal,
-                                  pParms->shutdowntime,
-                                  pParms->tid_t);
-
-   delete pParms;
-#endif
-   }
-
-
-//=============================================================================
-// Name: WaitForShutdown()
-// Description: Waits for all resources to release the AIA.
-// Inputs: reason - Reason the service was brought down
-//         waittime - amount of time to wait
-// Interface: public
-// Outputs: none.
-//=============================================================================
-void AIAService::WaitForShutdown(ui_shutdownreason_e      reason,
-                           btTime                   waittime,
-                           stTransactionID_t const &rTranID_t)
-{
-#if 0
-   btBool     notimeout = true;
-   btBool     DoWait    = false;
-   CAALEvent *pTheEvent = NULL;
-
-   {
-      AutoLock(this);
-
-      DEBUG_CERR("AIAService::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
-      AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount is " << m_refcount << ". 1 of 3\n");
-
-      // If the refcount is not zero setup a count up
-      // semaphore to wait until all resources release
-      if ( m_refcount ) {
-         DEBUG_CERR("AIAService::WaitForShutdown() refcount is non-zero. 2 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount is non-zero. 2 of 3\n");
-
-         m_pShutdownSem = new CSemaphore();
-         // Negative count means the semaphore counts up
-         m_pShutdownSem->Create(-m_refcount, 1);
-
-         DoWait = true;
-
-      } else {
-         DEBUG_CERR("AIAService::WaitForShutdown() refcount was 0. 2 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() refcount was 0. 2 of 3\n");
-      }
-
-   }
-
-   if ( DoWait ) {
-
-      // The semaphore returns true if it unblocked with no timeout
-      if ( AAL_INFINITE_WAIT == waittime ) {
-         notimeout = m_pShutdownSem->Wait();
-      } else {
-         notimeout = m_pShutdownSem->Wait(waittime);
-      }
-
-      {
-         AutoLock(this);
-         delete m_pShutdownSem;
-         m_pShutdownSem = NULL;
-      }
-   }
-
-   // Generate an event if the shutdown was called by the quite version of Release()
-   //  This is the normal case for this service.  This code may be capable of being
-   //  simplified as the event version is no longer used. It remains implemented as the
-   //  IAALService interface musst define both types of Release()
-   if ( !m_quietRelease ) {
-      // Send the event
-      if(true == notimeout){
-         pTheEvent = new CTransactionEvent(dynamic_cast<IBase*>(this),
-                                           tranevtServiceShutdown,
-                                           TransactionID(rTranID_t));
-      }else{
-           // Timeout event
-         pTheEvent= new CExceptionTransactionEvent(dynamic_cast<IBase*>(this),
-                                                   exttranevtServiceShutdown,
-                                                   TransactionID(rTranID_t),
-                                                   errSystemTimeout,
-                                                   reasSystemTimeout,
-                                                   const_cast<btString>(strSystemTimeout));
-      }
-
-      if(pTheEvent){
-         //Shutdown complete
-         pTheEvent->setHandler(m_Listener);
-         getRuntime()->schedDispatchable(pTheEvent);
-         DEBUG_CERR("AIAService::WaitForShutdown() exiting. 3 of 3\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() exiting. 3 of 3\n");
-      }else{
-         DEBUG_CERR("AIAService::WaitForShutdown() FATAL ERROR. CANNOT CREATE EVENT\n");
-         AAL_DEBUG(LM_Shutdown,"AIAService::WaitForShutdown() FATAL ERROR. CANNOT CREATE EVENT\n");
-      }
-   }
-
-   // TODO timeout should be adjusted for above waitimes elapsed
-   IssueShutdownMessageWorker(rTranID_t, waittime );
-#endif
-   return;
-}
-
-//=============================================================================
-// Name:        IssueShutdownMessageWorker()
-// Description: Worker function called from several places. Creates and sends
-//                 shutdown message to the kernel
-// Interface:   public
-// Inputs:      rTrabID_t - reference to a transaction ID structure
-//              timeout - timeout to wait
-// Outputs:     none
-// Comments:    Encapsulates the fields of a reqid_UID_Shutdown message
-//=============================================================================
-btBool AIAService::IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t,
-                                        btTime                   timeout)
-{
-#if 0
-   if (m_pUIDC->IsOK()) {
-      DEBUG_CERR("IssueShutdownMessageWorker: sending reqid_UID_Shutdown via IssueShutdownMessageWorker. 1 of 1\n");
-      AAL_DEBUG(LM_Shutdown,"IssueShutdownMessageWorker: sending reqid_UID_Shutdown via IssueShutdownMessageWorker. 1 of 1\n");
-
-      struct big {
-         struct aalui_ioctlreq  req;
-         struct aalui_Shutdown  shutdown;
-      };
-      struct big message;
-      memset( &message, 0, sizeof( message));
-      message.req.id = reqid_UID_Shutdown;
-      message.req.tranID = rTranID_t;
-
-      message.req.size           = sizeof( message.shutdown );
-      message.shutdown.m_reason  = ui_shutdownReasonNormal;
-      message.shutdown.m_timeout = timeout;
-
-      m_pUIDC->SendMessage( AALUID_IOCTL_SENDMSG, &message.req);
-      return true;
-   }
-   else {
-      DEBUG_CERR("IssueShutdownMessageWorker: no reqid_UID_Shutdown sent, UIDC already gone. 1 of 1\n");
-      AAL_DEBUG(LM_Shutdown, "IssueShutdownMessageWorker: no reqid_UID_Shutdown sent, UIDC already gone. 1 of 1\n");
-      return false;
-   }
-#endif
-}  // IssueShutdownMessageWorker
-
-
 
 //=============================================================================
 // Name: Release
@@ -589,34 +494,150 @@ btBool AIAService::IssueShutdownMessageWorker(stTransactionID_t const &rTranID_t
 btBool AIAService::Release(TransactionID const &rTranID,
                            btTime               timeout)
 {
-#if 0
-   DEBUG_CERR(__AAL_FUNC__ << ": Hello.\n");
-   AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Hello.\n");
+
+   AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Releasing.\n");
+   {
+      AutoLock(this);
+      m_state = Shuttingdown;
+   }
 
    //--------------------------------------------------------------
    // The shutdown process involves a thread ShutdownThread
    //   that waits for all resources currently using the AIA to
    //   release or until a timeout occurs.  At that point the
    //   message delivery engine is shutdown and the AIA is done.
+   //   This operations is performed in a dispatchable.
    //--------------------------------------------------------------
-   struct shutdownparms_s *pParms = new struct shutdownparms_s(this,timeout,rTranID);
+   IDispatchable * pDisp = new (std::nothrow) ShutdownDisp( this,
+                                                            timeout,
+                                                            TransactionID(dynamic_cast<IBase*>(this),true) );
+   ASSERT(NULL != pDisp);
+   FireAndForget(pDisp);
+   return true;
+}
 
-   //Important to lock here and not unlock until after the assignment are  the Shutdown
-   //  thread can come and go before the assignment, resulting in the join off of m_pShutdownThread
-   //  being off of a NULL pointer.
+//=============================================================================
+// Name: WaitForShutdown()
+// Description: Waits for all Driver stack to shutdown and then competes
+//                release.
+// Inputs: rtid - TransactionID
+//         waittime - amount of time to wait
+// Interface: public
+// Outputs: none.
+//=============================================================================
+void AIAService::WaitForShutdown(TransactionID const &rtid,
+                                 btTime timeout)
+{
+   // Wait for any children
+   SemWait();
+   m_pMDT->Join();
+   delete m_pMDT;
+   m_pMDT = NULL;
 
-   {
-      AutoLock(this);
+   AAL_INFO(LM_AIA, __AAL_FUNC__ << ": Done Releasing.\n");
 
-      // Create the Shutdown thread
-      m_pShutdownThread = new(std::nothrow) OSLThread(AIAService::ShutdownThread,
-                                                      OSLThread::THREADPRIORITY_NORMAL,
-                                                      pParms);
-      ASSERT(NULL != m_pShutdownThread);
+   // Since we are a singleton that never presented to a
+   //  client we don't do a ServiceBase::Release just complete now.
+   ServiceBase::ReleaseComplete();
+}
+
+//=============================================================================
+// Name: serviceReleased()
+// Description: During a shutdown where AFUProxies were not released we Release
+//              them. But because the application is shutting down we don't let
+//              the events go to the normal client. We override with TranID and
+//              eat the event.  We also decrement a count so we know when we
+//              are done.
+// Inputs: rtid - TransactionID
+// Interface: public
+// Outputs: none.
+//=============================================================================
+void AIAService::serviceReleased(TransactionID const &rTranID )
+{
+   SemPost();
+}
+
+//=============================================================================
+// Name: serviceReleaseFailed()
+// Description: During a shutdown where AFUProxies were not released we Release
+//              them. But because the application is shutting down we don't let
+//              the events go to the normal client. We override with TranID and
+//              eat the event.  We also decrement a count so we know when we
+//              are done.
+// Inputs: rtid - TransactionID
+// Interface: public
+// Outputs: none.
+// Comments: Would not expect this to happen
+//=============================================================================
+void AIAService::serviceReleaseFailed(const IEvent &rEvent)
+{
+   SemPost();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////             AIA DISPATCHABLES             ///////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//=============================================================================
+//=============================================================================
+AIAService::ShutdownDisp::ShutdownDisp(AIAService *pAIA,
+                                       btTime time,
+                                       TransactionID const &tid)
+: m_pAIA(pAIA),
+  m_timeout(time),
+  m_tid(tid)
+{}
+
+void AIAService::ShutdownDisp::operator() ()
+{
+   // Assume no children so we will not wait
+   m_pAIA->m_Semaphore.Reset(1);
+
+   ReleaseChildren(m_tid);
+
+   ShutdownMDT * pShutdownTrans = new (std::nothrow) ShutdownMDT(m_tid,m_timeout);
+   ASSERT(pShutdownTrans->IsOK());
+
+   if(!pShutdownTrans->IsOK()){
+      delete this;
+      return;
    }
 
-   DEBUG_CERR(__AAL_FUNC__ << ": Goodbye.\n");
-   AAL_DEBUG(LM_Shutdown, __AAL_FUNC__ << ": Goodbye.\n");
-#endif
-   return (m_pShutdownThread != NULL);
+   m_pAIA->SendMessage(NULL, pShutdownTrans, NULL);
+
+   m_pAIA->WaitForShutdown(m_tid, m_timeout);
+
+   delete this;
 }
+
+void AIAService::ShutdownDisp::ReleaseChildren(TransactionID const &tid)
+{
+   AFUList_citr iter = m_pAIA->m_mAFUList.end();
+
+   btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_pAIA->m_mAFUList.size());
+   if ( 0 == size ) {
+      return;
+   }
+
+   // Set the count up semaphore
+   m_pAIA->m_Semaphore.Reset( - size);
+
+   while ( m_pAIA->m_mAFUList.begin() != iter ) {
+
+      // Get the IAALService from the IBase
+
+      IAALService *pService = dynamic_ptr<IAALService>(iidService, (*iter));
+
+      iter--;
+
+      if ( NULL != pService ) {
+         // Release the Service overriding the default delivery
+         pService->Release(tid);
+      }
+   }
+}
+

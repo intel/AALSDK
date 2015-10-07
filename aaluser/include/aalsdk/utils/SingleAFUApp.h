@@ -185,7 +185,7 @@ ISingleAFUApp<Proprietary>::ISingleAFUApp() :
    m_pProprietary(NULL)
 {
    m_Sem.Create(0, 1);
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 }
 
@@ -285,7 +285,7 @@ void ISingleAFUApp<Proprietary>::runtimeAllocateServiceSucceeded(IBase          
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<Proprietary>(pServiceBase);
+   m_pProprietary = dynamic_ptr<Proprietary>(iidServiceBase, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    OnRuntimeAllocateServiceSucceeded(pServiceBase, tid);
@@ -307,7 +307,7 @@ void ISingleAFUApp<Proprietary>::serviceAllocated(IBase               *pServiceB
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<Proprietary>(pServiceBase);
+   m_pProprietary = dynamic_ptr<Proprietary>(iidServiceBase, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    OnServiceAllocated(pServiceBase, tid);

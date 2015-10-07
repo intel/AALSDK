@@ -79,13 +79,11 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void _ServiceBroker::init(TransactionID const &rtid)
+btBool _ServiceBroker::init( IBase *pclientBase,
+                             NamedValueSet const &optArgs,
+                             TransactionID const &rtid)
 {
-   // Sends a Service Client serviceAllocated callback
-   getRuntime()->schedDispatchable( new ObjectCreatedEvent(getRuntimeClient(),
-                                                           Client(),
-                                                           dynamic_cast<IBase *>(this),
-                                                           rtid) );
+   return initComplete(rtid);
 }
 
 //=============================================================================
@@ -110,38 +108,44 @@ void _ServiceBroker::allocService(IRuntime            *pProxy,
    pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
 
    ASSERT(NULL != pServiceClient);
-   if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
-      pDisp = new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                              pServiceClient,
-                                              NULL,
-                                              rTranID,
-                                              errAllocationFailure,
-                                              reasMissingInterface,
-                                              strMissingInterface);
+   if ( NULL == pServiceClient ) {
+      pDisp = new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                        pServiceClient,
+                                        pRuntimeClient,
+                                        NULL,
+                                        new CExceptionTransactionEvent( NULL,
+                                                                        rTranID,
+                                                                        errAllocationFailure,
+                                                                        reasMissingInterface,
+                                                                        strMissingInterface));
       goto _DISP;
    }
 
    // Process the manifest
 
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
-      pDisp = new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                              pServiceClient,
-                                              NULL,
-                                              rTranID,
-                                              errAllocationFailure,
-                                              reasBadConfiguration,
-                                              "Missing Config Record");
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errAllocationFailure,
+                                                                         reasBadConfiguration,
+                                                                         "Missing Config Record"));
       goto _DISP;
    }
 
    if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
-      pDisp = new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                              pServiceClient,
-                                              NULL,
-                                              rTranID,
-                                              errAllocationFailure,
-                                              reasBadConfiguration,
-                                              "Missing Config Record Service Name");
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errAllocationFailure,
+                                                                         reasBadConfiguration,
+                                                                         "Missing Config Record Service Name"));
       goto _DISP;
    }
 
@@ -159,13 +163,15 @@ void _ServiceBroker::allocService(IRuntime            *pProxy,
             delete SvcHost;
          }
 
-         pDisp = new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                 pServiceClient,
-                                                 NULL,
-                                                 rTranID,
-                                                 errCreationFailure,
-                                                 reasInternalError,
-                                                 "Failed to load Service");
+         pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                            pServiceClient,
+                                            pRuntimeClient,
+                                            NULL,
+                                            new CExceptionTransactionEvent( NULL,
+                                                                            rTranID,
+                                                                            errCreationFailure,
+                                                                            reasInternalError,
+                                                                            "Failed to load Service"));
          goto _DISP;
       }
 
@@ -183,13 +189,15 @@ void _ServiceBroker::allocService(IRuntime            *pProxy,
       m_ServiceMap.erase(std::string(sName));
       delete SvcHost;
 
-      pDisp = new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                              pServiceClient,
-                                              NULL,
-                                              rTranID,
-                                              errCreationFailure,
-                                              reasInternalError,
-                                              "Failed to construct Service");
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errCreationFailure,
+                                                                         reasInternalError,
+                                                                         "Failed to construct Service"));
    }
 
    // FALL THROUGH
@@ -395,7 +403,8 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
       } else {
          // Generate the callback and finish the cleanup (performed in the Dispatchable)
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                   Client(),
+                                                                   getServiceClient(),
+                                                                   getRuntimeClient(),
                                                                    this,
                                                                    rTranID));
 

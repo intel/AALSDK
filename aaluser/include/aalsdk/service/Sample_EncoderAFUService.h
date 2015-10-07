@@ -105,7 +105,7 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SampleEncoder, DeviceServiceBase)
    ,m_datap(NULL) //NOTE to initialize members use , not :
    {
-      SetSubClassInterface(iidEncode, dynamic_cast<IEncode*>(this));
+      SetInterface(iidEncode, dynamic_cast<IEncode*>(this));
    }
 
    // Encode interface, its static event handler method and non-static

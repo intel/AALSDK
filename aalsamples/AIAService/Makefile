@@ -37,6 +37,10 @@ CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
 
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
 ifneq (,$(ndebug)) 
 else
 CPPFLAGS += -DENABLE_DEBUG=1 
@@ -60,8 +64,11 @@ LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
 SOURCES=\
-AIADllMain.cpp\
-AIAService.cpp
+AIAService.cpp \
+UIDriverInterfaceAdapter.cpp \
+ALIAFUProxy.cpp \
+AIATransactions.cpp \
+uidrvMessage.cpp
  
 OBJS=$(SOURCES:.cpp=.o)
 
@@ -74,10 +81,25 @@ libaia.so.0: libaia.so.0.0.0
 	ln -sf libaia.so.0.0.0 libaia.so.0
 
 libaia.so.0.0.0: ${OBJS} 
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libaia.so.0 ${OBJS} $(LDFLAGS) -lOSAL -lAAS -laalrt -o libaia.so.0.0.0
+	$(CXX) $(CFLAGS) -fPIC -shared -Wl,-soname -Wl,libaia.so.0 ${OBJS} $(LDFLAGS) -lOSAL -lAAS -laalrt -o libaia.so.0.0.0
+	
+AIAService.o: AIAService.cpp AIA-internal.h Makefile 
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
 
+ALIAFUProxy.o: ALIAFUProxy.cpp ALIAFUProxy.h AIATransactions.h AIA-internal.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
+
+AIATransactions.o: AIATransactions.cpp AIATransactions.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
+	
+UIDriverInterfaceAdapter.o: UIDriverInterfaceAdapter.cpp UIDriverInterfaceAdapter.h AIATransactions.h Makefile 
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
+	
+uidrvMessage.o: uidrvMessage.cpp uidrvMessage.h Makefile	
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
+	
 %.o: %.cpp Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o $@ $<
 
 clean:
 	$(RM) libaia.so libaia.so.0 libaia.so.0.0.0 *.o

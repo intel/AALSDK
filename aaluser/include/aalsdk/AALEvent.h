@@ -47,7 +47,8 @@
 /// 05/08/2008     HM       Comments & License
 /// 01/04/2009     HM       Updated Copyright
 /// 07/10/2012     TW       Updated definitions to new format
-/// 07/15/2012     HM       Added #defines for backward compatibility@endverbatim
+/// 07/15/2012     HM       Added #defines for backward compatibility
+/// 10/06/2015     JG       Removed ObjectxyzEvents@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AALEVENT_H__
 #define __AALSDK_AALEVENT_H__
@@ -137,18 +138,6 @@ public:
    virtual btString Description() const = 0;
 };
 
-/// Interface of event response returned for IFactory::Create.
-///
-/// The object contained within the event response (IEvent::Object / IEvent::pObject) will
-/// contain the requested service.
-class AASLIB_API IObjectCreatedEvent
-{
-public:
-   /// IObjectCreatedEvent Destructor.
-   virtual ~IObjectCreatedEvent() {}
-   /// Retrieve the Named Values, which are now fully resolved as of the Create event.
-   virtual const NamedValueSet & GetOptArgs() const = 0;
-};
 
 //=============================================================================
 // Application defined event interfaces

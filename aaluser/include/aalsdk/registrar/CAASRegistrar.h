@@ -394,7 +394,7 @@ END_C_DECLS
              CTransactionEvent(     pObject,
                                     TranID),
              m_fRegisterSucceeded ( fRegisterSucceeded)
-             { SetSubClassInterface(tranevtRegistrarRegister,
+             { SetInterface(tranevtRegistrarRegister,
                                     dynamic_cast<IRegisterTransactionEvent*>(this));
              };
          virtual ~CRegisterTransactionEvent() {};
@@ -420,7 +420,7 @@ END_C_DECLS
              CTransactionEvent( pObject,
                                 TranID),
              m_fOpenSucceeded ( fOpenSucceeded)
-             { SetSubClassInterface(tranevtRegistrarOpen,
+             { SetInterface(tranevtRegistrarOpen,
                                     dynamic_cast<IOpenTransactionEvent*>(this));
              };
          virtual ~COpenTransactionEvent() {};
@@ -448,7 +448,7 @@ END_C_DECLS
                                 TranID),
              m_fFindSucceeded ( fFindSucceeded),
              m_pCFindResult   ( pCFindResult)
-             { SetSubClassInterface(tranevtRegistrarFind,
+             { SetInterface(tranevtRegistrarFind,
                                     dynamic_cast<IFindTransactionEvent*>(this));
              };
          virtual ~CFindTransactionEvent() {if (NULL != m_pCFindResult) delete m_pCFindResult;};
@@ -478,7 +478,7 @@ END_C_DECLS
                                TranID),
             m_fGetSucceeded  ( fGetSucceeded),
             m_pCDBRecord     ( pCDBRecord)
-             { SetSubClassInterface(tranevtRegistrarGet,
+             { SetInterface(tranevtRegistrarGet,
                                     dynamic_cast<IGetTransactionEvent*>(this));
              };
          virtual ~CGetTransactionEvent() {if (NULL != m_pCDBRecord) delete m_pCDBRecord;};
@@ -509,7 +509,7 @@ END_C_DECLS
                m_fCommitSucceeded ( fCommitSucceeded ),
                m_pCFindResult ( pCFindResult )
          {
-            SetSubClassInterface ( tranevtRegistrarCommit,
+            SetInterface ( tranevtRegistrarCommit,
                                    dynamic_cast<ICommitTransactionEvent*> ( this ) );
          };
          virtual ~CCommitTransactionEvent() {if ( NULL != m_pCFindResult ) delete m_pCFindResult;};

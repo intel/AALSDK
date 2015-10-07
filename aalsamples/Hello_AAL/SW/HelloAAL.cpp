@@ -149,7 +149,7 @@ RuntimeClient::RuntimeClient() :
    NamedValueSet configArgs;     // Bot used
 
    // Publish our interface
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
    m_Runtime.start(configArgs);
@@ -281,7 +281,7 @@ HelloAALApp::HelloAALApp(RuntimeClient *rtc) :
    m_runtimClient(rtc),
    m_Result(0)
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSampleHelloAALClient, dynamic_cast<IHelloAALClient *>(this));
    m_Sem.Create(0, 1);
 }
@@ -334,7 +334,7 @@ void HelloAALApp::serviceAllocated(IBase *pServiceBase,
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
 
-   IHelloAALService *ptheService = subclass_ptr<IHelloAALService>(pServiceBase);
+   IHelloAALService *ptheService = dynamic_ptr<IHelloAALService>(iidSampleHelloAAL, pServiceBase);
 
    ASSERT(NULL != ptheService);
    if ( NULL == ptheService ) {

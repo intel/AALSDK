@@ -58,7 +58,8 @@
 /// 12/15/2008     HM       Added iidEvent to second constructor
 /// 01/04/2009     HM       Updated Copyright
 /// 02/25/2009     HM       Re-enabled IEvent.Context cacheing - required e.g.
-///                            for DestroyObject messages@endverbatim
+///                            for DestroyObject messages
+/// 10/06/2015     JG       Removed ObjectxyzEvents@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -665,121 +666,5 @@ void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
 CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}
 CExceptionTransactionEvent::CExceptionTransactionEvent(IBase * ) {/*empty*/}
 
-//=============================================================================
-// Name: ObjectCreatedEvent
-// Description: AAL Runtime Event
-//=============================================================================
-ObjectCreatedEvent::ObjectCreatedEvent(IRuntimeClient       *prtClient,
-                                       IServiceClient       *pClient,
-                                       IBase                *pObject,
-                                       TransactionID         TranID,
-                                       const NamedValueSet  &OptArgs) :
-   CTransactionEvent(pObject, TranID),
-   m_OptArgs(OptArgs)
-{
-   AutoLock(this);
-
-   m_pServiceClient = pClient;
-   m_pRuntimeClient = prtClient;
-
-   if ( SetSubClassInterface(tranevtFactoryCreate, dynamic_cast<IObjectCreatedEvent *>(this)) != EObjOK ) {
-      m_bIsOK = false;
-      return;
-   }
-}
-
-void ObjectCreatedEvent::operator()()
-{
-   btBool del = false;
-
-   // Notify the Runtime Client first
-   if ( m_pRuntimeClient ) {
-      m_pRuntimeClient->runtimeAllocateServiceSucceeded(m_pObject, m_TranID);
-   }
-
-   // Now notify the Service Client
-   if ( NULL != m_pServiceClient ) {
-      m_pServiceClient->serviceAllocated(m_pObject, m_TranID);
-      del = true;
-   } else if ( NULL != m_pEventHandler ) {
-      m_pEventHandler(*this);
-   }
-
-   if ( del ) {
-      delete this;
-   }
-}
-
-ObjectCreatedEvent::ObjectCreatedEvent() {/*empty*/}
-
-
-ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
-                                                         IServiceClient     *pClient,
-                                                         IBase              *pObject,
-                                                         TransactionID       TranID,
-                                                         btUnsigned64bitInt  ExceptionNumber,
-                                                         btUnsigned64bitInt  Reason,
-                                                         btcString           Description) :
-   CExceptionTransactionEvent(pObject,
-                              TranID,
-                              ExceptionNumber,
-                              Reason,
-                              Description)
-{
-   m_pRuntimeClient = prtClient;
-   m_pServiceClient = pClient;
-   m_SubClassID = extranevtFactoryCreate;
-}
-
-void ObjectCreatedExceptionEvent::operator()()
-{
-   btBool del = false;
-
-   // Notify the Runtime Client
-   if ( NULL != m_pRuntimeClient ) {
-      m_pRuntimeClient->runtimeAllocateServiceFailed(*this);
-      del = true;
-   } else if ( NULL != m_pServiceClient ) {
-      m_pServiceClient->serviceAllocateFailed(*this);
-      del = true;
-   } else if ( NULL != m_pEventHandler ) {
-      m_pEventHandler(*this);
-   }
-
-   if ( del ) {
-      delete this;
-   }
-}
-
-ObjectCreatedExceptionEvent::ObjectCreatedExceptionEvent() {/*empty*/}
-
-CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
-                                                                   IBase                *pObject,
-                                                                   TransactionID const  &TransID,
-                                                                   btApplicationContext  Context) :
-   CTransactionEvent(pObject, TransID)
-{
-   m_pServiceClient = pClient;
-   m_SubClassID = tranevtObjectDestroyed;
-   m_Context    = Context;
-}
-
-void CObjectDestroyedTransactionEvent::operator()()
-{
-   btBool del = false;
-
-   if ( NULL != m_pServiceClient ) {
-      m_pServiceClient->serviceReleased(m_TranID);
-      del = true;
-   } else if ( NULL != m_pEventHandler ) {
-      m_pEventHandler(*this);
-   }
-
-   if ( del ) {
-      delete this;
-   }
-}
-
-CObjectDestroyedTransactionEvent::CObjectDestroyedTransactionEvent() {/*empty*/}
 
 END_NAMESPACE(AAL)
