@@ -210,7 +210,7 @@ void HWSPLAFU::TransactionHandler(const IEvent &theEvent)
    HWSPLAFU *This = static_cast<HWSPLAFU *>(theEvent.Object().Context());
 
    // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
    // Since MessageID is rspid_AFU_Response, Payload is struct aalui_AFUResponse, defined in aalui.h
    struct aalui_AFUResponse *pResponse =

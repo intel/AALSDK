@@ -323,7 +323,7 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
@@ -404,7 +404,7 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());

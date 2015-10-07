@@ -82,7 +82,7 @@ public:
       m_pSvcClient(NULL),
       m_pClient(NULL)
    {
-      SetSubClassInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
+      SetInterface(iidSampleHelloAAL, dynamic_cast<IHelloAALService *>(this));
    }
    /// Hook to allow the object to initialize
    btBool init( IBase *pclientBase,

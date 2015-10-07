@@ -352,7 +352,7 @@ void AASResourceManagerDaemon::serviceAllocated(IBase *pServiceBase,
     m_pAALService = pServiceBase;
     ASSERT(NULL != m_pAALService);
 
-    IResMgrService *ptheService = subclass_ptr<IResMgrService>(pServiceBase);
+    IResMgrService *ptheService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
 
     ASSERT(NULL != ptheService);
     if ( NULL == ptheService) {

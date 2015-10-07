@@ -93,7 +93,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       return;
    }
 
-   if ( EObjOK != SetSubClassInterface(iidService, dynamic_cast<IAALService *>(this)) ) {
+   if ( EObjOK != SetInterface(iidService, dynamic_cast<IAALService *>(this)) ) {
       m_bIsOK = false;
       return;
    }

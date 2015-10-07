@@ -97,12 +97,12 @@ public:
       m_servicecount(0)
    {
       // Register all exported interfaces
-      SetSubClassInterface(iidServiceBroker,
-                           dynamic_cast<IServiceBroker *>(this));
+      SetInterface(iidServiceBroker,
+                   dynamic_cast<IServiceBroker *>(this));
       SetInterface(iidServiceClient,
-                           dynamic_cast<IServiceClient *>(this));
+                   dynamic_cast<IServiceClient *>(this));
       SetInterface(iidResMgrClient,
-                           dynamic_cast<IResourceManagerClient *>(this));
+                   dynamic_cast<IResourceManagerClient *>(this));
 
    }
 

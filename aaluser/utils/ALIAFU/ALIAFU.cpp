@@ -166,13 +166,15 @@ void ALIAFU::serviceReleaseFailed(const IEvent &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                                  getServiceClient(),
-                                                                                  NULL,
-                                                                                  m_TranIDFrominit,
-                                                                                  errInternal,
-                                                                                  reasCauseUnknown,
-                                                                                  "Release Failed") );
+   getRuntime()->schedDispatchable( new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                                               getServiceClient(),
+                                                               getRuntimeClient(),
+                                                               NULL,
+                                                               new CExceptionTransactionEvent( NULL,
+                                                                                               m_TranIDFrominit,
+                                                                                               errInternal,
+                                                                                               reasCauseUnknown,
+                                                                                               "Release Failed")));
 }
 
 void ALIAFU::serviceEvent(const IEvent &Event)

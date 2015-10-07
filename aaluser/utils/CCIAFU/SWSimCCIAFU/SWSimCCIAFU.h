@@ -76,7 +76,7 @@ public:
       m_NextPhys(0)
    {
       SetInterface(        iidCCIAFU,      dynamic_cast<ICCIAFU *>(this));
-      SetSubClassInterface(iidSWSIMCCIAFU, dynamic_cast<ICCIAFU *>(this));
+      SetInterface(iidSWSIMCCIAFU, dynamic_cast<ICCIAFU *>(this));
    }
 
    virtual btBool init( IBase *pclientBase,

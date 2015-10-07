@@ -191,7 +191,7 @@ public:
         m_mydevice (0),
         m_pAALServiceClient(NULL)
     {
-        SetSubClassInterface(iidResMgrService, dynamic_cast<IResMgrService *>(this));
+        SetInterface(iidResMgrService, dynamic_cast<IResMgrService *>(this));
     }
 
 

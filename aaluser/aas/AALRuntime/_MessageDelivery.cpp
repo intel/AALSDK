@@ -66,8 +66,8 @@ BEGIN_NAMESPACE(AAL)
 _MessageDelivery::_MessageDelivery() :
    m_Dispatcher() // Default is a simple single threaded scheduler.
 {
-   if ( EObjOK != SetSubClassInterface(iidMDS,
-                                       dynamic_cast<IMessageDeliveryService *>(this)) ) {
+   if ( EObjOK != SetInterface(iidMDS,
+                               dynamic_cast<IMessageDeliveryService *>(this)) ) {
       m_bIsOK = false;
    }
 }

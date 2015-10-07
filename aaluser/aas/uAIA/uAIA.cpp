@@ -174,7 +174,7 @@ public:
      m_pmessage(pmessage)
    {
       SetSubClassInterface(tranevtUIDriverClientEvent,
-                            dynamic_cast<IUIDriverClientEvent*>(this));
+                           dynamic_cast<IUIDriverClientEvent*>(this));
 
    }
 
@@ -227,8 +227,6 @@ btBool uAIA::init(IBase *pclientBase,
 
    pCAIA->SetuAIA(this);
 
-   //pCAIA->_init(Handler(), Context(), rtid, OptArgs());
-   pCAIA->init(pclientBase,optArgs,rtid);
 
    //Singleton service already initialized
    if(!m_bIsOK){
@@ -260,8 +258,8 @@ btBool uAIA::init(IBase *pclientBase,
       m_bIsOK = true;
       AAL_INFO(LM_UAIA, "uAIA::Create, out\n");
    }
-   // Create the object
-   initComplete(rtid);
+   // Initialize the object
+   pCAIA->_init(pclientBase,rtid,optArgs);
    return true;
 }
 

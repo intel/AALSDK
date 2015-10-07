@@ -187,7 +187,7 @@ CMyCCIClient::CMyCCIClient() :
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
-   SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
 }
 
 void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,

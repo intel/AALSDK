@@ -263,7 +263,7 @@ void Runtime::init(IRuntimeClient *pClient, btBool bFirstTime)
 
    // Register interfaces
    // Add the public interfaces
-   if ( SetSubClassInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
+   if ( SetInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) != EObjOK ) {
       m_bIsOK = false;
       return;
    }

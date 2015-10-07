@@ -55,6 +55,7 @@
 
 
 #include <aalsdk/service/ICCIAFU.h>
+#include <aalsdk/service/CCIAFUService.h>
 #include <aalsdk/service/ICCIClient.h>
 
 #include <string.h>
@@ -175,7 +176,7 @@ RuntimeClient::RuntimeClient() :
    NamedValueSet configRecord;
 
    // Publish our interface
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
 
@@ -356,7 +357,7 @@ HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
    m_OutputSize(0)
 
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
    m_Sem.Create(0, 1);
 }
@@ -509,7 +510,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    ASSERT(NULL != m_pAALService);
 
    // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
-   m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_NLBService = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
 
    ASSERT(NULL != m_NLBService);
    if ( NULL == m_NLBService ) {
