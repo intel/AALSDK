@@ -223,7 +223,7 @@ btBool CResourceManagerProxy::GetMessage( NamedValueSet &nvs,
                                           TransactionID &tid )
 {
    if ( !IsOK() ) {
-      return NULL;
+      return false;
    }
 
    rmMessage Message;
