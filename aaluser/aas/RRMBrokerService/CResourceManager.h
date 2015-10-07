@@ -97,6 +97,7 @@ public:
       m_pRRMService(NULL),
       m_pRRMAALService(NULL)
    {
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
       SetInterface( iidResMgr,
                     dynamic_cast<IResourceManager *>(this));
       m_sem.Create(0, 1);
