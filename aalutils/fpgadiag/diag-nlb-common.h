@@ -213,6 +213,7 @@ struct NLBCmdLine
    #define MY_CMD_FLAG_HELP    0x00000001
    #define MY_CMD_FLAG_VERSION 0x00000002
    std::string      AFUTarget;
+   AAL::btInt       DevTarget;
    std::string      TestMode;
    AAL::btInt       LogLevel;
 };
