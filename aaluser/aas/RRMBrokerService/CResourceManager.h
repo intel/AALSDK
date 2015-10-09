@@ -134,12 +134,37 @@ private:
                                 void      *pContext);
    void ProcessRMMessages();
 
+   /// @brief Allocates the Remote Resource Manager service.
+   ///
+   /// The service will be run in serviceAllocated().
    btBool startRRMService();
-   // checks if Remote Resource Manager is already running
-   btBool                         isRRMPresent();
 
 
-   // Remote Resource Manager startup mode
+   /// @brief Checks if remote resource manager is already running by trying to
+   /// open its device file.
+   ///
+   /// This is used primarily to determine whether it is safe to start
+   /// a Remote Resource Manager instance to service resource requests from
+   /// this (and possibly other) processes.
+   ///
+   /// @return true if another RRM is already running, false otherwise.
+   btBool isRRMPresent();
+
+
+   /// @brief Remote Resource Manager startup mode
+   ///
+   /// Three modes are possible: 'always' will try to start a Remote Resource
+   /// Manager (RRM) thread during initialization, regardless of any other
+   /// RRM instances that are already running; 'automatic' will start a RRM
+   /// thread only when allocating a service requiring hardware access, and
+   /// only if no RRM is already running; and 'never' will not start a RRM but
+   /// assume that there is already one present on the system, possibly in
+   /// another process.
+   ///
+   /// The actual mode is passed either through setting the environment variable
+   /// AAL_RESOURCEMANAGER_CONFIG_INPROC to 'always', 'auto', or 'never'; or
+   /// by setting the AAL_RESOURCEMANAGER_CONFIG_INPROC key in the runtime
+   /// config record to 'always', 'auto', or 'never'.
    enum RRMStartupMode {
       always = 1,
       automatic,

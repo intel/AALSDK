@@ -434,9 +434,6 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 }
 
 
-
-
-// allocate and start remote resource manager in its own thread
 btBool CResourceManager::startRRMService() {
    NamedValueSet ResMgrManifest;
    NamedValueSet ResMgrConfigRecord;
@@ -456,8 +453,6 @@ btBool CResourceManager::startRRMService() {
 }
 
 
-// check if remote resource manager is already running by trying to open
-// its device file
 // TODO: if successful, might want to keep file open and pass fd to
 //       service construction. Otherwise, something might happen between our
 //       close() and the service's open().
@@ -480,8 +475,6 @@ btBool CResourceManager::isRRMPresent()
       return false;
    }
 }
-
-
 
 
 /*
@@ -531,6 +524,9 @@ void CResourceManager::serviceEvent(const IEvent &rEvent)
 {
    AAL_ERR(LM_ResMgr, "Unexpected service event.");
 }
+/*
+ * End of IServiceClient methods
+ */
 
 END_NAMESPACE(AAL)
 
