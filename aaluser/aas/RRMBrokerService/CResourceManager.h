@@ -52,6 +52,8 @@
 #  include "win/CResourceManagerProxy.h"
 #endif
 
+#include <aalsdk/rm/CAASResourceManager.h>
+
 //#include <aalsdk/kernel/aalrm_client.h>
 
 BEGIN_NAMESPACE(AAL)
@@ -81,15 +83,19 @@ AAL_DECLARE_BUILTIN_SVC_MOD(librrm, AALRESOURCEMANAGER_API)
 //=============================================================================
 class AALRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
                                                public  ServiceBase,
-                                               public  IResourceManager
+                                               public  IResourceManager,
+                                               public IServiceClient
 {
 public:
    // Loadable Service
    DECLARE_AAL_SERVICE_CONSTRUCTOR(CResourceManager, ServiceBase),
       m_pResMgrClient(NULL),
       m_RMProxy(),
-      m_pProxyPoll(NULL)
-   {
+      m_pProxyPoll(NULL),
+      m_pRRMAALService(NULL),
+      m_pRRMService(NULL),
+      m_rrmStartupMode(automatic)
+{
       SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
       SetInterface( iidResMgr,
                     dynamic_cast<IResourceManager *>(this));
@@ -110,6 +116,16 @@ public:
    // Request a resource.
    void RequestResource( NamedValueSet const &nvsManifest,
                          TransactionID const &tid);
+
+   // <IServiceClient>
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID());
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseFailed(const IEvent &rEvent);
+   virtual void serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
+
 protected:
    void StopMessagePump();
 
@@ -118,11 +134,29 @@ private:
                                 void      *pContext);
    void ProcessRMMessages();
 
+   btBool startRRMService();
+   // checks if Remote Resource Manager is already running
+   btBool                         isRRMPresent();
+
+
+   // Remote Resource Manager startup mode
+   enum RRMStartupMode {
+      always = 1,
+      automatic,
+      never
+   };
+
    IResourceManagerClient        *m_pResMgrClient;
    CResourceManagerProxy          m_RMProxy;
    OSLThread                     *m_pProxyPoll;
 
    CSemaphore                     m_sem;
+
+   // Remote Resource Manager
+   RRMStartupMode                 m_rrmStartupMode;
+   IResMgrService                *m_pRRMService;
+   IAALService                   *m_pRRMAALService;
+
 };
 
 END_NAMESPACE(AAL)

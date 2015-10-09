@@ -54,12 +54,10 @@
 
 #include "_MessageDelivery.h"
 
-#include <aalsdk/rm/CAASResourceManager.h>
 
 BEGIN_NAMESPACE(AAL)
 
 class _runtime;
-class RRMClient;     // forward declaration from _RuntimeImpl.cpp
 
 //=============================================================================
 // Name: _getnewRuntimeInstance
@@ -71,6 +69,7 @@ _runtime * _getnewRuntimeInstance(Runtime        *pRuntimeProxy,
                                   IRuntimeClient *pClient,
                                   btBool          bFirstTime=true);
 END_C_DECLS
+
 
 //=============================================================================
 /// @class _runtime
@@ -174,9 +173,6 @@ private:
    virtual void                    runtimeEvent(const IEvent & )        { ASSERT(false); /*empty*/}
    // </IRuntimeClient>
 
-   // check if Remote Resource Manager is already running
-   btBool                         isRRMPresent();
-
    // Maps proxy's to runtime clients.
    typedef std::map< Runtime * , IRuntimeClient * > ClientMap;
    typedef ClientMap::iterator                      ClientMap_itr;
@@ -189,13 +185,6 @@ private:
    enum State {
       Stopped = 1,
       Started
-   };
-
-   // Remote Resource Manager startup mode
-   enum RRMStartupMode {
-      always = 1,
-      automatic,
-      never
    };
 
    enum State        m_state;
@@ -225,10 +214,6 @@ private:
    CSemaphore        m_sem;
    // Active core services
    _MessageDelivery  m_MDS;
-
-   RRMClient        *m_pRRMClient;
-   RRMStartupMode    m_rrmStartupMode;
-
 };
 
 END_NAMESPACE(AAL)
