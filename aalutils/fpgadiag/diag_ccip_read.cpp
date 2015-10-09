@@ -76,7 +76,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
-                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
    for ( ; pInput < pEndInput ; ++pInput ) {
       *pInput = ReadBufData;
@@ -94,23 +94,9 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
-   /*if ( 0 != ResetHandshake() ) {
+   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
-   }*/
-
-   /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
-      return 1;
-   }*/
-
-   // Clear the DSM status fields
-   //::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
-
-   /*if ( 0 != ResetHandshake() ) {
-      return 1;
-   }*/
-
-   //ReadQLPCounters();
-   //SaveQLPCounters();
+   }
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
@@ -159,7 +145,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
     }
 
    //if --warm-fpga-cache is mentioned
-    /*if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
+    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
       {
    	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
 
@@ -177,16 +163,11 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    	   // Stop the device
    	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
-   	   ReadQLPCounters();
-   	   SaveQLPCounters();
-
    	   //Re-set the test mode
    	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-      }*/
+      }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
-
-   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -202,7 +183,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  cout << endl;
    }
 
-   /*if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
+   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_COOL_CPU_CACHE))
    {
 	   char * c = (char *)malloc (MAX_CPU_CACHE_SIZE); //Allocate 100MB of space - TODO Increase Cache size when LLC is increased
 	   int iterator;
@@ -212,7 +193,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   c[iterator] = iterator; //Operation to fill the cache with irrelevant content
 	   }
 
-   }*/
+   }
 
 #if   defined( __AAL_WINDOWS__ )
 #error TODO
@@ -233,73 +214,64 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
 	   // Set the number of cache lines for the test
-
 	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	   // Start the test
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
-	   // Wait for test completion
-	   /*while ( ( 0 == pAFUDSM->test_complete )) {
-		   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
-		   {
-			   absolute = Timer() + Timer(&ts);
-			   break;
-		   }
-
-		   SleepNano(10);
-	   }*/
+	   // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
 	   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
 	   {
-		   while(Timer() < absolute)
-		   {
+		   //Wait till timeout.
+		   while(Timer() < absolute){
 			   SleepNano(10);
 		   }
+
 		   // Stop the device
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+		   //wait for DSM register update or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+				 ( MaxPoll >= 0 )) {
+			   MaxPoll -= 500;
+			   SleepNano(500);
+		   }
+
+		   //Update timer.
 		   absolute = Timer() + Timer(&ts);
 	   }
+	   else	//In non-cont mode, wait till test completes and then stop the device.
+	   {
+		   // Wait for test completion or timeout
+		   while ( 0 == pAFUDSM->test_complete &&
+		         ( MaxPoll >= 0 )) {
+			   MaxPoll -= 500;
+			   SleepNano(500);
+		   }
 
-	   // Wait for test completion
-	   	   while ( 0 == pAFUDSM->test_complete ) {
-	   		  SleepMicro(100);
-	   	   }
-	   // Stop the device
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
-
-	   //ReadQLPCounters();
+		   // Stop the device
+		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+	   }
 
 	   PrintOutput(cmd, (sz / CL(1)));
 
-	   //SaveQLPCounters();
-
-	   // Increment Cachelines and update timer.
+	   // Increment Cachelines.
 	   sz += CL(1);
 
+	   // Check the device status
+	   if ( MaxPoll < 0 ) {
+		  cerr << "The maximum timeout for test stop was exceeded." << endl;
+		  ++res;
+		  break;
+	   }
+	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
       }
 
-   // Wait till test complete or timeout
-  /* while ( ( 0 == pAFUDSM->test_complete ) /*&&
-           ( MaxPoll >= 0 ) ) {
-      MaxPoll -= 500;
-      SleepNano(500);
-   }*/
-
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-   //ReadQLPCounters();
-
-   // Check the device status
-   if ( MaxPoll < 0 ) {
-      cerr << "The maximum timeout for test stop was exceeded." << endl;
-      ++res;
-   }
 
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }
-
-   m_RdBw = CalcReadBandwidth(cmd);
 
    // Clean up..
 
@@ -328,18 +300,10 @@ void  CNLBCcipRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
     bt32bitCSR startpenalty = pAFUDSM->start_overhead;
     bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
     bt32bitCSR rds          = pAFUDSM->num_reads;
-    cout << "$$$$$$  REads" << rds <<endl;
-    sleep(1);
-    bt32bitCSR rdss          = pAFUDSM->num_reads;
-    cout << "%%%%%  REads" << rdss <<endl;
+
 	  cout << setw(10) << cls 					<< ' '
 	       << setw(10) << pAFUDSM->num_reads    << ' '
 	       << setw(11) << pAFUDSM->num_writes   << ' ';
-	      /* << setw(12) << GetQLPCounter(0)      << ' '
-	       << setw(12) << GetQLPCounter(1)      << ' '
-	       << setw(13) << GetQLPCounter(2)      << ' '
-	       << setw(13) << GetQLPCounter(3)      << ' '
-	       << setw(10) << GetQLPCounter(10)     << ' ';*/
 
 	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		  ticks = rawticks - startpenalty;

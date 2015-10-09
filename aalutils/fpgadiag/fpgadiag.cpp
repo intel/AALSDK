@@ -734,7 +734,7 @@ int main(int argc, char *argv[])
       		// Run NLB ccip read test.
       		CNLBCcipRead nlbccip_read(&myapp);
 
-      		cout << " * Data Copy - CCIP READ" << flush;
+      		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
       		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
       		totalres += res;
       		if ( 0 == res ) {
@@ -749,7 +749,7 @@ int main(int argc, char *argv[])
    		// Run NLB ccip write test.
    		CNLBCcipWrite nlbccip_write(&myapp);
 
-   		cout << " * Data Copy - CCIP WRITE" << flush;
+   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
    		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
    		totalres += res;
    		if ( 0 == res ) {
@@ -764,7 +764,7 @@ int main(int argc, char *argv[])
       		// Run NLB ccip trput test.
       		CNLBCcipTrput nlbccip_trput(&myapp);
 
-      		cout << " * Data Copy - CCIP TRPUT" << flush;
+      		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
       		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
       		totalres += res;
       		if ( 0 == res ) {

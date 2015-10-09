@@ -514,7 +514,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    struct NLBCmdLine *nlbcl = (struct NLBCmdLine *)gcs->user;
 
 	string test;
-	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [CCIP-LPBK1]" << endl;
+	cout << "Enter test name: [LPBK1] [READ] [WRITE] [TRPUT] [SW] [CCIP-LPBK1] [CCIP-READ] [CCIP-WRITE] [CCIP-TRPUT]" << endl;
 	cin >> test;
    fprintf(fp, "Usage:\n");
 
@@ -530,6 +530,12 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
 	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ) {
+	 fprintf(fp, "   --mode=ccip-read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "CCIP-WRITE") ) {
+	 fprintf(fp, "   --mode=ccip-write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [CH-SELECT] [<OUTPUT>]");
+   } else if ( 0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ) {
+	 fprintf(fp, "   --mode=ccip-trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
    }
 
    fprintf(fp, "\n\n");
@@ -575,7 +581,9 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+   if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
+		0 == strcasecmp(test.c_str(), "READ") ||
         0 == strcasecmp(test.c_str(), "WRITE") ) {
       fprintf(fp, "      <FPGA-CACHE>= --warm-fpga-cache OR --wfc,   attempt to prime the cache with hits,           ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE) ) {
@@ -603,6 +611,8 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "WRITE") ||
         0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+        0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
+        0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <WRITES>    = --wt,                         write-through cache behavior,                   ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_WT) ) {
@@ -636,10 +646,13 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 
    fprintf(fp, "      <FREQ>      = --clock-freq=T    OR --f=T,   Clock frequency in Hz,                          Default=200 MHz\n");
 
-   if ( 0 == strcasecmp(test.c_str(), "READ") ||
+   if ( 0 == strcasecmp(test.c_str(), "READ")  ||
 	    0 == strcasecmp(test.c_str(), "WRITE") ||
+	    0 == strcasecmp(test.c_str(), "TRPUT") ||
 	    0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
-	    0 == strcasecmp(test.c_str(), "TRPUT") ) {
+	    0 == strcasecmp(test.c_str(), "CCIP-READ")  ||
+	    0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-TRPUT")) {
 
 	   fprintf(fp, "      <TIMEOUT>   = --timeout-nsec=T  OR --tn=T,  timeout for --cont mode (nanoseconds portion),  ");
 	   if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_TONSEC) ) {
@@ -695,6 +708,8 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
         0 == strcasecmp(test.c_str(), "READ")  ||
         0 == strcasecmp(test.c_str(), "TRPUT") ||
         0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+        0 == strcasecmp(test.c_str(), "CCIP-READ") ||
+        0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ||
         0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "      <RDSEL>     = --rds,                        readline-shared,                                ");
       if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_RDS) ) {
@@ -748,7 +763,10 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	  }
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
+   if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-READ") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
+	    0 == strcasecmp(test.c_str(), "CCIP-TRPUT")) {
 	  fprintf(fp, "      <CH-SELECT> = --auto-ch,                    Arbitrary Channel,                              ");
 	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_AUTO_CH) ) {
 		fprintf(fp, "yes\n");
