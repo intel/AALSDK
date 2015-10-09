@@ -59,6 +59,115 @@ BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
+//
+// RRMClient: Client for Remote Resource Manager
+// Synchronous wrapper around client for CResMgr
+//
+class RRMClient : public CAASBase,
+                  public IServiceClient
+{
+public:
+
+   RRMClient(IRuntime *pRuntime) :
+      m_pRuntime(pRuntime),
+      m_pRRMAALService(NULL),
+      m_pRRMService(NULL)
+   {
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+      m_sem.Create(0);
+   }
+
+   // allocate and start remote resource manager in its own thread
+   btBool startRRMService() {
+      NamedValueSet ResMgrManifest;
+      NamedValueSet ResMgrConfigRecord;
+
+      // Construct config record and manifest
+      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
+                       "libAASResMgr");
+      ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+      ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
+      ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
+
+      // allocate service, will be started in serviceAllocated()
+      m_pRuntime->allocService(this, ResMgrManifest, TransactionID());
+      m_sem.Wait();
+      if (!IsOK()) {
+         return false;
+      }
+   }
+
+   // Release remote resource manager service
+   btBool ReleaseRRMService()
+   {
+      if (m_pRRMAALService == NULL) {
+         return false;
+      }
+
+      m_pRRMAALService->Release(TransactionID());
+      return true;
+   }
+
+   /*
+    * IServiceClient methods
+    */
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID)
+   {
+      // Store ResMgrService pointer
+      m_pRRMService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
+      if (!m_pRRMService) {
+         // TODO: handle error
+         return;
+      }
+
+      // Store AAL service pointer (needed for Release())
+      m_pRRMAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+      ASSERT(NULL != m_pRRMAALService);
+
+      // run remote resource manager in separate thread
+      m_pRRMService->start(TransactionID());
+      // unblock semaphore
+      m_sem.Post(1);
+   }
+
+   virtual void serviceAllocateFailed(const IEvent &rEvent)
+   {
+      AAL_ERR(LM_ResMgr, "Allocation of CResMgr failed.");
+      PrintExceptionDescription(rEvent);
+      m_bIsOK = false;
+      m_sem.Post(1);
+   }
+
+   virtual void serviceReleased(TransactionID const &rTranID)
+   {
+      // clean up
+      m_pRRMAALService = NULL;
+      m_pRRMService = NULL;
+   }
+
+   virtual void serviceReleaseFailed(const IEvent &rEvent)
+   {
+      AAL_ERR(LM_ResMgr, "Release of CResMgr failed.");
+   }
+
+   virtual void serviceEvent(const IEvent &rEvent)
+   {
+      AAL_ERR(LM_ResMgr, "Unexpected service event.");
+   }
+
+private:
+   IRuntime *m_pRuntime;
+   CSemaphore m_sem;
+
+   // Remote Resource Manager
+   IResMgrService                *m_pRRMService;
+   IAALService                   *m_pRRMAALService;
+
+};
+
+
 // Singleton Runtime implementation
 static _runtime       *pTheRuntime = NULL;
 static CriticalSection TheRuntimeMtx;
@@ -190,7 +299,9 @@ _runtime::_runtime(Runtime *pRuntimeProxy, IRuntimeClient *pClient) :
    m_pBrokerSvcHost(NULL),
    m_pBroker(NULL),
    m_pBrokerbase(NULL),
-   m_pDefaultBrokerbase(NULL)
+   m_pDefaultBrokerbase(NULL),
+   m_rrmStartupMode(automatic),
+   m_pRRMClient(new RRMClient(this))
 {
    m_sem.Create(0);
 
@@ -379,6 +490,13 @@ void _runtime::stop(Runtime *pProxy)
          return;
       }
 
+      // Release RRM service, if present
+      if (m_pRRMClient) {
+         m_pRRMClient->ReleaseRRMService();
+         // TODO: check for failure
+      }
+
+
       // If the runtime is OK but is NOT stopped
       if ( IsOK() && ( Stopped != m_state ) ) {
 
@@ -423,6 +541,8 @@ void _runtime::allocService(Runtime             *pProxy,
                             TransactionID const &rTranID)
 {
    IDispatchable *pDisp = NULL;
+   btBool isSWService = false;
+   const INamedValueSet *ConfigRecord;
 
    AutoLock(this);
 
@@ -451,6 +571,30 @@ void _runtime::allocService(Runtime             *pProxy,
                                                                  reasCauseUnknown,
                                                                  "Runtime not OK"));
       goto _SCHED;
+   }
+
+   // if the service being requested is not SW-only, check if we need to start
+   // a remote resource manager
+   if ( rManifest.Has(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED) ){
+      rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+      if ( ConfigRecord->Has(AAL_FACTORY_CREATE_SOFTWARE_SERVICE) ){
+         ConfigRecord->Get(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, &isSWService);
+      }
+   }
+   if (!isSWService && m_rrmStartupMode == automatic && !isRRMPresent()) {
+      m_pRRMClient->startRRMService();
+
+      if (!m_pRRMClient->IsOK()) {
+         pDisp = new RuntimeCallback(RuntimeCallback::AllocateFailed,
+                                     m_pOwnerClient,
+                                     new CExceptionTransactionEvent( NULL,
+                                                                     rTranID,
+                                                                     errInternal,
+                                                                     reasCauseUnknown,
+                                                                     "Could not create RRM Service (in proc)."));
+         goto _SCHED;
+      }
+
    }
 
    // cmItr->second is the Runtime Client associated with the Runtime Proxy used to issue this request.
@@ -725,6 +869,8 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
    INamedValueSet const *pConfigRecord = NULL;
    btcString             sName         = NULL;
    std::string           strSname;
+   btcString             sStartupMode   = NULL;       // for parsing environment
+   std::string           strStartupMode;              // for reading environment
 
    // First check environment
    if ( Environment::GetObj()->Get("AALRUNTIME_CONFIG_BROKER_SERVICE", strSname) ) {
@@ -769,6 +915,50 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
       // Allocate the service.
       allocService(this, optArgs, TransactionID(Broker));
       m_sem.Wait();
+   }
+
+   //
+   // Determine mode for allocating remote resource manager service.
+   //
+
+   // Check environment
+   if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strStartupMode) ) {
+      sStartupMode = strStartupMode.c_str();
+   } else {
+      if ( ENamedValuesOK != rConfigParms.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
+         // Not in Environment and no Config Parms.
+         return true;
+      }
+      if ( ENamedValuesOK != pConfigRecord->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &sStartupMode) ) {
+              // Not in Environment and no Config Parms.
+              sStartupMode = NULL;
+      }
+   }
+
+   // Parse envvar string, set m_rrmStartupMode accordingly (or leave at default)
+   if (NULL != sStartupMode) {
+      if (strcmp("always", sStartupMode) == 0) {
+         m_rrmStartupMode = always;
+      } else if (strcmp("never", sStartupMode) == 0) {
+         m_rrmStartupMode = never;
+      }
+   }
+
+   // 'always' startup happens here
+   if (m_rrmStartupMode == always) {
+      ASSERT(m_pRRMClient != NULL);
+      if (!m_pRRMClient->startRRMService()) {
+         schedDispatchable(new RuntimeCallback(RuntimeCallback::StartFailed,
+                                                           m_pOwnerClient,
+                                                           m_pOwner,
+                                                           rConfigParms,
+                                                           new CExceptionTransactionEvent(m_pOwner,
+                                                                                          TransactionID(),
+                                                                                          errSysSystemStarted,
+                                                                                          reasInitError,
+                                                                                          "RRM failed to start in 'always' mode")));
+                     return false;
+      }
    }
 
    return true;
@@ -942,6 +1132,32 @@ void _runtime::serviceEvent(const IEvent &rEvent)
    // TODO
    ASSERT(false);
 }
+
+// check if remote resource manager is already running by trying to open
+// its device file
+// TODO: if successful, might want to keep file open and pass fd to
+//       service construction. Otherwise, something might happen between our
+//       close() and the service's open().
+btBool _runtime::isRRMPresent()
+{
+   int fd = open("/dev/aalrms", O_RDWR);
+   if (fd == -1) {
+      // Could not open file, check reason
+      if (errno == EBUSY) {
+         // EBUSY probably means RRM is running
+         return true;
+      } else {
+         // Unexpected error code
+         AAL_ERR(LM_ResMgr, "open of /dev/aalrms failed unexpectedly with errno " << errno << "(" << strerror(errno) << ")");
+         return false;
+      }
+   } else {
+      // Could open file, no RRM present
+      close(fd);
+      return false;
+   }
+}
+
 
 
 END_NAMESPACE(AAL)

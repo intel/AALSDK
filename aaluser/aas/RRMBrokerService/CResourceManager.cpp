@@ -90,8 +90,6 @@ AAL_END_SVC_MOD()
 
 BEGIN_NAMESPACE(AAL)
 
-enum RRMStartupMode { always, automatic, never };
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -120,10 +118,6 @@ btBool CResourceManager::init( IBase *pclientBase,
                                NamedValueSet const &optArgs,
                                TransactionID const &rtid)
 {
-   std::string       strStartupMode;              // for reading environment
-   btcString         sStartupMode   = NULL;       // for parsing environment
-   RRMStartupMode    startupMode    = automatic;  // default startup mode
-
    // Save the client interface
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
    if( NULL == m_pResMgrClient ){
@@ -134,65 +128,6 @@ btBool CResourceManager::init( IBase *pclientBase,
                                                  reasInvalidParameter,
                                                  strInvalidParameter));
 
-   }
-
-   // Allocate remote resource manager service, if we need one
-   // We need a RRM when instantiating a service that's not pure software.
-   // Need is currently determined through environment variable
-
-   // Check environment
-   if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strStartupMode) ) {
-      sStartupMode = strStartupMode.c_str();
-   } else {
-      if ( ENamedValuesOK != OptArgs().Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &sStartupMode) ) {
-              // Not in Environment and no Config Parms.
-              sStartupMode = NULL;
-      }
-   }
-
-   // Parse envvar string, set startupMode accordingly (or leave at default)
-   if (NULL != sStartupMode) {
-      if (strcmp("always", sStartupMode) == 0) {
-         startupMode = always;
-      } else if (strcmp("never", sStartupMode) == 0) {
-         startupMode = never;
-      }
-   }
-
-   switch (startupMode)
-   {
-   case automatic:
-      if (isRRMPresent()) break;
-   case always:
-      {
-         NamedValueSet ResMgrManifest;
-         NamedValueSet ResMgrConfigRecord;
-
-         // Construct config record and manifest
-         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
-                          "libAASResMgr");
-         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
-
-         ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
-         ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
-
-         // allocate service
-         getRuntime()->allocService(dynamic_cast<IBase *>(this), ResMgrManifest);
-
-         // wait for service to be allocated and run
-         m_sem.Wait();
-         if (!IsOK()) {
-            initFailed(new CExceptionTransactionEvent( NULL,
-                                                       rtid,
-                                                       errInternal,
-                                                       reasCauseUnknown,
-                                                       "Could not create RRM Service (in proc)."));
-            return false;
-         }
-      }
-      break;
-   case never:
-      break;
    }
 
    // Create an open channel to the remote resource manager
@@ -425,11 +360,6 @@ CResourceManager::~CResourceManager()
 //=============================================================================
 btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
-   if (m_pRRMAALService) {
-      m_pRRMAALService->Release(rTranID, timeout);
-      m_sem.Wait();
-      // TODO: check for failure
-   }
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
 
    // This function blocks until pump is stopped.
@@ -437,82 +367,6 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 
    ServiceBase::Release(rTranID, timeout);
 }
-
-
-/*
- * IServiceClient methods
- */
-
-// Service allocated callback
-void CResourceManager::serviceAllocated(IBase               *pServiceBase,
-                              TransactionID const &rTranID)
-{
-   // Store ResMgrService pointer
-   m_pRRMService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
-   if (!m_pRRMService) {
-      // TODO: handle error
-      return;
-   }
-
-   // Store AAL service pointer
-   m_pRRMAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-   ASSERT(NULL != m_pRRMAALService);
-
-   // run remote resource manager in separate thread
-   m_pRRMService->start(TransactionID());
-   // unblock init()
-   m_sem.Post(1);
-   return;
-}
-
-// Service allocated failed callback
-void CResourceManager::serviceAllocateFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   m_sem.Post(1);
-}
-
-// Service released callback
-void CResourceManager::serviceReleased(TransactionID const &rTranID) {
-   m_sem.Post(1);    // let Release() know.
-}
-
-// Service released failed callback
-void CResourceManager::serviceReleaseFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   m_sem.Post(1);    // let Release() know.
-}
-
-// Callback for generic events
-void CResourceManager::serviceEvent(const IEvent &rEvent) {
-   // TODO: handle unexpected events
-   ASSERT(false);
-}
-
-// check if remote resource manager is already running by trying to open
-// its device file
-// TODO: if successful, might want to keep file open and pass fd to
-//       service construction. Otherwise, something might happen between our
-//       close() and the service's open().
-btBool CResourceManager::isRRMPresent()
-{
-   int fd = open("/dev/aalrms", O_RDWR);
-   if (fd == -1) {
-      // Could not open file, check reason
-      if (errno == EBUSY) {
-         // EBUSY probably means RRM is running
-         return true;
-      } else {
-         // Unexpected error code
-         AAL_ERR(LM_ResMgr, "open of /dev/aalrms failed unexpectedly with errno " << errno << "(" << strerror(errno) << ")");
-         return false;
-      }
-   } else {
-      // Could open file, no RRM present
-      close(fd);
-      return false;
-   }
-}
-
 
 END_NAMESPACE(AAL)
 
