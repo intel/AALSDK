@@ -210,7 +210,7 @@ CMyApp::CMyApp() :
    m_pProprietary(NULL)
 {
 	m_Sem.Create(0, 1);
-	SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
+	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
     SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 	SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(&m_CCIClient));
 }
@@ -321,7 +321,7 @@ void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated (rt)");
@@ -366,7 +366,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated");
@@ -434,7 +434,7 @@ CMyCCIClient::CMyCCIClient() :
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
-   SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
 }
 
 void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
