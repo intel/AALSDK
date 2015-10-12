@@ -413,7 +413,7 @@ struct aalui_ioctlreq
    stTransactionID_t  tranID;  // Transaction ID to identify result [IN]
    btObjectType       context; // Optional token [IN]
    uid_errnum_e       errcode; // Driver specific error number
-   btObjectType       handle;  // Device handle
+   btHANDLE           handle;  // Device handle
    btWSSize           size;    // Size of payload section [IN]
 //   btVirtAddr         payload; // Pointer to optional payload [IN]
 };

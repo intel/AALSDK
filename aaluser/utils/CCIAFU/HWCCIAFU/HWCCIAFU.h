@@ -75,10 +75,12 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWCCIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
    {
       SetInterface(        iidCCIAFU,   dynamic_cast<ICCIAFU *>(this));
-      SetSubClassInterface(iidHWCCIAFU, dynamic_cast<ICCIAFU *>(this));
+      SetInterface(iidHWCCIAFU, dynamic_cast<ICCIAFU *>(this));
    }
 
-   virtual void init(TransactionID const &TranID);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
 

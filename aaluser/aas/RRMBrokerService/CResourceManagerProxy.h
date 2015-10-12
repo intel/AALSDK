@@ -133,6 +133,12 @@ public:
    btBool SendRequest( NamedValueSet const   &nvsManifest,
                        TransactionID const   &tid);
 
+   //==========================================================================
+   // Name: SendStop
+   // Description: Sends a message down RMC connection
+   //==========================================================================
+   btBool SendStop();
+
    btBool IsOK() { return m_bIsOK; }
 
 private:

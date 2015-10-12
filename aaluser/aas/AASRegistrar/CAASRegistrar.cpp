@@ -166,7 +166,7 @@ AASREGISTRAR_API
    AutoLock(this);
    m_bIsOK = false;              // CAASBase set it to true
 
-   if(SetSubClassInterface(iidRegistrar,dynamic_cast<IRegistrar*>(this))!= EObjOK)
+   if(SetInterface(iidRegistrar,dynamic_cast<IRegistrar*>(this))!= EObjOK)
       return;                    // m_bIsOK will be false
 
    // Initialize the semaphore

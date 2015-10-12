@@ -7,6 +7,6 @@ declare -r SCRIPT_NAME='gdb-bat'
 
 . ./gdb-common
 
-run_gdbtui "${VPATH}/tests/harnessed/gtest/.libs/bat" ${1+"$@"}
+run_gdbtui "${VPATH}/tests/harnessed/gtest/.libs/bat" ${1+"$@"} --no-timeout
 
 exit $?

@@ -38,7 +38,7 @@
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
 /// 12/16/2007     JG       Changed include path to expose aas/
-/// 04/04/2008     JG       Added IsOK methid to OLThread object
+/// 04/04/2008     JG       Added IsOK method to OLThread object
 ///                         Fixed bug in thread destructor that caused a
 ///                         resource leak if in Linux you do not do a Join()
 /// 05/08/2008     HM       Cleaned up windows includes
@@ -291,8 +291,9 @@ OSLThread::~OSLThread()
    }
 
    if ( IsThisThread( GetThreadID() ) ) {
-      // self-destruct
-      ExitCurrentThread(0);
+      // When self-destructing, allow the thread to return from the d'tor so that
+      // the C++ runtime releases the memory allocated for this.
+      ;
    } else {
 
       Cancel();  // Mark the thread for termination at the next cancellation point.

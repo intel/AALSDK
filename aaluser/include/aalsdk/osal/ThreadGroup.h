@@ -316,6 +316,26 @@ private:
    ThrGrpState *m_pState;
 };
 
+/// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
+///
+/// Waits for the thread group to dispatch pDisp and then destroys the thread group before returning.
+AAL::btBool   FireAndWait(IDispatchable            *pDisp,
+                          AAL::btUnsignedInt        MinThrs=0,
+                          AAL::btUnsignedInt        MaxThrs=0,
+                          OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                          AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+
+/// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
+///
+/// pDisp is not guaranteed to have dispatched prior to returning from this function.
+/// An OSLThread is created to ensure that the thread group is destroyed and its memory reclaimed
+///  upon dispatching pDisp. The thread self-destructs after reclaiming the thread group resources.
+AAL::btBool FireAndForget(IDispatchable            *pDisp,
+                          AAL::btUnsignedInt        MinThrs=0,
+                          AAL::btUnsignedInt        MaxThrs=0,
+                          OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                          AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+
 #endif // __AALSDK_OSAL_THREADGROUP_H__
 
 /// @}

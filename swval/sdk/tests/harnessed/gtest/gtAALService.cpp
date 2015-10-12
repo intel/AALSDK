@@ -349,7 +349,9 @@ protected:
    }
    virtual void TearDown()
    {
-      delete m_pSB; // also deletes m_pTransport, m_pMarshaller, m_pUnMarshaller
+      if ( NULL != m_pSB ) {
+         delete m_pSB; // also deletes m_pTransport, m_pMarshaller, m_pUnMarshaller
+      }
       m_pSB           = NULL;
       m_pTransport    = NULL;
       m_pMarshaller   = NULL;
@@ -368,11 +370,26 @@ protected:
    SB              *m_pSB;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-
 class ServiceBase_f_0 :
    public TServiceBase_f< EmptyISvcsFact, EmptyIRuntime, EmptyIRuntimeClient, EmptyServiceBase >
 {};
+
+class ServiceBase_f_1 :
+   public TServiceBase_f< EmptyISvcsFact, CallTrackingIRuntime, EmptyIRuntimeClient, EmptyServiceBase >
+{
+protected:
+   virtual void TearDown()
+   {
+      m_IRuntime.ClearLog();
+      TServiceBase_f< EmptyISvcsFact, CallTrackingIRuntime, EmptyIRuntimeClient, EmptyServiceBase >::TearDown();
+   }
+};
+
+class ServiceBase_f_2 :
+   public TServiceBase_f< EmptyISvcsFact, EmptyIRuntime, EmptyIRuntimeClient, CallTrackingServiceBase >
+{};
+
+////////////////////////////////////////////////////////////////////////////////
 
 TEST_F(ServiceBase_f_0, aal0680)
 {
@@ -481,10 +498,6 @@ TEST_F(ServiceBase_f_0, aal0682)
    EXPECT_EQ(NULL, m_pSB->_init(&base, TransactionID(), NamedValueSet()));
 }
 
-class ServiceBase_f_1 :
-   public TServiceBase_f< EmptyISvcsFact, CallTrackingIRuntime, EmptyIRuntimeClient, EmptyServiceBase >
-{};
-
 TEST_F(ServiceBase_f_1, aal0683)
 {
    // When the IBase * parameter to ServiceBase::_init() is non-NULL and has an iidServiceClient,
@@ -519,10 +532,6 @@ TEST_F(ServiceBase_f_1, aal0683)
 
    e->Delete();
 }
-
-class ServiceBase_f_2 :
-   public TServiceBase_f< EmptyISvcsFact, EmptyIRuntime, EmptyIRuntimeClient, CallTrackingServiceBase >
-{};
 
 TEST_F(ServiceBase_f_2, aal0684)
 {
@@ -572,4 +581,118 @@ TEST_F(ServiceBase_f_1, aal0685)
    delete reinterpret_cast<IDispatchable *>(x);
 }
 
+TEST_F(ServiceBase_f_1, aal0686)
+{
+   // ServiceBase::Release(btTime ) sends the 'service released' notification to the service
+   // module, then calls IRuntime::releaseRuntimeProxy() on m_Runtime. Finally, the ServiceBase
+   // is deleted (delete this;), prior to returning true.
+
+   EXPECT_TRUE(m_pSB->Release(AAL_INFINITE_WAIT));
+   // guard against double-delete in TearDown()
+   m_pSB = NULL;
+
+   // getRuntimeProxy() is called from the c'tor.
+   // releaseRuntimeProxy() is called from Release().
+   EXPECT_EQ(2, m_IRuntime.LogEntries());
+   EXPECT_STREQ("IRuntime::releaseRuntimeProxy1", m_IRuntime.Entry(1).MethodName());
+   EXPECT_EQ(0, m_IRuntime.Entry(1).Params());
+}
+
+TEST_F(ServiceBase_f_0, aal0687)
+{
+   // ServiceBase implements IRuntimeClient as do-nothing routines.
+
+   CAALEvent *e = new CAALEvent(NULL);
+
+   m_pSB->runtimeCreateOrGetProxyFailed(*e);
+   m_pSB->runtimeStarted(&m_IRuntime, NamedValueSet());
+   m_pSB->runtimeStopped(&m_IRuntime);
+   m_pSB->runtimeStartFailed(*e);
+   m_pSB->runtimeStopFailed(*e);
+   m_pSB->runtimeAllocateServiceFailed(*e);
+   m_pSB->runtimeAllocateServiceSucceeded(NULL, TransactionID());
+   m_pSB->runtimeEvent(*e);
+
+   e->Delete();
+}
+
+TEST_F(ServiceBase_f_0, aal0688)
+{
+   // ServiceBase implements processmsg() and SetParms() as do-nothing routines.
+
+   m_pSB->processmsg();
+   EXPECT_FALSE(m_pSB->SetParms(NamedValueSet()));
+}
+
+TEST_F(ServiceBase_f_1, aal0689)
+{
+   // ServiceBase::allocService() requests the service from the cached IRuntime *.
+
+   CAASBase      base;
+   NamedValueSet nvs;
+   nvs.Add((btNumberKey)5, (btUnsigned32bitInt)123);
+   TransactionID tid;
+   tid.ID(4);
+
+   m_pSB->allocService(&base, nvs, tid);
+
+   // getRuntimeProxy() is called from the c'tor.
+   // allocService() is called from ServiceBase::allocService().
+   EXPECT_EQ(2, m_IRuntime.LogEntries());
+   EXPECT_STREQ("IRuntime::allocService", m_IRuntime.Entry(1).MethodName());
+   // 7, because tid is broken into its 5 parts.
+   EXPECT_EQ(7, m_IRuntime.Entry(1).Params());
+
+   btObjectType x = NULL;
+   m_IRuntime.Entry(1).GetParam("pClient", &x);
+   EXPECT_EQ(reinterpret_cast<IBase *>(x), dynamic_cast<IBase *>(&base));
+
+   INamedValueSet const *pNVS = NULL;
+   m_IRuntime.Entry(1).GetParam("rManifest", &pNVS);
+   EXPECT_TRUE(nvs == *pNVS);
+
+   TransactionID tid2;
+   m_IRuntime.Entry(1).GetParam("rTranID", tid2);
+   EXPECT_EQ(tid.ID(), tid2.ID());
+}
+
+class aal0690ServiceBase : public CallTrackingServiceBase
+{
+public:
+   aal0690ServiceBase(AALServiceModule *container,
+                      IRuntime         *pAALRUNTIME,
+                      IAALTransport    *ptransport,
+                      IAALMarshaller   *marshaller,
+                      IAALUnMarshaller *unmarshaller) :
+      CallTrackingServiceBase(container,
+                              pAALRUNTIME,
+                              ptransport,
+                              marshaller,
+                              unmarshaller)
+   {}
+
+   void CallinitComplete(TransactionID const &rtid) { initComplete(rtid); }
+};
+
+class ServiceBase_f_3 :
+   public TServiceBase_f< EmptyISvcsFact, EmptyIRuntime, EmptyIRuntimeClient, aal0690ServiceBase >
+{};
+
+TEST_F(ServiceBase_f_3, aal0690)
+{
+   // The ServiceBase::initComplete() notification callback passes the TransactionID parameter to
+   // ServiceBase::init() [Service-specific override].
+
+   TransactionID tid;
+   tid.ID(4);
+
+   m_pSB->CallinitComplete(tid);
+
+   EXPECT_EQ(1, m_pSB->LogEntries());
+   EXPECT_STREQ("ServiceBase::init", m_pSB->Entry(0).MethodName());
+
+   TransactionID tid2;
+   m_pSB->Entry(0).GetParam("rtid", tid2);
+   EXPECT_EQ(tid2.ID(), tid.ID());
+}
 

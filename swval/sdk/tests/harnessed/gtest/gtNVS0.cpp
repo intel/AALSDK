@@ -470,3 +470,29 @@ TEST(NVS, aal0621)
    EXPECT_EQ(ENamedValuesRecursiveAdd, nvs.Add(sname, &nvs));
 }
 
+TEST(NVS, aal0698)
+{
+   // An empty NamedValueSet is a subset (NamedValueSet::Subset()) of a non-empty NamedValueSet,
+   // but not vice-versa.
+
+   NamedValueSet a;
+   NamedValueSet b;
+
+   EXPECT_EQ(ENamedValuesOK, b.Add((btNumberKey)3, "hi"));
+
+   EXPECT_TRUE(a.Subset(b));
+   EXPECT_FALSE(b.Subset(a));
+}
+
+TEST(NVS, aal0699)
+{
+   // An empty NamedValueSet is a subset (NamedValueSet::Subset()) of another empty
+   // NamedValueSet (and of itself).
+
+   NamedValueSet a;
+   NamedValueSet b;
+
+   EXPECT_TRUE(a.Subset(b));
+   EXPECT_TRUE(a.Subset(a));
+}
+

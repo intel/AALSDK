@@ -107,7 +107,7 @@ public:
          m_AFUTarget(DEFAULT_TARGET_AFU),
          m_WSRequestLen(0)
    {
-      SetSubClassInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+      SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
       m_bIsOK = true;
    }
    ~CMyApp(){}

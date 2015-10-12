@@ -216,31 +216,24 @@ protected:
 // TODO: Add checks for AFUDev capabilities, possibly selective exposure of
 //       interfaces based on results
 //
-void HWALIAFU::init(TransactionID const &TranID)
+btBool HWALIAFU::init(IBase *pclientBase,
+                      NamedValueSet const &optArgs,
+                      TransactionID const &TranID)
 {
-	// We don't expect the client to actually publish an interface.
-	// Check can be removed / moved to IALIBuffer implementation
-	// (that's currently the only interface requiring a peer at the client).
-	/*
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase());
+/*   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
-    if ( NULL == pClient ) {
-    /// ObjectCreatedExceptionEvent Constructor.
-    	getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(getRuntimeClient(),
-                                                                      Client(),
-                                                                      this,
-                                                                      TranID,
-                                                                      errBadParameter,
-                                                                      reasMissingInterface,
-                                                                      "Client did not publish ICCIClient Interface"));
+   if ( NULL == pClient ) {
+      /// ObjectCreatedExceptionEvent Constructor.
+      initFailed(new CExceptionTransactionEvent( this,
+                                                 TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Client did not publish ICCIClient Interface"));
+      return false;
+   }*/
 
-    	return;
-    }
-	*/
-	getRuntime()->schedDispatchable( new(std::nothrow) ObjectCreatedEvent(getRuntimeClient(),
-                                                                          Client(),
-                                                                          dynamic_cast<IBase *>(this),
-                                                                          TranID) );
+   initComplete(TranID);
+   return true;
 }
 
 //

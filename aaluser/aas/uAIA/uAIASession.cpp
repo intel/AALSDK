@@ -134,16 +134,20 @@ void uAIASession::MessageHandler(IEvent const &theEvent)
    // TODO: Check for exception
 
    // SWitch on the top level event ID
+   btIID iid = theEvent.SubClassID();
+
    switch ( theEvent.SubClassID() ) {
 
       // The event was a driver message
       case tranevtUIDriverClientEvent : {
 
-         IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+         IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
          // Get this address from the context of the return address
 
          uAIASession *This = static_cast<uAIASession*>(revt.msgRoute().Context());
+
+         uid_msgIDs_e foo = revt.MessageID();
 
          switch ( revt.MessageID() ) {
             case rspid_UID_BindComplete : {

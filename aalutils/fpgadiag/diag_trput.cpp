@@ -91,7 +91,7 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
    // Set output workspace address
-   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys())+512);
 
    // Set the test mode
    m_pCCIAFU->CSRWrite(CSR_CFG, 0);
@@ -100,7 +100,6 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
      {
        cfg |= (csr_type)NLB_TEST_MODE_CONT;
      }
-   //EnableCSRPrint(flag_is_set(gCmdLine.cmdflags, NLB_CMD_FLAG_CSRS));
 
    //Check for write through mode and add to CSR_CFG
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
@@ -119,11 +118,6 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
-
-   /*if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CSRS))
-   {
-	   cout << "CSR Write:\t" << std::hex << CSR_CFG << "\t" << cfg << endl;
-   }*/
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -167,20 +161,39 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   // Start the test
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
-
-		   // Wait for test completion
-		   while ( ( 0 == pAFUDSM->test_complete ))
+		   // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
+		   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
 		   {
-			   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
-			   {
-				   absolute = Timer() + Timer(&ts);
-				   break;
+			   //Wait till timeout.
+			   while(Timer() < absolute){
+				   SleepNano(10);
 			   }
-			   SleepNano(10);
-		   }
 
-		   // Stop the device
-		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+			   // Stop the device
+			   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+			   //wait for DSM register update or timeout
+			   while ( 0 == pAFUDSM->test_complete &&
+					 ( MaxPoll >= 0 )) {
+				   MaxPoll -= 500;
+				   SleepNano(500);
+			   }
+
+			   //Update timer.
+			   absolute = Timer() + Timer(&ts);
+		   }
+		   else	//In non-cont mode, wait till test completes and then stop the device.
+		   {
+			   // Wait for test completion or timeout
+			   while ( 0 == pAFUDSM->test_complete &&
+					 ( MaxPoll >= 0 )) {
+				   MaxPoll -= 500;
+				   SleepNano(500);
+			   }
+
+			   // Stop the device
+			   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+		   }
 
 		   ReadQLPCounters();
 
@@ -188,34 +201,25 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   SaveQLPCounters();
 
-		   // Increment number of cachelines and update Timer
+		   // Increment Cachelines.
 		   sz += CL(1);
+
+		   // Check the device status
+		   if ( MaxPoll < 0 ) {
+			  cerr << "The maximum timeout for test stop was exceeded." << endl;
+			  ++res;
+			  break;
+		   }
+		   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
        }
-
-
-   //Wait until test completes or times out.
-   while ( ( 0 == pAFUDSM->test_complete ) &&
-           ( MaxPoll >= 0 ) ) {
-      MaxPoll -= 500;
-      SleepNano(500);
-   }
 
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
 
-   // Check the device status
-   if ( MaxPoll < 0 ) {
-      cerr << "The maximum timeout for test stop was exceeded." << endl;
-      ++res;
-   }
-
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }
-
-   m_RdBw = CalcReadBandwidth(cmd);
-   m_WrBw = CalcWriteBandwidth(cmd);
 
    // Clean up..
 
@@ -244,13 +248,13 @@ void  CNLBTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
     bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
 	  cout << setw(10) << cls 					<< ' '
-	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   << ' '
-	       << setw(12) << GetQLPCounter(0)      << ' '
-	       << setw(12) << GetQLPCounter(1)      << ' '
-	       << setw(13) << GetQLPCounter(2)      << ' '
-	       << setw(13) << GetQLPCounter(3)      << ' '
-	       << setw(10) << GetQLPCounter(10)     << ' ';
+		   << setw(10) << pAFUDSM->num_reads    << ' '
+		   << setw(11) << pAFUDSM->num_writes   << ' '
+		   << setw(12) << GetQLPCounter(0)      << ' '
+		   << setw(12) << GetQLPCounter(1)      << ' '
+		   << setw(13) << GetQLPCounter(2)      << ' '
+		   << setw(13) << GetQLPCounter(3)      << ' '
+		   << setw(10) << GetQLPCounter(10)     << ' ';
 
 	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		  ticks = rawticks - startpenalty;
@@ -261,15 +265,15 @@ void  CNLBTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	  }
 	  cout  << setw(16) << ticks;
 
-	    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-	       double rdbw = 0.0;
-	       double wrbw = 0.0;
+	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+	   double rdbw = 0.0;
+	   double wrbw = 0.0;
 
-	       cout << "  "
-	            << setw(14) << CalcReadBandwidth(cmd) << ' '
-	            << setw(14) << CalcWriteBandwidth(cmd);
-	    }
+	   cout << "  "
+			<< setw(14) << CalcReadBandwidth(cmd) << ' '
+			<< setw(14) << CalcWriteBandwidth(cmd);
+	}
 
-	    cout << endl;
+	cout << endl;
 }
 

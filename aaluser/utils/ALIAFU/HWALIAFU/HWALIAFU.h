@@ -92,7 +92,9 @@ public:
 //      SetSubClassInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this));	// FIXME: subclass interfaces deprecated
    }
 
-   virtual void init(TransactionID const &TranID);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
 //   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);

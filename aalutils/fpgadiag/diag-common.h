@@ -164,6 +164,10 @@ protected:
 /// The default Test Mode.
 #define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
 
+
+/// The default Sub-Device ID.
+#define DEFAULT_TARGET_DEV -1
+
 ////////////////////////////////////////////////////////////////////////////////
 // CMyApp
 // Ugly hack so that Doxygen produces the correct class diagrams.
@@ -211,6 +215,11 @@ public:
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
    std::string AFUTarget() const             { return m_AFUTarget;   }
 
+   /// @brief Mutator for setting the NVS value that selects Sub Device.
+   void DevTarget(const btInt &target) { m_DevTarget = target; }
+   /// @brief Accessor for the NVS value that selects Sub Device.
+   btInt DevTarget() const             { return m_DevTarget;   }
+
    /// @brief Mutator for setting the test mode.
    void TestMode(const std::string &mode) { m_TestMode = mode; }
    /// @brief Accessor for the test mode.
@@ -244,6 +253,7 @@ public:
 
 protected:
    std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
+   btInt        m_DevTarget; ///< The NVS value used to select the Sub Device.
    std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
    CMyCCIClient m_CCIClient; ///< The ICCIClient used to communicate with the allocated Service.
    IRuntime    *m_pRuntime;
@@ -362,7 +372,35 @@ public:
    virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+class CNLBCcipRead : public INLB
+{
+public:
+	CNLBCcipRead(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 
+class CNLBCcipWrite : public INLB
+{
+public:
+	CNLBCcipWrite(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
+
+class CNLBCcipTrput : public INLB
+{
+public:
+	CNLBCcipTrput(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 /*class PrintFormatter : public INLB
 {
 public:

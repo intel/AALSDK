@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,50 +24,52 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AASRegistrarService.h
-/// @brief AAL Service Module definitions for Registrar
-/// @ingroup Registrar
+/// @file uidrvMessaging.cpp
+/// @brief Implementation uidrvMessage class. This is an abstraction of the low
+///        level message structure used by the driver interface.
+/// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Tim Whisonant, Intel Corporation
+/// AUTHOR: Tim Whisonant, Intel Corporation.
+///         Joseph Grecco, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/12/2013     TSW      Initial version.@endverbatim
+/// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_REGISTRAR_AASREGISTRARSERVICE_H__
-#define __AALSDK_REGISTRAR_AASREGISTRARSERVICE_H__
-#include <aalsdk/osal/OSServiceModule.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
 
-#define AASREGISTRAR_SVC_MOD         "libAASRegistrar" AAL_SVC_MOD_EXT
-#define AASREGISTRAR_SVC_ENTRY_POINT "libAASRegistrar" AAL_SVC_MOD_ENTRY_SUFFIX
-
-#define AASREGISTRAR_BEGIN_MOD() AAL_BEGIN_MOD(libAASRegistrar, AASREGISTRAR_API, AASREGISTRAR_VERSION, AASREGISTRAR_VERSION_CURRENT, AASREGISTRAR_VERSION_REVISION, AASREGISTRAR_VERSION_AGE)
-#define AASREGISTRAR_END_MOD()   AAL_END_MOD()
-
-AAL_DECLARE_MOD(libAASRegistrar, AASREGISTRAR_API)
+#include "uidrvMessage.h"
+#include "aalsdk/AALBase.h" // IBase
 
 
-BEGIN_C_DECLS
+USING_NAMESPACE(AAL)
 
-// Command codes for AASRegistrar Service Module
-#ifndef AASREGISTRAR_SVC_CMD_CREATE_REGISTRAR
-# define AASREGISTRAR_SVC_CMD_CREATE_REGISTRAR (AAL_SVC_USER_CMD_BASE + 0)
-#endif // AASREGISTRAR_SVC_CMD_CREATE_REGISTRAR
-struct RegistrarCreateParms
+uidrvMessage::uidrvMessage() :
+   m_pmessage(NULL)
+{}
+
+uidrvMessage::~uidrvMessage()
 {
-   AAL::btcString            DatabasePath;
-   AAL::btObjectType         pServiceContainer; // CAASServiceContainer *
-   AAL::btEventHandler       theEventHandler;
-   AAL::btApplicationContext Context;
-   AAL::btcObjectType        tranID;            // const TransactionID *
-   AAL::btcObjectType        optArgs;           // const NamedValueSet *
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+      m_pmessage = NULL;
+   }
+}
 
-   AAL::btObjectType         Result;            // CRegistrar *
-};
-
-END_C_DECLS
-
-#endif // __AALSDK_REGISTRAR_AASREGISTRARSERVICE_H__
+void uidrvMessage::size(btWSSize PayloadSize)
+{
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+   }
+   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(aalui_ioctlreq);
+   m_pmessage = (struct message*)new btByte[m_msgsize];
+   memset(m_pmessage, 0, m_msgsize);
+   m_pmessage->m_ioctlreq.size = PayloadSize;
+}
 

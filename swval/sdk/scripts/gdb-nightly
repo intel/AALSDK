@@ -7,6 +7,6 @@ declare -r SCRIPT_NAME='gdb-nightly'
 
 . ./gdb-common
 
-run_gdbtui "${VPATH}/tests/harnessed/gtest/.libs/nightly" ${1+"$@"}
+run_gdbtui "${VPATH}/tests/harnessed/gtest/.libs/nightly" ${1+"$@"} --no-timeout
 
 exit $?

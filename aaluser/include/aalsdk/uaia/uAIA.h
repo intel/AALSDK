@@ -128,7 +128,9 @@ public:
    void   Destroy(void);
 
    // Hook to allow the object to initialize
-   void init(TransactionID const &rtid);
+   btBool init(IBase *pclientBase,
+               NamedValueSet const &optArgs,
+               TransactionID const &rtid);
 
 
    // Shutdown methods
@@ -207,7 +209,12 @@ public:
    btBool MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet) { return m_AIA->MapWSID(Size, wsid, pRet); }
    void UnMapWSID(btVirtAddr ptr, btWSSize Size)                { m_AIA->UnMapWSID(ptr, Size); }
    void SendMessage(UIDriverClient_uidrvManip fncObj)           { m_AIA->SendMessage(fncObj);  }
-   void init(TransactionID const &rtid) {}
+   btBool init( IBase *pclientBase,
+                NamedValueSet const &optArgs,
+                TransactionID const &rtid)
+   {
+      initComplete(rtid);
+   }
 
    // IService
    btBool Release(TransactionID const &rTranID,

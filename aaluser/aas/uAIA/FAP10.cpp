@@ -1011,7 +1011,7 @@ WkSp_Allocate_Mapping_EventHandlerObject::WkSp_Allocate_Mapping_EventHandler(IEv
    //////////////////////////////////////////////////////////////////////////////////////
 
    // This Event is a IUIDriverClientEvent. Get the results from the call.
-   IUIDriverClientEvent *pevt = subclass_ptr <IUIDriverClientEvent> (theEvent);
+   IUIDriverClientEvent *pevt = dynamic_ptr <IUIDriverClientEvent> (tranevtUIDriverClientEvent, theEvent);
 
    if (uid_errnumOK == pevt->ResultCode()) {
       // DEBUG CODE
@@ -1249,7 +1249,7 @@ void WkSp_Free_Mapping_EventHandlerObject::WkSp_Free_Mapping_EventHandler(IEvent
    //////////////////////////////////////////////////////////////////////////////////////
 
    // This Event is a IUIDriverClientEvent. Get the results from the call.
-   IUIDriverClientEvent *pevt = subclass_ptr<IUIDriverClientEvent> (theEvent);
+   IUIDriverClientEvent *pevt = dynamic_ptr<IUIDriverClientEvent> (tranevtUIDriverClientEvent, theEvent);
 
    // DEBUG CODE
    if (rspid_WSM_Response != pevt->MessageID()) { // expect this to be rspid_WSM_Response
@@ -1882,7 +1882,7 @@ void Sig_MapCSRSpace_EventHandlerObject::MapCSRSpace_EventHandler(IEvent const &
    //////////////////////////////////////////////////////////////////////////////////////
 
    // This Event is a IUIDriverClientEvent. Get the results from the call.
-   IUIDriverClientEvent *pevt = subclass_ptr <IUIDriverClientEvent> (theEvent);
+   IUIDriverClientEvent *pevt = dynamic_ptr <IUIDriverClientEvent> (tranevtUIDriverClientEvent, theEvent);
    if(pevt==NULL){
       AAL_ERR(LM_UAIA, "Sig_MapCSRSpace_EventHandlerObject Invalid event\n.LOGIC ERROR \n");
    }

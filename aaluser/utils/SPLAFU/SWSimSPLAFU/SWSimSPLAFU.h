@@ -76,10 +76,12 @@ public:
       m_NextPhys(0)
    {
       SetInterface(        iidSPLAFU,      dynamic_cast<ISPLAFU *>(this));
-      SetSubClassInterface(iidSWSIMSPLAFU, dynamic_cast<ISPLAFU *>(this));
+      SetInterface(iidSWSIMSPLAFU, dynamic_cast<ISPLAFU *>(this));
    }
 
-   virtual void init(TransactionID const &TranID);
+   virtual btBool init( IBase *pclientBase,
+                        NamedValueSet const &optArgs,
+                        TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
    virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);

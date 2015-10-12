@@ -51,6 +51,7 @@
 
 
 #include <aalsdk/service/ISPLAFU.h>       // Service Interface
+#include <aalsdk/service/SPLAFUService.h>
 #include <aalsdk/service/ISPLClient.h>    // Service Client Interface
 #include <aalsdk/kernel/vafu2defs.h>      // AFU structure definitions (brings in spl2defs.h)
 
@@ -207,7 +208,7 @@ RuntimeClient::RuntimeClient() :
    NamedValueSet configRecord;
 
    // Publish our interface
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
 
@@ -682,7 +683,7 @@ Sudoku::Sudoku(RuntimeClient *rtc, char *puzName) :
    m_AFUDSMVirt(NULL),
    m_AFUDSMSize(0)
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
    m_Sem.Create(0, 1);
@@ -922,7 +923,7 @@ void Sudoku::serviceAllocated(IBase               *pServiceBase,
    ASSERT(NULL != m_pAALService);
 
    // Documentation says SPLAFU Service publishes ISPLAFU as subclass interface
-   m_SPLService = subclass_ptr<ISPLAFU>(pServiceBase);
+   m_SPLService = dynamic_ptr<ISPLAFU>(iidSPLAFU, pServiceBase);
 
    ASSERT(NULL != m_SPLService);
    if ( NULL == m_SPLService ) {

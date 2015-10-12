@@ -174,7 +174,7 @@ public:
      m_pmessage(pmessage)
    {
       SetSubClassInterface(tranevtUIDriverClientEvent,
-                            dynamic_cast<IUIDriverClientEvent*>(this));
+                           dynamic_cast<IUIDriverClientEvent*>(this));
 
    }
 
@@ -217,7 +217,9 @@ UIDriverClientEvent & UIDriverClientEvent::operator = (const UIDriverClientEvent
 // Comments:  This function may be called more than once per process but the
 //            uAIA and its UIDriverClient are singletons per process.
 //=============================================================================
-void uAIA::init( TransactionID const& rtid )
+btBool uAIA::init(IBase *pclientBase,
+                  NamedValueSet const &optArgs,
+                  TransactionID const &rtid)
 {
    AAL_INFO(LM_UAIA, "uAIA::Create. in\n");
 
@@ -225,8 +227,6 @@ void uAIA::init( TransactionID const& rtid )
 
    pCAIA->SetuAIA(this);
 
-   //pCAIA->_init(Handler(), Context(), rtid, OptArgs());
-   pCAIA->init(rtid);
 
    //Singleton service already initialized
    if(!m_bIsOK){
@@ -237,15 +237,13 @@ void uAIA::init( TransactionID const& rtid )
       m_pUIDC->Open();
       if (!m_pUIDC->IsOK()) {
          m_bIsOK = false;
-         getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent( getRuntimeClient(),
-                                                        Client(),
-                                                        dynamic_cast<IBase*>(this),
-                                                        rtid,
-                                                        errCreationFailure,
-                                                        reasCauseUnknown,
-                                                        "Failed to open UI Driver"));
+         initFailed(new CExceptionTransactionEvent( dynamic_cast<IBase*>(this),
+                                                    rtid,
+                                                    errCreationFailure,
+                                                    reasCauseUnknown,
+                                                    "Failed to open UI Driver"));
 
-         return;
+         return false;
       }
 
       // Create the Message delivery thread
@@ -260,11 +258,9 @@ void uAIA::init( TransactionID const& rtid )
       m_bIsOK = true;
       AAL_INFO(LM_UAIA, "uAIA::Create, out\n");
    }
-   // Create the object
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent(getRuntimeClient(),
-                                        Client(),
-                                        dynamic_cast<IBase*>(pCAIA),rtid));
-   return;
+   // Initialize the object
+   pCAIA->_init(pclientBase,rtid,optArgs);
+   return true;
 }
 
 //=============================================================================

@@ -78,7 +78,7 @@ public:
       m_pShutdownThread(NULL),
       m_servicecount(0)
    {
-      SetSubClassInterface(iidServiceBroker,
+      SetInterface(iidServiceBroker,
                            dynamic_cast<IServiceBroker *>(this));
    }
 

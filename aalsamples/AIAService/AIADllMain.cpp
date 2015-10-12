@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,29 +24,45 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file FAP20Service.h
-/// @brief AAL Service Module definitions for FAP Transactions 2.0
+/// @file uAIADllMain.cpp
+/// @brief Windows-specific DLL entry point (Main).
 /// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Tim Whisonant, Intel Corporation
+/// AUTHORS: Joseph Grecco, Intel Corporation.
+///          Henry Mitchel, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/12/2013     TSW      Initial version.@endverbatim
+/// 08/02/2007     JG       Initial version started
+/// 05/11/2008     HM       Comments & License
+/// 01/04/2009     HM       Updated Copyright@endverbatim
 //****************************************************************************
-#ifndef __FAPTRANS_FAP20SERVICE_H__
-#define __FAPTRANS_FAP20SERVICE_H__
-#include <aalsdk/osal/OSServiceModule.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
 
-#define FAPTRANS2_SVC_MOD         "libFAPTrans2" AAL_SVC_MOD_EXT
-#define FAPTRANS2_SVC_ENTRY_POINT "libFAPTrans2" AAL_SVC_MOD_ENTRY_SUFFIX
+#include "aalsdk/AALTypes.h"
+#include "aalsdk/uaia/uAIADefs.h"
 
-#define FAPTRANS2_BEGIN_MOD() AAL_BEGIN_MOD(libFAPTrans2, FAPTRANS2_API, FAPTRANS2_VERSION, FAPTRANS2_VERSION_CURRENT, FAPTRANS2_VERSION_REVISION, FAPTRANS2_VERSION_AGE)
-#define FAPTRANS2_END_MOD()   AAL_END_MOD()
 
-AAL_DECLARE_MOD(libFAPTrans2, FAPTRANS2_API)
+#ifdef __AAL_WINDOWS__
 
-#endif // __FAPTRANS_FAP20SERVICE_H__
+BOOL APIENTRY DllMain(HMODULE hModule,
+                      DWORD   ul_reason_for_call,
+                      LPVOID  lpReserved)
+{
+   switch ( ul_reason_for_call ) {
+      case DLL_PROCESS_ATTACH :
+      case DLL_THREAD_ATTACH  :
+      case DLL_THREAD_DETACH  :
+      case DLL_PROCESS_DETACH :
+         break;
+   }
+   return TRUE;
+}
+
+#endif // __AAL_WINDOWS__
+
 

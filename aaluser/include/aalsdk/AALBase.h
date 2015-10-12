@@ -56,7 +56,8 @@
 ///                            C-style casts to proper static_cast
 /// 11/19/2008     JG       Added smart pointer wrappers for IBase and subclass
 ///                         pointers IBase_sptr and dynamic_sptr<>.
-/// 01/04/2009     HM       Updated Copyright@endverbatim
+/// 01/04/2009     HM       Updated Copyright
+/// 10/06/2015     JG       Removed Subclass interfaces@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_AALBASE_H__
 #define __AALSDK_AALBASE_H__
@@ -84,10 +85,6 @@ public:
    virtual btGenericInterface Interface(btIID Interface) const = 0;
    /// Determine whether this object contains the specified interface.
    virtual btBool Has(btIID Interface) const                   = 0;
-   /// Query the native sub-class interface.
-   virtual btGenericInterface ISubClass() const                = 0;
-   /// Retrieve the native subclass id.
-   virtual btIID SubClassID() const                            = 0;
    /// IBase inequality.
    virtual btBool operator != (IBase const &rother) const      = 0;
    /// IBase equality.
@@ -135,45 +132,6 @@ T * dynamic_ptr(btIID Name, IEvent const &obj) {
    return static_cast<T *>(obj.Interface(Name));
 }
 
-
-/// Obtain a T & for a given IBase const &. The native sub-class for obj is assumed to be of type T.
-template<class T>
-T & subclass_ref(IBase const &obj) {
-   return *static_cast<T *>(obj.ISubClass());
-}
-/// Obtain a T & for a given IBase const *. The native sub-class for obj is assumed to be of type T.
-template<class T>
-T & subclass_ref(IBase const *obj) {
-   return *static_cast<T *>(obj->ISubClass());
-}
-
-/// Obtain a T & for a given IEvent const &. The native sub-class for obj is assumed to be of type T.
-template<class T>
-T & subclass_ref(IEvent const &obj) {
-   return *static_cast<T *>(obj.ISubClass());
-}
-
-
-/// Cast an IBase const & to a T *. The native sub-class for obj is assumed to be of type T.
-/// @retval  NULL  No such interface.
-template<class T>
-T * subclass_ptr(IBase const &obj) {
-   return static_cast<T *>(obj.ISubClass());
-}
-/// Cast an IBase const * to a T *. The native sub-class for obj is assumed to be of type T.
-/// @retval  NULL  No such interface.
-template<class T>
-T * subclass_ptr(IBase const *obj) {
-   return static_cast<T *>(obj->ISubClass());
-}
-/// Cast an IEvent const & to a T *. The native sub-class for obj is assumed to be of type T.
-/// @retval  NULL  No such interface.
-template<class T>
-T * subclass_ptr(IEvent const &obj) {
-   return static_cast<T *>(obj.ISubClass());
-}
-
-
 /// @}
 
 
@@ -197,13 +155,6 @@ public:
    virtual btBool  Release(TransactionID const &rTranID,
                            btTime               timeout=AAL_INFINITE_WAIT) = 0;
 
-   /// Intended to only be used when a service is being forcibly unloaded. (Exceptional case)
-   ///
-   /// This version is blocking and MUST have completed its shutdown before returning.
-   virtual btBool  Release(btTime timeout) = 0;
-
-   /// Used as a method for setting general purpose parameters on a Service
-   virtual btBool SetParms(NamedValueSet const &rparms) = 0;
 };
 
 

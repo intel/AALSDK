@@ -775,7 +775,7 @@ TEST_P(OSAL_ThreadGroup_vp_uint_0, aal0092)
    memset(x, 0, sizeof(x));
    memset(y, 0, sizeof(y));
 
-   AAL::btUnsigned32bitInt r = 123;
+   AAL::btUnsigned32bitInt r = GlobalTestConfig::GetInstance().RandSeed();
 
    for ( i = 0 ; i < ItemsToAdd ; ++i ) {
 
@@ -1889,41 +1889,43 @@ INSTANTIATE_TEST_CASE_P(My, OSAL_ThreadGroup_vp_uint_0,
                                              (AAL::btUnsignedInt)25));
 
 
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// Functor for Fire-and-Forget test.
-class FireAndForget : public IDispatchable
+TEST(FireAndWait, aal0691)
 {
-public:
-   FireAndForget(CSemaphore   *psem,
-                 unsigned long delay_in_micros) :
-      m_psem(psem),
-      m_micros(delay_in_micros),
-      m_tg()
-   {}
+   // FireAndWait() waits for the given IDispatchable to complete execution before returning.
 
-   void Fire()
-   {
-      m_tg.Add(this);
-   }
+   btInt i = 0;
 
-   void operator() ()
-   {
-      SleepMicro(m_micros);
-      m_psem->Post(1);
-      delete this;
-   }
+   UnsafeCountUpD d(i);
 
-protected:
-   CSemaphore    *m_psem;
-   unsigned long  m_micros;
-   OSLThreadGroup m_tg;
-};
+   EXPECT_EQ(0, GlobalTestConfig::GetInstance().CurrentThreads());
+
+   FireAndWait(&d);
+
+   EXPECT_EQ(0, GlobalTestConfig::GetInstance().CurrentThreads());
+   EXPECT_EQ(1, i);
+}
+
+TEST(FireAndForget, aal0692)
+{
+   // FireAndForget() provides asynchronous event dispatch.
+
+   btInt i = 0;
+
+   UnsafeCountUpD d(i);
+
+   EXPECT_EQ(0, GlobalTestConfig::GetInstance().CurrentThreads());
+
+   FireAndForget(&d);
+
+   YIELD_WHILE( GlobalTestConfig::GetInstance().CurrentThreads() > 0 );
+   EXPECT_EQ(1, i);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 // Value-parameterized test fixture
 class ThrGrFAF : public ::testing::TestWithParam< unsigned long >
@@ -1942,6 +1944,35 @@ protected:
 
 TEST_P(ThrGrFAF, DISABLED_FireAndForget)
 {
+   // Functor for Fire-and-Forget test.
+   class FireAndForget : public IDispatchable
+   {
+   public:
+      FireAndForget(CSemaphore   *psem,
+                    unsigned long delay_in_micros) :
+         m_psem(psem),
+         m_micros(delay_in_micros),
+         m_tg()
+      {}
+
+      void Fire()
+      {
+         m_tg.Add(this);
+      }
+
+      void operator() ()
+      {
+         SleepMicro(m_micros);
+         m_psem->Post(1);
+         delete this;
+      }
+
+   protected:
+      CSemaphore    *m_psem;
+      unsigned long  m_micros;
+      OSLThreadGroup m_tg;
+   };
+
    (new FireAndForget(&m_Sem, GetParam()))->Fire();
 
    EXPECT_TRUE(m_Sem.Wait());

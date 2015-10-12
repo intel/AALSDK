@@ -192,4 +192,3 @@ REGISTER_TYPED_TEST_CASE_P(NamedValueSet_Nested_tp_0,
 
 typedef ::testing::Types< NestedNVSTester > NamedValueSet_Nested_tp_0_Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, NamedValueSet_Nested_tp_0, NamedValueSet_Nested_tp_0_Types);
-

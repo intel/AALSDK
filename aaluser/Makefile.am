@@ -77,13 +77,15 @@ docclean docsclean: $(DOXYGEN_CLEAN)
 
 if AAL_COND_MAINTAINER
 
+WITH_DISTCC ?= n
 MAINTAINER_CHECK=maintainer-check
 maintainer-check:
 	@+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
 --conf='$(abs_top_srcdir)/configure' \
 --srcdir='$(abs_top_srcdir)' \
 --distdir='$(distdir)' \
---wkspc='$(abs_top_builddir)/maintainer-check''
+--wkspc='$(abs_top_builddir)/maintainer-check' \
+--distcc='$(WITH_DISTCC)''
 
 endif
 .PHONY: $(MAINTAINER_CHECK)
@@ -137,7 +139,6 @@ include/aalsdk/AALNVSMarshaller.h \
 include/aalsdk/AALTransactionID.h \
 include/aalsdk/_AALTypes.h \
 include/aalsdk/AALTypes.h \
-include/aalsdk/AASEDS.h \
 include/aalsdk/AASystem.h \
 include/aalsdk/AASLib.h \
 include/aalsdk/AFU.h \
@@ -176,7 +177,6 @@ asehdrs_HEADERS=\
 ase/sw/ase_common.h
 
 edshdrs_HEADERS=\
-include/aalsdk/eds/AASEDSService.h \
 include/aalsdk/eds/AASEventDeliveryService.h 
 
 faptranshdrs_HEADERS=\
@@ -283,7 +283,8 @@ include/aalsdk/uaia/uAIADefs.h \
 include/aalsdk/uaia/uAIA.h \
 include/aalsdk/uaia/uAIAService.h \
 include/aalsdk/uaia/uAIASession.h \
-include/aalsdk/uaia/uidrvMessage.h
+include/aalsdk/uaia/uidrvMessage.h \
+include/aalsdk/uaia/IAFUProxy.h
 
 utilshdrs_HEADERS=\
 include/aalsdk/utils/AALEventUtilities.h \
@@ -316,9 +317,6 @@ RegistrarRepository/linux/5.nvs
 
 AAS_EXTRA=\
 include/aalsdk/aas/AASService.h.in
-
-AASEDS_EXTRA=\
-include/aalsdk/eds/AASEDSService.h.in
 
 AASREGISTRAR_EXTRA=\
 include/aalsdk/registrar/AASRegistrarService.h.in

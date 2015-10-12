@@ -15,6 +15,7 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(top_srcdir)/aas/AALRuntime \
 -I$(top_srcdir)/tests/swvalmod \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
@@ -30,24 +31,28 @@ nightly \
 weekly
 
 bat_SOURCES=\
-main.cpp \
-gtCommon.h \
-gtCommon.cpp \
-gtCritSect.cpp \
-gtSem.cpp \
+gtAALEvent.cpp \
+gtAALService.cpp \
+gtAASBase.cpp \
 gtBarrier.cpp \
-gtThread.cpp \
-gtThreadGroup.h \
-gtThreadGroup.cpp \
-gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp \
+gtCommon.cpp \
+gtCommon.h \
+gtCritSect.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
-gtTimer.cpp \
+gtMDS.cpp \
+gtOSServiceModule.cpp \
+gtRuntime.cpp \
+gtSem.cpp \
+gtServiceBroker.cpp \
+gtServiceHost.cpp \
 gtSleep.cpp \
-gtAASBase.cpp \
-gtAALEvent.cpp \
-gtAALService.cpp
+gtThread.cpp \
+gtThreadGroup.cpp \
+gtThreadGroup.h \
+gtThreadGroupSR.cpp \
+gtTimer.cpp \
+main.cpp
 
 bat_CPPFLAGS=\
 -DTEST_SUITE_BAT=1 $(COMMON_CPPFLAGS)
@@ -56,17 +61,17 @@ bat_LDADD=$(COMMON_LDADD)
 
 
 nightly_SOURCES=\
-main.cpp \
-gtCommon.h \
 gtCommon.cpp \
+gtCommon.h \
 gtCritSect.cpp \
+gtDynLinkLibrary.cpp \
+gtOSServiceModule.cpp \
 gtSem.cpp \
 gtThread.cpp \
-gtThreadGroup.h \
 gtThreadGroup.cpp \
+gtThreadGroup.h \
 gtThreadGroupSR.cpp \
-gtOSServiceModule.cpp \
-gtDynLinkLibrary.cpp
+main.cpp
 
 
 
@@ -77,21 +82,21 @@ nightly_LDADD=$(COMMON_LDADD)
 
 
 weekly_SOURCES=\
-main.cpp \
-gtCommon.h \
-gtCommon.cpp \
-gtNVSLegacy.cpp \
 gtCValue.cpp \
-gtSeqRand.h \
-gtSeqRand.cpp \
-gtNVSTester.h \
-gtNVSTester.cpp \
+gtCommon.cpp \
+gtCommon.h \
 gtNVS0.cpp \
 gtNVS1.cpp \
 gtNVS2.cpp \
 gtNVS3.cpp \
 gtNVS4.cpp \
-gtNVS5.cpp
+gtNVS5.cpp \
+gtNVSLegacy.cpp \
+gtNVSTester.cpp \
+gtNVSTester.h \
+gtSeqRand.cpp \
+gtSeqRand.h \
+main.cpp
 
 weekly_CPPFLAGS=\
 -DTEST_SUITE_WEEKLY=1 $(COMMON_CPPFLAGS)
@@ -107,25 +112,29 @@ gtAALEvent.cpp \
 gtAALService.cpp \
 gtAASBase.cpp \
 gtBarrier.cpp \
+gtCValue.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
-gtNVSLegacy.cpp \
-gtCValue.cpp \
-gtSeqRand.h \
-gtSeqRand.cpp \
-gtNVSTester.h \
-gtNVSTester.cpp \
+gtMDS.cpp \
 gtNVS0.cpp \
 gtNVS1.cpp \
 gtNVS2.cpp \
 gtNVS3.cpp \
 gtNVS4.cpp \
 gtNVS5.cpp \
+gtNVSLegacy.cpp \
+gtNVSTester.cpp \
+gtNVSTester.h \
 gtOSServiceModule.cpp \
+gtRuntime.cpp \
 gtSem.cpp \
+gtSeqRand.cpp \
+gtSeqRand.h \
+gtServiceBroker.cpp \
+gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \

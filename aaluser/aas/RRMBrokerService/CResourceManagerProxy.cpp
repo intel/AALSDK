@@ -95,7 +95,6 @@ void rmMessage::clear()
 //==========================================================================
 void rmMessage::setSize(btWSSize PayloadSize)
 {
-   ASSERT(PayloadSize > 0);
    if ( PayloadSize > 0 ) {
       m_message.payload = (btVirtAddr)new char[(size_t)PayloadSize];
       memset(m_message.payload, 0, (size_t)PayloadSize);
@@ -224,7 +223,7 @@ btBool CResourceManagerProxy::GetMessage( NamedValueSet &nvs,
                                           TransactionID &tid )
 {
    if ( !IsOK() ) {
-      return NULL;
+      return false;
    }
 
    rmMessage Message;
@@ -253,12 +252,17 @@ btBool CResourceManagerProxy::GetMessage( NamedValueSet &nvs,
          }
 
          // Covert record into a Named Value for upstream processing
-         nvs = NamedValueSet(Message.payload(), Message.size());
+         if( Message.size() >0){
+            nvs = NamedValueSet(Message.payload(), Message.size());
+         }else {
+            nvs = NamedValueSet();
+         }
 
          nvs.Add(RM_MESSAGE_KEY_ID, MapEnumID(Message.id()));
          nvs.Add(RM_MESSAGE_KEY_RESULTCODE, (Message.result_code() == rms_resultOK ? errOK : errMethodFailure) );
          nvs.Add(RM_MESSAGE_KEY_REASONCODE, MapEnumReasonCode(Message.result_code()));
          nvs.Add(RM_MESSAGE_KEY_REASONSTRING, MapEnumResultString(Message.result_code()));
+
          tid = Message.tranID();
          Message.clear();
          return true;
@@ -314,6 +318,34 @@ btBool CResourceManagerProxy::SendRequest(NamedValueSet const   &nvsManifest,
       m_bIsOK = false;
    }
    delete[] buf;
+   return IsOK();
+}
+
+//==========================================================================
+// Name: SendRequest
+// Description: Request a service matching Manifest criteria.
+//==========================================================================
+btBool CResourceManagerProxy::SendStop()
+{
+   AutoLock(this);
+
+   if ( !IsOK() ) {
+      return IsOK();
+   }
+
+   struct aalrm_ioctlreq req;
+
+   memset(&req, 0, sizeof(req));
+
+   req.id      = reqid_Shutdown;
+   req.payload = NULL;
+   //req.tranID  = (stTransactionID_t const&)tid;
+
+   if ( -1 == ioctl(m_fdRMClient, AALRM_IOCTL_SENDMSG, &req) ) {
+      perror("CResourceManagerProxy::Send");
+      m_bIsOK = false;
+   }
+
    return IsOK();
 }
 
