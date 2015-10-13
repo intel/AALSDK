@@ -160,11 +160,13 @@ protected:
 /// The default CCIAFU Delegate.
 #define DEFAULT_TARGET_AFU CCIAFU_NVS_VAL_TARGET_FPGA
 
-/// The default Sub-Device ID.
-#define DEFAULT_TARGET_DEV 1
 
 /// The default Test Mode.
 #define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
+
+
+/// The default Sub-Device ID.
+#define DEFAULT_TARGET_DEV -1
 
 ////////////////////////////////////////////////////////////////////////////////
 // CMyApp
@@ -215,7 +217,7 @@ public:
 
    /// @brief Mutator for setting the NVS value that selects Sub Device.
    void DevTarget(const btInt &target) { m_DevTarget = target; }
-   /// @brief Accessor for the NVS value that selects Sub DEvice.
+   /// @brief Accessor for the NVS value that selects Sub Device.
    btInt DevTarget() const             { return m_DevTarget;   }
 
    /// @brief Mutator for setting the test mode.
@@ -370,7 +372,35 @@ public:
    virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+class CNLBCcipRead : public INLB
+{
+public:
+	CNLBCcipRead(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 
+class CNLBCcipWrite : public INLB
+{
+public:
+	CNLBCcipWrite(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
+
+class CNLBCcipTrput : public INLB
+{
+public:
+	CNLBCcipTrput(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 /*class PrintFormatter : public INLB
 {
 public:
