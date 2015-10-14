@@ -75,8 +75,8 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimALIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
+//      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
+//      SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
    virtual btBool init( IBase *pclientBase,

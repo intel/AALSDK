@@ -53,6 +53,7 @@
 												// and WorkSpaceMapper
 #include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
 #include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
+#include <aalsdk/uaia/IAFUProxy.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -69,7 +70,9 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// HWALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_FPGA)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class HWALIAFU_API HWALIAFU : public DeviceServiceBase,
+class HWALIAFU_API HWALIAFU : public ServiceBase,
+                              public IServiceClient,     // for AIA
+//                              public IAFUProxyClient,
                               public IALIMMIO,
                               public IALIBuffer,
                               public IALIUMsg,
@@ -81,7 +84,7 @@ class HWALIAFU_API HWALIAFU : public DeviceServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <DeviceServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, DeviceServiceBase)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, ServiceBase)
    {
 	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
       SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
@@ -89,7 +92,7 @@ public:
       SetInterface(        iidALI_BUFF_Service,   dynamic_cast<IALIBuffer *>(this));
 //      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
       SetInterface(        iidALI_RSET_Service,   dynamic_cast<IALIReset *>(this));
-//      SetSubClassInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this));	// FIXME: subclass interfaces deprecated
+      SetInterface(        iidServiceClient,      dynamic_cast<IServiceClient *>(this));  // for AIA
    }
 
    virtual btBool init( IBase *pclientBase,
@@ -131,10 +134,25 @@ public:
    virtual void afuReset( NamedValueSet const *pOptArgs = NULL);
    // </IALIReset>
 
+   // <IServiceClient>
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID());
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseFailed(const IEvent &rEvent);
+   virtual void serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
+
+/*   // <IAFUProxyClient>
+   virtual void AFUEvent(AAL::IEvent const &theEvent);
+   // </IAFUProxyClient>*/
+
 protected:
    static void AllocateBufferHandler(IEvent const & );
    static void FreeBufferHandler(IEvent const & );
 
+   IAALService *m_pAALService;
+   IAFUProxy   *m_pAFUProxy;
 };
 
 /// @}

@@ -90,7 +90,6 @@ public:
    virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
    virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
 };
->>>>>>> origin/master
 
 BEGIN_NAMESPACE(AAL)
 

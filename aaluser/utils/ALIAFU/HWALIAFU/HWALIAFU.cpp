@@ -232,6 +232,17 @@ btBool HWALIAFU::init(IBase *pclientBase,
       return false;
    }*/
 
+   // Allocate AIA service. Init is completed in serviceAllocated callback.
+   NamedValueSet nvsManifest;
+   NamedValueSet nvsConfigRecord;
+
+   nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   nvsConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+   nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsConfigRecord);
+   nvsManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AIA");
+
+   getRuntime()->allocService(this, nvsManifest, TransactionID());
+
    initComplete(TranID);
    return true;
 }
@@ -241,7 +252,7 @@ btBool HWALIAFU::init(IBase *pclientBase,
 //
 btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
-   return DeviceServiceBase::Release(TranID, timeout);
+   return ServiceBase::Release(TranID, timeout);
 }
 
 
@@ -255,7 +266,8 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 btVirtAddr HWALIAFU::mmioGetAddress( void )
 {
 	// FIXME: might want to cache this
-	return AFUDev().getMMIOR();
+//	return AFUDev().getMMIOR();
+   return NULL;
 }
 
 //
@@ -263,7 +275,8 @@ btVirtAddr HWALIAFU::mmioGetAddress( void )
 //
 btCSROffset HWALIAFU::mmioGetLength( void )
 {
-	return AFUDev().getMMIORsize();
+//	return AFUDev().getMMIORsize();
+   return 0;
 }
 
 //
@@ -341,7 +354,8 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
                                TransactionID const &TranID,
                                NamedValueSet       *pOptArgs)
 {
-	   AutoLock(this);
+   // FIXME: port to IAFUProxy
+/*	   AutoLock(this);
 
 	   // Create a transaction id that wraps the original from the application,
 	   // Otherwise the return transaction will go straight back there
@@ -370,7 +384,7 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
 
 	             );
 	   }
-
+*/
 }
 
 //
@@ -379,7 +393,8 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
 void HWALIAFU::bufferFree( btVirtAddr           Address,
                              TransactionID const &TranID)
 {
-	   AutoLock(this);
+   // FIXME: port to IAFUProxy
+/*	   AutoLock(this);
 
 	   // Create a transaction id that wraps the original from the application,
 	   //    Otherwise the return transaction will go straight back there
@@ -406,6 +421,7 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
 	                                                        pExcept)
 	             );
 	   }
+	   */
 }
 
 //
@@ -413,7 +429,8 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
 //
 btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 {
-	WorkSpaceMapper &wsm = AFUDev().WSM();
+   // FIXME: port to IAFUProxy
+/*   WorkSpaceMapper &wsm = AFUDev().WSM();
 	WorkSpaceMapper::pcWkSp_t pWkSp;	// workspace
 	WorkSpaceMapper::eWSM_Ret eRet = wsm.GetWkSp(Address, &pWkSp);
 
@@ -429,6 +446,8 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 		default:
 			return 0;
 	}
+*/
+   return 0;
 }
 
 //
@@ -437,6 +456,8 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 void HWALIAFU::AllocateBufferHandler(IEvent const &theEvent)
 {
+   // FIXME: port to IAFUProxy
+/*
    // The object that generated the event (AIAProxy) has our this as its context
    HWALIAFU *This = static_cast<HWALIAFU *>(theEvent.Object().Context());
 
@@ -513,6 +534,7 @@ _SEND_ERR:
                                                                   descr);
    This->getRuntime()->schedDispatchable( new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
                                                                                                                      pExcept) );
+*/
 }
 
 //
@@ -521,6 +543,8 @@ _SEND_ERR:
 //
 void HWALIAFU::FreeBufferHandler(IEvent const &theEvent)
 {
+   // FIXME: port to IAFUProxy
+   /*
    // The object that generated the event (AIAProxy) has our this as its context
    HWALIAFU *This = static_cast<HWALIAFU *>(theEvent.Object().Context());
 
@@ -594,6 +618,7 @@ _SEND_ERR:
                                                                   descr);
    This->getRuntime()->schedDispatchable( new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
                                                                                          pExcept) );
+*/
 }
 
 // ---------------------------------------------------------------------------
@@ -605,7 +630,9 @@ _SEND_ERR:
 //
 btUnsignedInt HWALIAFU::umsgGetNumber( void )
 {
-	return AFUDev().getUMSGsize();
+   // FIXME: port to IAFUProxy
+//	return AFUDev().getUMSGsize();
+   return 0;
 }
 
 //
@@ -613,7 +640,9 @@ btUnsignedInt HWALIAFU::umsgGetNumber( void )
 //
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-	return AFUDev().getUMSG() + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs
+   // FIXME: port to IAFUProxy
+//   return AFUDev().getUMSG() + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs
+   return NULL;
 }
 
 //
@@ -644,6 +673,70 @@ void HWALIAFU::afuReEnable( NamedValueSet const *pOptArgs)
 void HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
 {
 
+}
+
+
+
+/*
+ * IServiceClient methods (callbacks from AIA service)
+ */
+
+// Service allocated callback
+void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
+                              TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
+   if (!m_pAFUProxy) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rTranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing AFUProxy interface."));
+      return;
+   }
+
+   // Store AAL service pointer
+   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   if (!m_pAALService) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rTranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing service base interface."));
+      return;
+   }
+
+   // AFUProxy acquired, init complete.
+   // FIXME: reusing transaction IDs, is that okay?
+   initComplete(rTranID);
+   return;
+}
+
+// Service allocated failed callback
+void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   // FIXME: call initFailed!
+   ASSERT(false);
+}
+
+// Service released callback
+void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
+   // EMPTY
+}
+
+// Service released failed callback
+void HWALIAFU::serviceReleaseFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   // EMPTY
+}
+
+// Callback for generic events
+void HWALIAFU::serviceEvent(const IEvent &rEvent) {
+   // TODO: handle unexpected events
+   ASSERT(false);
 }
 
 
