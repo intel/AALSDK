@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-// @file diag_read.cpp
+// @file diag_ccip_read.cpp
 // @brief NLB VAFU template application file.
 // @ingroup
 // @verbatim
@@ -36,7 +36,7 @@
 // HISTORY:
 // WHEN:          WHO:     WHAT:
 // 05/30/2013     TSW      Initial version.
-// 07/30/2105     SC	   fpgadiag version@endverbatim
+// 09/24/2015     SC	   fpgadiag version@endverbatim
 //****************************************************************************
 
 //READ: This ia a read-only test with no data checking. AFU reads CSR_NUM_LINES starting from CSR_SRC_ADDR.
@@ -48,7 +48,7 @@
 #include "diag-nlb-common.h"
 
 // cool off fpga cache.
-btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
@@ -76,7 +76,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    volatile btUnsigned32bitInt *pInput    = (volatile btUnsigned32bitInt *)pInputUsrVirt;
    volatile btUnsigned32bitInt *pEndInput = (volatile btUnsigned32bitInt *)pInput +
-                                     (m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
+                                     	 	(m_pMyApp->InputSize() / sizeof(btUnsigned32bitInt));
 
    for ( ; pInput < pEndInput ; ++pInput ) {
       *pInput = ReadBufData;
@@ -86,20 +86,17 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    btVirtAddr pCoolOffUsrVirt = m_pMyApp->OutputVirt();
 
-   if ( 0 != ResetHandshake() ) {
-      return 1;
-   }
+   // Clear the DSM status fields
+   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+
+   //Set DSM base, high then low
+   //m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
+   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
    if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
    }
-
-   if ( 0 != ResetHandshake() ) {
-      return 1;
-   }
-
-   ReadQLPCounters();
-   SaveQLPCounters();
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
@@ -133,6 +130,19 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	  {
 		cfg |= (csr_type)NLB_TEST_MODE_RDO;
 	  }
+   // Select the channel.
+    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_QPI))
+    {
+     cfg |= (csr_type)NLB_TEST_MODE_QPI;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0))
+    {
+     cfg |= (csr_type)NLB_TEST_MODE_PCIE0;
+    }
+    else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE1))
+    {
+     cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
+    }
 
    //if --warm-fpga-cache is mentioned
     if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
@@ -153,9 +163,6 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    	   // Stop the device
    	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
-   	   ReadQLPCounters();
-   	   SaveQLPCounters();
-
    	   //Re-set the test mode
    	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
       }
@@ -164,8 +171,8 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-			 //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+			 //0123456789 0123456789 01234567890 0123456789012
+	  cout << "Cachelines Read_Count Write_Count 'Clocks(@"
 		   << Normalized(cmd)  << ")'";
 
 	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
@@ -237,7 +244,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   {
 		   // Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
-				 ( MaxPoll >= 0 )) {
+		         ( MaxPoll >= 0 )) {
 			   MaxPoll -= 500;
 			   SleepNano(500);
 		   }
@@ -246,27 +253,21 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 	   }
 
-	   ReadQLPCounters();
-
 	   PrintOutput(cmd, (sz / CL(1)));
-
-	   SaveQLPCounters();
 
 	   // Increment Cachelines.
 	   sz += CL(1);
 
 	   // Check the device status
 	   if ( MaxPoll < 0 ) {
-	      cerr << "The maximum timeout for test stop was exceeded." << endl;
-	      ++res;
-	      break;
+		  cerr << "The maximum timeout for test stop was exceeded." << endl;
+		  ++res;
+		  break;
 	   }
 	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
-   }
+      }
 
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-   ReadQLPCounters();
 
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
@@ -291,22 +292,18 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 }
 
 
-void  CNLBRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBCcipRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
     bt64bitCSR rawticks     = pAFUDSM->num_clocks;
     bt32bitCSR startpenalty = pAFUDSM->start_overhead;
     bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+    bt32bitCSR rds          = pAFUDSM->num_reads;
 
 	  cout << setw(10) << cls 					<< ' '
 	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   << ' '
-	       << setw(12) << GetQLPCounter(0)      << ' '
-	       << setw(12) << GetQLPCounter(1)      << ' '
-	       << setw(13) << GetQLPCounter(2)      << ' '
-	       << setw(13) << GetQLPCounter(3)      << ' '
-	       << setw(10) << GetQLPCounter(10)     << ' ';
+	       << setw(11) << pAFUDSM->num_writes   << ' ';
 
 	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		  ticks = rawticks - startpenalty;

@@ -210,7 +210,7 @@ CMyApp::CMyApp() :
    m_pProprietary(NULL)
 {
 	m_Sem.Create(0, 1);
-	SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
+	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
     SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 	SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(&m_CCIClient));
 }
@@ -251,44 +251,43 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 
    btcString AFUName = "CCIAFU";
 
-     INFO("Allocating " << AFUName << " Service");
+   INFO("Allocating " << AFUName << " Service");
 
-     // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-     //  mechanism.  This code is workaround code and is subject to change.
+   NamedValueSet Manifest;
+   NamedValueSet ConfigRecord;
 
-     //NamedValueSet Manifest(CCIAFU_MANIFEST);
-     NamedValueSet Manifest;
-     NamedValueSet ConfigRecord;
+  if ( 0 == strcmp(AFUTarget().c_str(), "CCIAFUTarget_FPGA") ) {      // Use FPGA hardware
 
-     if ( 0 == strcmp(AFUTarget().c_str(), "CCIAFUTarget_FPGA") ) {      /* Use FPGA hardware */
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
+  	   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+  	   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  	   if(-1 != DevTarget())
+  	   {
+  		   ConfigRecord.Add(keyRegChannelNumber, DevTarget());
+  	   }
+  }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
 
-        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
-        ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-        Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-        ConfigRecord.Add(keyRegChannelNumber, DevTarget());
-     }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_ASE") ) {         /* Use ASE based RTL simulation */
-        Manifest.Add(keyRegHandle, 20);
+	   Manifest.Add(keyRegHandle, 20);
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
-        ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+  	}else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_SWSIM") ) {       // default is Software Simulator
 
-     }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_SWSIM") ) {       /* default is Software Simulator */
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-        ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
-        ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+  	}
 
-     }
+  	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+  	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
+  	Manifest.Add(CCIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
 
-     Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-     Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
-     Manifest.Add(CCIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
+   #if DBG_HOOK
+  	INFO(Manifest);
+   #endif // DBG_HOOK
 
-  #if DBG_HOOK
-     INFO(Manifest);
-  #endif // DBG_HOOK
-
-     pRT->allocService(dynamic_cast<IBase *>(this), Manifest);
+  	pRT->allocService(dynamic_cast<IBase *>(this), Manifest);
 }
 
 void CMyApp::runtimeStopped(IRuntime *pRT)
@@ -322,7 +321,7 @@ void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated (rt)");
@@ -367,7 +366,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated");
@@ -435,7 +434,7 @@ CMyCCIClient::CMyCCIClient() :
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
-   SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
 }
 
 void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
@@ -730,6 +729,51 @@ int main(int argc, char *argv[])
 		}
 		cout << NORMAL << endl;
    }
+   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+         {
+      		// Run NLB ccip read test.
+      		CNLBCcipRead nlbccip_read(&myapp);
+
+      		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
+      		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
+      		totalres += res;
+      		if ( 0 == res ) {
+      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+      		} else {
+      		  cout << FAIL << "ERROR";
+      		}
+      		cout << NORMAL << endl;
+         }
+      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+   	 {
+   		// Run NLB ccip write test.
+   		CNLBCcipWrite nlbccip_write(&myapp);
+
+   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
+   		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
+   		totalres += res;
+   		if ( 0 == res ) {
+   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+   		} else {
+   		  cout << FAIL << "ERROR";
+   		}
+   		cout << NORMAL << endl;
+   	 }
+      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+      	 {
+      		// Run NLB ccip trput test.
+      		CNLBCcipTrput nlbccip_trput(&myapp);
+
+      		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
+      		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
+      		totalres += res;
+      		if ( 0 == res ) {
+      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+      		} else {
+      		  cout << FAIL << "ERROR";
+      		}
+      		cout << NORMAL << endl;
+      	 }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
