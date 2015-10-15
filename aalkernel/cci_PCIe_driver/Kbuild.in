@@ -6,7 +6,7 @@
 ##
 ##                            GPL LICENSE SUMMARY
 ##
-##  Copyright(c) 2012-2015, Intel Corporation.
+##  Copyright(c) 2010-2015, Intel Corporation.
 ##
 ##  This program  is  free software;  you  can redistribute it  and/or  modify
 ##  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 ##
 ##                                BSD LICENSE
 ##
-##  Copyright(c) 2012-2015, Intel Corporation.
+##  Copyright(c) 2011-2015, Intel Corporation.
 ##
 ##  Redistribution and  use  in source  and  binary  forms,  with  or  without
 ##  modification,  are   permitted  provided  that  the  following  conditions
@@ -54,95 +54,23 @@
 ##  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 ##  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 ##******************************************************************************
-ACLOCAL_AMFLAGS=-I m4
+##****************************************************************************
+##  FILE: Kbuild
+##     Intel(R) QuickAssist Technology AAL PCIe driver for CCI FPGA devices 
+##  Author:
+##     Joseph Grecco, Intel Corporation
+##  Created:
+##     10/14/2015
+##  Modified:
+##****************************************************************************
+EXTRA_CFLAGS=\
+-D__KERNEL__=1 \
+-DENABLE_ASSERT=@ENABLE_ASSERT@ \
+-DENABLE_DEBUG=@ENABLE_DEBUG@ \
+-DDRV_NAME=\"@CCIPCIEDRV_DRV_NAME@\" \
+-DDRV_VERSION=\"@CCIPCIEDRV_VERSION@\" \
+-I$(M) \
+-I$(aalkernelinc)
 
-.PHONY: dist-file-list
-dist-file-list: dist-all
-	@tar ztf "$(top_builddir)/$(distdir).tar.gz" | sed -e '/\/$$/d' -e 's/$(distdir)/\./' >"$(top_builddir)/dist-file-list"
-	@$(RM) $(DIST_ARCHIVES)
-
-clean-local:
-	@$(RM) $(top_builddir)/dist-file-list
-
-if AAL_COND_MAINTAINER
-
-MAINTAINER_CHECK=maintainer-check
-maintainer-check:
-	   @+$(TIME) $(BASH) -c '$(top_srcdir)/build/maintainer-check \
-			--conf='$(abs_top_srcdir)/configure' \
-			--srcdir='$(abs_top_srcdir)' \
-			--distdir='$(distdir)' \
-			--wkspc='$(abs_top_builddir)/maintainer-check''
-
-endif
-.PHONY: $(MAINTAINER_CHECK)
-
-SUBDIRS=\
-aalbus \
-aalresourcemgr_server \
-aalresourcemgr_client \
-aal_uidriver \
-spl2_pip_dksm \
-cciv4_driver \
-cci_PCIe_driver
-
-aalsdkhdrsdir=$(includedir)/aalsdk
-kernelhdrsdir=$(aalsdkhdrsdir)/kernel
-encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
-
-kernelhdrs_HEADERS=\
-include/aalsdk/kernel/aalbus-device.h \
-include/aalsdk/kernel/aalbus.h \
-include/aalsdk/kernel/aalbus_imonitorconfig.h \
-include/aalsdk/kernel/aalbus-ipip.h \
-include/aalsdk/kernel/aalbus_iupdate_config.h \
-include/aalsdk/kernel/aaldefs.h \
-include/aalsdk/kernel/aaldevice.h \
-include/aalsdk/kernel/aalids.h \
-include/aalsdk/kernel/aalinterface.h \
-include/aalsdk/kernel/aalmafu-events.h \
-include/aalsdk/kernel/aalmafu.h \
-include/aalsdk/kernel/aalqueue.h \
-include/aalsdk/kernel/aalrm_client.h \
-include/aalsdk/kernel/aalrm.h \
-include/aalsdk/kernel/aalrm_server.h \
-include/aalsdk/kernel/aalrm_server-services.h \
-include/aalsdk/kernel/aalrm-services.h \
-include/aalsdk/kernel/AALTransactionID_s.h \
-include/aalsdk/kernel/aaltypes.h \
-include/aalsdk/kernel/aalui-events.h \
-include/aalsdk/kernel/aalui.h \
-include/aalsdk/kernel/AALWorkspace.h \
-include/aalsdk/kernel/aalwsservice.h \
-include/aalsdk/kernel/ahmpip.h \
-include/aalsdk/kernel/ahmpipdefs.h \
-include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/fappip.h \
-include/aalsdk/kernel/KernelStructs.h \
-include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/splpip.h \
-include/aalsdk/kernel/vafu2defs.h
-
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
-
-if COND_AAL_MODPROBE_CONFIG
-modprobeconfdir=@AAL_MODPROBE_CONFIG_PATH@
-modprobeconf_DATA=\
-aalsdk.conf
-endif
-
-if COND_AAL_UDEV_RULES
-udevrulesdir=@AAL_UDEV_RULES_PATH@
-udevrules_DATA=\
-40-aalsdk.rules
-endif
-
-EXTRA_DIST=\
-README.GPLV2-LICENSE.TXT \
-build/aalsdk.conf.in \
-build/40-aalsdk.rules.in \
-build/insdrv.in \
-build/rmdrv.in
-
+obj-m                  :=@CCIPCIEDRV_DRV_NAME@.o
+@CCIPCIEDRV_DRV_NAME@-objs:= cci_pcie_driver_main.o cci_pcie_driver_simulator.o cci_pcie_common.o cci_pcie_driver_pdde.o kOSAL.o

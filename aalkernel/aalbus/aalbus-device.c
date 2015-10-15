@@ -312,7 +312,7 @@ aaldev_create_device(struct mafu_CreateAFU *pRequest,
       DPRINTF(AALBUS_DBG_MOD, ": AFU device created but not registered.  Action flags = %x\n",pRequest->actionflags);
       return paaldevice;
 
-   } else if( 0 != aal_bus_p->register_device(paaldevice, NULL) ) {
+   } else if( 0 != aal_bus_p->register_device(paaldevice) ) {
       DPRINTF(AALBUS_DBG_MOD, ": AFU device failed to register!.\n");
       status = kosal_sem_get_user_alertable(&aal_bus_type_p->alloc_list_sem);
       if (0 != status) {
