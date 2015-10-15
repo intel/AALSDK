@@ -37,6 +37,7 @@
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
 ///          Ananda Ravuri, Intel Corporation
+///          Enno Luebbers, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -71,9 +72,9 @@ BEGIN_NAMESPACE(AAL)
 /// An ALI Service will support zero to all of the following Services Interfaces:
 ///   iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 ///   iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
-///	  iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+///   iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
 ///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
-///	  iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+///   iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 ///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
 /// <TODO: LIST INTERFACES HERE>
 ///
@@ -278,7 +279,7 @@ public:
    virtual void bufferFreeFailed( IEvent const &rEvent ) = 0;
 };
 
-/// @brief  Obtain Global Performance Data (not AFU-specific)
+/// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous)
 ///
 class IALIPerf
 {
@@ -325,7 +326,7 @@ public:
                                          NamedValueSet const  *pOptArgs = NULL) = 0;
 };
 
-/// @brief  Reset the AFU Link Interface to this AFU
+/// @brief  Reset the AFU Link Interface to this AFU (synchronous)
 ///
 class IALIReset
 {

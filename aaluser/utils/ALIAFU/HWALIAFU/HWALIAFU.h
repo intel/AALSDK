@@ -124,8 +124,8 @@ public:
 
    // <IALIUMsg>
    virtual btUnsignedInt umsgGetNumber( void );
-   virtual btVirtAddr    umsgGetAddress( const btUnsignedInt UMsgNumber );
-   virtual bool umsgSetAttributes( NamedValueSet const &nvsArgs);
+   virtual btVirtAddr   umsgGetAddress( const btUnsignedInt UMsgNumber );
+   virtual bool      umsgSetAttributes( NamedValueSet const &nvsArgs);
    // </IALIUMsg>
 
    // <IALIReset>
