@@ -59,6 +59,8 @@ BEGIN_NAMESPACE(AAL)
 #define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
 #define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 #define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+#define iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
+#define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
 
 
 /// @file
@@ -76,6 +78,8 @@ BEGIN_NAMESPACE(AAL)
 ///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
 ///   iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 ///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+///   iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
+///   iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
 /// <TODO: LIST INTERFACES HERE>
 ///
 /// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
@@ -338,10 +342,6 @@ public:
       e_Error_Quiesce_Timeout    ///< Could not disable completely, issued reset anyway
    };
 
-   /// TODO: These functions should return e_Reset, but C++ templates seem unhappy.
-   ///       AAL::IALIReset::e_Reset should be a type, but it breaks the code, and
-   ///       I don't want to check in non-building code.
-
    /// @brief Initiate a Reset.
    ///
    /// Only the Link to this AFU will be reset.
@@ -356,9 +356,10 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     True if succeeded, False if not. False would imply that transactions
-   ///                did not quiesce within timeout value.
+   /// @param[in]  pNVS    Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset e_OK if succeeded, other values if a problem.
+   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                the provided timeout. (Currently no way to set timeout).
    ///
    virtual e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
 
@@ -372,8 +373,7 @@ public:
    ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     True if succeeded, False if not. False would imply that the alternating
-   ///                state machine was not followed.
+   /// @return     e_Reset e_OK if succeeded. No errors expected.
    ///
    virtual e_Reset afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
 
@@ -389,12 +389,135 @@ public:
    ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset e_OK if succeeded, other values if a problem.
+   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                the provided timeout. (Currently no way to set timeout).
    ///
    virtual e_Reset afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
 };
 
 // TODO:
-// MAFU: Reconfigure (Deactivate, Activate?)
+/// MAFU: Reconfigure (Deactivate, Activate?)
+/// NOTE: this will be a service that is not typically exported by the ALI Service. Rather,
+///       it will be allocated by requesting a PR_ID (an AFU_ID associated with a PR),
+///       along with if necessary additional meta information such as bus:function:number of
+///       the PCIe device.
+
+/// @brief  Provide Reconfiguration Services (asynchronous and controlled by driver)
+///
+class IALIReconfigure
+{
+public:
+   virtual ~IALIReconfigure() {}
+
+   #define AALCONF_FILENAMETYPE         btString
+
+   /// @brief Deactivate an AFU in preparation for it being reconfigured.
+   ///
+   /// Basically, if there is an AFU currently instantiated and connected to an
+   ///    application, then this will send an exception to the application indicating
+   ///    that it should release the AFU. There can be a timeout option that specifies
+   ///    that if the application does not Release within a particular time, then
+   ///    the AFU will be yanked. Then, a CleanIt!(tm) AFU will be loaded to clear
+   ///    out all the gates and clear the FPGA memory banks.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @return     void. Callback in IALIReconfigureClient.
+   ///
+   virtual void reconfDeactivate( TransactionID const &rTranID,
+                                  NamedValueSet const *pOptArgs = NULL) = 0;
+
+   /// @brief Configure an AFU.
+   ///
+   /// Download the defined bitstream to the PR region. Initially, the bitstream
+   ///    is a file name. Later, it might be a goal record, and that is why the
+   ///    parameter is an NVS. It is also possible in the NVS to specify a PR number
+   ///    if that is relevant, e.g. for the PF driver.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  pNVS Pointer to Optional Arguments. Initially need a bitstream.
+   /// @return     void. Callback in IALIReconfigureClient.
+   ///
+   virtual void reconfConfigure( TransactionID const &rTranID,
+                                 NamedValueSet const *pOptArgs = NULL) = 0;
+
+   /// @brief Activate an AFU after it has been reconfigured.
+   ///
+   /// Once the AFU has been reconfigured there needs to be a "probe" to load
+   ///    the AFU configuration information, e.g. AFU_ID, so that the associated
+   ///    service can be loaded and the whole shebang returned to the application.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @return     void. Callback in IALIReconfigureClient.
+   ///
+   virtual void reconfActivate( TransactionID const &rTranID,
+                                NamedValueSet const *pOptArgs = NULL) = 0;
+};
+
+/// @brief  Reconfiguration Callback
+///
+class IALIReconfigure_Client
+{
+public:
+   virtual ~IALIReconfigure_Client() {}
+
+   /// @brief Deactivate succeeded callback.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  rTranID Transaction from original reconfDeactivate call.
+   /// @return     void.
+   ///
+   virtual void deactivateSucceeded( TransactionID const &rTranID ) = 0;
+
+   /// @brief Notification callback for deactivate failed.
+   ///
+   /// Sent in response to a failed reconfDeactivate.
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   ///
+   virtual void deactivateFailed( IEvent const &rEvent ) = 0;
+
+   /// @brief Configuration successful.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  rTranID Transaction from original reconfConfigure call.
+   /// @return     void.
+   ///
+   virtual void configureSucceeded( TransactionID const &rTranID ) = 0;
+
+   /// @brief Notification callback for deactivate failed.
+   ///
+   /// Sent in response to a failed reconfConfigure.
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   ///
+   virtual void configureFailed( IEvent const &rEvent ) = 0;
+
+   /// @brief Activate succeeded callback.
+   ///
+   /// TODO: Implementation needs to be via driver transaction
+   ///
+   /// @param[in]  rTranID Transaction from original reconfActivate call.
+   /// @return     void.
+   ///
+   virtual void activateSucceeded( TransactionID const &rTranID ) = 0;
+
+   /// @brief Notification callback for  activate failure.
+   ///
+   /// Sent in response to a failed reconfActivated.
+   ///
+   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
+   ///
+   virtual void activateFailed( IEvent const &rEvent ) = 0;
+};
+
 
 
 /// @}
