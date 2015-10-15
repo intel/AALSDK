@@ -332,21 +332,34 @@ class IALIReset
 public:
    virtual ~IALIReset() {}
 
+   enum e_Reset {
+      e_OK,                      ///< Everything okay
+      e_Error_Quiesce_Timeout    ///< Could not disable completely, issued reset anyway
+   };
+
+   /// TODO: These functions should return e_Reset, but C++ templates seem unhappy.
+   ///       AAL::IALIReset::e_Reset should be a type, but it breaks the code, and
+   ///       I don't want to check in non-building code.
+
    /// @brief Initiate a Reset.
    ///
    /// Only the Link to this AFU will be reset.
-   /// By resetting the link, all outstanding transactions will quiesced, the
+   /// By resetting the link, all outstanding transactions will be quiesced, the
    ///    processing of memory transactions will be disabled,
    ///    the AFU will be sent a Reset signal.
+   /// There is a positive affirmation of Quiesce in the form of number of outstanding
+   ///    transactions going to 0.
+   /// Quiesce is destructive, e.g. outstanding transactions are lost. So state must
+   ///    be Reset afterwards.
    ///
-   /// TODO: Making this synchronous requires the mapping into user space of
-   ///          the Reset Device Feature List
+   /// TODO: Implementation needs to be via driver transaction so that driver is in
+   ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     True if succeeded, False if not. False would imply that transactions
    ///                did not quiesce within timeout value.
    ///
-   virtual void afuDisableAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
@@ -354,14 +367,14 @@ public:
    /// It is an error to do anything other than strictly alternate afuDisableAndReset
    ///    and afuReEnable.
    ///
-   /// TODO: Making this synchronous requires the mapping into user space of
-   ///          the Reset Device Feature List
+   /// TODO: Implementation needs to be via driver transaction so that driver is in
+   ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     True if succeeded, False if not. False would imply that the alternating
    ///                state machine was not followed.
    ///
-   virtual void afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
 
    /// @brief Request a complete Reset. Convenience function combining other two.
    ///
@@ -370,20 +383,13 @@ public:
    ///    processing of memory transactions will be disabled,
    ///    the AFU will be sent a Reset signal,
    ///    and transactions will be re-enabled.
-   /// TODO: Is there a positive affirmation of AFU Reset, now that DSM is gone? [Yes]
-   /// TODO: Check that quiescence is destructive. E.g., one could could not
-   ///       quiesce/enable without destroying state. Thus the need for reset. Correct? [Yes]
-   /// TODO: Assuming quiesce is destructive, might one not want to split this into
-   ///       two parts; Quiesce+Reset, then Enable Link? [Yes]
    ///
-   /// TODO: Making this synchronous requires the mapping into user space of
-   ///          the Reset Device Feature List
+   /// TODO: Implementation needs to be via driver transaction so that driver is in
+   ///          control, in case it needs to perform its own reset operations.
    ///
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
    ///
-   /// Response is via IALIReset_Client::()
-   ///
-   virtual void afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
 };
 
 // TODO:

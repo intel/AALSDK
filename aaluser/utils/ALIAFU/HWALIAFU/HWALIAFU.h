@@ -129,9 +129,9 @@ public:
    // </IALIUMsg>
 
    // <IALIReset>
-   virtual void afuDisableAndReset( NamedValueSet const *pOptArgs = NULL);
-   virtual void afuReEnable( NamedValueSet const *pOptArgs = NULL);
-   virtual void afuReset( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuReEnable( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL);
    // </IALIReset>
 
    // <IServiceClient>
