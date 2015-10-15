@@ -38,21 +38,22 @@ ASEALIAFU \
 HWALIAFU \
 SWSimALIAFU
 
-lib_LTLIBRARIES=libALIAFU.la
-
-libALIAFU_la_SOURCES=\
-ALIAFU.cpp \
-ALIAFU.h
-
-libALIAFU_la_CPPFLAGS=\
--I$(top_srcdir)/include \
--I$(top_builddir)/include
-
-libALIAFU_la_LDFLAGS=\
--module \
--version-info $(ALIAFU_VERSION_CURRENT):$(ALIAFU_VERSION_REVISION):$(ALIAFU_VERSION_AGE)
-
-libALIAFU_la_LIBADD=\
-$(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la
+# No top ALIAFU defined
+#lib_LTLIBRARIES=libALIAFU.la
+#
+#libALIAFU_la_SOURCES=\
+#ALIAFU.cpp \
+#ALIAFU.h
+#
+#libALIAFU_la_CPPFLAGS=\
+#-I$(top_srcdir)/include \
+#-I$(top_builddir)/include
+#
+#libALIAFU_la_LDFLAGS=\
+#-module \
+#-version-info $(ALIAFU_VERSION_CURRENT):$(ALIAFU_VERSION_REVISION):$(ALIAFU_VERSION_AGE)
+#
+#libALIAFU_la_LIBADD=\
+#$(top_builddir)/aas/OSAL/libOSAL.la \
+#$(top_builddir)/aas/AASLib/libAAS.la \
+#$(top_builddir)/aas/AALRuntime/libaalrt.la
