@@ -210,7 +210,7 @@ CMyApp::CMyApp() :
    m_pProprietary(NULL)
 {
 	m_Sem.Create(0, 1);
-	SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
+	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
     SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
 	SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(&m_CCIClient));
 }
@@ -321,7 +321,7 @@ void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated (rt)");
@@ -366,7 +366,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
 
-   m_pProprietary = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
    ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated");
@@ -434,7 +434,7 @@ CMyCCIClient::CMyCCIClient() :
    m_Wkspcs(0)
 {
    m_Sem.Create(0, INT_MAX);
-   SetSubClassInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
 }
 
 void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
@@ -714,7 +714,7 @@ int main(int argc, char *argv[])
 	   cout << NORMAL << endl
 			<< endl;
    }
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
    {
 		// Run NLB ccip test, which performs sw data verification.
 		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
@@ -729,51 +729,68 @@ int main(int argc, char *argv[])
 		}
 		cout << NORMAL << endl;
    }
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
-         {
-      		// Run NLB ccip read test.
-      		CNLBCcipRead nlbccip_read(&myapp);
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+   {
+		// Run NLB ccip read test.
+		CNLBCcipRead nlbccip_read(&myapp);
 
-      		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
-      		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
-      		totalres += res;
-      		if ( 0 == res ) {
-      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-      		} else {
-      		  cout << FAIL << "ERROR";
-      		}
-      		cout << NORMAL << endl;
-         }
-      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
-   	 {
-   		// Run NLB ccip write test.
-   		CNLBCcipWrite nlbccip_write(&myapp);
+		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
+		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+  {
+		// Run NLB ccip write test.
+		CNLBCcipWrite nlbccip_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
-   		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-   	 }
-      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
-      	 {
-      		// Run NLB ccip trput test.
-      		CNLBCcipTrput nlbccip_trput(&myapp);
+		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
+		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+  {
+		// Run NLB ccip trput test.
+		CNLBCcipTrput nlbccip_trput(&myapp);
 
-      		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
-      		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
-      		totalres += res;
-      		if ( 0 == res ) {
-      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-      		} else {
-      		  cout << FAIL << "ERROR";
-      		}
-      		cout << NORMAL << endl;
-      	 }
+		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
+		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
+  {
+	   // Run an SW Test..
+	   // * report bandwidth in GiB/s
+	   CNLBCcipSW nlbccip_sw(&myapp);
+
+	   cout << " * CCIP-SW test " << flush;
+	   res = nlbccip_sw.RunTest(gCmdLine, MAX_NLB_CCIP_SW_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
+  }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 

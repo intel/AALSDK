@@ -80,9 +80,9 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
 
-   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize()) ) {
+   /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize()) ) {
       return 1;
-   }
+   }*/
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
