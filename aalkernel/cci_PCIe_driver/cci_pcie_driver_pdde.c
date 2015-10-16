@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -72,15 +72,15 @@
 
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/aalinterface.h"
-#include "aalsdk/kernel/aalids.h"
-#include "aalsdk/kernel/aalrm.h"
-#include "aalsdk/kernel/aalqueue.h"
+//#include "aalsdk/kernel/aalids.h"
+//#include "aalsdk/kernel/aalrm.h"
+//#include "aalsdk/kernel/aalqueue.h"
 
 #include "cci_pcie_driver_internal.h"
 
 #include "cci_pcie_driver_simulator.h"
 
-#include "aalsdk/kernel/spl2defs.h"
+//#include "aalsdk/kernel/spl2defs.h"
 
 static int noprobe = 0;
 
@@ -104,7 +104,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 //
 // Typical usage:
 //    sudo insmod ccidrv           # Normal load. PCIe enumeration enabled
-//    sudo insmod ccidrv sim=4     # Instantiate
+//    sudo insmod ccidrv sim=4     # Instantiate 4 simulated AFUs
 
 ulong sim = 0;
 MODULE_PARM_DESC(sim, "Simulation: #=Number of simulated AFUs to instantiate");
@@ -137,44 +137,16 @@ btUnsignedInt debug = 0
 ;
 
 /******************************************************************************
- * Debug global definition
+ * Debug parameter global definition
  */
-
-//=============================================================================
-// /sys/bus/pci/drivers/aalspl2/recsn_index
-// rescan_index: Setting this variable will cause the board at the <val>
-//               position in the device list to be removed and the bus
-//               rescanned. This should enable the device to be rediscovered
-static void cci_pci_remove_and_rescan(unsigned);
-//
-int rescan_index  = 0;  //Used to rescan device by index
-MODULE_PARM_DESC(rescan_index, "Rescan device by index");
-module_param    (rescan_index, int, 0774);
-
-struct aal_device_addr rescanned_address = {0};
-
-
-//=============================================================================
-// Name: aalbus_attrib_store_debug
-//=============================================================================
-static ssize_t cciv4drv_attrib_store_rescan_index( struct device_driver *drv,
-                                             	  const char *buf,
-                                              	  size_t size)
-{
-   sscanf(buf,"%d", &rescan_index);
-
-   cci_pci_remove_and_rescan(rescan_index);
-
-   return size;
-}
-
-DRIVER_ATTR(rescan_index,S_IRUGO|S_IWUSR|S_IWGRP, NULL,cciv4drv_attrib_store_rescan_index);
-
-
 MODULE_PARM_DESC(debug, "module debug level");
 module_param    (debug, int, 0444);
+
+
 //=============================================================================
 // Name: aalbus_attrib_show_debug
+// Decription: Accessor for the debug parameter. Called when the sys fs
+//             parameter is read.
 //=============================================================================
 static ssize_t ahmpip_attrib_show_debug(struct device_driver *drv, char *buf)
 {
@@ -183,6 +155,8 @@ static ssize_t ahmpip_attrib_show_debug(struct device_driver *drv, char *buf)
 
 //=============================================================================
 // Name: aalbus_attrib_store_debug
+// Decription: Mutator for the debug parameter. Called when the sys fs
+//             parameter is written.
 //=============================================================================
 static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
                                          const char *buf,
@@ -197,7 +171,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
    return size;
 }
 
-// Attribute accessors for debug
+// Attributes for debug
 DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attrib_store_debug);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,31 +182,6 @@ DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attri
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-//=============================================================================
-// Name: devIID_tbl
-// Description: Lists the IDs of the interfaces this service exports to the
-//              AALBus interface broker.
-//=============================================================================
-static btID devIID_tbl[] = {
-   0  // None
-};
-
-//=============================================================================
-// Name: spldrv_class
-// Description: Class device. Wrapper object that contains both the Linux
-//              DD Model class information but also AAL specific class
-//              information. The modules "class" defines its unique interface
-//              attributes.
-//=============================================================================
-static struct aal_classdevice cciv4drv_class = {
-   .m_classid = {
-      .m_majorversion   = 0, //AALUI_DRV_MAJVERSION,
-      .m_minorversion   = 0, //AALUI_DRV_MINVERSION,
-      .m_releaseversion = 0, //AALUI_DRV_RELEASE,
-      .m_classGUID      = (0x0000000000002000), // AALUI_DRV_INTC,
-   },
-   .m_devIIDlist = devIID_tbl,        // List of supported device module APIs
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -281,15 +230,16 @@ MODULE_DEVICE_TABLE(pci, cci_pcie_id_tbl);
 //=============================================================================
 // Name: cci_pcie_driver_info
 // Description: This struct represents the QPI PCIe driver instance for the
-//              DKSM. The Driver object is registered with the Linux PCI
+//              driver. The Driver object is registered with the Linux PCI
 //              subsystem.
 //=============================================================================
 struct cci_pcie_driver_info
 {
-   int                        isregistered; // boolean : did we register with PCIe subsystem?
-   struct pci_driver          pcidrv;
+   int                        isregistered;  // boolean : did we register with PCIe subsystem?
+   struct pci_driver          pcidrv;        //  Linux PCIe driver structure
 };
 
+// Instantiate the structure
 static struct cci_pcie_driver_info driver_info = {
    .isregistered = 0,
    .pcidrv = {
@@ -300,8 +250,7 @@ static struct cci_pcie_driver_info driver_info = {
    },
 };
 
-/// cci_pci_probe - C
-/// @
+
 //=============================================================================
 // Name: cci_pci_probe
 // Description: Called during the device probe by PCIe subsystem.
@@ -313,8 +262,8 @@ static struct cci_pcie_driver_info driver_info = {
 //=============================================================================
 static
 int
-cci_pci_probe(struct pci_dev             *pcidev,
-                const struct pci_device_id *pcidevid)
+cci_pci_probe( struct pci_dev             *pcidev,
+               const struct pci_device_id *pcidevid)
 {
 
    int res = -EINVAL;
@@ -327,7 +276,7 @@ cci_pci_probe(struct pci_dev             *pcidev,
    return res;
 }
 
-
+#if 0
 //=============================================================================
 // Name: cci_pcie_internal_probe
 // Description: Called during the device probe by cci_pci_probe
@@ -468,7 +417,7 @@ DONE:
 
    PTRACEOUT;
 }
-
+#endif
 //=============================================================================
 // Name: cci_pci_remove
 // Description: Entry point called when a device registered with the PCIe
@@ -483,9 +432,9 @@ static
 void
 cci_pci_remove(struct pci_dev *pcidev)
 {
-   struct cci_device  *pCCIv4dev = NULL;
-   struct list_head     *This      = NULL;
-   struct list_head     *tmp       = NULL;
+   struct cci_device    *pCCIdev    = NULL;
+   struct list_head     *This       = NULL;
+   struct list_head     *tmp        = NULL;
 
    int found = 0;
 
@@ -504,13 +453,13 @@ cci_pci_remove(struct pci_dev *pcidev)
       //  as we will be deleting entries
       list_for_each_safe(This, tmp, &g_device_list) {
 
-         pCCIv4dev = cci_list_to_cci_device(This);
+         pCCIdev = cci_list_to_cci_device(This);
 
-         if ( pCCIv4dev->m_pcidev == pcidev ) {
+         if ( pCCIdev->m_pcidev == pcidev ) {
             ++found;
 
             PDEBUG("Deleting device 0x%p with list head 0x%p from list 0x%p\n",
-                  pCCIv4dev, This, &g_device_list);
+                  pCCIdev, This, &g_device_list);
 
 // TODO            cci_remove_device(pCCIv4dev);
          }
@@ -534,21 +483,19 @@ cci_pci_remove(struct pci_dev *pcidev)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-/////////////////                CCI V4 Driver             ////////////////////
+/////////////////                CCI    Driver             ////////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
-struct aal_interface             cci_afu_pip_interface;
-struct aal_interface             cci_simafu_pip_interface;
 
 
 //=============================================================================
-// Name: cciv4drv_init
-// Description: Entry point called when the module is loaded
+// Name: ccidrv_init
+// Description: Initialized the CCI driver framework
 // Interface: public
-// Inputs: none.
+// Inputs: Callback structure - ???.
 // Outputs: none.
 // Comments: none.
 //=============================================================================
@@ -562,11 +509,8 @@ ccidrv_initDriver(void/*callback*/)
    // Initialize the list of devices controlled by this driver
    INIT_LIST_HEAD(&g_device_list);
 
-   PINFO("Using %s configuration.\n", (0 == sim) ? "normal hardware" : "simulated hardware");
-
-   //----------------------------------
-   // Create the common /sys parameters
-   //----------------------------------
+   // Display whether we are running with real or simulated hardware
+   PINFO("Using %s configuration.\n", (0 == sim) ? "FPGA hardware" : "simulated hardware");
 
    // Process command line arguments
    if ( 0 == sim ) {
@@ -586,6 +530,8 @@ ccidrv_initDriver(void/*callback*/)
       driver_info.isregistered = 1;
 
       // Create the Debug /sys argument
+      //  For now this is only instantiated when using real hardware as we don't have a
+      //  registered driver to hang the parameter off of otherwise.
       if(driver_create_file(&driver_info.pcidrv.driver,&driver_attr_debug)){
           DPRINTF (CCIPCIE_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
           // Unregister the driver with the bus
@@ -653,8 +599,7 @@ ccidrv_exitDriver(void)
          PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pCCIdev,
                                                                                 This,
                                                                                 &g_device_list);
-
-//         cci_remove_device(pCCIdev);
+         cci_remove_device(pCCIdev);
       }// kosal_list_for_each_safe
 
    }else {

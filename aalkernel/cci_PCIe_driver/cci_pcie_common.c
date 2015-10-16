@@ -72,9 +72,6 @@
 
 #include "cci_pcie_driver_internal.h"
 
-
-
-
 //=============================================================================
 // Name: cci_create_device
 // Description: Constructor for a cci_device object
@@ -119,6 +116,29 @@ int cci_destroy_device( struct cci_device* pCCIdev)
 }
 
 //=============================================================================
+// Name: cci_release_device
+// Description: callback for notification that an AAL Device is being destroyed.
+// Interface: public
+// Inputs: pdev: kernel-provided generic device structure.
+// Outputs: none.
+// Comments:
+//=============================================================================
+void
+cci_release_device(struct device *pdev)
+{
+#if ENABLE_DEBUG
+   struct aal_device *paaldev = basedev_to_aaldev(pdev);
+#endif // ENABLE_DEBUG
+
+   PTRACEIN;
+
+   PDEBUG("Called with struct aal_device * 0x%p\n", paaldev);
+
+   // DO NOT call factory release here. It will be done by the framework.
+   PTRACEOUT;
+}
+
+//=============================================================================
 // Name: cci_publish_aaldevice
 // Description: Publishes an AAL Device with the Configuration Management
 //              subsystem.
@@ -155,6 +175,11 @@ int cci_publish_aaldevice(struct cci_device * pCCIdev)
 
    // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
    aaldev_pip_context(cci_dev_to_aaldev(pCCIdev)) = (void*)pCCIdev;
+
+   // Method called when the device is released (i.e., its destructor)
+   //  The canonical release device calls the user's release method.
+   //  If NULL is provided then only the canonical behavior is done
+   dev_setrelease(cci_dev_to_aaldev(pCCIdev), cci_release_device);
 
    ret = pAALbus->register_device(cci_dev_to_aaldev(pCCIdev));
    if ( 0 != ret ) {
@@ -197,13 +222,10 @@ cci_unpublish_aaldevice(struct cci_device *pCCIdev)
 void
 cci_remove_device(struct cci_device *pCCIdev)
 {
-   PVERBOSE("Removing CCIv4 device\n");
+   PDEBUG("Removing CCI device\n");
 
    // Call PIP to ensure the object is idle and ready for removal
    // TODO
-
-   // Make it unavailable
-   cci_unpublish_aaldevice(pCCIdev);
 
    // Remove ourselves from any lists
    kosal_sem_get_krnl( &pCCIdev->m_sem );
@@ -221,16 +243,21 @@ cci_remove_device(struct cci_device *pCCIdev)
       cci_dev_pci_dev_clr_enabled(pCCIdev);
    }
 
-   kosal_kfree(cci_dev_kvp_afu_mmio(pCCIdev), cci_dev_len_afu_mmio(pCCIdev));
-   kosal_kfree(cci_dev_kvp_afu_umsg(pCCIdev),cci_dev_len_afu_umsg(pCCIdev));
-
    // If simulated free the BAR
    if( cci_is_simulated(pCCIdev) ){
       if(NULL != cci_dev_kvp_config(pCCIdev)){
          kosal_kfree(cci_dev_kvp_config(pCCIdev), cci_dev_len_config(pCCIdev));
       }
+      if(NULL != cci_dev_kvp_afu_mmio(pCCIdev)){
+         kosal_kfree(cci_dev_kvp_afu_mmio(pCCIdev), cci_dev_len_afu_mmio(pCCIdev));
+      }
+      if(NULL != cci_dev_kvp_afu_umsg(pCCIdev)){
+         kosal_kfree(cci_dev_kvp_afu_umsg(pCCIdev),cci_dev_len_afu_umsg(pCCIdev));
+       }
    }
 
+   // Make it unavailable
+   cci_unpublish_aaldevice(pCCIdev);
    cci_destroy_device(pCCIdev);
 
 } // cci_remove_device

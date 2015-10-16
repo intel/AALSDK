@@ -752,13 +752,13 @@ out:
 int
 aaldev_init(struct aal_device *pdev)
 {
-   kosal_printk_level(KERN_INFO, "Initializing 0x%p\n", pdev);
 
+#if 0
    if( unlikely( !aaldev_valid(pdev) ) ) {
       kosal_printk_level(KERN_ERR, "aaldev_initFailed\n");
       return 0;
    }
-
+#endif
    //  Initialize interface
    pdev->i.addOwner        = aaldev_addOwner;
    pdev->i.isOwner         = aaldev_isOwner;

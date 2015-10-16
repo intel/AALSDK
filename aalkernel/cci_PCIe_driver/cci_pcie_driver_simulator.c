@@ -137,7 +137,7 @@ int cci_sim_discover_devices(ulong numdevices,
    struct aal_device_id aalid;
    btVirtAddr           pAperture         = NULL;
 
-   PVERBOSE("Discovering %ld simulated CCI devices", numdevices);
+   PVERBOSE("Creating %ld simulated CCI devices", numdevices);
 
    // Loop through and probe each simulated device
    while(numdevices--){
@@ -153,7 +153,6 @@ int cci_sim_discover_devices(ulong numdevices,
       }
 
       // Create the AFU
-      aaldevid_devaddr_busnum(aalid) = 1;
       ret = cci_create_sim_afu(pAperture, CCI_SIM_APERTURE_SIZE, &aalid, g_device_list);
       ASSERT(0 == ret);
       if(0>ret){
@@ -198,7 +197,7 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    cci_dev_kvp_cci_csr(pCCIdev)  = cci_dev_kvp_config(pCCIdev);
    cci_dev_len_cci_csr(pCCIdev)  = CCI_SIM_APERTURE_SIZE;
 
-   // Allocate uMSG space K
+   // Allocate uMSG space
    ptemp = kosal_kzmalloc(CCI_UMSG_SIZE);
    if ( NULL == ptemp ) {
       PERR("Unable to allocate system memory for uMsg area\n");
@@ -243,17 +242,22 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    cci_dev_clr_allow_map_csr_write_space(pCCIdev);
    cci_dev_clr_allow_map_csr_read_space(pCCIdev);
 
-   // Enable MMIO-R and UMSG space
+   // Enable MMIO-R and uMSG space
    cci_dev_set_allow_map_mmior_space(pCCIdev);
    cci_dev_set_allow_map_umsg_space(pCCIdev);
 
    // Mark as simulated
    cci_set_simulated(pCCIdev);
 
+   // Create the AAL device structure. The AAL device is the
+   //  base class for all devices in AAL. Among other things it
+   //  holds the device name, address and pointer to Low Level Communications
+   //  module (PIP)
    pCCIdev->m_aaldev =  aaldev_create( "CCISIMAFU",
                                         paalid,
                                         &cci_simAFUpip);
 
+   // Set how many owners are allowed access to this device simultaneously
    pCCIdev->m_aaldev->m_maxowners = 1;
 
       // Device is ready for use.  Publish it with the Configuration Management Subsystem

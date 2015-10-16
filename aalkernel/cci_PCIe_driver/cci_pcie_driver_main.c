@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -59,7 +59,8 @@
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 // PURPOSE: This file implements init/exit entry points for the
-//          Intel(R) Intel QuickAssist Technology AAL FPGA device driver.
+//          Intel(R) Intel QuickAssist Technology AAL FPGA device driver for
+//          CCI protocol compliant devices.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
@@ -101,7 +102,7 @@ ccidrv_init(void)
    PINFO("-> License %s\n", DRV_LICENSE);
    PINFO("-> %s\n",       DRV_COPYRIGHT);
 
-   //
+   // Call the framework initialization
    ret = ccidrv_initDriver(/* Callback */);
 
    PTRACEOUT_INT(ret);
@@ -121,6 +122,7 @@ static
 void
 ccidrv_exit(void)
 {
+   // Exit the framework
    ccidrv_exitDriver();
 }
 

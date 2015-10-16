@@ -241,6 +241,7 @@ extern int ccidrv_initDriver(void/*callback*/);
 extern struct cci_device* cci_create_device(void);
 extern int cci_destroy_device( struct cci_device*);
 extern int cci_publish_aaldevice(struct cci_device *);
+extern void cci_remove_device(struct cci_device *);
 extern void ccidrv_exitDriver(void);
 
 

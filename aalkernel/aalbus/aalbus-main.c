@@ -122,6 +122,7 @@ MODULE_PARM_DESC(debug, "debug level");
 module_param    (debug, int, 0444);
 #endif // __AAL_LINUX__
 
+extern void aaldev_release_device(struct device *pdev);
 
 // Declare standard entry points
 static int
@@ -718,7 +719,7 @@ aalbus_register_device(struct aal_device *paaldev)
 {
    struct update_config_parms parms;
 
-   kosal_printk_level(KERN_INFO, "Registering device %s\n", paaldev->m_basename);
+   kosal_printk_level(KERN_INFO, "Registering device %s\n", aaldev_devname(paaldev));
 
    if ( unlikely( !aaldev_init(paaldev) ) ) {
       kosal_printk_level(KERN_ERR, "Device registration failed\n");
@@ -739,12 +740,7 @@ aalbus_register_device(struct aal_device *paaldev)
       return -1;
    }
 
-
    aaldev_to_basedev(paaldev).bus = &aalBus.m_bustype;
-
-   kosal_printk_level(KERN_INFO, "ownerlist %p, address of ownerlist %p -- these should be EQUAL\n",
-                         &paaldev->m_ownerlist, paaldev->m_ownerlist.next);
-
 
    // Add this device to the bus' list of devices
    if (0 !=  kosal_sem_get_user_alertable(&aalBus.alloc_list_sem)) {
@@ -755,6 +751,7 @@ aalbus_register_device(struct aal_device *paaldev)
       kosal_sem_put(&aalBus.alloc_list_sem);
    }
 
+   paaldev->m_dev.release = aaldev_release_device; // System method
 
    // device_register(&AALDEVBASE(dev));
    if ( device_register(&aaldev_to_basedev(paaldev)) ) {
@@ -775,10 +772,7 @@ aalbus_register_device(struct aal_device *paaldev)
    aaldev_set_registered(paaldev);
    kosal_sem_put(&aalBus.m_sem);
 
-   DPRINTF(AALBUS_DBG_MOD, "ownerlist %p, address of ownerlist %p -- these should STILL be EQUAL\n",
-                         &paaldev->m_ownerlist, paaldev->m_ownerlist.next);
-
-   DPRINTF(AALBUS_DBG_MOD,  "Done registering device %s\n", aaldev_basename(paaldev));
+   DPRINTF(AALBUS_DBG_MOD,  "Done registering device %s\n",aaldev_devname(paaldev));
 
    return 0;
 }
