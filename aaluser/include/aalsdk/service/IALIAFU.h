@@ -366,7 +366,7 @@ public:
    /// @brief Re-enable the AFU after a Reset.
    ///
    /// Only the Link to this AFU will be enabled.
-   /// It is an error to do anything other than strictly alternate afuDisableAndReset
+   /// It is an error to do anything other than strictly alternate afuQuiesceAndReset
    ///    and afuReEnable.
    ///
    /// TODO: Implementation needs to be via driver transaction so that driver is in
@@ -410,6 +410,7 @@ class IALIReconfigure
 public:
    virtual ~IALIReconfigure() {}
 
+   #define AALCONF_FILENAMEKEY          "BitStreamFile"
    #define AALCONF_FILENAMETYPE         btString
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
