@@ -241,9 +241,10 @@ btBool HWALIAFU::init(IBase *pclientBase,
    nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsConfigRecord);
    nvsManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AIA");
 
+   m_pTidSaved = &TranID;
    getRuntime()->allocService(this, nvsManifest, TransactionID());
 
-   initComplete(TranID);
+   // initComplete happens in serviceAllocated()
    return true;
 }
 
@@ -683,14 +684,16 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
 
 // Service allocated callback
 void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
-                              TransactionID const &rTranID)
+                                TransactionID const &rTranID)
 {
+   ASSERT(m_pTidSaved !=NULL);    // if m_tidSaved == NULL, we got a serviceAllocated
+                                  // before we requested one
    // Store ResMgrService pointer
    m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
    if (!m_pAFUProxy) {
       // TODO: handle error
       initFailed(new CExceptionTransactionEvent( NULL,
-                                                 rTranID,
+                                                 *m_pTidSaved,
                                                  errBadParameter,
                                                  reasMissingInterface,
                                                  "Error: Missing AFUProxy interface."));
@@ -702,24 +705,26 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
    if (!m_pAALService) {
       // TODO: handle error
       initFailed(new CExceptionTransactionEvent( NULL,
-                                                 rTranID,
+                                                 *m_pTidSaved,
                                                  errBadParameter,
                                                  reasMissingInterface,
                                                  "Error: Missing service base interface."));
       return;
    }
 
-   // AFUProxy acquired, init complete.
-   // FIXME: reusing transaction IDs, is that okay?
-   initComplete(rTranID);
+   // AFUProxy acquired, init complete for original (saved) transaction/
+   initComplete(*m_pTidSaved);
    return;
 }
 
 // Service allocated failed callback
 void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
    m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   // FIXME: call initFailed!
-   ASSERT(false);
+   initFailed(new CExceptionTransactionEvent( NULL,
+                                              *m_pTidSaved,
+                                              errAllocationFailure,
+                                              reasUnknown,
+                                              "Error: Failed to allocate ALI."));
 }
 
 // Service released callback
