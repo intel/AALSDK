@@ -356,7 +356,7 @@ HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
    m_OutputSize(0)
 
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidALI_BUFF_Service_Client, dynamic_cast<IALIBuffer_Client *>(this));
    m_Sem.Create(0, 1);
 }
@@ -529,8 +529,8 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
-
+//   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
+   dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
 }
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
