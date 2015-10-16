@@ -55,15 +55,16 @@
  *
  */
 
-`include "ase_global.vh"
+import ase_pkg::*;
+
 `include "platform.vh"
 
 
 module outoforder_wrf_channel
   #(
     parameter int NUM_WAIT_STATIONS = 16,
-    parameter int HDR_WIDTH = 61,
-    parameter int DATA_WIDTH = 512,
+    parameter int HDR_WIDTH = CCIP_TX_HDR_WIDTH,
+    parameter int DATA_WIDTH = CCIP_DATA_WIDTH,
     parameter int COUNT_WIDTH = 8,
     parameter int FIFO_FULL_THRESH = 5,
     parameter int FIFO_DEPTH_BASE2 = 3,
@@ -74,11 +75,11 @@ module outoforder_wrf_channel
     input logic 		  clk,
     input logic 		  rst,
     // Transaction in
-    input logic [HDR_WIDTH-1:0]   meta_in,
+    input 			  TxHdr_t meta_in,
     input logic [DATA_WIDTH-1:0]  data_in,
     input logic 		  write_en,
     // Transaction out
-    output logic [HDR_WIDTH-1:0]  meta_out,
+    output 			  TxHdr_t meta_out,
     output logic [DATA_WIDTH-1:0] data_out,
     output logic 		  valid_out,
     input logic 		  read_en,
@@ -129,8 +130,8 @@ module outoforder_wrf_channel
    logic 			  wrfence_pop;
 
    // Latbuf control and status
-   logic [0:NUM_WAIT_STATIONS-1]   latbuf_status;
-   logic [0:NUM_WAIT_STATIONS-1]   latbuf_ready;
+   logic [0:NUM_WAIT_STATIONS-1]  latbuf_status;
+   logic [0:NUM_WAIT_STATIONS-1]  latbuf_ready;
    logic 			  latbuf_empty;
    logic 			  latbuf_full;
    logic 			  latbuf_almfull;
@@ -139,7 +140,7 @@ module outoforder_wrf_channel
    logic 			  latbuf_pop;
    int 				  latbuf_count;
    logic 			  latbuf_anyready;
-
+   
    // Stage 1 signals
    logic [HDR_WIDTH-1:0] 	  stg1_meta;
    logic [DATA_WIDTH-1:0] 	  stg1_data;
@@ -186,10 +187,8 @@ module outoforder_wrf_channel
    int 				  jj;
    int 				  ii;
 
-   // logic [FIFO_WIDTH-1:0] 	  reg_stg3_din;
-   // logic 			  reg_stg3_wen;
-   // logic 			  reg_latbuf_pop;
-
+   logic [CCIP_TX_HDR_WIDTH-1:0]  meta_out_vec;
+  
 
    /*
     * Flow errors
@@ -292,42 +291,37 @@ module outoforder_wrf_channel
 	 // Select a random latency
 	 case ( meta )
 	   // ReadLine
-	   `ASE_TX0_RDLINE_S:
-	   // `ASE_TX0_RDLINE_I:
-	   // `ASE_TX0_RDLINE_E:
+	   CCIP_TX0_RDLINE_S:
 	     begin
-	   	ret_random_lat = $urandom_range (`RDLINE_LATRANGE);
+	   	ret_random_lat = $urandom_range (`RDLINE_S_LATRANGE);
+	     end
+
+	   CCIP_TX0_RDLINE_I:
+	     begin
+	   	ret_random_lat = $urandom_range (`RDLINE_I_LATRANGE);
+	     end
+
+	   CCIP_TX0_RDLINE_E:
+	     begin
+	   	ret_random_lat = $urandom_range (`RDLINE_E_LATRANGE);
 	     end
 
 	   // WriteLine
-	   `ASE_TX1_WRLINE_I:
-	   // `ASE_TX1_WRLINE_M:
+	   CCIP_TX1_WRLINE_M:
 	     begin
-		ret_random_lat = $urandom_range (`WRLINE_LATRANGE);
+		ret_random_lat = $urandom_range (`WRLINE_M_LATRANGE);
 	     end
 
-	   // WriteThru
-	   // `ASE_TX1_WRTHRU:
-	   //   begin
-	   // 	ret_random_lat = $urandom_range (`WRTHRU_LATRANGE);
-	   //   end
-
-	   // WriteFence
-	   `ASE_TX1_WRFENCE:
+	   CCIP_TX1_WRLINE_I:
 	     begin
-// `ifdef ASE_DEBUG
-// 		`BEGIN_YELLOW_FONTCOLOR;
-// 		$display("SIM-SV: %m =>  WriteFence must not enter latency model");
-// 		`END_YELLOW_FONTCOLOR;
-// `endif
-		ret_random_lat = 1;
+		ret_random_lat = $urandom_range (`WRLINE_I_LATRANGE);
 	     end
 
 	   // IntrValid
-	   `ASE_TX1_INTRVALID:
-	     begin
-		ret_random_lat = $urandom_range (`INTR_LATRANGE);
-	     end
+	   // `CCI_TX1_INTRVALID:
+	   //   begin
+	   // 	ret_random_lat = $urandom_range (`INTR_LATRANGE);
+	   //   end
 
 	   // Unspecified type (warn but specify latency
 	   default:
@@ -364,7 +358,7 @@ module outoforder_wrf_channel
       .clk        (clk),
       .rst        (rst),
       .wr_en      (write_en),
-      .data_in    ({tid_in, meta_in, data_in}),
+      .data_in    ({tid_in, CCIP_TX_HDR_WIDTH'(meta_in), data_in}),
       .rd_en      (stg1_pop),
       .data_out   ({stg1_tid, stg1_meta, stg1_data}),
       .data_out_v (stg1_valid),
@@ -378,7 +372,7 @@ module outoforder_wrf_channel
 
    // Assert WriteFence
    always @(*) begin
-      if (~stg1_empty && (stg1_meta[`TX_META_TYPERANGE]==`ASE_TX1_WRFENCE))
+      if (~stg1_empty && (stg1_meta[`TX_META_TYPERANGE]==CCIP_TX1_WRFENCE))
 	assert_wrfence	<= 1;
       else
 	assert_wrfence	<= 0;
@@ -387,13 +381,11 @@ module outoforder_wrf_channel
    // Filter WRFENCE
    always @(posedge clk) begin
       q_din		<= {stg1_tid, stg1_meta, stg1_data};
-      // q_push		<= ~stg1_empty && (~assert_wrfence && ~q_full);      
       q_push		<= stg1_valid && (~assert_wrfence && ~q_full);      
-      // stg1_pop	<= ~stg1_empty && ((~assert_wrfence && ~q_full) || wrfence_pop );
    end
-   // assign q_din    = {stg1_tid, stg1_meta, stg1_data};
+
    assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || (assert_wrfence && wrfence_pop));
-   // assign q_push   = ~stg1_empty && (~assert_wrfence && ~q_full);
+
 
    // WriteFence passthru/trap FSM
    always @(posedge clk) begin
@@ -674,7 +666,7 @@ module outoforder_wrf_channel
       .wr_en      (stg3_wen),
       .data_in    (stg3_din),
       .rd_en      (read_en),
-      .data_out   ({tid_out, meta_out, data_out}),
+      .data_out   ({tid_out, meta_out_vec, data_out}),
       .data_out_v (valid_out),
       .alm_full   (stg3_full),
       .full       (),
@@ -684,6 +676,9 @@ module outoforder_wrf_channel
       .underflow  (stg3_underflow)
       );
 
+   // Recast vector to struct form   
+   assign meta_out = TxHdr_t'(meta_out_vec);
+         
    assign empty = stg3_empty;
 
    // Count
@@ -696,7 +691,7 @@ module outoforder_wrf_channel
     */
 `ifdef ASE_DEBUG
    stream_checker #(HDR_WIDTH, TID_WIDTH)
-   checkunit (clk, write_en, meta_in, tid_in, valid_out, meta_out, tid_out);   
+   checkunit (clk, write_en, CCIP_TX_HDR_WIDTH'(meta_in), tid_in, valid_out, meta_out_vec, tid_out);   
 `endif
 
 endmodule // outoforder_wrf_channel

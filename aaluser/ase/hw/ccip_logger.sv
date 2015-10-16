@@ -35,10 +35,9 @@
  *
  */
 
-module cci_logger
+module transaction_logger
   #(
-    parameter INTERFACE_TYPE = "CCIS", // Can be "CCIS" or "SPL"
-    parameter LOGNAME   = "ccis_transactions.tsv"
+    parameter LOGNAME   = "ccip_transactions.tsv"
     )
    (
     // Configure enable

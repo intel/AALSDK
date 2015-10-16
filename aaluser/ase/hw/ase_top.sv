@@ -36,10 +36,7 @@
  *
  * **************************************************************************/
 
-import cvl_pkg::*;
-
-`include "ase_global.vh"
-`include "platform.vh"
+import ase_top_pkg::*;
 
 `timescale 1ns/1ns
 
@@ -55,25 +52,27 @@ module ase_top();
    cci_p_RxData_if ffs_LP16ui_sRxData_afu;
 
    // CCI-P emulator
-   ccip_emulator ccip_emulator     (
-				    .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui              ),
-				    .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui              ),
-				    .vl_clk_LPdomain_16ui               (vl_clk_LPdomain_16ui              ),
-				    .ffs_vl_LP32ui_lp2sy_SystemReset_n  (ffs_vl_LP32ui_lp2sy_SystemReset_n ),
-				    .ffs_vl_LP32ui_lp2sy_SoftReset_n    (ffs_vl_LP32ui_lp2sy_SoftReset_n   ),
-				    .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu            ),
-				    .ffs_LP16ui_sRxData_afu             (ffs_LP16ui_sRxData_afu            )
-				    );
+   ccip_emulator ccip_emulator 
+     (
+      .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui         ),
+      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
+      .vl_clk_LPdomain_16ui               (vl_clk_LPdomain_16ui         ),
+      .ffs_vl_LP32ui_lp2sy_SystemReset_n  (ffs_vl_LP32ui_lp2sy_SystemReset_n ),
+      .ffs_vl_LP32ui_lp2sy_SoftReset_n    (ffs_vl_LP32ui_lp2sy_SoftReset_n   ),
+      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu            ),
+      .ffs_LP16ui_sRxData_afu             (ffs_LP16ui_sRxData_afu            )
+      );
 
 
    // CCIP AFU
-   ccip_std_afu ccip_std_afu  (
-			       .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui              ),
-			       .vl_clk_LPdomain_16ui		   (vl_clk_LPdomain_16ui              ),
-			       .ffs_vl_LP32ui_lp2sy_SystemReset_n  (ffs_vl_LP32ui_lp2sy_SystemReset_n ),
-			       .ffs_vl_LP32ui_lp2sy_SoftReset_n    (ffs_vl_LP32ui_lp2sy_SoftReset_n   ),
-			       .ffs_LP16ui_sTxData_afu		   (ffs_LP16ui_sTxData_afu            ),
-			       .ffs_LP16ui_sRxData_afu		   (ffs_LP16ui_sRxData_afu            )
-			       );
-   
+   ccip_std_afu ccip_std_afu  
+     (
+      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui              ),
+      .vl_clk_LPdomain_16ui		  (vl_clk_LPdomain_16ui              ),
+      .ffs_vl_LP32ui_lp2sy_SystemReset_n  (ffs_vl_LP32ui_lp2sy_SystemReset_n ),
+      .ffs_vl_LP32ui_lp2sy_SoftReset_n    (ffs_vl_LP32ui_lp2sy_SoftReset_n   ),
+      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu            ),
+      .ffs_LP16ui_sRxData_afu		  (ffs_LP16ui_sRxData_afu            )
+      );
+
 endmodule

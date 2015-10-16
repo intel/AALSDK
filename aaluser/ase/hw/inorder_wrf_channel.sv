@@ -99,7 +99,7 @@ module inorder_wrf_channel
    
    // Assert WriteFence
    always @(*) begin
-      if (~inff_empty && (inff_meta[`TX_META_TYPERANGE]==`ASE_TX1_WRFENCE))
+      if (~inff_empty && (inff_meta[`TX_META_TYPERANGE]==`CCI_TX1_WRFENCE))
 	assert_wrfence	<= 1;
       else
 	assert_wrfence	<= 0;
