@@ -256,34 +256,37 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   // Stop the device
 	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
 
+	   while ( ( 0 == pAFUDSM->test_complete ) &&
+			 ( MaxPoll >= 0 ) )
+	   {
+		 MaxPoll -= 500;
+		 SleepNano(500);
+	   }
+
 	   ReadQLPCounters();
 
 	   PrintOutput(cmd, (sz / CL(1)));
 
 	   SaveQLPCounters();
 
-	   //cIncrement number of cachelines
+	   //Increment number of cachelines
 	   sz += CL(1);
 
+	   // Check the device status
+	   if ( MaxPoll < 0 ) {
+		   cerr << "The maximum timeout for test stop was exceeded." << endl;
+		   ++res;
+		   break;
+	   }
+
+	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
    }
    //Disable UMsgs upon test completion
    m_pCCIAFU->CSRWrite(CSR_UMSG_BASE, 0);
-   while ( ( 0 == pAFUDSM->test_complete ) &&
-		 ( MaxPoll >= 0 ) )
-   {
-	 MaxPoll -= 500;
-	 SleepNano(500);
-   }
 
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
-
-   // Check the device status
-   if ( MaxPoll < 0 ) {
-	   cerr << "The maximum timeout for test stop was exceeded." << endl;
-	   ++res;
-   }
 
    if ( 0 != pAFUDSM->test_error ) {
 	   ++res;

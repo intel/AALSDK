@@ -54,7 +54,9 @@ BEGIN_C_DECLS
 # define NLB_TESTMODE_TRPUT 	 "TestMode_trput"
 # define NLB_TESTMODE_SW    	 "TestMode_sw"
 # define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
-
+# define NLB_TESTMODE_CCIP_READ  "TestMode_ccipread"
+# define NLB_TESTMODE_CCIP_WRITE "TestMode_ccipwrite"
+# define NLB_TESTMODE_CCIP_TRPUT "TestMode_cciptrput"
 struct NLBDefaults
 {
    wkspc_size_type mincls;

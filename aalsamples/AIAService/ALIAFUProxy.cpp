@@ -189,6 +189,7 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
 btBool ALIAFUProxy::Release(AAL::TransactionID const &rtid, AAL::btTime timeout)
 {
    m_pAIA->SendMessage(m_devHandle, new UnBindAFUDevice(rtid), dynamic_cast<IAFUProxyClient*>(this) );
+   return true;
 }
 
 
