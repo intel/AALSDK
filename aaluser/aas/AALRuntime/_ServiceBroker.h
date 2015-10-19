@@ -71,9 +71,9 @@ public:
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    // Called when the service is released
    virtual btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);

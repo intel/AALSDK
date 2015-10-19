@@ -74,6 +74,141 @@ int aalsdk_ltdl_unlock(void)
    return pthread_mutex_unlock(&gltdlLock);
 }
 # endif // HAVE_PTHREAD_H
+
+bt32bitInt aalsdk_ltdl_open(OSServiceModule *p, const char *filename)
+{
+   bt32bitInt  res = 0;
+   bt32bitInt  tmp;
+   const char *error_msg = NULL;
+
+   lt_dladvise advise;
+
+   btBool      locked  = true;
+   btBool      advised = false;
+
+   tmp = aalsdk_ltdl_lock();
+   if ( 0 != tmp ) {
+      locked = false;
+      res = tmp;
+      error_msg = strerror(res);
+      if ( res > 0 ) {
+         res = -res;
+      }
+# if DBG_DYN_LOAD
+      fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", error_msg, res);
+# endif // DBG_DYN_LOAD
+      // yes, continue anyway.
+   }
+
+   if ( NULL != p->entry_point_fn ) {
+      // Already open or not initialized..
+      res = 1;
+      error_msg = "Already / not Init";
+      goto ERROR;
+   }
+
+   tmp = lt_dladvise_init(&advise);
+   if ( 0 != tmp ) {
+      res = tmp;
+      if ( res > 0 ) {
+         res = -res;
+      }
+      error_msg = lt_dlerror();
+      if ( NULL == error_msg ) {
+         error_msg = "lt_dladvise_init()";
+      }
+      goto ERROR;
+   }
+   advised = true;
+
+   tmp = lt_dladvise_global(&advise);
+   if ( 0 != tmp ) {
+      res = tmp;
+      if ( res > 0 ) {
+         res = -res;
+      }
+      error_msg = lt_dlerror();
+      if ( NULL == error_msg ) {
+         error_msg = "lt_dladvise_global()";
+      }
+      goto ERROR;
+   }
+
+# if DBG_DYN_LOAD
+   fprintf(stderr, "[DBG_DYN_LOAD] Trying '%s' ", filename);
+# endif // DBG_DYN_LOAD
+
+   p->handle = lt_dlopenadvise(filename, advise);
+   if ( NULL == p->handle ) {
+      res = 2;
+      error_msg = lt_dlerror();
+      if ( NULL == error_msg ) {
+         error_msg = "lt_dlopenadvise()";
+      }
+      goto ERROR;
+   }
+
+# if DBG_DYN_LOAD
+   fprintf(stderr, "[OK].\nLooking up module entry : '%s' ", p->entry_point_name);
+# endif // DBG_DYN_LOAD
+
+   p->entry_point_fn = (AALSvcEntryPoint) lt_dlsym(p->handle, p->entry_point_name);
+
+   if ( NULL == p->entry_point_fn ) {
+      res = 3;
+      error_msg = lt_dlerror();
+      if ( NULL == error_msg ) {
+         error_msg = "lt_dlsym()";
+      }
+      goto ERROR;
+   }
+# if DBG_DYN_LOAD
+   else {
+      fprintf(stderr, "[OK].\n");
+   }
+# endif // DBG_DYN_LOAD
+
+   goto CLEANUP;
+
+ERROR:
+# if DBG_DYN_LOAD
+   fprintf(stderr, "[DBG_DYN_LOAD] Error : %s (%d)\n", error_msg, res);
+# endif // DBG_DYN_LOAD
+
+CLEANUP:
+   if ( advised ) {
+      tmp = lt_dladvise_destroy(&advise);
+      if ( 0 != tmp ) {
+         res = tmp;
+         if ( res > 0 ) {
+            res = -res;
+         }
+# if DBG_DYN_LOAD
+         error_msg = lt_dlerror();
+         if ( NULL == error_msg ) {
+            error_msg = "lt_dladvise_destroy()";
+         }
+         fprintf(stderr, "[DBG_DYN_LOAD] %s failed (%d).\n", error_msg, res);
+# endif // DBG_DYN_LOAD
+      }
+   }
+
+   if ( locked ) {
+      tmp = aalsdk_ltdl_unlock();
+      if ( 0 != tmp ) {
+         res = tmp;
+         error_msg = strerror(res);
+         if ( res > 0 ) {
+            res = -res;
+         }
+# if DBG_DYN_LOAD
+         fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_unlock() failed : %s (%d).\n", error_msg, res);
+# endif // DBG_DYN_LOAD
+      }
+   }
+
+   return res;
+}
 #endif // HAVE_LTDL_H
 
 #if defined ( __AAL_WINDOWS__ )                                               
@@ -112,25 +247,25 @@ bt32bitInt OSServiceModuleOpen(OSServiceModule *p)
    bt32bitInt res = 0;
 #if defined( __AAL_WINDOWS__ )
 
+   const char *error_msg = NULL;
+
    if ( NULL != p->entry_point_fn ) {
       // Already open or not initialized..
       res = 1;
-      p->error_msg = "Already / not Init";
 # if DBG_DYN_LOAD
-      fprintf(stderr, "[DBG_DYN_LOAD] Error : %s (%d)\n", p->error_msg, res);
+      error_msg = "Already / not Init";
+      fprintf(stderr, "[DBG_DYN_LOAD] Error : %s (%d)\n", error_msg, res);
 # endif // DBG_DYN_LOAD
       return res;
    }
-
-   p->error_msg = NULL;
 
    p->handle = LoadLibrary(p->full_name);
 
    if ( NULL == p->handle ) {
       res = 2;
-      p->error_msg = "LoadLibrary()";
 # if DBG_DYN_LOAD
-      fprintf(stderr, "[DBG_DYN_LOAD] Error : %s (%d)\n", p->error_msg, res);
+      error_msg = "LoadLibrary()";
+      fprintf(stderr, "[DBG_DYN_LOAD] Error : %s (%d)\n", error_msg, res);
 # endif // DBG_DYN_LOAD
       return res;
    }
@@ -143,9 +278,9 @@ bt32bitInt OSServiceModuleOpen(OSServiceModule *p)
 
    if ( NULL == p->entry_point_fn ) {
       res = 3;
-      p->error_msg = "GetProcAddress()";
 # if DBG_DYN_LOAD
-      fprintf(stderr, "[Fail] : %s (%d)\n", p->error_msg, res);
+      error_msg = "GetProcAddress()";
+      fprintf(stderr, "[Fail] : %s (%d)\n", error_msg, res);
 # endif // DBG_DYN_LOAD
    }
 # if DBG_DYN_LOAD
@@ -156,135 +291,20 @@ bt32bitInt OSServiceModuleOpen(OSServiceModule *p)
 
 #elif HAVE_LTDL_H
 
-   lt_dladvise advise;
-   bt32bitInt  tmp;
-   btByte      buf[AAL_SVC_MOD_FULL_NAME_MAX + 256];
-
-   btBool      locked  = true;
-   btBool      advised = false;
-
-   tmp = aalsdk_ltdl_lock();
-   if ( 0 != tmp ) {
-      locked = false;
-      res = tmp;
-      p->error_msg = strerror(res);
-# if DBG_DYN_LOAD
-      fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", p->error_msg, res);
-# endif // DBG_DYN_LOAD
-      // yes, continue anyway.
-   }
-
-   if ( NULL != p->entry_point_fn ) {
-      // Already open or not initialized..
-      res = 1;
-      p->error_msg = "Already / not Init";
-      goto ERROR;
-   }
-
-   p->error_msg = NULL;
-
-   tmp = lt_dladvise_init(&advise);
-   if ( 0 != tmp ) {
-      res = tmp;
-      p->error_msg = lt_dlerror();
-      if ( NULL == p->error_msg ) {
-         p->error_msg = "lt_dladvise_init()";
-      }
-      goto ERROR;
-   }
-   advised = true;
-
-   tmp = lt_dladvise_global(&advise);
-   if ( 0 != tmp ) {
-      res = tmp;
-      p->error_msg = lt_dlerror();
-      if ( NULL == p->error_msg ) {
-         p->error_msg = "lt_dladvise_global()";
-      }
-      goto ERROR;
-   }
-
-# if DBG_DYN_LOAD
-   fprintf(stderr, "[DBG_DYN_LOAD] Trying '%s' ", p->full_name);
-# endif // DBG_DYN_LOAD
-
    // First, try the less-restrictive unqualified path (ie, module name only).
+   res = aalsdk_ltdl_open(p, p->full_name);
 
-   p->handle = lt_dlopenadvise(p->full_name, advise);
-
-   if ( NULL == p->handle ) {
+   if ( 2 == res ) {
       // Now try the fully-qualified installation path for the lib.
+      btByte buf[AAL_SVC_MOD_FULL_NAME_MAX + 256];
+
       snprintf(buf, sizeof(buf), "%s/%s", LIBDIR, p->full_name);
 
 # if DBG_DYN_LOAD
-      fprintf(stderr, " [Fail]. Trying '%s' ", buf);
+      fprintf(stderr, "  >> ");
 # endif // DBG_DYN_LOAD
 
-      p->handle = lt_dlopenadvise(buf, advise);
-
-      if ( NULL == p->handle ) {
-         res = 2;
-         p->error_msg = lt_dlerror();
-         if ( NULL == p->error_msg ) {
-            p->error_msg = "lt_dlopenadvise()";
-         }
-         goto ERROR;
-      }
-   }
-
-# if DBG_DYN_LOAD
-   fprintf(stderr, "[OK]. Looking up module entry : '%s' ", p->entry_point_name);
-# endif // DBG_DYN_LOAD
-
-   p->entry_point_fn = (AALSvcEntryPoint) lt_dlsym(p->handle, p->entry_point_name);
-
-   if ( NULL == p->entry_point_fn ) {
-      res = 3;
-      p->error_msg = lt_dlerror();
-      if ( NULL == p->error_msg ) {
-         p->error_msg = "lt_dlsym()";
-      }
-      goto ERROR;
-   }
-# if DBG_DYN_LOAD
-   else {
-      fprintf(stderr, "[OK].\n");
-   }
-# endif // DBG_DYN_LOAD
-
-   goto CLEANUP;
-
-ERROR:
-
-# if DBG_DYN_LOAD
-   fprintf(stderr, " [Fail] : %s (%d)", p->error_msg, res);
-# endif // DBG_DYN_LOAD
-
-CLEANUP:
-
-   if ( advised ) {
-      tmp = lt_dladvise_destroy(&advise);
-      if ( 0 != tmp ) {
-         res = tmp;
-         p->error_msg = lt_dlerror();
-         if ( NULL == p->error_msg ) {
-            p->error_msg = "lt_dladvise_destroy()";
-         }
-# if DBG_DYN_LOAD
-         fprintf(stderr, "[DBG_DYN_LOAD] %s failed (%d).\n", p->error_msg, res);
-# endif // DBG_DYN_LOAD
-      }
-   }
-
-   if ( locked ) {
-      tmp = aalsdk_ltdl_unlock();
-      if ( 0 != tmp ) {
-         res = tmp;
-         p->error_msg = strerror(res);
-# if DBG_DYN_LOAD
-         fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_unlock() failed : %s (%d).\n", p->error_msg, res);
-# endif // DBG_DYN_LOAD
-      }
+      res = aalsdk_ltdl_open(p, buf);
    }
 
 #endif // OS
@@ -293,17 +313,17 @@ CLEANUP:
 
 bt32bitInt OSServiceModuleClose(OSServiceModule *p)
 {
-   bt32bitInt res = 0;
+   bt32bitInt  res       = 0;
+   const char *error_msg = NULL;
 #if defined( __AAL_WINDOWS__ )
 
-   p->error_msg = NULL;
    if ( NULL != p->handle ) {
 
       if ( !FreeLibrary(p->handle) ) {
          res = 1;
-         p->error_msg = "FreeLibrary()";
 # if DBG_DYN_LOAD
-         fprintf(stderr, "[DBG_DYN_LOAD] Error : %s ", p->error_msg);
+         error_msg = "FreeLibrary()";
+         fprintf(stderr, "[DBG_DYN_LOAD] Error : %s ", error_msg);
 # endif // DBG_DYN_LOAD
       }
 
@@ -318,14 +338,15 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
    if ( 0 != tmp ) {
       locked = false;
       res = tmp;
-      p->error_msg = strerror(res);
+      error_msg = strerror(res);
+      if ( res > 0 ) {
+         res = -res;
+      }
 # if DBG_DYN_LOAD
-      fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", p->error_msg, res);
+      fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_lock() failed : %s (%d).\n", error_msg, res);
 # endif // DBG_DYN_LOAD
       // yes, continue anyway.
    }
-
-   p->error_msg = NULL;
 
    if ( NULL != p->handle ) {
 
@@ -334,12 +355,15 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
 
       if ( 0 != tmp ) {
          res = tmp;
-         p->error_msg = lt_dlerror();
-         if ( NULL == p->error_msg ) {
-            p->error_msg = "lt_dlclose()";
+         if ( res > 0 ) {
+            res = -res;
          }
 # if DBG_DYN_LOAD
-         fprintf(stderr, "[DBG_DYN_LOAD] %s failed (%d).\n", p->error_msg, res);
+         error_msg = lt_dlerror();
+         if ( NULL == error_msg ) {
+            error_msg = "lt_dlclose()";
+         }
+         fprintf(stderr, "[DBG_DYN_LOAD] %s failed (%d).\n", error_msg, res);
 # endif // DBG_DYN_LOAD
       }
    }
@@ -348,9 +372,12 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
       tmp = aalsdk_ltdl_unlock();
       if ( 0 != tmp ) {
          res = tmp;
-         p->error_msg = strerror(res);
+         error_msg = strerror(res);
+         if ( res > 0 ) {
+            res = -res;
+         }
 # if DBG_DYN_LOAD
-         fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_unlock() failed : %s (%d).\n", p->error_msg, res);
+         fprintf(stderr, "[DBG_DYN_LOAD] aalsdk_ltdl_unlock() failed : %s (%d).\n", error_msg, res);
 # endif // DBG_DYN_LOAD
       }
    }
@@ -360,5 +387,4 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
 }
 
 /// @}
-
 

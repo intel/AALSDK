@@ -69,8 +69,6 @@ DynLinkLibrary::DynLinkLibrary() {/*empty*/}
 DynLinkLibrary::DynLinkLibrary(const DynLinkLibrary & ) {/*empty*/}
 DynLinkLibrary & DynLinkLibrary::operator=(const DynLinkLibrary & ) { return *this; }
 
-#define DBG_DYN_LOAD 0
-
 //=============================================================================
 // Name:  DynLinkLibrary
 // Description: Constructor

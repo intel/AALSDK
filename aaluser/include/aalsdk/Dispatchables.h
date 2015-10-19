@@ -251,24 +251,31 @@ void operator() ()
 {
    switch ( m_type ) {
       case CreateorGetProxyFailed: {
+         ASSERT(NULL != m_pEvent);
          m_pobject->runtimeCreateOrGetProxyFailed(*m_pEvent);
-      }break;
+         delete m_pEvent;
+      } break;
       case Started : {
          m_pobject->runtimeStarted(m_prt, m_rConfigParms);
       } break;
       case StartFailed : {
+         ASSERT(NULL != m_pEvent);
          m_pobject->runtimeStartFailed(*m_pEvent);
+         delete m_pEvent;
       } break;
       case ServiceAllocated : {
          m_pobject->runtimeAllocateServiceSucceeded(m_so, m_rTranID);
       } break;
       case AllocateFailed : {
+         ASSERT(NULL != m_pEvent);
          m_pobject->runtimeAllocateServiceFailed(*m_pEvent);
+         delete m_pEvent;
       } break;
       case Stopped : {
          m_pobject->runtimeStopped(m_prt);
       } break;
       case Event : {
+         ASSERT(NULL != m_pEvent);
          m_pobject->runtimeEvent(*m_pEvent);
          // Delete the event object as it didn't render itself
          delete m_pEvent;

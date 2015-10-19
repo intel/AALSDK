@@ -4,8 +4,27 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
+#include "swvalsvcmod.h"
+
 #include <aalsdk/aas/ServiceHost.h>
+#include <aalsdk/Dispatchables.h>
 #include <_ServiceBroker.h>
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Test_ServiceBroker : public _ServiceBroker
+{
+public:
+   Test_ServiceBroker(AALServiceModule *pSvcMod,
+                      IRuntime         *pRuntime,
+                      IAALTransport    *pTransport,
+                      IAALMarshaller   *pMarshaller,
+                      IAALUnMarshaller *pUnMarshaller) :
+      _ServiceBroker(pSvcMod, pRuntime, pTransport, pMarshaller, pUnMarshaller)
+   {}
+
+   ServiceHost * Host(std::string const &sName) { return findServiceHost(sName); }
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -40,11 +59,11 @@ public:
 
       m_Runtime.getRuntimeProxyReturnsThisValue(&m_Runtime);
 
-      m_pSvcBroker = new(std::nothrow) _ServiceBroker(&m_SvcModule,
-                                                      &m_Runtime,
-                                                      m_pTransport,
-                                                      m_pMarshaller,
-                                                      m_pUnMarshaller);
+      m_pSvcBroker = new(std::nothrow) Test_ServiceBroker(&m_SvcModule,
+                                                          &m_Runtime,
+                                                          m_pTransport,
+                                                          m_pMarshaller,
+                                                          m_pUnMarshaller);
       ASSERT_NONNULL(m_pSvcBroker);
    }
    virtual void TearDown()
@@ -54,13 +73,13 @@ public:
       }
    }
 
-   _ServiceBroker  *m_pSvcBroker;
-   Transport       *m_pTransport;
-   Marsh           *m_pMarshaller;
-   UnMarsh         *m_pUnMarshaller;
-   AALServiceModule m_SvcModule;
-   SvcsFact         m_SvcsFactory;
-   RT               m_Runtime;
+   Test_ServiceBroker *m_pSvcBroker;
+   Transport          *m_pTransport;
+   Marsh              *m_pMarshaller;
+   UnMarsh            *m_pUnMarshaller;
+   AALServiceModule    m_SvcModule;
+   SvcsFact            m_SvcsFactory;
+   RT                  m_Runtime;
 };
 
 typedef ServiceBroker_f<EmptyISvcsFact, EmptyIRuntime> ServiceBroker_f_0;
@@ -77,15 +96,30 @@ protected:
    }
 };
 
+class ServiceBroker_f_2 : public ServiceBroker_f<CallTrackingISvcsFact, CallTrackingIRuntime>
+{
+protected:
+   ServiceBroker_f_2() {}
+
+   virtual void TearDown()
+   {
+      m_SvcsFactory.ClearLog();
+      m_Runtime.ClearLog();
+      ServiceBroker_f<CallTrackingISvcsFact, CallTrackingIRuntime>::TearDown();
+   }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 TEST_F(ServiceBroker_f_0, aal0709)
 {
-   // When successful, _ServiceBroker::_ServiceBroker() sets a subclass of
+   // When successful, _ServiceBroker::_ServiceBroker() sets an interface of
    // iidServiceBroker / IServiceBroker *. _ServiceBroker::IsOK() returns true, indicating success.
 
+#if DEPRECATED
    EXPECT_EQ(iidServiceBroker, m_pSvcBroker->SubClassID());
    EXPECT_EQ(dynamic_cast<IServiceBroker *>(m_pSvcBroker), m_pSvcBroker->ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(m_pSvcBroker->Has(iidServiceBroker));
    EXPECT_EQ(dynamic_cast<IServiceBroker *>(m_pSvcBroker), m_pSvcBroker->Interface(iidServiceBroker));
@@ -95,15 +129,18 @@ TEST_F(ServiceBroker_f_0, aal0709)
 
 TEST_F(ServiceBroker_f_1, aal0710)
 {
-   // _ServiceBroker::init() causes an ObjectCreatedEvent to be dispatched to the associated
-   // runtime proxy object.
+   // _ServiceBroker::init() call IServiceBase::initComplete(), passing the given TransactionID.
+   // As a result, IServiceModuleCallback::ServiceInitialized() is called, which dispatches a
+   // ServiceClientCallback(ServiceClientCallback::Allocated ...) to the IServiceClient.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
+   EmptyIServiceClient SvcClient;
+   NamedValueSet nvs;
    TransactionID tid;
    tid.ID(4);
 
-   m_pSvcBroker->init(tid);
+   EXPECT_TRUE(m_pSvcBroker->init(&SvcClient, nvs, tid));
 
    EXPECT_EQ(2, m_Runtime.LogEntries());
    EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
@@ -114,16 +151,20 @@ TEST_F(ServiceBroker_f_1, aal0710)
    m_Runtime.Entry(1).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
-   ObjectCreatedEvent *pEvent = reinterpret_cast<ObjectCreatedEvent *>(x);
-   EXPECT_TRUE(pEvent->IsOK());
-   delete pEvent;
+   IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
+
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
+
+   //delete pCB;
+   pCB->operator() ();
 }
 
 TEST_F(ServiceBroker_f_1, aal0711)
 {
    // When the pServiceClientBase parameter to _ServiceBroker::allocService() does not
-   // implement iidServiceClient, allocService() dispatches an ObjectCreatedExceptionEvent
-   // and returns immediately.
+   // implement iidServiceClient, allocService() dispatches a
+   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -148,18 +189,18 @@ TEST_F(ServiceBroker_f_1, aal0711)
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
 
-   ObjectCreatedExceptionEvent *pEvent = dynamic_cast<ObjectCreatedExceptionEvent *>(pDisp);
-   EXPECT_TRUE(pEvent->IsOK());
-   EXPECT_EQ(4, pEvent->TranID().ID());
-   delete pEvent;
+   //delete pCB;
+   pCB->operator() ();
 }
 
 TEST_F(ServiceBroker_f_1, aal0712)
 {
    // When the NamedValueSet manifest passed to _ServiceBroker::allocService() has no
-   // AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED key, allocService() dispatches an
-   // ObjectCreatedExceptionEvent and returns immediately.
+   // AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED key, allocService() dispatches a
+   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -184,19 +225,20 @@ TEST_F(ServiceBroker_f_1, aal0712)
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
 
-   ObjectCreatedExceptionEvent *pEvent = dynamic_cast<ObjectCreatedExceptionEvent *>(pDisp);
-   EXPECT_TRUE(pEvent->IsOK());
-   EXPECT_EQ(5, pEvent->TranID().ID());
-   delete pEvent;
+//   delete pCB;
+
+   pCB->operator() ();
 }
 
 TEST_F(ServiceBroker_f_1, aal0713)
 {
    // When the NamedValueSet manifest passed to _ServiceBroker::allocService() has an
    // AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED key, but the associated config record has
-   // no AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME key, allocService() dispatches an
-   // ObjectCreatedExceptionEvent and returns immediately.
+   // no AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME key, allocService() dispatches a
+   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -226,10 +268,11 @@ TEST_F(ServiceBroker_f_1, aal0713)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ObjectCreatedExceptionEvent *pEvent = dynamic_cast<ObjectCreatedExceptionEvent *>(pDisp);
-   EXPECT_TRUE(pEvent->IsOK());
-   EXPECT_EQ(6, pEvent->TranID().ID());
-   delete pEvent;
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
+
+   //delete pCB;
+   pCB->operator() ();
 }
 
 TEST_F(ServiceBroker_f_1, aal0714)
@@ -237,7 +280,7 @@ TEST_F(ServiceBroker_f_1, aal0714)
    // When the required manifest, complete with config record and service name are given,
    // _ServiceBroker::allocService() creates a ServiceHost for the given service. If the
    // given service could not be loaded, allocService() deletes the ServiceHost, then dispatches
-   // an ObjectCreatedExceptionEvent and returns immediately.
+   // a ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -269,32 +312,67 @@ TEST_F(ServiceBroker_f_1, aal0714)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ObjectCreatedExceptionEvent *pEvent = dynamic_cast<ObjectCreatedExceptionEvent *>(pDisp);
-   EXPECT_TRUE(pEvent->IsOK());
-   EXPECT_EQ(7, pEvent->TranID().ID());
-   delete pEvent;
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
+
+   //delete pCB;
+   pCB->operator() ();
 }
 
-TEST_F(ServiceBroker_f_1, aal0715)
+TEST_F(ServiceBroker_f_2, aal0715)
 {
    // When the required manifest, complete with config record and service name are given,
    // _ServiceBroker::allocService() creates a ServiceHost for the given service. When the
    // given service is loaded successfully, allocService() maps the service name to its
    // service host object, and invokes ServiceHost::InstantiateService() on the object.
 
+   class aal0715SvcClient : public ISwvalSvcClient,
+                            public CAASBase
+   {
+   public:
+      aal0715SvcClient()
+      {
+         if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
+            m_bIsOK = false;
+            return;
+         }
+         if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+            m_bIsOK = false;
+            return;
+         }
+      }
+
+      virtual void DidSomething(const AAL::TransactionID & , int ) {}
+
+      // <IServiceClient>
+      virtual void      serviceAllocated(AAL::IBase               *pServiceBase,
+                                         AAL::TransactionID const &rTranID = AAL::TransactionID())
+      {
+         ASSERT_NONNULL(pServiceBase);
+         delete pServiceBase;
+      }
+      virtual void serviceAllocateFailed(const AAL::IEvent &rEvent)                                {}
+      virtual void       serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID()) {}
+      virtual void  serviceReleaseFailed(const AAL::IEvent &rEvent)                                {}
+      virtual void          serviceEvent(const AAL::IEvent &rEvent)                                {}
+      // </IServiceClient>
+   };
+
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
-   EmptyIRuntimeClient        rtc;
-   CallTrackingIServiceClient SvcClient;
+   EmptyIRuntimeClient rtc;
+   aal0715SvcClient    SvcClient;
 
-   NamedValueSet              manifest;
-   NamedValueSet              configrecord;
+   NamedValueSet       manifest;
+   NamedValueSet       configrecord;
 
    configrecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalsvcmod");
    manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrecord);
 
-   TransactionID              tid;
+   TransactionID       tid;
    tid.ID(8);
+
+   m_Runtime.getRuntimeClientReturnsThisValue(&rtc);
 
    m_pSvcBroker->allocService(&m_Runtime,
                               &rtc,
@@ -302,9 +380,27 @@ TEST_F(ServiceBroker_f_1, aal0715)
                               manifest,
                               tid);
 
-   EXPECT_EQ(4, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy",  m_Runtime.Entry(0).MethodName());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy",  m_Runtime.Entry(1).MethodName());
-   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(2).MethodName());
-   EXPECT_STREQ("IRuntime::allocService",     m_Runtime.Entry(3).MethodName());
+   EXPECT_EQ(4, m_Runtime.LogEntries()) << m_Runtime;
+/*
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::getRuntimeClient()
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(3).MethodName());
+
+   btObjectType x = NULL;
+   m_Runtime.Entry(3).GetParam("pDisp", &x);
+   ASSERT_NONNULL(x);
+
+   IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
+   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ASSERT_NONNULL(pCB);
+
+   //delete pCB;
+   pCB->operator() ();
+
+   ServiceHost *pSvcHost = m_pSvcBroker->Host("libswvalsvcmod");
+   ASSERT_NONNULL(pSvcHost);
+   delete pSvcHost;
 }

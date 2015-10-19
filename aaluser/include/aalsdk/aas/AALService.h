@@ -145,28 +145,28 @@ public:
    virtual ~IServiceBase() {}
 
    // Called once when the Service is done initializing.
-   virtual btBool initComplete(TransactionID const &rtid)      = 0;
-   virtual btBool initFailed(IEvent const *ptheEvent)          = 0;
+   virtual btBool                     initComplete(TransactionID const &rtid) = 0;
+   virtual btBool                       initFailed(IEvent const *ptheEvent)   = 0;
 
    // Final step for release
-   virtual btBool ReleaseComplete()                                    = 0;
+   virtual btBool                  ReleaseComplete()                          = 0;
 
-   virtual NamedValueSet const &OptArgs() const                = 0;
+   virtual NamedValueSet const &           OptArgs() const                    = 0;
 
    /// Accessor to pointer to the Service's Client's Interface
-    virtual IServiceClient *getServiceClient() const           = 0;
+   virtual IServiceClient *       getServiceClient() const                    = 0;
 
-    /// Accessor to pointer to the Service's Client's IBase Interface
-    virtual IBase          *getServiceClientBase() const       = 0;
+   /// Accessor to pointer to the Service's Client's IBase Interface
+   virtual IBase *            getServiceClientBase() const                    = 0;
 
-    /// Accessor to pointer to the Runtime to be used in ObjectCreated
-    virtual IRuntime *getRuntime() const                       = 0;
+   /// Accessor to pointer to the Runtime to be used in ObjectCreated
+   virtual IRuntime *                   getRuntime() const                    = 0;
 
-    /// Accessor to pointer to the Runtime Client
-    virtual IRuntimeClient * getRuntimeClient() const          = 0;
+   /// Accessor to pointer to the Runtime Client
+   virtual IRuntimeClient *       getRuntimeClient() const                    = 0;
 
-    /// Accessor to this Services Service Module
-    virtual AALServiceModule     * getAALServiceModule() const = 0;
+   /// Accessor to this Services Service Module
+   virtual AALServiceModule *  getAALServiceModule() const                    = 0;
 };
 
 //=============================================================================
@@ -215,9 +215,9 @@ public:
    ///
    /// This function is called by the factory AFTER _init(), insuring
    /// that base class initialization has occurred by the time this is called.
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid) = 0;
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid) = 0;
 
 
    // @param[in]  pclient       Interface of client of service.
@@ -227,12 +227,12 @@ public:
    //  traverse the inheritance hierarchy during initialization.
    //
    //  Client is using callback interface method of signaling
-   virtual btBool _init( IBase               *pclientBase,
-                         TransactionID const &rtid,
-                         NamedValueSet const &optArgs,
-                         CAALEvent           *pcmpltEvent = NULL);
+   virtual btBool _init(IBase               *pclientBase,
+                        TransactionID const &rtid,
+                        NamedValueSet const &optArgs,
+                        CAALEvent           *pcmpltEvent = NULL);
 
-   // <IAALService> - Empty defaults
+   // <IAALService>
 
    /// @brief     Called to release Service and free its resources
    ///
@@ -247,32 +247,31 @@ public:
    // <IServiceBase>
 
    // Called once when the Service is done initializing.
-   btBool initComplete(TransactionID const &rtid);
-   btBool initFailed(IEvent const *ptheEvent);
+   virtual btBool                    initComplete(TransactionID const &rtid);
+   virtual btBool                      initFailed(IEvent const        *ptheEvent);
 
    // Final Release.  This should only be called by the framework or in the case of an unrecoverable error.
    //   This function destroys the Service object.
-   virtual btBool ReleaseComplete();
+   virtual btBool                 ReleaseComplete();
 
    /// Accessor to optional arguments passed during allocateService
-   ///
-   NamedValueSet const &OptArgs() const;
+   virtual NamedValueSet const &          OptArgs() const;
 
    /// Accessor to pointer to the Service's Client's Interface
-   IServiceClient *getServiceClient() const;
+   virtual IServiceClient *      getServiceClient() const;
 
    /// Accessor to pointer to the Service's Client's IBase Interface
-   IBase          *getServiceClientBase() const;
+   virtual IBase *           getServiceClientBase() const;
 
    /// Accessor to pointer to the Runtime to be used in ObjectCreated
    ///
-   IRuntime * getRuntime() const;
+   virtual IRuntime *                  getRuntime() const;
 
    /// Accessor to pointer to the Runtime Client
-   IRuntimeClient * getRuntimeClient() const;
+   virtual IRuntimeClient *      getRuntimeClient() const;
 
    /// Accessor to this Services Service Module
-   AALServiceModule     * getAALServiceModule()  const;
+   virtual AALServiceModule * getAALServiceModule() const;
 
    // </IServiceBase>
 
@@ -364,15 +363,8 @@ public:
    /// @param[in] rEvent will be an event that can be parsed to determine
    ///               what occurred.
    virtual void runtimeEvent(const IEvent & ) {/*to be implemented by the service*/}
+
    // </IRuntimeClient>
-
-
-
-
-#if DEPRECATED
-   //@brief  IServiceClient - For backward compatibility with < version 4.0
-   void messageHandler(const IEvent &rEvent);
-#endif // DEPRECATED
 
    //=============================================================================
    // Name: sendmsg

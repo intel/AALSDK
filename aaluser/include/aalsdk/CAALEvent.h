@@ -120,14 +120,13 @@ public:
    // <IEvent>
    virtual btGenericInterface    Interface(btIID ID)        const;
    virtual btBool                      Has(btIID ID)        const;
-   virtual btGenericInterface    ISubClass()                const { return m_ISubClass;  }
-   virtual btIID                SubClassID()                const { return m_SubClassID; }
+   virtual btIID                SubClassID()                const;
    virtual btBool             operator != (const IEvent & ) const;
    virtual btBool             operator == (const IEvent & ) const; ///< Equality is defined here as instance exact.
-   virtual IBase &                  Object()                const { return *m_pObject;   }
-   virtual IBase *                 pObject()                const { return  m_pObject;   }
-   virtual btBool                     IsOK()                const { return  m_bIsOK;     }
-   virtual btApplicationContext    Context()                const { return  m_Context;   } // Re-enabled HM 20090225, see file header comments
+   virtual IBase &                  Object()                const;
+   virtual IBase *                 pObject()                const;
+   virtual btBool                     IsOK()                const;
+   virtual btApplicationContext    Context()                const;
    virtual btApplicationContext SetContext(btApplicationContext Ctx);
    // </IEvent>
 
@@ -181,7 +180,6 @@ protected:
    IServiceClient       *m_pServiceClient;
    IRuntimeClient       *m_pRuntimeClient;
    btEventHandler        m_pEventHandler;
-   btGenericInterface    m_ISubClass;
    btIID                 m_SubClassID;
    TransactionID         m_TranID;  // Only accessible outside from TransactionEvents
 
@@ -246,10 +244,10 @@ public:
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
    /// @param[in]  pHandler         For specific routing
-   CExceptionEvent(IBase           *pObject,
-                   btID             ExceptionNumber,
-                   btID             Reason,
-                   btcString        Description);
+   CExceptionEvent(IBase    *pObject,
+                   btID      ExceptionNumber,
+                   btID      Reason,
+                   btcString Description);
    /// CExceptionEvent Constructor.
    ///
    /// @param[in]  pObject          An IBase associated with this event.
@@ -258,15 +256,15 @@ public:
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
    /// @param[in]  pHandler         For specific routing
-   CExceptionEvent(IBase           *pObject,
-                   btIID            SubClassID,
-                   btID             ExceptionNumber,
-                   btID             Reason,
-                   btcString        Description);
+   CExceptionEvent(IBase    *pObject,
+                   btIID     SubClassID,
+                   btID      ExceptionNumber,
+                   btID      Reason,
+                   btcString Description);
 
    // <IExceptionEvent>
-   btID ExceptionNumber() const { return m_ExceptionNumber; }
-   btID          Reason() const { return m_Reason;          }
+   btID ExceptionNumber() const;
+   btID          Reason() const;
    btString Description() const;
    // </IExceptionEvent>
 
@@ -324,13 +322,13 @@ public:
                               btcString            Description);
 
    // <IExceptionEvent>
-   btID ExceptionNumber() const { return m_ExceptionNumber; }
-   btID          Reason() const { return m_Reason;          }
+   btID ExceptionNumber() const;
+   btID          Reason() const;
    btString Description() const;
    // </IExceptionEvent>
 
    // <ITransactionEvent>
-   TransactionID TranID() const { return m_TranID; }
+   TransactionID TranID() const;
    void SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 

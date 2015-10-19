@@ -98,7 +98,6 @@ CAASBase::CAASBase(btApplicationContext Context) :
       return;
    }
 
-   // IBase is the default native subclass interface unless overridden by a subclass
    if ( SetInterface(iidBase, dynamic_cast<IBase *>(this)) != EObjOK ) {
       return;
    }
@@ -174,12 +173,10 @@ btBool CAASBase::operator != (IBase const &rOther) const
 // Comments: checks to see if each interface in one object is implemented
 //           in the other.
 //
-// Three criteria must be met for CAASBase equality:
+// Two criteria must be met for CAASBase equality:
 //  1) Both objects must implement iidCBase (ie, both are conceptually CAASBase
 //     instances).
-//  2) Both objects must implement the same SubClass (ie, both conceptually have
-//     the same default interface).
-//  3) Both objects must implement a) the same number and b) the same types of
+//  2) Both objects must implement a) the same number and b) the same types of
 //     other interfaces.
 //=============================================================================
 btBool CAASBase::operator == (IBase const &rOther) const
@@ -196,7 +193,7 @@ btBool CAASBase::operator == (IBase const &rOther) const
       AutoLock(pOther);
 
       if ( m_InterfaceMap.size() != pOther->m_InterfaceMap.size() ) {
-         // 3a) fails
+         // 2a) fails
          return false;
       }
 
@@ -207,7 +204,7 @@ btBool CAASBase::operator == (IBase const &rOther) const
                l != m_InterfaceMap.end() ;
                   ++l, ++r ) {
          if ( (*l).first != (*r).first ) {
-            // 3b) fails
+            // 2b) fails
             return false;
          }
       }
@@ -215,6 +212,18 @@ btBool CAASBase::operator == (IBase const &rOther) const
 
    // objects are equal
    return true;
+}
+
+btBool CAASBase::IsOK() const
+{
+   AutoLock(this);
+   return m_bIsOK;
+}
+
+btApplicationContext CAASBase::Context() const
+{
+   AutoLock(this);
+   return m_Context;
 }
 
 void CAASBase::SetContext(btApplicationContext context)
@@ -266,18 +275,20 @@ EOBJECT CAASBase::ReplaceInterface(btIID              Interface,
 {
    AutoLock(this);
 
-   // Make sure there is not an implementation already.
-   if ( !Has(Interface) ) {
-      return EPObjNameNotFound;
+   // Make sure there is already an implementation.
+   IIDINTERFACE_ITR iter = m_InterfaceMap.find(Interface);
+   if ( m_InterfaceMap.end() == iter ) {
+      return EObjNameNotFound;
    }
-
 
    if ( NULL == pInterface ) {
-      m_InterfaceMap.erase(m_InterfaceMap.find(Interface));
-   }else{
-      //Add the interface
+      // Remove the entry for Interface.
+      m_InterfaceMap.erase(iter);
+   } else {
+      // Replace the existing Interface entry.
       m_InterfaceMap[Interface] = pInterface;
    }
+
    return EObjOK;
 }
 
@@ -296,13 +307,12 @@ CAALBase::CAALBase(btEventHandler       pEventHandler,
 {
    // Save the event handler
    if ( NULL == pEventHandler ) {
+      m_bIsOK = false;
       return;
    }
-   m_bIsOK = true;
 }
 
 CAALBase::CAALBase() {/*empty*/}
-CAALBase::~CAALBase() {}
 CAALBase::CAALBase(const CAALBase & ) {/*empty*/}
 CAALBase & CAALBase::operator=(const CAALBase & ) { return *this; }
 

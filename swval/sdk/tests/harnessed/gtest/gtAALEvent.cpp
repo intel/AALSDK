@@ -10,7 +10,6 @@ class CAALEvent_f : public AAL::IEvent,
 public:
    virtual btGenericInterface    Interface(btIID ID)           const { return m_pCAALEvent->Interface(ID);    }
    virtual btBool                      Has(btIID ID)           const { return m_pCAALEvent->Has(ID);          }
-   virtual btGenericInterface    ISubClass()                   const { return m_pCAALEvent->ISubClass();      }
    virtual btIID                SubClassID()                   const { return m_pCAALEvent->SubClassID();     }
    virtual btBool             operator != (const IEvent &rhs)  const { return m_pCAALEvent->operator !=(rhs); }
    virtual btBool             operator == (const IEvent &rhs)  const { return m_pCAALEvent->operator ==(rhs); }
@@ -108,8 +107,8 @@ void CAALEventProtected::EventHandler(IEvent const &e)
 
 TEST_F(CAALEvent_f_0, aal0622)
 {
-   // CAALEvent::CAALEvent(IBase *pObject) sets an interface pointer for iidCEvent, and sets a SubClass
-   // interface of iidEvent. When object initialization is successful, m_bIsOK is set to true. m_pObject
+   // CAALEvent::CAALEvent(IBase *pObject) sets an interface pointer for iidCEvent and
+   // iidEvent. When object initialization is successful, m_bIsOK is set to true. m_pObject
    // stores the input parameter for later retrieval by Object() and pObject().
 
    EXPECT_TRUE(Has(iidCEvent));
@@ -118,7 +117,9 @@ TEST_F(CAALEvent_f_0, aal0622)
    EXPECT_TRUE(Has(iidEvent));
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>( Interface(iidEvent) ));
 
+#if DEPRECATED
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+#endif // DEPRECATED
    EXPECT_EQ(iidEvent, SubClassID());
 
    EXPECT_TRUE(IsOK());
@@ -129,8 +130,8 @@ TEST_F(CAALEvent_f_0, aal0622)
 
 TEST_F(CAALEvent_f_0, aal0623)
 {
-   // CAALEvent::CAALEvent(IBase *pObject) with NULL input IBase pointer , sets an interface
-   // pointer for iidCEvent, and sets a SubClass interface of iidEvent. When object initialization
+   // CAALEvent::CAALEvent(IBase *pObject) with NULL input IBase pointer sets interface
+   // pointers for iidCEvent and iidEvent. When object initialization
    // is successful, m_bIsOK is set to true. m_pObject stores the NULL input parameter for later
    // retrieval by Object() and pObject().
 
@@ -142,7 +143,9 @@ TEST_F(CAALEvent_f_0, aal0623)
    EXPECT_TRUE(Has(iidEvent));
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>( Interface(iidEvent) ));
 
+#if DEPRECATED
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+#endif // DEPRECATED
    EXPECT_EQ(iidEvent, SubClassID());
 
    EXPECT_TRUE(IsOK());
@@ -152,8 +155,8 @@ TEST_F(CAALEvent_f_0, aal0623)
 
 TEST_F(CAALEvent_f_0, aal0624)
 {
-   // CAALEvent(IBase *pObject, btIID SubClassID) sets an interface pointer for iidCEvent,
-   // iidEvent and sets a SubClass interface of SubClassID. When object initialization is
+   // CAALEvent(IBase *pObject, btIID SubClassID) sets interface pointers for iidCEvent,
+   // iidEvent, and SubClassID. When object initialization is
    // successful, m_bIsOK is set to true. m_pObject stores the input parameter for later
    // retrieval by Object() and pObject().
 
@@ -166,7 +169,7 @@ TEST_F(CAALEvent_f_0, aal0624)
    EXPECT_TRUE(Has(iidEvent));
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>( Interface(iidEvent) ));
 
-   EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+   EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>( Interface(ID) ));
    EXPECT_EQ(ID, SubClassID());
    
    EXPECT_TRUE(IsOK());
@@ -180,7 +183,7 @@ TEST_F(CAALEvent_f_0, aal0625)
    // When the input parameter to CAALEvent(IBase *pObject, btIID SubClassID)
    // has a matching subclass interface ID, set SubClass interface returns EObjDuplicateName.
    // CAALEvent object doesn't has a subclass interface, m_bIsOK is set to false,
-   // m_SubClassID is 0 and m_ISubClass is NULL.   -
+   // m_SubClassID is 0.   -
 
    const btIID ID = iidCEvent; // interface conflict
 
@@ -192,7 +195,9 @@ TEST_F(CAALEvent_f_0, aal0625)
    EXPECT_TRUE(Has(iidEvent));
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>( Interface(iidEvent) ));
 
+#if DEPRECATED
    EXPECT_EQ(NULL, ISubClass());
+#endif // DEPRECATED
    EXPECT_EQ(0,   SubClassID());
 
    EXPECT_FALSE(IsOK());
@@ -310,8 +315,9 @@ TEST(CAALEventTest, aal0631)
 
 TEST_F(CAALEvent_f_0, aal0632)
 {
-   // When set a sub class interface pointer to a non-NULL subclass object ( CAALEvent ::SetSubClassInterface()),
-   // m_SubClassID stores subclass id and m_ISubClass stores interface pointer and returns EObjOK.
+   // when set a sub class interface pointer to a non-NULL subclass object (CAALEvent ::SetSubClassInterface()),
+   // m_SubClassID stores subclass id and an interface entry is made for the parameters in the
+   // interface map. The function returns EObjOK.
 
    const btIID ID = 988;
    const btGenericInterface Ifc = (btGenericInterface)99;
@@ -319,7 +325,9 @@ TEST_F(CAALEvent_f_0, aal0632)
 
    EXPECT_TRUE(Has(ID));
    EXPECT_EQ(ID, SubClassID());
+#if DEPRECATED
    EXPECT_EQ(Ifc, ISubClass());
+#endif // DEPRECATED
 }
 
 TEST_F(CAALEvent_f_0, aal0633)
@@ -337,12 +345,16 @@ TEST_F(CAALEvent_f_0, aal0634)
    // When try to set already implemented sub class interface,
    // CAALEvent::SetSubClassInterface() returns EObjDuplicateName.
 
+#if DEPRECATED
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+#endif // DEPRECATED
    EXPECT_EQ(iidEvent, SubClassID());
 
    EXPECT_EQ(EObjDuplicateName, SetSubClassInterface(iidEvent, (btGenericInterface)3));
 
+#if DEPRECATED
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+#endif // DEPRECATED
    EXPECT_EQ(iidEvent, SubClassID());
 
    const btIID              ID  = 988;
@@ -350,12 +362,16 @@ TEST_F(CAALEvent_f_0, aal0634)
 
    EXPECT_EQ(EObjOK, SetSubClassInterface(ID, Ifc));
 
+#if DEPRECATED
    EXPECT_EQ(Ifc, ISubClass());
+#endif // DEPRECATED
    EXPECT_EQ(ID, SubClassID());
 
    EXPECT_EQ(EObjDuplicateName, SetSubClassInterface(iidCEvent, (btGenericInterface)4));
 
+#if DEPRECATED
    EXPECT_EQ(Ifc, ISubClass());
+#endif // DEPRECATED
    EXPECT_EQ(ID, SubClassID());
 }
 
@@ -377,21 +393,27 @@ TEST_F(CAALEvent_f_0, aal0636)
    EXPECT_FALSE(Has(ID));
 }
 
+#if DEPRECATED
 TEST_F(CAALEvent_f_0, aal0637)
 {
    // ISubClass() returns the latest/ recent cached subclass pointer
    // which set by SetSubClassInterface().
 
+#if DEPRECATED
    EXPECT_EQ(dynamic_cast<IEvent *>(m_pCAALEvent), reinterpret_cast<IEvent *>(ISubClass()));
+#endif // DEPRECATED
    EXPECT_EQ(iidEvent, SubClassID());
 
    const btIID ID = 988;
    const btGenericInterface Ifc = (btGenericInterface)99;
    EXPECT_EQ(EObjOK, SetSubClassInterface(ID, Ifc));
 
+#if DEPRECATED
    EXPECT_EQ(Ifc, ISubClass());
+#endif // DEPRECATED
    EXPECT_EQ(ID, SubClassID());
 }
+#endif // DEPRECATED
 
 TEST_F(CAALEvent_f_0, aal0638)
 {
@@ -399,6 +421,12 @@ TEST_F(CAALEvent_f_0, aal0638)
    // set by CAALEvent::SetSubClassInterface()
 
    EXPECT_EQ(iidEvent, SubClassID());
+
+   const btIID ID = 988;
+   const btGenericInterface Ifc = (btGenericInterface)99;
+   EXPECT_EQ(EObjOK, SetSubClassInterface(ID, Ifc));
+
+   EXPECT_EQ(ID, SubClassID());
 }
 
 TEST(CAALEventTest, aal0639)
@@ -436,16 +464,15 @@ TEST(CAALEventTest, aal0640)
          m_IBase(b),
          m_SubClassIfc( reinterpret_cast<btGenericInterface>( dynamic_cast<IEvent *>(this) ) )
       {}
-      btGenericInterface    Interface(btIID Interface)   const { return NULL;     }
-      btBool                      Has(btIID Interface)   const { return false;    }
-      btGenericInterface    ISubClass()                  const { return m_SubClassIfc; }
-      btIID                SubClassID()                  const { return iidEvent; }
-      btBool             operator != (const IEvent &rhs) const { return true;     }
-      btBool             operator == (const IEvent &rhs) const { return false;    }
-      btBool                     IsOK()                  const { return true;     }
-      btApplicationContext    Context()                  const { return NULL;     }
-      IBase &                  Object()                  const { return m_IBase;  }
-      IBase *                 pObject()                  const { return &m_IBase; }
+      btGenericInterface    Interface(btIID Interface)   const  { return NULL;     }
+      btBool                      Has(btIID Interface)   const  { return false;    }
+      btIID                SubClassID()                  const  { return iidEvent; }
+      btBool             operator != (const IEvent &rhs) const  { return true;     }
+      btBool             operator == (const IEvent &rhs) const  { return false;    }
+      btBool                     IsOK()                  const  { return true;     }
+      btApplicationContext    Context()                  const  { return NULL;     }
+      IBase &                  Object()                  const  { return m_IBase;  }
+      IBase *                 pObject()                  const  { return &m_IBase; }
       btApplicationContext SetContext(btApplicationContext Ctx) { return NULL;     }
 
    protected:
@@ -596,7 +623,6 @@ TEST_F(CAALEvent_f_0, aal0647)
      aal0647Base() {}
      btGenericInterface Interface(btIID Interface) const  { return NULL;  }
      btBool Has(btIID Interface) const                    { return false; }
-     btGenericInterface ISubClass() const                 { return NULL;  }
      btIID SubClassID() const                             { return 0;     }
      btBool operator != (IBase const &rother) const       { return true;  }
      btBool operator == (IBase const &rother) const       { return false; }
@@ -777,7 +803,9 @@ TEST(CTransactionEventTest, aal0662)
    EXPECT_EQ(7, e.TranID().ID());
 
    EXPECT_EQ(iidTranEvent, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.IsOK());
 }
@@ -801,7 +829,9 @@ TEST(CTransactionEventTest, aal0663)
    EXPECT_EQ(7, e.TranID().ID());
 
    EXPECT_EQ(ID, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.Has(iidTranEvent));
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
@@ -1054,7 +1084,9 @@ TEST(CExceptionEventTest, aal0666)
    EXPECT_STREQ(Descr, e.Description());
 
    EXPECT_EQ(iidExEvent, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.IsOK());
 }
@@ -1083,7 +1115,9 @@ TEST(CExceptionEventTest, aal0667)
    EXPECT_STREQ(Descr, e.Description());
 
    EXPECT_EQ(ID, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.Has(iidExEvent));
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionEvent *>(&e) ), e.Interface(iidExEvent));
@@ -1309,7 +1343,9 @@ TEST(CExceptionTransactionEventTest, aal0669)
    EXPECT_EQ(105, e.TranID().ID());
 
    EXPECT_EQ(iidExTranEvent, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.Has(iidTranEvent));
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
@@ -1347,7 +1383,9 @@ TEST(CExceptionTransactionEventTest, aal0670)
    EXPECT_EQ(107, e.TranID().ID());
 
    EXPECT_EQ(ID, e.SubClassID());
+#if DEPRECATED
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<IExceptionTransactionEvent *>(&e) ), e.ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(e.Has(iidTranEvent));
    EXPECT_EQ(reinterpret_cast<btGenericInterface>( dynamic_cast<ITransactionEvent *>(&e) ), e.Interface(iidTranEvent));
@@ -1559,7 +1597,7 @@ TEST(CExceptionTransactionEventTest, aal0671)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-
+#if DEPRECATED
 TEST(ObjectCreatedEventTest, aal0672)
 {
    // ObjectCreatedEvent(IRuntimeClient * , IServiceClient * , IBase * , TransactionID ,
@@ -1638,4 +1676,5 @@ TEST(ObjectCreatedEventTest, aal0672)
    svc.Entry(0).GetParam("tid", tid3);
    EXPECT_EQ(tid.ID(), tid3.ID());
 }
+#endif // DEPRECATED
 

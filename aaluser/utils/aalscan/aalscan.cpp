@@ -170,9 +170,6 @@ void DumpServiceMod(FILE *fp, OSServiceModule *p)
    fprintf(fp, "\t  Root name: %s\n", p->root_name);
    fprintf(fp, "\t  Full name: %s\n", p->full_name);
    fprintf(fp, "\tEntry_Point: %s\n", p->entry_point_name);
-   if ( NULL != p->error_msg ) {
-      fprintf(fp, "\tError: %s\n", p->error_msg);
-   }
 }
 
 int main(int argc, char *argv[])

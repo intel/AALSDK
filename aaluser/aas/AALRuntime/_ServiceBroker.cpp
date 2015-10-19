@@ -79,9 +79,9 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-btBool _ServiceBroker::init( IBase *pclientBase,
-                             NamedValueSet const &optArgs,
-                             TransactionID const &rtid)
+btBool _ServiceBroker::init(IBase               *pclientBase,
+                            NamedValueSet const &optArgs,
+                            TransactionID const &rtid)
 {
    return initComplete(rtid);
 }

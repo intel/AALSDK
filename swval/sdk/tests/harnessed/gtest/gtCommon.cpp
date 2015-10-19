@@ -811,19 +811,32 @@ btcString MethodCallLogEntry::MethodName() const
    return n;
 }
 
-void MethodCallLogEntry::AddParam(btcString name, btBool             value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btByte             value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, bt32bitInt         value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btUnsigned32bitInt value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, bt64bitInt         value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btUnsigned64bitInt value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btFloat            value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btcString          value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, btObjectType       value) { m_NVS.Add(name, value); }
-void MethodCallLogEntry::AddParam(btcString name, INamedValueSet    *value) { m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btBool             value)
+{ m_Order.push_back(TracksParamOrder(name, btBool_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btByte             value)
+{ m_Order.push_back(TracksParamOrder(name, btByte_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, bt32bitInt         value)
+{ m_Order.push_back(TracksParamOrder(name, bt32bitInt_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btUnsigned32bitInt value)
+{ m_Order.push_back(TracksParamOrder(name, btUnsigned32bitInt_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, bt64bitInt         value)
+{ m_Order.push_back(TracksParamOrder(name, bt64bitInt_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btUnsigned64bitInt value)
+{ m_Order.push_back(TracksParamOrder(name, btUnsigned64bitInt_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btFloat            value)
+{ m_Order.push_back(TracksParamOrder(name, btFloat_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btcString          value)
+{ m_Order.push_back(TracksParamOrder(name, btString_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, btObjectType       value)
+{ m_Order.push_back(TracksParamOrder(name, btObjectType_t)); m_NVS.Add(name, value); }
+void MethodCallLogEntry::AddParam(btcString name, INamedValueSet    *value)
+{ m_Order.push_back(TracksParamOrder(name, btNamedValueSet_t)); m_NVS.Add(name, value); }
 
 void MethodCallLogEntry::AddParam(btcString name, const TransactionID &value)
 {
+   // overload btUnknownType_t to mean const TransactionID & .
+   m_Order.push_back(TracksParamOrder(name, btUnknownType_t));
+
    std::string var(name);
    std::string key;
 
@@ -847,9 +860,27 @@ void MethodCallLogEntry::AddParam(btcString name, const TransactionID &value)
 
 unsigned MethodCallLogEntry::Params() const
 {
-   btUnsignedInt u = 0;
-   m_NVS.GetNumNames(&u);
-   return (unsigned)(u - 1);
+   return (btUnsignedInt)m_Order.size();
+}
+
+std::string MethodCallLogEntry::ParamName(unsigned i) const
+{
+   std::list<TracksParamOrder>::const_iterator iter = m_Order.begin();
+   while ( i > 0 ) {
+      ++iter;
+      --i;
+   }
+   return (*iter).m_ParamName;
+}
+
+eBasicTypes MethodCallLogEntry::ParamType(unsigned i) const
+{
+   std::list<TracksParamOrder>::const_iterator iter = m_Order.begin();
+   while ( i > 0 ) {
+      ++iter;
+      --i;
+   }
+   return (*iter).m_Type;
 }
 
 void MethodCallLogEntry::GetParam(btcString name, btBool                *pValue) const { m_NVS.Get(name, pValue); }
@@ -919,6 +950,58 @@ void MethodCallLog::ClearLog()
    m_LogList.clear();
 }
 
+std::ostream & operator << (std::ostream &os, const MethodCallLog &l)
+{
+#define TYPE_CASE(x) case x##_t : os << #x << " "; break
+
+   unsigned i;
+   unsigned param;
+
+   const unsigned E = l.LogEntries();
+   for ( i = 0 ; i < E ; ++i ) {
+      const MethodCallLogEntry &e(l.Entry(i));
+
+      os << e.MethodName() << "(";
+
+      const unsigned P = e.Params();
+      for ( param = 0 ; param < P ; ++param ) {
+         switch ( e.ParamType(param) ) {
+            TYPE_CASE(btBool);
+            TYPE_CASE(btByte);
+            TYPE_CASE(bt32bitInt);
+            TYPE_CASE(btInt);
+            TYPE_CASE(btUnsigned32bitInt);
+            TYPE_CASE(btUnsignedInt);
+            TYPE_CASE(bt64bitInt);
+            TYPE_CASE(btUnsigned64bitInt);
+            TYPE_CASE(btFloat);
+            TYPE_CASE(btString);
+            case btNamedValueSet_t : os << "const NamedValueSet &"; break;
+            TYPE_CASE(bt32bitIntArray);
+            TYPE_CASE(btUnsigned32bitIntArray);
+            TYPE_CASE(bt64bitIntArray);
+            TYPE_CASE(btUnsigned64bitIntArray);
+            TYPE_CASE(btObjectType);
+            TYPE_CASE(btFloatArray);
+            TYPE_CASE(btStringArray);
+            TYPE_CASE(btObjectArray);
+            TYPE_CASE(btByteArray);
+            case btUnknownType_t : os << "const TransactionID &"; break;
+         }
+         os << e.ParamName(param);
+
+         if ( P - 1 > param ) {
+            os << ", ";
+         }
+      }
+
+      os << ")" << std::endl;
+   }
+
+   return os;
+#undef TYPE_CASE
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 EmptyIServiceClient::EmptyIServiceClient(btApplicationContext Ctx) :
@@ -950,6 +1033,7 @@ IBase * EmptyISvcsFact::CreateServiceObject(AALServiceModule * ,
                                             IRuntime         * ) { return m_CreateServiceObject_returns; }
 
 btBool EmptyISvcsFact::InitializeService(IBase               * ,
+                                         IBase               * ,
                                          TransactionID const & ,
                                          NamedValueSet const & ) { return m_InitializeService_returns; }
 
@@ -962,8 +1046,7 @@ EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
    m_start_returns(true),
    m_schedDispatchable_returns(true),
    m_getRuntimeProxy_returns(NULL),
-   m_releaseRuntimeProxy_0_returns(true),
-   m_releaseRuntimeProxy_1_returns(true),
+   m_releaseRuntimeProxy_returns(true),
    m_getRuntimeClient_returns(NULL),
    m_IsOK_returns(true)
 {
@@ -972,21 +1055,19 @@ EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
    }
 }
 
-btBool                      EmptyIRuntime::start(const NamedValueSet & ) { return m_start_returns;                 }
-btBool          EmptyIRuntime::schedDispatchable(IDispatchable * )       { return m_schedDispatchable_returns;     }
-IRuntime *        EmptyIRuntime::getRuntimeProxy(IRuntimeClient * )      { return m_getRuntimeProxy_returns;       }
-btBool        EmptyIRuntime::releaseRuntimeProxy(IRuntime * )            { return m_releaseRuntimeProxy_0_returns; }
-btBool        EmptyIRuntime::releaseRuntimeProxy()                       { return m_releaseRuntimeProxy_1_returns; }
-IRuntimeClient * EmptyIRuntime::getRuntimeClient()                       { return m_getRuntimeClient_returns;      }
-btBool                       EmptyIRuntime::IsOK()                       { return m_IsOK_returns;                  }
+btBool                      EmptyIRuntime::start(const NamedValueSet & ) { return m_start_returns;               }
+btBool          EmptyIRuntime::schedDispatchable(IDispatchable * )       { return m_schedDispatchable_returns;   }
+IRuntime *        EmptyIRuntime::getRuntimeProxy(IRuntimeClient * )      { return m_getRuntimeProxy_returns;     }
+btBool        EmptyIRuntime::releaseRuntimeProxy()                       { return m_releaseRuntimeProxy_returns; }
+IRuntimeClient * EmptyIRuntime::getRuntimeClient()                       { return m_getRuntimeClient_returns;    }
+btBool                       EmptyIRuntime::IsOK()                       { return m_IsOK_returns;                }
 
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, start,                btBool,            m_start_returns                )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, schedDispatchable,    btBool,            m_schedDispatchable_returns    )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeProxy,      IRuntime * ,       m_getRuntimeProxy_returns      )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy0, btBool,            m_releaseRuntimeProxy_0_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy1, btBool,            m_releaseRuntimeProxy_1_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,     IRuntimeClient * , m_getRuntimeClient_returns     )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                 btBool,            m_IsOK_returns                 )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, start,               btBool,            m_start_returns              )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, schedDispatchable,   btBool,            m_schedDispatchable_returns  )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeProxy,     IRuntime * ,       m_getRuntimeProxy_returns    )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy, btBool,            m_releaseRuntimeProxy_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,    IRuntimeClient * , m_getRuntimeClient_returns   )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                btBool,            m_IsOK_returns               )
 
 
 EmptyIAALTransport::EmptyIAALTransport() :
@@ -1151,28 +1232,53 @@ EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
                                    IAALTransport    *ptransport,
                                    IAALMarshaller   *marshaller,
                                    IAALUnMarshaller *unmarshaller) :
-   ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
+   ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller),
+   m_init_returns(false)
 {}
 
-void EmptyServiceBase::init(TransactionID const & ) {}
+btBool EmptyServiceBase::init(IBase * ,
+                              NamedValueSet const & ,
+                              TransactionID const & ) { return m_init_returns; }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceBase, init, btBool, m_init_returns)
+
+void EmptyServiceBase::ServiceClient(IServiceClient *pSvcClient)
+{
+   m_pclient = pSvcClient;
+}
+
+void EmptyServiceBase::ServiceClientBase(IBase *pBase)
+{
+   m_pclientbase = pBase;
+}
+
+void EmptyServiceBase::RT(IRuntime *pRT)
+{
+   m_Runtime = pRT;
+}
+
 
 
 EmptyServiceModule::EmptyServiceModule() :
    m_Construct_returns(NULL),
-   m_getRuntime_returns(NULL)
+   m_ServiceInitialized_returns(false),
+   m_ServiceInitFailed_returns(false)
 {}
 
-IBase * EmptyServiceModule::Construct(IRuntime            *pAALRUNTIME,
-                                      IBase               *Client,
-                                      TransactionID const &tid,
-                                      NamedValueSet const &optArgs) { return m_Construct_returns; }
-void          EmptyServiceModule::Destroy()            {}
-void       EmptyServiceModule::setRuntime(IRuntime * ) {}
-IRuntime * EmptyServiceModule::getRuntime()      const { return m_getRuntime_returns; }
-void  EmptyServiceModule::ServiceReleased(IBase * )    {}
+btBool EmptyServiceModule::Construct(IRuntime            *pAALRUNTIME,
+                                     IBase               *Client,
+                                     TransactionID const &tid,
+                                     NamedValueSet const &optArgs) { return m_Construct_returns; }
+void          EmptyServiceModule::Destroy()         {}
+void  EmptyServiceModule::ServiceReleased(IBase * ) {}
+btBool EmptyServiceModule::ServiceInitialized(IBase * , TransactionID const & )
+{ return m_ServiceInitialized_returns; }
+btBool EmptyServiceModule::ServiceInitFailed(IBase * , IEvent const * )
+{ return m_ServiceInitFailed_returns; }
 
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, Construct,  IBase *,    m_Construct_returns )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, getRuntime, IRuntime *, m_getRuntime_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, Construct,          btBool, m_Construct_returns         )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitialized, btBool, m_ServiceInitialized_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitFailed,  btBool, m_ServiceInitFailed_returns )
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1280,15 +1386,23 @@ IBase * CallTrackingISvcsFact::CreateServiceObject(AALServiceModule *container,
    return EmptyISvcsFact::CreateServiceObject(container, pRuntime);
 }
 
-btBool CallTrackingISvcsFact::InitializeService(IBase               *Client,
+void CallTrackingISvcsFact::DestroyServiceObject(IBase *pServiceBase)
+{
+   MethodCallLogEntry *l = AddToLog("ISvcsFact::DestroyServiceObject");
+   l->AddParam("pServiceBase", reinterpret_cast<btObjectType>(pServiceBase));
+}
+
+btBool CallTrackingISvcsFact::InitializeService(IBase               *newService,
+                                                IBase               *Client,
                                                 TransactionID const &rtid,
                                                 NamedValueSet const &optArgs)
 {
    MethodCallLogEntry *l = AddToLog("ISvcsFact::InitializeService");
-   l->AddParam("Client",  reinterpret_cast<btObjectType>(Client));
-   l->AddParam("rtid",    rtid);
-   l->AddParam("optArgs", dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(optArgs) ));
-   return EmptyISvcsFact::InitializeService(Client, rtid, optArgs);
+   l->AddParam("newService", reinterpret_cast<btObjectType>(newService));
+   l->AddParam("Client",     reinterpret_cast<btObjectType>(Client));
+   l->AddParam("rtid",       rtid);
+   l->AddParam("optArgs",    dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(optArgs) ));
+   return EmptyISvcsFact::InitializeService(newService, Client, rtid, optArgs);
 }
 
 
@@ -1332,16 +1446,9 @@ IRuntime * CallTrackingIRuntime::getRuntimeProxy(IRuntimeClient *pClient)
    return EmptyIRuntime::getRuntimeProxy(pClient);
 }
 
-btBool CallTrackingIRuntime::releaseRuntimeProxy(IRuntime *pRuntime)
-{
-   MethodCallLogEntry *l = AddToLog("IRuntime::releaseRuntimeProxy0");
-   l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
-   return EmptyIRuntime::releaseRuntimeProxy(pRuntime);
-}
-
 btBool CallTrackingIRuntime::releaseRuntimeProxy()
 {
-   AddToLog("IRuntime::releaseRuntimeProxy1");
+   AddToLog("IRuntime::releaseRuntimeProxy");
    return EmptyIRuntime::releaseRuntimeProxy();
 }
 
@@ -1366,19 +1473,101 @@ CallTrackingServiceBase::CallTrackingServiceBase(AALServiceModule *container,
    EmptyServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller)
 {}
 
-void CallTrackingServiceBase::init(TransactionID const &rtid)
+btBool CallTrackingServiceBase::init(IBase               *pclientBase,
+                                     NamedValueSet const &optArgs,
+                                     TransactionID const &rtid)
 {
    MethodCallLogEntry *l = AddToLog("ServiceBase::init");
+   l->AddParam("pclientBase", reinterpret_cast<btObjectType>(pclientBase));
+   l->AddParam("optArgs",     dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(optArgs)) );
+   l->AddParam("rtid",        rtid);
+   return EmptyServiceBase::init(pclientBase, optArgs, rtid);
+}
+
+btBool CallTrackingServiceBase::_init(IBase               *pclientBase,
+                                      TransactionID const &rtid,
+                                      NamedValueSet const &optArgs,
+                                      CAALEvent           *pcmpltEvent)
+{
+   MethodCallLogEntry *l = AddToLog("ServiceBase::_init");
+   l->AddParam("pclientBase", reinterpret_cast<btObjectType>(pclientBase));
+   l->AddParam("rtid",        rtid);
+   l->AddParam("optArgs",     dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(optArgs)) );
+   l->AddParam("pcmpltEvent", reinterpret_cast<btObjectType>(pcmpltEvent));
+   return EmptyServiceBase::_init(pclientBase, rtid, optArgs, pcmpltEvent);
+}
+
+btBool CallTrackingServiceBase::Release(TransactionID const &rTranID, btTime timeout)
+{
+   MethodCallLogEntry *l = AddToLog("ServiceBase::Release");
+   l->AddParam("rTranID", rTranID);
+   l->AddParam("timeout", timeout);
+   return EmptyServiceBase::Release(rTranID, timeout);
+}
+
+btBool CallTrackingServiceBase::initComplete(TransactionID const &rtid)
+{
+   MethodCallLogEntry *l = AddToLog("ServiceBase::initComplete");
    l->AddParam("rtid", rtid);
+   return EmptyServiceBase::initComplete(rtid);
+}
+
+btBool CallTrackingServiceBase::initFailed(IEvent const *ptheEvent)
+{
+   MethodCallLogEntry *l = AddToLog("ServiceBase::initFailed");
+   l->AddParam("ptheEvent", reinterpret_cast<btObjectType>( const_cast<IEvent *>(ptheEvent) ));
+   return EmptyServiceBase::initFailed(ptheEvent);
+}
+
+btBool CallTrackingServiceBase::ReleaseComplete()
+{
+   AddToLog("ServiceBase::ReleaseComplete");
+   return EmptyServiceBase::ReleaseComplete();
+}
+
+NamedValueSet const & CallTrackingServiceBase::OptArgs() const
+{
+   AddToLog("ServiceBase::OptArgs");
+   return EmptyServiceBase::OptArgs();
+}
+
+IServiceClient * CallTrackingServiceBase::getServiceClient() const
+{
+   AddToLog("ServiceBase::getServiceClient");
+   return EmptyServiceBase::getServiceClient();
+}
+
+IBase * CallTrackingServiceBase::getServiceClientBase() const
+{
+   AddToLog("ServiceBase::getServiceClientBase");
+   return EmptyServiceBase::getServiceClientBase();
+}
+
+IRuntime * CallTrackingServiceBase::getRuntime() const
+{
+   AddToLog("ServiceBase::getRuntime");
+   return EmptyServiceBase::getRuntime();
+}
+
+IRuntimeClient * CallTrackingServiceBase::getRuntimeClient() const
+{
+   AddToLog("ServiceBase::getRuntimeClient");
+   return EmptyServiceBase::getRuntimeClient();
+}
+
+AALServiceModule * CallTrackingServiceBase::getAALServiceModule() const
+{
+   AddToLog("ServiceBase::getAALServiceModule");
+   return EmptyServiceBase::getAALServiceModule();
 }
 
 
 CallTrackingServiceModule::CallTrackingServiceModule() {}
 
-IBase * CallTrackingServiceModule::Construct(IRuntime            *pAALRUNTIME,
-                                             IBase               *Client,
-                                             TransactionID const &tid,
-                                             NamedValueSet const &optArgs)
+btBool CallTrackingServiceModule::Construct(IRuntime            *pAALRUNTIME,
+                                            IBase               *Client,
+                                            TransactionID const &tid,
+                                            NamedValueSet const &optArgs)
 {
    MethodCallLogEntry *l = AddToLog("IServiceModule::Construct");
    l->AddParam("pAALRUNTIME", reinterpret_cast<btObjectType>(pAALRUNTIME));
@@ -1394,20 +1583,26 @@ void CallTrackingServiceModule::Destroy()
    AddToLog("IServiceModule::Destroy");
 }
 
-void CallTrackingServiceModule::setRuntime(IRuntime *pRuntime)
-{
-   MethodCallLogEntry *l = AddToLog("IServiceModule::setRuntime");
-   l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
-}
-
-IRuntime * CallTrackingServiceModule::getRuntime() const
-{
-   AddToLog("IServiceModule::getRuntime");
-   return EmptyServiceModule::getRuntime();
-}
-
 void CallTrackingServiceModule::ServiceReleased(IBase *pService)
 {
    MethodCallLogEntry *l = AddToLog("IServiceModuleCallback::ServiceReleased");
    l->AddParam("pService", reinterpret_cast<btObjectType>(pService));
+}
+
+btBool CallTrackingServiceModule::ServiceInitialized(IBase               *pService,
+                                                     TransactionID const &rtid)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceModuleCallback::ServiceInitialized");
+   l->AddParam("pService", reinterpret_cast<btObjectType>(pService));
+   l->AddParam("rtid",     rtid);
+   return EmptyServiceModule::ServiceInitialized(pService, rtid);
+}
+
+btBool CallTrackingServiceModule::ServiceInitFailed(IBase        *pService,
+                                                    IEvent const *pEvent)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceModuleCallback::ServiceInitFailed");
+   l->AddParam("pService", reinterpret_cast<btObjectType>(pService));
+   l->AddParam("pEvent",   reinterpret_cast<btObjectType>( const_cast<IEvent *>(pEvent) ));
+   return EmptyServiceModule::ServiceInitFailed(pService, pEvent);
 }
