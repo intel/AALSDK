@@ -50,6 +50,8 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include "ALIAIATransactions.h"
+
 #include "HWALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
@@ -220,28 +222,38 @@ btBool HWALIAFU::init(IBase *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &TranID)
 {
-/*   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-   ASSERT( NULL != pClient );
-   if ( NULL == pClient ) {
-      /// ObjectCreatedExceptionEvent Constructor.
-      initFailed(new CExceptionTransactionEvent( this,
-                                                 TranID,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Client did not publish ICCIClient Interface"));
-      return false;
-   }*/
+   btHANDLE devHandle;
 
+   m_pSvcClient = pclientBase;
+   ASSERT( NULL != m_pSvcClient );
+
+   //
    // Allocate AIA service. Init is completed in serviceAllocated callback.
+   //
+
    NamedValueSet nvsManifest;
    NamedValueSet nvsConfigRecord;
 
-   nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libaia");
+   //nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
    nvsConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
    nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsConfigRecord);
    nvsManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AIA");
 
-   m_pTidSaved = &TranID;
+   // add hardware handle obtained by resource manager
+   if( optArgs.Has(keyRegHandle) ) {
+      optArgs.Get(keyRegHandle, &devHandle);
+   }else {
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                TranID,
+                                                errBadParameter,
+                                                reasNoDevice,
+                                                "No device handle in Configuration Record!"));
+      return true;
+    }
+   nvsManifest.Add(keyRegHandle, devHandle);
+
+   m_tidSaved = TranID;
    getRuntime()->allocService(this, nvsManifest, TransactionID());
 
    // initComplete happens in serviceAllocated()
@@ -355,37 +367,35 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
                                TransactionID const &TranID,
                                NamedValueSet       *pOptArgs)
 {
-   // FIXME: port to IAFUProxy
-/*	   AutoLock(this);
-
+	   AutoLock(this);
+/*
 	   // Create a transaction id that wraps the original from the application,
 	   // Otherwise the return transaction will go straight back there
 	   TransactionID tid(new(std::nothrow) TransactionID(TranID),
 	                     HWALIAFU::AllocateBufferHandler,
 	                     true);
+*/
+	   // Create the request to bundle in the transaction
 
 	   // Create the Transaction
-	   WkSp_Single_Allocate_AFUTransaction AFUTran(Length, MASTER_VIRT_MODE);
+	   BufferAllocate transaction(TranID, Length);
 
 	   // Check the parameters
-	   if ( AFUTran.IsOK() ) {
+	   if ( transaction.IsOK() ) {
 	      // Will return to AllocateBufferHandler, below.
-
-	      AFUDev().SendTransaction(&AFUTran, tid);
-
+	      m_pAFUProxy->SendTransaction(&transaction);
 	   } else {
-	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
 	                                                                     TranID,
 	                                                                     errAFUWorkSpace,
 	                                                                     reasAFUNoMemory,
-	                                                                     "AFUTran validity check failed");
+	                                                                     "BufferAllocate transaction validity check failed");
 	      getRuntime()->schedDispatchable(
-	         new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, ClientBase()),
+	         new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
 	                                                            pExcept)
 
 	             );
 	   }
-*/
 }
 
 //
@@ -686,14 +696,12 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
 void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
                                 TransactionID const &rTranID)
 {
-   ASSERT(m_pTidSaved !=NULL);    // if m_tidSaved == NULL, we got a serviceAllocated
-                                  // before we requested one
    // Store ResMgrService pointer
    m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
    if (!m_pAFUProxy) {
       // TODO: handle error
       initFailed(new CExceptionTransactionEvent( NULL,
-                                                 *m_pTidSaved,
+                                                 m_tidSaved,
                                                  errBadParameter,
                                                  reasMissingInterface,
                                                  "Error: Missing AFUProxy interface."));
@@ -705,7 +713,7 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
    if (!m_pAALService) {
       // TODO: handle error
       initFailed(new CExceptionTransactionEvent( NULL,
-                                                 *m_pTidSaved,
+                                                 m_tidSaved,
                                                  errBadParameter,
                                                  reasMissingInterface,
                                                  "Error: Missing service base interface."));
@@ -713,7 +721,7 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
    }
 
    // AFUProxy acquired, init complete for original (saved) transaction/
-   initComplete(*m_pTidSaved);
+   initComplete(m_tidSaved);
    return;
 }
 
@@ -721,7 +729,7 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
    m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
    initFailed(new CExceptionTransactionEvent( NULL,
-                                              *m_pTidSaved,
+                                              m_tidSaved,
                                               errAllocationFailure,
                                               reasUnknown,
                                               "Error: Failed to allocate ALI."));

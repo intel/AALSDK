@@ -87,8 +87,7 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, ServiceBase),
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
-      m_pTidSaved(NULL)
-
+      m_tidSaved()
    {
 	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
       SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
@@ -157,7 +156,9 @@ protected:
 
    IAALService         *m_pAALService;
    IAFUProxy           *m_pAFUProxy;
-   TransactionID const *m_pTidSaved;
+   TransactionID        m_tidSaved;
+   IBase               *m_pSvcClient;
+
 };
 
 /// @}
