@@ -48,33 +48,42 @@
  * All warnings are logged in warnings.log
  */
 
-`include "ase_global.vh"
+import ase_pkg::*;
 `include "platform.vh"
 
 module cci_sniffer
-  #(
-    parameter int TX_HDR_WIDTH = 61,
-    parameter int RX_HDR_WIDTH = 18,
-    parameter int DATA_WIDTH = 512
-    )
    (
-    // CCI-standard interface
-    input logic 		   clk,
-    input logic 		   resetb ,
-    input logic 		   lp_initdone ,
-    input logic [TX_HDR_WIDTH-1:0] tx_c0_header,
-    input logic 		   tx_c0_rdvalid,
-    input logic [TX_HDR_WIDTH-1:0] tx_c1_header,
-    input logic [DATA_WIDTH-1:0]   tx_c1_data,
-    input logic 		   tx_c1_wrvalid,
-    input logic 		   tx_c1_intrvalid,
-    input logic [RX_HDR_WIDTH-1:0] rx_c0_header,
-    input logic [DATA_WIDTH-1:0]   rx_c0_data,
-    input logic 		   rx_c0_cfgvalid,
-    input logic 		   rx_c0_rdvalid,
-    input logic 		   rx_c0_wrvalid,
-    input logic [RX_HDR_WIDTH-1:0] rx_c1_header,
-    input logic 		   rx_c1_wrvalid
+    // CCI interface
+    input logic 		      clk,
+    input logic 		      sys_reset_n,
+    input logic 		      sw_reset_n,
+    // C0Tx channel
+    input 			      TxHdr_t C0TxHdr,
+    input logic 		      C0TxRdValid,
+    input logic 		      C0TxAlmFull,
+    // C1Tx channel
+    input 			      TxHdr_t C1TxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] C1TxData,
+    input logic 		      C1TxWrValid,
+    input logic 		      C1TxAlmFull,
+    input logic 		      C1TxIntrValid,
+    // Config channel
+    input logic 		      CfgRdData,
+    input logic 		      CfgRdDataValid,
+    input logic 		      CfgHeader,
+    input logic 		      CfgWrValid,
+    input logic 		      CfgRdValid,
+    // C0Rx channel
+    input 			      RxHdr_t C0RxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] C0RxData,
+    input logic 		      C0RxRdValid,
+    input logic 		      C0RxWrValid,
+    input logic 		      C0RxUmsgValid,
+    input logic 		      C0RxIntrValid,
+    // C1Rx channel
+    input 			      RxHdr_t C1RxHdr,
+    input logic 		      C1RxWrValid,
+    input logic 		      C1RxIntrValid
     );
 
    int 				   log_started;   
@@ -84,7 +93,9 @@ module cci_sniffer
    logic 			   xz_tx1_flag;
    logic 			   xz_rx0_flag;
    logic 			   xz_rx1_flag;
+   logic 			   xz_cfg_flag;
 
+   
    /*
     * FUNCTIONS
     */
@@ -102,7 +113,7 @@ module cci_sniffer
    endfunction
 
    // Hazard warning
-   function void print_hazard_message ( logic [`PHYSCLADDR_WIDTH-1:0] cl_addr );
+   function void print_hazard_message ( logic [PHYSCLADDR_WIDTH-1:0] cl_addr );
       begin
 	 // Set message
 	 `BEGIN_RED_FONTCOLOR;
@@ -124,13 +135,15 @@ module cci_sniffer
       forever begin
 	 // XZ messages
 	 if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
-	   print_xz_message ( "CCI-TX0" );
+	   print_xz_message ( "C0Tx" );
 	 if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF))
-	   print_xz_message ( "CCI-TX1" );
+	   print_xz_message ( "C1Tx" );
 	 if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF))
-	   print_xz_message ( "CCI-RX0" );
+	   print_xz_message ( "C0Rx" );
 	 if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
-	   print_xz_message ( "CCI-RX1" );
+	   print_xz_message ( "C1Rx" );
+	 if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
+	   print_xz_message ( "Cfg " );
 	 // Wait till next clock
 	 @(posedge clk);
       end
@@ -139,49 +152,51 @@ module cci_sniffer
    /*
     * TX checker files
     */
-   assign xz_tx0_flag = (^tx_c0_header)                && tx_c0_rdvalid ;
-   assign xz_tx1_flag = (^tx_c1_header || ^tx_c1_data) && tx_c1_wrvalid ;
-   assign xz_rx0_flag = (^rx_c0_header || ^rx_c0_data) && (rx_c0_cfgvalid || rx_c0_wrvalid || rx_c0_rdvalid) ;
-   assign xz_rx1_flag = ^rx_c1_header                  && rx_c1_wrvalid ;
-
+   assign xz_tx0_flag = (^C0TxHdr)                 && C0TxRdValid ;
+   assign xz_tx1_flag = (^C1TxHdr || ^C1TxData)    && C1TxWrValid ;
+   assign xz_rx0_flag = (^C0RxHdr || ^C0RxData)    && (C0RxWrValid || C0RxRdValid) ;
+   assign xz_rx1_flag = (^C1RxHdr)                 && C1RxWrValid ;
+   assign xz_cfg_flag = (^CfgHeader || ^CfgRdData) && (CfgRdDataValid || CfgWrValid || CfgRdValid);
+   
+   
    /*
     * Data hazard warning engine
     * - Store address as a searchable primary key
     */
    int unsigned active_addresses[*];
-
+   
    always @(posedge clk) begin
       // Push function
-      if (tx_c0_rdvalid) begin
-	 if (~active_addresses.exists(tx_c0_header[`TX_CLADDR_BITRANGE])) begin
-	    active_addresses[tx_c0_header[`TX_CLADDR_BITRANGE]] = tx_c0_header[`TX_MDATA_BITRANGE];
+      if (C0TxRdValid) begin
+	 if (~active_addresses.exists(C0TxHdr.addr)) begin
+	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
 	 end
 	 else begin
-	    print_hazard_message(tx_c0_header[`TX_CLADDR_BITRANGE]);
-	    active_addresses[tx_c0_header[`TX_CLADDR_BITRANGE]] = tx_c0_header[`TX_MDATA_BITRANGE];
+	    print_hazard_message(C0TxHdr.addr);
+	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
 	 end
       end
-      if (tx_c1_wrvalid) begin
-	 if (~active_addresses.exists(tx_c1_header[`TX_CLADDR_BITRANGE])) begin
-	    active_addresses[tx_c1_header[`TX_CLADDR_BITRANGE]] = tx_c1_header[`TX_MDATA_BITRANGE];
+      if (C1TxWrValid) begin
+	 if (~active_addresses.exists(C1TxHdr.addr)) begin
+	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
 	 end
 	 else begin
-	    print_hazard_message(tx_c1_header[`TX_CLADDR_BITRANGE]);
-	    active_addresses[tx_c1_header[`TX_CLADDR_BITRANGE]] = tx_c1_header[`TX_MDATA_BITRANGE];
+	    print_hazard_message(C1TxHdr.addr);
+	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
 	 end
       end
       // Pop function
-      if (rx_c0_rdvalid) begin
-	 if (active_addresses.exists(rx_c0_header[`RX_MDATA_BITRANGE]))
-	   active_addresses.delete(rx_c0_header[`RX_MDATA_BITRANGE]);
+      if (C0RxRdValid) begin
+	 if (active_addresses.exists(C0RxHdr.mdata))
+	   active_addresses.delete(C0RxHdr.mdata);
       end
-      if (rx_c0_wrvalid) begin
-	 if (active_addresses.exists(rx_c0_header[`RX_MDATA_BITRANGE]))
-	   active_addresses.delete(rx_c0_header[`RX_MDATA_BITRANGE]);
+      if (C0RxWrValid) begin
+	 if (active_addresses.exists(C0RxHdr.mdata))
+	   active_addresses.delete(C0RxHdr.mdata);
       end
-      if (rx_c1_wrvalid) begin
-	 if (active_addresses.exists(rx_c1_header[`RX_MDATA_BITRANGE]))
-	   active_addresses.delete(rx_c1_header[`RX_MDATA_BITRANGE]);
+      if (C1RxWrValid) begin
+	 if (active_addresses.exists(C1RxHdr.mdata))
+	   active_addresses.delete(C1RxHdr.mdata);
       end
    end
 

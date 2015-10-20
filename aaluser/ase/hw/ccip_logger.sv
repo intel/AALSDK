@@ -35,40 +35,51 @@
  *
  */
 
-module transaction_logger
+import ase_pkg::*;
+`include "platform.vh"
+
+module ccip_logger
   #(
     parameter LOGNAME   = "ccip_transactions.tsv"
     )
    (
     // Configure enable
-    input int                               enable_logger,
-    input int                               finish_logger,
+    input int 			      enable_logger,
+    input int 			      finish_logger,
     // Buffer message injection
     // input logic                             log_string_en,
     // input string [1023:0]                   log_string ,
     // CCI interface
-    input logic                             clk      ,               // out
-    input logic                             sys_reset_n,             // out
-    input logic                             sw_reset_n,              // out
-    input logic 			    lp_initdone ,            // out
-    input logic  [`CCI_TX_HDR_WIDTH-1:0]    tx_c0_header,            // in
-    input logic 			    tx_c0_rdvalid,           // in
-    input logic 			    tx_c0_almostfull,        // out
-    input logic [`CCI_TX_HDR_WIDTH-1:0]     tx_c1_header,            // in
-    input logic [`CCI_DATA_WIDTH-1:0] 	    tx_c1_data,              // in
-    input logic 			    tx_c1_wrvalid,           // in
-    input logic 		            tx_c1_almostfull,        // out
-    input logic 			    tx_c1_intrvalid,         // in
-    input logic [`ASE_CCI_RX_HDR_WIDTH-1:0] rx_c0_header,            // out
-    input logic [`CCI_DATA_WIDTH-1:0] 	    rx_c0_data,              // out
-    input logic 			    rx_c0_rdvalid,           // out
-    input logic 			    rx_c0_wrvalid,           // out
-    input logic 			    rx_c0_cfgvalid,          // out
-    input logic [`ASE_CCI_RX_HDR_WIDTH-1:0] rx_c1_header,            // out
-    input logic 			    rx_c1_wrvalid,           // out
-    input logic 			    rx_c0_umsgvalid,         // out
-    input logic 			    rx_c0_intrvalid,         // out
-    input logic 			    rx_c1_intrvalid          // out   
+    input logic 		      clk,
+    input logic 		      sys_reset_n,
+    input logic 		      sw_reset_n,
+    // C0Tx channel
+    input 			      TxHdr_t C0TxHdr,
+    input logic 		      C0TxRdValid,
+    input logic 		      C0TxAlmFull,
+    // C1Tx channel
+    input 			      TxHdr_t C1TxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] C1TxData,
+    input logic 		      C1TxWrValid,
+    input logic 		      C1TxAlmFull,
+    input logic 		      C1TxIntrValid,
+    // Config channel
+    input logic 		      CfgRdData,
+    input logic 		      CfgRdDataValid,
+    input logic 		      CfgHeader,
+    input logic 		      CfgWrValid,
+    input logic 		      CfgRdValid,
+    // C0Rx channel
+    input 			      RxHdr_t C0RxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] C0RxData,
+    input logic 		      C0RxRdValid,
+    input logic 		      C0RxWrValid,
+    input logic 		      C0RxUmsgValid,
+    input logic 		      C0RxIntrValid,
+    // C1Rx channel
+    input 			      RxHdr_t C1RxHdr,
+    input logic 		      C1RxWrValid,
+    input logic 		      C1RxIntrValid
     );
 
    /*
@@ -80,20 +91,11 @@ module transaction_logger
    int 					    log_fd;
 
    // Reset management
-   logic 				    lp_initdone_q;   
    logic 				    sys_reset_n_q;
    logic 				    sw_reset_n_q;
 
-   // generate
-   //    if (INTERFACE_TYPE == "CCIS") begin
-   //    end
-   //    if (INTERFACE_TYPE == "SPL") begin
-   //    end
-   // endgenerate
-
    // Registers for comparing previous states
    always @(posedge clk) begin
-      lp_initdone_q	<= lp_initdone;
       sw_reset_n_q	<= sw_reset_n;
       sys_reset_n_q     <= sys_reset_n;
    end
@@ -105,30 +107,68 @@ module transaction_logger
    // export "DPI-C" task buffer_messages;
    // task buffer_messages (string log_string);
    //    begin
-   // 	 $fwrite (log_fd, log_string);	 
+   // 	 $fwrite (log_fd, log_string);
    //    end
    // endtask
- 
-   
+
+   // Print Channel function
+   function string print_channel (logic [1:0] vc_sel);
+      begin
+	 case (vc_sel)
+	   2'b00: return "VA ";
+	   2'b01: return "VL0";
+	   2'b10: return "VH0";
+	   2'b11: return "VH1";
+	 endcase
+      end
+   endfunction
+
+   // Print Req Type
+   function string print_reqtype (logic [3:0] req);
+      begin
+	 case (req)
+	   CCIP_TX0_RDLINE_S : return "RdLine_S ";
+	   CCIP_TX0_RDLINE_I : return "RdLine_I ";
+	   CCIP_TX0_RDLINE_E : return "RdLine_E ";
+	   CCIP_TX1_WRLINE_I : return "WrLine_I ";
+	   CCIP_TX1_WRLINE_M : return "WrLine_M ";
+	   CCIP_TX1_WRFENCE  : return "WrFence  ";
+	   CCIP_TX1_INTRVALID: return "IntrReq  ";
+	   default           : return "* ERROR *";	   
+	 endcase
+      end
+   endfunction
+
+   // Print resp type
+   function string print_resptype (logic [3:0] resp);
+      begin
+	 case (resp)
+	   CCIP_RX0_RD_RESP   : return "RdResp   ";
+	   CCIP_RX0_WR_RESP   : return "WrResp   ";
+	   CCIP_RX1_WR_RESP   : return "WrResp   ";
+	   CCIP_RX0_INTR_CMPLT: return "IntrResp ";
+	   CCIP_RX1_INTR_CMPLT: return "IntrResp ";
+	   default            : return "* ERROR *";
+	 endcase
+      end
+   endfunction
+
+
    /*
     * Watcher process
     */
    initial begin : logger_proc
       // Display
-      $display("SIM-SV: CCI Logger started");
+      $display("SIM-SV: Transaction Logger started");
 
       // Open transactions.tsv file
       log_fd = $fopen("transactions.tsv", "w");
 
       // Headers
-      $fwrite(log_fd, "\tTime\tTransactionType\tChannel\tMetaInfo\tCacheAddr\tData\n");
+      // $fwrite(log_fd, "\tTime\tTransactionType\tChannel\tMetaInfo\tCacheAddr\tData\n");
 
       // Watch CCI port
       forever begin
-	 // If LP_initdone changed, log the event
-	 if (lp_initdone_q != lp_initdone) begin
-	    $fwrite(log_fd, "%d\tLP_initdone toggled from %b to %b\n", $time, lp_initdone_q, lp_initdone);
-	 end
 	 // Indicate Software controlled reset
 	 if (sw_reset_n_q != sw_reset_n) begin
 	    $fwrite(log_fd, "%d\tSoftware reset toggled from %b to %b\n", $time, sw_reset_n_q, sw_reset_n);
@@ -139,83 +179,125 @@ module transaction_logger
 	 end
 	 // Buffer messages
 	 // if (log_string_en) begin
-	 //    $fwrite(log_fd, log_string);	    
+	 //    $fwrite(log_fd, log_string);
 	 // end
-	 // Watch CCI for valid transactions
-	 if (lp_initdone) begin
-	    ////////////////////////////// RX0 cfgvalid /////////////////////////////////
-	    if (rx_c0_cfgvalid) begin
-	       $fwrite(log_fd, "%d\tCSRWrite\t\t\t%x\t%x\n", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
-	       if (enable_logger) $display("%d\tCSRWrite\t\t\t%x\t%x", $time, rx_c0_header[`RX_CSR_BITRANGE], rx_c0_data[31:0]);
-	    end
-	    /////////////////////////////// RX0 wrvalid /////////////////////////////////
-	    if (rx_c0_wrvalid) begin
-	       $fwrite(log_fd, "%d\tWrResp\t\t0\t%x\tNA\tNA\n", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
-	       if (enable_logger) $display("%d\tWrResp\t\t0\t%x\tNA\tNA", $time, rx_c0_header[`RX_MDATA_BITRANGE] );
-	    end
-	    /////////////////////////////// RX0 rdvalid /////////////////////////////////
-	    if (rx_c0_rdvalid) begin
-	       $fwrite(log_fd, "%d\tRdResp\t\t0\t%x\tNA\t%x\n", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
-	       if (enable_logger) $display("%d\tRdResp\t\t0\t%x\tNA\t%x", $time, rx_c0_header[`RX_MDATA_BITRANGE], rx_c0_data );
-	    end
-	    ////////////////////////////// RX0 umsgvalid ////////////////////////////////
-	    if (rx_c0_umsgvalid) begin
-	       if (rx_c0_header[`CCI_UMSG_BITINDEX]) begin              // Umsg Hint
-		  $fwrite(log_fd, "%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
-		  if (enable_logger) $display("%d\tUmsgHint\t0\t%x\n", $time, rx_c0_header[5:0] );
-	       end
-	       else begin                                               // Umsg with data
-		  $fwrite(log_fd, "%d\tUmsgData\t0\t%x\t%x\n", $time, rx_c0_header[5:0], rx_c0_data );
-		  if (enable_logger) $display("%d\tUmsgData\t0\t%x\n", $time, rx_c0_data );
-	       end
-	    end
-	    /////////////////////////////// RX1 wrvalid /////////////////////////////////
-	    if (rx_c1_wrvalid) begin
-	       $fwrite(log_fd, "%d\tWrResp\t\t1\t%x\tNA\tNA\n", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
-	       if (enable_logger) $display("%d\tWrResp\t\t1\t%x\tNA\tNA", $time, rx_c1_header[`RX_MDATA_BITRANGE] );
-	    end
-	    /////////////////////////////// TX0 rdvalid /////////////////////////////////
-	    if (tx_c0_rdvalid) begin
-	       if ((tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_S) || (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE)) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_S\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (enable_logger) $display("%d\tRdLineReq_S\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_I) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_I\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (enable_logger) $display("%d\tRdLineReq_I\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else if (tx_c0_header[`TX_META_TYPERANGE] == `ASE_TX0_RDLINE_O) begin
-		  $fwrite(log_fd, "%d\tRdLineReq_O\t0\t%x\t%x\tNA\n", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-		  if (enable_logger) $display("%d\tRdLineReq_O\t0\t%x\t%x\tNA", $time, tx_c0_header[`TX_MDATA_BITRANGE], tx_c0_header[45:14]);
-	       end
-	       else begin
-		  $fwrite(log_fd, "ReadValid on TX-CH0 validated an UNKNOWN Request type at t = %d \n", $time);
-	       end
-	    end
-	    /////////////////////////////// TX1 wrvalid /////////////////////////////////
-	    if (tx_c1_wrvalid) begin
-	       if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRTHRU) begin
-		  $fwrite(log_fd, "%d\tWrThruReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-		  if (enable_logger) $display("%d\tWrThruReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-	       end
-	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRLINE) begin
-		  $fwrite(log_fd, "%d\tWrLineReq\t1\t%x\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-		  if (enable_logger) $display("%d\tWrLineReq\t1\t%x\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14], tx_c1_data);
-	       end
-	       else if (tx_c1_header[`TX_META_TYPERANGE] == `ASE_TX1_WRFENCE) begin
-		  $fwrite(log_fd, "%d\tWriteFence\t1\t%x\t%x\n", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
-		  if (enable_logger) $display("%d\tWriteFence\t1\t%x\t%x", $time, tx_c1_header[`TX_MDATA_BITRANGE], tx_c1_header[45:14]);
-	       end
-	       else begin
-		  $fwrite(log_fd, "WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
-		  if (enable_logger) $display("WriteValid on TX-CH1 validated an UNKNOWN Request type at t = %d \n", $time);
-	       end
-	    end
-	    ////////////////////////////// FINISH command ////////////////////////////////
-	    if (finish_logger == 1) begin
-	       $fclose(log_fd);	       
-	    end
+	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* SW -> AFU Config Write *******************/
+	 if (CfgWrValid) begin
+	    if (cfg.enable_cl_view) $display("%d\tCfgWrite\t%x\t%d bytes\t%x",
+					     $time,
+					     CfgHeader.index,
+					     4^(1 + CfgHeader.num_bytes),
+					     C0RxData[8*4^(1+CfgHeader.num_bytes)-1:0]);
+	    $fwrite(log_fd, "%d\tCfgWrite\t%x\t%d bytes\t%x\n",
+		    $time,
+		    CfgHeader.index,
+		    4^(1 + CfgHeader.num_bytes),
+		    C0RxData[8*4^(1+CfgHeader.num_bytes)-1:0]);
 	 end
+	 /*************** SW -> AFU Config Read Request ****************/
+	 if (CfgRdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\tCfgRdReq\t%x",
+					     $time,
+					     CfgHeader.index);
+	    $fwrite(log_fd, "%d\tCfgRdReq\t%x",
+		    $time,
+		    CfgHeader.index);
+	 end
+	 /*************** AFU -> SW Config Read Response ***************/
+	 if (CfgRdDataValid) begin
+	 end
+	 //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* AFU -> MEM Read Request ******************/
+	 if (C0TxRdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
+					     $time,					     
+					     print_channel(C0TxHdr.vc),
+					     print_reqtype(C0TxHdr.reqtype),
+					     C0TxHdr.addr,
+					     C0TxHdr.mdata);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\n",
+		    $time,
+		    print_channel(C0TxHdr.vc),
+		    print_reqtype(C0TxHdr.reqtype),
+		    C0TxHdr.addr,
+		    C0TxHdr.mdata);
+	 end
+	 //////////////////////// C1 TX CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* AFU -> MEM Write Request *****************/
+	 if (C1TxWrValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x",
+					     $time,					     
+					     print_channel(C1TxHdr.vc),
+					     print_reqtype(C1TxHdr.reqtype),
+					     C1TxHdr.addr,
+					     C1TxHdr.mdata,
+					     C1TxData);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\t%x\n",
+		    $time,
+		    print_channel(C1TxHdr.vc),
+		    print_reqtype(C1TxHdr.reqtype),
+		    C1TxHdr.addr,
+		    C1TxHdr.mdata,
+		    C1TxData);
+	 end
+	 //////////////////////// C0 RX CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* MEM -> AFU Read Response *****************/
+	 if (C0RxRdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
+					     $time,
+					     print_channel(C0RxHdr.vc),
+					     print_resptype(C0RxHdr.resptype),
+					     C0RxHdr.mdata,
+					     C0RxData);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\n",
+		    $time,
+		    print_channel(C0RxHdr.vc),
+		    print_resptype(C0RxHdr.resptype),
+		    C0RxHdr.mdata,
+		    C0RxData);    
+	 end
+	 /****************** MEM -> AFU Write Response *****************/
+	 if (C0RxWrValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x",
+					     $time,
+					     print_channel(C0RxHdr.vc),
+					     print_resptype(C0RxHdr.resptype),
+					     C0RxHdr.mdata);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\n",
+		    $time,
+		    print_channel(C0RxHdr.vc),
+		    print_resptype(C0RxHdr.resptype),
+		    C0RxHdr.mdata);	    
+	 end
+	 /************* SW -> MEM -> AFU Unordered Message  ************/
+	 if (C0RxUmsgValid) begin
+	 end
+	 /**************** MEM -> AFU Interrupt Response  **************/
+	 if (C0RxIntrValid) begin
+	 end
+	 //////////////////////// C1 RX CHANNEL TRANSACTIONS //////////////////////////
+	 /****************** MEM -> AFU Write Response  ****************/
+	 if (C1RxWrValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x",
+					     $time,
+					     print_channel(C1RxHdr.vc),
+					     print_resptype(C1RxHdr.resptype),
+					     C1RxHdr.mdata);
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\n",
+		    $time,
+		    print_channel(C1RxHdr.vc),
+		    print_resptype(C1RxHdr.resptype),
+		    C1RxHdr.mdata);	    
+	 end
+	 /**************** MEM -> AFU Interrupt Response  **************/
+	 if (C1RxIntrValid) begin
+	 end
+	 ////////////////////////////// FINISH command ////////////////////////////////
+	 if (finish_logger == 1) begin
+	    $fclose(log_fd);
+	 end
+	 //////////////////////////////////////////////////////////////////////////////
 	 // Wait till next clock
 	 @(posedge clk);
       end

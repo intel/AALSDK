@@ -44,21 +44,15 @@
  */
 
 package ase_pkg;
-   
-
-// `ifndef _ASE_GLOBAL_VH_
-//  `define _ASE_GLOBAL_VH_
 
    // Include platform.vh if not already
  `ifndef _PLATFORM_VH_
   `include "platform.vh"
  `endif
 
-
    // `define GRAM_AUTO "no_rw_check"                         // defaults to auto
    // `define GRAM_STYLE RAM_STYLE
    // `define SYNC_RESET_POLARITY 0
-
 
    // Address widths
    // `define PHYSADDR_WIDTH       38
@@ -98,18 +92,7 @@ package ase_pkg;
     */
    parameter CCIP_DATA_WIDTH       = 512;
    parameter CCIP_UMSG_BITINDEX    = 12;
-   parameter CCIP_CFG_HDR_WIDTH    = 18;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
-   
-   
-   /*
-    * SPL specifications
-    */
-   //parameter SPL_TX_HDR_WIDTH           99
-   //parameter SPL_RX_HDR_WIDTH           18
-   //parameter SPL_DATA_WIDTH             512
-   //parameter SPL_CSR_WIDTH              32
-   
    
    /*
     * TX header deconstruction
@@ -276,34 +259,36 @@ package ase_pkg;
     * ***********************************************************/ 
    // RxHdr
    typedef struct packed {
-      logic [1:0] vc;       // 27:26
-      logic       poison;   // 25
-      logic       hitmiss;  // 24
-      logic       format;   // 23
-      logic       rsvd22;   // 22
-      logic [1:0] clnum;    // 21:20
-      logic [3:0] resptype; // 19:16
-      logic [15:0] mdata;   // 15:0  
+      logic [1:0] vc;       // 27:26  // Virtual channel select
+      logic       poison;   // 25     // Poison bit
+      logic       hitmiss;  // 24     // Hit/miss indicator
+      logic       format;   // 23     // Multi-CL enable
+      logic       rsvd22;   // 22     // X
+      logic [1:0] clnum;    // 21:20  // Cache line number
+      logic [3:0] resptype; // 19:16  // Response type
+      logic [15:0] mdata;   // 15:0   // Metadata
    } RxHdr_t;
-
+   parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
 
    // TxHdr
    typedef struct packed {
-      logic [1:0]  vc;       // 73:72
-      logic 	   sop;      // 71
-      logic 	   rsvd70;   // Reserved bit(s)    // 70
-      logic [1:0]  len;      // 69:68
-      logic [3:0]  reqtype;  // 67:64
-      logic [5:0]  rsvd63_58;// Reserved bit(s)    // 63:58
-      logic [41:0] addr;    // 57:16
-      logic [15:0] mdata;   // 15:0
+      logic [1:0]  vc;       // 73:72  // Virtual channel select            
+      logic 	   sop;      // 71     // Start of packet
+      logic 	   rsvd70;   // 70     // X
+      logic [1:0]  len;      // 69:68  // Length
+      logic [3:0]  reqtype;  // 67:64  // Request Type
+      logic [5:0]  rsvd63_58;// 63:58  // X
+      logic [41:0] addr;     // 57:16  // Address
+      logic [15:0] mdata;    // 15:0   // Metadata
    } TxHdr_t;
-
-// `endif //  `ifndef _ASE_GLOBAL_VH_
-
-   // Structure widths
-   // If this computes wrong, there is trouble
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
-   parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
-      
+
+   // CfgHdr
+   typedef struct packed {
+      logic [15:0] index;     // 19:4 // Dword aligned address
+      logic [1:0]  rsvd3_2;   // 3:2  // Reserved
+      logic [1:0]  num_bytes; // 1:0  // 00 - 4b, 01 - 8b, 10 - 64b
+      } CfgHdr_t;
+   parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
+         
 endpackage

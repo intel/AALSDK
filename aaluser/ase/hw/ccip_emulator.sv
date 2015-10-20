@@ -44,9 +44,9 @@
  *   Added return path FIFOs for marshalling
  */
 
-import cvl_pkg::*;
+import ase_pkg::*;
+import ase_top_pkg::*;
 
-`include "ase_global.vh"
 `include "platform.vh"
 
 // `timescale 1ns/1ns
