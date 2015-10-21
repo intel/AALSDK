@@ -529,8 +529,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-//   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
-   dynamic_ptr<IAALService>(iidService, m_pAALService)->Release(TransactionID());
+   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
 }
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)

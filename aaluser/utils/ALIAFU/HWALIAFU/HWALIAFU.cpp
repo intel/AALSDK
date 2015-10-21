@@ -154,7 +154,7 @@ class BufferFreed : public IDispatchable
 {
 public:
    BufferFreed(IALIBuffer_Client   *pRecipient,
-                           TransactionID       TranID) :
+               TransactionID        TranID) :
       m_pRecipient(pRecipient),
       m_TranID(TranID)
    {
@@ -368,13 +368,10 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
                                NamedValueSet       *pOptArgs)
 {
 	   AutoLock(this);
-/*
+
 	   // Create a transaction id that wraps the original from the application,
-	   // Otherwise the return transaction will go straight back there
-	   TransactionID tid(new(std::nothrow) TransactionID(TranID),
-	                     HWALIAFU::AllocateBufferHandler,
-	                     true);
-*/
+//	   TransactionID tid(new(std::nothrow) TransactionID(TranID));
+
 	   // Create the request to bundle in the transaction
 
 	   // Create the Transaction
@@ -382,7 +379,7 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
 
 	   // Check the parameters
 	   if ( transaction.IsOK() ) {
-	      // Will return to AllocateBufferHandler, below.
+	      // Will return to AFUEvent, below.
 	      m_pAFUProxy->SendTransaction(&transaction);
 	   } else {
 	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
@@ -405,6 +402,14 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
                              TransactionID const &TranID)
 {
    // FIXME: port to IAFUProxy
+
+   // send fake bufferFreed event, since we're not doing anything
+   getRuntime()->schedDispatchable(
+               new(std::nothrow) BufferFreed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
+                                                                                m_pSvcClient),
+                                                 TranID)
+                   );
+
 /*	   AutoLock(this);
 
 	   // Create a transaction id that wraps the original from the application,
@@ -751,6 +756,40 @@ void HWALIAFU::serviceEvent(const IEvent &rEvent) {
    // TODO: handle unexpected events
    ASSERT(false);
 }
+
+
+// Callback for ALIAFUProxy
+void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
+{
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+   ASSERT(NULL != puidEvent);
+
+//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+
+   switch(puidEvent->MessageID())
+   {
+   case rspid_WSM_Response:
+      {
+         // TODO check result code
+
+         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+         getRuntime()->schedDispatchable(
+                     new(std::nothrow) BufferAllocated(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
+                                                                                      m_pSvcClient),
+                                                       puidEvent->msgTranID(),
+                                                       pResult->wsParms.ptr,
+                                                       pResult->wsParms.physptr,
+                                                       pResult->wsParms.size)
+                         );
+      } break;
+   default:
+      ASSERT(false); // unexpected event
+   }
+}
+
 
 
 /// @} group HWALIAFU

@@ -72,7 +72,7 @@ BEGIN_NAMESPACE(AAL)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
 class HWALIAFU_API HWALIAFU : public ServiceBase,
                               public IServiceClient,     // for AIA
-//                              public IAFUProxyClient,
+                              public IAFUProxyClient,
                               public IALIMMIO,
                               public IALIBuffer,
                               public IALIUMsg,
@@ -96,6 +96,7 @@ public:
 //      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
       SetInterface(        iidALI_RSET_Service,   dynamic_cast<IALIReset *>(this));
       SetInterface(        iidServiceClient,      dynamic_cast<IServiceClient *>(this));  // for AIA
+      SetInterface(        iidAFUProxyClient,     dynamic_cast<IAFUProxyClient *>(this));  // for AFUProy
    }
 
    virtual btBool init( IBase *pclientBase,
@@ -146,9 +147,9 @@ public:
    virtual void serviceEvent(const IEvent &rEvent);
    // </IServiceClient>
 
-/*   // <IAFUProxyClient>
+   // <IAFUProxyClient>
    virtual void AFUEvent(AAL::IEvent const &theEvent);
-   // </IAFUProxyClient>*/
+   // </IAFUProxyClient>
 
 protected:
    static void AllocateBufferHandler(IEvent const & );

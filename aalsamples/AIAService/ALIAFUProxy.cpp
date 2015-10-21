@@ -101,7 +101,9 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
    //
    // Check Client for proper interface
 
-   // TODO
+   m_pClient = dynamic_ptr<IAFUProxyClient>(iidAFUProxyClient, pclientBase);
+   ASSERT(m_pClient != NULL);
+   // TODO initFailed if m_pClient == NULL?
 
 
    // Bind the AFU device to complete transfer of ownership
