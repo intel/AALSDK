@@ -104,6 +104,11 @@ ccidrv_init(void)
 
    // Call the framework initialization
    ret = ccidrv_initDriver(/* Callback */);
+   if( 0 == ret ){
+
+      // Initialize the User mode interface
+      ret = ccidrv_initUMAPI();
+   }
 
    PTRACEOUT_INT(ret);
    return ret;

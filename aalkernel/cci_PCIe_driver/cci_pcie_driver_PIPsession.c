@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -55,7 +55,7 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cciv4_PIPsession.c
+//        FILE: cci_PIPsession.c
 //     CREATED: 07/28/2015
 //      AUTHOR: Joseph Grecco, Intel
 // PURPOSE: This file implements the Intel(R) QuickAssist Technology AAL
@@ -77,8 +77,8 @@
 #include "aalsdk/kernel/aalbus-device.h"
 #include "aalsdk/kernel/spl2defs.h"
 
-#include "cciv4_PIPsession.h"
-#include "cciv4_driver_internal.h"
+#include "cci_pcie_driver_PIPsession.h"
+#include "cci_pcie_driver_internal.h"
 
 #include "aalsdk/kernel/aalmafu-events.h"
 
@@ -93,27 +93,27 @@
 // Outputs: encoder_session
 // Comments:
 //=============================================================================
-struct cciv4_PIPsession *
+struct cci_PIPsession *
 session_create(struct aaldev_ownerSession *pownerSess)
 {
-   struct cciv4_PIPsession *pSess;
+   struct cci_PIPsession *pSess;
 
    // Allocate the session object
-   pSess = (struct cciv4_PIPsession *)kosal_kzmalloc(sizeof(struct cciv4_PIPsession));
+   pSess = (struct cci_PIPsession *)kosal_kzmalloc(sizeof(struct cci_PIPsession));
    ASSERT(NULL != pSess);
    if( NULL == pSess ){
       return NULL;
    }
 
    // Initialize the session
-   cciv4_PIPsessionp_to_ownerSession(pSess)  = pownerSess;
-   cciv4_PIPsessionp_to_aal_afup(pSess)      = aalsess_aaldevicep(pownerSess);
+   cci_PIPsessionp_to_ownerSession(pSess)  = pownerSess;
+   cci_PIPsessionp_to_aal_afup(pSess)      = aalsess_aaldevicep(pownerSess);
 
-   kosal_mutex_init(cciv4_PIPsessionp_semaphore(pSess));
+   kosal_mutex_init(cci_PIPsessionp_semaphore(pSess));
 
    // Save the device for this AFU. (Saved when the AFU was created)
-   cciv4_PIPsessionp_to_cciv4dev(pSess) = aaldev_pip_context_to_obj(struct cciv4_device *, pSess->paaldev);
-   //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cciv4_device *, pSess->paaldev);
+   cci_PIPsessionp_to_cciv4dev(pSess) = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
+   //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
    PDEBUG("CCIv4 PIP Session Created.\n");
 
    return pSess;
@@ -130,8 +130,8 @@ int
 BindSession(struct aaldev_ownerSession *pownerSess)
 {
    struct aal_device       *paaldev = NULL;
-   struct cciv4_device     *pdev    = NULL;
-   struct cciv4_PIPsession *pSess   = NULL;
+   struct cci_device     *pdev    = NULL;
+   struct cci_PIPsession *pSess   = NULL;
 
    PVERBOSE("Binding UI Session with CCIv4 Device\n");
 
@@ -145,7 +145,7 @@ BindSession(struct aaldev_ownerSession *pownerSess)
    }
 
    // Get the device from the AAL device's PIP context (setup when device was created)
-   pdev = aaldev_pip_context_to_obj(struct cciv4_device*, paaldev);
+   pdev = aaldev_pip_context_to_obj(struct cci_device*, paaldev);
 
    // Create a PIP session and save it.
    pSess = session_create( pownerSess );
@@ -158,7 +158,7 @@ BindSession(struct aaldev_ownerSession *pownerSess)
    pownerSess->m_PIPHandle = pSess;
 
    // Save the session in the device
-   cciv4_dev_to_PIPsessionp(pdev) = pSess;
+   cci_dev_to_PIPsessionp(pdev) = pSess;
 
    return 1;
 }
@@ -171,12 +171,12 @@ BindSession(struct aaldev_ownerSession *pownerSess)
 // Outputs: none.
 // Comments:
 //=============================================================================
-int session_destroy(struct cciv4_PIPsession *pSess)
+int session_destroy(struct cci_PIPsession *pSess)
 {
    PDEBUG( "Destroying CCIv4 PIP Session.\n");
 
    // Final free
-   kosal_kfree(pSess, sizeof(struct cciv4_PIPsession) );
+   kosal_kfree(pSess, sizeof(struct cci_PIPsession) );
    return 0;
 }
 
@@ -190,22 +190,64 @@ int session_destroy(struct cciv4_PIPsession *pSess)
 //=============================================================================
 int UnbindSession(struct aaldev_ownerSession *pownerSess)
 {
-   struct cciv4_PIPsession *pSess = (struct cciv4_PIPsession *)pownerSess->m_PIPHandle;
-   struct cciv4_device     *pdev  = cciv4_PIPsessionp_to_cciv4dev(pSess);
+   struct cci_PIPsession *pSess = (struct cci_PIPsession *)pownerSess->m_PIPHandle;
+   struct cci_device     *pdev  = cci_PIPsessionp_to_cciv4dev(pSess);
 
    PDEBUG("UnBinding UI Session\n");
 
    // Stop all on-going processing
-   kosal_sem_get_krnl( cciv4_dev_psem(pdev) );
+   kosal_sem_get_krnl( cci_dev_psem(pdev) );
    // TODO STOP STUFF HERE
-   kosal_sem_put( cciv4_dev_psem(pdev) );
+   kosal_sem_put( cci_dev_psem(pdev) );
 
    // Free all allocated workspaces not yet freed
-   cciv4_flush_all_wsids(pSess);
+   cci_flush_all_wsids(pSess);
 
    session_destroy(pSess);
 
    return 1;
 }
 
+//=============================================================================
+// Name: cci_flush_all_wsids
+// Description: Frees all workspaces allocated for this session
+// Interface: private
+// Inputs: sessp - session
+// Comments: This function should be called during cleanup.  It does not
+//           protect session queue access
+//=============================================================================
+void
+cci_flush_all_wsids(struct cci_PIPsession *psess)
+{
+   struct aaldev_ownerSession *pownerSess;
+   struct cci_device        *pdev;
+
+   struct aal_wsid            *wsidp;
+   struct aal_wsid            *tmp;
+
+   PTRACEIN;
+
+   ASSERT(psess);
+
+   pownerSess = cci_PIPsessionp_to_ownerSession(psess);
+   ASSERT(pownerSess);
+
+   pdev = cci_PIPsessionp_to_cciv4dev(psess);
+   ASSERT(pdev);
+
+   PVERBOSE("Freeing allocated workspaces.\n");
+
+   list_for_each_entry_safe(wsidp, tmp, &pownerSess->m_wshead, m_list) {
+
+      kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
+
+      // remove the wsid from the device and destroy
+      PVERBOSE("Done Freeing PWS with id 0x%llx.\n", wsidp->m_id);
+
+      list_del_init(&wsidp->m_list);
+
+      pownerSess->m_uiapi->freewsid(wsidp);
+   } // end list_for_each_entry
+   PTRACEOUT;
+}
 

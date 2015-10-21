@@ -155,32 +155,6 @@ int cci_publish_aaldevice(struct cci_device * pCCIdev)
 
    ASSERT(pCCIdev);
 
-   // Config space mapping
-   cci_dev_to_aaldev(pCCIdev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
-   }
-
-   if( cci_dev_allow_map_csr_write_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
-   }
-
-   if( cci_dev_allow_map_mmior_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
-   }
-
-   if( cci_dev_allow_map_umsg_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
-   }
-
-   // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
-   aaldev_pip_context(cci_dev_to_aaldev(pCCIdev)) = (void*)pCCIdev;
-
-   // Method called when the device is released (i.e., its destructor)
-   //  The canonical release device calls the user's release method.
-   //  If NULL is provided then only the canonical behavior is done
-   dev_setrelease(cci_dev_to_aaldev(pCCIdev), cci_release_device);
-
    ret = pAALbus->register_device(cci_dev_to_aaldev(pCCIdev));
    if ( 0 != ret ) {
       return -ENODEV;
@@ -261,3 +235,5 @@ cci_remove_device(struct cci_device *pCCIdev)
    cci_destroy_device(pCCIdev);
 
 } // cci_remove_device
+
+

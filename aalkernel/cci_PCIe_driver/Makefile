@@ -83,8 +83,12 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/cci_pcie_driver_internal.h \
 	$(srcdir)/cci_pcie_driver_simulator.c \
 	$(srcdir)/cci_pcie_driver_simulator.h \
+	$(srcdir)/cci_pcie_driver_PIPsession.c \
+	$(srcdir)/cci_pcie_driver_PIPsession.h \
 	$(srcdir)/cci_pcie_common.c $(srcdir)/cci_pcie_driver_pdde.c \
-	$(top_srcdir)/build-aux/depcomp
+	$(srcdir)/cci_pcie_driver_umapi_linux.c \
+	$(srcdir)/cci_pcie_driver_umapi_linux.h \
+	$(srcdir)/cciui-events.h $(top_srcdir)/build-aux/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/aalkernel.m4 \
 	$(top_srcdir)/configure.ac
@@ -96,7 +100,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am_driver_OBJECTS = cci_pcie_driver_main.$(OBJEXT) \
 	cci_pcie_common.$(OBJEXT) cci_pcie_driver_simulator.$(OBJEXT) \
-	cci_pcie_driver_pdde.$(OBJEXT)
+	cci_pcie_driver_pdde.$(OBJEXT) \
+	cci_pcie_driver_PIPsession.$(OBJEXT) \
+	cci_pcie_driver_umapi_linux.$(OBJEXT)
 driver_OBJECTS = $(am_driver_OBJECTS)
 driver_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -205,8 +211,8 @@ AALUIDRV_VERSION_MAJOR = 4
 AALUIDRV_VERSION_MINOR = 2
 AALUIDRV_VERSION_RELEASE = 0
 AAL_MODPROBE_CONFIG_PATH = no
-AAL_OS_KERNEL_BUILD_PATH = /lib/modules/3.13.0-65-generic/build
-AAL_OS_MODULE_INSTALL_PATH = /lib/modules/3.13.0-65-generic/aalsdk
+AAL_OS_KERNEL_BUILD_PATH = /lib/modules/3.13.0-66-generic/build
+AAL_OS_MODULE_INSTALL_PATH = /lib/modules/3.13.0-66-generic/aalsdk
 AAL_UDEV_RULES_PATH = no
 ACLOCAL = ${SHELL} /home/joe/sources/aalsdk/aalkernel/build-aux/missing aclocal-1.14
 AMTAR = $${TAR-tar}
@@ -320,7 +326,7 @@ MY_KBUILD_VERBOSE = $(my__kbuild_verbose_$(V))
 my__kbuild_verbose_ = $(AM_DEFAULT_VERBOSITY)
 my__kbuild_verbose_0 = 0
 my__kbuild_verbose_1 = 1
-moduledir = /lib/modules/3.13.0-65-generic/aalsdk
+moduledir = /lib/modules/3.13.0-66-generic/aalsdk
 module_DATA = \
 kbuild/ccipciedrv.ko
 
@@ -331,7 +337,12 @@ cci_pcie_driver_main.c \
 cci_pcie_common.c \
 cci_pcie_driver_simulator.c \
 cci_pcie_driver_pdde.c \
-cci_pcie_driver_simulator.h
+cci_pcie_driver_PIPsession.c \
+cci_pcie_driver_PIPsession.h \
+cci_pcie_driver_simulator.h \
+cci_pcie_driver_umapi_linux.c \
+cci_pcie_driver_umapi_linux.h \
+cciui-events.h 
 
 all: all-am
 
@@ -379,9 +390,11 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/cci_pcie_common.Po
+include ./$(DEPDIR)/cci_pcie_driver_PIPsession.Po
 include ./$(DEPDIR)/cci_pcie_driver_main.Po
 include ./$(DEPDIR)/cci_pcie_driver_pdde.Po
 include ./$(DEPDIR)/cci_pcie_driver_simulator.Po
+include ./$(DEPDIR)/cci_pcie_driver_umapi_linux.Po
 
 .c.o:
 	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -626,14 +639,14 @@ kbuild/ccipciedrv.ko: kbuild/Module.symvers
 
 kbuild/Module.symvers: $(abs_top_builddir)/aalbus/kbuild/Module.symvers $(driver_SOURCES) $(abs_top_builddir)/cci_PCIe_driver/kbuild/kOSAL.c $(abs_top_builddir)/cci_PCIe_driver/kbuild/Makefile
 	@cp --preserve=all "$(abs_top_builddir)/aalbus/kbuild/Module.symvers" "$(abs_top_builddir)/cci_PCIe_driver/kbuild" && \
-$(MAKE) -C "/lib/modules/3.13.0-65-generic/build" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cci_PCIe_driver/kbuild" aalkernelinc="$(abs_top_srcdir)/include" modules && \
+$(MAKE) -C "/lib/modules/3.13.0-66-generic/build" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cci_PCIe_driver/kbuild" aalkernelinc="$(abs_top_srcdir)/include" modules && \
 if [ -f "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.o" ]; then touch "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.o" ; fi && \
 if [ -f "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.mod.o" ]; then touch "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.mod.o" ; fi && \
 if [ -f "$(abs_top_builddir)/cci_PCIe_driver/kbuild/Module.symvers" ]; then touch "$(abs_top_builddir)/cci_PCIe_driver/kbuild/Module.symvers" ; fi && \
 if [ -f "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.ko" ]; then touch "$(abs_top_builddir)/cci_PCIe_driver/kbuild/ccipciedrv.ko" ; fi
 
 clean-local:
-	@$(MAKE) -C "/lib/modules/3.13.0-65-generic/build" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cci_PCIe_driver/kbuild" clean
+	@$(MAKE) -C "/lib/modules/3.13.0-66-generic/build" KBUILD_VERBOSE=$(MY_KBUILD_VERBOSE) M="$(abs_top_builddir)/cci_PCIe_driver/kbuild" clean
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

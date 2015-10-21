@@ -242,8 +242,10 @@ extern struct cci_device* cci_create_device(void);
 extern int cci_destroy_device( struct cci_device*);
 extern int cci_publish_aaldevice(struct cci_device *);
 extern void cci_remove_device(struct cci_device *);
+extern void cci_release_device(struct device *pdev);
 extern void ccidrv_exitDriver(void);
 
+extern int ccidrv_initUMAPI(void);
 
 #if 0
 void cci_release_device( struct device *pdev );

@@ -72,6 +72,11 @@
 #include "cci_pcie_driver_internal.h"
 #include "cci_pcie_driver_simulator.h"
 
+#include "cci_pcie_driver_PIPsession.h"
+
+#include "aalsdk/kernel/fappip.h"
+#include "aalsdk/kernel/aalui-events.h"
+
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
 
 int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
@@ -84,8 +89,32 @@ static char mmioafustring[]    = "CCIv4 MMIO test  \n";
 static char umesgafustring[]   = "CCIv4 UMSG test  \n";
 #endif
 
+static int
+CommandHandler(struct aaldev_ownerSession *,
+               struct aal_pipmessage,
+               void *);
 
-struct aal_ipip cci_simAFUpip; //TEMP
+//=============================================================================
+// CCIV4_SIMAFUpip
+// Description: Physical Interface Protocol Interface for the SPL2 AFU
+//              kernel based AFU engine.
+//=============================================================================
+struct aal_ipip cci_simAFUpip = {
+   .m_messageHandler = {
+      .sendMessage   = CommandHandler,       // Command Handler
+      .bindSession   = BindSession,          // Session binder
+      .unBindSession = UnbindSession,        // Session unbinder
+   },
+
+   .m_fops = {
+//     .mmap = cci_sim_mmap,
+   },
+
+   // Methods for binding and unbinding PIP to generic aal_device
+   //  Unused in this PIP
+   .binddevice    = NULL,      // Binds the PIP to the device
+   .unbinddevice  = NULL,      // Binds the PIP to the device
+};
 
 //=============================================================================
 // nextAFU_addr - Keeps the next available address for new AFUs
@@ -173,7 +202,12 @@ int cci_sim_discover_devices(ulong numdevices,
 //         size - size of aperture.
 //         g_device_list - List head of global device list.
 // Outputs: 0 - success.
-// Comments: none.
+// Comments: The steps are:
+//               Create the CCI device object.
+//               Set the CCI attributes (e.g., MMIO regions)
+//               Attach an aal_device to the CCI device (used by framework)
+//               Publish the new device with the framework
+//               Add the device to the driver's global list
 //=============================================================================
 int cci_create_sim_afu( btVirtAddr virtAddr,
                         uint size,
@@ -184,8 +218,17 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    btVirtAddr         ptemp      = NULL;
    int                ret        = 0;
 
+   //=============================================================
+   // Create the CCI device structure. The CCI device is the class
+   // used by the Low Level Communications (PIP). It holds the
+   // hardware specific attributes.
+
    // Construct the cci_device object
    pCCIdev = cci_create_device();
+
+   //====================================================
+   // Set up the cci_device attributes used by the driver
+   //
 
    // Set up Simulated Config Space
    cci_dev_len_config(pCCIdev)  = size;
@@ -230,14 +273,6 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    cci_dev_kvp_afu_mmio(pCCIdev) = ptemp;
    cci_dev_phys_afu_mmio(pCCIdev) = virt_to_phys(cci_dev_kvp_afu_mmio(pCCIdev));
 
-   // Set  AFU specifics
-   aaldevid_afuguidl(*paalid) = CCI_SIM_AFUIDL;
-   aaldevid_afuguidh(*paalid) = CCI_SIM_AFUIDH;
-   aaldevid_devtype(*paalid)  = aal_devtypeAFU;
-   aaldevid_pipguid(*paalid)  = CCI_SIMAFUPIP_IID;
-   aaldevid_vendorid(*paalid) = AAL_vendINTC;
-   aaldevid_ahmguid(*paalid)  = HOST_AHM_GUID;
-
    // Direct user mode CSR interface not supported
    cci_dev_clr_allow_map_csr_write_space(pCCIdev);
    cci_dev_clr_allow_map_csr_read_space(pCCIdev);
@@ -249,16 +284,57 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    // Mark as simulated
    cci_set_simulated(pCCIdev);
 
+   //===========================================================
    // Create the AAL device structure. The AAL device is the
-   //  base class for all devices in AAL. Among other things it
-   //  holds the device name, address and pointer to Low Level Communications
-   //  module (PIP)
+   // base class for all devices in AAL. This object is used by
+   // the AAL kernel framework. It also provides the pointer to
+   // the low level physical interface protocol module (PIP).
+
+   // Create the ID of the AAL device. Used for Resource Management.
+   aaldevid_afuguidl(*paalid) = CCI_SIM_AFUIDL;
+   aaldevid_afuguidh(*paalid) = CCI_SIM_AFUIDH;
+   aaldevid_devtype(*paalid)  = aal_devtypeAFU;
+   aaldevid_pipguid(*paalid)  = CCI_SIMAFUPIP_IID;
+   aaldevid_vendorid(*paalid) = AAL_vendINTC;
+   aaldevid_ahmguid(*paalid)  = HOST_AHM_GUID;
+
+   // Create the AAL device
    pCCIdev->m_aaldev =  aaldev_create( "CCISIMAFU",
                                         paalid,
                                         &cci_simAFUpip);
 
+   //===========================================================
+   // Set up the optional aal_device attributes
+   //
+
    // Set how many owners are allowed access to this device simultaneously
    pCCIdev->m_aaldev->m_maxowners = 1;
+
+   // Set the config space mapping permissions
+   cci_dev_to_aaldev(pCCIdev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
+   if( cci_dev_allow_map_csr_read_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
+   }
+
+   if( cci_dev_allow_map_csr_write_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
+   }
+
+   if( cci_dev_allow_map_mmior_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
+   }
+
+   if( cci_dev_allow_map_umsg_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
+   }
+
+   // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
+   aaldev_pip_context(cci_dev_to_aaldev(pCCIdev)) = (void*)pCCIdev;
+
+   // Method called when the device is released (i.e., its destructor)
+   //  The canonical release device calls the user's release method.
+   //  If NULL is provided then only the canonical behavior is done
+   dev_setrelease(cci_dev_to_aaldev(pCCIdev), cci_release_device);
 
       // Device is ready for use.  Publish it with the Configuration Management Subsystem
    ret = cci_publish_aaldevice(pCCIdev);
@@ -278,3 +354,614 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
 
    return 0;
 }
+
+
+//=============================================================================
+// Name: CommandHandler
+// Description: Implements the PIP command handler
+// Interface: public
+// Inputs: pownerSess - Session between App and device
+//         Message - Message to process
+//         MessageContext - used by UIDRV (TODO deprecate)
+// Outputs: none.
+// Comments:
+//=============================================================================
+int
+CommandHandler(struct aaldev_ownerSession *pownerSess,
+               struct aal_pipmessage       Message,
+               void                       *MessageContext)
+{
+#if (1 == ENABLE_DEBUG)
+#define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
+#else
+#define AFU_COMMAND_CASE(x) case x :
+#endif // ENABLE_DEBUG
+
+   // Private session object set at session bind time (i.e., when allocated)
+   struct cci_PIPsession *pSess = (struct cci_PIPsession *)aalsess_pipHandle(pownerSess);
+   struct cci_device  *pdev  = NULL;
+
+   // Generalized payload pointer. Points to locally allocated and copied
+   //    version of pmsg->payload of length pmsg->size
+   void *p_localpayload = NULL;
+
+   // Overall return value for this function. Set before exiting if there is an error.
+   //    retval = 0 means good return.
+   int retval = 0;
+
+   // UI Driver message
+   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *) Message.m_message;
+
+   // Used to point to the response event
+   struct uidrv_event_afu_response_event  *pafuresponse_evt = NULL;
+   struct uidrv_event_afu_workspace_event *pafuws_evt       = NULL;
+
+   // Used by WS allocation
+   struct aal_wsid                        *wsidp            = NULL;
+
+   // if we return a request error, return this.  usually it's an invalid request error.
+   uid_errnum_e request_error = uid_errnumInvalidRequest;
+
+   PINFO("In CCIv4 Command handler, AFUCommand().\n");
+
+   // Perform some basic checks while assigning the pdev
+   ASSERT(NULL != pSess );
+   if ( NULL == pSess ) {
+      PDEBUG("Error: No PIP session\n");
+      return -EIO;
+   }
+
+   // Get the cciv4 device
+   pdev = cci_PIPsessionp_to_cciv4dev(pSess);
+   if ( NULL == pdev ) {
+      PDEBUG("Error: No device\n");
+      return -EIO;
+   }
+   //============================
+
+   // Get the request copied into local memory
+   p_localpayload = kosal_kzmalloc(pmsg->size);
+   if( !p_localpayload ) {
+      PDEBUG("Error: kosal_kzmalloc failed with size=%" PRIu64 "\n", pmsg->size);
+      retval = -ENOMEM;
+      goto ERROR;
+   }
+   if ( copy_from_user( p_localpayload, (void *) pmsg->payload, pmsg->size) ) {
+      PDEBUG("Error: copy_from_user(p_localpayload=%p, pmsg->payload=%p, pmsg->size=%" PRIu64 ") failed.\n", p_localpayload,
+                                                                                                             pmsg->payload,
+                                                                                                             pmsg->size);
+      retval = -EFAULT;
+      goto ERROR;
+   }
+
+
+   // Check for MAFU message first. Invalid for this device.
+   // Flow will fall through the switch statement which follows.
+   //  and the error event will be sent in the default clause.
+   if ( aalui_mafucmd == pmsg->cmd ) {
+      PDEBUG("Permission denied. Not Management AFU\n");
+      request_error = uid_errnumPermission;
+   }
+
+   //=====================
+   // Message processor
+   //=====================
+   switch ( pmsg->cmd ) {
+      // Returns a workspace ID for the Config Space
+      AFU_COMMAND_CASE(fappip_getCSRmap) {
+         struct cciv4req *preq = (struct cciv4req *)p_localpayload;
+
+         if ( !cci_dev_allow_map_csr_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
+            pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                             0,
+                                                             (btPhysAddr)NULL,
+                                                             0,
+                                                             0,
+                                                             0,
+                                                             Message.m_tranID,
+                                                             Message.m_context,
+                                                             uid_errnumPermission);
+            PERR("Direct API access not permitted on this device\n");
+
+            retval = -EPERM;
+         } else {
+
+            //------------------------------------------------------------
+            // Create the WSID object and add to the list for this session
+            //------------------------------------------------------------
+            if ( ( WSID_CSRMAP_WRITEAREA != preq->ahmreq.u.wksp.m_wsid ) &&
+                 ( WSID_CSRMAP_READAREA  != preq->ahmreq.u.wksp.m_wsid ) ) {
+               PERR("Failed getCSR map Parameter\n");
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                                0,
+                                                                (btPhysAddr)NULL,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                Message.m_tranID,
+                                                                Message.m_context,
+                                                                uid_errnumBadParameter);
+               PERR("Bad WSID on fappip_getCSRmap\n");
+
+               retval = -EINVAL;
+            } else {
+
+               wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+               if ( NULL == wsidp ) {
+                  PERR("Could not allocate CSR workspace\n");
+                  retval = -ENOMEM;
+                  /* generate a failure event back to the caller? */
+                  goto ERROR;
+               }
+
+               wsidp->m_type = WSM_TYPE_CSR;
+               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
+                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+                         wsidp,
+                         preq->ahmreq.u.wksp.m_wsid);
+
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_cci_csr(pdev), (int)cci_dev_len_cci_csr(pdev));
+
+               // Return the event with all of the appropriate aperture descriptor information
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
+                                 pownerSess->m_device,
+                                 wsidobjp_to_wid(wsidp),
+                                 cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
+                                 cci_dev_len_cci_csr(pdev),         // Return the requested aperture size
+                                 4,                                 // Return the CSR size in octets
+                                 4,                                 // Return the inter-CSR spacing octets
+                                 Message.m_tranID,
+                                 Message.m_context,
+                                 uid_errnumOK);
+
+               PVERBOSE("Sending uid_wseventCSRMap Event\n");
+
+               retval = 0;
+            }
+         }
+
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         if ( 0 != retval ) {
+            goto ERROR;
+         }
+
+      } break;
+
+      // Returns a workspace ID for the MMIO-R Space
+      AFU_COMMAND_CASE(fappip_getMMIORmap) {
+         struct cciv4req *preq = (struct cciv4req *)p_localpayload;
+
+         if ( !cci_dev_allow_map_mmior_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
+            pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                             0,
+                                                             (btPhysAddr)NULL,
+                                                             0,
+                                                             0,
+                                                             0,
+                                                             Message.m_tranID,
+                                                             Message.m_context,
+                                                             uid_errnumPermission);
+            PERR("Direct API access not permitted on this device\n");
+
+            retval = -EPERM;
+         } else {
+
+            //------------------------------------------------------------
+            // Create the WSID object and add to the list for this session
+            //------------------------------------------------------------
+            if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
+               PERR("Failed getCSR map Parameter\n");
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                                0,
+                                                                (btPhysAddr)NULL,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                Message.m_tranID,
+                                                                Message.m_context,
+                                                                uid_errnumBadParameter);
+               PERR("Bad WSID on fappip_getMMIORmap\n");
+
+               retval = -EINVAL;
+            } else {
+
+               wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+               if ( NULL == wsidp ) {
+                  PERR("Could not allocate MMIOR workspace\n");
+                  retval = -ENOMEM;
+                  /* generate a failure event back to the caller? */
+                  goto ERROR;
+               }
+
+               wsidp->m_type = WSM_TYPE_CSR;
+               PDEBUG("Getting CSR Aperature WSID %p WSID_MAP_MMIOR using id %llx .\n",
+                         wsidp,
+                         preq->ahmreq.u.wksp.m_wsid);
+
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+
+               // Return the event with all of the appropriate aperture descriptor information
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
+                                 pownerSess->m_device,
+                                 wsidobjp_to_wid(wsidp),
+                                 cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
+                                 cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
+                                 4,                                  // Return the CSR size in octets
+                                 4,                                  // Return the inter-CSR spacing octets
+                                 Message.m_tranID,
+                                 Message.m_context,
+                                 uid_errnumOK);
+
+               PVERBOSE("Sending fappip_getMMIORmap Event\n");
+
+               retval = 0;
+            }
+         }
+
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         if ( 0 != retval ) {
+            goto ERROR;
+         }
+
+      } break;
+
+      AFU_COMMAND_CASE(fappip_getuMSGmap) {
+         struct cciv4req *preq = (struct cciv4req *)p_localpayload;
+
+         if ( !cci_dev_allow_map_umsg_space(pdev) ) {
+            PERR("Failed getCSR map Permission\n");
+            pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                             0,
+                                                             (btPhysAddr)NULL,
+                                                             0,
+                                                             0,
+                                                             0,
+                                                             Message.m_tranID,
+                                                             Message.m_context,
+                                                             uid_errnumPermission);
+            PERR("Direct API access not permitted on this device\n");
+
+            retval = -EPERM;
+         } else {
+
+            //------------------------------------------------------------
+            // Create the WSID object and add to the list for this session
+            //------------------------------------------------------------
+            if ( WSID_MAP_UMSG != preq->ahmreq.u.wksp.m_wsid ) {
+               PERR("Failed getCSR map Parameter\n");
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+                                                                0,
+                                                                (btPhysAddr)NULL,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                Message.m_tranID,
+                                                                Message.m_context,
+                                                                uid_errnumBadParameter);
+               PERR("Bad WSID on fappip_getuMSGmap\n");
+
+               retval = -EINVAL;
+            } else {
+
+               wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+               if ( NULL == wsidp ) {
+                  PERR("Could not allocate UMSG workspace\n");
+                  retval = -ENOMEM;
+                  /* generate a failure event back to the caller? */
+                  goto ERROR;
+               }
+
+               wsidp->m_type = WSM_TYPE_CSR;
+               PDEBUG("Getting CSR Aperature WSID %p WSID_MAP_UMSG using id %llx .\n",
+                         wsidp,
+                         preq->ahmreq.u.wksp.m_wsid);
+
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_umsg(pdev), (int)cci_dev_len_afu_umsg(pdev));
+
+               // Return the event with all of the appropriate aperture descriptor information
+               pafuws_evt = uidrv_event_afu_afugetcsrmap_create(
+                                 pownerSess->m_device,
+                                 wsidobjp_to_wid(wsidp),
+                                 cci_dev_phys_afu_umsg(pdev),        // Return the requested aperture
+                                 cci_dev_len_afu_umsg(pdev),         // Return the requested aperture size
+                                 4,                                  // Return the CSR size in octets
+                                 4,                                  // Return the inter-CSR spacing octets
+                                 Message.m_tranID,
+                                 Message.m_context,
+                                 uid_errnumOK);
+
+               PVERBOSE("Sending fappip_getuMSGmap Event\n");
+
+               retval = 0;
+            }
+         }
+
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         if ( 0 != retval ) {
+            goto ERROR;
+         }
+
+      } break;
+
+#if 0
+   //============================
+   //  Get/Set CSR block function
+   //============================
+   case fappip_afucmdCSR_GETSET:{
+
+      // Used by Get/Set CSR
+      unsigned             u;
+      unsigned             index;
+      csr_read_write_blk  *pcsr_rwb;
+      unsigned             num_to_set;
+      csr_offset_value    *pcsr_array;
+
+      DPRINTF(ENCODER_DBG_AFU, "Get/Set function\n");
+      // Make sure we are the transaction owner
+      if( !spl2_sessionp_is_tranowner(pSess){
+         // Device is currently busy.
+          pafuresponse_evt = uidrv_event_afutrancmplt_create(pownerSess->m_device,
+                                                             &Message.m_tranID,
+                                                             Message.m_context,
+                                                             NULL,
+                                                             uid_errnumPermission);
+          // Send the event
+          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                         pownerSess->m_device,
+                                         AALQIP(pafuresponse_evt),
+                                         MessageContext);
+          goto failed;
+
+      }
+      index       = 0;
+      pcsr_rwb    = (csr_read_write_blk*) p_localpayload;
+      num_to_set  = pcsr_rwb->num_to_set;
+      pcsr_array  = csr_rwb_setarray(pcsr_rwb);
+
+      DPRINTF(ENCODER_DBG_AFU, "Num to set %d\n", num_to_set);
+
+      // Execute the simulator
+      for (u = 0; u < num_to_set; ++u) {
+
+         // Invoke the PIP writecsr method. (See encoder write csr
+         if( 0 != encoder_writecsr( pSess->pencoderafu, pcsr_array[u].csr_offset, pcsr_array[u].csr_value) ){
+            pafuresponse_evt = uidrv_event_afu_afucsrgetset_create(  pownerSess->m_device,
+                                                                     pcsr_rwb,
+                                                                     u,
+                                                                     &Message.m_tranID,
+                                                                     Message.m_context,
+                                                                     uid_errnumOK);
+
+         }
+      }
+
+      if( NULL == pafuresponse_evt){
+         // Create the response event
+         pafuresponse_evt = uidrv_event_afu_afucsrgetset_create( pownerSess->m_device,
+                                                                 pcsr_rwb,
+                                                                 index,
+                                                                 &Message.m_tranID,
+                                                                 Message.m_context,
+                                                                 uid_errnumOK);
+      }
+
+      if (unlikely(pafuresponse_evt == NULL)) {
+         DPRINTF(ENCODER_DBG_AFU, "Exception creating event! No memory\n");
+         retval = -ENOMEM;
+         goto failed;
+      }
+
+      // Send the event
+      pownerSess->m_uiapi->sendevent(pSess->m_pownerSess->m_UIHandle,
+                                     pownerSess->m_device,
+                                     AALQIP(pafuresponse_evt),
+                                     Message.m_context);
+
+      break;
+   }
+#endif
+
+   //============================
+   //  Allocate Workspace
+   //============================
+   AFU_COMMAND_CASE(fappip_afucmdWKSP_VALLOC) {
+      struct ahm_req          req;
+      btVirtAddr krnl_virt = NULL;
+
+      req = *(struct ahm_req *)p_localpayload;
+
+      // Normal flow -- create the needed workspace.
+      krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(req.u.wksp.m_size);
+      if (NULL == krnl_virt) {
+         pafuws_evt = uidrv_event_afu_afuallocws_create(pownerSess->m_device,
+                                                        (btWSID) 0,
+                                                        NULL,
+                                                        (btPhysAddr)NULL,
+                                                        req.u.wksp.m_size,
+                                                        Message.m_tranID,
+                                                        Message.m_context,
+                                                        uid_errnumNoMem);
+
+         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                        pownerSess->m_device,
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         goto ERROR;
+      }
+
+      //------------------------------------------------------------
+      // Create the WSID object and add to the list for this session
+      //------------------------------------------------------------
+      wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, (btWSID)krnl_virt);
+      if ( NULL == wsidp ) {
+         PERR("Couldn't allocate task workspace\n");
+         retval = -ENOMEM;
+         /* send a failure event back to the caller? */
+         goto ERROR;
+      }
+
+      wsidp->m_size = req.u.wksp.m_size;
+      wsidp->m_type = WSM_TYPE_PHYSICAL;
+      PDEBUG("Creating Physical WSID %p.\n", wsidp);
+
+      // Add the new wsid onto the session
+      aalsess_add_ws(pownerSess, wsidp->m_list);
+
+      PINFO("CCI WS alloc wsid=0x%" PRIx64 " phys=0x%" PRIxPHYS_ADDR  " kvp=0x%" PRIx64 " size=%" PRIu64 " success!\n",
+               req.u.wksp.m_wsid,
+               kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
+               wsidp->m_id,
+               wsidp->m_size);
+
+      // Create the event
+      pafuws_evt = uidrv_event_afu_afuallocws_create(
+                                            aalsess_aaldevicep(pownerSess),
+                                            wsidobjp_to_wid(wsidp), // make the wsid appear page aligned for mmap
+                                            NULL,
+                                            kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
+                                            req.u.wksp.m_size,
+                                            Message.m_tranID,
+                                            Message.m_context,
+                                            uid_errnumOK);
+
+      PVERBOSE("Sending the WKSP Alloc event.\n");
+      // Send the event
+      pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                     aalsess_aaldevicep(pownerSess),
+                                     AALQIP(pafuws_evt),
+                                     Message.m_context);
+
+   } break; // case fappip_afucmdWKSP_VALLOC
+
+
+   //============================
+   //  Free Workspace
+   //============================
+   AFU_COMMAND_CASE(fappip_afucmdWKSP_VFREE) {
+      struct ahm_req         req;
+      btVirtAddr krnl_virt = NULL;
+
+      req = *(struct ahm_req*)p_localpayload;
+
+      ASSERT(0 != req.u.wksp.m_wsid);
+      if ( 0 == req.u.wksp.m_wsid ) {
+         PDEBUG("WKSP_IOC_FREE: WS id can't be 0.\n");
+         // Create the exception event
+         pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                        Message.m_tranID,
+                                                        Message.m_context,
+                                                        uid_errnumBadParameter);
+
+         // Send the event
+         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                        pownerSess->m_device,
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+         retval = -EFAULT;
+         goto ERROR;
+      }
+
+      // Get the workspace ID object
+      wsidp = wsid_to_wsidobjp(req.u.wksp.m_wsid);
+
+      ASSERT(wsidp);
+      if ( NULL == wsidp ) {
+         // Create the exception event
+         pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                        Message.m_tranID,
+                                                        Message.m_context,
+                                                        uid_errnumBadParameter);
+
+         PDEBUG("Sending WKSP_FREE Exception\n");
+         // Send the event
+         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                        pownerSess->m_device,
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         retval = -EFAULT;
+         goto ERROR;
+      }
+
+      // Free the buffer
+      if(  WSM_TYPE_PHYSICAL != wsidp->m_type ) {
+         PDEBUG( "Workspace free failed due to bad WS type. Should be %d but received %d\n",WSM_TYPE_PHYSICAL,
+               wsidp->m_type);
+
+         pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                        Message.m_tranID,
+                                                        Message.m_context,
+                                                        uid_errnumBadParameter);
+         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                        pownerSess->m_device,
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+         retval = -EFAULT;
+         goto ERROR;
+      }
+
+      krnl_virt = (btVirtAddr)wsidp->m_id;
+
+      kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+
+      // remove the wsid from the device and destroy
+      list_del_init(&wsidp->m_list);
+      pownerSess->m_uiapi->freewsid(wsidp);
+
+      // Create the  event
+      pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                     Message.m_tranID,
+                                                     Message.m_context,
+                                                     uid_errnumOK);
+
+      PVERBOSE("Sending the WKSP Free event.\n");
+      // Send the event
+      pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                     pownerSess->m_device,
+                                     AALQIP(pafuws_evt),
+                                     Message.m_context);
+   } break; // case fappip_afucmdWKSP_FREE
+
+   default: {
+      PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
+
+      pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
+                                                                  &Message.m_tranID,
+                                                                  Message.m_context,
+                                                                  request_error);
+
+      pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                     pownerSess->m_device,
+                                     AALQIP(pafuresponse_evt),
+                                     Message.m_context);
+
+      retval = -EINVAL;
+   } break;
+   } // switch (pmsg->cmd)
+
+   ASSERT(0 == retval);
+
+ERROR:
+   if ( NULL != p_localpayload ) {
+      kfree(p_localpayload);
+   }
+
+   return retval;
+}
+

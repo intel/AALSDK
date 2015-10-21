@@ -277,9 +277,6 @@ static inline struct aal_device *
 #define AAL_AFU_DEVICE_BASENAME     "AALAFU"
 
    struct aal_device    *paaldevice = NULL;
-   struct aal_bus       *aal_bus_p;
-   struct aal_bus_type  *aal_bus_type_p;
-   int status;
 
    ASSERT(devID);
 
@@ -297,6 +294,8 @@ static inline struct aal_device *
 
     // Prepare the new device
    memset(paaldevice, 0, sizeof(struct aal_device));
+
+   paaldevice->m_devid        = *devID;
 
    // Store the base name
    if ( 0 == strlen(szDevName) ) {
@@ -336,7 +335,6 @@ static inline struct aal_device *
 
    // Initialize the device ID info
    DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
-   paaldevice->m_devid        = *devID;
 
    // The Context is a PIP defined data value
    //   The standard AAL PIP pointer is stored as well

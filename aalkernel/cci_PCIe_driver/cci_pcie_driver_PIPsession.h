@@ -55,7 +55,7 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cciv4_PIPsession.h
+//        FILE: cci_PIPsession.h
 //     CREATED: 07/28/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //
@@ -65,12 +65,12 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************
-#ifndef __AALKERNEL_CCIV4_PIP_SESSION_H__
-#define __AALKERNEL_CCIV4_PIP_SESSION_H__
-#include "cciv4_driver_internal.h"
+#ifndef __AALKERNEL_CCI_PIP_SESSION_H__
+#define __AALKERNEL_CCI_PIP_SESSION_H__
+#include "cci_pcie_driver_internal.h"
 
 //=============================================================================
-// Name: cciv4_PIPsession
+// Name: cci_PIPsession
 // Description: Object that represents an instance of a session between an
 //              owner of a device and the device itself. It holds state such
 //              as the task list and PIP interface. The PIP interface
@@ -79,11 +79,11 @@
 //           the generic session context shared between the PIP and the
 //           AAL kernel services.
 //=============================================================================
-struct cciv4_PIPsession {
+struct cci_PIPsession {
 
    // PIP contains all of the interfaces we use for communications
    struct aal_device             *paaldev;
-   struct cciv4_device           *pCCIV4dev;
+   struct cci_device           *pCCIV4dev;
 
    // Current transaction
    stTransactionID_t              currTranID;
@@ -93,21 +93,21 @@ struct cciv4_PIPsession {
    struct semaphore               session_sem;
 
 };
-#define cciv4_PIPsessionp_to_cciv4dev(s)            ( (s)->pCCIV4dev )
-#define cciv4_PIPsessionp_to_aal_afup(s)            ((s)->paaldev)
-#define cciv4_PIPsessionp_to_ownerSession(s)        ((s)->pownerSess)
-#define cciv4_PIPsessionp_semaphore(s)              (&(s)->session_sem)
+#define cci_PIPsessionp_to_cciv4dev(s)            ( (s)->pCCIV4dev )
+#define cci_PIPsessionp_to_aal_afup(s)            ((s)->paaldev)
+#define cci_PIPsessionp_to_ownerSession(s)        ((s)->pownerSess)
+#define cci_PIPsessionp_semaphore(s)              (&(s)->session_sem)
 
 //=============================================================================
 //=============================================================================
 //                                PROTOTYPES
 //=============================================================================
 //=============================================================================
-struct cciv4_PIPsession *session_create(struct aaldev_ownerSession *pownerSess);
+struct cci_PIPsession *session_create(struct aaldev_ownerSession *pownerSess);
 int BindSession(struct aaldev_ownerSession *pownerSess);
-int session_destroy(struct cciv4_PIPsession *sess);
+int session_destroy(struct cci_PIPsession *sess);
 int UnbindSession(struct aaldev_ownerSession *pownerSess);
-void flush_all_wsids( struct cciv4_PIPsession *);
+void cci_flush_all_wsids( struct cci_PIPsession *);
 
 #endif // __AALKERNEL_CCIV4_PIP_SESSION_H__
 
