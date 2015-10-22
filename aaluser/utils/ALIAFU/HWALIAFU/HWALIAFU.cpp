@@ -265,7 +265,12 @@ btBool HWALIAFU::init(IBase *pclientBase,
 //
 btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
-   return ServiceBase::Release(TranID, timeout);
+   // Wrap original transaction id and timeout
+   ReleaseContext *prc = new ReleaseContext(TranID, timeout);
+   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+   // Release ALI / AFUProxy
+   ASSERT(m_pAALService != NULL);
+   return m_pAALService->Release(TransactionID(appContext), timeout);
 }
 
 
@@ -742,13 +747,14 @@ void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
 
 // Service released callback
 void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
-   // EMPTY
+   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
+   ServiceBase::Release(prc->rTranID, prc->timeout);
 }
 
 // Service released failed callback
 void HWALIAFU::serviceReleaseFailed(const IEvent &rEvent) {
    m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   // EMPTY
+   // TODO EMPTY
 }
 
 // Callback for generic events

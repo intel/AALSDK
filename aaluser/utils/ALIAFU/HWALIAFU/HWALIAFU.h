@@ -160,6 +160,16 @@ protected:
    TransactionID        m_tidSaved;
    IBase               *m_pSvcClient;
 
+private:
+   struct ReleaseContext {
+      const TransactionID & rTranID;
+      const btTime          timeout;
+      ReleaseContext(const TransactionID &rtid, btTime to) :
+         rTranID(rtid),
+         timeout(to)
+      {}
+   };
+
 };
 
 /// @}
