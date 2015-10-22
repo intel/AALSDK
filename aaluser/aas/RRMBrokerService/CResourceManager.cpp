@@ -421,13 +421,23 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
 
+   // FIXME - there's a race condition here - it happens that the runtime
+   // already shut down the remote resource manager; in that case,
+   // m_pRRMAALService will not be NULL, but calling Release() on it will
+   // segfault / call pure virtual.
+   // Temporary fix: never shut down remote resource manager, but always let
+   // runtime cleanup handle it.
+
+#if 0
    // If we never allocated a remote resource manager service (i.e. it's
    // running externally), go ahead and release self.
    if (m_pRRMAALService == NULL) {
+#endif
       StopMessagePump();
       ServiceBase::Release(rTranID, timeout);   // This function blocks until pump is stopped.
 
       return true;
+#if 0
    }
 
    // If we have allocated a remote resource manager service, wrap original
@@ -437,6 +447,7 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
    return m_pRRMAALService->Release(TransactionID(appContext));
 
    // in the latter case, further shutdown happens in serviceReleased below.
+#endif
 }
 
 
