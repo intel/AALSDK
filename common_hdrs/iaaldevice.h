@@ -68,9 +68,35 @@
 #define __AALSDK_KERNEL_AALDEVICE_INTERFACE_H__
 #include <aalsdk/kernel/kosal.h>
 
+#ifdef __AAL_USER__
+# include <aalsdk/AALTypes.h>
+# define __user
+#endif
+
 BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
+//-----------------------------------------------------------------------------
+// Typedefs and constants
+//-----------------------------------------------------------------------------
+
+// Defines for AFU mask
+#define   AAL_DEVIDMASK_AFU(n)  (0x1 <<n)
+#define   AAL_DEVID_MAFU        64
+
+//=============================================================================
+// Name:
+// Description: mappable API modes
+//=============================================================================
+// XXX These must match fappip.h:WSID_CSRMAP_*AREA
+#define AAL_DEV_APIMAP_NONE     0x00000000
+#define AAL_DEV_APIMAP_CSRREAD  0x00000001
+#define AAL_DEV_APIMAP_CSRWRITE 0x00000002
+#define AAL_DEV_APIMAP_MMIOR    0x00000004
+#define AAL_DEV_APIMAP_UMSG     0x00000008
+#define AAL_DEV_APIMAP_CSRRW    ( AAL_DEV_APIMAP_CSRREAD | AAL_DEV_APIMAP_CSRWRITE )
+
+
 //=============================================================================
 // Standard Format for GUID is either binary or a modified hex-encoded string
 // NOTE: See http://en.wikipedia.org/wiki/Globally_Unique_Identifier
@@ -257,7 +283,7 @@ struct aalrms_configUpDateEvent {
    struct device_attrib    devattrs;   // Device attributes
 };
 
-
+#if defined( __AAL_KERNEL__ )
 // Forward Reference
 struct aal_device;
 struct aaldev_owner;
@@ -330,7 +356,7 @@ struct aaldevice_interface {
 #define dev_hasRelease(p)         (NULL != (p)->i.releasedevice)
 #define dev_setrelease(p,f)       (p)->i.releasedevice=f
 #define dev_release(p,d)          (p)->i.releasedevice(d)
-
+#endif
 
 
 END_C_DECLS

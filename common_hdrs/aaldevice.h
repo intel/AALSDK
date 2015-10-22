@@ -80,10 +80,13 @@
 #include <aalsdk/kernel/kosal.h>
 #include <aalsdk/kernel/iaaldevice.h>
 #include <aalsdk/kernel/aalbus-device.h>
+#if 0
 #ifdef __AAL_USER__
 # include <aalsdk/AALTypes.h>
 # define __user
 #endif
+#endif
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //                               AAL Device
@@ -105,26 +108,6 @@ struct aaldevCallbacks
    void (*devReleased)(struct device*);                  // Called when device released
    btInt(*devAdd)( struct aal_device *dev);              // Function called when device is created
 };
-
-//-----------------------------------------------------------------------------
-// Typedefs and constants
-//-----------------------------------------------------------------------------
-
-// Defines for AFU mask
-#define   AAL_DEVIDMASK_AFU(n)  (0x1 <<n)
-#define   AAL_DEVID_MAFU        64
-
-//=============================================================================
-// Name: 
-// Description: mappable API modes
-//=============================================================================
-// XXX These must match fappip.h:WSID_CSRMAP_*AREA
-#define AAL_DEV_APIMAP_NONE     0x00000000
-#define AAL_DEV_APIMAP_CSRREAD  0x00000001
-#define AAL_DEV_APIMAP_CSRWRITE 0x00000002
-#define AAL_DEV_APIMAP_MMIOR    0x00000004
-#define AAL_DEV_APIMAP_UMSG     0x00000008
-#define AAL_DEV_APIMAP_CSRRW    ( AAL_DEV_APIMAP_CSRREAD | AAL_DEV_APIMAP_CSRWRITE )
 
 
 #if 1

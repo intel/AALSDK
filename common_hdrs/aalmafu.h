@@ -68,7 +68,7 @@
 #ifndef __AALSDK_KERNEL_AALMAFU_H__
 #define __AALSDK_KERNEL_AALMAFU_H__
 #include <aalsdk/kernel/aaltypes.h>
-#include <aalsdk/kernel/aaldevice.h>
+#include <aalsdk/kernel/iaaldevice.h>
 #include <aalsdk/kernel/aalui.h>
 
 BEGIN_NAMESPACE(AAL)

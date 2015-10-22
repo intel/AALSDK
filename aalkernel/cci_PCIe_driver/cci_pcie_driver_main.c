@@ -128,6 +128,7 @@ void
 ccidrv_exit(void)
 {
    // Exit the framework
+   ccidrv_exitUMAPI();
    ccidrv_exitDriver();
 }
 

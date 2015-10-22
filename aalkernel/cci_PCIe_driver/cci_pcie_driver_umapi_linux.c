@@ -258,8 +258,11 @@ ccidrv_initUMAPI(void)
          }
       }
 #endif
+      device_destroy(thisDriver.m_class, thisDriver.m_devtype);
       cdev_del(&thisDriver.m_cdev);
+      class_destroy(thisDriver.m_class);
       unregister_chrdev_region(thisDriver.m_devtype, 1);
+      return res;
 
 }
 
@@ -279,7 +282,9 @@ void ccidrv_exitUMAPI(void)
 
    // TODO FLUSH ALL Messages
 
+   device_destroy(thisDriver.m_class, thisDriver.m_devtype);
    cdev_del(&thisDriver.m_cdev);
+   class_destroy(thisDriver.m_class);
    unregister_chrdev_region(thisDriver.m_devtype, 1);
 
 }
@@ -384,7 +389,6 @@ int ccidrv_ioctl(struct inode *inode,
 
    return ret;
 }
-
 
 
 //=============================================================================
@@ -1625,7 +1629,7 @@ static struct aal_wsid *find_wsid(const struct ccidrv_session *ccidrv_sess_p,
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-/////////////////               MMAP METHODd                ///////////////////
+/////////////////               MMAP METHOD                 ///////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

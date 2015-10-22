@@ -42,7 +42,7 @@
 #ifndef __AALSDK_UTILS_RESMGRUTILITIES_H__
 #define __AALSDK_UTILS_RESMGRUTILITIES_H__
 #include <aalsdk/AALTypes.h>         // bt types
-#include <aalsdk/kernel/aaldevice.h> // aal_device_addr
+#include <aalsdk/kernel/iaaldevice.h> // aal_device_addr
 
 BEGIN_NAMESPACE(AAL)
 

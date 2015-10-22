@@ -246,6 +246,7 @@ extern void cci_release_device(struct device *pdev);
 extern void ccidrv_exitDriver(void);
 
 extern int ccidrv_initUMAPI(void);
+void ccidrv_exitUMAPI(void);
 
 #if 0
 void cci_release_device( struct device *pdev );

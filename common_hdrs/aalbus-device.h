@@ -96,7 +96,7 @@
 #include <aalsdk/kernel/aalmafu.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 #include <aalsdk/kernel/aalbus-ipip.h>
-//#include <aalsdk/kernel/aaldevice.h>
+
 
 BEGIN_NAMESPACE(AAL)
 

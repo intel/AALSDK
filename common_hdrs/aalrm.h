@@ -73,7 +73,7 @@
 #ifndef __AALSDK_KERNEL_AALRM_H__
 #define __AALSDK_KERNEL_AALRM_H__
 #include <aalsdk/kernel/AALTransactionID_s.h>
-#include <aalsdk/kernel/aaldevice.h>
+#include <aalsdk/kernel/iaaldevice.h>
 
 BEGIN_NAMESPACE(AAL)
 

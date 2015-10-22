@@ -99,7 +99,7 @@
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 #include <aalsdk/kernel/AALWorkspace.h>
-#include <aalsdk/kernel/aaldevice.h>
+#include <aalsdk/kernel/iaaldevice.h>
 
 BEGIN_NAMESPACE(AAL)
 

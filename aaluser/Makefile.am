@@ -195,6 +195,7 @@ include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
 include/aalsdk/kernel/aaldevice.h \
+include/aalsdk/kernel/aaldevice.h \
 include/aalsdk/kernel/aalids.h \
 include/aalsdk/kernel/aalinterface.h \
 include/aalsdk/kernel/aalmafu-events.h \
