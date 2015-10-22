@@ -63,10 +63,10 @@
 //        tranID   - Transaction ID
 // Comments:
 //=============================================================================
-class UAIA_API BufferAllocate : public IAIATransaction
+class UAIA_API BufferAllocateTransaction : public IAIATransaction
 {
 public:
-   BufferAllocate( AAL::TransactionID const &tranID, AAL::btWSSize len );
+   BufferAllocateTransaction( AAL::TransactionID const &tranID, AAL::btWSSize len );
    AAL::btBool                IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;
@@ -74,7 +74,7 @@ public:
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
 
-   ~BufferAllocate();
+   ~BufferAllocateTransaction();
 
 private:
    AAL::uid_msgIDs_e             m_msgID;

@@ -374,13 +374,11 @@ void HWALIAFU::bufferAllocate( btWSSize             Length,
 {
 	   AutoLock(this);
 
-	   // Create a transaction id that wraps the original from the application,
+	   // TODO: Create a transaction id that wraps the original from the application,
 //	   TransactionID tid(new(std::nothrow) TransactionID(TranID));
 
-	   // Create the request to bundle in the transaction
-
 	   // Create the Transaction
-	   BufferAllocate transaction(TranID, Length);
+	   BufferAllocateTransaction transaction(TranID, Length);
 
 	   // Check the parameters
 	   if ( transaction.IsOK() ) {

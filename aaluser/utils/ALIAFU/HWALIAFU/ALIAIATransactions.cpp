@@ -70,7 +70,7 @@ USING_NAMESPACE(AAL)
 ///////////////////////////////////////////////////////////////////////////////
 
 
-BufferAllocate::BufferAllocate( TransactionID const &tranID, btWSSize len ) :
+BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranID, btWSSize len ) :
    m_msgID(reqid_UID_SendPIP),
    m_tid_t(tranID),
    m_bIsOK(false),
@@ -109,18 +109,18 @@ BufferAllocate::BufferAllocate( TransactionID const &tranID, btWSSize len ) :
    m_bIsOK = true;
 }
 
-AAL::btBool                    BufferAllocate::IsOK() const {return m_bIsOK;}
-AAL::btVirtAddr                BufferAllocate::getPayloadPtr()const {return m_payload;}
-AAL::btWSSize                  BufferAllocate::getPayloadSize()const {return m_size;}
-AAL::stTransactionID_t const   BufferAllocate::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              BufferAllocate::getMsgID()const {return m_msgID;}
+AAL::btBool                    BufferAllocateTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                BufferAllocateTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  BufferAllocateTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   BufferAllocateTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              BufferAllocateTransaction::getMsgID()const {return m_msgID;}
 
-BufferAllocate::~BufferAllocate() {
+BufferAllocateTransaction::~BufferAllocateTransaction() {
    // unpack payload and free memory
-/*   struct aalui_AFUmessage *afumsg = (aalui_AFUmessage *)m_payload;
+   struct aalui_AFUmessage *afumsg = (aalui_AFUmessage *)m_payload;
    struct ahm_req          *req    = (ahm_req *)afumsg->payload;
    delete req;
-   delete afumsg;*/
+   delete afumsg;
 }
 
 
