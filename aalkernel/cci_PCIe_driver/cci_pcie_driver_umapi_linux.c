@@ -125,6 +125,14 @@ int ccidrv_ioctl(struct inode *inode,
                 unsigned int cmd,
                 unsigned long arg);
 #endif
+btInt ccidrv_messageHandler(struct ccidrv_session  *psess,
+                            btUnsigned32bitInt     cmd,
+                            struct aalui_ioctlreq *preq,
+                            btWSSize               InbufSize,
+                            struct aalui_ioctlreq *presp,
+                            btWSSize              *pOutbufSize);
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -363,7 +371,7 @@ int ccidrv_ioctl(struct inode *inode,
       //Header is all there is
       pfullrequest = &req;
    }
-#if 0
+
    // Pass the message to OS independent processing
    ret = ccidrv_messageHandler(psess,
                               cmd,
@@ -371,7 +379,7 @@ int ccidrv_ioctl(struct inode *inode,
                               FullRequestSize,
                               pfullrequest,   // Pointer to output buffer
                               &Outbufsize);   // Outbuf buffer size
-#endif
+
    if ( 0 != ret ) {
       PDEBUG("ccidrv_messageHandler failed\n");
    } else {

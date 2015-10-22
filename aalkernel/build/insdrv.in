@@ -83,11 +83,8 @@ declare -r SLEEP="`which sleep`" 2>/dev/null
 # Names for sets of drivers which can be loaded by this script.
 declare -ra DRIVER_SETS=(\
 'base' \
-'spl' \
-'spl-pci' \
-'spl-nhm' \
-'spl-jkt' \
-'spl-test Base address' \
+'cci' \
+'cci-sim' \
 'cciv4' \
 'cciv4-sim' \
 )
@@ -143,22 +140,8 @@ declare mod_path
          fi
          printf "[ OK ]\n"
 
-         mod="@AALUIDRV_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
       ;; # base
-
-      spl2|spl2-pci|spl2-nhm|spl2-jkt)
-         die "$1 is deprecated. Please choose from the following: ${DRIVER_SETS[*]}"
-      ;; # spl2
-
-      spl)
+      cci)
          mod="@AALBUS_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/aalbus/kbuild"
          printf "insmod %-15s " "${mod}"
@@ -189,8 +172,9 @@ declare mod_path
          fi
          printf "[ OK ]\n"
 
-         mod="@AALUIDRV_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+ 
+         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
@@ -198,19 +182,9 @@ declare mod_path
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
-
-         mod="@SPL2PIP_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-      ;; # spl
-
-      spl-pci|spl_pci)
+      ;; # cciv4 
+      
+      cci-sim|cci_sim)
          mod="@AALBUS_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/aalbus/kbuild"
          printf "insmod %-15s " "${mod}"
@@ -241,131 +215,17 @@ declare mod_path
          fi
          printf "[ OK ]\n"
 
-         mod="@AALUIDRV_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         elif ! ${INSMOD} "${mod_path}/${mod}" sim=4 ; then
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
+      ;; # cciv4-sim (sim=4)
 
-         mod="@SPL2PIP_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=0 ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-      ;; # spl-pci (nopcie=0)
-
-      spl-nhm|spl_nhm)
-         mod="@AALBUS_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalbus/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALRMS_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALRMC_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALUIDRV_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@SPL2PIP_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=2 ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-      ;; # spl-nhm (nopcie=2)
-
-      spl-jkt|spl_jkt)
-         mod="@AALBUS_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalbus/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALRMS_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALRMC_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@AALUIDRV_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-
-         mod="@SPL2PIP_DRV_NAME@.ko"
-         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
-         printf "insmod %-15s " "${mod}"
-         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
-            printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=3 ; then
-            die "[FAIL]"
-         fi
-         printf "[ OK ]\n"
-      ;; # spl-jkt (nopcie=3)
-		
       cciv4)
          mod="@AALBUS_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/aalbus/kbuild"
