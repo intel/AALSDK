@@ -419,18 +419,24 @@ CResourceManager::~CResourceManager()
 //=============================================================================
 btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
-   // Release remote resource manager service
-   if (m_pRRMAALService == NULL) {
-      return false;
-   }
-
-   m_pRRMAALService->Release(TransactionID());
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
 
-   // This function blocks until pump is stopped.
-   StopMessagePump();
+   // If we never allocated a remote resource manager service (i.e. it's
+   // running externally), go ahead and release self.
+   if (m_pRRMAALService == NULL) {
+      StopMessagePump();
+      ServiceBase::Release(rTranID, timeout);   // This function blocks until pump is stopped.
 
-   return ServiceBase::Release(rTranID, timeout);
+      return true;
+   }
+
+   // If we have allocated a remote resource manager service, wrap original
+   // transaction id and timeout and release it.
+   ReleaseContext *prc = new ReleaseContext(rTranID, timeout);
+   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+   return m_pRRMAALService->Release(TransactionID(appContext));
+
+   // in the latter case, further shutdown happens in serviceReleased below.
 }
 
 
@@ -511,8 +517,10 @@ void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
 void CResourceManager::serviceReleased(TransactionID const &rTranID)
 {
    // clean up
-   m_pRRMAALService = NULL;
-   m_pRRMService = NULL;
+   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
+   StopMessagePump();
+
+   ServiceBase::Release(prc->tranID, prc->timeout);   // This function blocks until pump is stopped.
 }
 
 void CResourceManager::serviceReleaseFailed(const IEvent &rEvent)

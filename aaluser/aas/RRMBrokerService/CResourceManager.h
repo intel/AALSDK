@@ -182,6 +182,15 @@ private:
    IResMgrService                *m_pRRMService;
    IAALService                   *m_pRRMAALService;
 
+   // Context for properly wrapping transaction IDs on Release()
+   struct ReleaseContext {
+      const TransactionID   tranID;
+      const btTime          timeout;
+      ReleaseContext(const TransactionID &rtid, btTime to) :
+         tranID(rtid),
+         timeout(to)
+      {}
+   };
 };
 
 END_NAMESPACE(AAL)
