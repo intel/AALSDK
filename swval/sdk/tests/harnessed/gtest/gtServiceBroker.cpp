@@ -404,3 +404,4 @@ IRuntime::schedDispatchable(btObjectType pDisp)
    ASSERT_NONNULL(pSvcHost);
    delete pSvcHost;
 }
+

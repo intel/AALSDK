@@ -187,116 +187,112 @@ protected:
 //============================================================================
 // AAL Runtime
 //============================================================================
-class RuntimeCallback : public IDispatchable
+
+/// @brief Delivers IRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const & );
+class RuntimeCreateOrGetProxyFailed : public IDispatchable
 {
 public:
-   enum MessageType{
-      CreateorGetProxyFailed,
-      AllocateFailed,
-      ServiceAllocated,
-      Started,
-      StartFailed,
-      StopFailed,
-      Stopped,
-      Event
-   };
-
-   RuntimeCallback( enum MessageType       type,
-                   IRuntimeClient         *po,
-                   IRuntime               *prt,
-                   const NamedValueSet    &rConfigParms,
-                   const IEvent           *pEvent=NULL) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(prt),
-   m_so(NULL),
-   m_rConfigParms(rConfigParms),
-   m_pEvent(pEvent)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IRuntimeClient          *po,
-                   IRuntime                *prt) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(prt),
-   m_so(NULL),
-   m_rConfigParms(NamedValueSet()),
-   m_pEvent(NULL)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IBase                   *so,
-                   TransactionID const     &rtid) :
-   m_type(type),
-   m_pobject(NULL),
-   m_prt(NULL),
-   m_so(so),
-   m_rConfigParms(NamedValueSet()),
-   m_rTranID(rtid),
-   m_pEvent(NULL)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IRuntimeClient          *po,
-                   const IEvent            *pEvent) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(NULL),
-   m_rConfigParms(NamedValueSet()),
-   m_pEvent(pEvent)
-{}
-
-void operator() ()
-{
-   switch ( m_type ) {
-      case CreateorGetProxyFailed: {
-         ASSERT(NULL != m_pEvent);
-         m_pobject->runtimeCreateOrGetProxyFailed(*m_pEvent);
-         delete m_pEvent;
-      } break;
-      case Started : {
-         m_pobject->runtimeStarted(m_prt, m_rConfigParms);
-      } break;
-      case StartFailed : {
-         ASSERT(NULL != m_pEvent);
-         m_pobject->runtimeStartFailed(*m_pEvent);
-         delete m_pEvent;
-      } break;
-      case ServiceAllocated : {
-         m_pobject->runtimeAllocateServiceSucceeded(m_so, m_rTranID);
-      } break;
-      case AllocateFailed : {
-         ASSERT(NULL != m_pEvent);
-         m_pobject->runtimeAllocateServiceFailed(*m_pEvent);
-         delete m_pEvent;
-      } break;
-      case Stopped : {
-         m_pobject->runtimeStopped(m_prt);
-      } break;
-      case Event : {
-         ASSERT(NULL != m_pEvent);
-         m_pobject->runtimeEvent(*m_pEvent);
-         // Delete the event object as it didn't render itself
-         delete m_pEvent;
-      } break;
-      default:
-         ASSERT(false);
-      break;
-   }
-   delete this;
-}
-
-virtual ~RuntimeCallback() {}
-
+   RuntimeCreateOrGetProxyFailed(IRuntimeClient *pRTClient,
+                                 const IEvent   *pEvent);
+   ~RuntimeCreateOrGetProxyFailed();
+   virtual void       operator() ();
 protected:
-   IRuntimeClient          *m_pobject;
-   IRuntime                *m_prt;
-   IBase                   *m_so;
-   const NamedValueSet     &m_rConfigParms;
-   enum MessageType         m_type;
-   TransactionID const      m_rTranID;
-   IEvent const            *m_pEvent;
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStarted(IRuntime            * ,
+///                                                const NamedValueSet & );
+class RuntimeStarted : public IDispatchable
+{
+public:
+   RuntimeStarted(IRuntimeClient      *pRTClient,
+                  IRuntime            *pRT,
+                  const NamedValueSet &rConfigParms);
+   virtual void operator() ();
+protected:
+   IRuntimeClient      *m_pRTClient;
+   IRuntime            *m_pRT;
+   const NamedValueSet &m_rConfigParms;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStartFailed(const IEvent & );
+class RuntimeStartFailed : public IDispatchable
+{
+public:
+   RuntimeStartFailed(IRuntimeClient *pRTClient,
+                      const IEvent   *pEvent);
+   ~RuntimeStartFailed();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStopped(IRuntime * );
+class RuntimeStopped : public IDispatchable
+{
+public:
+   RuntimeStopped(IRuntimeClient *pRTClient,
+                  IRuntime       *pRT);
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   IRuntime       *m_pRT;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStopFailed(const IEvent & );
+class RuntimeStopFailed : public IDispatchable
+{
+public:
+   RuntimeStopFailed(IRuntimeClient *pRTClient,
+                     const IEvent   *pEvent);
+   ~RuntimeStopFailed();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeAllocateServiceSucceeded(IBase * ,
+///                                                                 TransactionID const & );
+class RuntimeAllocateServiceSucceeded : public IDispatchable
+{
+public:
+   RuntimeAllocateServiceSucceeded(IRuntimeClient      *pRTClient,
+                                   IBase               *pServiceBase,
+                                   TransactionID const &rTranID);
+   virtual void operator() ();
+protected:
+   IRuntimeClient      *m_pRTClient;
+   IBase               *m_pServiceBase;
+   TransactionID const &m_rTranID;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeAllocateServiceFailed(const IEvent & );
+class RuntimeAllocateServiceFailed : public IDispatchable
+{
+public:
+   RuntimeAllocateServiceFailed(IRuntimeClient *pRTClient,
+                                const IEvent   *pEvent);
+   ~RuntimeAllocateServiceFailed();
+   virtual void      operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeEvent(const IEvent & );
+class RuntimeEvent : public IDispatchable
+{
+public:
+   RuntimeEvent(IRuntimeClient *pRTClient,
+                const IEvent   *pEvent);
+   ~RuntimeEvent();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
 };
 
 END_NAMESPACE(AAL)

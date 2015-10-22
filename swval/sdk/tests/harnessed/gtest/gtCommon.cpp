@@ -1334,7 +1334,7 @@ void CallTrackingIRuntimeClient::runtimeStarted(IRuntime            *pRuntime,
 {
    MethodCallLogEntry *l = AddToLog("IRuntimeClient::runtimeStarted");
    l->AddParam("pRuntime", reinterpret_cast<btObjectType>(pRuntime));
-   l->AddParam("nvs",      &nvs);
+   l->AddParam("nvs",      dynamic_cast<INamedValueSet *>( & const_cast<NamedValueSet &>(nvs)));
 }
 
 void CallTrackingIRuntimeClient::runtimeStopped(IRuntime *pRuntime)

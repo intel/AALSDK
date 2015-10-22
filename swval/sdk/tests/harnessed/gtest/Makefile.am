@@ -38,6 +38,7 @@ gtBarrier.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
+gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtMDS.cpp \
@@ -116,6 +117,7 @@ gtCValue.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
+gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
 gtMDS.cpp \
