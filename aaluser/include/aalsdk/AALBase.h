@@ -75,24 +75,25 @@ BEGIN_NAMESPACE(AAL)
 // Typedefs and Constants
 //=============================================================================
 
-/// Public Interface base class for AAL active objects.
+/// @interface IBase
+/// @brief Public Interface base class for AAL active objects.
 class AASLIB_API IBase
 {
 public:
    /// IBase Destructor.
-   virtual ~IBase(){};
+   virtual ~IBase() {}
    /// Query interface for a given interface id.
-   virtual btGenericInterface Interface(btIID Interface) const = 0;
+   virtual btGenericInterface Interface(btIID Interface)     const = 0;
    /// Determine whether this object contains the specified interface.
-   virtual btBool Has(btIID Interface) const                   = 0;
+   virtual btBool                   Has(btIID Interface)     const = 0;
    /// IBase inequality.
-   virtual btBool operator != (IBase const &rother) const      = 0;
+   virtual btBool          operator != (IBase const &rother) const = 0;
    /// IBase equality.
-   virtual btBool operator == (IBase const &rother) const      = 0;
+   virtual btBool          operator == (IBase const &rother) const = 0;
    /// Internal state check.
-   virtual btBool IsOK() const                                 = 0;
+   virtual btBool                  IsOK()                    const = 0;
    /// Retrieve the application-specific context for the object.
-   virtual btApplicationContext Context() const                = 0;
+   virtual btApplicationContext Context()                    const = 0;
 };
 
 
@@ -134,8 +135,8 @@ T * dynamic_ptr(btIID Name, IEvent const &obj) {
 
 /// @}
 
-
-/// Base interface for AAL Services.
+/// @interface IAALService
+/// @brief Base interface for AAL Services.
 /// @ingroup Services
 class AASLIB_API IAALService
 {
@@ -152,9 +153,8 @@ public:
    ///
    /// @retval  true   Service destruction was successful.
    /// @retval  false  An error occurred during destruction.
-   virtual btBool  Release(TransactionID const &rTranID,
-                           btTime               timeout=AAL_INFINITE_WAIT) = 0;
-
+   virtual btBool Release(TransactionID const &rTranID,
+                          btTime               timeout=AAL_INFINITE_WAIT) = 0;
 };
 
 

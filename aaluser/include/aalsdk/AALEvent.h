@@ -79,8 +79,6 @@ public:
    virtual btGenericInterface    Interface(btIID Interface)      const = 0;
    /// Determine whether this event contains the specified interface.
    virtual btBool                      Has(btIID Interface)      const = 0;
-   /// Query the native subclass interface.
-   virtual btGenericInterface    ISubClass()                     const = 0;
    /// Retrieve the native subclass id.
    virtual btIID                SubClassID()                     const = 0;
    /// IEvent inequality.

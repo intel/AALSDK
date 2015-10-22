@@ -74,19 +74,20 @@ ServiceBase::ServiceBase(AALServiceModule *container,
                          IAALUnMarshaller *unmarshaller) :
    m_Flags(0),
    m_RuntimeClient(NULL),
+   m_Runtime(NULL),
    m_pclient(NULL),
    m_pclientbase(NULL),
    m_pcontainer(container),
-   m_Runtime(NULL),
    m_ptransport(ptransport),
    m_pmarshaller(marshaller),
    m_punmarshaller(unmarshaller),
    m_runMDT(false),
    m_pMDT(NULL)
 {
-   AutoLock(this);
+   ASSERT(NULL != m_pcontainer);
+   ASSERT(NULL != pAALRuntime);
 
-      ASSERT(NULL != m_pcontainer);
+   AutoLock(this);
 
    if ( EObjOK != SetInterface(iidServiceBase, dynamic_cast<IServiceBase *>(this)) ) {
       m_bIsOK = false;
@@ -97,14 +98,14 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       m_bIsOK = false;
       return;
    }
+
    // Get a new Runtime Proxy for use by this Service.
    //  This proxy must be released when deleted.
    m_Runtime = pAALRuntime->getRuntimeProxy(this);
-   if(NULL == m_Runtime){
+   if ( NULL == m_Runtime ) {
+      m_bIsOK = false;
       return;
    }
-
-
 }
 
 ServiceBase::~ServiceBase()
@@ -160,18 +161,19 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
                                                                      getServiceClient(),
                                                                      getRuntimeClient(),
                                                                      this,
-                                                                     rTranID));
- 
+                                                                     rTranID) );
 }
 
 btBool ServiceBase::ReleaseComplete()
 {
    {
-//      AutoLock(this);
+      AutoLock(this);
 
       // Release the Proxy
-      getRuntime()->releaseRuntimeProxy();
-      m_Runtime = NULL;
+      if ( NULL != m_Runtime ) {
+         getRuntime()->releaseRuntimeProxy();
+         m_Runtime = NULL;
+      }
 
       // Object should not access anything after this call
       Released();
@@ -184,27 +186,29 @@ btBool ServiceBase::ReleaseComplete()
    return true;
 }
 
-btBool ServiceBase::_init( IBase               *pclientBase,
-                           TransactionID const &rtid,
-                           NamedValueSet const &optArgs,
-                           CAALEvent           *pcmpltEvent)
+btBool ServiceBase::_init(IBase               *pclientBase,
+                          TransactionID const &rtid,
+                          NamedValueSet const &optArgs,
+                          CAALEvent           *pcmpltEvent)
 {
-   //
    // Save and set the base member variables
-   if(NULL == pclientBase){
+   ASSERT(NULL != pclientBase);
+   if ( NULL == pclientBase ) {
       return false;
    }
+
    AutoLock(this);
+
    // If there is already a clientbase for this object
    //  don't overwrite as the Service may be a singleton. Either
    //  the singleton will fail to init() or it will keep its
    //  own copy of the new client and optArgs.
-   if(NULL == m_pclientbase) {
-      m_pclientbase = pclientBase;
+   if ( NULL == m_pclientbase ) {
       m_pclient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
-      if(NULL == m_pclient){
+      if ( NULL == m_pclient ) {
          return false;
       }
+      m_pclientbase = pclientBase;
       m_optArgs = optArgs;
    }
 
@@ -217,52 +221,47 @@ btBool ServiceBase::_init( IBase               *pclientBase,
    //  of the most derived class in the Service class hierarchy.
    if ( NULL == pcmpltEvent ) {
       return init(pclientBase, optArgs, rtid);
-   } else {
-      // Queue the completion to enable next layer down (the class derived from this)
-      //   to initialize
-      getRuntime()->schedDispatchable(pcmpltEvent);
    }
 
-   return true;
+   // Queue the completion to enable next layer down (the class derived from this)
+   //   to initialize.
+   return getRuntime()->schedDispatchable(pcmpltEvent);
 }
 
 btBool ServiceBase::initComplete(TransactionID const &rtid)
 {
-   btBool ret = true;
+   AutoLock(this);
 
    // Record this Service with the Service Module if one is present
-   if(NULL != getAALServiceModule()){
-      ret = getAALServiceModule()->ServiceInitialized(dynamic_cast<IBase*>(this), rtid);
-   }else {
-      // TODO IS THIS A VALID PATH
-      ASSERT(false);
-      ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
-                                                                       getServiceClient(),
-                                                                       getRuntimeClient(),
-                                                                       dynamic_cast<IBase*>(this),
-                                                                       rtid));
+   if ( NULL != getAALServiceModule() ) {
+      return getAALServiceModule()->ServiceInitialized(dynamic_cast<IBase *>(this), rtid);
    }
-   return ret;
+
+   // TODO IS THIS A VALID PATH
+   ASSERT(false);
+   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Allocated,
+                                                                     getServiceClient(),
+                                                                     getRuntimeClient(),
+                                                                     dynamic_cast<IBase *>(this),
+                                                                     rtid) );
 }
 
 btBool ServiceBase::initFailed(IEvent const *ptheEvent)
 {
-   btBool ret = true;
+   AutoLock(this);
 
    // Record this Service with the Service Module if one is present
-   if(NULL != getAALServiceModule()){
-      ret = getAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase*>(this), ptheEvent);
-   }else {
-      // TODO IS THIS A VALID PATH
-      ASSERT(false);
-      ret = getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                                       getServiceClient(),
-                                                                       getRuntimeClient(),
-                                                                       dynamic_cast<IBase*>(this),
-                                                                       ptheEvent));
+   if ( NULL != getAALServiceModule() ) {
+      return getAALServiceModule()->ServiceInitFailed(dynamic_cast<IBase *>(this), ptheEvent);
    }
 
-   return ret;
+   // TODO IS THIS A VALID PATH
+   ASSERT(false);
+   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                                                     getServiceClient(),
+                                                                     getRuntimeClient(),
+                                                                     dynamic_cast<IBase *>(this),
+                                                                     ptheEvent) );
 }
 
 btBool ServiceBase::sendmsg()
@@ -353,26 +352,27 @@ void ServiceBase::MessageDeliveryThread()
    }
 }
 
-IAALMarshaller &     ServiceBase::marshall() { AutoLock(this); return *m_pmarshaller;   }
-IAALUnMarshaller & ServiceBase::unmarshall() { AutoLock(this); return *m_punmarshaller; }
-IAALTransport &         ServiceBase::recvr() { AutoLock(this); return *m_ptransport;    }
-IAALTransport &        ServiceBase::sender() { AutoLock(this); return *m_ptransport;    }
+IAALMarshaller &              ServiceBase::marshall()       { AutoLock(this); return *m_pmarshaller;          }
+IAALUnMarshaller &          ServiceBase::unmarshall()       { AutoLock(this); return *m_punmarshaller;        }
+IAALTransport &                  ServiceBase::recvr()       { AutoLock(this); return *m_ptransport;           }
+IAALTransport &                 ServiceBase::sender()       { AutoLock(this); return *m_ptransport;           }
 
-btBool   ServiceBase::HasMarshaller()  const { AutoLock(this); return NULL != m_pmarshaller;   }
-btBool ServiceBase::HasUnMarshaller()  const { AutoLock(this); return NULL != m_punmarshaller; }
-btBool    ServiceBase::HasTransport()  const { AutoLock(this); return NULL != m_ptransport;    }
+btBool                   ServiceBase::HasMarshaller() const { AutoLock(this); return NULL != m_pmarshaller;   }
+btBool                 ServiceBase::HasUnMarshaller() const { AutoLock(this); return NULL != m_punmarshaller; }
+btBool                    ServiceBase::HasTransport() const { AutoLock(this); return NULL != m_ptransport;    }
 
-NamedValueSet const &               ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;           }
-IServiceClient *              ServiceBase::getServiceClient() const { AutoLock(this); return m_pclient;        }
-IBase *                   ServiceBase::getServiceClientBase() const { AutoLock(this); return m_pclientbase;    }
-IRuntime *                       ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;           }
-IRuntimeClient *           ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient;     }
-AALServiceModule *        ServiceBase::getAALServiceModule() const { AutoLock(this); return m_pcontainer;      }
+NamedValueSet const &          ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;               }
+IServiceClient *      ServiceBase::getServiceClient() const { AutoLock(this); return m_pclient;               }
+IBase *           ServiceBase::getServiceClientBase() const { AutoLock(this); return m_pclientbase;           }
+IRuntime *                  ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;               }
+IRuntimeClient *      ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient;         }
+AALServiceModule * ServiceBase::getAALServiceModule() const { AutoLock(this); return m_pcontainer;            }
 
-void ServiceBase::allocService(IBase                  *pClient,
-                               NamedValueSet const    &rManifest,
-                               TransactionID const    &rTranID)
+void ServiceBase::allocService(IBase               *pClient,
+                               NamedValueSet const &rManifest,
+                               TransactionID const &rTranID)
 {
+   AutoLock(this);
    getRuntime()->allocService(pClient, rManifest, rTranID);
 }
 

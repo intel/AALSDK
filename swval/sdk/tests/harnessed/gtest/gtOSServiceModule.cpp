@@ -42,7 +42,9 @@ TEST(OSAL_OSServiceModule, aal0203)
 #endif // OS
 
    EXPECT_NULL(m.entry_point_fn);
+#if DEPRECATED
    EXPECT_NULL(m.error_msg);
+#endif // DEPRECATED
 }
 
 TEST(OSAL_OSServiceModule, aal0204)
@@ -55,7 +57,9 @@ TEST(OSAL_OSServiceModule, aal0204)
    m.entry_point_fn = (AALSvcEntryPoint) 0xdeadbeef;
 
    EXPECT_EQ(1, OSServiceModuleOpen(&m));
+#if DEPRECATED
    EXPECT_NONNULL(m.error_msg);
+#endif // DEPRECATED
 }
 
 TEST(OSAL_OSServiceModule, aal0205)
@@ -66,9 +70,15 @@ TEST(OSAL_OSServiceModule, aal0205)
 
    OSServiceModuleInit(&m, "libnonexist");
 
+#if DEPRECATED
    EXPECT_NULL(m.error_msg);
+#endif // DEPRECATED
+
    EXPECT_EQ(2, OSServiceModuleOpen(&m));
+
+#if DEPRECATED
    EXPECT_NONNULL(m.error_msg);
+#endif // DEPRECATED
 }
 
 TEST(OSAL_OSServiceModule, aal0206)
@@ -83,9 +93,15 @@ TEST(OSAL_OSServiceModule, aal0206)
    // Corrupt entry_point_name so that it's not found within the module.
    strncpy(m.entry_point_name, "junk", 4);
 
+#if DEPRECATED
    EXPECT_NULL(m.error_msg);
+#endif // DEPRECATED
+
    EXPECT_EQ(3, OSServiceModuleOpen(&m));
+
+#if DEPRECATED
    EXPECT_NONNULL(m.error_msg);
+#endif // DEPRECATED
 }
 
 TEST(OSAL_OSServiceModule, aal0207)

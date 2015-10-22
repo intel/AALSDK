@@ -537,7 +537,6 @@ typedef struct OSAL_API _OSServiceModule
    BTBYTE           full_name[AAL_SVC_MOD_FULL_NAME_MAX];         ///< full name of module. (OS-specific. eg, "libOSAL.so")
    BTBYTE           entry_point_name[AAL_SVC_MOD_ENTRY_NAME_MAX]; ///< module entry point name. (eg. "libOSALAALSvcMod")
    AALSvcEntryPoint entry_point_fn;                               ///< address of the module entry point.
-   BTCSTR           error_msg;                                    ///< error message, if any, resulting from the API calls.
 } OSServiceModule;
 
 /// @brief Initialize the given OSServiceModule, preparing it to open the Service Module whose module root name is root_name.

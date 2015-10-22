@@ -1068,6 +1068,55 @@ build_samples() {
 
 # Build / packaging
 ################################################################################
+# Banned Functions
+
+declare -ra BANNED_FNS=(\
+'strcpy'         'wcscpy'         '_tcscpy'       '_mbscpy'           'StrCpy'       'StrCpyA'          'StrCpyW' \
+'lstrcpy'        'lstrcpyA'       'lstrcpyW'      'strcpyA'           'strcpyW'      '_tccpy'           '_mbccpy' \
+'strcat'         'wcscat'         '_tcscat'       '_mbscat'           'StrCat'       'StrCatA'          'StrCatW' \
+'lstrcat'        'lstrcatA'       'lstrcatW'      'StrCatBuffW'       'StrCatBuff'   'StrCatBuffA'      'StrCatChainW' \
+'strcatA'        'strcatW'        '_tccat'        '_mbccat'           'wnsprintf'    'wnsprintfA'       'wnsprintfW' \
+'sprintfW'       'sprintfA'       'wsprintf'      'wsprintfW'         'wsprintfA'    'sprintf'          'swprintf' \
+'_stprintf'      '_snwprintf'     '_snprintf'     '_sntprintf'        'nsprintf'     'wvsprintf'        'wvsprintfA' \
+'wvsprintfW'     'vsprintf'       '_vstprintf'    'vswprintf'         'vsnprintf'    '_vsnwprintf'      '_vsntprintf' \
+'wvnsprintf'     'wvnsprintfA'    'wvnsprintfW'   'strncpy'           'wcsncpy'      '_tcsncpy'         '_mbsncpy' \
+'_mbsnbcpy'      'StrCpyN'        'StrCpyNA'      'StrCpyNW'          'StrNCpy'      'strcpynA'         'StrNCpyA' \
+'StrNCpyW'       'lstrcpyn'       'lstrcpynA'     'lstrcpynW'         '_fstrncpy'    'strncat'          'wcsncat' \
+'_tcsncat'       '_mbsncat'       '_mbsnbcat'     'StrCatN'           'StrCatNA'     'StrCatNW'         'StrNCat' \
+'StrNCatA'       'StrNCatW'       'lstrncat'      'lstrcatnA'         'lstrcatnW'    'lstrcatn'         '_fstrncat' \
+'strtok'         '_tcstok'        'wcstok'        '_mbstok'           'Makepath'     '_tmakepath'       '_makepath' \
+'_wmakepath'     '_splitpath'     '_tsplitpath'   '_wsplitpath'       'scanf'        'wscanf'           '_tscanf' \
+'sscanf'         'swscanf'        '_stscanf'      'snscanf'           'snwscanf'     '_sntscanf'        '_itoa' \
+'_itow'          '_i64toa'        '_i64tow'       '_ui64toa'          '_ui64tot'     '_ui64tow'         '_ultoa' \
+'_ultot'         '_ultow'         'IsBadWritePtr' 'IsBadHugeWritePtr' 'IsBadReadPtr' 'IsBadHugeReadPtr' 'IsBadCodePtr' \
+'IsBadStringPtr' 'CharToOem'      'CharToOemA'    'CharToOemW'        'OemToChar'    'OemToCharA'       'OemToCharW' \
+'CharToOemBuffA' 'CharToOemBuffW' 'alloca'        '_alloca'\
+)
+
+# $1 : the file to search for banned fn's
+banned_functions_check_file() {
+   local -r file="$1"
+   local    pattern
+
+   for f in ${BANNED_FNS[@]} ; do
+      pattern="$f"'[[:space:]]*\('
+      if ${EGREP} -q "${pattern}" "${file}" ; then
+
+         if [ 0 -ne ${LOG_FD} ]; then 
+            printf "\n<SeCoE banned function '$f'>\n"  >&${LOG_FD}
+            ${EGREP} -H -n -C 5 "${pattern}" "${file}" >&${LOG_FD}
+            printf "</SeCoE banned function '$f'>\n\n" >&${LOG_FD}
+         fi
+
+         printf "\n\x1b[%sm<SeCoE banned function '$f'>\x1b[0m\n" "${ATTR_BRIGHT}${FG_MAGENTA}"
+         ${EGREP} -H -n -C 5 --color "${pattern}" "${file}"
+         printf "\x1b[%sm</SeCoE banned function '$f'>\x1b[0m\n\n" "${ATTR_BRIGHT}${FG_MAGENTA}"
+      fi
+   done
+}
+
+# Banned Functions
+################################################################################
 # Copyrights
 
 declare -ra COPYRIGHT_USER_CHECKED_PREFIXES=(\
@@ -1211,198 +1260,6 @@ declare -ra COPYRIGHT_KERNEL_EXCEPT_NAMES=(\
 'README.GPLV2-LICENSE.TXT' \
 'KernelStructs.h'\
 )
-
-
-# $1 : full path to file to update
-#copyright_user_old_to_new() {
-#   local    f="$1"
-#   local    can_convert=true
-#   local    str
-#   local    orig_date
-#   local    l
-#   local    com=''
-#
-#   local -r    old_line_one_regex='(##|//|dnl )[*]+'
-#   local -r    old_line_two_regex='(##|//|dnl)[[:space:]]+INTEL[[:space:]]+CONFIDENTIAL'
-#   local -r  old_line_three_regex='(##|//|dnl)'
-#   local -r   old_line_four_regex='(##|//|dnl)[[:space:]]+Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})? Intel Corporation All Rights Reserved'
-#
-#   local -r old_end_comment_regex='(##|//|dnl )[*]+'
-#
-#   local -i fd
-#   local    line_one
-#   local    line_two
-#   local    line_three
-#   local    line_four
-#
-#   local -r save_ifs="${IFS}"
-#   IFS='
-#'
-#   exec {fd}<"$f"
-#
-#   read -r -u ${fd} line_one
-#   if [ "${line_one}" = '#!/bin/bash' ] || \
-#      [ "${line_one}" = '#!/bin/sh' ]   || \
-#      [ "${line_one}" = '%{' ]; then
-#      read -r -u ${fd} line_one
-#   fi
-#
-#   str="${line_one}"
-#   if [[ $str =~ $old_line_one_regex ]]; then
-#      :
-#   else
-#      can_convert=false
-#   fi
-#   if [ "${line_one:0:2}" = '##' ]; then
-#      com='##'
-#   fi
-#   if [ "${line_one:0:2}" = '//' ]; then
-#      com='//'
-#   fi
-#   if [ "${line_one:0:3}" = 'dnl' ]; then
-#      com='dnl'
-#   fi
-#
-#
-#   read -r -u ${fd} line_two
-#   str="${line_two}"
-#   if [[ $str =~ $old_line_two_regex ]]; then
-#      :
-#   else
-#      can_convert=false
-#   fi
-#
-#   read -r -u ${fd} line_three
-#   str="${line_three}"
-#   if [[ $str =~ $old_line_three_regex ]]; then
-#      :
-#   else
-#      can_convert=false
-#   fi
-#
-#   read -r -u ${fd} line_four
-#   str="${line_four}"
-#   orig_date="${line_four}"
-#   if [[ $str =~ $old_line_four_regex ]]; then
-#      :
-#   else
-#      can_convert=false
-#   fi
-#
-#   exec {fd}<&-
-#
-#
-#   if ! ${can_convert} ; then
-#      die "Malformed old user copyright encountered in '$f'\n"
-#   fi
-#
-#   # Isolate the date.
-#   orig_date="${orig_date% Intel Corporation}"
-#   orig_date="${orig_date##*Copyright (c) }"
-#
-#
-#   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
-#   local -i fd2
-#   local -i fdtmp
-#   local    found_end=false
-#
-#   cmd ${CP} "$f" "${tmpfile}"
-#
-#   exec {fdtmp}<"${tmpfile}"
-#   exec {fd2}>"$f"
-#
-#   # Skip the old comment
-#   read -r -u ${fdtmp} line_one
-#   if [ "${line_one}" = '#!/bin/bash' ] || \
-#      [ "${line_one}" = '#!/bin/sh' ]   || \
-#      [ "${line_one}" = '%{' ]; then
-#      echo -E "${line_one}" >&${fd2}
-#      read -r -u ${fdtmp} line_one
-#   fi
-#
-#   while read -r -u ${fdtmp} l ; do
-#      str="$l"
-#      if [[ $str =~ $old_end_comment_regex ]]; then
-#         found_end=true
-#         break
-#      fi
-#   done
-#
-#   if ! ${found_end} ; then
-#      exec {fd2}>&-
-#      exec {fdtmp}<&-
-#      cmd ${RM} "${tmpfile}"
-#      die "EOF scanning old user comment in '$f'\n"
-#   fi
-#
-#
-#   # Is the old date field a range?
-#   if [ "${orig_date/-/}" != "${orig_date}" ]; then
-#      printf -v l "${com} Copyright (c) ${orig_date%-*}-${THIS_YEAR}, Intel Corporation\n"
-#   else
-#      printf -v l "${com} Copyright (c) ${THIS_YEAR}, Intel Corporation\n"
-#   fi
-#   echo -E $l >&${fd2}
-#
-#   printf -v l "${com}\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} Redistribution  and  use  in source  and  binary  forms,  with  or  without\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} modification, are permitted provided that the following conditions are met:\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} * Redistributions of  source code  must retain the  above copyright notice,\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}   this list of conditions and the following disclaimer.\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} * Redistributions in binary form must reproduce the above copyright notice,\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}   this list of conditions and the following disclaimer in the documentation\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}   and/or other materials provided with the distribution.\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} * Neither the name  of Intel Corporation  nor the names of its contributors\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}   may be used to  endorse or promote  products derived  from this  software\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}   without specific prior written permission.\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com}\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT NOT LIMITED TO,  THE\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} ARE DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT OWNER  OR CONTRIBUTORS BE\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT LIMITED  TO,  PROCUREMENT  OF\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} SUBSTITUTE GOODS OR SERVICES;  LOSS OF USE,  DATA, OR PROFITS;  OR BUSINESS\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} INTERRUPTION)  HOWEVER CAUSED  AND ON ANY THEORY  OF LIABILITY,  WHETHER IN\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE\n"
-#   echo -E $l >&${fd2}
-#   printf -v l "${com} POSSIBILITY OF SUCH DAMAGE.\n"
-#   echo -E $l >&${fd2}
-#
-#   while read -r -u ${fdtmp} l ; do
-#      echo -E "$l" >&${fd2}
-#   done
-#
-#   exec {fd2}>&-
-#   exec {fdtmp}<&-
-#   IFS="${save_ifs}"
-#
-#   cmd ${RM} "${tmpfile}"
-#}
 
 # $1 : full path to file to update
 copyright_user_adjust_date() {
@@ -1622,6 +1479,7 @@ copyrights_check_user() {
 
       if ${need_to_iterate} ; then
          eval "$1" "${src_root}/$l"
+         banned_functions_check_file "${src_root}/$l"
       else
          # skipping file
          eval "$2" "${src_root}/$l"
@@ -1633,322 +1491,6 @@ copyrights_check_user() {
 
    IFS="${save_ifs}"
 }
-
-#  1 //******************************************************************************
-#  2 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-#  3 //
-#  4 // This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or
-#  5 //         redistributing this file, you may do so under either license.
-#  6 //
-#  7 //                            GPL LICENSE SUMMARY
-#  8 //
-#  9 //  Copyright(c) 2008-2014 Intel Corporation.
-# 10 //
-# 11 //  This program  is  free software;  you  can redistribute it  and/or  modify
-# 12 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
-# 13 //  published by the Free Software Foundation.
-# 14 //
-# 15 //  This  program  is distributed  in the  hope that it  will  be useful,  but
-# 16 //  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of
-# 17 //  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU
-# 18 //  General Public License for more details.
-# 19 //
-# 23 //  The  full  GNU  General Public License is  included in  this  distribution
-# 24 //  in the file called README.GPLV2-LICENSE.TXT.
-# 25 //
-# 26 //  Contact Information:
-# 27 //  Henry Mitchel, henry.mitchel at intel.com
-# 28 //  77 Reed Rd., Hudson, MA  01749
-# 29 //
-# 30 //                                BSD LICENSE
-# 31 //
-# 32 //  Copyright(c) 2008-2014 Intel Corporation.
-
-# $1 : full path to file to update
-#copyright_kernel_old_to_new() {
-#   local    f="$1"
-#   local    str
-#   local    l
-#   local    tmp
-#   local    com=''
-#
-#   local -i bars_found=0
-#   local -r line_bar_regex='(##|//|dnl )[*]+'
-#
-#   local    date_one=''
-#   local    date_two=''
-#   local -r date_isolation_regex='(##|//|dnl)[[:space:]]+Copyright([[:space:]])?[(]c[)][[:space:]]+(20[[:digit:]]{2})(-20[[:digit:]]{2})?[.,]?[[:space:]]+Intel[[:space:]]+Corporation[.]?'
-#   # first half of date in ${BASH_REMATCH[3]}, second half (if any) in ${BASH_REMATCH[4]}.
-#
-#   local -r line_file_regex='(##|//|dnl)[[:space:]]+(FILE:|@file)'
-#
-#   local -i fd
-#
-#   local -r save_ifs="${IFS}"
-#   IFS='
-#'
-#   exec {fd}<"$f"
-#
-#   read -r -u ${fd} str
-#   if [ "${str}" = '#!/bin/bash' ] || \
-#      [ "${str}" = '#!/bin/sh' ]   || \
-#      [ "${str}" = '%{' ]; then
-#      read -r -u ${fd} str
-#   fi
-#
-#   tmp="${str}"
-#   if [[ $tmp =~ $line_bar_regex ]]; then
-#      :
-#   else
-#      die "Can't convert kernel copyright in '$f' : missing first line bar\n"
-#   fi
-#   if [ "${str:0:2}" = '##' ]; then
-#      com='##'
-#   fi
-#   if [ "${str:0:2}" = '//' ]; then
-#      com='//'
-#   fi
-#   if [ "${str:0:3}" = 'dnl' ]; then
-#      com='dnl'
-#   fi
-#
-#   let $(( ++bars_found ))
-#
-#   while read -r -u ${fd} str ; do
-#
-#      tmp="${str}"
-#      if [[ $tmp =~ $date_isolation_regex ]]; then
-#         tmp="${BASH_REMATCH[4]}"
-#         if [ x"${tmp}" != x ]; then
-#            # already a date range
-#            tmp="${BASH_REMATCH[3]}-${THIS_YEAR}"
-#         else
-#            if [ "${BASH_REMATCH[3]}" != "${THIS_YEAR}" ]; then
-#               tmp="${BASH_REMATCH[3]}-${THIS_YEAR}"
-#            else
-#               tmp="${THIS_YEAR}"
-#            fi
-#         fi
-#
-#         if [ x"${date_one}" = x ]; then
-#            date_one="${tmp}"
-#         else
-#            date_two="${tmp}"
-#         fi
-#      else
-#         tmp="${str}"
-#         if [[ $tmp =~ $line_bar_regex ]]; then
-#            let $(( ++bars_found ))
-#            break
-#         fi
-#      fi
-#
-#   done
-#   if [ ${bars_found} -ne 2 ]; then
-#      die "Can't convert kernel copyright in '$f' : missing second line bar\n"
-#   fi
-#
-#
-#   while read -r -u ${fd} str ; do
-#      tmp="${str}"
-#      if [[ $tmp =~ $line_bar_regex ]]; then
-#         let $(( ++bars_found ))
-#         break
-#      fi
-#   done
-#   if [ ${bars_found} -ne 3 ]; then
-#      die "Can't convert kernel copyright in '$f' : missing third line bar\n"
-#   fi
-#
-#   read -r -u ${fd} str
-#   tmp="${str}"
-#
-#   if [[ $tmp =~ $line_file_regex ]]; then
-#      :
-#   else
-#      die "Can't convert kernel copyright in '$f' : file line not found after 3rd line bar\n"
-#   fi
-#
-#
-#   while read -r -u ${fd} str ; do
-#      tmp="${str}"
-#      if [[ $tmp =~ $line_bar_regex ]]; then
-#         let $(( ++bars_found ))
-#         break
-#      fi
-#   done
-#   if [ ${bars_found} -ne 4 ]; then
-#      die "Can't convert kernel copyright in '$f' : missing fourth line bar\n"
-#   fi
-#
-#   exec {fd}<&-
-#
-#
-#   # Do the conversion.
-#
-#   local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
-#   local -i fd2
-#   local -i fdtmp
-#   local    found_end=false
-#
-#   cmd ${CP} "$f" "${tmpfile}"
-#
-#   exec {fdtmp}<"${tmpfile}"
-#   exec {fd2}>"$f"
-#
-#   # Skip the old comment
-#
-#   read -r -u ${fdtmp} str
-#   if [ "${str}" = '#!/bin/bash' ] || \
-#      [ "${str}" = '#!/bin/sh' ]   || \
-#      [ "${str}" = '%{' ]; then
-#      echo -E "${str}" >&${fd2}
-#
-#      while read -r -u ${fdtmp} str ; do
-#         tmp="${str}"
-#         if [[ $tmp =~ $line_bar_regex ]]; then
-#            break
-#         fi
-#      done
-#
-#   fi
-#
-#   while read -r -u ${fdtmp} str ; do
-#      tmp="${str}"
-#      if [[ $tmp =~ $line_bar_regex ]]; then
-#         break
-#      fi
-#   done
-# 
-#   # Add the new comment
-#
-#   printf -v l "${com}"
-#   echo -nE "$l" >&${fd2}
-#   printf -v l '******************************************************************************'
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com} Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com} This  file  is  provided  under  a  dual BSD/GPLv2  license.  When using or"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}         redistributing this file, you may do so under either license."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}                            GPL LICENSE SUMMARY"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  Copyright(c) ${date_one}, Intel Corporation."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  This program  is  free software;  you  can redistribute it  and/or  modify"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  it  under  the  terms of  version 2 of  the GNU General Public License  as"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  published by the Free Software Foundation."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  This  program  is distributed  in the  hope that it  will  be useful,  but"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  WITHOUT   ANY   WARRANTY;   without   even  the   implied   warranty    of"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  MERCHANTABILITY  or  FITNESS  FOR  A  PARTICULAR  PURPOSE.  See  the   GNU"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  General Public License for more details."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  The  full  GNU  General Public License is  included in  this  distribution"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  in the file called README.GPLV2-LICENSE.TXT."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  Contact Information:"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  Henry Mitchel, henry.mitchel at intel.com"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  77 Reed Rd., Hudson, MA  01749"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}                                BSD LICENSE"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  Copyright(c) ${date_two}, Intel Corporation."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  Redistribution and  use  in source  and  binary  forms,  with  or  without"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  modification,  are   permitted  provided  that  the  following  conditions"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  are met:"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}    * Redistributions  of  source  code  must  retain  the  above  copyright"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      notice, this list of conditions and the following disclaimer."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}    * Redistributions in  binary form  must  reproduce  the  above copyright"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      notice,  this  list of  conditions  and  the  following disclaimer  in"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      the   documentation   and/or   other   materials   provided  with  the"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      distribution."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}    * Neither   the  name   of  Intel  Corporation  nor  the  names  of  its"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      contributors  may  be  used  to  endorse  or promote  products derived"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}      from this software without specific prior written permission."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  THIS  SOFTWARE  IS  PROVIDED  BY  THE  COPYRIGHT HOLDERS  AND CONTRIBUTORS"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  \"AS IS\"  AND  ANY  EXPRESS  OR  IMPLIED  WARRANTIES,  INCLUDING,  BUT  NOT"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  LIMITED  TO, THE  IMPLIED WARRANTIES OF  MERCHANTABILITY  AND FITNESS  FOR"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  A  PARTICULAR  PURPOSE  ARE  DISCLAIMED.  IN NO EVENT  SHALL THE COPYRIGHT"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  OWNER OR CONTRIBUTORS BE LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL   DAMAGES  (INCLUDING,   BUT   NOT"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  LIMITED  TO,  PROCUREMENT  OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF USE,"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  DATA,  OR PROFITS;  OR BUSINESS INTERRUPTION)  HOWEVER  CAUSED  AND ON ANY"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT LIABILITY,  OR TORT"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE"
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE."
-#   echo -E "$l" >&${fd2}
-#   printf -v l "${com}"
-#   echo -nE "$l" >&${fd2}
-#   printf -v l '******************************************************************************'
-#   echo -E "$l" >&${fd2}
-#
-#   while read -r -u ${fdtmp} l ; do
-#      echo -E "$l" >&${fd2}
-#   done
-#
-#   exec {fd2}>&-
-#   exec {fdtmp}<&-
-#   IFS="${save_ifs}"
-#
-#   cmd ${RM} "${tmpfile}"
-#}
 
 # $1 : full path to file to update
 copyright_kernel_adjust_date() {
@@ -2308,6 +1850,7 @@ copyrights_check_kernel() {
 
       if ${need_to_iterate} ; then
          eval "$1" "${src_root}/$l"
+         banned_functions_check_file "${src_root}/$l"
       else
          # skipping file
          eval "$2" "${src_root}/$l"

@@ -73,24 +73,16 @@ AALServiceModule::AALServiceModule(ISvcsFact &fact) :
    }
 }
 
-//=============================================================================
-// Name: ~AALServiceModule()
-// Description: Destructor
-//=============================================================================
-AALServiceModule::~AALServiceModule()
+btBool AALServiceModule::Construct(IRuntime            *pAALRuntime,
+                                   IBase               *Client,
+                                   TransactionID const &tranID,
+                                   NamedValueSet const &optArgs)
 {
-}
-btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
-                                    IBase               *Client,
-                                    TransactionID const &tranID,
-                                    NamedValueSet const &optArgs)
-{
-
    AutoLock(this);
 
    // Create the actual object
-   IBase *pNewService = m_SvcsFact.CreateServiceObject( this,
-                                                        pAALRuntime);
+   IBase *pNewService = m_SvcsFact.CreateServiceObject(this,
+                                                       pAALRuntime);
    // Add the service to the list of services the module
    if ( NULL == pNewService ) {
       return false;
@@ -103,16 +95,18 @@ btBool AALServiceModule::Construct(IRuntime           *pAALRuntime,
    // Initialize the Service. It  will issue serviceAllocated or failure.
    //   When the Service finishes initalization it will indicate in callback
    //   whether it was successful or not.
-   if( !m_SvcsFact.InitializeService( pNewService,
-                                      Client,
-                                      tranID,
-                                      optArgs)){
-      // If InitializeService fails then this is a severe failure.
-      // An event was not sent. Let upper layers handle the failure.
-      m_SvcsFact.DestroyServiceObject(pNewService);
-      return false;
+   if ( m_SvcsFact.InitializeService(pNewService,
+                                     Client,
+                                     tranID,
+                                     optArgs) ) {
+      return true;
    }
-   return true;
+
+   // If InitializeService fails then this is a severe failure.
+   // An event was not sent. Let upper layers handle the failure.
+   m_SvcsFact.DestroyServiceObject(pNewService);
+
+   return false;
 }
 
 //=============================================================================
@@ -140,7 +134,10 @@ void AALServiceModule::Destroy()
       //  count to a negative number.
       //  The waiter will block until the semaphore
       //  counts up to zero.
-      btBool res = m_srvcCount.Create( - static_cast<btInt>(size) );
+#if ENABLE_ASSERT
+      btBool res =
+#endif // ENABLE_ASSERT
+      m_srvcCount.Create( - static_cast<btInt>(size) );
       ASSERT(res);
 
       // Loop through all services and shut them down
@@ -161,7 +158,6 @@ void AALServiceModule::Destroy()
 //=============================================================================
 void AALServiceModule::ServiceReleased(IBase *pService)
 {
-   AutoLock(this);
    RemovefromServiceList(pService);
 }
 
@@ -174,37 +170,40 @@ void AALServiceModule::ServiceReleased(IBase *pService)
 // Outputs: none.
 // Comments:
 //=============================================================================
-btBool AALServiceModule::ServiceInitialized( IBase *pService,
-                                             TransactionID const &rtid)
+btBool AALServiceModule::ServiceInitialized(IBase               *pService,
+                                            TransactionID const &rtid)
 {
    AutoLock(this);
 
-   // Reduce pending count
-   m_pendingcount--;
-
    ASSERT(NULL != pService);
+   if ( NULL == pService ) {
+      return false;
+   }
+
    IServiceBase *pServiceBase = dynamic_ptr<IServiceBase>(iidServiceBase, pService);
 
    ASSERT(NULL != pServiceBase);
-   if(NULL == pServiceBase ){
+   if ( NULL == pServiceBase ) {
       return false;
    }
 
    // Add Service to the List
    btBool ret = AddToServiceList(pService);
-   ASSERT(true == ret);
-   if(false == ret){
+
+   ASSERT(ret);
+   if ( !ret ) {
       return ret;
    }
 
+   // Reduce pending count
+   m_pendingcount--;
+
    // Notify the Service client on behalf of the Service
-   return pServiceBase->getRuntime()->schedDispatchable(new ServiceClientCallback( ServiceClientCallback::Allocated,
+   return pServiceBase->getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Allocated,
                                                                                    pServiceBase->getServiceClient(),
                                                                                    pServiceBase->getRuntimeClient(),
                                                                                    pService,
-                                                                                   rtid));
-
-
+                                                                                   rtid) );
 }
 
 //=============================================================================
@@ -216,35 +215,37 @@ btBool AALServiceModule::ServiceInitialized( IBase *pService,
 // Comments: Once the Service calls this it will be destroyed!! The Service
 //           MUST return immediately with the return code.
 //=============================================================================
-btBool AALServiceModule::ServiceInitFailed(IBase *pService,
+btBool AALServiceModule::ServiceInitFailed(IBase        *pService,
                                            IEvent const *pEvent)
 {
    AutoLock(this);
-   btBool ret = false;
 
    m_pendingcount--;
 
    ASSERT(NULL != pService);
-   IServiceBase *pServiceBase = dynamic_ptr<IServiceBase>(iidServiceBase, pService);
-
-   ASSERT(NULL != pServiceBase);
-   if(NULL == pServiceBase ){
+   if ( NULL == pService ) {
       return false;
    }
 
-   // Create the dispachable for the Service allocate failed callback
-   ServiceClientCallback * pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                              pServiceBase->getServiceClient(),
-                                                              pServiceBase->getRuntimeClient(),
-                                                              pService,
-                                                              pEvent);
+   IServiceBase *pServiceBase = dynamic_ptr<IServiceBase>(iidServiceBase, pService);
+
+   ASSERT(NULL != pServiceBase);
+   if ( NULL == pServiceBase ) {
+      return false;
+   }
+
+   // Create the dispatchable for the Service allocate failed callback
+   ServiceClientCallback *pDisp = new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                                            pServiceBase->getServiceClient(),
+                                                            pServiceBase->getRuntimeClient(),
+                                                            pService,
+                                                            pEvent);
 
    // Destroy the failed Service
    m_SvcsFact.DestroyServiceObject(pService);
 
    // Notify the Service client on behalf of the Service
-   FireAndForget(pDisp);
-   return ret;
+   return FireAndForget(pDisp);
 }
 
 //=============================================================================
@@ -280,10 +281,12 @@ btBool AALServiceModule::RemovefromServiceList(IBase *pService)
 {
    AutoLock(this);
 
-   if ( !ServiceInstanceRegistered(pService) ) {
+   list_iter itr = find(m_serviceList.begin(), m_serviceList.end(), pService);
+
+   if ( m_serviceList.end() == itr ) {
       return false;
    }
-   list_iter itr = find(m_serviceList.begin(), m_serviceList.end(), pService);
+
    m_serviceList.erase(itr);
 
    // Post to the count up semaphore
@@ -318,105 +321,99 @@ btBool AALServiceModule::ServiceInstanceRegistered(IBase *pService)
 void AALServiceModule::SendReleaseToAll()
 {
    AutoLock(this);   // Lock until done issuing releases
-   CSemaphore     srvcCount;
-
-
-   list_iter iter = m_serviceList.begin();
 
    btUnsigned32bitInt size = static_cast<btUnsigned32bitInt>(m_serviceList.size());
    if ( 0 == size ) {
       return;
    }
 
-   //  count to a negative number.
-   //  The waiter will block until the semaphore
-   //  counts up to zero.
-   if(!m_srvcCount.Reset( - static_cast<btInt>(size))){
+   // count to a negative number.
+   // The waiter will block until the semaphore
+   // counts up to zero.
+   btBool res = m_srvcCount.Reset( - static_cast<btInt>(size) );
+
+   ASSERT(res);
+   if ( !res ) {
       return;
    }
+
+   list_iter iter = m_serviceList.begin();
 
    while ( m_serviceList.end() != iter ) {
 
       // Get the IAALService from the IBase
       IAALService *pService = dynamic_ptr<IAALService>(iidService, *iter);
 
+      // It's crucial that the iterator is ++'ed here before calling Release(), because
+      // Release() will result in RemovefromServiceList(), which would otherwise invalidate
+      // the iterator.
       iter++;
 
       if ( NULL != pService ) {
          // Release the Service overriding the default delivery
-         pService->Release(TransactionID(dynamic_cast<IBase*>(this),true));
+         pService->Release( TransactionID(dynamic_cast<IBase *>(this), true) );
       }
    }
 }
 
 // <IServiceClient>
 //=============================================================================
-// Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Name: serviceAllocated()
+// Description:
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments:
 //=============================================================================
-void AALServiceModule::serviceAllocated(IBase               *pServiceBase,
-                                        TransactionID const &rTranID )
-{
-
-}
+void AALServiceModule::serviceAllocated(IBase               * ,
+                                        TransactionID const & )
+{/*empty*/}
 
 //=============================================================================
-// Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Name: serviceAllocateFailed()
+// Description:
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments:
 //=============================================================================
-void AALServiceModule::serviceAllocateFailed(const IEvent &rEvent)
-{
-
-}
+void AALServiceModule::serviceAllocateFailed(const IEvent & )
+{/*empty*/}
 
 //=============================================================================
-// Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Name: serviceReleased()
+// Description:
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments:
 //=============================================================================
-void AALServiceModule::serviceReleased(TransactionID const &rTranID )
+void AALServiceModule::serviceReleased(TransactionID const & )
 {
-
    m_srvcCount.Post(1);
 }
 
-
 //=============================================================================
-// Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Name: serviceReleaseFailed()
+// Description:
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments:
 //=============================================================================
-void AALServiceModule::serviceReleaseFailed(const IEvent &rEvent)
-{
-
-}
+void AALServiceModule::serviceReleaseFailed(const IEvent & )
+{/*empty*/}
 
 //=============================================================================
-// Name: SendReleaseToAll()
-// Description: Broadcast a hard Release to all Services
+// Name: serviceEvent()
+// Description:
 // Interface: public
 // Inputs: none
 // Outputs: none.
-// Comments: THIS IS HARD CORE AND MAY WANT TO BE REMOVED
+// Comments:
 //=============================================================================
-void AALServiceModule::serviceEvent(const IEvent &rEvent)
-{
-
-}
+void AALServiceModule::serviceEvent(const IEvent & )
+{/*empty*/}
 
 
 END_NAMESPACE(AAL)

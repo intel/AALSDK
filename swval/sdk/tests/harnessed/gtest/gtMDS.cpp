@@ -39,12 +39,14 @@ protected:
 
 TEST_F(MessageDelivery_f, aal0706)
 {
-   // When successful, _MessageDelivery::_MessageDelivery() sets a subclass of
+   // When successful, _MessageDelivery::_MessageDelivery() sets an interface of
    // iidMDS / IMessageDeliveryService *. _MessageDelivery::IsOK() returns true,
    // indicating success.
 
+#if DEPRECATED
    EXPECT_EQ(iidMDS, m_pMDS->SubClassID());
    EXPECT_EQ(dynamic_cast<IMessageDeliveryService *>(m_pMDS), m_pMDS->ISubClass());
+#endif // DEPRECATED
 
    EXPECT_TRUE(m_pMDS->Has(iidMDS));
    EXPECT_EQ(dynamic_cast<IMessageDeliveryService *>(m_pMDS), m_pMDS->Interface(iidMDS));

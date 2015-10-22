@@ -105,6 +105,8 @@ ServiceHost::ServiceHost(AALSvcEntryPoint EP) :
    m_pProvider(NULL),
    m_base(NULL)
 {
+   memset(&m_modparms, 0, sizeof(OSServiceModule));
+
    ASSERT(NULL != EP);
    if ( NULL == EP ) {
       return; // m_bIsOK remains false.
@@ -128,10 +130,9 @@ ServiceHost::ServiceHost(AALSvcEntryPoint EP) :
 //=============================================================================
 void ServiceHost::freeProvider()
 {
-   ASSERT(NULL != m_modparms.entry_point_fn);
-
-   if( NULL != m_modparms.entry_point_fn ) {
-      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL );
+   if ( NULL != m_modparms.entry_point_fn ) {
+      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL);
+      m_modparms.entry_point_fn = NULL;
    }
 }
 
@@ -143,17 +144,11 @@ void ServiceHost::freeProvider()
 //=============================================================================
 ServiceHost::~ServiceHost()
 {
-   ASSERT(NULL != m_modparms.entry_point_fn);
+   freeProvider();
 
-   if( NULL != m_modparms.entry_point_fn ) {
-      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL );
+   if ( NULL != m_pDynLinkLib ) {
+      delete m_pDynLinkLib;
    }
-
-   if( NULL != m_pDynLinkLib ) {
-       delete m_pDynLinkLib;
-       m_pDynLinkLib = NULL;
-    }
-    return;
 }
 
 //=============================================================================
@@ -187,7 +182,7 @@ btBool ServiceHost::InstantiateService(IRuntime            *pRuntime,
       return false;
    }
 
-   return m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);;
+   return m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);
 }
 
 END_NAMESPACE(AAL)

@@ -73,10 +73,6 @@ public:
    virtual btBool    scheduleMessage(IDispatchable * );
    // </IMessageDeliveryService>
 
-#if DEPRECATED
-   EDS_Status Schedule();
-#endif // DEPRECATED
-
 protected:
    OSLThreadGroup m_Dispatcher;
 };

@@ -75,11 +75,10 @@ typedef enum eservice_connection_types
    conn_type_shram
 } eservice_connection_types;
 
- //=============================================================================
- // Name: IAALTransport
- // Description: trasnport class interface
- //=============================================================================
-///
+//=============================================================================
+// @interface IAALTransport
+// @brief Transport class interface.
+//=============================================================================
 class AASLIB_API IAALTransport
 {
 public:
@@ -92,10 +91,10 @@ public:
    virtual int            putmsg(btcString , btWSSize len) = 0;
 };
 
- //=============================================================================
- // Name: IAALMarshalUnMarshallerUtil
- // Description: Marshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALMarshalUnMarshallerUtil
+// @brief Marshaller class interface.
+//=============================================================================
 class AASLIB_API IAALMarshalUnMarshallerUtil
 {
 public:
@@ -109,10 +108,10 @@ public:
    virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const = 0;
 };
 
- //=============================================================================
- // Name: IAALMarshaller
- // Description: Marshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALMarshaller
+// @brief Marshaller class interface.
+//=============================================================================
 class AASLIB_API IAALMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
@@ -184,10 +183,10 @@ public:
    virtual char const *pmsgp(btWSSize *len)                                                = 0;
 };
 
- //=============================================================================
- // Name: IAALUnMarshaller
- // Description: UnMarshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALUnMarshaller
+// @brief UnMarshaller class interface.
+//=============================================================================
 class AASLIB_API IAALUnMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
@@ -266,16 +265,16 @@ public:
    ///
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
-   virtual IBase * CreateServiceObject(AALServiceModule *container,
-                                       IRuntime         *pRuntime) = 0;
+   virtual IBase * CreateServiceObject(AALServiceModule    *container,
+                                       IRuntime            *pRuntime)     = 0;
 
    // Used to destroy and uninitialized Service Object
-   virtual void DestroyServiceObject(IBase    *pServiceBase) = 0;
+   virtual void   DestroyServiceObject(IBase               *pServiceBase) = 0;
 
-   virtual btBool InitializeService( IBase               *newService,
-                                     IBase               *Client,
+   virtual btBool    InitializeService(IBase               *newService,
+                                       IBase               *Client,
                                        TransactionID const &rtid,
-                                       NamedValueSet const &optArgs) = 0;
+                                       NamedValueSet const &optArgs)      = 0;
 };
 
 
@@ -328,13 +327,13 @@ public:
 
    /// Callback invoked by the Service to indicate that it is released.
    /// @param[in]  pService  The Service that has been released.
-   virtual void ServiceReleased(IBase *pService) = 0;
+   virtual void      ServiceReleased(IBase *pService)                            = 0;
 
    /// Callback invoked by the Service to indicate that it has been initialized.
    /// @param[in]  pService  The Service that has been initialized.
    virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid) = 0;
 
-   virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent) = 0;
+   virtual btBool  ServiceInitFailed(IBase *pService, IEvent const *pEvent)      = 0;
 };
 
 
@@ -356,33 +355,29 @@ public:
    /// Constructed with a concrete instance of the ISvcsFact interface within the
    ///  well-known entry point of the dynamically-loaded Service executable.
    AALServiceModule(ISvcsFact &fact);
-   /// AALServiceModule Destructor.
-   virtual ~AALServiceModule();
 
    // <IServiceModule>
-
-    virtual btBool Construct( IRuntime            *pRuntime,
-                              IBase               *Client,
-                              TransactionID const &tid = TransactionID(),
-                              NamedValueSet const &optArgs = NamedValueSet());
+   virtual btBool Construct(IRuntime            *pRuntime,
+                            IBase               *Client,
+                            TransactionID const &tid = TransactionID(),
+                            NamedValueSet const &optArgs = NamedValueSet());
 
    virtual void Destroy();
-
    // </IServiceModule>
 
    // <IServiceModuleCallback>
-   virtual void ServiceReleased(IBase *pService);
+   virtual void      ServiceReleased(IBase *pService);
    virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid);
-   virtual btBool ServiceInitFailed(IBase *pService, IEvent const  *pEvent);
+   virtual btBool  ServiceInitFailed(IBase *pService, IEvent        const *pEvent);
    // </IServiceModuleCallback>
 
    // <IServiceClient>
-   virtual void serviceAllocated(IBase               *pServiceBase,
-                                 TransactionID const &rTranID = TransactionID());
+   virtual void      serviceAllocated(IBase               *pServiceBase,
+                                      TransactionID const &rTranID = TransactionID());
    virtual void serviceAllocateFailed(const IEvent &rEvent);
-   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
-   virtual void serviceReleaseFailed(const IEvent &rEvent);
-   virtual void serviceEvent(const IEvent &rEvent);
+   virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void  serviceReleaseFailed(const IEvent &rEvent);
+   virtual void          serviceEvent(const IEvent &rEvent);
    // </IServiceClient>
 
    //=============================================================================
@@ -426,15 +421,14 @@ private:
 
 protected:
 
-   typedef std::list< IBase * > list_type;
-   typedef list_type::iterator          list_iter;
-   typedef list_type::const_iterator    list_citer;
+   typedef std::list< IBase * >      list_type;
+   typedef list_type::iterator       list_iter;
+   typedef list_type::const_iterator list_citer;
 
    ISvcsFact           &m_SvcsFact;
-//   IRuntime       *m_Runtime;
    IRuntimeClient      *m_RuntimeClient;
-   CSemaphore           m_srvcCount;
    btUnsignedInt        m_pendingcount;
+   CSemaphore           m_srvcCount;
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4251)
@@ -443,7 +437,6 @@ protected:
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
-
 };
 
 END_NAMESPACE(AAL)

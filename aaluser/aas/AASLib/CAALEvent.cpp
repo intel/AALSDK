@@ -94,7 +94,6 @@ CAALEvent::CAALEvent(IBase *pObject) :
    m_pServiceClient(NULL),
    m_pRuntimeClient(NULL),
    m_pEventHandler(NULL),
-   m_ISubClass(NULL),
    m_SubClassID(0)
 {
    AutoLock(this);
@@ -129,7 +128,6 @@ CAALEvent::CAALEvent(IBase *pObject, btIID SubClassID) :
    m_pServiceClient(NULL),
    m_pRuntimeClient(NULL),
    m_pEventHandler(NULL),
-   m_ISubClass(NULL),
    m_SubClassID(0)
 {
    AutoLock(this);
@@ -188,6 +186,12 @@ btBool CAALEvent::Has(btIID ID) const
 {
    AutoLock(this);
    return m_InterfaceMap.end() != m_InterfaceMap.find(ID);
+}
+
+btIID CAALEvent::SubClassID() const
+{
+   AutoLock(this);
+   return m_SubClassID;
 }
 
 //=============================================================================
@@ -261,6 +265,11 @@ btBool CAALEvent::operator == (const IEvent &rOther) const
    return true;
 }
 
+IBase &               CAALEvent::Object() const { AutoLock(this); return *m_pObject; }
+IBase *              CAALEvent::pObject() const { AutoLock(this); return  m_pObject; }
+btBool                  CAALEvent::IsOK() const { AutoLock(this); return  m_bIsOK;   }
+btApplicationContext CAALEvent::Context() const { AutoLock(this); return  m_Context; }
+
 void CAALEvent::setHandler(IServiceClient *pHandler)
 {
    AutoLock(this);
@@ -315,7 +324,6 @@ EOBJECT CAALEvent::SetSubClassInterface(btIID              InterfaceID,
       return result;
    }
 
-   m_ISubClass  = pInterface;
    m_SubClassID = InterfaceID;
 
    return result;
@@ -575,6 +583,9 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
    }
 }
 
+btID CExceptionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
+btID          CExceptionEvent::Reason() const { AutoLock(this); return m_Reason;          }
+
 btString CExceptionEvent::Description() const
 {
    AutoLock(this);
@@ -651,11 +662,16 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
    }
 }
 
+btID CExceptionTransactionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
+btID          CExceptionTransactionEvent::Reason() const { AutoLock(this); return m_Reason;          }
+
 btString CExceptionTransactionEvent::Description() const
 {
    AutoLock(this);
    return (btString)(char *)m_strDescription.c_str();
 }
+
+TransactionID CExceptionTransactionEvent::TranID() const { AutoLock(this); return m_TranID; }
 
 void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
 {
