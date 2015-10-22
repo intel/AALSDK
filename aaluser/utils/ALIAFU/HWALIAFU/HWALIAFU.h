@@ -162,10 +162,10 @@ protected:
 
 private:
    struct ReleaseContext {
-      const TransactionID & rTranID;
+      const TransactionID   TranID;
       const btTime          timeout;
       ReleaseContext(const TransactionID &rtid, btTime to) :
-         rTranID(rtid),
+         TranID(rtid),
          timeout(to)
       {}
    };

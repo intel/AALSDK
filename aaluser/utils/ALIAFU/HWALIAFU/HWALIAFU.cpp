@@ -748,7 +748,7 @@ void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
 // Service released callback
 void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
    ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
-   ServiceBase::Release(prc->rTranID, prc->timeout);
+   ServiceBase::Release(prc->TranID, prc->timeout);
 }
 
 // Service released failed callback
