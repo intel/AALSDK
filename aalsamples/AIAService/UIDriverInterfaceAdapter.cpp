@@ -516,6 +516,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    reqp->tranID = pMessage->getTranID();
    reqp->handle = devHandle;
    reqp->context = pProxyClient;
+   reqp->size = pMessage->getPayloadSize();
 
    memcpy(aalui_ioctlPayload(reqp), pMessage->getPayloadPtr(), pMessage->getPayloadSize());
 
