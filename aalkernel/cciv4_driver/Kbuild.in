@@ -75,4 +75,4 @@ EXTRA_CFLAGS=\
 -I$(aalkernelinc)
 
 obj-m                  :=@CCIV4DRV_DRV_NAME@.o
-@CCIV4DRV_DRV_NAME@-objs:= cciv4_driver_main.o cciv4_simulator.o cciv4_sim_afu_pip.o cciv4_PIPsession.o cciv4_common.o cciv4_sim_afu_mmap.o cciv4_sim_mafu_pip.o kOSAL.o
+@CCIV4DRV_DRV_NAME@-objs:= cciv4_driver_main.o cciv4_simulator.o cciv4_sim_afu_pip.o cciv4_PIPsession.o cciv4_common.o cciv4_sim_afu_mmap.o cciv4_sim_mafu_pip.o ccip_fme_mmio.o ccip_port_mmio.o ccip_sim_mmio.o kOSAL.o
