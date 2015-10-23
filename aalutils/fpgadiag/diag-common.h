@@ -401,6 +401,15 @@ public:
    virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+class CNLBCcipSW : public INLB
+{
+public:
+	CNLBCcipSW(CMyApp *pMyApp) :
+      INLB(pMyApp)
+    {}
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
+   virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
+};
 /*class PrintFormatter : public INLB
 {
 public:

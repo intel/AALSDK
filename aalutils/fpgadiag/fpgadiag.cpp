@@ -714,7 +714,7 @@ int main(int argc, char *argv[])
 	   cout << NORMAL << endl
 			<< endl;
    }
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
    {
 		// Run NLB ccip test, which performs sw data verification.
 		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
@@ -729,51 +729,68 @@ int main(int argc, char *argv[])
 		}
 		cout << NORMAL << endl;
    }
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
-         {
-      		// Run NLB ccip read test.
-      		CNLBCcipRead nlbccip_read(&myapp);
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+   {
+		// Run NLB ccip read test.
+		CNLBCcipRead nlbccip_read(&myapp);
 
-      		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
-      		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
-      		totalres += res;
-      		if ( 0 == res ) {
-      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-      		} else {
-      		  cout << FAIL << "ERROR";
-      		}
-      		cout << NORMAL << endl;
-         }
-      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
-   	 {
-   		// Run NLB ccip write test.
-   		CNLBCcipWrite nlbccip_write(&myapp);
+		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
+		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+  {
+		// Run NLB ccip write test.
+		CNLBCcipWrite nlbccip_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
-   		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-   	 }
-      if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
-      	 {
-      		// Run NLB ccip trput test.
-      		CNLBCcipTrput nlbccip_trput(&myapp);
+		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
+		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+  {
+		// Run NLB ccip trput test.
+		CNLBCcipTrput nlbccip_trput(&myapp);
 
-      		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
-      		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
-      		totalres += res;
-      		if ( 0 == res ) {
-      		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-      		} else {
-      		  cout << FAIL << "ERROR";
-      		}
-      		cout << NORMAL << endl;
-      	 }
+		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
+		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
+  {
+	   // Run an SW Test..
+	   // * report bandwidth in GiB/s
+	   CNLBCcipSW nlbccip_sw(&myapp);
+
+	   cout << " * CCIP-SW test " << flush;
+	   res = nlbccip_sw.RunTest(gCmdLine, MAX_NLB_CCIP_SW_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
+  }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
