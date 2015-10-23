@@ -135,6 +135,10 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
 
       void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
 
+      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+      void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
+
+
    protected:
       void SemWait(void);
       void SemPost(void);

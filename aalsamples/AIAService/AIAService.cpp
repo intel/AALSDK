@@ -387,6 +387,20 @@ void AIAService::SendMessage( AAL::btHANDLE devHandle,
 
 }
 
+
+AAL::btBool AIAService::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+{
+   return m_uida.MapWSID(Size, wsid, pRet);
+}
+
+void AIAService::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)
+{
+   m_uida.UnMapWSID(ptr, Size);
+}
+
+
+
+
 //=============================================================================
 // Name: MessageDeliveryThread
 // Description: Message Delivery Thread

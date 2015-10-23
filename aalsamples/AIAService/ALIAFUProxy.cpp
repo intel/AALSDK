@@ -137,6 +137,20 @@ btBool ALIAFUProxy::SendTransaction(IAIATransaction *pAFUmessage)
    return true;  /// SendMessage is a void TDO cleanup
 }
 
+
+
+AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+{
+   return m_pAIA->MapWSID(Size, wsid, pRet);
+}
+
+void ALIAFUProxy::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)
+{
+   m_pAIA->UnMapWSID(ptr, Size);
+}
+
+
+
 //=============================================================================
 // Name: AFUEvent
 // Description: Callback when an upstream messsage is received

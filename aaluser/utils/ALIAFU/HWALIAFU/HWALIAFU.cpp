@@ -780,6 +780,19 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
          // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
          struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
 
+         // mmap
+         btVirtAddr virtAddr;
+         if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+            AAL_ERR( LM_All, "FATAL: MapWSID failed");
+         }
+
+         // Remember wsid associated with virtual ptr
+         if (m_mapWSID.find(pResult->wsParms.ptr) != m_mapWSID.end()) {
+            AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+         } else {
+            m_mapWSID[pResult->wsParms.ptr] = pResult->wsParms.wsid;
+         }
+
          getRuntime()->schedDispatchable(
                      new(std::nothrow) BufferAllocated(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
                                                                                       m_pSvcClient),

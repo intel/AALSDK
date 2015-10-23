@@ -87,7 +87,8 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, ServiceBase),
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
-      m_tidSaved()
+      m_tidSaved(),
+      m_mapWSID()
    {
 	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
       SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
@@ -169,6 +170,9 @@ private:
          timeout(to)
       {}
    };
+
+   typedef std::map<btVirtAddr, btWSID> mapWSID_t;
+   mapWSID_t m_mapWSID;
 
 };
 
