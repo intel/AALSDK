@@ -87,5 +87,37 @@ private:
 }; // class BindAFUDevice
 
 
+//=============================================================================
+// Name:          BufferFreeTransaction
+// Description:   Send a Workspace Free operation to the driver stack
+// Input:         tranID   - Transaction ID
+//                addr     - address of buffer to free
+// Comments:
+//=============================================================================
+class UAIA_API BufferFreeTransaction : public IAIATransaction
+{
+public:
+   BufferFreeTransaction( AAL::TransactionID const &tranID, AAL::btWSID wsid );
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+
+   ~BufferFreeTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+
+};
+
+
+
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

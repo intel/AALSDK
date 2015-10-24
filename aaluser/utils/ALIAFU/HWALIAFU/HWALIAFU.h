@@ -88,7 +88,7 @@ public:
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
       m_tidSaved(),
-      m_mapWSID()
+      m_mapWkSpc()
    {
 	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
       SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
@@ -171,8 +171,10 @@ private:
       {}
    };
 
-   typedef std::map<btVirtAddr, btWSID> mapWSID_t;
-   mapWSID_t m_mapWSID;
+
+   // Map to store workspace parameters
+   typedef std::map<btVirtAddr, struct aalui_WSMParms> mapWkSpc_t;
+   mapWkSpc_t m_mapWkSpc;
 
 };
 

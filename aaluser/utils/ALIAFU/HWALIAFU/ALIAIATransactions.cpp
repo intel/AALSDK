@@ -124,6 +124,66 @@ BufferAllocateTransaction::~BufferAllocateTransaction() {
 }
 
 
+
+
+BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSID wsid ) :
+   m_msgID(reqid_UID_SendPIP),
+   m_tid_t(tranID),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+   // We need to send an ahm_req within an aalui_AFUmessage packaged in an
+   // BufferAllocate-AIATransaction.
+
+   // Allocate structs
+   struct aalui_AFUmessage *afumsg  = (new (std::nothrow) struct aalui_AFUmessage);
+   struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
+
+   // fill out aalui_AFUmessage
+   afumsg->cmd     = fappip_afucmdWKSP_VFREE;
+   afumsg->payload = (btVirtAddr) req;
+   afumsg->size    = sizeof(struct ahm_req);
+   afumsg->apiver  = AAL_AHMAPI_IID_1_0;
+   afumsg->pipver  = AAL_AHMPIP_IID_1_0;
+
+   // fill out ahm_req
+   req->u.wksp.m_wsid   = wsid;
+   req->u.wksp.m_size   = 0;        // not used
+   req->u.wksp.m_pgsize = 0;        // not used?
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+   m_size = sizeof(struct aalui_AFUmessage);
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){
+      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    BufferFreeTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                BufferFreeTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  BufferFreeTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   BufferFreeTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              BufferFreeTransaction::getMsgID()const {return m_msgID;}
+
+BufferFreeTransaction::~BufferFreeTransaction() {
+   // unpack payload and free memory
+   struct aalui_AFUmessage *afumsg = (aalui_AFUmessage *)m_payload;
+   struct ahm_req          *req    = (ahm_req *)afumsg->payload;
+   delete req;
+   delete afumsg;
+}
+
+
+
+
+
+
 /*
 BufferGetIOVA::BufferGetIOVA( TransactionID const &tranID ) :
    m_msgID(???),
