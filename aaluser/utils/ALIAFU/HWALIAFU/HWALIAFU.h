@@ -153,9 +153,6 @@ public:
    // </IAFUProxyClient>
 
 protected:
-   static void AllocateBufferHandler(IEvent const & );
-   static void FreeBufferHandler(IEvent const & );
-
    IAALService         *m_pAALService;
    IAFUProxy           *m_pAFUProxy;
    TransactionID        m_tidSaved;

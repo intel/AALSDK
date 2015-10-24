@@ -448,35 +448,6 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
                                                         pExcept)
              );
    }
-
-/*	   AutoLock(this);
-
-	   // Create a transaction id that wraps the original from the application,
-	   //    Otherwise the return transaction will go straight back there
-	   // The AFU can use the new transaction id's Context and EventHandler
-	   //    to carry information around.
-	   TransactionID tid(new(std::nothrow) TransactionID(TranID),
-	                     HWALIAFU::FreeBufferHandler,
-	                     true);
-
-	   WkSp_Single_Free_AFUTransaction AFUTran(&AFUDev(), Address);
-
-	   if ( AFUTran.IsOK() ) {
-
-	      AFUDev().SendTransaction(&AFUTran, tid);
-
-	   } else {
-	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-	                                                                     TranID,
-	                                                                     errMemory,
-	                                                                     reasUnknown,
-	                                                                     "AFUTran validity check failed");
-	      getRuntime()->schedDispatchable(
-	         new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, ClientBase()),
-	                                                        pExcept)
-	             );
-	   }
-	   */
 }
 
 //
@@ -502,177 +473,6 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 
    // not found
    return 0;
-}
-
-//
-// AllocateBufferHandler. Internal callback on completion of transaction
-//                        sent from bufferAllocate().
-//
-void HWALIAFU::AllocateBufferHandler(IEvent const &theEvent)
-{
-   // FIXME: port to IAFUProxy
-/*
-   // The object that generated the event (AIAProxy) has our this as its context
-   HWALIAFU *This = static_cast<HWALIAFU *>(theEvent.Object().Context());
-
-   // Recover the original wrapped TransactionID
-   TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
-
-   // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
-
-   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
-
-   btcString descr = NULL;
-
-   // Check for exception
-   if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
-      descr = "SubClassID() was exception";
-      goto _SEND_ERR;
-   }
-
-   // ALL THE CODE IN THIS BLOCK IS JUST DEBUG CHECK CODE - none of these EVER fire unless
-   //    the framework is broken
-   {
-      // Debug Check; Expect it to be a tranevtUIDriverClientEvent
-      if ( tranevtUIDriverClientEvent != theEvent.SubClassID() ) {
-         ERR("Expected tranevtUIDriverClientEvent, got " << theEvent.SubClassID());
-         goto _SEND_ERR;
-      }
-      VERBOSE("Got tranevtUIDriverClientEvent");
-
-      // Debug Check; Expect it to be an rspid_WSM_Response
-      if ( rspid_WSM_Response != revt.MessageID() ) {
-         ERR("Expected rspid_WSM_Response, got " << revt.MessageID());
-         goto _SEND_ERR;
-      }
-      VERBOSE("Got tranevtUIDriverClientEvent->rspid_WSM_Response.");
-
-      // Debug Check, expect a payload
-      if ( !pResult ) {
-         ERR("No payload, sending Exception Transaction");
-         goto _SEND_ERR;
-      }
-
-      // Debug Check, pResult->evtID should be uid_wseventAllocate
-      if ( uid_wseventAllocate != pResult->evtID ) {
-         ERR("LOGIC ERROR: not an uid_wseventAllocate; sending Exception Transaction");
-         goto _SEND_ERR;
-      }
-   }  // End of DEBUG CHECK CODE
-
-   // REAL CODE
-   if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory allocation
-
-      // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) BufferAllocated(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
-                                                                                           OrigTranID,
-                                                                                           pResult->wsParms.ptr,
-                                                                                           pResult->wsParms.physptr,
-                                                                                           pResult->wsParms.size) );
-
-   } else {    // error during allocate
-      // get an error string
-      descr = "bad ResultCode()";
-      goto _SEND_ERR;
-   }
-
-   return;
-
-_SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
-                                                                  OrigTranID,
-                                                                  errAFUWorkSpace,
-                                                                  reasAFUNoMemory,
-                                                                  descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
-                                                                                                                     pExcept) );
-*/
-}
-
-//
-// FreeBufferHandler. Internal callback on completion of transaction
-//                    sent from bufferFree().
-//
-void HWALIAFU::FreeBufferHandler(IEvent const &theEvent)
-{
-   // FIXME: port to IAFUProxy
-   /*
-   // The object that generated the event (AIAProxy) has our this as its context
-   HWALIAFU *This = static_cast<HWALIAFU *>(theEvent.Object().Context());
-
-   // Recover the original wrapped TransactionID
-   TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
-
-   // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
-
-   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
-
-   btcString descr = NULL;
-
-   // Check for exception
-   if ( AAL_IS_EXCEPTION(theEvent.SubClassID()) ) {
-      descr = "SubClassID() was exception";
-      goto _SEND_ERR;
-   }
-
-   // ALL THE CODE IN THIS BLOCK IS JUST DEBUG CHECK CODE - none of these EVER fire unless
-   //    the framework is broken
-   {
-      // Debug Check; Expect it to be a tranevtUIDriverClientEvent
-      if ( tranevtUIDriverClientEvent != theEvent.SubClassID() ) {
-         ERR("Expected tranevtUIDriverClientEvent, got " << theEvent.SubClassID());
-         goto _SEND_ERR;
-      }
-      VERBOSE("Got tranevtUIDriverClientEvent");
-
-      // Debug Check; Expect it to be an rspid_AFU_Response
-      if ( rspid_WSM_Response != revt.MessageID() ) {
-         ERR("Expected rspid_AFU_Response, got " << revt.MessageID());
-         goto _SEND_ERR;
-      }
-      VERBOSE("Got tranevtUIDriverClientEvent->rspid_AFU_Response");
-
-      // Debug Check, expect a payload
-      if ( !pResult ) {
-         ERR("No payload, sending Exception Transaction");
-         goto _SEND_ERR;
-      }
-
-      // Debug Check, pResult->evtID should be uid_wseventFree
-      if ( uid_wseventFree != pResult->evtID ) {
-         ERR("LOGIC ERROR: not an uid_wseventFree; sending Exception Transaction");
-         goto _SEND_ERR;
-      }
-   }  // End of DEBUG CHECK code
-
-   // REAL CODE
-   if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory free
-
-      // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) BufferFreed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
-                                                                                       OrigTranID) );
-
-   } else {    // error during free
-      // get an error string
-      descr = "bad ResultCode()";
-      goto _SEND_ERR;
-   }
-
-   return;
-
-_SEND_ERR:
-   IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(This),
-                                                                  OrigTranID,
-                                                                  errAFUWorkSpace,
-                                                                  reasAFUNoMemory,
-                                                                  descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, This->ClientBase()),
-                                                                                         pExcept) );
-*/
 }
 
 // ---------------------------------------------------------------------------
@@ -808,6 +608,9 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    switch(puidEvent->MessageID())
    {
+   //===========================
+   // WSM response
+   // ==========================
    case rspid_WSM_Response:
       {
          // TODO check result code
@@ -817,6 +620,9 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
          switch(pResult->evtID)
          {
+         //------------------------
+         // Workspace allocate
+         //------------------------
          case uid_wseventAllocate:
             {
 
@@ -843,6 +649,9 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
                                                           pResult->wsParms.size)
                             );
             } break;
+         //------------------------
+         // Workspace free
+         //------------------------
          case uid_wseventFree:
             {
                // TODO: Forget workspace parameters here, not in bufferFree().
