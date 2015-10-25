@@ -72,23 +72,20 @@ class AASEDS_API IEventDispatcher
 public:
    /// IEventDispatcher Destructor.
    virtual ~IEventDispatcher() {}
-   /// Internal state check.
-   virtual btBool IsOK()                          = 0;
 
+   /// Internal state check.
+   virtual btBool       IsOK()                      = 0;
    /// Queue an event with event handler to the Dispatcher.
    virtual btBool QueueEvent(btEventHandler pEventHandler,
-                           CAALEvent     *pEvent) = 0;
-
+                             CAALEvent     *pEvent) = 0;
    /// Queue a functor Event (deprecated)
-   virtual btBool QueueEvent(btObjectType target,
-                           CAALEvent   *pEvent)   = 0;
-
+   virtual btBool QueueEvent(btObjectType   target,
+                             CAALEvent     *pEvent) = 0;
    /// Queue a generic Dispatchable funtor or event.
-   virtual btBool QueueEvent( btObjectType parm,
-                              IDispatchable *)       = 0;
-
+   virtual btBool QueueEvent(btObjectType   parm,
+                             IDispatchable *pDisp)  = 0;
    /// Release the resources held by the Event Dispatcher.
-   virtual void Release()                         = 0;
+   virtual void      Release()                      = 0;
 };
 
 
@@ -99,25 +96,22 @@ public:
    /// IEventDeliveryService Destructor.
    virtual ~IEventDeliveryService() {}
 
- //  virtual EDS_Status        Schedule()  = 0;
+   virtual void StartEventDelivery()                 = 0;
+   virtual void  StopEventDelivery()                 = 0;
+   virtual btBool     scheduleWork(IDispatchable * ) = 0;
 
-//   virtual void               Unblock()  = 0;
-
-   virtual void    StartEventDelivery()  = 0;
-   virtual void     StopEventDelivery()  = 0;
-#if 0
+#if DEPRECATED
+   virtual EDS_Status Schedule() = 0;
+   virtual void        Unblock() = 0;
    virtual btBool QueueEvent(btEventHandler ,
-                           CAALEvent * ) = 0;
-
+                             CAALEvent * ) = 0;
    /// @param btObjectType Target for Event
    /// @param CAALEvent Pointer to Event
    virtual btBool QueueEvent(btObjectType ,
                              CAALEvent * ) = 0;
-#endif
-   virtual btBool scheduleWork( IDispatchable *)       = 0;
-
    /// Retrieve the IEventDispatcher interface.
-//   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
+   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
+#endif // DEPRECATED
 };
 
 /// @}
@@ -126,13 +120,12 @@ public:
 class AASEDS_API IMessageDeliveryService
 {
 public:
-   /// IEventDeliveryService Destructor.
+   /// IMessageDeliveryService Destructor.
    virtual ~IMessageDeliveryService() {}
 
-   virtual void   StartMessageDelivery()  = 0;
-   virtual void   StopMessageDelivery()  = 0;
-
-   virtual btBool scheduleMessage( IDispatchable *) = 0;
+   virtual void StartMessageDelivery()                 = 0;
+   virtual void  StopMessageDelivery()                 = 0;
+   virtual btBool    scheduleMessage(IDispatchable * ) = 0;
 };
 
 END_NAMESPACE(AAL)

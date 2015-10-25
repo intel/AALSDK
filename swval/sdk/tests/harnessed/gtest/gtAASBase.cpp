@@ -20,10 +20,9 @@ public:
 
 TEST_F(CAASBase_f_0, aal0225)
 {
-   // CAASBase::CAASBase(btApplicationContext ) sets an interface pointer for iidCBase,
-   // and sets a SubClass interface of iidBase. When object initialization is successful,
-   // m_bIsOK is set to true. m_Context stores the input parameter for later retrieval by
-   // Context().
+   // CAASBase::CAASBase(btApplicationContext ) sets interface pointers for iidCBase and iidBase,
+   // When object initialization is successful, m_bIsOK is set to true. m_Context stores the
+   // input parameter for later retrieval by Context().
 
    EXPECT_TRUE(Has(iidBase));
    EXPECT_TRUE(Has(iidCBase));
@@ -145,6 +144,7 @@ TEST_F(CAASBase_f_0, aal0233)
 	EXPECT_EQ(&refB, pInterface);
 }
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0234)
 {
    // When set a sub class interface pointer to subclass object (CAASBase::SetSubClassInterface()),
@@ -157,7 +157,9 @@ TEST_F(CAASBase_f_0, aal0234)
    EXPECT_EQ(pinterface, ISubClass());
    EXPECT_EQ(interfaceID, SubClassID());
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0235)
 {
    // When the input parameter to CAASBase::SetSubClassInterface() is NULL,
@@ -166,7 +168,9 @@ TEST_F(CAASBase_f_0, aal0235)
 	btIID interfaceID =988;
 	EXPECT_EQ(EObjBadObject, SetSubClassInterface(interfaceID, NULL));
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0236)
 {
    // When try to set already implemented sub class interface,
@@ -177,6 +181,7 @@ TEST_F(CAASBase_f_0, aal0236)
 	EXPECT_EQ(EObjOK, SetSubClassInterface(interfaceID, pinterface)) ;
 	EXPECT_EQ(EObjDuplicateName, SetSubClassInterface(interfaceID, pinterface));
 }
+#endif // DEPRECATED
 
 TEST_F(CAASBase_f_0, aal0237)
 {
@@ -195,6 +200,7 @@ TEST_F(CAASBase_f_0, aal0238)
 	EXPECT_FALSE(Has(interfaceID));
 }
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0239)
 {
    // CAASBase::CAASBase(btApplicationContext ) sets a default SubClass interface of iidBase.
@@ -202,7 +208,9 @@ TEST_F(CAASBase_f_0, aal0239)
 	EXPECT_EQ(static_cast<CAASBase_f_0 *>(ISubClass()),this);
 	EXPECT_EQ(SubClassID(),iidBase);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0240)
 {
    // CAASBase::ISubClass() returns the cached pointer to subclass iidBase object.
@@ -215,7 +223,9 @@ TEST_F(CAASBase_f_0, aal0240)
 	EXPECT_EQ(subclass_ref<IBase>(this),  *this);
 	EXPECT_EQ(subclass_ref<IBase>(*this), *this);
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0241)
 {
    // CAASBase::ISubClass() returns the latest/recent cached subclass
@@ -236,14 +246,18 @@ TEST_F(CAASBase_f_0, aal0241)
 	EXPECT_EQ(pinterface, &subclass_ref<btGenericInterface>(this));
 	EXPECT_EQ(pinterface, &subclass_ref<btGenericInterface>(*this));
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0242)
 {
    // When constructor CAASBase(btApplicationContext ) sets SubClass ID iidBase by
    // default, ISubClassID() returns subclass ID (iidBase).
 	EXPECT_EQ(iidBase, SubClassID());
 }
+#endif // DEPRECATED
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0243)
 {
    // CAASBase::ISubClassID() returns stored subclass ID in m_SubClassID,
@@ -254,6 +268,7 @@ TEST_F(CAASBase_f_0, aal0243)
 	EXPECT_EQ(EObjOK, SetSubClassInterface(interfaceID, pinterface));
 	EXPECT_EQ(interfaceID, SubClassID());
 }
+#endif // DEPRECATED
 
 TEST_F(CAASBase_f_0, aal0244)
 {
@@ -285,14 +300,12 @@ TEST_F(CAASBase_f_0, aal0245)
    {
    public:
       aal0245Base() {}
-      btGenericInterface Interface(btIID Interface) const  { return NULL;  }
-      btBool Has(btIID Interface) const                    { return false; }
-      btGenericInterface ISubClass() const                 { return NULL;  }
-      btIID SubClassID() const                             { return 0;     }
-      btBool operator != (IBase const &rother) const       { return true;  }
-      btBool operator == (IBase const &rother) const       { return false; }
-      btBool IsOK() const                                  { return true;  }
-      btApplicationContext Context() const                 { return NULL;  }
+      btGenericInterface Interface(btIID Interface)     const { return NULL;  }
+      btBool                   Has(btIID Interface)     const { return false; }
+      btBool          operator != (IBase const &rother) const { return true;  }
+      btBool          operator == (IBase const &rother) const { return false; }
+      btBool                  IsOK()                    const { return true;  }
+      btApplicationContext Context()                    const { return NULL;  }
    } a;
 
    CAASBase b;
@@ -301,6 +314,7 @@ TEST_F(CAASBase_f_0, aal0245)
 	EXPECT_TRUE( b != a);
 }
 
+#if DEPRECATED
 TEST_F(CAASBase_f_0, aal0246)
 {
    // When both (lhs and rhs) are CAASBase instances but don't implement the same SubClass,
@@ -333,12 +347,12 @@ TEST_F(CAASBase_f_0, aal0246)
    EXPECT_FALSE(b == a);
    EXPECT_TRUE( b != a);
 }
+#endif // DEPRECATED
 
 TEST_F(CAASBase_f_0, aal0247)
 {
-   // When both (lhs and rhs) are CAASBase instances, implement the
-   // same SubClass, but not same number of interfaces, operator == returns
-   // false and != returns true.
+   // When both (lhs and rhs) are CAASBase instances but don't implement the same number
+   // of interfaces, operator == returns false and != returns true.
 
    class aal0247Base : public CAASBase
    {
@@ -370,7 +384,7 @@ TEST_F(CAASBase_f_0, aal0247)
 
 TEST_F(CAASBase_f_0, aal0248)
 {
-   // When both (lhs and rhs) are CAASBase instances, implement the same SubClass,
+   // When both (lhs and rhs) are CAASBase instances,
    // implement same number of interfaces, but implement different interface types,
    // operator == returns false and != returns true.
 
@@ -402,3 +416,104 @@ TEST_F(CAASBase_f_0, aal0248)
    EXPECT_FALSE(b == a);
    EXPECT_TRUE( b != a);
 }
+
+TEST_F(CAASBase_f_0, aal0716)
+{
+   // When a CAASBase object does not implement an interface described by the btIID parameter
+   // to CAASBase::ReplaceInterface(), the function returns EObjNameNotFound, indicating failure.
+
+   class aal0716Base : public CAASBase
+   {
+   public:
+      aal0716Base() {}
+
+      EOBJECT CallReplaceInterface(btIID id, btGenericInterface ifc)
+      {
+         return ReplaceInterface(id, ifc);
+      }
+   } b;
+
+   const btIID         ID = 999;
+   btGenericInterface Ifc = (btGenericInterface) 3;
+
+   EXPECT_EQ(EObjNameNotFound, b.CallReplaceInterface(ID, Ifc));
+}
+
+TEST_F(CAASBase_f_0, aal0717)
+{
+   // When a CAASBase object does implement the interface described by the btIID parameter
+   // to CAASBase::ReplaceInterface(btIID , btGenericInterface ), and the btGenericInterface
+   // parameter is NULL, the function removes the interface entry for the btIID and returns EObjOK.
+
+   class aal0717Base : public CAASBase
+   {
+   public:
+      aal0717Base() {}
+
+      EOBJECT CallSetInterface(btIID id, btGenericInterface ifc)
+      { return SetInterface(id, ifc); }
+
+      EOBJECT CallReplaceInterface(btIID id, btGenericInterface ifc)
+      { return ReplaceInterface(id, ifc); }
+   } b;
+
+   const btIID         ID = 999;
+   btGenericInterface Ifc = (btGenericInterface) 3;
+
+   EXPECT_EQ(EObjOK, b.CallSetInterface(ID, Ifc));
+
+   EXPECT_TRUE(b.Has(ID));
+   EXPECT_EQ(EObjOK, b.CallReplaceInterface(ID, NULL));
+   EXPECT_FALSE(b.Has(ID));
+}
+
+TEST_F(CAASBase_f_0, aal0718)
+{
+   // When a CAASBase object does implement the interface described by the btIID parameter to
+   // CAASBase::ReplaceInterface(btIID , btGenericInterface ), and the btGenericInterface
+   // parameter is non-NULL, the interface entry is updated and EObjOK is returned.
+
+   class aal0718Base : public CAASBase
+   {
+   public:
+      aal0718Base() {}
+
+      EOBJECT CallSetInterface(btIID id, btGenericInterface ifc)
+      { return SetInterface(id, ifc); }
+
+      EOBJECT CallReplaceInterface(btIID id, btGenericInterface ifc)
+      { return ReplaceInterface(id, ifc); }
+   } b;
+
+   const btIID         ID = 999;
+   btGenericInterface Ifc = (btGenericInterface) 3;
+
+   EXPECT_EQ(EObjOK, b.CallSetInterface(ID, Ifc));
+
+   EXPECT_TRUE(b.Has(ID));
+   EXPECT_EQ(Ifc, b.Interface(ID));
+
+   btGenericInterface NewIfc = (btGenericInterface) 7;
+
+   EXPECT_EQ(EObjOK, b.CallReplaceInterface(ID, NewIfc));
+   EXPECT_TRUE(b.Has(ID));
+   EXPECT_EQ(NewIfc, b.Interface(ID));
+}
+
+TEST(CAALBaseTest, CAALBaseTest)
+{
+   class DerivedFromCAALBase : public CAALBase
+   {
+   public:
+      DerivedFromCAALBase(btEventHandler       h,
+                          btApplicationContext ctx) : CAALBase(h, ctx) {}
+      virtual void Destroy(TransactionID const & ) {}
+   };
+
+   DerivedFromCAALBase d0((btEventHandler)NULL, (btApplicationContext)NULL);
+   EXPECT_FALSE(d0.IsOK()); // NULL event handler
+
+   DerivedFromCAALBase d1((btEventHandler)3, (btApplicationContext)NULL);
+   EXPECT_TRUE(d1.IsOK());
+}
+

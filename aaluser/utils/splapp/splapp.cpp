@@ -163,7 +163,7 @@ CMySPLClient::CMySPLClient() :
    m_AFUDSMSize(0)
 {
    m_Sem.Create(0, INT_MAX);
-   SetSubClassInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+   SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
 }
 
 void CMySPLClient::OnWorkspaceAllocated(TransactionID const &TranID,

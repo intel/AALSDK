@@ -35,20 +35,39 @@
 ##  History:
 ##     06/27/2013    TSW   Initial version
 ##******************************************************************************
-bin_PROGRAMS=AASResourceManager
+lib_LTLIBRARIES=libAASResMgr.la
 
-AASResourceManager_SOURCES=\
-AASResourceManager.cpp \
+libAASResMgr_la_SOURCES=\
 CAASResourceManager.cpp \
 CRegistrarDatabase.cpp \
 InstanceRecord.cpp \
 RegDBSkeleton.cpp \
 ResMgrAlgorithms.cpp
 
+libAASResMgr_la_CPPFLAGS=\
+-DREGISTRAR_DATABASE_PATH=\"$(datadir)/aalsdk/RegistrarRepository/linux\" \
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libAASResMgr_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la
+
+
+
+bin_PROGRAMS=AASResourceManager
+
+AASResourceManager_SOURCES=\
+AASResourceManager.cpp
+
 AASResourceManager_CPPFLAGS=\
 -DREGISTRAR_DATABASE_PATH=\"$(datadir)/aalsdk/RegistrarRepository/linux\" \
--I$(top_srcdir)/include
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
 AASResourceManager_LDADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la
+
+

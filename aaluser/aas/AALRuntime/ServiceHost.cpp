@@ -24,14 +24,19 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: ServiceHost.cpp
-//     CREATED: Mar 22, 2014
-//      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
-//
-// PURPOSE:   Wrapper class for Service Host plug-ins
-// HISTORY:
-// COMMENTS:
-// WHEN:          WHO:     WHAT:
+///        @file: ServiceHost.cpp
+///     CREATED: Mar 22, 2014
+///      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
+///
+// /@brief:   Wrapper class for Service Host plug-ins
+/// @verbatim
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+///
+/// AUTHORS: Joseph Grecco, Intel Corporation.
+/// HISTORY:
+/// COMMENTS:
+/// WHEN:          WHO:     WHAT:
+/// 09/5/2015      JG       Added Provider Release. Changed for 4.x@endverbatim
 //****************************************************************************///
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -51,24 +56,19 @@ BEGIN_NAMESPACE(AAL)
 // Inputs: root_name - Name of the Service to load.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost(btcString             root_name) :
+ServiceHost::ServiceHost(btcString root_name) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
-   m_base(NULL),
-   m_name()
+   m_base(NULL)
 {
-   memset(&m_modparms, 0, sizeof(m_modparms));
-
    OSServiceModuleInit(&m_modparms, root_name);
 
    // Load the Class factory's module
-   m_pDynLinkLib = new DynLinkLibrary(std::string(m_modparms.full_name));
+   m_pDynLinkLib = new(std::nothrow) DynLinkLibrary(std::string(m_modparms.full_name));
 
-   // Check for NULL
-   if ( ( NULL == m_pDynLinkLib ) ||
-        !m_pDynLinkLib->IsOK()  ) {
-      goto ERR;
+   if ( ( NULL == m_pDynLinkLib ) || !m_pDynLinkLib->IsOK() ) {
+      goto _ERR;
    }
 
    m_modparms.entry_point_fn = (AALSvcEntryPoint)m_pDynLinkLib->GetSymAddress(std::string(m_modparms.entry_point_name));
@@ -76,7 +76,7 @@ ServiceHost::ServiceHost(btcString             root_name) :
    if ( ( NULL == m_modparms.entry_point_fn ) ||
         ( 0 != m_modparms.entry_point_fn(AAL_SVC_CMD_GET_PROVIDER, &m_pProvider) ) ||
         ( NULL == m_pProvider ) ) {
-      goto ERR;
+      goto _ERR;
    }
 
    m_name  = std::string(root_name);
@@ -84,7 +84,8 @@ ServiceHost::ServiceHost(btcString             root_name) :
 
    return;
 
-ERR:
+_ERR:
+   // m_bIsOK remains false.
    if ( NULL != m_pDynLinkLib ) {
       delete m_pDynLinkLib;
       m_pDynLinkLib = NULL;
@@ -98,56 +99,90 @@ ERR:
 // Inputs: EntryPoint - Entry point of loaded Service Module.
 // Comments:
 //=============================================================================
-ServiceHost::ServiceHost( AALSvcEntryPoint    EntryPoint) :
+ServiceHost::ServiceHost(AALSvcEntryPoint EP) :
    m_bIsOK(false),
    m_pDynLinkLib(NULL),
    m_pProvider(NULL),
-   m_base(NULL),
-   m_name()
+   m_base(NULL)
 {
-   m_modparms.entry_point_fn = EntryPoint;
+   memset(&m_modparms, 0, sizeof(OSServiceModule));
 
-   if ( ( NULL == m_modparms.entry_point_fn ) ||
-        ( 0 != m_modparms.entry_point_fn(AAL_SVC_CMD_GET_PROVIDER, &m_pProvider) ) ||
-        ( NULL == m_pProvider ) ) {
-
-      // TODO this is always going to be NULL (see above).
-      if ( NULL != m_pDynLinkLib ) {
-         delete m_pDynLinkLib;
-         m_pDynLinkLib = NULL;
-      }
-      return;
-
+   ASSERT(NULL != EP);
+   if ( NULL == EP ) {
+      return; // m_bIsOK remains false.
    }
-    m_bIsOK = true;
+
+   m_modparms.entry_point_fn = EP;
+
+   if ( ( 0 != m_modparms.entry_point_fn(AAL_SVC_CMD_GET_PROVIDER, &m_pProvider) ) ||
+        ( NULL == m_pProvider ) ) {
+      return;
+   }
+
+   m_bIsOK = true;
 }
 
 //=============================================================================
-// Name: allocService
-// Description: Allocate an instance of the Service
+// Name: freeProvider
+// Description: Frees the provider in eth Servcie Library
 // Interface: public
-// Inputs: pClient - Owners ServiceCient interface
-//         rManifest - Manifest and optional arguments
-//         rTranID - Optional Transaction ID
 // Comments:
 //=============================================================================
-btBool ServiceHost::InstantiateService( IRuntime           *pRuntime,
-                                        IBase               *pClientBase,
-                                        NamedValueSet const &rManifest,
-                                        TransactionID const &rTranID)
-      {
+void ServiceHost::freeProvider()
+{
+   if ( NULL != m_modparms.entry_point_fn ) {
+      m_modparms.entry_point_fn(AAL_SVC_CMD_FREE_PROVIDER, NULL);
+      m_modparms.entry_point_fn = NULL;
+   }
+}
 
+//=============================================================================
+// Name: ~ServiceHost
+// Description: Destructor
+// Interface: public
+// Comments: Unloads the Service Library.
+//=============================================================================
+ServiceHost::~ServiceHost()
+{
+   freeProvider();
+
+   if ( NULL != m_pDynLinkLib ) {
+      delete m_pDynLinkLib;
+   }
+}
+
+//=============================================================================
+// Name: InstantiateService
+// Description: Allocate an instance of the Service
+// Interface: public
+// Inputs: pRuntime - Pointer to runtime
+//         pClient - Owners ServiceCient interface
+//         rManifest - Manifest and optional arguments
+//         rTranID - Optional Transaction ID
+// Comments: If this fails then do not expect an event is generated by the
+//           Service.
+//=============================================================================
+btBool ServiceHost::InstantiateService(IRuntime            *pRuntime,
+                                       IBase               *pClientBase,
+                                       NamedValueSet const &rManifest,
+                                       TransactionID const &rTranID)
+{
    // Assign a runtime proxy to this Service  TODO DEPRECATE
-   if ( !IsOK() || (NULL == pRuntime) ){
+   ASSERT(NULL != pRuntime);
+   if ( NULL == pRuntime ) {
       return false;
    }
 
-   if ( IsOK() && ( NULL != m_pProvider ) ) {
-      m_base = m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);
-      return NULL != m_base;
+   if ( !IsOK() ) {
+      return false;
    }
 
-   return false;
+   ASSERT(NULL != m_pProvider);
+   if ( NULL == m_pProvider ) {
+      return false;
+   }
+
+   return m_pProvider->Construct(pRuntime, pClientBase, rTranID, rManifest);
 }
 
 END_NAMESPACE(AAL)

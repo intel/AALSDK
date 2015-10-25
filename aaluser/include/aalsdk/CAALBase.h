@@ -60,7 +60,8 @@
 /// 06/20/2009     JG       Changes in preparation for shutdown
 /// 12/28/2009     JG       Changed CAALBase to CAFUBase and created a
 ///                           CAALBase that is an object that simply can
-///                           generate events@endverbatim
+///                           generate events
+/// 10/06/2015     JG        Removed Subclass interfaces@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_CAALBASE_H__
 #define __AALSDK_CAALBASE_H__
@@ -78,7 +79,7 @@ BEGIN_NAMESPACE(AAL)
 typedef enum EOBJECT
 {
    EObjOK = 0,        ///< Operation completed successfully.
-   EPObjNameNotFound, ///< Name lookup failed.
+   EObjNameNotFound,  ///< Name lookup failed.
    EObjDuplicateName, ///< Name already exists.
    EObjBadObject      ///< Invalid object state.
 } EOBJECT;
@@ -88,7 +89,8 @@ typedef std::map<btID, btGenericInterface>::const_iterator IIDINTERFACE_CITR;
 typedef std::map<btID, btGenericInterface>::iterator       IIDINTERFACE_ITR;
 
 /// Concrete base class for objects.
-class AASLIB_API CAASBase : public IBase, protected CriticalSection
+class AASLIB_API CAASBase : public    IBase,
+                            protected CriticalSection
 {
 public:
    /// CAASBase construct with optional btApplicationContext.
@@ -99,22 +101,17 @@ public:
    // <IBase>
    btGenericInterface   Interface(btIID Interface)     const;
    virtual btBool             Has(btIID Interface)     const;
-   btGenericInterface   ISubClass()                    const;
-   btIID               SubClassID()                    const;
    btBool            operator != (IBase const &rother) const;
    btBool            operator == (IBase const &rother) const;
-   btBool                    IsOK()                    const { return m_bIsOK;   }
-   btApplicationContext   Context()                    const { return m_Context; }
+   btBool                    IsOK()                    const;
+   btApplicationContext   Context()                    const;
    // </IBase>
 
    void SetContext(btApplicationContext context);
 
 protected:
-   EOBJECT SetInterface(btIID              Interface,
-                        btGenericInterface pInterface);
-
-   EOBJECT SetSubClassInterface(btIID              Interface,
-                                btGenericInterface pInterface);
+   EOBJECT     SetInterface(btIID              Interface,
+                            btGenericInterface pInterface);
 
    EOBJECT ReplaceInterface(btIID              Interface,
                             btGenericInterface pInterface);
@@ -135,8 +132,6 @@ private:
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
-   btGenericInterface m_ISubClass;
-   btIID              m_SubClassID;
 };
 
 /// Concrete base class for objects that generate events.
@@ -146,8 +141,7 @@ public:
    /// CAALBase construct with Event Handler and Application-specific Context.
    CAALBase(btEventHandler       pEventHandler,
             btApplicationContext Context=NULL);
-   /// CAALBase Destructor.
-   virtual ~CAALBase();
+
    /// Destroy this CAALBase.
    virtual void Destroy(TransactionID const &TransID) = 0;
 

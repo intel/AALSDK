@@ -112,7 +112,7 @@ public:
          m_TaskMode(ONE_SHOT),
          m_bDeepScrub(false)
    {
-      SetSubClassInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
+      SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this));
       m_bIsOK = true;
    }
    ~CMyApp(){}

@@ -274,7 +274,7 @@ void HWAFUWkspcDelegate<mode>::WkspcAlloc(btWSSize             Length,
                                                                      reasAFUNoMemory,
                                                                      "AFUTran validity check failed");
       getRuntime()->schedDispatchable(
-         new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+         new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
                                                             pExcept)
 
              );
@@ -307,7 +307,7 @@ void HWAFUWkspcDelegate<mode>::WkspcFree(btVirtAddr           Address,
                                                                      reasUnknown,
                                                                      "AFUTran validity check failed");
       getRuntime()->schedDispatchable(
-         new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, ClientBase()),
+         new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
                                                         pExcept)
              );
    }
@@ -323,7 +323,7 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
@@ -370,7 +370,7 @@ void HWAFUWkspcDelegate<mode>::AllocateWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory allocation
 
       // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, This->getServiceClientBase()),
                                                                                            OrigTranID,
                                                                                            pResult->wsParms.ptr,
                                                                                            pResult->wsParms.physptr,
@@ -390,7 +390,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->getServiceClientBase()),
                                                                                                                      pExcept) );
 }
 
@@ -404,7 +404,7 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    TransactionID OrigTranID = UnWrapTransactionIDFromEvent(theEvent);
 
    // Need the event in order to get its payload
-   IUIDriverClientEvent &revt = subclass_ref<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent &revt = dynamic_ref<IUIDriverClientEvent>(tranevtUIDriverClientEvent, theEvent);
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(revt.Payload());
@@ -451,7 +451,7 @@ void HWAFUWkspcDelegate<mode>::FreeWorkSpaceHandler(IEvent const &theEvent)
    if ( uid_errnumOK == revt.ResultCode() ) {      // Have a valid memory free
 
       // Send the message
-      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+      This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, This->getServiceClientBase()),
                                                                                        OrigTranID) );
 
    } else {    // error during free
@@ -468,7 +468,7 @@ _SEND_ERR:
                                                                   errAFUWorkSpace,
                                                                   reasAFUNoMemory,
                                                                   descr);
-   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->ClientBase()),
+   This->getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, This->getServiceClientBase()),
                                                                                          pExcept) );
 }
 

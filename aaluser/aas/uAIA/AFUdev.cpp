@@ -103,7 +103,7 @@ CAFUDev::CAFUDev( void * handle,
       return;
    }
 
-   if(SetSubClassInterface(iidAFUDev,dynamic_cast<IAFUDev*>(this))!= EObjOK) {
+   if(SetInterface(iidAFUDev,dynamic_cast<IAFUDev*>(this))!= EObjOK) {
       return;
    }
 
@@ -249,7 +249,8 @@ CAFUDev::CSRMapHandler(IEvent const        &theEvent,
                        btUnsignedInt       *pnumEvents )
 {
    // This Event is a IUIDriverClientEvent. Get the results from the call.
-   IUIDriverClientEvent *pevt = subclass_ptr<IUIDriverClientEvent>(theEvent);
+   IUIDriverClientEvent *pevt = dynamic_ptr<IUIDriverClientEvent>(tranevtUIDriverClientEvent,
+                                                                  theEvent);
    if ( NULL == pevt ) {
 
       // and generate the event

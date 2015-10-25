@@ -75,11 +75,10 @@ typedef enum eservice_connection_types
    conn_type_shram
 } eservice_connection_types;
 
- //=============================================================================
- // Name: IAALTransport
- // Description: trasnport class interface
- //=============================================================================
-///
+//=============================================================================
+// @interface IAALTransport
+// @brief Transport class interface.
+//=============================================================================
 class AASLIB_API IAALTransport
 {
 public:
@@ -92,10 +91,10 @@ public:
    virtual int            putmsg(btcString , btWSSize len) = 0;
 };
 
- //=============================================================================
- // Name: IAALMarshalUnMarshallerUtil
- // Description: Marshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALMarshalUnMarshallerUtil
+// @brief Marshaller class interface.
+//=============================================================================
 class AASLIB_API IAALMarshalUnMarshallerUtil
 {
 public:
@@ -109,10 +108,10 @@ public:
    virtual ENamedValues GetName(btUnsignedInt index, btStringKey *pName) const = 0;
 };
 
- //=============================================================================
- // Name: IAALMarshaller
- // Description: Marshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALMarshaller
+// @brief Marshaller class interface.
+//=============================================================================
 class AASLIB_API IAALMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
@@ -184,10 +183,10 @@ public:
    virtual char const *pmsgp(btWSSize *len)                                                = 0;
 };
 
- //=============================================================================
- // Name: IAALUnMarshaller
- // Description: UnMarshaller class interface
- //=============================================================================
+//=============================================================================
+// @interface IAALUnMarshaller
+// @brief UnMarshaller class interface.
+//=============================================================================
 class AASLIB_API IAALUnMarshaller : public IAALMarshalUnMarshallerUtil
 {
 public:
@@ -266,12 +265,16 @@ public:
    ///
    /// @retval  IBase *  On success.
    /// @retval  NULL     On failure.
-   virtual IBase * CreateServiceObject(AALServiceModule *container,
-                                       IRuntime         *pRuntime) = 0;
+   virtual IBase * CreateServiceObject(AALServiceModule    *container,
+                                       IRuntime            *pRuntime)     = 0;
 
-   virtual btBool    InitializeService(IBase               *Client,
+   // Used to destroy and uninitialized Service Object
+   virtual void   DestroyServiceObject(IBase               *pServiceBase) = 0;
+
+   virtual btBool    InitializeService(IBase               *newService,
+                                       IBase               *Client,
                                        TransactionID const &rtid,
-                                       NamedValueSet const &optArgs) = 0;
+                                       NamedValueSet const &optArgs)      = 0;
 };
 
 
@@ -288,19 +291,21 @@ public:
    /// IServiceModule Destructor.
    virtual ~IServiceModule() {}
 
-   /// Uses ISvcsFact to create the Service object.
-    ///
-    /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
-    ///   object passed in the call may be queried for the desired Service interfaces.
-    /// @param[in]  tid       Optional TransactionID for the event.
-    /// @param[in]  optArgs   Optional Service-specific arguments.
-    ///
-    /// @retval  IBase *  On success.
-    /// @retval  NULL     On failure.
-    virtual IBase *Construct(IRuntime            *pAALRUNTIME,
-                             IBase               *Client,
-                             TransactionID const &tid = TransactionID(),
-                             NamedValueSet const &optArgs = NamedValueSet()) = 0;
+   /// Uses ISvcsFact to create the Service object. Note that success of this function
+   ///  does not guarantee the object creates successfully. It only indicates that the
+   ///  request is being serviced.  Final response is delivered via callback.
+   ///
+   /// @param[in]  Client  The callback interface to receive the serviceAllocated. The
+   ///   object passed in the call may be queried for the desired Service interfaces.
+   /// @param[in]  tid       Optional TransactionID for the event.
+   /// @param[in]  optArgs   Optional Service-specific arguments.
+   ///
+   /// @retval  IBase *  On success.
+   /// @retval  false     On failure.
+   virtual btBool Construct(IRuntime            *pAALRUNTIME,
+                            IBase               *Client,
+                            TransactionID const &tid = TransactionID(),
+                            NamedValueSet const &optArgs = NamedValueSet()) = 0;
 
    /// Forcefully destroy the Service objects created by this module.
    ///
@@ -309,8 +314,6 @@ public:
    ///  modules address space MUST be deleted.
    virtual void Destroy() = 0;
 
-   virtual void       setRuntime(IRuntime *pRuntime) = 0;
-   virtual IRuntime * getRuntime() const             = 0;
 };
 
 
@@ -321,9 +324,16 @@ class AASLIB_API IServiceModuleCallback
 public:
    /// IServiceModuleCallback Destructor.
    virtual ~IServiceModuleCallback() {}
+
    /// Callback invoked by the Service to indicate that it is released.
-   /// @param[in]  pService  The Service being released.
-   virtual void ServiceReleased(IBase *pService) = 0;
+   /// @param[in]  pService  The Service that has been released.
+   virtual void      ServiceReleased(IBase *pService)                            = 0;
+
+   /// Callback invoked by the Service to indicate that it has been initialized.
+   /// @param[in]  pService  The Service that has been initialized.
+   virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid) = 0;
+
+   virtual btBool  ServiceInitFailed(IBase *pService, IEvent const *pEvent)      = 0;
 };
 
 
@@ -335,6 +345,7 @@ public:
 /// Used in conjunction with DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR and ISvcsFact to
 /// implement the means of Constructing and Destroying an AAL Service.
 class AASLIB_API AALServiceModule : public CAASBase,
+                                    public IServiceClient,
                                     public IServiceModule,
                                     public IServiceModuleCallback
 {
@@ -346,53 +357,53 @@ public:
    AALServiceModule(ISvcsFact &fact);
 
    // <IServiceModule>
-
-   virtual IBase *Construct(IRuntime            *pAALRUNTIME,
+   virtual btBool Construct(IRuntime            *pRuntime,
                             IBase               *Client,
                             TransactionID const &tid = TransactionID(),
                             NamedValueSet const &optArgs = NamedValueSet());
 
    virtual void Destroy();
-
-   virtual void setRuntime(IRuntime *pRuntime);
-   virtual IRuntime * getRuntime() const;
-
    // </IServiceModule>
 
    // <IServiceModuleCallback>
-
-   virtual void ServiceReleased(IBase *pService);
-
+   virtual void      ServiceReleased(IBase *pService);
+   virtual btBool ServiceInitialized(IBase *pService, TransactionID const &rtid);
+   virtual btBool  ServiceInitFailed(IBase *pService, IEvent        const *pEvent);
    // </IServiceModuleCallback>
 
-   void setRuntimeClient(IRuntimeClient *pRTC);
-   IRuntimeClient * getRuntimeClient() const;
+   // <IServiceClient>
+   virtual void      serviceAllocated(IBase               *pServiceBase,
+                                      TransactionID const &rTranID = TransactionID());
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void  serviceReleaseFailed(const IEvent &rEvent);
+   virtual void          serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
 
-private:
    //=============================================================================
    // Name: AddToServiceList
    /// @brief Adds service to  service list
-   ///   @param[in] pService  IBase of service
-   ///    @return false service already registered
+   /// @param[in] pService  IBase of service
+   /// @return false service already registered
    //=============================================================================
    btBool AddToServiceList(IBase *pService);
 
    //=============================================================================
    // Name: RemovefromServiceList
    /// @brief  Remove service from service list
-   ///      @param[in] pService - IBase of service
-   ///     @return false - was not registered
+   /// @param[in] pService - IBase of service
+   /// @return false - was not registered
    //=============================================================================
    btBool RemovefromServiceList(IBase *pService);
 
    //=============================================================================
    // Name: ServiceInstanceRegistered
-   /// @brief Determines if a service is already registerd
+   /// @brief Determines if a service is already registered
    /// @param[in]   pService IBase of service
-   ///     @return true if service registered
+   /// @return true if service registered
    //=============================================================================
    btBool ServiceInstanceRegistered(IBase *pService);
-
+private:
    ////////////////////////////////////////////////////////////////////////////
    ////                          Shutdown                                  ////
    ////////////////////////////////////////////////////////////////////////////
@@ -409,92 +420,26 @@ private:
    void SendReleaseToAll();
 
 protected:
-   typedef std::map< IBase *, IBase * > list_type;
-   typedef list_type::const_iterator    const_iterator;
 
-   ISvcsFact      &m_SvcsFact;
-   IRuntime       *m_Runtime;
-   IRuntimeClient *m_RuntimeClient;
-   CSemaphore      m_srvcCount;
+   typedef std::list< IBase * >      list_type;
+   typedef list_type::iterator       list_iter;
+   typedef list_type::const_iterator list_citer;
+
+   ISvcsFact           &m_SvcsFact;
+   IRuntimeClient      *m_RuntimeClient;
+   btUnsignedInt        m_pendingcount;
+   CSemaphore           m_srvcCount;
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4251)
 #endif // _MSC_VER
-   list_type       m_serviceList;
+   list_type            m_serviceList;
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
 };
 
 END_NAMESPACE(AAL)
-
-#if DEPRECATED
-//=============================================================================
-// Name: DECLARE_SERVICE_PROVIDER_ACCESSOR
-/// @brief Implements the Service Provider accessor for the package.
-///              Add this macro to the Service Package source module to enable
-///              loading by factory.
-// Interface: public
-/// @param[in] _CLASSNAME_ - Class name.
-/// @param[out] Pointer to the service provider.
-///
-///           Macro expands to generate code for type _CLASSNAME_.
-///           _CLASSNAME must be the exact name of the Factory class.
-///           The _CLASSNAME_ provider MUST be derived from IBase and must be a
-///           fully implemented IBase (e.g., CAASBase). The _CLASSNAME_ provider
-///           MAY implement IServiceModule as an aggregated object.
-///           Note that dynamic_cast<> is used on the provider object to get the
-///           IBase interface pointer but dynamic_ptr<> is used to get
-//           IServiceModule.
-//=============================================================================
-
-#define DECLARE_SERVICE_PROVIDER_ACCESSOR "_ServiceModule"
-
-#define DEFINE_SERVICE_PROVIDER_ACCESSOR(_CLASSNAME_) extern "C" {                                            \
-__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::btEventHandler         eventHandler,          \
-                                                           AAL::TransactionID const   &tranID,                \
-                                                           AAL::btApplicationContext   context,               \
-                                                           AAL::CAASServiceContainer  *ServiceContainer,      \
-                                                           AAL::IBase                **ppService,             \
-                                                           AAL::NamedValueSet const   &optArgs)               \
-{                                                                                                             \
-   static _CLASSNAME_ theServiceProvider;                                                                     \
-   theServiceProvider.Construct(eventHandler, tranID, context);                                               \
-   if ( !theServiceProvider.IsOK() ) {                                                                        \
-      return NULL;                                                                                            \
-   }                                                                                                          \
-   theServiceProvider.ServiceContainer(ServiceContainer);                                                     \
-   *ppService = dynamic_cast<IBase *>(&theServiceProvider);                                                   \
-   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, *ppService);                                   \
-}                                                                                                             \
-                                                                                                              \
-__declspec(dllexport) unsigned long _GetServiceProviderVersion()                                              \
-{                                                                                                             \
-   return AAL_Proxy_Interface_Version;                                                                        \
-}                                                                                                             \
-}
-
-
-/// Declares an instance of the well-known Service executable entry point.
-///
-/// AAL Services use this macro to define the well-known entry point.
-///
-/// @param[in]  N  The type of Service factory used by the module. N must be a type derived from
-///   ISvcsFact.
-#define DEFINE_SERVICE_PROVIDER_2_0_ACCESSOR(N) extern "C" {                                                  \
-static N ServiceFactory;                                                                                      \
-__declspec(dllexport) AAL::IServiceModule * _ServiceModule(AAL::CAASServiceContainer *AASServiceContainer)    \
-{                                                                                                             \
-   static AAL::AALServiceModule theServiceProvider(ServiceFactory);                                           \
-   if ( !theServiceProvider.IsOK() ) {                                                                        \
-      return NULL;                                                                                            \
-   }                                                                                                          \
-   theServiceProvider.ServiceContainer(AASServiceContainer);                                                  \
-   return dynamic_ptr<AAL::IServiceModule>(iidServiceProvider, &theServiceProvider);                          \
-}                                                                                                             \
-}
-#endif // DEPRECATED
-
 /// @}
 
 

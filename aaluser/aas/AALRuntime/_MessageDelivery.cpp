@@ -63,8 +63,27 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup MDS
 /// @{
 
+_MessageDelivery::_MessageDelivery() :
+   m_Dispatcher() // Default is a simple single threaded scheduler.
+{
+   if ( EObjOK != SetInterface(iidMDS,
+                               dynamic_cast<IMessageDeliveryService *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
 
+//=============================================================================
+// Name: ~_MessageDelivery
+// Description: Retrieve the IEventDispatcher interface.
+// Interface: public
+// Comments:
+//=============================================================================
+_MessageDelivery::~_MessageDelivery()
+{
+   StopMessageDelivery();
+}
 
+#if DEPRECATED
 //=============================================================================
 // Name: Schedule
 // Description: Manually process some work
@@ -75,6 +94,7 @@ EDS_Status _MessageDelivery::Schedule()
 {
    return EDS_statusUnsupportedModel;
 }
+#endif // DEPRECATED
 
 //=============================================================================
 // Name: StartMessageDelivery
@@ -86,7 +106,6 @@ void _MessageDelivery::StartMessageDelivery()
 {
    AutoLock(this);
    m_Dispatcher.Start();
-
 }
 
 //=============================================================================
@@ -103,29 +122,18 @@ void _MessageDelivery::StopMessageDelivery()
 }
 
 //=============================================================================
-// Name: ~_MessageDelivery
-// Description: Retrieve the IEventDispatcher interface.
-// Interface: public
-// Comments:
-//=============================================================================
-_MessageDelivery::~_MessageDelivery()
-{
-   StopMessageDelivery();
-}
-
-//=============================================================================
 // Name: ~scheduleMessage
 // Description: Schedule a message for processing
 // Interface: public
 // Comments:
 //=============================================================================
-btBool _MessageDelivery::scheduleMessage( IDispatchable *pDispatchable)
+btBool _MessageDelivery::scheduleMessage(IDispatchable *pDispatchable)
 {
+   AutoLock(this);
    return m_Dispatcher.Add(pDispatchable);
 }
 
 /// @}
-
 
 END_NAMESPACE(AAL)
 

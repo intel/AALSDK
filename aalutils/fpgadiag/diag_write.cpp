@@ -196,20 +196,39 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 		   // Start the test
 		   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
-
-		   // Wait for test completion
-		   while ( ( 0 == pAFUDSM->test_complete ))
+		   // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
+		   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
 		   {
-			   if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) && Timer() > absolute)
-			   {
-				   absolute = Timer() + Timer(&ts);
-				   break;
+			   //Wait till timeout.
+			   while(Timer() < absolute){
+				   SleepNano(10);
 			   }
-			   SleepNano(10);
-		   }
 
-		   // Stop the device
-		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+			   // Stop the device
+			   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+
+			   //wait for DSM register update or timeout
+			   while ( 0 == pAFUDSM->test_complete &&
+					 ( MaxPoll >= 0 )) {
+				   MaxPoll -= 500;
+				   SleepNano(500);
+			   }
+
+			   //Update timer.
+			   absolute = Timer() + Timer(&ts);
+		   }
+		   else	//In non-cont mode, wait till test completes and then stop the device.
+		   {
+			   // Wait for test completion or timeout
+			   while ( 0 == pAFUDSM->test_complete &&
+					 ( MaxPoll >= 0 )) {
+				   MaxPoll -= 500;
+				   SleepNano(500);
+			   }
+
+			   // Stop the device
+			   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+		   }
 
 		   ReadQLPCounters();
 
@@ -217,32 +236,25 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
 		   SaveQLPCounters();
 
-		   //Incrememnt the cachelines and update the timer.
+		   // Increment Cachelines.
 		   sz += CL(1);
-       }
 
-   //Wait until test completes or timeout
-   while ( ( 0 == pAFUDSM->test_complete ) &&
-           ( MaxPoll >= 0 ) ) {
-      MaxPoll -= 500;
-      SleepNano(500);
-   }
+		   // Check the device status
+		   if ( MaxPoll < 0 ) {
+			  cerr << "The maximum timeout for test stop was exceeded." << endl;
+			  ++res;
+			  break;
+		   }
+		   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+       }
 
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    ReadQLPCounters();
 
-   // Check the device status
-   if ( MaxPoll < 0 ) {
-      cerr << "The maximum timeout for test stop was exceeded." << endl;
-      ++res;
-   }
-
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }
-
-   m_WrBw = CalcWriteBandwidth(cmd);
 
    // Clean up..
 

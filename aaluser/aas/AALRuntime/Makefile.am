@@ -49,7 +49,8 @@ _MessageDelivery.h \
 _MessageDelivery.cpp \
 _ServiceBroker.h \
 _ServiceBroker.cpp \
-ServiceHost.cpp
+ServiceHost.cpp \
+Dispatchables.cpp
 
 libaalrt_la_CPPFLAGS=\
 -I$(top_srcdir)/include \

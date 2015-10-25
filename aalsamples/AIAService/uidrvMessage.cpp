@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,50 +24,52 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AASEDSService.h
-/// @brief AAL Service Module definitions for Event Delivery Service
-/// @ingroup EDS
+/// @file uidrvMessaging.cpp
+/// @brief Implementation uidrvMessage class. This is an abstraction of the low
+///        level message structure used by the driver interface.
+/// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Tim Whisonant, Intel Corporation
+/// AUTHOR: Tim Whisonant, Intel Corporation.
+///         Joseph Grecco, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/12/2013     TSW      Initial version.@endverbatim
+/// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_EDS_AASEDSSERVICE_H__
-#define __AALSDK_EDS_AASEDSSERVICE_H__
-#include <aalsdk/osal/OSServiceModule.h>
-#include <aalsdk/AASystem.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
 
-#define AASEDS_SVC_MOD         "@AASEDS_SVC_MOD@" AAL_SVC_MOD_EXT
-#define AASEDS_SVC_ENTRY_POINT "@AASEDS_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
+#include "uidrvMessage.h"
+#include "aalsdk/AALBase.h" // IBase
 
-#define AASEDS_BEGIN_MOD() AAL_BEGIN_MOD(@AASEDS_SVC_MOD@, AASEDS_API, AASEDS_VERSION, AASEDS_VERSION_CURRENT, AASEDS_VERSION_REVISION, AASEDS_VERSION_AGE)
-#define AASEDS_END_MOD()   AAL_END_MOD()
 
-AAL_DECLARE_MOD(@AASEDS_SVC_MOD@, AASEDS_API)
+USING_NAMESPACE(AAL)
 
-BEGIN_C_DECLS
+uidrvMessage::uidrvMessage() :
+   m_pmessage(NULL)
+{}
 
-#ifndef AASEDS_SVC_CMD_CREATE_EDS
-# define AASEDS_SVC_CMD_CREATE_EDS (AAL_SVC_USER_CMD_BASE + 0)
-#endif // AASEDS_SVC_CMD_CREATE_EDS
-struct EDSCreateParms
+uidrvMessage::~uidrvMessage()
 {
-   AAL::btObjectType           pServiceContainer; // CAASServiceContainer *
-   AAL::EnumCallbackModel      CallBackModel;
-   AAL::btEventHandler         theEventHandler;
-   AAL::btApplicationContext   Context;
-   AAL::btcObjectType          tranID;            // const TransactionID *
-   AAL::btcObjectType          optArgs;           // const NamedValueSet *
-   AAL::btBool                 Block;
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+      m_pmessage = NULL;
+   }
+}
 
-   AAL::btObjectType           Result;            // CEventDeliveryService *
-};
-
-END_C_DECLS
-
-#endif // __AALSDK_EDS_AASEDSSERVICE_H__
+void uidrvMessage::size(btWSSize PayloadSize)
+{
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+   }
+   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(aalui_ioctlreq);
+   m_pmessage = (struct message*)new btByte[m_msgsize];
+   memset(m_pmessage, 0, m_msgsize);
+   m_pmessage->m_ioctlreq.size = PayloadSize;
+}
 

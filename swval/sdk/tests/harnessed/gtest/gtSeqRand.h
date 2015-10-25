@@ -29,6 +29,7 @@ class TFltVerifier<btFloat>
 public:
    TFltVerifier() {}
    void expect_eq(btFloat a, btFloat b) { EXPECT_FLOAT_EQ(a, b); }
+   void expect_ne(btFloat a, btFloat b) { EXPECT_NE(a, b);       }
 };
 
 template <typename S>
@@ -145,8 +146,8 @@ public:
    TValueRandomizer(const X *pValues, btUnsigned32bitInt Count) :
       m_pValues(pValues),
       m_Count(Count),
-      m_Seed(0),
-      m_SaveSeed(0)
+      m_Seed(GlobalTestConfig::GetInstance().RandSeed()),
+      m_SaveSeed(m_Seed)
    {}
    virtual ~TValueRandomizer() {}
 

@@ -15,6 +15,7 @@ libgtest_la_LDFLAGS=$(GTEST_LDFLAGS)
 
 COMMON_CPPFLAGS=\
 -I$(top_srcdir)/include \
+-I$(top_srcdir)/aas/AALRuntime \
 -I$(top_srcdir)/tests/swvalmod \
 -I$(top_builddir)/include $(GTEST_CPPFLAGS)
 
@@ -37,11 +38,15 @@ gtBarrier.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
+gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtMDS.cpp \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
 gtSem.cpp \
+gtServiceBroker.cpp \
+gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \
@@ -112,8 +117,10 @@ gtCValue.cpp \
 gtCommon.cpp \
 gtCommon.h \
 gtCritSect.cpp \
+gtDispatchables.cpp \
 gtDynLinkLibrary.cpp \
 gtEnvVar.cpp \
+gtMDS.cpp \
 gtNVS0.cpp \
 gtNVS1.cpp \
 gtNVS2.cpp \
@@ -128,6 +135,8 @@ gtRuntime.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
+gtServiceBroker.cpp \
+gtServiceHost.cpp \
 gtSleep.cpp \
 gtThread.cpp \
 gtThreadGroup.cpp \

@@ -79,13 +79,11 @@ BEGIN_NAMESPACE(AAL)
 //   derived from ServiceBase it can assume that all of the base members have
 //.  been initialized.
 //=============================================================================
-void _ServiceBroker::init(TransactionID const &rtid)
+btBool _ServiceBroker::init(IBase               *pclientBase,
+                            NamedValueSet const &optArgs,
+                            TransactionID const &rtid)
 {
-   // Sends a Service Client serviceAllocated callback
-   getRuntime()->schedDispatchable(new ObjectCreatedEvent( getRuntimeClient(),
-                                                           Client(),
-                                                           dynamic_cast<IBase*>(this),
-                                                           rtid));
+   return initComplete(rtid);
 }
 
 //=============================================================================
@@ -95,87 +93,121 @@ void _ServiceBroker::init(TransactionID const &rtid)
 // Inputs:  pServiceClient - Pointer to the standard Service Client interface
 // Comments:
 //=============================================================================
-void _ServiceBroker::allocService(IRuntime               *pProxy,
-                                  IRuntimeClient         *pRuntimeClient,
-                                  IBase                  *pServiceClientBase,
-                                  const NamedValueSet     &rManifest,
-                                  TransactionID const     &rTranID)
+void _ServiceBroker::allocService(IRuntime            *pProxy,
+                                  IRuntimeClient      *pRuntimeClient,
+                                  IBase               *pServiceClientBase,
+                                  const NamedValueSet &rManifest,
+                                  TransactionID const &rTranID)
 {
-   // Process the manifest
-   btcString             sName  = NULL;
+   IDispatchable        *pDisp        = NULL;
+   btcString             sName        = NULL;
    INamedValueSet const *ConfigRecord = NULL;
+   ServiceHost          *SvcHost      = NULL;
+   IServiceClient       *pServiceClient;
 
-   IServiceClient      *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
-   if ( NULL == pServiceClient ) { // TODO replace all ObjectCreatedExceptionEvents with RuntimeCallbacks
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                                      pServiceClient,
-                                                                      NULL,
-                                                                      rTranID,
-                                                                      errAllocationFailure,
-                                                                      reasMissingInterface,
-                                                                      strMissingInterface));
+   pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pServiceClientBase);
+
+   ASSERT(NULL != pServiceClient);
+   if ( NULL == pServiceClient ) {
+      pDisp = new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
+                                        pServiceClient,
+                                        pRuntimeClient,
+                                        NULL,
+                                        new CExceptionTransactionEvent( NULL,
+                                                                        rTranID,
+                                                                        errAllocationFailure,
+                                                                        reasMissingInterface,
+                                                                        strMissingInterface));
+      goto _DISP;
    }
 
+   // Process the manifest
+
    if ( ENamedValuesOK != rManifest.Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord) ) {
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                                      pServiceClient,
-                                                                      NULL,
-                                                                      rTranID,
-                                                                      errAllocationFailure,
-                                                                      reasBadConfiguration,
-                                                                      "Missing Config Record"));
-      return;
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errAllocationFailure,
+                                                                         reasBadConfiguration,
+                                                                         "Missing Config Record"));
+      goto _DISP;
    }
 
    if ( ENamedValuesOK != ConfigRecord->Get(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, &sName) ) {
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                                      pServiceClient,
-                                                                      NULL,
-                                                                      rTranID,
-                                                                      errAllocationFailure,
-                                                                      reasBadConfiguration,
-                                                                      "Missing Config RecordService Name"));
-      return;
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errAllocationFailure,
+                                                                         reasBadConfiguration,
+                                                                         "Missing Config Record Service Name"));
+      goto _DISP;
    }
 
-   ServiceHost *SvcHost = NULL;
-   if ( NULL == (SvcHost = findServiceHost(sName)) ) {
-      // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
-      SvcHost = new ServiceHost(sName);
-   }
+   {
+      AutoLock(this);
 
-   if ( (NULL == SvcHost) || !SvcHost->IsOK() ) {
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                                      pServiceClient,
-                                                                      NULL,
-                                                                      rTranID,
-                                                                      errCreationFailure,
-                                                                      reasInternalError,
-                                                                      "Failed to load Service"));
-      return;
-   }
+      if ( NULL == (SvcHost = findServiceHost(sName)) ) {
+         // Load the Service Library and set the Runtime Proxy and Runtime Service Providers
+         SvcHost = new(std::nothrow) ServiceHost(sName);
+      }
 
-   // Allocate the service
+      if ( ( NULL == SvcHost ) || !SvcHost->IsOK() ) {
 
-   // Save the ServiceHost.  Do it now before the Service generates the serviceAllocated.
-   //  If it fails remove it
-   m_ServiceMap[std::string(sName)] = SvcHost;
+         if ( NULL != SvcHost ) {
+            delete SvcHost;
+         }
 
-   if ( !SvcHost->InstantiateService(pProxy, pServiceClientBase, rManifest, rTranID) ) {
+         pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                            pServiceClient,
+                                            pRuntimeClient,
+                                            NULL,
+                                            new CExceptionTransactionEvent( NULL,
+                                                                            rTranID,
+                                                                            errCreationFailure,
+                                                                            reasInternalError,
+                                                                            "Failed to load Service"));
+         goto _DISP;
+      }
+
+      // Allocate the service
+
+      // Save the ServiceHost.  Do it now before the Service generates the serviceAllocated.
+      //  If it fails remove it
+      m_ServiceMap[std::string(sName)] = SvcHost;
+
+      if ( SvcHost->InstantiateService(pProxy, pServiceClientBase, rManifest, rTranID) ) {
+         // success
+         return;
+      }
+
       m_ServiceMap.erase(std::string(sName));
       delete SvcHost;
-      getRuntime()->schedDispatchable(new ObjectCreatedExceptionEvent(pRuntimeClient,
-                                                                      pServiceClient,
-                                                                      NULL,
-                                                                      rTranID,
-                                                                      errCreationFailure,
-                                                                      reasInternalError,
-                                                                      "Failed to construct Service"));
-      return;
+
+      pDisp = new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
+                                         pServiceClient,
+                                         pRuntimeClient,
+                                         NULL,
+                                         new CExceptionTransactionEvent( NULL,
+                                                                         rTranID,
+                                                                         errCreationFailure,
+                                                                         reasInternalError,
+                                                                         "Failed to construct Service"));
    }
 
-}
+   // FALL THROUGH
 
+_DISP:
+   ASSERT(NULL != pDisp);
+   if ( NULL != pDisp ) {
+      getRuntime()->schedDispatchable(pDisp);
+   }
+}
 
 //=============================================================================
 // Name: findServiceHost
@@ -185,8 +217,9 @@ void _ServiceBroker::allocService(IRuntime               *pProxy,
 //=============================================================================
 ServiceHost *_ServiceBroker::findServiceHost(std::string const &sName)
 {
+   AutoLock(this);
    Servicemap_itr itr = m_ServiceMap.find(sName);
-   if ( itr == m_ServiceMap.end() ) {
+   if ( m_ServiceMap.end() == itr ) {
       return NULL;
    }
    return itr->second;
@@ -215,7 +248,7 @@ ServiceHost *_ServiceBroker::findServiceHost(std::string const &sName)
 
 struct shutdown_thread_parms
 {
-   shutdown_thread_parms(_ServiceBroker    *pfact,
+   shutdown_thread_parms(_ServiceBroker      *pfact,
                          TransactionID const &rTranID,
                          btTime               timeout) :
       m_this(pfact),
@@ -224,9 +257,10 @@ struct shutdown_thread_parms
    {}
 
    _ServiceBroker *m_this;
-   TransactionID     m_rTranID;
-   btTime            m_timeout;
+   TransactionID   m_rTranID;
+   btTime          m_timeout;
 };
+
 //=============================================================================
 // Name: Release
 // Description: Release the service
@@ -270,35 +304,34 @@ btBool _ServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 // Comments:
 //=============================================================================
 void _ServiceBroker::ShutdownThread(OSLThread *pThread,
-                                      void      *pContext)
+                                    void      *pContext)
 {
    //Get a pointer to this objects context
    struct shutdown_thread_parms *pparms = static_cast<struct shutdown_thread_parms *>(pContext);
-   _ServiceBroker             *This   = static_cast<_ServiceBroker *>(pparms->m_this);
+   _ServiceBroker               *This   = static_cast<_ServiceBroker *>(pparms->m_this);
 
    This->DoShutdown(pparms->m_rTranID, pparms->m_timeout);
 
    // Destroy the thread and parms
    delete pparms;
-
 }
 
 struct shutdown_handler_thread_parms
 {
-shutdown_handler_thread_parms(_ServiceBroker *pfact,
-                              ServiceHost      *pSvcHost,
-                              CSemaphore       &srvcCount,
-                              btTime            timeout) :
-   m_this(pfact),
-   m_pSvcHost(pSvcHost),
-   m_timeout(timeout),
-   m_srvcCount(srvcCount)
-{}
+   shutdown_handler_thread_parms(_ServiceBroker *pfact,
+                                 ServiceHost    *pSvcHost,
+                                 CSemaphore     &srvcCount,
+                                 btTime          timeout) :
+      m_this(pfact),
+      m_pSvcHost(pSvcHost),
+      m_srvcCount(srvcCount),
+      m_timeout(timeout)
+   {}
 
    _ServiceBroker *m_this;
-   ServiceHost      *m_pSvcHost;
-   btTime            m_timeout;
-   CSemaphore       &m_srvcCount;
+   ServiceHost    *m_pSvcHost;
+   CSemaphore     &m_srvcCount;
+   btTime          m_timeout;
 };
 
 //=============================================================================
@@ -370,7 +403,8 @@ btBool _ServiceBroker::DoShutdown(TransactionID const &rTranID,
       } else {
          // Generate the callback and finish the cleanup (performed in the Dispatchable)
          getRuntime()->schedDispatchable(new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                   Client(),
+                                                                   getServiceClient(),
+                                                                   getRuntimeClient(),
                                                                    this,
                                                                    rTranID));
 
@@ -418,18 +452,6 @@ void _ServiceBroker::ShutdownHandler(ServiceHost *pSvcHost, CSemaphore &cnt)
       cnt.Post(1);
    }
 }
-
- //=============================================================================
- // Name: ~_ServiceBroker
- // Description: Destructor
- // Interface: public
- // Comments:
- //=============================================================================
- _ServiceBroker::~_ServiceBroker()
- {
-
- }
-
 
 END_NAMESPACE(AAL)
 

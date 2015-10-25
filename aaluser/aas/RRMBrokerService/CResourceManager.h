@@ -52,6 +52,7 @@
 #  include "win/CResourceManagerProxy.h"
 #endif
 
+#include <aalsdk/rm/CAASResourceManager.h>
 #include "aalsdk/rm/AALResourceManagerClient.h"
 
 //#include <aalsdk/kernel/aalrm_client.h>
@@ -83,7 +84,8 @@ AAL_DECLARE_BUILTIN_SVC_MOD(librrm, AALRESOURCEMANAGER_API)
 //=============================================================================
 class AALRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
                                                public  ServiceBase,
-                                               public  IResourceManager
+                                               public  IResourceManager,
+                                               public IServiceClient
 
 {
 public:
@@ -91,17 +93,23 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(CResourceManager, ServiceBase),
       m_pResMgrClient(NULL),
       m_RMProxy(),
-      m_pProxyPoll(NULL)
+      m_pProxyPoll(NULL),
+      m_pRRMService(NULL),
+      m_pRRMAALService(NULL)
    {
-      SetSubClassInterface( iidResMgr,
-                            dynamic_cast<IResourceManager *>(this));
+      SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+      SetInterface( iidResMgr,
+                    dynamic_cast<IResourceManager *>(this));
+      m_sem.Create(0, 1);
    }
 
    ~CResourceManager();
 
    // Initialize the object including any configuration changes based on
    //  start-up config parameters. Once complete the facility is fully functional
-   void init(TransactionID const &rtid);
+   btBool init( IBase *pclientBase,
+                NamedValueSet const &optArgs,
+                TransactionID const &rtid);
 
    // Called when the service is released
    btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
@@ -109,15 +117,33 @@ public:
    // Request a resource.
    void RequestResource( NamedValueSet const &nvsManifest,
                          TransactionID const &tid);
+protected:
+   void StopMessagePump();
+
+   // <IServiceClient>
+   void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID());
+   void serviceAllocateFailed(const IEvent &rEvent);
+   void serviceReleased(TransactionID const &rTranID = TransactionID());
+   void serviceReleaseFailed(const IEvent &rEvent);
+   void serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
 
 private:
    static void ProxyPollThread( OSLThread *pThread,
                                 void      *pContext);
    void ProcessRMMessages();
 
+   // check if remote resource manager is already running
+   btBool                         isRRMPresent();
+
    IResourceManagerClient        *m_pResMgrClient;
    CResourceManagerProxy          m_RMProxy;
    OSLThread                     *m_pProxyPoll;
+
+   CSemaphore                     m_sem;
+   IResMgrService                *m_pRRMService;
+   IAALService                   *m_pRRMAALService;
 };
 
 END_NAMESPACE(AAL)

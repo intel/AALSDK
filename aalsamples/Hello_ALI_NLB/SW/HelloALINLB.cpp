@@ -55,6 +55,7 @@
 
 
 #include <aalsdk/service/ICCIAFU.h>
+#include <aalsdk/service/CCIAFUService.h>
 #include <aalsdk/service/ICCIClient.h>
 
 #include <string.h>
@@ -63,7 +64,7 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-//#define  HWAFU
+#define  HWAFU
 //#define  ASEAFU
 
 using namespace std;
@@ -175,7 +176,7 @@ RuntimeClient::RuntimeClient() :
    NamedValueSet configRecord;
 
    // Publish our interface
-   SetSubClassInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
 
    m_Sem.Create(0, 1);
 
@@ -356,7 +357,7 @@ HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
    m_OutputSize(0)
 
 {
-   SetSubClassInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+   SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
    m_Sem.Create(0, 1);
 }
@@ -383,9 +384,11 @@ btInt HelloALINLBApp::run()
 
 #if defined( HWAFU )                /* Use FPGA hardware */
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+//   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   //ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
    Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
@@ -507,7 +510,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    ASSERT(NULL != m_pAALService);
 
    // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
-   m_NLBService = subclass_ptr<ICCIAFU>(pServiceBase);
+   m_NLBService = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
 
    ASSERT(NULL != m_NLBService);
    if ( NULL == m_NLBService ) {

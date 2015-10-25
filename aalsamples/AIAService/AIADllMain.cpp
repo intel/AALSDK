@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,22 +24,45 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AASEDS.h
-/// @brief 
-/// @ingroup EDS
+/// @file uAIADllMain.cpp
+/// @brief Windows-specific DLL entry point (Main).
+/// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Tim Whisonant, Intel Corporation
+/// AUTHORS: Joseph Grecco, Intel Corporation.
+///          Henry Mitchel, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 01/24/2013     TSW      Create convenience header for AASEDS.@endverbatim
+/// 08/02/2007     JG       Initial version started
+/// 05/11/2008     HM       Comments & License
+/// 01/04/2009     HM       Updated Copyright@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AASEDS_H__
-#define __AALSDK_AASEDS_H__
-# include <aalsdk/eds/AASEventDeliveryService.h>
-# include <aalsdk/eds/CAASEventDeliveryService.h>
-# include <aalsdk/eds/AASEDSService.h>
-#endif // __AALSDK_AASEDS_H__
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
+#include "aalsdk/AALTypes.h"
+#include "aalsdk/uaia/uAIADefs.h"
+
+
+#ifdef __AAL_WINDOWS__
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+                      DWORD   ul_reason_for_call,
+                      LPVOID  lpReserved)
+{
+   switch ( ul_reason_for_call ) {
+      case DLL_PROCESS_ATTACH :
+      case DLL_THREAD_ATTACH  :
+      case DLL_THREAD_DETACH  :
+      case DLL_PROCESS_DETACH :
+         break;
+   }
+   return TRUE;
+}
+
+#endif // __AAL_WINDOWS__
+
 

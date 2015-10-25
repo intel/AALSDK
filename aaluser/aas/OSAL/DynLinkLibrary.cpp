@@ -69,8 +69,6 @@ DynLinkLibrary::DynLinkLibrary() {/*empty*/}
 DynLinkLibrary::DynLinkLibrary(const DynLinkLibrary & ) {/*empty*/}
 DynLinkLibrary & DynLinkLibrary::operator=(const DynLinkLibrary & ) { return *this; }
 
-#define DBG_DYN_LOAD 0
-
 //=============================================================================
 // Name:  DynLinkLibrary
 // Description: Constructor
@@ -165,7 +163,7 @@ DynLinkLibrary::DynLinkLibrary(const std::string &LibraryName) :
       // TODO use logger here?
       std::cerr << "DynLinkLibrary::DynLinkLibrary() Error";
       if ( NULL != ErrMsg ) {
-         std::cerr << " : " << ErrMsg << " (or unresolved symbol in library)";
+         std::cerr << " : File [" << LibraryName << "] " << ErrMsg << " (or unresolved symbol in library)";
       }
       std::cerr << std::endl;
       return;

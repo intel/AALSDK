@@ -62,7 +62,7 @@ CAFUAllocateWorkSpaceTransactionEvent::CAFUAllocateWorkSpaceTransactionEvent(IBa
    m_WorkSpaceAddress(WorkSpaceAddress),
    m_WorkSpaceSize(WorkSpaceSize)
 {
-   SetSubClassInterface(tranevtAFU_WorkSpaceAllocate,
+   SetInterface(tranevtAFU_WorkSpaceAllocate,
                         dynamic_cast<IAFUAllocateWorkSpaceTransactionEvent *>(this));
 }
 
@@ -86,7 +86,7 @@ CAFUFreeWorkSpaceTransactionEvent::CAFUFreeWorkSpaceTransactionEvent(IBase      
    CTransactionEvent(pObject, TransID),
    m_WorkSpaceID(WorkSpaceID)
 {
-   SetSubClassInterface(tranevtAFU_WorkSpaceFree,
+   SetInterface(tranevtAFU_WorkSpaceFree,
                         dynamic_cast<IAFUFreeWorkSpaceTransactionEvent *>(this));
 }
 

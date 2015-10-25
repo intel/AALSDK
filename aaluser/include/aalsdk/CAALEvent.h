@@ -60,7 +60,8 @@
 ///                            is still valid (related to the object receiving
 ///                            the message, not the object throwing it).
 /// 04/22/2012     HM       Disabled irrelevant warning about export
-///                            of CAALEvent::m_InterfaceMap for _WIN32@endverbatim
+///                            of CAALEvent::m_InterfaceMap for _WIN32
+/// 10/06/2015     JG       Removed ObjectxyzEvents@endverbatim
 //****************************************************************************
 #ifndef __AALSDK_CAALEVENT_H__
 #define __AALSDK_CAALEVENT_H__
@@ -119,14 +120,13 @@ public:
    // <IEvent>
    virtual btGenericInterface    Interface(btIID ID)        const;
    virtual btBool                      Has(btIID ID)        const;
-   virtual btGenericInterface    ISubClass()                const { return m_ISubClass;  }
-   virtual btIID                SubClassID()                const { return m_SubClassID; }
+   virtual btIID                SubClassID()                const;
    virtual btBool             operator != (const IEvent & ) const;
    virtual btBool             operator == (const IEvent & ) const; ///< Equality is defined here as instance exact.
-   virtual IBase &                  Object()                const { return *m_pObject;   }
-   virtual IBase *                 pObject()                const { return  m_pObject;   }
-   virtual btBool                     IsOK()                const { return  m_bIsOK;     }
-   virtual btApplicationContext    Context()                const { return  m_Context;   } // Re-enabled HM 20090225, see file header comments
+   virtual IBase &                  Object()                const;
+   virtual IBase *                 pObject()                const;
+   virtual btBool                     IsOK()                const;
+   virtual btApplicationContext    Context()                const;
    virtual btApplicationContext SetContext(btApplicationContext Ctx);
    // </IEvent>
 
@@ -180,7 +180,6 @@ protected:
    IServiceClient       *m_pServiceClient;
    IRuntimeClient       *m_pRuntimeClient;
    btEventHandler        m_pEventHandler;
-   btGenericInterface    m_ISubClass;
    btIID                 m_SubClassID;
    TransactionID         m_TranID;  // Only accessible outside from TransactionEvents
 
@@ -245,10 +244,10 @@ public:
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
    /// @param[in]  pHandler         For specific routing
-   CExceptionEvent(IBase           *pObject,
-                   btID             ExceptionNumber,
-                   btID             Reason,
-                   btcString        Description);
+   CExceptionEvent(IBase    *pObject,
+                   btID      ExceptionNumber,
+                   btID      Reason,
+                   btcString Description);
    /// CExceptionEvent Constructor.
    ///
    /// @param[in]  pObject          An IBase associated with this event.
@@ -257,15 +256,15 @@ public:
    /// @param[in]  Reason           Numeric reason code.
    /// @param[in]  Description      A textual description of the exception.
    /// @param[in]  pHandler         For specific routing
-   CExceptionEvent(IBase           *pObject,
-                   btIID            SubClassID,
-                   btID             ExceptionNumber,
-                   btID             Reason,
-                   btcString        Description);
+   CExceptionEvent(IBase    *pObject,
+                   btIID     SubClassID,
+                   btID      ExceptionNumber,
+                   btID      Reason,
+                   btcString Description);
 
    // <IExceptionEvent>
-   btID ExceptionNumber() const { return m_ExceptionNumber; }
-   btID          Reason() const { return m_Reason;          }
+   btID ExceptionNumber() const;
+   btID          Reason() const;
    btString Description() const;
    // </IExceptionEvent>
 
@@ -323,13 +322,13 @@ public:
                               btcString            Description);
 
    // <IExceptionEvent>
-   btID ExceptionNumber() const { return m_ExceptionNumber; }
-   btID          Reason() const { return m_Reason;          }
+   btID ExceptionNumber() const;
+   btID          Reason() const;
    btString Description() const;
    // </IExceptionEvent>
 
    // <ITransactionEvent>
-   TransactionID TranID() const { return m_TranID; }
+   TransactionID TranID() const;
    void SetTranID(TransactionID const &TranID);
    // </ITransactionEvent>
 
@@ -349,91 +348,6 @@ protected:
    // These are prohibited.
    CExceptionTransactionEvent();
    CExceptionTransactionEvent(IBase * );
-};
-
-
-/// Concrete implementation of IObjectCreatedEvent.
-///
-/// The event contains an IBase * which may be queried for the desired Service interfaces.
-///
-/// ie
-/// @code
-/// if ( tranevtFactoryCreate == theEvent.SubClassID() ) {
-///
-///    IAALService *pService = dynamic_ptr<IAALService>(iidService, theEvent.Object());
-///
-///    if ( NULL != pService ) {
-///       // Access the Service interface via pService.
-///    }
-///
-/// }
-/// @endcode
-class AASLIB_API ObjectCreatedEvent : public CTransactionEvent,
-                                      public IObjectCreatedEvent
-{
-public:
-   /// ObjectCreatedEvent Constructor.
-   ///
-   /// The native sub-class interface id is tranevtFactoryCreate.
-   ///
-   /// @param[in]  prtClient Pointer to Runtime Client
-   /// @param[in]  pClient   ServiceClient.
-   /// @param[in]  pObject   The Service requested by the IFactory::Create call.
-   /// @param[in]  TranID    The original TransactionID from IFactory::Create.
-   /// @param[in]  OptArgs   The NamedValueSet from the IFactory::Create call.
-   ObjectCreatedEvent(IRuntimeClient      *prtClient,
-                      IServiceClient      *pClient,
-                      IBase               *pObject,
-                      TransactionID        TranID,
-                      const NamedValueSet &OptArgs = NamedValueSet());
-
-   virtual void operator()();
-
-   // <IObjectCreatedEvent>
-   const NamedValueSet & GetOptArgs() const { return m_OptArgs; }
-   // </IObjectCreatedEvent>
-
-protected:
-   // These are prohibited.
-   ObjectCreatedEvent();
-
-   NamedValueSet m_OptArgs;
-};
-
-/// Created in response to a failed IFactory::Create.
-class AASLIB_API ObjectCreatedExceptionEvent : public CExceptionTransactionEvent
-{
-public:
-   /// ObjectCreatedExceptionEvent Constructor.
-   ObjectCreatedExceptionEvent(IRuntimeClient     *prtClient,
-                               IServiceClient     *pClient,
-                               IBase              *pObject,
-                               TransactionID       TranID,
-                               btUnsigned64bitInt  ExceptionNumber,
-                               btUnsigned64bitInt  Reason,
-                               btcString           Description);
-
-   virtual void operator()();
-
-protected:
-   // These are prohibited.
-   ObjectCreatedExceptionEvent();
-};
-
-/// Created in response to IAALService::Release.
-class AASLIB_API CObjectDestroyedTransactionEvent : public CTransactionEvent
-{
-public:
-   /// CObjectDestroyedTransactionEvent Constructor.
-   CObjectDestroyedTransactionEvent(IServiceClient       *pClient,
-                                    IBase                *pObject,
-                                    TransactionID const  &TransID,
-                                    btApplicationContext  Context);
-
-   virtual void operator()();
-
-protected:
-   CObjectDestroyedTransactionEvent();
 };
 
 /// @}

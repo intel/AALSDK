@@ -59,67 +59,126 @@ public:
    };
 
    ServiceClientCallback(enum MessageType        type,
-                         IServiceClient          *pClient,
+                         IServiceClient          *pServiceClient,
+                         IRuntimeClient          *pRuntimeClient,
                          IBase                   *pServiceBase,
                          TransactionID const     &rTranID = TransactionID() ) :
    m_type(type),
-   m_pClient(pClient),
-   m_pServiceBase(pServiceBase),
+   m_pServiceClient(pServiceClient),
+   m_pRuntimeClient(pRuntimeClient),
+   m_pBase(pServiceBase),
    m_TranID(rTranID),
    m_pEvent(NULL)
    {
-      ASSERT(NULL != pClient);
+      ASSERT(NULL != pServiceClient);
+      ASSERT(NULL != pRuntimeClient);
       ASSERT(NULL != pServiceBase);
    }
 
    ServiceClientCallback(enum MessageType        type,
-                         IServiceClient         *pClient,
+                         IServiceClient         *pServiceClient,
+                         IRuntimeClient         *pRuntimeClient,
                          IBase                  *pServiceBase,
                          const IEvent           *pEvent=NULL ) :
    m_type(type),
-   m_pClient(pClient),
-   m_pServiceBase(pServiceBase),
+   m_pServiceClient(pServiceClient),
+   m_pRuntimeClient(pRuntimeClient),
+   m_pBase(pServiceBase),
    m_TranID(),
    m_pEvent(pEvent)
    {
-      ASSERT(NULL != pClient);
+      ASSERT(NULL != pServiceClient);
       ASSERT(NULL != pServiceBase);
    }
 
 
-void operator() ()
-{
-   switch ( m_type ) {
-      case Allocated : {
-         m_pClient->serviceAllocated(m_pServiceBase, m_TranID);
-      } break;
-      case AllocateFailed : {
-         m_pClient->serviceAllocateFailed(*m_pEvent);
-      } break;
-      case Released : {
-         dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase)->Release(0);
-         m_pClient->serviceReleased(m_TranID);
-      } break;
-      case ReleaseFailed : {
-         m_pClient->serviceReleaseFailed(*m_pEvent);
-      } break;
-      case Event : {
-         m_pClient->serviceEvent(*m_pEvent);
-         // Delete the event object as it didn't render itself
+   void operator() ()
+   {
+
+      // If this is a Release. Complete the release before any callbacks
+      if(Released == m_type ){
+         dynamic_ptr<IServiceBase>(iidServiceBase, m_pBase)->ReleaseComplete();
+      }
+      // First Process the TramsactionID
+      btBool bProcessed = ProcessTranID();
+
+      // If no callback was invoked or we
+      //  should not filter eveb if we did
+      if(!bProcessed || !m_TranID.Filter()){
+         // Process the normal callback
+         InvokeCallback(m_pServiceClient, m_pRuntimeClient);
+      }
+
+      // Clean-up
+      if(m_pEvent){
          delete m_pEvent;
-      } break;
-      default:
-         ASSERT(false);
-      break;
+      }
+      delete this;
    }
-   delete this;
+
+   // Processes the TransactioID for override.
+   //  Returns true if there was something to do.
+   btBool ProcessTranID()
+   {
+      if(NULL == m_TranID.Ibase()){
+         return false;
+      }
+      IServiceClient *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_TranID.Ibase());
+      IRuntimeClient *pRuntimeClient = dynamic_ptr<IRuntimeClient>(iidRuntimeClient, m_TranID.Ibase());
+
+      InvokeCallback(pServiceClient, pRuntimeClient);
+      return true;
+   }
+
+   void InvokeCallback(IServiceClient *pServiceClient, IRuntimeClient *pRuntimeClient)
+   {
+      switch ( m_type ) {
+         case Allocated : {
+            if(pServiceClient){
+               pServiceClient->serviceAllocated(m_pBase, m_TranID);
+            }
+            if(pRuntimeClient){
+               pRuntimeClient->runtimeAllocateServiceSucceeded(m_pBase, m_TranID);
+            }
+
+         } break;
+         case AllocateFailed : {
+            if(pServiceClient){
+               pServiceClient->serviceAllocateFailed(*m_pEvent);
+            }
+
+            if(pRuntimeClient){
+               pRuntimeClient->runtimeAllocateServiceFailed(*m_pEvent);
+             }
+
+         } break;
+         case Released : {
+            if(pServiceClient){
+               pServiceClient->serviceReleased(m_TranID);
+            }
+         } break;
+         case ReleaseFailed : {
+            if(pServiceClient){
+               pServiceClient->serviceReleaseFailed(*m_pEvent);
+            }
+          } break;
+         case Event : {
+            if(pServiceClient){
+               pServiceClient->serviceEvent(*m_pEvent);
+            }
+         } break;
+         default:
+            ASSERT(false);
+         break;
+      }
 }
 
 virtual ~ServiceClientCallback() {}
 
 protected:
-   IServiceClient          *m_pClient;
-   IBase                   *m_pServiceBase;
+   IServiceClient          *m_pServiceClient;
+   IRuntimeClient          *m_pRuntimeClient;
+   IBase                   *m_pBase;
    enum MessageType         m_type;
    TransactionID const      m_TranID;
    IEvent const            *m_pEvent;
@@ -128,109 +187,112 @@ protected:
 //============================================================================
 // AAL Runtime
 //============================================================================
-class RuntimeCallback : public IDispatchable
+
+/// @brief Delivers IRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const & );
+class RuntimeCreateOrGetProxyFailed : public IDispatchable
 {
 public:
-   enum MessageType{
-      CreateorGetProxyFailed,
-      AllocateFailed,
-      ServiceAllocated,
-      Started,
-      StartFailed,
-      StopFailed,
-      Stopped,
-      Event
-   };
-
-   RuntimeCallback( enum MessageType       type,
-                   IRuntimeClient         *po,
-                   IRuntime               *prt,
-                   const NamedValueSet    &rConfigParms,
-                   const IEvent           *pEvent=NULL) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(prt),
-   m_so(NULL),
-   m_rConfigParms(rConfigParms),
-   m_pEvent(pEvent)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IRuntimeClient          *po,
-                   IRuntime                *prt) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(prt),
-   m_so(NULL),
-   m_rConfigParms(NamedValueSet()),
-   m_pEvent(NULL)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IBase                   *so,
-                   TransactionID const     &rtid) :
-   m_type(type),
-   m_pobject(NULL),
-   m_prt(NULL),
-   m_so(so),
-   m_rConfigParms(NamedValueSet()),
-   m_rTranID(rtid),
-   m_pEvent(NULL)
-{}
-
-   RuntimeCallback(enum MessageType        type,
-                   IRuntimeClient          *po,
-                   const IEvent            *pEvent) :
-   m_type(type),
-   m_pobject(po),
-   m_prt(NULL),
-   m_rConfigParms(NamedValueSet()),
-   m_pEvent(pEvent)
-{}
-
-void operator() ()
-{
-   switch ( m_type ) {
-      case CreateorGetProxyFailed: {
-         m_pobject->runtimeCreateOrGetProxyFailed(*m_pEvent);
-      }break;
-      case Started : {
-         m_pobject->runtimeStarted(m_prt, m_rConfigParms);
-      } break;
-      case StartFailed : {
-         m_pobject->runtimeStartFailed(*m_pEvent);
-      } break;
-      case ServiceAllocated : {
-         m_pobject->runtimeAllocateServiceSucceeded(m_so, m_rTranID);
-      } break;
-      case AllocateFailed : {
-         m_pobject->runtimeAllocateServiceFailed(*m_pEvent);
-      } break;
-      case Stopped : {
-         m_pobject->runtimeStopped(m_prt);
-      } break;
-      case Event : {
-         m_pobject->runtimeEvent(*m_pEvent);
-         // Delete the event object as it didn't render itself
-         delete m_pEvent;
-      } break;
-      default:
-         ASSERT(false);
-      break;
-   }
-   delete this;
-}
-
-virtual ~RuntimeCallback() {}
-
+   RuntimeCreateOrGetProxyFailed(IRuntimeClient *pRTClient,
+                                 const IEvent   *pEvent);
+   ~RuntimeCreateOrGetProxyFailed();
+   virtual void       operator() ();
 protected:
-   IRuntimeClient          *m_pobject;
-   IRuntime                *m_prt;
-   IBase                   *m_so;
-   const NamedValueSet     &m_rConfigParms;
-   enum MessageType         m_type;
-   TransactionID const      m_rTranID;
-   IEvent const            *m_pEvent;
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStarted(IRuntime            * ,
+///                                                const NamedValueSet & );
+class RuntimeStarted : public IDispatchable
+{
+public:
+   RuntimeStarted(IRuntimeClient      *pRTClient,
+                  IRuntime            *pRT,
+                  const NamedValueSet &rConfigParms);
+   virtual void operator() ();
+protected:
+   IRuntimeClient      *m_pRTClient;
+   IRuntime            *m_pRT;
+   const NamedValueSet &m_rConfigParms;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStartFailed(const IEvent & );
+class RuntimeStartFailed : public IDispatchable
+{
+public:
+   RuntimeStartFailed(IRuntimeClient *pRTClient,
+                      const IEvent   *pEvent);
+   ~RuntimeStartFailed();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStopped(IRuntime * );
+class RuntimeStopped : public IDispatchable
+{
+public:
+   RuntimeStopped(IRuntimeClient *pRTClient,
+                  IRuntime       *pRT);
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   IRuntime       *m_pRT;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeStopFailed(const IEvent & );
+class RuntimeStopFailed : public IDispatchable
+{
+public:
+   RuntimeStopFailed(IRuntimeClient *pRTClient,
+                     const IEvent   *pEvent);
+   ~RuntimeStopFailed();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeAllocateServiceSucceeded(IBase * ,
+///                                                                 TransactionID const & );
+class RuntimeAllocateServiceSucceeded : public IDispatchable
+{
+public:
+   RuntimeAllocateServiceSucceeded(IRuntimeClient      *pRTClient,
+                                   IBase               *pServiceBase,
+                                   TransactionID const &rTranID);
+   virtual void operator() ();
+protected:
+   IRuntimeClient      *m_pRTClient;
+   IBase               *m_pServiceBase;
+   TransactionID const &m_rTranID;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeAllocateServiceFailed(const IEvent & );
+class RuntimeAllocateServiceFailed : public IDispatchable
+{
+public:
+   RuntimeAllocateServiceFailed(IRuntimeClient *pRTClient,
+                                const IEvent   *pEvent);
+   ~RuntimeAllocateServiceFailed();
+   virtual void      operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeEvent(const IEvent & );
+class RuntimeEvent : public IDispatchable
+{
+public:
+   RuntimeEvent(IRuntimeClient *pRTClient,
+                const IEvent   *pEvent);
+   ~RuntimeEvent();
+   virtual void operator() ();
+protected:
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
 };
 
 END_NAMESPACE(AAL)

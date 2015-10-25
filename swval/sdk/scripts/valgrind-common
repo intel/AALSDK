@@ -68,6 +68,8 @@ on_sigint() {
 }
 trap 'on_sigint' SIGINT
 
+declare SRCDIR=''
+
 # $1 : name of the application binary to be analyzed.
 # $2 : the valgrind analysis requested.
 # $3 (optional) : whether distcc is requested.
@@ -81,8 +83,8 @@ setup() {
    fi
 
    # This script is located in swval/sdk/scripts
-   local -r srcdir="`cd ${PWD}/.. && pwd`"
-   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   SRCDIR="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${SRCDIR}/../.. && pwd`"
    local -r gitdir="${reporoot}/.git"
 
    # Make sure we're being run from the right place.
@@ -107,15 +109,15 @@ setup() {
          fi
       done
 
-      if ! [ -f "${srcdir}/configure" ]; then
-         pushd "${srcdir}" >/dev/null 2>&1
+      if ! [ -f "${SRCDIR}/configure" ]; then
+         pushd "${SRCDIR}" >/dev/null 2>&1
          ${AUTORECONF} -vi
          popd >/dev/null 2>&1
       fi
 
       pushd "${VPATH}/${analysis}" >/dev/null 2>&1
 
-      ${srcdir}/configure --with-valgrind="${analysis}"
+      ${SRCDIR}/configure --with-valgrind="${analysis}"
 
       popd >/dev/null 2>&1
    fi
@@ -147,8 +149,8 @@ cleanup() {
    local -r analysis="$2"
 
    # This script is located in swval/sdk/scripts
-   local -r srcdir="`cd ${PWD}/.. && pwd`"
-   local -r reporoot="`cd ${srcdir}/../.. && pwd`"
+   SRCDIR="`cd ${PWD}/.. && pwd`"
+   local -r reporoot="`cd ${SRCDIR}/../.. && pwd`"
    local -r gitdir="${reporoot}/.git"
 
    # Make sure we're being run from the right place.
@@ -216,18 +218,37 @@ run_valgrind_memcheck() {
 
    [ -e "${out}/${tool}.log" ] && return
 
-   ${VALGRIND} -v \
-               --trace-children=yes \
-               --log-file="${out}/${tool}.log" \
-               --tool="${tool}" \
-               --leak-check=full \
-               --undef-value-errors=yes \
-               --track-origins=yes \
-               --show-leak-kinds=all \
-               --leak-check-heuristics=all \
-               --malloc-fill=0xa1 \
-               --free-fill=0xfe \
-               ${exe} ${1+"$@"}
+   local -r gen_suppressions=false
+
+   if ${gen_suppressions} ; then
+      ${VALGRIND} -v \
+                  --trace-children=yes \
+                  --log-file="${out}/${tool}.log" \
+                  --tool="${tool}" \
+                  --gen-suppressions=all \
+                  --leak-check=full \
+                  --undef-value-errors=yes \
+                  --track-origins=yes \
+                  --show-leak-kinds=all \
+                  --leak-check-heuristics=all \
+                  --malloc-fill=0xa1 \
+                  --free-fill=0xfe \
+                  ${exe} ${1+"$@"}
+   else
+      ${VALGRIND} -v \
+                  --trace-children=yes \
+                  --log-file="${out}/${tool}.log" \
+                  --tool="${tool}" \
+                  --suppressions="${SRCDIR}/scripts/${tool}.supp" \
+                  --leak-check=full \
+                  --undef-value-errors=yes \
+                  --track-origins=yes \
+                  --show-leak-kinds=all \
+                  --leak-check-heuristics=all \
+                  --malloc-fill=0xa1 \
+                  --free-fill=0xfe \
+                  ${exe} ${1+"$@"}
+   fi
 }
 
 # $1 : app to analyze

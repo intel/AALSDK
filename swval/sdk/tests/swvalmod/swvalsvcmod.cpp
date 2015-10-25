@@ -5,6 +5,31 @@
 
 #include "swvalsvcmod.h"
 
+class CDidSomethingDisp : public IDispatchable
+{
+public:
+   CDidSomethingDisp(ISwvalSvcClient          *pClient,
+                     const AAL::TransactionID &tid,
+                     int                       i) :
+      m_pClient(pClient),
+      m_tid(tid),
+      m_i(i)
+   {}
+
+   virtual void operator() ()
+   {
+      m_pClient->DidSomething(m_tid, m_i);
+      delete this;
+   }
+
+protected:
+   ISwvalSvcClient          *m_pClient;
+   const AAL::TransactionID &m_tid;
+   int                       m_i;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 static const char *Something_in_the_mod = "This variable is in the service mod.";
 
 class CSwvalSvcMod : public ISwvalSvcMod,
@@ -13,17 +38,29 @@ class CSwvalSvcMod : public ISwvalSvcMod,
 public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(CSwvalSvcMod, AAL::ServiceBase)
    {
-      SetSubClassInterface(iidSwvalSvc, dynamic_cast<ISwvalSvcMod *>(this));
+      if ( AAL::EObjOK != SetInterface(iidSwvalSvc, dynamic_cast<ISwvalSvcMod *>(this)) ) {
+         m_bIsOK = false;
+      }
+   }
+
+   virtual void DoSomething(const AAL::TransactionID &tid, int i)
+   {
+      ISwvalSvcClient *pSwvalClient = AAL::dynamic_ptr<ISwvalSvcClient>(iidSwvalSvcClient, m_pclientbase);
+      ASSERT(NULL != pSwvalClient);
+
+      getRuntime()->schedDispatchable( new CDidSomethingDisp(pSwvalClient, tid, i + 1) );
    }
 
    virtual ~CSwvalSvcMod() {}
-   virtual int DoSomething(int i) { return i + 1; }
 
-   virtual void init(AAL::TransactionID const &tid)
+
+   virtual AAL::btBool init(AAL::IBase               *pclientBase,
+                            AAL::NamedValueSet const &optArgs,
+                            AAL::TransactionID const &tid)
    {
-      allocService(AAL::dynamic_ptr<AAL::IBase>(iidBase, this),
-                   AAL::NamedValueSet(),
-                   AAL::TransactionID());
+      ASSERT(NULL != m_pclient); // iidServiceClient / IServiceClient *
+      ASSERT(NULL != AAL::dynamic_ptr<ISwvalSvcClient>(iidSwvalSvcClient, pclientBase));
+      return initComplete(tid);
    }
 
    virtual AAL::btBool Release(AAL::TransactionID const &tid, AAL::btTime timeout=AAL_INFINITE_WAIT)
@@ -31,10 +68,70 @@ public:
       return AAL::ServiceBase::Release(tid, timeout);
    }
 
-   virtual AAL::btBool Release(AAL::btTime timeout=AAL_INFINITE_WAIT)
+   // <IServiceBase>
+
+   virtual AAL::btBool initComplete(AAL::TransactionID const &rtid)
    {
-      return AAL::ServiceBase::Release(timeout);
+      return AAL::ServiceBase::initComplete(rtid);
    }
+
+   virtual AAL::btBool initFailed(AAL::IEvent const *ptheEvent)
+   {
+      return AAL::ServiceBase::initFailed(ptheEvent);
+   }
+
+   virtual AAL::btBool ReleaseComplete()
+   {
+      return AAL::ServiceBase::ReleaseComplete();
+   }
+
+   // </IServiceBase>
+
+   // <IRuntimeClient>
+
+   virtual void runtimeCreateOrGetProxyFailed(AAL::IEvent const &e)
+   {
+
+   }
+
+   virtual void runtimeStarted(AAL::IRuntime            * ,
+                               const AAL::NamedValueSet & )
+   {
+
+   }
+
+   virtual void runtimeStopped(AAL::IRuntime * )
+   {
+
+   }
+
+   virtual void runtimeStartFailed(const AAL::IEvent & )
+   {
+
+   }
+
+   virtual void runtimeStopFailed(const AAL::IEvent & )
+   {
+
+   }
+
+   virtual void runtimeAllocateServiceFailed(AAL::IEvent const & )
+   {
+
+   }
+
+   virtual void runtimeAllocateServiceSucceeded(AAL::IBase               * ,
+                                                AAL::TransactionID const & )
+   {
+
+   }
+
+   virtual void runtimeEvent(const AAL::IEvent & )
+   {
+
+   }
+
+   // </IRuntimeClient>
 };
 
 

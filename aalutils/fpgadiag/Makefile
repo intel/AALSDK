@@ -63,8 +63,8 @@ endif
 
 all: fpgadiag
 
-fpgadiag: fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag-nlb-common.o
-	$(CXX) -g -O2 -o fpgadiag fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag-nlb-common.o $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
+fpgadiag: fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag_ccip_read.o diag_ccip_write.o diag_ccip_trput.o diag_ccip_sw.o diag-nlb-common.o
+	$(CXX) -g -O2 -o fpgadiag fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag_ccip_read.o diag_ccip_write.o diag_ccip_trput.o diag_ccip_sw.o diag-nlb-common.o $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
 
 fpgadiag.o: fpgadiag.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o fpgadiag.o fpgadiag.cpp
@@ -87,10 +87,22 @@ diag_sw.o: diag_sw.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagD
 diag_ccip_lpbk1.o: diag_ccip_lpbk1.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag_ccip_lpbk1.o diag_ccip_lpbk1.cpp
 
+diag_ccip_read.o: diag_ccip_read.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag_ccip_read.o diag_ccip_read.cpp
+	
+diag_ccip_write.o: diag_ccip_write.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag_ccip_write.o diag_ccip_write.cpp
+	
+diag_ccip_trput.o: diag_ccip_trput.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag_ccip_trput.o diag_ccip_trput.cpp
+	
+diag_ccip_sw.o: diag_ccip_sw.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag_ccip_sw.o diag_ccip_sw.cpp
+
 diag-nlb-common.o: diag-nlb-common.cpp diag-common.h diag_defaults.h diag-nlb-common.h fpgadiagDefs.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -g -O2 -c -o diag-nlb-common.o diag-nlb-common.cpp
 
 clean:
-	$(RM) fpgadiag fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag-nlb-common.o
+	$(RM) fpgadiag fpgadiag.o diag_lpbk1.o diag_read.o diag_write.o diag_trput.o diag_sw.o diag_ccip_lpbk1.o diag_ccip_read.o diag_ccip_write.o diag_ccip_trput.o diag_ccip_sw.o diag-nlb-common.o
 
 .PHONY:all clean

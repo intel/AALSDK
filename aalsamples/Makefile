@@ -40,7 +40,8 @@ Hello_CCI_NLB/SW \
 Hello_SPL_LB/SW \
 Sudoku_SPL/SW \
 LinkedList_SPL/SW \
-Hello_ALI_NLB/SW 
+Hello_ALI_NLB/SW  \
+AIAService
 
 MFLAGS  =
 ifneq (,$(ndebug))

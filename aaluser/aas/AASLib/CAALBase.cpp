@@ -91,17 +91,14 @@ CAASBase::CAASBase(btApplicationContext Context) :
    CriticalSection(),
    m_Context(Context),
    m_bIsOK(false),
-   m_InterfaceMap(),
-   m_ISubClass(NULL),
-   m_SubClassID(0)
+   m_InterfaceMap()
 {
    // Add the public interfaces
    if ( SetInterface(iidCBase, dynamic_cast<CAASBase *>(this)) != EObjOK ) {
       return;
    }
 
-   // IBase is the default native subclass interface unless overridden by a subclass
-   if ( SetSubClassInterface(iidBase, dynamic_cast<IBase *>(this)) != EObjOK ) {
+   if ( SetInterface(iidBase, dynamic_cast<IBase *>(this)) != EObjOK ) {
       return;
    }
 
@@ -154,32 +151,6 @@ btBool CAASBase::Has(btIID Interface) const
 }
 
 //=============================================================================
-// Name: CAASBase::ISubClass
-// Description: Returns the cached pointer to the native (subclass) object
-// Interface: public
-// Inputs: none.
-// Outputs: class pointer
-// Comments:
-//=============================================================================
-btGenericInterface CAASBase::ISubClass() const
-{
-   return m_ISubClass;
-}
-
-//=============================================================================
-// Name: CAASBase::SubClassID
-// Description: Returns the subclass ID for the Object
-// Interface: public
-// Inputs: none
-// Outputs: ID
-// Comments:
-//=============================================================================
-btIID CAASBase::SubClassID() const
-{
-   return m_SubClassID;
-}
-
-//=============================================================================
 // Name: CAASBase::operator !=
 // Description: operator !=
 // Interface: public
@@ -202,12 +173,10 @@ btBool CAASBase::operator != (IBase const &rOther) const
 // Comments: checks to see if each interface in one object is implemented
 //           in the other.
 //
-// Three criteria must be met for CAASBase equality:
+// Two criteria must be met for CAASBase equality:
 //  1) Both objects must implement iidCBase (ie, both are conceptually CAASBase
 //     instances).
-//  2) Both objects must implement the same SubClass (ie, both conceptually have
-//     the same default interface).
-//  3) Both objects must implement a) the same number and b) the same types of
+//  2) Both objects must implement a) the same number and b) the same types of
 //     other interfaces.
 //=============================================================================
 btBool CAASBase::operator == (IBase const &rOther) const
@@ -223,13 +192,8 @@ btBool CAASBase::operator == (IBase const &rOther) const
    {
       AutoLock(pOther);
 
-      if ( SubClassID() != pOther->SubClassID() ) {
-         // 2) fails
-         return false;
-      }
-
       if ( m_InterfaceMap.size() != pOther->m_InterfaceMap.size() ) {
-         // 3a) fails
+         // 2a) fails
          return false;
       }
 
@@ -240,7 +204,7 @@ btBool CAASBase::operator == (IBase const &rOther) const
                l != m_InterfaceMap.end() ;
                   ++l, ++r ) {
          if ( (*l).first != (*r).first ) {
-            // 3b) fails
+            // 2b) fails
             return false;
          }
       }
@@ -248,6 +212,18 @@ btBool CAASBase::operator == (IBase const &rOther) const
 
    // objects are equal
    return true;
+}
+
+btBool CAASBase::IsOK() const
+{
+   AutoLock(this);
+   return m_bIsOK;
+}
+
+btApplicationContext CAASBase::Context() const
+{
+   AutoLock(this);
+   return m_Context;
 }
 
 void CAASBase::SetContext(btApplicationContext context)
@@ -299,82 +275,22 @@ EOBJECT CAASBase::ReplaceInterface(btIID              Interface,
 {
    AutoLock(this);
 
-   // Make sure there is not an implementation already.
-   if ( !Has(Interface) ) {
-      return EPObjNameNotFound;
+   // Make sure there is already an implementation.
+   IIDINTERFACE_ITR iter = m_InterfaceMap.find(Interface);
+   if ( m_InterfaceMap.end() == iter ) {
+      return EObjNameNotFound;
    }
-
 
    if ( NULL == pInterface ) {
-      m_InterfaceMap.erase(m_InterfaceMap.find(Interface));
-   }else{
-      //Add the interface
+      // Remove the entry for Interface.
+      m_InterfaceMap.erase(iter);
+   } else {
+      // Replace the existing Interface entry.
       m_InterfaceMap[Interface] = pInterface;
    }
+
    return EObjOK;
 }
-
-//=============================================================================
-// Name: CAASBase::SetSubClassInterface
-// Description: Sets an interface pointer on the subclass interface for the
-//              object.  This function may only be called once per class.
-// Interface: protected
-// Inputs: Interface - name of the interface to set.
-//         pInterface - Interface pointer
-// Outputs: Interface pointer.
-// Comments:
-//=============================================================================
-EOBJECT CAASBase::SetSubClassInterface(btIID              InterfaceID,
-                                       btGenericInterface pInterface)
-{
-   EOBJECT result;
-
-   AutoLock(this);
-
-   if ( (result = SetInterface(InterfaceID,
-                               pInterface)) != EObjOK ) {
-      return result;
-   }
-
-   m_ISubClass  = pInterface;
-   m_SubClassID = InterfaceID;
-
-   return result;
-}
-
-
-#if DEPRECATED
-//=============================================================================
-// Name: CAASBase::CAASBase
-// Description: Copy Constructor
-// Interface: public
-// Inputs: none.
-// Outputs: none.
-// Comments: For each base classes copy constructor must register
-//           its own interface.  This implies that all derived classes
-//           must call the base classes copy constructor for the copy
-//           to work.
-//=============================================================================
-CAASBase::CAASBase(const CAASBase &rOther) :
-   CriticalSection()
-{
-   AutoLock(this);
-
-   // Add the public interfaces.
-   if ( SetInterface(iidCBase, dynamic_cast<CAASBase *>(this)) != EObjOK ) {
-      return;
-   }
-
-   // IBase is the default native subclass interface unless overridden by a subclass
-   if ( SetSubClassInterface(iidBase, dynamic_cast<IBase *>(this)) != EObjOK ) {
-      return;
-   }
-
-   m_Context = rOther.m_Context;
-   m_bIsOK   = rOther.m_bIsOK;
-}
-#endif // DEPRECATED
-
 
 //=============================================================================
 // Name: CAALBase
@@ -391,13 +307,12 @@ CAALBase::CAALBase(btEventHandler       pEventHandler,
 {
    // Save the event handler
    if ( NULL == pEventHandler ) {
+      m_bIsOK = false;
       return;
    }
-   m_bIsOK = true;
 }
 
 CAALBase::CAALBase() {/*empty*/}
-CAALBase::~CAALBase() {}
 CAALBase::CAALBase(const CAALBase & ) {/*empty*/}
 CAALBase & CAALBase::operator=(const CAALBase & ) { return *this; }
 
