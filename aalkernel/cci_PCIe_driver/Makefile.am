@@ -89,6 +89,7 @@ cci_pcie_driver_PIPsession.h \
 cci_pcie_driver_simulator.h \
 cci_pcie_driver_umapi_linux.c \
 cci_pcie_driver_umapi_linux.h \
+cci_pcie_driver_umapi_common.c \
 cciui-events.h 
 
 

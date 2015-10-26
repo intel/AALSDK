@@ -83,7 +83,7 @@ struct cci_PIPsession {
 
    // PIP contains all of the interfaces we use for communications
    struct aal_device             *paaldev;
-   struct cci_device           *pCCIV4dev;
+   struct cci_device           *pCCIdev;
 
    // Current transaction
    stTransactionID_t              currTranID;
@@ -93,7 +93,7 @@ struct cci_PIPsession {
    struct semaphore               session_sem;
 
 };
-#define cci_PIPsessionp_to_cciv4dev(s)            ( (s)->pCCIV4dev )
+#define cci_PIPsessionp_to_ccidev(s)              ( (s)->pCCIdev )
 #define cci_PIPsessionp_to_aal_afup(s)            ((s)->paaldev)
 #define cci_PIPsessionp_to_ownerSession(s)        ((s)->pownerSess)
 #define cci_PIPsessionp_semaphore(s)              (&(s)->session_sem)

@@ -71,7 +71,7 @@
 
 #if 0
 #include "aalsdk/kernel/aalbus-device.h"
-#include "aalsdk/kernel/aalqueue.h"
+
 #include "aalsdk/kernel/aalui.h"
 #include "aalsdk/kernel/aalui-events.h"
 #include "aalsdk/kernel/aalmafu.h"
@@ -79,7 +79,7 @@
 
 #include "cciv4_PIPsession.h"
 #endif
-
+#include "aalsdk/kernel/aalqueue.h"
 #include <aalsdk/kernel/iaaldevice.h>
 
 
@@ -159,7 +159,7 @@ struct cci_device {
    btPhysAddr                 m_phys_afu_umsg;   // Physical address of CSR space
    size_t                     m_len_afu_umsg;    // Bytes
 
-   struct cciv4_PIPsession   *m_pPIPSession;     // PIP session object
+   struct cci_PIPsession     *m_pPIPSession;     // PIP session object
 };
 
 
@@ -248,6 +248,18 @@ extern void ccidrv_exitDriver(void);
 extern int ccidrv_initUMAPI(void);
 void ccidrv_exitUMAPI(void);
 
+extern struct ccidrv_session * ccidrv_session_create(btPID );
+extern btInt ccidrv_session_destroy(struct ccidrv_session * );
+extern struct aal_wsid *find_wsid( const struct ccidrv_session *ccidrv_sess_p,
+                                   struct aal_wsid *check_wsid_p);
+extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
+extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
+                                        unsigned long long id);
+extern btInt
+ccidrv_sendevent( btObjectType       sesHandle,
+                  struct aal_device *devp,
+                  struct aal_q_item *eventp,
+                  btObjectType       context);
 #if 0
 void cci_release_device( struct device *pdev );
 

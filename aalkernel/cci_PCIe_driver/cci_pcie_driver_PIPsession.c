@@ -112,7 +112,7 @@ session_create(struct aaldev_ownerSession *pownerSess)
    kosal_mutex_init(cci_PIPsessionp_semaphore(pSess));
 
    // Save the device for this AFU. (Saved when the AFU was created)
-   cci_PIPsessionp_to_cciv4dev(pSess) = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
+   cci_PIPsessionp_to_ccidev(pSess) = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
    //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
    PDEBUG("CCIv4 PIP Session Created.\n");
 
@@ -129,7 +129,7 @@ session_create(struct aaldev_ownerSession *pownerSess)
 int
 BindSession(struct aaldev_ownerSession *pownerSess)
 {
-   struct aal_device       *paaldev = NULL;
+   struct aal_device     *paaldev = NULL;
    struct cci_device     *pdev    = NULL;
    struct cci_PIPsession *pSess   = NULL;
 
@@ -191,7 +191,7 @@ int session_destroy(struct cci_PIPsession *pSess)
 int UnbindSession(struct aaldev_ownerSession *pownerSess)
 {
    struct cci_PIPsession *pSess = (struct cci_PIPsession *)pownerSess->m_PIPHandle;
-   struct cci_device     *pdev  = cci_PIPsessionp_to_cciv4dev(pSess);
+   struct cci_device     *pdev  = cci_PIPsessionp_to_ccidev(pSess);
 
    PDEBUG("UnBinding UI Session\n");
 
@@ -232,7 +232,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
    pownerSess = cci_PIPsessionp_to_ownerSession(psess);
    ASSERT(pownerSess);
 
-   pdev = cci_PIPsessionp_to_cciv4dev(psess);
+   pdev = cci_PIPsessionp_to_ccidev(psess);
    ASSERT(pdev);
 
    PVERBOSE("Freeing allocated workspaces.\n");
@@ -246,7 +246,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
 
       list_del_init(&wsidp->m_list);
 
-      pownerSess->m_uiapi->freewsid(wsidp);
+      ccidrv_freewsid(wsidp);
    } // end list_for_each_entry
    PTRACEOUT;
 }

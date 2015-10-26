@@ -173,7 +173,7 @@ declare mod_path
          printf "[ OK ]\n"
 
  
-         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod="@CCIPCIEDRV_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
@@ -215,7 +215,7 @@ declare mod_path
          fi
          printf "[ OK ]\n"
 
-         mod="@CCIV4DRV_DRV_NAME@.ko"
+         mod="@CCIPCIEDRV_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
@@ -341,9 +341,9 @@ ${SLEEP} 3
 
 ${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
 ${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
-${CHMOD} "${DEV_PERMS}" '/dev/aalui'     || die "dev file perms for aalui"
+${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for aalui"
 
-${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/aalui'
+${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/uidrv'
 
 exit 0
 

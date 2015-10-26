@@ -87,6 +87,7 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/cci_pcie_driver_PIPsession.h \
 	$(srcdir)/cci_pcie_common.c $(srcdir)/cci_pcie_driver_pdde.c \
 	$(srcdir)/cci_pcie_driver_umapi_linux.c \
+	$(srcdir)/cci_pcie_driver_umapi_common.c \
 	$(srcdir)/cci_pcie_driver_umapi_linux.h \
 	$(srcdir)/cciui-events.h $(top_srcdir)/build-aux/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -102,7 +103,8 @@ am_driver_OBJECTS = cci_pcie_driver_main.$(OBJEXT) \
 	cci_pcie_common.$(OBJEXT) cci_pcie_driver_simulator.$(OBJEXT) \
 	cci_pcie_driver_pdde.$(OBJEXT) \
 	cci_pcie_driver_PIPsession.$(OBJEXT) \
-	cci_pcie_driver_umapi_linux.$(OBJEXT)
+	cci_pcie_driver_umapi_linux.$(OBJEXT) \
+	cci_pcie_driver_umapi_common.$(OBJEXT)
 driver_OBJECTS = $(am_driver_OBJECTS)
 driver_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -342,6 +344,7 @@ cci_pcie_driver_PIPsession.h \
 cci_pcie_driver_simulator.h \
 cci_pcie_driver_umapi_linux.c \
 cci_pcie_driver_umapi_linux.h \
+cci_pcie_driver_umapi_common.c \
 cciui-events.h 
 
 all: all-am
@@ -394,6 +397,7 @@ include ./$(DEPDIR)/cci_pcie_driver_PIPsession.Po
 include ./$(DEPDIR)/cci_pcie_driver_main.Po
 include ./$(DEPDIR)/cci_pcie_driver_pdde.Po
 include ./$(DEPDIR)/cci_pcie_driver_simulator.Po
+include ./$(DEPDIR)/cci_pcie_driver_umapi_common.Po
 include ./$(DEPDIR)/cci_pcie_driver_umapi_linux.Po
 
 .c.o:

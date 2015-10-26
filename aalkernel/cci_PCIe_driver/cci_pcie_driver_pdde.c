@@ -82,7 +82,6 @@
 
 //#include "aalsdk/kernel/spl2defs.h"
 
-static int noprobe = 0;
 
 /// g_device_list - Global device list for this module.
 struct list_head g_device_list;
@@ -212,8 +211,8 @@ typedef int (*cci_internal_probe)(struct cci_device         * ,
 /// cci_pci_id_tbl - identify PCI devices supported by this module
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, QPI_DEVICE_ID_FPGA   ), .driver_data = NULL/*(kernel_ulong_t)cci_qpi_internal_probe*/  },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCIFPGA), .driver_data = NULL/*(kernel_ulong_t)cci_pcie_internal_probe*/ },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, QPI_DEVICE_ID_FPGA   ), .driver_data = 0/*(kernel_ulong_t)cci_qpi_internal_probe*/  },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCIFPGA), .driver_data = 0/*(kernel_ulong_t)cci_pcie_internal_probe*/ },
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
