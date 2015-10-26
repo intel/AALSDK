@@ -80,9 +80,14 @@ public:
 
 void operator() ()
 {
-   {  m_pClient->AFUEvent(*m_pEvent);
-      delete m_pEvent;
+   // Process TransactionID
+   const TransactionID &msgTid = dynamic_cast<const IUIDriverEvent*>(evtUIDriverClientEvent, m_pEvent)->msgTranID();
+   if (msgTid.Filter() && msgTid.Handler() != NULL) {
+      msgTid.Handler()(*m_pEvent);
+   } else {
+      m_pClient->AFUEvent(*m_pEvent);
    }
+   delete m_pEvent;
    delete this;
 }
 

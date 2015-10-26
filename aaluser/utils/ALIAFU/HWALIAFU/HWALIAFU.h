@@ -157,8 +157,16 @@ protected:
    IAFUProxy           *m_pAFUProxy;
    TransactionID        m_tidSaved;
    IBase               *m_pSvcClient;
+   btVirtAddr           m_MMIORmap;
+   btUnsigned32bitInt   m_MMIORsize;
+   btVirtAddr           m_uMSGmap;
+   btUnsigned32bitInt   m_uMSGsize;
 
-private:
+   // handler for MMIO buffer allocation (on init)
+   static void _mmioAllocEventHandler(IEvent const &theEvent);
+   // handler for uMSG buffer allocation (on init)
+   static void _umsgAllocEventHandler(IEvent const &theEvent);
+
    struct ReleaseContext {
       const TransactionID   TranID;
       const btTime          timeout;

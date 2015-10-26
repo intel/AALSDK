@@ -84,7 +84,7 @@ private:
    AAL::btWSSize                 m_size;
    AAL::btWSSize                 m_bufLength;
 
-}; // class BindAFUDevice
+}; // class BufferAllocateTransaction
 
 
 //=============================================================================
@@ -117,6 +117,65 @@ private:
 
 };
 
+
+//=============================================================================
+// Name:          GetMMIOBuffer
+// Description:   Send a Get MMIO Buffer operation to the Driver stack
+// Input:         tranID   - Transaction ID
+// Comments:
+//=============================================================================
+class UAIA_API GetMMIOBufferTransaction : public IAIATransaction
+{
+public:
+   GetMMIOBufferTransaction( AAL::TransactionID const &tranID );
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+
+   ~GetMMIOBufferTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+
+}; // class GetMMIOBufferTransaction
+
+
+//=============================================================================
+// Name:          GetUMSGBuffer
+// Description:   Send a Get UMSG Buffer operation to the Driver stack
+// Input:         tranID   - Transaction ID
+// Comments:
+//=============================================================================
+class UAIA_API GetUMSGBufferTransaction : public IAIATransaction
+{
+public:
+   GetUMSGBufferTransaction( AAL::TransactionID const &tranID );
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+
+   ~GetUMSGBufferTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+
+}; // class GetUMSGBufferTransaction
 
 
 #endif // __AALSDK_AIATRANSACTIONS_H__
