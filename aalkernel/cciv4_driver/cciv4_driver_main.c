@@ -84,6 +84,36 @@
 
 static int noprobe = 0;
 
+#define  CCIP_SIMULATION_MMIO 0
+
+
+#if CCIP_SIMULATION_MMIO
+
+
+#include "ccip_def.h"
+
+btVirtAddr pfme    = NULL;
+btVirtAddr pport    = NULL;
+struct fme_device *ptempfme = NULL;
+struct port_device *ptempport= NULL;
+
+struct ccip_device         *pccipdev = NULL;
+
+extern int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio);
+extern int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio);
+
+extern bt32bitInt get_fme_mmio(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+extern bt32bitInt get_port_mmio(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+
+extern void ccip_fme_mem_free(struct fme_device *pfme_dev );
+extern void ccip_port_mem_free(struct port_device *pport_dev );
+
+
+extern int print_sim_fme_device(struct fme_device *pfme_dev);
+extern int print_sim_port_device(struct port_device *pport_dev);
+
+#endif
+
 /// g_device_list - Global device list for this module.
 struct list_head g_device_list;
 
@@ -333,11 +363,50 @@ cciv4_pci_probe(struct pci_dev             *pcidev,
 
    int res = -EINVAL;
 
+#if CCIP_SIMULATION_MMIO
+   struct aal_device_id aaldevid;
+   cciv4_internal_probe  probe_fn;
+
+   struct cciv4_device  *pcciv4_dev = NULL;
    PTRACEIN;
 
-   // TODO FILL IN DETAILS
+    PTRACEIN;
 
-   PTRACEOUT_INT(res);
+    PINFO("cciv4_pci_probe\n");
+
+    probe_fn = (cciv4_internal_probe)pcidevid->driver_data;
+
+    ASSERT(NULL != probe_fn);
+    if ( NULL == probe_fn ) {
+       PERR("NULL cciv4_internal_probe in 0x%p\n", pcidevid);
+       goto ERR;
+    }
+
+    //TBD freed in  cciv4_pci_remove  or modedrv_exit()
+    pcciv4_dev = kzalloc(sizeof(struct cciv4_device), GFP_KERNEL);
+    if ( NULL ==  pcciv4_dev ) {
+       res = -ENOMEM;
+       goto ERR;
+    }
+
+ 	memset(&aaldevid, 0, sizeof(aaldevid));
+
+ 	res = probe_fn(pcciv4_dev, &aaldevid, pcidev, pcidevid);
+
+ 	ASSERT(0 == res);
+ 	if ( 0 != res ) {
+ 	  goto ERR;
+ 	}
+
+    // TODO FILL IN DETAILS
+ ERR:
+
+
+ 	if ( NULL != pcciv4_dev ) {
+ 		kfree(pcciv4_dev);
+ 	}
+ 	PTRACEOUT_INT(res);
+#endif
    return res;
 }
 
@@ -364,11 +433,208 @@ cciv4_pcie_internal_probe(struct cciv4_device         *pspl2dev,
 
    int res = EINVAL;
 
+#if CCIP_SIMULATION_MMIO
+   u32 viddid = 0;
    PTRACEIN;
+	ASSERT(pcidev);
+	if ( NULL == pcidev ) {
+		res = -EINVAL;
+		PTRACEOUT_INT(res);
+		return res;
+	}
+	ASSERT(pcidevid);
+	if ( NULL == pcidevid ) {
+		res = -EINVAL;
+		PTRACEOUT_INT(res);
+		return res;
+	}
+
+	pccipdev = kzalloc(sizeof(struct ccip_device), GFP_KERNEL);
+	if ( NULL ==  pccipdev ) {
+		res = -ENOMEM;
+		goto ERR;
+	}
+
+
+	ccip_dev_pci_dev(pccipdev) = pcidev;
+
+	res = pci_enable_device(pcidev);
+	if ( res < 0 ) {
+		PERR("Failed to enable device res=%d\n", res);
+		PTRACEOUT_INT(res);
+		return res;
+	}
+
+/*
+   // read BAR1 to BAR5
+   // Max 5 ports per FPGA
+   // Five AFU Device
+	for(int i=1;i<=CCIP_MAX_PCIBAR;i++)
+	{
+		res = pci_request_region(pcidev,i, CCIV4_PCI_DRIVER_NAME);
+		if ( res ) {
+			PINFO("No pci region at bar=%d \"%s\" (%d). Using Bar 0.\n",
+					      i,
+							CCIV4_PCI_DRIVER_NAME,
+							res);
+			}
+		else
+		{
+			pccipdev->m_phys_port_mmio[i]  = __PHYS_ADDR_CAST( pci_resource_start(pcidev, i) );
+			pccipdev->m_len_port_mmio[i]   = (size_t)pci_resource_len(pcidev, i);
+
+		}
+	}
+*/
+
+	// Read BAR 0 for FME MMIO region
+	res = pci_request_region(pcidev, 0, CCIV4_PCI_DRIVER_NAME);
+
+	if ( res ) {
+		PINFO("Failed to obtian PCI BAR=0 \"%s\" (%d). Using Bar 0.\n",	CCIV4_PCI_DRIVER_NAME, res);
+		ccip_fmedev_phys_afu_mmio(pccipdev) = 0;
+		ccip_fmedev_len_afu_mmio(pccipdev)  = 0;
+      goto ERR;
+
+	}else{
+		// get the base address register ( BAR0).
+		ccip_fmedev_phys_afu_mmio(pccipdev) = __PHYS_ADDR_CAST( pci_resource_start(pcidev, 0) );
+	   ccip_fmedev_len_afu_mmio(pccipdev)  = (size_t)pci_resource_len(pcidev, 0);
+
+	}
+
+	// Read BAR 1 for PORT MMIO region
+   res = pci_request_region(pcidev, 1, CCIV4_PCI_DRIVER_NAME);
+
+   if ( res ) {
+      PERR("Failed to obtain PCI BAR=1 \"%s\" (%d)\n",CCIV4_PCI_DRIVER_NAME,res);
+      ccip_portdev_phys_afu_mmio(pccipdev) = 0;
+      ccip_portdev_len_afu_mmio(pccipdev)  = 0;
+      goto ERR;
+
+   }else {
+   	// get the base address register ( BAR1).
+   	ccip_portdev_phys_afu_mmio(pccipdev) = __PHYS_ADDR_CAST( pci_resource_start(pcidev, 1) );
+   	ccip_portdev_len_afu_mmio(pccipdev)  = (size_t)pci_resource_len(pcidev, 1);
+
+   }
+
+
+   // for actual PCIe card (not QPI), enable PCIe error reporting
+   pci_enable_pcie_error_reporting(pcidev);
+
+   // enable bus mastering (if not already set)
+   pci_set_master(pcidev);
+   pci_save_state(pcidev);
+
+   // Verify the device signature.
+   res = pci_read_config_dword(pcidev, 0, &viddid);
+   ASSERT(0 == res);
+   if ( 0 != res ) {
+      goto ERR;
+   }
+
+
+   // ioremap BAR0 MMIO region
+   if(0 != ccip_fmedev_phys_afu_mmio(pccipdev)){
+   	 // BARO ioremap
+   	 // TBD ioremap_nocache()
+   	 ccip_fmedev_kvp_afu_mmio(pccipdev) = ioremap(ccip_fmedev_phys_afu_mmio(pccipdev), ccip_fmedev_len_afu_mmio(pccipdev));
+
+   }else{
+      PERR("Failed to map BAR 0 into kernel space.\n");
+        res = -ENXIO;
+        goto ERR;
+   }
+
+   // ioremap BAR1 MMIO region
+   if(0 != ccip_portdev_phys_afu_mmio(pccipdev)){
+   	// BAR1 ioremap
+   	// TBD ioremap_nocache()
+   	ccip_portdev_kvp_afu_mmio(pccipdev) = ioremap(ccip_portdev_phys_afu_mmio(pccipdev), ccip_portdev_len_afu_mmio(pccipdev));
+
+   }else{
+      PERR("Failed to map BAR 1 into kernel space.\n");
+      res = -ENXIO;
+      goto ERR;
+   }
+
+
+   // Bus Device function  of pci device
+   ccip_dev_devfunnum(pccipdev) = pcidev->devfn;
+   ccip_dev_busnum(pccipdev) = pcidev->bus->number;
+
+
+   // FME mmio region
+	if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
+
+		pccipdev->m_pfme_dev =(struct fme_device*) kzalloc(sizeof(struct fme_device), GFP_KERNEL);
+		if ( NULL == pccipdev->m_pfme_dev ) {
+			res = -ENOMEM;
+			goto ERR;
+		}
+      // Populate FME MMIO Region
+		get_fme_mmio(pccipdev->m_pfme_dev,ccip_fmedev_kvp_afu_mmio(pccipdev) );
+
+		// print fme CSRS
+		print_sim_fme_device(pccipdev->m_pfme_dev);
+
+
+	}
+
+	// PORT mmio region
+	if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
+
+		pccipdev->m_pport_dev = (struct port_device*) kzalloc(sizeof(struct port_device), GFP_KERNEL);
+		if ( NULL == pccipdev->m_pport_dev ) {
+		  res = -ENOMEM;
+		  goto ERR;
+		}
+
+		 // Populate PORT MMIO Region
+		get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
+
+		// print port CSRs
+		print_sim_port_device(pccipdev->m_pport_dev);
+
+	}
 
    // TODO FILL IN DETAILS
 
-   PTRACEOUT_INT(res);
+ERR:
+
+  if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
+   }
+
+  if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev)) {
+      iounmap(ccip_portdev_kvp_afu_mmio(pccipdev));
+      ccip_portdev_kvp_afu_mmio(pccipdev) = NULL;
+   }
+
+
+	if( 0 != ccip_fmedev_phys_afu_mmio(pccipdev)){
+		pci_release_region(pcidev, 0);
+	}
+
+	if( 0 != ccip_portdev_phys_afu_mmio(pccipdev)){
+		pci_release_region(pcidev, 1);
+	}
+
+	if ( NULL != pccipdev ) {
+				kfree(pccipdev);
+	}
+
+
+	PTRACEOUT_INT(res);
+#endif
+
+
+
+   // TODO FILL IN DETAILS
+
+
    return res;
 }
 
@@ -587,6 +853,19 @@ cciv4drv_init(void)
 
    PINFO("Using %s configuration.\n", (0 == sim) ? "normal hardware" : "simulated hardware");
 #if 0
+#if CCIP_SIMULATION_MMIO
+   // Register as PCI device
+   ret = pci_register_driver(&cciv4_pci_driver_info.pcidrv);
+   ASSERT(0 == ret);
+   if( 0 != ret ) {
+      PERR("Failed to register PCI driver. (%d)\n", ret);
+   goto ERR;
+   }
+
+   cciv4_pci_driver_info.isregistered = 1;
+
+#endif
+
    // Install an OS driver for this module.  This enables probe() semantics.
    //   This functionality will be moving to AAL Bus subsystem as it is canonical.
    ret = aalbus_get_bus()->init_driver((kosal_ownermodule *)THIS_MODULE,
@@ -609,6 +888,50 @@ cciv4drv_init(void)
        ret = -EIO;
        goto ERR;
    }
+
+#if CCIP_SIMULATION_MMIO
+
+
+	pfme = kosal_kzmalloc(CCIP_MMIO_SIZE);
+	 if ( NULL == pfme ) {
+		 PERR("Unable to allocate system memory for uMsg area\n");
+		 ret = -ENOMEM;
+		 goto ERR;
+
+	 }
+
+	 pport = kosal_kzmalloc(CCIP_MMIO_SIZE);
+	if ( NULL == pport ) {
+	  PERR("Unable to allocate system memory for uMsg area\n");
+	  ret = -ENOMEM;
+	  goto ERR;
+
+	}
+
+	ptempfme =(struct fme_device*) kzalloc(sizeof(struct fme_device), GFP_KERNEL);
+	if ( NULL == ptempfme ) {
+	  ret = -ENOMEM;
+	  return ret;
+	}
+	ptempport = (struct port_device*) kzalloc(sizeof(struct port_device), GFP_KERNEL);
+	if ( NULL == ptempport ) {
+	  ret = -ENOMEM;
+	  return ret;
+	}
+
+
+	ccip_sim_wrt_fme_mmio(pfme);
+	ccip_sim_wrt_port_mmio(pport);
+
+    get_fme_mmio(ptempfme,pfme );
+
+   get_port_mmio(ptempport,pport);
+
+   print_sim_fme_device(ptempfme);
+   print_sim_port_device(ptempport);
+
+
+#endif
 
    // Process command line arguments
    if ( 0 == sim ) {
@@ -700,6 +1023,25 @@ ERR:
 
    aalbus_get_bus()->release_driver(&cciv4_pci_driver_info.aaldriver, &cciv4drv_class);
 
+#if CCIP_SIMULATION_MMIO
+
+
+   if(pfme)  {
+
+      kosal_kfree(pfme, CCIP_MMIO_SIZE);
+      ccip_fme_mem_free(ptempfme);
+   }
+
+   if(pport)  {
+      kosal_kfree(pport, CCIP_MMIO_SIZE);
+      ccip_port_mem_free(ptempport);
+   }
+
+    if(pccipdev)  {
+   	  kosal_kfree(pccipdev, sizeof(pccipdev));
+    }
+#endif
+
    PTRACEOUT_INT(ret);
    return ret;
 }
@@ -759,7 +1101,34 @@ cciv4drv_exit(void)
       pci_unregister_driver(&cciv4_pci_driver_info.pcidrv);
       cciv4_pci_driver_info.isregistered = 0;
    }
+#if CCIP_SIMULATION_MMIO
 
+/*
+   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+        iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+        ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
+     }
+
+    if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev)) {
+        iounmap(ccip_portdev_kvp_afu_mmio(pccipdev));
+        ccip_portdev_kvp_afu_mmio(pccipdev) = NULL;
+     }
+*/
+   if(pfme)  {
+
+      kosal_kfree(pfme, CCIP_MMIO_SIZE);
+      ccip_fme_mem_free(ptempfme);
+   }
+
+   if(pport)  {
+      kosal_kfree(pport, CCIP_MMIO_SIZE);
+      ccip_port_mem_free(ptempport);
+   }
+
+    if(pccipdev)  {
+   	  kosal_kfree(pccipdev, sizeof(pccipdev));
+    }
+#endif
    aalbus_get_bus()->release_driver(&cciv4_pci_driver_info.aaldriver, &cciv4drv_class);
 
    //aalbus_get_bus()->unregister_driver( &cciv4_pci_driver_info.aaldriver );

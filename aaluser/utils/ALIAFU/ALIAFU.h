@@ -51,7 +51,7 @@
 
 BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup CCIAFUv3
+/// @addtogroup IALIAFU
 /// @{
 
 #if defined ( __AAL_WINDOWS__ )

@@ -64,8 +64,8 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// SWSimALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase,
-                                        public IALIAFU
+class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase /*,
+                                        public IALIAFU  // FIXME: There is no IALIAFU */
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -75,8 +75,8 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimALIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
+//      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
+//      SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
    }
 
    virtual btBool init( IBase *pclientBase,

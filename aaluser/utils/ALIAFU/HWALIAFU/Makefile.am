@@ -36,6 +36,8 @@
 lib_LTLIBRARIES=libHWALIAFU.la
 
 libHWALIAFU_la_SOURCES=\
+ALIAIATransactions.cpp \
+ALIAUATransactions.h \
 HWALIAFU.cpp \
 HWALIAFU.h
 

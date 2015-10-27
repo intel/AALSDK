@@ -86,6 +86,11 @@ public:
    // Send a message to the device
    AAL::btBool SendTransaction( IAIATransaction *pAFUmessage);
 
+   // Map/Unmap Workspace IDs to virtual memory addresses
+   AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+   void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
+
+
 protected:
    void AFUEvent( AAL::IEvent const &theEvent);
 

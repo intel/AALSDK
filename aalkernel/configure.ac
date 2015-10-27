@@ -202,7 +202,13 @@ AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driv
                  cciv4_driver/kbuild/cciv4_PIPsession.c:cciv4_driver/cciv4_PIPsession.c
                  cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c  
                  cciv4_driver/kbuild/cciv4_sim_mafu_pip.c:cciv4_driver/cciv4_sim_mafu_pip.c      
-                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c                                                                                    
+                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c 
+                 cciv4_driver/kbuild/ccip_def.h:cciv4_driver/ccip_def.h
+                 cciv4_driver/kbuild/ccip_fme_mmio.h:cciv4_driver/ccip_fme_mmio.h 
+                 cciv4_driver/kbuild/ccip_fme_mmio.c:cciv4_driver/ccip_fme_mmio.c
+                 cciv4_driver/kbuild/ccip_port_mmio.h:cciv4_driver/ccip_port_mmio.h 
+                 cciv4_driver/kbuild/ccip_port_mmio.c:cciv4_driver/ccip_port_mmio.c 
+                 cciv4_driver/kbuild/ccip_sim_mmio.c:cciv4_driver/ccip_sim_mmio.c  
                  cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
 AC_CONFIG_FILES([cci_PCIe_driver/kbuild/Makefile:cci_PCIe_driver/Kbuild.in])

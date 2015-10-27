@@ -90,8 +90,6 @@ AAL_END_SVC_MOD()
 
 BEGIN_NAMESPACE(AAL)
 
-enum RRMStartupMode { always, automatic, never };
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -120,9 +118,9 @@ btBool CResourceManager::init( IBase *pclientBase,
                                NamedValueSet const &optArgs,
                                TransactionID const &rtid)
 {
-   std::string       strStartupMode;              // for reading environment
-   btcString         sStartupMode   = NULL;       // for parsing environment
-   RRMStartupMode    startupMode    = automatic;  // default startup mode
+   INamedValueSet const *pConfigRecord = NULL;
+   btcString             sStartupMode   = NULL;       // for parsing environment
+   std::string           strStartupMode;              // for reading environment
 
    // Save the client interface
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
@@ -136,63 +134,41 @@ btBool CResourceManager::init( IBase *pclientBase,
 
    }
 
-   // Allocate remote resource manager service, if we need one
-   // We need a RRM when instantiating a service that's not pure software.
-   // Need is currently determined through environment variable
+   //
+   // Determine mode for allocating remote resource manager service.
+   //
 
-   // Check environment
+   // Check environment and optargs
    if ( Environment::GetObj()->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", strStartupMode) ) {
       sStartupMode = strStartupMode.c_str();
    } else {
-      if ( ENamedValuesOK != OptArgs().Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &sStartupMode) ) {
-              // Not in Environment and no Config Parms.
+      if ( ENamedValuesOK == optArgs.Get(AALRUNTIME_CONFIG_RECORD, &pConfigRecord) ) {
+         if ( ENamedValuesOK != pConfigRecord->Get("AAL_RESOURCEMANAGER_CONFIG_INPROC", &sStartupMode) ) {
+              // Not in config record
               sStartupMode = NULL;
-      }
-   }
-
-   // Parse envvar string, set startupMode accordingly (or leave at default)
-   if (NULL != sStartupMode) {
-      if (strcmp("always", sStartupMode) == 0) {
-         startupMode = always;
-      } else if (strcmp("never", sStartupMode) == 0) {
-         startupMode = never;
-      }
-   }
-
-   switch (startupMode)
-   {
-   case automatic:
-      if (isRRMPresent()) break;
-   case always:
-      {
-         NamedValueSet ResMgrManifest;
-         NamedValueSet ResMgrConfigRecord;
-
-         // Construct config record and manifest
-         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
-                          "libAASResMgr");
-         ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
-
-         ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
-         ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
-
-         // allocate service
-         getRuntime()->allocService(dynamic_cast<IBase *>(this), ResMgrManifest);
-
-         // wait for service to be allocated and run
-         m_sem.Wait();
-         if (!IsOK()) {
-            initFailed(new CExceptionTransactionEvent( NULL,
-                                                       rtid,
-                                                       errInternal,
-                                                       reasCauseUnknown,
-                                                       "Could not create RRM Service (in proc)."));
-            return false;
          }
       }
-      break;
-   case never:
-      break;
+   }
+
+   // Parse envvar string, set m_rrmStartupMode accordingly (or leave at default)
+   if (NULL != sStartupMode) {
+      if (strcmp("always", sStartupMode) == 0) {
+         m_rrmStartupMode = always;
+      } else if (strcmp("never", sStartupMode) == 0) {
+         m_rrmStartupMode = never;
+      }
+   }
+
+   // RRM 'always' startup happens right here
+   if (m_rrmStartupMode == always) {
+      if (!startRRMService()) {
+         initFailed(new CExceptionTransactionEvent(NULL,
+                                                   rtid,
+                                                   errSysSystemStarted,
+                                                   reasInitError,
+                                                   "RRM failed to start in 'always' mode"));
+         return false;
+      }
    }
 
    // Create an open channel to the remote resource manager
@@ -236,6 +212,24 @@ void CResourceManager::RequestResource(NamedValueSet const &nvsManifest,
 {
    // Only allow one command be sent at a time
    AutoLock(this);
+
+   // check if we need to start a remote resource manager
+   // RequestResource is only called for services that are not SW-only, so
+   // we don't need to check for that
+   if (m_rrmStartupMode == automatic && !isRRMPresent()) {
+      if (!startRRMService()) {
+         getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                          nvsManifest,
+                                                                          ResourceManagerClientMessage::AllocateFailed,
+                                                                          new CExceptionTransactionEvent( NULL,
+                                                                                                          tid,
+                                                                                                          errInternal,
+                                                                                                          reasCauseUnknown,
+                                                                                                          "Could not create RRM Service (in proc).")));
+         return;
+      }
+   }
+
    // Send the request to the Resource Manager
    if(false == m_RMProxy.SendRequest(nvsManifest,tid) ){
 
@@ -425,71 +419,57 @@ CResourceManager::~CResourceManager()
 //=============================================================================
 btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 {
-   if (m_pRRMAALService) {
-      m_pRRMAALService->Release(rTranID, timeout);
-      m_sem.Wait();
-      // TODO: check for failure
-   }
    // TODO  - Send the shutdown to the driver and wait until done before issuing this
 
-   // This function blocks until pump is stopped.
-   StopMessagePump();
+   // FIXME - there's a race condition here - it happens that the runtime
+   // already shut down the remote resource manager; in that case,
+   // m_pRRMAALService will not be NULL, but calling Release() on it will
+   // segfault / call pure virtual.
+   // Temporary fix: never shut down remote resource manager, but always let
+   // runtime cleanup handle it.
 
-   ServiceBase::Release(rTranID, timeout);
-}
+#if 0
+   // If we never allocated a remote resource manager service (i.e. it's
+   // running externally), go ahead and release self.
+   if (m_pRRMAALService == NULL) {
+#endif
+      StopMessagePump();
+      ServiceBase::Release(rTranID, timeout);   // This function blocks until pump is stopped.
 
-
-/*
- * IServiceClient methods
- */
-
-// Service allocated callback
-void CResourceManager::serviceAllocated(IBase               *pServiceBase,
-                              TransactionID const &rTranID)
-{
-   // Store ResMgrService pointer
-   m_pRRMService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
-   if (!m_pRRMService) {
-      // TODO: handle error
-      return;
+      return true;
+#if 0
    }
 
-   // Store AAL service pointer
-   m_pRRMAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-   ASSERT(NULL != m_pRRMAALService);
+   // If we have allocated a remote resource manager service, wrap original
+   // transaction id and timeout and release it.
+   ReleaseContext *prc = new ReleaseContext(rTranID, timeout);
+   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+   return m_pRRMAALService->Release(TransactionID(appContext));
 
-   // run remote resource manager in separate thread
-   m_pRRMService->start(TransactionID());
-   // unblock init()
-   m_sem.Post(1);
-   return;
+   // in the latter case, further shutdown happens in serviceReleased below.
+#endif
 }
 
-// Service allocated failed callback
-void CResourceManager::serviceAllocateFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   m_sem.Post(1);
+
+btBool CResourceManager::startRRMService() {
+   NamedValueSet ResMgrManifest;
+   NamedValueSet ResMgrConfigRecord;
+
+   // Construct config record and manifest
+   ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME,
+                    "libAASResMgr");
+   ResMgrConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   ResMgrManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ResMgrConfigRecord);
+   ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
+
+   // allocate service, will be started in serviceAllocated()
+   getRuntime()->allocService(this, ResMgrManifest, TransactionID());
+   m_sem.Wait();
+   return IsOK();
 }
 
-// Service released callback
-void CResourceManager::serviceReleased(TransactionID const &rTranID) {
-   m_sem.Post(1);    // let Release() know.
-}
 
-// Service released failed callback
-void CResourceManager::serviceReleaseFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   m_sem.Post(1);    // let Release() know.
-}
-
-// Callback for generic events
-void CResourceManager::serviceEvent(const IEvent &rEvent) {
-   // TODO: handle unexpected events
-   ASSERT(false);
-}
-
-// check if remote resource manager is already running by trying to open
-// its device file
 // TODO: if successful, might want to keep file open and pass fd to
 //       service construction. Otherwise, something might happen between our
 //       close() and the service's open().
@@ -513,6 +493,59 @@ btBool CResourceManager::isRRMPresent()
    }
 }
 
+
+/*
+ * IServiceClient methods
+ */
+void CResourceManager::serviceAllocated(IBase               *pServiceBase,
+                              TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_pRRMService = dynamic_ptr<IResMgrService>(iidResMgrService, pServiceBase);
+   if (!m_pRRMService) {
+      // TODO: handle error
+      return;
+   }
+
+   // Store AAL service pointer (needed for Release())
+   m_pRRMAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   ASSERT(NULL != m_pRRMAALService);
+
+   // run remote resource manager in separate thread
+   m_pRRMService->start(TransactionID());
+   // unblock semaphore
+   m_sem.Post(1);
+}
+
+void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
+{
+   AAL_ERR(LM_ResMgr, "Allocation of CResMgr failed.");
+   PrintExceptionDescription(rEvent);
+   m_bIsOK = false;
+   m_sem.Post(1);
+}
+
+void CResourceManager::serviceReleased(TransactionID const &rTranID)
+{
+   // clean up
+   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
+   StopMessagePump();
+
+   ServiceBase::Release(prc->tranID, prc->timeout);   // This function blocks until pump is stopped.
+}
+
+void CResourceManager::serviceReleaseFailed(const IEvent &rEvent)
+{
+   AAL_ERR(LM_ResMgr, "Release of CResMgr failed.");
+}
+
+void CResourceManager::serviceEvent(const IEvent &rEvent)
+{
+   AAL_ERR(LM_ResMgr, "Unexpected service event.");
+}
+/*
+ * End of IServiceClient methods
+ */
 
 END_NAMESPACE(AAL)
 

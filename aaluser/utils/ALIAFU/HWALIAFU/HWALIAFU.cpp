@@ -50,6 +50,8 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include "ALIAIATransactions.h"
+
 #include "HWALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
@@ -57,69 +59,744 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup HWALIAFU
 /// @{
 
+#ifdef INFO
+# undef INFO
+#endif // INFO
+#define INFO(x) AAL_INFO(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#ifdef ERR
+# undef ERR
+#endif // ERR
+#define ERR(x) AAL_ERR(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+#ifdef VERBOSE
+# undef VERBOSE
+#endif // VERBOSE
+#define VERBOSE(x) AAL_VERBOSE(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
+
+// ===========================================================================
+//
+// Dispatchables for client callbacks
+//
+// ===========================================================================
+
+//
+// Dispatchable for IALIBuffer_Client::bufferAllocated
+//
+class BufferAllocated : public IDispatchable
+{
+public:
+   BufferAllocated(IALIBuffer_Client *pRecipient,
+                   TransactionID     TranID,
+                   btVirtAddr        WkspcVirt,
+                   btPhysAddr        WkspcPhys,
+                   btWSSize          WkspcSize) :
+      m_pRecipient(pRecipient),
+      m_TranID(TranID),
+      m_WkspcVirt(WkspcVirt),
+      m_WkspcPhys(WkspcPhys),
+      m_WkspcSize(WkspcSize)
+   {
+      ASSERT(NULL != m_pRecipient);
+   }
+
+   virtual void operator() ()
+   {
+	   // FIXME: IALIBuffer_Client::bufferAllocated doen't take a physical address anymore
+	   //        Remove from dispatchable
+	   // 	  m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcPhys, m_WkspcSize);
+	   m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcSize);
+	   delete this;
+   }
+
+protected:
+   IALIBuffer_Client *m_pRecipient;
+   TransactionID     m_TranID;
+   btVirtAddr        m_WkspcVirt;
+   btPhysAddr        m_WkspcPhys;
+   btWSSize          m_WkspcSize;
+};
+
+//
+// Dispatchable for IALIBuffer_Client::bufferAllocateFailed
+//
+class BufferAllocateFailed : public IDispatchable
+{
+public:
+   BufferAllocateFailed(IALIBuffer_Client *pRecipient,
+                        IEvent            *pExcept) :
+      m_pRecipient(pRecipient),
+      m_pExcept(pExcept)
+   {
+      ASSERT(NULL != m_pRecipient);
+      ASSERT(NULL != m_pExcept);
+   }
+   ~BufferAllocateFailed()
+   {
+      if ( NULL != m_pExcept ) {
+         delete m_pExcept;
+      }
+   }
+
+   virtual void operator() ()
+   {
+      m_pRecipient->bufferAllocateFailed(*m_pExcept);
+      delete this;
+   }
+
+protected:
+   IALIBuffer_Client *m_pRecipient;
+   IEvent     *m_pExcept;
+};
+
+//
+// Dispatchable for IALIBuffer_Client::bufferFreed
+//
+class BufferFreed : public IDispatchable
+{
+public:
+   BufferFreed(IALIBuffer_Client   *pRecipient,
+               TransactionID        TranID) :
+      m_pRecipient(pRecipient),
+      m_TranID(TranID)
+   {
+      ASSERT(NULL != m_pRecipient);
+   }
+
+   virtual void operator() ()
+   {
+      m_pRecipient->bufferFreed(m_TranID);
+      delete this;
+   }
+
+protected:
+   IALIBuffer_Client   *m_pRecipient;
+   TransactionID m_TranID;
+};
+
+//
+// Dispatchable for IALIBuffer_Client::bufferFreeFailed
+//
+class BufferFreeFailed : public IDispatchable
+{
+public:
+   BufferFreeFailed(IALIBuffer_Client *pRecipient,
+                    IEvent            *pExcept) :
+      m_pRecipient(pRecipient),
+      m_pExcept(pExcept)
+   {
+      ASSERT(NULL != m_pRecipient);
+      ASSERT(NULL != m_pExcept);
+   }
+   ~BufferFreeFailed()
+   {
+      if ( NULL != m_pExcept ) {
+         delete m_pExcept;
+      }
+   }
+
+   virtual void operator() ()
+   {
+      m_pRecipient->bufferFreeFailed(*m_pExcept);
+      delete this;
+   }
+
+protected:
+   IALIBuffer_Client *m_pRecipient;
+   IEvent     *m_pExcept;
+};
+
+
+
+// ===========================================================================
+//
+// HWALIAFU implementation
+//
+// ===========================================================================
+
+//
+// init. Does nothing but dispatch ObjectCreatedEvent.
+//
+// TODO: Add checks for AFUDev capabilities, possibly selective exposure of
+//       interfaces based on results
+//
 btBool HWALIAFU::init(IBase *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-   ASSERT( NULL != pClient );
-   if ( NULL == pClient ) {
-      /// ObjectCreatedExceptionEvent Constructor.
-      initFailed(new CExceptionTransactionEvent( this,
-                                                 TranID,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Client did not publish ICCIClient Interface"));
-      return false;
-   }
+   btHANDLE devHandle;
 
-   initComplete(TranID);
+   m_pSvcClient = pclientBase;
+   ASSERT( NULL != m_pSvcClient );
+
+   //
+   // Allocate AIA service. Init is completed in serviceAllocated callback.
+   //
+
+   NamedValueSet nvsManifest;
+   NamedValueSet nvsConfigRecord;
+
+   nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libaia");
+   //nvsConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   nvsConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+   nvsManifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &nvsConfigRecord);
+   nvsManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "AIA");
+
+   // add hardware handle obtained by resource manager
+   if( optArgs.Has(keyRegHandle) ) {
+      optArgs.Get(keyRegHandle, &devHandle);
+   }else {
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                TranID,
+                                                errBadParameter,
+                                                reasNoDevice,
+                                                "No device handle in Configuration Record!"));
+      return true;
+    }
+   nvsManifest.Add(keyRegHandle, devHandle);
+
+   m_tidSaved = TranID;
+   getRuntime()->allocService(this, nvsManifest, TransactionID());
+
+   // initComplete happens in serviceAllocated()
    return true;
 }
 
+//
+// Release. Release service
+//
 btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
-   return DeviceServiceBase::Release(TranID, timeout);
+   // Wrap original transaction id and timeout
+   ReleaseContext *prc = new ReleaseContext(TranID, timeout);
+   btApplicationContext appContext = reinterpret_cast<btApplicationContext>(prc);
+   // Release ALI / AFUProxy
+   ASSERT(m_pAALService != NULL);
+   return m_pAALService->Release(TransactionID(appContext), timeout);
 }
 
-void HWALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                   TransactionID const &TranID)
+
+// ---------------------------------------------------------------------------
+// IALIMMIO interface implementation
+// ---------------------------------------------------------------------------
+
+//
+// mmioGetAddress. Return address of MMIO space.
+//
+btVirtAddr HWALIAFU::mmioGetAddress( void )
+{
+   return m_MMIORmap;
+}
+
+//
+// mmioGetLength. Return length of MMIO space.
+//
+btCSROffset HWALIAFU::mmioGetLength( void )
+{
+   return m_MMIORsize;
+}
+
+//
+// mmioRead32. Read 32bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * const pValue)
+{
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
+	}
+
+	*pValue = *( (btUnsigned32bitInt*)(pMMIOBase + Offset) );
+
+	return true;
+}
+
+//
+// mmioWrite32. Write 32bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value)
+{
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
+	}
+
+	*( (btUnsigned32bitInt*)(pMMIOBase + Offset) ) = Value;
+
+	return true;
+}
+
+//
+// mmioRead64. Read 64bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioRead64( const btCSROffset Offset, btUnsigned64bitInt * const pValue)
+{
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
+	}
+
+	*pValue = *( (btUnsigned64bitInt*)(pMMIOBase + Offset) );
+
+	return true;
+}
+
+//
+// mmioWrite64. Write 64bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value)
+{
+	btVirtAddr pMMIOBase = mmioGetAddress();
+
+	if (pMMIOBase == NULL) {
+		return false;
+	}
+
+	*( (btUnsigned64bitInt*)(pMMIOBase + Offset) ) = Value;
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// IALIBuffer interface implementation
+// ---------------------------------------------------------------------------
+
+//
+// bufferAllocate. Allocate a shared buffer (formerly known as workspace).
+//
+void HWALIAFU::bufferAllocate( btWSSize             Length,
+                               TransactionID const &TranID,
+                               NamedValueSet       *pOptArgs)
+{
+	   AutoLock(this);
+
+	   // TODO: Create a transaction id that wraps the original from the application,
+//	   TransactionID tid(new(std::nothrow) TransactionID(TranID));
+
+	   // Create the Transaction
+	   BufferAllocateTransaction transaction(TranID, Length);
+
+	   // Check the parameters
+	   if ( transaction.IsOK() ) {
+	      // Will return to AFUEvent, below.
+	      m_pAFUProxy->SendTransaction(&transaction);
+	   } else {
+	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
+	                                                                     TranID,
+	                                                                     errAFUWorkSpace,
+	                                                                     reasAFUNoMemory,
+	                                                                     "BufferAllocate transaction validity check failed");
+	      getRuntime()->schedDispatchable(
+	         new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
+	                                                            pExcept)
+
+	             );
+	   }
+}
+
+//
+// bufferFree. Release previously allocated buffer.
+//
+void HWALIAFU::bufferFree( btVirtAddr           Address,
+                             TransactionID const &TranID)
 {
    AutoLock(this);
-   WkspcAlloc(Length, TranID);
-}
+   // TODO: Create a transaction id that wraps the original from the application,
+//    TransactionID tid(new(std::nothrow) TransactionID(TranID));
 
-void HWALIAFU::WorkspaceFree(btVirtAddr           Address,
-                               TransactionID const &TranID)
-{
-   AutoLock(this);
-   WkspcFree(Address, TranID);
-}
-
-btBool HWALIAFU::CSRRead(btCSROffset CSR,
-                           btCSRValue *pValue)
-{
-   // Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
-   return AFUDev().atomicGetCSR(CSR >> 2, pValue);
-}
-
-btBool HWALIAFU::CSRWrite(btCSROffset CSR,
-                            btCSRValue  Value)
-{
-   // Divide by 4, because CAFUDev expects 0-based CSR #'s, not byte offsets.
-   return AFUDev().atomicSetCSR(CSR >> 2, Value);
-}
-
-btBool HWALIAFU::CSRWrite64(btCSROffset CSR,
-                              bt64bitCSR  Value)
-{
-   if ( CSRWrite(CSR + 4, Value >> 32) ) {
-      return CSRWrite(CSR, Value & 0xffffffff);
+   // Find workspace id
+   mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
+   if (i == m_mapWkSpc.end()) {  // not found
+      AAL_ERR(LM_All, "Tried to free non-existent Buffer");
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasInvalidParameter,
+                                                                     "Tried to free non-existent Buffer");
+      getRuntime()->schedDispatchable(
+         new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
+                                                        pExcept)
+             );
+      return;
    }
-   return false;
+   // workspace id is in i->second.wsid
+
+   // Create the Transaction
+   BufferFreeTransaction transaction(TranID, i->second.wsid);
+
+   // Check the parameters
+   if ( transaction.IsOK() ) {
+
+      // Unmap buffer
+      m_pAFUProxy->UnMapWSID(i->second.ptr, i->second.size);
+
+      // Send transaction
+      // Will return to AFUEvent, below.
+      m_pAFUProxy->SendTransaction(&transaction);
+
+      // Forget workspace parameters
+      // FIXME We should really do this on the transaction returning in
+      //       AFUEvent below, but then we'd have to map the TransactionID
+      //       in the response to the m_mapWkSpc entry somehow.
+      m_mapWkSpc.erase(i);
+
+   } else {
+      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
+                                                                     TranID,
+                                                                     errMemory,
+                                                                     reasUnknown,
+                                                                     "AFUTran validity check failed");
+      getRuntime()->schedDispatchable(
+         new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
+                                                        pExcept)
+             );
+   }
 }
 
-/// @}
+//
+// bufferGetIOVA. Retrieve IO Virtual Address for a virtual address.
+//
+btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
+{
+   // TODO Return actual IOVA instead of physptr
+
+   // try to find exact match
+   mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
+   if (i != m_mapWkSpc.end()) {
+      return i->second.physptr;
+   }
+
+   // look through all workspaces to see if Address is in one of them
+   // TODO: there might be a more efficient way
+   for (mapWkSpc_t::iterator i = m_mapWkSpc.begin(); i != m_mapWkSpc.end(); i++ ) {
+      if (Address < i->second.ptr + i->second.size) {
+         return i->second.physptr + (Address - i->second.ptr);
+      }
+   }
+
+   // not found
+   return 0;
+}
+
+// ---------------------------------------------------------------------------
+// IALIUMsg interface implementation
+// ---------------------------------------------------------------------------
+
+//
+// umsgGetNumber. Return number of UMSGs.
+//
+btUnsignedInt HWALIAFU::umsgGetNumber( void )
+{
+   return m_uMSGsize;
+}
+
+//
+// umsgGetAddress. Get address of specific UMSG.
+//
+btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
+{
+   return m_uMSGmap + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs
+}
+
+//
+// umsgSetAttributes. Set UMSG attributes.
+//
+// FIXME: not implemented
+//
+bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+{
+	return false;
+}
+
+
+// ---------------------------------------------------------------------------
+// IALIReset interface implementation
+// ---------------------------------------------------------------------------
+
+IALIReset::e_Reset HWALIAFU::afuQuiesceAndReset( NamedValueSet const *pOptArgs)
+{
+   return e_OK;
+}
+
+IALIReset::e_Reset HWALIAFU::afuReEnable( NamedValueSet const *pOptArgs)
+{
+   return e_OK;
+}
+
+IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
+{
+   return e_OK;
+}
+
+
+
+/*
+ * IServiceClient methods (callbacks from AIA service)
+ */
+
+// Service allocated callback
+void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
+                                TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
+   if (!m_pAFUProxy) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_tidSaved,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing AFUProxy interface."));
+      return;
+   }
+
+   // Store AAL service pointer
+   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   if (!m_pAALService) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_tidSaved,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing service base interface."));
+      return;
+   }
+
+   // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
+   // FIXME this daisy-chaining of init operations is ugly, better use semaphores?
+
+   // Set callback
+   TransactionID mmioTid(static_cast<btApplicationContext>(this), HWALIAFU::_mmioAllocEventHandler, true );
+
+   // Create the Transaction
+   GetMMIOBufferTransaction mmioTransaction(mmioTid);
+
+   // Check the parameters
+   if ( mmioTransaction.IsOK() ) {
+      // Will return to mmioAllocEventHandler, below.
+      m_pAFUProxy->SendTransaction(&mmioTransaction);
+   } else {
+      initFailed(new CExceptionTransactionEvent(NULL,
+                                                m_tidSaved,
+                                                errAFUWorkSpace,
+                                                reasAFUNoMemory,
+                                                "MMIO BufferAllocate transaction validity check failed"));
+      return;
+   }
+}
+
+// Service allocated failed callback
+void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   initFailed(new CExceptionTransactionEvent( NULL,
+                                              m_tidSaved,
+                                              errAllocationFailure,
+                                              reasUnknown,
+                                              "Error: Failed to allocate ALI."));
+}
+
+// Service released callback
+void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
+   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
+   ServiceBase::Release(prc->TranID, prc->timeout);
+}
+
+// Service released failed callback
+void HWALIAFU::serviceReleaseFailed(const IEvent &rEvent) {
+   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
+   // TODO EMPTY
+}
+
+// Callback for generic events
+void HWALIAFU::serviceEvent(const IEvent &rEvent) {
+   // TODO: handle unexpected events
+   ASSERT(false);
+}
+
+
+// Dedicated callback for MMIO buffer allocation
+void HWALIAFU::_mmioAllocEventHandler(IEvent const &theEvent)
+{
+   // TODO add checks and handle unexpected events
+
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+   ASSERT(NULL != puidEvent);
+   ASSERT(puidEvent->MessageID() == rspid_WSM_Response);
+
+   // Unwrap pointer to HWALIAFU instance from event's transaction ID
+   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);
+
+   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+   // mmap
+   if (!This->m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+      AAL_ERR( LM_All, "FATAL: MapWSID failed");
+   }
+
+   // Remember workspace parameters associated with virtual ptr (if we ever need it)
+   if (This->m_mapWkSpc.find(pResult->wsParms.ptr) != This->m_mapWkSpc.end()) {
+      AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+   } else {
+      // store entire aalui_WSParms struct in map
+      This->m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
+   }
+
+   This->m_MMIORmap = pResult->wsParms.ptr;
+   This->m_MMIORsize = pResult->wsParms.size;
+
+   // Get UMSG buffer
+
+   // Set callback
+   TransactionID umsgTid(static_cast<btApplicationContext>(This), HWALIAFU::_umsgAllocEventHandler, true );
+
+   // Create the Transaction
+   GetUMSGBufferTransaction umsgTransaction(umsgTid);
+
+   // Check the parameters
+   if ( umsgTransaction.IsOK() ) {
+      // Will return to mmio/umsgAllocEventHandler, below.
+      This->m_pAFUProxy->SendTransaction(&umsgTransaction);
+   } else {
+      This->initFailed(new CExceptionTransactionEvent(NULL,
+                                                This->m_tidSaved,
+                                                errAFUWorkSpace,
+                                                reasAFUNoMemory,
+                                                "UMSG BufferAllocate transaction validity check failed"));
+      return;
+   }
+
+
+}
+
+
+// Dedicated callback for uMSG buffer allocation
+void HWALIAFU::_umsgAllocEventHandler(IEvent const &theEvent)
+{
+   // TODO add checks and handle unexpected events
+
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+   ASSERT(NULL != puidEvent);
+   ASSERT(puidEvent->MessageID() == rspid_WSM_Response);
+
+   // Unwrap pointer to HWALIAFU instance from event's transaction ID
+   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);
+
+   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+   // TODO: handle unmap event
+
+   // mmap
+   if (!This->m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+      AAL_ERR( LM_All, "FATAL: MapWSID failed");
+   }
+
+   // Remember workspace parameters associated with virtual ptr
+   if (This->m_mapWkSpc.find(pResult->wsParms.ptr) != This->m_mapWkSpc.end()) {
+      AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+   } else {
+      // store entire aalui_WSParms struct in map
+      This->m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
+   }
+
+   This->m_uMSGmap = pResult->wsParms.ptr;
+   This->m_uMSGsize = pResult->wsParms.size;
+
+   // init complete for original (saved) transaction/
+   This->initComplete(This->m_tidSaved);
+   return;
+}
+
+
+
+// Callback for ALIAFUProxy
+void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
+{
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+   ASSERT(NULL != puidEvent);
+
+//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+
+   switch(puidEvent->MessageID())
+   {
+   //===========================
+   // WSM response
+   // ==========================
+   case rspid_WSM_Response:
+      {
+         // TODO check result code
+
+         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+         switch(pResult->evtID)
+         {
+         //------------------------
+         // Workspace allocate
+         //------------------------
+         case uid_wseventAllocate:
+            {
+
+            // mmap
+            if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+               AAL_ERR( LM_All, "FATAL: MapWSID failed");
+            }
+
+            // Remember workspace parameters associated with virtual ptr
+            if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
+               AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+            } else {
+               // store entire aalui_WSParms struct in map
+               m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
+            }
+
+            getRuntime()->schedDispatchable(
+                        new(std::nothrow) BufferAllocated(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
+                                                                                         m_pSvcClient),
+                                                          puidEvent->msgTranID(),
+                                                          pResult->wsParms.ptr,
+                                                          pResult->wsParms.physptr,
+                                                          pResult->wsParms.size)
+                            );
+            } break;
+         //------------------------
+         // Workspace free
+         //------------------------
+         case uid_wseventFree:
+            {
+               // TODO: Forget workspace parameters here, not in bufferFree().
+               getRuntime()->schedDispatchable(
+                            new(std::nothrow) BufferFreed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
+                                                                                             m_pSvcClient),
+                                                              puidEvent->msgTranID())
+                                );
+
+            } break;
+/*         case uid_wseventSCRMap:
+            {
+
+            }*/
+         default:
+            ASSERT(false); // unexpected WSM_Response evtID
+            std::cerr << "Event: " << std::dec << pResult << std::endl;
+         } // switch evtID
+
+      } break;
+   default:
+      ASSERT(false); // unexpected event
+   }
+}
+
+
+
+
+
+/// @} group HWALIAFU
 
 END_NAMESPACE(AAL)
 

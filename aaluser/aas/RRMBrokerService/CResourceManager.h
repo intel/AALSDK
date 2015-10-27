@@ -53,7 +53,6 @@
 #endif
 
 #include <aalsdk/rm/CAASResourceManager.h>
-#include "aalsdk/rm/AALResourceManagerClient.h"
 
 //#include <aalsdk/kernel/aalrm_client.h>
 
@@ -86,7 +85,6 @@ class AALRESOURCEMANAGER_API CResourceManager : private CUnCopyable,
                                                public  ServiceBase,
                                                public  IResourceManager,
                                                public IServiceClient
-
 {
 public:
    // Loadable Service
@@ -94,9 +92,10 @@ public:
       m_pResMgrClient(NULL),
       m_RMProxy(),
       m_pProxyPoll(NULL),
+      m_pRRMAALService(NULL),
       m_pRRMService(NULL),
-      m_pRRMAALService(NULL)
-   {
+      m_rrmStartupMode(automatic)
+{
       SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
       SetInterface( iidResMgr,
                     dynamic_cast<IResourceManager *>(this));
@@ -117,33 +116,81 @@ public:
    // Request a resource.
    void RequestResource( NamedValueSet const &nvsManifest,
                          TransactionID const &tid);
-protected:
-   void StopMessagePump();
 
    // <IServiceClient>
-   void serviceAllocated(IBase               *pServiceBase,
+   virtual void serviceAllocated(IBase               *pServiceBase,
                                  TransactionID const &rTranID = TransactionID());
-   void serviceAllocateFailed(const IEvent &rEvent);
-   void serviceReleased(TransactionID const &rTranID = TransactionID());
-   void serviceReleaseFailed(const IEvent &rEvent);
-   void serviceEvent(const IEvent &rEvent);
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleaseFailed(const IEvent &rEvent);
+   virtual void serviceEvent(const IEvent &rEvent);
    // </IServiceClient>
+
+protected:
+   void StopMessagePump();
 
 private:
    static void ProxyPollThread( OSLThread *pThread,
                                 void      *pContext);
    void ProcessRMMessages();
 
-   // check if remote resource manager is already running
-   btBool                         isRRMPresent();
+   /// @brief Allocates the Remote Resource Manager service.
+   ///
+   /// The service will be run in serviceAllocated().
+   btBool startRRMService();
+
+
+   /// @brief Checks if remote resource manager is already running by trying to
+   /// open its device file.
+   ///
+   /// This is used primarily to determine whether it is safe to start
+   /// a Remote Resource Manager instance to service resource requests from
+   /// this (and possibly other) processes.
+   ///
+   /// @return true if another RRM is already running, false otherwise.
+   btBool isRRMPresent();
+
+
+   /// @brief Remote Resource Manager startup mode
+   ///
+   /// Three modes are possible: 'always' will try to start a Remote Resource
+   /// Manager (RRM) thread during initialization, regardless of any other
+   /// RRM instances that are already running; 'automatic' will start a RRM
+   /// thread only when allocating a service requiring hardware access, and
+   /// only if no RRM is already running; and 'never' will not start a RRM but
+   /// assume that there is already one present on the system, possibly in
+   /// another process.
+   ///
+   /// The actual mode is passed either through setting the environment variable
+   /// AAL_RESOURCEMANAGER_CONFIG_INPROC to 'always', 'auto', or 'never'; or
+   /// by setting the AAL_RESOURCEMANAGER_CONFIG_INPROC key in the runtime
+   /// config record to 'always', 'auto', or 'never'.
+   enum RRMStartupMode {
+      always = 1,
+      automatic,
+      never
+   };
 
    IResourceManagerClient        *m_pResMgrClient;
    CResourceManagerProxy          m_RMProxy;
    OSLThread                     *m_pProxyPoll;
 
    CSemaphore                     m_sem;
+
+   // Remote Resource Manager
+   RRMStartupMode                 m_rrmStartupMode;
    IResMgrService                *m_pRRMService;
    IAALService                   *m_pRRMAALService;
+
+   // Context for properly wrapping transaction IDs on Release()
+   struct ReleaseContext {
+      const TransactionID   tranID;
+      const btTime          timeout;
+      ReleaseContext(const TransactionID &rtid, btTime to) :
+         tranID(rtid),
+         timeout(to)
+      {}
+   };
 };
 
 END_NAMESPACE(AAL)

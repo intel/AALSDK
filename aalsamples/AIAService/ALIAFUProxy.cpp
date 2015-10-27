@@ -101,7 +101,9 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
    //
    // Check Client for proper interface
 
-   // TODO
+   m_pClient = dynamic_ptr<IAFUProxyClient>(iidAFUProxyClient, pclientBase);
+   ASSERT(m_pClient != NULL);
+   // TODO initFailed if m_pClient == NULL?
 
 
    // Bind the AFU device to complete transfer of ownership
@@ -134,6 +136,20 @@ btBool ALIAFUProxy::SendTransaction(IAIATransaction *pAFUmessage)
    m_pAIA->SendMessage(m_devHandle, pAFUmessage, m_pClient);
    return true;  /// SendMessage is a void TDO cleanup
 }
+
+
+
+AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+{
+   return m_pAIA->MapWSID(Size, wsid, pRet);
+}
+
+void ALIAFUProxy::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)
+{
+   m_pAIA->UnMapWSID(ptr, Size);
+}
+
+
 
 //=============================================================================
 // Name: AFUEvent

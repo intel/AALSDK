@@ -95,7 +95,7 @@ btBool ServiceBroker::init(IBase *pclientBase,
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
    if ( !m_pRMSvcHost->InstantiateService( getRuntime(),
-                                           dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
+                                           dynamic_cast<IBase*>(this), optArgs, tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
       initFailed( new CExceptionTransactionEvent( NULL,

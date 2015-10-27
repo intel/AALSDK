@@ -88,7 +88,16 @@ cciv4_sim_afu_pip.c \
 cciv4_sim_mafu_pip.c \
 cciv4_PIPsession.c \
 cciv4_sim_afu_mmap.c \
-cciv4_PIPsession.h 
+cciv4_PIPsession.h  \
+ccip_port_mmio.c  \
+ccip_sim_mmio.c \
+ccip_def.h   \
+ccip_fme_mmio.h \
+ccip_fme_mmio.c  \
+ccip_port_mmio.h   
+
+
+
 
 kbuild/@CCIV4DRV_DRV_NAME@.ko: kbuild/Module.symvers
 

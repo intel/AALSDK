@@ -100,6 +100,11 @@ public:
    ~IAFUProxy(){};
    // Send a message to the device
    virtual AAL::btBool SendTransaction( IAIATransaction *pAFUmessage )       = 0;
+
+   // Map/Unmap Workspace IDs to virtual memory addresses
+   virtual AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet) = 0;
+   virtual void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)           = 0;
+
 #if 0
    // Accessors to memory mapped regions
    virtual AAL::btVirtAddr getCSRBase()                                       = 0;
