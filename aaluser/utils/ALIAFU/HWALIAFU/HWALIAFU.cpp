@@ -100,8 +100,8 @@ public:
 
    virtual void operator() ()
    {
-	   // FIXME: IALIBuffer_Client::bufferAllocated doen't take a physical address anymore
-	   //        Remove from dispatchable
+	   // TODO: IALIBuffer_Client::bufferAllocated doen't take a physical address anymore
+	   //       Remove from dispatchable
 	   // 	  m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcPhys, m_WkspcSize);
 	   m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcSize);
 	   delete this;
@@ -213,7 +213,7 @@ protected:
 // ===========================================================================
 
 //
-// init. Does nothing but dispatch ObjectCreatedEvent.
+// init.
 //
 // TODO: Add checks for AFUDev capabilities, possibly selective exposure of
 //       interfaces based on results
@@ -274,6 +274,93 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 }
 
 
+
+/*
+ * IServiceClient methods (callbacks from AIA service)
+ */
+
+// Service allocated callback
+void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
+                                TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
+   if (!m_pAFUProxy) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_tidSaved,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing AFUProxy interface."));
+      return;
+   }
+
+   // Store AAL service pointer
+   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   if (!m_pAALService) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_tidSaved,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing service base interface."));
+      return;
+   }
+
+   // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
+
+   // Set callback
+   TransactionID mmioTid(static_cast<btApplicationContext>(this), HWALIAFU::_mmioAllocEventHandler, true );
+
+   // Create the Transaction
+   GetMMIOBufferTransaction mmioTransaction(mmioTid);
+
+   // Check the parameters
+   if ( mmioTransaction.IsOK() ) {
+      // Will return to mmioAllocEventHandler, below.
+      m_pAFUProxy->SendTransaction(&mmioTransaction);
+   } else {
+      initFailed(new CExceptionTransactionEvent(NULL,
+                                                m_tidSaved,
+                                                errAFUWorkSpace,
+                                                reasAFUNoMemory,
+                                                "MMIO BufferAllocate transaction validity check failed"));
+      return;
+   }
+}
+
+// Service allocated failed callback
+void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
+   m_bIsOK = false;
+   initFailed(new CExceptionTransactionEvent( NULL,
+                                              m_tidSaved,
+                                              errAllocationFailure,
+                                              reasUnknown,
+                                              "Error: Failed to allocate ALI."));
+}
+
+// Service released callback
+void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
+   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
+   ServiceBase::Release(prc->TranID, prc->timeout);
+}
+
+// Service released failed callback
+void HWALIAFU::serviceReleaseFailed(const IEvent &rEvent) {
+   m_bIsOK = false;
+   // TODO EMPTY
+}
+
+// Callback for generic events
+void HWALIAFU::serviceEvent(const IEvent &rEvent) {
+   // TODO: handle unexpected events
+   ASSERT(false);
+}
+
+
+
+
+
 // ---------------------------------------------------------------------------
 // IALIMMIO interface implementation
 // ---------------------------------------------------------------------------
@@ -305,7 +392,7 @@ btBool HWALIAFU::mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * cons
 		return false;
 	}
 
-	*pValue = *( (btUnsigned32bitInt*)(pMMIOBase + Offset) );
+	*pValue = *( (btUnsigned32bitInt*)(pMMIOBase + Offset) );      // FIXME: might want to use C++ style casts
 
 	return true;
 }
@@ -432,13 +519,10 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
       m_pAFUProxy->UnMapWSID(i->second.ptr, i->second.size);
 
       // Send transaction
-      // Will return to AFUEvent, below.
+      // Will eventually trigger AFUEvent(), below.
       m_pAFUProxy->SendTransaction(&transaction);
 
       // Forget workspace parameters
-      // FIXME We should really do this on the transaction returning in
-      //       AFUEvent below, but then we'd have to map the TransactionID
-      //       in the response to the m_mapWkSpc entry somehow.
       m_mapWkSpc.erase(i);
 
    } else {
@@ -496,13 +580,13 @@ btUnsignedInt HWALIAFU::umsgGetNumber( void )
 //
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-   return m_uMSGmap + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs
+   return m_uMSGmap + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs FIXME incorrect conversion
 }
 
 //
 // umsgSetAttributes. Set UMSG attributes.
 //
-// FIXME: not implemented
+// TODO: not implemented
 //
 bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
@@ -531,89 +615,6 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
 
 
 
-/*
- * IServiceClient methods (callbacks from AIA service)
- */
-
-// Service allocated callback
-void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
-                                TransactionID const &rTranID)
-{
-   // Store ResMgrService pointer
-   m_pAFUProxy = dynamic_ptr<IAFUProxy>(iidAFUProxy, pServiceBase);
-   if (!m_pAFUProxy) {
-      // TODO: handle error
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 m_tidSaved,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Error: Missing AFUProxy interface."));
-      return;
-   }
-
-   // Store AAL service pointer
-   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-   if (!m_pAALService) {
-      // TODO: handle error
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 m_tidSaved,
-                                                 errBadParameter,
-                                                 reasMissingInterface,
-                                                 "Error: Missing service base interface."));
-      return;
-   }
-
-   // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
-   // FIXME this daisy-chaining of init operations is ugly, better use semaphores?
-
-   // Set callback
-   TransactionID mmioTid(static_cast<btApplicationContext>(this), HWALIAFU::_mmioAllocEventHandler, true );
-
-   // Create the Transaction
-   GetMMIOBufferTransaction mmioTransaction(mmioTid);
-
-   // Check the parameters
-   if ( mmioTransaction.IsOK() ) {
-      // Will return to mmioAllocEventHandler, below.
-      m_pAFUProxy->SendTransaction(&mmioTransaction);
-   } else {
-      initFailed(new CExceptionTransactionEvent(NULL,
-                                                m_tidSaved,
-                                                errAFUWorkSpace,
-                                                reasAFUNoMemory,
-                                                "MMIO BufferAllocate transaction validity check failed"));
-      return;
-   }
-}
-
-// Service allocated failed callback
-void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   initFailed(new CExceptionTransactionEvent( NULL,
-                                              m_tidSaved,
-                                              errAllocationFailure,
-                                              reasUnknown,
-                                              "Error: Failed to allocate ALI."));
-}
-
-// Service released callback
-void HWALIAFU::serviceReleased(TransactionID const &rTranID) {
-   ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
-   ServiceBase::Release(prc->TranID, prc->timeout);
-}
-
-// Service released failed callback
-void HWALIAFU::serviceReleaseFailed(const IEvent &rEvent) {
-   m_bIsOK = false;  // FIXME: reusing ServiceBase's m_bIsOK - is that okay?
-   // TODO EMPTY
-}
-
-// Callback for generic events
-void HWALIAFU::serviceEvent(const IEvent &rEvent) {
-   // TODO: handle unexpected events
-   ASSERT(false);
-}
-
 
 // Dedicated callback for MMIO buffer allocation
 void HWALIAFU::_mmioAllocEventHandler(IEvent const &theEvent)
@@ -626,7 +627,7 @@ void HWALIAFU::_mmioAllocEventHandler(IEvent const &theEvent)
    ASSERT(puidEvent->MessageID() == rspid_WSM_Response);
 
    // Unwrap pointer to HWALIAFU instance from event's transaction ID
-   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);
+   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);   // FIXME: construct TransactionID first and use context
 
    // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
    struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());

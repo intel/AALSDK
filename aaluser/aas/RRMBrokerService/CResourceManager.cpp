@@ -527,11 +527,13 @@ void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
 
 void CResourceManager::serviceReleased(TransactionID const &rTranID)
 {
+#if 0
    // clean up
    ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
    StopMessagePump();
 
    ServiceBase::Release(prc->tranID, prc->timeout);   // This function blocks until pump is stopped.
+#endif
 }
 
 void CResourceManager::serviceReleaseFailed(const IEvent &rEvent)
