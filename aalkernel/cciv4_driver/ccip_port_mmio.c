@@ -171,6 +171,8 @@ bt32bitInt get_port_header(struct port_device *pport_dev,btVirtAddr pkvp_port_mm
 
 
 	PINFO(" get_port_header EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);
@@ -288,6 +290,8 @@ bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr pkvp_po
 
 
    PINFO(" get_port_featurelist EXIT \n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
    PTRACEOUT_INT(res);
@@ -340,6 +344,8 @@ bt32bitInt get_port_err_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_
    ccip_port_err(pport_dev)->ccip_port_malformed_req_1.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
    PINFO(" get_port_err_rev0 EXIT\n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
    PTRACEOUT_INT(res);
@@ -384,6 +390,8 @@ bt32bitInt get_port_umsg_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port
 
 
 	PINFO(" get_port_umsg_rev0 EXIT\n");
+	PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);
@@ -435,6 +443,8 @@ bt32bitInt get_port_pr_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_m
 
 
 	PINFO(" get_port_pr_rev0 EXIT\n");
+	PTRACEOUT_INT(res);
+	return res;
 ERR:
 	PTRACEOUT_INT(res);
 	return res;
@@ -468,6 +478,8 @@ bt32bitInt get_port_stap_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port
 	ccip_port_stap(pport_dev)->ccip_port_stap.csr= read_ccip_csr64(pkvp_port_mmio,offset);
 
 	PINFO(" get_port_stap_rev0 EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);

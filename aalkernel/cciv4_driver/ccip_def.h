@@ -320,12 +320,12 @@ struct CCIP_PORT_AFU_OFFSET {
       btUnsigned64bitInt csr;
       struct {
          btUnsigned64bitInt port_offset :24; // Port offset
-         btUnsigned64bitInt rsvd1 :6; // Reserved
+         btUnsigned64bitInt rsvd1 :8; // Reserved
          btUnsigned64bitInt port_bar :3; // Port BAR
-         btUnsigned64bitInt rsvd2 :22; // Reserved
+         btUnsigned64bitInt rsvd2 :21; // Reserved
          btUnsigned64bitInt port_arbit_poly :4; // Port Arbitration
          btUnsigned64bitInt port_imp :1; // Port Implemented
-         btUnsigned64bitInt rsvd3 :4; // Reserved
+         btUnsigned64bitInt rsvd3 :3; // Reserved
       }; // end struct
    }; // end union
 
