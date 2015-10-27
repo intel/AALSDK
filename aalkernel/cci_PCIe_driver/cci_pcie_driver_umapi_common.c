@@ -529,20 +529,21 @@ process_send_message(struct ccidrv_session  *psess,
 //         preq - request headers
 //         arg - original user input args
 // Outputs: none.
-// Comments: This function process the session bind and unbind requests.  It
-//           updates the requested device's owner manifest to effectively
-//           pass ownership from the Resource Manager to the application (bind).
+// Comments: This function process the session bind and unbind requests.
+//           Basically Bind/Unbind are similar to Open/Close in a traditional
+//           character driver. Unlike a traditional driver we do not use device
+//           nodes to represent the
 //=============================================================================
 btInt
 process_bind_request(struct ccidrv_session  *psess,
                      struct aalui_ioctlreq *preq)
 {
-   struct aal_device              *pdev;
-   struct uidrv_event_bindcmplt   *bindcmplt   = NULL;
-   struct uidrv_event_unbindcmplt *unbindcmplt = NULL;
-   struct aalui_extbindargs        bindevt     = {0};
-   struct aaldev_ownerSession     *ownerSessp  = NULL;
-   btInt                           ret         = 0;
+   struct aal_device              *pdev         = NULL;
+   struct uidrv_event_bindcmplt   *bindcmplt    = NULL;
+   struct uidrv_event_unbindcmplt *unbindcmplt  = NULL;
+   struct aalui_extbindargs        bindevt      = {0};
+   struct aaldev_ownerSession     *ownerSessp   = NULL;
+   btInt                           ret          = 0;
 
 #if 1
 # define UIDRV_PROCESS_BIND_REQUEST_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -979,8 +980,6 @@ ccidrv_sendevent(btObjectType       sesHandle, // Session handle  TODO this and 
 }
 
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -1088,7 +1087,6 @@ btInt ccidrv_freewsid(struct aal_wsid *pwsid)
 
    return 0;
 }
-
 
 //=============================================================================
 // Name: ccidrv_flush_eventqueue
