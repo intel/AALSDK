@@ -342,7 +342,16 @@ CASSERT(sizeof(struct CCIP_PORT_AFU_OFFSET) == 8);
  *  Header Description:
  *
  ******************************************************************************/
-;
+
+#define byte_offset_FME_DFH             0x00
+#define byte_offset_FME_AFUIDL          0x08
+#define byte_offset_FME_AFUIDH          0x10
+#define byte_offset_FME_NXTAFU_OFFSET   0x18
+#define byte_offset_FME_RSVD            0x20
+#define byte_offset_FME_SPAD            0x28
+#define byte_offset_FME_CAPABILITY      0x30
+#define byte_offset_FME_PORTOFFSET      0x38
+
 struct CCIP_FME_HDR {
 
    // FME  Header
@@ -401,6 +410,11 @@ CASSERT(sizeof(struct CCIP_FME_HDR) == (7* 8));
  *  Feature Description:
  *
  ******************************************************************************/
+
+#define byte_offset_TMP_HDR         0x00
+#define byte_offset_TMP_THRHLD      0x08
+#define byte_offset_TMP_RDSFME1     0x10
+#define byte_offset_TMP_RDSFME2     0x18
 
 // struct Device type Header
 struct CCIP_FME_TMP_DFL {
@@ -485,6 +499,11 @@ CASSERT(sizeof(struct CCIP_FME_TMP_DFL) == (4*8));
  *
  ******************************************************************************/
 
+#define byte_offset_PM_HDR         0x00
+#define byte_offset_PM_THRHLD      0x08
+#define byte_offset_PM_RDVR        0x10
+#define byte_offset_PM_MAXVR       0x18
+
 struct CCIP_FME_PM_DFL {
 
    // FME Power Management Feature header
@@ -562,6 +581,15 @@ CASSERT(sizeof(struct CCIP_FME_PM_DFL) == (4*8));
  *  Feature Description:
  *
  ******************************************************************************/
+
+#define byte_offset_FPMON_HDR              0x00
+#define byte_offset_FPMON_CACHE_CTL        0x08
+#define byte_offset_FPMON_CACHE_CTR_0      0x10
+#define byte_offset_FPMON_CACHE_CTR_1      0x18
+#define byte_offset_FPMON_FAB_CTL	       0x20
+#define byte_offset_FPMON_FAB_CTR	       0x28
+#define byte_offset_FPMON_CLK_CTR	       0x38
+
 
 struct CCIP_FME_FPMON_DFL {
 
@@ -679,6 +707,12 @@ CASSERT(sizeof(struct CCIP_FME_FPMON_DFL) == (7*8));
  *
  ******************************************************************************/
 
+#define byte_offset_GERR_HDR         0x00
+#define byte_offset_GERR_MASK        0x08
+#define byte_offset_GERR             0x10
+#define byte_offset_FIRST_GERR       0x20
+
+
 struct CCIP_FME_GERROR_DFL {
 
    // FME Global Error header
@@ -735,6 +769,10 @@ CASSERT(sizeof(struct CCIP_FME_GERROR_DFL) ==(4* 8));
  *  Feature Description:
  *
  ******************************************************************************/
+#define byte_offset_PR_HDR          0x00
+#define byte_offset_PR_CONTROL      0x08
+#define byte_offset_PR_STATUS       0x10
+#define byte_offset_PR_DATA         0x18
 
 struct CCIP_FME_PR_DFL {
 
@@ -814,6 +852,16 @@ CASSERT(sizeof(struct CCIP_FME_PR_DFL) ==(4* 8));
  *  Header Description:
  *
  ******************************************************************************/
+
+#define byte_offset_PORT_DFH                 0x00
+#define byte_offset_PORT_AFUIDL              0x08
+#define byte_offset_PORT_AFUIDH              0x10
+#define byte_offset_PORT_NXTAFU_OFFSET       0x18
+#define byte_offset_PORT_RSVD                0x20
+#define byte_offset_PORT_SPAD                0x28
+#define byte_offset_PORT_CAP                 0x30
+#define byte_offset_PORT_CONTROL             0x38
+#define byte_offset_PORT_STATUS	            0x40
 
 // Port status
 struct CCIP_PORT_HDR {
@@ -896,6 +944,13 @@ CASSERT(sizeof(struct CCIP_PORT_HDR) == (9 *8));
  *  Feature Type = Private
  *  offset 0x40 bytes form Device Feature Header
  ******************************************************************************/
+
+#define byte_offset_PORT_ERR_DFH                0x00
+#define byte_offset_PORT_ERR_MASK               0x08
+#define byte_offset_PORT_ERR                    0x10
+#define byte_offset_PORT_FIRST_ERR              0x18
+#define byte_offset_PORT_MALREQ_0               0x20
+#define byte_offset_PORT_MALREQ_1               0x28
 
 struct CCIP_PORT_ERR_DFL {
 
@@ -997,6 +1052,11 @@ CASSERT(sizeof(struct CCIP_PORT_ERR_DFL) == (6 *8));
  *
  ******************************************************************************/
 
+#define byte_offset_USMG_DFH                0x00
+#define byte_offset_UMSG_CAP                0x08
+#define byte_offset_UMSG_BASE_ADDR          0x10
+#define byte_offset_UMSG_MODE               0x18
+
 struct CCIP_PORT_UMSG_DFL {
 
    // Port usmg Header
@@ -1056,6 +1116,15 @@ CASSERT(sizeof(struct CCIP_PORT_UMSG_DFL) == (4 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
+
+#define byte_offset_PORT_PR_HDR                0x00
+#define byte_offset_PORT_PR_CTL                0x08
+#define byte_offset_PORT_PR_STATUS             0x10
+#define byte_offset_PORT_PR_DATA               0x18
+#define byte_offset_PORT_PR_PWB                0x20
+#define byte_offset_PORT_PR_USRCLKFEQ          0x28
+
+
 struct CCIP_PORT_PR_DFL {
 
    // Port usmg Header
@@ -1155,6 +1224,9 @@ CASSERT(sizeof(struct CCIP_PORT_PR_DFL) == (6 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
+
+#define byte_offset_PORT_STAP_HDR                0x00
+#define byte_offset_PORT_STAP                    0x08
 
 struct CCIP_PORT_STAP_DFL {
 
@@ -1369,8 +1441,9 @@ struct ccip_device
 
 	int                      m_simulated;
 
-	btUnsigned32bitInt       m_busNum;
-	btUnsigned32bitInt       m_devfunNum;
+	btUnsigned32bitInt       m_busnum;
+	btUnsigned32bitInt       m_devnum;
+	btUnsigned32bitInt       m_funnum;
 
 	// TBD
 	// struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
@@ -1432,8 +1505,9 @@ struct ccip_device
 #define ccip_portdev_len_afu_mmio(pdev)          ((pdev)->m_len_port_mmio)
 
 
-#define ccip_dev_busnum(pdev)        				    ((pdev)->m_busNum)
-#define ccip_dev_devfunnum(pdev)        				 ((pdev)->m_devfunNum)
+#define ccip_dev_busnum(pdev)        				    ((pdev)->m_busnum)
+#define ccip_dev_devnum(pdev)        				    ((pdev)->m_devnum)
+#define ccip_dev_funnum(pdev)        				    ((pdev)->m_funnum)
 
 /// @brief   Writes 64 bit control and status registers.
 ///

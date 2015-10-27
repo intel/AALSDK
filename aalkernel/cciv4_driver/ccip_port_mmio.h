@@ -135,6 +135,27 @@ bt32bitInt get_port_stap_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port
 /// @return    void
 void ccip_port_mem_free(struct port_device *pport_dev );
 
+/// @brief   Reset port
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+
+/// @brief   Port Reset Enable
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_reset_enable(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+
+/// @brief   Port Quiesce Reset
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_quiesce_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+
 END_NAMESPACE(AAL)
 
 #endif /* __AALKERNEL_CCIP_PORT_DEF_H_ */

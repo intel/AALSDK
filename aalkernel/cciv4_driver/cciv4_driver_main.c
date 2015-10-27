@@ -712,7 +712,8 @@ cciv4_pcie0_internal_probe(struct cciv4_device         *pspl2dev,
    pci_save_state(pcidev);
 
    // Bus Device function  of pci device
-   ccip_dev_devfunnum(pccipdev) = pcidev->devfn;
+   ccip_dev_devnum(pccipdev) = PCI_SLOT(pcidev->devfn);
+   ccip_dev_funnum(pccipdev) = PCI_FUNC(pcidev->devfn);
    ccip_dev_busnum(pccipdev) = pcidev->bus->number;
 
    

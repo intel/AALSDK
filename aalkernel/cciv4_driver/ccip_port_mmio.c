@@ -531,3 +531,104 @@ void ccip_port_mem_free(struct port_device *pport_dev )
 	PTRACEOUT;
 }
 
+/// @brief   port reset
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+{
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
+
+	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
+	{
+
+		offset =  byte_offset_PORT_CONTROL;
+		ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+
+		ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x1;
+
+		// Reset Port
+		write_ccip_csr64(pkvp_port_mmio, offset,ccip_port_hdr(pport_dev)->ccip_port_control.csr);
+	}
+
+
+	return res;
+}
+
+
+/// @brief   Port Reset Enable
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_reset_enable(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+{
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
+
+	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
+	{
+
+		port_reset(pport_dev,pkvp_port_mmio );
+
+		// Port enable  TBD ?
+	}
+
+	return res;
+}
+
+/// @brief   Port Quiesce Reset
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_quiesce_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+{
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
+	bt32bitInt outstaning_request =0;
+	btTime delay =10;
+
+	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
+	{
+
+		port_reset(pport_dev,pkvp_port_mmio );
+
+		offset =  byte_offset_PORT_CONTROL;
+		ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+		outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
+
+
+		// All CCI-P request at port complete
+		// Set to 1 When all outstanding requests initiated bu this port have been drained
+		//TBD
+		// sleep
+		if(0 == outstaning_request)
+		{
+			kosal_udelay(delay);
+
+			ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+			outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
+			if(0 == outstaning_request)
+			{
+				// time out error
+				res = -ETIME;
+				return  res;
+			}
+		}
+
+
+
+	}
+
+
+	return res;
+}
+
+
+
+
+
+
