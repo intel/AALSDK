@@ -605,9 +605,9 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
 	kosal_printk_level(KERN_INFO, "tmp_thshold2_status = %x \n",pfme_dev->m_pfme_tmp->ccip_tmp_threshold.tmp_thshold2_status);
 
 	kosal_printk_level(KERN_INFO, "dbg_mode = %x \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.dbg_mode);
-	kosal_printk_level(KERN_INFO, "tmp_reading = %x \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading);
-	kosal_printk_level(KERN_INFO, "tmp_reading_valid = %x \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading_valid);
-	kosal_printk_level(KERN_INFO, "tmp_reading_seq_num = %x \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading_seq_num);
+	kosal_printk_level(KERN_INFO, "tmp_reading = %d \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading);
+	kosal_printk_level(KERN_INFO, "tmp_reading_valid = %d \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading_valid);
+	kosal_printk_level(KERN_INFO, "tmp_reading_seq_num = %d \n",pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm1.tmp_reading_seq_num);
 
 	kosal_printk_level(KERN_INFO, "FM2 rsvd = %lu \n",(long unsigned int)pfme_dev->m_pfme_tmp->ccip_tmp_rdssensor_fm2.rsvd);
 
@@ -635,20 +635,20 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
 	kosal_printk_level(KERN_INFO, "core_supply_voltvalid = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.core_supply_voltvalid);
 	kosal_printk_level(KERN_INFO, "trans_supply_voltvalid = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.trans_supply_voltvalid);
 	kosal_printk_level(KERN_INFO, "fpga_supply_voltvalid = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.fpga_supply_voltvalid);
-	kosal_printk_level(KERN_INFO, "clock_buffer_supply_voltvalue = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.clock_buffer_supply_voltvalue);
-	kosal_printk_level(KERN_INFO, "core_supply_voltvalue = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.core_supply_voltvalue);
-	kosal_printk_level(KERN_INFO, "trans_supply_voltvalue = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.trans_supply_voltvalue);
+	kosal_printk_level(KERN_INFO, "clock_buffer_supply_voltvalue = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.clock_buffer_supply_voltvalue);
+	kosal_printk_level(KERN_INFO, "core_supply_voltvalue = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.core_supply_voltvalue);
+	kosal_printk_level(KERN_INFO, "trans_supply_voltvalue = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.trans_supply_voltvalue);
 
-	kosal_printk_level(KERN_INFO, "fpga_supply_voltvalue = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.fpga_supply_voltvalue);
-	kosal_printk_level(KERN_INFO, "volt_regulator_readmods = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.volt_regulator_readmods);
-	kosal_printk_level(KERN_INFO, "volt_regulator_readmod_value = %x \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.volt_regulator_readmod_value);
+	kosal_printk_level(KERN_INFO, "fpga_supply_voltvalue = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.fpga_supply_voltvalue);
+	kosal_printk_level(KERN_INFO, "volt_regulator_readmods = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.volt_regulator_readmods);
+	kosal_printk_level(KERN_INFO, "volt_regulator_readmod_value = %d \n",pfme_dev->m_pfme_pm->ccip_pm_rdvr.volt_regulator_readmod_value);
 
 
 	kosal_printk_level(KERN_INFO, "hw_set_field = %x \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.hw_set_field);
-	kosal_printk_level(KERN_INFO, "max_clock_supply_voltrec = %x \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_clock_supply_voltrec);
-	kosal_printk_level(KERN_INFO, "max_core_supply_voltrec = %x \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_core_supply_voltrec);
-	kosal_printk_level(KERN_INFO, "max_fpga_supply_voltrec = %x \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_fpga_supply_voltrec);
-	kosal_printk_level(KERN_INFO, "max_trans_supply_voltrec = %x \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_trans_supply_voltrec);
+	kosal_printk_level(KERN_INFO, "max_clock_supply_voltrec = %d \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_clock_supply_voltrec);
+	kosal_printk_level(KERN_INFO, "max_core_supply_voltrec = %d \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_core_supply_voltrec);
+	kosal_printk_level(KERN_INFO, "max_fpga_supply_voltrec = %d \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_fpga_supply_voltrec);
+	kosal_printk_level(KERN_INFO, "max_trans_supply_voltrec = %d \n",pfme_dev->m_pfme_pm->ccip_pm_mrdvr.max_trans_supply_voltrec);
 
 	kosal_printk_level(KERN_INFO, "FME Power Feature  END \n \n");
 
