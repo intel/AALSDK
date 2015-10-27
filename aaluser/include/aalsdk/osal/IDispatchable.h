@@ -63,6 +63,81 @@ public:
 
    virtual ~IDispatchable() {}
 };
+
+/// @brief Groups one or more IDispatchable's so that they are executed as one.
+class OSAL_API DispatchableGroup : public IDispatchable
+{
+public:
+   DispatchableGroup(IDispatchable *p0)
+   {
+      ASSERT(NULL != p0);
+      m_DispList.push_back(p0);
+   }
+   DispatchableGroup(IDispatchable *p0,
+                     IDispatchable *p1)
+   {
+      ASSERT(NULL != p0);
+      m_DispList.push_back(p0);
+      ASSERT(NULL != p1);
+      m_DispList.push_back(p1);
+   }
+   DispatchableGroup(IDispatchable *p0,
+                     IDispatchable *p1,
+                     IDispatchable *p2)
+   {
+      ASSERT(NULL != p0);
+      m_DispList.push_back(p0);
+      ASSERT(NULL != p1);
+      m_DispList.push_back(p1);
+      ASSERT(NULL != p2);
+      m_DispList.push_back(p2);
+   }
+   DispatchableGroup(IDispatchable *p0,
+                     IDispatchable *p1,
+                     IDispatchable *p2,
+                     IDispatchable *p3)
+   {
+      ASSERT(NULL != p0);
+      m_DispList.push_back(p0);
+      ASSERT(NULL != p1);
+      m_DispList.push_back(p1);
+      ASSERT(NULL != p2);
+      m_DispList.push_back(p2);
+      ASSERT(NULL != p3);
+      m_DispList.push_back(p3);
+   }
+   DispatchableGroup(IDispatchable *p0,
+                     IDispatchable *p1,
+                     IDispatchable *p2,
+                     IDispatchable *p3,
+                     IDispatchable *p4)
+   {
+      ASSERT(NULL != p0);
+      m_DispList.push_back(p0);
+      ASSERT(NULL != p1);
+      m_DispList.push_back(p1);
+      ASSERT(NULL != p2);
+      m_DispList.push_back(p2);
+      ASSERT(NULL != p3);
+      m_DispList.push_back(p3);
+      ASSERT(NULL != p4);
+      m_DispList.push_back(p4);
+   }
+
+   virtual void operator() ()
+   {
+      std::list<IDispatchable *>::iterator iter;
+      for ( iter = m_DispList.begin() ; iter != m_DispList.end() ; ++iter ) {
+         (*iter)->operator() ();
+      }
+      delete this;
+   }
+
+protected:
+   DispatchableGroup() {}
+   std::list<IDispatchable *> m_DispList;
+};
+
 /// @}
 
 #endif // __IDISPATCHABLE_H__

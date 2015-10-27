@@ -131,7 +131,7 @@ TEST_F(ServiceBroker_f_1, aal0710)
 {
    // _ServiceBroker::init() call IServiceBase::initComplete(), passing the given TransactionID.
    // As a result, IServiceModuleCallback::ServiceInitialized() is called, which dispatches a
-   // ServiceClientCallback(ServiceClientCallback::Allocated ...) to the IServiceClient.
+   // ServiceAllocated notification to the IServiceClient.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -153,7 +153,7 @@ TEST_F(ServiceBroker_f_1, aal0710)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocated *pCB = dynamic_cast<ServiceAllocated *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    //delete pCB;
@@ -164,7 +164,7 @@ TEST_F(ServiceBroker_f_1, aal0711)
 {
    // When the pServiceClientBase parameter to _ServiceBroker::allocService() does not
    // implement iidServiceClient, allocService() dispatches a
-   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
+   // ServiceAllocateFailed notification and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -189,7 +189,7 @@ TEST_F(ServiceBroker_f_1, aal0711)
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocateFailed *pCB = dynamic_cast<ServiceAllocateFailed *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    //delete pCB;
@@ -200,7 +200,7 @@ TEST_F(ServiceBroker_f_1, aal0712)
 {
    // When the NamedValueSet manifest passed to _ServiceBroker::allocService() has no
    // AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED key, allocService() dispatches a
-   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
+   // ServiceAllocateFailed notification and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -225,7 +225,7 @@ TEST_F(ServiceBroker_f_1, aal0712)
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocateFailed *pCB = dynamic_cast<ServiceAllocateFailed *>(pDisp);
    ASSERT_NONNULL(pCB);
 
 //   delete pCB;
@@ -238,7 +238,7 @@ TEST_F(ServiceBroker_f_1, aal0713)
    // When the NamedValueSet manifest passed to _ServiceBroker::allocService() has an
    // AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED key, but the associated config record has
    // no AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME key, allocService() dispatches a
-   // ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns immediately.
+   // ServiceAllocateFailed notification and returns immediately.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -268,7 +268,7 @@ TEST_F(ServiceBroker_f_1, aal0713)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocateFailed *pCB = dynamic_cast<ServiceAllocateFailed *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    //delete pCB;
@@ -280,7 +280,7 @@ TEST_F(ServiceBroker_f_1, aal0714)
    // When the required manifest, complete with config record and service name are given,
    // _ServiceBroker::allocService() creates a ServiceHost for the given service. If the
    // given service could not be loaded, allocService() deletes the ServiceHost, then dispatches
-   // a ServiceClientCallback(ServiceClientCallback::AllocateFailed ...) and returns.
+   // a ServiceAllocateFailed notification and returns.
 
    EXPECT_TRUE(m_pSvcBroker->IsOK());
 
@@ -312,7 +312,7 @@ TEST_F(ServiceBroker_f_1, aal0714)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocateFailed *pCB = dynamic_cast<ServiceAllocateFailed *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    //delete pCB;
@@ -394,7 +394,7 @@ IRuntime::schedDispatchable(btObjectType pDisp)
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocated *pCB = dynamic_cast<ServiceAllocated *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    //delete pCB;

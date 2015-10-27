@@ -157,11 +157,9 @@ btBool ServiceBase::Release(TransactionID const &rTranID, btTime timeout)
    // Send the Released Event.  The callback will execute ServiceBase::Release(btTime timeout)
    //  just before dispatching the callback thus insuring that the final cleanup is executed
    //  before notification is received.
-   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Released,
-                                                                     getServiceClient(),
-                                                                     getRuntimeClient(),
-                                                                     this,
-                                                                     rTranID) );
+   return getRuntime()->schedDispatchable( new ServiceReleased(getServiceClient(),
+                                                               this,
+                                                               rTranID) );
 }
 
 btBool ServiceBase::ReleaseComplete()
@@ -239,11 +237,10 @@ btBool ServiceBase::initComplete(TransactionID const &rtid)
 
    // TODO IS THIS A VALID PATH
    ASSERT(false);
-   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Allocated,
-                                                                     getServiceClient(),
-                                                                     getRuntimeClient(),
-                                                                     dynamic_cast<IBase *>(this),
-                                                                     rtid) );
+   return getRuntime()->schedDispatchable( new ServiceAllocated(getServiceClient(),
+                                                                getRuntimeClient(),
+                                                                dynamic_cast<IBase *>(this),
+                                                                rtid) );
 }
 
 btBool ServiceBase::initFailed(IEvent const *ptheEvent)
@@ -257,10 +254,8 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
 
    // TODO IS THIS A VALID PATH
    ASSERT(false);
-   return getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                                     getServiceClient(),
+   return getRuntime()->schedDispatchable( new ServiceAllocateFailed(getServiceClient(),
                                                                      getRuntimeClient(),
-                                                                     dynamic_cast<IBase *>(this),
                                                                      ptheEvent) );
 }
 

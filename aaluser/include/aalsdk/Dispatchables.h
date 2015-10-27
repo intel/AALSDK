@@ -47,6 +47,82 @@ BEGIN_NAMESPACE(AAL)
 //============================================================================
 // AAL Service Client
 //============================================================================
+
+/// @brief Delivers IServiceClient::serviceAllocated(IBase               * ,
+///                                                  TransactionID const & );
+class ServiceAllocated : public IDispatchable
+{
+public:
+   ServiceAllocated(IServiceClient      *pSvcClient,
+                    IRuntimeClient      *pRTClient,
+                    IBase               *pServiceBase,
+                    TransactionID const &rTranID);
+   virtual void operator() ();
+protected:
+   IServiceClient      *m_pSvcClient;
+   IRuntimeClient      *m_pRTClient;
+   IBase               *m_pServiceBase;
+   const TransactionID &m_rTranID;
+};
+
+/// @brief Delivers IServiceClient::serviceAllocateFailed(const IEvent & );
+class ServiceAllocateFailed : public IDispatchable
+{
+public:
+   ServiceAllocateFailed(IServiceClient *pSvcClient,
+                         IRuntimeClient *pRTClient,
+                         const IEvent   *pEvent);
+   ~ServiceAllocateFailed();
+   virtual void operator() ();
+protected:
+   IServiceClient *m_pSvcClient;
+   IRuntimeClient *m_pRTClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IServiceClient::serviceReleased(TransactionID const & );
+class ServiceReleased : public IDispatchable
+{
+public:
+   ServiceReleased(IServiceClient      *pSvcClient,
+                   IBase               *pServiceBase,
+                   TransactionID const &rTranID);
+   virtual void operator() ();
+protected:
+   IServiceClient      *m_pSvcClient;
+   IBase               *m_pServiceBase;
+   const TransactionID &m_rTranID;
+};
+
+/// @brief Delivers IServiceClient::serviceReleaseFailed(const IEvent & );
+class ServiceReleaseFailed : public IDispatchable
+{
+public:
+   ServiceReleaseFailed(IServiceClient *pSvcClient,
+                        const IEvent   *pEvent);
+   ~ServiceReleaseFailed();
+   virtual void operator() ();
+protected:
+   IServiceClient *m_pSvcClient;
+   const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IServiceClient::serviceEvent(const IEvent & );
+class ServiceEvent : public IDispatchable
+{
+public:
+   ServiceEvent(IServiceClient *pSvcClient,
+                const IEvent   *pEvent);
+   ~ServiceEvent();
+   virtual void operator() ();
+protected:
+   IServiceClient *m_pSvcClient;
+   const IEvent   *m_pEvent;
+};
+
+
+
+#if 0
 class ServiceClientCallback : public IDispatchable
 {
 public:
@@ -183,6 +259,7 @@ protected:
    TransactionID const      m_TranID;
    IEvent const            *m_pEvent;
 };
+#endif
 
 //============================================================================
 // AAL Runtime

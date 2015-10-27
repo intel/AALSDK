@@ -545,7 +545,7 @@ TEST_F(AALServiceModule_f_5, aal0677)
    // AALServiceModule::Destroy() releases (via IAALService::Release(TransactionID const & , btTime ))
    // each service being tracked by the AALServiceModule, waiting until each has been released prior
    // to returning. As a result of IAALService::Release(), a
-   // ServiceClientCallback(ServiceClientCallback::Released, ...) is sent to each IServiceClient.
+   // ServiceReleased notification is sent to each IServiceClient.
 
    // A) Make sure we don't hang when there are no services in AALServiceModule::m_serviceList.
    Destroy();
@@ -577,7 +577,7 @@ TEST_F(AALServiceModule_f_5, aal0677)
       ASSERT_NONNULL(x);
       IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-      ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback*>(pDisp);
+      AAL::ServiceReleased *pCB = dynamic_cast<AAL::ServiceReleased *>(pDisp);
       ASSERT_NONNULL(pCB);
 
       delete pCB;
@@ -647,7 +647,7 @@ TEST_F(AALServiceModule_f_1, aal0720)
 TEST_F(AALServiceModule_f_2, aal0721)
 {
    // When AALServiceModule::ServiceInitialized() is successful, pService is added to the list
-   // of services tracked by the module, and a ServiceClientCallback(ServiceClientCallback::Allocated ...)
+   // of services tracked by the module, and a ServiceAllocated notification
    // is sent to pService's IServiceClient.
 
    TransactionID tid;
@@ -668,7 +668,7 @@ TEST_F(AALServiceModule_f_2, aal0721)
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
    ASSERT_NONNULL(pDisp);
 
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocated *pCB = dynamic_cast<ServiceAllocated *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    delete pCB;
@@ -1169,7 +1169,7 @@ TEST_F(ServiceBase_f_1, aal0690)
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
-   ServiceClientCallback *pCB = dynamic_cast<ServiceClientCallback *>(pDisp);
+   ServiceAllocated *pCB = dynamic_cast<ServiceAllocated *>(pDisp);
    ASSERT_NONNULL(pCB);
 
    delete pCB;

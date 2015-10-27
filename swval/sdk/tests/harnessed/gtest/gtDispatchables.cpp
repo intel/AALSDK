@@ -279,3 +279,239 @@ TEST_F(RuntimeDispatchables_f_7, aal0741)
    EXPECT_EQ(reinterpret_cast<IEvent *>(x), m_pEvent);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(DispatchableGroup, aal0742)
+{
+   // The DispatchableGroup c'tor that takes 1 IDispatchable * executes that IDispatchable from
+   // its operator()().
+
+   class LightSwitch : public IDispatchable
+   {
+   public:
+      LightSwitch(btBool &Switch) :
+         m_Switch(Switch)
+      {}
+
+      virtual void operator() ()
+      {
+         m_Switch = !m_Switch;
+         delete this;
+      }
+
+   protected:
+      btBool &m_Switch;
+   };
+
+   btBool b = true;
+   DispatchableGroup *pGrp = new DispatchableGroup( new LightSwitch(b) );
+
+   EXPECT_TRUE(b);
+   pGrp->operator() ();
+   EXPECT_FALSE(b);
+}
+
+TEST(DispatchableGroup, aal0743)
+{
+   // The DispatchableGroup c'tor that takes 2 IDispatchable *'s executes those IDispatchable from
+   // its operator()() in the order in which they were provided.
+
+   class LightSwitchID : public IDispatchable
+   {
+   public:
+      LightSwitchID(btBool &Switch, btInt &SharedID, btInt MyID) :
+         m_Switch(Switch),
+         m_SharedID(SharedID),
+         m_MyID(MyID)
+      {}
+
+      virtual void operator() ()
+      {
+         m_Switch   = !m_Switch;
+         m_SharedID = m_MyID;
+         delete this;
+      }
+
+   protected:
+      btBool &m_Switch;
+      btInt  &m_SharedID;
+      btInt   m_MyID;
+   };
+
+
+   btBool b[2] = { true, true };
+   btInt  id   = 0;
+
+   DispatchableGroup *pGrp = new DispatchableGroup(new LightSwitchID(b[0], id, 1),
+                                                   new LightSwitchID(b[1], id, 2)
+                                                  );
+
+   EXPECT_TRUE(b[0]);
+   EXPECT_TRUE(b[1]);
+
+   pGrp->operator() ();
+
+   EXPECT_FALSE(b[0]);
+   EXPECT_FALSE(b[1]);
+
+   EXPECT_EQ(2, id);
+}
+
+TEST(DispatchableGroup, aal0744)
+{
+   // The DispatchableGroup c'tor that takes 3 IDispatchable *'s executes those IDispatchable from
+   // its operator()() in the order in which they were provided.
+
+   class LightSwitchID : public IDispatchable
+   {
+   public:
+      LightSwitchID(btBool &Switch, btInt &SharedID, btInt MyID) :
+         m_Switch(Switch),
+         m_SharedID(SharedID),
+         m_MyID(MyID)
+      {}
+
+      virtual void operator() ()
+      {
+         m_Switch   = !m_Switch;
+         m_SharedID = m_MyID;
+         delete this;
+      }
+
+   protected:
+      btBool &m_Switch;
+      btInt  &m_SharedID;
+      btInt   m_MyID;
+   };
+
+
+   btBool b[3] = { true, true, true };
+   btInt  id   = 0;
+
+   DispatchableGroup *pGrp = new DispatchableGroup(new LightSwitchID(b[0], id, 1),
+                                                   new LightSwitchID(b[1], id, 2),
+                                                   new LightSwitchID(b[2], id, 3)
+                                                  );
+
+   EXPECT_TRUE(b[0]);
+   EXPECT_TRUE(b[1]);
+   EXPECT_TRUE(b[2]);
+
+   pGrp->operator() ();
+
+   EXPECT_FALSE(b[0]);
+   EXPECT_FALSE(b[1]);
+   EXPECT_FALSE(b[2]);
+
+   EXPECT_EQ(3, id);
+}
+
+TEST(DispatchableGroup, aal0745)
+{
+   // The DispatchableGroup c'tor that takes 4 IDispatchable *'s executes those IDispatchable from
+   // its operator()() in the order in which they were provided.
+
+   class LightSwitchID : public IDispatchable
+   {
+   public:
+      LightSwitchID(btBool &Switch, btInt &SharedID, btInt MyID) :
+         m_Switch(Switch),
+         m_SharedID(SharedID),
+         m_MyID(MyID)
+      {}
+
+      virtual void operator() ()
+      {
+         m_Switch   = !m_Switch;
+         m_SharedID = m_MyID;
+         delete this;
+      }
+
+   protected:
+      btBool &m_Switch;
+      btInt  &m_SharedID;
+      btInt   m_MyID;
+   };
+
+
+   btBool b[4] = { true, true, true, true };
+   btInt  id   = 0;
+
+   DispatchableGroup *pGrp = new DispatchableGroup(new LightSwitchID(b[0], id, 1),
+                                                   new LightSwitchID(b[1], id, 2),
+                                                   new LightSwitchID(b[2], id, 3),
+                                                   new LightSwitchID(b[3], id, 4)
+                                                  );
+
+   EXPECT_TRUE(b[0]);
+   EXPECT_TRUE(b[1]);
+   EXPECT_TRUE(b[2]);
+   EXPECT_TRUE(b[3]);
+
+   pGrp->operator() ();
+
+   EXPECT_FALSE(b[0]);
+   EXPECT_FALSE(b[1]);
+   EXPECT_FALSE(b[2]);
+   EXPECT_FALSE(b[3]);
+
+   EXPECT_EQ(4, id);
+}
+
+TEST(DispatchableGroup, aal0746)
+{
+   // The DispatchableGroup c'tor that takes 5 IDispatchable *'s executes those IDispatchable from
+   // its operator()() in the order in which they were provided.
+
+   class LightSwitchID : public IDispatchable
+   {
+   public:
+      LightSwitchID(btBool &Switch, btInt &SharedID, btInt MyID) :
+         m_Switch(Switch),
+         m_SharedID(SharedID),
+         m_MyID(MyID)
+      {}
+
+      virtual void operator() ()
+      {
+         m_Switch   = !m_Switch;
+         m_SharedID = m_MyID;
+         delete this;
+      }
+
+   protected:
+      btBool &m_Switch;
+      btInt  &m_SharedID;
+      btInt   m_MyID;
+   };
+
+
+   btBool b[5] = { true, true, true, true, true };
+   btInt  id   = 0;
+
+   DispatchableGroup *pGrp = new DispatchableGroup(new LightSwitchID(b[0], id, 1),
+                                                   new LightSwitchID(b[1], id, 2),
+                                                   new LightSwitchID(b[2], id, 3),
+                                                   new LightSwitchID(b[3], id, 4),
+                                                   new LightSwitchID(b[4], id, 5)
+                                                  );
+
+   EXPECT_TRUE(b[0]);
+   EXPECT_TRUE(b[1]);
+   EXPECT_TRUE(b[2]);
+   EXPECT_TRUE(b[3]);
+   EXPECT_TRUE(b[4]);
+
+   pGrp->operator() ();
+
+   EXPECT_FALSE(b[0]);
+   EXPECT_FALSE(b[1]);
+   EXPECT_FALSE(b[2]);
+   EXPECT_FALSE(b[3]);
+   EXPECT_FALSE(b[4]);
+
+   EXPECT_EQ(5, id);
+}
+
+
+

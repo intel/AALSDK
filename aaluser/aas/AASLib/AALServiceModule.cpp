@@ -199,11 +199,10 @@ btBool AALServiceModule::ServiceInitialized(IBase               *pService,
    m_pendingcount--;
 
    // Notify the Service client on behalf of the Service
-   return pServiceBase->getRuntime()->schedDispatchable( new ServiceClientCallback(ServiceClientCallback::Allocated,
-                                                                                   pServiceBase->getServiceClient(),
-                                                                                   pServiceBase->getRuntimeClient(),
-                                                                                   pService,
-                                                                                   rtid) );
+   return pServiceBase->getRuntime()->schedDispatchable( new ServiceAllocated(pServiceBase->getServiceClient(),
+                                                                              pServiceBase->getRuntimeClient(),
+                                                                              pService,
+                                                                              rtid) );
 }
 
 //=============================================================================
@@ -235,10 +234,8 @@ btBool AALServiceModule::ServiceInitFailed(IBase        *pService,
    }
 
    // Create the dispatchable for the Service allocate failed callback
-   ServiceClientCallback *pDisp = new ServiceClientCallback(ServiceClientCallback::AllocateFailed,
-                                                            pServiceBase->getServiceClient(),
+   ServiceAllocateFailed *pDisp = new ServiceAllocateFailed(pServiceBase->getServiceClient(),
                                                             pServiceBase->getRuntimeClient(),
-                                                            pService,
                                                             pEvent);
 
    // Destroy the failed Service
