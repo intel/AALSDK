@@ -81,7 +81,7 @@ public:
 void operator() ()
 {
    // Process TransactionID
-   const TransactionID &msgTid = dynamic_cast<const IUIDriverEvent*>(evtUIDriverClientEvent, m_pEvent)->msgTranID();
+   const TransactionID &msgTid = dynamic_cast<const IUIDriverEvent*>(evtUIDriverClientEvent, m_pEvent)->msgTranID(); // FIXME check for errors
    if (msgTid.Filter() && msgTid.Handler() != NULL) {
       msgTid.Handler()(*m_pEvent);
    } else {
