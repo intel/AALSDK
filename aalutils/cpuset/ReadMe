@@ -1,0 +1,78 @@
+
+The files in this directory provide the foundation for using cpusets to
+confine processes to a specific range of cpus.
+
+1.) CpuSet4.conf. This file is an Upstart conf file.  For it to take effect
+    it needs to be located in /etc/init.  After locating the file in
+    /etc/file the cpuset will be created upon reboot.
+
+    Cpusets are a special type of directory.  Once created and mounted, 
+    a cpuset directory will be populated by a variety of files, see cpuset
+    documentation for a full explanation.  This conf file creates a parent
+    cpuset directory and child cpuset subdirectory called CpuSubset1.
+
+    There are 3 files in a cpuset directory that are used to confine
+    processes to a specific range of cpus (or cores).  These 3 files are
+    only writable in a cpuset subdirectory. 
+
+    They are:
+      a.) cpuset.cpus - defines the range of cpus for the cpuset.
+      b.) cpuset.mems - defines the memory controller range for the cpuset.
+      c.) tasks - defines which pids are confined to the cpus and memory
+                  controllers defined by the cpusets.cpus and cpuset.mems
+                  files.
+
+
+    As CpuSet4.conf is part of the Upstart bootup configuration process, the
+    CpuSubset1 subdirectory will exist when Unbuntu is booted.  The mechanism
+    to confine pids to a specific cpu range is to populate the 3 files shown
+    above in the child cpuset, in this case CpuSubset1.
+
+    For example,
+       a.) cd CpuSubset1
+       b.) /bin/echo 0-3 > cpuset.cpus
+       c.) /bin/echo 0 > cpuset.mems
+       d.) /bin/echo 1 > tasks
+
+    The example defines the cpu range as cpu 0 to cpu 3, the memory controller
+    range as 0 (a single memory controller, i.e. only the memory behind mc0)
+    and puts pid 1 to put into the tasks file.  After these commands are 
+    executed pid 1 and all its children will be confined to the the cpu range
+    defined by step b and the memory behind memory controller 0.  Pids can only
+    be moved into the tasks file one at a time.  Two shell files that move
+    multiple pids into the tasks are included in this directory and are
+    explained below.
+ 
+    As cpusets for FPGA+XEON/AAL are intended to balance power and thermal
+    loading based on FPGA power consumption, exact mechanisms for step b 
+    and step c will need to be defined after a "per cpu" value is determined.
+    In other words, if the FPGA uses x number of watts then how many cpus will
+    need to be offlined via the cpuset mechanism?  Presently, that
+    determination is ongoing.
+
+2.) xfrtasks.sh.  This shell attempts to move all the pids in the tasks file
+    in the parent cpuset to the child cpuset tasks file. The tasks file in the 
+    parent cpuset is populated with all pids that are present at boot time.
+
+3.) xfrtasks2.sh.  This shell attempts to move all pids that show up in a
+    ps command to the tasks file in the child cpuset.
+
+4.) all_pids_parent_mask.sh.  This shell displays the list of allowed cpus for 
+    each pid.  It also displays the parent pid of each pid.  This shell is 
+    useful after running a shell that loads the tasks file.
+
+Finding related to files 2 and 3 from above:
+
+Only pids that are children or grandchilren or later descendents of pid 1 are
+moveable to a child tasks file.  The children of pid 2 are not moveable.  The
+children of pid 2 are kernel pids and investigation reveals that they are
+sterile.  However, their cpu affinity persists.  This is not presently 
+considered to be problematic because they kernel pids and thought to be well
+behaved and usually sleeping.
+
+Any pid that is a child of a pid in the tasks file in the confined cpuset
+(the child cpuset, CpusSubset1 in this case) will be confined to the cpu
+range defined for that child cpuset, i.e. cpus 0-3 in the example at the
+top of this file.
+
+ 

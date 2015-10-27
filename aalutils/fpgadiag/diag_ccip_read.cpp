@@ -94,9 +94,9 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
-   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
+   /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
-   }
+   }*/
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
