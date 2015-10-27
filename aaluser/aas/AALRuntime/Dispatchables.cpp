@@ -50,6 +50,174 @@
 
 BEGIN_NAMESPACE(AAL)
 
+ServiceAllocated::ServiceAllocated(IServiceClient      *pSvcClient,
+                                   IRuntimeClient      *pRTClient,
+                                   IBase               *pServiceBase,
+                                   TransactionID const &rTranID) :
+   m_pSvcClient(pSvcClient),
+   m_pRTClient(pRTClient),
+   m_pServiceBase(pServiceBase),
+   m_rTranID(rTranID)
+{
+   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pServiceBase);
+}
+
+void ServiceAllocated::operator() ()
+{
+   IServiceClient *pSvcClient = NULL;
+   IRuntimeClient *pRTClient  = NULL;
+
+   // Process the TransactionID.
+   if ( NULL != m_rTranID.Ibase() ) {
+      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_rTranID.Ibase());
+      pRTClient  = dynamic_ptr<IRuntimeClient>(iidRuntimeClient, m_rTranID.Ibase());
+
+      if ( NULL != pSvcClient ) {
+         pSvcClient->serviceAllocated(m_pServiceBase, m_rTranID);
+      }
+
+      if ( NULL != pRTClient ) {
+         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_rTranID);
+      }
+   }
+
+   if ( ( NULL == m_rTranID.Ibase() ) || !m_rTranID.Filter() ) {
+      pSvcClient = m_pSvcClient;
+      pRTClient  = m_pRTClient;
+
+      if ( NULL != pSvcClient ) {
+         pSvcClient->serviceAllocated(m_pServiceBase, m_rTranID);
+      }
+
+      if ( NULL != pRTClient ) {
+         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_rTranID);
+      }
+   }
+
+   delete this;
+}
+
+ServiceAllocateFailed::ServiceAllocateFailed(IServiceClient *pSvcClient,
+                                             IRuntimeClient *pRTClient,
+                                             const IEvent   *pEvent) :
+   m_pSvcClient(pSvcClient),
+   m_pRTClient(pRTClient),
+   m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pEvent);
+}
+
+ServiceAllocateFailed::~ServiceAllocateFailed()
+{
+   if ( NULL != m_pEvent ) {
+      delete m_pEvent;
+   }
+}
+
+void ServiceAllocateFailed::operator() ()
+{
+   if ( NULL != m_pSvcClient ) {
+      m_pSvcClient->serviceAllocateFailed(*m_pEvent);
+   }
+
+   if ( NULL != m_pRTClient ) {
+      m_pRTClient->runtimeAllocateServiceFailed(*m_pEvent);
+   }
+
+   delete this;
+}
+
+ServiceReleased::ServiceReleased(IServiceClient      *pSvcClient,
+                                 IBase               *pServiceBase,
+                                 TransactionID const &rTranID) :
+   m_pSvcClient(pSvcClient),
+   m_pServiceBase(pServiceBase),
+   m_rTranID(rTranID)
+{
+   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pServiceBase);
+}
+
+void ServiceReleased::operator() ()
+{
+   dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase)->ReleaseComplete();
+
+   IServiceClient *pSvcClient = NULL;
+
+   // Process the TransactionID.
+   if ( NULL != m_rTranID.Ibase() ) {
+      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_rTranID.Ibase());
+
+      if ( NULL != pSvcClient ) {
+         pSvcClient->serviceReleased(m_rTranID);
+      }
+   }
+
+   if ( ( NULL == m_rTranID.Ibase() ) || !m_rTranID.Filter() ) {
+      pSvcClient = m_pSvcClient;
+
+      if ( NULL != pSvcClient ) {
+         pSvcClient->serviceReleased(m_rTranID);
+      }
+   }
+
+   delete this;
+}
+
+ServiceReleaseFailed::ServiceReleaseFailed(IServiceClient *pSvcClient,
+                                           const IEvent   *pEvent) :
+   m_pSvcClient(pSvcClient),
+   m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pEvent);
+}
+
+ServiceReleaseFailed::~ServiceReleaseFailed()
+{
+   if ( NULL != m_pEvent ) {
+      delete m_pEvent;
+   }
+}
+
+void ServiceReleaseFailed::operator() ()
+{
+   if ( NULL != m_pSvcClient ) {
+      m_pSvcClient->serviceReleaseFailed(*m_pEvent);
+   }
+
+   delete this;
+}
+
+ServiceEvent::ServiceEvent(IServiceClient *pSvcClient,
+                           const IEvent   *pEvent) :
+   m_pSvcClient(pSvcClient),
+   m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pEvent);
+}
+
+ServiceEvent::~ServiceEvent()
+{
+   if ( NULL != m_pEvent ) {
+      delete m_pEvent;
+   }
+}
+
+void ServiceEvent::operator() ()
+{
+   if ( NULL != m_pSvcClient ) {
+      m_pSvcClient->serviceEvent(*m_pEvent);
+   }
+
+   delete this;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 RuntimeCreateOrGetProxyFailed::RuntimeCreateOrGetProxyFailed(IRuntimeClient *pRTClient,
                                                              const IEvent   *pEvent) :
    m_pRTClient(pRTClient),

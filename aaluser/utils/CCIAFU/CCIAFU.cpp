@@ -176,11 +176,7 @@ void CCIAFU::serviceReleaseFailed(const IEvent        &Event)
 void CCIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
-                                                                            getServiceClient(),
-                                                                            getRuntimeClient(),
-                                                                            dynamic_cast<IBase *>(this),
-                                                                            &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), &Event) );
 }
 
 

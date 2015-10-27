@@ -166,25 +166,19 @@ void ALIAFU::serviceReleaseFailed(const IEvent &Event)
 {
    // Reflect the error to the outer client.
 // TODO extract the Exception info and put in this event
-   getRuntime()->schedDispatchable( new ServiceClientCallback( ServiceClientCallback::AllocateFailed,
-                                                               getServiceClient(),
-                                                               getRuntimeClient(),
-                                                               NULL,
-                                                               new CExceptionTransactionEvent( NULL,
-                                                                                               m_TranIDFrominit,
-                                                                                               errInternal,
-                                                                                               reasCauseUnknown,
-                                                                                               "Release Failed")));
+   getRuntime()->schedDispatchable( new ServiceAllocateFailed(getServiceClient(),
+                                                              getRuntimeClient(),
+                                                              new CExceptionTransactionEvent(NULL,
+                                                                                             m_TranIDFrominit,
+                                                                                             errInternal,
+                                                                                             reasCauseUnknown,
+                                                                                             "Release Failed")));
 }
 
 void ALIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) ServiceClientCallback(ServiceClientCallback::Event,
-                                                                            getServiceClient(),
-                                                                            getRuntimeClient(),
-                                                                            dynamic_cast<IBase *>(this),
-                                                                            &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), &Event) );
 }
 
 
