@@ -88,7 +88,9 @@ public:
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
       m_tidSaved(),
-      m_mapWkSpc()
+      m_mapWkSpc(),
+      m_MMIORmap(NULL),
+      m_uMSGmap(NULL)
    {
 	   // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
@@ -152,6 +154,11 @@ public:
    // <IAFUProxyClient>
    virtual void AFUEvent(AAL::IEvent const &theEvent);
    // </IAFUProxyClient>
+
+   enum InitTransaction {
+      GetMMIO = 1,
+      GetUMSG
+   };
 
 protected:
    IAALService         *m_pAALService;

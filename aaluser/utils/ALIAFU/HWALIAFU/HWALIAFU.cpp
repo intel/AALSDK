@@ -309,22 +309,26 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
    // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
 
-   // Set callback
-   TransactionID mmioTid(static_cast<btApplicationContext>(this), HWALIAFU::_mmioAllocEventHandler, true );
+   // Set transaction IDs so that AFUEvent() can distinguish between MMIO and
+   // UMSG events (both are uid_wseventCSRMap events)
+   TransactionID mmioTid(GetMMIO);
+   TransactionID umsgTid(GetUMSG);
 
-   // Create the Transaction
+   // Create the Transactions
    GetMMIOBufferTransaction mmioTransaction(mmioTid);
+   GetUMSGBufferTransaction umsgTransaction(umsgTid);
 
    // Check the parameters
-   if ( mmioTransaction.IsOK() ) {
-      // Will return to mmioAllocEventHandler, below.
+   if ( mmioTransaction.IsOK() && umsgTransaction.IsOK()) {
+      // Will return to AFUEvent(), below.
       m_pAFUProxy->SendTransaction(&mmioTransaction);
+      m_pAFUProxy->SendTransaction(&umsgTransaction);
    } else {
       initFailed(new CExceptionTransactionEvent(NULL,
                                                 m_tidSaved,
                                                 errAFUWorkSpace,
                                                 reasAFUNoMemory,
-                                                "MMIO BufferAllocate transaction validity check failed"));
+                                                "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
       return;
    }
 }
@@ -356,10 +360,6 @@ void HWALIAFU::serviceEvent(const IEvent &rEvent) {
    // TODO: handle unexpected events
    ASSERT(false);
 }
-
-
-
-
 
 // ---------------------------------------------------------------------------
 // IALIMMIO interface implementation
@@ -593,7 +593,6 @@ bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 	return false;
 }
 
-
 // ---------------------------------------------------------------------------
 // IALIReset interface implementation
 // ---------------------------------------------------------------------------
@@ -613,106 +612,9 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
    return e_OK;
 }
 
-
-
-
-// Dedicated callback for MMIO buffer allocation
-void HWALIAFU::_mmioAllocEventHandler(IEvent const &theEvent)
-{
-   // TODO add checks and handle unexpected events
-
-   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
-                                                           theEvent);
-   ASSERT(NULL != puidEvent);
-   ASSERT(puidEvent->MessageID() == rspid_WSM_Response);
-
-   // Unwrap pointer to HWALIAFU instance from event's transaction ID
-   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);   // FIXME: construct TransactionID first and use context
-
-   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-   // mmap
-   if (!This->m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-      AAL_ERR( LM_All, "FATAL: MapWSID failed");
-   }
-
-   // Remember workspace parameters associated with virtual ptr (if we ever need it)
-   if (This->m_mapWkSpc.find(pResult->wsParms.ptr) != This->m_mapWkSpc.end()) {
-      AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-   } else {
-      // store entire aalui_WSParms struct in map
-      This->m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
-   }
-
-   This->m_MMIORmap = pResult->wsParms.ptr;
-   This->m_MMIORsize = pResult->wsParms.size;
-
-   // Get UMSG buffer
-
-   // Set callback
-   TransactionID umsgTid(static_cast<btApplicationContext>(This), HWALIAFU::_umsgAllocEventHandler, true );
-
-   // Create the Transaction
-   GetUMSGBufferTransaction umsgTransaction(umsgTid);
-
-   // Check the parameters
-   if ( umsgTransaction.IsOK() ) {
-      // Will return to mmio/umsgAllocEventHandler, below.
-      This->m_pAFUProxy->SendTransaction(&umsgTransaction);
-   } else {
-      This->initFailed(new CExceptionTransactionEvent(NULL,
-                                                This->m_tidSaved,
-                                                errAFUWorkSpace,
-                                                reasAFUNoMemory,
-                                                "UMSG BufferAllocate transaction validity check failed"));
-      return;
-   }
-
-
-}
-
-
-// Dedicated callback for uMSG buffer allocation
-void HWALIAFU::_umsgAllocEventHandler(IEvent const &theEvent)
-{
-   // TODO add checks and handle unexpected events
-
-   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
-                                                           theEvent);
-   ASSERT(NULL != puidEvent);
-   ASSERT(puidEvent->MessageID() == rspid_WSM_Response);
-
-   // Unwrap pointer to HWALIAFU instance from event's transaction ID
-   HWALIAFU *This = reinterpret_cast<HWALIAFU *>(puidEvent->msgTranID().m_ID);
-
-   // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-   struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-   // TODO: handle unmap event
-
-   // mmap
-   if (!This->m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-      AAL_ERR( LM_All, "FATAL: MapWSID failed");
-   }
-
-   // Remember workspace parameters associated with virtual ptr
-   if (This->m_mapWkSpc.find(pResult->wsParms.ptr) != This->m_mapWkSpc.end()) {
-      AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-   } else {
-      // store entire aalui_WSParms struct in map
-      This->m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
-   }
-
-   This->m_uMSGmap = pResult->wsParms.ptr;
-   This->m_uMSGsize = pResult->wsParms.size;
-
-   // init complete for original (saved) transaction/
-   This->initComplete(This->m_tidSaved);
-   return;
-}
-
-
+// ---------------------------------------------------------------------------
+// IAFUProxyClient interface implementation
+// ---------------------------------------------------------------------------
 
 // Callback for ALIAFUProxy
 void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
@@ -778,13 +680,75 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
                                 );
 
             } break;
-/*         case uid_wseventSCRMap:
+         //-----------------------
+         // Initial GetMMIO/GetUMSG transactions
+         //-----------------------
+         case uid_wseventCSRMap:
             {
+               if (puidEvent->msgTranID().m_intID == GetMMIO) {
 
-            }*/
+                  //
+                  // GetMMIO
+                  //
+
+                  // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+                  struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+                  // mmap
+                  if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+                     AAL_ERR( LM_All, "FATAL: MapWSID failed");
+                  }
+
+                  // Remember workspace parameters associated with virtual ptr (if we ever need it)
+                  if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
+                     AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+                  } else {
+                     // store entire aalui_WSParms struct in map
+                     m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
+                  }
+
+                  m_MMIORmap = pResult->wsParms.ptr;
+                  m_MMIORsize = pResult->wsParms.size;
+
+               } else if (puidEvent->msgTranID().m_intID == GetUMSG) {
+
+                  //
+                  // GetUMSG
+                  //
+
+                  // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+                  struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+                  // TODO: handle unmap event
+
+                  // mmap
+                  if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
+                     AAL_ERR( LM_All, "FATAL: MapWSID failed");
+                  }
+
+                  // Remember workspace parameters associated with virtual ptr
+                  if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
+                     AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+                  } else {
+                     // store entire aalui_WSParms struct in map
+                     m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
+                  }
+
+                  m_uMSGmap = pResult->wsParms.ptr;
+                  m_uMSGsize = pResult->wsParms.size;
+
+               } else {
+                  ASSERT(false); // unexpected transaction ID
+               }
+
+               // init is complete when MMIOmap and uMSGmap are both set
+               if (m_MMIORmap != NULL && m_uMSGmap != NULL) {
+                  initComplete(m_tidSaved);
+               }
+            }
+
          default:
             ASSERT(false); // unexpected WSM_Response evtID
-            std::cerr << "Event: " << std::dec << pResult << std::endl;
          } // switch evtID
 
       } break;
