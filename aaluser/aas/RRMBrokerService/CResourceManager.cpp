@@ -428,16 +428,13 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
    // Temporary fix: never shut down remote resource manager, but always let
    // runtime cleanup handle it.
 
-#if 0
    // If we never allocated a remote resource manager service (i.e. it's
    // running externally), go ahead and release self.
    if (m_pRRMAALService == NULL) {
-#endif
       StopMessagePump();
       ServiceBase::Release(rTranID, timeout);   // This function blocks until pump is stopped.
 
       return true;
-#if 0
    }
 
    // If we have allocated a remote resource manager service, wrap original
@@ -447,7 +444,6 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
    return m_pRRMAALService->Release(TransactionID(appContext));
 
    // in the latter case, further shutdown happens in serviceReleased below.
-#endif
 }
 
 
@@ -527,13 +523,11 @@ void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
 
 void CResourceManager::serviceReleased(TransactionID const &rTranID)
 {
-#if 0
    // clean up
    ReleaseContext *prc = reinterpret_cast<ReleaseContext *>(rTranID.Context());
    StopMessagePump();
 
    ServiceBase::Release(prc->tranID, prc->timeout);   // This function blocks until pump is stopped.
-#endif
 }
 
 void CResourceManager::serviceReleaseFailed(const IEvent &rEvent)
