@@ -43,7 +43,7 @@ private:
 
 public:
   mm_debug_link_linux() { m_fd = -1; m_buf_end = 0;}
-  int open(void);
+  int open(char* filename);
   ssize_t read();
   ssize_t write( const void *buf, size_t count);
   void close(void);

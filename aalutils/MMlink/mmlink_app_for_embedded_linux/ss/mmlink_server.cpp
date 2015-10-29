@@ -90,10 +90,11 @@ int mmlink_server::setup_listen_socket(void)
   if (m_listen < 0)
   {
     DPRINT("Socket creation failed: %d\n", errno);
+    printf("Socket creation failed: %d\n", errno);
     return errno;
   }
   DPRINT("m_listen: %d\n", m_listen);
-
+  printf("TCP socket listening on socket # %d\n", m_listen );
   // Allow reconnect sooner, after server exit.
   int optval = 1;
   int err = 
@@ -102,23 +103,24 @@ int mmlink_server::setup_listen_socket(void)
   if (err < 0)
   {
     DPRINT("setsockopt failed: %d\n", errno);
+    printf("setsockopt failed: %d\n", errno);
     return errno;
   }
 
   return 0;
 }
 
-int mmlink_server::run(void)
+int mmlink_server::run(char* filename)
 {
   int err = 0;
   m_running = true;
 
-  if (err = m_driver->open())
+  if (err = m_driver->open(filename))
   {
     fprintf(stderr, "failed to init driver (%d).\n", err);
     return err;
   }
-
+  printf("System file opened\n");
   // Todo: modulate timeout based on number of connections, expectation of data.
   struct timeval tv;
   tv.tv_sec  = 0;

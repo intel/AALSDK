@@ -27,7 +27,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/mm-debug-link.h>
+#include "mm-debug-link.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +39,10 @@
 #include "mm_debug_link_linux.h"
 #include "dprint.h"
 
-#define DRIVER_PATH "/dev/mm_debug_link"
+//#define DRIVER_PATH "/dev/mm_debug_link"
+//#define DRIVER_PATH "/sys/bus/pci/devices/0000:02:00.0/resource0"
+
+
 #define B2P_EOP 0x7B
 
 mm_debug_link_interface *get_mm_debug_link(void)
@@ -47,21 +50,26 @@ mm_debug_link_interface *get_mm_debug_link(void)
   return new mm_debug_link_linux();
 }
 
-int mm_debug_link_linux::open(void)
+int mm_debug_link_linux::open(char* filename)
 {
   struct stat sts;
-
   m_fd = -1;
 
-  if ((stat(DRIVER_PATH, &sts)) == -1)
+  if ((stat(filename, &sts)) == -1)
   {
-    DPRINT("[MM Link Task] Failed to open %s. MM Debug Link Driver may not be loaded.\n", DRIVER_PATH);
+    DPRINT("[MM Link Task] Failed to open %s. MM Debug Link Driver may not be loaded.\n", filename);
+    printf("[MM Link Task] Failed to open %s. MM Debug Link Driver may not be loaded.\n", filename);
     exit(EXIT_FAILURE);
   }
-  m_fd = ::open(DRIVER_PATH, O_RDWR);
+
+  //m_fd = ::open(drvPath, O_RDWR);
+  m_fd = ::open(filename, O_RDWR | O_SYNC);
 
   if (m_fd < 0)
+  {
+    printf("failed to open sys file. fd = %d\n", m_fd);
     return m_fd;
+  }
   return 0;
 }
 

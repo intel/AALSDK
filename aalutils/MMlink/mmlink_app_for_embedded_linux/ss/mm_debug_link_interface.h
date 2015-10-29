@@ -32,7 +32,7 @@
 class mm_debug_link_interface
 {
 public:
-  virtual int open(void) = 0;
+  virtual int open(char* filename) = 0;
   virtual ssize_t read() = 0;
   virtual ssize_t write(const void *buf, size_t count) = 0;
   virtual void close(void) = 0;

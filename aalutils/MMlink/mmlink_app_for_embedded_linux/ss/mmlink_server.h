@@ -42,7 +42,7 @@ class mmlink_server
 public:
   mmlink_server(struct sockaddr_in *sock, mm_debug_link_interface *driver);
   ~mmlink_server();
-  int run(void);
+  int run(char* filename);
   void stop(void) { m_running = false; }
   int get_server_id(void) { return m_server_id; }
   mm_debug_link_interface *get_driver_fd(void) { return m_driver; } 
