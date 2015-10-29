@@ -26,12 +26,15 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <signal.h>
 
 #include "mmlink_server.h"
 #include "mm_debug_link_interface.h"
 #include "udp_log.h"
+
+#define MAX_FILENAME_SIZE (256)
 
 mmlink_server *server;
 void int_handler(int sig)
@@ -45,13 +48,16 @@ int main(int argc, char **argv)
 {
   int ip = INADDR_ANY;
   short port = 3333;
+  char * sys_file = (char *)malloc (MAX_FILENAME_SIZE);
 
   signal(SIGINT, int_handler);
   for (int i = 1; i < argc; ++i)
   {
     sscanf(argv[i], "--ip=%d", &ip);
     sscanf(argv[i], "--port=%d", &port);
+    sscanf(argv[i], "--sysfs=%s", sys_file);
   }
+
 
   struct sockaddr_in sock;
   sock.sin_family = AF_INET;
@@ -61,13 +67,13 @@ int main(int argc, char **argv)
   mm_debug_link_interface *driver = get_mm_debug_link();
   server = new mmlink_server(&sock, driver);
 
-  int err = server->run();
+  int err = server->run(sys_file);
 
   server->print_stats();
 
   delete server; server = NULL;
   delete driver; driver = NULL;
-
+  free(sys_file);
   return err;
 }
 
