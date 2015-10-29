@@ -27,7 +27,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include "mm-debug-link.h"
+#include <linux/mm-debug-link.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,14 +44,13 @@
 
 mm_debug_link_interface *get_mm_debug_link(void)
 {
-	printf ("linux interface\n");
   return new mm_debug_link_linux();
 }
 
 int mm_debug_link_linux::open(void)
 {
   struct stat sts;
-  printf ("open function\n");
+
   m_fd = -1;
 
   if ((stat(DRIVER_PATH, &sts)) == -1)
@@ -59,12 +58,7 @@ int mm_debug_link_linux::open(void)
     DPRINT("[MM Link Task] Failed to open %s. MM Debug Link Driver may not be loaded.\n", DRIVER_PATH);
     exit(EXIT_FAILURE);
   }
-
-  cout << "Enter Driver path\n";
-  string drvPath;
-  cin >> drvPath;
-  m_fd = ::open(drvPath, O_RDWR);
-  //m_fd = ::open(DRIVER_PATH, O_RDWR);
+  m_fd = ::open(DRIVER_PATH, O_RDWR);
 
   if (m_fd < 0)
     return m_fd;

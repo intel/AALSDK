@@ -46,7 +46,6 @@ int main(int argc, char **argv)
   int ip = INADDR_ANY;
   short port = 3333;
 
-  printf("In main func \n");
   signal(SIGINT, int_handler);
   for (int i = 1; i < argc; ++i)
   {
@@ -59,9 +58,7 @@ int main(int argc, char **argv)
   sock.sin_port = htons(port);
   sock.sin_addr.s_addr = htonl(ip);
 
-  printf("getting driver interface\n");
   mm_debug_link_interface *driver = get_mm_debug_link();
-  printf("got driver interface\n");
   server = new mmlink_server(&sock, driver);
 
   int err = server->run();

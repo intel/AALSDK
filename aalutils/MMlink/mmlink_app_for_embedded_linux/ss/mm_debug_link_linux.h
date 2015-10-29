@@ -42,7 +42,7 @@ private:
   size_t m_buf_end;
 
 public:
-  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0; printf("linux ctor\n");}
+  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0;}
   int open(void);
   ssize_t read();
   ssize_t write( const void *buf, size_t count);

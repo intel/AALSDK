@@ -45,8 +45,6 @@
 
 mmlink_server::mmlink_server(struct sockaddr_in *sock, mm_debug_link_interface *driver)
 {
-	printf("mmlink server ctor\n");
-
   m_addr = *sock;
 
   m_num_bound_connections = 0;
@@ -115,7 +113,6 @@ int mmlink_server::run(void)
   int err = 0;
   m_running = true;
 
-  printf("server run \n");
   if (err = m_driver->open())
   {
     fprintf(stderr, "failed to init driver (%d).\n", err);

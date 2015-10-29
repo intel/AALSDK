@@ -2,13 +2,9 @@
 SRC := $(shell pwd)
 LDFLAGS += -lstdc++ $(DEBUG)
 CFLAGS += -c $(DEBUG)
-CC := g++
+CC := arm-linux-gnueabihf-g++
 #DEBUG := -g -O0 -fno-inline
 DEBUG :=
-
-INC_DIR = ../../mmlink_char_linux_driver/char
-CFLAGS += -c -W -I$(INC_DIR)
-DEPS = mm-debug-link.h
 
 MMLINK_OBJS := udp_log.o mmlink_server.o mmlink_connection.o mm_debug_link.o main.o
 
@@ -31,7 +27,7 @@ mmlink_server.o: mmlink_server.cpp mmlink_server.h mmlink_connection.h mm_debug_
 mmlink_connection.o: mmlink_connection.cpp mmlink_connection.h dprint.h
 	$(CC) $(CFLAGS) mmlink_connection.cpp
 
-mm_debug_link.o: mm_debug_link_linux.cpp mm_debug_link_linux.h dprint.h 
+mm_debug_link.o: mm_debug_link_linux.cpp mm_debug_link_linux.h dprint.h
 	$(CC) -I $(KERNEL_SRC_DIR)/include $(CFLAGS) mm_debug_link_linux.cpp -o mm_debug_link.o
 
 main.o: main.cpp mmlink_server.h mm_debug_link_interface.h udp_log.h
