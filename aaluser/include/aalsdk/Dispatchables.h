@@ -62,7 +62,7 @@ protected:
    IServiceClient      *m_pSvcClient;
    IRuntimeClient      *m_pRTClient;
    IBase               *m_pServiceBase;
-   const TransactionID &m_rTranID;
+   const TransactionID  m_rTranID;
 };
 
 /// @brief Delivers IServiceClient::serviceAllocateFailed(const IEvent & );
@@ -91,7 +91,7 @@ public:
 protected:
    IServiceClient      *m_pSvcClient;
    IBase               *m_pServiceBase;
-   const TransactionID &m_rTranID;
+   const TransactionID  m_rTranID;
 };
 
 /// @brief Delivers IServiceClient::serviceReleaseFailed(const IEvent & );
@@ -343,7 +343,7 @@ public:
 protected:
    IRuntimeClient      *m_pRTClient;
    IBase               *m_pServiceBase;
-   TransactionID const &m_rTranID;
+   TransactionID const  m_rTranID;
 };
 
 /// @brief Delivers IRuntimeClient::runtimeAllocateServiceFailed(const IEvent & );

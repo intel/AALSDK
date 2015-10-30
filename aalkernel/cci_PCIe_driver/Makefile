@@ -85,11 +85,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/cci_pcie_driver_simulator.h \
 	$(srcdir)/cci_pcie_driver_PIPsession.c \
 	$(srcdir)/cci_pcie_driver_PIPsession.h \
-	$(srcdir)/cci_pcie_common.c $(srcdir)/cci_pcie_driver_pdde.c \
+	$(srcdir)/cci_pcie_common.c \
+	$(srcdir)/cci_pcie_driver_pdde_linux.c \
 	$(srcdir)/cci_pcie_driver_umapi_linux.c \
 	$(srcdir)/cci_pcie_driver_umapi_common.c \
-	$(srcdir)/cci_pcie_driver_umapi_linux.h \
-	$(srcdir)/cciui-events.h $(top_srcdir)/build-aux/depcomp
+	$(srcdir)/cci_pcie_driver_umapi_linux.h $(srcdir)/ccip_defs.h \
+	$(srcdir)/cciui-events.h $(srcdir)/ccip_fme_mmio.c \
+	$(srcdir)/ccip_fme_mmio.h $(top_srcdir)/build-aux/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/aalkernel.m4 \
 	$(top_srcdir)/configure.ac
@@ -101,10 +103,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am_driver_OBJECTS = cci_pcie_driver_main.$(OBJEXT) \
 	cci_pcie_common.$(OBJEXT) cci_pcie_driver_simulator.$(OBJEXT) \
-	cci_pcie_driver_pdde.$(OBJEXT) \
+	cci_pcie_driver_pdde_linux.$(OBJEXT) \
 	cci_pcie_driver_PIPsession.$(OBJEXT) \
 	cci_pcie_driver_umapi_linux.$(OBJEXT) \
-	cci_pcie_driver_umapi_common.$(OBJEXT)
+	cci_pcie_driver_umapi_common.$(OBJEXT) ccip_fme_mmio.$(OBJEXT)
 driver_OBJECTS = $(am_driver_OBJECTS)
 driver_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -338,14 +340,17 @@ cci_pcie_driver_internal.h \
 cci_pcie_driver_main.c \
 cci_pcie_common.c \
 cci_pcie_driver_simulator.c \
-cci_pcie_driver_pdde.c \
+cci_pcie_driver_pdde_linux.c \
 cci_pcie_driver_PIPsession.c \
 cci_pcie_driver_PIPsession.h \
 cci_pcie_driver_simulator.h \
 cci_pcie_driver_umapi_linux.c \
 cci_pcie_driver_umapi_linux.h \
 cci_pcie_driver_umapi_common.c \
-cciui-events.h 
+ccip_defs.h \
+cciui-events.h \
+ccip_fme_mmio.h \
+ccip_fme_mmio.c  
 
 all: all-am
 
@@ -395,10 +400,11 @@ distclean-compile:
 include ./$(DEPDIR)/cci_pcie_common.Po
 include ./$(DEPDIR)/cci_pcie_driver_PIPsession.Po
 include ./$(DEPDIR)/cci_pcie_driver_main.Po
-include ./$(DEPDIR)/cci_pcie_driver_pdde.Po
+include ./$(DEPDIR)/cci_pcie_driver_pdde_linux.Po
 include ./$(DEPDIR)/cci_pcie_driver_simulator.Po
 include ./$(DEPDIR)/cci_pcie_driver_umapi_common.Po
 include ./$(DEPDIR)/cci_pcie_driver_umapi_linux.Po
+include ./$(DEPDIR)/ccip_fme_mmio.Po
 
 .c.o:
 	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

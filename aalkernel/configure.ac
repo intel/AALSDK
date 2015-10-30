@@ -219,12 +219,16 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_PIPsession.c:cci_PCIe_driver/cci_pcie_driver_PIPsession.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_PIPsession.h:cci_PCIe_driver/cci_pcie_driver_PIPsession.h                 
                  cci_PCIe_driver/kbuild/cci_pcie_common.c:cci_PCIe_driver/cci_pcie_common.c
-                 cci_PCIe_driver/kbuild/cci_pcie_driver_pdde.c:cci_PCIe_driver/cci_pcie_driver_pdde.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_pdde_linux.c:cci_PCIe_driver/cci_pcie_driver_pdde_linux.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.c:cci_PCIe_driver/cci_pcie_driver_umapi_linux.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_common.c:cci_PCIe_driver/cci_pcie_driver_umapi_common.c
                  cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.h:cci_PCIe_driver/cci_pcie_driver_umapi_linux.h
+                 cci_PCIe_driver/kbuild/ccip_defs.h:cci_PCIe_driver/ccip_defs.h
                  cci_PCIe_driver/kbuild/cciui-events.h:cci_PCIe_driver/cciui-events.h
+                 cci_PCIe_driver/kbuild/ccip_fme_mmio.c:cci_PCIe_driver/ccip_fme_mmio.c
+                 cci_PCIe_driver/kbuild/ccip_fme_mmio.h:cci_PCIe_driver/ccip_fme_mmio.h                 
                  cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
+                 ccip_fme_mmio
 
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile

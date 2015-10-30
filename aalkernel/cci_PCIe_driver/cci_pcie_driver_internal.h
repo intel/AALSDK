@@ -87,22 +87,24 @@
 #ifndef DRV_VERSION
 # define DRV_VERSION          "EXPERIMENTAL VERSION"
 #endif
-#define DRV_DESCRIPTION       "Intel(R) AAL FPGA Device driver and CCIv4 Physical Interface Protocol Driver (PIP)"
+#define DRV_DESCRIPTION       "Intel(R) AAL FPGA PCIe Device driver and CCI Physical Interface Protocol (PIP)"
 #define DRV_AUTHOR            "Joseph Grecco <joe.grecco@intel.com>"
 #define DRV_LICENSE           "Dual BSD/GPL"
-#define DRV_COPYRIGHT         "Copyright (c) 2012-2015 Intel Corporation"
+#define DRV_COPYRIGHT         "Copyright (c) 2015 Intel Corporation"
 
-#define DEVICE_BASENAME       "cciv4"
+#define DEVICE_BASENAME       "cci"
 
-#define CCIV4_PCI_DRIVER_NAME "aalcciv4"
+#define CCI_PCI_DRIVER_NAME   "ccidrv"
 
 ////////////////////////////////////////////////////////////////////////////////
 #define CCI_MMIO_SIZE       ( 0x20000 )                   /// Size of AFU MMIO space
 #define CCI_UMSG_SIZE       ( 0x5000 )                    /// Size of uMsg space
 
 // PCI device IDs
-#define QPI_DEVICE_ID_FPGA    0xBCBC ///< QPI device ID
-#define PCI_DEVICE_ID_PCIFPGA 0xBCBD ///< PCIe device ID
+#define PCIe_DEVICE_ID_RCiEP0    0xBCBD ///< Primary port with FIU
+#define PCIe_DEVICE_ID_RCiEP1    0xBCBE ///< Null device for data transport
+#define PCIe_DEVICE_ID_RCiEP2    0xBCBC ///< QPI or UPI EPt
+
 
 //=============================================================================
 // Prototypes
@@ -288,7 +290,47 @@ cci_flush_all_wsids(struct cci_PIPsession *psess);
 //                                INLINE PRIMITIVES
 //=============================================================================
 //=============================================================================
+//=============================================================================
+// Name: cci_getBARAddress
+// Description: Called during the device probe by cci_pci_probe
+//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
+// Interface: public
+// Inputs:  ppcidev - Pointer to PICe device
+//          pphysaddr - Pointer to where to return the physical address
+//          pvirtaddr - Pointer to where to return teh mapped virtual address
+//          psize - BAR region size
+// Outputs: 1 = success.
+// Comments:
+//=============================================================================
+static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
+                                     int               barnum,
+                                     btPhysAddr       *pphysaddr,
+                                     btVirtAddr       *pvirtaddr,
+                                     size_t           *psize)
+{
+   if ( pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
+      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
+      return 0;
 
+   }else{
+      // get the low base address register.
+      *pphysaddr = pci_resource_start(ppcidev, 0);
+      *psize  = (size_t)pci_resource_len(ppcidev, 0);
+
+      PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
+      PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
+
+   }
+
+   // Only non-zero regions make sense
+   if((0 == *pphysaddr) || (0 == *psize)){
+      pci_release_region(ppcidev, barnum);
+      return 0;
+   }
+
+   pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
+   return 1;
+}
 
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__

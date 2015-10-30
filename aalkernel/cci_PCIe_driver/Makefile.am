@@ -83,14 +83,17 @@ cci_pcie_driver_internal.h \
 cci_pcie_driver_main.c \
 cci_pcie_common.c \
 cci_pcie_driver_simulator.c \
-cci_pcie_driver_pdde.c \
+cci_pcie_driver_pdde_linux.c \
 cci_pcie_driver_PIPsession.c \
 cci_pcie_driver_PIPsession.h \
 cci_pcie_driver_simulator.h \
 cci_pcie_driver_umapi_linux.c \
 cci_pcie_driver_umapi_linux.h \
 cci_pcie_driver_umapi_common.c \
-cciui-events.h 
+ccip_defs.h \
+cciui-events.h \
+ccip_fme_mmio.h \
+ccip_fme_mmio.c  
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers

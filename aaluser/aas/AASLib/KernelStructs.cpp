@@ -556,8 +556,6 @@ std::ostream & operator << (std::ostream &s, const uid_msgIDs_e &enumeration)
       uid_msgIDs_e_CASE(reqid_UID_Deactivate,       "Deactivate the device "                    );
       uid_msgIDs_e_CASE(reqid_UID_Shutdown,         "Request that the Service session shutdown ");
       uid_msgIDs_e_CASE(reqid_UID_SendAFU,          "Send AFU a message "                       );
-      uid_msgIDs_e_CASE(reqid_UID_SendPIP,          "Send PIP a message "                       );
-      uid_msgIDs_e_CASE(reqid_UID_SendWSM,          "Send to Workspace Manager "                );
       uid_msgIDs_e_CASE(rspid_UID_Shutdown,         "Service is shutdown "                      );
       uid_msgIDs_e_CASE(rspid_UID_UnbindComplete,   "Release Device Response "                  );
       uid_msgIDs_e_CASE(rspid_UID_BindComplete,     "Bind has completed "                       );

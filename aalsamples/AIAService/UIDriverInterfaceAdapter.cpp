@@ -538,8 +538,6 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
        break;
 
     case reqid_UID_SendAFU:
-    case reqid_UID_SendPIP:
-    case reqid_UID_SendWSM:
     case reqid_UID_Shutdown:
        cmd = AALUID_IOCTL_SENDMSG;
        break;

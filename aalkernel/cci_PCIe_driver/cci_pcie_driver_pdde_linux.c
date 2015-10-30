@@ -58,6 +58,7 @@
 //        FILE: cci_pcie_driver_pdde.c
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
+//              Ananda Ravuri, Intel <ananda.ravuri@intel.com>
 // PURPOSE: This file implements the Physical Device Discovery and Enumeration
 //          functionality of the Intel(R) Intel QuickAssist Technology AAL
 //          FPGA device driver.
@@ -79,6 +80,9 @@
 #include "cci_pcie_driver_internal.h"
 
 #include "cci_pcie_driver_simulator.h"
+
+#include "ccip_defs.h"
+#include "ccip_fme_mmio.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
@@ -189,30 +193,33 @@ DRIVER_ATTR(debug,S_IRUGO|S_IWUSR|S_IWGRP, ahmpip_attrib_show_debug,ahmpip_attri
 static int cci_pci_probe(struct pci_dev * , const struct pci_device_id * );
 static void cci_pci_remove(struct pci_dev * );
 
-#if 0
-static int cci_qpi_internal_probe(struct cci_device         * ,
-                                    struct aal_device_id       * ,
-                                    struct pci_dev             * ,
-                                    const struct pci_device_id * );
+static
+struct ccip_device *
+cci_pcie_stub_probe( struct pci_dev             *pcidev,
+                     const struct pci_device_id *pcidevid);
 
-static int cci_pcie_internal_probe(struct cci_device         * ,
-                                     struct aal_device_id       * ,
-                                     struct pci_dev             * ,
-                                     const struct pci_device_id * );
+static
+struct ccip_device *
+cci_enumerate_device( struct pci_dev             *pcidev,
+                     const struct pci_device_id *pcidevid);
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////            PCIE INTEGRATION               ///////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//=============================================================================
+//=============================================================================
 
-/// cci_internal_probe - type of probe functions called by the module's main pci probe.
-typedef int (*cci_internal_probe)(struct cci_device         * ,
-                                    struct aal_device_id       * ,
-                                    struct pci_dev             * ,
-                                    const struct pci_device_id * );
-#endif
 ///=================================================================
 /// cci_pci_id_tbl - identify PCI devices supported by this module
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, QPI_DEVICE_ID_FPGA   ), .driver_data = 0/*(kernel_ulong_t)cci_qpi_internal_probe*/  },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCIFPGA), .driver_data = 0/*(kernel_ulong_t)cci_pcie_internal_probe*/ },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
@@ -235,13 +242,58 @@ struct cci_pcie_driver_info
 static struct cci_pcie_driver_info driver_info = {
    .isregistered = 0,
    .pcidrv = {
-      .name     = CCIV4_PCI_DRIVER_NAME,
+      .name     = CCI_PCI_DRIVER_NAME,
       .id_table = cci_pcie_id_tbl,
       .probe    = cci_pci_probe,
       .remove   = cci_pci_remove,
    },
 };
 
+/// Signature of CCI device specific probe function
+typedef struct ccip_device * (*cci_probe_fn)( struct pci_dev                * ,
+                                              const struct pci_device_id    * );
+
+
+//=============================================================================
+// Name: cci_pcie_stub_probe
+// Description: Called if either the PCIe_DEVICE_ID_RCiEP1 or PCIe_DEVICE_ID_RCiEP2
+//              devices are detected. These devices have no visible host interface.
+// Interface: public
+// Inputs: pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Outputs: Pointer to populated CCI device or NULL if failure
+// Comments:
+//=============================================================================
+static
+struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
+                                          const struct pci_device_id *pcidevid)
+{
+
+   ASSERT(pcidev);
+   if ( NULL == pcidev ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+   }
+
+   ASSERT(pcidevid);
+   if ( NULL == pcidevid ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+   }
+   switch(pcidevid->device)
+   {
+      case PCIe_DEVICE_ID_RCiEP1:
+         PVERBOSE("PCIe RCiEP 1 ignored\n");
+         break;
+      case PCIe_DEVICE_ID_RCiEP2:
+         PVERBOSE("PCIe RCiEP 2 ignored\n");
+         break;
+      default:
+         PVERBOSE("Unknown device ID ignored\n");
+         return NULL;
+   }
+   return NULL;
+}
 
 //=============================================================================
 // Name: cci_pci_probe
@@ -259,14 +311,273 @@ cci_pci_probe( struct pci_dev             *pcidev,
 {
 
    int res = -EINVAL;
+   cci_probe_fn  probe_fn;
+   struct ccip_device      *pccidev = NULL;
 
    PTRACEIN;
 
-   // TODO FILL IN DETAILS
+   // Validate parameters
+   ASSERT(pcidev);
+   if ( NULL == pcidev ) {
+      res = -EINVAL;
+      PTRACEOUT_INT(res);
+      return res;
+   }
 
+   ASSERT(pcidevid);
+   if ( NULL == pcidevid ) {
+      res = -EINVAL;
+      PTRACEOUT_INT(res);
+      return res;
+   }
+
+   // Display device information
+   PVERBOSE("Discovered FPGA Device:")
+   PVERBOSE("-VenderID %x  \n",pcidevid->vendor );
+   PVERBOSE("-DeviceID  %x  \n",pcidevid->device );
+   PVERBOSE("-B:D.F = %x:%x.%x  \n",pcidev->bus->number,PCI_SLOT(pcidev->devfn),PCI_FUNC(pcidev->devfn) );
+
+   // Get the device specific probe function
+   probe_fn = (cci_probe_fn)pcidevid->driver_data;
+   ASSERT(NULL != probe_fn);
+   if ( NULL == probe_fn ) {
+       PERR("NULL cci_enumerate function from probe\n");
+       return res;
+   }
+
+   // Call the probe function.  This is where the real work occurs
+   pccidev = probe_fn( pcidev, pcidevid );
+   ASSERT(pccidev);
+
+   // If all went well record this device on our
+   //  list of devices owned by this driver
+   if(NULL != pccidev){
+      kosal_list_add(&(pccidev->m_list), &g_device_list);
+   }
    PTRACEOUT_INT(res);
    return res;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////        BOARD DEVICE BAR ENUMERATION       ///////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//=============================================================================
+//=============================================================================
+
+//=============================================================================
+// Name: cci_enumerate_device
+// Description: Called during the device probe to initiate the enumeration of
+//              the device attributes and construct the internal objects..
+// Inputs: pcidev - kernel-provided device pointer.
+//         pcidevid - kernel-provided device id pointer.
+// Outputs: 0 = success.
+// Comments:
+//=============================================================================
+static
+struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
+                                           const struct pci_device_id *pcidevid)
+{
+
+   struct ccip_device * pccipdev       = NULL;
+
+   size_t               barsize        = 0;
+   int                  res            = 0;
+
+   PTRACEIN;
+
+   // Check arguments
+   ASSERT(pcidev);
+   if ( NULL == pcidev ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+   }
+   ASSERT(pcidevid);
+   if ( NULL == pcidevid ) {
+      PTRACEOUT_INT(-EINVAL);
+      return NULL;
+    }
+
+   // Allocate the board object
+   pccipdev = (struct ccip_device * ) kosal_kmalloc(sizeof(struct ccip_device));
+   if ( NULL ==  pccipdev ) {
+      PERR("Could not allocate CCI device object\n");
+      return NULL;
+   }
+
+   // Debug dump the BAR data
+   {
+      int i;
+      btPhysAddr           pbaseAddr =0 ;
+
+      // print BAR0 to BAR5 Address and Length
+      for( i=0; i<=CCIP_MAX_PCIBAR; i++){
+
+         pbaseAddr = pci_resource_start(pcidev, i);
+         PDEBUG("BAR =%d : Address : %lx \n", i, pbaseAddr);
+
+         barsize  = (size_t)pci_resource_len(pcidev, i);
+         PDEBUG("BAR=%d size : %zd\n", i, barsize);
+
+      }
+   }
+
+   // Setup the PCIe device
+   //----------------------
+   res = pci_enable_device(pcidev);
+   if ( res < 0 ) {
+      PERR("Failed to enable device res=%d\n", res);
+      PTRACEOUT_INT(res);
+      return NULL;
+   }
+
+   // enable PCIe error reporting
+   pci_enable_pcie_error_reporting(pcidev);
+
+   // enable bus mastering (if not already set)
+   pci_set_master(pcidev);
+   pci_save_state(pcidev);
+
+   // Save the PCI device in t he CCI object
+   ccip_dev_pci_dev(pccipdev) = pcidev;
+
+
+   // Acquire the BAR regions
+   //  64 Bit BARs are actually spread
+   //  across 2 consecutive BARs. So we
+   //  use 0 and 2 rather than 0 and 1
+   //------------------------------------
+   {
+      btPhysAddr           pbarPhyAddr    = 0;
+      btVirtAddr           pbarVirtAddr   = 0;
+      size_t               barsize        = 0;
+
+      // BAR 0  is the FME
+      if( !cci_getBARAddress(  pcidev,
+                               0,
+                              &pbarPhyAddr,
+                              &pbarVirtAddr,
+                              &barsize) ){
+         goto ERR;
+      }
+
+      // Save the BAR information in the CCI Device object
+      ccip_fmedev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
+      ccip_fmedev_len_afu_mmio(pccipdev)     = barsize;
+      ccip_fmedev_kvp_afu_mmio(pccipdev)     = pbarVirtAddr;
+
+      PDEBUG("ccip_fmedev_phys_afu_mmio(pccipdev) : %lx\n", ccip_fmedev_phys_afu_mmio(pccipdev));
+      PDEBUG("ccip_fmedev_kvp_afu_mmio(pccipdev) : %lx\n",(long unsigned int) ccip_fmedev_kvp_afu_mmio(pccipdev));
+      PDEBUG("ccip_fmedev_len_afu_mmio(pccipdev): %zu\n", ccip_fmedev_len_afu_mmio(pccipdev));
+
+      // BAR 2  is the Port object
+      if( !cci_getBARAddress(  pcidev,
+                               2,
+                              &pbarPhyAddr,
+                              &pbarVirtAddr,
+                              &barsize) ){
+         goto ERR;
+      }
+
+      // Save the BAR information in the CCI Device object
+      ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
+      ccip_portdev_len_afu_mmio(pccipdev)     = barsize;
+      ccip_portdev_kvp_afu_mmio(pccipdev)     = pbarVirtAddr;
+
+      PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
+      PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
+      PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
+   }
+
+   // Bus Device function  of pci device
+   ccip_dev_devfunnum(pccipdev) = pcidev->devfn;
+   ccip_dev_busnum(pccipdev) = pcidev->bus->number;
+
+
+   // FME mmio region
+   if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
+
+      PINFO(" FME mmio region   \n");
+
+      // Create the FME MMIO device object
+      pccipdev->m_pfme_dev = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
+      if ( NULL == pccipdev->m_pfme_dev ) {
+         PERR("Could not allocate memory for FME object\n");
+         res = -ENOMEM;
+         goto ERR;
+      }
+#if 0
+      // print fme CSRS
+      print_sim_fme_device(pccipdev->m_pfme_dev);
+#endif
+
+   }
+#if 0
+   // PORT mmio region
+   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
+
+
+      PINFO(" PORT mmio region   \n");
+
+      pccipdev->m_pport_dev = (struct port_device*) kzalloc(sizeof(struct port_device), GFP_KERNEL);
+      if ( NULL == pccipdev->m_pport_dev ) {
+        res = -ENOMEM;
+
+        PINFO(" PORT mmio region ERROR   \n");
+        goto ERR;
+      }
+
+     // Populate PORT MMIO Region
+      get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
+
+      // print port CSRs
+      print_sim_port_device(pccipdev->m_pport_dev);
+
+   }
+
+#endif
+   return pccipdev;
+ERR:
+
+
+   PINFO(" -----ERROR -----   \n");
+
+
+  if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
+   }
+
+  if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev)) {
+      iounmap(ccip_portdev_kvp_afu_mmio(pccipdev));
+      ccip_portdev_kvp_afu_mmio(pccipdev) = NULL;
+   }
+
+
+   if( 0 != ccip_fmedev_phys_afu_mmio(pccipdev)){
+      // TBD
+      pci_release_region(pcidev, 0);
+//      pci_release_region(pcidev, 1);
+   }
+
+   if( 0 != ccip_portdev_phys_afu_mmio(pccipdev)){
+      //TBD
+      pci_release_region(pcidev, 2);
+//      pci_release_region(pcidev, 3);
+   }
+
+   if ( NULL != pccipdev ) {
+         kfree(pccipdev);
+   }
+
+
+   PTRACEOUT_INT(res);
+   return NULL;
+}
+
 
 #if 0
 //=============================================================================

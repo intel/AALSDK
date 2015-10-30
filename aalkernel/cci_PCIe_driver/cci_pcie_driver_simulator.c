@@ -66,6 +66,9 @@
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
 #include "aalsdk/kernel/kosal.h"
+
+#define MODULE_FLAGS CCIPCIE_DBG_MOD
+
 #include "aalsdk/kernel/aalids.h"
 #include "aalsdk/kernel/aalbus.h"
 
@@ -77,7 +80,7 @@
 #include "aalsdk/kernel/fappip.h"
 #include "aalsdk/kernel/aalui-events.h"
 
-#define MODULE_FLAGS CCIPCIE_DBG_MOD
+
 
 int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
 

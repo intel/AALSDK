@@ -631,8 +631,6 @@ UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
       break;
 
    case reqid_UID_SendAFU:
-   case reqid_UID_SendPIP:
-   case reqid_UID_SendWSM:
       ioctlCMD = AALUID_IOCTL_SENDMSG;
       break;
     default:

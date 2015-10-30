@@ -71,7 +71,7 @@ USING_NAMESPACE(AAL)
 
 
 BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranID, btWSSize len ) :
-   m_msgID(reqid_UID_SendPIP),
+   m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
@@ -127,7 +127,7 @@ BufferAllocateTransaction::~BufferAllocateTransaction() {
 
 
 BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSID wsid ) :
-   m_msgID(reqid_UID_SendPIP),
+   m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
@@ -182,7 +182,7 @@ BufferFreeTransaction::~BufferFreeTransaction() {
 
 
 GetMMIOBufferTransaction::GetMMIOBufferTransaction( TransactionID const &tranID ) :
-   m_msgID(reqid_UID_SendPIP),
+   m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
@@ -234,7 +234,7 @@ GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
 
 
 GetUMSGBufferTransaction::GetUMSGBufferTransaction( TransactionID const &tranID ) :
-   m_msgID(reqid_UID_SendPIP),
+   m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),

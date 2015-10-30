@@ -152,6 +152,8 @@ bt32bitInt get_fme_mmio(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio )
    }
 
    PINFO(" get_fme_mmio EXIT\n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
    PTRACEOUT_INT(res);
@@ -239,6 +241,8 @@ bt32bitInt get_fme_dev_header(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mm
    }
 
    PINFO(" get_fme_header EXIT \n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
    PTRACEOUT_INT(res);
@@ -374,6 +378,8 @@ bt32bitInt get_fme_dev_featurelist(struct fme_device *pfme_dev,btVirtAddr pkvp_f
 
 
    PINFO(" get_fme_dev_featurelist EXIT \n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
    PTRACEOUT_INT(res);
@@ -419,7 +425,9 @@ bt32bitInt get_fme_dev_tmp_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_
 
 
 	PINFO(" get_fme_dev_tmp_rev0 EXIT \n");
-
+	PTRACEOUT_INT(res);
+	return res;
+	
 ERR:
 	PTRACEOUT_INT(res);
 
@@ -464,6 +472,8 @@ bt32bitInt get_fme_dev_pm_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_m
 	ccip_fme_pm(pfme_dev)->ccip_pm_mrdvr.csr = read_ccip_csr64(pkvp_fme_mmio,offset);
 
 	PINFO(" get_fme_dev_pm_rev0 EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);
@@ -521,6 +531,8 @@ bt32bitInt get_fme_dev_fpmon_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fm
    ccip_fme_fpmon(pfme_dev)->ccip_fpmon_clk_ctrs.csr = read_ccip_csr64(pkvp_fme_mmio,offset);
 
    PINFO(" get_fme_dev_fpmon_rev0 EXIT \n");
+   PTRACEOUT_INT(res);
+   return res;
 
 ERR:
 
@@ -565,6 +577,8 @@ bt32bitInt get_fme_dev_gerr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme
 	ccip_fme_gerr(pfme_dev)->ccip_fme_first_error.csr = read_ccip_csr64(pkvp_fme_mmio,offset);
 
 	PINFO(" get_fme_dev_gerr_rev0 EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);
@@ -610,6 +624,8 @@ bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_m
 
 
 	PINFO(" get_fme_dev_pr_rev0 EXIT \n");
+        PTRACEOUT_INT(res);
+	return res;
 
 ERR:
 	PTRACEOUT_INT(res);

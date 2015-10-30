@@ -170,11 +170,7 @@ process_send_message(struct uidrv_session  *psess,
    //--------------------------------------------------------------------------
    switch ( preq->id ) {
 
-      // Send a message to the Workspace manager interface
-      UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendWSM) // TODO these will go to WS mgr interface
-
       // Send a message to the AFU via the PIP message handler
-      UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendPIP)
       UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendAFU) {
          // Get the handle and validate
          pdev = aaldev_handle_to_devp(preq->handle);

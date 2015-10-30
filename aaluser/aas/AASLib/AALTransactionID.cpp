@@ -348,7 +348,10 @@ bt32bitInt TransactionID::ID() const
 // Name: ~TransactionID
 // Description: Destructor
 //=============================================================================
-TransactionID::~TransactionID() {}
+TransactionID::~TransactionID() {
+
+   int x=1;
+}
 
 //=============================================================================
 // Name: operator <<
