@@ -88,15 +88,18 @@ public:
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
       m_tidSaved(),
-      m_mapWkSpc()
+      m_mapWkSpc(),
+      m_MMIORmap(NULL),
+      m_uMSGmap(NULL)
    {
-	   // FIXME: these probably need to go into init() and be exposed based on the AFUDev's capabilities
+	   // TODO: at some point, these probably go into init() and be exposed based
+      //       on the actual capabilities
       SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
       SetInterface(        iidALI_UMSG_Service,   dynamic_cast<IALIUMsg *>(this));
       SetInterface(        iidALI_BUFF_Service,   dynamic_cast<IALIBuffer *>(this));
 //      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
       SetInterface(        iidALI_RSET_Service,   dynamic_cast<IALIReset *>(this));
-      SetInterface(        iidServiceClient,      dynamic_cast<IServiceClient *>(this));  // for AIA
+      SetInterface(        iidServiceClient,      dynamic_cast<IServiceClient *>(this));   // for AIA
       SetInterface(        iidAFUProxyClient,     dynamic_cast<IAFUProxyClient *>(this));  // for AFUProy
    }
 
@@ -141,9 +144,9 @@ public:
 
    // <IServiceClient>
    virtual void serviceAllocated(IBase               *pServiceBase,
-                                 TransactionID const &rTranID = TransactionID());
+                                 TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
    virtual void serviceAllocateFailed(const IEvent &rEvent);
-   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
    virtual void serviceReleaseFailed(const IEvent &rEvent);
    virtual void serviceEvent(const IEvent &rEvent);
    // </IServiceClient>
@@ -151,6 +154,11 @@ public:
    // <IAFUProxyClient>
    virtual void AFUEvent(AAL::IEvent const &theEvent);
    // </IAFUProxyClient>
+
+   enum InitTransaction {
+      GetMMIO = 1,
+      GetUMSG
+   };
 
 protected:
    IAALService         *m_pAALService;

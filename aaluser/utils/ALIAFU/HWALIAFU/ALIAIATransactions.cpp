@@ -117,7 +117,7 @@ AAL::uid_msgIDs_e              BufferAllocateTransaction::getMsgID()const {retur
 
 BufferAllocateTransaction::~BufferAllocateTransaction() {
    // unpack payload and free memory
-   struct aalui_AFUmessage *afumsg = (aalui_AFUmessage *)m_payload;
+   struct aalui_AFUmessage *afumsg = (aalui_AFUmessage *)m_payload;     // FIXME: use C++ style casts
    struct ahm_req          *req    = (ahm_req *)afumsg->payload;
    delete req;
    delete afumsg;
@@ -283,80 +283,3 @@ GetUMSGBufferTransaction::~GetUMSGBufferTransaction() {
    delete afumsg;
 }
 
-
-
-/*
-BufferGetIOVA::BufferGetIOVA( TransactionID const &tranID ) :
-   m_msgID(???),
-   m_tid_t(tranID),
-   m_bIsOK(true)
-{}
-
-AAL::btVirtAddr                BufferGetIOVA::getPayloadPtr()const {return NULL;}
-AAL::btWSSize                  BufferGetIOVA::getPayloadSize()const {return 0;}
-AAL::stTransactionID_t const   BufferGetIOVA::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              BufferGetIOVA::getMsgID()const {return m_msgID;}
-
-
-GetMMIORMap::GetMMIORMap( TransactionID const &tranID ) :
-   m_msgID(fappip_getMMIORmap),
-   m_tid_t(tranID),
-   m_bIsOK(true)
-{}
-
-AAL::btVirtAddr                GetMMIORMap::getPayloadPtr()const {return NULL;}
-AAL::btWSSize                  GetMMIORMap::getPayloadSize()const {return 0;}
-AAL::stTransactionID_t const   GetMMIORMap::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              GetMMIORMap::getMsgID()const {return m_msgID;}
-
-*/
-
-
-/*
-UnBindAFUDevice::UnBindAFUDevice( TransactionID const &tranID ) :
-   m_msgID(reqid_UID_UnBind),
-   m_tid_t(tranID),
-   m_bIsOK(true)
-{}
-
-AAL::btVirtAddr                UnBindAFUDevice::getPayloadPtr()const {return NULL;}
-AAL::btWSSize                  UnBindAFUDevice::getPayloadSize()const {return 0;}
-AAL::stTransactionID_t const   UnBindAFUDevice::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              UnBindAFUDevice::getMsgID()const {return m_msgID;}
-
-
-ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) :
-   m_msgID(reqid_UID_Shutdown),
-   m_tid_t(tranID),
-   m_bIsOK(false),
-   m_payload(NULL),
-   m_size(0),
-   m_timeout(timeout)
-{
-   union{
-      AAL::btVirtAddr         ppayload;
-      struct aalui_Shutdown  *puiShutdown;
-   };
-
-   // Allocate to union and save pointer avoiding casting ugliness
-   puiShutdown = (new (std::nothrow) struct aalui_Shutdown);
-   m_payload = ppayload;
-
-   ASSERT(NULL != m_payload);
-   if(NULL == m_payload){
-      return;
-   }
-
-   m_size = sizeof(struct aalui_Shutdown);
-
-   puiShutdown->m_reason = ui_shutdownReasonNormal;
-   puiShutdown->m_timeout = m_timeout;
-   m_bIsOK = true;
-
-}
-AAL::btBool                    ShutdownMDT::IsOK() const {return m_bIsOK;}
-AAL::btVirtAddr                ShutdownMDT::getPayloadPtr()const {return m_payload;}
-AAL::btWSSize                  ShutdownMDT::getPayloadSize()const {return m_size;}
-AAL::stTransactionID_t const   ShutdownMDT::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              ShutdownMDT::getMsgID()const {return m_msgID;}
-*/

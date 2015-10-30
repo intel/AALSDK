@@ -155,6 +155,7 @@ protected:
    btUnsigned32bitInt  m_servicecount;
    TransactionMap      m_Transactions;
    ServiceClientMap    m_ServiceClientMap;
+   TransactionID      m_releaseTid;
 };
 
 
