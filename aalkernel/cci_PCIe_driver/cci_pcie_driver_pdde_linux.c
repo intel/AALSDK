@@ -332,7 +332,7 @@ cci_pci_probe( struct pci_dev             *pcidev,
    }
 
    // Display device information
-   PVERBOSE("Discovered FPGA Device:")
+   PVERBOSE("Discovered FPGA Device:");
    PVERBOSE("-VenderID %x  \n",pcidevid->vendor );
    PVERBOSE("-DeviceID  %x  \n",pcidevid->device );
    PVERBOSE("-B:D.F = %x:%x.%x  \n",pcidev->bus->number,PCI_SLOT(pcidev->devfn),PCI_FUNC(pcidev->devfn) );
