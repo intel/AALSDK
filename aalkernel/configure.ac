@@ -207,8 +207,11 @@ AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driv
                  cciv4_driver/kbuild/ccip_fme_mmio.c:cciv4_driver/ccip_fme_mmio.c
                  cciv4_driver/kbuild/ccip_port_mmio.h:cciv4_driver/ccip_port_mmio.h 
                  cciv4_driver/kbuild/ccip_port_mmio.c:cciv4_driver/ccip_port_mmio.c 
-                 cciv4_driver/kbuild/ccip_sim_mmio.c:cciv4_driver/ccip_sim_mmio.c  
+                 cciv4_driver/kbuild/ccip_sim_mmio.c:cciv4_driver/ccip_sim_mmio.c
+                 cciv4_driver/kbuild/ccip_perf_counters.c:cciv4_driver/ccip_perf_counters.c  
+                 cciv4_driver/kbuild/ccip_perf_counters.h:cciv4_driver/ccip_perf_counters.h   
                  cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
+
 
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile
