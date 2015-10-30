@@ -170,11 +170,6 @@ protected:
    btVirtAddr           m_uMSGmap;
    btUnsigned32bitInt   m_uMSGsize;
 
-   // handler for MMIO buffer allocation (on init)
-   static void _mmioAllocEventHandler(IEvent const &theEvent);
-   // handler for uMSG buffer allocation (on init)
-   static void _umsgAllocEventHandler(IEvent const &theEvent);
-
    struct ReleaseContext {
       const TransactionID   TranID;
       const btTime          timeout;
