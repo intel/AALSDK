@@ -94,7 +94,9 @@ ccip_sim_mmio.c \
 ccip_def.h   \
 ccip_fme_mmio.h \
 ccip_fme_mmio.c  \
-ccip_port_mmio.h   
+ccip_port_mmio.h   \
+ccip_perf_counters.h \
+ccip_perf_counters.c
 
 
 
