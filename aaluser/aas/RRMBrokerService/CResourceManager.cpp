@@ -122,6 +122,9 @@ btBool CResourceManager::init( IBase *pclientBase,
    btcString             sStartupMode   = NULL;       // for parsing environment
    std::string           strStartupMode;              // for reading environment
 
+   // Remember init transaction ID for later
+   m_initTid = rtid;
+
    // Save the client interface
    m_pResMgrClient = dynamic_ptr<IResourceManagerClient>(iidResMgrClient, getServiceClientBase());
    if( NULL == m_pResMgrClient ){
@@ -131,7 +134,7 @@ btBool CResourceManager::init( IBase *pclientBase,
                                                  errBadParameter,
                                                  reasInvalidParameter,
                                                  strInvalidParameter));
-
+      return true;
    }
 
    //
@@ -161,41 +164,41 @@ btBool CResourceManager::init( IBase *pclientBase,
 
    // RRM 'always' startup happens right here
    if (m_rrmStartupMode == always) {
-      if (!startRRMService()) {
-         initFailed(new CExceptionTransactionEvent(NULL,
-                                                   rtid,
-                                                   errSysSystemStarted,
-                                                   reasInitError,
-                                                   "RRM failed to start in 'always' mode"));
-         return false;
+      allocRRMService();
+
+      // continue initialization in serviceAllocated()
+   } else {
+      // if not starting RRM here, continue initialization
+
+      // Create an open channel to the remote resource manager
+      if ( !m_RMProxy.Open() ) {
+         // Sends a Service Client serviceAllocated callback
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    rtid,
+                                                    errDevice,
+                                                    reasNoDevice,
+                                                    strNoDevice));
+         return true;
       }
+
+      // Kick off the polling loop on the Proxy
+      m_pProxyPoll = new OSLThread( CResourceManager::ProxyPollThread,
+                                    OSLThread::THREADPRIORITY_NORMAL,
+                                    this);
+      if(NULL == m_pProxyPoll){
+         m_RMProxy.Close();
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    rtid,
+                                                    errInternal,
+                                                    reasCauseUnknown,
+                                                    "Could not create RM Proxy Poll thread."));
+         return true;
+      }
+
+      initComplete(rtid);
+
    }
 
-   // Create an open channel to the remote resource manager
-   if ( !m_RMProxy.Open() ) {
-      // Sends a Service Client serviceAllocated callback
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 rtid,
-                                                 errDevice,
-                                                 reasNoDevice,
-                                                 strNoDevice));
-      return true;
-   }
-
-   // Kick off the polling loop on the Proxy
-   m_pProxyPoll = new OSLThread( CResourceManager::ProxyPollThread,
-                                 OSLThread::THREADPRIORITY_NORMAL,
-                                 this);
-   if(NULL == m_pProxyPoll){
-      m_RMProxy.Close();
-      initFailed(new CExceptionTransactionEvent( NULL,
-                                                 rtid,
-                                                 errInternal,
-                                                 reasCauseUnknown,
-                                                 "Could not create RM Proxy Poll thread."));
-   }
-   // Sends a Service Client serviceAllocated callback
-   initComplete(rtid);
    return true;
 }
 
@@ -217,34 +220,31 @@ void CResourceManager::RequestResource(NamedValueSet const &nvsManifest,
    // RequestResource is only called for services that are not SW-only, so
    // we don't need to check for that
    if (m_rrmStartupMode == automatic && !isRRMPresent()) {
-      if (!startRRMService()) {
+
+      // if we have to allocate the RRM, we will forward the request in serviceAllocated()
+      // and pass the request parameters through its transaction ID
+      allocRRMService(TransactionID(reinterpret_cast<btApplicationContext>(new ResourceRequestContext(nvsManifest, tid))));
+
+   } else {
+
+      // if we don't allocate the RRM here, we can directly forward the request
+
+      // Send the request to the Resource Manager
+      if(false == m_RMProxy.SendRequest(nvsManifest,tid) ){
+
+         // Failed to send the request so schedule a callback
          getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
                                                                           nvsManifest,
                                                                           ResourceManagerClientMessage::AllocateFailed,
-                                                                          new CExceptionTransactionEvent( NULL,
-                                                                                                          tid,
-                                                                                                          errInternal,
-                                                                                                          reasCauseUnknown,
-                                                                                                          "Could not create RRM Service (in proc).")));
+                                                                          new CExceptionTransactionEvent(this,
+                                                                                                         tid,
+                                                                                                         errInternal,
+                                                                                                         reasCauseUnknown,
+                                                                                                         "Failed SendRequest on RM Proxy") ) );
          return;
-      }
+     }
+
    }
-
-   // Send the request to the Resource Manager
-   if(false == m_RMProxy.SendRequest(nvsManifest,tid) ){
-
-      // Failed to send the request so schedule a callback
-      getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
-                                                                       nvsManifest,
-                                                                       ResourceManagerClientMessage::AllocateFailed,
-                                                                       new CExceptionTransactionEvent(this,
-                                                                                                      tid,
-                                                                                                      errInternal,
-                                                                                                      reasCauseUnknown,
-                                                                                                      "Failed SendRequest on RM Proxy") ) );
-      return;
-  }
-
 }
 
 //=============================================================================
@@ -431,6 +431,7 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
    // If we never allocated a remote resource manager service (i.e. it's
    // running externally), go ahead and release self.
    if (m_pRRMAALService == NULL) {
+      ASSERT(m_rrmStartupMode != always);    // something's wrong - we should have a m_pRRMAALService on 'always'
       StopMessagePump();
       ServiceBase::Release(rTranID, timeout);   // This function blocks until pump is stopped.
 
@@ -447,7 +448,7 @@ btBool CResourceManager::Release(TransactionID const &rTranID, btTime timeout)
 }
 
 
-btBool CResourceManager::startRRMService() {
+void CResourceManager::allocRRMService(TransactionID const &rTid) {
    NamedValueSet ResMgrManifest;
    NamedValueSet ResMgrConfigRecord;
 
@@ -460,9 +461,7 @@ btBool CResourceManager::startRRMService() {
    ResMgrManifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "CAASResourceManager");
 
    // allocate service, will be started in serviceAllocated()
-   getRuntime()->allocService(this, ResMgrManifest, TransactionID());
-   m_sem.Wait();
-   return IsOK();
+   getRuntime()->allocService(this, ResMgrManifest, rTid);
 }
 
 
@@ -509,8 +508,78 @@ void CResourceManager::serviceAllocated(IBase               *pServiceBase,
 
    // run remote resource manager in separate thread
    m_pRRMService->start(TransactionID());
-   // unblock semaphore
-   m_sem.Post(1);
+
+   // TODO: synchronize (we want the RRM to be running before continuing)
+
+   // do housekeeping after allocation
+   switch (m_rrmStartupMode) {
+
+   case always:
+      {
+         // we were started in init(), need to finish up initialization here
+
+         // Create an open channel to the remote resource manager
+         if ( !m_RMProxy.Open() ) {
+            // Sends a Service Client serviceAllocated callback
+            initFailed(new CExceptionTransactionEvent( NULL,
+                                                       m_initTid,
+                                                       errDevice,
+                                                       reasNoDevice,
+                                                       strNoDevice));
+            return;
+         }
+
+         // Kick off the polling loop on the Proxy
+         m_pProxyPoll = new OSLThread( CResourceManager::ProxyPollThread,
+                                       OSLThread::THREADPRIORITY_NORMAL,
+                                       this);
+         if(NULL == m_pProxyPoll){
+            m_RMProxy.Close();
+            initFailed(new CExceptionTransactionEvent( NULL,
+                                                       m_initTid,
+                                                       errInternal,
+                                                       reasCauseUnknown,
+                                                       "Could not create RM Proxy Poll thread."));
+            return;
+         }
+
+         initComplete(m_initTid);
+         break;
+      }
+   case automatic:
+      {
+         // we were started in requestResource(), so initialization was done
+         // in init(), but we need to forward the request to the Resource Manager
+         struct ResourceRequestContext *rrc = reinterpret_cast<ResourceRequestContext *>(rTranID.Context());
+         if(false == m_RMProxy.SendRequest(rrc->nvsManifest,rrc->tranID) ){
+
+            // Failed to send the request so schedule a callback
+            getRuntime()->schedDispatchable(new ResourceManagerClientMessage(m_pResMgrClient,
+                                                                             rrc->nvsManifest,
+                                                                             ResourceManagerClientMessage::AllocateFailed,
+                                                                             new CExceptionTransactionEvent(this,
+                                                                                                            rrc->tranID,
+                                                                                                            errInternal,
+                                                                                                            reasCauseUnknown,
+                                                                                                            "Failed SendRequest on RM Proxy") ) );
+         }
+         // free resource request context memory that was passed in transaction ID
+         delete rrc;
+         break;
+      }
+   case never:
+      {
+         ASSERT(false);    // if never allocating a RRM service, we shouldn't see
+                           // serviceAllocated() called
+         break;
+      }
+   default:
+      {
+         ASSERT(false);    // unexpected startup mode
+         break;
+      }
+   }
+
 }
 
 void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
@@ -518,7 +587,7 @@ void CResourceManager::serviceAllocateFailed(const IEvent &rEvent)
    AAL_ERR(LM_ResMgr, "Allocation of CResMgr failed.");
    PrintExceptionDescription(rEvent);
    m_bIsOK = false;
-   m_sem.Post(1);
+   // TODO: initFailed(m_initTid);
 }
 
 void CResourceManager::serviceReleased(TransactionID const &rTranID)
@@ -528,6 +597,9 @@ void CResourceManager::serviceReleased(TransactionID const &rTranID)
    StopMessagePump();
 
    ServiceBase::Release(prc->tranID, prc->timeout);   // This function blocks until pump is stopped.
+
+   // Destroy encapsulated context
+   delete prc;
 }
 
 void CResourceManager::serviceReleaseFailed(const IEvent &rEvent)
