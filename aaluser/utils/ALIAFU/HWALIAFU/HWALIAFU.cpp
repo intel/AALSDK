@@ -647,7 +647,7 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
             // mmap
             if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-               AAL_ERR( LM_All, "FATAL: MapWSID failed");
+               AAL_ERR( LM_All, "FATAL: MapWSID failed");   // TODO: throw bufferAllocateFailed, etc.
             }
 
             // Remember workspace parameters associated with virtual ptr

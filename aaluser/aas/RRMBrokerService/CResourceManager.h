@@ -136,8 +136,8 @@ private:
 
    /// @brief Allocates the Remote Resource Manager service.
    ///
-   /// The service will be run in serviceAllocated().
-   btBool startRRMService();
+   /// The service thread will be started in serviceAllocated().
+   void allocRRMService(TransactionID const &rTid = TransactionID());
 
 
    /// @brief Checks if remote resource manager is already running by trying to
@@ -177,10 +177,17 @@ private:
 
    CSemaphore                     m_sem;
 
+   TransactionID                  m_initTid;       // for proper initComplete()
+   TransactionID                  m_releaseTid;    // for proper Service::Release()
+
    // Remote Resource Manager
    RRMStartupMode                 m_rrmStartupMode;
    IResMgrService                *m_pRRMService;
    IAALService                   *m_pRRMAALService;
+
+   // TODO: we might use STL's pair instead of custom structs, but I need to
+   //       figure out how pair constructs its members (by value or by ref)
+   //       (EL)
 
    // Context for properly wrapping transaction IDs on Release()
    struct ReleaseContext {
@@ -191,6 +198,17 @@ private:
          timeout(to)
       {}
    };
+
+   // Context for tunneling resource request through RRM allocation
+   struct ResourceRequestContext {
+      const NamedValueSet nvsManifest;
+      const TransactionID tranID;
+      ResourceRequestContext(const NamedValueSet &nvs, const TransactionID &rtid) :
+         nvsManifest(nvs),
+         tranID(rtid)
+      {}
+   };
+
 };
 
 END_NAMESPACE(AAL)
