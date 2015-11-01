@@ -58,7 +58,7 @@ int main(void)
 {
    struct pci_access *pacc;
    struct pci_dev *dev;
-   unsigned int c;
+   int c;
    char namebuf[1024], *name;
    char resbuf[1024];
    int retval = 0;
@@ -99,7 +99,7 @@ int main(void)
          c = snprintf( namebuf, sizeof(namebuf),
                    "/sys/bus/pci/devices/%04x:%02x:%02x.%d/resource",
                    dev->domain, dev->bus, dev->dev, dev->func);
-         if (c < 0 && c >= sizeof(namebuf)) {
+         if (c < 0 || c >= sizeof(namebuf)) {
             fprintf( stderr, "String too long, aborting with code 1.\n" );
             retval = 1;
             goto exit0;
