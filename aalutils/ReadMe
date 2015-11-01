@@ -1,13 +1,20 @@
 pciutils is the 3.4.0 stable version of pciutils, ~2015.10.30, available from
    git://git.kernel.org/pub/scm/utils/pciutils/pciutils.git
 
+NOTE: I had to make the following modifications:
+1) Add an additional 'ln -s' in the install-lib case in the Makefile
+
 It contains README with various configuration options, but basically, in order
 to use it, you want to use the following combination:
-$ cd pciutils
-$ make SHARED=yes
-$ make PREFIX=<installation_directory> install-libs
+
+   $ cd pciutils
+   $ make SHARED=yes
+   $ make PREFIX=<installation_directory> SHARED=yes install-lib
 
 It is not standard autoconf, but has some relationship with it.
+
+Linkage is naturally C, not C++, so using need to surround the include
+   of pci.h in C++ code using it with extern "C" linkage definitions.
 
 ----------------------------------------------------------------
 
