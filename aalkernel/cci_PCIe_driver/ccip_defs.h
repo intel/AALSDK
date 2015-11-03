@@ -75,7 +75,9 @@
 #define __AALKERNEL_CCIP_DEFS_H_
 #include "aalsdk/kernel/kosal.h"
 
+#if !defined(MODULE_FLAGS)
 #define MODULE_FLAGS CCIPCIE_DBG_MOD // Prints all
+#endif
 
 #include <aalsdk/kernel/aaltypes.h>
 #include "cci_pcie_driver_internal.h"
@@ -85,40 +87,6 @@ BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup aalkernel_ccip
 /// @{
-
-///=================================================================
-/// IDs used by the devices and objects
-///=================================================================
-
-// FPGA Management Engine GUID
-#define CCIP_FME_GUIDL              (0x82FE38F0F9E17764ULL)
-#define CCIP_FME_GUIDH              (0xBFAf2AE94A5246E3ULL)
-
-/// FPGA Port GUID
-#define CCIP_PORT_GUIDL             (0x9642B06C6B355B87ULL)
-#define CCIP_PORT_GUIDH             (0x3AB49893138D42EBULL)
-
-/// AFU GUID
-#define CCIP_AFU_GUIDL              (0xC000C9660D824272ULL)
-#define CCIP_AFU_GUIDH              (0x9AEFFE5F84570612ULL)
-
-/// Vender ID and Device ID
-#define CCIP_FPGA_VENDER_ID         0x8086
-
-/// PCI Device ID
-#define PCIe_DEVICE_ID_RCiEP0       0xBCBD
-#define PCIe_DEVICE_ID_RCiEP1       0xBCBE
-
-/// QPI Device ID
-#define PCIe_DEVICE_ID_RCiEP2       0xBCBC
-
-/// MMIO Space map
-#define FME_DFH_AFUIDL  0x8
-#define FME_DFH_AFUIDH  0x10
-#define FME_DFH_NEXTAFU 0x18
-
-
-
 
 /// MMIO space Size
 /// Simulation  mmio size
@@ -585,97 +553,97 @@ struct CCIP_FME_DFL_FPMON {
    // FPGA performance counters
    struct CCIP_FPMON_CH_CTL {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt reset_counter :1; //Reset counter
-           btUnsigned64bitInt rsvd2 :7;
-           btUnsigned64bitInt freeze :1; // Freeze
-           btUnsigned64bitInt rsvd1 :7;
-           btUnsigned64bitInt cache_event :4; // Cache Event code
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt reset_counter :1; //Reset counter
+            btUnsigned64bitInt rsvd2 :7;
+            btUnsigned64bitInt freeze :1; // Freeze
+            btUnsigned64bitInt rsvd1 :7;
+            btUnsigned64bitInt cache_event :4; // Cache Event code
 
-           //enum  e_Cache_Event_Code  cache_event :4;
+            //enum  e_Cache_Event_Code  cache_event :4;
 
-           btUnsigned64bitInt rsvd :44;
-        }; // end struct
-     }; // end union
+            btUnsigned64bitInt rsvd :44;
+         }; // end struct
+      }; // end union
 
    }ccip_fpmon_ch_ctl; // end struct CCIP_FPMON_CH_CTL
 
    // FPGA  Cache port0
    struct CCIP_FPMON_CH_CTR_0 {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt cache_counter :48; //Cache counter
-           btUnsigned64bitInt rsvd :16;
-        }; // end struct
-     }; // end union
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt cache_counter :48; //Cache counter
+            btUnsigned64bitInt rsvd :16;
+         }; // end struct
+      }; // end union
 
    }ccip_fpmon_ch_ctr_0; // end CIP_FPMON_CH_CTR_0
 
    // FPGA Cache port1
    struct CCIP_FPMON_CH_CTR_1 {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt cache_counter :48; //Cache counter
-           btUnsigned64bitInt rsvd :16;
-        }; // end struct
-     }; // end union
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt cache_counter :48; //Cache counter
+            btUnsigned64bitInt rsvd :16;
+         }; // end struct
+      }; // end union
 
    }ccip_fpmon_ch_ctr_1; // end struct CCIP_FPMON_CH_CTR_1
 
    // FPGA  Fabric control
    struct CCIP_FPMON_FAB_CTL {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt reset_counter :1; // Reset Counters
-           btUnsigned64bitInt rsvd3 :7;
-           btUnsigned64bitInt freeze :1; // Freeze
-           btUnsigned64bitInt rsvd2 :7;
-           btUnsigned64bitInt fabric_evt_code :4; // Fabric Event Code
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt reset_counter :1; // Reset Counters
+            btUnsigned64bitInt rsvd3 :7;
+            btUnsigned64bitInt freeze :1; // Freeze
+            btUnsigned64bitInt rsvd2 :7;
+            btUnsigned64bitInt fabric_evt_code :4; // Fabric Event Code
 
-           // e_Fabric_Event_Code fabric_evt_code :4; // Fabric Event Code
+            // e_Fabric_Event_Code fabric_evt_code :4; // Fabric Event Code
 
-           btUnsigned64bitInt port_id :2; // CCI-P Port ID
+            btUnsigned64bitInt port_id :2; // CCI-P Port ID
 
-           //enum e_CCIP_Port_Id port_id :2; // CCI-P Port ID
+            //enum e_CCIP_Port_Id port_id :2; // CCI-P Port ID
 
-           btUnsigned64bitInt rsvd1 :1;
-           btUnsigned64bitInt ccip_port_filter :1; // CCI-P Port Filter enable /disbale
-           btUnsigned64bitInt rsvd :40;
-        }; // end stuct
-     }; // end unon
+            btUnsigned64bitInt rsvd1 :1;
+            btUnsigned64bitInt ccip_port_filter :1; // CCI-P Port Filter enable /disbale
+            btUnsigned64bitInt rsvd :40;
+         }; // end stuct
+      }; // end unon
 
    }ccip_fpmon_fab_ctl; // end struct CCIP_FPMON_FAB_CTL
 
    // FPGA  Fabric control
    struct CCIP_FPMON_FAB_CTR {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt fabric_counter :48; // Fabric event counter
-           btUnsigned64bitInt rsvd :16;
-        }; // end struct
-     }; //end union
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt fabric_counter :48; // Fabric event counter
+            btUnsigned64bitInt rsvd :16;
+         }; // end struct
+      }; //end union
 
    }ccip_fpmon_fab_ctr; //end struct CCIP_FPMON_FAB_CTR
 
    // FPGA  Fabric control
    struct CCIP_FPMON_CLK_CTRS {
 
-     union {
-        btUnsigned64bitInt csr;
-        struct {
-           btUnsigned64bitInt afu_interf_clock :64; // AFU interface clock
-        }; // end struct
-     }; //end union
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt afu_interf_clock :64; // AFU interface clock
+         }; // end struct
+      }; //end union
 
 
    }ccip_fpmon_clk_ctrs; // end struct CCIP_FPMON_CLK_CTRS
@@ -788,7 +756,7 @@ struct CCIP_FME_DFL_PR {
             btUnsigned64bitInt rsvd1 :1;
             btUnsigned64bitInt pr_status :4;
 
-           // enum e_CCIP_PORT_PR_status  pr_status :4;
+            // enum e_CCIP_PORT_PR_status  pr_status :4;
 
             btUnsigned64bitInt rsvd :35;
          }; // end struct
@@ -1208,84 +1176,27 @@ struct CCIP_AFU_Header {
 CASSERT(sizeof(struct CCIP_AFU_Header) == (4*8));
 
 
-///============================================================================
-/// Name: fme_device
-/// @brief   FPGA Management engine device struct
-///============================================================================
-struct fme_device
-{
 
-   struct CCIP_FME_HDR        *m_pHDR;          // FME Header
-   struct CCIP_FME_DFL_THERM  *m_pThermmgmt;    // FME  Thermal Management DFL
-   struct CCIP_FME_DFL_PM     *m_pPowermgmt;    // FME  Power Management DFL
-   struct CCIP_FME_DFL_FPMON  *m_pPerf;         // FME  Global Performance  DFL
-   struct CCIP_FME_DFL_GERROR *m_pGerror;       // FME  Global Error  DFL
-   struct CCIP_FME_DFL_PR     *m_pPRmgmt;       // FME  PR Management  DFL
-
-
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
-
-   // Used for being added to the global list of devices.
-   struct list_head           m_list;           // List itself
-
-   // Private semaphore
-   struct semaphore           m_sem;
-
-   // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
-
-   // btUnsignedInt              m_flags;
-
-   // struct aal_device         m_aal_dev;         // AAL Device from which this is derived
-
-}; // end struct fme_device
-
-#define ccip_fme_dev_board_type(pdev)         ((pdev)->m_boardtype)
-
-
-#define ccip_fme_dev_pci_dev(pdev)           ((pdev)->m_pcidev)
-
-#define ccip_fme_aal_dev(pdev)               ((pdev)->m_aal_dev)
-#define ccip_fme_hdr(pdev)                   ((pdev)->m_pHDR)
-#define ccip_fme_therm(pdev)                 ((pdev)->m_pThermmgmt)
-#define ccip_fme_power(pdev)                 ((pdev)->m_pPowermgmt)
-#define ccip_fme_perf(pdev)                  ((pdev)->m_pPerf)
-#define ccip_fme_gerr(pdev)                  ((pdev)->m_pGerror)
-#define ccip_fme_pr(pdev)                    ((pdev)->m_pPRmgmt)
-
-#define ccip_fme_mem_sessionp(pdev)              ((pdev)->m_pmem_session)
-
-#define ccip_dev_fme_phys_mmio(pdev)              ((pdev)->m_phys_fme_mmio)
-#define ccip_dev_fme_kvp_mmio(pdev)               ((pdev)->m_kvp_fme_mmio)
-#define ccip_dev_fme_len_mmio(pdev)               ((pdev)->m_len_fme_mmio)
-
-#define ccip_dev_fme_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define ccip_dev_fme_to_aaldev(pdev)             ((pdev)->m_aal_dev)
-
-#define ccip_dev_fme_list_head(pdev)             ((pdev)->m_list)
-#define ccip_list_fme_to_ccip_device(plist)      kosal_list_entry(plist, struct fme_device, m_list)
-#define aaldev_to_ccip_fme_device(plist)         kosal_list_entry(plist, struct fme_device, m_list)
-#define ccip_dev_fme_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
-#define ccip_dev_fme_psem(pdev)                  (&(pdev)->m_sem)
 
 // CCIP port device
 struct port_device
 {
-	struct CCIP_PORT_HDR         *m_pport_hdr;        // PORRT Header
-	struct CCIP_PORT_ERR_DFL 	  *m_pport_err;       // PORT Error DFL
-	struct CCIP_PORT_UMSG_DFL    *m_pport_umsg;       // PORT USMG DFL
-	struct CCIP_PORT_PR_DFL      *m_pport_pr;         // PORT PR DFL
-	struct CCIP_PORT_STAP_DFL    *m_pport_stap;       // PORT Signal tap DFL
+   struct CCIP_PORT_HDR         *m_pport_hdr;        // PORRT Header
+   struct CCIP_PORT_ERR_DFL 	  *m_pport_err;       // PORT Error DFL
+   struct CCIP_PORT_UMSG_DFL    *m_pport_umsg;       // PORT USMG DFL
+   struct CCIP_PORT_PR_DFL      *m_pport_pr;         // PORT PR DFL
+   struct CCIP_PORT_STAP_DFL    *m_pport_stap;       // PORT Signal tap DFL
 
-	struct pci_dev               *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
-	// Used for being added to the global list of devices.
-	struct list_head              m_list;           // List itself
+   struct pci_dev               *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
+   // Used for being added to the global list of devices.
+   struct list_head              m_list;           // List itself
 
-	// Private semaphore
-	struct semaphore              m_sem;
+   // Private semaphore
+   struct semaphore              m_sem;
 
-	// struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
+   // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
 
-	// struct aal_device         aal_dev;         // AAL Device from which this is derived
+   // struct aal_device         aal_dev;         // AAL Device from which this is derived
 
 
 }; // end struct port_device
@@ -1324,7 +1235,7 @@ struct port_device
 struct afu_device
 {
 
-//   struct aal_device         aal_dev;         // AAL Device from which this is derived
+   //   struct aal_device         aal_dev;         // AAL Device from which this is derived
 
    struct CCIP_AFU_Header    *pAfu_header;
 
@@ -1337,68 +1248,55 @@ struct afu_device
 struct ccip_device
 {
    // Used for being added to the global list of devices.
-   struct list_head         m_list;           // List itself
+   struct list_head           m_list;
 
-	struct aal_device       *m_aal_dev;         // AAL Device from which this is derived
+   // Head of the list of AAL devices created
+   struct list_head           m_devlisthead;
 
-	struct fme_device       *m_pfme_dev;    // FME Device
+   struct fme_device         *m_pfme_dev;    // FME Device
 
-	// List of ports TBD
-	struct port_device      *m_pport_dev;   // FME Port
+   // List of ports TBD
+   struct port_device        *m_pport_dev;   // FME Port
 
-	// List of AFU  TBD
-	struct afu_device       *m_pafu_dev;    // FME AFU
+   // List of AFU  TBD
+   struct afu_device         *m_pafu_dev;    // FME AFU
 
-	struct pci_dev          *m_pcidev;         // Linux pci_dev pointer
+   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
 
-	// TBD ?
-	//struct pr_device         *m_ppr_dev ;
+   // TBD ?
+   //struct pr_device         *m_ppr_dev ;
 
-	btUnsignedInt            m_flags;
+   btUnsignedInt              m_flags;
 
+   // Private semaphore
+   struct semaphore           m_sem;
 
+   int                        m_simulated;
 
-	// Private semaphore
-	struct semaphore         m_sem;
+   btUnsigned32bitInt         m_busNum;
+   btUnsigned32bitInt         m_devicenum;   // device number
+   btUnsigned32bitInt         m_functnum;    // function number
 
-	enum aal_bus_types_e     m_boardtype;
+   // FME MMIO Space
+   btVirtAddr                 m_kvp_fme_mmio;   // kv address of MMIO space
+   btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
+   size_t                     m_len_fme_mmio;   // Bytes
 
-	int                      m_simulated;
+   btVirtAddr                 m_kvp_port_mmio;   // kv address of MMIO space
+   btPhysAddr                 m_phys_port_mmio;  // Physical address of MMIO space
+   size_t                     m_len_port_mmio;
 
-	btUnsigned32bitInt       m_busNum;
-	btUnsigned32bitInt       m_devfunNum;
-
-	// TBD
-	// struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
-
-	// FME MMIO Space
-	btVirtAddr                 m_kvp_fme_mmio;   // kv address of MMIO space
-	btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
-	size_t                     m_len_fme_mmio;   // Bytes
-
-
-	// port MMIO Space for 5 BAR's
-	// list of ports TBD ?
-	// btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
-	// btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
-	// size_t                     m_len_port_mmio[5];   // Bytes
-
-
-	btVirtAddr                 m_kvp_port_mmio;   // kv address of MMIO space
-	btPhysAddr                 m_phys_port_mmio;  // Physical address of MMIO space
-	size_t                     m_len_port_mmio;
-
-	// AFU MMIO Space
-	// list of afu TBD ?
-	btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
-	btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
-	size_t                     m_len_afu_mmio;   // Bytes
+   // AFU MMIO Space
+   btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
+   btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
+   size_t                     m_len_afu_mmio;   // Bytes
 
 
 }; // end struct ccip_afu_device
 
 
 #define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
+#define ccip_dev_to_fme_dev(pdev)            (pdev->m_pfme_dev)
 
 #define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
 
@@ -1418,6 +1316,7 @@ struct ccip_device
 #define ccip_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_dev_psem(pdev)                  (&(pdev)->m_sem)
 
+#define ccip_aal_dev_list(pdev)              ((pdev)->m_devlisthead)
 
 #define ccip_fmedev_phys_afu_mmio(pdev)         ((pdev)->m_phys_fme_mmio)
 #define ccip_fmedev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_fme_mmio)
@@ -1428,8 +1327,9 @@ struct ccip_device
 #define ccip_portdev_len_afu_mmio(pdev)          ((pdev)->m_len_port_mmio)
 
 
-#define ccip_dev_busnum(pdev)        				    ((pdev)->m_busNum)
-#define ccip_dev_devfunnum(pdev)        				 ((pdev)->m_devfunNum)
+#define ccip_dev_pcie_busnum(pdev)              ((pdev)->m_busNum)
+#define ccip_dev_pcie_devnum(pdev)              ((pdev)->m_devicenum)
+#define ccip_dev_pcie_fcnnum(pdev)              ((pdev)->m_functnum)
 
 /// @brief   Writes 64 bit control and status registers.
 ///

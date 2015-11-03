@@ -152,13 +152,15 @@ enum aal_device_request_e {
 struct aal_device_addr {
    enum aal_bus_types_e m_bustype;     // Type of bus E.g., FSB, QPI, PCIe
    btUnsigned32bitInt   m_busnum;      // Bus number
-   btUnsigned32bitInt   m_devicenum;   // device/channel number
+   btUnsigned32bitInt   m_devicenum;   // device number
+   btUnsigned32bitInt   m_functnum;    // function number
    bt32bitInt           m_subdevnum;   // Sub-device/channel number
 };
 #define aaldevaddr_bustype(devaddr)         ((devaddr).m_bustype)
-#define aaldevaddr_busnum(devid)          ((devaddr).m_busnum)
-#define aaldevaddr_devnum(devid)          ((devaddr).m_devicenum)
-#define aaldevaddr_subdevnum(devid)       ((devaddr).m_subdevnum)
+#define aaldevaddr_busnum(devaddr)          ((devaddr).m_busnum)
+#define aaldevaddr_devnum(devaddr)          ((devaddr).m_devicenum)
+#define aaldevaddr_fcnnum(devaddr)          ((devaddr).m_functnum)
+#define aaldevaddr_subdevnum(devaddr)       ((devaddr).m_subdevnum)
 
 
 //=============================================================================
@@ -192,6 +194,7 @@ struct aal_device_id {
 #define aaldevid_devaddr_bustype(devid)   ((aaldevid_addr(devid)).m_bustype)
 #define aaldevid_devaddr_busnum(devid)    ((aaldevid_addr(devid)).m_busnum)
 #define aaldevid_devaddr_devnum(devid)    ((aaldevid_addr(devid)).m_devicenum)
+#define aaldevid_devaddr_fcnnum(devid)    ((aaldevid_addr(devid)).m_functnum)
 #define aaldevid_devaddr_subdevnum(devid) ((aaldevid_addr(devid)).m_subdevnum)
 
 #define aaldevid_afuguidl(devid) ((devid).m_afuGUIDl)

@@ -57,7 +57,7 @@
 //****************************************************************************
 //        FILE: cci_pcie_driver_simulator.c
 //     CREATED: Oct 14, 2015
-//      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
+//      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //
 // PURPOSE:   This file contains the implementation of the simulated CCI
 //            device
@@ -94,15 +94,14 @@ static char umesgafustring[]   = "CCIv4 UMSG test  \n";
 
 static int
 CommandHandler(struct aaldev_ownerSession *,
-               struct aal_pipmessage,
-               void *);
+               struct aal_pipmessage);
 int
 cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
                struct aal_wsid *wsidp,
                btAny os_specific);
 
 //=============================================================================
-// CCIV4_SIMAFUpip
+// cci_simAFUpip
 // Description: Physical Interface Protocol Interface for the SPL2 AFU
 //              kernel based AFU engine.
 //=============================================================================
@@ -221,7 +220,7 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
                         struct aal_device_id *paalid,
                         struct list_head *pdevice_list)
 {
-   struct cci_device *pCCIdev    = NULL;
+   struct cci_aal_device *pCCIdev    = NULL;
    btVirtAddr         ptemp      = NULL;
    int                ret        = 0;
 
@@ -230,11 +229,11 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    // used by the Low Level Communications (PIP). It holds the
    // hardware specific attributes.
 
-   // Construct the cci_device object
+   // Construct the cci_aal_device object
    pCCIdev = cci_create_device();
 
-   //====================================================
-   // Set up the cci_device attributes used by the driver
+   //========================================================
+   // Set up the cci_aal_device attributes used by the driver
    //
 
    // Set up Simulated Config Space
@@ -369,14 +368,12 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
 // Interface: public
 // Inputs: pownerSess - Session between App and device
 //         Message - Message to process
-//         MessageContext - used by UIDRV (TODO deprecate)
 // Outputs: none.
 // Comments:
 //=============================================================================
 int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
-               struct aal_pipmessage       Message,
-               void                       *MessageContext)
+               struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -386,7 +383,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
    // Private session object set at session bind time (i.e., when allocated)
    struct cci_PIPsession *pSess = (struct cci_PIPsession *)aalsess_pipHandle(pownerSess);
-   struct cci_device  *pdev  = NULL;
+   struct cci_aal_device  *pdev  = NULL;
 
    // Generalized payload pointer. Points to locally allocated and copied
    //    version of pmsg->payload of length pmsg->size
@@ -1042,7 +1039,7 @@ cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
    struct vm_area_struct     *pvma = (struct vm_area_struct *) os_specific;
 
    struct cci_PIPsession   *pSess = NULL;
-   struct cci_device       *pdev = NULL;
+   struct cci_aal_device       *pdev = NULL;
    unsigned long              max_length = 0; // mmap length requested by user
    int                        res = -EINVAL;
 

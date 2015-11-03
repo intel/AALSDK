@@ -83,7 +83,7 @@ struct cci_PIPsession {
 
    // PIP contains all of the interfaces we use for communications
    struct aal_device             *paaldev;
-   struct cci_device           *pCCIdev;
+   struct cci_aal_device           *pCCIdev;
 
    // Current transaction
    stTransactionID_t              currTranID;

@@ -92,8 +92,8 @@ cci_pcie_driver_umapi_linux.h \
 cci_pcie_driver_umapi_common.c \
 ccip_defs.h \
 cciui-events.h \
-ccip_fme_mmio.h \
-ccip_fme_mmio.c  
+ccip_fme.h \
+ccip_fme.c
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers

@@ -86,8 +86,7 @@
 
 static int
 AFUCommand(struct aaldev_ownerSession *,
-           struct aal_pipmessage,
-           void *);
+           struct aal_pipmessage);
 
 
 //=============================================================================
@@ -601,8 +600,7 @@ ERROR:
 //=============================================================================
 int
 AFUCommand(struct aaldev_ownerSession *pownerSess,
-           struct aal_pipmessage       Message,
-           void                       *MessageContext)
+           struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -683,7 +681,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       AFU_COMMAND_CASE(fappip_afucmdSTART_SPL2_TRANSACTION) {
          if ( start_spl2_transaction(pownerSess,
                                      &Message,
-                                     MessageContext,
+                                     NULL,
                                      (struct spl2req *)p_localpayload) ) {
             retval = -EIO;
             goto ERROR;
@@ -693,7 +691,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       AFU_COMMAND_CASE(fappip_afucmdSTOP_SPL2_TRANSACTION) {
          if ( stop_spl2_transaction( pownerSess,
                                     &Message,
-                                     MessageContext) ) {
+                                     NULL) ) {
             retval = -EIO;
             goto ERROR;
          }
@@ -703,7 +701,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       AFU_COMMAND_CASE(fappip_afucmdSET_SPL2_CONTEXT_WORKSPACE) {
          if ( set_spl2_context_workspace(pownerSess,
                                          &Message,
-                                         MessageContext,
+                                         NULL,
                                          (struct spl2req *)p_localpayload) ) {
             retval = -EIO;
             goto ERROR;

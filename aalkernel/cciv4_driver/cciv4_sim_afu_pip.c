@@ -85,8 +85,7 @@ extern int cciv4_sim_mmap( struct aaldev_ownerSession *,
 
 static int
 CommandHandler(struct aaldev_ownerSession *,
-               struct aal_pipmessage,
-               void *);
+               struct aal_pipmessage);
 
 
 //=============================================================================
@@ -123,8 +122,7 @@ struct aal_ipip cciv4_simAFUpip = {
 //=============================================================================
 int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
-               struct aal_pipmessage       Message,
-               void                       *MessageContext)
+               struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);

@@ -112,8 +112,8 @@ session_create(struct aaldev_ownerSession *pownerSess)
    kosal_mutex_init(cci_PIPsessionp_semaphore(pSess));
 
    // Save the device for this AFU. (Saved when the AFU was created)
-   cci_PIPsessionp_to_ccidev(pSess) = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
-   //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cci_device *, pSess->paaldev);
+   cci_PIPsessionp_to_ccidev(pSess) = aaldev_pip_context_to_obj(struct cci_aal_device *, pSess->paaldev);
+   //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cci_aal_device *, pSess->paaldev);
    PDEBUG("CCIv4 PIP Session Created.\n");
 
    return pSess;
@@ -130,7 +130,7 @@ int
 BindSession(struct aaldev_ownerSession *pownerSess)
 {
    struct aal_device     *paaldev = NULL;
-   struct cci_device     *pdev    = NULL;
+   struct cci_aal_device     *pdev    = NULL;
    struct cci_PIPsession *pSess   = NULL;
 
    PVERBOSE("Binding UI Session with CCIv4 Device\n");
@@ -145,7 +145,7 @@ BindSession(struct aaldev_ownerSession *pownerSess)
    }
 
    // Get the device from the AAL device's PIP context (setup when device was created)
-   pdev = aaldev_pip_context_to_obj(struct cci_device*, paaldev);
+   pdev = aaldev_pip_context_to_obj(struct cci_aal_device*, paaldev);
 
    // Create a PIP session and save it.
    pSess = session_create( pownerSess );
@@ -191,7 +191,7 @@ int session_destroy(struct cci_PIPsession *pSess)
 int UnbindSession(struct aaldev_ownerSession *pownerSess)
 {
    struct cci_PIPsession *pSess = (struct cci_PIPsession *)pownerSess->m_PIPHandle;
-   struct cci_device     *pdev  = cci_PIPsessionp_to_ccidev(pSess);
+   struct cci_aal_device     *pdev  = cci_PIPsessionp_to_ccidev(pSess);
 
    PDEBUG("UnBinding UI Session\n");
 
@@ -220,7 +220,7 @@ void
 cci_flush_all_wsids(struct cci_PIPsession *psess)
 {
    struct aaldev_ownerSession *pownerSess;
-   struct cci_device        *pdev;
+   struct cci_aal_device        *pdev;
 
    struct aal_wsid            *wsidp;
    struct aal_wsid            *tmp;

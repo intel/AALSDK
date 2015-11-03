@@ -115,8 +115,8 @@ struct aal_pipmsghandler
 
    // Send a UI message to the PIP
    btInt (*sendMessage)(struct aaldev_ownerSession *,   // Owner Session
-                        struct aal_pipmessage,          // Message
-                        btObjectType );                 // Message context
+                        struct aal_pipmessage);         // Message
+
 };
 
 

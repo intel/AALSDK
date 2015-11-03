@@ -69,23 +69,144 @@
 #define MODULE_FLAGS CCIV4_DBG_MOD // Prints all
 
 #include "aalsdk/kernel/aalbus.h"
+#include "aalsdk/kernel/ccipdriver.h"
+#include "aalsdk/kernel/iaaldevice.h"
 
 #include "cci_pcie_driver_internal.h"
 
+#include "ccip_defs.h"
+
+
+extern struct aal_ipip cci_FMEpip;
+
+///============================================================================
+/// cci_dev_create_allocatable_objects
+/// @brief Construct the FME MMIO object.
+///
+/// @param[in] fme_device fme device object .
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+///============================================================================
+btBool cci_dev_create_allocatable_objects(struct ccip_device * pccipdev)
+{
+   struct cci_aal_device   *pCCIdev    = NULL;
+   struct aal_device_id     aalid;
+   int                      ret        = 0;
+
+
+   // First create FME objects
+
+   //=============================================================
+   // Create the CCI device structure. The CCI device is the class
+   // used by the Low Level Communications (PIP). It holds the
+   // hardware specific attributes.
+
+   // Construct the cci_aal_device object
+   pCCIdev = cci_create_device();
+
+   ASSERT(NULL != pCCIdev);
+
+   // Make it an FME by setting the type field and giving a pointer to the
+   //  FME device object of the CCIP board device
+   cci_dev_type(pCCIdev) = cci_dev_FME;
+   set_cci_dev_subclass(pCCIdev, ccip_dev_to_fme_dev(pccipdev));
+
+   // Setup the AAL device's ID. This is the collection of attributes
+   //  that uniquely identifies the AAL device, usually for the purpose
+   //  of allocation through Resource Management
+   aaldevid_devaddr_bustype(aalid)     = aal_bustype_PCIe;
+
+   // The AAL address maps to the PCIe address. The Subdevice number is
+   //  vendor defined and in this case the FME object has the value CCIP_DEV_FME_SUBDEV
+   aaldevid_devaddr_busnum(aalid)      = ccip_dev_pcie_busnum(pccipdev);
+   aaldevid_devaddr_devnum(aalid)      = ccip_dev_pcie_devnum(pccipdev);
+   aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
+   aaldevid_devaddr_subdevnum(aalid)   = CCIP_DEV_FME_SUBDEV;
+
+   // The following attributes describe the interfaces supported by the device
+   aaldevid_afuguidl(aalid)            = CCIP_FME_GUIDL;
+   aaldevid_afuguidh(aalid)            = CCIP_FME_GUIDH;
+   aaldevid_devtype(aalid)             = aal_devtypeAFU;
+   aaldevid_pipguid(aalid)             = CCIP_FME_PIPIID;
+   aaldevid_vendorid(aalid)            = AAL_vendINTC;
+
+   // Set the interface permissions
+   // Enable MMIO-R
+   cci_dev_set_allow_map_mmior_space(pCCIdev);
+
+
+   // Create the AAL device and attach it to the CCI device object
+   pCCIdev->m_aaldev =  aaldev_create( "CCIPFME",           // AAL device base name
+                                        &aalid,             // AAL ID
+                                        &cci_FMEpip);
+
+   //===========================================================
+   // Set up the optional aal_device attributes
+   //
+
+   // Set how many owners are allowed access to this device simultaneously
+   pCCIdev->m_aaldev->m_maxowners = 1;
+
+   // Set the config space mapping permissions
+   cci_dev_to_aaldev(pCCIdev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
+   if( cci_dev_allow_map_csr_read_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
+   }
+
+   if( cci_dev_allow_map_csr_write_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
+   }
+
+   if( cci_dev_allow_map_mmior_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
+   }
+
+   if( cci_dev_allow_map_umsg_space(pCCIdev) ){
+      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
+   }
+
+   // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
+   aaldev_pip_context(cci_dev_to_aaldev(pCCIdev)) = (void*)pCCIdev;
+
+   // Method called when the device is released (i.e., its destructor)
+   //  The canonical release device calls the user's release method.
+   //  If NULL is provided then only the canonical behavior is done
+   dev_setrelease(cci_dev_to_aaldev(pCCIdev), cci_release_device);
+
+      // Device is ready for use.  Publish it with the Configuration Management Subsystem
+   ret = cci_publish_aaldevice(pCCIdev);
+   ASSERT(ret == 0);
+   if(0> ret){
+      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(aalid),
+                                                                  aaldevid_devaddr_devnum(aalid),
+                                                                  aaldevid_devaddr_fcnnum(aalid),
+                                                                  aaldevid_devaddr_subdevnum(aalid));
+      kosal_kfree(cci_dev_kvp_afu_mmio(pCCIdev), cci_dev_len_afu_mmio(pCCIdev));
+      kosal_kfree(cci_dev_kvp_afu_umsg(pCCIdev),cci_dev_len_afu_umsg(pCCIdev));
+      cci_destroy_device(pCCIdev);
+      return -EINVAL;
+   }
+
+   // Add the device to theCCI Board device's device list
+   kosal_list_add(&ccip_aal_dev_list(pccipdev), &cci_dev_list_head(pCCIdev));
+
+   return true;
+}
+
 //=============================================================================
 // Name: cci_create_device
-// Description: Constructor for a cci_device object
+// Description: Constructor for a cci_aal_device object
 // Outputs: pointer to object.
 // Comments: none.
 //=============================================================================
- struct cci_device* cci_create_device()
+ struct cci_aal_device* cci_create_device()
 {
-   struct cci_device* pCCIdev = NULL;
+   struct cci_aal_device* pCCIdev = NULL;
 
-   // Allocate the cci_device object
-   pCCIdev = (struct cci_device*) kosal_kzmalloc(sizeof(struct cci_device));
+   // Allocate the cci_aal_device object
+   pCCIdev = (struct cci_aal_device*) kosal_kzmalloc(sizeof(struct cci_aal_device));
    if ( NULL == pCCIdev ) {
-      PERR("Unable to allocate system memory for cci_device object\n");
+      PERR("Unable to allocate system memory for cci_aal_device object\n");
       return NULL;
    }
 
@@ -98,20 +219,20 @@
 
 //=============================================================================
 // Name: cci_destroy_device
-// Description: Destructor for a cci_device object
+// Description: Destructor for a cci_aal_device object
 // Inputs: pointer to object.
 // Outputs: 0 - success
 // Comments: none.
 //=============================================================================
-int cci_destroy_device( struct cci_device* pCCIdev)
+int cci_destroy_device( struct cci_aal_device* pCCIdev)
 {
    ASSERT(NULL != pCCIdev);
    if(NULL == pCCIdev){
-      PERR("Attemptiong to destroy NULL pointer to cci_device object\n");
+      PERR("Attemptiong to destroy NULL pointer to cci_aal_device object\n");
       return -EINVAL;
    }
 
-   kosal_kfree(pCCIdev, sizeof(struct cci_device));
+   kosal_kfree(pCCIdev, sizeof(struct cci_aal_device));
    return 0;
 }
 
@@ -146,7 +267,7 @@ cci_release_device(struct device *pdev)
 // Outputs: 0 - success.
 // Comments: none.
 //=============================================================================
-int cci_publish_aaldevice(struct cci_device * pCCIdev)
+int cci_publish_aaldevice(struct cci_aal_device * pCCIdev)
 {
    btInt ret = 0;
 
@@ -173,7 +294,7 @@ int cci_publish_aaldevice(struct cci_device * pCCIdev)
 // Comments:
 //=============================================================================
 void
-cci_unpublish_aaldevice(struct cci_device *pCCIdev)
+cci_unpublish_aaldevice(struct cci_aal_device *pCCIdev)
 {
    PVERBOSE("Removing CCIv4 device from configuration\n");
 
@@ -194,7 +315,7 @@ cci_unpublish_aaldevice(struct cci_device *pCCIdev)
 // Comments:
 //=============================================================================
 void
-cci_remove_device(struct cci_device *pCCIdev)
+cci_remove_device(struct cci_aal_device *pCCIdev)
 {
    PDEBUG("Removing CCI device\n");
 

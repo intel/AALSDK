@@ -471,7 +471,7 @@ process_send_message(struct ccidrv_session  *psess,
          //  This macro resolves to calling the low level, device specific, command
          //  handler called the Physical Interface Protocol (PIP).  This enabled devices
          //  served by this driver have custom low level drivers.
-         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage, ownSessp);
+         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage);
          pipMessage.m_message = NULL;
 
          PTRACEOUT_INT(ret);

@@ -79,8 +79,7 @@
 
 int
 MAFUCommand(struct aaldev_ownerSession * ,
-            struct aal_pipmessage ,
-            void * );
+            struct aal_pipmessage );
 
 static void    spl2_sim_read_cci_csr(struct spl2_device * , btCSROffset );
 static void spl2_sim_write_cci_csr32(struct spl2_device * , btCSROffset , bt32bitCSR );
@@ -421,8 +420,7 @@ struct uidrv_event_afu_response_event *
 //=============================================================================
 int
 MAFUCommand(struct aaldev_ownerSession *pownerSess,
-            struct aal_pipmessage       Message,
-            void                       *MessageContext)
+            struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);

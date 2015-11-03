@@ -79,7 +79,8 @@
 
 #include "cciv4_PIPsession.h"
 #endif
-#include "aalsdk/kernel/aalqueue.h"
+
+#include <aalsdk/kernel/aalqueue.h>
 #include <aalsdk/kernel/iaaldevice.h>
 
 
@@ -110,12 +111,18 @@
 // Prototypes
 //=============================================================================
 
+enum   cci_devtype{
+   cci_dev_FME,
+   cci_dev_Port,
+   cci_dev_AFU
+};
 
 //=============================================================================
-// Name: cci_device
-// Description: Structure describing a CCI device
+// Name: cci_aal_device
+// Description: Structure describing a CCI AAL device. This object is used to
+//              expose an allocatable object to the host via the aalbus.
 //=============================================================================
-struct cci_device {
+struct cci_aal_device {
 #define CCI_DEV_FLAG_PCI_DEV_ENABLED           0x00000001
 #define CCI_DEV_FLAG_PCI_REGION_REQUESTED      0x00000002
 #define CCI_DEV_FLAG_ALLOW_MAP_CSR_READ_SPACE  0x00000004
@@ -162,10 +169,22 @@ struct cci_device {
    size_t                     m_len_afu_umsg;    // Bytes
 
    struct cci_PIPsession     *m_pPIPSession;     // PIP session object
+
+   enum   cci_devtype         m_devtype;        // Type of the subclass (e.g., FME, PORT, AFU)
+   union {
+      void                   *m_void;
+      struct fme_device      *m_pfme;
+//      struct port_device     *m_pport;
+//      struct afu_device      *m_afu;
+   };
 };
 
 
-#define pci_dev_to_cci_dev(ptr)             cci_container_of(ptr, struct pci_dev, m_pcidev, struct cci_device)
+#define pci_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
+
+#define cci_dev_to_fme(pdev)                 (pdev->m_devtype == cci_dev_FME ? pdev->m_pfme : NULL)
+
+#define set_cci_dev_subclass(pdev, psc)      (pdev->m_void = psc)
 
 #define cci_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
    #define cci_dev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)
@@ -198,6 +217,8 @@ struct cci_device {
    #define cci_dev_set_simulated(pdev) ((pdev)->m_flags |= CCI_DEV_FLAG_SIMULATED_DEV)
    #define cci_dev_clr_simulated(pdev) ((pdev)->m_flags &= ~CCI_DEV_FLAG_SIMULATED_DEV)
 
+#define cci_dev_type(pdev)                  ((pdev)->m_devtype)
+
 #define cci_dev_board_type(pdev)            ((pdev)->m_boardtype)
 
 #define cci_set_simulated(pdev)             ((pdev)->m_simulated = 1)
@@ -229,8 +250,8 @@ struct cci_device {
 
 
 #define cci_dev_list_head(pdev)             ((pdev)->m_list)
-#define cci_list_to_cci_device(plist)     kosal_list_entry(plist, struct cci_device, m_list)
-#define aaldev_to_cci_device(plist)         kosal_list_entry(plist, struct cci_device, m_list)
+#define cci_list_to_cci_aal_device(plist)     kosal_list_entry(plist, struct cci_aal_device, m_list)
+#define aaldev_to_cci_aal_device(plist)         kosal_list_entry(plist, struct cci_aal_device, m_list)
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
@@ -239,11 +260,13 @@ struct cci_device {
 //                                PROTOTYPES
 //=============================================================================
 //=============================================================================
+struct ccip_device;   // forward reference
 extern int ccidrv_initDriver(void/*callback*/);
-extern struct cci_device* cci_create_device(void);
-extern int cci_destroy_device( struct cci_device*);
-extern int cci_publish_aaldevice(struct cci_device *);
-extern void cci_remove_device(struct cci_device *);
+extern btBool cci_dev_create_allocatable_objects(struct ccip_device *);
+extern struct cci_aal_device* cci_create_device(void);
+extern int cci_destroy_device( struct cci_aal_device*);
+extern int cci_publish_aaldevice(struct cci_aal_device *);
+extern void cci_remove_device(struct cci_aal_device *);
 extern void cci_release_device(struct device *pdev);
 extern void ccidrv_exitDriver(void);
 
@@ -258,10 +281,13 @@ extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
 extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
                                         unsigned long long id);
 extern btInt
-ccidrv_sendevent( btObjectType       sesHandle,
-                  struct aal_device *devp,
-                  struct aal_q_item *eventp,
-                  btObjectType       context);
+ccidrv_sendevent( btObjectType,
+                  struct aal_device *,
+                  struct aal_q_item *,
+                  btObjectType);
+
+
+
 #if 0
 void cci_release_device( struct device *pdev );
 
@@ -271,15 +297,15 @@ cci_sim_mmap(struct aaldev_ownerSession* pownerSess,
                btAny os_specific);
 
 extern int
-cci_publish_aaldevice(struct cci_device *);
+cci_publish_aaldevice(struct cci_aal_device *);
 
 
 
 extern int
-cci_destroy_device(struct cci_device* );
+cci_destroy_device(struct cci_aal_device* );
 
 extern void
-cci_remove_device(struct cci_device *);
+cci_remove_device(struct cci_aal_device *);
 
 
 extern void

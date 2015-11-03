@@ -217,7 +217,7 @@ process_send_message(struct uidrv_session  *psess,
          // The aalsess_pipSendMessage macros calls the aal_pipmsghandler::sendMessage() vector
          //    where the aal_pipmsghandler is the messaging interface to the PIP.  The actual
          //    implementation of sendMessage will be in the PIP implementation as indicated above.
-         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage, ownSessp);
+         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage);
          pipMessage.m_message = NULL;
 
          PTRACEOUT_INT(ret);

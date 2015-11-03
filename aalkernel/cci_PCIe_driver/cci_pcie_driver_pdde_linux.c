@@ -402,11 +402,16 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
     }
 
    // Allocate the board object
-   pccipdev = (struct ccip_device * ) kosal_kmalloc(sizeof(struct ccip_device));
+   pccipdev = (struct ccip_device * ) kosal_kzmalloc(sizeof(struct ccip_device));
    if ( NULL ==  pccipdev ) {
       PERR("Could not allocate CCI device object\n");
       return NULL;
    }
+
+   // Initialize object
+   kosal_list_init(&cci_dev_list_head(pccipdev));
+   kosal_list_init(&ccip_aal_dev_list(pccipdev));
+   kosal_mutex_init(cci_dev_psem(pccipdev));
 
    // Debug dump the BAR data
    {
@@ -441,7 +446,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    pci_set_master(pcidev);
    pci_save_state(pcidev);
 
-   // Save the PCI device in t he CCI object
+   // Save the PCI device in the CCI object
    ccip_dev_pci_dev(pccipdev) = pcidev;
 
 
@@ -492,10 +497,10 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
    }
 
-   // Bus Device function  of pci device
-   ccip_dev_devfunnum(pccipdev) = pcidev->devfn;
-   ccip_dev_busnum(pccipdev) = pcidev->bus->number;
-
+   // Bus Device function of PCIe device
+   ccip_dev_pcie_busnum(pccipdev)   = pcidev->bus->number;
+   ccip_dev_pcie_devnum(pccipdev)   = PCI_SLOT(pcidev->devfn);
+   ccip_dev_pcie_fcnnum(pccipdev)   = PCI_FUNC(pcidev->devfn);
 
    // FME mmio region
    if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
@@ -509,6 +514,14 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          res = -ENOMEM;
          goto ERR;
       }
+
+      // Instantiate allocatable objects including AFUs if present
+      if(!cci_dev_create_allocatable_objects(pccipdev)){
+         ccip_destroy_fme_mmio_dev(pccipdev->m_pfme_dev);
+         goto ERR;
+      }
+
+
 #if 0
       // print fme CSRS
       print_sim_fme_device(pccipdev->m_pfme_dev);
@@ -594,7 +607,7 @@ ERR:
 //=============================================================================
 static
 int
-cci_pcie_internal_probe(struct cci_device         *pspl2dev,
+cci_pcie_internal_probe(struct cci_aal_device         *pspl2dev,
                           struct aal_device_id       *paaldevid,
                           struct pci_dev             *pcidev,
                           const struct pci_device_id *pcidevid)
@@ -627,7 +640,7 @@ cci_pcie_internal_probe(struct cci_device         *pspl2dev,
 //=============================================================================
 static
 int
-cci_qpi_internal_probe(struct cci_device         *pspl2dev,
+cci_qpi_internal_probe(struct cci_aal_device         *pspl2dev,
                          struct aal_device_id       *paaldevid,
                          struct pci_dev             *pcidev,
                          const struct pci_device_id *pcidevid)
@@ -659,7 +672,7 @@ cci_pci_remove_and_rescan(unsigned index)
 {
    struct list_head   *This     		= NULL;
    struct list_head   *tmp      		= NULL;
-   struct cci_device *pspl2dev 		= NULL;
+   struct cci_aal_device *pspl2dev 		= NULL;
    struct pci_dev     *pcidev 			= NULL;
    unsigned int bustype					= 0;
    unsigned cnt 						= index;
@@ -673,7 +686,7 @@ cci_pci_remove_and_rescan(unsigned index)
       //  as we will be deleting entries
       list_for_each_safe(This, tmp, &g_device_list) {
 
-         pspl2dev = cci_list_to_cci_device(This);
+         pspl2dev = cci_list_to_cci_aal_device(This);
 
          // If this is it
          if( 0 == cnt ) {
@@ -735,7 +748,7 @@ static
 void
 cci_pci_remove(struct pci_dev *pcidev)
 {
-   struct cci_device    *pCCIdev    = NULL;
+   struct cci_aal_device    *pCCIdev    = NULL;
    struct list_head     *This       = NULL;
    struct list_head     *tmp        = NULL;
 
@@ -756,7 +769,7 @@ cci_pci_remove(struct pci_dev *pcidev)
       //  as we will be deleting entries
       list_for_each_safe(This, tmp, &g_device_list) {
 
-         pCCIdev = cci_list_to_cci_device(This);
+         pCCIdev = cci_list_to_cci_aal_device(This);
 
          if ( pCCIdev->m_pcidev == pcidev ) {
             ++found;
@@ -882,7 +895,7 @@ ERR:
 void
 ccidrv_exitDriver(void)
 {
-   struct cci_device  *pCCIdev      = NULL;
+   struct cci_aal_device  *pCCIdev      = NULL;
    struct list_head   *This         = NULL;
    struct list_head   *tmp          = NULL;
 
@@ -897,7 +910,7 @@ ccidrv_exitDriver(void)
       kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          // Get the device from the list entry
-         pCCIdev = cci_list_to_cci_device(This);
+         pCCIdev = cci_list_to_cci_aal_device(This);
 
          PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pCCIdev,
                                                                                 This,

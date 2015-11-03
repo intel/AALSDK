@@ -55,92 +55,119 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_def.h
-/// @brief  Definitions for ccip.
-/// @ingroup aalkernel_ccip
-/// @verbatim
-//        FILE: ccip_fme_mmio.h
-//     CREATED: Sept 24, 2015
-//      AUTHOR: Ananda Ravuri, Intel <ananda.ravuri@intel.com>
-//              Joseph Grecco, Intel <joe.grecco@intel.com>
+//        FILE: ccipdriver.h
+//     CREATED: Nov. 2, 2015
+//      AUTHOR: Joseph Grecco, Intel  <joe.grecco@intel.com>
 //
-// PURPOSE:   This file contains the definations of the CCIP FME
-//             Device Feature List and CSR.
+// PURPOSE: Definitions for the CCIP device driver
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
-//****************************************************************************///
-#ifndef __AALKERNEL_CCIP_FME_DEF_H_
-#define __AALKERNEL_CCIP_FME_DEF_H_
-
-#include <aalsdk/kernel/aaltypes.h>
-#include "cci_pcie_driver_internal.h"
+// 11/02/15       JG       Initial version.
+//****************************************************************************
+#ifndef __AALSDK_CCIP_DRIVER_H__
+#define __AALSDK_CCIP_DRIVER_H__
+#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/AALWorkspace.h>
 
 BEGIN_NAMESPACE(AAL)
 
-/// @brief   Get the FPGA Management Engine Device Object.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    Device object; NULL == failure
-struct fme_device * get_fme_mmio_dev(btVirtAddr pkvp_fme_mmio );
+BEGIN_C_DECLS
 
-/// @brief   reads FME header from MMIO.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    FME Header object; NULL ==failure
-struct CCIP_FME_HDR* get_fme_dev_header(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+///=================================================================
+/// IDs used by the devices and objects
+///=================================================================
+
+// FPGA Management Engine GUID
+#define CCIP_FME_GUIDL              (0x82FE38F0F9E17764ULL)
+#define CCIP_FME_GUIDH              (0xBFAf2AE94A5246E3ULL)
+#define CCIP_FME_PIPIID             (0x4DDEA2705E7344D1ULL)
+
+#define CCIP_DEV_FME_SUBDEV         0
+
+/// FPGA Port GUID
+#define CCIP_PORT_GUIDL             (0x9642B06C6B355B87ULL)
+#define CCIP_PORT_GUIDH             (0x3AB49893138D42EBULL)
+
+/// AFU GUID
+#define CCIP_AFU_GUIDL              (0xC000C9660D824272ULL)
+#define CCIP_AFU_GUIDH              (0x9AEFFE5F84570612ULL)
+
+/// Vender ID and Device ID
+#define CCIP_FPGA_VENDER_ID         0x8086
+
+/// PCI Device ID
+#define PCIe_DEVICE_ID_RCiEP0       0xBCBD
+#define PCIe_DEVICE_ID_RCiEP1       0xBCBE
+
+/// QPI Device ID
+#define PCIe_DEVICE_ID_RCiEP2       0xBCBC
+
+/// MMIO Space map
+#define FME_DFH_AFUIDL  0x8
+#define FME_DFH_AFUIDH  0x10
+#define FME_DFH_NEXTAFU 0x18
 
 
-/// @brief   reads FME header from MMIO.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_featurelist(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+typedef enum
+{
+    ccipdrv_afucmdWKSP_ALLOC=1,
+    ccipdrv_afucmdWKSP_VALLOC,
+    ccipdrv_afucmdWKSP_FREE,
+    ccipdrv_afucmdWKSP_VFREE,
+    ccipdrv_afucmdWKSP_GET_PHYS,
 
-/// @brief   reads FME Temperature Management CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_tmp_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );;
+    ccipdrv_getMMIORmap,
+    ccipdrv_getUMSGmap,
+    ccipdrv_getHDR,
+    ccipdrv_getThermMgmt,
+    ccipdrv_getPowerMgmt,
+    ccipdrv_getPerCountermap,
+    ccipdrv_getGErrormap,
+    ccipdrv_getPRmap
+} ccipdrv_afuCmdID_e;
 
-/// @brief   reads FME Power Management CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_pm_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+struct ahm_req
+{
+   union {
+      // mem_alloc
+      struct {
+         btWSID   m_wsid;     // IN
+         btWSSize m_size;     // IN
+         btWSSize m_pgsize;
+      } wksp;
 
-/// @brief   reads FME Global performance CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_fpmon_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+// Special workspace IDs for CSR Aperture mapping
+// XXX These must match aaldevice.h:AAL_DEV_APIMAP_CSR*
+#define WSID_CSRMAP_READAREA  0x00000001
+#define WSID_CSRMAP_WRITEAREA 0x00000002
+#define WSID_MAP_MMIOR        0x00000003
+#define WSID_MAP_UMSG         0x00000004
+      // mem_get_cookie
+      struct {
+         btWSID             m_wsid;   /* IN  */
+         btUnsigned64bitInt m_cookie; /* OUT */
+      } wksp_cookie;
 
-/// @brief   reads FME Global error CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_gerr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+      struct {
+         btVirtAddr         vaddr; /* IN   */
+         btWSSize           size;   /* IN   */
+         btUnsigned64bitInt mem_id; /* OUT  */
+      } mem_uv2id;
+   } u;
+};
 
-/// @brief   reads FME PR CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+struct ccidrvreq
+{
+   struct ahm_req    ahmreq;
+   stTransactionID_t afutskTranID;
+   btTime            pollrate;
+};
 
-/// @brief   freee FME Device feature list memory
-///
-/// @param[in] fme_device fme device pointer .
-/// @return    void
-void ccip_fme_mem_free(struct fme_device *pfme_dev );
+
+END_C_DECLS
 
 END_NAMESPACE(AAL)
 
-#endif /* __AALKERNEL_CCIP_FME_DEF_H_ */
+#endif // __AALSDK_CCIP_DRIVER_H__
+
