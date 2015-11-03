@@ -99,10 +99,11 @@ parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
  * LAT_UNDEFINED   : Undefined latency
  * 
  */ 
-`define CSR_WRITE_LATRANGE         8       // 730 ns
+`define CSR_WRITE_LATRANGE         20       // 730 ns
+`define CSR_READ_LATRANGE          20
 `define RDLINE_S_LATRANGE          8,16
 `define RDLINE_I_LATRANGE          8,16
-`define RDLINE_E_LATRANGE          8,16
+// `define RDLINE_E_LATRANGE          8,16
 `define WRLINE_M_LATRANGE          4,7
 `define WRLINE_I_LATRANGE          4,7
 `define UMSG_START2HINT_LATRANGE   39,41   // 200 ns

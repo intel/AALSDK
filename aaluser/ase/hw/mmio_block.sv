@@ -165,7 +165,7 @@ module mmio_block
    logic 			   mmioresp_full;
    logic 			   mmioresp_empty;
 
-   import "DPI-C" function void mmio_update(int mmioaddr64, bit [63:0] mmiodata );
+   import "DPI-C" function void mmio_update_dex(int mmioaddr64, bit [63:0] mmiodata );
 
    // Response staging FIFO
    ase_fifo
@@ -202,7 +202,7 @@ module mmio_block
       else begin
 	 if (~mmioresp_empty) begin
 	    mmioresp_read <= 1;
-	    mmio_update( {tid_array[ mmioresp_dout[MMIORESP_FIFO_WIDTH-1:CCIP_MMIO_RDDATA_WIDTH] ], 2'b0} , mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0]);
+	    mmio_update_dex( {tid_array[ mmioresp_dout[MMIORESP_FIFO_WIDTH-1:CCIP_MMIO_RDDATA_WIDTH] ], 2'b0} , mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0]);
 	 end
 	 else begin
 	    mmioresp_read <= 0;

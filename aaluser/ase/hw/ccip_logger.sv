@@ -44,42 +44,42 @@ module ccip_logger
     )
    (
     // Configure enable
-    input int 			      enable_logger,
-    input int 			      finish_logger,
+    input int 				    enable_logger,
+    input int 				    finish_logger,
     // Buffer message injection
     // input logic                             log_string_en,
     // input string [1023:0]                   log_string ,
     // CCI interface
-    input logic 		      clk,
-    input logic 		      sys_reset_n,
-    input logic 		      sw_reset_n,
+    input logic 			    clk,
+    input logic 			    sys_reset_n,
+    input logic 			    sw_reset_n,
     // C0Tx channel
-    input 			      TxHdr_t C0TxHdr,
-    input logic 		      C0TxRdValid,
-    input logic 		      C0TxAlmFull,
+    input 				    TxHdr_t C0TxHdr,
+    input logic 			    C0TxRdValid,
+    input logic 			    C0TxAlmFull,
     // C1Tx channel
-    input 			      TxHdr_t C1TxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] C1TxData,
-    input logic 		      C1TxWrValid,
-    input logic 		      C1TxAlmFull,
-    input logic 		      C1TxIntrValid,
+    input 				    TxHdr_t C1TxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	    C1TxData,
+    input logic 			    C1TxWrValid,
+    input logic 			    C1TxAlmFull,
+    input logic 			    C1TxIntrValid,
     // Config channel
-    input logic 		      CfgRdData,
-    input logic 		      CfgRdDataValid,
-    input logic 		      CfgHeader,
-    input logic 		      CfgWrValid,
-    input logic 		      CfgRdValid,
+    input logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData,
+    input logic 			    CfgRdDataValid,
+    input 				    CfgHdr_t CfgHeader,
+    input logic 			    CfgWrValid,
+    input logic 			    CfgRdValid,
     // C0Rx channel
-    input 			      RxHdr_t C0RxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] C0RxData,
-    input logic 		      C0RxRdValid,
-    input logic 		      C0RxWrValid,
-    input logic 		      C0RxUmsgValid,
-    input logic 		      C0RxIntrValid,
+    input 				    RxHdr_t C0RxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	    C0RxData,
+    input logic 			    C0RxRdValid,
+    input logic 			    C0RxWrValid,
+    input logic 			    C0RxUmsgValid,
+    input logic 			    C0RxIntrValid,
     // C1Rx channel
-    input 			      RxHdr_t C1RxHdr,
-    input logic 		      C1RxWrValid,
-    input logic 		      C1RxIntrValid
+    input 				    RxHdr_t C1RxHdr,
+    input logic 			    C1RxWrValid,
+    input logic 			    C1RxIntrValid
     );
 
    /*
@@ -134,7 +134,7 @@ module ccip_logger
 	   CCIP_TX1_WRLINE_M : return "WrLine_M ";
 	   CCIP_TX1_WRFENCE  : return "WrFence  ";
 	   CCIP_TX1_INTRVALID: return "IntrReq  ";
-	   default           : return "* ERROR *";	   
+	   default           : return "* ERROR *";
 	 endcase
       end
    endfunction
@@ -153,7 +153,33 @@ module ccip_logger
       end
    endfunction
 
+   // Print CSR data
+   function string csr_data(int num_bytes, logic [CCIP_DATA_WIDTH-1:0] rx0_data);
+      string str_4;
+      string str_8;
+      string str_64;
+      begin
+	 case (num_bytes)
+	   4 :
+	     begin
+		str_4.hextoa(rx0_data[31:0]);
+		return str_4;
+	     end
+	   8 :
+	     begin
+		str_8.hextoa(rx0_data[63:0]);
+		return str_8;
+	     end
+	   64 :
+	     begin
+		str_64.hextoa(rx0_data[511:0]);
+		return str_64;
+	     end
+	 endcase
+      end
+   endfunction
 
+   
    /*
     * Watcher process
     */
@@ -184,16 +210,16 @@ module ccip_logger
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU Config Write *******************/
 	 if (CfgWrValid) begin
-	    if (cfg.enable_cl_view) $display("%d\tCfgWrite\t%x\t%d bytes\t%x",
-					     $time,
-					     CfgHeader.index,
-					     4^(1 + CfgHeader.num_bytes),
-					     C0RxData[8*4^(1+CfgHeader.num_bytes)-1:0]);
-	    $fwrite(log_fd, "%d\tCfgWrite\t%x\t%d bytes\t%x\n",
-		    $time,
-		    CfgHeader.index,
-		    4^(1 + CfgHeader.num_bytes),
-		    C0RxData[8*4^(1+CfgHeader.num_bytes)-1:0]);
+	    if (cfg.enable_cl_view) $display("%d\tCfgWrite\t%x\t%d bytes\t%s",
+	    				     $time,
+	    				     CfgHeader.index,
+	    				     4^(1 + CfgHeader.num_bytes),
+	    				     csr_data(4^(1 + CfgHeader.num_bytes), C0RxData)  );
+	    $fwrite(log_fd, "%d\tCfgWrite\t%x\t%d bytes\t%s",
+	    	    $time,
+	    	    CfgHeader.index,
+	    	    4^(1 + CfgHeader.num_bytes),
+	    	    csr_data(4^(1 + CfgHeader.num_bytes), C0RxData)  );
 	 end
 	 /*************** SW -> AFU Config Read Request ****************/
 	 if (CfgRdValid) begin
@@ -211,7 +237,7 @@ module ccip_logger
 	 /******************* AFU -> MEM Read Request ******************/
 	 if (C0TxRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
-					     $time,					     
+					     $time,
 					     print_channel(C0TxHdr.vc),
 					     print_reqtype(C0TxHdr.reqtype),
 					     C0TxHdr.addr,
@@ -227,7 +253,7 @@ module ccip_logger
 	 /******************* AFU -> MEM Write Request *****************/
 	 if (C1TxWrValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x",
-					     $time,					     
+					     $time,
 					     print_channel(C1TxHdr.vc),
 					     print_reqtype(C1TxHdr.reqtype),
 					     C1TxHdr.addr,
@@ -255,7 +281,7 @@ module ccip_logger
 		    print_channel(C0RxHdr.vc),
 		    print_resptype(C0RxHdr.resptype),
 		    C0RxHdr.mdata,
-		    C0RxData);    
+		    C0RxData);
 	 end
 	 /****************** MEM -> AFU Write Response *****************/
 	 if (C0RxWrValid) begin
@@ -268,7 +294,7 @@ module ccip_logger
 		    $time,
 		    print_channel(C0RxHdr.vc),
 		    print_resptype(C0RxHdr.resptype),
-		    C0RxHdr.mdata);	    
+		    C0RxHdr.mdata);
 	 end
 	 /************* SW -> MEM -> AFU Unordered Message  ************/
 	 if (C0RxUmsgValid) begin
@@ -288,7 +314,7 @@ module ccip_logger
 		    $time,
 		    print_channel(C1RxHdr.vc),
 		    print_resptype(C1RxHdr.resptype),
-		    C1RxHdr.mdata);	    
+		    C1RxHdr.mdata);
 	 end
 	 /**************** MEM -> AFU Interrupt Response  **************/
 	 if (C1RxIntrValid) begin

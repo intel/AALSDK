@@ -17,7 +17,7 @@
 #include <sys/time.h>      // Timestamp generation
 
 #define MEM_NAME "/largemem"
-#define MEM_SIZE 32*1024*1024*1024
+#define MEM_SIZE 1024*1024*1024
 #define NUM_INTS MEM_SIZE/sizeof(uint64_t)
 #define BASE_NUM 0xcafebabedecafbad
 

@@ -50,7 +50,7 @@ pthread_mutex_t lock;
 // CSR Map
 /* uint32_t csr_map[CSR_MAP_SIZE/4]; */
 uint32_t csr_write_cnt = 0;
-uint32_t *ase_csr_base;
+uint64_t *ase_csr_base;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -374,7 +374,7 @@ void allocate_buffer(struct buffer_t *mem)
 // Pin ASE CSR base, so CSR Writes can be managed
 if (buffer_index_count == 0)
   {
-      ase_csr_base = (uint32_t*)mem->vbase;
+      ase_csr_base = (uint64_t*)mem->vbase;
       //      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
   }
 
@@ -525,7 +525,7 @@ void umas_init(uint32_t umsg_mode)
     {
       // Initialize 
       umas = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-      umas->memsize = 32 * 1024;
+      umas->memsize = NUM_UMSG_PER_AFU * ASE_PAGESIZE;
       umas->is_umas = 1;
       allocate_buffer (umas);
 
@@ -558,6 +558,7 @@ void umas_init(uint32_t umsg_mode)
  * Action     : Form a message and send it down a message queue
  *
  */
+#if 0
 void umsg_send(int umas_id, char *umsg_data)
 {
 
@@ -596,7 +597,7 @@ void umsg_send(int umas_id, char *umsg_data)
 
   mqueue_send(app2sim_umsg_tx, umsg_str);
 }
-
+#endif
 
 /*
  * umas_deinit : Deinitialize UMAS region
@@ -613,7 +614,7 @@ void umas_deinit()
   END_RED_FONTCOLOR;
 }
 
-
+#if 0
 /*
  * setup_spl_cxt_pte : Create SPL Page table and Contexts
  * Setup SPL context and page tables using ASE memory allocation
@@ -791,4 +792,4 @@ void spl_driver_stop()
 
   FUNC_CALL_EXIT;
 }
-
+#endif

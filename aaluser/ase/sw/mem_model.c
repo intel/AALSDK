@@ -260,6 +260,12 @@ void ase_alloc_action(struct buffer_t *mem)
 
   if (mem->index == 0)
     {
+      // Pin CSR address
+      ase_csr_base = (uint64_t*) mem->pbase;
+#ifdef ASE_DEBUG
+      printf("SIM-C : ase_csr_base = %p\n", (void*)ase_csr_base);
+#endif
+
       // If UMSG is enabled, write information to CSR region
       ase_umsg_init(mem->pbase);
     }

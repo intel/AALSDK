@@ -7,9 +7,9 @@
 # gcc -g -o mq_test         mq_test.c     ../../sw/tstamp_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c ../../sw/ipc_mgmt_ops.c -I ../../sw/    -lrt
 # gcc -g -o mq_test         mq_test.c        -lrt
 
-gcc -g -o shuffle \
-    -I ../../sw/  -I $VCS_HOME/include/ -D SIM_SIDE=1 \
-    shuffle.c ../../sw/randomness_control.c ../../sw/error_report.c 
+# gcc -g -o shuffle \
+    # -I ../../sw/  -I $VCS_HOME/include/ -D SIM_SIDE=1 \
+    # shuffle.c ../../sw/randomness_control.c ../../sw/error_report.c 
 
 # gcc -g -o server_sock     server_sock.c
 
@@ -36,8 +36,11 @@ gcc -g -o shuffle \
 
 # gcc -g -o read_file read_file.c
 
-gcc -g -o ase_mq_test ase_mq_test.c \
-    ../../sw/mqueue_ops.c \
-    ../../sw/error_report.c \
-    ../../sw/tstamp_ops.c \
-    -I ../../sw/ -lrt
+# gcc -g -o ase_mq_test ase_mq_test.c \
+#     ../../sw/mqueue_ops.c \
+#     ../../sw/error_report.c \
+#     ../../sw/tstamp_ops.c \
+#     -I ../../sw/ -lrt
+# inotify_test.c
+
+gcc -g -o inotify_test inotify_test.c -I../../sw/ -lrt

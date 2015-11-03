@@ -42,14 +42,15 @@
  * - RRS: Tue Dec 23 11:01:28 PST 2014
  *   Optimizing ASE for performance
  *   Added return path FIFOs for marshalling
+ * - RRS: Tue Oct 21 13:33:34 PDT 2015
+ *   CCIP migration
+ * 
  */
 
 import ase_pkg::*;
 import ase_top_pkg::*;
 
 `include "platform.vh"
-
-// `timescale 1ns/1ns
 
 // CCI to Memory translator module
 module ccip_emulator
@@ -73,93 +74,99 @@ module ccip_emulator
    logic 	clk_64ui ;
    logic 	sys_reset_n;
    logic 	sw_reset_n;
-   // logic 	lp_initdone ;
    // Config
-   logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData; 
-   logic 			     CfgRdDataValid;
-   logic [CCIP_CFG_HDR_WIDTH-1:0]    CfgHeader;
-   logic 			     CfgWrValid;
-   logic 			     CfgRdValid;
+   // logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData; 
+   // logic 			     CfgRdDataValid;
+   // logic [CCIP_CFG_HDR_WIDTH-1:0]    CfgHeader;
+   // logic 			     CfgWrValid;
+   // logic 			     CfgRdValid;
    // Tx0
    TxHdr_t                           C0TxHdr;
-   logic 			     C0TxRdValid;
+   logic 	C0TxRdValid;
    // Tx1
    TxHdr_t                           C1TxHdr;
-   logic [CCIP_DATA_WIDTH-1:0] 	     C1TxData;
-   logic 			     C1TxWrValid;
-   logic 			     C1TxIntrValid;
+   logic [CCIP_DATA_WIDTH-1:0] C1TxData;
+   logic 		       C1TxWrValid;
+   logic 		       C1TxIntrValid;
+   // Tx2
+   logic [CCIP_MMIO_RDHDR_WIDTH-1:0] C2TxHdr;
+   logic 			     C2TxMMIORdValid;
+   logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData;   
    // Rx0
-   logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData;
+   logic 			      C0RxMMIOWrValid;
+   logic 			      C0RxMMIORdValid;   
+   logic [CCIP_DATA_WIDTH-1:0] 	      C0RxData;
    RxHdr_t                           C0RxHdr;
-   logic 			     C0RxRdValid;
-   logic 			     C0RxWrValid;
-   logic 			     C0RxUMsgValid;
+   logic 			      C0RxRdValid;
+   logic 			      C0RxWrValid;
+   logic 			      C0RxUMsgValid;
    // Rx1
    RxHdr_t                           C1RxHdr;
-   logic 			     C1RxWrValid;
-   logic 			     C1RxIntrValid;
+   logic 			      C1RxWrValid;
+   logic 			      C1RxIntrValid;
    // Almost full signals
-   logic 			     C0TxAlmFull;
-   logic 			     C1TxAlmFull;
+   logic 			      C0TxAlmFull;
+   logic 			      C1TxAlmFull;
 
    /*
     * Remapping ASE CCIP to cvl_pkg struct
     */ 
-   always @(*) begin
-      // Rx OUT
-      ffs_LP16ui_sRxData_afu.C0Hdr <= { C0RxHdr.vc, 
-					C0RxHdr.poison, 
-					C0RxHdr.hitmiss, 
-					1'b0, 
-					C0RxHdr.clnum,
-					C0RxHdr.resptype,
-					C0RxHdr.mdata
-					};
-      ffs_LP16ui_sRxData_afu.C0Data <= C0RxData;
-      ffs_LP16ui_sRxData_afu.C0WrValid <= C0RxWrValid;
-      ffs_LP16ui_sRxData_afu.C0RdValid <= C0RxRdValid;      
-      ffs_LP16ui_sRxData_afu.C0UmsgValid <= C0RxUMsgValid;
-      ffs_LP16ui_sRxData_afu.C1Hdr  <= { C1RxHdr.vc, 
-					 C1RxHdr.poison, 
-					 C1RxHdr.hitmiss, 
-					 1'b0, 
-					 C1RxHdr.clnum,
-					 C1RxHdr.resptype,
-					 C1RxHdr.mdata
-					 };
-      ffs_LP16ui_sRxData_afu.C1WrValid <= C1RxWrValid;
-      ffs_LP16ui_sRxData_afu.C1Intrvalid <= C1RxIntrValid;
-      // ffs_LP16ui_sRxData_afu.InitDn <= lp_initdone;
-      ffs_LP16ui_sRxData_afu.CfgWrValid <= CfgWrValid;
-      ffs_LP16ui_sRxData_afu.CfgRdValid <= CfgRdValid;
-      ffs_LP16ui_sRxData_afu.CfgHeader  <= CfgHeader;
-      // Tx OUT
-      { C0TxHdr.vc,
-	C0TxHdr.sop,
-	C0TxHdr.rsvd70,
-	C0TxHdr.len,
-	C0TxHdr.reqtype,
-	C0TxHdr.rsvd63_58,
-	C0TxHdr.addr,
-	C0TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C0Hdr;
-      C0TxRdValid <= ffs_LP16ui_sTxData_afu.C0TxRdValid;
-      { C1TxHdr.vc,
-	C1TxHdr.sop,
-	C1TxHdr.rsvd70,
-	C1TxHdr.len,
-	C1TxHdr.reqtype,
-	C1TxHdr.rsvd63_58,
-	C1TxHdr.addr,
-	C1TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C1Hdr;
-      C1TxData <= ffs_LP16ui_sTxData_afu.C1Data;
-      C1TxWrValid <= ffs_LP16ui_sTxData_afu.C1WrValid;
-      C1TxIntrValid <= ffs_LP16ui_sTxData_afu.C1IntrValid;      
-      CfgRdDataValid <= ffs_LP16ui_sTxData_afu.CfgRdValid;
-      CfgRdData <= ffs_LP16ui_sTxData_afu.CfgRdData;      
-      // Almost full signals
-      ffs_LP16ui_sRxData_afu.C0TxAlmFull = C0TxAlmFull;
-      ffs_LP16ui_sRxData_afu.C1TxAlmFull = C1TxAlmFull;     	
-   end
+   // always @(*) begin
+   //    // Rx OUT
+   //    ffs_LP16ui_sRxData_afu.C0Hdr <= { C0RxHdr.vc, 
+   // 					C0RxHdr.poison, 
+   // 					C0RxHdr.hitmiss, 
+   // 					1'b0, 
+   // 					C0RxHdr.clnum,
+   // 					C0RxHdr.resptype,
+   // 					C0RxHdr.mdata
+   // 					};
+   //    ffs_LP16ui_sRxData_afu.C0Data <= C0RxData;
+   //    ffs_LP16ui_sRxData_afu.C0WrValid <= C0RxWrValid;
+   //    ffs_LP16ui_sRxData_afu.C0RdValid <= C0RxRdValid;      
+   //    ffs_LP16ui_sRxData_afu.C0IntrValid <= C0RxIntrValid;
+   //    ffs_LP16ui_sRxData_afu.C0UMsgValid <= C0RxUMsgValid;
+   //    ffs_LP16ui_sRxData_afu.C1Hdr  <= { C1RxHdr.vc, 
+   // 					 C1RxHdr.poison, 
+   // 					 C1RxHdr.hitmiss, 
+   // 					 1'b0, 
+   // 					 C1RxHdr.clnum,
+   // 					 C1RxHdr.resptype,
+   // 					 C1RxHdr.mdata
+   // 					 };
+   //    ffs_LP16ui_sRxData_afu.C1WrValid <= C1RxWrValid;
+   //    ffs_LP16ui_sRxData_afu.C1IntrValid <= C1RxIntrValid;
+   //    // ffs_LP16ui_sRxData_afu.InitDn <= lp_initdone;
+   //    ffs_LP16ui_sRxData_afu.CfgWrValid <= CfgWrValid;
+   //    ffs_LP16ui_sRxData_afu.CfgRdValid <= CfgRdValid;
+   //    ffs_LP16ui_sRxData_afu.CfgHdr     <= CfgHeader;
+   //    // Tx OUT
+   //    { C0TxHdr.vc,
+   // 	C0TxHdr.sop,
+   // 	C0TxHdr.rsvd70,
+   // 	C0TxHdr.len,
+   // 	C0TxHdr.reqtype,
+   // 	C0TxHdr.rsvd63_58,
+   // 	C0TxHdr.addr,
+   // 	C0TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C0Hdr;
+   //    C0TxRdValid <= ffs_LP16ui_sTxData_afu.C0RdValid;
+   //    { C1TxHdr.vc,
+   // 	C1TxHdr.sop,
+   // 	C1TxHdr.rsvd70,
+   // 	C1TxHdr.len,
+   // 	C1TxHdr.reqtype,
+   // 	C1TxHdr.rsvd63_58,
+   // 	C1TxHdr.addr,
+   // 	C1TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C1Hdr;
+   //    C1TxData <= ffs_LP16ui_sTxData_afu.C1Data;
+   //    C1TxWrValid <= ffs_LP16ui_sTxData_afu.C1WrValid;
+   //    C1TxIntrValid <= ffs_LP16ui_sTxData_afu.C1IntrValid;      
+   //    CfgRdDataValid <= ffs_LP16ui_sTxData_afu.CfgRdValid;
+   //    CfgRdData <= ffs_LP16ui_sTxData_afu.CfgRdData;      
+   //    // Almost full signals
+   //    ffs_LP16ui_sRxData_afu.C0TxAlmFull = C0TxAlmFull;
+   //    ffs_LP16ui_sRxData_afu.C1TxAlmFull = C1TxAlmFull;     	
+   // end
    
    /*
     * DPI import/export functions
@@ -182,7 +189,7 @@ module ccip_emulator
    // export "DPI-C" task umsg_dispatch;
 
    // CAPCM initilize
-   import "DPI-C" context task capcm_init();
+   // import "DPI-C" context task capcm_init();
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
@@ -460,34 +467,6 @@ module ccip_emulator
    assign csr_value = csrff_dout[31:0];
 
 
-   /*
-    * Return response channel
-    * PROBLEM: MUXing between channels 0 and 1 causes dropped transactions
-    *          Replacing with FIFO doesnt seem to change occurance of problem
-    *          Restricting write responses to TX1 seems to be a temporary solution
-    *
-    * DIVE:
-    * - Problem seems to be when ch0_write gets dropped, conditions unknown
-    */
-   int 	 tx_to_rx_channel;
-
-   // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
-   // Since requests on TX1 can return either via RX0 or RX1, this is needed
-   // always @(posedge clk) begin
-   always @(posedge clk) begin : channel_random_proc
-      if (~sys_reset_n) begin
-	 tx_to_rx_channel	<= 1;
-      end
-      // else if (~cf2as_latbuf_ch1_empty) begin
-      else if (cf2as_latbuf_ch1_valid) begin
-	 tx_to_rx_channel	<= abs_val($random) % 2;
-	 // tx_to_rx_channel	<= 1;
-	 // tx_to_rx_channel	<= 0;
-      end
-   end
-
-
-
 
    /* ******************************************************************
     *
@@ -614,7 +593,7 @@ module ccip_emulator
     * Unified message watcher daemon
     */
    always @(posedge clk) begin : daemon_proc
-//      if (lp_initdone) begin
+//      if (lp_initdone) begin      
 	 ase_listener();
 //      end
    end
@@ -632,7 +611,7 @@ module ccip_emulator
     * 
     * *******************************************************************/
    // CAFU->ASE CH0
-   logic [CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
+   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
    logic 			 cf2as_latbuf_ch0_pop;
    logic 			 cf2as_latbuf_ch0_read;
    logic 			 cf2as_latbuf_ch0_empty;
@@ -642,10 +621,10 @@ module ccip_emulator
    logic [13:0] 		 cf2as_latbuf_ch0_meta;
 
    // CAFU->ASE CH0
-   logic [CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch1_header;
-   logic [CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data;
-   logic [CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_0;
-   logic [CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_1;
+   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch1_header;
+   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data;
+   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_0;
+   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_1;
    logic 			 cf2as_latbuf_ch1_pop;
    logic 			 cf2as_latbuf_ch1_read_0;
    logic 			 cf2as_latbuf_ch1_read_1;
@@ -663,11 +642,11 @@ module ccip_emulator
    // CAFU->ASE CH0 (TX0)
    // Composed as {header, data}
    // Latency scoreboard (for latency modeling and shuffling)
-   latency_scoreboard
+   outoforder_wrf_channel
      #(
-       .NUM_TRANSACTIONS    (LATBUF_NUM_TRANSACTIONS),
-       .HDR_WIDTH           (CCI_TX_HDR_WIDTH),
-       .DATA_WIDTH          (CCI_DATA_WIDTH),
+       .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
+       .HDR_WIDTH           (CCIP_TX_HDR_WIDTH),
+       .DATA_WIDTH          (CCIP_DATA_WIDTH),
        .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
        .FIFO_FULL_THRESH    (LATBUF_FULL_THRESHOLD),
        .FIFO_DEPTH_BASE2    (LATBUF_DEPTH_BASE2)
@@ -677,7 +656,7 @@ module ccip_emulator
       .clk		( clk ),
       .rst		( ~sys_reset_n ),
       .meta_in		( CCIP_TX_HDR_WIDTH'(C0TxHdr)),
-      .data_in		( {CCI_DATA_WIDTH{1'b0}} ),
+      .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
       .meta_out		( cf2as_latbuf_ch0_header ),
       .data_out		(  ),
@@ -693,14 +672,14 @@ module ccip_emulator
    
    // CAFU->ASE CH1 (TX1)
    // Latency scoreboard (latency modeling and shuffling)
-   latency_scoreboard
+   outoforder_wrf_channel
      #(
-       .NUM_TRANSACTIONS (`LATBUF_NUM_TRANSACTIONS),
+       .NUM_WAIT_STATIONS(LATBUF_NUM_TRANSACTIONS),
        .HDR_WIDTH        (CCIP_TX_HDR_WIDTH),
        .DATA_WIDTH       (CCIP_DATA_WIDTH),
-       .COUNT_WIDTH      (`LATBUF_COUNT_WIDTH),
-       .FIFO_FULL_THRESH (`LATBUF_FULL_THRESHOLD),
-       .FIFO_DEPTH_BASE2 (`LATBUF_DEPTH_BASE2)
+       .COUNT_WIDTH      (LATBUF_COUNT_WIDTH),
+       .FIFO_FULL_THRESH (LATBUF_FULL_THRESHOLD),
+       .FIFO_DEPTH_BASE2 (LATBUF_DEPTH_BASE2)
        )
    cf2as_latbuf_ch1
      (
@@ -720,147 +699,31 @@ module ccip_emulator
       .count            ( )
       );
 
-   
-   /* *******************************************************************
-    * Staging incoming requests for TX0 and TX1 channels
-    * - cf2as_latbuf_ch0
-    * - cf2as_latbuf_ch1
+
+   /*
+    * Return response channel
+    * PROBLEM: MUXing between channels 0 and 1 causes dropped transactions
+    *          Replacing with FIFO doesnt seem to change occurance of problem
+    *          Restricting write responses to TX1 seems to be a temporary solution
     *
-    * *******************************************************************/
-   // CAFU->ASE CH0
-   // logic [`CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
-   // logic 			 cf2as_latbuf_ch0_pop;
-   // logic 			 cf2as_latbuf_ch0_read;
-   // logic 			 cf2as_latbuf_ch0_empty;
-   // logic 			 cf2as_latbuf_ch0_empty_q;
-   // logic 			 cf2as_latbuf_ch0_valid;
-   // logic [31:0] 		 cf2as_latbuf_ch0_claddr;
-   // logic [13:0] 		 cf2as_latbuf_ch0_meta;
+    * DIVE:
+    * - Problem seems to be when ch0_write gets dropped, conditions unknown
+    */
+   int 	 tx_to_rx_channel;
 
-   // CAFU->ASE CH0
-   // logic [`CCI_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch1_header;
-   // logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data;
-   // logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_0;
-   // logic [`CCI_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_1;
-   // logic 			 cf2as_latbuf_ch1_pop;
-   // logic 			 cf2as_latbuf_ch1_read_0;
-   // logic 			 cf2as_latbuf_ch1_read_1;
-   // logic 			 cf2as_latbuf_ch1_read;
-   // logic 			 cf2as_latbuf_ch1_empty;
-   // logic 			 cf2as_latbuf_ch1_empty_q;
-   // logic 			 cf2as_latbuf_ch1_valid;
-   // logic [41:0] 		 cf2as_latbuf_ch1_claddr;
-   // logic [41:0] 		 cf2as_latbuf_ch1_claddr_0;
-   // logic [41:0] 		 cf2as_latbuf_ch1_claddr_1;
-   // logic [15:0] 		 cf2as_latbuf_ch1_meta;
-   // logic [15:0] 		 cf2as_latbuf_ch1_meta_0;
-   // logic [15:0] 		 cf2as_latbuf_ch1_meta_1;
-
-
-   // Both streams write back to CH0 at same time
-   // always @(posedge clk) begin : error_check_proc
-   //    if (cf2as_latbuf_ch1_read_0 && cf2as_latbuf_ch1_read_1) begin
-   // 	 `BEGIN_RED_FONTCOLOR;
-   // 	 $display ("*** ERROR: Both streams popped at the same time --- data may be lost ***");
-   // 	 start_simkill_countdown();
-   // 	 `END_RED_FONTCOLOR;
-   //    end
-   // end
-
-
-   // CAFU->ASE CH0 (TX0)
-   // Composed as {header, data}
-   // Latency scoreboard (for latency modeling and shuffling)
-   // latency_scoreboard
-   //   #(
-   //     .NUM_TRANSACTIONS    (`LATBUF_NUM_TRANSACTIONS),
-   //     .HDR_WIDTH           (`CCI_TX_HDR_WIDTH),
-   //     .DATA_WIDTH          (`CCI_DATA_WIDTH),
-   //     .COUNT_WIDTH         (`LATBUF_COUNT_WIDTH),
-   //     .FIFO_FULL_THRESH    (`LATBUF_FULL_THRESHOLD),
-   //     .FIFO_DEPTH_BASE2    (`LATBUF_DEPTH_BASE2)
-   //     )
-   // cf2as_latbuf_ch0
-   //   (
-   //    .clk		( clk ),
-   //    .rst		( ~sys_reset_n ),
-   //    .meta_in		( C0TxHeader ),
-   //    .data_in		( {`CCI_DATA_WIDTH{1'b0}} ),
-   //    .write_en		( tx_c0_rdvalid ),
-   //    .meta_out		( cf2as_latbuf_ch0_header ),
-   //    .data_out		(  ),
-   //    .valid_out	( cf2as_latbuf_ch0_valid ),
-   //    .read_en		( cf2as_latbuf_ch0_pop ),
-   //    .empty		( cf2as_latbuf_ch0_empty ),
-   //    .full             ( tx_c0_almostfull ),
-   //    .overflow         ( tx0_overflow ),
-   //    .underflow        ( tx0_underflow ),
-   //    .count            ( )
-   //    );
-
-   // POP CH0 staging
-   // assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
-
-   // always @(posedge clk) begin : reg_proc_1
-   //    cf2as_latbuf_ch0_empty_q	<= cf2as_latbuf_ch0_empty;
-   // end
-
-   // Duplicate signals
-   // always @(*) begin : comb_rename_1
-   //    cf2as_latbuf_ch0_claddr	<= cf2as_latbuf_ch0_header[`TX_CLADDR_BITRANGE];
-   //    cf2as_latbuf_ch0_meta	<= cf2as_latbuf_ch0_header[`TX_MDATA_BITRANGE];
-   // end
-
-
-   // CAFU->ASE CH1 (TX1)
-   // Latency scoreboard (latency modeling and shuffling)
-   // latency_scoreboard
-   //   #(
-   //     .NUM_TRANSACTIONS (`LATBUF_NUM_TRANSACTIONS),
-   //     .HDR_WIDTH        (`CCI_TX_HDR_WIDTH),
-   //     .DATA_WIDTH       (`CCI_DATA_WIDTH),
-   //     .COUNT_WIDTH      (`LATBUF_COUNT_WIDTH),
-   //     .FIFO_FULL_THRESH (`LATBUF_FULL_THRESHOLD),
-   //     .FIFO_DEPTH_BASE2 (`LATBUF_DEPTH_BASE2)
-   //     )
-   // cf2as_latbuf_ch1
-   //   (
-   //    .clk		( clk ),
-   //    .rst		( ~sys_reset_n ),
-   //    .meta_in		( tx_c1_header ),
-   //    .data_in		( tx_c1_data ),
-   //    .write_en		( tx_c1_wrvalid ),
-   //    .meta_out		( cf2as_latbuf_ch1_header ),
-   //    .data_out		( cf2as_latbuf_ch1_data ),
-   //    .valid_out	( cf2as_latbuf_ch1_valid ),
-   //    .read_en		( cf2as_latbuf_ch1_pop ),
-   //    .empty		( cf2as_latbuf_ch1_empty ),
-   //    .full             ( tx_c1_almostfull ),
-   //    .overflow         ( tx1_overflow ),
-   //    .underflow        ( tx1_underflow ),
-   //    .count            ( )
-   //    );
-
-   
-   // POP CH1 staging
-   // assign cf2as_latbuf_ch1_read = cf2as_latbuf_ch1_read_0 ^ cf2as_latbuf_ch1_read_1;
-   // assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
-
-   // always @(posedge clk) begin : reg_proc_2
-   //    cf2as_latbuf_ch1_empty_q	<= cf2as_latbuf_ch1_empty;
-   // end
-
-   // // Duplicating signals (DPI seems to cause errors in DEX function) --- P2 debug priority
-   // always @(*) begin : comb_rename_2
-   //    cf2as_latbuf_ch1_claddr_1 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-   //    cf2as_latbuf_ch1_meta_1	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
-   //    cf2as_latbuf_ch1_data_1	<= cf2as_latbuf_ch1_data;
-   //    cf2as_latbuf_ch1_claddr_0 <= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-   //    cf2as_latbuf_ch1_meta_0	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
-   //    cf2as_latbuf_ch1_data_0	<= cf2as_latbuf_ch1_data;
-   //    cf2as_latbuf_ch1_claddr	<= cf2as_latbuf_ch1_header[`TX_CLADDR_BITRANGE];
-   //    cf2as_latbuf_ch1_meta	<= cf2as_latbuf_ch1_header[`TX_MDATA_BITRANGE];
-   // end
+   // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
+   // Since requests on TX1 can return either via RX0 or RX1, this is needed
+   // always @(posedge clk) begin
+   always @(posedge clk) begin : channel_random_proc
+      if (~sys_reset_n) begin
+	 tx_to_rx_channel	<= 1;
+      end
+      else if (cf2as_latbuf_ch1_valid) begin
+	 // tx_to_rx_channel	<= abs_val($random) % 2;
+	 tx_to_rx_channel	<= 1;
+	 // tx_to_rx_channel	<= 0;
+      end
+   end
 
 
    /* *******************************************************************
@@ -869,378 +732,88 @@ module ccip_emulator
     * - as2cf_fifo_ch1
     *
     * *******************************************************************/
-//    parameter int 		 ASE_RX0_PATHWIDTH = 5 + `ASE_CCI_RX_HDR_WIDTH + `CCI_DATA_WIDTH;
-//    parameter int 		 ASE_RX1_PATHWIDTH = 2 + `ASE_CCI_RX_HDR_WIDTH;
+   parameter int 		 ASE_RX0_PATHWIDTH = 4 + CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
+   parameter int 		 ASE_RX1_PATHWIDTH = 2 + CCIP_RX_HDR_WIDTH;
 
-//    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
-//    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
-//    logic 			 as2cf_fifo_ch0_write;
-//    logic 			 as2cf_fifo_ch0_read;
-//    logic 			 as2cf_fifo_ch0_full;
-//    logic 			 as2cf_fifo_ch0_empty;
-//    logic 			 as2cf_fifo_ch0_overflow;
-//    logic 			 as2cf_fifo_ch0_underflow;
-//    logic 			 as2cf_fifo_ch0_valid;
+   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
+   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
+   logic 			 as2cf_fifo_ch0_write;
+   logic 			 as2cf_fifo_ch0_read;
+   logic 			 as2cf_fifo_ch0_full;
+   logic 			 as2cf_fifo_ch0_empty;
+   logic 			 as2cf_fifo_ch0_overflow;
+   logic 			 as2cf_fifo_ch0_underflow;
+   logic 			 as2cf_fifo_ch0_valid;
 
-//    logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_din;
-//    logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_dout;
-//    logic 			 as2cf_fifo_ch1_write;
-//    logic 			 as2cf_fifo_ch1_read;
-//    logic 			 as2cf_fifo_ch1_full;
-//    logic 			 as2cf_fifo_ch1_empty;
-//    logic 			 as2cf_fifo_ch1_overflow;
-//    logic 			 as2cf_fifo_ch1_underflow;
-//    logic 			 as2cf_fifo_ch1_valid;
-
-
-//    // CH0 coded as {intrvalid, umsgvalid, wrvalid, rdvalid, cfgvalid, hdr, data}
-//    ase_fifo
-//      #(
-//        .DATA_WIDTH (ASE_RX0_PATHWIDTH)
-//        )
-//    as2cf_fifo_ch0
-//      (
-//       .clk        ( clk ),
-//       .rst        ( ~sys_reset_n ),
-//       .wr_en      ( as2cf_fifo_ch0_write ),
-//       .data_in    ( as2cf_fifo_ch0_din ),
-//       .rd_en      ( as2cf_fifo_ch0_read ),
-//       .data_out   ( as2cf_fifo_ch0_dout ),
-//       .data_out_v ( as2cf_fifo_ch0_valid ),
-//       .alm_full   ( as2cf_fifo_ch0_full ),
-//       .full       ( ),
-//       .empty      ( as2cf_fifo_ch0_empty ),
-//       .count      ( ),
-//       .overflow   ( as2cf_fifo_ch0_overflow ),
-//       .underflow  ( as2cf_fifo_ch0_underflow )
-//       );
-
-//    // CH1 coded as {intrvalid, wrvalid, hdr}
-//    ase_fifo
-//      #(
-//        .DATA_WIDTH (ASE_RX1_PATHWIDTH)
-//        )
-//    as2cf_fifo_ch1
-//      (
-//       .clk        ( clk ),
-//       .rst        ( ~sys_reset_n ),
-//       .wr_en      ( as2cf_fifo_ch1_write ),
-//       .data_in    ( as2cf_fifo_ch1_din ),
-//       .rd_en      ( as2cf_fifo_ch1_read ),
-//       .data_out   ( as2cf_fifo_ch1_dout ),
-//       .data_out_v ( as2cf_fifo_ch1_valid ),
-//       .alm_full   ( as2cf_fifo_ch1_full ),
-//       .full       ( ),
-//       .empty      ( as2cf_fifo_ch1_empty ),
-//       .count      ( ),
-//       .overflow   ( as2cf_fifo_ch1_overflow ),
-//       .underflow  ( as2cf_fifo_ch1_underflow )
-//       );
-
-//    // read control (no flow control on RX0 channels (pop when available)
-//    assign as2cf_fifo_ch0_read = ~as2cf_fifo_ch0_empty;
-//    assign as2cf_fifo_ch1_read = ~as2cf_fifo_ch1_empty;
-
-//    // RX0 channel
-//    always @(posedge clk) begin : as2cf_fifo_ch0_consumer
-//       if (~sys_reset_n) begin
-// 	 C0RxData		<= `CCI_DATA_WIDTH'b0;
-// 	 {C0RxHeader.vc, 
-// 	  C0RxHeader.posion,
-// 	  C0RxHeader.format,
-// 	  C0RxHeader.rsvd22,
-// 	  C0RxHeader.clnum,
-// 	  C0RxHeader.resptype,
-// 	  C0RxHeader.mdata}     <= 0;	 
-// 	 CfgWrValid		<= 0;
-// 	 C0RxWrValid		<= 0;
-// 	 C0RxRdValid		<= 0;
-// //	 rx_c0_intrvalid	<= 0;
-// 	 C0RxUMsgValid	<= 0;
-//       end
-//       else if (as2cf_fifo_ch0_valid) begin
-// 	 C0RxData		<= as2cf_fifo_ch0_dout[`CCI_DATA_WIDTH-1:0];
-// 	 {C0RxHeader.vc, 
-// 	  C0RxHeader.posion,
-// 	  C0RxHeader.format,
-// 	  C0RxHeader.rsvd22,
-// 	  C0RxHeader.clnum,
-// 	  C0RxHeader.resptype,
-// 	  C0RxHeader.mdata} 	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH-1):`CCI_DATA_WIDTH];
-// 	 CfgWrValid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH)];
-// 	 C0RxRdValid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+1)];
-// 	 C0RxWrValid		<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+2)];
-// 	 C0RxUMsgValid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+3)];
-// //	 rx_c0_intrvalid	<= as2cf_fifo_ch0_dout[(`CCI_DATA_WIDTH+`ASE_CCI_RX_HDR_WIDTH+4)];
-//       end
-//       else begin
-// 	 C0RxData		<= 0;
-// 	 {C0RxHeader.vc, 
-// 	  C0RxHeader.posion,
-// 	  C0RxHeader.format,
-// 	  C0RxHeader.rsvd22,
-// 	  C0RxHeader.clnum,
-// 	  C0RxHeader.resptype,
-// 	  C0RxHeader.mdata}     <= 0;	 
-// 	 CfgWrValid		<= 0;
-// 	 C0RxWrValid		<= 0;
-// 	 C0RxRdValid		<= 0;
-// //	 rx_c0_intrvalid	<= 0;
-// 	 C0RxUMsgValid	<= 0;
-//       end
-//    end
-
-//    // RX1 channel
-//    always @(posedge clk) begin : as2cf_fifo_ch1_consumer
-//       if (~sys_reset_n) begin
-// 	 {C1RxHeader.vc, 
-// 	  C1RxHeader.posion,
-// 	  C1RxHeader.format,
-// 	  C1RxHeader.rsvd22,
-// 	  C1RxHeader.clnum,
-// 	  C1RxHeader.resptype,
-// 	  C1RxHeader.mdata} 	<= `ASE_CCI_RX_HDR_WIDTH'b0;
-// 	 C1RxWrValid		<= 1'b0;
-// 	 C1RxIntrValid	<= 1'b0;
-//       end
-//       else if (as2cf_fifo_ch1_valid) begin
-// 	 {C1RxHeader.vc, 
-// 	  C1RxHeader.posion,
-// 	  C1RxHeader.format,
-// 	  C1RxHeader.rsvd22,
-// 	  C1RxHeader.clnum,
-// 	  C1RxHeader.resptype,
-// 	  C1RxHeader.mdata}	<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH-1:0];
-// 	 C1RxWrValid		<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH];
-// 	 C1RxIntrValid	<= as2cf_fifo_ch1_dout[`ASE_CCI_RX_HDR_WIDTH+1];
-//       end
-//       else begin
-// 	 {C1RxHeader.vc, 
-// 	  C1RxHeader.posion,
-// 	  C1RxHeader.format,
-// 	  C1RxHeader.rsvd22,
-// 	  C1RxHeader.clnum,
-// 	  C1RxHeader.resptype,
-// 	  C1RxHeader.mdata} 	<= `ASE_CCI_RX_HDR_WIDTH'b0;
-// 	 C1RxWrValid		<= 1'b0;
-// 	 C1RxIntrValid	<= 1'b0;
-//       end
-//    end
+   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_din;
+   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_dout;
+   logic 			 as2cf_fifo_ch1_write;
+   logic 			 as2cf_fifo_ch1_read;
+   logic 			 as2cf_fifo_ch1_full;
+   logic 			 as2cf_fifo_ch1_empty;
+   logic 			 as2cf_fifo_ch1_overflow;
+   logic 			 as2cf_fifo_ch1_underflow;
+   logic 			 as2cf_fifo_ch1_valid;
 
 
-//    /*
-//     * RX0 channel management
-//     */
-//    always @(posedge clk) begin : as2cf_fifo_ch0_producer
-//       if (~sys_reset_n) begin
-//    	 csrff_read				<= 0;
-//    	 umsgff_read				<= 0;
-//    	 as2cf_fifo_ch0_write			<= 0;
-//    	 cf2as_latbuf_ch0_read			<= 0;
-//    	 cf2as_latbuf_ch1_read_0		<= 0;
-// 	 sw_reset_trig                          <= 1;
-//    	 rx0_state				<= RxIdle;
-//       end
-//       else begin
-//    	 case (rx0_state)
-//    	   // Default state
-//    	   RxIdle:
-//    	     begin
-//    		if (~csrff_empty && (csr_address >= AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full) begin
-//    		   as2cf_fifo_ch0_din		<= {5'b00001, {`ASE_RX0_CSR_WRITE, csr_index}, {480'b0, csr_value}};
-//    		   as2cf_fifo_ch0_write		<= 1;
-//    		   csrff_read			<= ~csrff_empty;
-//    		   umsgff_read			<= 0;
-//    		   cf2as_latbuf_ch0_read	<= 0;
-//    		   cf2as_latbuf_ch1_read_0	<= 0;
-//    		   rx0_state			<= RxAFUCSRWrite;
-//    		end
-//    		else if ( ~csrff_empty && (csr_address < AFU_CSR_LO_BOUND) && ~as2cf_fifo_ch0_full ) begin
-//    		   if (csrff_dout[45:32]	== CCI_RESET_CTRL_OFFSET) begin
-//    		      sw_reset_trig		<= ~csrff_dout[CCI_RESET_CTRL_BITLOC];
-//    		   end
-//    		   csrff_read			<= 1;
-//    		   umsgff_read			<= 0;
-//    		   as2cf_fifo_ch0_write		<= 0;
-//    		   cf2as_latbuf_ch0_read	<= 0;
-//    		   cf2as_latbuf_ch1_read_0	<= 0;
-//    		   rx0_state			<= RxQLPCSRWrite;
-//    		end
-//    		// else if ( ~umsgff_empty && ~as2cf_fifo_ch0_full ) begin
-//    		//    as2cf_fifo_ch0_din		<= { 5'b01000, umsgff_dout };
-//    		//    as2cf_fifo_ch0_write		<= 1;
-//    		//    umsgff_read			<= ~umsgff_empty;
-//    		//    csrff_read			<= 0;
-//    		//    cf2as_latbuf_ch0_read	<= 0;
-//    		//    cf2as_latbuf_ch1_read_0	<= 0;
-//    		//    rx0_state			<= RxUmsg;
-//    		// end
-//    		else if (~cf2as_latbuf_ch0_empty && ~as2cf_fifo_ch0_full ) begin
-//    		   rd_memline_dex (rx0_pkt, cf2as_latbuf_ch0_claddr, cf2as_latbuf_ch0_meta );
-//    		   as2cf_fifo_ch0_din		<= {5'b00010, rx0_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0], unpack_ccipkt_to_vector(rx0_pkt)};
-//    		   as2cf_fifo_ch0_write		<= 1;
-//    		   cf2as_latbuf_ch0_read	<= ~cf2as_latbuf_ch0_empty;
-//    		   csrff_read			<= 0;
-//    		   umsgff_read			<= 0;
-//    		   cf2as_latbuf_ch1_read_0	<= 0;
-//    		   rx0_state			<= RxReadResp;
-//    		end
-//    		else if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 0) && ~as2cf_fifo_ch0_full ) begin
-//    		   wr_memline_dex(rx0_pkt, cf2as_latbuf_ch1_claddr_0, cf2as_latbuf_ch1_meta_0, cf2as_latbuf_ch1_data_0 );
-//    		   csrff_read			<= 0;
-//    		   as2cf_fifo_ch0_din		<= {5'b00100, rx0_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0], 512'b0};
-//    		   as2cf_fifo_ch0_write		<= 1;
-//    		   cf2as_latbuf_ch1_read_0	<= ~cf2as_latbuf_ch1_empty; // 1;
-//    		   cf2as_latbuf_ch0_read	<= 0;
-//    		   rx0_state			<= RxWriteResp;
-//    		end
-//    		else begin
-//    		   as2cf_fifo_ch0_din		<= 0;
-//    		   csrff_read			<= 0;
-//    		   umsgff_read			<= 0;
-//    		   as2cf_fifo_ch0_write		<= 0;
-//    		   cf2as_latbuf_ch0_read	<= 0;
-//    		   cf2as_latbuf_ch1_read_0	<= 0;
-//    		   rx0_state			<= RxIdle;
-//    		end
-//    	     end
-//    	   // CSR Write in AFU space
-//    	   RxAFUCSRWrite:
-//    	     begin
-//    		as2cf_fifo_ch0_din		<= 0;
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    		rx0_state			<= RxIdle;
-//    	     end
-//    	   // CSR Write in QLP region
-//    	   RxQLPCSRWrite:
-//    	     begin
-//    		as2cf_fifo_ch0_din		<= 0;
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    		rx0_state			<= RxIdle;
-//    	     end
-//    	   // Unordered Message
-//    	   // RxUmsg:
-//    	   //   begin
-//    	   // 	as2cf_fifo_ch0_din		<= 0;
-//    	   // 	csrff_read			<= 0;
-//    	   // 	umsgff_read			<= 0;
-//    	   // 	as2cf_fifo_ch0_write		<= 0;
-//    	   // 	cf2as_latbuf_ch0_read		<= 0;
-//    	   // 	cf2as_latbuf_ch1_read_0		<= 0;
-//    	   // 	rx0_state			<= RxIdle;
-//    	   //   end
-//    	   // Read Response
-//    	   RxReadResp:
-//    	     begin
-//    		as2cf_fifo_ch0_din		<= 0;
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    		rx0_state			<= RxIdle;
-//    	     end
-// 	   // Write Response
-//    	   RxWriteResp:
-//    	     begin
-//    		as2cf_fifo_ch0_din		<= 0;
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    		rx0_state			<= RxIdle;
-//    	     end
-//    	   // Interrupt Response
-//    	   RxIntrResp:
-//    	     begin
-//    		as2cf_fifo_ch0_din		<= 0;
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    	   	rx0_state			<= RxIdle;
-//    	     end
-//    	   // Lala land
-//    	   default:
-//    	     begin
-//    		csrff_read			<= 0;
-//    		umsgff_read			<= 0;
-//    		as2cf_fifo_ch0_write		<= 0;
-//    		cf2as_latbuf_ch0_read		<= 0;
-//    		cf2as_latbuf_ch1_read_0		<= 0;
-//    		rx0_state			<= RxIdle;
-//    	     end
-//    	 endcase
-//       end
-//    end
+   // CH0 coded as {intrvalid, umsgvalid, wrvalid, rdvalid, cfgvalid, hdr, data}
+   ase_fifo
+     #(
+       .DATA_WIDTH (ASE_RX0_PATHWIDTH)
+       )
+   as2cf_fifo_ch0
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( as2cf_fifo_ch0_write ),
+      .data_in    ( as2cf_fifo_ch0_din ),
+      .rd_en      ( as2cf_fifo_ch0_read ),
+      .data_out   ( as2cf_fifo_ch0_dout ),
+      .data_out_v ( as2cf_fifo_ch0_valid ),
+      .alm_full   ( as2cf_fifo_ch0_full ),
+      .full       ( ),
+      .empty      ( as2cf_fifo_ch0_empty ),
+      .count      ( ),
+      .overflow   ( as2cf_fifo_ch0_overflow ),
+      .underflow  ( as2cf_fifo_ch0_underflow )
+      );
+
+   // CH1 coded as {intrvalid, wrvalid, hdr}
+   ase_fifo
+     #(
+       .DATA_WIDTH (ASE_RX1_PATHWIDTH)
+       )
+   as2cf_fifo_ch1
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( as2cf_fifo_ch1_write ),
+      .data_in    ( as2cf_fifo_ch1_din ),
+      .rd_en      ( as2cf_fifo_ch1_read ),
+      .data_out   ( as2cf_fifo_ch1_dout ),
+      .data_out_v ( as2cf_fifo_ch1_valid ),
+      .alm_full   ( as2cf_fifo_ch1_full ),
+      .full       ( ),
+      .empty      ( as2cf_fifo_ch1_empty ),
+      .count      ( ),
+      .overflow   ( as2cf_fifo_ch1_overflow ),
+      .underflow  ( as2cf_fifo_ch1_underflow )
+      );
+
+   
+   /*
+    * RX0 Channel management
+    * - Read response 
+    * - Can block due
+    */
 
 
-//    /*
-//     * RX1 channel management
-//     */
-//    always @(posedge clk) begin : as2cf_fifo_ch1_producer
-//       if (~sys_reset_n) begin
-//    	 as2cf_fifo_ch1_write			<= 0;
-//    	 cf2as_latbuf_ch1_read_1		<= 0;
-// 	 rx1_state				<= RxIdle;
-//       end
-//       else begin
-// 	 case (rx1_state)
-// 	   // Default state
-// 	   RxIdle:
-// 	     begin
-// 		if (~cf2as_latbuf_ch1_empty && (tx_to_rx_channel == 1) && ~as2cf_fifo_ch1_full ) begin
-//    		   wr_memline_dex(rx1_pkt, cf2as_latbuf_ch1_claddr_1, cf2as_latbuf_ch1_meta_1, cf2as_latbuf_ch1_data_1 );
-//    		   as2cf_fifo_ch1_din		<= { 2'b01, rx1_pkt.meta[`ASE_CCI_RX_HDR_WIDTH-1:0]};
-//    		   as2cf_fifo_ch1_write		<= 1;
-//    		   cf2as_latbuf_ch1_read_1	<= ~cf2as_latbuf_ch1_empty;  // 1;
-// 		   rx1_state			<= RxWriteResp;
-// 		end
-// 		else begin
-// 		   as2cf_fifo_ch1_din		<= 0;
-//    		   as2cf_fifo_ch1_write		<= 0;
-//    		   cf2as_latbuf_ch1_read_1	<= 0;
-// 		   rx1_state			<= RxIdle;
-// 		end
-// 	     end
-// 	   // Write Response
-// 	   RxWriteResp:
-// 	     begin
-// 		as2cf_fifo_ch1_din		<= 0;
-//    		as2cf_fifo_ch1_write		<= 0;
-//    		cf2as_latbuf_ch1_read_1		<= 0;
-// 		rx1_state			<= RxIdle;
-// 	     end
-// 	   // Interrupt response
-// 	   RxIntrResp:
-// 	     begin
-// 		as2cf_fifo_ch1_din		<= 0;
-//    		as2cf_fifo_ch1_write		<= 0;
-//    		cf2as_latbuf_ch1_read_1		<= 0;
-// 		rx1_state			<= RxIdle;
-// 	     end
-// 	   // Lala land
-// 	   default:
-// 	     begin
-// 		as2cf_fifo_ch1_din		<= 0;
-//    		as2cf_fifo_ch1_write		<= 0;
-//    		cf2as_latbuf_ch1_read_1		<= 0;
-// 		rx1_state			<= RxIdle;
-// 	     end
-// 	 endcase
-//       end
-//    end
-
+   /*
+    * RX1 Channel management
+    *
+    */  
+   
+   
 
    /* *******************************************************************
     * Inactivity management block
@@ -1348,11 +921,11 @@ module ccip_emulator
       #100ns;
 
       // Setting up CA-private memory
-      if (cfg.enable_capcm) begin
-	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
-	 capcm_init();
-      end
-
+      // if (cfg.enable_capcm) begin
+      // 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
+      // 	 capcm_init();
+      // end
+      
       // Link layer ready signal
       wait (lp_initdone == 1'b1);
       $display("SIM-SV: CCI InitDone is HIGH...");
@@ -1434,34 +1007,36 @@ module ccip_emulator
     * - XZ checker
     * - Data hazard warning
     */
-/* // FIXME //
-   cci_sniffer
-     #(
-       .TX_HDR_WIDTH (`CCI_TX_HDR_WIDTH),
-       .RX_HDR_WIDTH (`ASE_CCI_RX_HDR_WIDTH),
-       .DATA_WIDTH   (`CCI_DATA_WIDTH)
-       )
-   cci_sniffer
+   ccip_sniffer ccip_sniffer
      (
-      // CCI signals
-      .clk             (clk),
-      .resetb          (sys_reset_n),
-      .lp_initdone     (lp_initdone),
-      .tx_c0_header    (tx_c0_header),
-      .tx_c0_rdvalid   (tx_c0_rdvalid),
-      .tx_c1_header    (tx_c1_header),
-      .tx_c1_data      (tx_c1_data),
-      .tx_c1_wrvalid   (tx_c1_wrvalid),
-      .tx_c1_intrvalid (tx_c1_intrvalid),  // (tx_c1_intrvalid_sel ),
-      .rx_c0_header    (rx_c0_header),
-      .rx_c0_data      (rx_c0_data),
-      .rx_c0_rdvalid   (rx_c0_rdvalid),
-      .rx_c0_wrvalid   (rx_c0_wrvalid),
-      .rx_c0_cfgvalid  (rx_c0_cfgvalid),
-      .rx_c1_header    (rx_c1_header),
-      .rx_c1_wrvalid   (rx_c1_wrvalid)
+      .clk            (clk               ),
+      .sys_reset_n    (sys_reset_n       ),
+      .sw_reset_n     (sw_reset_n        ),
+      .C0TxHdr        (C0TxHdr           ),
+      .C0TxRdValid    (C0TxRdValid       ),
+      .C0TxAlmFull    (C0TxAlmFull       ),
+      .C1TxHdr        (C1TxHdr           ),
+      .C1TxData       (C1TxData          ),
+      .C1TxWrValid    (C1TxWrValid       ),
+      .C1TxAlmFull    (C1TxAlmFull       ),
+      .C1TxIntrValid  (C1TxIntrValid     ),
+      .CfgRdData      (CfgRdData         ),
+      .CfgRdDataValid (CfgRdDataValid    ),
+      .CfgHeader      (CfgHeader         ),
+      .CfgWrValid     (CfgWrValid        ),
+      .CfgRdValid     (CfgRdValid        ),
+      .C0RxHdr        (C0RxHdr           ),
+      .C0RxData       (C0RxData          ),
+      .C0RxRdValid    (C0RxRdValid       ),
+      .C0RxWrValid    (C0RxWrValid       ),
+      .C0RxUmsgValid  (C0RxUmsgValid     ),
+      .C0RxIntrValid  (C0RxIntrValid     ),
+      .C1RxHdr        (C1RxHdr           ),
+      .C1RxWrValid    (C1RxWrValid       ),
+      .C1RxIntrValid  (C1RxIntrValid     )
       );
-*/
+   
+
    
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
@@ -1472,11 +1047,11 @@ module ccip_emulator
 	 read_check_array[C0TxHeader.mdata] = C0TxHeader.addr;
       end
       if (C0RxRdValid) begin
-	 if (read_check_array.exists(C0RxHeader.mdata)
+	 if (read_check_array.exists(C0RxHeader.mdata))
 	   read_check_array.delete(C0RxHeader.mdata);
       end
    end
-
+      
    // Write response checking
    int unsigned write_check_array[*];
    always @(posedge clk) begin : write_array_checkproc
@@ -1498,37 +1073,37 @@ module ccip_emulator
    /*
     * CCI Logger module
     */
-/*
-   cci_logger cci_logger
+   ccip_logger ccip_logger
      (
+      // Logger control
       .enable_logger    (cfg.enable_cl_view),
       .finish_logger    (finish_logger     ),
-      // .log_string_en    (cci_logger_msg_en ),
-      // .log_string       (cci_logger_msg    ),
-      // interface
-      .clk              (clk              ),        
-      .sys_reset_n     	(sys_reset_n      ),     
-      .sw_reset_n      	(sw_reset_n       ),      
-      .lp_initdone     	(lp_initdone      ),    
-      .tx_c0_header    	(tx_c0_header     ),    
-      .tx_c0_rdvalid   	(tx_c0_rdvalid    ),   
-      .tx_c0_almostfull	(tx_c0_almostfull ),
-      .tx_c1_header    	(tx_c1_header     ),    
-      .tx_c1_data      	(tx_c1_data       ),      
-      .tx_c1_wrvalid   	(tx_c1_wrvalid    ),   
-      .tx_c1_almostfull	(tx_c1_almostfull ),
-      .tx_c1_intrvalid 	(tx_c1_intrvalid  ), 
-      .rx_c0_header    	(rx_c0_header     ),    
-      .rx_c0_data      	(rx_c0_data       ),      
-      .rx_c0_rdvalid   	(rx_c0_rdvalid    ),   
-      .rx_c0_wrvalid   	(rx_c0_wrvalid    ),   
-      .rx_c0_cfgvalid  	(rx_c0_cfgvalid   ),  
-      .rx_c1_header    	(rx_c1_header     ),    
-      .rx_c1_wrvalid   	(rx_c1_wrvalid    ),   
-      .rx_c0_umsgvalid 	(rx_c0_umsgvalid  ), 
-      .rx_c0_intrvalid 	(rx_c0_intrvalid  ), 
-      .rx_c1_intrvalid  (rx_c1_intrvalid  )     
+      // CCIP ports
+      .clk            (clk               ),
+      .sys_reset_n    (sys_reset_n       ),
+      .sw_reset_n     (sw_reset_n        ),
+      .C0TxHdr        (C0TxHdr           ),
+      .C0TxRdValid    (C0TxRdValid       ),
+      .C0TxAlmFull    (C0TxAlmFull       ),
+      .C1TxHdr        (C1TxHdr           ),
+      .C1TxData       (C1TxData          ),
+      .C1TxWrValid    (C1TxWrValid       ),
+      .C1TxAlmFull    (C1TxAlmFull       ),
+      .C1TxIntrValid  (C1TxIntrValid     ),
+      .CfgRdData      (CfgRdData         ),
+      .CfgRdDataValid (CfgRdDataValid    ),
+      .CfgHeader      (CfgHeader         ),
+      .CfgWrValid     (CfgWrValid        ),
+      .CfgRdValid     (CfgRdValid        ),
+      .C0RxHdr        (C0RxHdr           ),
+      .C0RxData       (C0RxData          ),
+      .C0RxRdValid    (C0RxRdValid       ),
+      .C0RxWrValid    (C0RxWrValid       ),
+      .C0RxUmsgValid  (C0RxUmsgValid     ),
+      .C0RxIntrValid  (C0RxIntrValid     ),
+      .C1RxHdr        (C1RxHdr           ),
+      .C1RxWrValid    (C1RxWrValid       ),
+      .C1RxIntrValid  (C1RxIntrValid     )
       );
-*/   
    
 endmodule // cci_emulator

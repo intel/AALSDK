@@ -65,18 +65,18 @@ package ase_pkg;
    parameter CCIP_TX0_RDLINE_S   =  4'h4;
    parameter CCIP_TX0_RDLINE_I   =  4'h6;
    parameter CCIP_TX0_RDLINE_E   =  4'h7;
-   parameter CCIP_RX0_RD_RESP    =  4'h4;   
-   
+   parameter CCIP_RX0_RD_RESP    =  4'h4;
+
    // Write request/response
    parameter CCIP_TX1_WRLINE_I   =  4'h1;
    parameter CCIP_TX1_WRLINE_M   =  4'h2;
    parameter CCIP_TX1_WRFENCE    =  4'h5;
-   parameter CCIP_RX0_WR_RESP    =  4'h1;   
+   parameter CCIP_RX0_WR_RESP    =  4'h1;
    parameter CCIP_RX1_WR_RESP    =  4'h1;
-   				    
+
    // MSI-X request/response
    parameter CCIP_TX1_INTRVALID  =  4'h8;
-   parameter CCIP_RX0_INTR_CMPLT =  4'h8; 
+   parameter CCIP_RX0_INTR_CMPLT =  4'h8;
    parameter CCIP_RX1_INTR_CMPLT =  4'h8;
 
    // CSR Write/Rread
@@ -85,15 +85,15 @@ package ase_pkg;
 
    // UMsg // TBD
    parameter CCIP_RX0_UMSG       =  4'hF;
-   
-				   
+
+
    /*
     * CCI specifications
     */
    parameter CCIP_DATA_WIDTH       = 512;
    parameter CCIP_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
-   
+
    /*
     * TX header deconstruction
     */
@@ -121,21 +121,21 @@ package ase_pkg;
     * Enter 'n' here, where n = log_2(FIFO_DEPTH) & n is an integer
     */
    parameter ASE_FIFO_DEPTH_NUMBITS = 8;
-   
-   
+
+
    /*
     * SIMKILL_ON_UNDEFINED: A switch to kill simulation if on a valid
     * signal, 'X' or 'Z' is not allowed, gracious closedown on same
     */
  `define VLOG_UNDEF                   1'bx
  `define VLOG_HIIMP                   1'bz
-   
-   
+
+
    /*
     * Latency Scoreboard generics
     */
    // Number of transactions in latency scoreboard
-   parameter LATBUF_NUM_TRANSACTIONS = 8;
+   parameter LATBUF_NUM_TRANSACTIONS = 32;
    // Radix of latency scoreboard radix
    parameter LATBUF_COUNT_WIDTH      = $clog2(LATBUF_NUM_TRANSACTIONS) + 1;
    // ASE_fifo full threshold inside latency scoreboard
@@ -207,7 +207,7 @@ package ase_pkg;
       logic [CCIP_DATA_WIDTH-1:0] 	 data_q;
       logic 				 change;
       logic 				 hint_enable;
-      logic 				 hint_timer_started; 			      
+      logic 				 hint_timer_started;
       logic 				 hint_ready;
       logic 				 hint_pop;
       logic 				 data_timer_started;
@@ -256,7 +256,7 @@ package ase_pkg;
    /* ***********************************************************
     * CCI-P headers
     * RxHdr, TxHdr, CCIP Packets
-    * ***********************************************************/ 
+    * ***********************************************************/
    // RxHdr
    typedef struct packed {
       logic [1:0] vc;       // 27:26  // Virtual channel select
@@ -272,7 +272,7 @@ package ase_pkg;
 
    // TxHdr
    typedef struct packed {
-      logic [1:0]  vc;       // 73:72  // Virtual channel select            
+      logic [1:0]  vc;       // 73:72  // Virtual channel select
       logic 	   sop;      // 71     // Start of packet
       logic 	   rsvd70;   // 70     // X
       logic [1:0]  len;      // 69:68  // Length
@@ -285,10 +285,18 @@ package ase_pkg;
 
    // CfgHdr
    typedef struct packed {
-      logic [15:0] index;     // 19:4 // Dword aligned address
-      logic [1:0]  rsvd3_2;   // 3:2  // Reserved
-      logic [1:0]  num_bytes; // 1:0  // 00 - 4b, 01 - 8b, 10 - 64b
+      logic [15:0] index;
+      logic [1:0]  len;
+      logic 	   poison;
+      logic [8:0]  tid;  
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
-         
+      
+   // Config channel
+   parameter CCIP_MMIO_ADDR_WIDTH   = 16;
+   parameter CCIP_MMIO_INDEX_WIDTH  = 14;
+   parameter CCIP_MMIO_TID_WIDTH    = 9;
+   parameter CCIP_MMIO_RDDATA_WIDTH = 64;
+
+
 endpackage

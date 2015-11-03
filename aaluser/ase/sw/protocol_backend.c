@@ -187,6 +187,22 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 }
 
 
+/*
+ * DPI: MMIO update 
+ */ 
+void mmio_update_dex (int *addr, uint64_t *data)
+{
+  FUNC_CALL_ENTRY;
+  
+  uint64_t *mmio_addr;
+  mmio_addr = (uint64_t*)((uint64_t)ase_csr_base + (uint64_t)*addr);
+
+  *mmio_addr = (uint64_t) *data;
+
+  FUNC_CALL_EXIT;
+}
+
+
 // -----------------------------------------------------------------------
 // vbase/pbase exchange THREAD
 // when an allocate request is received, the buffer is copied into a
@@ -290,39 +306,46 @@ int ase_listener()
     }
 
 
-  /*
-   * UMSG listener
-   */
-  // Message string
-  char umsg_str[SIZEOF_UMSG_PACK_T];
-  /* int ii; */
-  umsg_pack_t inst;
+#if 0 
+/*   /\* */
+/*    * UMSG listener */
+/*    *\/ */
+/*   // Message string */
+/*   char umsg_str[SIZEOF_UMSG_PACK_T]; */
+/*   /\* int ii; *\/ */
+/*   umsg_pack_t inst; */
 
-  // Cleanse receptacle string
-  /* umsg_data = malloc(CL_BYTE_WIDTH); */
-  memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T );
-  /* memset (umsg_data, '\0', CL_BYTE_WIDTH ); */
+/*   // Cleanse receptacle string */
+/*   /\* umsg_data = malloc(CL_BYTE_WIDTH); *\/ */
+/*   memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T ); */
+/*   /\* memset (umsg_data, '\0', CL_BYTE_WIDTH ); *\/ */
   
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
-    {
-/* #ifdef ASE_DEBUG */
-/*       printf("ASERxMsg => UMSG Received \n");       */
-/* #endif */
-      // Tokenize messgae to get msg_id & umsg_data
-      // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
-      memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T);
+/*   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT) */
+/*     { */
+/* /\* #ifdef ASE_DEBUG *\/ */
+/* /\*       printf("ASERxMsg => UMSG Received \n");       *\/ */
+/* /\* #endif *\/ */
+/*       // Tokenize messgae to get msg_id & umsg_data */
+/*       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data ); */
+/*       memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T); */
       
-/* #ifdef ASE_DEBUG */
-/*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); */
-/*       for(ii = 0 ; ii < 64; ii++) */
-/* 	printf("%02X", (int)inst.data[ii]); */
-/*       printf("\n"); */
-/* #endif */
+/* /\* #ifdef ASE_DEBUG *\/ */
+/* /\*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); *\/ */
+/* /\*       for(ii = 0 ; ii < 64; ii++) *\/ */
+/* /\* 	printf("%02X", (int)inst.data[ii]); *\/ */
+/* /\*       printf("\n"); *\/ */
+/* /\* #endif *\/ */
       
-      // UMSG dispatch
-      umsg_dispatch(0, 1, inst.hint, inst.id, inst.data);
-    }
+/*       // UMSG dispatch */
+/*       umsg_dispatch(0, 1, inst.hint, inst.id, inst.data); */
+/*     } */
+#endif
 
+  /*
+   * UMSG compare routine
+   * *FIXME*: Profiling and costliness analysis needed here
+   */
+  
 
   /*
    * SIMKILL message handler
@@ -409,6 +432,7 @@ void calc_phys_memory_ranges()
   END_YELLOW_FONTCOLOR;
 
   // Internal check messages
+#if 0
   if (cfg->enable_capcm)
     {
       if (capcm_size > (uint64_t)8*1024*1024*1024 )
@@ -438,6 +462,7 @@ void calc_phys_memory_ranges()
 	  END_RED_FONTCOLOR;
 	}
     }
+#endif
 }
 
 

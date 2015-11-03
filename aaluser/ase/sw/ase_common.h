@@ -99,6 +99,9 @@
 #define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
 #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
 
+#define NUM_UMSG_PER_AFU               8
+
+#if 0 
 /*
  * SPL constants
  */
@@ -119,7 +122,7 @@
 //                                Byte Offset  Attribute  Width  Comments
 #define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
 #define      DSM_STATUS            0x40         // RO      512b   test status and error info
-
+#endif
 
 /* *******************************************************************************
  *
@@ -241,7 +244,7 @@ extern struct buffer_t *end;       // Tail pointer
 // CSR fake physical base address
 extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
 // DPI side CSR base, offsets updated on CSR writes
-extern uint32_t *ase_csr_base;      
+extern uint64_t *ase_csr_base;      
 // Timestamp reference time
 extern struct timeval start;
 
@@ -512,13 +515,20 @@ void start_simkill_countdown();
 void run_clocks(int num_clocks);
 
 // CSR Write 
+#if 0
 void csr_write_dex(cci_pkt *csr);
 void csr_write_completed();
+#endif
 
 // Read system memory line
 void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
 // Write system memory line
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
+
+// MMIO request 
+void mmio_dispatch(int init, int wren, int addr, long int data, int dwidth);
+// MMIO Read response
+void mmio_update_dex(int *addr, uint64_t *data64);
 
 // CAPCM functions
 extern void capcm_init();
@@ -531,7 +541,8 @@ void ase_umsg_init();
 
 /*
  * Request/Response options
- */ 
+ */
+#if 0 
 // TX0 channel
 #define ASE_TX0_RDLINE       0x4
 // TX1 channel
@@ -539,6 +550,7 @@ void ase_umsg_init();
 #define ASE_TX1_WRLINE       0x2
 #define ASE_TX1_WRFENCE      0x5   // CCI 1.8
 #define ASE_TX1_INTRVALID    0x8   // CCI 1.8
+#endif
 // RX0 channel
 #define ASE_RX0_CSR_WRITE    0x0
 #define ASE_RX0_WR_RESP      0x1

@@ -301,10 +301,10 @@ module outoforder_wrf_channel
 	   	ret_random_lat = $urandom_range (`RDLINE_I_LATRANGE);
 	     end
 
-	   CCIP_TX0_RDLINE_E:
-	     begin
-	   	ret_random_lat = $urandom_range (`RDLINE_E_LATRANGE);
-	     end
+	   // CCIP_TX0_RDLINE_E:
+	   //   begin
+	   // 	ret_random_lat = $urandom_range (`RDLINE_E_LATRANGE);
+	   //   end
 
 	   // WriteLine
 	   CCIP_TX1_WRLINE_M:

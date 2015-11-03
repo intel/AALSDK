@@ -46,10 +46,10 @@ module tb_latency_scoreboard();
 	 valid_in <= 0;
 	 wr_iter <= 0;
 	 data_in <= 64'hCAFEBABE_BEBAFECA;	 
-	 meta_in <= 72'h01_00000000_00000000;	 
+	 meta_in <= 72'h00_00000000_00000000;	 
       end
       else begin
-	 if ((~full) && (wr_iter < 10)) begin
+	 if ((~full) && (wr_iter < 256)) begin
 	    $display(wr_iter);	    
 	    wr_iter <= wr_iter + 1;
 	    meta_in <= meta_in + 72'h01_00000000_00000000;

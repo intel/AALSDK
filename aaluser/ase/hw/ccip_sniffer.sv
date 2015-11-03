@@ -51,39 +51,39 @@
 import ase_pkg::*;
 `include "platform.vh"
 
-module cci_sniffer
+module ccip_sniffer
    (
     // CCI interface
-    input logic 		      clk,
-    input logic 		      sys_reset_n,
-    input logic 		      sw_reset_n,
+    input logic 			    clk,
+    input logic 			    sys_reset_n,
+    input logic 			    sw_reset_n,
     // C0Tx channel
-    input 			      TxHdr_t C0TxHdr,
-    input logic 		      C0TxRdValid,
-    input logic 		      C0TxAlmFull,
+    input 				    TxHdr_t C0TxHdr,
+    input logic 			    C0TxRdValid,
+    input logic 			    C0TxAlmFull,
     // C1Tx channel
-    input 			      TxHdr_t C1TxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] C1TxData,
-    input logic 		      C1TxWrValid,
-    input logic 		      C1TxAlmFull,
-    input logic 		      C1TxIntrValid,
+    input 				    TxHdr_t C1TxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	    C1TxData,
+    input logic 			    C1TxWrValid,
+    input logic 			    C1TxAlmFull,
+    input logic 			    C1TxIntrValid,
     // Config channel
-    input logic 		      CfgRdData,
-    input logic 		      CfgRdDataValid,
-    input logic 		      CfgHeader,
-    input logic 		      CfgWrValid,
-    input logic 		      CfgRdValid,
+    input logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData,
+    input logic 			    CfgRdDataValid,
+    input 				    CfgHdr_t CfgHeader,
+    input logic 			    CfgWrValid,
+    input logic 			    CfgRdValid,
     // C0Rx channel
-    input 			      RxHdr_t C0RxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] C0RxData,
-    input logic 		      C0RxRdValid,
-    input logic 		      C0RxWrValid,
-    input logic 		      C0RxUmsgValid,
-    input logic 		      C0RxIntrValid,
+    input 				    RxHdr_t C0RxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	    C0RxData,
+    input logic 			    C0RxRdValid,
+    input logic 			    C0RxWrValid,
+    input logic 			    C0RxUmsgValid,
+    input logic 			    C0RxIntrValid,
     // C1Rx channel
-    input 			      RxHdr_t C1RxHdr,
-    input logic 		      C1RxWrValid,
-    input logic 		      C1RxIntrValid
+    input 				    RxHdr_t C1RxHdr,
+    input logic 			    C1RxWrValid,
+    input logic 			    C1RxIntrValid      
     );
 
    int 				   log_started;   
