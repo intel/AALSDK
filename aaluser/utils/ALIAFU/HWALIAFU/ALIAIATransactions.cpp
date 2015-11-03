@@ -1,4 +1,3 @@
-
 // Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
@@ -24,6 +23,7 @@
 // CONTRACT,  STRICT LIABILITY,  OR TORT  (INCLUDING NEGLIGENCE  OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+//****************************************************************************
 //****************************************************************************
 /// @file AIATransactions.cpp
 /// @brief Transaction Objects represent Commands/Messages to be sent down

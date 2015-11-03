@@ -62,7 +62,7 @@
 //          Intel(R) Intel QuickAssist Technology AAL FPGA device driver for
 //          CCI protocol compliant devices.
 // HISTORY:
-// COMMENTS:
+// COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
 // 10/14/2015    JG       Initial version started
 //****************************************************************************

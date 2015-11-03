@@ -55,7 +55,7 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cci_pcie_driver_pdde.c
+//        FILE: cci_pcie_driver_pdde_linux.c
 //     CREATED: 10/14/2015
 //      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
 //              Ananda Ravuri, Intel <ananda.ravuri@intel.com>
@@ -63,7 +63,7 @@
 //          functionality of the Intel(R) Intel QuickAssist Technology AAL
 //          FPGA device driver.
 // HISTORY:
-// COMMENTS:
+// COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
 // 10/14/2015    JG       Initial version started
 //****************************************************************************
@@ -82,7 +82,7 @@
 #include "cci_pcie_driver_simulator.h"
 
 #include "ccip_defs.h"
-#include "ccip_fme_mmio.h"
+#include "ccip_fme.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
@@ -214,7 +214,7 @@ cci_enumerate_device( struct pci_dev             *pcidev,
 //=============================================================================
 
 ///=================================================================
-/// cci_pci_id_tbl - identify PCI devices supported by this module
+/// cci_pci_id_tbl - identify PCI devices supported by this driver
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
@@ -228,8 +228,8 @@ MODULE_DEVICE_TABLE(pci, cci_pcie_id_tbl);
 
 //=============================================================================
 // Name: cci_pcie_driver_info
-// Description: This struct represents the QPI PCIe driver instance for the
-//              driver. The Driver object is registered with the Linux PCI
+// Description: This struct represents the PCIe driver instance.
+//              The Driver object is registered with the Linux PCI
 //              subsystem.
 //=============================================================================
 struct cci_pcie_driver_info
@@ -290,7 +290,7 @@ struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
          break;
       default:
          PVERBOSE("Unknown device ID ignored\n");
-         return NULL;
+         break;
    }
    return NULL;
 }
@@ -350,7 +350,7 @@ cci_pci_probe( struct pci_dev             *pcidev,
    ASSERT(pccidev);
 
    // If all went well record this device on our
-   //  list of devices owned by this driver
+   //  list of devices owned by the driver
    if(NULL != pccidev){
       kosal_list_add(&(pccidev->m_list), &g_device_list);
    }
@@ -371,10 +371,10 @@ cci_pci_probe( struct pci_dev             *pcidev,
 //=============================================================================
 // Name: cci_enumerate_device
 // Description: Called during the device probe to initiate the enumeration of
-//              the device attributes and construct the internal objects..
+//              the device attributes and construct the internal objects.
 // Inputs: pcidev - kernel-provided device pointer.
 //         pcidevid - kernel-provided device id pointer.
-// Outputs: 0 = success.
+// Returns: 0 = success.
 // Comments:
 //=============================================================================
 static

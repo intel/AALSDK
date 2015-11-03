@@ -1230,7 +1230,10 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'spl2defs.h' \
 'splpip.h' \
 'vafu2defs.h' \
-'encoder_kbae-public.h'\
+'encoder_kbae-public.h' \
+'iaaldevice.h' \
+'ccipdriver.h' \
+'ccipdrv-events.h' \
 )
 
 declare -ra COPYRIGHT_KERNEL_CHECKED_PREFIXES=(\
