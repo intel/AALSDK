@@ -131,7 +131,7 @@ module mmio_block
    mmioreq_fifo
      (
       .clk        ( clk ),
-      .rst        ( ~sys_reset_n ),
+      .rst        ( rst ),
       .wr_en      ( mmioreq_write ),
       .data_in    ( mmioreq_din ),
       .rd_en      ( mmioreq_pop ),
@@ -165,7 +165,7 @@ module mmio_block
    logic 			   mmioresp_full;
    logic 			   mmioresp_empty;
 
-   import "DPI-C" function void mmio_update(inout int mmioaddr64, inout bit [63:0] mmiodata );
+   import "DPI-C" function void mmio_update(int mmioaddr64, bit [63:0] mmiodata );
 
    // Response staging FIFO
    ase_fifo
@@ -177,7 +177,7 @@ module mmio_block
    mmioresp_fifo
      (
      .clk        ( clk ),
-     .rst        ( ~sys_reset_n ),
+     .rst        ( rst ),
      .wr_en      ( mmioresp_write ),
      .data_in    ( mmioresp_din ),
      .rd_en      ( mmioresp_pop ),
@@ -196,7 +196,7 @@ module mmio_block
 
    // FIFO writes to memory
    always @(posedge clk) begin
-      if (~sys_reset_n) begin
+      if (rst) begin
 	 mmioresp_read <= 0;
       end
       else begin
