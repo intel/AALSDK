@@ -81,6 +81,24 @@
 // periodic timer
 #define PERF_COUNTER_TIMER  60000
 
+#define CACHE_EVENT_COUNTER_MAX_TRY 30
+
+#define CACHE_EVENT_COUNTER_TIMEOUT 1000
+
+struct FPMON_CACHE_CTL {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt port_counter :60;
+         btUnsigned64bitInt event_code :4;
+      }; //end struct
+   }; // end union
+
+}; //end struct FPMON_CACHE_CONTROL
+
+
+
 // global performance Device feature list offset
 #define byte_offset_FPMON_DFH_HDR   0x3000
 
@@ -359,6 +377,153 @@ void ccip_stop_perf_counters_free(void)
 
 
 
+// @brief   update cache event  performance counters.
+///
+/// @param[in] event_code cache event code.
+/// @param[in] pkvp_fpmon_mmio Global performance mmio pointer.
+/// @param[in] pperf_counters_hr pointer to performance counter  human readable format
+/// @param[in] pperf_counters_bin pointer to performance counter binary format
+/// @return    error code
+bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
+                                       btVirtAddr pkvp_fpmon_mmio,
+                                       struct ccip_perf_counters *pperf_counters_hr ,
+                                       struct ccip_perf_counters *pperf_counters_bin)
+{
+   bt32bitInt res =0;
+   bt32bitInt counter =0;
+   /*
+   btTime delay =10;
+   btTime totaldelay =0;
+    */
+   struct FPMON_CACHE_CTL fpmon_cache_ctl_port0;
+   struct FPMON_CACHE_CTL fpmon_cache_ctl_port1;
+   struct CCIP_FPMON_CH_CTL ccip_fpmon_ch_ctl;
+
+
+
+   ccip_fpmon_ch_ctl.csr = read_ccip_csr64(pkvp_fpmon_mmio,byte_offset_FPMON_CACHE_CTL);
+   ccip_fpmon_ch_ctl.cache_event =event_code;
+
+   write_ccip_csr64(pkvp_fpmon_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fpmon_ch_ctl.csr);
+
+   while(event_code != fpmon_cache_ctl_port0.event_code )
+   {
+      fpmon_cache_ctl_port0.csr = read_ccip_csr64(pkvp_fpmon_mmio,byte_offset_FPMON_CACHE_CTR_0);
+      counter++;
+      if( counter > CACHE_EVENT_COUNTER_MAX_TRY)
+         break;
+
+      /*
+      // Sleep
+      kosal_udelay(delay);
+
+      // total dealy
+      totaldelay = totaldelay + delay;
+
+      // if total delay is more then 1 millisecond , return erroor
+      if(totaldelay > CACHE_EVENT_COUNTER_TIMEOUT)   {
+         res = -ETIME;
+         break ;
+      }
+      */
+
+
+   }
+
+   counter =0;
+   while(event_code != fpmon_cache_ctl_port1.event_code )
+   {
+      fpmon_cache_ctl_port1.csr = read_ccip_csr64(pkvp_fpmon_mmio,byte_offset_FPMON_CACHE_CTR_1);
+
+      counter++;
+      if( counter > CACHE_EVENT_COUNTER_MAX_TRY)
+            break;
+
+      /*
+      // Sleep
+      kosal_udelay(delay);
+
+      // total dealy
+      totaldelay = totaldelay + delay;
+
+      // if total delay is more then 1 millisecond , return erroor
+      if(totaldelay > CACHE_EVENT_COUNTER_TIMEOUT)   {
+         res = -ETIME;
+         break ;
+      }
+      */
+   }
+
+
+   switch (event_code)
+   {
+
+    case  Cache_Read_Hit:
+    {
+       pperf_counters_hr->Port0_Read_Hit = fpmon_cache_ctl_port0.port_counter;
+       pperf_counters_bin->Port0_Read_Hit = fpmon_cache_ctl_port0.port_counter;
+
+       pperf_counters_hr->Port1_Read_Hit = fpmon_cache_ctl_port1.port_counter;
+       pperf_counters_bin->Port1_Read_Hit = fpmon_cache_ctl_port1.port_counter;
+    }
+    break;
+
+    case  Cache_Write_Hit:
+    {
+       pperf_counters_hr->Port0_Write_Hit = fpmon_cache_ctl_port0.port_counter;
+       pperf_counters_bin->Port0_Write_Hit = fpmon_cache_ctl_port0.port_counter;
+
+       pperf_counters_hr->Port1_Write_Hit = fpmon_cache_ctl_port1.port_counter;
+       pperf_counters_bin->Port1_Write_Hit = fpmon_cache_ctl_port1.port_counter;
+    }
+    break;
+
+    case  Cache_Read_Miss:
+    {
+       pperf_counters_hr->Port0_Read_Miss = fpmon_cache_ctl_port0.port_counter;
+       pperf_counters_bin->Port0_Read_Miss = fpmon_cache_ctl_port0.port_counter;
+
+       pperf_counters_hr->Port1_Read_Miss = fpmon_cache_ctl_port1.port_counter;
+       pperf_counters_bin->Port1_Read_Miss = fpmon_cache_ctl_port1.port_counter;
+    }
+    break;
+
+
+    case  Cache_Write_Miss:
+    {
+       pperf_counters_hr->Port0_Write_Miss = fpmon_cache_ctl_port0.port_counter;
+       pperf_counters_bin->Port0_Write_Miss = fpmon_cache_ctl_port0.port_counter;
+
+
+       pperf_counters_hr->Port1_Write_Miss = fpmon_cache_ctl_port1.port_counter;
+       pperf_counters_bin->Port1_Write_Miss = fpmon_cache_ctl_port1.port_counter;
+    }
+    break;
+
+    case  Cache_Evictions:
+    {
+       pperf_counters_hr->Port0_Evictions = fpmon_cache_ctl_port0.port_counter;
+       pperf_counters_bin->Port0_Evictions = fpmon_cache_ctl_port0.port_counter;
+
+       pperf_counters_hr->Port1_Evictions = fpmon_cache_ctl_port1.port_counter;
+       pperf_counters_bin->Port1_Evictions = fpmon_cache_ctl_port1.port_counter;
+    }
+    break;
+
+    default:
+    {
+       // Error
+       PERR("invalid Cache Event code  \n");
+    }
+    break;
+
+   }
+
+   return res;
+
+}
+
+
 // @brief   get snapshot of performance counters.
 ///
 /// @param[in] void.
@@ -367,129 +532,39 @@ bt32bitInt ccip_perf_counters_snapshot(void)
 {
 
    bt32bitInt res =0;
-   btTime delay =10;
-   struct fme_device *pfme_dev = NULL;
+  struct fme_device *pfme_dev = NULL;
    btVirtAddr pkvp_fme_mmio = NULL;
 
-/*
-   struct ccip_device *pccip_dev    = NULL;
-   struct list_head   *This         = NULL;
-   struct list_head   *tmp          = NULL;
+   struct CCIP_FPMON_CH_CTL ccip_fpmon_ch_ctl;
+   struct ccip_perf_counters *pperf_counters_hr = NULL ;
+   struct ccip_perf_counters *pperf_counters_bin = NULL;
 
-   if( !kosal_list_is_empty(&g_device_list) ){
-
-         // Run through list of devices.  Use safe variant
-         //  as we will be deleting entries
-         kosal_list_for_each_safe(This, tmp, &g_device_list) {
-
-            // Get the device from the list entry
-            pccip_dev = cciv4_list_to_cciv4_device(This);
-            if(NULL !=pccip_dev)
-               break;
-
-         }// kosal_list_for_each_safe
-
-      }
-   else {
-
-      PERR("No registered Devices");
-      res = -EINVAL;
-      return res;
-   }
-
-
-   pkvp_fme_mmio = ccip_fmedev_kvp_afu_mmio(pccip_dev);
-   pfme_dev = pccip_dev->m_pfme_dev;
-
-   if ( (NULL == pfme_dev ) &&
-        (NULL == pkvp_fme_mmio )  &&
-        (NULL == ccip_fme_fpmon(pfme_dev))) {
-
-         res = -EINVAL;
-         return res;
-   }
-*/
    PINFO("Enter \n");
+
    // FIX offset
    pkvp_fme_mmio = pkvp_fme_mmio + byte_offset_FPMON_DFH_HDR;
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTL);
+   ccip_fpmon_ch_ctl.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTL);
+   ccip_fpmon_ch_ctl.freeze =0x1;
+   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fpmon_ch_ctl.csr);
 
    //Cache_Read_Hit
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =Cache_Read_Hit;
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x1;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-   kosal_udelay(delay);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_0);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_1);
-
-   ccip_perf_counters_hr.Port0_Read_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_hr.Port1_Read_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-   ccip_perf_counters_bin.Port0_Read_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_bin.Port1_Read_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
+   update_cache_event_counters(Cache_Read_Hit,pkvp_fme_mmio,pperf_counters_hr,pperf_counters_bin);
 
    // Cache_Write_Hit
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =Cache_Write_Hit;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-
-   kosal_udelay(delay);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_0);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_1);
-
-   ccip_perf_counters_hr.Port0_Write_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_hr.Port1_Write_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-   ccip_perf_counters_bin.Port0_Write_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_bin.Port1_Write_Hit = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-
+    update_cache_event_counters(Cache_Write_Hit,pkvp_fme_mmio,pperf_counters_hr,pperf_counters_bin);
 
    // Cache_Read_Miss
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =Cache_Read_Miss;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-
-   kosal_udelay(delay);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_0);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_1);
-
-   ccip_perf_counters_hr.Port0_Read_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_hr.Port1_Read_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-   ccip_perf_counters_bin.Port0_Read_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_bin.Port1_Read_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-
-
+   update_cache_event_counters(Cache_Read_Miss,pkvp_fme_mmio,pperf_counters_hr,pperf_counters_bin);
 
    // Cache_Write_Miss
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =Cache_Write_Miss;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
+   update_cache_event_counters(Cache_Write_Miss,pkvp_fme_mmio,pperf_counters_hr,pperf_counters_bin);
 
-
-   kosal_udelay(delay);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_0);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_1);
-
-   ccip_perf_counters_hr.Port0_Write_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_hr.Port1_Write_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-   ccip_perf_counters_bin.Port0_Write_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_bin.Port1_Write_Miss = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-
-   // Port0_Evictions
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =Cache_Evictions;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
-
-
-   kosal_udelay(delay);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_0);
-   ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.csr = read_ccip_csr64(pkvp_fme_mmio,byte_offset_FPMON_CACHE_CTR_1);
-
-   ccip_perf_counters_hr.Port0_Evictions = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_hr.Port1_Evictions = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
-   ccip_perf_counters_bin.Port0_Evictions = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter;
-   ccip_perf_counters_bin.Port1_Evictions = ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
+   //Cache_Evictions
+   update_cache_event_counters(Cache_Evictions,pkvp_fme_mmio,pperf_counters_hr,pperf_counters_bin);
 
    //reset freeze
    ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x0;
-   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fme_fpmon(pfme_dev)->ccip_fpmon_ch_ctl.csr);
+   write_ccip_csr64(pkvp_fme_mmio, byte_offset_FPMON_CACHE_CTL,ccip_fpmon_ch_ctl.csr);
 
    PINFO("End \n");
 

@@ -77,6 +77,8 @@
 
 #define MODULE_FLAGS CCIV4_DBG_MOD
 
+#define  CCIP_PORT_OUTREQ_TIMEOUT  1000
+#define  CCIP_PORT_OUTREQ_COMPLETE 0x1
 
 /// @brief   reads PORT mmio region
 ///
@@ -531,104 +533,124 @@ void ccip_port_mem_free(struct port_device *pport_dev )
 	PTRACEOUT;
 }
 
-/// @brief   port reset
+
+/// @brief   Port Re Enable
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt port_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+bt32bitInt afu_re_enable(btVirtAddr pkvp_port_mmio )
 {
-	bt32bitInt res =0;
-	bt32bitInt offset =0;
 
-	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
-	{
+   bt32bitInt res =0;
+   struct CCIP_PORT_CONTROL port_control;
 
-		offset =  byte_offset_PORT_CONTROL;
-		ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+   PINFO(" Enter \n");
 
-		ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x1;
+   if(NULL == pkvp_port_mmio)  {
 
-		// Reset Port
-		write_ccip_csr64(pkvp_port_mmio, offset,ccip_port_hdr(pport_dev)->ccip_port_control.csr);
-	}
+      res = -EINVAL;
+      return  res;
+   }
 
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
+   port_control.port_sftreset_control = 0x0;
 
-	return res;
+   // Re enable port /afu
+   write_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL,port_control.csr);
+
+   PINFO(" Exit \n");
+
+   return res;
+}
+
+/// @brief   Reset port
+///
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt afu_port_reset(btVirtAddr pkvp_port_mmio )
+{
+   bt32bitInt res =0;
+   struct CCIP_PORT_CONTROL port_control;
+
+   PINFO(" Enter \n");
+
+   if(NULL == pkvp_port_mmio)  {
+
+      res = -EINVAL;
+      return  res;
+   }
+
+   // afu/port Quiesce reset
+   res = afu_quiesce_reset(pkvp_port_mmio );
+   if(0 != res) {
+      goto ERR;
+   }
+
+   // afu/port enable
+   res = afu_re_enable(pkvp_port_mmio );
+   if(0 != res) {
+      goto ERR;
+   }
+
+   PINFO(" Exit \n");
+
+ERR:
+   PINFO(" Error Exit \n");
+   return res;
 }
 
 
-/// @brief   Port Reset Enable
-///
-/// @param[in] pport_dev port device pointer.
-/// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt port_reset_enable(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
-{
-	bt32bitInt res =0;
-	bt32bitInt offset =0;
-
-	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
-	{
-
-		port_reset(pport_dev,pkvp_port_mmio );
-
-		// Port enable  TBD ?
-	}
-
-	return res;
-}
 
 /// @brief   Port Quiesce Reset
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt port_quiesce_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+bt32bitInt afu_quiesce_reset(btVirtAddr pkvp_port_mmio )
 {
-	bt32bitInt res =0;
-	bt32bitInt offset =0;
-	bt32bitInt outstaning_request =0;
-	btTime delay =10;
+   bt32bitInt res =0;
+   btTime delay =10;
+   btTime totaldelay =0;
+   struct CCIP_PORT_CONTROL port_control;
 
-	if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
-	{
+   PINFO(" Enter \n");
 
-		port_reset(pport_dev,pkvp_port_mmio );
+   if(NULL == pkvp_port_mmio)  {
 
-		offset =  byte_offset_PORT_CONTROL;
-		ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
-		outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
+   res = -EINVAL;
+   return  res;
+   }
 
+   // Reset Port
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
+   port_control.port_sftreset_control = 0x1;
+   write_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL,port_control.csr);
 
-		// All CCI-P request at port complete
-		// Set to 1 When all outstanding requests initiated bu this port have been drained
-		//TBD
-		// sleep
-		if(0 == outstaning_request)
-		{
-			kosal_udelay(delay);
+   // read Port control CSR
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
 
-			ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
-			outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
-			if(0 == outstaning_request)
-			{
-				// time out error
-				res = -ETIME;
-				return  res;
-			}
-		}
+   // All CCI-P request at port complete
+   // Set to 1 When all outstanding requests initiated bu this port have been drained
+   while (CCIP_PORT_OUTREQ_COMPLETE != port_control.ccip_outstaning_request)
+   {
+      // Sleep
+      kosal_udelay(delay);
 
+      // total dealy
+      totaldelay = totaldelay + delay;
 
+      // if total delay is more then 1 millisecond , return erroor
+      if(totaldelay > CCIP_PORT_OUTREQ_TIMEOUT)   {
+         res = -ETIME;
+         break ;
+      }
 
-	}
+      port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
 
+   }
 
-	return res;
+   PINFO(" Exit \n");
+   return  res;
 }
-
-
-
 
 
 
