@@ -236,6 +236,10 @@ int cci_sim_discover_devices(ulong numdevices,
       }
 #endif
    }// end while
+
+   if(kosal_list_is_empty(pg_device_list)){
+      return -EIO;
+   }
    return 0;
 }
 
@@ -354,8 +358,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
    } // End FME region
 
-   goto ERR;   // Force failure
-#if 0
+ #if 0
    // PORT mmio region
    if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
 
@@ -383,10 +386,12 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    return pccipdev;
 ERR:
 
-
-   PINFO(" -----ERROR -----   \n");
+   PERR(" -----ERROR -----   \n");
 
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+      if(ccip_dev_to_fme_dev(pccipdev)){
+         ccip_destroy_fme_mmio_dev(ccip_dev_to_fme_dev(pccipdev));
+      }
       ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
@@ -424,9 +429,9 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
                         struct aal_device_id *paalid,
                         struct list_head *pdevice_list)
 {
-   struct cci_aal_device *pCCIdev    = NULL;
-   btVirtAddr         ptemp      = NULL;
-   int                ret        = 0;
+   struct cci_aal_device   *pcci_aaldev   = NULL;
+   btVirtAddr               ptemp         = NULL;
+   int                      ret           = 0;
 
    //=============================================================
    // Create the CCI device structure. The CCI device is the class
@@ -434,27 +439,27 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    // hardware specific attributes.
 
    // Construct the cci_aal_device object
-   pCCIdev = cci_create_device();
+   pcci_aaldev = cci_create_aal_device();
 
    //========================================================
    // Set up the cci_aal_device attributes used by the driver
    //
 
    // Set up Simulated Config Space
-   cci_dev_len_config(pCCIdev)  = size;
-   cci_dev_kvp_config(pCCIdev)  = virtAddr;
-   cci_dev_phys_config(pCCIdev) = virt_to_phys(cci_dev_kvp_config(pCCIdev));
+   cci_dev_len_config(pcci_aaldev)  = size;
+   cci_dev_kvp_config(pcci_aaldev)  = virtAddr;
+   cci_dev_phys_config(pcci_aaldev) = virt_to_phys(cci_dev_kvp_config(pcci_aaldev));
 
    // Set CCI CSR Attributes
-   cci_dev_phys_cci_csr(pCCIdev) = cci_dev_phys_config(pCCIdev);
-   cci_dev_kvp_cci_csr(pCCIdev)  = cci_dev_kvp_config(pCCIdev);
-   cci_dev_len_cci_csr(pCCIdev)  = CCI_SIM_APERTURE_SIZE;
+   cci_dev_phys_cci_csr(pcci_aaldev) = cci_dev_phys_config(pcci_aaldev);
+   cci_dev_kvp_cci_csr(pcci_aaldev)  = cci_dev_kvp_config(pcci_aaldev);
+   cci_dev_len_cci_csr(pcci_aaldev)  = CCI_SIM_APERTURE_SIZE;
 
    // Allocate uMSG space
    ptemp = kosal_kzmalloc(CCI_UMSG_SIZE);
    if ( NULL == ptemp ) {
       PERR("Unable to allocate system memory for uMsg area\n");
-      cci_destroy_device(pCCIdev);
+      cci_destroy_aal_device(pcci_aaldev);
       return -ENOMEM;
    }
 
@@ -462,16 +467,16 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    strncpy((char*)ptemp,umesgafustring,strlen(umesgafustring));
 #endif
 
-   cci_dev_len_afu_umsg(pCCIdev) = size;
-   cci_dev_kvp_afu_umsg(pCCIdev) = ptemp;
-   cci_dev_phys_afu_umsg(pCCIdev) = virt_to_phys(ptemp);
+   cci_dev_len_afu_umsg(pcci_aaldev) = size;
+   cci_dev_kvp_afu_umsg(pcci_aaldev) = ptemp;
+   cci_dev_phys_afu_umsg(pcci_aaldev) = virt_to_phys(ptemp);
 
    // Allocate MMIO space
    ptemp = kosal_kzmalloc(CCI_MMIO_SIZE);
    if ( NULL == ptemp ) {
       PERR("Unable to allocate system memory for MMIO area\n");
-      kosal_kfree(cci_dev_kvp_afu_umsg(pCCIdev), cci_dev_len_afu_umsg(pCCIdev));
-      cci_destroy_device(pCCIdev);
+      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev), cci_dev_len_afu_umsg(pcci_aaldev));
+      cci_destroy_aal_device(pcci_aaldev);
       return -ENOMEM;
    }
 
@@ -479,20 +484,20 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    strncpy((char*)ptemp,mmioafustring,strlen(mmioafustring));
 #endif
 
-   cci_dev_len_afu_mmio(pCCIdev) = size;
-   cci_dev_kvp_afu_mmio(pCCIdev) = ptemp;
-   cci_dev_phys_afu_mmio(pCCIdev) = virt_to_phys(cci_dev_kvp_afu_mmio(pCCIdev));
+   cci_dev_len_afu_mmio(pcci_aaldev) = size;
+   cci_dev_kvp_afu_mmio(pcci_aaldev) = ptemp;
+   cci_dev_phys_afu_mmio(pcci_aaldev) = virt_to_phys(cci_dev_kvp_afu_mmio(pcci_aaldev));
 
    // Direct user mode CSR interface not supported
-   cci_dev_clr_allow_map_csr_write_space(pCCIdev);
-   cci_dev_clr_allow_map_csr_read_space(pCCIdev);
+   cci_dev_clr_allow_map_csr_write_space(pcci_aaldev);
+   cci_dev_clr_allow_map_csr_read_space(pcci_aaldev);
 
    // Enable MMIO-R and uMSG space
-   cci_dev_set_allow_map_mmior_space(pCCIdev);
-   cci_dev_set_allow_map_umsg_space(pCCIdev);
+   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   cci_dev_set_allow_map_umsg_space(pcci_aaldev);
 
    // Mark as simulated
-   cci_set_simulated(pCCIdev);
+   cci_set_simulated(pcci_aaldev);
 
    //===========================================================
    // Create the AAL device structure. The AAL device is the
@@ -509,7 +514,7 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    aaldevid_ahmguid(*paalid)  = HOST_AHM_GUID;
 
    // Create the AAL device
-   pCCIdev->m_aaldev =  aaldev_create( "CCISIMAFU",
+   pcci_aaldev->m_aaldev =  aaldev_create( "CCISIMAFU",
                                         paalid,
                                         &cci_simAFUpip);
 
@@ -518,49 +523,49 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    //
 
    // Set how many owners are allowed access to this device simultaneously
-   pCCIdev->m_aaldev->m_maxowners = 1;
+   pcci_aaldev->m_aaldev->m_maxowners = 1;
 
    // Set the config space mapping permissions
-   cci_dev_to_aaldev(pCCIdev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
+   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
    }
 
-   if( cci_dev_allow_map_csr_write_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
+   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
    }
 
-   if( cci_dev_allow_map_mmior_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
+   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
    }
 
-   if( cci_dev_allow_map_umsg_space(pCCIdev) ){
-      cci_dev_to_aaldev(pCCIdev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
+   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
    // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
-   aaldev_pip_context(cci_dev_to_aaldev(pCCIdev)) = (void*)pCCIdev;
+   aaldev_pip_context(cci_aaldev_to_aaldev(pcci_aaldev)) = (void*)pcci_aaldev;
 
    // Method called when the device is released (i.e., its destructor)
    //  The canonical release device calls the user's release method.
    //  If NULL is provided then only the canonical behavior is done
-   dev_setrelease(cci_dev_to_aaldev(pCCIdev), cci_release_device);
+   dev_setrelease(cci_aaldev_to_aaldev(pcci_aaldev), cci_release_device);
 
       // Device is ready for use.  Publish it with the Configuration Management Subsystem
-   ret = cci_publish_aaldevice(pCCIdev);
+   ret = cci_publish_aaldevice(pcci_aaldev);
    ASSERT(ret == 0);
    if(0> ret){
       PERR("Failed to initialize AAL Device for simulated CCIV4 AFU[%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
                                                                                aaldevid_devaddr_devnum(*paalid),
                                                                                aaldevid_devaddr_subdevnum(*paalid));
-      kosal_kfree(cci_dev_kvp_afu_mmio(pCCIdev), cci_dev_len_afu_mmio(pCCIdev));
-      kosal_kfree(cci_dev_kvp_afu_umsg(pCCIdev),cci_dev_len_afu_umsg(pCCIdev));
-      cci_destroy_device(pCCIdev);
+      kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
+      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
+      cci_destroy_aal_device(pcci_aaldev);
       return -EINVAL;
    }
 
    // Add the device to the device list
-   kosal_list_add(&cci_dev_list_head(pCCIdev), pdevice_list);
+   kosal_list_add(&cci_dev_list_head(pcci_aaldev), pdevice_list);
 
    return 0;
 }

@@ -615,7 +615,7 @@ static
 void
 cci_pci_remove(struct pci_dev *pcidev)
 {
-   struct cci_aal_device    *pCCIdev    = NULL;
+   struct ccip_device   *pccidev    = NULL;
    struct list_head     *This       = NULL;
    struct list_head     *tmp        = NULL;
 
@@ -630,20 +630,20 @@ cci_pci_remove(struct pci_dev *pcidev)
    }
 
    // Search through our list of devices to find the one matching pcidev
-   if ( !list_empty(&g_device_list) ) {
+   if ( !kosal_list_is_empty(&g_device_list) ) {
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
       list_for_each_safe(This, tmp, &g_device_list) {
 
-         pCCIdev = cci_list_to_cci_aal_device(This);
+         pccidev = ccip_list_to_ccip_device(This);
 
-         if ( pCCIdev->m_pcidev == pcidev ) {
+         if ( pccidev->m_pcidev == pcidev ) {
             ++found;
 
             PDEBUG("Deleting device 0x%p with list head 0x%p from list 0x%p\n",
-                  pCCIdev, This, &g_device_list);
-            cci_remove_device(pCCIdev);
+                  pccidev, This, &g_device_list);
+            cci_remove_device(pccidev);
          }
 
       }
@@ -758,7 +758,7 @@ ERR:
 void
 ccidrv_exitDriver(void)
 {
-   struct cci_aal_device  *pCCIdev      = NULL;
+   struct ccip_device *pccidev      = NULL;
    struct list_head   *This         = NULL;
    struct list_head   *tmp          = NULL;
 
@@ -773,12 +773,12 @@ ccidrv_exitDriver(void)
       kosal_list_for_each_safe(This, tmp, &g_device_list) {
 
          // Get the device from the list entry
-         pCCIdev = cci_list_to_cci_aal_device(This);
+         pccidev = ccip_list_to_ccip_device(This);
 
-         PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pCCIdev,
+         PDEBUG("<- Deleting device 0x%p with list head 0x%p from list 0x%p\n", pccidev,
                                                                                 This,
                                                                                 &g_device_list);
-         cci_remove_device(pCCIdev);
+         cci_remove_device(pccidev);
       }// kosal_list_for_each_safe
 
    }else {

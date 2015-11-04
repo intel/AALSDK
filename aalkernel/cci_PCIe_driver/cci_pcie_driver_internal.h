@@ -246,7 +246,7 @@ struct cci_aal_device {
 
 
 #define cci_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define cci_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
+#define cci_aaldev_to_aaldev(pdev)          ((pdev)->m_aaldev)
 
 
 #define cci_dev_list_head(pdev)             ((pdev)->m_list)
@@ -263,10 +263,10 @@ struct cci_aal_device {
 struct ccip_device;   // forward reference
 extern int ccidrv_initDriver(void/*callback*/);
 extern btBool cci_dev_create_allocatable_objects(struct ccip_device *);
-extern struct cci_aal_device* cci_create_device(void);
-extern int cci_destroy_device( struct cci_aal_device*);
+extern struct cci_aal_device* cci_create_aal_device(void);
+extern int cci_destroy_aal_device( struct cci_aal_device*);
 extern int cci_publish_aaldevice(struct cci_aal_device *);
-extern void cci_remove_device(struct cci_aal_device *);
+extern void cci_remove_device(struct ccip_device *);
 extern void cci_release_device(struct device *pdev);
 extern void ccidrv_exitDriver(void);
 

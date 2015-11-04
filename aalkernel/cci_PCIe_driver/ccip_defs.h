@@ -1331,6 +1331,7 @@ struct ccip_device
 #define ccip_dev_pcie_devnum(pdev)              ((pdev)->m_devicenum)
 #define ccip_dev_pcie_fcnnum(pdev)              ((pdev)->m_functnum)
 
+
 /// @brief   Writes 64 bit control and status registers.
 ///
 /// @param[in]  baseAddress   base CSR address.

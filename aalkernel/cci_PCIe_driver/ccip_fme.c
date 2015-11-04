@@ -663,6 +663,7 @@ struct fme_device * get_fme_mmio_dev(btVirtAddr pkvp_fme_mmio )
 ///============================================================================
 void ccip_destroy_fme_mmio_dev(struct fme_device *pfme_dev)
 {
+   PVERBOSE("Destroying fme_device");
    kosal_kfree(pfme_dev,sizeof(struct fme_device));
 }
 

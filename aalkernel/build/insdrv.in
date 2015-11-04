@@ -220,7 +220,7 @@ declare mod_path
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" sim=4 ; then
+         elif ! ${INSMOD} "${mod_path}/${mod}" sim=1 ; then
             die "[FAIL]"
          fi
          printf "[ OK ]\n"

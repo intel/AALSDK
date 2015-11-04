@@ -589,13 +589,18 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
    int res =0;
    int i =0;
 
+
    if (NULL == pfme_dev ) {
       PERR("Unable to allocate system memory for pfme_dev object\n");
       res = -1;
       goto EROR;
    }
 
-   PINFO(" print_fme_device ENTER\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "****************         FME MMIO CONTENT        ****************\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
 
    if(pfme_dev->m_pHDR)
    {
@@ -794,7 +799,8 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "FME PR Feature  END \n \n");
    }
 
-   PINFO(" print_fme_device EXIT\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
 
    EROR:
 
@@ -810,7 +816,11 @@ int print_sim_port_device(struct port_device *pport_dev)
       goto EROR;
    }
 
-   PINFO(" print_port_dev_mmio ENTERv\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "****************        PORT MMIO CONTENT        ****************\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
 
    if(pport_dev->m_pport_hdr)
    {
@@ -956,7 +966,8 @@ int print_sim_port_device(struct port_device *pport_dev)
 
    }
 
-   PINFO(" print_port_dev_mmio EXIT\n");
+   PDEBUG( "*****************************************************************\n");
+   PDEBUG( "*****************************************************************\n");
    EROR:
 
    return res;
