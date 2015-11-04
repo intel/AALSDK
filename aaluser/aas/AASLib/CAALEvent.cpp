@@ -445,20 +445,7 @@ EOBJECT CAALEvent::SetInterface(btIID              Interface,
 // Interface:    protected
 // Comments:
 //=============================================================================
-btBool CAALEvent::ProcessEventTranID()
-{
-   btBool ret = false;
-
-   // If a static handler has been assigned
-   if ( NULL != m_TranID.Handler() ) {
-      //Call it
-      m_TranID.Handler()(*this);
-      ret =  m_TranID.Filter();
-      // If an IMessageHandler has been assigned
-   }
-   // Return filter value or false if no override at all
-   return ret;
-}
+btBool CAALEvent::ProcessEventTranID() {/* no TransactionID override in regular events */ return false; }
 
 CAALEvent::CAALEvent() {/*empty*/}
 CAALEvent::~CAALEvent() {/*empty*/}
@@ -471,11 +458,10 @@ CAALEvent::~CAALEvent() {/*empty*/}
 //=============================================================================
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
                                      TransactionID const &TranID) :
-   CAALEvent(pObject)
+   CAALEvent(pObject),
+   m_TranID(TranID)
 {
    AutoLock(this);
-
-   m_TranID = TranID;
 
    // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
@@ -493,11 +479,10 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
                                      btIID                SubClassID,
                                      TransactionID const &TranID) :
-   CAALEvent(pObject)
+   CAALEvent(pObject),
+   m_TranID(TranID)
 {
    AutoLock(this);
-
-   m_TranID = TranID;
 
    // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
@@ -526,6 +511,20 @@ void CTransactionEvent::SetTranID(TransactionID const &TranID)
 
 CTransactionEvent::CTransactionEvent() {/*empty*/}
 CTransactionEvent::CTransactionEvent(IBase * ) {/*empty*/}
+
+btBool CTransactionEvent::ProcessEventTranID()
+{
+   btBool ret = false;
+   // If a static handler has been assigned
+   if ( NULL != m_TranID.Handler() ) {
+      //Call it
+      m_TranID.Handler()(*this);
+      ret =  m_TranID.Filter();
+      // If an IMessageHandler has been assigned
+   }
+   // Return filter value or false if no override at all
+   return ret;
+}
 
 //=============================================================================
 // Name: CExceptionEvent
@@ -677,6 +676,20 @@ void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
 {
    AutoLock(this);
    m_TranID = TranID;
+}
+
+btBool CExceptionTransactionEvent::ProcessEventTranID()
+{
+   btBool ret = false;
+   // If a static handler has been assigned
+   if ( NULL != m_TranID.Handler() ) {
+      //Call it
+      m_TranID.Handler()(*this);
+      ret =  m_TranID.Filter();
+      // If an IMessageHandler has been assigned
+   }
+   // Return filter value or false if no override at all
+   return ret;
 }
 
 CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}

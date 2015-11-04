@@ -62,6 +62,8 @@ protected:
       ASSERT_NONNULL(m_pCAALEvent);
    }
 
+   btBool ProcessEventTranID() { return false; }
+
    CAASBase   m_CAASBase;
    CAALEvent *m_pCAALEvent;
 };
@@ -476,6 +478,8 @@ TEST(CAALEventTest, aal0640)
       btApplicationContext SetContext(btApplicationContext Ctx) { return NULL;     }
 
    protected:
+      btBool       ProcessEventTranID()                         { return false;    }
+
       IBase             &m_IBase;
       btGenericInterface m_SubClassIfc;
    } rhs(base);

@@ -62,7 +62,7 @@ protected:
    IServiceClient      *m_pSvcClient;
    IRuntimeClient      *m_pRTClient;
    IBase               *m_pServiceBase;
-   const TransactionID &m_rTranID;
+   const TransactionID  m_rTranID;
 };
 
 /// @brief Delivers IServiceClient::serviceAllocateFailed(const IEvent & );
@@ -91,7 +91,7 @@ public:
 protected:
    IServiceClient      *m_pSvcClient;
    IBase               *m_pServiceBase;
-   const TransactionID &m_rTranID;
+   const TransactionID  m_rTranID;
 };
 
 /// @brief Delivers IServiceClient::serviceReleaseFailed(const IEvent & );
@@ -119,147 +119,6 @@ protected:
    IServiceClient *m_pSvcClient;
    const IEvent   *m_pEvent;
 };
-
-
-
-#if 0
-class ServiceClientCallback : public IDispatchable
-{
-public:
-   enum MessageType{
-      Allocated,
-      AllocateFailed,
-      Released,
-      ReleaseFailed,
-      Event
-   };
-
-   ServiceClientCallback(enum MessageType        type,
-                         IServiceClient          *pServiceClient,
-                         IRuntimeClient          *pRuntimeClient,
-                         IBase                   *pServiceBase,
-                         TransactionID const     &rTranID = TransactionID() ) :
-   m_type(type),
-   m_pServiceClient(pServiceClient),
-   m_pRuntimeClient(pRuntimeClient),
-   m_pBase(pServiceBase),
-   m_TranID(rTranID),
-   m_pEvent(NULL)
-   {
-      ASSERT(NULL != pServiceClient);
-      ASSERT(NULL != pRuntimeClient);
-      ASSERT(NULL != pServiceBase);
-   }
-
-   ServiceClientCallback(enum MessageType        type,
-                         IServiceClient         *pServiceClient,
-                         IRuntimeClient         *pRuntimeClient,
-                         IBase                  *pServiceBase,
-                         const IEvent           *pEvent=NULL ) :
-   m_type(type),
-   m_pServiceClient(pServiceClient),
-   m_pRuntimeClient(pRuntimeClient),
-   m_pBase(pServiceBase),
-   m_TranID(),
-   m_pEvent(pEvent)
-   {
-      ASSERT(NULL != pServiceClient);
-      ASSERT(NULL != pServiceBase);
-   }
-
-
-   void operator() ()
-   {
-
-      // If this is a Release. Complete the release before any callbacks
-      if(Released == m_type ){
-         dynamic_ptr<IServiceBase>(iidServiceBase, m_pBase)->ReleaseComplete();
-      }
-      // First Process the TramsactionID
-      btBool bProcessed = ProcessTranID();
-
-      // If no callback was invoked or we
-      //  should not filter eveb if we did
-      if(!bProcessed || !m_TranID.Filter()){
-         // Process the normal callback
-         InvokeCallback(m_pServiceClient, m_pRuntimeClient);
-      }
-
-      // Clean-up
-      if(m_pEvent){
-         delete m_pEvent;
-      }
-      delete this;
-   }
-
-   // Processes the TransactioID for override.
-   //  Returns true if there was something to do.
-   btBool ProcessTranID()
-   {
-      if(NULL == m_TranID.Ibase()){
-         return false;
-      }
-      IServiceClient *pServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_TranID.Ibase());
-      IRuntimeClient *pRuntimeClient = dynamic_ptr<IRuntimeClient>(iidRuntimeClient, m_TranID.Ibase());
-
-      InvokeCallback(pServiceClient, pRuntimeClient);
-      return true;
-   }
-
-   void InvokeCallback(IServiceClient *pServiceClient, IRuntimeClient *pRuntimeClient)
-   {
-      switch ( m_type ) {
-         case Allocated : {
-            if(pServiceClient){
-               pServiceClient->serviceAllocated(m_pBase, m_TranID);
-            }
-            if(pRuntimeClient){
-               pRuntimeClient->runtimeAllocateServiceSucceeded(m_pBase, m_TranID);
-            }
-
-         } break;
-         case AllocateFailed : {
-            if(pServiceClient){
-               pServiceClient->serviceAllocateFailed(*m_pEvent);
-            }
-
-            if(pRuntimeClient){
-               pRuntimeClient->runtimeAllocateServiceFailed(*m_pEvent);
-             }
-
-         } break;
-         case Released : {
-            if(pServiceClient){
-               pServiceClient->serviceReleased(m_TranID);
-            }
-         } break;
-         case ReleaseFailed : {
-            if(pServiceClient){
-               pServiceClient->serviceReleaseFailed(*m_pEvent);
-            }
-          } break;
-         case Event : {
-            if(pServiceClient){
-               pServiceClient->serviceEvent(*m_pEvent);
-            }
-         } break;
-         default:
-            ASSERT(false);
-         break;
-      }
-}
-
-virtual ~ServiceClientCallback() {}
-
-protected:
-   IServiceClient          *m_pServiceClient;
-   IRuntimeClient          *m_pRuntimeClient;
-   IBase                   *m_pBase;
-   enum MessageType         m_type;
-   TransactionID const      m_TranID;
-   IEvent const            *m_pEvent;
-};
-#endif
 
 //============================================================================
 // AAL Runtime
@@ -290,7 +149,7 @@ public:
 protected:
    IRuntimeClient      *m_pRTClient;
    IRuntime            *m_pRT;
-   const NamedValueSet &m_rConfigParms;
+   const NamedValueSet  m_rConfigParms;
 };
 
 /// @brief Delivers IRuntimeClient::runtimeStartFailed(const IEvent & );
@@ -343,7 +202,7 @@ public:
 protected:
    IRuntimeClient      *m_pRTClient;
    IBase               *m_pServiceBase;
-   TransactionID const &m_rTranID;
+   const TransactionID  m_rTranID;
 };
 
 /// @brief Delivers IRuntimeClient::runtimeAllocateServiceFailed(const IEvent & );

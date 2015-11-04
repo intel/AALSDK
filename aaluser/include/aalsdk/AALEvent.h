@@ -96,6 +96,8 @@ public:
    /// Set the context.
    /// @return Previous context.
    virtual btApplicationContext SetContext(btApplicationContext Ctx)   = 0;
+protected:
+   virtual btBool       ProcessEventTranID()                           = 0;
 };
 
 /// Base interface for all Transaction Event interfaces.

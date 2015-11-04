@@ -166,14 +166,14 @@ protected:
    /// Outputs interface pointer
    EOBJECT SetInterface(btIID              Interface,
                         btGenericInterface pInterface);
+
    /// Processes the transaction ID for Event Handling
-   btBool ProcessEventTranID();
+   virtual btBool ProcessEventTranID();
 
    // These are prohibited.
    CAALEvent();
    virtual ~CAALEvent();
 
-protected:
    IBase                *m_pObject;
    btBool                m_bIsOK;
    btApplicationContext  m_Context;
@@ -181,7 +181,6 @@ protected:
    IRuntimeClient       *m_pRuntimeClient;
    btEventHandler        m_pEventHandler;
    btIID                 m_SubClassID;
-   TransactionID         m_TranID;  // Only accessible outside from TransactionEvents
 
 #if defined( __AAL_WINDOWS__ )
 # pragma warning( push )
@@ -227,6 +226,10 @@ protected:
    // These are prohibited.
    CTransactionEvent();
    CTransactionEvent(IBase * );
+
+   virtual btBool ProcessEventTranID();
+
+   TransactionID m_TranID;
 };
 
 
@@ -333,6 +336,9 @@ public:
    // </ITransactionEvent>
 
 protected:
+
+   virtual btBool ProcessEventTranID();
+
    TransactionID m_TranID;
    btID          m_ExceptionNumber;
    btID          m_Reason;
