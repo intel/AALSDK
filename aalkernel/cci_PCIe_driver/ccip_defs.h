@@ -398,7 +398,7 @@ struct CCIP_FME_DFL_THERM {
    struct CCIP_DFH  ccip_fme_tmp_dflhdr ;
 
    // Temperature Threshold
-   struct CCIP_TMP_THRESHOLD {
+   struct CCIP_TEMP_THRESHOLD {
 
       union {
          btUnsigned64bitInt csr;
@@ -430,7 +430,7 @@ struct CCIP_FME_DFL_THERM {
    }ccip_tmp_threshold; // end struct CCIP_TMP_THRESHOLD
 
    // Temperature Sensor Read values
-   struct CCIP_TMP_RDSSENSOR_FMT1 {
+   struct CCIP_TEMP_RDSSENSOR_FMT1 {
 
       union {
          btUnsigned64bitInt csr;
@@ -449,7 +449,7 @@ struct CCIP_FME_DFL_THERM {
    }ccip_tmp_rdssensor_fm1; // end struct CCIP_TMP_RDSSENSOR_FMT1
 
    // Temperature sensor read values
-   struct CCIP_TMP_RDSSENSOR_FMT2 {
+   struct CCIP_TEMP_RDSSENSOR_FMT2 {
 
       union {
          btUnsigned64bitInt csr;

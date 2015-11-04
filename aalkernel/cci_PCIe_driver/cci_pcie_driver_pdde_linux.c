@@ -497,17 +497,25 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
    }
 
-   // Bus Device function of PCIe device
+   // Save the Bus:Device:Function of PCIe device
    ccip_dev_pcie_busnum(pccipdev)   = pcidev->bus->number;
    ccip_dev_pcie_devnum(pccipdev)   = PCI_SLOT(pcidev->devfn);
    ccip_dev_pcie_fcnnum(pccipdev)   = PCI_FUNC(pcidev->devfn);
 
-   // FME mmio region
+   // Enumerate the device
+   //  Instantiate internal objects. Objects that represent
+   //  objects that can be allocated through the AALBus are
+   //  constructed around the aaldevice base and are published
+   //  with aalbus.
+   //---------------------------------------------------------
+   //FME region
    if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
 
       PINFO(" FME mmio region   \n");
 
       // Create the FME MMIO device object
+      //   Enumerates the FME feature list
+      //----------------------------------
       pccipdev->m_pfme_dev = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
       if ( NULL == pccipdev->m_pfme_dev ) {
          PERR("Could not allocate memory for FME object\n");
@@ -592,148 +600,7 @@ ERR:
 }
 
 
-#if 0
-//=============================================================================
-// Name: cci_pcie_internal_probe
-// Description: Called during the device probe by cci_pci_probe
-//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
-// Interface: public
-// Inputs: pspl2dev - module-specific device to be populated.
-//         paaldevid - AAL device id to be populated.
-//         pcidev - kernel-provided device pointer.
-//         pcidevid - kernel-provided device id pointer.
-// Outputs: 0 = success.
-// Comments:
-//=============================================================================
-static
-int
-cci_pcie_internal_probe(struct cci_aal_device         *pspl2dev,
-                          struct aal_device_id       *paaldevid,
-                          struct pci_dev             *pcidev,
-                          const struct pci_device_id *pcidevid)
-{
 
-   int res = EINVAL;
-
-   PTRACEIN;
-
-   // TODO FILL IN DETAILS
-
-   PTRACEOUT_INT(res);
-   return res;
-}
-
-
-/// cci_qpi_internal_probe - C
-
-//=============================================================================
-// Name: cci_qpi_internal_probe
-// Description: Called during the device probe by cci_pci_probe
-//                  when the device id matches QPI_DEVICE_ID_FPGA.
-// Interface: public
-// Inputs: pspl2dev - module-specific device to be populated.
-//         paaldevid - AAL device id to be populated.
-//         pcidev - kernel-provided device pointer.
-//         pcidevid - kernel-provided device id pointer.
-// Outputs: 0 = success.
-// Comments:
-//=============================================================================
-static
-int
-cci_qpi_internal_probe(struct cci_aal_device         *pspl2dev,
-                         struct aal_device_id       *paaldevid,
-                         struct pci_dev             *pcidev,
-                         const struct pci_device_id *pcidevid)
-{
-
-   int res =0;
-
-   PTRACEIN;
-
-   // TODO FILL IN DETAILS
-
-   PTRACEOUT_INT(res);
-   return res;
-}
-
-
-//=============================================================================
-// Name: cci_pci_remove_and_rescan
-// Description: Used to force a rescan of the PCIe subsystem.
-// Interface: public
-// Inputs: index - zero based index indicating which board to remove and rescan.
-// Outputs: none.
-// Comments: Searches through g_device_list to find a board at the index entry
-//            in the devicelist and then removes it. Then a rescan on the
-//            parent bus is issued.
-//=============================================================================
-static void
-cci_pci_remove_and_rescan(unsigned index)
-{
-   struct list_head   *This     		= NULL;
-   struct list_head   *tmp      		= NULL;
-   struct cci_aal_device *pspl2dev 		= NULL;
-   struct pci_dev     *pcidev 			= NULL;
-   unsigned int bustype					= 0;
-   unsigned cnt 						= index;
-
-   PTRACEIN;
-
-   // Search through our list of devices to find the one matching pcidev
-   if ( !list_empty(&g_device_list) ) {
-
-      // Run through list of devices.  Use safe variant
-      //  as we will be deleting entries
-      list_for_each_safe(This, tmp, &g_device_list) {
-
-         pspl2dev = cci_list_to_cci_aal_device(This);
-
-         // If this is it
-         if( 0 == cnt ) {
-
-            struct pci_bus *parent = NULL;
-            struct aal_device * paaldev = cci_dev_to_aaldev(pspl2dev);
-
-            noprobe =1;
-
-            // Save device information
-            pcidev = cci_dev_pci_dev(pspl2dev);
-            bustype = cci_dev_board_type(pspl2dev);
-
-            parent = pcidev->bus->parent;
-
-            PDEBUG("Removing the SPL2 device %p\n", pcidev);
-
-            // Save the address so it can be restored
-            rescanned_address = aaldev_devaddr(paaldev);
-
-#if !defined(RHEL_RELEASE_VERSION)
-#define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
-#endif
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0) && !defined(RHEL_RELEASE_CODE)) || (defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 7))
-            pci_stop_bus_device(pcidev);
-            pci_remove_bus_device(pcidev);
-#else
-            pci_stop_and_remove_bus_device(pcidev);
-#endif
-            noprobe =0;
-
-            if(NULL != parent){
-                   PDEBUG("Rescanning bus\n");
-                   pci_rescan_bus(parent);
-            }
-            goto DONE;
-         }// if( 0 == cnt )
-         cnt--;
-      }// list_for_each_safe
-
-   }// !list_empty
-   PDEBUG("No device at index %d\n", index);
-DONE:
-
-   PTRACEOUT;
-}
-#endif
 //=============================================================================
 // Name: cci_pci_remove
 // Description: Entry point called when a device registered with the PCIe
@@ -776,8 +643,7 @@ cci_pci_remove(struct pci_dev *pcidev)
 
             PDEBUG("Deleting device 0x%p with list head 0x%p from list 0x%p\n",
                   pCCIdev, This, &g_device_list);
-
-// TODO            cci_remove_device(pCCIv4dev);
+            cci_remove_device(pCCIdev);
          }
 
       }
@@ -794,8 +660,6 @@ cci_pci_remove(struct pci_dev *pcidev)
    PTRACEOUT;
 }
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -805,7 +669,6 @@ cci_pci_remove(struct pci_dev *pcidev)
 ///////////////////////////////////////////////////////////////////////////////
 //=============================================================================
 //=============================================================================
-
 
 //=============================================================================
 // Name: ccidrv_initDriver

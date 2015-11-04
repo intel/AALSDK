@@ -83,6 +83,7 @@ cci_pcie_driver_internal.h \
 cci_pcie_driver_main.c \
 cci_pcie_common.c \
 cci_pcie_driver_simulator.c \
+ccip_sim_mmio.c \
 cci_pcie_driver_pdde_linux.c \
 cci_pcie_driver_PIPsession.c \
 cci_pcie_driver_PIPsession.h \

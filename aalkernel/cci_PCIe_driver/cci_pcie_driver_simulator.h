@@ -67,7 +67,7 @@
 #ifndef __CCI_PCIE_DRIVER_SIMULATOR_H__
 #define __CCI_PCIE_DRIVER_SIMULATOR_H__
 
-#define CCI_SIM_APERTURE_SIZE     ( 0x10000 )       /// Size of device CSR region, in bytes
+#define CCI_SIM_APERTURE_SIZE     (  0x120000  )       /// Size of device CSR region, in bytes
 
 // Using NLB AFU ID
 #define CCI_SIM_AFUIDH            ( 0xC000C9660D824272L )
