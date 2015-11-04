@@ -114,7 +114,8 @@ btBool cci_dev_create_allocatable_objects(struct ccip_device * pccipdev)
    // Setup the AAL device's ID. This is the collection of attributes
    //  that uniquely identifies the AAL device, usually for the purpose
    //  of allocation through Resource Management
-   aaldevid_devaddr_bustype(aalid)     = aal_bustype_PCIe;
+   //------------------------------------------------------------------
+   aaldevid_devaddr_bustype(aalid)     =  ccip_dev_pcie_bustype(pccipdev);
 
    // The AAL address maps to the PCIe address. The Subdevice number is
    //  vendor defined and in this case the FME object has the value CCIP_DEV_FME_SUBDEV

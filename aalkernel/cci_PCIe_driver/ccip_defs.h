@@ -1273,6 +1273,7 @@ struct ccip_device
 
    int                        m_simulated;
 
+   enum aal_bus_types_e       m_bustype;
    btUnsigned32bitInt         m_busNum;
    btUnsigned32bitInt         m_devicenum;   // device number
    btUnsigned32bitInt         m_functnum;    // function number
@@ -1326,7 +1327,7 @@ struct ccip_device
 #define ccip_portdev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_port_mmio)
 #define ccip_portdev_len_afu_mmio(pdev)          ((pdev)->m_len_port_mmio)
 
-
+#define ccip_dev_pcie_bustype(pdev)             ((pdev)->m_bustype)
 #define ccip_dev_pcie_busnum(pdev)              ((pdev)->m_busNum)
 #define ccip_dev_pcie_devnum(pdev)              ((pdev)->m_devicenum)
 #define ccip_dev_pcie_fcnnum(pdev)              ((pdev)->m_functnum)

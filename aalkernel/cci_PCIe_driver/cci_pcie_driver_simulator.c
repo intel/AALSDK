@@ -140,7 +140,7 @@ struct aal_ipip cci_simAFUpip = {
 static struct aal_device_addr nextAFU_addr = {
    .m_bustype   = aal_bustype_Host,
    .m_busnum    = 1,       //
-   .m_devicenum = 1,       //
+   .m_devicenum = 0,       //
    .m_functnum  = 1,       //
    .m_subdevnum = 0        // AFU
 };
@@ -315,7 +315,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
    PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
 
-   // Save the Bus:Device:Function of PCIe device
+   // Save the Bus:Device:Function of simulated device
+   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
    ccip_dev_pcie_busnum(pccipdev)   = aaldevid_devaddr_busnum(*pdevid);
    ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
    ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
