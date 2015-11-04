@@ -24,7 +24,7 @@ public:
 
 protected:
    ISwvalSvcClient          *m_pClient;
-   const AAL::TransactionID &m_tid;
+   const AAL::TransactionID  m_tid;
    int                       m_i;
 };
 

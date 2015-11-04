@@ -466,7 +466,7 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
 
 
 ////////////////////////////////////////////////////////////////////////////////
-# define AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__x )  __##__y##BuiltInAALSvcMod
+# define AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__x )  __##__x##BuiltInAALSvcMod
 
 //=============================================================================
 // Name: AAL_DECLARE_BUILTIN_MOD
@@ -491,6 +491,9 @@ extern __storagecls bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUn
 
 #define AAL_DECLARE_BUILTIN_SVC_MOD(__rtnamesym, __storagecls) AAL_DECLARE_BUILTIN_MOD(__rtnamesym, __storagecls)
 
+
+#ifdef __cplusplus
+
 //=============================================================================
 // Name: AAL_BEGIN_BUILTIN_SVC_MOD
 // Description: Implements the common module entry points and commands for
@@ -503,21 +506,26 @@ extern __storagecls bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(btUn
 // Comments: AAL_BEGIN_SVC_MOD is used for Service modules and includes the
 //           command to access the Service Factory.
 //=============================================================================
-
-#ifdef __cplusplus
-
 # define AAL_BEGIN_BUILTIN_SVC_MOD(__svcfactory, __rtnamesym, __storagecls, __verstr, __vercur, __verrev, __verage) \
-extern "C" {                                                                                                \
+extern "C" {                                                                                                        \
 __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigned32bitInt cmd,              \
                                                                           AAL::btAny              arg)              \
-{                                                                                                           \
-   static __svcfactory          *pServiceFactory  = NULL;                                              \
-   static AAL::AALServiceModule *pServiceProvider = NULL;                                              \
-   static CriticalSection        cs;                                                                   \
-   AAL::bt32bitInt               res = 0;                                                              \
-   switch( cmd ) {                                                                                          \
+{                                                                                                                   \
+   static __svcfactory          *pServiceFactory  = NULL;                                                           \
+   static AAL::AALServiceModule *pServiceProvider = NULL;                                                           \
+   static CriticalSection        cs;                                                                                \
+   AAL::bt32bitInt               res = 0;                                                                           \
+   switch( cmd ) {                                                                                                  \
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
 
+
+/// Completes the built-in Service Module entry point and default command implementations.
+# define AAL_END_BUILTIN_SVC_MOD()                                                                                  \
+      default : res = -1; break;                                                                                    \
+   }                                                                                                                \
+     return res;                                                                                                    \
+  }                                                                                                                 \
+} /* extern "C" */
 
 #endif // __cplusplus
 

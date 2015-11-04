@@ -230,4 +230,165 @@ TEST(OSAL_OSServiceModule, aal0208)
    EXPECT_EQ(0, OSServiceModuleClose(&m));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+class CBuiltinDidSomethingDisp : public IDispatchable
+{
+public:
+   CBuiltinDidSomethingDisp(ISwvalSvcClient          *pClient,
+                            const AAL::TransactionID &tid,
+                            int                       i) :
+      m_pClient(pClient),
+      m_tid(tid),
+      m_i(i)
+   {}
+
+   virtual void operator() ()
+   {
+      m_pClient->DidSomething(m_tid, m_i);
+      delete this;
+   }
+
+protected:
+   ISwvalSvcClient          *m_pClient;
+   const AAL::TransactionID  m_tid;
+   int                       m_i;
+};
+
+class CBuiltinSwvalSvcMod : public ISwvalSvcMod,
+                            public AAL::ServiceBase
+{
+public:
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(CBuiltinSwvalSvcMod, AAL::ServiceBase)
+   {
+      if ( AAL::EObjOK != SetInterface(iidSwvalSvc, dynamic_cast<ISwvalSvcMod *>(this)) ) {
+         m_bIsOK = false;
+      }
+   }
+
+   virtual void DoSomething(const AAL::TransactionID &tid, int i)
+   {
+      ISwvalSvcClient *pSwvalClient = AAL::dynamic_ptr<ISwvalSvcClient>(iidSwvalSvcClient, m_pclientbase);
+      ASSERT(NULL != pSwvalClient);
+
+      getRuntime()->schedDispatchable( new CBuiltinDidSomethingDisp(pSwvalClient, tid, i + 2) );
+   }
+
+   virtual ~CBuiltinSwvalSvcMod() {}
+
+
+   virtual AAL::btBool init(AAL::IBase               *pclientBase,
+                            AAL::NamedValueSet const &optArgs,
+                            AAL::TransactionID const &tid)
+   {
+      ASSERT(NULL != m_pclient); // iidServiceClient / IServiceClient *
+      ASSERT(NULL != AAL::dynamic_ptr<ISwvalSvcClient>(iidSwvalSvcClient, pclientBase));
+      return initComplete(tid);
+   }
+
+   virtual AAL::btBool Release(AAL::TransactionID const &tid, AAL::btTime timeout=AAL_INFINITE_WAIT)
+   {
+      return AAL::ServiceBase::Release(tid, timeout);
+   }
+
+   // <IServiceBase>
+
+   virtual AAL::btBool initComplete(AAL::TransactionID const &rtid)
+   {
+      return AAL::ServiceBase::initComplete(rtid);
+   }
+
+   virtual AAL::btBool initFailed(AAL::IEvent const *ptheEvent)
+   {
+      return AAL::ServiceBase::initFailed(ptheEvent);
+   }
+
+   virtual AAL::btBool ReleaseComplete()
+   {
+      return AAL::ServiceBase::ReleaseComplete();
+   }
+
+   // </IServiceBase>
+
+   // <IRuntimeClient>
+   virtual void   runtimeCreateOrGetProxyFailed(AAL::IEvent const & )        {}
+   virtual void                  runtimeStarted(AAL::IRuntime            * ,
+                                                const AAL::NamedValueSet & ) {}
+   virtual void                  runtimeStopped(AAL::IRuntime * )            {}
+   virtual void              runtimeStartFailed(const AAL::IEvent & )        {}
+   virtual void               runtimeStopFailed(const AAL::IEvent & )        {}
+   virtual void    runtimeAllocateServiceFailed(AAL::IEvent const & )        {}
+   virtual void runtimeAllocateServiceSucceeded(AAL::IBase               * ,
+                                                AAL::TransactionID const & ) {}
+   virtual void                    runtimeEvent(const AAL::IEvent & )        {}
+   // </IRuntimeClient>
+};
+
+
+AAL_DECLARE_BUILTIN_MOD(libswvalsvcmod, SWVALSVCMOD_API)
+
+#define BUILTIN_SWVALSVCMOD_VERSION          "5.4.3"
+#define BUILTIN_SWVALSVCMOD_VERSION_CURRENT  5
+#define BUILTIN_SWVALSVCMOD_VERSION_REVISION 4
+#define BUILTIN_SWVALSVCMOD_VERSION_AGE      3
+
+AAL_BEGIN_BUILTIN_SVC_MOD(AAL::InProcSvcsFact< CBuiltinSwvalSvcMod >,
+                          libswvalsvcmod,
+                          SWVALSVCMOD_API,
+                          BUILTIN_SWVALSVCMOD_VERSION,
+                          BUILTIN_SWVALSVCMOD_VERSION_CURRENT,
+                          BUILTIN_SWVALSVCMOD_VERSION_REVISION,
+                          BUILTIN_SWVALSVCMOD_VERSION_AGE)
+
+   AAL_BEGIN_SVC_MOD_CMD(SWVALSVCMOD_CMD_SAY_HELLO)
+      strncpy((char *)arg, "hi ya", 5);
+   AAL_END_SVC_MOD_CMD()
+
+   // SWVALSVCMOD_CMD_MALLOC_STRUCT not implemented
+   // SWVALSVCMOD_CMD_FREE not implemented
+
+AAL_END_BUILTIN_SVC_MOD()
+
+TEST(OSAL_OSServiceModule, aal0747)
+{
+   // The AAL_BUILTIN_* macros allow creating an AAL service module entry point that exists in a
+   // non-dlopen()'ed loadable library.
+
+   AALSvcEntryPoint fn = AAL_BUILTIN_SVC_MOD_ENTRY_POINT(libswvalsvcmod);
+
+   char ver[AAL_SVC_MOD_VER_STR_MAX];
+
+   AAL::btUnsigned32bitInt cur = 0;
+   AAL::btUnsigned32bitInt rev = 0;
+   AAL::btUnsigned32bitInt age = 0;
+
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_VER_STR,       ver));
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_VER_CURRENT,  &cur));
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_VER_REVISION, &rev));
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_VER_AGE,      &age));
+
+   EXPECT_STREQ(BUILTIN_SWVALSVCMOD_VERSION,       ver);
+   EXPECT_STREQ(BUILTIN_SWVALSVCMOD_VERSION,       "5.4.3");
+
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_CURRENT,  cur);
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_CURRENT,  5);
+
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_REVISION, rev);
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_REVISION, 4);
+
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_AGE,      age);
+   EXPECT_EQ(BUILTIN_SWVALSVCMOD_VERSION_AGE,      3);
+
+   char hello[6] = { 0, 0, 0, 0, 0, 0 };
+   EXPECT_EQ(0, fn(SWVALSVCMOD_CMD_SAY_HELLO, hello));
+   EXPECT_STREQ("hi ya", hello);
+
+   EXPECT_EQ(-1, fn(SWVALSVCMOD_CMD_MALLOC_STRUCT, NULL)); // not implemented
+
+   IServiceModule *pMod = NULL;
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_GET_PROVIDER, &pMod));
+   ASSERT_NONNULL(pMod);
+
+   EXPECT_EQ(0, fn(AAL_SVC_CMD_FREE_PROVIDER, NULL));
+}
 
