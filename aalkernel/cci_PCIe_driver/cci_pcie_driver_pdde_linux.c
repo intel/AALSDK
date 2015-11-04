@@ -86,6 +86,8 @@
 
 //#include "aalsdk/kernel/spl2defs.h"
 
+extern int print_sim_fme_device(struct fme_device *);
+extern int print_sim_port_device(struct port_device *pport_dev);
 
 /// g_device_list - Global device list for this module.
 struct list_head g_device_list;
@@ -530,7 +532,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       }
 
 
-#if 0
+#if 1
       // print fme CSRS
       print_sim_fme_device(pccipdev->m_pfme_dev);
 #endif
