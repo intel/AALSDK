@@ -871,8 +871,7 @@ CASSERT(sizeof(struct CCIP_PORT_HDR) == (9 *8));
  *  Feature Type = Private
  *  offset 0x40 bytes form Device Feature Header
  ******************************************************************************/
-
-struct CCIP_PORT_ERR_DFL {
+struct CCIP_PORT_DFL_ERR {
 
    // Port Error Header
    struct CCIP_DFH ccip_port_err_dflhdr;
@@ -962,7 +961,7 @@ struct CCIP_PORT_ERR_DFL {
    }ccip_port_malformed_req_1;  // end struct CCIP_PORT_MALFORMED_REQ_1
 
 }; // end struct CCIP_PORT_ERR_DFL
-CASSERT(sizeof(struct CCIP_PORT_ERR_DFL) == (6 *8));
+CASSERT(sizeof(struct CCIP_PORT_DFL_ERR ) == (6 *8));
 
 /******************************************************************************
  *  FPGA Port USMG Feature
@@ -971,8 +970,7 @@ CASSERT(sizeof(struct CCIP_PORT_ERR_DFL) == (6 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
-
-struct CCIP_PORT_UMSG_DFL {
+struct CCIP_PORT_DFL_UMSG {
 
    // Port usmg Header
    struct CCIP_DFH ccip_port_umsg_dflhdr;
@@ -1021,7 +1019,7 @@ struct CCIP_PORT_UMSG_DFL {
 
 
 }; // end struct CCIP_PORT_UMSG_feature
-CASSERT(sizeof(struct CCIP_PORT_UMSG_DFL) == (4 *8));
+CASSERT(sizeof(struct CCIP_PORT_DFL_UMSG) == (4 *8));
 
 
 /******************************************************************************
@@ -1031,7 +1029,7 @@ CASSERT(sizeof(struct CCIP_PORT_UMSG_DFL) == (4 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
-struct CCIP_PORT_PR_DFL {
+struct CCIP_PORT_DFL_PR {
 
    // Port usmg Header
    struct CCIP_DFH ccip_port_pr_dflhdr;
@@ -1120,7 +1118,7 @@ struct CCIP_PORT_PR_DFL {
 
 
 }; // end struct CCIP_PORT_UMSG_feature
-CASSERT(sizeof(struct CCIP_PORT_PR_DFL) == (6 *8));
+CASSERT(sizeof(struct CCIP_PORT_DFL_PR) == (6 *8));
 
 
 /******************************************************************************
@@ -1130,8 +1128,7 @@ CASSERT(sizeof(struct CCIP_PORT_PR_DFL) == (6 *8));
  *  Feature Type = Private
  *
  ******************************************************************************/
-
-struct CCIP_PORT_STAP_DFL {
+struct CCIP_PORT_DFL_STAP {
 
    // Port usmg Header
    struct CCIP_DFH ccip_port_stap_dflhdr;
@@ -1148,7 +1145,7 @@ struct CCIP_PORT_STAP_DFL {
    }ccip_port_stap; // end struct CCIP_PORT_STAP
 
 }; // end struct CCIP_PORT_UMSG_feature
-CASSERT(sizeof(struct CCIP_PORT_STAP_DFL) == (2*8));
+CASSERT(sizeof(struct CCIP_PORT_DFL_STAP) == (2*8));
 
 
 /******************************************************************************
@@ -1158,7 +1155,6 @@ CASSERT(sizeof(struct CCIP_PORT_STAP_DFL) == (2*8));
  *  Feature Type = Private
  *
  ******************************************************************************/
-
 struct CCIP_AFU_Header {
 
    // FME  Header
@@ -1175,62 +1171,10 @@ struct CCIP_AFU_Header {
 } ;
 CASSERT(sizeof(struct CCIP_AFU_Header) == (4*8));
 
-
-
-
-// CCIP port device
-struct port_device
-{
-   struct CCIP_PORT_HDR         *m_pport_hdr;        // PORRT Header
-   struct CCIP_PORT_ERR_DFL 	  *m_pport_err;       // PORT Error DFL
-   struct CCIP_PORT_UMSG_DFL    *m_pport_umsg;       // PORT USMG DFL
-   struct CCIP_PORT_PR_DFL      *m_pport_pr;         // PORT PR DFL
-   struct CCIP_PORT_STAP_DFL    *m_pport_stap;       // PORT Signal tap DFL
-
-   struct pci_dev               *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
-   // Used for being added to the global list of devices.
-   struct list_head              m_list;           // List itself
-
-   // Private semaphore
-   struct semaphore              m_sem;
-
-   // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
-
-   // struct aal_device         aal_dev;         // AAL Device from which this is derived
-
-
-}; // end struct port_device
-
-#define ccip_port_dev_pci_dev(pdev)          ((pdev)->m_pcidev)
-
-#define ccip_port_aal_dev(pdev)               ((pdev)->aal_dev)
-#define ccip_port_hdr(pdev)                   ((pdev)->m_pport_hdr)
-#define ccip_port_err(pdev)                   ((pdev)->m_pport_err)
-#define ccip_port_umsg(pdev)                  ((pdev)->m_pport_umsg)
-#define ccip_port_pr(pdev)                    ((pdev)->m_pport_pr)
-#define ccip_port_stap(pdev)                  ((pdev)->m_pport_stap)
-
-
-#define ccip_port_mem_sessionp(pdev)              ((pdev)->m_pmem_session)
-
-
-#define ccip_dev_port_mmio(pdev)              ((pdev)->m_phys_port_mmio)
-#define ccip_dev_port_kvp_mmio(pdev)          ((pdev)->m_kvp_port_mmio)
-#define ccip_dev_port_len_mmio(pdev)          ((pdev)->m_len_port_mmio)
-
-#define ccip_dev_port_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define ccip_dev_port_to_aaldev(pdev)             ((pdev)->m_aal_dev)
-
-
-
-#define ccip_dev_port_list_head(pdev)             ((pdev)->m_list)
-#define ccip_list_port_to_ccip_device(plist)      kosal_list_entry(plist, struct port_device, m_list)
-#define aaldev_to_ccip_port_device(plist)         kosal_list_entry(plist, struct port_device, m_list)
-#define ccip_dev_port_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
-#define ccip_dev_port_psem(pdev)                  (&(pdev)->m_sem)
-
-
-
+///============================================================================
+/// Name: port_device
+/// @brief  Port device struct
+///============================================================================
 // CCIP afu device
 struct afu_device
 {
@@ -1244,27 +1188,26 @@ struct afu_device
 
 }; // end struct ccip_afu_device
 
-// CCIP board device
+
+///============================================================================
+/// Name: ccip_device
+/// @brief  CCIP board device
+///============================================================================
 struct ccip_device
 {
    // Used for being added to the global list of devices.
-   struct list_head           m_list;
+   kosal_list_head            m_list;
 
    // Head of the list of AAL devices created
-   struct list_head           m_devlisthead;
+   kosal_list_head            m_devlisthead;
+
+   // Head of the list of ports devices
+   kosal_list_head            m_portlisthead;
+
 
    struct fme_device         *m_pfme_dev;    // FME Device
 
-   // List of ports TBD
-   struct port_device        *m_pport_dev;   // FME Port
-
-   // List of AFU  TBD
-   struct afu_device         *m_pafu_dev;    // FME AFU
-
    struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
-
-   // TBD ?
-   //struct pr_device         *m_ppr_dev ;
 
    btUnsignedInt              m_flags;
 
@@ -1297,27 +1240,29 @@ struct ccip_device
 
 
 #define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
-#define ccip_dev_to_fme_dev(pdev)            (pdev->m_pfme_dev)
+#define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
+#define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
+#define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
+#define ccip_dev_to_port_dev(pdev)           ((pdev)->m_pfme_dev)
 
 #define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
 
-#define cciv4_dev_board_type(pdev)            ((pdev)->m_boardtype)
+#define cci_dev_board_type(pdev)             ((pdev)->m_boardtype)
 
 #define ccip_set_simulated(pdev)             ((pdev)->m_simulated = 1)
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
 
-#define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
 
 
-#define ccip_dev_list_head(pdev)             ((pdev)->m_list)
-#define ccip_list_to_ccip_device(plist)     kosal_list_entry(plist, struct ccip_device, m_list)
+#define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
 #define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)
 #define ccip_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_dev_psem(pdev)                  (&(pdev)->m_sem)
 
+#define ccip_dev_list_head(pdev)             ((pdev)->m_list)
 #define ccip_aal_dev_list(pdev)              ((pdev)->m_devlisthead)
+#define ccip_port_dev_list(pdev)             ((pdev)->m_portlisthead)
 
 #define ccip_fmedev_phys_afu_mmio(pdev)         ((pdev)->m_phys_fme_mmio)
 #define ccip_fmedev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_fme_mmio)

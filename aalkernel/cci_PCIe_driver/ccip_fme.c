@@ -77,12 +77,13 @@
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
 
+#include "aalsdk/kernel/ccipdriver.h"
+#include "aalsdk/kernel/ccipdrv-events.h"
+
 #include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "cci_pcie_driver_PIPsession.h"
 
-#include "aalsdk/kernel/ccipdriver.h"
-#include "aalsdk/kernel/ccipdrv-events.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -92,11 +93,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-int CommandHandler(struct aaldev_ownerSession *,
-                   struct aal_pipmessage);
-int cci_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
+static int CommandHandler( struct aaldev_ownerSession *,
+                           struct aal_pipmessage);
+static int cci_mmap( struct aaldev_ownerSession *pownerSess,
+                     struct aal_wsid *wsidp,
+                     btAny os_specific);
 
 
 //=============================================================================
@@ -632,7 +633,7 @@ struct fme_device * get_fme_mmio_dev(btVirtAddr pkvp_fme_mmio )
    }
 
    // Get the FPGA Management Engine Header
-   ccip_fme_hdr(pfme_dev) =  get_fme_dev_header(pfme_dev,pkvp_fme_mmio );
+   ccip_fme_hdr(pfme_dev) =  get_fme_dev_header(pkvp_fme_mmio );
    if(NULL == ccip_fme_hdr(pfme_dev)){
       PERR("Error reading FME header %d \n" ,res);
       goto ERR;
@@ -675,8 +676,7 @@ void ccip_destroy_fme_mmio_dev(struct fme_device *pfme_dev)
 /// @param[in] pkvp_fme_mmio fme mmio virtual address
 /// @return    error code
 ///============================================================================
-struct CCIP_FME_HDR* get_fme_dev_header( struct fme_device *pfme_dev,
-      btVirtAddr pkvp_fme_mmio )
+struct CCIP_FME_HDR* get_fme_dev_header(btVirtAddr pkvp_fme_mmio )
 {
 
    // FME registers are mapped into the PF MMIO address space. FME DFH will
@@ -721,14 +721,13 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
 
       // check for Device type
       // Type == CCIP_DFType_private
-      if(fme_dfh.Type  != CCIP_DFType_private )
-      {
+      if(fme_dfh.Type  != CCIP_DFType_private ){
          PERR(" invalid FME Feature Type \n");
          res = -EINVAL;
          goto ERR;
       }
       if(0 != fme_dfh.Feature_rev){
-         PVERBOSE("Found feature with invalid revision %d. IGNORING!\n",fme_dfh.Feature_rev);
+         PVERBOSE("Found FME feature with invalid revision %d. IGNORING!\n",fme_dfh.Feature_rev);
          continue;
       }
 
@@ -782,11 +781,8 @@ bt32bitInt get_fme_dev_featurelist( struct fme_device *pfme_dev,
 
    }while(0 != fme_dfh.next_DFH_offset );  // end while
 
-
    PINFO(" get_fme_dev_featurelist EXIT \n");
-   PTRACEOUT_INT(res);
-   return res;
-ERR:
+ ERR:
    PTRACEOUT_INT(res);
    return res;
 }

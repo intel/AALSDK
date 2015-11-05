@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -55,13 +55,14 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_def.h
-/// @brief  Definitions for ccip.
+/// @file ccip_port.h
+/// @brief  Definitions for CCI Port.
 /// @ingroup aalkernel_ccip
 /// @verbatim
-//        FILE: ccip_port_mmio.h
+//        FILE: ccip_port.h
 //     CREATED: Sept 24, 2015
-//      AUTHOR:
+//      AUTHOR: Ananda Ravuri, Intel <ananda.ravuri@intel.com>
+//              Joseph Grecco, Intel <joe.grecco@intel.com>
 //
 // PURPOSE:   This file contains the definations of the CCIP Port
 //             Device Feature List and CSR.
@@ -69,71 +70,106 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-
 #ifndef __AALKERNEL_CCIP_PORT_DEF_H_
 #define __AALKERNEL_CCIP_PORT_DEF_H_
 
 #include <aalsdk/kernel/aaltypes.h>
-#include "cciv4_driver_internal.h"
+#include "cci_pcie_driver_internal.h"
+#include "ccip_defs.h"
 
 BEGIN_NAMESPACE(AAL)
 
-/// @brief   reads PORT mmio region
+
+///============================================================================
+/// Name: port_device
+/// @brief  Port device struct
+///============================================================================
+struct port_device
+{
+   struct CCIP_PORT_HDR         *m_pport_hdr;         // PORRT Header
+   struct CCIP_PORT_DFL_ERR     *m_pport_err;         // PORT Error DFL
+   struct CCIP_PORT_DFL_UMSG    *m_pport_umsg;        // PORT USMG DFL
+   struct CCIP_PORT_DFL_PR      *m_pport_pr;          // PORT PR DFL
+   struct CCIP_PORT_DFL_STAP    *m_pport_stap;        // PORT Signal tap DFL
+
+   struct ccip_device           *m_ccipdev;           // Parent board
+
+   // Used for being added to the list of devices.
+   kosal_list_head               m_list;
+
+   // Private semaphore
+   struct semaphore              m_sem;
+
+   enum aal_bus_types_e          m_bustype;
+   btUnsigned32bitInt            m_busNum;
+   btUnsigned32bitInt            m_devicenum;   // device number
+   btUnsigned32bitInt            m_functnum;    // function number
+
+   // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
+
+   // struct aal_device         aal_dev;         // AAL Device from which this is derived
+
+
+}; // end struct port_device
+
+#define ccip_port_dev_pci_dev(pdev)          ((pdev)->m_pcidev)
+
+#define ccip_port_aal_dev(pdev)               ((pdev)->aal_dev)
+#define ccip_port_hdr(pdev)                   ((pdev)->m_pport_hdr)
+#define ccip_port_err(pdev)                   ((pdev)->m_pport_err)
+#define ccip_port_umsg(pdev)                  ((pdev)->m_pport_umsg)
+#define ccip_port_pr(pdev)                    ((pdev)->m_pport_pr)
+#define ccip_port_stap(pdev)                  ((pdev)->m_pport_stap)
+
+#define ccip_port_bustype(pdev)               ((pdev)->m_bustype)
+#define ccip_port_busnum(pdev)                ((pdev)->m_busNum)
+#define ccip_port_devnum(pdev)                ((pdev)->m_devicenum)
+#define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
+
+#define ccip_port_mem_sessionp(pdev)          ((pdev)->m_pmem_session)
+
+#define ccip_port_mmio(pdev)                  ((pdev)->m_phys_port_mmio)
+#define ccip_port_kvp_mmio(pdev)              ((pdev)->m_kvp_port_mmio)
+#define ccip__port_len_mmio(pdev)             ((pdev)->m_len_port_mmio)
+
+#define ccip_port_to_ccidev(pdev)             ((pdev)->m_ccipdev)
+
+#define ccip_port_list_head(pdev)             ((pdev)->m_list)
+#define cci_list_to_cci_port_device(plist)     kosal_list_entry(plist, struct port_device, m_list)
+
+
+#define aaldev_to_ccip_port_device(plist)         kosal_list_entry(plist, struct port_device, m_list)
+#define ccip_port_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
+#define ccip_port_psem(pdev)                  (&(pdev)->m_sem)
+
+/// @brief creates a Port Device
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt get_port_mmio(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+/// @return    port_device code
+struct port_device  *get_port_device( btVirtAddr pkvp_port_mmio);
+
+/// @brief  destroys a Port Device
+///
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    port_device code
+void destroy_port_device( struct port_device  *);
+
 
 /// @brief   reads PORT Header
 ///
 /// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt get_port_header(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+struct CCIP_PORT_HDR * get_port_header( btVirtAddr );
 
 /// @brief   reads PORT feature list
 ///
 /// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio );
+bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr );
 
-/// @brief   reads PORT error  CSR
-///
-/// @param[in] pport_dev port device pointer.
-/// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt get_port_err_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio);
-
-/// @brief   reads PORT UMSG CSR
-///
-/// @param[in] pport_dev port device pointer.
-/// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt get_port_umsg_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio);
-
-
-/// @brief   reads PORT PR CSR
-///
-/// @param[in] pport_dev port device pointer.
-/// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt get_port_pr_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio);
-
-
-/// @brief   reads PORT signaltap CSR
-///
-/// @param[in] pport_dev port device pointer.
-/// @param[in] pkvp_port_mmio port mmio virtual address
-/// @return    error code
-bt32bitInt get_port_stap_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio);
-
-/// @brief   freee Port feature list memory
-///
-/// @param[in] pport_dev port device pointer .
-/// @return    void
-void ccip_port_mem_free(struct port_device *pport_dev );
+extern struct aal_ipip cci_Portpip;
 
 END_NAMESPACE(AAL)
 

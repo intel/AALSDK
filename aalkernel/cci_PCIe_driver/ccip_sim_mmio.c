@@ -75,8 +75,9 @@
 #include "aalsdk/kernel/aalqueue.h"
 #include "aalsdk/kernel/ccipdriver.h"
 #include "cci_pcie_driver_internal.h"
-#include "ccip_defs.h"
+
 #include "ccip_fme.h"
+#include "ccip_port.h"
 
 #define OFFSET 0x8;
 
@@ -367,10 +368,10 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
 int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 {
    struct CCIP_PORT_HDR         port_hdr;
-   struct CCIP_PORT_ERR_DFL	   port_err;
-   struct CCIP_PORT_UMSG_DFL    port_umsg;
-   struct CCIP_PORT_PR_DFL      port_pr;
-   struct CCIP_PORT_STAP_DFL    port_stap;
+   struct CCIP_PORT_DFL_ERR     port_err;
+   struct CCIP_PORT_DFL_UMSG    port_umsg;
+   struct CCIP_PORT_DFL_PR      port_pr;
+   struct CCIP_PORT_DFL_STAP    port_stap;
 
 
    btVirtAddr ptr = pkvp_fme_mmio;
@@ -813,7 +814,7 @@ int print_sim_port_device(struct port_device *pport_dev)
    if ( NULL == pport_dev ) {
       PERR("Unable to allocate system memory for pfme_dev object\n");
       res = -1;
-      goto EROR;
+      goto ERR;
    }
 
    PDEBUG( "*****************************************************************\n");
@@ -864,6 +865,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Feature_ID = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.Feature_ID);
       PDEBUG( "Feature_rev = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.Type);
+
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.next_DFH_offset);
 
       PDEBUG( "rsvd = %x \n",(  unsigned int)pport_dev->m_pport_err->ccip_port_error_mask.rsvd);
@@ -954,6 +956,7 @@ int print_sim_port_device(struct port_device *pport_dev)
 
    if(pport_dev->m_pport_stap)
    {
+
       PDEBUG( "PORT SIGNAL TAP   START \n \n");
       PDEBUG( "Feature_ID = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.Feature_ID);
       PDEBUG( "Feature_rev = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.Feature_rev);
@@ -968,7 +971,8 @@ int print_sim_port_device(struct port_device *pport_dev)
 
    PDEBUG( "*****************************************************************\n");
    PDEBUG( "*****************************************************************\n");
-   EROR:
+
+   ERR:
 
    return res;
 

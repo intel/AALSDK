@@ -94,7 +94,9 @@ cci_pcie_driver_umapi_common.c \
 ccip_defs.h \
 cciui-events.h \
 ccip_fme.h \
-ccip_fme.c
+ccip_fme.c \
+ccip_port.h \
+ccip_port.c
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers

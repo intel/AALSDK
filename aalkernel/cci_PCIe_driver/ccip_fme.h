@@ -64,7 +64,7 @@
 //      AUTHOR: Ananda Ravuri, Intel <ananda.ravuri@intel.com>
 //              Joseph Grecco, Intel <joe.grecco@intel.com>
 //
-// PURPOSE:   This file contains the definations of the CCIP FME
+// PURPOSE:   This file contains the defintions of the CCIP FME
 //             Device Feature List and CSR.
 // HISTORY:
 // COMMENTS:
@@ -72,80 +72,12 @@
 //****************************************************************************///
 #ifndef __AALKERNEL_CCIP_FME_DEF_H_
 #define __AALKERNEL_CCIP_FME_DEF_H_
+#include <aalsdk/kernel/kosal.h>
 
 #include <aalsdk/kernel/aaltypes.h>
 #include "cci_pcie_driver_internal.h"
 
 BEGIN_NAMESPACE(AAL)
-
-/// @brief   Get the FPGA Management Engine Device Object.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    Device object; NULL == failure
-struct fme_device * get_fme_mmio_dev(btVirtAddr pkvp_fme_mmio );
-
-/// @brief Destroy the FME MMIO object.
-///
-/// @param[in] fme_device fme device object .
-/// @return    None
-void ccip_destroy_fme_mmio_dev(struct fme_device *);
-
-/// @brief   reads FME header from MMIO.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    FME Header object; NULL ==failure
-struct CCIP_FME_HDR* get_fme_dev_header(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-
-/// @brief   reads FME header from MMIO.
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_featurelist(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME Temperature Management CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_tmp_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );;
-
-/// @brief   reads FME Power Management CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_pm_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME Global performance CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_fpmon_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME Global error CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_gerr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME PR CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   freee FME Device feature list memory
-///
-/// @param[in] fme_device fme device pointer .
-/// @return    void
-void ccip_fme_mem_free(struct fme_device *pfme_dev );
 
 ///============================================================================
 /// Name: fme_device
@@ -206,8 +138,75 @@ struct fme_device
 #define ccip_dev_fme_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_dev_fme_psem(pdev)                  (&(pdev)->m_sem)
 
+/// @brief   Get the FPGA Management Engine Device Object.
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    Device object; NULL == failure
+struct fme_device * get_fme_mmio_dev(btVirtAddr pkvp_fme_mmio );
+
+/// @brief Destroy the FME MMIO object.
+///
+/// @param[in] fme_device fme device object .
+/// @return    None
+void ccip_destroy_fme_mmio_dev(struct fme_device *);
+
+/// @brief   reads FME header from MMIO.
+///
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    FME Header object; NULL ==failure
+struct CCIP_FME_HDR* get_fme_dev_header(btVirtAddr pkvp_fme_mmio );
 
 
+/// @brief   reads FME header from MMIO.
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_featurelist(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+
+/// @brief   reads FME Temperature Management CSR
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_tmp_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );;
+
+/// @brief   reads FME Power Management CSR
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_pm_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+
+/// @brief   reads FME Global performance CSR
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_fpmon_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+
+/// @brief   reads FME Global error CSR
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_gerr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+
+/// @brief   reads FME PR CSR
+///
+/// @param[in] fme_device fme device pointer.
+/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @return    error code
+bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+
+/// @brief   freee FME Device feature list memory
+///
+/// @param[in] fme_device fme device pointer .
+/// @return    void
+void ccip_fme_mem_free(struct fme_device *pfme_dev );
+
+extern struct aal_ipip cci_FMEpip;
 
 END_NAMESPACE(AAL)
 

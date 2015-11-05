@@ -83,6 +83,7 @@
 
 #include "ccip_defs.h"
 #include "ccip_fme.h"
+#include "ccip_port.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
@@ -403,17 +404,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       return NULL;
     }
 
-   // Allocate the board object
-   pccipdev = (struct ccip_device * ) kosal_kzmalloc(sizeof(struct ccip_device));
-   if ( NULL ==  pccipdev ) {
-      PERR("Could not allocate CCI device object\n");
-      return NULL;
-   }
-
-   // Initialize object
-   kosal_list_init(&cci_dev_list_head(pccipdev));
-   kosal_list_init(&ccip_aal_dev_list(pccipdev));
-   kosal_mutex_init(cci_dev_psem(pccipdev));
+   // Create the CCI device object
+   pccipdev = create_ccidevice();
 
    // Debug dump the BAR data
    {
@@ -450,7 +442,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
    // Save the PCI device in the CCI object
    ccip_dev_pci_dev(pccipdev) = pcidev;
-
 
    // Acquire the BAR regions
    //  64 Bit BARs are actually spread
@@ -519,19 +510,18 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       // Create the FME MMIO device object
       //   Enumerates the FME feature list
       //----------------------------------
-      pccipdev->m_pfme_dev = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
+      ccip_dev_to_fme_dev(pccipdev) = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
       if ( NULL == pccipdev->m_pfme_dev ) {
          PERR("Could not allocate memory for FME object\n");
          res = -ENOMEM;
          goto ERR;
       }
 
-      // Instantiate allocatable objects including AFUs if present
-      if(!cci_dev_create_allocatable_objects(pccipdev)){
+      // Instantiate AAL allocatable objects including AFUs if present
+      if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){
          ccip_destroy_fme_mmio_dev(pccipdev->m_pfme_dev);
          goto ERR;
       }
-
 
 #if 1
       // print fme CSRS
@@ -555,13 +545,12 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       }
 
      // Populate PORT MMIO Region
-      get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
+ //     get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
 
       // print port CSRs
       print_sim_port_device(pccipdev->m_pport_dev);
 
    }
-
 #endif
    return pccipdev;
 ERR:

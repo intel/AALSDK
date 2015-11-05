@@ -80,6 +80,7 @@
 
 #include "ccip_defs.h"
 #include "ccip_fme.h"
+#include "ccip_port.h"
 #include "cci_pcie_driver_simulator.h"
 
 
@@ -87,7 +88,7 @@ extern int  ccip_sim_wrt_port_mmio(btVirtAddr);
 extern int  ccip_sim_wrt_fme_mmio(btVirtAddr);
 
 extern int print_sim_fme_device(struct fme_device *);
-extern int print_sim_port_device(struct port_device *pport_dev);
+extern int print_sim_port_device(struct port_device *);
 
 int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
 
@@ -282,22 +283,22 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
       return NULL;
     }
 
-   // Allocate the board object
-   pccipdev = (struct ccip_device * ) kosal_kzmalloc(sizeof(struct ccip_device));
-   if ( NULL ==  pccipdev ) {
-      PERR("Could not allocate CCI device object\n");
-      return NULL;
-   }
+   // Create the CCI device object
+   pccipdev = create_ccidevice();
 
-   // Initialize object
-   kosal_list_init(&cci_dev_list_head(pccipdev));
-   kosal_list_init(&ccip_aal_dev_list(pccipdev));
-   kosal_mutex_init(cci_dev_psem(pccipdev));
+   // Save the Bus:Device:Function of simulated device
+   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
+   ccip_dev_pcie_busnum(pccipdev)   = aaldevid_devaddr_busnum(*pdevid);
+   ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
+   ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
 
-   // Mark thsi devcie as simulated
+   // Mark thsi device as simulated
    ccip_set_simulated(pccipdev);
 
-   // Save the BAR information in the CCI Device object
+   // FME Device initialization
+   //---------------------------
+
+   // Save the FME information in the CCI Device object
    ccip_fmedev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar0));
    ccip_fmedev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
    ccip_fmedev_kvp_afu_mmio(pccipdev)     = bar0;
@@ -306,26 +307,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    PDEBUG("ccip_fmedev_kvp_afu_mmio(pccipdev) : %lx\n",(long unsigned int) ccip_fmedev_kvp_afu_mmio(pccipdev));
    PDEBUG("ccip_fmedev_len_afu_mmio(pccipdev): %zu\n", ccip_fmedev_len_afu_mmio(pccipdev));
 
-   // Save the BAR information in the CCI Device object
-   ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
-   ccip_portdev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
-   ccip_portdev_kvp_afu_mmio(pccipdev)     = bar2;
-
-   PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
-   PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
-   PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
-
-   // Save the Bus:Device:Function of simulated device
-   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
-   ccip_dev_pcie_busnum(pccipdev)   = aaldevid_devaddr_busnum(*pdevid);
-   ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
-   ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
-
-   // Now populate the simulated BARs
+   // Now populate the simulated MMIO
    ccip_sim_wrt_fme_mmio(ccip_fmedev_kvp_afu_mmio(pccipdev));
-
-   ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev));
-
 
    // Enumerate the device
    //  Instantiate internal objects. Objects that represent
@@ -341,48 +324,74 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
       // Create the FME MMIO device object
       //   Enumerates the FME feature list
       //----------------------------------
-      pccipdev->m_pfme_dev = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
+      ccip_dev_to_fme_dev(pccipdev) = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
       if ( NULL == pccipdev->m_pfme_dev ) {
          PERR("Could not allocate memory for FME object\n");
          res = -ENOMEM;
          goto ERR;
       }
 
-      // Instantiate allocatable objects including AFUs if present
-      if(!cci_dev_create_allocatable_objects(pccipdev)){
-         ccip_destroy_fme_mmio_dev(pccipdev->m_pfme_dev);
+      // Instantiate allocatable objects
+      if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){
          goto ERR;
       }
 
-      // print fme CSRS
-      print_sim_fme_device(pccipdev->m_pfme_dev);
+      // print FME MMIO
+      print_sim_fme_device(ccip_dev_to_fme_dev(pccipdev));
 
    } // End FME region
 
- #if 0
-   // PORT mmio region
-   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
+   // Port Device initialization
+   //---------------------------
 
+   // Save the Port information in the CCI Device object
+   ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
+   ccip_portdev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
+   ccip_portdev_kvp_afu_mmio(pccipdev)     = bar2;
+
+   PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
+   PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
+   PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
+
+   // Now populate the simulated MMIO
+   ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev));
+
+   // Enumerate the devices
+   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
+      struct port_device  *pportdev = NULL;
 
       PINFO(" PORT mmio region   \n");
 
-      pccipdev->m_pport_dev = (struct port_device*) kzalloc(sizeof(struct port_device), GFP_KERNEL);
-      if ( NULL == pccipdev->m_pport_dev ) {
-        res = -ENOMEM;
-
-        PINFO(" PORT mmio region ERROR   \n");
-        goto ERR;
+      // Discover and create Port device
+      //   Enumerates the Port feature list, creates the Port object.
+      //   Then add the new port object onto the list
+      //-------------------------------------------------------------
+      pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) );
+      if ( NULL == pportdev ) {
+         PERR("Could not allocate memory for FME object\n");
+         res = -ENOMEM;
+         goto ERR;
       }
 
-     // Populate PORT MMIO Region
-      get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
+      // Point to our parent
+      ccip_port_to_ccidev(pportdev) = pccipdev;
 
-      // print port CSRs
-      print_sim_port_device(pccipdev->m_pport_dev);
+      // Inherits B:D:F from board
+      ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
+      ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+      ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
+      ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
 
+      print_sim_port_device(pportdev);
+
+      // Added it to the port list
+      kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+      // Instantiate allocatable objects including AFUs if present
+      if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, 0)){
+         goto ERR;
+      }
    }
-
-#endif
 
    return pccipdev;
 ERR:

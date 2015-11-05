@@ -174,7 +174,7 @@ struct cci_aal_device {
    union {
       void                   *m_void;
       struct fme_device      *m_pfme;
-//      struct port_device     *m_pport;
+      struct port_device     *m_pport;
 //      struct afu_device      *m_afu;
    };
 };
@@ -261,11 +261,18 @@ struct cci_aal_device {
 //=============================================================================
 //=============================================================================
 struct ccip_device;   // forward reference
+struct port_device;
+
 extern int ccidrv_initDriver(void/*callback*/);
-extern btBool cci_dev_create_allocatable_objects(struct ccip_device *);
+struct ccip_device * create_ccidevice(void);
+void  destroy_ccidevice(struct ccip_device *pccidev);
+extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
+btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *,
+                                                   btUnsigned32bitInt);
 extern struct cci_aal_device* cci_create_aal_device(void);
 extern int cci_destroy_aal_device( struct cci_aal_device*);
 extern int cci_publish_aaldevice(struct cci_aal_device *);
+extern void cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev);
 extern void cci_remove_device(struct ccip_device *);
 extern void cci_release_device(struct device *pdev);
 extern void ccidrv_exitDriver(void);
