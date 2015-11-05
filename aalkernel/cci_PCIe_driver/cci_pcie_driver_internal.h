@@ -335,17 +335,16 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
                                      size_t           *psize)
 {
    if ( pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
-      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
-      return 0;
-
-   }else{
       // get the low base address register.
-      *pphysaddr = pci_resource_start(ppcidev, 0);
-      *psize  = (size_t)pci_resource_len(ppcidev, 0);
+      *pphysaddr = pci_resource_start(ppcidev, barnum);
+      *psize  = (size_t)pci_resource_len(ppcidev, barnum);
 
       PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
       PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
 
+   }else{
+      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
+      return 0;
    }
 
    // Only non-zero regions make sense
@@ -354,7 +353,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
       return 0;
    }
 
-   pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
+   *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
    return 1;
 }
 

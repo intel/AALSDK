@@ -351,8 +351,25 @@ cci_remove_device(struct ccip_device *pccidev)
       PVERBOSE("No published objects to remove\n");
    }
 
+   // Release the BAR memory
+   if(NULL != ccip_fmedev_kvp_afu_mmio(pccidev)){
+      if( cci_is_simulated(pccidev) ){
+         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccidev), ccip_fmedev_len_afu_mmio(pccidev));
+      }else {
+         iounmap(ccip_fmedev_kvp_afu_mmio(pccidev));
+      }
+   }
+   if(NULL != cci_dev_kvp_afu_mmio(pccidev)){
+      if( cci_is_simulated(pccidev) ){
+         kosal_kfree(cci_dev_kvp_afu_mmio(pccidev), cci_dev_len_afu_mmio(pccidev));
+      }else {
+         iounmap(ccip_fmedev_kvp_afu_mmio(pccidev));
+      }
+   }
+
    if ( cci_dev_pci_dev_is_region_requested(pccidev) ) {
-      pci_release_regions(cci_dev_pci_dev(pccidev));
+      pci_release_region(cci_dev_pci_dev(pccidev), 0);
+      pci_release_region(cci_dev_pci_dev(pccidev), 2);
       cci_dev_pci_dev_clr_region_requested(pccidev);
    }
 
@@ -361,19 +378,6 @@ cci_remove_device(struct ccip_device *pccidev)
       cci_dev_pci_dev_clr_enabled(pccidev);
    }
 
-   // If simulated free the BAR
-   if( cci_is_simulated(pccidev) ){
-      if(NULL != ccip_fmedev_kvp_afu_mmio(pccidev)){
-         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccidev), ccip_fmedev_len_afu_mmio(pccidev));
-      }
-      if(NULL != cci_dev_kvp_afu_mmio(pccidev)){
-         kosal_kfree(cci_dev_kvp_afu_mmio(pccidev), cci_dev_len_afu_mmio(pccidev));
-      }
-   }
-
-   // Make it unavailable
-//   cci_unpublish_aaldevice(pccidev);
-//   cci_destroy_device(pccidev);
    kosal_kfree(pccidev, sizeof(struct ccip_device));
 
 } // cci_remove_device
