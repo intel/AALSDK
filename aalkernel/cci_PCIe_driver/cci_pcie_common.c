@@ -325,7 +325,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    aaldevid_devaddr_busnum(aalid)      = ccip_port_busnum(pportdev);
    aaldevid_devaddr_devnum(aalid)      = ccip_port_devnum(pportdev);
    aaldevid_devaddr_fcnnum(aalid)      = ccip_port_fcnnum(pportdev);
-   aaldevid_devaddr_subdevnum(aalid)   = CCIP_DEV_PORT_SUBDEV(devnum);
+   aaldevid_devaddr_subdevnum(aalid)   = devnum;
 
    // The following attributes describe the interfaces supported by the device
    aaldevid_afuguidl(aalid)            = CCIP_PORT_GUIDL;
@@ -513,51 +513,57 @@ cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev)
 
 //=============================================================================
 // Name: cci_remove_device
-// Description: Performs generic cleanup and deletion of CCIv4 object
-// Input: pCCIdev - device to remove
+// Description: Performs generic cleanup and deletion of CCI object
+// Input: pccipdev - device to remove
 // Comment:
 // Returns: none
 // Comments:
 //=============================================================================
 void
-cci_remove_device(struct ccip_device *pccidev)
+cci_remove_device(struct ccip_device *pccipdev)
 {
+   int x;
    PDEBUG("Removing CCI device\n");
 
    // Call PIP to ensure the object is idle and ready for removal
    // TODO
 
-   // Release the BAR memory
-   if(NULL != ccip_fmedev_kvp_afu_mmio(pccidev)){
-      if( cci_is_simulated(pccidev) ){
-         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccidev), ccip_fmedev_len_afu_mmio(pccidev));
-      }else {
-         iounmap(ccip_fmedev_kvp_afu_mmio(pccidev));
-      }
-   }
-   if(NULL != cci_dev_kvp_afu_mmio(pccidev)){
-      if( cci_is_simulated(pccidev) ){
-         kosal_kfree(cci_dev_kvp_afu_mmio(pccidev), cci_dev_len_afu_mmio(pccidev));
-      }else {
-         iounmap(ccip_fmedev_kvp_afu_mmio(pccidev));
+   // Release the resources used for ports
+   for(x=0; x<5; x++){
+      if(ccip_has_resource(pccipdev, x)){
+         if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
+            if(!ccip_is_simulated(pccipdev)){
+               iounmap(ccip_portdev_kvp_afu_mmio(pccipdev,x));
+               pci_release_region(ccip_dev_to_pci_dev(pccipdev), x);
+            }else{
+               kosal_kfree(ccip_portdev_kvp_afu_mmio(pccipdev,x),ccip_portdev_len_afu_mmio(pccipdev,x) );
+            }
+             ccip_portdev_kvp_afu_mmio(pccipdev,x) = NULL;
+          }
       }
    }
 
-   // Release the resources
-   if( cci_dev_pci_dev_is_region_requested(pccidev) ) {
-      pci_release_region(cci_dev_pci_dev(pccidev), 0);
-      pci_release_region(cci_dev_pci_dev(pccidev), 2);
-      cci_dev_pci_dev_clr_region_requested(pccidev);
+   // Release FME Resources
+   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+      if(!ccip_is_simulated(pccipdev)){
+         iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+         pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
+      }else{
+         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
+      }
+      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
-   if( cci_dev_pci_dev_is_enabled(pccidev) ) {
-      pci_disable_device(cci_dev_pci_dev(pccidev));
-      cci_dev_pci_dev_clr_enabled(pccidev);
+   if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
+      if(!ccip_is_simulated(pccipdev)){
+         pci_disable_device(cci_dev_pci_dev(pccipdev));
+      }
+      cci_dev_pci_dev_clr_enabled(pccipdev);
    }
 
    // Destroy the device
    //  Cleans up any child objects.
-   destroy_ccidevice(pccidev);
+   destroy_ccidevice(pccipdev);
 
 } // cci_remove_device
 

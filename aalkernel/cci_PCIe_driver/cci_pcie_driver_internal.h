@@ -330,7 +330,7 @@ cci_flush_all_wsids(struct cci_PIPsession *psess);
 // Interface: public
 // Inputs:  ppcidev - Pointer to PICe device
 //          pphysaddr - Pointer to where to return the physical address
-//          pvirtaddr - Pointer to where to return teh mapped virtual address
+//          pvirtaddr - Pointer to where to return the mapped virtual address
 //          psize - BAR region size
 // Outputs: 1 = success.
 // Comments:

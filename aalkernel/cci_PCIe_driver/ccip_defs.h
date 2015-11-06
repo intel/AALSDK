@@ -1228,9 +1228,9 @@ struct ccip_device
    btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
    size_t                     m_len_fme_mmio;   // Bytes
 
-   btVirtAddr                 m_kvp_port_mmio;   // kv address of MMIO space
-   btPhysAddr                 m_phys_port_mmio;  // Physical address of MMIO space
-   size_t                     m_len_port_mmio;
+   btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
+   btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
+   size_t                     m_len_port_mmio[5];
 
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
@@ -1254,8 +1254,8 @@ struct ccip_device
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
 
-#define ccip_set_resource(pdev,r)            ((pdev)->m_resources &= (1<<r))
-#define ccip_has_resource(pdev,r)            ((pdev)->m_resources && (1<<r))
+#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
+#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
 #define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
 
 #define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
@@ -1267,13 +1267,13 @@ struct ccip_device
 #define ccip_aal_dev_list(pdev)              ((pdev)->m_devlisthead)
 #define ccip_port_dev_list(pdev)             ((pdev)->m_portlisthead)
 
-#define ccip_fmedev_phys_afu_mmio(pdev)         ((pdev)->m_phys_fme_mmio)
-#define ccip_fmedev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_fme_mmio)
-#define ccip_fmedev_len_afu_mmio(pdev)          ((pdev)->m_len_fme_mmio)
+#define ccip_fmedev_phys_afu_mmio(pdev)      ((pdev)->m_phys_fme_mmio)
+#define ccip_fmedev_kvp_afu_mmio(pdev)       ((pdev)->m_kvp_fme_mmio)
+#define ccip_fmedev_len_afu_mmio(pdev)       ((pdev)->m_len_fme_mmio)
 
-#define ccip_portdev_phys_afu_mmio(pdev)         ((pdev)->m_phys_port_mmio)
-#define ccip_portdev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_port_mmio)
-#define ccip_portdev_len_afu_mmio(pdev)          ((pdev)->m_len_port_mmio)
+#define ccip_portdev_phys_afu_mmio(pdev,n)   ((pdev)->m_phys_port_mmio[n])
+#define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
+#define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
 
 #define ccip_dev_pcie_bustype(pdev)             ((pdev)->m_bustype)
 #define ccip_dev_pcie_busnum(pdev)              ((pdev)->m_busNum)

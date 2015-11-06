@@ -500,115 +500,115 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
 
    // Port Device initialization
-   //  Loop through FME Header to determine how many
-   //  ports are supported on this device and where the
-   //  MMIO regions is for each.
-   //---------------------------
-// while(NOT DONE) TBD
-
-   // Acquire the BAR regions
-   //------------------------------------
+   //  Loop through each Port Offset register to determine
+   //  if a Port has been implemented and where its resources are.
+   //  The resources may reside in different Bars and at different offsets.
+   //  The driver must keep track of all resources it claims so it can
+   //  free them later.
+   //----------------------------------------------------------------------
    {
-      btPhysAddr           pbarPhyAddr    = 0;
-      btVirtAddr           pbarVirtAddr   = 0;
-      size_t               barsize        = 0;
+      struct fme_device  *pfme_dev  = ccip_dev_to_fme_dev(pccipdev);
+      struct CCIP_FME_HDR *pfme_hdr = ccip_fme_hdr(pfme_dev);
 
-      // BAR 2  is the Port object
-      if( !cci_getBARAddress(  pcidev,
-                               2,
-                              &pbarPhyAddr,
-                              &pbarVirtAddr,
-                              &barsize) ){
-         goto ERR;
-      }
+      int i=0;
 
-      // Save the BAR information in the CCI Device object
-      ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
-      ccip_portdev_len_afu_mmio(pccipdev)     = barsize;
-      ccip_portdev_kvp_afu_mmio(pccipdev)     = pbarVirtAddr;
+      for(i=0;  0!= pfme_hdr->port_offsets[i].port_imp  ;i++){
 
-      PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
-      PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
-      PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
-   }
+         btPhysAddr pbarPhyAddr        = 0;
+         btUnsigned32bitInt bar        = pfme_hdr->port_offsets[i].port_bar;
+         btUnsigned64bitInt offset     = pfme_hdr->port_offsets[i].port_offset;
+         struct port_device *pportdev  = NULL;
 
-   // Enumerate the devices
-   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
-      struct port_device  *pportdev = NULL;
+         PINFO("***** PORT %d MMIO region @ Bar %d offset %x *****\n",i , bar, pfme_hdr->port_offsets[i].port_offset);
 
-      PINFO(" PORT mmio region   \n");
+         // Check to see if the resource has already been acquired
+         if(!ccip_has_resource(pccipdev, bar)){
 
-      // Discover and create Port device
-      //   Enumerates the Port feature list, creates the Port object.
-      //   Then add the new port object onto the list
-      //-------------------------------------------------------------
-      pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) );
-      if ( NULL == pportdev ) {
-         PERR("Could not allocate memory for FME object\n");
-         res = -ENOMEM;
-         goto ERR;
-      }
+            PVERBOSE("Getting resources from BAR %d\n", bar);
 
-      PDEBUG("Created Port Device\n");
-      // Point to our parent
-      ccip_port_to_ccidev(pportdev) = pccipdev;
+            // Get the bar
+            if( !cci_getBARAddress(  pcidev,
+                                     pfme_hdr->port_offsets[i].port_bar,
+                                    &pbarPhyAddr,
+                                    &ccip_portdev_kvp_afu_mmio(pccipdev,bar),
+                                    &ccip_portdev_len_afu_mmio(pccipdev,bar)) ){
+               goto ERR;
+            }
+            ccip_portdev_phys_afu_mmio(pccipdev,bar)   = __PHYS_ADDR_CAST(pbarPhyAddr);
 
-      // Inherits B:D:F from board
-      ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
-      ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
-      ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
-      ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+            // Record the resource
+            ccip_set_resource(pccipdev, bar);
 
-      print_sim_port_device(pportdev);
+            PDEBUG("Bar phys : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev,bar));
+            PDEBUG("Virt : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev,bar));
+            PDEBUG("Len: %zu\n", ccip_portdev_len_afu_mmio(pccipdev,bar));
+         }
 
-      PDEBUG("Adding to list\n");
 
-      // Added it to the port list
-      kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+         // Discover and create Port device
+         //   Enumerates the Port feature list, creates the Port object.
+         //   Then add the new port object onto the list
+         //-------------------------------------------------------------
+         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset );
+         if ( NULL == pportdev ) {
+            PERR("Could not allocate memory for FME object\n");
+            res = -ENOMEM;
+            goto ERR;
+         }
 
-      PDEBUG("Creating Allocatable objects\n");
+         PDEBUG("Created Port Device\n");
 
-      // Instantiate allocatable objects including AFUs if present
-      if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, 0)){
-         goto ERR;
-      }
+         // Point to our parent
+         ccip_port_to_ccidev(pportdev) = pccipdev;
 
+         // Inherits B:D:F from board
+         ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
+         ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+         ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
+         ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+
+         // Log the Port MMIO
+         print_sim_port_device(pportdev);
+
+         PDEBUG("Adding to list\n");
+
+         // Added it to the port list
+         kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+         PDEBUG("Creating Allocatable objects\n");
+
+         // Instantiate allocatable objects including AFUs if present
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i)){
+            goto ERR;
+         }
+      }// End for loop
    }
 
    return pccipdev;
 ERR:
-
-
+{
+   int x;
    PINFO(" -----ERROR -----   \n");
-
+   for(x=0; x<5; x++){
+      if(ccip_has_resource(pccipdev, x)){
+         if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
+             iounmap(ccip_portdev_kvp_afu_mmio(pccipdev,x));
+             pci_release_region(pcidev, x);
+             ccip_portdev_kvp_afu_mmio(pccipdev,x) = NULL;
+          }
+      }
+   }
 
   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
-      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
-   }
-
-  if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev)) {
-      iounmap(ccip_portdev_kvp_afu_mmio(pccipdev));
-      ccip_portdev_kvp_afu_mmio(pccipdev) = NULL;
-   }
-
-
-   if( 0 != ccip_fmedev_phys_afu_mmio(pccipdev)){
-      // TBD
       pci_release_region(pcidev, 0);
-//      pci_release_region(pcidev, 1);
-   }
-
-   if( 0 != ccip_portdev_phys_afu_mmio(pccipdev)){
-      //TBD
-      pci_release_region(pcidev, 2);
-//      pci_release_region(pcidev, 3);
+      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
    if ( NULL != pccipdev ) {
          kfree(pccipdev);
    }
-
+}
 
    PTRACEOUT_INT(res);
    return NULL;

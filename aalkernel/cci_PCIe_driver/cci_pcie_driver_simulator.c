@@ -337,16 +337,16 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
    // Save the Port information in the CCI Device object
 
-   ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
-   ccip_portdev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
-   ccip_portdev_kvp_afu_mmio(pccipdev)     = bar2;
+   ccip_portdev_phys_afu_mmio(pccipdev,0)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
+   ccip_portdev_len_afu_mmio(pccipdev,0)     = CCI_SIM_APERTURE_SIZE;
+   ccip_portdev_kvp_afu_mmio(pccipdev,0)     = bar2;
 
-   PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
-   PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
-   PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
+   PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev,0));
+   PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev,0));
+   PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev,0));
 
    // Now populate the simulated Port MMIO
-   ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev));
+   ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev,0));
 
    // Enumerate the devices
    //  Loop through each Port Offset register to determine
@@ -371,7 +371,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) + pfme_hdr->port_offsets[i].port_offset);
+         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;
@@ -390,6 +390,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
          ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
 
+         // Log the Port MMIO
          print_sim_port_device(pportdev);
 
          PDEBUG("Adding to list\n");
@@ -419,8 +420,9 @@ ERR:
       ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
    }
 
-   if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev)) {
-      ccip_portdev_kvp_afu_mmio(pccipdev) = NULL;
+   if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,0)) {
+      kosal_kfree(ccip_portdev_kvp_afu_mmio(pccipdev,0), ccip_portdev_len_afu_mmio(pccipdev,0) );
+      ccip_portdev_kvp_afu_mmio(pccipdev,0) = NULL;
    }
 
    if ( NULL != pccipdev ) {
