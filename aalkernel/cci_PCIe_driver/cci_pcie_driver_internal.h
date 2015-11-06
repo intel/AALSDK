@@ -341,7 +341,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
                                      btVirtAddr       *pvirtaddr,
                                      size_t           *psize)
 {
-   if ( pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
+   if ( !pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
       // get the low base address register.
       *pphysaddr = pci_resource_start(ppcidev, barnum);
       *psize  = (size_t)pci_resource_len(ppcidev, barnum);
