@@ -1218,8 +1218,10 @@ struct ccip_device
 
    enum aal_bus_types_e       m_bustype;
    btUnsigned32bitInt         m_busNum;
-   btUnsigned32bitInt         m_devicenum;   // device number
-   btUnsigned32bitInt         m_functnum;    // function number
+   btUnsigned32bitInt         m_devicenum;      // device number
+   btUnsigned32bitInt         m_functnum;       // function number
+
+   btInt                      m_resources;      // Bit mask indicating bars that have been reserved
 
    // FME MMIO Space
    btVirtAddr                 m_kvp_fme_mmio;   // kv address of MMIO space
@@ -1238,7 +1240,6 @@ struct ccip_device
 
 }; // end struct ccip_afu_device
 
-
 #define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
 #define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
@@ -1253,7 +1254,9 @@ struct ccip_device
 #define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
 #define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
 
-
+#define ccip_set_resource(pdev,r)            ((pdev)->m_resources &= (1<<r))
+#define ccip_has_resource(pdev,r)            ((pdev)->m_resources && (1<<r))
+#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
 
 #define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
 #define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)

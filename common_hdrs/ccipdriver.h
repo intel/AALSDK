@@ -84,14 +84,21 @@ BEGIN_C_DECLS
 #define CCIP_FME_PIPIID             (0x4DDEA2705E7344D1ULL)
 
 #define CCIP_DEV_FME_SUBDEV         0
+#define CCIP_DEV_PORT_SUBDEV(s)     (s + 0x10)
+#define CCIP_DEV_AFU_SUBDEV(s)      (s + 0x20)
+
+#define PORT_SUBDEV(s)              (s - 0x10 )
+#define AFU_SUBDEV(s)               (s - 0x20 )
 
 /// FPGA Port GUID
 #define CCIP_PORT_GUIDL             (0x9642B06C6B355B87ULL)
 #define CCIP_PORT_GUIDH             (0x3AB49893138D42EBULL)
+#define CCIP_PORT_PIPIID            (0x5E82B04A50E59F20ULL)
 
 /// AFU GUID
 #define CCIP_AFU_GUIDL              (0xC000C9660D824272ULL)
 #define CCIP_AFU_GUIDH              (0x9AEFFE5F84570612ULL)
+#define CCIP_AFU_PIPIID             (0x26F67D4CAD054DFCULL)
 
 /// Vender ID and Device ID
 #define CCIP_FPGA_VENDER_ID         0x8086

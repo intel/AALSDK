@@ -96,9 +96,6 @@ struct fme_device
 
    struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
 
-   // Used for being added to the global list of devices.
-   struct list_head           m_list;           // List itself
-
    // Private semaphore
    struct semaphore           m_sem;
 
@@ -132,9 +129,6 @@ struct fme_device
 #define ccip_dev_fme_to_pci_dev(pdev)            ((pdev)->m_pcidev)
 #define ccip_dev_fme_to_aaldev(pdev)             ((pdev)->m_aal_dev)
 
-#define ccip_dev_fme_list_head(pdev)             ((pdev)->m_list)
-#define ccip_list_fme_to_ccip_device(plist)      kosal_list_entry(plist, struct fme_device, m_list)
-#define aaldev_to_ccip_fme_device(plist)         kosal_list_entry(plist, struct fme_device, m_list)
 #define ccip_dev_fme_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_dev_fme_psem(pdev)                  (&(pdev)->m_sem)
 

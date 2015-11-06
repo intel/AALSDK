@@ -148,8 +148,8 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    //port 1
    portoffset.port_imp =0x1;
    portoffset.port_arbit_poly =0x1;
-   portoffset.port_bar =0x1;
-   portoffset.port_offset =0x60000;
+   portoffset.port_bar =0x2;
+   portoffset.port_offset =0x00000;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,portoffset.csr);
 
@@ -157,12 +157,12 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    portoffset.port_imp =0x1;
    portoffset.port_arbit_poly =0x1;
    portoffset.port_bar =0x1;
-   portoffset.port_offset =0x70000;
+   portoffset.port_offset =0x00000;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,portoffset.csr);
 
    //port 3
-   portoffset.port_imp =0x1;
+   portoffset.port_imp =0x0;
    portoffset.port_arbit_poly =0x1;
    portoffset.port_bar =0x1;
    portoffset.port_offset =0x80000;

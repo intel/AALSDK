@@ -226,16 +226,7 @@ int cci_sim_discover_devices(ulong numdevices,
       }
 
       kosal_list_add(&(pccidev->m_list), pg_device_list);
-#if 0
 
-      // Create the AFU
-      ret = cci_create_sim_afu(pAperture, CCI_SIM_APERTURE_SIZE, &aalid, g_device_list);
-      ASSERT(0 == ret);
-      if(0>ret){
-         kfree(pAperture);
-         PERR("Unable to create simulated device\n");
-      }
-#endif
    }// end while
 
    if(kosal_list_is_empty(pg_device_list)){
@@ -345,6 +336,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    //---------------------------
 
    // Save the Port information in the CCI Device object
+
    ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
    ccip_portdev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
    ccip_portdev_kvp_afu_mmio(pccipdev)     = bar2;
@@ -353,45 +345,67 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
    PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
    PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
 
-   // Now populate the simulated MMIO
+   // Now populate the simulated Port MMIO
    ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev));
 
    // Enumerate the devices
-   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
-      struct port_device  *pportdev = NULL;
+   //  Loop through each Port Offset register to determine
+   //  if a Port has been implemented and where its resources are.
+   //  Since this is a simulated device all of the Ports are in the
+   //  ccip_portdev_kvp_afu_mmio() location.  In real hardware the
+   //  resources may reside in different Bars and at different offsets.
+   //  The driver must keep track of all resources it claims so it can
+   //  free them later.
+   //------------------------------------------------------------------
+   {
+      struct fme_device  *pfme_dev  = ccip_dev_to_fme_dev(pccipdev);
+      struct CCIP_FME_HDR *pfme_hdr = ccip_fme_hdr(pfme_dev);
+      struct port_device *pportdev  = NULL;
+      int i=0;
 
-      PINFO(" PORT mmio region   \n");
+      for(i=0;  0!= pfme_hdr->port_offsets[i].port_imp  ;i++){
 
-      // Discover and create Port device
-      //   Enumerates the Port feature list, creates the Port object.
-      //   Then add the new port object onto the list
-      //-------------------------------------------------------------
-      pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) );
-      if ( NULL == pportdev ) {
-         PERR("Could not allocate memory for FME object\n");
-         res = -ENOMEM;
-         goto ERR;
-      }
+         PINFO("***** PORT %d MMIO region @ Bar %d offset %x *****\n",i , pfme_hdr->port_offsets[i].port_bar, pfme_hdr->port_offsets[i].port_offset);
 
-      // Point to our parent
-      ccip_port_to_ccidev(pportdev) = pccipdev;
+         // Discover and create Port device
+         //   Enumerates the Port feature list, creates the Port object.
+         //   Then add the new port object onto the list
+         //-------------------------------------------------------------
+         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) + pfme_hdr->port_offsets[i].port_offset);
+         if ( NULL == pportdev ) {
+            PERR("Could not allocate memory for FME object\n");
+            res = -ENOMEM;
+            goto ERR;
+         }
 
-      // Inherits B:D:F from board
-      ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
-      ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
-      ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
-      ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+         ccip_set_resource(pccipdev, pfme_hdr->port_offsets[i].port_bar);
 
-      print_sim_port_device(pportdev);
+         PDEBUG("Created Port Device\n");
+         // Point to our parent
+         ccip_port_to_ccidev(pportdev) = pccipdev;
 
-      // Added it to the port list
-      kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+         // Inherits B:D:F from board
+         ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
+         ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+         ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
+         ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
 
-      // Instantiate allocatable objects including AFUs if present
-      if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, 0)){
-         goto ERR;
-      }
-   }
+         print_sim_port_device(pportdev);
+
+         PDEBUG("Adding to list\n");
+
+         // Added it to the port list
+         kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+         PDEBUG("Creating Allocatable objects\n");
+
+         // Instantiate allocatable objects including AFUs if present
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i)){
+            goto ERR;
+         }
+      }// End for
+
+   }// end block
 
    return pccipdev;
 ERR:

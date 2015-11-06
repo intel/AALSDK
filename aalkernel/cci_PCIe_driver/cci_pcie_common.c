@@ -113,6 +113,8 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
    struct list_head *paaldev_list = &ccip_aal_dev_list(pccidev);
    struct list_head *port_list = &ccip_port_dev_list(pccidev);
 
+   PVERBOSE("Destroying CCI devices\n");
+
    // Check the aaldevice list for any registered objects
    if( !kosal_list_is_empty( paaldev_list ) ){
       struct cci_aal_device *pcci_aaldev   = NULL;
@@ -273,7 +275,7 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    }
 
    // Add the device to the CCI Board device's device list
-   kosal_list_add(&ccip_aal_dev_list(pccipdev), &cci_dev_list_head(pcci_aaldev));
+   kosal_list_add(&cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list(pccipdev));
 
    return true;
 }
@@ -390,7 +392,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    }
 
    // Add the device to the CCI Board device's device list
-   kosal_list_add(&ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ), &cci_dev_list_head(pcci_aaldev));
+   kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
 
    return true;

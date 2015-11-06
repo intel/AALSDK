@@ -567,6 +567,9 @@ struct port_device  *get_port_device( btVirtAddr pkvp_port_mmio)
       return NULL;
    }
 
+   // Initialize the list head
+   kosal_list_init(&ccip_port_list_head(pport_dev));
+
    // Get Port header
    ccip_port_hdr(pport_dev) = get_port_header(pkvp_port_mmio );
    if(NULL == ccip_port_hdr(pport_dev)) {

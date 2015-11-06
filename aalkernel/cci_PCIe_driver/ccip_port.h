@@ -126,6 +126,8 @@ struct port_device
 #define ccip_port_devnum(pdev)                ((pdev)->m_devicenum)
 #define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
 
+#define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
+
 #define ccip_port_mem_sessionp(pdev)          ((pdev)->m_pmem_session)
 
 #define ccip_port_mmio(pdev)                  ((pdev)->m_phys_port_mmio)

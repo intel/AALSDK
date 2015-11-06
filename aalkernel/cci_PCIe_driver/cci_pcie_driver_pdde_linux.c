@@ -387,7 +387,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
    struct ccip_device * pccipdev       = NULL;
 
-   size_t               barsize        = 0;
    int                  res            = 0;
 
    PTRACEIN;
@@ -404,26 +403,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       return NULL;
     }
 
-   // Create the CCI device object
-   pccipdev = create_ccidevice();
-
-   // Debug dump the BAR data
-   {
-      int i;
-      btPhysAddr           pbaseAddr =0 ;
-
-      // print BAR0 to BAR5 Address and Length
-      for( i=0; i<=CCIP_MAX_PCIBAR; i++){
-
-         pbaseAddr = pci_resource_start(pcidev, i);
-         PDEBUG("BAR =%d : Address : %lx \n", i, pbaseAddr);
-
-         barsize  = (size_t)pci_resource_len(pcidev, i);
-         PDEBUG("BAR=%d size : %zd\n", i, barsize);
-
-      }
-   }
-
    // Setup the PCIe device
    //----------------------
    res = pci_enable_device(pcidev);
@@ -439,6 +418,12 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
    // enable bus mastering (if not already set)
    pci_set_master(pcidev);
    pci_save_state(pcidev);
+
+   // Create the CCI device object
+   //  Allocate a new CCI board device object
+   //  and populate it with its reource information
+   //----------------------------------------------
+   pccipdev = create_ccidevice();
 
    // Save the PCI device in the CCI object
    ccip_dev_pci_dev(pccipdev) = pcidev;
@@ -471,23 +456,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       PDEBUG("ccip_fmedev_kvp_afu_mmio(pccipdev) : %lx\n",(long unsigned int) ccip_fmedev_kvp_afu_mmio(pccipdev));
       PDEBUG("ccip_fmedev_len_afu_mmio(pccipdev): %zu\n", ccip_fmedev_len_afu_mmio(pccipdev));
 
-      // BAR 2  is the Port object
-      if( !cci_getBARAddress(  pcidev,
-                               2,
-                              &pbarPhyAddr,
-                              &pbarVirtAddr,
-                              &barsize) ){
-         goto ERR;
-      }
-
-      // Save the BAR information in the CCI Device object
-      ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
-      ccip_portdev_len_afu_mmio(pccipdev)     = barsize;
-      ccip_portdev_kvp_afu_mmio(pccipdev)     = pbarVirtAddr;
-
-      PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
-      PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
-      PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
    }
 
    // Save the Bus:Device:Function of PCIe device
@@ -529,29 +497,84 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 #endif
 
    }
-#if 0
-   // PORT mmio region
-   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
 
+
+   // Port Device initialization
+   //  Loop through FME Header to determine how many
+   //  ports are supported on this device and where the
+   //  MMIO regions is for each.
+   //---------------------------
+// while(NOT DONE) TBD
+
+   // Acquire the BAR regions
+   //------------------------------------
+   {
+      btPhysAddr           pbarPhyAddr    = 0;
+      btVirtAddr           pbarVirtAddr   = 0;
+      size_t               barsize        = 0;
+
+      // BAR 2  is the Port object
+      if( !cci_getBARAddress(  pcidev,
+                               2,
+                              &pbarPhyAddr,
+                              &pbarVirtAddr,
+                              &barsize) ){
+         goto ERR;
+      }
+
+      // Save the BAR information in the CCI Device object
+      ccip_portdev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(pbarPhyAddr);
+      ccip_portdev_len_afu_mmio(pccipdev)     = barsize;
+      ccip_portdev_kvp_afu_mmio(pccipdev)     = pbarVirtAddr;
+
+      PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev));
+      PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev));
+      PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev));
+   }
+
+   // Enumerate the devices
+   if(0 != ccip_portdev_kvp_afu_mmio(pccipdev) ){
+      struct port_device  *pportdev = NULL;
 
       PINFO(" PORT mmio region   \n");
 
-      pccipdev->m_pport_dev = (struct port_device*) kzalloc(sizeof(struct port_device), GFP_KERNEL);
-      if ( NULL == pccipdev->m_pport_dev ) {
-        res = -ENOMEM;
-
-        PINFO(" PORT mmio region ERROR   \n");
-        goto ERR;
+      // Discover and create Port device
+      //   Enumerates the Port feature list, creates the Port object.
+      //   Then add the new port object onto the list
+      //-------------------------------------------------------------
+      pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev) );
+      if ( NULL == pportdev ) {
+         PERR("Could not allocate memory for FME object\n");
+         res = -ENOMEM;
+         goto ERR;
       }
 
-     // Populate PORT MMIO Region
- //     get_port_mmio(pccipdev->m_pport_dev,ccip_portdev_kvp_afu_mmio(pccipdev) );
+      PDEBUG("Created Port Device\n");
+      // Point to our parent
+      ccip_port_to_ccidev(pportdev) = pccipdev;
 
-      // print port CSRs
-      print_sim_port_device(pccipdev->m_pport_dev);
+      // Inherits B:D:F from board
+      ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
+      ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
+      ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
+      ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
+
+      print_sim_port_device(pportdev);
+
+      PDEBUG("Adding to list\n");
+
+      // Added it to the port list
+      kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+      PDEBUG("Creating Allocatable objects\n");
+
+      // Instantiate allocatable objects including AFUs if present
+      if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, 0)){
+         goto ERR;
+      }
 
    }
-#endif
+
    return pccipdev;
 ERR:
 
