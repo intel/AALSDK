@@ -64,7 +64,7 @@
 // HISTORY:
 // COMMENTS: Linux specific
 // WHEN:          WHO:     WHAT:
-// 10/14/2015    JG       Initial version started
+// 10/14/2015     JG       Initial version started
 //****************************************************************************
 #include "aalsdk/kernel/kosal.h"
 

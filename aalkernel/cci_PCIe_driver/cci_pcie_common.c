@@ -529,10 +529,11 @@ cci_remove_device(struct ccip_device *pccipdev)
    // TODO
 
    // Release the resources used for ports
-   for(x=0; x<5; x++){
+   for(x=1; x<5; x++){
       if(ccip_has_resource(pccipdev, x)){
          if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
             if(!ccip_is_simulated(pccipdev)){
+               PVERBOSE("Freeing Port BAR %d\n",x);
                iounmap(ccip_portdev_kvp_afu_mmio(pccipdev,x));
                pci_release_region(ccip_dev_to_pci_dev(pccipdev), x);
             }else{
@@ -546,6 +547,7 @@ cci_remove_device(struct ccip_device *pccipdev)
    // Release FME Resources
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       if(!ccip_is_simulated(pccipdev)){
+         PVERBOSE("Freeing Port BAR 0\n");
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
       }else{
@@ -556,6 +558,7 @@ cci_remove_device(struct ccip_device *pccipdev)
 
    if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
       if(!ccip_is_simulated(pccipdev)){
+         PVERBOSE("Disabling PCIe device\n");
          pci_disable_device(cci_dev_pci_dev(pccipdev));
       }
       cci_dev_pci_dev_clr_enabled(pccipdev);
