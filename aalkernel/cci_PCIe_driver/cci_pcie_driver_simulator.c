@@ -400,8 +400,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
          PDEBUG("Creating Allocatable objects\n");
 
-         // Instantiate allocatable objects including AFUs if present
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i)){
+         // Instantiate allocatable objects including AFUs if present. Port subdevice address is 1 based.
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
             goto ERR;
          }
       }// End for

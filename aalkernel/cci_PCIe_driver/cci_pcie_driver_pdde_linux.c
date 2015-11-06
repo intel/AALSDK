@@ -356,6 +356,7 @@ cci_pci_probe( struct pci_dev             *pcidev,
    //  list of devices owned by the driver
    if(NULL != pccidev){
       kosal_list_add(&(pccidev->m_list), &g_device_list);
+      res = 0;
    }
    PTRACEOUT_INT(res);
    return res;
@@ -510,7 +511,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       struct fme_device  *pfme_dev  = ccip_dev_to_fme_dev(pccipdev);
       struct CCIP_FME_HDR *pfme_hdr = ccip_fme_hdr(pfme_dev);
 
-      int i=2;
+      int i=0;
 /*
       for(i=0;  0!= pfme_hdr->port_offsets[i].port_imp  ;i++){
 */
@@ -531,7 +532,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
             // Get the bar
             if( !cci_getBARAddress(  pcidev,
-                                     pfme_hdr->port_offsets[i].port_bar,
+                                     bar,
                                     &pbarPhyAddr,
                                     &ccip_portdev_kvp_afu_mmio(pccipdev,bar),
                                     &ccip_portdev_len_afu_mmio(pccipdev,bar)) ){
@@ -580,8 +581,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
          PDEBUG("Creating Allocatable objects\n");
 
-         // Instantiate allocatable objects including AFUs if present
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i)){
+         // Instantiate allocatable objects including AFUs if present. Subdevice is 1 based
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
             goto ERR;
          }
 //      }// End for loop
