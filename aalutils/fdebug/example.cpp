@@ -109,8 +109,8 @@ int main(void)
          /* get the bars if they exist */
 
          for ( int i = 0; i<NUM_BARS ; ++i ) {
-            init_mmioRegion( pdev, &gboards[this_board].bar[i], i, 0);
-            init_mmioRegion( pdev, &gboards[this_board].bar[i], i, 0x01);
+            init_mmioRegion( gboards[this_board].pdev, &gboards[this_board].bar[i], i, 0);
+            init_mmioRegion( gboards[this_board].pdev, &gboards[this_board].bar[i], i, 0x01);
          } /* end of bar loop */
       } /* end of if (vendor_id == ... ) selection criteria */
    } /* end of for (dev = pacc->devices ... loop */
@@ -175,7 +175,7 @@ int init_mmioRegion( struct pci_dev *pdev, struct mmioRegion *pbar, int numbar, 
 
 
    /* debug */
-   printf("resource file test name is %s\n", pbar->filename);
+//   printf("resource file test name is %s\n", pbar->filename);
 
    if ( stat( pbar->filename, &fstatus) ) {   /* no file, clean up and get out */
       retval = 0;
