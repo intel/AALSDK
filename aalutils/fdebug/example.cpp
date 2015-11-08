@@ -87,8 +87,8 @@ int main(void)
       pci_fill_info(pdev, PCI_FILL_IDENT | PCI_FILL_BASES | PCI_FILL_CLASS); /* Fill in header info we need */
 
       /* only looking for specific device and vendor */
-//      if ( gvendor_id == pdev->vendor_id && gdevice_id == pdev->device_id ) {
-      if ( 0x00 == pdev->bus && 0x0f == pdev->dev && 0x0 == pdev->func ) {  /* debug device */
+      if ( gvendor_id == pdev->vendor_id && gdevice_id == pdev->device_id ) {
+//      if ( 0x00 == pdev->bus && 0x0f == pdev->dev && 0x0 == pdev->func ) {  /* debug device */
 
          /* Remember this board */
          int this_board = gnum_boards;
@@ -125,7 +125,7 @@ int main(void)
                /* bar exists, print first 4 fields */
                unsigned long long *ullbase = (unsigned long long *)gboards[board].bar[barnum].pbase;
                printf( "Board %d: Bar %d: WC %d\n", board, barnum, gboards[board].bar[barnum].flags);
-               printf( "\t%08x %08x %08x %08x\n",
+               printf( "\t%08llx %08llx %08llx %08llx\n",
                        *(ullbase), *(ullbase+1), *(ullbase+2),  *(ullbase+3)
                        );
             }
