@@ -87,7 +87,7 @@ int main(void)
       pci_fill_info(pdev, PCI_FILL_IDENT | PCI_FILL_BASES | PCI_FILL_CLASS); /* Fill in header info we need */
 
       /* only looking for specific device and vendor */
-//      if ( gvendor_id == pdev->vendor_id /* && gdevice_id == pdev->device_id */) {
+//      if ( gvendor_id == pdev->vendor_id && gdevice_id == pdev->device_id ) {
       if ( 0x00 == pdev->bus && 0x0f == pdev->dev && 0x0 == pdev->func ) {  /* debug device */
 
          /* Remember this board */
@@ -109,7 +109,7 @@ int main(void)
          /* get the bars if they exist */
 
          for ( int i = 0; i<NUM_BARS ; ++i ) {
-            init_mmioRegion( gboards[this_board].pdev, &gboards[this_board].bar[i], i, 0);
+            init_mmioRegion( gboards[this_board].pdev, &gboards[this_board].bar[i], i, 0x00);
             init_mmioRegion( gboards[this_board].pdev, &gboards[this_board].bar[i], i, 0x01);
          } /* end of bar loop */
       } /* end of if (vendor_id == ... ) selection criteria */
@@ -119,13 +119,25 @@ int main(void)
    /* put your code here */
    /* note that you have all the necessary information in boards array and buffers array */
    {
+      for ( int board = 0; board < gnum_boards; ++board) {
+         for ( int barnum = 0; barnum < NUM_BARS; ++barnum) {
+            if ( gboards[board].bar[barnum].pbase) {
+               /* bar exists, print first 4 fields */
+               unsigned long long *ullbase = (unsigned long long *)gboards[board].bar[barnum].pbase;
+               printf( "Board %d: Bar %d: WC %d\n", board, barnum, gboards[board].bar[barnum].flags);
+               printf( "\t%08x %08x %08x %08x\n",
+                       *(ullbase), *(ullbase+1), *(ullbase+2),  *(ullbase+3)
+                       );
+            }
+         } /* for each bar */
+      } /* for each board */
 
    }
 
 
 exit1:   /* clean up open files in bars */
    for ( int board = 0; board < gnum_boards; ++board) {
-      for ( int barnum = 0; barnum<NUM_BARS; ++barnum) {
+      for ( int barnum = 0; barnum < NUM_BARS; ++barnum) {
             close_and_clean_mmioRegion( &gboards[board].bar[barnum] );
             close_and_clean_mmioRegion( &gboards[board].wc_bar[barnum] );
       } /* for each bar */
