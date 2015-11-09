@@ -22,8 +22,13 @@ extern "C" {
 }
 #endif
 
-u16 gvendor_id = 0x8086;                     /* Identity of the device */
+#if 1                                        /* NORMAL VALUE is 1. VMware DEBUG is 0. */
+u16 gvendor_id = 0x8086;                     /* FPGA device */
 u16 gdevice_id = 0xBCBD;
+#else
+u16 gvendor_id = 0x15AD;                     /* VMware test device (VGA driver)*/
+u16 gdevice_id = 0x0405;
+#endif
 
 #define NUM_BUFS                4            /* how many buffers do you want? */
 #define MAX_BOARDS              2            /* will not track more than this number of boards */
@@ -87,8 +92,7 @@ int main(void)
       pci_fill_info(pdev, PCI_FILL_IDENT | PCI_FILL_BASES | PCI_FILL_CLASS); /* Fill in header info we need */
 
       /* only looking for specific device and vendor */
-//      if ( gvendor_id == pdev->vendor_id && gdevice_id == pdev->device_id ) {
-      if ( 0x00 == pdev->bus && 0x0f == pdev->dev && 0x0 == pdev->func ) {  /* debug device */
+      if ( gvendor_id == pdev->vendor_id && gdevice_id == pdev->device_id ) {
 
          /* Remember this board */
          int this_board = gnum_boards;
