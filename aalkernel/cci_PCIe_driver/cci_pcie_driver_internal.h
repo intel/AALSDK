@@ -175,14 +175,16 @@ struct cci_aal_device {
       void                   *m_void;
       struct fme_device      *m_pfme;
       struct port_device     *m_pport;
-//      struct afu_device      *m_afu;
+      struct afu_device      *m_afu;
    };
 };
 
 
 #define pci_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
 
-#define cci_dev_to_fme(pdev)                 (pdev->m_devtype == cci_dev_FME ? pdev->m_pfme : NULL)
+#define cci_dev_to_pfme(pdev)                 (pdev->m_devtype == cci_dev_FME ? pdev->m_pfme : NULL)
+#define cci_dev_to_pport(pdev)                (pdev->m_devtype == cci_dev_PORT ? pdev->m_pport : NULL)
+#define cci_dev_to_pafu(pdev)                 (pdev->m_devtype == cci_dev_AFU ? pdev->m_pafu : NULL)
 
 #define set_cci_dev_subclass(pdev, psc)      (pdev->m_void = psc)
 

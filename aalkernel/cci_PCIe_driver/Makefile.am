@@ -96,7 +96,8 @@ cciui-events.h \
 ccip_fme.h \
 ccip_fme.c \
 ccip_port.h \
-ccip_port.c
+ccip_port.c \
+ccip_afu.c
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers
