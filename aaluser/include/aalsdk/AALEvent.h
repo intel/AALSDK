@@ -96,6 +96,8 @@ public:
    /// Set the context.
    /// @return Previous context.
    virtual btApplicationContext SetContext(btApplicationContext Ctx)   = 0;
+   /// @return An identical copy of this event object.
+   virtual IEvent *                  Clone()                     const = 0;
 protected:
    virtual btBool       ProcessEventTranID()                           = 0;
 };

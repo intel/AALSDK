@@ -107,7 +107,6 @@ BEGIN_NAMESPACE(AAL)
 /// Concrete implementation of IEvent.
 class AASLIB_API CAALEvent : protected CriticalSection,
                              public    CCountedObject,
-                             private   CUnCopyable,
                              public    IDispatchable,
                              public    IEvent
 {
@@ -128,6 +127,7 @@ public:
    virtual btBool                     IsOK()                const;
    virtual btApplicationContext    Context()                const;
    virtual btApplicationContext SetContext(btApplicationContext Ctx);
+   virtual IEvent *                  Clone()                const;
    // </IEvent>
 
    virtual void setHandler(IServiceClient *pHandler);
@@ -174,6 +174,18 @@ protected:
    CAALEvent();
    virtual ~CAALEvent();
 
+   /// CAALEvent copy constructor.
+   CAALEvent(const CAALEvent &other) :
+      m_pObject(other.m_pObject),
+      m_bIsOK(other.m_bIsOK),
+      m_Context(other.m_Context),
+      m_pServiceClient(other.m_pServiceClient),
+      m_pRuntimeClient(other.m_pRuntimeClient),
+      m_pEventHandler(other.m_pEventHandler),
+      m_SubClassID(other.m_SubClassID),
+      m_InterfaceMap(other.m_InterfaceMap)
+   {}
+
    IBase                *m_pObject;
    btBool                m_bIsOK;
    btApplicationContext  m_Context;
@@ -217,6 +229,9 @@ public:
                      btIID                SubClassID,
                      TransactionID const &rTranID);
 
+   virtual btBool operator == (const IEvent & ) const;
+   virtual IEvent *      Clone()                const;
+
    // <ITransactionEvent>
    TransactionID TranID() const;
    void       SetTranID(TransactionID const &TranID);
@@ -228,6 +243,12 @@ protected:
    CTransactionEvent(IBase * );
 
    virtual btBool ProcessEventTranID();
+
+   /// CTransactionEvent copy constructor.
+   CTransactionEvent(const CTransactionEvent &other) :
+      CAALEvent(other),
+      m_TranID(other.m_TranID)
+   {}
 
    TransactionID m_TranID;
 };
@@ -265,6 +286,9 @@ public:
                    btID      Reason,
                    btcString Description);
 
+   virtual btBool operator == (const IEvent & ) const;
+   virtual IEvent *      Clone()                const;
+
    // <IExceptionEvent>
    btID ExceptionNumber() const;
    btID          Reason() const;
@@ -272,6 +296,14 @@ public:
    // </IExceptionEvent>
 
 protected:
+   /// CExceptionEvent copy constructor.
+   CExceptionEvent(const CExceptionEvent &other) :
+      CAALEvent(other),
+      m_ExceptionNumber(other.m_ExceptionNumber),
+      m_Reason(other.m_Reason),
+      m_strDescription(other.m_strDescription)
+   {}
+
    btID        m_ExceptionNumber;
    btID        m_Reason;
 #ifdef _MSC_VER
@@ -324,6 +356,9 @@ public:
                               btID                 Reason,
                               btcString            Description);
 
+   virtual btBool operator == (const IEvent & ) const;
+   virtual IEvent *      Clone()                const;
+
    // <IExceptionEvent>
    btID ExceptionNumber() const;
    btID          Reason() const;
@@ -338,6 +373,15 @@ public:
 protected:
 
    virtual btBool ProcessEventTranID();
+
+   /// CExceptionTransactionEvent copy constructor.
+   CExceptionTransactionEvent(const CExceptionTransactionEvent &other) :
+      CAALEvent(other),
+      m_TranID(other.m_TranID),
+      m_ExceptionNumber(other.m_ExceptionNumber),
+      m_Reason(other.m_Reason),
+      m_strDescription(other.m_strDescription)
+   {}
 
    TransactionID m_TranID;
    btID          m_ExceptionNumber;

@@ -302,6 +302,11 @@ btApplicationContext CAALEvent::SetContext(btApplicationContext Ctx)
    return res;
 }
 
+IEvent * CAALEvent::Clone() const
+{
+   return new(std::nothrow) CAALEvent(*this);
+}
+
 //=============================================================================
 // Name: CAALEvent::SetSubClassInterface
 // Description: Sets an interface pointer on the subclass interface for the
@@ -497,6 +502,37 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
    }
 }
 
+btBool CTransactionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      ITransactionEvent *pIOther = reinterpret_cast<ITransactionEvent *>(rhs.Interface(iidTranEvent));
+      CTransactionEvent *pCOther = dynamic_cast<CTransactionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_TranID == pCOther->m_TranID ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CTransactionEvent::Clone() const
+{
+   return new(std::nothrow) CTransactionEvent(*this);
+}
+
 TransactionID CTransactionEvent::TranID() const
 {
    AutoLock(this);
@@ -582,6 +618,39 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
    }
 }
 
+btBool CExceptionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      IExceptionEvent *pIOther = reinterpret_cast<IExceptionEvent *>(rhs.Interface(iidExEvent));
+      CExceptionEvent *pCOther = dynamic_cast<CExceptionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_ExceptionNumber == pCOther->m_ExceptionNumber &&
+              m_Reason          == pCOther->m_Reason          &&
+              0 == m_strDescription.compare(pCOther->m_strDescription) ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CExceptionEvent::Clone() const
+{
+   return new(std::nothrow) CExceptionEvent(*this);
+}
+
 btID CExceptionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
 btID          CExceptionEvent::Reason() const { AutoLock(this); return m_Reason;          }
 
@@ -659,6 +728,40 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
       m_bIsOK = false;
       return;
    }
+}
+
+btBool CExceptionTransactionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      IExceptionTransactionEvent *pIOther = reinterpret_cast<IExceptionTransactionEvent *>(rhs.Interface(iidExTranEvent));
+      CExceptionTransactionEvent *pCOther = dynamic_cast<CExceptionTransactionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_TranID          == pCOther->m_TranID          &&
+              m_ExceptionNumber == pCOther->m_ExceptionNumber &&
+              m_Reason          == pCOther->m_Reason          &&
+              0 == m_strDescription.compare(pCOther->m_strDescription) ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CExceptionTransactionEvent::Clone() const
+{
+   return new(std::nothrow) CExceptionTransactionEvent(*this);
 }
 
 btID CExceptionTransactionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
