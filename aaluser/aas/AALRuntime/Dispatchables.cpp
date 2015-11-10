@@ -57,9 +57,8 @@ ServiceAllocated::ServiceAllocated(IServiceClient      *pSvcClient,
    m_pSvcClient(pSvcClient),
    m_pRTClient(pRTClient),
    m_pServiceBase(pServiceBase),
-   m_rTranID(rTranID)
+   m_TranID(rTranID)
 {
-   ASSERT(NULL != m_pSvcClient);
    ASSERT(NULL != m_pServiceBase);
 }
 
@@ -69,29 +68,29 @@ void ServiceAllocated::operator() ()
    IRuntimeClient *pRTClient  = NULL;
 
    // Process the TransactionID.
-   if ( NULL != m_rTranID.Ibase() ) {
-      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_rTranID.Ibase());
-      pRTClient  = dynamic_ptr<IRuntimeClient>(iidRuntimeClient, m_rTranID.Ibase());
+   if ( NULL != m_TranID.Ibase() ) {
+      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_TranID.Ibase());
+      pRTClient  = dynamic_ptr<IRuntimeClient>(iidRuntimeClient, m_TranID.Ibase());
 
       if ( NULL != pSvcClient ) {
-         pSvcClient->serviceAllocated(m_pServiceBase, m_rTranID);
+         pSvcClient->serviceAllocated(m_pServiceBase, m_TranID);
       }
 
       if ( NULL != pRTClient ) {
-         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_rTranID);
+         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_TranID);
       }
    }
 
-   if ( ( NULL == m_rTranID.Ibase() ) || !m_rTranID.Filter() ) {
+   if ( ( NULL == m_TranID.Ibase() ) || !m_TranID.Filter() ) {
       pSvcClient = m_pSvcClient;
       pRTClient  = m_pRTClient;
 
       if ( NULL != pSvcClient ) {
-         pSvcClient->serviceAllocated(m_pServiceBase, m_rTranID);
+         pSvcClient->serviceAllocated(m_pServiceBase, m_TranID);
       }
 
       if ( NULL != pRTClient ) {
-         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_rTranID);
+         pRTClient->runtimeAllocateServiceSucceeded(m_pServiceBase, m_TranID);
       }
    }
 
@@ -105,7 +104,7 @@ ServiceAllocateFailed::ServiceAllocateFailed(IServiceClient *pSvcClient,
    m_pRTClient(pRTClient),
    m_pEvent(pEvent)
 {
-   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pSvcClient || NULL != m_pRTClient);
    ASSERT(NULL != m_pEvent);
 }
 
@@ -134,7 +133,7 @@ ServiceReleased::ServiceReleased(IServiceClient      *pSvcClient,
                                  TransactionID const &rTranID) :
    m_pSvcClient(pSvcClient),
    m_pServiceBase(pServiceBase),
-   m_rTranID(rTranID)
+   m_TranID(rTranID)
 {
    ASSERT(NULL != m_pSvcClient);
    ASSERT(NULL != m_pServiceBase);
@@ -142,24 +141,28 @@ ServiceReleased::ServiceReleased(IServiceClient      *pSvcClient,
 
 void ServiceReleased::operator() ()
 {
-   dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase)->ReleaseComplete();
+   IServiceBase *pSvcBase = dynamic_ptr<IServiceBase>(iidServiceBase, m_pServiceBase);
+   ASSERT(NULL != pSvcBase);
+   if ( NULL != pSvcBase ) {
+      pSvcBase->ReleaseComplete();
+   }
 
    IServiceClient *pSvcClient = NULL;
 
    // Process the TransactionID.
-   if ( NULL != m_rTranID.Ibase() ) {
-      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_rTranID.Ibase());
+   if ( NULL != m_TranID.Ibase() ) {
+      pSvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_TranID.Ibase());
 
       if ( NULL != pSvcClient ) {
-         pSvcClient->serviceReleased(m_rTranID);
+         pSvcClient->serviceReleased(m_TranID);
       }
    }
 
-   if ( ( NULL == m_rTranID.Ibase() ) || !m_rTranID.Filter() ) {
+   if ( ( NULL == m_TranID.Ibase() ) || !m_TranID.Filter() ) {
       pSvcClient = m_pSvcClient;
 
       if ( NULL != pSvcClient ) {
-         pSvcClient->serviceReleased(m_rTranID);
+         pSvcClient->serviceReleased(m_TranID);
       }
    }
 
