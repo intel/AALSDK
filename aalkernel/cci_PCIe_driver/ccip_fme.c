@@ -227,7 +227,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   goto ERROR;
                }
 
-               wsidp->m_type = WSM_TYPE_CSR;
+               wsidp->m_type = WSM_TYPE_MMIO;
                PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
                          ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
                          wsidp,
@@ -388,7 +388,7 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 
    // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
    // CSR region, then satisfy the request by mapping PCIe BAR 0.
-   if ( WSM_TYPE_CSR == wsidp->m_type ) {
+   if ( WSM_TYPE_MMIO == wsidp->m_type ) {
       void *ptr;
       size_t size;
       switch ( wsidp->m_id )

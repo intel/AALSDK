@@ -400,7 +400,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       // Get the AFU header pointer by adding the offset to the port header address
       struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)pportdev->m_pport_hdr) + pportdev->m_pport_hdr->ccip_port_next_afu.afu_id_offset);
 
-      if(0xFFFFFFFFFFFFFFFFULL != pafu_hdr->ccip_dfh.csr){
+      if(~0ULL != pafu_hdr->ccip_dfh.csr){
 
          PVERBOSE("Instantiating User AFU\n");
          PVERBOSE("User AFU\n");

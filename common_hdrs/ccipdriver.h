@@ -119,19 +119,10 @@ BEGIN_C_DECLS
 typedef enum
 {
     ccipdrv_afucmdWKSP_ALLOC=1,
-    ccipdrv_afucmdWKSP_VALLOC,
     ccipdrv_afucmdWKSP_FREE,
-    ccipdrv_afucmdWKSP_VFREE,
-    ccipdrv_afucmdWKSP_GET_PHYS,
 
     ccipdrv_getMMIORmap,
-    ccipdrv_getUMSGmap,
-    ccipdrv_getHDR,
-    ccipdrv_getThermMgmt,
-    ccipdrv_getPowerMgmt,
-    ccipdrv_getPerCountermap,
-    ccipdrv_getGErrormap,
-    ccipdrv_getPRmap
+    ccipdrv_getFeatureRehion
 } ccipdrv_afuCmdID_e;
 
 struct ahm_req

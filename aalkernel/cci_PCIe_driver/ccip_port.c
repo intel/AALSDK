@@ -227,7 +227,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   goto ERROR;
                }
 
-               wsidp->m_type = WSM_TYPE_CSR;
+               wsidp->m_type = WSM_TYPE_MMIO;
                PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
                          ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
                          wsidp,
@@ -388,7 +388,7 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 
    // Special case - check the wsid type for WSM_TYPE_CSR. If this is a request to map the
    // CSR region, then satisfy the request by mapping PCIe BAR 0.
-   if ( WSM_TYPE_CSR == wsidp->m_type ) {
+   if ( WSM_TYPE_MMIO == wsidp->m_type ) {
       void *ptr;
       size_t size;
       switch ( wsidp->m_id )
@@ -617,6 +617,51 @@ struct CCIP_PORT_HDR *get_port_header( btVirtAddr pkvp_port_mmio )
 {
    return (struct CCIP_PORT_HDR *)(pkvp_port_mmio);
 }
+
+///============================================================================
+/// Name: get_port_feature
+/// @brief   Gets the pointer to a Port Feature
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] Feature_ID - Feature ID to search for
+/// @return    NULL = failure
+///============================================================================
+btVirtAddr get_port_feature( struct port_device *pport_dev,
+                             btUnsigned64bitInt Feature_ID )
+{
+   struct CCIP_DFH         port_dfh;
+   btVirtAddr              pkvp_port = NULL;
+
+
+   PTRACEIN;
+   PINFO(" get_port_feature ENTER\n");
+
+   if( ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset ==0)   {
+      PERR("NO PORT features are available \n");
+      return NULL;
+   }
+   // read PORT Device feature Header
+   pkvp_port = ((btVirtAddr)ccip_port_hdr(pport_dev)) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
+
+   do {
+      // Peek at the Header
+      port_dfh.csr = read_ccip_csr64(pkvp_port,0);
+
+     // Device feature ID
+      if(Feature_ID == port_dfh.Feature_ID){
+         PTRACEOUT;
+         return pkvp_port;
+      }
+      // Point at next feature header.
+      pkvp_port = pkvp_port + port_dfh.next_DFH_offset;
+
+   }while(0 != port_dfh.next_DFH_offset ); // end while
+
+   PINFO(" get_port_featurelist EXIT \n");
+   PTRACEOUT;
+   return NULL;
+}
+
 
 ///============================================================================
 /// Name: get_port_featurelist

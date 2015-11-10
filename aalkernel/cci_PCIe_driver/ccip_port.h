@@ -170,7 +170,9 @@ struct CCIP_PORT_HDR * get_port_header( btVirtAddr );
 /// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr );
+bt32bitInt get_port_featurelist(struct port_device *,btVirtAddr );
+
+btVirtAddr get_port_feature( struct port_device *,btUnsigned64bitInt );
 
 extern struct aal_ipip cci_Portpip;
 extern struct aal_ipip cci_AFUpip;
