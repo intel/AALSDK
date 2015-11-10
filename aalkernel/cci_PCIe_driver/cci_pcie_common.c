@@ -154,6 +154,12 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
       PVERBOSE("No port objects to remove\n");
    }
 
+   // Destroy the FME device
+   if(NULL != ccip_dev_to_fme_dev(pccidev)) {
+      PVERBOSE("Freeing FME Memory\n");
+      kosal_kfree(ccip_dev_to_fme_dev(pccidev),sizeof(struct fme_device ) );
+   }
+
    // Remove ourselves from any lists
    kosal_sem_get_krnl( &pccidev->m_sem );
    kosal_list_del(&cci_dev_list_head(pccidev));
@@ -650,12 +656,6 @@ cci_remove_device(struct ccip_device *pccipdev)
          PVERBOSE("Freeing FME BAR 0\n");
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
-
-         if(NULL != ccip_dev_to_fme_dev(pccipdev)) {
-            PVERBOSE("Freeing FME Memory\n");
-            kosal_kfree(ccip_dev_to_fme_dev(pccipdev),sizeof(struct fme_device ) );
-         }
-
       }else{
          kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
       }
