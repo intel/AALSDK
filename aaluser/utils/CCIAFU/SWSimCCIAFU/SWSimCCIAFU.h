@@ -75,16 +75,19 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimCCIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      SetInterface(        iidCCIAFU,      dynamic_cast<ICCIAFU *>(this));
-      SetInterface(iidSWSIMCCIAFU, dynamic_cast<ICCIAFU *>(this));
+      if ( EObjOK != SetInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidSWSIMCCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
    // <ICCIAFU>

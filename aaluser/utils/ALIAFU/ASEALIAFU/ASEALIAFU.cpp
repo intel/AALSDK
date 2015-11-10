@@ -65,9 +65,9 @@ BEGIN_NAMESPACE(AAL)
 
 CriticalSection ASEALIAFU::sm_ASEMtx;
 
-btBool ASEALIAFU::init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &TranID)
+btBool ASEALIAFU::init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
@@ -92,15 +92,9 @@ btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
   return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ASEALIAFU::Release(btTime timeout)
-{
-  session_deinit();
-  return ServiceBase::Release(timeout);
-}
-
 
 void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                    TransactionID const &TranID)
+                                  TransactionID const &TranID)
 {
   buffer_t                  buf;
   std::pair<map_iter, bool> res;
@@ -151,7 +145,7 @@ void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
 }
 
 void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
-                                TransactionID const &TranID)
+                              TransactionID const &TranID)
 {
    btcString descr = NULL;
    map_iter  iter;
@@ -195,7 +189,7 @@ void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
 }
 
 btBool ASEALIAFU::CSRRead(btCSROffset CSR,
-                            btCSRValue *pValue)
+                          btCSRValue *pValue)
 {
    if ( __UINTPTR_T_CONST(0x344) == CSR ) {
       *pValue = m_Last3c4;
@@ -209,7 +203,7 @@ btBool ASEALIAFU::CSRRead(btCSROffset CSR,
 }
 
 btBool ASEALIAFU::CSRWrite(btCSROffset CSR,
-                             btCSRValue  Value)
+                           btCSRValue  Value)
 {
    if ( __UINTPTR_T_CONST(0x3c4) == CSR ) {
       m_Last3c4 = Value;
@@ -223,7 +217,7 @@ btBool ASEALIAFU::CSRWrite(btCSROffset CSR,
 }
 
 btBool ASEALIAFU::CSRWrite64(btCSROffset CSR,
-                               bt64bitCSR  Value)
+                             bt64bitCSR  Value)
 {
   if ( CSRWrite(CSR + 4, Value >> 32) ) {
     return CSRWrite(CSR, Value & 0xffffffff);

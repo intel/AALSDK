@@ -62,7 +62,7 @@ BEGIN_NAMESPACE(AAL)
 /// ASEALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_ASE)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
 class ASEALIAFU_API ASEALIAFU : public ServiceBase,
-                                    public IALIAFU
+                                public IALIAFU
 {
 public:
    // <ServiceBase>
@@ -70,16 +70,19 @@ public:
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-      SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
+      if ( EObjOK != SetInterface(iidALIAFU,    dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
    // <IALIAFU>

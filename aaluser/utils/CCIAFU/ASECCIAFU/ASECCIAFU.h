@@ -70,16 +70,19 @@ public:
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-      SetInterface(        iidCCIAFU,    dynamic_cast<ICCIAFU *>(this));
-      SetInterface(iidASECCIAFU, dynamic_cast<ICCIAFU *>(this));
+      if ( EObjOK != SetInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidASECCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
    // <ICCIAFU>

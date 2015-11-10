@@ -65,7 +65,7 @@ BEGIN_NAMESPACE(AAL)
 /// SWSimALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
 class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase,
-                                        public IALIAFU
+                                    public IALIAFU
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -75,16 +75,19 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimALIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      SetInterface(        iidALIAFU,      dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this));
+      if ( EObjOK != SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
    // <IALIAFU>
@@ -150,8 +153,8 @@ protected:
    friend std::ostream & operator << (std::ostream & , const SWSimALIAFU::CSR & );
 
    typedef std::map<btCSROffset, SWSimALIAFU::CSR> csr_map;
-   typedef csr_map::iterator                         csr_iter;
-   typedef csr_map::const_iterator                   csr_const_iter;
+   typedef csr_map::iterator                       csr_iter;
+   typedef csr_map::const_iterator                 csr_const_iter;
 
    btPhysAddr NextPhys();
    void       SimulatorRead(CSR csr);

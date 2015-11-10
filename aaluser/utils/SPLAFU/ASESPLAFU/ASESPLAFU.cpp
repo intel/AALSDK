@@ -64,11 +64,10 @@ BEGIN_NAMESPACE(AAL)
 
 CriticalSection ASESPLAFU::sm_ASEMtx;
 
-btBool ASESPLAFU::init(IBase *pclientBase,
+btBool ASESPLAFU::init(IBase               *pclientBase,
                        NamedValueSet const &optArgs,
                        TransactionID const &TranID)
 {
-
    ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, getServiceClientBase());
    ASSERT( NULL != pClient );
    if(NULL == pClient){
@@ -111,19 +110,6 @@ btBool ASESPLAFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ASESPLAFU::Release(btTime timeout)
-{
-   {
-      AutoLock(&ASESPLAFU::sm_ASEMtx);
-      // deallocate_buffer (m_spl_pt);
-      // deallocate_buffer (m_spl_cxt);
-      deallocate_buffer(m_dsm);
-   }
-
-   session_deinit();
-
-   return ServiceBase::Release(timeout);
-}
 
 void ASESPLAFU::WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID)

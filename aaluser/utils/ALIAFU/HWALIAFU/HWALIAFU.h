@@ -65,7 +65,7 @@ BEGIN_NAMESPACE(AAL)
 /// HWALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_FPGA)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
 class HWALIAFU_API HWALIAFU : public HWAFUWkspcDelegate<MASTER_VIRT_MODE>,
-                                  public IALIAFU
+                              public IALIAFU
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -74,16 +74,19 @@ public:
    // <DeviceServiceBase>
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
    {
-      SetInterface(        iidALIAFU,   dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidHWALIAFU, dynamic_cast<IALIAFU *>(this));
+      if ( EObjOK != SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidHWALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </DeviceServiceBase>
 
    // <IALIAFU>

@@ -59,9 +59,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup HWSPLAFU
 /// @{
 
-btBool HWSPLAFU::init( IBase *pclientBase,
-                       NamedValueSet const &optArgs,
-                       TransactionID const &TranID)
+btBool HWSPLAFU::init(IBase               *pclientBase,
+                      NamedValueSet const &optArgs,
+                      TransactionID const &TranID)
 {
    ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, getServiceClientBase());
    ASSERT( NULL != pClient );

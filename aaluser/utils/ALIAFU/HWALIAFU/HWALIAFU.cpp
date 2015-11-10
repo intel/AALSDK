@@ -57,7 +57,7 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup HWALIAFU
 /// @{
 
-btBool HWALIAFU::init(IBase *pclientBase,
+btBool HWALIAFU::init(IBase               *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &TranID)
 {
@@ -83,14 +83,14 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 }
 
 void HWALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                   TransactionID const &TranID)
+                                 TransactionID const &TranID)
 {
    AutoLock(this);
    WkspcAlloc(Length, TranID);
 }
 
 void HWALIAFU::WorkspaceFree(btVirtAddr           Address,
-                               TransactionID const &TranID)
+                             TransactionID const &TranID)
 {
    AutoLock(this);
    WkspcFree(Address, TranID);

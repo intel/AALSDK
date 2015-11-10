@@ -89,17 +89,22 @@ public:
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
-      SetInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this));
-      SetInterface(iidCCIClient,      dynamic_cast<ICCIClient *>(this));
-      SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
+      if ( EObjOK != SetInterface(iidCCIAFU,        dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidCCIClient,     dynamic_cast<ICCIClient *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
 

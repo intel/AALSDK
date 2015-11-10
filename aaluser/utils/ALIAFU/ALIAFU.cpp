@@ -60,9 +60,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup ALIAFU
 /// @{
 
-btBool ALIAFU::init( IBase *pclientBase,
-                     NamedValueSet const &optArgs,
-                     TransactionID const &TranID)
+btBool ALIAFU::init(IBase               *pclientBase,
+                    NamedValueSet const &optArgs,
+                    TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
@@ -110,20 +110,9 @@ btBool ALIAFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ALIAFU::Release(btTime timeout)
-{
-   if ( NULL != m_pDelegate ) {
-      dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
-      m_pDelegate = NULL;
-      return true;
-   }
-
-   return ServiceBase::Release(timeout);
-}
-
 
 void ALIAFU::serviceAllocated(IBase               *pServiceBase,
-                                TransactionID const &TranID)
+                              TransactionID const &TranID)
 {
    m_pDelegate = dynamic_ptr<IALIAFU>(iidALIAFU, pServiceBase);
    ASSERT(NULL != m_pDelegate);
@@ -178,45 +167,45 @@ void ALIAFU::serviceReleaseFailed(const IEvent &Event)
 void ALIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), Event.Clone()) );
 }
 
 
 // We delegate our IALIAFU interface to the chosen implementation strategy.
 void ALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                 TransactionID const &TranID)
+                               TransactionID const &TranID)
 {
    m_pDelegate->WorkspaceAllocate(Length, TranID);
 }
 
 void ALIAFU::WorkspaceFree(btVirtAddr           Address,
-                             TransactionID const &TranID)
+                           TransactionID const &TranID)
 {
    m_pDelegate->WorkspaceFree(Address, TranID);
 }
 
 btBool ALIAFU::CSRRead(btCSROffset CSR,
-                         btCSRValue *pValue)
+                       btCSRValue *pValue)
 {
    return m_pDelegate->CSRRead(CSR, pValue);
 }
 
 btBool ALIAFU::CSRWrite(btCSROffset CSR,
-                          btCSRValue  Value)
+                        btCSRValue  Value)
 {
    return m_pDelegate->CSRWrite(CSR, Value);
 }
 
 btBool ALIAFU::CSRWrite64(btCSROffset CSR,
-                            bt64bitCSR  Value)
+                          bt64bitCSR  Value)
 {
    return m_pDelegate->CSRWrite64(CSR, Value);
 }
 
 void ALIAFU::OnWorkspaceAllocated(TransactionID const &TranID,
-                                    btVirtAddr           WkspcVirt,
-                                    btPhysAddr           WkspcPhys,
-                                    btWSSize             WkspcSize)
+                                  btVirtAddr           WkspcVirt,
+                                  btPhysAddr           WkspcPhys,
+                                  btWSSize             WkspcSize)
 {
    // Reflect the message to the outer client.
    getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),

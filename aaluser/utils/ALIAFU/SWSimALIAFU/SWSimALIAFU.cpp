@@ -85,7 +85,7 @@ BEGIN_NAMESPACE(AAL)
 # define CL(x) ((x) * 64)
 #endif // CL
 
-btBool SWSimALIAFU::init(IBase *pclientBase,
+btBool SWSimALIAFU::init(IBase               *pclientBase,
                          NamedValueSet const &optArgs,
                          TransactionID const &TranID)
 {
@@ -131,11 +131,6 @@ btBool SWSimALIAFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool SWSimALIAFU::Release(btTime timeout)
-{
-   return ServiceBase::Release(timeout);
-}
-
 
 btPhysAddr SWSimALIAFU::NextPhys()
 {
@@ -146,7 +141,7 @@ btPhysAddr SWSimALIAFU::NextPhys()
 }
 
 void SWSimALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                      TransactionID const &TranID)
+                                    TransactionID const &TranID)
 {
    AutoLock(this);
 
@@ -183,7 +178,7 @@ void SWSimALIAFU::WorkspaceAllocate(btWSSize             Length,
 }
 
 void SWSimALIAFU::WorkspaceFree(btVirtAddr           Address,
-                                  TransactionID const &TranID)
+                                TransactionID const &TranID)
 {
    AutoLock(this);
 
@@ -220,7 +215,7 @@ void SWSimALIAFU::WorkspaceFree(btVirtAddr           Address,
 }
 
 btBool SWSimALIAFU::CSRRead(btCSROffset Offset,
-                              btCSRValue *pValue)
+                            btCSRValue *pValue)
 {
    AutoLock(this);
 
@@ -247,7 +242,7 @@ btBool SWSimALIAFU::CSRRead(btCSROffset Offset,
 }
 
 btBool SWSimALIAFU::CSRWrite(btCSROffset Offset,
-                               btCSRValue  Value)
+                             btCSRValue  Value)
 {
    AutoLock(this);
 
@@ -268,7 +263,7 @@ btBool SWSimALIAFU::CSRWrite(btCSROffset Offset,
 }
 
 btBool SWSimALIAFU::CSRWrite64(btCSROffset Offset,
-                                 bt64bitCSR  Value)
+                               bt64bitCSR  Value)
 {
    if ( CSRWrite(Offset + 4, Value >> 32) ) {
       return CSRWrite(Offset, Value & 0xffffffff);
