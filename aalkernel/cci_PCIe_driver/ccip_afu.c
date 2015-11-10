@@ -1,3 +1,4 @@
+
 //******************************************************************************
 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
@@ -26,7 +27,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -55,70 +56,56 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-//        FILE: cci_pcie_driver_simulator.c
-//     CREATED: Oct 14, 2015
-//      AUTHOR: Joseph Grecco, Intel <joe.grecco@intel.com>
+/// @file ccip_afu.h
+/// @brief  Definitions for ccip.
+/// @ingroup aalkernel_ccip
+/// @verbatim
+//        FILE: ccip_port_mmio.c
+//     CREATED: Sept 24, 2015
+//      AUTHOR:
 //
-// PURPOSE:   This file contains the implementation of the simulated CCI
-//            device
+// PURPOSE:   This file contains the implementation of the CCIP AFU
+//             low-level function (i.e., Physical Interface Protocol driver).
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
 #include "aalsdk/kernel/kosal.h"
-
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
 
-#include "aalsdk/kernel/aalids.h"
-#include "aalsdk/kernel/aalbus.h"
-
-#include "cci_pcie_driver_PIPsession.h"
+#include "aalsdk/kernel/AALTransactionID_s.h"
+#include "aalsdk/kernel/aalbus-ipip.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "aalsdk/kernel/ccipdrv-events.h"
-#include "aalsdk/kernel/iaaldevice.h"
 
 #include "ccip_defs.h"
-#include "ccip_fme.h"
 #include "ccip_port.h"
-#include "cci_pcie_driver_simulator.h"
+#include "cci_pcie_driver_PIPsession.h"
 
 
-extern int  ccip_sim_wrt_port_mmio(btVirtAddr);
-extern int  ccip_sim_wrt_fme_mmio(btVirtAddr);
 
-extern int print_sim_fme_device(struct fme_device *);
-extern int print_sim_port_device(struct port_device *);
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////              PIP INTERFACE               ////////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
+static int CommandHandler( struct aaldev_ownerSession *,
+                           struct aal_pipmessage);
+static int cci_mmap(struct aaldev_ownerSession *pownerSess,
+                           struct aal_wsid *wsidp,
+                           btAny os_specific);
 
-#define CCIV4_MMIO_UMSG_TEST 0
-
-#if CCIV4_MMIO_UMSG_TEST
-// Turn on in AFUdev.cpp, as well
-static char mmioafustring[]    = "CCIv4 MMIO test  \n";
-static char umesgafustring[]   = "CCIv4 UMSG test  \n";
-#endif
-
-static int
-CommandHandler(struct aaldev_ownerSession *,
-               struct aal_pipmessage);
-int
-cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
-
-static
-struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
-                                                     btVirtAddr bar2,
-                                                     struct aal_device_id *pdevid);
 
 //=============================================================================
-// cci_simAFUpip
+// cci_FMEpip
 // Description: Physical Interface Protocol Interface for the SPL2 AFU
 //              kernel based AFU engine.
 //=============================================================================
-struct aal_ipip cci_simAFUpip = {
+struct aal_ipip cci_AFUpip = {
    .m_messageHandler = {
       .sendMessage   = CommandHandler,       // Command Handler
       .bindSession   = BindSession,          // Session binder
@@ -126,7 +113,7 @@ struct aal_ipip cci_simAFUpip = {
    },
 
    .m_fops = {
-     .mmap = cci_sim_mmap,
+     .mmap = cci_mmap,
    },
 
    // Methods for binding and unbinding PIP to generic aal_device
@@ -134,467 +121,6 @@ struct aal_ipip cci_simAFUpip = {
    .binddevice    = NULL,      // Binds the PIP to the device
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
-
-//=============================================================================
-// nextAFU_addr - Keeps the next available address for new AFUs
-//=============================================================================
-static struct aal_device_addr nextAFU_addr = {
-   .m_bustype   = aal_bustype_Host,
-   .m_busnum    = 1,       //
-   .m_devicenum = 0,       //
-   .m_functnum  = 1,       //
-   .m_subdevnum = 0        // AFU
-};
-
-
-//=============================================================================
-// Name: cci_sim_alloc_next_afu_addr
-// Description: Allocate the next AFU address
-// Interface: public
-// Returns 0 - success
-// Inputs: none
-// Outputs: none.
-// Comments: Allocates sequential addresses.  This is a hack for simulation
-//           but is adequate.
-//=============================================================================
-struct aal_device_addr
-cci_sim_alloc_next_afu_addr(void)
-{
-   ++(nextAFU_addr.m_devicenum);
-   if( 0 == (nextAFU_addr.m_devicenum &= 0xffff) ) {
-      ++(nextAFU_addr.m_busnum);
-      nextAFU_addr.m_busnum &= 0xffff;
-   }
-   return nextAFU_addr;
-} // cci_alloc_next_afu_addr
-
-
-//=============================================================================
-// Name: cci_sim_discover_devices
-// Description: Performs the functionality of the PCIe OS enumeration functions
-//              for real hardware.
-// Inputs: numdevices - Number of AFUs to "discover".
-//         g_device_list - List head of global device list.
-// Outputs: 0 - success.
-// Comments: none.
-//=============================================================================
-int cci_sim_discover_devices(ulong numdevices,
-                             struct list_head *pg_device_list)
-{
-   struct aal_device_id aalid;
-   btVirtAddr           bar0, bar2        = NULL;
-
-   PVERBOSE("Creating %ld simulated CCI devices", numdevices);
-
-   // Loop through and probe each simulated device
-   while(numdevices--){
-      struct ccip_device *pccidev = NULL;
-
-      // Allocate the BAR for the simulated device
-      bar0 = kosal_kzmalloc( CCI_SIM_APERTURE_SIZE );
-      if(NULL == bar0){
-         PERR("Unable to allocate system memory for simulated BAR 0\n");
-         return -EINVAL;
-      }
-
-      // Allocate the BAR for the simulated device
-      bar2 = kosal_kzmalloc( CCI_SIM_APERTURE_SIZE );
-      if(NULL == bar2){
-         PERR("Unable to allocate system memory for simulated BAR 2\n");
-         if(bar0){
-            kosal_kfree(bar0, CCI_SIM_APERTURE_SIZE);
-         }
-         return -EINVAL;
-      }
-
-      // Create Channel AFU for this device
-      aaldevid_addr(aalid) = cci_sim_alloc_next_afu_addr();
-
-      aaldevid_devaddr_bustype(aalid) = aal_bustype_Host;
-
-      // Enumerate the features of the simulated device
-      pccidev = cci_enumerate_simulated_device( bar0,
-                                                bar2,
-                                                &aalid);
-
-      // If all went well record this device on our
-      //  list of devices owned by the driver
-      if(NULL == pccidev){
-         kosal_kfree(bar0, CCI_SIM_APERTURE_SIZE);
-         kosal_kfree(bar2, CCI_SIM_APERTURE_SIZE);
-         continue;
-      }
-
-      kosal_list_add(&(pccidev->m_list), pg_device_list);
-
-   }// end while
-
-   if(kosal_list_is_empty(pg_device_list)){
-      return -EIO;
-   }
-   return 0;
-}
-
-
-//=============================================================================
-// Name: cci_enumerate_simulated_device
-// Description: Called during the device probe to initiate the enumeration of
-//              the device attributes and construct the internal objects.
-// Inputs: pcidev - kernel-provided device pointer.
-//         pcidevid - kernel-provided device id pointer.
-// Returns: 0 = success.
-// Comments:
-//=============================================================================
-static
-struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
-                                                     btVirtAddr bar2,
-                                                     struct aal_device_id *pdevid)
-{
-
-   struct ccip_device * pccipdev       = NULL;
-
-   int                  res            = 0;
-
-   PTRACEIN;
-
-   // Check arguments
-   ASSERT(bar0);
-   if ( NULL == bar0 ) {
-      PTRACEOUT_INT(-EINVAL);
-      return NULL;
-   }
-   ASSERT(bar2);
-   if ( NULL == bar2 ) {
-      PTRACEOUT_INT(-EINVAL);
-      return NULL;
-    }
-   ASSERT(pdevid);
-   if ( NULL == pdevid ) {
-      PTRACEOUT_INT(-EINVAL);
-      return NULL;
-    }
-
-   // Create the CCI device object
-   pccipdev = create_ccidevice();
-
-   // Save the Bus:Device:Function of simulated device
-   ccip_dev_pcie_bustype(pccipdev)  = aal_bustype_Host;
-   ccip_dev_pcie_busnum(pccipdev)   = aaldevid_devaddr_busnum(*pdevid);
-   ccip_dev_pcie_devnum(pccipdev)   = aaldevid_devaddr_devnum(*pdevid);
-   ccip_dev_pcie_fcnnum(pccipdev)   = aaldevid_devaddr_fcnnum(*pdevid);
-
-   // Mark thsi device as simulated
-   ccip_set_simulated(pccipdev);
-
-   // FME Device initialization
-   //---------------------------
-
-   // Save the FME information in the CCI Device object
-   ccip_fmedev_phys_afu_mmio(pccipdev)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar0));
-   ccip_fmedev_len_afu_mmio(pccipdev)     = CCI_SIM_APERTURE_SIZE;
-   ccip_fmedev_kvp_afu_mmio(pccipdev)     = bar0;
-
-   PDEBUG("ccip_fmedev_phys_afu_mmio(pccipdev) : %lx\n", ccip_fmedev_phys_afu_mmio(pccipdev));
-   PDEBUG("ccip_fmedev_kvp_afu_mmio(pccipdev) : %lx\n",(long unsigned int) ccip_fmedev_kvp_afu_mmio(pccipdev));
-   PDEBUG("ccip_fmedev_len_afu_mmio(pccipdev): %zu\n", ccip_fmedev_len_afu_mmio(pccipdev));
-
-   // Now populate the simulated MMIO
-   ccip_sim_wrt_fme_mmio(ccip_fmedev_kvp_afu_mmio(pccipdev));
-
-   // Enumerate the device
-   //  Instantiate internal objects. Objects that represent
-   //  objects that can be allocated through the AALBus are
-   //  constructed around the aaldevice base and are published
-   //  with aalbus.
-   //---------------------------------------------------------
-   //FME region
-   if(0 != ccip_fmedev_kvp_afu_mmio(pccipdev)){
-
-      PINFO(" FME mmio region   \n");
-
-      // Create the FME MMIO device object
-      //   Enumerates the FME feature list
-      //----------------------------------
-      ccip_dev_to_fme_dev(pccipdev) = get_fme_mmio_dev(ccip_fmedev_kvp_afu_mmio(pccipdev) );
-      if ( NULL == pccipdev->m_pfme_dev ) {
-         PERR("Could not allocate memory for FME object\n");
-         res = -ENOMEM;
-         goto ERR;
-      }
-
-      // Instantiate allocatable objects
-      if(!cci_fme_dev_create_AAL_allocatable_objects(pccipdev)){
-         goto ERR;
-      }
-
-      // print FME MMIO
-      print_sim_fme_device(ccip_dev_to_fme_dev(pccipdev));
-
-   } // End FME region
-
-   // Port Device initialization
-   //---------------------------
-
-   // Save the Port information in the CCI Device object
-
-   ccip_portdev_phys_afu_mmio(pccipdev,0)    = __PHYS_ADDR_CAST(kosal_virt_to_phys(bar2));
-   ccip_portdev_len_afu_mmio(pccipdev,0)     = CCI_SIM_APERTURE_SIZE;
-   ccip_portdev_kvp_afu_mmio(pccipdev,0)     = bar2;
-
-   PDEBUG("ccip_portdev_phys_afu_mmio(pccipdev) : %" PRIxPHYS_ADDR "\n", ccip_portdev_phys_afu_mmio(pccipdev,0));
-   PDEBUG("ccip_portdev_len_afu_mmio(pccipdev): %zu\n", ccip_portdev_len_afu_mmio(pccipdev,0));
-   PDEBUG("ccip_portdev_kvp_afu_mmio(pccipdev) : %p\n", ccip_portdev_kvp_afu_mmio(pccipdev,0));
-   PDEBUG("End of Port Space %p\n", ccip_portdev_kvp_afu_mmio(pccipdev,0) + CCI_SIM_APERTURE_SIZE);
-   // Now populate the simulated Port MMIO
-   ccip_sim_wrt_port_mmio(ccip_portdev_kvp_afu_mmio(pccipdev,0));
-
-   // Enumerate the devices
-   //  Loop through each Port Offset register to determine
-   //  if a Port has been implemented and where its resources are.
-   //  Since this is a simulated device all of the Ports are in the
-   //  ccip_portdev_kvp_afu_mmio() location.  In real hardware the
-   //  resources may reside in different Bars and at different offsets.
-   //  The driver must keep track of all resources it claims so it can
-   //  free them later.
-   //------------------------------------------------------------------
-   {
-      struct fme_device  *pfme_dev  = ccip_dev_to_fme_dev(pccipdev);
-      struct CCIP_FME_HDR *pfme_hdr = ccip_fme_hdr(pfme_dev);
-      struct port_device *pportdev  = NULL;
-      int i=0;
-
-      for(i=0;  0!= pfme_hdr->port_offsets[i].port_imp  ;i++){
-
-         PINFO("***** PORT %d MMIO region @ Bar %d offset %x *****\n",i , pfme_hdr->port_offsets[i].port_bar, pfme_hdr->port_offsets[i].port_offset);
-
-         // Discover and create Port device
-         //   Enumerates the Port feature list, creates the Port object.
-         //   Then add the new port object onto the list
-         //-------------------------------------------------------------
-         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
-         if ( NULL == pportdev ) {
-            PERR("Could not allocate memory for FME object\n");
-            res = -ENOMEM;
-            goto ERR;
-         }
-
-         ccip_set_resource(pccipdev, pfme_hdr->port_offsets[i].port_bar);
-
-         PDEBUG("Created Port Device\n");
-         // Point to our parent
-         ccip_port_to_ccidev(pportdev) = pccipdev;
-
-         // Inherits B:D:F from board
-         ccip_port_bustype(pportdev)   = ccip_dev_pcie_bustype(pccipdev);
-         ccip_port_busnum(pportdev)    = ccip_dev_pcie_busnum(pccipdev);
-         ccip_port_devnum(pportdev)    = ccip_dev_pcie_devnum(pccipdev);
-         ccip_port_fcnnum(pportdev)    = ccip_dev_pcie_fcnnum(pccipdev);
-
-         // Log the Port MMIO
-         print_sim_port_device(pportdev);
-
-         PDEBUG("Adding to list\n");
-
-         // Added it to the port list
-         kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
-
-         PDEBUG("Creating Allocatable objects\n");
-
-         // Instantiate allocatable objects including AFUs if present. Port subdevice address is 1 based.
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
-            goto ERR;
-         }
-      }// End for
-
-   }// end block
-
-   return pccipdev;
-ERR:
-
-   PERR(" -----ERROR -----   \n");
-
-   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
-      if(ccip_dev_to_fme_dev(pccipdev)){
-         ccip_destroy_fme_mmio_dev(ccip_dev_to_fme_dev(pccipdev));
-      }
-      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
-   }
-
-   if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,0)) {
-      kosal_kfree(ccip_portdev_kvp_afu_mmio(pccipdev,0), ccip_portdev_len_afu_mmio(pccipdev,0) );
-      ccip_portdev_kvp_afu_mmio(pccipdev,0) = NULL;
-   }
-
-   if ( NULL != pccipdev ) {
-         kfree(pccipdev);
-   }
-
-
-   PTRACEOUT_INT(res);
-   return NULL;
-}
-
-//=============================================================================
-// Name: cci_create_sim_afu
-// Description: Performs the functionality of the PCIe Probe functions for real
-//              hardware. It causes AAL Devices to be instantiated for the
-//              number of simulated devices "discovered".
-// Inputs: virtAddr - Virtual Address of aperture.
-//         size - size of aperture.
-//         g_device_list - List head of global device list.
-// Outputs: 0 - success.
-// Comments: The steps are:
-//               Create the CCI device object.
-//               Set the CCI attributes (e.g., MMIO regions)
-//               Attach an aal_device to the CCI device (used by framework)
-//               Publish the new device with the framework
-//               Add the device to the driver's global list
-//=============================================================================
-int cci_create_sim_afu( btVirtAddr virtAddr,
-                        uint size,
-                        struct aal_device_id *paalid,
-                        struct list_head *pdevice_list)
-{
-   struct cci_aal_device   *pcci_aaldev   = NULL;
-   btVirtAddr               ptemp         = NULL;
-   int                      ret           = 0;
-
-   //=============================================================
-   // Create the CCI device structure. The CCI device is the class
-   // used by the Low Level Communications (PIP). It holds the
-   // hardware specific attributes.
-
-   // Construct the cci_aal_device object
-   pcci_aaldev = cci_create_aal_device();
-
-   //========================================================
-   // Set up the cci_aal_device attributes used by the driver
-   //
-
-   // Set up Simulated Config Space
-   cci_dev_len_config(pcci_aaldev)  = size;
-   cci_dev_kvp_config(pcci_aaldev)  = virtAddr;
-   cci_dev_phys_config(pcci_aaldev) = virt_to_phys(cci_dev_kvp_config(pcci_aaldev));
-
-   // Set CCI CSR Attributes
-   cci_dev_phys_cci_csr(pcci_aaldev) = cci_dev_phys_config(pcci_aaldev);
-   cci_dev_kvp_cci_csr(pcci_aaldev)  = cci_dev_kvp_config(pcci_aaldev);
-   cci_dev_len_cci_csr(pcci_aaldev)  = CCI_SIM_APERTURE_SIZE;
-
-   // Allocate uMSG space
-   ptemp = kosal_kzmalloc(CCI_UMSG_SIZE);
-   if ( NULL == ptemp ) {
-      PERR("Unable to allocate system memory for uMsg area\n");
-      cci_destroy_aal_device(pcci_aaldev);
-      return -ENOMEM;
-   }
-
-#if CCIV4_MMIO_UMSG_TEST
-   strncpy((char*)ptemp,umesgafustring,strlen(umesgafustring));
-#endif
-
-   cci_dev_len_afu_umsg(pcci_aaldev) = size;
-   cci_dev_kvp_afu_umsg(pcci_aaldev) = ptemp;
-   cci_dev_phys_afu_umsg(pcci_aaldev) = virt_to_phys(ptemp);
-
-   // Allocate MMIO space
-   ptemp = kosal_kzmalloc(CCI_MMIO_SIZE);
-   if ( NULL == ptemp ) {
-      PERR("Unable to allocate system memory for MMIO area\n");
-      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev), cci_dev_len_afu_umsg(pcci_aaldev));
-      cci_destroy_aal_device(pcci_aaldev);
-      return -ENOMEM;
-   }
-
-#if CCIV4_MMIO_UMSG_TEST
-   strncpy((char*)ptemp,mmioafustring,strlen(mmioafustring));
-#endif
-
-   cci_dev_len_afu_mmio(pcci_aaldev) = size;
-   cci_dev_kvp_afu_mmio(pcci_aaldev) = ptemp;
-   cci_dev_phys_afu_mmio(pcci_aaldev) = virt_to_phys(cci_dev_kvp_afu_mmio(pcci_aaldev));
-
-   // Direct user mode CSR interface not supported
-   cci_dev_clr_allow_map_csr_write_space(pcci_aaldev);
-   cci_dev_clr_allow_map_csr_read_space(pcci_aaldev);
-
-   // Enable MMIO-R and uMSG space
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
-   cci_dev_set_allow_map_umsg_space(pcci_aaldev);
-
-   // Mark as simulated
-   cci_set_simulated(pcci_aaldev);
-
-   //===========================================================
-   // Create the AAL device structure. The AAL device is the
-   // base class for all devices in AAL. This object is used by
-   // the AAL kernel framework. It also provides the pointer to
-   // the low level physical interface protocol module (PIP).
-
-   // Create the ID of the AAL device. Used for Resource Management.
-   aaldevid_afuguidl(*paalid) = CCI_SIM_AFUIDL;
-   aaldevid_afuguidh(*paalid) = CCI_SIM_AFUIDH;
-   aaldevid_devtype(*paalid)  = aal_devtypeAFU;
-   aaldevid_pipguid(*paalid)  = CCI_SIMAFUPIP_IID;
-   aaldevid_vendorid(*paalid) = AAL_vendINTC;
-   aaldevid_ahmguid(*paalid)  = HOST_AHM_GUID;
-
-   // Create the AAL device
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCISIMAFU",
-                                        paalid,
-                                        &cci_simAFUpip);
-
-   //===========================================================
-   // Set up the optional aal_device attributes
-   //
-
-   // Set how many owners are allowed access to this device simultaneously
-   pcci_aaldev->m_aaldev->m_maxowners = 1;
-
-   // Set the config space mapping permissions
-   cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
-   }
-
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
-   }
-
-   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
-   }
-
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
-   }
-
-   // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
-   aaldev_pip_context(cci_aaldev_to_aaldev(pcci_aaldev)) = (void*)pcci_aaldev;
-
-   // Method called when the device is released (i.e., its destructor)
-   //  The canonical release device calls the user's release method.
-   //  If NULL is provided then only the canonical behavior is done
-   dev_setrelease(cci_aaldev_to_aaldev(pcci_aaldev), cci_release_device);
-
-      // Device is ready for use.  Publish it with the Configuration Management Subsystem
-   ret = cci_publish_aaldevice(pcci_aaldev);
-   ASSERT(ret == 0);
-   if(0> ret){
-      PERR("Failed to initialize AAL Device for simulated CCIV4 AFU[%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
-                                                                               aaldevid_devaddr_devnum(*paalid),
-                                                                               aaldevid_devaddr_subdevnum(*paalid));
-      kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
-      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
-      cci_destroy_aal_device(pcci_aaldev);
-      return -EINVAL;
-   }
-
-   // Add the device to the device list
-   kosal_list_add(&cci_dev_list_head(pcci_aaldev), pdevice_list);
-
-   return 0;
-}
 
 
 //=============================================================================
@@ -606,7 +132,7 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
 // Outputs: none.
 // Comments:
 //=============================================================================
-static int
+int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
                struct aal_pipmessage       Message)
 {
@@ -764,7 +290,6 @@ ERROR:
    return retval;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -816,7 +341,7 @@ static struct vm_operations_struct csr_vma_ops =
 
 
 //=============================================================================
-// Name: cci_sim_mmap
+// Name: cci_mmap
 // Description: Method used for mapping kernel memory to user space. Called by
 //              uidrv.
 // Interface: public
@@ -827,7 +352,7 @@ static struct vm_operations_struct csr_vma_ops =
 //           to perform the map operation.
 //=============================================================================
 int
-cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
+cci_mmap(struct aaldev_ownerSession *pownerSess,
                struct aal_wsid *wsidp,
                btAny os_specific)
 {
@@ -868,7 +393,7 @@ cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
       size_t size;
       switch ( wsidp->m_id )
       {
-         case WSID_CSRMAP_WRITEAREA:
+            case WSID_CSRMAP_WRITEAREA:
             case WSID_CSRMAP_READAREA:
             case WSID_MAP_MMIOR:
             case WSID_MAP_UMSG:
@@ -1011,3 +536,4 @@ cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
    ERROR:
    return res;
 }
+

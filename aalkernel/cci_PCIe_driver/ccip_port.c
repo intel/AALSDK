@@ -1,4 +1,3 @@
-
 //******************************************************************************
 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
@@ -7,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -27,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -56,16 +55,16 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_def.h
-/// @brief  Definitions for ccip.
+/// @file ccip_port.c
+/// @brief  Implementation of the ccip Port object.
 /// @ingroup aalkernel_ccip
 /// @verbatim
-//        FILE: ccip_port_mmio.c
+//        FILE: ccip_port.c
 //     CREATED: Sept 24, 2015
 //      AUTHOR:
 //
-// PURPOSE:   This file contains the definations of the CCIP port
-//             Device Feature List and CSR.
+// PURPOSE:   This file contains the implementation of the CCIP port
+//             low-level function (i.e., Physical Interface Protocol driver).
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:

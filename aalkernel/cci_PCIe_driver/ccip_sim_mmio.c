@@ -75,11 +75,13 @@
 #include "aalsdk/kernel/aalqueue.h"
 #include "aalsdk/kernel/ccipdriver.h"
 #include "cci_pcie_driver_internal.h"
+#include "cci_pcie_driver_simulator.h"
+
 
 #include "ccip_fme.h"
 #include "ccip_port.h"
 
-#define OFFSET 0x8;
+#define OFFSET 0x8
 
 int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
 {
@@ -367,17 +369,24 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
 }
 int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 {
-   struct CCIP_PORT_HDR         port_hdr;
-   struct CCIP_PORT_DFL_ERR     port_err;
-   struct CCIP_PORT_DFL_UMSG    port_umsg;
-   struct CCIP_PORT_DFL_PR      port_pr;
-   struct CCIP_PORT_DFL_STAP    port_stap;
+   struct CCIP_PORT_HDR          port_hdr;
+   struct CCIP_PORT_DFL_ERR      port_err;
+   struct CCIP_PORT_DFL_UMSG     port_umsg;
+   struct CCIP_PORT_DFL_PR       port_pr;
+   struct CCIP_PORT_DFL_STAP     port_stap;
+   struct CCIP_AFU_Header        afu_hdr;
 
+   btVirtAddr afuptr;
+   int afu_id_offset;
 
    btVirtAddr ptr = pkvp_fme_mmio;
+
+
    int offset =0;
 
    PINFO(" ccip_sim_wrt_port_mmio ENTER\n");
+
+   afuptr = ptr;           // First AFU offset relative to First Port
 
    // Port header
    port_hdr.ccip_port_dfh.Type = CCIP_DFType_afu;
@@ -397,8 +406,9 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,port_hdr.ccip_port_afuidh.csr);
 
    //port next afu offset
-   port_hdr.ccip_port_next_afu.afu_id_offset=0x0;
+   port_hdr.ccip_port_next_afu.afu_id_offset=0x0;        // Temporary value
    offset = offset + OFFSET;
+   afu_id_offset = offset;       // Save this so it can be populated at the end
    write_ccip_csr64(ptr,offset,port_hdr.ccip_port_next_afu.csr) ;
 
    //rsvd
@@ -566,7 +576,6 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    ptr = ptr+ port_pr.ccip_port_pr_dflhdr.next_DFH_offset;
    offset =0;
 
-
    port_stap.ccip_port_stap_dflhdr.Type =CCIP_DFType_private;
    port_stap.ccip_port_stap_dflhdr.next_DFH_offset =0x0;
    port_stap.ccip_port_stap_dflhdr.Feature_rev =0;
@@ -579,7 +588,43 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_stap.ccip_port_stap.rsvd =0;
    write_ccip_csr64(ptr,offset,port_stap.ccip_port_stap.csr);
 
+   // First AFU offset is the next free location (ptr + OFFSET) - the base address of Port HDR afuptr
+   offset = (ptr + OFFSET) - afuptr;
+
+   // User AFU - re write the value
+   port_hdr.ccip_port_next_afu.afu_id_offset=offset;
+   write_ccip_csr64(afuptr, afu_id_offset, port_hdr.ccip_port_next_afu.csr);
+
+   ptr = afuptr + port_hdr.ccip_port_next_afu.csr;
+
+   PINFO("AFU offset is %x beyond PORT header at %p = %p\n", offset, afuptr, ptr );
+
+   offset = 0;
+
+   // Port header
+   afu_hdr.ccip_dfh.Type = CCIP_DFType_afu;
+   afu_hdr.ccip_dfh.next_DFH_offset =0x0;
+   afu_hdr.ccip_dfh.Feature_rev =0;
+   afu_hdr.ccip_dfh.Feature_ID =1;
+   write_ccip_csr64(ptr,offset,afu_hdr.ccip_dfh.csr);
+
+   //port afu id low
+   afu_hdr.ccip_afu_id_l.afu_id_l = CCI_SIM_AFUIDL;
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,afu_hdr.ccip_afu_id_l.csr);
+
+   //port afu id high
+   afu_hdr.ccip_afu_id_h.afu_id_h = CCI_SIM_AFUIDH;
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,afu_hdr.ccip_afu_id_h.csr);
+
+   //port next afu offset
+   afu_hdr.ccip_next_afu.afu_id_offset = 0x0;        // Temporary value
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,afu_hdr.ccip_next_afu.csr);
+
    PINFO(" ccip_sim_wrt_port_mmio EXIT \n");
+
 
    return 0;
 }
@@ -968,6 +1013,29 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "PORT SIGNAL tap  END \n \n");
 
    }
+
+   if(0 != pport_dev->m_pport_hdr->ccip_port_next_afu.afu_id_offset) {
+
+      // Get the AFU Header
+      struct CCIP_AFU_Header *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)pport_dev->m_pport_hdr) + pport_dev->m_pport_hdr->ccip_port_next_afu.afu_id_offset);
+
+      PDEBUG( "USER AFU   START %p \n \n", pafu_hdr);
+
+      PDEBUG( "Feature_ID = %x \n",pafu_hdr->ccip_dfh.Feature_ID);
+      PDEBUG( "Feature_rev = %x \n",pafu_hdr->ccip_dfh.Feature_rev);
+      PDEBUG( "Type = %x \n",pafu_hdr->ccip_dfh.Type);
+      PDEBUG( "next_DFH_offset = %x \n",pafu_hdr->ccip_dfh.next_DFH_offset);
+
+      PDEBUG( "afu_id_l.afu_id_l= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_l.afu_id_l);
+      PDEBUG( "afu_id_h.afu_id_h= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_h.afu_id_h);
+
+      PDEBUG( "next_afu.afu_id_offset= %x \n",pafu_hdr->ccip_next_afu.afu_id_offset);
+
+
+      PDEBUG( "USER AFU  END \n \n");
+
+   }
+
 
    PDEBUG( "*****************************************************************\n");
    PDEBUG( "*****************************************************************\n");

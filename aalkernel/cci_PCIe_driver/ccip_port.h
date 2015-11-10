@@ -105,16 +105,17 @@ struct port_device
    btUnsigned32bitInt            m_devicenum;   // device number
    btUnsigned32bitInt            m_functnum;    // function number
 
-   // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
-
-   // struct aal_device         aal_dev;         // AAL Device from which this is derived
+   // The AFU in this port
+   struct afu_device             m_afu;
 
 
 }; // end struct port_device
 
 #define ccip_port_dev_pci_dev(pdev)          ((pdev)->m_pcidev)
 
-#define ccip_port_aal_dev(pdev)               ((pdev)->aal_dev)
+#define afu_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct afu_device, m_afu, struct port_device)
+
+#define ccip_port_afu_dev(pdev)               ((pdev)->m_afu)
 #define ccip_port_hdr(pdev)                   ((pdev)->m_pport_hdr)
 #define ccip_port_err(pdev)                   ((pdev)->m_pport_err)
 #define ccip_port_umsg(pdev)                  ((pdev)->m_pport_umsg)
@@ -172,6 +173,7 @@ struct CCIP_PORT_HDR * get_port_header( btVirtAddr );
 bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr );
 
 extern struct aal_ipip cci_Portpip;
+extern struct aal_ipip cci_AFUpip;
 
 END_NAMESPACE(AAL)
 

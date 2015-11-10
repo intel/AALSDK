@@ -394,6 +394,106 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    // Add the device to the CCI Board device's device list
    kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
 
+   //=========================================
+   // Instantiate a User AFU if one is present
+   {
+      // Get the AFU header pointer by adding the offset to the port header address
+      struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)pportdev->m_pport_hdr) + pportdev->m_pport_hdr->ccip_port_next_afu.afu_id_offset);
+
+      if(0xFFFFFFFFFFFFFFFFULL != pafu_hdr->ccip_dfh.csr){
+
+         PVERBOSE("Instantiating User AFU\n");
+         PVERBOSE("User AFU\n");
+         PVERBOSE( "> Feature_ID = %x \n",pafu_hdr->ccip_dfh.Feature_ID);
+         PVERBOSE("> Feature_rev = %x \n",pafu_hdr->ccip_dfh.Feature_rev);
+         PVERBOSE( "> Type = %x \n",pafu_hdr->ccip_dfh.Type);
+         PVERBOSE( "> afu_id_l.afu_id_l= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_l.afu_id_l);
+         PVERBOSE( "> afu_id_h.afu_id_h= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_h.afu_id_h);
+         PVERBOSE( "> next_DFH_offset = %x \n",pafu_hdr->ccip_dfh.next_DFH_offset);
+         PVERBOSE( "> next_afu.afu_id_offset= %x \n",pafu_hdr->ccip_next_afu.afu_id_offset);
+
+         // Construct the cci_aal_device object
+         pcci_aaldev = cci_create_aal_device();
+
+         ASSERT(NULL != pcci_aaldev);
+
+         // Make it a User AFU
+         cci_dev_type(pcci_aaldev) = cci_dev_AFU;
+
+         // Bind the AAL device to the Port's AFU object. This enables the driver
+         //   to get to the Port AFU object from the AAL device.
+         set_cci_dev_subclass(pcci_aaldev, &ccip_port_afu_dev(pportdev));
+
+         // Device Address is the same as the Port. Set the AFU ID information
+         // The following attributes describe the interfaces supported by the device
+         aaldevid_afuguidl(aalid)            = pafu_hdr->ccip_afu_id_l.afu_id_l;
+         aaldevid_afuguidh(aalid)            = pafu_hdr->ccip_afu_id_h.afu_id_h;
+         aaldevid_devtype(aalid)             = aal_devtypeAFU;
+         aaldevid_pipguid(aalid)             = CCIP_AFU_PIPIID;
+         aaldevid_vendorid(aalid)            = AAL_vendINTC;
+
+         // Set the interface permissions
+         // Enable MMIO-R
+         cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+
+
+         // Create the AAL device and attach it to the CCI device object
+         pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name
+                                                 &aalid,             // AAL ID
+                                                 &cci_AFUpip);
+
+         //===========================================================
+         // Set up the optional aal_device attributes
+         //
+
+         // Set how many owners are allowed access to this device simultaneously
+         pcci_aaldev->m_aaldev->m_maxowners = 1;
+
+         // Set the config space mapping permissions
+         cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
+         if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+            cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
+         }
+
+         if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+            cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
+         }
+
+         if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+            cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
+         }
+
+         if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+            cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
+         }
+
+         // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
+         aaldev_pip_context(cci_aaldev_to_aaldev(pcci_aaldev)) = (void*)pcci_aaldev;
+
+         // Method called when the device is released (i.e., its destructor)
+         //  The canonical release device calls the user's release method.
+         //  If NULL is provided then only the canonical behavior is done
+         dev_setrelease(cci_aaldev_to_aaldev(pcci_aaldev), cci_release_device);
+
+            // Device is ready for use.  Publish it with the Configuration Management Subsystem
+         ret = cci_publish_aaldevice(pcci_aaldev);
+         ASSERT(ret == 0);
+         if(0> ret){
+            PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(aalid),
+                                                                        aaldevid_devaddr_devnum(aalid),
+                                                                        aaldevid_devaddr_fcnnum(aalid),
+                                                                        aaldevid_devaddr_subdevnum(aalid));
+            kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
+            kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
+            cci_destroy_aal_device(pcci_aaldev);
+            return false;
+         }
+
+         // Add the device to the CCI Board device's device list
+         kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+
+      } // End if(0xFFFFFFFFFFFFFFFFULL == pafu_hdr->ccip_dfh.csr){
+   } //End block
 
    return true;
 }
@@ -547,9 +647,15 @@ cci_remove_device(struct ccip_device *pccipdev)
    // Release FME Resources
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       if(!ccip_is_simulated(pccipdev)){
-         PVERBOSE("Freeing Port BAR 0\n");
+         PVERBOSE("Freeing FME BAR 0\n");
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
+
+         if(NULL != ccip_dev_to_fme_dev(pccipdev)) {
+            PVERBOSE("Freeing FME Memory\n");
+            kosal_kfree(ccip_dev_to_fme_dev(pccipdev),sizeof(struct fme_device ) );
+         }
+
       }else{
          kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
       }
