@@ -597,12 +597,12 @@ bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 // IALIReset interface implementation
 // ---------------------------------------------------------------------------
 
-IALIReset::e_Reset HWALIAFU::afuQuiesceAndReset( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
 {
    return e_OK;
 }
 
-IALIReset::e_Reset HWALIAFU::afuReEnable( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
 {
    return e_OK;
 }

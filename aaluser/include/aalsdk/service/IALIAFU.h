@@ -361,12 +361,13 @@ public:
    ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
    ///                the provided timeout. (Currently no way to set timeout).
    ///
-   virtual e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL) = 0;
+//   virtual e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
    /// Only the Link to this AFU will be enabled.
-   /// It is an error to do anything other than strictly alternate afuQuiesceAndReset
+   /// It is an error to do anything other than strictly alternate afuQuiesceAndHalt
    ///    and afuReEnable.
    ///
    /// TODO: Implementation needs to be via driver transaction so that driver is in
@@ -375,7 +376,7 @@ public:
    /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
    /// @return     e_Reset e_OK if succeeded. No errors expected.
    ///
-   virtual e_Reset afuReEnable( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL) = 0;
 
    /// @brief Request a complete Reset. Convenience function combining other two.
    ///
