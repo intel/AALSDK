@@ -137,8 +137,8 @@ public:
    // </IALIUMsg>
 
    // <IALIReset>
-   virtual IALIReset::e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL);
-   virtual IALIReset::e_Reset afuReEnable( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL);
    virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL);
    // </IALIReset>
 

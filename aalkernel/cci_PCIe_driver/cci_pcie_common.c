@@ -647,9 +647,15 @@ cci_remove_device(struct ccip_device *pccipdev)
    // Release FME Resources
    if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
       if(!ccip_is_simulated(pccipdev)){
-         PVERBOSE("Freeing Port BAR 0\n");
+         PVERBOSE("Freeing FME BAR 0\n");
          iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
          pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
+
+         if(NULL != ccip_dev_to_fme_dev(pccipdev)) {
+            PVERBOSE("Freeing FME Memory\n");
+            kosal_kfree(ccip_dev_to_fme_dev(pccipdev),sizeof(struct fme_device ) );
+         }
+
       }else{
          kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
       }

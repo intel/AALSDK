@@ -608,7 +608,12 @@ ERR:
      PVERBOSE("Freeing Port BAR 0\n");
      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
      pci_release_region(pcidev, 0);
+
+     if(NULL != ccip_dev_to_fme_dev(pccipdev)) {
+         kosal_kfree(ccip_dev_to_fme_dev(pccipdev),sizeof(struct fme_device ) );
+     }
      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
+
    }
 
    if ( NULL != pccipdev ) {
