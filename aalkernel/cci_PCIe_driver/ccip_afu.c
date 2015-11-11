@@ -1,4 +1,3 @@
-
 //******************************************************************************
 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
@@ -56,7 +55,7 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_afu.h
+/// @file ccip_afu.c
 /// @brief  Definitions for ccip.
 /// @ingroup aalkernel_ccip
 /// @verbatim
