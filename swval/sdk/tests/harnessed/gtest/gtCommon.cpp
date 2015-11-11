@@ -842,8 +842,8 @@ void MethodCallLogEntry::AddParam(btcString name, const TransactionID &value)
 
    stTransactionID_t tidStruct = (stTransactionID_t)value;
 
-   key = var + std::string(".m_ID");
-   m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_ID));
+   key = var + std::string(".m_Context");
+   m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Context));
 
    key = var + std::string(".m_Handler");
    m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Handler));
@@ -901,8 +901,8 @@ void MethodCallLogEntry::GetParam(btcString name, TransactionID &tid) const
 
    stTransactionID_t tidStruct;
 
-   key = var + std::string(".m_ID");
-   m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_ID));
+   key = var + std::string(".m_Context");
+   m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Context));
 
    key = var + std::string(".m_Handler");
    m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Handler));

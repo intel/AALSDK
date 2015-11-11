@@ -93,7 +93,7 @@ BEGIN_NAMESPACE(AAL)
 /// @ingroup Events
 typedef struct stTransactionID_t
 {
-   btApplicationContext m_ID;
+   btApplicationContext m_Context;
    btEventHandler       m_Handler;
    IBase               *m_IBase;
    btBool               m_Filter;

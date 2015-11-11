@@ -27,7 +27,7 @@ void Set(stTransactionID_t   &stid,
          btBool               filter,
          bt32bitInt           id)
 {
-   stid.m_ID      = ctx;
+   stid.m_Context = ctx;
    stid.m_Handler = h;
    stid.m_IBase   = pBase;
    stid.m_Filter  = filter;
@@ -67,7 +67,7 @@ void Check(stTransactionID_t const &stid,
            btBool                   filter,
            bt32bitInt               id)
 {
-   EXPECT_EQ(ctx,    stid.m_ID);
+   EXPECT_EQ(ctx,    stid.m_Context);
    EXPECT_EQ(h,      stid.m_Handler);
    EXPECT_EQ(pBase,  stid.m_IBase);
    EXPECT_EQ(filter, stid.m_Filter);
@@ -97,7 +97,7 @@ TEST(TransactionIDTest, aal0763)
    const bt32bitInt           id    = 6;
 
    stTransactionID_t stid;
-   stid.m_ID      = ctx;
+   stid.m_Context      = ctx;
    stid.m_Handler = h;
    stid.m_IBase   = const_cast<IBase *>(pBase);
    stid.m_Filter  = filt;
@@ -305,7 +305,7 @@ TEST(TransactionIDTest, aal0777)
    const bt32bitInt           id    = 6;
 
    stTransactionID_t stid;
-   stid.m_ID      = ctx;
+   stid.m_Context = ctx;
    stid.m_Handler = h;
    stid.m_IBase   = const_cast<IBase *>(pBase);
    stid.m_Filter  = filt;
