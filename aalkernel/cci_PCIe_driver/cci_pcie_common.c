@@ -391,8 +391,6 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
                                                                   aaldevid_devaddr_devnum(aalid),
                                                                   aaldevid_devaddr_fcnnum(aalid),
                                                                   aaldevid_devaddr_subdevnum(aalid));
-      kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
-      kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
       cci_destroy_aal_device(pcci_aaldev);
       return false;
    }
@@ -442,6 +440,10 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
          // Enable MMIO-R
          cci_dev_set_allow_map_mmior_space(pcci_aaldev);
 
+         // Setup the MMIO region parameters
+         cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
+         cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
+         cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys(pafu_hdr);
 
          // Create the AAL device and attach it to the CCI device object
          pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name

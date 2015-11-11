@@ -206,6 +206,10 @@ int ccidrv_session_destroy(struct ccidrv_session * psess)
        //  holds the context about this ownership relationship. E.g., owner PID, the device itself etc..
        pdev = devowner_itr->m_device;  // Get the device to free
 
+       // Device owner session is the instance of the interfaces
+       // for this device/session binding
+       ownerSessp = dev_OwnerSession(pdev,psess->m_pid);
+
        // Unbind the PIP from the session. This gives the driver a chance to cleanup
        //  the hardware if necessary
        if(unlikely(!aaldev_pipmsgHandlerp(pdev)->unBindSession( ownerSessp ))){

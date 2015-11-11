@@ -745,10 +745,10 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
                }
 
                // init is complete when MMIOmap and uMSGmap are both set
-               if (m_MMIORmap != NULL && m_uMSGmap != NULL) {
+               if (m_MMIORmap != NULL /*&& m_uMSGmap != NULL*/) {
                   initComplete(m_tidSaved);
                }
-            }
+            }break;
 
          default:
             ASSERT(false); // unexpected WSM_Response evtID

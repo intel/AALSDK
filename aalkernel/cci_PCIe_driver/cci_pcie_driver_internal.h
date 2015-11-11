@@ -98,7 +98,7 @@
 #define CCI_PCI_DRIVER_NAME   "ccidrv"
 
 ////////////////////////////////////////////////////////////////////////////////
-#define CCI_MMIO_SIZE       ( 0x20000 )                   /// Size of AFU MMIO space
+#define CCI_MMIO_SIZE       ( 0x40000 )                   /// Size of AFU MMIO space
 #define CCI_UMSG_SIZE       ( 0x5000 )                    /// Size of uMsg space
 
 // PCI device IDs

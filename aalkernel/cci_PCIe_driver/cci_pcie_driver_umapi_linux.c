@@ -479,6 +479,9 @@ ccidrv_mmap  (struct file *file, struct vm_area_struct *vma)
    struct ccidrv_session * psess = NULL;
    struct aal_device *pdev = NULL;
 
+   PTRACEIN;
+   PVERBOSE("In UIDRV\n");
+
    //////////////////////////////////////////////////////////////////////////////////
    if(vma->vm_pgoff == 0 ) {
       DPRINTF( UIDRV_DBG_MMAP, "Invalid WSID\n");

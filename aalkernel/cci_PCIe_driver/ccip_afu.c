@@ -239,8 +239,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetcsrmap_create( pownerSess->m_device,
                                                                    wsidobjp_to_wid(wsidp),
-                                                                   cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
-                                                                   cci_dev_len_cci_csr(pdev),         // Return the requested aperture size
+                                                                   cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
+                                                                   cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
                                                                    4,                                 // Return the CSR size in octets
                                                                    4,                                 // Return the inter-CSR spacing octets
                                                                    Message.m_tranID,
@@ -282,7 +282,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            Message.m_context,
                                                            uid_errnumNoMem);
 
-            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+            ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
                                            Message.m_context);
@@ -293,7 +293,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          //------------------------------------------------------------
          // Create the WSID object and add to the list for this session
          //------------------------------------------------------------
-         wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, (btWSID)krnl_virt);
+
+         wsidp = ccidrv_getwsid(pownerSess->m_device, (btWSID)krnl_virt);
          if ( NULL == wsidp ) {
             PERR("Couldn't allocate task workspace\n");
             retval = -ENOMEM;
@@ -327,7 +328,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          PVERBOSE("Sending the WKSP Alloc event.\n");
          // Send the event
-         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+         ccidrv_sendevent(aalsess_uiHandle(pownerSess),
                                         aalsess_aaldevicep(pownerSess),
                                         AALQIP(pafuws_evt),
                                         Message.m_context);
@@ -353,7 +354,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            uid_errnumBadParameter);
 
             // Send the event
-            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+            ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
                                            Message.m_context);
@@ -374,7 +375,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             PDEBUG("Sending WKSP_FREE Exception\n");
             // Send the event
-            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+            ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
                                            Message.m_context);
@@ -392,7 +393,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            Message.m_tranID,
                                                            Message.m_context,
                                                            uid_errnumBadParameter);
-            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+            ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
                                            Message.m_context);
@@ -407,7 +408,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // remove the wsid from the device and destroy
          list_del_init(&wsidp->m_list);
-         pownerSess->m_uiapi->freewsid(wsidp);
+         ccidrv_freewsid(wsidp);
 
          // Create the  event
          pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
@@ -417,7 +418,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          PVERBOSE("Sending the WKSP Free event.\n");
          // Send the event
-         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+         ccidrv_sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
                                         Message.m_context);
