@@ -107,11 +107,11 @@ public:
 
    /// @brief Construct from structure
    /// @param[in] stTid XXX from kernel ioctl?
-   TransactionID(stTransactionID_t    stTid);
+   TransactionID(const stTransactionID_t &stTid);
 
    /// @brief Copy Constructor
    /// @param[in] rOther TransactionID to copy
-   TransactionID(TransactionID const &rOther);
+   TransactionID(const TransactionID &rOther);
 
    /// @brief Application specified ID
    /// @param[in] ID application context
@@ -211,35 +211,13 @@ public:
    void  Filter(btBool               Filter);
    void      ID(bt32bitInt           intID);
 
-   TransactionID & operator = (TransactionID const &rOther) {
-      m_tid = rOther.m_tid;
-      return *this;
-   }
+   TransactionID & operator = (const TransactionID     & );
+   TransactionID & operator = (const stTransactionID_t & );
 
-   TransactionID & operator = (stTransactionID_t const &tid) {
-      m_tid = tid;
-      return *this;
-   }
+   operator const stTransactionID_t & () const;
+   operator stTransactionID_t &       ();
 
-   operator stTransactionID_t const & () const {
-      return m_tid;
-   }
-
-   operator stTransactionID_t & () {
-      return m_tid;
-   }
-
-   btBool operator == (const TransactionID &rhs) const;
-
-#if DEPRECATED
-   btBool operator < (const TransactionID &rOther) const {
-      return m_tid.m_intID < rOther.m_tid.m_intID;
-   }
-
-   btBool operator > (const TransactionID  &rOther) const{
-       return m_tid.m_intID > rOther.m_tid.m_intID;
-   }
-#endif // DEPRECATED
+   btBool operator == (const TransactionID & ) const;
 
 private:
    stTransactionID_t  m_tid;
