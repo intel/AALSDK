@@ -53,6 +53,7 @@ gtThreadGroup.cpp \
 gtThreadGroup.h \
 gtThreadGroupSR.cpp \
 gtTimer.cpp \
+gtTransactionID.cpp \
 main.cpp
 
 bat_CPPFLAGS=\
@@ -143,6 +144,7 @@ gtThreadGroup.cpp \
 gtThreadGroup.h \
 gtThreadGroupSR.cpp \
 gtTimer.cpp \
+gtTransactionID.cpp \
 main.cpp
 
 endif
