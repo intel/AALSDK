@@ -1,3 +1,4 @@
+
 //******************************************************************************
 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
@@ -6,7 +7,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2011-2015, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +27,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2011-2015, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -54,6 +55,21 @@
 //  (INCLUDING  NEGLIGENCE  OR OTHERWISE) ARISING  IN ANY WAY  OUT  OF THE USE
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
+//****************************************************************************
+/// @file ccip_def.h
+/// @brief  Definitions for ccip.
+/// @ingroup aalkernel_ccip
+/// @verbatim
+//        FILE: ccip_port_mmio.c
+//     CREATED: Sept 24, 2015
+//      AUTHOR:
+//
+// PURPOSE:   This file contains the definations of the CCIP port
+//             Device Feature List and CSR.
+// HISTORY:
+// COMMENTS:
+// WHEN:          WHO:     WHAT:
+//****************************************************************************///
 
 #include "aalsdk/kernel/kosal.h"
 #include "ccip_def.h"
@@ -61,6 +77,8 @@
 
 #define MODULE_FLAGS CCIV4_DBG_MOD
 
+#define  CCIP_PORT_OUTREQ_TIMEOUT  1000
+#define  CCIP_PORT_OUTREQ_COMPLETE 0x1
 
 /// @brief   reads PORT mmio region
 ///
@@ -75,26 +93,26 @@ bt32bitInt get_port_mmio(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio
    PINFO(" get_port_mmio ENTER\n");
 
    if((NULL == pport_dev) || (NULL ==  pkvp_port_mmio)) {
-      res = -EINVAL;
-      goto ERR;
+   	res = -EINVAL;
+   	goto ERR;
    }
 
    // get port header
    res =  get_port_header(pport_dev,pkvp_port_mmio );
    if(res !=0) {
-      PERR("Port Header Error %d\n", res);
-      goto ERR;
+   	PERR("Port Header Error %d\n", res);
+   	goto ERR;
    }
 
    // get port feature list
    res =  get_port_featurelist(pport_dev,pkvp_port_mmio );
    if(res !=0) {
-      PERR("Port device feature list Error %d \n",res);
-      goto ERR;
+   	PERR("Port device feature list Error %d \n",res);
+   	goto ERR;
    }
 
    PINFO(" get_port_mmio EXIT \n");
-   ERR:
+ERR:
    PTRACEOUT_INT(res);
    return res;
 }
@@ -106,61 +124,61 @@ bt32bitInt get_port_mmio(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio
 /// @return    error code
 bt32bitInt get_port_header(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
 {
-   bt32bitInt res =0;
-   bt32bitInt offset =0;
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
 
    PTRACEIN;
-   PINFO(" get_port_header ENTER\n");
+	PINFO(" get_port_header ENTER\n");
 
-   ccip_port_hdr(pport_dev) =  (struct CCIP_PORT_HDR*) kosal_kzmalloc(sizeof(struct CCIP_PORT_HDR));
+	ccip_port_hdr(pport_dev) =  (struct CCIP_PORT_HDR*) kosal_kzmalloc(sizeof(struct CCIP_PORT_HDR));
 
-   if ( NULL == ccip_port_hdr(pport_dev)) {
-      PERR("Unable to allocate system memory for PORT Header object\n");
-      res = -ENOMEM;
-      goto ERR;
-   }
-   // Read port Header
-   ccip_port_hdr(pport_dev)->ccip_port_dfh.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	if ( NULL == ccip_port_hdr(pport_dev)) {
+		 PERR("Unable to allocate system memory for PORT Header object\n");
+		 res = -ENOMEM;
+		 goto ERR;
+	  }
+	// Read port Header
+	ccip_port_hdr(pport_dev)->ccip_port_dfh.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port AFU ID low
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_afuidl.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port AFU ID low
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_afuidl.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port AFU ID hight
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_afuidh.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port AFU ID hight
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_afuidh.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read  next afu offset
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_next_afu.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	 // Read  next afu offset
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_next_afu.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Rsvd
-   offset = offset + byte_offset_CSR;
+	// Rsvd
+	offset = offset + byte_offset_CSR;
 
-   // Read  scratchpad csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_scratchpad.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	 // Read  scratchpad csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_scratchpad.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read  PORT Capability csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_capability.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read  PORT Capability csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_capability.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read  PORT control csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read  PORT control csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read  PORT status csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_hdr(pport_dev)->ccip_port_status.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read  PORT status csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_hdr(pport_dev)->ccip_port_status.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
 
-   PINFO(" get_port_header EXIT \n");
-   PTRACEOUT_INT(res);
-   return res;
+	PINFO(" get_port_header EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
-   ERR:
-   PTRACEOUT_INT(res);
-   return res;
+ERR:
+	PTRACEOUT_INT(res);
+	return res;
 }
 
 
@@ -193,71 +211,71 @@ bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr pkvp_po
    while (validFeature)
    {
 
-      // check for Device type
-      // Type == CCIP_DFType_private
-      if(port_dfh.Type  != CCIP_DFType_private ) {
-         PERR(" invalid PORT Feature Type \n");
-         res = -EINVAL;
-         goto ERR;
+		// check for Device type
+		// Type == CCIP_DFType_private
+		if(port_dfh.Type  != CCIP_DFType_private ) {
+			PERR(" invalid PORT Feature Type \n");
+			res = -EINVAL;
+			goto ERR;
 
-      }
-      // Device feature revision
+		}
+		// Device feature revision
       switch (port_dfh.Feature_rev)
-      {
+        {
 
-         case CCIP_DFL_rev0 :
-         {
-            // Device feature ID
-            switch(port_dfh.Feature_ID)
-            {
+           case CCIP_DFL_rev0 :
+           {
+         	  // Device feature ID
+                switch(port_dfh.Feature_ID)
+                {
 
-               case CCIP_PORT_ERROR_DFLID:
-               {
-                  res = get_port_err_rev0(pport_dev, pkvp_port );
-               }
-               break;
+                   case CCIP_PORT_ERROR_DFLID:
+                   {
+                     res = get_port_err_rev0(pport_dev, pkvp_port );
+                   }
+                   break;
 
-               case CCIP_PORT_USMG_DFLID:
-               {
-                  res = get_port_umsg_rev0(pport_dev, pkvp_port );
-               }
-               break;
+                   case CCIP_PORT_USMG_DFLID:
+                   {
+                      res = get_port_umsg_rev0(pport_dev, pkvp_port );
+                   }
+                   break;
 
-               case CCIP_PORT_PR_DFLID:
-               {
-                  res = get_port_pr_rev0(pport_dev, pkvp_port );
-               }
-               break;
+                   case CCIP_PORT_PR_DFLID:
+                   {
+                      res = get_port_pr_rev0(pport_dev, pkvp_port );
+                   }
+                   break;
 
-               case CCIP_PORT_STP_DFLID:
-               {
-                  res = get_port_stap_rev0(pport_dev, pkvp_port );
-               }
-               break;
-
-
-               default :
-               {
-                  PERR(" invalid PORT Feature ID\n");
-                  res = -EINVAL;
-                  goto ERR;
-               }
-               break ;
-            } // end switch
+                   case CCIP_PORT_STP_DFLID:
+                   {
+                      res = get_port_stap_rev0(pport_dev, pkvp_port );
+                   }
+                   break;
 
 
-         }
-         break ;
+                   default :
+                   {
+                  	 PERR(" invalid PORT Feature ID\n");
+                  	 res = -EINVAL;
+                  	 goto ERR;
+                   }
+                      break ;
+                } // end switch
 
-         case CCIP_DFL_rev1:
-         {
 
-         }
-         break ;
+           }
+           break ;
 
-         default :
-            break ;
-      }; // end switch
+           case CCIP_DFL_rev1:
+           {
+
+           }
+           break ;
+
+           default :
+           break ;
+        }; // end switch
 
       if(port_dfh.next_DFH_offset !=0) {
 
@@ -277,7 +295,7 @@ bt32bitInt get_port_featurelist(struct port_device *pport_dev,btVirtAddr pkvp_po
    PTRACEOUT_INT(res);
    return res;
 
-   ERR:
+ERR:
    PTRACEOUT_INT(res);
    return res;
 }
@@ -300,10 +318,10 @@ bt32bitInt get_port_err_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_
    ccip_port_err(pport_dev) =  (struct CCIP_PORT_ERR_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_ERR_DFL));
 
    if ( NULL == ccip_port_err(pport_dev)) {
-      PERR("Unable to allocate system memory for PORT ERROR object\n");
-      res = -ENOMEM;
-      goto ERR;
-   }
+       PERR("Unable to allocate system memory for PORT ERROR object\n");
+       res = -ENOMEM;
+       goto ERR;
+     }
    // Read port error header
    ccip_port_err(pport_dev)->ccip_port_err_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
@@ -331,7 +349,7 @@ bt32bitInt get_port_err_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_
    PTRACEOUT_INT(res);
    return res;
 
-   ERR:
+ERR:
    PTRACEOUT_INT(res);
    return res;
 }
@@ -344,42 +362,42 @@ bt32bitInt get_port_err_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_
 bt32bitInt get_port_umsg_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio)
 {
 
-   bt32bitInt res =0;
-   bt32bitInt offset =0;
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
 
-   PTRACEIN;
-   PINFO(" get_port_umsg_rev0 ENTER\n");
+	PTRACEIN;
+	PINFO(" get_port_umsg_rev0 ENTER\n");
 
-   ccip_port_umsg(pport_dev) =  (struct CCIP_PORT_UMSG_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_UMSG_DFL));
+	ccip_port_umsg(pport_dev) =  (struct CCIP_PORT_UMSG_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_UMSG_DFL));
 
-   if (  NULL == ccip_port_umsg(pport_dev)) {
-      PERR("Unable to allocate system memory for PORT USMG object\n");
-      res = -ENOMEM;
-      goto ERR;
-   }
-   // Read port USMG header
-   ccip_port_umsg(pport_dev)->ccip_port_umsg_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	if (  NULL == ccip_port_umsg(pport_dev)) {
+		 PERR("Unable to allocate system memory for PORT USMG object\n");
+		 res = -ENOMEM;
+		 goto ERR;
+	  }
+	// Read port USMG header
+	ccip_port_umsg(pport_dev)->ccip_port_umsg_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port USMG  capability csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_umsg(pport_dev)->ccip_umsg_capability.csr= read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port USMG  capability csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_umsg(pport_dev)->ccip_umsg_capability.csr= read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port USMG  base address csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_umsg(pport_dev)->ccip_umsg_base_address.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port USMG  base address csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_umsg(pport_dev)->ccip_umsg_base_address.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port USMG  mode csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_umsg(pport_dev)->ccip_umsg_mode.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port USMG  mode csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_umsg(pport_dev)->ccip_umsg_mode.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
 
-   PINFO(" get_port_umsg_rev0 EXIT\n");
-   PTRACEOUT_INT(res);
-   return res;
+	PINFO(" get_port_umsg_rev0 EXIT\n");
+	PTRACEOUT_INT(res);
+	return res;
 
-   ERR:
-   PTRACEOUT_INT(res);
-   return res;
+ERR:
+	PTRACEOUT_INT(res);
+	return res;
 }
 
 /// @brief   reads PORT PR CSR
@@ -390,48 +408,48 @@ bt32bitInt get_port_umsg_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port
 bt32bitInt get_port_pr_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio)
 {
 
-   bt32bitInt res =0;
-   bt32bitInt offset =0;
-   PTRACEIN;
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
+	PTRACEIN;
    PINFO(" get_port_pr_rev0 ENTER\n");
 
-   ccip_port_pr(pport_dev) =  (struct CCIP_PORT_PR_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_PR_DFL));
+	ccip_port_pr(pport_dev) =  (struct CCIP_PORT_PR_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_PR_DFL));
 
-   if (  NULL == ccip_port_pr(pport_dev)) {
-      PERR("Unable to allocate system memory for PORT PR object\n");
-      res = -ENOMEM;
-      goto ERR;
-   }
-   // Read port PR header
-   ccip_port_pr(pport_dev)->ccip_port_pr_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	if (  NULL == ccip_port_pr(pport_dev)) {
+		 PERR("Unable to allocate system memory for PORT PR object\n");
+		 res = -ENOMEM;
+		 goto ERR;
+	  }
+	// Read port PR header
+	ccip_port_pr(pport_dev)->ccip_port_pr_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port PR control csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_pr(pport_dev)->ccip_port_pr_control.csr= read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port PR control csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_pr(pport_dev)->ccip_port_pr_control.csr= read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port PR status csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_pr(pport_dev)->ccip_port_pr_status.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port PR status csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_pr(pport_dev)->ccip_port_pr_status.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port PR data csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_pr(pport_dev)->ccip_port_pr_data.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port PR data csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_pr(pport_dev)->ccip_port_pr_data.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port PR power budget csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_pr(pport_dev)->ccip_port_pr_pbudget.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port PR power budget csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_pr(pport_dev)->ccip_port_pr_pbudget.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port PR user clock frequency csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_pr(pport_dev)->ccip_usr_clk_freq.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port PR user clock frequency csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_pr(pport_dev)->ccip_usr_clk_freq.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
 
-   PINFO(" get_port_pr_rev0 EXIT\n");
-   PTRACEOUT_INT(res);
-   return res;
-   ERR:
-   PTRACEOUT_INT(res);
-   return res;
+	PINFO(" get_port_pr_rev0 EXIT\n");
+	PTRACEOUT_INT(res);
+	return res;
+ERR:
+	PTRACEOUT_INT(res);
+	return res;
 }
 
 /// @brief   reads PORT signaltap CSR
@@ -442,32 +460,32 @@ bt32bitInt get_port_pr_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_m
 bt32bitInt get_port_stap_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio)
 {
 
-   bt32bitInt res =0;
-   bt32bitInt offset =0;
-   PTRACEIN;
-   PINFO(" get_port_stap_rev0 ENTER\n");
+	bt32bitInt res =0;
+	bt32bitInt offset =0;
+	PTRACEIN;
+	PINFO(" get_port_stap_rev0 ENTER\n");
 
-   ccip_port_stap(pport_dev) =  (struct CCIP_PORT_STAP_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_STAP_DFL));
+	ccip_port_stap(pport_dev) =  (struct CCIP_PORT_STAP_DFL*) kosal_kzmalloc(sizeof(struct CCIP_PORT_STAP_DFL));
 
-   if (  NULL == ccip_port_stap(pport_dev)) {
-      PERR("Unable to allocate system memory for PORT Signaltap object\n");
-      res = -ENOMEM;
-      goto ERR;
-   }
-   // Read port signaltap header
-   ccip_port_stap(pport_dev)->ccip_port_stap_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+	if (  NULL == ccip_port_stap(pport_dev)) {
+		 PERR("Unable to allocate system memory for PORT Signaltap object\n");
+		 res = -ENOMEM;
+		 goto ERR;
+	  }
+	// Read port signaltap header
+	ccip_port_stap(pport_dev)->ccip_port_stap_dflhdr.csr = read_ccip_csr64(pkvp_port_mmio,offset);
 
-   // Read port signaltap csr
-   offset = offset + byte_offset_CSR;
-   ccip_port_stap(pport_dev)->ccip_port_stap.csr= read_ccip_csr64(pkvp_port_mmio,offset);
+	// Read port signaltap csr
+	offset = offset + byte_offset_CSR;
+	ccip_port_stap(pport_dev)->ccip_port_stap.csr= read_ccip_csr64(pkvp_port_mmio,offset);
 
-   PINFO(" get_port_stap_rev0 EXIT \n");
-   PTRACEOUT_INT(res);
-   return res;
+	PINFO(" get_port_stap_rev0 EXIT \n");
+	PTRACEOUT_INT(res);
+	return res;
 
-   ERR:
-   PTRACEOUT_INT(res);
-   return res;
+ERR:
+	PTRACEOUT_INT(res);
+	return res;
 }
 /// @brief   freee Port feature list memory
 ///
@@ -476,143 +494,163 @@ bt32bitInt get_port_stap_rev0(struct port_device *pport_dev,btVirtAddr pkvp_port
 void ccip_port_mem_free(struct port_device *pport_dev )
 {
 
-   PTRACEIN;
-   PINFO(" ccip_port_mem_free ENTER\n");
+	PTRACEIN;
+	PINFO(" ccip_port_mem_free ENTER\n");
 
-   if(pport_dev)	{
+	if(pport_dev)	{
 
-      PINFO(" ccip_port_mem_free  pport_dev \n");
+		PINFO(" ccip_port_mem_free  pport_dev \n");
 
-      if(pport_dev->m_pport_hdr) {
+		if(pport_dev->m_pport_hdr) {
 
-         kosal_kfree(pport_dev->m_pport_hdr, sizeof(struct CCIP_PORT_HDR));
-      }
+			kosal_kfree(pport_dev->m_pport_hdr, sizeof(struct CCIP_PORT_HDR));
+		}
 
-      if(pport_dev->m_pport_err) {
+		if(pport_dev->m_pport_err) {
 
-         kosal_kfree(pport_dev->m_pport_err, sizeof(struct CCIP_PORT_ERR_DFL));
-      }
+			kosal_kfree(pport_dev->m_pport_err, sizeof(struct CCIP_PORT_ERR_DFL));
+		}
 
-      if(pport_dev->m_pport_umsg) {
+		if(pport_dev->m_pport_umsg) {
 
-         kosal_kfree(pport_dev->m_pport_umsg, sizeof(struct CCIP_PORT_UMSG_DFL));
-      }
+			kosal_kfree(pport_dev->m_pport_umsg, sizeof(struct CCIP_PORT_UMSG_DFL));
+		}
 
-      if(pport_dev->m_pport_pr)	{
+		if(pport_dev->m_pport_pr)	{
 
-         kosal_kfree(pport_dev->m_pport_pr, sizeof(struct CCIP_PORT_PR_DFL));
-      }
+			kosal_kfree(pport_dev->m_pport_pr, sizeof(struct CCIP_PORT_PR_DFL));
+		}
 
-      if(pport_dev->m_pport_stap) 	{
+		if(pport_dev->m_pport_stap) 	{
 
-         kosal_kfree(pport_dev->m_pport_stap, sizeof(struct CCIP_PORT_STAP_DFL));
-      }
+			kosal_kfree(pport_dev->m_pport_stap, sizeof(struct CCIP_PORT_STAP_DFL));
+		}
 
-      // iounmap  BAR1 TBD
-   }
-   PINFO(" ccip_port_mem_free EXIT\n");
+		// iounmap  BAR1 TBD
+	}
+	PINFO(" ccip_port_mem_free EXIT\n");
 
-   PTRACEOUT;
+	PTRACEOUT;
 }
 
-/// @brief   port reset
+
+/// @brief   Port Re Enable
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt port_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+bt32bitInt afu_re_enable(btVirtAddr pkvp_port_mmio )
 {
+
    bt32bitInt res =0;
-   bt32bitInt offset =0;
+   struct CCIP_PORT_CONTROL port_control;
 
-   if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
-   {
+   PINFO(" Enter \n");
 
-      offset =  byte_offset_PORT_CONTROL;
-      ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
+   if(NULL == pkvp_port_mmio)  {
 
-      ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x1;
-
-      // Reset Port
-      write_ccip_csr64(pkvp_port_mmio, offset,ccip_port_hdr(pport_dev)->ccip_port_control.csr);
+      res = -EINVAL;
+      return  res;
    }
 
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
+   port_control.port_sftreset_control = 0x0;
+
+   // Re enable port /afu
+   write_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL,port_control.csr);
+
+   PINFO(" Exit \n");
 
    return res;
 }
 
-
-/// @brief   Port Reset Enable
+/// @brief   Reset port
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt port_reset_enable(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+bt32bitInt afu_port_reset(btVirtAddr pkvp_port_mmio )
 {
    bt32bitInt res =0;
+   struct CCIP_PORT_CONTROL port_control;
 
+   PINFO(" Enter \n");
 
-   if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
-   {
+   if(NULL == pkvp_port_mmio)  {
 
-      port_reset(pport_dev,pkvp_port_mmio );
-
-      // Port enable  TBD ?
+      res = -EINVAL;
+      return  res;
    }
 
+   // afu/port Quiesce reset
+   res = afu_quiesce_reset(pkvp_port_mmio );
+   if(0 != res) {
+      goto ERR;
+   }
+
+   // afu/port enable
+   res = afu_re_enable(pkvp_port_mmio );
+   if(0 != res) {
+      goto ERR;
+   }
+
+   PINFO(" Exit \n");
+
+ERR:
+   PINFO(" Error Exit \n");
    return res;
 }
+
+
 
 /// @brief   Port Quiesce Reset
 ///
-/// @param[in] pport_dev port device pointer.
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    error code
-bt32bitInt port_quiesce_reset(struct port_device *pport_dev,btVirtAddr pkvp_port_mmio )
+bt32bitInt afu_quiesce_reset(btVirtAddr pkvp_port_mmio )
 {
    bt32bitInt res =0;
-   bt32bitInt offset =0;
-   bt32bitInt outstaning_request =0;
    btTime delay =10;
+   btTime totaldelay =0;
+   struct CCIP_PORT_CONTROL port_control;
 
-   if( (NULL != pport_dev ) && (NULL != ccip_port_hdr(pport_dev)) && (NULL != pkvp_port_mmio) )
+   PINFO(" Enter \n");
+
+   if(NULL == pkvp_port_mmio)  {
+
+   res = -EINVAL;
+   return  res;
+   }
+
+   // Reset Port
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
+   port_control.port_sftreset_control = 0x1;
+   write_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL,port_control.csr);
+
+   // read Port control CSR
+   port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
+
+   // All CCI-P request at port complete
+   // Set to 1 When all outstanding requests initiated bu this port have been drained
+   while (CCIP_PORT_OUTREQ_COMPLETE != port_control.ccip_outstaning_request)
    {
+      // Sleep
+      kosal_udelay(delay);
 
-      port_reset(pport_dev,pkvp_port_mmio );
+      // total dealy
+      totaldelay = totaldelay + delay;
 
-      offset =  byte_offset_PORT_CONTROL;
-      ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
-      outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
-
-
-      // All CCI-P request at port complete
-      // Set to 1 When all outstanding requests initiated bu this port have been drained
-      //TBD
-      // sleep
-      if(0 == outstaning_request)
-      {
-         kosal_udelay(delay);
-
-         ccip_port_hdr(pport_dev)->ccip_port_control.csr = read_ccip_csr64(pkvp_port_mmio,offset);
-         outstaning_request = ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request;
-         if(0 == outstaning_request)
-         {
-            // time out error
-            res = -ETIME;
-            return  res;
-         }
+      // if total delay is more then 1 millisecond , return erroor
+      if(totaldelay > CCIP_PORT_OUTREQ_TIMEOUT)   {
+         res = -ETIME;
+         break ;
       }
 
-
+      port_control.csr = read_ccip_csr64(pkvp_port_mmio,byte_offset_PORT_CONTROL);
 
    }
 
-
-   return res;
+   PINFO(" Exit \n");
+   return  res;
 }
-
-
-
 
 
 
