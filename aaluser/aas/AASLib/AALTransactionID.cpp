@@ -95,7 +95,7 @@ bt32bitInt _AssignTranID()
 //=============================================================================
 TransactionID::TransactionID()
 {
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
@@ -119,7 +119,7 @@ TransactionID::TransactionID(const stTransactionID_t &stTid)
 //=============================================================================
 TransactionID::TransactionID(bt32bitInt intID)
 {
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
@@ -133,7 +133,7 @@ TransactionID::TransactionID(bt32bitInt intID)
 TransactionID::TransactionID(bt32bitInt           intID,
                              btApplicationContext Ctxt)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
@@ -155,7 +155,7 @@ TransactionID::TransactionID(const TransactionID &rOther) :
 //=============================================================================
 TransactionID::TransactionID(btApplicationContext Ctxt)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
@@ -173,7 +173,7 @@ TransactionID::TransactionID(bt32bitInt           intID,
                              btEventHandler       evtHandler,
                              btBool               Filter)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
@@ -189,7 +189,7 @@ TransactionID::TransactionID(btApplicationContext Ctxt,
                              btEventHandler       evtHandler,
                              btBool               Filter)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
@@ -205,7 +205,7 @@ TransactionID::TransactionID(bt32bitInt     intID,
                              btEventHandler evtHandler,
                              btBool         Filter)
 {
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
@@ -221,7 +221,7 @@ TransactionID::TransactionID(btEventHandler evtHandler,
                              btBool         Filter)
 {
    //Assign an internal value
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
@@ -239,7 +239,7 @@ TransactionID::TransactionID(bt32bitInt           intID,
                              IBase               *pIBase,
                              btBool               Filter)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
@@ -255,7 +255,7 @@ TransactionID::TransactionID(btApplicationContext Ctxt,
                              IBase               *pIBase,
                              btBool               Filter)
 {
-   m_tid.m_ID      = Ctxt;
+   m_tid.m_Context = Ctxt;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
@@ -271,7 +271,7 @@ TransactionID::TransactionID(bt32bitInt intID,
                              IBase     *pIBase,
                              btBool     Filter)
 {
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
@@ -287,7 +287,7 @@ TransactionID::TransactionID(IBase *pIBase,
                              btBool Filter)
 {
    //Assign an internal value
-   m_tid.m_ID      = NULL;
+   m_tid.m_Context = NULL;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
@@ -301,7 +301,7 @@ TransactionID::TransactionID(IBase *pIBase,
 btApplicationContext TransactionID::Context() const
 {
    // return value
-   return m_tid.m_ID;
+   return m_tid.m_Context;
 }
 
 //=============================================================================
@@ -344,7 +344,7 @@ bt32bitInt TransactionID::ID() const
    return m_tid.m_intID;
 }
 
-void TransactionID::Context(btApplicationContext Context) { m_tid.m_ID      = Context; }
+void TransactionID::Context(btApplicationContext Context) { m_tid.m_Context = Context; }
 void TransactionID::Handler(btEventHandler Handler)       { m_tid.m_Handler = Handler; }
 void   TransactionID::Ibase(IBase *pIBase)                { m_tid.m_IBase   = pIBase;  }
 void  TransactionID::Filter(btBool Filter)                { m_tid.m_Filter  = Filter;  }
@@ -391,7 +391,7 @@ btBool TransactionID::operator == (const TransactionID &rhs) const
    }
 
    // compare the other data members.
-   return m_tid.m_ID      == rhs.m_tid.m_ID      &&
+   return m_tid.m_Context == rhs.m_tid.m_Context &&
           m_tid.m_Handler == rhs.m_tid.m_Handler &&
           m_tid.m_Filter  == rhs.m_tid.m_Filter  &&
           m_tid.m_intID   == rhs.m_tid.m_intID;
