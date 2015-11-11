@@ -107,7 +107,7 @@ public:
 
    /// @brief Construct from structure
    /// @param[in] stTid XXX from kernel ioctl?
-   TransactionID(stTransactionID_t stTid);
+   TransactionID(stTransactionID_t    stTid);
 
    /// @brief Copy Constructor
    /// @param[in] rOther TransactionID to copy
@@ -119,7 +119,7 @@ public:
 
    /// @brief Specified Integer ID
    /// @param intID 32-bit integer
-   TransactionID(bt32bitInt intID);
+   TransactionID(bt32bitInt           intID);
 
    /// @brief Application specified Context and Handler
    /// @param intID
@@ -135,15 +135,15 @@ public:
    /// @param Filter
    TransactionID(btApplicationContext ID,
                  btEventHandler       EventHandler,
-                 btBool               Filter = true);
+                 btBool               Filter=true);
 
    /// @brief Application specified ID and Handler
    /// @param intID
    /// @param EventHandler
    /// @param Filter
-   TransactionID(bt32bitInt     intID,
-                 btEventHandler EventHandler,
-                 btBool         Filter=true);
+   TransactionID(bt32bitInt           intID,
+                 btEventHandler       EventHandler,
+                 btBool               Filter=true);
 
    /// @brief Application specified ID, Context, Handler, Filter
    /// @param intID
@@ -158,58 +158,58 @@ public:
    /// @brief System assigned ID application provided Handler.
    /// @param EventHandler
    /// @param Filter
-   TransactionID(btEventHandler EventHandler,
-                 btBool         Filter=true);
+   TransactionID(btEventHandler       EventHandler,
+                 btBool               Filter=true);
 
 
   /// @brief Application specified Context and Handler
    /// @param ID
    /// @param iBase
    /// @param Filter
-   TransactionID(btApplicationContext         ID,
-                 IBase                       *pIBase,
-                 btBool                       Filter = true);
+   TransactionID(btApplicationContext ID,
+                 IBase               *pIBase,
+                 btBool               Filter=true);
 
    /// @brief Application specified ID and Handler
    /// @param intID
    /// @param iBase
    /// @param Filter
-   TransactionID(bt32bitInt                   intID,
-                 IBase                       *pIBase,
-                 btBool                       Filter=true);
+   TransactionID(bt32bitInt           intID,
+                 IBase               *pIBase,
+                 btBool               Filter=true);
 
    /// @brief Application specified ID, Context, Handler, Filter
    /// @param intID
    /// @param ID
    /// @param iBase
    /// @param Filter
-   TransactionID(bt32bitInt                   intID,
-                 btApplicationContext         ID,
-                 IBase                       *pIBase,
-                 btBool                       Filter=true);
+   TransactionID(bt32bitInt           intID,
+                 btApplicationContext ID,
+                 IBase               *pIBase,
+                 btBool               Filter=true);
 
    /// @brief System assigned ID application provided Handler.
    /// @param iBase
    /// @param Filter
-   TransactionID(IBase                       *pIBase,
-                 btBool                       Filter=true);
+   TransactionID(IBase               *pIBase,
+                 btBool               Filter=true);
 
    /// TransactionID Destructor.
    virtual ~TransactionID();
 
-   //Accessors
-   btApplicationContext        Context() const;
-   btEventHandler              Handler() const;
-   IBase                      *Ibase() const;
-   btBool                      Filter()  const;
-   bt32bitInt                  ID()      const;
+   // Accessors
+   btApplicationContext Context() const;
+   btEventHandler       Handler() const;
+   IBase                 *Ibase() const;
+   btBool                Filter() const;
+   bt32bitInt                ID() const;
 
    // Mutators
-   void Context(btApplicationContext Context)             { m_tid.m_ID = Context;                }
-   void Handler(btEventHandler Handler)                   { m_tid.m_Handler = Handler;           }
-   void Ibase(IBase *pIBase)                              { m_tid.m_IBase = pIBase;              }
-   void Filter(btBool Filter)                             { m_tid.m_Filter = Filter;             }
-   void ID(bt32bitInt intID)                              { m_tid.m_intID = intID;               }
+   void Context(btApplicationContext Context);
+   void Handler(btEventHandler       Handler);
+   void   Ibase(IBase               *pIBase);
+   void  Filter(btBool               Filter);
+   void      ID(bt32bitInt           intID);
 
    TransactionID & operator = (TransactionID const &rOther) {
       m_tid = rOther.m_tid;
@@ -229,6 +229,9 @@ public:
       return m_tid;
    }
 
+   btBool operator == (const TransactionID &rhs) const;
+
+#if DEPRECATED
    btBool operator < (const TransactionID &rOther) const {
       return m_tid.m_intID < rOther.m_tid.m_intID;
    }
@@ -236,6 +239,7 @@ public:
    btBool operator > (const TransactionID  &rOther) const{
        return m_tid.m_intID > rOther.m_tid.m_intID;
    }
+#endif // DEPRECATED
 
 private:
    stTransactionID_t  m_tid;

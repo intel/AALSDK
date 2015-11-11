@@ -83,7 +83,7 @@ class HWALIAFU_API HWALIAFU : public ServiceBase,
 #endif // __AAL_WINDOWS__
 public:
    // <DeviceServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, ServiceBase),
+DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
       m_tidSaved(),
@@ -91,23 +91,39 @@ public:
       m_MMIORmap(NULL),
       m_uMSGmap(NULL)
    {
+
 	   // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
-      SetInterface(        iidALI_MMIO_Service,   dynamic_cast<IALIMMIO *>(this));
-      SetInterface(        iidALI_UMSG_Service,   dynamic_cast<IALIUMsg *>(this));
-      SetInterface(        iidALI_BUFF_Service,   dynamic_cast<IALIBuffer *>(this));
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
+         m_bIsOK = false;
+      }
 //      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
-      SetInterface(        iidALI_RSET_Service,   dynamic_cast<IALIReset *>(this));
-      SetInterface(        iidServiceClient,      dynamic_cast<IServiceClient *>(this));   // for AIA
-      SetInterface(        iidAFUProxyClient,     dynamic_cast<IAFUProxyClient *>(this));  // for AFUProy
+      if ( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ){
+         m_bIsOK = false;
+      } // for AIA
+
+      if ( EObjOK != SetInterface(iidAFUProxyClient, dynamic_cast<IAFUProxyClient *>(this)) ){
+         m_bIsOK = false;
+      }  // for AFUProy
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-//   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </DeviceServiceBase>
 
    // <IALIMMIO>

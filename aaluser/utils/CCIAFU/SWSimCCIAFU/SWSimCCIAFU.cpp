@@ -131,12 +131,6 @@ btBool SWSimCCIAFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool SWSimCCIAFU::Release(btTime timeout)
-{
-   return ServiceBase::Release(timeout);
-}
-
-
 btPhysAddr SWSimCCIAFU::NextPhys()
 {
    btPhysAddr p   = m_NextPhys;

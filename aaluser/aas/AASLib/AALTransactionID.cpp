@@ -60,6 +60,7 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include "aalsdk/AALBase.h"
 #include "aalsdk/AALTransactionID.h"
 
 BEGIN_NAMESPACE(AAL)
@@ -342,6 +343,40 @@ bt32bitInt TransactionID::ID() const
 {
    //Return handler
    return m_tid.m_intID;
+}
+
+void TransactionID::Context(btApplicationContext Context) { m_tid.m_ID      = Context; }
+void TransactionID::Handler(btEventHandler Handler)       { m_tid.m_Handler = Handler; }
+void   TransactionID::Ibase(IBase *pIBase)                { m_tid.m_IBase   = pIBase;  }
+void  TransactionID::Filter(btBool Filter)                { m_tid.m_Filter  = Filter;  }
+void      TransactionID::ID(bt32bitInt intID)             { m_tid.m_intID   = intID;   }
+
+btBool TransactionID::operator == (const TransactionID &rhs) const
+{
+   const IBase *pMyIBase  = m_tid.m_IBase;
+   const IBase *pRHSIBase = rhs.m_tid.m_IBase;
+
+   if ( ( NULL == pMyIBase ) && ( NULL != pRHSIBase) ) {
+      return false;
+   }
+   if ( ( NULL != pMyIBase ) && ( NULL == pRHSIBase) ) {
+      return false;
+   }
+
+   if ( NULL != pMyIBase ) {
+      // We have an IBase * for both lhs and rhs.
+      ASSERT(NULL != pRHSIBase);
+
+      if ( pMyIBase->operator != (*pRHSIBase) ) {
+         return false;
+      }
+   }
+
+   // compare the other data members.
+   return m_tid.m_ID      == rhs.m_tid.m_ID      &&
+          m_tid.m_Handler == rhs.m_tid.m_Handler &&
+          m_tid.m_Filter  == rhs.m_tid.m_Filter  &&
+          m_tid.m_intID   == rhs.m_tid.m_intID;
 }
 
 //=============================================================================

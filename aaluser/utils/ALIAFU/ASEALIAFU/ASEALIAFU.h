@@ -61,42 +61,96 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// ASEALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_ASE)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class ASEALIAFU_API ASEALIAFU : public ServiceBase/*,
-                                    public IALIAFU   // FIXME: there is no single IALIAFU */
+class ASEALIAFU_API ASEALIAFU : public ServiceBase,
+                              public IServiceClient,     // for AIA
+                              public IALIMMIO,
+                              public IALIBuffer,
+                              public IALIUMsg,
+                              public IALIReset/*
+                              public IALIPerf*/
 {
+#if defined ( __AAL_WINDOWS__ )
+# pragma warning(pop)
+#endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
    DECLARE_AAL_SERVICE_CONSTRUCTOR(ASEALIAFU, ServiceBase),
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-//      SetInterface(        iidALIAFU,    dynamic_cast<IALIAFU *>(this));
-//      SetInterface(iidASEALIAFU, dynamic_cast<IALIAFU *>(this));
+
+      // TODO: at some point, these probably go into init() and be exposed based
+      //       on the actual capabilities
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
+         m_bIsOK = false;
+      }
+//      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
+      if ( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ){
+         m_bIsOK = false;
+      } // for AIA
+
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
-   // </ServiceBase>
+   // </DeviceServiceBase>
 
-   // <IALIAFU>
-   virtual void WorkspaceAllocate(btWSSize             Length,
-                                  TransactionID const &TranID);
+   // <IALIMMIO>
+   virtual btVirtAddr   mmioGetAddress( void );
+   virtual btCSROffset  mmioGetLength( void );
 
-   virtual void     WorkspaceFree(btVirtAddr           Address,
-                                  TransactionID const &TranID);
+   virtual btBool   mmioRead32( const btCSROffset Offset,       btUnsigned32bitInt * const pValue);
+   virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
+   virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
+   virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   // </IALIMMIO>
 
-   virtual btBool         CSRRead(btCSROffset CSR,
-                                  btCSRValue *pValue);
+   // <IALIBuffer>
+   virtual void bufferAllocate( btWSSize             Length,
+                                TransactionID const &TranID,
+                                NamedValueSet       *pOptArgs = NULL ){};
+   virtual void     bufferFree( btVirtAddr           Address,
+                                TransactionID const &TranID){};
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address){};
+   // </IALIBuffer>
 
-   virtual btBool        CSRWrite(btCSROffset CSR,
-                                  btCSRValue  Value);
-   virtual btBool      CSRWrite64(btCSROffset CSR,
-                                  bt64bitCSR  Value);
-   // </IALIAFU>
+   // <IALIUMsg>
+   virtual btUnsignedInt umsgGetNumber( void ){};
+   virtual btVirtAddr   umsgGetAddress( const btUnsignedInt UMsgNumber ){};
+   virtual bool      umsgSetAttributes( NamedValueSet const &nvsArgs){};
+   // </IALIUMsg>
+
+   // <IALIReset>
+   virtual IALIReset::e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL){};
+   virtual IALIReset::e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL){};
+   virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL){};
+   // </IALIReset>
+
+   // <IServiceClient>
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID()){};  // FIXME: potential dangling reference
+   virtual void serviceAllocateFailed(const IEvent &rEvent){};
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID()){};  // FIXME: potential dangling reference
+   virtual void serviceReleaseFailed(const IEvent &rEvent){};
+   virtual void serviceEvent(const IEvent &rEvent){};
+   // </IServiceClient>
+
 
 protected:
    typedef std::map<btVirtAddr, buffer_t> map_t;

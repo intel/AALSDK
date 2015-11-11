@@ -92,12 +92,6 @@ btBool ASECCIAFU::Release(TransactionID const &TranID, btTime timeout)
   return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ASECCIAFU::Release(btTime timeout)
-{
-  session_deinit();
-  return ServiceBase::Release(timeout);
-}
-
 
 void ASECCIAFU::WorkspaceAllocate(btWSSize             Length,
                                   TransactionID const &TranID)

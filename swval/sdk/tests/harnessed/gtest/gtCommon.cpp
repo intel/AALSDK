@@ -1227,6 +1227,43 @@ ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btObjectArray         
 
 void EmptyIAALUnMarshaller::importmsg(char const *pmsg, btWSSize len) {}
 
+
+EmptyIServiceBase::EmptyIServiceBase(btApplicationContext Ctx) :
+   AAL::CAASBase(Ctx),
+   m_initComplete_returns(false),
+   m_initFailed_returns(false),
+   m_ReleaseComplete_returns(false),
+   m_getServiceClient_returns(NULL),
+   m_getServiceClientBase_returns(NULL),
+   m_getRuntime_returns(NULL),
+   m_getRuntimeClient_returns(NULL),
+   m_getAALServiceModule_returns(NULL)
+{
+   if ( EObjOK != SetInterface(iidServiceBase, this) ) {
+      m_bIsOK = false;
+   }
+}
+
+btBool                    EmptyIServiceBase::initComplete(TransactionID const & ) { return m_initComplete_returns;         }
+btBool                      EmptyIServiceBase::initFailed(IEvent const * )        { return m_initFailed_returns;           }
+btBool                 EmptyIServiceBase::ReleaseComplete()                       { return m_ReleaseComplete_returns;      }
+NamedValueSet const &          EmptyIServiceBase::OptArgs()                 const { return m_OptArgs_returns;              }
+IServiceClient *      EmptyIServiceBase::getServiceClient()                 const { return m_getServiceClient_returns;     }
+IBase *           EmptyIServiceBase::getServiceClientBase()                 const { return m_getServiceClientBase_returns; }
+IRuntime *                  EmptyIServiceBase::getRuntime()                 const { return m_getRuntime_returns;           }
+IRuntimeClient *      EmptyIServiceBase::getRuntimeClient()                 const { return m_getRuntimeClient_returns;     }
+AALServiceModule * EmptyIServiceBase::getAALServiceModule()                 const { return m_getAALServiceModule_returns;  }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initComplete,         btBool,                m_initComplete_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initFailed,           btBool,                m_initFailed_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, ReleaseComplete,      btBool,                m_ReleaseComplete_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, OptArgs,              NamedValueSet const &, m_OptArgs_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClient,     IServiceClient *,      m_getServiceClient_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClientBase, IBase *,               m_getServiceClientBase_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntime,           IRuntime *,            m_getRuntime_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntimeClient,     IRuntimeClient *,      m_getRuntimeClient_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getAALServiceModule,  AALServiceModule *,    m_getAALServiceModule_returns)
+
 EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
                                    IRuntime         *pAALRUNTIME,
                                    IAALTransport    *ptransport,
@@ -1462,6 +1499,67 @@ btBool CallTrackingIRuntime::IsOK()
 {
    AddToLog("IRuntime::IsOK");
    return EmptyIRuntime::IsOK();
+}
+
+
+CallTrackingIServiceBase::CallTrackingIServiceBase(btApplicationContext Ctx) :
+   EmptyIServiceBase(Ctx)
+{}
+
+btBool CallTrackingIServiceBase::initComplete(TransactionID const &rtid)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceBase::initComplete");
+   l->AddParam("rtid", rtid);
+   return EmptyIServiceBase::initComplete(rtid);
+}
+
+btBool CallTrackingIServiceBase::initFailed(IEvent const *ptheEvent)
+{
+   MethodCallLogEntry *l = AddToLog("IServiceBase::initFailed");
+   l->AddParam("ptheEvent", reinterpret_cast<btObjectType>( const_cast<IEvent *>(ptheEvent) ));
+   return EmptyIServiceBase::initFailed(ptheEvent);
+}
+
+btBool CallTrackingIServiceBase::ReleaseComplete()
+{
+   AddToLog("IServiceBase::ReleaseComplete");
+   return EmptyIServiceBase::ReleaseComplete();
+}
+
+NamedValueSet const & CallTrackingIServiceBase::OptArgs() const
+{
+   AddToLog("IServiceBase::OptArgs");
+   return EmptyIServiceBase::OptArgs();
+}
+
+IServiceClient * CallTrackingIServiceBase::getServiceClient() const
+{
+   AddToLog("IServiceBase::getServiceClient");
+   return EmptyIServiceBase::getServiceClient();
+}
+
+IBase * CallTrackingIServiceBase::getServiceClientBase() const
+{
+   AddToLog("IServiceBase::getServiceClientBase");
+   return EmptyIServiceBase::getServiceClientBase();
+}
+
+IRuntime * CallTrackingIServiceBase::getRuntime() const
+{
+   AddToLog("IServiceBase::getRuntime");
+   return EmptyIServiceBase::getRuntime();
+}
+
+IRuntimeClient * CallTrackingIServiceBase::getRuntimeClient() const
+{
+   AddToLog("IServiceBase::getRuntimeClient");
+   return EmptyIServiceBase::getRuntimeClient();
+}
+
+AALServiceModule * CallTrackingIServiceBase::getAALServiceModule() const
+{
+   AddToLog("IServiceBase::getAALServiceModule");
+   return EmptyIServiceBase::getAALServiceModule();
 }
 
 

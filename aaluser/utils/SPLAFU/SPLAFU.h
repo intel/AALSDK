@@ -90,22 +90,25 @@ public:
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
-      SetInterface(iidSPLAFU, dynamic_cast<ISPLAFU *>(this));
-      SetInterface(iidCCIClient,      dynamic_cast<ICCIClient *>(this));
-      SetInterface(iidSPLClient,      dynamic_cast<ISPLClient *>(this));
-      SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this));
+      if ( EObjOK != SetInterface(iidSPLAFU, dynamic_cast<ISPLAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidSPLClient, dynamic_cast<ISPLClient *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidServiceClient,  dynamic_cast<IServiceClient *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   ~SPLAFU()
-   {
-   };
-
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
 

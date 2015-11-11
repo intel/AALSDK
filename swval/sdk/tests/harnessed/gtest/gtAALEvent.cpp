@@ -18,6 +18,7 @@ public:
    virtual btBool                     IsOK()                   const { return m_pCAALEvent->IsOK();           }
    virtual btApplicationContext    Context()                   const { return m_pCAALEvent->Context();        }
    virtual btApplicationContext SetContext(btApplicationContext Ctx) { return m_pCAALEvent->SetContext(Ctx);  }
+   virtual IEvent *                  Clone()                   const { return NULL;                           }
 
    virtual void setHandler(IServiceClient *p) { m_pCAALEvent->setHandler(p); }
    virtual void setHandler(IRuntimeClient *p) { m_pCAALEvent->setHandler(p); }
@@ -61,6 +62,8 @@ protected:
       m_pCAALEvent = new(std::nothrow) CAALEvent(pIBase, SubClassID);
       ASSERT_NONNULL(m_pCAALEvent);
    }
+
+   btBool ProcessEventTranID() { return false; }
 
    CAASBase   m_CAASBase;
    CAALEvent *m_pCAALEvent;
@@ -474,8 +477,16 @@ TEST(CAALEventTest, aal0640)
       IBase &                  Object()                  const  { return m_IBase;  }
       IBase *                 pObject()                  const  { return &m_IBase; }
       btApplicationContext SetContext(btApplicationContext Ctx) { return NULL;     }
+      IEvent *                  Clone()                  const  { return new(std::nothrow) aal0640Event(*this); }
 
    protected:
+      btBool       ProcessEventTranID()                         { return false;    }
+
+      aal0640Event(const aal0640Event &other) :
+         m_IBase(other.m_IBase),
+         m_SubClassIfc(other.m_SubClassIfc)
+      {}
+
       IBase             &m_IBase;
       btGenericInterface m_SubClassIfc;
    } rhs(base);
@@ -1678,3 +1689,114 @@ TEST(ObjectCreatedEventTest, aal0672)
 }
 #endif // DEPRECATED
 
+TEST(CAALEventTest, aal0748)
+{
+   // CAALEvent::Clone() creates a deep copy of the object.
+
+   CAASBase base;
+
+   CAALEvent *pOrig = new(std::nothrow) CAALEvent(&base);
+   ASSERT_NONNULL(pOrig);
+
+   IEvent *pClone = pOrig->Clone();
+
+   CAALEvent *pCAALEvent = dynamic_cast<CAALEvent *>(pClone);
+   ASSERT_NONNULL(pCAALEvent);
+
+   EXPECT_TRUE(pOrig->operator == (*pCAALEvent));
+
+   pCAALEvent->Delete();
+   pOrig->Delete();
+}
+
+TEST(CAALEventTest, aal0749)
+{
+   // CTransactionEvent::Clone() creates a deep copy of the object.
+
+   CAASBase      base;
+   TransactionID tid;
+   tid.ID(3);
+
+   CTransactionEvent *pOrig = new(std::nothrow) CTransactionEvent(&base, tid);
+   ASSERT_NONNULL(pOrig);
+
+   IEvent *pClone = pOrig->Clone();
+
+   CTransactionEvent *pCTransEvent = dynamic_cast<CTransactionEvent *>(pClone);
+   ASSERT_NONNULL(pCTransEvent);
+
+   EXPECT_TRUE(pOrig->operator == (*pCTransEvent));
+
+   EXPECT_EQ(3, pCTransEvent->TranID().ID());
+
+   pCTransEvent->Delete();
+   pOrig->Delete();
+}
+
+TEST(CAALEventTest, aal0750)
+{
+   // CExceptionEvent::Clone() creates a deep copy of the object.
+
+   CAASBase base;
+
+   const btID      num   = 46578;
+   const btID      reas  = 40982364;
+         btcString descr = "aal0750";
+
+   CExceptionEvent *pOrig = new(std::nothrow) CExceptionEvent(&base,
+                                                              num,
+                                                              reas,
+                                                              descr);
+   ASSERT_NONNULL(pOrig);
+
+   IEvent *pClone = pOrig->Clone();
+
+   CExceptionEvent *pCExEvent = dynamic_cast<CExceptionEvent *>(pClone);
+   ASSERT_NONNULL(pCExEvent);
+
+   EXPECT_TRUE(pOrig->operator == (*pCExEvent));
+
+   EXPECT_EQ(num, pCExEvent->ExceptionNumber());
+   EXPECT_EQ(reas, pCExEvent->Reason());
+   EXPECT_STREQ(descr, pCExEvent->Description());
+
+   pCExEvent->Delete();
+   pOrig->Delete();
+}
+
+TEST(CAALEventTest, aal0751)
+{
+   // CExceptionTransactionEvent::Clone() creates a deep copy of the object.
+
+   CAASBase base;
+
+   TransactionID tid;
+   tid.ID(3);
+
+   const btID      num   = 46578;
+   const btID      reas  = 40982364;
+         btcString descr = "aal0750";
+
+   CExceptionTransactionEvent *pOrig = new(std::nothrow) CExceptionTransactionEvent(&base,
+                                                                                    tid,
+                                                                                    num,
+                                                                                    reas,
+                                                                                    descr);
+   ASSERT_NONNULL(pOrig);
+
+   IEvent *pClone = pOrig->Clone();
+
+   CExceptionTransactionEvent *pCExTransEvent = dynamic_cast<CExceptionTransactionEvent *>(pClone);
+   ASSERT_NONNULL(pCExTransEvent);
+
+   EXPECT_TRUE(pOrig->operator == (*pCExTransEvent));
+
+   EXPECT_EQ(3, pCExTransEvent->TranID().ID());
+
+   EXPECT_EQ(num, pCExTransEvent->ExceptionNumber());
+   EXPECT_EQ(reas, pCExTransEvent->Reason());
+   EXPECT_STREQ(descr, pCExTransEvent->Description());
+
+   pCExTransEvent->Delete();
+   pOrig->Delete();
+}

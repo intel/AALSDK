@@ -111,23 +111,35 @@ public:
                 TransactionID const                &rtid) :
       m_That(That),
       m_ptr(ptr),
-      m_rtid(rtid)
+      m_tid(rtid)
    {}
+
+   virtual IEvent * Clone() const
+   {
+      return new(std::nothrow) InitComplete<T>(*this);
+   }
 
    virtual void Dispatch(btObjectType target) const
    {
-      (m_That->*m_ptr)(m_rtid);
+      (m_That->*m_ptr)(m_tid);
    }
 
    virtual void operator()()
    {
-      (m_That->*m_ptr)(m_rtid);
+      (m_That->*m_ptr)(m_tid);
    }
 
 protected:
+   InitComplete(const InitComplete &other) :
+      CAALEvent(other),
+      m_That(other.m_That),
+      m_ptr(other.m_ptr),
+      m_tid(other.m_tid)
+   {}
+
    T                  *m_That;
    void           (T::*m_ptr)(TransactionID const &);
-   TransactionID const m_rtid;
+   const TransactionID m_tid;
 };
 
 

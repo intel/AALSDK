@@ -800,6 +800,44 @@ protected:
    NamedValueSet m_NVS;
 };
 
+class EmptyIServiceBase : public AAL::IServiceBase,
+                          public AAL::CAASBase
+{
+public:
+   EmptyIServiceBase(btApplicationContext Ctx=NULL);
+
+   virtual btBool                     initComplete(TransactionID const &rtid);
+   virtual btBool                       initFailed(IEvent const *ptheEvent);
+   virtual btBool                  ReleaseComplete();
+   virtual NamedValueSet const &           OptArgs() const;
+   virtual IServiceClient *       getServiceClient() const;
+   virtual IBase *            getServiceClientBase() const;
+   virtual IRuntime *                   getRuntime() const;
+   virtual IRuntimeClient *       getRuntimeClient() const;
+   virtual AALServiceModule *  getAALServiceModule() const;
+
+   DECLARE_RETVAL_ACCESSORS(initComplete,         btBool)
+   DECLARE_RETVAL_ACCESSORS(initFailed,           btBool)
+   DECLARE_RETVAL_ACCESSORS(ReleaseComplete,      btBool)
+   DECLARE_RETVAL_ACCESSORS(OptArgs,              NamedValueSet const &)
+   DECLARE_RETVAL_ACCESSORS(getServiceClient,     IServiceClient *)
+   DECLARE_RETVAL_ACCESSORS(getServiceClientBase, IBase *)
+   DECLARE_RETVAL_ACCESSORS(getRuntime,           IRuntime *)
+   DECLARE_RETVAL_ACCESSORS(getRuntimeClient,     IRuntimeClient *)
+   DECLARE_RETVAL_ACCESSORS(getAALServiceModule,  AALServiceModule *)
+
+protected:
+   btBool            m_initComplete_returns;
+   btBool            m_initFailed_returns;
+   btBool            m_ReleaseComplete_returns;
+   IServiceClient   *m_getServiceClient_returns;
+   IBase            *m_getServiceClientBase_returns;
+   IRuntime         *m_getRuntime_returns;
+   IRuntimeClient   *m_getRuntimeClient_returns;
+   AALServiceModule *m_getAALServiceModule_returns;
+   NamedValueSet     m_OptArgs_returns;
+};
+
 class EmptyServiceBase : public AAL::ServiceBase
 {
 public:
@@ -916,6 +954,23 @@ public:
    virtual btBool       releaseRuntimeProxy();
    virtual IRuntimeClient *getRuntimeClient();
    virtual btBool                      IsOK();
+};
+
+class CallTrackingIServiceBase : public EmptyIServiceBase,
+                                 public MethodCallLog
+{
+public:
+   CallTrackingIServiceBase(btApplicationContext Ctx=NULL);
+
+   virtual btBool                     initComplete(TransactionID const &rtid);
+   virtual btBool                       initFailed(IEvent const *ptheEvent);
+   virtual btBool                  ReleaseComplete();
+   virtual NamedValueSet const &           OptArgs() const;
+   virtual IServiceClient *       getServiceClient() const;
+   virtual IBase *            getServiceClientBase() const;
+   virtual IRuntime *                   getRuntime() const;
+   virtual IRuntimeClient *       getRuntimeClient() const;
+   virtual AALServiceModule *  getAALServiceModule() const;
 };
 
 class CallTrackingServiceBase : public EmptyServiceBase,

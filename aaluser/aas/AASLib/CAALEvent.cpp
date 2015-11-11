@@ -302,6 +302,11 @@ btApplicationContext CAALEvent::SetContext(btApplicationContext Ctx)
    return res;
 }
 
+IEvent * CAALEvent::Clone() const
+{
+   return new(std::nothrow) CAALEvent(*this);
+}
+
 //=============================================================================
 // Name: CAALEvent::SetSubClassInterface
 // Description: Sets an interface pointer on the subclass interface for the
@@ -445,20 +450,7 @@ EOBJECT CAALEvent::SetInterface(btIID              Interface,
 // Interface:    protected
 // Comments:
 //=============================================================================
-btBool CAALEvent::ProcessEventTranID()
-{
-   btBool ret = false;
-
-   // If a static handler has been assigned
-   if ( NULL != m_TranID.Handler() ) {
-      //Call it
-      m_TranID.Handler()(*this);
-      ret =  m_TranID.Filter();
-      // If an IMessageHandler has been assigned
-   }
-   // Return filter value or false if no override at all
-   return ret;
-}
+btBool CAALEvent::ProcessEventTranID() {/* no TransactionID override in regular events */ return false; }
 
 CAALEvent::CAALEvent() {/*empty*/}
 CAALEvent::~CAALEvent() {/*empty*/}
@@ -471,11 +463,10 @@ CAALEvent::~CAALEvent() {/*empty*/}
 //=============================================================================
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
                                      TransactionID const &TranID) :
-   CAALEvent(pObject)
+   CAALEvent(pObject),
+   m_TranID(TranID)
 {
    AutoLock(this);
-
-   m_TranID = TranID;
 
    // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetSubClassInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
@@ -493,11 +484,10 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
 CTransactionEvent::CTransactionEvent(IBase               *pObject,
                                      btIID                SubClassID,
                                      TransactionID const &TranID) :
-   CAALEvent(pObject)
+   CAALEvent(pObject),
+   m_TranID(TranID)
 {
    AutoLock(this);
-
-   m_TranID = TranID;
 
    // ITransactionEvent is the default native subclass interface unless overridden by a subclass.
    if ( SetInterface(iidTranEvent, dynamic_cast<ITransactionEvent *>(this)) != EObjOK ) {
@@ -510,6 +500,37 @@ CTransactionEvent::CTransactionEvent(IBase               *pObject,
       m_bIsOK = false;
       return;
    }
+}
+
+btBool CTransactionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      ITransactionEvent *pIOther = reinterpret_cast<ITransactionEvent *>(rhs.Interface(iidTranEvent));
+      CTransactionEvent *pCOther = dynamic_cast<CTransactionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_TranID == pCOther->m_TranID ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CTransactionEvent::Clone() const
+{
+   return new(std::nothrow) CTransactionEvent(*this);
 }
 
 TransactionID CTransactionEvent::TranID() const
@@ -526,6 +547,20 @@ void CTransactionEvent::SetTranID(TransactionID const &TranID)
 
 CTransactionEvent::CTransactionEvent() {/*empty*/}
 CTransactionEvent::CTransactionEvent(IBase * ) {/*empty*/}
+
+btBool CTransactionEvent::ProcessEventTranID()
+{
+   btBool ret = false;
+   // If a static handler has been assigned
+   if ( NULL != m_TranID.Handler() ) {
+      //Call it
+      m_TranID.Handler()(*this);
+      ret =  m_TranID.Filter();
+      // If an IMessageHandler has been assigned
+   }
+   // Return filter value or false if no override at all
+   return ret;
+}
 
 //=============================================================================
 // Name: CExceptionEvent
@@ -581,6 +616,39 @@ CExceptionEvent::CExceptionEvent(IBase    *pObject,
       m_bIsOK = false;
       return;
    }
+}
+
+btBool CExceptionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      IExceptionEvent *pIOther = reinterpret_cast<IExceptionEvent *>(rhs.Interface(iidExEvent));
+      CExceptionEvent *pCOther = dynamic_cast<CExceptionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_ExceptionNumber == pCOther->m_ExceptionNumber &&
+              m_Reason          == pCOther->m_Reason          &&
+              0 == m_strDescription.compare(pCOther->m_strDescription) ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CExceptionEvent::Clone() const
+{
+   return new(std::nothrow) CExceptionEvent(*this);
 }
 
 btID CExceptionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
@@ -662,6 +730,40 @@ CExceptionTransactionEvent::CExceptionTransactionEvent(IBase               *pObj
    }
 }
 
+btBool CExceptionTransactionEvent::operator == (const IEvent &rhs) const
+{
+   AutoLock(this);
+
+   if ( CAALEvent::operator==(rhs) ) {
+
+      IExceptionTransactionEvent *pIOther = reinterpret_cast<IExceptionTransactionEvent *>(rhs.Interface(iidExTranEvent));
+      CExceptionTransactionEvent *pCOther = dynamic_cast<CExceptionTransactionEvent *>(pIOther);
+
+      if ( NULL == pCOther ) {
+         return false;
+      }
+
+      {
+         AutoLock(pCOther);
+
+         if ( m_TranID          == pCOther->m_TranID          &&
+              m_ExceptionNumber == pCOther->m_ExceptionNumber &&
+              m_Reason          == pCOther->m_Reason          &&
+              0 == m_strDescription.compare(pCOther->m_strDescription) ) {
+            // objects are equal
+            return true;
+         }
+      }
+
+   }
+   return false;
+}
+
+IEvent * CExceptionTransactionEvent::Clone() const
+{
+   return new(std::nothrow) CExceptionTransactionEvent(*this);
+}
+
 btID CExceptionTransactionEvent::ExceptionNumber() const { AutoLock(this); return m_ExceptionNumber; }
 btID          CExceptionTransactionEvent::Reason() const { AutoLock(this); return m_Reason;          }
 
@@ -677,6 +779,20 @@ void CExceptionTransactionEvent::SetTranID(TransactionID const &TranID)
 {
    AutoLock(this);
    m_TranID = TranID;
+}
+
+btBool CExceptionTransactionEvent::ProcessEventTranID()
+{
+   btBool ret = false;
+   // If a static handler has been assigned
+   if ( NULL != m_TranID.Handler() ) {
+      //Call it
+      m_TranID.Handler()(*this);
+      ret =  m_TranID.Filter();
+      // If an IMessageHandler has been assigned
+   }
+   // Return filter value or false if no override at all
+   return ret;
 }
 
 CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}

@@ -91,7 +91,7 @@ BEGIN_NAMESPACE(AAL)
 # define CL(x) ((x) * 64)
 #endif // CL
 
-btBool SWSimSPLAFU::init(IBase *pclientBase,
+btBool SWSimSPLAFU::init(IBase               *pclientBase,
                          NamedValueSet const &optArgs,
                          TransactionID const &TranID)
 {
@@ -195,25 +195,6 @@ btBool SWSimSPLAFU::Release(TransactionID const &TranID, btTime timeout)
    return ServiceBase::Release(TranID, timeout);
 }
 
-btBool SWSimSPLAFU::Release(btTime timeout)
-{
-   if ( NULL != m_SPLDSM.Virt() ) {
-      InternalWkspcFree(m_SPLDSM.Virt(), m_SPLDSM);
-      m_SPLDSM = WkspcAlloc();
-   }
-
-   if ( NULL != m_SPLContext.Virt() ) {
-      InternalWkspcFree(m_SPLContext.Virt(), m_SPLContext);
-      m_SPLContext = WkspcAlloc();
-   }
-
-   if ( NULL != m_AFUDSM.Virt() ) {
-      InternalWkspcFree(m_AFUDSM.Virt(), m_AFUDSM);
-      m_AFUDSM = WkspcAlloc();
-   }
-
-   return ServiceBase::Release(timeout);
-}
 
 btPhysAddr SWSimSPLAFU::NextPhys()
 {

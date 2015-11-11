@@ -60,9 +60,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup CCIAFU
 /// @{
 
-btBool CCIAFU::init( IBase *pclientBase,
-                     NamedValueSet const &optArgs,
-                     TransactionID const &rtid)
+btBool CCIAFU::init(IBase               *pclientBase,
+                    NamedValueSet const &optArgs,
+                    TransactionID const &rtid)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
@@ -108,17 +108,6 @@ btBool CCIAFU::Release(TransactionID const &TranID, btTime timeout)
    }
 
    return ServiceBase::Release(TranID, timeout);
-}
-
-btBool CCIAFU::Release(btTime timeout)
-{
-   if ( NULL != m_pDelegate ) {
-      dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
-      m_pDelegate = NULL;
-      return true;
-   }
-
-   return ServiceBase::Release(timeout);
 }
 
 
@@ -176,7 +165,7 @@ void CCIAFU::serviceReleaseFailed(const IEvent        &Event)
 void CCIAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), Event.Clone()) );
 }
 
 

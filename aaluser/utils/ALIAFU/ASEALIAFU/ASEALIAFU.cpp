@@ -65,9 +65,9 @@ BEGIN_NAMESPACE(AAL)
 
 CriticalSection ASEALIAFU::sm_ASEMtx;
 
-btBool ASEALIAFU::init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &TranID)
+btBool ASEALIAFU::init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &TranID)
 {
    ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
    ASSERT( NULL != pClient );
@@ -92,144 +92,7 @@ btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
   return ServiceBase::Release(TranID, timeout);
 }
 
-btBool ASEALIAFU::Release(btTime timeout)
-{
-  session_deinit();
-  return ServiceBase::Release(timeout);
-}
 
-
-void ASEALIAFU::WorkspaceAllocate(btWSSize             Length,
-                                    TransactionID const &TranID)
-{
-  buffer_t                  buf;
-  std::pair<map_iter, bool> res;
-  btcString                 descr = NULL;
-
-  ::memset(&buf, 0, sizeof(buffer_t));
-
-  buf.memsize = (uint32_t)Length;
-
-  {
-     AutoLock(&ASEALIAFU::sm_ASEMtx);
-     allocate_buffer(&buf);
-  }
-
-  if ( ( ASE_BUFFER_VALID != buf.valid )   ||
-       ( MAP_FAILED == (void *)buf.vbase ) ||
-       ( 0 == buf.fake_paddr ) ) {
-    descr = "allocate_buffer()";
-    goto _SEND_ERR;
-  }
-
-  {
-     AutoLock(this);
-     // Map the virtual address to its internal representation.
-     res = m_WkspcMap.insert(std::make_pair((btVirtAddr)buf.vbase, buf));
-  }
-
-  if ( !res.second ) {
-    descr = "map.insert()";
-    goto _SEND_ERR;
-  }
-
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocated(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
-                                                                                 TranID,
-                                                                                 (btVirtAddr)buf.vbase,
-                                                                                 (btPhysAddr)buf.fake_paddr,
-                                                                                 (btWSSize)buf.memsize) );
-  return;
-
- _SEND_ERR:
-  IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                 TranID,
-                                                                 errAFUWorkSpace,
-                                                                 reasAFUNoMemory,
-                                                                 descr);
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceAllocateFailed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
-                                                                                      pExcept));
-}
-
-void ASEALIAFU::WorkspaceFree(btVirtAddr           Address,
-                                TransactionID const &TranID)
-{
-   btcString descr = NULL;
-   map_iter  iter;
-   buffer_t  buf;
-
-   {
-      AutoLock(this);
-
-      // Find the internal structure.
-      iter = m_WkspcMap.find(Address);
-
-      if ( m_WkspcMap.end() == iter ) {
-         // No mapping for Address exists.
-         descr = "no such address";
-         goto _SEND_ERR;
-      }
-
-      buf = (*iter).second;
-
-      {
-         AutoLock(&ASEALIAFU::sm_ASEMtx);
-         deallocate_buffer(&buf);
-      }
-
-      // Remove the mapping.
-      m_WkspcMap.erase(iter);
-   }
-
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
-                                                                             TranID) );
-  return;
-
- _SEND_ERR:
-  IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                 TranID,
-                                                                 errAFUWorkSpace,
-                                                                 reasAFUNoMemory,
-                                                                 descr);
-  getRuntime()->schedDispatchable( new(std::nothrow) CCIClientWorkspaceFreeFailed(dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase()),
-                                                                                  pExcept));
-}
-
-btBool ASEALIAFU::CSRRead(btCSROffset CSR,
-                            btCSRValue *pValue)
-{
-   if ( __UINTPTR_T_CONST(0x344) == CSR ) {
-      *pValue = m_Last3c4;
-   } else if ( __UINTPTR_T_CONST(0x34c) == CSR ) {
-      *pValue = m_Last3cc;
-   } else {
-      AutoLock(&ASEALIAFU::sm_ASEMtx);
-      *pValue = (btCSRValue) csr_read(CSR);
-   }
-   return true;
-}
-
-btBool ASEALIAFU::CSRWrite(btCSROffset CSR,
-                             btCSRValue  Value)
-{
-   if ( __UINTPTR_T_CONST(0x3c4) == CSR ) {
-      m_Last3c4 = Value;
-   } else if ( __UINTPTR_T_CONST(0x3cc) == CSR ) {
-      m_Last3cc = Value;
-   } else {
-      AutoLock(&ASEALIAFU::sm_ASEMtx);
-      csr_write(CSR, (bt32bitCSR)Value);
-   }
-   return true;
-}
-
-btBool ASEALIAFU::CSRWrite64(btCSROffset CSR,
-                               bt64bitCSR  Value)
-{
-  if ( CSRWrite(CSR + 4, Value >> 32) ) {
-    return CSRWrite(CSR, Value & 0xffffffff);
-  }
-  return false;
-}
 
 /// @}
 

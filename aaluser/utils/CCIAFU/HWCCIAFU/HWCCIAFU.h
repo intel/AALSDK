@@ -74,13 +74,17 @@ public:
    // <DeviceServiceBase>
    DECLARE_AAL_SERVICE_CONSTRUCTOR(HWCCIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
    {
-      SetInterface(        iidCCIAFU,   dynamic_cast<ICCIAFU *>(this));
-      SetInterface(iidHWCCIAFU, dynamic_cast<ICCIAFU *>(this));
+      if ( EObjOK != SetInterface(iidCCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidHWCCIAFU, dynamic_cast<ICCIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
 

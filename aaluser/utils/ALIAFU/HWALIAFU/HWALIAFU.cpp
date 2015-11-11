@@ -218,7 +218,7 @@ protected:
 // TODO: Add checks for AFUDev capabilities, possibly selective exposure of
 //       interfaces based on results
 //
-btBool HWALIAFU::init(IBase *pclientBase,
+btBool HWALIAFU::init(IBase               *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &TranID)
 {

@@ -66,9 +66,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup SPLAFU
 /// @{
 
-btBool SPLAFU::init( IBase *pclientBase,
-                     NamedValueSet const &optArgs,
-                     TransactionID const &TranID)
+btBool SPLAFU::init(IBase               *pclientBase,
+                    NamedValueSet const &optArgs,
+                    TransactionID const &TranID)
 {
    ISPLClient *pClient = dynamic_ptr<ISPLClient>(iidSPLClient, getServiceClientBase());
    ASSERT( NULL != pClient );
@@ -116,17 +116,6 @@ btBool SPLAFU::Release(TransactionID const &TranID, btTime timeout)
    }
    ServiceBase::Release(TranID, timeout);
    return false;
-}
-
-btBool SPLAFU::Release(btTime timeout)
-{
-   if ( NULL != m_pDelegate ) {
-      dynamic_cast<IAALService *>(m_pDelegate)->Release(timeout);
-      m_pDelegate = NULL;
-      return true;
-   }
-
-   return ServiceBase::Release(timeout);
 }
 
 
@@ -185,7 +174,7 @@ void SPLAFU::serviceReleaseFailed(const IEvent &Event)
 void SPLAFU::serviceEvent(const IEvent &Event)
 {
    // Reflect the message to the outer client.
-   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), &Event) );
+   getRuntime()->schedDispatchable( new(std::nothrow) ServiceEvent(getServiceClient(), Event.Clone()) );
 }
 
 

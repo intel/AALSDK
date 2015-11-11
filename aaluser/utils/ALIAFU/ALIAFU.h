@@ -76,9 +76,9 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// See @ref cciapp for more details.
 class ALIAFU_API ALIAFU : public ServiceBase,
-                              public IALIAFU,
-                              public IServiceClient,
-                              public ICCIClient
+                          public IALIAFU,
+                          public IServiceClient,
+                          public ICCIClient
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -89,17 +89,22 @@ public:
       m_pDelegate(NULL),
       m_TargetAFU(NULL)
    {
-      SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this));
-      SetInterface(iidCCIClient,        dynamic_cast<ICCIClient *>(this));
-      SetInterface(iidServiceClient,    dynamic_cast<IServiceClient *>(this));
+      if ( EObjOK != SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidServiceClient,    dynamic_cast<IServiceClient *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
 
@@ -148,7 +153,7 @@ public:
    // </ICCIClient>
 
 protected:
-   IALIAFU    *m_pDelegate;          ///< Pointer to allocated Delegate AFU instance.
+   IALIAFU      *m_pDelegate;          ///< Pointer to allocated Delegate AFU instance.
    btcString     m_TargetAFU;          ///< Saved value of ALIAFU_NVS_KEY_TARGET. Helps us extract the appropriate Delegate interface.
    TransactionID m_TranIDFrominit;     ///< Saved from the call to ServiceBase::init, until the Delegate AFU is allocated.
    TransactionID m_TranIDFromRelease;  ///< Saved from the call to ServiceBase::Release, until the Delegate AFU is freed.

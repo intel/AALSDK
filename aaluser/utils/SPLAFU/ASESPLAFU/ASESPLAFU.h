@@ -69,16 +69,19 @@ public:
       m_Last3c4(0xffffffff),
       m_Last3cc(0xffffffff)
    {
-      SetInterface(        iidSPLAFU,    dynamic_cast<ISPLAFU *>(this));
-      SetInterface(iidASESPLAFU, dynamic_cast<ISPLAFU *>(this));
+      if ( EObjOK != SetInterface(iidSPLAFU, dynamic_cast<ISPLAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
+      if ( EObjOK != SetInterface(iidASESPLAFU, dynamic_cast<ISPLAFU *>(this)) ) {
+         m_bIsOK = false;
+      }
    }
 
-   virtual btBool init( IBase *pclientBase,
-                        NamedValueSet const &optArgs,
-                        TransactionID const &rtid);
+   virtual btBool init(IBase               *pclientBase,
+                       NamedValueSet const &optArgs,
+                       TransactionID const &rtid);
 
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
-   virtual btBool Release(btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
    // <ISPLAFU>

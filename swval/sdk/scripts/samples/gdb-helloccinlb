@@ -1,0 +1,165 @@
+# INTEL CONFIDENTIAL - For Intel Internal Use Only
+
+shopt -o -s nounset
+
+declare -r SCRIPT_NAME='gdb-helloccinlb'
+
+declare -r PRINT=true
+pr() {
+   if ${PRINT} ; then
+      printf "$*\n"
+   fi
+}
+
+die() {
+   printf "die: %s\n" ${1+"$@"}
+   exit 13
+}
+
+declare -r AUTORECONF="`which autoreconf`" 2>/dev/null
+[ "x${AUTORECONF}" = x ] && die "no autoreconf?"
+declare -r GIT="`which git`" 2>/dev/null
+[ "x${GIT}" = x ] && die "no git?"
+declare -r MAKE="`which make`" 2>/dev/null
+[ "x${MAKE}" = x ] && die "no make?"
+declare -r MKDIR="`which mkdir`" 2>/dev/null
+[ "x${MKDIR}" = x ] && die "no mkdir?"
+declare -r LN="`which ln`" 2>/dev/null
+[ "x${LN}" = x ] && die "no ln?"
+declare -r RM="`which rm`" 2>/dev/null
+[ "x${RM}" = x ] && die "no rm?"
+
+declare GDBTUI="`which gdbtui`" 2>/dev/null
+if [ "x${GDBTUI}" = x ]; then
+   GDBTUI="`which gdb`" 2>/dev/null
+   if echo q | ${GDBTUI} -tui ; then
+      GDBTUI="${GDBTUI} -tui"
+   else
+      die "no gdbtui?"
+   fi
+fi
+pr "GDBTUI=${GDBTUI}"
+
+set -e
+
+declare VPATH=''
+declare KILLED=false
+
+on_exit() {
+   ${KILLED} && printf "=[\n"
+}
+trap 'on_exit' EXIT
+
+on_sigint() {
+   trap - SIGINT
+   KILLED=true
+   exit 99
+}
+trap 'on_sigint' SIGINT
+
+declare SRCDIR=''
+declare AALSAMPLES=''
+
+setup() {
+   SRCDIR="`cd ${PWD}/../../../../aaluser && pwd`"
+   pr "SRCDIR=${SRCDIR}"
+   AALSAMPLES="`cd ${SRCDIR}/../aalsamples && pwd`"
+   pr "AALSAMPLES=${AALSAMPLES}"
+
+   local -r reporoot="`cd ${SRCDIR}/.. && pwd`"
+   pr "reporoot=${reporoot}"
+   local -r gitdir="${reporoot}/.git"
+   pr "gitdir=${gitdir}"
+
+   # Make sure we're being run from the right place.
+   [ -e "${gitdir}" ] || die "${SCRIPT_NAME} must be run from the dir where it exists."
+
+   local -r git_commit_hash="`${GIT} --git-dir=${gitdir} log -1 --format='%H%d'`"
+
+   VPATH="${PWD}/gdb.${git_commit_hash:0:7}"
+   pr "VPATH=${VPATH}"
+   if ! [ -d "${VPATH}" ]; then
+      ${MKDIR} -p "${VPATH}"
+   fi
+   
+   if ! [ -f "${VPATH}/Makefile" ]; then
+      # Make sure that the symlinks to common_hdrs exist.
+      for x in "${reporoot}/aaluser/include/aalsdk" \
+               "${reporoot}/aalkernel/include/aalsdk"
+      do
+         if ! [ -L "$x/kernel" ]; then
+            pushd "$x" >/dev/null 2>&1
+            ${LN} -s "../../../common_hdrs" kernel
+            popd >/dev/null 2>&1
+         fi
+      done
+      
+      if ! [ -f "${SRCDIR}/configure" ]; then
+         pushd "${SRCDIR}" >/dev/null 2>&1
+         ${AUTORECONF} -vi
+         popd >/dev/null 2>&1
+      fi
+
+      pushd "${VPATH}" >/dev/null 2>&1
+
+      ${SRCDIR}/configure
+
+      popd >/dev/null 2>&1
+   fi
+
+   pushd "${VPATH}" >/dev/null 2>&1
+
+   ${MAKE}
+   ${MAKE} DESTDIR="${VPATH}/myinst" install
+
+   popd >/dev/null 2>&1
+
+
+   pushd "${AALSAMPLES}" >/dev/null 2>&1
+
+   ${MAKE} DESTDIR="${VPATH}/myinst"
+
+   popd >/dev/null 2>&1
+
+
+   printf "\n"
+   printf "%s\n" "${git_commit_hash}"
+
+   return 0
+}
+
+# $1 : exe to debug
+# $2 : $LD_LIBRARY_PATH value
+# ... : program args
+run_gdbtui() {
+   local -r exe="$1"
+   pr "exe=${exe}"
+   shift
+   local -r ld_library_path="$1"
+   pr "ld_library_path=${ld_library_path}"
+   shift
+
+   # Use the hacked gdbinit found in swval/sdk/scripts/samples, because the gdbinit.in substitution is
+   # done by swval/sdk; but we're using aaluser.
+   local -r gdbinit="${PWD}/gdbinit"
+   pr "gdbinit=${gdbinit}"
+
+   pushd "${AALSAMPLES}" >/dev/null 2>&1
+
+   LD_LIBRARY_PATH="${ld_library_path}" \
+      ${GDBTUI} \
+      -quiet \
+      -tty=${TTY:-'/dev/null'} \
+      -d "${SRCDIR}" \
+      -d "${exe%/*}" \
+      -d "${ld_library_path}" \
+      -x "${gdbinit}" \
+      --args "${exe}" ${1+"$@"}
+
+   popd >/dev/null 2>&1
+}
+
+setup
+run_gdbtui "${AALSAMPLES}/Hello_CCI_NLB/SW/helloCCInlb" "`cd ${AALSAMPLES}/Hello_CCI_NLB/SW && pwd`" ${1+"$@"}
+exit $?
+
