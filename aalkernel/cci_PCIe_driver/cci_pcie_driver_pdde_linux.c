@@ -686,6 +686,66 @@ cci_pci_remove(struct pci_dev *pcidev)
    PTRACEOUT;
 }
 
+//=============================================================================
+// Name: cci_remove_device
+// Description: Performs generic cleanup and deletion of CCI object
+// Input: pccipdev - device to remove
+// Comment:
+// Returns: none
+// Comments:
+//=============================================================================
+void
+cci_remove_device(struct ccip_device *pccipdev)
+{
+   int x;
+   PDEBUG("Removing CCI device\n");
+
+   // Call PIP to ensure the object is idle and ready for removal
+   // TODO
+
+   // Release the resources used for ports
+   for(x=1; x<5; x++){
+      if(ccip_has_resource(pccipdev, x)){
+         if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
+            if(!ccip_is_simulated(pccipdev)){
+               PVERBOSE("Freeing Port BAR %d\n",x);
+               iounmap(ccip_portdev_kvp_afu_mmio(pccipdev,x));
+               pci_release_region(ccip_dev_to_pci_dev(pccipdev), x);
+            }else{
+               kosal_kfree(ccip_portdev_kvp_afu_mmio(pccipdev,x),ccip_portdev_len_afu_mmio(pccipdev,x) );
+            }
+             ccip_portdev_kvp_afu_mmio(pccipdev,x) = NULL;
+          }
+      }
+   }
+
+   // Release FME Resources
+   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
+      if(!ccip_is_simulated(pccipdev)){
+         PVERBOSE("Freeing FME BAR 0\n");
+         iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
+         pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
+      }else{
+         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
+      }
+      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
+   }
+
+   if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
+      if(!ccip_is_simulated(pccipdev)){
+         PVERBOSE("Disabling PCIe device\n");
+         pci_disable_device(cci_dev_pci_dev(pccipdev));
+      }
+      cci_dev_pci_dev_clr_enabled(pccipdev);
+   }
+
+   // Destroy the device
+   //  Cleans up any child objects.
+   destroy_ccidevice(pccipdev);
+
+} // cci_remove_device
+
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////

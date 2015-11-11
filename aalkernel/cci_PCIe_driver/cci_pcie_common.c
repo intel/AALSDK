@@ -59,14 +59,14 @@
 //     CREATED: Jul 28, 2015
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   This file holds OS independent implementation common to this
-//            driver
+// PURPOSE:   This file holds OS independent AAL specific implementation
+//            common to this driver.
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
 #include "aalsdk/kernel/kosal.h"
-#define MODULE_FLAGS CCIV4_DBG_MOD // Prints all
+#define MODULE_FLAGS CCIPCIE_DBG_MOD // Prints all
 
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/ccipdriver.h"
@@ -79,7 +79,7 @@
 #include "ccip_fme.h"
 
 ///============================================================================
-/// create_ccidevice
+/// Name: create_ccidevice
 /// @brief Creates the CCI Board device object
 /// @return ccip_device
 ///============================================================================
@@ -104,7 +104,7 @@ struct ccip_device * create_ccidevice()
 }
 
 ///============================================================================
-/// destroy_ccidevice
+/// Name: destroy_ccidevice
 /// @brief Destroys the CCI Board device object
 /// @return ccip_device
 ///============================================================================
@@ -169,7 +169,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 }
 
 ///============================================================================
-/// cci_fme_dev_create_AAL_allocatable_objects
+/// Name: cci_fme_dev_create_AAL_allocatable_objects
 /// @brief Creates and registers FME objects (resources) we want to expose
 ///        Through AAL.
 ///
@@ -287,7 +287,7 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 }
 
 ///============================================================================
-/// cci_port_dev_create_AAL_allocatable_objects
+/// Name: cci_port_dev_create_AAL_allocatable_objects
 /// @brief Creates and registers Port objects (resources) we want to expose
 ///        through AAL.
 ///
@@ -504,12 +504,11 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    return true;
 }
 
-//=============================================================================
-// Name: cci_create_aal_device
-// Description: Constructor for a cci_aal_device object
-// Outputs: pointer to object.
-// Comments: none.
-//=============================================================================
+///============================================================================
+/// Name: cci_create_aal_device
+/// @brief Constructor for a cci_aal_device object.
+/// @return    pointer to object
+///============================================================================
  struct cci_aal_device* cci_create_aal_device()
 {
    struct cci_aal_device* pcci_aaldev = NULL;
@@ -617,63 +616,5 @@ cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev)
 
 } // cci_unpublish_aaldevice
 
-//=============================================================================
-// Name: cci_remove_device
-// Description: Performs generic cleanup and deletion of CCI object
-// Input: pccipdev - device to remove
-// Comment:
-// Returns: none
-// Comments:
-//=============================================================================
-void
-cci_remove_device(struct ccip_device *pccipdev)
-{
-   int x;
-   PDEBUG("Removing CCI device\n");
-
-   // Call PIP to ensure the object is idle and ready for removal
-   // TODO
-
-   // Release the resources used for ports
-   for(x=1; x<5; x++){
-      if(ccip_has_resource(pccipdev, x)){
-         if( NULL != ccip_portdev_kvp_afu_mmio(pccipdev,x)) {
-            if(!ccip_is_simulated(pccipdev)){
-               PVERBOSE("Freeing Port BAR %d\n",x);
-               iounmap(ccip_portdev_kvp_afu_mmio(pccipdev,x));
-               pci_release_region(ccip_dev_to_pci_dev(pccipdev), x);
-            }else{
-               kosal_kfree(ccip_portdev_kvp_afu_mmio(pccipdev,x),ccip_portdev_len_afu_mmio(pccipdev,x) );
-            }
-             ccip_portdev_kvp_afu_mmio(pccipdev,x) = NULL;
-          }
-      }
-   }
-
-   // Release FME Resources
-   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
-      if(!ccip_is_simulated(pccipdev)){
-         PVERBOSE("Freeing FME BAR 0\n");
-         iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
-         pci_release_region(ccip_dev_to_pci_dev(pccipdev), 0);
-      }else{
-         kosal_kfree(ccip_fmedev_kvp_afu_mmio(pccipdev),ccip_fmedev_len_afu_mmio(pccipdev) );
-      }
-      ccip_fmedev_kvp_afu_mmio(pccipdev) = NULL;
-   }
-
-   if( cci_dev_pci_dev_is_enabled(pccipdev) ) {
-      if(!ccip_is_simulated(pccipdev)){
-         PVERBOSE("Disabling PCIe device\n");
-         pci_disable_device(cci_dev_pci_dev(pccipdev));
-      }
-      cci_dev_pci_dev_clr_enabled(pccipdev);
-   }
-
-   // Destroy the device
-   //  Cleans up any child objects.
-   destroy_ccidevice(pccipdev);
-
-} // cci_remove_device
 
 

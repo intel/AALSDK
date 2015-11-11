@@ -62,7 +62,7 @@ BEGIN_NAMESPACE(AAL)
 // Name: AALServiceModule()
 // Description: Constructor
 //=============================================================================
-AALServiceModule::AALServiceModule(ISvcsFact &fact) :
+AALServiceModule::AALServiceModule(ISvcsFact *fact) :
    m_SvcsFact(fact),
    m_RuntimeClient(NULL),
    m_pendingcount(0)
@@ -81,8 +81,8 @@ btBool AALServiceModule::Construct(IRuntime            *pAALRuntime,
    AutoLock(this);
 
    // Create the actual object
-   IBase *pNewService = m_SvcsFact.CreateServiceObject(this,
-                                                       pAALRuntime);
+   IBase *pNewService = m_SvcsFact->CreateServiceObject( this,
+                                                         pAALRuntime);
    // Add the service to the list of services the module
    if ( NULL == pNewService ) {
       return false;
@@ -93,18 +93,18 @@ btBool AALServiceModule::Construct(IRuntime            *pAALRuntime,
    m_pendingcount++;
 
    // Initialize the Service. It  will issue serviceAllocated or failure.
-   //   When the Service finishes initalization it will indicate in callback
+   //   When the Service finishes initialization it will indicate in callback
    //   whether it was successful or not.
-   if ( m_SvcsFact.InitializeService(pNewService,
-                                     Client,
-                                     tranID,
-                                     optArgs) ) {
+   if ( m_SvcsFact->InitializeService( pNewService,
+                                       Client,
+                                       tranID,
+                                       optArgs) ) {
       return true;
    }
 
    // If InitializeService fails then this is a severe failure.
    // An event was not sent. Let upper layers handle the failure.
-   m_SvcsFact.DestroyServiceObject(pNewService);
+   m_SvcsFact->DestroyServiceObject(pNewService);
 
    return false;
 }
@@ -233,13 +233,14 @@ btBool AALServiceModule::ServiceInitFailed(IBase        *pService,
       return false;
    }
 
-   // Create the dispatchable for the Service allocate failed callback
-   ServiceAllocateFailed *pDisp = new ServiceAllocateFailed(pServiceBase->getServiceClient(),
+   // Create the dispatchable for the Service allocate failed callback.
+   //  The Service object will be destroyed in the dispatchable once the
+   //  callbacks have been called.
+   ServiceAllocateFailed *pDisp = new ServiceAllocateFailed(pService,
+                                                            m_SvcsFact,
+                                                            pServiceBase->getServiceClient(),
                                                             pServiceBase->getRuntimeClient(),
                                                             pEvent);
-
-   // Destroy the failed Service
-   m_SvcsFact.DestroyServiceObject(pService);
 
    // Notify the Service client on behalf of the Service
    return FireAndForget(pDisp);

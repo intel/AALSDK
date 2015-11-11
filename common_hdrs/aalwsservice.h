@@ -111,6 +111,7 @@ enum wstype
 {
    WSM_TYPE_VIRTUAL,
    WSM_TYPE_PHYSICAL,
+   WSM_TYPE_CSR,
    WSM_TYPE_MMIO
 };
 struct aal_wsid

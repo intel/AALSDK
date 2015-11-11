@@ -99,6 +99,9 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       return;
    }
 
+   // Get the client of the Runtime we are running under.
+   m_RuntimeClient = pAALRuntime->getRuntimeClient();
+
    // Get a new Runtime Proxy for use by this Service.
    //  This proxy must be released when deleted.
    m_Runtime = pAALRuntime->getRuntimeProxy(this);
@@ -210,9 +213,6 @@ btBool ServiceBase::_init(IBase               *pclientBase,
       m_optArgs = optArgs;
    }
 
-   // Get the client of the Runtime we are running under.
-   m_RuntimeClient = getRuntime()->getRuntimeClient();
-
    // Check that mandatory initialization has occurred
 
    // If no completion event then this is the direct superclass
@@ -254,9 +254,11 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
 
    // TODO IS THIS A VALID PATH
    ASSERT(false);
+/*
    return getRuntime()->schedDispatchable( new ServiceAllocateFailed(getServiceClient(),
                                                                      getRuntimeClient(),
                                                                      ptheEvent) );
+                                                                     */
 }
 
 btBool ServiceBase::sendmsg()

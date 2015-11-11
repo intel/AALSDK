@@ -534,7 +534,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 {
-   ERR("Failed to allocate a Service");
+   ERR("Failed to allocate Service");
     PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
 

@@ -69,12 +69,19 @@ protected:
 class ServiceAllocateFailed : public IDispatchable
 {
 public:
+   ServiceAllocateFailed(IBase          *pService,
+                         ISvcsFact      *pSvcsFact,
+                         IServiceClient *pSvcClient,
+                         IRuntimeClient *pRTClient,
+                         const IEvent   *pEvent);
    ServiceAllocateFailed(IServiceClient *pSvcClient,
                          IRuntimeClient *pRTClient,
                          const IEvent   *pEvent);
    ~ServiceAllocateFailed();
    virtual void operator() ();
 protected:
+   IBase          *m_pService;
+   ISvcsFact      *m_pSvcsFact;
    IServiceClient *m_pSvcClient;
    IRuntimeClient *m_pRTClient;
    const IEvent   *m_pEvent;

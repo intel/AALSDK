@@ -264,7 +264,7 @@ case AAL_SVC_CMD_GET_PROVIDER : {                                               
       }                                                                                       \
    }                                                                                          \
    if ( NULL == pServiceProvider ) {                                                          \
-      pServiceProvider = new AAL::AALServiceModule(*pServiceFactory);                         \
+      pServiceProvider = new AAL::AALServiceModule(pServiceFactory);                          \
       if ( NULL == pServiceProvider ) {                                                       \
          return 2;                                                                            \
       }                                                                                       \

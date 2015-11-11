@@ -44,7 +44,7 @@
 #include "aalsdk/AALLoggerExtern.h"
 
 #include "aalsdk/INTCDefs.h"
-#include "aalsdk/kernel/aalui.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 #include "ALIAIATransactions.h"
 
@@ -86,11 +86,9 @@ BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranI
    struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
 
    // fill out aalui_AFUmessage
-   afumsg->cmd     = fappip_afucmdWKSP_VALLOC;
+   afumsg->cmd     = ccipdrv_afucmdWKSP_ALLOC;
    afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
-   afumsg->apiver  = AAL_AHMAPI_IID_1_0;
-   afumsg->pipver  = AAL_AHMPIP_IID_1_0;
 
    // fill out ahm_req
    req->u.wksp.m_wsid   = 0;        // not used?
@@ -142,11 +140,9 @@ BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSI
    struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
 
    // fill out aalui_AFUmessage
-   afumsg->cmd     = fappip_afucmdWKSP_VFREE;
+   afumsg->cmd     = ccipdrv_afucmdWKSP_FREE;
    afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
-   afumsg->apiver  = AAL_AHMAPI_IID_1_0;
-   afumsg->pipver  = AAL_AHMPIP_IID_1_0;
 
    // fill out ahm_req
    req->u.wksp.m_wsid   = wsid;
@@ -197,11 +193,9 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction( TransactionID const &tranID 
    struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
 
    // fill out aalui_AFUmessage
-   afumsg->cmd     = fappip_getMMIORmap;
+   afumsg->cmd     = ccipdrv_getMMIORmap;
    afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
-   afumsg->apiver  = AAL_AHMAPI_IID_1_0;
-   afumsg->pipver  = AAL_AHMPIP_IID_1_0;
 
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;
 
@@ -232,7 +226,7 @@ GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
 }
 
 
-
+/*
 GetUMSGBufferTransaction::GetUMSGBufferTransaction( TransactionID const &tranID ) :
    m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
@@ -283,3 +277,4 @@ GetUMSGBufferTransaction::~GetUMSGBufferTransaction() {
    delete afumsg;
 }
 
+*/

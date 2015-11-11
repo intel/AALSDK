@@ -41,7 +41,7 @@
 #ifndef __AALSDK_AIATRANSACTIONS_H__
 #define __AALSDK_AIATRANSACTIONS_H__
 #include <aalsdk/kernel/aalids.h>
-#include <aalsdk/kernel/fappip.h>
+#include <aalsdk/kernel/ccipdriver.h>
 
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/osal/OSServiceModule.h>

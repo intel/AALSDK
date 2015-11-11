@@ -49,8 +49,7 @@
 #include <aalsdk/service/HWALIAFUService.h>
 #include <aalsdk/aas/AALDeviceService.h>
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/faptrans/FAP10.h>              // WkSp_Single_Allocate_AFUTransaction
-												// and WorkSpaceMapper
+
 #include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
 #include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
 #include <aalsdk/uaia/IAFUProxy.h>

@@ -316,13 +316,14 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
    // Create the Transactions
    GetMMIOBufferTransaction mmioTransaction(mmioTid);
+/*
    GetUMSGBufferTransaction umsgTransaction(umsgTid);
-
+*/
    // Check the parameters
-   if ( mmioTransaction.IsOK() && umsgTransaction.IsOK()) {
+   if ( mmioTransaction.IsOK()/* && umsgTransaction.IsOK()*/) {
       // Will return to AFUEvent(), below.
       m_pAFUProxy->SendTransaction(&mmioTransaction);
-      m_pAFUProxy->SendTransaction(&umsgTransaction);
+//      m_pAFUProxy->SendTransaction(&umsgTransaction);
    } else {
       initFailed(new CExceptionTransactionEvent(NULL,
                                                 m_tidSaved,
@@ -336,11 +337,13 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 // Service allocated failed callback
 void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
    m_bIsOK = false;
+
    initFailed(new CExceptionTransactionEvent( NULL,
                                               m_tidSaved,
                                               errAllocationFailure,
                                               reasUnknown,
                                               "Error: Failed to allocate ALI."));
+
 }
 
 // Service released callback

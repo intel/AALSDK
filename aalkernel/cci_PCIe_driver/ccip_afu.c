@@ -264,25 +264,182 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       } break;
 
+      AFU_COMMAND_CASE(ccipdrv_afucmdWKSP_ALLOC)
+      {
+         struct ccidrvreq    *preq        = (struct ccidrvreq *)pmsg->payload;
+         btVirtAddr           krnl_virt   = NULL;
+         struct aal_wsid     *wsidp       = NULL;
+
+         // Normal flow -- create the needed workspace.
+         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
+         if (NULL == krnl_virt) {
+            pafuws_evt = ccipdrv_event_afu_afuallocws_create(pownerSess->m_device,
+                                                           (btWSID) 0,
+                                                           NULL,
+                                                           (btPhysAddr)NULL,
+                                                           preq->ahmreq.u.wksp.m_size,
+                                                           Message.m_tranID,
+                                                           Message.m_context,
+                                                           uid_errnumNoMem);
+
+            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                           pownerSess->m_device,
+                                           AALQIP(pafuws_evt),
+                                           Message.m_context);
+
+            goto ERROR;
+         }
+
+         //------------------------------------------------------------
+         // Create the WSID object and add to the list for this session
+         //------------------------------------------------------------
+         wsidp = pownerSess->m_uiapi->getwsid(pownerSess->m_device, (btWSID)krnl_virt);
+         if ( NULL == wsidp ) {
+            PERR("Couldn't allocate task workspace\n");
+            retval = -ENOMEM;
+            /* send a failure event back to the caller? */
+            goto ERROR;
+         }
+
+         wsidp->m_size = preq->ahmreq.u.wksp.m_size;
+         wsidp->m_type = WSM_TYPE_VIRTUAL;
+         PDEBUG("Creating Physical WSID %p.\n", wsidp);
+
+         // Add the new wsid onto the session
+         aalsess_add_ws(pownerSess, wsidp->m_list);
+
+         PINFO("CCI WS alloc wsid=0x%" PRIx64 " phys=0x%" PRIxPHYS_ADDR  " kvp=0x%" PRIx64 " size=%" PRIu64 " success!\n",
+                  preq->ahmreq.u.wksp.m_wsid,
+                  kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
+                  wsidp->m_id,
+                  wsidp->m_size);
+
+         // Create the event
+         pafuws_evt = ccipdrv_event_afu_afuallocws_create(
+                                               aalsess_aaldevicep(pownerSess),
+                                               wsidobjp_to_wid(wsidp), // make the wsid appear page aligned for mmap
+                                               NULL,
+                                               kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
+                                               preq->ahmreq.u.wksp.m_size,
+                                               Message.m_tranID,
+                                               Message.m_context,
+                                               uid_errnumOK);
+
+         PVERBOSE("Sending the WKSP Alloc event.\n");
+         // Send the event
+         pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
+                                        aalsess_aaldevicep(pownerSess),
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+
+      } break; // case fappip_afucmdWKSP_VALLOC
 
 
-   default: {
-      struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
+      //============================
+      //  Free Workspace
+      //============================
+      AFU_COMMAND_CASE(ccipdrv_afucmdWKSP_FREE) {
+         struct ccidrvreq    *preq        = (struct ccidrvreq *)pmsg->payload;
+         btVirtAddr           krnl_virt   = NULL;
+         struct aal_wsid     *wsidp       = NULL;
 
-      PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
+         ASSERT(0 != preq->ahmreq.u.wksp.m_wsid);
+         if ( 0 == preq->ahmreq.u.wksp.m_wsid ) {
+            PDEBUG("WKSP_IOC_FREE: WS id can't be 0.\n");
+            // Create the exception event
+            pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                           Message.m_tranID,
+                                                           Message.m_context,
+                                                           uid_errnumBadParameter);
 
-      pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                  &Message.m_tranID,
-                                                                  Message.m_context,
-                                                                  request_error);
+            // Send the event
+            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                           pownerSess->m_device,
+                                           AALQIP(pafuws_evt),
+                                           Message.m_context);
+            retval = -EFAULT;
+            goto ERROR;
+         }
 
-     ccidrv_sendevent( pownerSess->m_UIHandle,
-                       pownerSess->m_device,
-                       AALQIP(pafuresponse_evt),
-                       Message.m_context);
+         // Get the workspace ID object
+         wsidp = wsid_to_wsidobjp(preq->ahmreq.u.wksp.m_wsid);
 
-      retval = -EINVAL;
-   } break;
+         ASSERT(wsidp);
+         if ( NULL == wsidp ) {
+            // Create the exception event
+            pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                           Message.m_tranID,
+                                                           Message.m_context,
+                                                           uid_errnumBadParameter);
+
+            PDEBUG("Sending WKSP_FREE Exception\n");
+            // Send the event
+            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                           pownerSess->m_device,
+                                           AALQIP(pafuws_evt),
+                                           Message.m_context);
+
+            retval = -EFAULT;
+            goto ERROR;
+         }
+
+         // Free the buffer
+         if(  WSM_TYPE_VIRTUAL != wsidp->m_type ) {
+            PDEBUG( "Workspace free failed due to bad WS type. Should be %d but received %d\n",WSM_TYPE_VIRTUAL,
+                  wsidp->m_type);
+
+            pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                           Message.m_tranID,
+                                                           Message.m_context,
+                                                           uid_errnumBadParameter);
+            pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                           pownerSess->m_device,
+                                           AALQIP(pafuws_evt),
+                                           Message.m_context);
+
+            retval = -EFAULT;
+            goto ERROR;
+         }
+
+         krnl_virt = (btVirtAddr)wsidp->m_id;
+
+         kosal_free_contiguous_mem(krnl_virt, wsidp->m_size);
+
+         // remove the wsid from the device and destroy
+         list_del_init(&wsidp->m_list);
+         pownerSess->m_uiapi->freewsid(wsidp);
+
+         // Create the  event
+         pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
+                                                        Message.m_tranID,
+                                                        Message.m_context,
+                                                        uid_errnumOK);
+
+         PVERBOSE("Sending the WKSP Free event.\n");
+         // Send the event
+         pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
+                                        pownerSess->m_device,
+                                        AALQIP(pafuws_evt),
+                                        Message.m_context);
+      } break; // case fappip_afucmdWKSP_FREE
+
+      default: {
+         struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
+
+         PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
+
+         pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
+                                                                     &Message.m_tranID,
+                                                                     Message.m_context,
+                                                                     request_error);
+
+        ccidrv_sendevent( pownerSess->m_UIHandle,
+                          pownerSess->m_device,
+                          AALQIP(pafuresponse_evt),
+                          Message.m_context);
+
+         retval = -EINVAL;
+      } break;
    } // switch (pmsg->cmd)
 
    ASSERT(0 == retval);

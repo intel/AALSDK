@@ -67,8 +67,8 @@
 //****************************************************************************
 #ifndef __AALSDK_CCIP_DRIVER_H__
 #define __AALSDK_CCIP_DRIVER_H__
-#include <aalsdk/kernel/aalui.h>
 #include <aalsdk/kernel/AALWorkspace.h>
+#include <aalsdk/kernel/AALTransactionID_s.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -122,7 +122,7 @@ typedef enum
     ccipdrv_afucmdWKSP_FREE,
 
     ccipdrv_getMMIORmap,
-    ccipdrv_getFeatureRehion
+    ccipdrv_getFeatureRegion
 } ccipdrv_afuCmdID_e;
 
 struct ahm_req

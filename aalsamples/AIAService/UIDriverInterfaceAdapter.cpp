@@ -283,7 +283,7 @@ void UIDriverInterfaceAdapter::Open(const char *devName)
 
    std::string strName;
    if ( devName == NULL ) {
-      strName="/dev/aalui";
+      strName="/dev/uidrv";
    } else {
 	   strName = devName;
    }
