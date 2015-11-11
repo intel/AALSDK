@@ -401,10 +401,6 @@
 
 /// @}
 
-#if DEPRECATED
-#define iidProxyBase                 __AAL_IID(AAL_sysAAL, 0x0002)
-#endif // DEPRECATED
-
 /// @addtogroup Services
 /// @{
 
@@ -420,9 +416,6 @@
 #define iidRuntimeClient             __AAL_IID(AAL_sysAAL, 0x0007)   // Class implements IRuntimeClient
 
 #define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0008)   // Class implements IRuntime
-
-
-
 
 /// @}
 
@@ -448,9 +441,7 @@
 #define iidRegistrar                 __AAL_IID(AAL_sysAAS, 0x0002)
 #define iidMDS                       __AAL_IID(AAL_sysAAS, 0x0003)
 
-//#if DEPRECATED
 #define iidFactory                   __AAL_IID(AAL_sysAAS, 0x0004)
-//#endif // DEPRECATED
 /// @ingroup uAIA
 #define iidAIA                       __AAL_IID(AAL_sysAAS, 0x0005)
 /// @ingroup AFU
@@ -462,20 +453,10 @@
 /// @ingroup ServiceBroker
 #define iidServiceBroker             __AAL_IID(AAL_sysAAS, 0x000A)
 
-#if DEPRECATED
-#define iidAIA_Management            __AAL_IID(AAL_sysAIA, 0x0001)
-#define iidAIA_Provisioning          __AAL_IID(AAL_sysAIA, 0x0002)
-#define iidAIA_Communication         __AAL_IID(AAL_sysAIA, 0x0003)
-#define iidAIA_WorkSpace             __AAL_IID(AAL_sysAIA, 0x0004)
-#endif // DEPRECATED
-
 /// @ingroup uAIA
 #define iidAIA_uAIA                  __AAL_IID(AAL_sysAIA, 0x0005)
 
 #define iidAFU_Factory               __AAL_IID(AAL_sysAFU, 0x0001)
-#if DEPRECATED
-#define iidAFU_WorkSpace             __AAL_IID(AAL_sysAFU, 0x0002)
-#endif // DEPRECATED
 
 #define iidManagementAFU             __AAL_IID(AAL_sysManagementAFU, 0x0001)
 
@@ -1111,10 +1092,6 @@ static void __AAL_dbg_ID_MACRO(void) {
          DBG_AAL_MAKE_NAME(iidBase)
          DBG_AAL_MAKE_NAME(iidServiceContainer)
          DBG_AAL_MAKE_NAME(iidRegistrar)
-#if DEPRECATED
-         DBG_AAL_MAKE_NAME(iidEDS)
-         DBG_AAL_MAKE_NAME(iidEventDeliveryService)
-#endif // DEPRECATED
          DBG_AAL_MAKE_NAME(iidFactory)
          DBG_AAL_MAKE_NAME(iidAIA)
          DBG_AAL_MAKE_NAME(iidAFU)

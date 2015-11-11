@@ -91,35 +91,6 @@ BEGIN_NAMESPACE(AAL)
       class CAASServiceContainer;
       class IEventDispatcher;
 
-#if DEPRECATED
-      //==========================================================================
-      // Typedef for entry point signature
-      //==========================================================================
-      typedef  CRegistrar * (*Registrar_t)(const std::string    &DatabasePath,
-                                           CAASServiceContainer *pServiceContainer,
-                                           btEventHandler        theEventHandler,
-                                           btApplicationContext  Context,
-                                           TransactionID const  &tranID,
-                                           NamedValueSet const  &optArgs );
-
-
-      //==========================================================================
-      // Name: _CreateRegistrarService Extern
-      // Description: Registrar Factory Declaration
-      //==========================================================================
- 
-BEGIN_C_DECLS
-         AASREGISTRAR_API CRegistrar *
-         _CreateRegistrarService(const std::string    &DatabasePath,
-                                 CAASServiceContainer *pServiceContainer,
-                                 btEventHandler        theEventHandler,
-                                 btApplicationContext  Context,
-                                 TransactionID const  &tranID,
-                                 NamedValueSet const  &optArgs );
-END_C_DECLS
-
-#endif // DEPRECATED
-
       //=============================================================================
       // Name: CRegistrar
       // Description: Declaration of concrete class implementing IRegistrar
@@ -344,42 +315,6 @@ END_C_DECLS
 
          NamedValueSet  m_nvs;
       }; // class CDBRecord
-
-#if DEPRECATED
-
-      // RegisterExceptionTransactionEvent
-
-      class AASREGISTRAR_API CRegisterExceptionTransactionEvent:
-         public IRegisterExceptionTransactionEvent,
-         public CExceptionTransactionEvent
-      {
-      public:
-         CRegisterExceptionTransactionEvent(
-               IBase *pObject,
-               TransactionID const &TranID,
-               btID ExceptionNumber,
-               btID Reason,
-               btString Description,
-               CFindResult* pCFindResult):
-            CExceptionTransactionEvent(
-               pObject,
-               extranevtRegistrarRegister,
-               TranID,
-               ExceptionNumber,
-               Reason,
-               Description),
-            m_pCFindResult(pCFindResult)
-            {};
-         virtual ~CRegisterExceptionTransactionEvent() {if (NULL != m_pCFindResult) delete m_pCFindResult;};
-
-         const    IFindResult& FindResult() const {return *dynamic_cast<const IFindResult*>(m_pCFindResult);};
-      private:
-         const    CFindResult* m_pCFindResult;
-         CRegisterExceptionTransactionEvent();
-         CRegisterExceptionTransactionEvent(const CRegisterExceptionTransactionEvent & );
-         CRegisterExceptionTransactionEvent & operator = (const CRegisterExceptionTransactionEvent & );
-      };
-#endif // DEPRECATED
 
       // RegisterTransactionEvent
 
