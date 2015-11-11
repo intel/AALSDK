@@ -83,19 +83,6 @@ _MessageDelivery::~_MessageDelivery()
    StopMessageDelivery();
 }
 
-#if DEPRECATED
-//=============================================================================
-// Name: Schedule
-// Description: Manually process some work
-// Interface: public
-// Comments: Unsupported
-//=============================================================================
-EDS_Status _MessageDelivery::Schedule()
-{
-   return EDS_statusUnsupportedModel;
-}
-#endif // DEPRECATED
-
 //=============================================================================
 // Name: StartMessageDelivery
 // Description: Start the service

@@ -99,19 +99,6 @@ public:
    virtual void StartEventDelivery()                 = 0;
    virtual void  StopEventDelivery()                 = 0;
    virtual btBool     scheduleWork(IDispatchable * ) = 0;
-
-#if DEPRECATED
-   virtual EDS_Status Schedule() = 0;
-   virtual void        Unblock() = 0;
-   virtual btBool QueueEvent(btEventHandler ,
-                             CAALEvent * ) = 0;
-   /// @param btObjectType Target for Event
-   /// @param CAALEvent Pointer to Event
-   virtual btBool QueueEvent(btObjectType ,
-                             CAALEvent * ) = 0;
-   /// Retrieve the IEventDispatcher interface.
-   virtual IEventDispatcher *GetEventDispatcher(EDSDispatchClass = EDS_dispatcherNormal) = 0;
-#endif // DEPRECATED
 };
 
 /// @}

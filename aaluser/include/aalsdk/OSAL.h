@@ -63,44 +63,6 @@ do                                                                              
 }while(0)
 
 
-#if DEPRECATED
-#ifdef __AAL_LINUX__
-//=============================================================================
-// Macros and constants
-//=============================================================================
-
-// --- Increment --- long int version -----------------------------------------
-inline long InterlockedIncrement (volatile long * pCounter)
-{
-   int result;
-
-   asm volatile ("lock; xaddl %0, %1" :
-		 "=r" (result),
-		 "=m" (*pCounter) :
-		 "0" (1),
-		 "m" (*pCounter));
-
-   return (long) result + 1;
-}
-
-// --- Decrement --- long int versions ----------------------------------------
-inline long InterlockedDecrement (volatile long * pCounter)
-{
-   int result;
-
-   asm volatile ("lock; xaddl %0, %1" :
-
-		 "=r" (result),
-		 "=m" (*pCounter) :
-		  "0" (-1),
-		  "m" (*pCounter));
-
-   return (long) result - 1;
-}
-
-#endif // __AAL_LINUX__
-#endif // DEPRECATED
-
 /// Find the first bit set, scanning low to high.
 /// @param[in] value is input bitmask
 OSAL_API unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value);

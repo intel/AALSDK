@@ -214,21 +214,11 @@ void PrintExceptionDescription(IEvent const &theEvent)
    if ( theEvent.Has(iidExEvent) ) {
       //ExceptionEvent
 
-#if DEPRECATED
-      cerr << "\nEXCEPTION EVENT THROWN:  " <<
-              dynamic_ref<IExceptionEvent>(iidExEvent, theEvent).Description() << endl;
-#endif // DEPRECATED
-
       AAL_ERR(LM_EDS, "\nEXCEPTION EVENT THROWN:  " <<
                       dynamic_ref<IExceptionEvent>(iidExEvent, theEvent).Description() << endl);
 
    } else if ( theEvent.Has(iidExTranEvent) ) {
       //ExceptionTransaction
-
-#if DEPRECATED
-      cerr << "\nEXCEPTION TRANSACTION EVENT THROWN:  " <<
-              dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, theEvent).Description() << endl;
-#endif // DEPRECATED
 
       AAL_ERR(LM_EDS, "\nEXCEPTION TRANSACTION EVENT THROWN:  " <<
                       dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, theEvent).Description() << endl);

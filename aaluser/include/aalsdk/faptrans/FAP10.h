@@ -445,10 +445,6 @@ BEGIN_NAMESPACE(AAL)
    class FAPTRANS1_API WkSp_Single_Allocate_AFUTransaction : public IAFUTransaction
    {
    public:
-#if DEPRECATED /* trying to deprecate AAL_TASKMODE_* */
-      WkSp_Single_Allocate_AFUTransaction(btWSSize len,
-                                          btInt    TaskMode);
-#endif
       WkSp_Single_Allocate_AFUTransaction(btWSSize   len,
                                           TTASK_MODE TaskMode);
 
@@ -958,59 +954,6 @@ BEGIN_NAMESPACE(AAL)
       Sig_MapCSRSpace_AFUTransaction();
 
    }; // end of class WkSp_Single_Allocate_AFUTransaction
-#if DEPRECATED
-   //=============================================================================
-   // Name:          WkSp_Free_Mapping_EventHandlerObject
-   // Description:   Encapsulates the WkSp_Single_Allocate_AFUTransaction callback
-   //                   function that must mmap the wsid to get the pointer
-   //=============================================================================
-
-   class WkSp_Free_Mapping_EventHandlerObject {
-   public:
-      WkSp_Free_Mapping_EventHandlerObject(const WorkSpaceMapper::WkSp &rParms);
-      static void WkSp_Free_Mapping_EventHandler(IEvent const &theEvent);
-      virtual btEventHandler Get_Free_Mapping_EventHandler();
-      virtual ~WkSp_Free_Mapping_EventHandlerObject(){};
-   private:
-      WkSp_Free_Mapping_EventHandlerObject();
-      struct aalui_WSMParms m_WSMParms;
-
-   }; // class WkSp_Free_Mapping_EventHandlerObject
-
-   //=============================================================================
-   // Name:          WkSp_Single_Free_AFUTransaction
-   // Description:   Encapsulates the request to free a single workspace
-   // Parameters:    address, length, wsid obtained from allocate
-   //=============================================================================
-
-   class WkSp_Single_Free_AFUTransaction : public IAFUTransaction
-   {
-   public:
-      WkSp_Single_Free_AFUTransaction(IAFUDev           *pIAFUDev,
-                                      const btObjectType ptr);
-      void          *GetPayloadPtr();
-      btUnsignedInt  GetSize();
-      TransactionID *GetTranIDPtr();
-      uid_msgIDs_e   GetCommand();
-      btID           GetPIPVer();         // Return the PIP version, burned in
-      btID           GetAPIVer();         // Return the API version, burned in
-      btBool         IsOK();
-      std::string    GetError();          // Called if IsOK() fails
-
-   protected:
-      struct big {
-         struct aalui_AFUmessage afuMsg;
-         struct ahm_req          ahmreq;
-      };
-      struct big                            m_big;
-      btBool                                m_bIsOK;
-      TransactionID                         m_tidEmbedded;
-      WkSp_Free_Mapping_EventHandlerObject *m_pWkspMapObj; // cleaned up in the handler
-      std::string                           m_ErrorString;
-   }; // class WkSp_Single_Free_AFUTransaction
-
-#endif // DEPRECATED
-
 
 END_NAMESPACE(AAL)
 

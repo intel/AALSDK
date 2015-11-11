@@ -114,19 +114,5 @@
 // Used in samples
 #define  INTC_sysSampleMisc            INTC_sysBase(0x1000)
 
-
-
-
-#if DEPRECATED
-/*=============================================================================
-===============================================================================
-======================= Define INT-AAL-Specific Classes =======================
-===============================================================================
-=============================================================================*/
-#define iidAIA_FSBV1Factory         __AAL_IID(INTC_sysFSBV1AIA, 0x0001)
-#define iidAIA_FSBV1AIA             __AAL_IID(INTC_sysFSBV1AIA, 0x0002)
-#define iidAIA_FSBV1WorkSpace       __AAL_IID(INTC_sysFSBV1AIA, 0x0003)
-#endif // DEPRECATED
-
 #endif // __AALSDK_INTCDEFS_H__
 

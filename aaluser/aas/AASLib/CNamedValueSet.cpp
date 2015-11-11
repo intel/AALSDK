@@ -641,21 +641,6 @@ public:
    //=============================================================================
    TNamedValueSet() {}
 
-#if DEPRECATED
-   //=============================================================================
-   // Name: TNamedValues
-   // Description: Copy Constructor
-   // Interface: public
-   // Inputs: none.
-   // Outputs: none.
-   // Comments:
-   //=============================================================================
-   TNamedValueSet(const TNamedValueSet &rOther)
-   {
-      *this = rOther;
-   }
-#endif // DEPRECATED
-
    //=============================================================================
    // Name: TNamedValues
    // Description: Assignment
