@@ -36,11 +36,9 @@
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
+//           Enno Luebbers, Intel Corporation
 ///          
 ///
-/// This sample demonstrates how to create an AFU Service that uses a host-based AFU engine.
-///  This design also applies to AFU Services that use hardware via a
-///  Physical Interface Protocol (PIP) module.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -686,7 +684,7 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
          //-----------------------
          // Initial GetMMIO/GetUMSG transactions
          //-----------------------
-         case uid_wseventCSRMap:
+         case uid_wseventMMIOMap:
             {
                if (puidEvent->msgTranID().m_intID == GetMMIO) {
 

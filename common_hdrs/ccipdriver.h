@@ -70,6 +70,10 @@
 #include <aalsdk/kernel/AALWorkspace.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 
+#include <aalsdk/CUnCopyable.h>
+
+
+
 BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
@@ -124,6 +128,75 @@ BEGIN_C_DECLS
 #define FME_DFH_AFUIDH  0x10
 #define FME_DFH_NEXTAFU 0x18
 
+//-----------------------------------------------------------------------------
+// Request message IDs
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   uid_errnumOK = 0,
+   uid_errnumBadDevHandle,                       // 1
+   uid_errnumCouldNotClaimDevice,                // 2
+   uid_errnumNoAppropriateInterface,             // 3
+   uid_errnumDeviceHasNoPIPAssigned,             // 4
+   uid_errnumCouldNotBindPipInterface,           // 5
+   uid_errnumCouldNotUnBindPipInterface,         // 6
+   uid_errnumNotDeviceOwner,                     // 7
+   uid_errnumSystem,                             // 8
+   uid_errnumAFUTransaction,                     // 9
+   uid_errnumAFUTransactionNotFound,             // 10
+   uid_errnumDuplicateStartingAFUTransactionID,  // 11
+   uid_errnumBadParameter,                       // 12
+   uid_errnumNoMem,                              // 13
+   uid_errnumNoMap,                              // 14
+   uid_errnumBadMapping,                         // 15
+   uid_errnumPermission,                         // 16
+   uid_errnumInvalidOpOnMAFU,                    // 17
+   uid_errnumPointerOutOfWorkspace,              // 18
+   uid_errnumNoAFUBindToChannel,                 // 19
+   uid_errnumCopyFromUser,                       // 20
+   uid_errnumDescArrayEmpty,                     // 21
+   uid_errnumCouldNotCreate,                     // 22
+   uid_errnumInvalidRequest,                     // 23
+   uid_errnumInvalidDeviceAddr,                  // 24
+   uid_errnumCouldNotDestroy,                    // 25
+   uid_errnumDeviceBusy                          // 26
+} uid_errnum_e;
+
+typedef enum
+{
+   // Management
+   reqid_UID_Bind=1,                // Use default API Version
+   reqid_UID_ExtendedBindInfo,      // Pass additional Bind parms
+   reqid_UID_UnBind,                // Release a device
+
+   // Provision
+   reqid_UID_Activate,              // Activate the device
+   reqid_UID_Deactivate,            // Deactivate the device
+
+   // Administration
+   reqid_UID_Shutdown,              // Request that the Service session shutdown
+
+   reqid_UID_SendAFU,               // Send AFU a message
+
+   // Response and Event IDs
+   rspid_UID_Shutdown=0xF000,       // Service is shutdown
+   rspid_UID_UnbindComplete,        // Release Device Response
+   rspid_UID_BindComplete,          // Bind has completed
+
+   rspid_UID_Activate,              // Activate the device
+   rspid_UID_Deactivate,            // Deactivate the device
+
+   rspid_AFU_Response,              // Response from AFU request
+   rspid_AFU_Event,                 // Event from AFU
+
+   rspid_PIP_Event,                 // Event from PIP
+
+   rspid_WSM_Response,              // Event from Workspace manager
+
+   rspid_UID_Response,
+   rspid_UID_Event,
+
+} uid_msgIDs_e;
 
 typedef enum
 {
@@ -133,6 +206,81 @@ typedef enum
     ccipdrv_getMMIORmap,
     ccipdrv_getFeatureRegion
 } ccipdrv_afuCmdID_e;
+
+struct aalui_AFUmessage
+{
+   btUnsigned64bitInt  apiver;     // Version of message handler [IN]
+   btUnsigned64bitInt  pipver;     // Version of PIP interface [IN]
+   btUnsigned64bitInt  cmd;        // Command [IN]
+   btWSSize            size;       // size of payload [IN]
+   btVirtAddr          payload;    // data [IN/OUT]
+};
+
+#if   defined( __AAL_LINUX__ )
+# define AALUID_IOCTL_SENDMSG       _IOR ('x', 0x00, struct aalui_ioctlreq)
+# define AALUID_IOCTL_GETMSG_DESC   _IOR ('x', 0x01, struct aalui_ioctlreq)
+# define AALUID_IOCTL_GETMSG        _IOWR('x', 0x02, struct aalui_ioctlreq)
+# define AALUID_IOCTL_BINDDEV       _IOWR('x', 0x03, struct aalui_ioctlreq)
+# define AALUID_IOCTL_ACTIVATEDEV   _IOWR('x', 0x04, struct aalui_ioctlreq)
+# define AALUID_IOCTL_DEACTIVATEDEV _IOWR('x', 0x05, struct aalui_ioctlreq)
+#elif defined( __AAL_WINDOWS__ )
+# ifdef __AAL_USER__
+#    include <winioctl.h>
+# endif // __AAL_USER__
+
+// CTL_CODE() bits:
+//     Common[31]
+// DeviceType[30:16]
+//     Access[15:14]
+//     Custom[13]
+//   Function[12:2] (or [10:0] << 2)
+//     Method[1:0]
+
+# define UAIA_DRV_ID                  0x2
+# define UAIA_DEVICE_TYPE             FILE_DEVICE_BUS_EXTENDER
+# define UAIA_ACCESS                  FILE_ANY_ACCESS
+# define UAIA_CUSTOM                  1
+# define UAIA_METHOD                  METHOD_BUFFERED
+
+// field extractors
+# define AAL_IOCTL_DRV_ID(__ctl_code) (((__ctl_code) >> 10) & 0x7)
+# define AAL_IOCTL_FN(__ctl_code)     (((__ctl_code) >> 2) & 0xff)
+
+                  // 0 - 0xff
+# define UAIA_IOCTL(__index)          CTL_CODE(UAIA_DEVICE_TYPE, (UAIA_CUSTOM << 11) | (UAIA_DRV_ID << 8) | (__index), UAIA_METHOD, UAIA_ACCESS)
+
+# define AALUID_IOCTL_SENDMSG         UAIA_IOCTL(0x00)
+# define AALUID_IOCTL_GETMSG_DESC     UAIA_IOCTL(0x01)
+# define AALUID_IOCTL_GETMSG          UAIA_IOCTL(0x02)
+# define AALUID_IOCTL_BINDDEV         UAIA_IOCTL(0x03)
+# define AALUID_IOCTL_ACTIVATEDEV     UAIA_IOCTL(0x04)
+# define AALUID_IOCTL_DEACTIVATEDEV   UAIA_IOCTL(0x05)
+# define AALUID_IOCTL_POLL            UAIA_IOCTL(0x06)
+# define AALUID_IOCTL_MMAP            UAIA_IOCTL(0x07)
+
+#endif // OS
+
+//=============================================================================
+// Name: aalui_ioctlreq
+// Description: IOCTL message block
+//=============================================================================
+struct aalui_ioctlreq
+{
+   uid_msgIDs_e       id;           // ID of UI request [IN]
+   stTransactionID_t  tranID;       // Transaction ID to identify result [IN]
+   btObjectType       context;      // Optional token [IN]
+   uid_errnum_e       errcode;      // Driver specific error number
+   btHANDLE           handle;       // Device handle
+   btWSSize           size;         // Size of payload section [IN]
+   btByte             payload[1];   // Beginning of optional payload [IN]
+};
+
+// TODO CASSERT( sizeof(struct aalui_ioctlreq)
+
+#define aalui_ioAFUmessagep(i)   (struct aalui_AFUmessage *)(((char *)i) + sizeof(struct aalui_ioctlreq) )
+#define aalui_ioctlPayload(i)    (void *)(((char *)i) + sizeof(struct aalui_ioctlreq) )
+#define aalui_ioctlPayloadSize(i)   ((i)->size)
+
 
 struct ahm_req
 {
@@ -164,6 +312,7 @@ struct ahm_req
    } u;
 };
 
+
 struct ccidrvreq
 {
    struct ahm_req    ahmreq;
@@ -171,10 +320,127 @@ struct ccidrvreq
    btTime            pollrate;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////          EVENT SUPPORT FUNCTIONS         ////////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+//=============================================================================
+// Name: aalui_Shutdown
+// Type[Dir]: Request[IN]
+// Object: UI Driver
+// Description: Request to the AFU
+// Comments:
+//=============================================================================
+typedef enum
+{
+   ui_shutdownReasonNormal=0,
+   ui_shutdownReasonMaint,
+   ui_shutdownFailure,
+   ui_shutdownReasonRestart
+} ui_shutdownreason_e;
+
+
+//=============================================================================
+// Name: aalui_Shutdown
+// Description: UI driver shutdown event.
+//=============================================================================
+//=============================================================================
+struct aalui_Shutdown {
+   ui_shutdownreason_e m_reason;
+   btTime              m_timeout;
+};
+
+
+//=============================================================================
+// Name: aalui_WSMParms
+// Object: Kernel Workspace Manager Service
+// Command ID: reqid_UID_SendWSM
+// Input: wsid  - Workspace ID
+//        ptr   - Pointer to start of workspace
+//        physptr - Physical address
+//        size  - size in bytes of workspace
+// Description: Parameters describing a workspace
+// Comments: Used in WSM interface
+//=============================================================================
+struct aalui_WSMParms
+{
+   btWSID     wsid;        // Workspace ID
+   btVirtAddr ptr;         // Virtual Workspace pointer
+   btPhysAddr physptr;     // Depends on use
+   btWSSize   size;        // Workspace size
+   btWSSize   itemsize;    // Workspace item size
+   btWSSize   itemspacing; // Workspace item spacing
+   TTASK_MODE type;        // Task mode this workspace is compatible with
+};
+
+
+//=============================================================================
+// Name: aalui_WSMEvent
+// Type[Dir]: Event/Response [OUT]
+// Object: Kernel Workspace Manager Service
+// Command ID: reqid_UID_SendWSM
+// fields: wsid - Workspace ID
+//         ptr  - Pointer tostart of workspace
+//         size - size in bytes of workspace
+// Description: Parameters describing a workspace
+// Comments: Used in WSM interface
+//=============================================================================
+typedef enum
+{
+   uid_wseventAllocate=0,
+   uid_wseventFree,
+   uid_wseventGetPhys,
+   uid_wseventCSRMap,
+   uid_wseventMMIOMap
+} uid_wseventID_e;
+
+struct aalui_WSMEvent
+{
+   uid_wseventID_e       evtID;
+   struct aalui_WSMParms wsParms;
+};
+
+
+//=============================================================================
+// Name: aalui_extbindargs
+// TYpe pDir]; Request[IN] Response[OUT]
+// Description: Extended bind arguments.
+// Comments: This object is used to specify arguments to the PIP during the
+//           bind operation and to receive attributes back in the bind complete
+//=============================================================================
+struct aalui_extbindargs
+{
+   btUnsigned64bitInt m_apiver;        // Version of message handler
+   btUnsigned64bitInt m_pipver;        // Version of PIP interface
+   btUnsigned32bitInt m_mappableAPI;   // Permits direct CSR mapping
+   btObjectType       m_pipattrib;     // Attribute block (TBD)
+};
+
+
 
 END_C_DECLS
 
 END_NAMESPACE(AAL)
+
+//=============================================================================
+// Name: IAIATransaction
+// Description: Interface to IAIATransaction object which abstracts the
+//              and AIA downstream message.
+// Comments:
+//=============================================================================
+class UAIA_API IAIATransaction : public CUnCopyable
+{
+public:
+   virtual ~IAIATransaction(){};
+   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
+   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
+   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
+   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
+};
 
 #endif // __AALSDK_CCIP_DRIVER_H__
 

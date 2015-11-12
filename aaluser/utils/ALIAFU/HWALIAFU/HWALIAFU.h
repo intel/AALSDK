@@ -47,11 +47,11 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/HWALIAFUService.h>
-#include <aalsdk/aas/AALDeviceService.h>
+//#include <aalsdk/aas/AALDeviceService.h>
 #include <aalsdk/service/IALIAFU.h>
 
 #include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
-#include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
+//#include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
 #include <aalsdk/uaia/IAFUProxy.h>
 
 BEGIN_NAMESPACE(AAL)

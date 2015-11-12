@@ -46,7 +46,11 @@
 //****************************************************************************
 #ifndef __AALSDK_SERVICE_IALIAFU_H__
 #define __AALSDK_SERVICE_IALIAFU_H__
-#include <aalsdk/AAL.h>
+#include <aalsdk/OSAL.h>
+#include <aalsdk/AALTypes.h>
+#include <aalsdk/AALIDDefs.h>
+#include <aalsdk/INTCDefs.h>
+#include <aalsdk/AASLib.h>
 
 BEGIN_NAMESPACE(AAL)
 

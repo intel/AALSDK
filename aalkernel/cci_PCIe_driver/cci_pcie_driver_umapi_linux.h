@@ -71,7 +71,7 @@
 #define __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_LINUX_H__
 #include "aalsdk/kernel/kosal.h"
 #include "aalsdk/kernel/aalbus.h"
-#include "aalsdk/kernel/aalui.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 #define DEV_NAME          "aalui"
 

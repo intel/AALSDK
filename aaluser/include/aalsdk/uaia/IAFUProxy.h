@@ -40,15 +40,17 @@
 #define __AALSDK_IAFUPROXY_H__
 
 #include <aalsdk/AALTypes.h>
+#include <aalsdk/kernel/ccipdriver.h>
+
 //#include <aalsdk/CAALBase.h>                    // CAALBase
 //#include <aalsdk/AALEvent.h>                    // IEvent
 //#include <aalsdk/AALTransactionID.h>
 //#include <aalsdk/uaia/uidrvMessage.h>           // uidrvMessageRoute
-#include <aalsdk/uaia/AIA.h>                      // IAFUDev, IAFUTransaction, IAFUCSRMap
+//#include <aalsdk/uaia/AIA.h>                      // IAFUDev, IAFUTransaction, IAFUCSRMap
 //#include <aalsdk/uaia/IUAIASession.h>           // IuAIASession
 //#include <aalsdk/uaia/AALuAIA_Messaging.h>      // UIDriverClient_uidrvMarshaler_t
 
-#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
+//#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
 
 //#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
 

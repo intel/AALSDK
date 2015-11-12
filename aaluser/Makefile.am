@@ -215,6 +215,7 @@ include/aalsdk/kernel/aalwsservice.h \
 include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
+include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \

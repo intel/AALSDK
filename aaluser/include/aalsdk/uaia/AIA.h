@@ -75,22 +75,6 @@
 # define AIA_API    __declspec(0)
 #endif // __AAL_WINDOWS__
 
-//=============================================================================
-// Name: IAIATransaction
-// Description: Interface to IAIATransaction object which abstracts the
-//              and AIA downstream message.
-// Comments:
-//=============================================================================
-class UAIA_API IAIATransaction : public CUnCopyable
-{
-public:
-   virtual ~IAIATransaction(){};
-   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
-   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
-   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
-   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
-};
-
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================

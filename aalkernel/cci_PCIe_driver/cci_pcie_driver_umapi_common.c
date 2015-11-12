@@ -73,8 +73,7 @@
 
 
 #include "cci_pcie_driver_umapi_linux.h"
-#include "cciui-events.h"
-#include "aalsdk/kernel/aalui-events.h"
+#include "ccipdrv-events.h"
 
 // Prototypes
 struct ccidrv_session * ccidrv_session_create(btPID );
@@ -99,14 +98,12 @@ btInt ccidrv_flush_eventqueue(  struct ccidrv_session *psess);
 
 btInt process_send_message( struct ccidrv_session  *,
                             struct aalui_ioctlreq *);
-btInt process_send_message( struct ccidrv_session  *,
-                            struct aalui_ioctlreq *);
 btInt process_bind_request( struct ccidrv_session  *psess,
                             struct aalui_ioctlreq *preq);
-btInt ccidrv_process_message( struct aalui_ioctlreq *preq,
-                              struct aal_q_item     *pqitem,
-                              struct aalui_ioctlreq *resp,
-                              btWSSize              *pOutbufsize);
+btInt ccidrv_marshal_upstream_message( struct aalui_ioctlreq *preq,
+                                       struct aal_q_item     *pqitem,
+                                       struct aalui_ioctlreq *resp,
+                                       btWSSize              *pOutbufsize);
 
 extern struct um_APIdriver thisDriver;
 
@@ -361,7 +358,7 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
 
          // Process the request
          *pOutbufSize = OutbufSize;
-         return ccidrv_process_message(preq, pqitem, presp, pOutbufSize);
+         return ccidrv_marshal_upstream_message(preq, pqitem, presp, pOutbufSize);
       } break; // case  AALUID_IOCTL_GETMSG:
 
 
@@ -416,7 +413,7 @@ process_send_message(struct ccidrv_session  *psess,
    struct aal_pipmessage              pipMessage;
    ui_shutdownreason_e                shutdown_reason;
    btTime                             timeleft;
-   struct uidrv_event_shutdown_event *newreq;
+
 //   btWSSize                             messagesize;
 
 #if 1
@@ -483,6 +480,8 @@ process_send_message(struct ccidrv_session  *psess,
 
       UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_Shutdown) {
          // Create shutdown  request object
+         struct ccipdrv_event_afu_response_event *newreq;
+
          shutdown_reason =((struct aalui_Shutdown*) aalui_ioctlPayload(preq))->m_reason;
 
          // Assume kernel shutdown takes zero time for now so return original
@@ -491,11 +490,11 @@ process_send_message(struct ccidrv_session  *psess,
          timeleft = ((struct aalui_Shutdown*)aalui_ioctlPayload(preq))->m_timeout;
 
          PDEBUG("Received a shutdown ioctl reason %d\n", shutdown_reason);
-         newreq = uidrv_event_shutdown_event_create(shutdown_reason,
-                                                    timeleft,
-                                                    &preq->tranID,
-                                                    preq->context,
-                                                    uid_errnumOK);
+         newreq = ccipdrv_event_shutdown_event_create( shutdown_reason,
+                                                       timeleft,
+                                                      &preq->tranID,
+                                                       preq->context,
+                                                       uid_errnumOK);
          ASSERT(NULL != newreq);
          if ( NULL == newreq ) {
             ret = -ENOMEM;
@@ -504,7 +503,7 @@ process_send_message(struct ccidrv_session  *psess,
          }
 
          // Enqueue the shutdown event
-         _aal_q_enqueue(ui_evtp_uishutdown_to_qip(newreq), &psess->m_eventq);
+         _aal_q_enqueue(ui_evtp_afuresponse_to_qip(newreq), &psess->m_eventq);
 
          // Unblock select() calls.
          kosal_wake_up_interruptible( &psess->m_waitq);
@@ -741,7 +740,7 @@ UNBIND_DONE:
 }  // process_bind_request
 
 //=============================================================================
-// Name: ccidrv_process_message
+// Name: ccidrv_marshal_upstream_message
 // Description: Pre-process a queued message targeted for the application.
 //              Called from AALUID_IOCTL_GETMSG, the message is unpacked,
 //              any kernel level functions performed and the user mode event
@@ -755,10 +754,10 @@ UNBIND_DONE:
 // Comments: Kernel event is destroyed
 //=============================================================================
 btInt
-ccidrv_process_message( struct aalui_ioctlreq *preq,
-                        struct aal_q_item     *pqitem,
-                        struct aalui_ioctlreq *resp,
-                        btWSSize              *pOutbufsize)
+ccidrv_marshal_upstream_message( struct aalui_ioctlreq *preq,
+                                 struct aal_q_item     *pqitem,
+                                 struct aalui_ioctlreq *resp,
+                                 btWSSize              *pOutbufsize)
 {
    btInt    ret = 0;
    btWSSize Outbufsize;
@@ -779,33 +778,6 @@ ccidrv_process_message( struct aalui_ioctlreq *preq,
    *pOutbufsize = 0; // Prepar
    // Switch on message type
    switch ( pqitem->m_id ) {
-      //-------------------
-      // Shutdown  Complete
-      //-------------------
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_UID_Shutdown) {
-         // Copy the header portion of the response
-         resp->id      = (uid_msgIDs_e)pqitem->m_id;
-         resp->errcode = qip_to_ui_evtp_uishutdown(pqitem)->m_errnum;
-         resp->handle  = NULL;
-         resp->context = qip_to_ui_evtp_uishutdown(pqitem)->m_context;
-         resp->tranID  = qip_to_ui_evtp_uishutdown(pqitem)->m_tranID;
-         resp->size    = pqitem->m_length;
-
-         PDEBUG("Shutdown reason %d\n", ((struct aalui_Shutdown *)qip_to_ui_evtp_uishutdown(pqitem)->m_payload)->m_reason);
-
-         // Copy the body of the message
-         if ( ( resp->size + sizeof(struct aalui_ioctlreq) ) > Outbufsize ) {
-            ret = -EINVAL;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
-
-         memcpy((char *)resp + sizeof(struct aalui_ioctlreq), qip_to_ui_evtp_uishutdown(pqitem)->m_payload, (size_t)resp->size);
-
-         // Destroy the event
-         uidrv_event_shutdown_event_destroy(qip_to_ui_evtp_uishutdown(pqitem));
-      } break; // case rspid_UID_Shutdown
-
       //--------------
       // Bind Complete
       //--------------
@@ -850,6 +822,7 @@ ccidrv_process_message( struct aalui_ioctlreq *preq,
       //-------------
       // AFU Response
       //-------------
+      UIDRV_PROCESS_MESSAGE_CASE(rspid_UID_Shutdown)
       UIDRV_PROCESS_MESSAGE_CASE(rspid_AFU_Response) {
          ASSERT(NULL != preq);
 
@@ -861,7 +834,7 @@ ccidrv_process_message( struct aalui_ioctlreq *preq,
          resp->tranID  = qip_to_ui_evtp_afuresponse(pqitem)->m_tranID;
 
          if ( preq->size < QI_LEN(pqitem) ) {
-            uidrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));  //BUG in Linux version
+            ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));  //BUG in Linux version
             ret = -EINVAL;
             PTRACEOUT_INT(ret);
             return ret;
@@ -869,29 +842,17 @@ ccidrv_process_message( struct aalui_ioctlreq *preq,
 
          resp->size    = QI_LEN(pqitem);
 
-         // Some failures do not have response structs
-         if ( NULL != qip_to_ui_evtp_afuresponse(pqitem)->m_response ) {
-
-            if ( uid_afurespSetGetCSRComplete == qip_to_ui_evtp_afuresponse(pqitem)->m_response->respID ) {
-               PDEBUG("pCSRrwb = %p\n", qip_to_ui_evtp_afuresponse(pqitem)->m_response->pcsrBlk);
-               PDEBUG("Num CSR get %" PRIu64 ", Num CSR Set %" PRIu64 "\n\n",
-                         qip_to_ui_evtp_afuresponse(pqitem)->m_response->pcsrBlk->num_to_get,
-                         qip_to_ui_evtp_afuresponse(pqitem)->m_response->pcsrBlk->num_to_set);
-            }
-
-            // Copy the body of the message to end of message
-            if ( ( resp->size + sizeof(struct aalui_ioctlreq) ) > Outbufsize ) {
-               ret = -EINVAL;
-               PTRACEOUT_INT(ret);
-               return ret;
-            }
-
-            memcpy((char *)resp + sizeof(struct aalui_ioctlreq), qip_to_ui_evtp_afuresponse(pqitem)->m_payload, (size_t)resp->size);
-
-         } // if ( qip_to_ui_evtp_afuresponse(pqitem)->m_response !=  NULL)
+         // Make sure there is room to fit the message
+         if ( ( resp->size + (sizeof(struct aalui_ioctlreq)-1) ) > Outbufsize ) {
+            ret = -EINVAL;
+            PTRACEOUT_INT(ret);
+            return ret;
+         }
+         // Copy the payload
+         memcpy(resp->payload, qip_to_ui_evtp_afuresponse(pqitem)->m_payload, (size_t)resp->size);
 
          //Destroy the event
-         uidrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
+         ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
       } break; // case rspid_AFU_Response
 
       //-------------
@@ -925,7 +886,7 @@ ccidrv_process_message( struct aalui_ioctlreq *preq,
          memcpy((char *)resp + sizeof(struct aalui_ioctlreq), qip_to_ui_evtp_afuwsevent(pqitem)->m_payload, (size_t)resp->size);
 
          //Destroy the event
-         uidrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
+         ccipdrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
 
       } break; // case rspid_WSM_Response
 
@@ -1129,12 +1090,12 @@ int ccidrv_flush_eventqueue(  struct ccidrv_session *psess)
          }
          case rspid_AFU_Response: {
             DPRINTF( UIDRV_DBG_IOCTL, ": Flushing Response event\n" );
-            uidrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
+            ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
             break;
          }
 
          case rspid_WSM_Response: {
-            uidrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
+            ccipdrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
             break;
          }
 

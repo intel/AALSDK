@@ -44,7 +44,7 @@
 #define __AALSDK_AIA_UIDRVMESSAGE_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALBase.h>      // IBase
-#include <aalsdk/kernel/aalui.h> // uid_msgIDs_e, uid_errnum_e
+#include <aalsdk/kernel/ccipdriver.h> // uid_msgIDs_e, uid_errnum_e
 
 #include <aalsdk/CUnCopyable.h>
 

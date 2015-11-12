@@ -43,7 +43,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALLoggerExtern.h"
-#include "aalsdk/kernel/aalui.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 #include "UIDriverInterfaceAdapter.h"
 

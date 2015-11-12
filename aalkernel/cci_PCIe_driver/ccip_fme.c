@@ -78,7 +78,7 @@
 #include "aalsdk/kernel/aalbus-ipip.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
-#include "aalsdk/kernel/ccipdrv-events.h"
+#include "ccipdrv-events.h"
 
 #include "ccip_defs.h"
 #include "ccip_fme.h"

@@ -55,15 +55,15 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_afu.c
-/// @brief  Definitions for ccip User AFU.
+/// @file ccip_stap.c
+/// @brief  Definitions for ccip Signal Tap AAL device.
 /// @ingroup aalkernel_ccip
 /// @verbatim
 //        FILE: ccip_port_mmio.c
-//     CREATED: Nov 9, 2015
+//     CREATED: Nov 11, 2015
 //      AUTHOR:
 //
-// PURPOSE:   This file contains the implementation of the CCIP AFU
+// PURPOSE:   This file contains the implementation of the CCIP Signal Tap
 //             low-level function (i.e., Physical Interface Protocol driver).
 // HISTORY:
 // COMMENTS:
@@ -82,10 +82,12 @@
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
+
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-/////////////////           AAL SUPPORT FUNCTIONS          ////////////////////
+/////////////////              PIP INTERFACE               ////////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,13 +98,12 @@ static int cci_mmap(struct aaldev_ownerSession *pownerSess,
                            struct aal_wsid *wsidp,
                            btAny os_specific);
 
-
-//=============================================================================
-// cci_FMEpip
-// Description: Physical Interface Protocol Interface for the SPL2 AFU
-//              kernel based AFU engine.
-//=============================================================================
-struct aal_ipip cci_AFUpip = {
+///=============================================================================
+/// Name: cci_STPpip
+/// @brief Physical Interface Protocol Interface for the Signal Tap AFU
+///              kernel based AFU engine.
+///=============================================================================
+struct aal_ipip cci_STAPpip = {
    .m_messageHandler = {
       .sendMessage   = CommandHandler,       // Command Handler
       .bindSession   = BindSession,          // Session binder
@@ -119,11 +120,9 @@ struct aal_ipip cci_AFUpip = {
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
 
-
-
 ///============================================================================
-/// Name: cci_create_AAL_UAFU_Device
-/// @brief Creates and registers User AFU object (resource) we want to
+/// Name: cci_create_AAL_SignalTap_Device
+/// @brief Creates and registers Signal Tap objects (resources) we want to
 ///        expose through AAL.
 ///
 /// @param[in] pportdev - Port device
@@ -131,29 +130,23 @@ struct aal_ipip cci_AFUpip = {
 /// @return    AAL Device pointer
 ///============================================================================
 struct cci_aal_device   *
-            cci_create_AAL_UAFU_Device( struct port_device  * pportdev,
-                                        struct CCIP_AFU_Header *pafu_hdr,
-                                        struct aal_device_id *paalid)
+               cci_create_AAL_SignalTap_Device( struct port_device  *pportdev,
+                                                struct aal_device_id *paalid)
 {
    struct cci_aal_device   *pcci_aaldev = NULL;
    int ret;
 
    PTRACEIN;
 
-   PVERBOSE("Instantiating User AFU\n");
-   PVERBOSE("User AFU\n");
-   PVERBOSE( "> Feature_ID = %x \n",pafu_hdr->ccip_dfh.Feature_ID);
-   PVERBOSE("> Feature_rev = %x \n",pafu_hdr->ccip_dfh.Feature_rev);
-   PVERBOSE( "> Type = %x \n",pafu_hdr->ccip_dfh.Type);
-   PVERBOSE( "> afu_id_l.afu_id_l= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_l.afu_id_l);
-   PVERBOSE( "> afu_id_h.afu_id_h= %lx \n",( long unsigned int)pafu_hdr->ccip_afu_id_h.afu_id_h);
-   PVERBOSE( "> next_DFH_offset = %x \n",pafu_hdr->ccip_dfh.next_DFH_offset);
-   PVERBOSE( "> next_afu.afu_id_offset= %x \n",pafu_hdr->ccip_next_afu.afu_id_offset);
+   PVERBOSE("Creating Signal Tap device\n");
 
    // Construct the cci_aal_device object
    pcci_aaldev = cci_create_aal_device();
 
    ASSERT(NULL != pcci_aaldev);
+   if( NULL == pcci_aaldev){
+      return NULL;
+   }
 
    // Make it a User AFU
    cci_dev_type(pcci_aaldev) = cci_dev_AFU;
@@ -164,23 +157,19 @@ struct cci_aal_device   *
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
-   aaldevid_afuguidl(*paalid)            = pafu_hdr->ccip_afu_id_l.afu_id_l;
-   aaldevid_afuguidh(*paalid)            = pafu_hdr->ccip_afu_id_h.afu_id_h;
-   aaldevid_pipguid(*paalid)             = CCIP_AFU_PIPIID;
-
-   // Set the interface permissions
-   // Enable MMIO-R
-   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+   aaldevid_afuguidl(*paalid)            = CCIP_STAP_GUIDL;
+   aaldevid_afuguidh(*paalid)            = CCIP_STAP_GUIDH;
+   aaldevid_pipguid(*paalid)             = CCIP_STAP_PIPIID;
 
    // Setup the MMIO region parameters
-   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
-   cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys(pafu_hdr);
+   cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)ccip_port_stap(pportdev);
+   cci_dev_len_afu_mmio(pcci_aaldev)   = sizeof(struct CCIP_PORT_DFL_STAP);
+   cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_stap(pportdev));
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name
-                                           &*paalid,             // AAL ID
-                                           &cci_AFUpip);
+   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPSTAP",         // AAL device base name
+                                           paalid,             // AAL ID
+                                           &cci_STAPpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
@@ -191,20 +180,9 @@ struct cci_aal_device   *
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
-   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
-   }
-
-   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
-   }
 
    if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
       cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
-   }
-
-   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
-      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
    }
 
    // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
@@ -219,18 +197,15 @@ struct cci_aal_device   *
    ret = cci_publish_aaldevice(pcci_aaldev);
    ASSERT(ret == 0);
    if(0> ret){
-      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
-                                                                  aaldevid_devaddr_devnum(*paalid),
-                                                                  aaldevid_devaddr_fcnnum(*paalid),
-                                                                  aaldevid_devaddr_subdevnum(*paalid));
+      PERR("Failed to initialize AAL Device for CCIPSTAP[%d:%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
+                                                                       aaldevid_devaddr_devnum(*paalid),
+                                                                       aaldevid_devaddr_fcnnum(*paalid),
+                                                                       aaldevid_devaddr_subdevnum(*paalid));
       cci_destroy_aal_device(pcci_aaldev);
       return NULL;
    }
-
-   PTRACEOUT;
    return pcci_aaldev;
 }
-
 
 
 //=============================================================================

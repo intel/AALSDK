@@ -92,7 +92,7 @@ cci_pcie_driver_umapi_linux.c \
 cci_pcie_driver_umapi_linux.h \
 cci_pcie_driver_umapi_common.c \
 ccip_defs.h \
-cciui-events.h \
+ccipdrv-events.h \
 ccip_fme.h \
 ccip_fme.c \
 ccip_port.h \

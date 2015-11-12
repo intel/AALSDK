@@ -69,7 +69,7 @@
 #define __AALSDK_KERNEL_AALMAFU_H__
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/iaaldevice.h>
-#include <aalsdk/kernel/aalui.h>
+//#include <aalsdk/kernel/aalui.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -80,7 +80,7 @@ BEGIN_C_DECLS
 //----------------
 typedef enum {
    // Management AFU commands
-   aalui_mafucmd=AALUI_AFUCMD_STARTMAFU,
+   aalui_mafucmd,
    aalui_mafucmdActvateAFU,
    aalui_mafucmdDeactvateAFU,
    aalui_mafucmdInitializeAFU,

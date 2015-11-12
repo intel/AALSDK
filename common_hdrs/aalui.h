@@ -391,7 +391,8 @@ typedef enum
    uid_wseventAllocate=0,
    uid_wseventFree,
    uid_wseventGetPhys,
-   uid_wseventCSRMap
+   uid_wseventCSRMap,
+   uid_wseventMMIOMap
 } uid_wseventID_e;
 
 struct aalui_WSMEvent

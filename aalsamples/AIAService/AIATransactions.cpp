@@ -43,7 +43,7 @@
 #include "aalsdk/AALLoggerExtern.h"
 
 #include "aalsdk/INTCDefs.h"
-#include "aalsdk/kernel/aalui.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 #include "AIATransactions.h"
 

@@ -39,7 +39,6 @@
 #ifndef __AALSDK_ALIAFUPROXY_H__
 #define __AALSDK_ALIAFUPROXY_H__
 #
-#include <aalsdk/uaia/AIA.h>
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/INTCDefs.h>
 #include <aalsdk/uaia/IAFUProxy.h>

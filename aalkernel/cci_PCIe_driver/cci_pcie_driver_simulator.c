@@ -75,13 +75,13 @@
 #include "cci_pcie_driver_PIPsession.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
-#include "aalsdk/kernel/ccipdrv-events.h"
 #include "aalsdk/kernel/iaaldevice.h"
 
 #include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_simulator.h"
+#include "ccipdrv-events.h"
 
 
 extern int  ccip_sim_wrt_port_mmio(btVirtAddr);
