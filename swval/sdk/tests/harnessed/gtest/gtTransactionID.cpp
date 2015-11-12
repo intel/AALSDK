@@ -11,7 +11,7 @@ void Set(AAL::TransactionID  &tid,
          btEventHandler       h,
          IBase               *pBase,
          btBool               filter,
-         bt32bitInt           id)
+         btID                 id)
 {
    tid.Context(ctx);
    tid.Handler(h);
@@ -25,7 +25,7 @@ void Set(stTransactionID_t   &stid,
          btEventHandler       h,
          IBase               *pBase,
          btBool               filter,
-         bt32bitInt           id)
+         btID                 id)
 {
    stid.m_Context = ctx;
    stid.m_Handler = h;
@@ -51,7 +51,7 @@ void Check(const AAL::TransactionID &tid,
            btEventHandler            h,
            IBase const              *pBase,
            btBool                    filter,
-           bt32bitInt                id)
+           btID                      id)
 {
    EXPECT_EQ(ctx,    tid.Context());
    EXPECT_EQ(h,      tid.Handler());
@@ -65,7 +65,7 @@ void Check(stTransactionID_t const &stid,
            btEventHandler           h,
            IBase const             *pBase,
            btBool                   filter,
-           bt32bitInt               id)
+           btID                     id)
 {
    EXPECT_EQ(ctx,    stid.m_Context);
    EXPECT_EQ(h,      stid.m_Handler);
@@ -94,10 +94,10 @@ TEST(TransactionIDTest, aal0763)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    stTransactionID_t stid;
-   stid.m_Context      = ctx;
+   stid.m_Context = ctx;
    stid.m_Handler = h;
    stid.m_IBase   = const_cast<IBase *>(pBase);
    stid.m_Filter  = filt;
@@ -115,7 +115,7 @@ TEST(TransactionIDTest, aal0764)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    TransactionID tid0;
    Set(tid0, ctx, h, const_cast<IBase *>(pBase), filt, id);
@@ -137,11 +137,11 @@ TEST(TransactionIDTest, aal0765)
 
 TEST(TransactionIDTest, aal0766)
 {
-   // TransactionID::TransactionID(bt32bitInt ) creates a TransactionID with a NULL
+   // TransactionID::TransactionID(btID ) creates a TransactionID with a NULL
    // btApplicationContext, a NULL btEventHandler, a NULL IBase *, a set filter flag, and the
    // given integer ID.
 
-   const bt32bitInt id = 6;
+   const btID id = 6;
 
    TransactionID tid(id);
    Check(tid, NULL, NULL, NULL, true, id);
@@ -149,12 +149,12 @@ TEST(TransactionIDTest, aal0766)
 
 TEST(TransactionIDTest, aal0767)
 {
-   // TransactionID::TransactionID(bt32bitInt , btApplicationContext ) creates a TransactionID
+   // TransactionID::TransactionID(btID , btApplicationContext ) creates a TransactionID
    // with the given btApplicationContext, a NULL btEventHandler, a NULL IBase *, a set filter flag,
    // and the given integer ID.
 
    const btApplicationContext ctx = (btApplicationContext)3;
-   const bt32bitInt           id  = 6;
+   const btID                 id  = 6;
 
    TransactionID tid(id, ctx);
    Check(tid, ctx, NULL, NULL, true, id);
@@ -176,13 +176,13 @@ TEST(TransactionIDTest, aal0768)
 
 TEST(TransactionIDTest, aal0769)
 {
-   // TransactionID::TransactionID(bt32bitInt , btEventHandler, btBool ) creates a
+   // TransactionID::TransactionID(btID , btEventHandler, btBool ) creates a
    // TransactionID with a NULL btApplicationContext, the given btEventHandler, a NULL IBase *,
    // the given filter flag, and the given integer ID.
 
    const btEventHandler h    = (btEventHandler)4;
    const btBool         filt = true;
-   const bt32bitInt     id   = 6;
+   const btID           id   = 6;
 
    TransactionID tid(id, h, filt);
    Check(tid, NULL, h, NULL, filt, id);
@@ -190,14 +190,14 @@ TEST(TransactionIDTest, aal0769)
 
 TEST(TransactionIDTest, aal0770)
 {
-   // TransactionID::TransactionID(bt32bitInt , btApplicationContext , btEventHandler, btBool )
+   // TransactionID::TransactionID(btID , btApplicationContext , btEventHandler, btBool )
    // creates a TransactionID with the given btApplicationContext, the given btEventHandler, a NULL IBase *,
    // the given filter flag, and the given integer ID.
 
    const btApplicationContext ctx  = (btApplicationContext)3;
    const btEventHandler       h    = (btEventHandler)4;
    const btBool               filt = true;
-   const bt32bitInt           id   = 6;
+   const btID                 id   = 6;
 
    TransactionID tid(id, ctx, h, filt);
    Check(tid, ctx, h, NULL, filt, id);
@@ -232,13 +232,13 @@ TEST(TransactionIDTest, aal0772)
 
 TEST(TransactionIDTest, aal0773)
 {
-   // TransactionID::TransactionID(bt32bitInt , IBase * , btBool )
+   // TransactionID::TransactionID(btID , IBase * , btBool )
    // creates a TransactionID with a NULL btApplicationContext, a NULL btEventHandler,
    // the given IBase *, the given filter flag, and the given integer ID.
 
-   const IBase     *pBase = (IBase *)5;
-   const bt32bitInt id    = 6;
-   const btBool     filt  = true;
+   const IBase *pBase = (IBase *)5;
+   const btID   id    = 6;
+   const btBool filt  = true;
 
    TransactionID tid(id, const_cast<IBase *>(pBase), filt);
    Check(tid, NULL, NULL, pBase, filt, id);
@@ -246,13 +246,13 @@ TEST(TransactionIDTest, aal0773)
 
 TEST(TransactionIDTest, aal0774)
 {
-   // TransactionID::TransactionID(bt32bitInt , btApplicationContext , IBase * , btBool )
+   // TransactionID::TransactionID(btID , btApplicationContext , IBase * , btBool )
    // creates a TransactionID with the given btApplicationContext, a NULL btEventHandler,
    // the given IBase *, the given filter flag, and the given integer ID.
 
    const btApplicationContext ctx   = (btApplicationContext)3;
    const IBase               *pBase = (IBase *)5;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
    const btBool               filt  = true;
 
    TransactionID tid(id, ctx, const_cast<IBase *>(pBase), filt);
@@ -281,7 +281,7 @@ TEST(TransactionIDTest, aal0776)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    TransactionID tid0;
    Set(tid0, ctx, h, const_cast<IBase *>(pBase), filt, id);
@@ -302,7 +302,7 @@ TEST(TransactionIDTest, aal0777)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    stTransactionID_t stid;
    stid.m_Context = ctx;
@@ -327,7 +327,7 @@ TEST(TransactionIDTest, aal0778)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    TransactionID tid;
    Set(tid, ctx, h, const_cast<IBase *>(pBase), filt, id);
@@ -344,7 +344,7 @@ TEST(TransactionIDTest, aal0779)
    const btEventHandler       h     = (btEventHandler)4;
    const IBase               *pBase = (IBase *)5;
    const btBool               filt  = true;
-   const bt32bitInt           id    = 6;
+   const btID                 id    = 6;
 
    TransactionID tid;
    Set(tid.operator AAL::stTransactionID_t &(), ctx, h, const_cast<IBase *>(pBase), filt, id);
@@ -429,7 +429,7 @@ TEST(TransactionIDTest, aal0782)
    // When comparing TransactionID objects with TransactionID::operator == (), if both
    // TransactionID's have non-NULL IBase *'s, then IBase::operator != () is used to compare the
    // two IBase *'s. When IBase::operator != () returns false, the btApplicationContext,
-   // btEventHandler, bt32bitInt, and btBool fields in the two objects are bitwise compared to
+   // btEventHandler, btID, and btBool fields in the two objects are bitwise compared to
    // make the final determination of equality.
 
    CAASBase lhsbase;

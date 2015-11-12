@@ -610,9 +610,9 @@ btInt NLBLpbk1(CMyApp *app)
    // 2.) A data input buffer.
    // 3.) A data output buffer.
 
-   pAFU->WorkspaceAllocate(LPBK1_DSM_SIZE,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   pAFU->WorkspaceAllocate(LPBK1_DSM_SIZE,    TransactionID((btID)CMyCCIClient::WKSPC_DSM));
+   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   pAFU->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    app->ClientWait();
@@ -786,9 +786,9 @@ btInt NLBLpbk1(CMyApp *app)
    pAFU->CSRWrite(CSR_CTL, 7);
 
    // Release the Workspaces
-   pAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   pAFU->WorkspaceFree(pOutputUsrVirt, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   pAFU->WorkspaceFree(pDSMUsrVirt,    TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   pAFU->WorkspaceFree(pInputUsrVirt,  TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   pAFU->WorkspaceFree(pOutputUsrVirt, TransactionID((btID)CMyCCIClient::WKSPC_OUT));
+   pAFU->WorkspaceFree(pDSMUsrVirt,    TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Synchronize with the workspace free event notifications.
    app->ClientWait();

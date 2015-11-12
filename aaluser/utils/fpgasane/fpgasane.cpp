@@ -1005,9 +1005,9 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
 {
    btInt res = 0;
 
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((btID)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    m_pMyApp->ClientWait();
@@ -1090,9 +1090,9 @@ btInt CNLBLpbk1::RunTest(btWSSize wssize)
    // Clean up..
 
    // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((btID)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Synchronize with the workspace free event notifications.
    m_pMyApp->ClientWait();
@@ -1111,11 +1111,11 @@ btInt CNLBRead::RunTest(btWSSize wssize)
 {
    btInt res = 0;
 
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((btID)CMyCCIClient::WKSPC_IN));
 
    // Overloading the "output" workspace here to be the buffer we use to cool down the cache.
-   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_READ_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_READ_WKSPC, TransactionID((btID)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    m_pMyApp->ClientWait();
@@ -1219,9 +1219,9 @@ btInt CNLBRead::RunTest(btWSSize wssize)
    // Clean up..
 
    // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt,     TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt,     TransactionID((btID)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Synchronize with the workspace free event notifications.
    m_pMyApp->ClientWait();
@@ -1238,12 +1238,12 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
 {
    btInt res = 0;
 
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Overloading the "input" workspace here to be the buffer we use to cool down the cache.
-   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_WRITE_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_WRITE_WKSPC, TransactionID((btID)CMyCCIClient::WKSPC_IN));
 
-   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((btID)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    m_pMyApp->ClientWait();
@@ -1339,9 +1339,9 @@ btInt CNLBWrite::RunTest(btWSSize wssize)
    // Clean up..
 
    // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt,     TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt,     TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((btID)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Synchronize with the workspace free event notifications.
    m_pMyApp->ClientWait();
@@ -1358,9 +1358,9 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
 {
    btInt res = 0;
 
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((btID)CMyCCIClient::WKSPC_OUT));
 
    // Synchronize with the workspace allocation event notifications.
    m_pMyApp->ClientWait();
@@ -1449,9 +1449,9 @@ btInt CNLBTrput::RunTest(btWSSize wssize)
    // Clean up..
 
    // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((btID)CMyCCIClient::WKSPC_IN));
+   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((btID)CMyCCIClient::WKSPC_OUT));
+   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((btID)CMyCCIClient::WKSPC_DSM));
 
    // Synchronize with the workspace free event notifications.
    m_pMyApp->ClientWait();

@@ -97,16 +97,16 @@ typedef struct stTransactionID_t
    btEventHandler       m_Handler;
    IBase               *m_IBase;
    btBool               m_Filter;
-   bt32bitInt           m_intID;
+   btID                 m_intID;
 } stTransactionID_t;
 
 
-// Note: using an absolute number here (32, 24) to ensure that both user and kernel are getting
+// Note: using an absolute number here (40, 20) to ensure that both user and kernel are getting
 //       the same sized struct.
 #if   (8 == sizeof_void_ptr)
-   CASSERT(32 == sizeof(stTransactionID_t));
+   CASSERT(40 == sizeof(stTransactionID_t));
 #elif (4 == sizeof_void_ptr)
-   CASSERT(24 == sizeof(stTransactionID_t));
+   CASSERT(20 == sizeof(stTransactionID_t));
 #else
 #  error Add stTransactionID_t size check for unknown address size.
 #endif // sizeof_void_ptr

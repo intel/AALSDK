@@ -66,30 +66,6 @@
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
-// Name: _AssignTranID
-// Description: Assigns a unique transaction iD
-// Interface: public
-// Inputs: none
-// Outputs: TranID.
-// Comments: This is just a quick hack implementation!!!
-//=============================================================================
-bt32bitInt _AssignTranID()
-{
-   static bt32bitInt _LastTranID = 0;
-
-   if ( 0 == _LastTranID ) {
-
-      srand( (unsigned)time( NULL ) );
-      _LastTranID = rand();
-
-   } else {
-      _LastTranID++;
-   }
-
-   return _LastTranID;
-}
-
-//=============================================================================
 // Name: TransactionID
 // Description: Default constructor  - System assigned ID. Default Listener
 //=============================================================================
@@ -101,7 +77,7 @@ TransactionID::TransactionID()
    m_tid.m_Filter  = true;
 
    //Assign an internal value
-   m_tid.m_intID = _AssignTranID();
+   m_tid.m_intID = TransactionID::NextUniqueID();
 }
 
 //=============================================================================
@@ -117,7 +93,7 @@ TransactionID::TransactionID(const stTransactionID_t &stTid)
 // Name: TransactionID
 // Description: Constructor for a Specified Integer ID
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt intID)
+TransactionID::TransactionID(btID intID)
 {
    m_tid.m_Context = NULL;
    m_tid.m_Handler = NULL;
@@ -130,10 +106,10 @@ TransactionID::TransactionID(bt32bitInt intID)
 // Name: TransactionID
 // Description: Constructor for a Specified Integer ID
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt           intID,
-                             btApplicationContext Ctxt)
+TransactionID::TransactionID(btID                 intID,
+                             btApplicationContext Context)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
@@ -153,13 +129,13 @@ TransactionID::TransactionID(const TransactionID &rOther) :
 // Description: Constructor for Application specified ID
 //              and Handler (if provided)
 //=============================================================================
-TransactionID::TransactionID(btApplicationContext Ctxt)
+TransactionID::TransactionID(btApplicationContext Context)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = true;
-   m_tid.m_intID   = _AssignTranID();
+   m_tid.m_intID   = TransactionID::NextUniqueID();
 }
 
 
@@ -168,12 +144,12 @@ TransactionID::TransactionID(btApplicationContext Ctxt)
 // Description: Constructor for Application specified ID, Context, Handler,
 //              and filter flag
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt           intID,
-                             btApplicationContext Ctxt,
+TransactionID::TransactionID(btID                 intID,
+                             btApplicationContext Context,
                              btEventHandler       evtHandler,
                              btBool               Filter)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
@@ -185,15 +161,15 @@ TransactionID::TransactionID(bt32bitInt           intID,
 // Description: Constructor for Application specified ID
 //              and Handler (if provided)
 //=============================================================================
-TransactionID::TransactionID(btApplicationContext Ctxt,
+TransactionID::TransactionID(btApplicationContext Context,
                              btEventHandler       evtHandler,
                              btBool               Filter)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
-   m_tid.m_intID   = _AssignTranID();
+   m_tid.m_intID   = TransactionID::NextUniqueID();
 }
 
 
@@ -201,7 +177,7 @@ TransactionID::TransactionID(btApplicationContext Ctxt,
 // Name: TransactionID
 // Description: Constructor for Application specified ID and Handler
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt     intID,
+TransactionID::TransactionID(btID           intID,
                              btEventHandler evtHandler,
                              btBool         Filter)
 {
@@ -225,7 +201,7 @@ TransactionID::TransactionID(btEventHandler evtHandler,
    m_tid.m_Handler = evtHandler;
    m_tid.m_IBase   = NULL;
    m_tid.m_Filter  = Filter;
-   m_tid.m_intID   = _AssignTranID();
+   m_tid.m_intID   = TransactionID::NextUniqueID();
 }
 
 
@@ -234,12 +210,12 @@ TransactionID::TransactionID(btEventHandler evtHandler,
 // Description: Constructor for Application specified ID, Context, Handler,
 //              and filter flag
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt           intID,
-                             btApplicationContext Ctxt,
+TransactionID::TransactionID(btID                 intID,
+                             btApplicationContext Context,
                              IBase               *pIBase,
                              btBool               Filter)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
@@ -251,15 +227,15 @@ TransactionID::TransactionID(bt32bitInt           intID,
 // Description: Constructor for Application specified ID
 //              and Handler (if provided)
 //=============================================================================
-TransactionID::TransactionID(btApplicationContext Ctxt,
+TransactionID::TransactionID(btApplicationContext Context,
                              IBase               *pIBase,
                              btBool               Filter)
 {
-   m_tid.m_Context = Ctxt;
+   m_tid.m_Context = Context;
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
-   m_tid.m_intID   = _AssignTranID();
+   m_tid.m_intID   = TransactionID::NextUniqueID();
 }
 
 
@@ -267,7 +243,7 @@ TransactionID::TransactionID(btApplicationContext Ctxt,
 // Name: TransactionID
 // Description: Constructor for Application specified ID and Handler
 //=============================================================================
-TransactionID::TransactionID(bt32bitInt intID,
+TransactionID::TransactionID(btID       intID,
                              IBase     *pIBase,
                              btBool     Filter)
 {
@@ -291,7 +267,7 @@ TransactionID::TransactionID(IBase *pIBase,
    m_tid.m_Handler = NULL;
    m_tid.m_IBase   = pIBase;
    m_tid.m_Filter  = Filter;
-   m_tid.m_intID   = _AssignTranID();
+   m_tid.m_intID   = TransactionID::NextUniqueID();
 }
 
 //=============================================================================
@@ -338,17 +314,17 @@ IBase * TransactionID::Ibase() const
 // Name: ID
 // Description: Returns ID
 //=============================================================================
-bt32bitInt TransactionID::ID() const
+btID TransactionID::ID() const
 {
    //Return handler
    return m_tid.m_intID;
 }
 
 void TransactionID::Context(btApplicationContext Context) { m_tid.m_Context = Context; }
-void TransactionID::Handler(btEventHandler Handler)       { m_tid.m_Handler = Handler; }
-void   TransactionID::Ibase(IBase *pIBase)                { m_tid.m_IBase   = pIBase;  }
-void  TransactionID::Filter(btBool Filter)                { m_tid.m_Filter  = Filter;  }
-void      TransactionID::ID(bt32bitInt intID)             { m_tid.m_intID   = intID;   }
+void TransactionID::Handler(btEventHandler       Handler) { m_tid.m_Handler = Handler; }
+void   TransactionID::Ibase(IBase               *pIBase)  { m_tid.m_IBase   = pIBase;  }
+void  TransactionID::Filter(btBool               Filter)  { m_tid.m_Filter  = Filter;  }
+void      TransactionID::ID(btID                 intID)   { m_tid.m_intID   = intID;   }
 
 TransactionID & TransactionID::operator = (const TransactionID &rOther)
 {
@@ -414,6 +390,14 @@ std::ostream & operator << (std::ostream &s, const TransactionID &TranID)
    return s;
 }
 
-END_NAMESPACE(AAL)
+btID            TransactionID::sm_NextUniqueID = 0;
+CriticalSection TransactionID::sm_CS;
 
+btID TransactionID::NextUniqueID()
+{
+   AutoLock(&TransactionID::sm_CS);
+   return TransactionID::sm_NextUniqueID++;
+}
+
+END_NAMESPACE(AAL)
 

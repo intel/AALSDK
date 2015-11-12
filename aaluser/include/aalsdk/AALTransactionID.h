@@ -64,7 +64,7 @@
 //****************************************************************************
 #ifndef __AALSDK_AALTRANSACTIONID_H__
 #define __AALSDK_AALTRANSACTIONID_H__
-#include <aalsdk/AALTypes.h>
+#include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 
 #ifdef __cplusplus
@@ -73,9 +73,6 @@ BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup Events
 /// @{
-
-//Creates a new transaction ID
-AASLIB_API bt32bitInt _AssignTranID();
 
 //=============================================================================
 /// @brief TransactionIDs provide handles for interacting with AAS.
@@ -115,25 +112,25 @@ public:
 
    /// @brief Application specified ID
    /// @param[in] ID application context
-   TransactionID(btApplicationContext ID);
+   TransactionID(btApplicationContext Context);
 
    /// @brief Specified Integer ID
    /// @param intID 32-bit integer
-   TransactionID(bt32bitInt           intID);
+   TransactionID(btID                 intID);
 
    /// @brief Application specified Context and Handler
    /// @param intID
    /// @param ID
    /// @param EventHandler
    /// @param Filter
-   TransactionID(bt32bitInt           intID,
-                 btApplicationContext ID);
+   TransactionID(btID                 intID,
+                 btApplicationContext Context);
 
    /// @brief Application specified Context and Handler
    /// @param ID
    /// @param EventHandler
    /// @param Filter
-   TransactionID(btApplicationContext ID,
+   TransactionID(btApplicationContext Context,
                  btEventHandler       EventHandler,
                  btBool               Filter=true);
 
@@ -141,7 +138,7 @@ public:
    /// @param intID
    /// @param EventHandler
    /// @param Filter
-   TransactionID(bt32bitInt           intID,
+   TransactionID(btID                 intID,
                  btEventHandler       EventHandler,
                  btBool               Filter=true);
 
@@ -150,8 +147,8 @@ public:
    /// @param ID
    /// @param EventHandler
    /// @param Filter
-   TransactionID(bt32bitInt           intID,
-                 btApplicationContext ID,
+   TransactionID(btID                 intID,
+                 btApplicationContext Context,
                  btEventHandler       EventHandler,
                  btBool               Filter=true);
 
@@ -166,7 +163,7 @@ public:
    /// @param ID
    /// @param iBase
    /// @param Filter
-   TransactionID(btApplicationContext ID,
+   TransactionID(btApplicationContext Context,
                  IBase               *pIBase,
                  btBool               Filter=true);
 
@@ -174,7 +171,7 @@ public:
    /// @param intID
    /// @param iBase
    /// @param Filter
-   TransactionID(bt32bitInt           intID,
+   TransactionID(btID                 intID,
                  IBase               *pIBase,
                  btBool               Filter=true);
 
@@ -183,8 +180,8 @@ public:
    /// @param ID
    /// @param iBase
    /// @param Filter
-   TransactionID(bt32bitInt           intID,
-                 btApplicationContext ID,
+   TransactionID(btID                 intID,
+                 btApplicationContext Context,
                  IBase               *pIBase,
                  btBool               Filter=true);
 
@@ -202,14 +199,14 @@ public:
    btEventHandler       Handler() const;
    IBase                 *Ibase() const;
    btBool                Filter() const;
-   bt32bitInt                ID() const;
+   btID                      ID() const;
 
    // Mutators
    void Context(btApplicationContext Context);
    void Handler(btEventHandler       Handler);
    void   Ibase(IBase               *pIBase);
    void  Filter(btBool               Filter);
-   void      ID(bt32bitInt           intID);
+   void      ID(btID                 intID);
 
    TransactionID & operator = (const TransactionID     & );
    TransactionID & operator = (const stTransactionID_t & );
@@ -219,8 +216,13 @@ public:
 
    btBool operator == (const TransactionID & ) const;
 
+   static btID NextUniqueID();
+
 private:
-   stTransactionID_t  m_tid;
+   stTransactionID_t m_tid;
+
+   static btID            sm_NextUniqueID;
+   static CriticalSection sm_CS;
 };
 
 /// TransactionID streamer.
