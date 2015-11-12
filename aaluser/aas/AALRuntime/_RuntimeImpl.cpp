@@ -43,7 +43,7 @@
 // Runtime definitions
 #include "aalsdk/AALTypes.h"
 #include "aalsdk/aas/ServiceHost.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 #include "_RuntimeImpl.h"
 #include "_MessageDelivery.h"

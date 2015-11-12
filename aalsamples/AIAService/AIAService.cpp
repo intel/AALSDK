@@ -49,7 +49,7 @@
 #include "aalsdk/osal/ThreadGroup.h"
 
 #include "AIA-internal.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 #include "ALIAFUProxy.h"
 
 

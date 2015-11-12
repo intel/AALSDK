@@ -154,7 +154,6 @@ include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
-include/aalsdk/Dispatchables.h \
 include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
@@ -168,7 +167,8 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
-include/aalsdk/aas/ServiceHost.h 
+include/aalsdk/aas/ServiceHost.h \
+include/aalsdk/aas/Dispatchables.h 
 
 aalclphdrs_HEADERS=\
 include/aalsdk/aalclp/aalclp.h

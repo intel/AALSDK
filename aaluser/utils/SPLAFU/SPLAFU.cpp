@@ -54,7 +54,7 @@
 #include <aalsdk/AALBase.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 #include <aalsdk/service/HWSPLAFUService.h>
 #include <aalsdk/service/ASESPLAFUService.h>
 #include <aalsdk/service/SWSimSPLAFUService.h>

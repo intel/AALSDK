@@ -58,7 +58,7 @@
 #include <aalsdk/uaia/AALuAIA_Messaging.h>
 #include <aalsdk/uaia/uAIASession.h> // uAIASession{}
 #include <aalsdk/uaia/uAIA.h>        // CAIA{}
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 #include <aalsdk/IServiceClient.h>
 

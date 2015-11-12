@@ -50,7 +50,7 @@
 
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 

@@ -73,6 +73,7 @@
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
 
+#include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
 
@@ -83,12 +84,10 @@
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
-/////////////////              PIP INTERFACE               ////////////////////
+/////////////////           AAL SUPPORT FUNCTIONS          ////////////////////
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,9 +100,8 @@ static int cci_mmap(struct aaldev_ownerSession *pownerSess,
 
 
 //=============================================================================
-// cci_FMEpip
-// Description: Physical Interface Protocol Interface for the SPL2 AFU
-//              kernel based AFU engine.
+// Name: cci_FMEpip
+// @brief Physical Interface Protocol Interface for the CCIP Port device
 //=============================================================================
 struct aal_ipip cci_Portpip = {
    .m_messageHandler = {
@@ -122,6 +120,120 @@ struct aal_ipip cci_Portpip = {
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
 
+
+///============================================================================
+/// Name: cci_create_AAL_Port_Device
+/// @brief Creates and registers PR objects (resources) we want to
+///        expose through AAL.
+///
+/// @param[in] pportdev - Port device
+/// @param[in] paalid - Base AAL ID for this device.
+/// @return    AAL Device pointer
+///============================================================================
+struct cci_aal_device   *
+               cci_create_AAL_Port_Device( struct port_device  *pportdev,
+                                           btUnsigned32bitInt devnum,
+                                           struct aal_device_id *paalid)
+{
+   struct cci_aal_device   *pcci_aaldev = NULL;
+   int                      ret         = 0;
+   PTRACEIN;
+
+   //=====================================================================
+   // Create the Port AAL device. The Port AAL device is the class
+   //   is registered with AAL Bus to enable it to be allocated by an
+   //   application. AAL device objects represent the application usable
+   //   devices. AAL device objects have their own low level communication
+   //   function called the Physical Interface Protocol (PIP). This enables
+   //   us to easily create object specific interfaces in a single driver.
+
+   // Construct the cci_aal_device object
+   pcci_aaldev = cci_create_aal_device();
+
+   ASSERT(NULL != pcci_aaldev);
+
+   // Make it an Port by setting the type field and giving a pointer to the
+   //  Port device object of the CCIP board device
+   cci_dev_type(pcci_aaldev) = cci_dev_Port;
+   set_cci_dev_subclass(pcci_aaldev, pportdev);
+
+   // Setup the AAL device's ID. This is the collection of attributes
+   //  that uniquely identifies the AAL device, usually for the purpose
+   //  of allocation through Resource Management
+   //------------------------------------------------------------------
+   aaldevid_devaddr_bustype(*paalid)     =   ccip_port_bustype(pportdev);
+
+   // The AAL address maps to the PCIe address. The Subdevice number is
+   //  vendor defined and in this case the FME object has the value CCIP_DEV_FME_SUBDEV
+   aaldevid_devaddr_busnum(*paalid)      = ccip_port_busnum(pportdev);
+   aaldevid_devaddr_devnum(*paalid)      = ccip_port_devnum(pportdev);
+   aaldevid_devaddr_fcnnum(*paalid)      = ccip_port_fcnnum(pportdev);
+   aaldevid_devaddr_subdevnum(*paalid)   = devnum;
+
+   // The following attributes describe the interfaces supported by the device
+   aaldevid_afuguidl(*paalid)            = CCIP_PORT_GUIDL;
+   aaldevid_afuguidh(*paalid)            = CCIP_PORT_GUIDH;
+   aaldevid_devtype(*paalid)             = aal_devtypeAFU;
+   aaldevid_pipguid(*paalid)             = CCIP_PORT_PIPIID;
+   aaldevid_vendorid(*paalid)            = AAL_vendINTC;
+
+   // Set the interface permissions
+   // Enable MMIO-R
+   cci_dev_set_allow_map_mmior_space(pcci_aaldev);
+
+
+   // Create the AAL device and attach it to the CCI device object
+   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPPORT",           // AAL device base name
+                                           &*paalid,             // AAL ID
+                                           &cci_Portpip);
+
+   //===========================================================
+   // Set up the optional aal_device attributes
+   //
+
+   // Set how many owners are allowed access to this device simultaneously
+   pcci_aaldev->m_aaldev->m_maxowners = 1;
+
+   // Set the config space mapping permissions
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
+   if( cci_dev_allow_map_csr_read_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRWRITE;
+   }
+
+   if( cci_dev_allow_map_csr_write_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_CSRREAD;
+   }
+
+   if( cci_dev_allow_map_mmior_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_MMIOR;
+   }
+
+   if( cci_dev_allow_map_umsg_space(pcci_aaldev) ){
+      cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI |= AAL_DEV_APIMAP_UMSG;
+   }
+
+   // The PIP uses the PIP context to get a handle to the CCI Device from the generic device.
+   aaldev_pip_context(cci_aaldev_to_aaldev(pcci_aaldev)) = (void*)pcci_aaldev;
+
+   // Method called when the device is released (i.e., its destructor)
+   //  The canonical release device calls the user's release method.
+   //  If NULL is provided then only the canonical behavior is done
+   dev_setrelease(cci_aaldev_to_aaldev(pcci_aaldev), cci_release_device);
+
+      // Device is ready for use.  Publish it with the Configuration Management Subsystem
+   ret = cci_publish_aaldevice(pcci_aaldev);
+   ASSERT(ret == 0);
+   if(0> ret){
+      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
+                                                                  aaldevid_devaddr_devnum(*paalid),
+                                                                  aaldevid_devaddr_fcnnum(*paalid),
+                                                                  aaldevid_devaddr_subdevnum(*paalid));
+      cci_destroy_aal_device(pcci_aaldev);
+      return NULL;
+   }
+   PTRACEOUT;
+   return pcci_aaldev;
+}
 
 //=============================================================================
 // Name: CommandHandler
@@ -537,6 +649,14 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
    return res;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+////////////////////                                     //////////////////////
+/////////////////          GENERIC PORT FUNCTIONS          ////////////////////
+////////////////////                                     //////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 
 ///============================================================================
 /// Name: get_port_device
@@ -661,7 +781,6 @@ btVirtAddr get_port_feature( struct port_device *pport_dev,
    PTRACEOUT;
    return NULL;
 }
-
 
 ///============================================================================
 /// Name: get_port_featurelist

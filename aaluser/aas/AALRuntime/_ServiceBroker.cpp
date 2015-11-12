@@ -43,7 +43,7 @@
 
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
 #include "_ServiceBroker.h"

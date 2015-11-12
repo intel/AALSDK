@@ -54,7 +54,7 @@
 #include "aalsdk/osal/ThreadGroup.h"
 
 #include "aalsdk/aas/AALService.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -234,16 +234,19 @@ btBool AALServiceModule::ServiceInitFailed(IBase        *pService,
    }
 
    // Create the dispatchable for the Service allocate failed callback.
-   //  The Service object will be destroyed in the dispatchable once the
-   //  callbacks have been called.
-   ServiceAllocateFailed *pDisp = new ServiceAllocateFailed(pService,
-                                                            m_SvcsFact,
-                                                            pServiceBase->getServiceClient(),
-                                                            pServiceBase->getRuntimeClient(),
-                                                            pEvent);
+   //  The Service object will be destroyed in the Destroy Service dispatchable
+   //  after the notifications.
+   ServiceAllocateFailed *pNotifyDisp = new ServiceAllocateFailed( pServiceBase->getServiceClient(),
+                                                                   pServiceBase->getRuntimeClient(),
+                                                                   pEvent);
 
-   // Notify the Service client on behalf of the Service
-   return FireAndForget(pDisp);
+   DestroyServiceObject *pDestroyDisp = new DestroyServiceObject( m_SvcsFact,
+                                                                  pService);
+
+
+
+   // Notify the Service client and clean-up partially initialized Service
+   return FireAndForget(new DispatchableGroup(pNotifyDisp, pDestroyDisp) );
 }
 
 //=============================================================================

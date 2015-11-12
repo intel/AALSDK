@@ -51,7 +51,7 @@
 #include <aalsdk/service/HWALIAFUService.h>
 #include <aalsdk/service/ASEALIAFUService.h>
 #include <aalsdk/service/SWSimALIAFUService.h>
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 #include "ALIAFU.h"
 

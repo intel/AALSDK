@@ -43,12 +43,13 @@
 #include "aalsdk/Runtime.h"
 #include "_RuntimeImpl.h"
 #include "aalsdk/CAALEvent.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 /// @addtogroup AAL Runtime
 /// @{
 
 BEGIN_NAMESPACE(AAL)
+
 
 ServiceAllocated::ServiceAllocated(IServiceClient      *pSvcClient,
                                    IRuntimeClient      *pRTClient,
@@ -97,26 +98,9 @@ void ServiceAllocated::operator() ()
    delete this;
 }
 
-ServiceAllocateFailed::ServiceAllocateFailed(IBase          *pService,
-                                             ISvcsFact      *pSvcsFact,
-                                             IServiceClient *pSvcClient,
-                                             IRuntimeClient *pRTClient,
-                                             const IEvent   *pEvent) :
-   m_pService(pService),
-   m_pSvcsFact(pSvcsFact),
-   m_pSvcClient(pSvcClient),
-   m_pRTClient(pRTClient),
-   m_pEvent(pEvent)
-{
-   ASSERT(NULL != m_pSvcClient);
-   ASSERT(NULL != m_pEvent);
-}
-
 ServiceAllocateFailed::ServiceAllocateFailed(IServiceClient *pSvcClient,
                                              IRuntimeClient *pRTClient,
                                              const IEvent   *pEvent) :
-   m_pService(NULL),
-   m_pSvcsFact(NULL),
    m_pSvcClient(pSvcClient),
    m_pRTClient(pRTClient),
    m_pEvent(pEvent)
@@ -141,11 +125,19 @@ void ServiceAllocateFailed::operator() ()
    if ( NULL != m_pRTClient ) {
       m_pRTClient->runtimeAllocateServiceFailed(*m_pEvent);
    }
+   delete this;
+}
 
-   // If the Factory and Object present then clean-up here.
-   if(m_pSvcsFact){
-      m_pSvcsFact->DestroyServiceObject(m_pService);
-   }
+
+DestroyServiceObject::DestroyServiceObject(ISvcsFact *pSvcsFact,
+                                           IBase     *pService) :
+m_pSvcsFact(pSvcsFact),
+m_pService(pService)
+{}
+
+void DestroyServiceObject::operator() ()
+{
+   m_pSvcsFact->DestroyServiceObject(m_pService);
    delete this;
 }
 
