@@ -96,9 +96,18 @@ BEGIN_C_DECLS
 #define CCIP_PORT_PIPIID            (0x5E82B04A50E59F20ULL)
 
 /// AFU GUID
-#define CCIP_AFU_GUIDL              (0xC000C9660D824272ULL)
-#define CCIP_AFU_GUIDH              (0x9AEFFE5F84570612ULL)
 #define CCIP_AFU_PIPIID             (0x26F67D4CAD054DFCULL)
+
+/// Signal Tap GUID
+#define CCIP_STAP_GUIDL             (0xB6B03A385883AB8DULL)
+#define CCIP_STAP_GUIDH             (0x022F85B12CC24C9DULL)
+#define CCIP_STAP_PIPIID            (0xA710C842F06E45E0ULL)
+
+/// Partial Reconfiguration GUID
+#define CCIP_PR_GUIDL               (0x83B54FD5E5216870ULL)
+#define CCIP_PR_GUIDH               (0xA3AAB28579A04572ULL)
+#define CCIP_PR_PIPIID              (0x7C4D41EA156C4D81ULL)
+
 
 /// Vender ID and Device ID
 #define CCIP_FPGA_VENDER_ID         0x8086

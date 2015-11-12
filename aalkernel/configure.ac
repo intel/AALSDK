@@ -234,6 +234,8 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/c
                  cci_PCIe_driver/kbuild/ccip_port.c:cci_PCIe_driver/ccip_port.c
                  cci_PCIe_driver/kbuild/ccip_port.h:cci_PCIe_driver/ccip_port.h
                  cci_PCIe_driver/kbuild/ccip_afu.c:cci_PCIe_driver/ccip_afu.c
+                 cci_PCIe_driver/kbuild/ccip_stap.c:cci_PCIe_driver/ccip_stap.c
+                 cci_PCIe_driver/kbuild/ccip_pr.c:cci_PCIe_driver/ccip_pr.c
                  cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
 AC_CONFIG_FILES([Makefile
