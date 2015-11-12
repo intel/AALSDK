@@ -41,34 +41,14 @@
 # include <aalsdk/AALDefs.h>
 # include <aalsdk/AALTypes.h>
 
-
 /// @addtogroup OSAL
 /// @{
-
-#define RESMGR_UTILSAFU_BACKDOOR(__cr, __mfst)                                 \
-do                                                                             \
-{                                                                              \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libUtilsAFU"); \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME,     "libAASUAIA");  \
-   __mfst.Add(AAL_FACTORY_CREATE_SERVICENAME,                  "UtilsAFU");    \
-}while(0)
-
-#define RESMGR_SAMPLEENCODER_BACKDOOR(__cr, __mfst)                                           \
-do                                                                                            \
-{                                                                                             \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSampleEncoderAFUService"); \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME,     "libAASUAIA");                 \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_SERVICENAME,       "Encoder");                    \
-   __mfst.Add(AAL_FACTORY_CREATE_SERVICENAME,                  "Encoder");                    \
-}while(0)
-
 
 /// Find the first bit set, scanning low to high.
 /// @param[in] value is input bitmask
 OSAL_API unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value);
 
 /// @}
-
 
 # include <aalsdk/osal/Timer.h>
 # include <aalsdk/osal/Sleep.h>
