@@ -65,6 +65,8 @@ END_C_DECLS
 # define aalsdk_ltdl_unlock() 0
 #endif // HAVE_LTDL_H && HAVE_PTHREAD_H
 
+BEGIN_NAMESPACE(AAL)
+
 DynLinkLibrary::DynLinkLibrary() {/*empty*/}
 DynLinkLibrary::DynLinkLibrary(const DynLinkLibrary & ) {/*empty*/}
 DynLinkLibrary & DynLinkLibrary::operator=(const DynLinkLibrary & ) { return *this; }
@@ -122,7 +124,7 @@ DynLinkLibrary::DynLinkLibrary(const std::string &LibraryName) :
 
    // First, try the less-restrictive unqualified path (ie, module name only).
 
-   m_hDLL = (AAL::btObjectType)lt_dlopenadvise( LibraryName.c_str(), advise );
+   m_hDLL = (btObjectType)lt_dlopenadvise( LibraryName.c_str(), advise );
 
    if ( NULL == m_hDLL ) {
       // Now try the fully-qualified installation path for the lib.
@@ -132,7 +134,7 @@ DynLinkLibrary::DynLinkLibrary(const std::string &LibraryName) :
       std::cerr << " [Fail]. Trying " << FullPath << " ";
 # endif // DBG_DYN_LOAD
 
-      m_hDLL = (AAL::btObjectType)lt_dlopenadvise( FullPath.c_str(), advise );
+      m_hDLL = (btObjectType)lt_dlopenadvise( FullPath.c_str(), advise );
 
 # if DBG_DYN_LOAD
       if ( NULL != m_hDLL ) {
@@ -276,4 +278,6 @@ void * DynLinkLibrary::GetSymAddress(const std::string &SymbolName)
    return res;
 #endif // HAVE_LTDL_H
 }
+
+END_NAMESPACE(AAL)
 

@@ -85,9 +85,12 @@
 
 BEGIN_C_DECLS
 
+BEGIN_NAMESPACE(AAL)
+
 /// Signature of the Service Module Entry Point.
 typedef BT32I (*AALSvcEntryPoint)(BT32U , BTANY );
 
+END_NAMESPACE(AAL)
 
 #ifndef _AAL_SVC_INTERNAL_CMD_BASE
 /// AALSDK-specific Service commands start here.
@@ -448,7 +451,7 @@ __storagecls AAL::bt32bitInt AAL_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::btUnsigne
 {                                                                                                           \
    static __svcfactory          *pServiceFactory  = NULL;                                                   \
    static AAL::AALServiceModule *pServiceProvider = NULL;                                                   \
-   static CriticalSection        cs;                                                                        \
+   static AAL::CriticalSection   cs;                                                                        \
    AAL::bt32bitInt               res = 0;                                                                   \
    switch( cmd ) {                                                                                          \
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
@@ -513,7 +516,7 @@ __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::b
 {                                                                                                                   \
    static __svcfactory          *pServiceFactory  = NULL;                                                           \
    static AAL::AALServiceModule *pServiceProvider = NULL;                                                           \
-   static CriticalSection        cs;                                                                                \
+   static AAL::CriticalSection   cs;                                                                                \
    AAL::bt32bitInt               res = 0;                                                                           \
    switch( cmd ) {                                                                                                  \
       AAL_SVC_MOD_DEFAULT_IMPL(__svcfactory, arg, __verstr, __vercur, __verrev, __verage);
@@ -529,7 +532,7 @@ __storagecls AAL::bt32bitInt AAL_BUILTIN_SVC_MOD_ENTRY_POINT(__rtnamesym)(AAL::b
 
 #endif // __cplusplus
 
-
+BEGIN_NAMESPACE(AAL)
 
 /// @brief Low-level Service Module handle used by OSServiceModuleInit, OSServiceModuleOpen, and OSServiceModuleClose.
 ///
@@ -573,6 +576,8 @@ BT32I OSAL_API OSServiceModuleOpen(OSServiceModule *p);
 /// @retval 0 Service Module was successfully closed.
 /// @retval non-0 and set p->error_msg on failure.
 BT32I OSAL_API OSServiceModuleClose(OSServiceModule *p);
+
+END_NAMESPACE(AAL)
 
 END_C_DECLS
 

@@ -46,6 +46,8 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 class OSAL_API Timer
 {
 public:
@@ -73,19 +75,19 @@ public:
    // == 0 if *this == other
    int Compare(const Timer &other) const;
 
-   void      AsSeconds(double & )                          const;
-   void AsMilliSeconds(double & )                          const;
-   void AsMicroSeconds(double & )                          const;
-   void  AsNanoSeconds(double & )                          const;
+   void      AsSeconds(double & )                     const;
+   void AsMilliSeconds(double & )                     const;
+   void AsMicroSeconds(double & )                     const;
+   void  AsNanoSeconds(double & )                     const;
 
-   void      AsSeconds(AAL::btUnsigned64bitInt & )         const;
-   void AsMilliSeconds(AAL::btUnsigned64bitInt & )         const;
-   void AsMicroSeconds(AAL::btUnsigned64bitInt & )         const;
-   void  AsNanoSeconds(AAL::btUnsigned64bitInt & )         const;
+   void      AsSeconds(btUnsigned64bitInt & )         const;
+   void AsMilliSeconds(btUnsigned64bitInt & )         const;
+   void AsMicroSeconds(btUnsigned64bitInt & )         const;
+   void  AsNanoSeconds(btUnsigned64bitInt & )         const;
 
-   std::string NormalizedUnits()                           const;
-   std::string Normalized(AAL::btUnsigned64bitInt * =NULL,
-                          double                  * =NULL) const;
+   std::string NormalizedUnits()                      const;
+   std::string Normalized(btUnsigned64bitInt * =NULL,
+                          double             * =NULL) const;
 
 #if   defined( __AAL_WINDOWS__ )
    operator LARGE_INTEGER ()   const { return m_Start; }
@@ -119,6 +121,8 @@ inline bool  operator >  (const Timer &l, const Timer &r) { return l.Compare(r) 
 inline bool  operator >= (const Timer &l, const Timer &r) { return l.Compare(r) >= 0; }
 inline bool  operator == (const Timer &l, const Timer &r) { return l.Compare(r) == 0; }
 inline bool  operator != (const Timer &l, const Timer &r) { return l.Compare(r) != 0; }
+
+END_NAMESPACE(AAL)
 
 /// @}
 

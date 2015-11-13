@@ -47,6 +47,8 @@
 
 #include "aalsdk/osal/Timer.h"
 
+BEGIN_NAMESPACE(AAL)
+
 #if defined( __AAL_WINDOWS__ )
 LARGE_INTEGER Timer::sm_ClockFreq = { 0, 0 };
 #endif // __AAL_WINDOWS__
@@ -203,51 +205,51 @@ void Timer::AsNanoSeconds(double &d) const
 #endif // OS
 }
 
-void Timer::AsSeconds(AAL::btUnsigned64bitInt &u) const
+void Timer::AsSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
-   u = (AAL::btUnsigned64bitInt) (m_Start.QuadPart / Timer::sm_ClockFreq.QuadPart);
+   u = (btUnsigned64bitInt) (m_Start.QuadPart / Timer::sm_ClockFreq.QuadPart);
 #elif defined( __AAL_LINUX__ )
-   AAL::btUnsigned64bitInt s = (AAL::btUnsigned64bitInt)m_Start.tv_sec;
-   AAL::btUnsigned64bitInt n = (AAL::btUnsigned64bitInt)m_Start.tv_nsec;
+   btUnsigned64bitInt s = (btUnsigned64bitInt)m_Start.tv_sec;
+   btUnsigned64bitInt n = (btUnsigned64bitInt)m_Start.tv_nsec;
    n /= (1000ULL * 1000ULL * 1000ULL);
    u = s + n;
 #endif // OS
 }
 
-void Timer::AsMilliSeconds(AAL::btUnsigned64bitInt &u) const
+void Timer::AsMilliSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
-   u = (AAL::btUnsigned64bitInt) ((m_Start.QuadPart * 1000) / Timer::sm_ClockFreq.QuadPart);
+   u = (btUnsigned64bitInt) ((m_Start.QuadPart * 1000) / Timer::sm_ClockFreq.QuadPart);
 #elif defined( __AAL_LINUX__ )
-   AAL::btUnsigned64bitInt s = (AAL::btUnsigned64bitInt)m_Start.tv_sec;
-   AAL::btUnsigned64bitInt n = (AAL::btUnsigned64bitInt)m_Start.tv_nsec;
+   btUnsigned64bitInt s = (btUnsigned64bitInt)m_Start.tv_sec;
+   btUnsigned64bitInt n = (btUnsigned64bitInt)m_Start.tv_nsec;
    s *= 1000ULL;
    n /= (1000ULL * 1000ULL);
    u = s + n;
 #endif // OS
 }
 
-void Timer::AsMicroSeconds(AAL::btUnsigned64bitInt &u) const
+void Timer::AsMicroSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
-   u = (AAL::btUnsigned64bitInt) ((m_Start.QuadPart * 1000000) / Timer::sm_ClockFreq.QuadPart);
+   u = (btUnsigned64bitInt) ((m_Start.QuadPart * 1000000) / Timer::sm_ClockFreq.QuadPart);
 #elif defined( __AAL_LINUX__ )
-   AAL::btUnsigned64bitInt s = (AAL::btUnsigned64bitInt)m_Start.tv_sec;
-   AAL::btUnsigned64bitInt n = (AAL::btUnsigned64bitInt)m_Start.tv_nsec;
+   btUnsigned64bitInt s = (btUnsigned64bitInt)m_Start.tv_sec;
+   btUnsigned64bitInt n = (btUnsigned64bitInt)m_Start.tv_nsec;
    s *= (1000ULL * 1000ULL);
    n /= 1000ULL;
    u = s + n;
 #endif // OS
 }
 
-void Timer::AsNanoSeconds(AAL::btUnsigned64bitInt &u) const
+void Timer::AsNanoSeconds(btUnsigned64bitInt &u) const
 {
 #if   defined( __AAL_WINDOWS__ )
-   u = (AAL::btUnsigned64bitInt) ((m_Start.QuadPart * 1000000000) / Timer::sm_ClockFreq.QuadPart);
+   u = (btUnsigned64bitInt) ((m_Start.QuadPart * 1000000000) / Timer::sm_ClockFreq.QuadPart);
 #elif defined( __AAL_LINUX__ )
-   AAL::btUnsigned64bitInt s = (AAL::btUnsigned64bitInt)m_Start.tv_sec;
-   AAL::btUnsigned64bitInt n = (AAL::btUnsigned64bitInt)m_Start.tv_nsec;
+   btUnsigned64bitInt s = (btUnsigned64bitInt)m_Start.tv_sec;
+   btUnsigned64bitInt n = (btUnsigned64bitInt)m_Start.tv_nsec;
    s *= (1000ULL * 1000ULL * 1000ULL);
    u = s + n;
 #endif // OS
@@ -348,7 +350,7 @@ std::string Timer::NormalizedUnits() const
 #endif // OS
 }
 
-std::string Timer::Normalized(AAL::btUnsigned64bitInt *i, double *d) const
+std::string Timer::Normalized(btUnsigned64bitInt *i, double *d) const
 {
    double             x = 0.0;
    std::ostringstream oss;
@@ -500,4 +502,5 @@ std::string Timer::Normalized(AAL::btUnsigned64bitInt *i, double *d) const
    return oss.str();
 }
 
+END_NAMESPACE(AAL)
 

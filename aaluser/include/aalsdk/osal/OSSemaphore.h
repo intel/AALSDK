@@ -68,6 +68,7 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
 
 /// Interface abstraction for Semaphores.
 ///
@@ -120,19 +121,19 @@ public:
    ///
    /// @retval  true   The Semaphore was created.
    /// @retval  false  An error occurred during creation.
-   AAL::btBool Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMaxCount=0);
+   btBool Create(btInt nInitialCount, btUnsignedInt nMaxCount=0);
 
    /// Destroy the Semaphore, releasing its resources.
    ///
    /// @retval  true   The Semaphore was destroyed.
    /// @retval  false  Semaphore not initialized or an error occurred during destruction.
-   AAL::btBool Destroy();
+   btBool Destroy();
 
    /// Get the current value of the Semaphore counts to nCount.
    ///
    /// @retval  true   The count was set to nCount.
    /// @retval  false  Semaphore not initialized or nCount > max count.
-   AAL::btBool Reset(AAL::btInt nCount = 0);
+   btBool Reset(btInt nCount = 0);
 
    /// Get the current value of the Semaphore count to nCount.
    ///
@@ -140,24 +141,24 @@ public:
    /// @param[pit]  rMaxCount    Maximum value.
    ///
    /// @retval The count.
-   AAL::btBool CurrCounts(AAL::btInt &rCurCount, AAL::btInt &rMaxCount);
+   btBool CurrCounts(btInt &rCurCount, btInt &rMaxCount);
 
    /// If the current count + nCount is less than or equal to the max count, then increment by nCount.
    ///
    /// @retval  true   The count was incremented by nCount.
    /// @retval  false  Semaphore not initialized or current count + nCount > max count.
-   AAL::btBool Post(AAL::btInt nCount);
+   btBool Post(btInt nCount);
 
    /// Causes all Blocked Threads to unblock with a failure.
    ///
    /// @retval  true   All waiters unblocked and return false.
    /// @retval  false  Semaphore not initialized.
-   AAL::btBool UnblockAll();
+   btBool UnblockAll();
 
    /// Returns the current number of waiters.
    /// NOTE: This is a snapshot and may change by the time the
    ///       caller examines the value
-   AAL::btUnsignedInt NumWaiters();
+   btUnsignedInt NumWaiters();
 
    /// Wait for the Semaphore count to become greater than 0 or until the supplied timeout occurs.
    ///
@@ -168,29 +169,29 @@ public:
    ///
    /// @retval  true   The count became greater than 0 before the Timeout expired.
    /// @retval  false  Semaphore not initialized or ( Timeout expired and count not greater than 0 ).
-   AAL::btBool Wait(AAL::btTime Timeout);
+   btBool Wait(btTime Timeout);
    /// Wait for the Semaphore count to become greater than 0, then decrement the count by one.
    ///
    /// @retval  false  Semaphore not initialized.
-   AAL::btBool Wait();
+   btBool Wait();
 
 private:
-   AAL::btBool          m_bInitialized;
-   AAL::btInt           m_MaxCount;
-   AAL::btInt           m_CurCount;
-   AAL::btUnsignedInt   m_WaitCount;
-   AAL::btBool          m_bUnBlocking;
+   btBool          m_bInitialized;
+   btInt           m_MaxCount;
+   btInt           m_CurCount;
+   btUnsignedInt   m_WaitCount;
+   btBool          m_bUnBlocking;
 
 #if   defined( __AAL_WINDOWS__ )
-   HANDLE               m_hEvent;
+   HANDLE          m_hEvent;
 #elif defined( __AAL_LINUX__ )
-   pthread_cond_t       m_condition;
+   pthread_cond_t  m_condition;
 #endif // OS
 };
 
+END_NAMESPACE(AAL)
 
 /// @}
-
 
 #endif // __AALSDK_OSAL_OSSEMAPHORE_H__
 

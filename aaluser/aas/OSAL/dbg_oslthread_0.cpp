@@ -10,9 +10,11 @@
 
 # elif defined( __AAL_LINUX__ )
 
-static volatile AAL::btUIntPtr gOSLThreadCount = 0;
+namespace Testing {
 
-AAL::btUIntPtr DbgOSLThreadCount()
+static volatile btUIntPtr gOSLThreadCount = 0;
+
+btUIntPtr DbgOSLThreadCount()
 {
    return gOSLThreadCount;
 }
@@ -26,6 +28,8 @@ static void pthread_OSLThreadCount_cleanup(void *arg)
    AutoLock(&gOSLThreadCountLock);
    --gOSLThreadCount;
 }
+
+} // Testing
 
 # endif // OS
 

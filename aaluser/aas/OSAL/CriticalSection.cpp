@@ -49,6 +49,8 @@
 
 #include "aalsdk/osal/CriticalSection.h"
 
+BEGIN_NAMESPACE(AAL)
+
 // We used to initialize mutexes by calling pthread_mutex_init.  This seems to
 // cause problems if global AAL::Mutex objects are constructed at start-up -
 // presumably they are getting initialized before the pthreads library.  So
@@ -59,3 +61,4 @@
 const pthread_mutex_t CriticalSection::sm_MutexInitializer = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 #endif // __AAL_LINUX__
 
+END_NAMESPACE(AAL)

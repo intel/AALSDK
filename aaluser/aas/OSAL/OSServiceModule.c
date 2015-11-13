@@ -59,6 +59,8 @@
 /// @addtogroup ServiceModule
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 #if HAVE_LTDL_H
 # if HAVE_PTHREAD_H
 // See http://www.gnu.org/software/libtool/manual/html_node/Thread-Safety-in-libltdl.html
@@ -385,6 +387,8 @@ bt32bitInt OSServiceModuleClose(OSServiceModule *p)
 #endif // OS
    return res;
 }
+
+END_NAMESPACE(AAL)
 
 /// @}
 
