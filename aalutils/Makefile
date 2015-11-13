@@ -34,8 +34,7 @@
 ##     07/21/2015    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-fpgadiag \
-fdebug
+fpgadiag
 
 MFLAGS  =
 ifneq (,$(ndebug))
@@ -59,8 +58,6 @@ MFLAGS += DESTDIR=$(DESTDIR)
 endif
 
 all clean:
-	cd pciutils && $(MAKE) SHARED=yes $@ || exit 1
-	cd pciutils && $(MAKE) SHARED=yes PREFIX=$(prefix) install-lib || exit 1
 	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
 
 .PHONY:all clean
