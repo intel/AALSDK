@@ -54,6 +54,8 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 /// Abstraction of Critical Sections (Mutex).
 class OSAL_API CriticalSection
 {
@@ -132,7 +134,7 @@ private:
 
 
 /// It is possible that the object may be immutable or in a const method so safely cast away the const
-#define AutoLock(__p) _AutoLock __LockObj(const_cast<CriticalSection *>(dynamic_cast<CriticalSection const *>(__p)))
+#define AutoLock(__p) AAL::_AutoLock __LockObj(const_cast<AAL::CriticalSection *>(dynamic_cast<AAL::CriticalSection const *>(__p)))
 /// Stack-based convenience auto-Mutex objects. Use AutoLock to declare.
 class _AutoLock
 {
@@ -205,6 +207,8 @@ public:
 protected:
    CriticalSection *m_p;
 };
+
+END_NAMESPACE(AAL)
 
 /// @}
 

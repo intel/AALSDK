@@ -55,34 +55,35 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
 
 class OSLThread;
 /// The thread Function signature.
 typedef void (*ThreadProc)(OSLThread *pThread, void *pContext);
 
 /// Retrieve the OS process id of the current process.
-OSAL_API AAL::btPID   GetProcessID();
+OSAL_API btPID     GetProcessID();
 
 /// Retrieve the OS thread id of the current thread.
-OSAL_API AAL::btTID    GetThreadID();
+OSAL_API btTID      GetThreadID();
 
 /// Compare the two OS thread id's, returning true if they identify the same thread.
-OSAL_API AAL::btBool ThreadIDEqual(AAL::btTID , AAL::btTID );
+OSAL_API btBool   ThreadIDEqual(btTID , btTID );
 
 /// Cause the calling thread to exit immediately, passing ExitStatus back to the OS.
-OSAL_API void    ExitCurrentThread(AAL::btUIntPtr ExitStatus);
+OSAL_API void ExitCurrentThread(btUIntPtr ExitStatus);
 
 /*
 /// Retrieve the number of CPUs.
 ///
 /// @note This function is not currently implemented.
-OSAL_API AAL::btInt GetNumProcessors();
+OSAL_API btInt GetNumProcessors();
 */
 
 /// Retrieve a 32-bit random number in a thread-safe manner.
 ///
 /// @param[in,out]  storage  Provides the seed for the generation (and the thread-specific storage).
-OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage);
+OSAL_API btUnsigned32bitInt GetRand(btUnsigned32bitInt *storage);
 
 
 //
@@ -94,10 +95,10 @@ public:
       m_tid(GetThreadID())
    {}
 
-   AAL::btTID   getTID () { return m_tid; }
-   operator AAL::btTID () { return m_tid; }
+   btTID   getTID () { return m_tid; }
+   operator btTID () { return m_tid; }
 private:
-   AAL::btTID m_tid;
+   btTID m_tid;
 };
 
 
@@ -134,17 +135,17 @@ public:
 	OSLThread(ThreadProc                    pProc,
 	          OSLThread::ThreadPriority     nPriority,
 	          void                         *pContext,
-	          AAL::btBool                   ThisThread = false);
+	          btBool                        ThisThread = false);
    /// OSLThread Destructor.
 	virtual ~OSLThread();
 	/// Internal state check.
-   AAL::btBool         IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
+   btBool              IsOK() { return 0 != flag_is_set(m_State, THR_ST_OK); }
    /// Send a kill signal to a thread to unblock a system call.
    void             Unblock();
    /// Post one count to the thread's local synchronization object.
    void              Signal();
    /// Wait for the thread's local synchronization object for a given time.
-   void                Wait(AAL::btTime ulMilliseconds);
+   void                Wait(btTime ulMilliseconds);
    /// Wait for the thread's local synchronization object.
    void                Wait();
    /// Wait for the thread to exit.
@@ -156,13 +157,13 @@ public:
    /// @note There is currently no Windows implementation.
    void              Cancel();
    /// Compare this thread's identifier with id.
-   AAL::btBool IsThisThread(AAL::btID id) const;
+   btBool      IsThisThread(btID id) const;
    /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
-   AAL::btTID           tid();
+   btTID                tid();
 
 
-   static const AAL::btInt sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORITY_COUNT];
-   static const AAL::btInt sm_DefaultPriority;
+   static const btInt sm_PriorityTranslationTable[(btInt)THREADPRIORITY_COUNT];
+   static const btInt sm_DefaultPriority;
 
 private:
 #if   defined( __AAL_WINDOWS__ )
@@ -173,11 +174,11 @@ private:
    CSemaphore         m_Semaphore;
 #endif // OS
 
-   AAL::btTID         m_tid;
+   btTID              m_tid;
    ThreadProc         m_pProc;
-   AAL::btInt         m_nPriority;
+   btInt              m_nPriority;
    void              *m_pContext;
-   AAL::btUnsignedInt m_State;
+   btUnsignedInt      m_State;
 
 #if   defined( __AAL_WINDOWS__ )
    // _beginthread() takes this signature.
@@ -196,6 +197,8 @@ private:
 /// @param[in]  nPriority  Must be one of ThreadPriority values. If not, then no action is taken.
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority);
 */
+
+END_NAMESPACE(AAL)
 
 /// @}
 

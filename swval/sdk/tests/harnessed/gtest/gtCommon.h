@@ -27,7 +27,11 @@ using namespace AAL;
 #endif // OS
 
 #if defined( __AAL_LINUX__ )
+BEGIN_NAMESPACE(AAL)
+   BEGIN_NAMESPACE(Testing)
 AAL::btUIntPtr DbgOSLThreadCount();
+   END_NAMESPACE(Testing)
+END_NAMESPACE(AAL)
 #endif // __AAL_LINUX__
 class GlobalTestConfig
 {
@@ -44,7 +48,7 @@ public:
 #if   defined( __AAL_WINDOWS__ )
 # error TODO implement GlobalTestConfig::CurrentThreads() for Windows.
 #elif defined( __AAL_LINUX__ )
-      return DbgOSLThreadCount();
+      return AAL::Testing::DbgOSLThreadCount();
 #endif // OS
    }
 

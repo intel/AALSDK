@@ -46,6 +46,8 @@
 # error TODO: Barrier for unknown OS.
 #endif // __AAL_UNKNOWN_OS__
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // Name: Barrier
 // Description: Constructor
@@ -73,10 +75,14 @@ Barrier::~Barrier()
    Destroy();
 }
 
+END_NAMESPACE(AAL)
+
 #if defined( __AAL_LINUX__ )
 # include <errno.h>
 # include <sys/time.h>
 #endif // __AAL_LINUX__
+
+BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 // Name: Create
@@ -88,7 +94,7 @@ Barrier::~Barrier()
 // Outputs:
 // Comments: m_UnlockCount = std::max(1, UnlockCount);
 //=============================================================================
-AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoReset)
+btBool Barrier::Create(btUnsignedInt UnlockCount, btBool bAutoReset)
 {
    AutoLock(this);
    
@@ -120,7 +126,7 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
    // The current count always starts from zero.
    // The unlock count must be greater than zero upon return from Create().
    m_CurCount    = 0;
-   m_UnlockCount = std::max((AAL::btUnsignedInt)1, UnlockCount);
+   m_UnlockCount = std::max((btUnsignedInt)1, UnlockCount);
 
    if ( bAutoReset ) {
       flag_setf(m_Flags, BARRIER_FLAG_AUTO_RESET);
@@ -140,9 +146,9 @@ AAL::btBool Barrier::Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoRes
 // Comments: Note that Destroying a Barrier with something waiting will 
 //           result in non-deterministic behavior.
 //=============================================================================
-AAL::btBool Barrier::Destroy()
+btBool Barrier::Destroy()
 {
-   AAL::btBool res = true;
+   btBool res = true;
    
    AutoLock(this);
    
@@ -184,9 +190,9 @@ AAL::btBool Barrier::Destroy()
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
+btBool Barrier::Reset(btUnsignedInt UnlockCount)
 {
-   AAL::btBool res = true;
+   btBool res = true;
 
    AutoLock(this);
    
@@ -227,7 +233,7 @@ AAL::btBool Barrier::Reset(AAL::btUnsignedInt UnlockCount)
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedInt &rUnlockCount)
+btBool Barrier::CurrCounts(btUnsignedInt &rCurCount, btUnsignedInt &rUnlockCount)
 {
    AutoLock(this);
    
@@ -250,9 +256,9 @@ AAL::btBool Barrier::CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedIn
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
+btBool Barrier::Post(btUnsignedInt nCount)
 {
-   AAL::btBool res = true;
+   btBool res = true;
 
    AutoLock(this);
    
@@ -263,10 +269,10 @@ AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
       return false;
    }
    
-   const AAL::btBool bWasLocked = (m_CurCount < m_UnlockCount);
+   const btBool bWasLocked = (m_CurCount < m_UnlockCount);
 
    // We let m_CurCount meet, but never exceed, m_UnlockCount.
-   AAL::btUnsignedInt c = std::min(nCount, m_UnlockCount - m_CurCount);
+   btUnsignedInt c = std::min(nCount, m_UnlockCount - m_CurCount);
    
    m_CurCount += c;
 
@@ -310,9 +316,9 @@ AAL::btBool Barrier::Post(AAL::btUnsignedInt nCount)
 //            There is nothing preventing threads from returning to wait()
 //            after unblocking.
 //=============================================================================
-AAL::btBool Barrier::UnblockAll()
+btBool Barrier::UnblockAll()
 {
-   AAL::btBool res = true;
+   btBool res = true;
 
    AutoLock(this);
    
@@ -346,7 +352,7 @@ AAL::btBool Barrier::UnblockAll()
    return res;
 }
 
-AAL::btUnsignedInt Barrier::NumWaiters() const
+btUnsignedInt Barrier::NumWaiters() const
 {
    AutoLock(this);
    return m_AutoResetManager.NumWaiters();
@@ -461,7 +467,7 @@ void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock)
    }
 }
 
-void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock, AAL::btTime Timeout)
+void Barrier::AutoResetManager::WaitForAutoResetCompletion(_AutoLock *pAutoLock, btTime Timeout)
 {
    if ( AAL_INFINITE_WAIT == Timeout ) {
       WaitForAutoResetCompletion(pAutoLock);
@@ -573,7 +579,7 @@ void Barrier::AutoResetManager::RemoveWaiter()
 
 }
 
-AAL::btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
+btUnsignedInt Barrier::AutoResetManager::NumWaiters() const
 {
    return m_NumWaiters;
 }
@@ -620,7 +626,7 @@ void Barrier::AutoResetManager::AutoResetEnd()
 
 void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
 {
-   const AAL::btTime Timeout = 100;
+   const btTime Timeout = 100;
 
 #if defined( __AAL_LINUX__ )
    struct timeval  tv;
@@ -663,7 +669,7 @@ void Barrier::AutoResetManager::WaitForAllWaitersToExit(_AutoLock *pAutoLock)
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Wait()
+btBool Barrier::Wait()
 {
    AutoLock(this);
    
@@ -674,7 +680,7 @@ AAL::btBool Barrier::Wait()
       return false;
    }
    
-   AAL::btBool res = true;
+   btBool res = true;
    
    m_AutoResetManager.AddWaiter(&__LockObj);
    
@@ -706,7 +712,7 @@ AAL::btBool Barrier::Wait()
 // Returns: False if the Barrier is bad or it times out waiting
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
+btBool Barrier::Wait(btTime Timeout) // milliseconds
 {
    if ( AAL_INFINITE_WAIT == Timeout ) {
       return Wait();
@@ -732,7 +738,7 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
    ts.tv_sec  += ts.tv_nsec / 1000000000;
    ts.tv_nsec %= 1000000000;
 
-   AAL::btBool res = true;
+   btBool res = true;
 
    m_AutoResetManager.AddWaiter(&__LockObj);
 
@@ -776,7 +782,7 @@ AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Wait()
+btBool Barrier::Wait()
 {
    DWORD dwWaitResult;
 
@@ -842,7 +848,7 @@ WAITLOOP:
 // Returns: False if the Barrier is bad or it times out waiting
 // Comments:
 //=============================================================================
-AAL::btBool Barrier::Wait(AAL::btTime Timeout) // milliseconds
+btBool Barrier::Wait(btTime Timeout) // milliseconds
 {
    DWORD dwWaitResult;
 
@@ -903,4 +909,6 @@ WAITLOOP:
 }
 
 #endif // OS
+
+END_NAMESPACE(AAL)
 

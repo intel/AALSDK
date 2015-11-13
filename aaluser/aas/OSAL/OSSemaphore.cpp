@@ -68,6 +68,8 @@
 # include <sys/time.h>
 #endif // OS
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // Name: CSemaphore
 // Description: Constructor
@@ -107,7 +109,7 @@ CSemaphore::~CSemaphore()
 // Comments: Uses Mutexs to implement semaphores to implement count up
 //           functionality
 //=============================================================================
-AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMaxCount)
+btBool CSemaphore::Create(btInt nInitialCount, btUnsignedInt nMaxCount)
 {
    // We always protect m_bInitialized with our internal lock (CriticalSection).
    AutoLock(this);
@@ -144,7 +146,7 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
       if ( 0 == nMaxCount ) {
          m_MaxCount = 1;
       } else {
-         m_MaxCount = (AAL::btInt) nMaxCount;
+         m_MaxCount = (btInt) nMaxCount;
       }
 
    } else {
@@ -154,9 +156,9 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
          m_MaxCount = (0 == nInitialCount) ? 1 : nInitialCount;
          m_CurCount = nInitialCount;
       } else {
-         m_MaxCount = (AAL::btInt) nMaxCount;
+         m_MaxCount = (btInt) nMaxCount;
          // Cap the initial count at the max.
-         m_CurCount = (nInitialCount > (AAL::btInt) nMaxCount) ? (AAL::btInt) nMaxCount : nInitialCount;
+         m_CurCount = (nInitialCount > (btInt) nMaxCount) ? (btInt) nMaxCount : nInitialCount;
       }
 
    }
@@ -171,9 +173,9 @@ AAL::btBool CSemaphore::Create(AAL::btInt nInitialCount, AAL::btUnsignedInt nMax
 // Comments: Note that Destroying a Semaphore with something waiting will 
 //           result in undeterministic behavior.
 //=============================================================================
-AAL::btBool CSemaphore::Destroy()
+btBool CSemaphore::Destroy()
 {
-   AAL::btBool res = false;
+   btBool res = false;
 
    AutoLock(this);
 
@@ -203,7 +205,7 @@ AAL::btBool CSemaphore::Destroy()
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
+btBool CSemaphore::Reset(btInt nCount)
 {
    AutoLock(this);
 
@@ -258,7 +260,7 @@ AAL::btBool CSemaphore::Reset(AAL::btInt nCount)
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::CurrCounts(AAL::btInt &rcurrCount, AAL::btInt &rmaxCount)
+btBool CSemaphore::CurrCounts(btInt &rcurrCount, btInt &rmaxCount)
 {
    AutoLock(this);
 
@@ -281,7 +283,7 @@ AAL::btBool CSemaphore::CurrCounts(AAL::btInt &rcurrCount, AAL::btInt &rmaxCount
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Post(AAL::btInt nCount)
+btBool CSemaphore::Post(btInt nCount)
 {
    AutoLock(this);
 
@@ -331,7 +333,7 @@ AAL::btBool CSemaphore::Post(AAL::btInt nCount)
 //            There is nothing preventing threads from returning to wait()
 //            after unblocking.
 //=============================================================================
-AAL::btBool CSemaphore::UnblockAll()
+btBool CSemaphore::UnblockAll()
 {
    AutoLock(this);
 
@@ -339,7 +341,7 @@ AAL::btBool CSemaphore::UnblockAll()
       return false;
    }
 
-   AAL::btBool res = true;
+   btBool res = true;
 
    m_bUnBlocking = true;
    m_CurCount    = 0;
@@ -370,7 +372,7 @@ AAL::btBool CSemaphore::UnblockAll()
 // Returns: Current number of waiters
 // Comments:
 //=============================================================================
-AAL::btUnsignedInt CSemaphore::NumWaiters()
+btUnsignedInt CSemaphore::NumWaiters()
 {
    return m_WaitCount;
 }
@@ -396,7 +398,7 @@ do                                              \
 // Returns: False if the semaphore is bad or it times out waiting
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
+btBool CSemaphore::Wait(btTime Timeout) // milliseconds
 {
    if ( AAL_INFINITE_WAIT == Timeout ) {
       return Wait();
@@ -470,7 +472,7 @@ AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Wait()
+btBool CSemaphore::Wait()
 {
    AutoLock(this);
 
@@ -516,7 +518,7 @@ AAL::btBool CSemaphore::Wait()
 // Returns: False if the semaphore is bad or it times out waiting
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Wait(AAL::btTime Timeout) // milliseconds
+btBool CSemaphore::Wait(btTime Timeout) // milliseconds
 {
    DWORD dwWaitResult;
 
@@ -585,7 +587,7 @@ WAITLOOP:
 // Outputs:
 // Comments:
 //=============================================================================
-AAL::btBool CSemaphore::Wait()
+btBool CSemaphore::Wait()
 {
    DWORD dwWaitResult;
 
@@ -640,4 +642,6 @@ WAITLOOP:
 }
 
 #endif // OS
+
+END_NAMESPACE(AAL)
 

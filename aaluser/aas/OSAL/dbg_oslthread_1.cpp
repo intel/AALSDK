@@ -11,10 +11,10 @@
 # elif defined( __AAL_LINUX__ )
 
    {
-      AutoLock(&gOSLThreadCountLock);
-      ++gOSLThreadCount;
+      AutoLock(&AAL::Testing::gOSLThreadCountLock);
+      ++AAL::Testing::gOSLThreadCount;
    }
-   pthread_cleanup_push(pthread_OSLThreadCount_cleanup, pThread);
+   pthread_cleanup_push(AAL::Testing::pthread_OSLThreadCount_cleanup, pThread);
 
 # endif // OS
 

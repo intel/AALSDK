@@ -12,8 +12,8 @@
 
    pthread_cleanup_pop(0);
    {
-      AutoLock(&gOSLThreadCountLock);
-      --gOSLThreadCount;
+      AutoLock(&AAL::Testing::gOSLThreadCountLock);
+      --AAL::Testing::gOSLThreadCount;
    }
 
 # endif // OS
