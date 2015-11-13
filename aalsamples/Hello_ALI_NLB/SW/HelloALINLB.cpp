@@ -436,12 +436,21 @@ btInt HelloALINLBApp::run()
 
 #if 0 /* Setting to 0 turns off actul NLB functionality for debug purposes */
 
-      // Initialize the source and destination buffers
-      memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
-      memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
-
       // Clear the DSM
-      ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+      ::memset( m_DSMVirt, 0, m_DSMSize);
+
+      // Initialize the source and destination buffers
+      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
+      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+
+      struct CacheLine {                           // Operate on cache lines
+         btUnsigned32bitInt uint[16];
+      };
+      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
+      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+         pCL[i].uint[15] = i;
+      };                         // Cache-Line[n] is zero except last uint = n
+
 
       // Original code puts DSM Reset prior to AFU Reset, but ccipTest
       //    reverses that. We are following ccipTest here.
@@ -458,6 +467,8 @@ btInt HelloALINLBApp::run()
       #if defined ( ASEAFU )
       SleepSec(5);
       #endif /* ASE AFU */
+
+      __sync_synchronize();
 
       // Set input workspace address
       m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
@@ -478,7 +489,7 @@ btInt HelloALINLBApp::run()
 
 
       // Wait for test completion
-      while( 0 == *StatusAddr ) {
+      while( 0 == ((*StatusAddr)&0x1) ) {
          SleepMicro(100);
       }
       MSG("Done Running Test");
