@@ -84,6 +84,9 @@
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
+#define  CCIP_PORT_OUTSTADREQ_TIMEOUT   100
+#define  CCIP_PORT_OUTSTADREQ_COMPLETE  0x1
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
@@ -875,3 +878,109 @@ ERR:
    PTRACEOUT_INT(res);
    return res;
 }
+
+///============================================================================
+/// Name: port_afu_deassert
+/// @brief   Port Re Enable
+///
+/// @param[in] pport_dev port device pointer
+/// @return    error code
+///============================================================================
+bt32bitInt port_afu_deassert(struct port_device *pport_dev)
+{
+
+   bt32bitInt res = 0;
+   PINFO(" Enter \n");
+   if (NULL == ccip_port_hdr(pport_dev))
+   {
+      res = -EINVAL;
+      return  res;
+   }
+   ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x0;
+
+   PINFO(" Exit \n");
+
+   return res;
+}
+///============================================================================
+/// Name: port_afu_reset
+/// @brief   Reset port
+///
+/// @param[in] pport_dev port device pointer
+/// @return    error code
+///============================================================================
+bt32bitInt port_afu_reset(struct port_device *pport_dev)
+{
+   bt32bitInt res = 0;
+   PINFO(" Enter \n");
+   if (NULL == ccip_port_hdr(pport_dev))  {
+      res = -EINVAL;
+      return  res;
+   }
+
+   // afu/port Quiesce reset
+   res = port_afu_quiesce_reset(pport_dev);
+   if (0 != res) {
+      goto ERR;
+   }
+
+   // afu/port enable
+   res = port_afu_deassert(pport_dev);
+   if (0 != res) {
+      goto ERR;
+   }
+
+   PINFO(" Exit \n");
+
+ERR:
+   PINFO(" Error Exit \n");
+   return res;
+}
+
+///============================================================================
+/// Name: port_afu_quiesce_reset
+/// @brief   Port Quiesce Reset
+///
+/// @param[in] pport_dev port device pointer
+/// @return    error code
+///============================================================================
+bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev)
+{
+   bt32bitInt res = 0;
+   btTime delay = 10;
+   btTime totaldelay = 0;
+
+   PINFO(" Enter \n");
+
+   if (NULL == ccip_port_hdr(pport_dev))  {
+      res = -EINVAL;
+      goto ERR;
+   }
+
+   // Reset Port
+   ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x1;
+
+   // All CCI-P request at port complete
+   // Set to 1 When all outstanding requests initiated bu this port have been drained
+   while (CCIP_PORT_OUTSTADREQ_COMPLETE != ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request)
+   {
+      // Sleep
+      kosal_udelay(delay);
+
+      // total dealy
+      totaldelay = totaldelay + delay;
+
+      // if total delay is more then 1 millisecond , return erroor
+      if (totaldelay > CCIP_PORT_OUTSTADREQ_TIMEOUT)   {
+         res = -ETIME;
+         goto ERR;
+      }
+
+   }
+   PINFO(" Exit \n");
+ERR:
+   PINFO(" Error Exit \n");
+   return  res;
+}
+
+

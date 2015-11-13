@@ -561,6 +561,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          }
 
          PDEBUG("Created Port Device\n");
+         port_afu_deassert(pportdev);
 
          // Point to our parent
          ccip_port_to_ccidev(pportdev) = pccipdev;
