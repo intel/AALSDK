@@ -80,14 +80,16 @@ BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranI
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // BufferAllocate-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
 
    // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = (new (std::nothrow) struct aalui_CCIdrvMessage);
-   struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_afucmdWKSP_ALLOC;
-   afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
 
    // fill out ahm_req
@@ -97,7 +99,6 @@ BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranI
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-   m_size = sizeof(struct aalui_CCIdrvMessage);
 
    ASSERT(NULL != m_payload);
    if(NULL == m_payload){
@@ -116,8 +117,6 @@ AAL::uid_msgIDs_e              BufferAllocateTransaction::getMsgID()const {retur
 BufferAllocateTransaction::~BufferAllocateTransaction() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;     // FIXME: use C++ style casts
-   struct ahm_req          *req    = (ahm_req *)afumsg->payload;
-   delete req;
    delete afumsg;
 }
 
@@ -132,16 +131,21 @@ BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSI
    m_size(0),
    m_bufLength(0)
 {
+
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // BufferAllocate-AIATransaction.
+   // BufferFree-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
 
    // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = (new (std::nothrow) struct aalui_CCIdrvMessage);
-   struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_afucmdWKSP_FREE;
-   afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
 
    // fill out ahm_req
@@ -151,7 +155,6 @@ BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSI
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-   m_size = sizeof(struct aalui_CCIdrvMessage);
 
    ASSERT(NULL != m_payload);
    if(NULL == m_payload){
@@ -170,8 +173,6 @@ AAL::uid_msgIDs_e              BufferFreeTransaction::getMsgID()const {return m_
 BufferFreeTransaction::~BufferFreeTransaction() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
-   struct ahm_req          *req    = (ahm_req *)afumsg->payload;
-   delete req;
    delete afumsg;
 }
 
@@ -186,22 +187,25 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction( TransactionID const &tranID 
    m_bufLength(0)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // BufferAllocate-AIATransaction.
+   // GetMMIOBufferTransaction-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
 
    // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = (new (std::nothrow) struct aalui_CCIdrvMessage);
-   struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_getMMIORmap;
-   afumsg->payload = (btVirtAddr) req;
    afumsg->size    = sizeof(struct ahm_req);
 
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-   m_size = sizeof(struct aalui_CCIdrvMessage);
 
    ASSERT(NULL != m_payload);
    if(NULL == m_payload){
@@ -220,8 +224,6 @@ AAL::uid_msgIDs_e              GetMMIOBufferTransaction::getMsgID()const {return
 GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
-   struct ahm_req          *req    = (ahm_req *)afumsg->payload;
-   delete req;
    delete afumsg;
 }
 

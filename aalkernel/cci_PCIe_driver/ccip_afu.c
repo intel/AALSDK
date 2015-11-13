@@ -314,6 +314,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             //------------------------------------------------------------
             // Create the WSID object and add to the list for this session
             //------------------------------------------------------------
+
+PINFO("About to examine wsid.\n");
             if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
                PERR("Failed ccipdrv_getMMIOR map Parameter\n");
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,

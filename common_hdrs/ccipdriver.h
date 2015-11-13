@@ -209,7 +209,7 @@ struct aalui_CCIdrvMessage
    btUnsigned64bitInt  pipver;     // Version of PIP interface [IN]
    btUnsigned64bitInt  cmd;        // Command [IN]
    btWSSize            size;       // size of payload [IN]
-   btVirtAddr          payload;    // data [IN/OUT]
+   btByte              payload[1]; // data [IN/OUT]
 };
 
 #if   defined( __AAL_LINUX__ )
