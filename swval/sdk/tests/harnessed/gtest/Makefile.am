@@ -44,6 +44,7 @@ gtEnvVar.cpp \
 gtMDS.cpp \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
+gtRuntime_Int.cpp \
 gtSem.cpp \
 gtServiceBroker.cpp \
 gtServiceHost.cpp \
@@ -133,6 +134,7 @@ gtNVSTester.cpp \
 gtNVSTester.h \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
+gtRuntime_Int.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
