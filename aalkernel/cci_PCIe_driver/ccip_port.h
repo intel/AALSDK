@@ -174,6 +174,27 @@ bt32bitInt get_port_featurelist(struct port_device *,btVirtAddr );
 
 btVirtAddr get_port_feature( struct port_device *,btUnsigned64bitInt );
 
+
+/// @brief   Port Quiesce Reset
+///
+/// @param[in] pport_dev port device pointer.
+/// @param[in] pkvp_port_mmio port mmio virtual address
+/// @return    error code
+bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev);
+
+/// @brief   Reset port
+///
+/// @param[in] pport_dev port device pointer.
+/// @return    error code
+bt32bitInt port_afu_reset(struct port_device *pport_dev);
+
+/// @brief   Port Re Enable
+///
+/// @param[in] pport_dev port device pointer.
+/// @return    error code
+bt32bitInt port_afu_deassert(struct port_device *pport_dev);
+
+
 extern struct aal_ipip cci_Portpip;
 extern struct aal_ipip cci_AFUpip;
 
