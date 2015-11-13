@@ -8,7 +8,7 @@ DEBUG :=
 
 INC_DIR = ../../mmlink_char_linux_driver/char
 CFLAGS += -c -W -I$(INC_DIR)
-DEPS = mm-debug-link.h
+#DEPS = mm-debug-link.h
 
 MMLINK_OBJS := udp_log.o mmlink_server.o mmlink_connection.o mm_debug_link.o main.o
 

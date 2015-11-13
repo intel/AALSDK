@@ -40,10 +40,14 @@ private:
   static const size_t BUFSIZE = 3000; // size of buffer for t2h data
   char m_buf[BUFSIZE];
   size_t m_buf_end;
+  int m_write_fifo_capacity;
+  void *map_base;
 
 public:
-  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0;}
+  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0; m_write_fifo_capacity = 0;}
   int open(char* filename);
+  void* read_mmr(off_t target, int access_type);
+  void write_mmr(off_t target, int access_type, unsigned int write_val);
   ssize_t read();
   ssize_t write( const void *buf, size_t count);
   void close(void);
