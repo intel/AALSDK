@@ -529,10 +529,10 @@ btInt HelloALINLBApp::run()
 void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
-   // Documentation says HWALIAFU Service publishes IAALServiceas subclass interface
+   // Documentation says HWALIAFU Service publishes IAALService as subclass interface
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pALIBufferService ) {
+   if ( NULL == m_pAALService ) {
       m_bIsOK = false;
       return;
    }

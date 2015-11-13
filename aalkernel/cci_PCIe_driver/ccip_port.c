@@ -69,7 +69,6 @@
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
 
@@ -890,7 +889,9 @@ bt32bitInt port_afu_deassert(struct port_device *pport_dev)
 {
 
    bt32bitInt res = 0;
-   PINFO(" Enter \n");
+
+   PTRACEIN;
+
    if (NULL == ccip_port_hdr(pport_dev))
    {
       res = -EINVAL;
@@ -898,7 +899,7 @@ bt32bitInt port_afu_deassert(struct port_device *pport_dev)
    }
    ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x0;
 
-   PINFO(" Exit \n");
+   PTRACEOUT_INT(res);
 
    return res;
 }
@@ -912,7 +913,9 @@ bt32bitInt port_afu_deassert(struct port_device *pport_dev)
 bt32bitInt port_afu_reset(struct port_device *pport_dev)
 {
    bt32bitInt res = 0;
-   PINFO(" Enter \n");
+
+   PTRACEIN;
+
    if (NULL == ccip_port_hdr(pport_dev))  {
       res = -EINVAL;
       return  res;
@@ -930,10 +933,8 @@ bt32bitInt port_afu_reset(struct port_device *pport_dev)
       goto ERR;
    }
 
-   PINFO(" Exit \n");
-
 ERR:
-   PINFO(" Error Exit \n");
+   PTRACEOUT_INT(res);
    return res;
 }
 
@@ -950,7 +951,7 @@ bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev)
    btTime delay = 10;
    btTime totaldelay = 0;
 
-   PINFO(" Enter \n");
+   PTRACEIN;
 
    if (NULL == ccip_port_hdr(pport_dev))  {
       res = -EINVAL;
@@ -977,9 +978,9 @@ bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev)
       }
 
    }
-   PINFO(" Exit \n");
+
 ERR:
-   PINFO(" Error Exit \n");
+   PTRACEOUT_INT(res);
    return  res;
 }
 
