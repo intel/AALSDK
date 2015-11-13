@@ -385,65 +385,61 @@ btCSROffset HWALIAFU::mmioGetLength( void )
 //
 // mmioRead32. Read 32bit CSR. Offset given in bytes.
 //
-btBool HWALIAFU::mmioRead32( const btCSROffset Offset, btUnsigned32bitInt * const pValue)
+btBool HWALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
-	btVirtAddr pMMIOBase = mmioGetAddress();
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
 
-	if (pMMIOBase == NULL) {
-		return false;
-	}
+   // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
+   *pValue = *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) );
 
-	*pValue = *( (btUnsigned32bitInt*)(pMMIOBase + Offset) );      // FIXME: might want to use C++ style casts
-
-	return true;
+   return true;
 }
 
 //
 // mmioWrite32. Write 32bit CSR. Offset given in bytes.
 //
-btBool HWALIAFU::mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value)
+btBool HWALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
-	btVirtAddr pMMIOBase = mmioGetAddress();
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
 
-	if (pMMIOBase == NULL) {
-		return false;
-	}
+   // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
+   *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) ) = Value;
 
-	*( (btUnsigned32bitInt*)(pMMIOBase + Offset) ) = Value;
-
-	return true;
+   return true;
 }
 
 //
 // mmioRead64. Read 64bit CSR. Offset given in bytes.
 //
-btBool HWALIAFU::mmioRead64( const btCSROffset Offset, btUnsigned64bitInt * const pValue)
+btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
-	btVirtAddr pMMIOBase = mmioGetAddress();
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
 
-	if (pMMIOBase == NULL) {
-		return false;
-	}
+   // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
+   *pValue = *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) );
 
-	*pValue = *( (btUnsigned64bitInt*)(pMMIOBase + Offset) );
-
-	return true;
+   return true;
 }
 
 //
 // mmioWrite64. Write 64bit CSR. Offset given in bytes.
 //
-btBool HWALIAFU::mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value)
+btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
-	btVirtAddr pMMIOBase = mmioGetAddress();
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
 
-	if (pMMIOBase == NULL) {
-		return false;
-	}
+   // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
+   *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) ) = Value;
 
-	*( (btUnsigned64bitInt*)(pMMIOBase + Offset) ) = Value;
-
-	return true;
+   return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -453,34 +449,34 @@ btBool HWALIAFU::mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt
 //
 // bufferAllocate. Allocate a shared buffer (formerly known as workspace).
 //
-void HWALIAFU::bufferAllocate( btWSSize             Length,
-                               TransactionID const &TranID,
-                               NamedValueSet       *pOptArgs)
+void HWALIAFU::bufferAllocate(btWSSize Length,
+                              TransactionID const &TranID,
+                              NamedValueSet *pOptArgs)
 {
-	   AutoLock(this);
+   AutoLock(this);
 
-	   // TODO: Create a transaction id that wraps the original from the application,
+   // TODO: Create a transaction id that wraps the original from the application,
 //	   TransactionID tid(new(std::nothrow) TransactionID(TranID));
 
-	   // Create the Transaction
-	   BufferAllocateTransaction transaction(TranID, Length);
+   // Create the Transaction
+   BufferAllocateTransaction transaction(TranID, Length);
 
-	   // Check the parameters
-	   if ( transaction.IsOK() ) {
-	      // Will return to AFUEvent, below.
-	      m_pAFUProxy->SendTransaction(&transaction);
-	   } else {
-	      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
-	                                                                     TranID,
-	                                                                     errAFUWorkSpace,
-	                                                                     reasAFUNoMemory,
-	                                                                     "BufferAllocate transaction validity check failed");
-	      getRuntime()->schedDispatchable(
-	         new(std::nothrow) BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
-	                                                            pExcept)
-
-	             );
-	   }
+   // Check the parameters
+   if ( transaction.IsOK() ) {
+      // Will return to AFUEvent, below.
+      m_pAFUProxy->SendTransaction(&transaction);
+   } else {
+      IEvent *pExcept = new (std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
+                                                                      TranID,
+                                                                      errAFUWorkSpace,
+                                                                      reasAFUNoMemory,
+                                                                      "BufferAllocate transaction validity check failed");
+      getRuntime()->schedDispatchable(
+         new (std::nothrow)
+            BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
+                                 pExcept)
+            );
+   }
 }
 
 //
@@ -554,6 +550,7 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 
    // look through all workspaces to see if Address is in one of them
    // TODO: there might be a more efficient way
+   // TODO: this loop works only if map keeps keys in increasing order -- does it?
    for (mapWkSpc_t::iterator i = m_mapWkSpc.begin(); i != m_mapWkSpc.end(); i++ ) {
       if (Address < i->second.ptr + i->second.size) {
          return i->second.physptr + (Address - i->second.ptr);
@@ -573,7 +570,7 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 btUnsignedInt HWALIAFU::umsgGetNumber( void )
 {
-   return m_uMSGsize;
+   return m_uMSGsize / 4096;  // one page per UMsg
 }
 
 //
@@ -581,7 +578,18 @@ btUnsignedInt HWALIAFU::umsgGetNumber( void )
 //
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
-   return m_uMSGmap + (UMsgNumber << 9);	// assumes 512 bit (cacheline) UMSGs FIXME incorrect conversion
+   // Umsgs are separated by 1 Page + 1 CL
+   // Malicious call could overflow and cause wrap to invalid address.
+   // TODO: Check if there is any problem with using a different address
+   //       in the UMAS range
+   btUnsigned32bitInt offset = UMsgNumber * (4096 + 64) ;
+
+   if ( offset >=  m_uMSGsize) {
+      return NULL;
+   } else {
+      // m_uMSGmap is btVirtAddr is char* so math is in bytes
+      return m_uMSGmap + offset;
+   }
 }
 
 //
