@@ -56,10 +56,6 @@ USING_NAMESPACE(AAL)
 //==========================================================================
 class UAIA_API uidrvMessage : public CUnCopyable
 {
-   struct message {
-      aalui_ioctlreq m_ioctlreq;
-      btByte         m_payload[1];
-   };
 
 public:
    uidrvMessage();
@@ -68,23 +64,23 @@ public:
    // size mutator (allocates m_payload)
    void size(btWSSize PayloadSize);
    // result_code mutator
-   void result_code(uid_errnum_e e) {ASSERT(NULL != m_pmessage); m_pmessage->m_ioctlreq.errcode = e; }
+   void result_code(uid_errnum_e e) {ASSERT(NULL != m_pmessage); m_pmessage->errcode = e; }
 
-   operator struct aalui_ioctlreq * ()           { ASSERT(NULL != m_pmessage); return &m_pmessage->m_ioctlreq;}
-   struct aalui_ioctlreq *   GetReqp()           { ASSERT(NULL != m_pmessage); return &m_pmessage->m_ioctlreq;}
+   operator struct ccipui_ioctlreq * ()           { ASSERT(NULL != m_pmessage); return m_pmessage;}
+   struct ccipui_ioctlreq *   GetReqp()           { ASSERT(NULL != m_pmessage); return m_pmessage;}
 
-   btHANDLE                  handle()      const { ASSERT(NULL != m_pmessage); return m_pmessage->m_ioctlreq.handle;  }
-   uid_msgIDs_e              id()          const { ASSERT(NULL != m_pmessage); return m_pmessage->m_ioctlreq.id;      }
-   uid_errnum_e              result_code() const { ASSERT(NULL != m_pmessage); return m_pmessage->m_ioctlreq.errcode; }
-   btWSSize                  size()        const { ASSERT(NULL != m_pmessage); return m_pmessage->m_ioctlreq.size;    }
+   btHANDLE                  handle()      const { ASSERT(NULL != m_pmessage); return m_pmessage->handle;  }
+   uid_msgIDs_e              id()          const { ASSERT(NULL != m_pmessage); return m_pmessage->id;      }
+   uid_errnum_e              result_code() const { ASSERT(NULL != m_pmessage); return m_pmessage->errcode; }
+   btWSSize                  size()        const { ASSERT(NULL != m_pmessage); return m_pmessage->size;    }
    btWSSize                  msgsize()     const { ASSERT(NULL != m_pmessage); return m_msgsize;    }
-   stTransactionID_t const & tranID()      const { ASSERT(NULL != m_pmessage); return m_pmessage->m_ioctlreq.tranID;  }
+   stTransactionID_t const & tranID()      const { ASSERT(NULL != m_pmessage); return m_pmessage->tranID;  }
    btObjectType              context()     const { ASSERT(NULL != m_pmessage);
-                                                   return static_cast<btObjectType>(m_pmessage->m_ioctlreq.context); }
-   btVirtAddr                payload()     const { ASSERT(NULL != m_pmessage); return reinterpret_cast<btVirtAddr>(m_pmessage->m_payload); }
+                                                   return static_cast<btObjectType>(m_pmessage->context); }
+   btVirtAddr                payload()     const;
 
 protected:
-   struct message *m_pmessage;
+   struct ccipui_ioctlreq *m_pmessage;
    btWSSize        m_msgsize;
 
 }; // end of class uidrvMessage

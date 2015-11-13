@@ -116,9 +116,9 @@ int ccidrv_ioctl(struct inode *inode,
 
 extern btInt ccidrv_messageHandler( struct ccidrv_session   *psess,
                                     btUnsigned32bitInt       cmd,
-                                    struct aalui_ioctlreq   *preq,
+                                    struct ccipui_ioctlreq   *preq,
                                     btWSSize                 InbufSize,
-                                    struct aalui_ioctlreq   *presp,
+                                    struct ccipui_ioctlreq   *presp,
                                     btWSSize                *pOutbufSize);
 
 
@@ -294,9 +294,9 @@ int ccidrv_ioctl(struct inode *inode,
 
    // Generic variables
    int                    ret=0;
-   struct aalui_ioctlreq  req;                 // User IOCTL header
+   struct ccipui_ioctlreq  req;                 // User IOCTL header
 
-   struct aalui_ioctlreq *pfullrequest = NULL; // Full message with var data
+   struct ccipui_ioctlreq *pfullrequest = NULL; // Full message with var data
    btWSSize               FullRequestSize;
    btWSSize               Outbufsize;
 
@@ -316,14 +316,14 @@ int ccidrv_ioctl(struct inode *inode,
       return -EFAULT;
    }
 
-   // Total user buffer size is the size of structure aalui_ioctlreq + payload size
-   Outbufsize = FullRequestSize = sizeof(struct aalui_ioctlreq) + aalui_ioctlPayloadSize(&req);
+   // Total user buffer size is the size of structure ccipui_ioctlreq + payload size
+   Outbufsize = FullRequestSize = sizeof(struct ccipui_ioctlreq) + aalui_ioctlPayloadSize(&req);
 
    // Check to see if there is a payload
-   if ( FullRequestSize > sizeof(struct aalui_ioctlreq) ) {
+   if ( FullRequestSize > sizeof(struct ccipui_ioctlreq) ) {
 
       PINFO("UIDRV is reading message with payload of size %" PRIu64 "\n", aalui_ioctlPayloadSize(&req));
-      pfullrequest = (struct aalui_ioctlreq *) kosal_kmalloc(FullRequestSize);
+      pfullrequest = (struct ccipui_ioctlreq *) kosal_kmalloc(FullRequestSize);
 
       // Read whole message
       if ( copy_from_user(pfullrequest, (void *)arg, FullRequestSize) ) {

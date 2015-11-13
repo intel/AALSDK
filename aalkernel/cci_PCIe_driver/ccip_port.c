@@ -263,7 +263,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    int retval = 0;
 
    // UI Driver message
-   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *) Message.m_message;
+   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
 
    // Used by WS allocation
    struct aal_wsid                        *wsidp            = NULL;
@@ -291,14 +291,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // Message processor
    //=====================
    switch ( pmsg->cmd ) {
-      struct ccipdrv_event_afu_workspace_event *pafuws_evt       = NULL;
+      struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
       // Returns a workspace ID for the Config Space
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
 
          if ( !cci_dev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
-            pafuws_evt = ccipdrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+            pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
@@ -317,7 +317,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             //------------------------------------------------------------
             if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
                PERR("Failed ccipdrv_getMMIOR map Parameter\n");
-               pafuws_evt = ccipdrv_event_afu_afugetcsrmap_create(pownerSess->m_device,
+               pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
                                                                 0,
@@ -348,7 +348,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_cci_csr(pdev), (int)cci_dev_len_cci_csr(pdev));
 
                // Return the event with all of the appropriate aperture descriptor information
-               pafuws_evt = ccipdrv_event_afu_afugetcsrmap_create( pownerSess->m_device,
+               pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
                                                                    cci_dev_len_cci_csr(pdev),         // Return the requested aperture size

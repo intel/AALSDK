@@ -81,9 +81,9 @@ btInt ccidrv_session_destroy(struct ccidrv_session * );
 btInt ccidrv_fasync(btInt fd, struct file *, btInt );
 btInt ccidrv_messageHandler( struct ccidrv_session  *,
                              btUnsigned32bitInt     ,
-                             struct aalui_ioctlreq *,
+                             struct ccipui_ioctlreq *,
                              btWSSize               ,
-                             struct aalui_ioctlreq *,
+                             struct ccipui_ioctlreq *,
                              btWSSize              *);
 
 btInt ccidrv_sendevent( void *,
@@ -97,12 +97,12 @@ btInt ccidrv_valwsid(struct aal_wsid *);
 btInt ccidrv_flush_eventqueue(  struct ccidrv_session *psess);
 
 btInt process_send_message( struct ccidrv_session  *,
-                            struct aalui_ioctlreq *);
+                            struct ccipui_ioctlreq *);
 btInt process_bind_request( struct ccidrv_session  *psess,
-                            struct aalui_ioctlreq *preq);
-btInt ccidrv_marshal_upstream_message( struct aalui_ioctlreq *preq,
+                            struct ccipui_ioctlreq *preq);
+btInt ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
                                        struct aal_q_item     *pqitem,
-                                       struct aalui_ioctlreq *resp,
+                                       struct ccipui_ioctlreq *resp,
                                        btWSSize              *pOutbufsize);
 
 extern struct um_APIdriver thisDriver;
@@ -264,9 +264,9 @@ int ccidrv_session_destroy(struct ccidrv_session * psess)
 btInt
 ccidrv_messageHandler( struct ccidrv_session *psess,
                        btUnsigned32bitInt     cmd,
-                       struct aalui_ioctlreq *preq,
+                       struct ccipui_ioctlreq *preq,
                        btWSSize               InbufSize,
-                       struct aalui_ioctlreq *presp,
+                       struct ccipui_ioctlreq *presp,
                        btWSSize              *pOutbufSize)
 {
    btInt    ret            = -EINVAL; // Assume failure
@@ -316,8 +316,8 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
 
          // Copy the original header into the response then
          //   modify the parts as necessary.
-         if ( OutbufSize <= sizeof(struct aalui_ioctlreq) ) {
-            memcpy(presp, preq, sizeof(struct aalui_ioctlreq));
+         if ( OutbufSize <= sizeof(struct ccipui_ioctlreq) ) {
+            memcpy(presp, preq, sizeof(struct ccipui_ioctlreq));
          }
 
          // Return the type and total size of the message that will be returned
@@ -327,7 +327,7 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
          PVERBOSE("Getting Message Decriptor - size = %" PRIu64 "\n", preq->size);
 
          // GETMSG_DESC always returns size of ioctlreq (i.e., header)
-         *pOutbufSize = sizeof(struct aalui_ioctlreq);
+         *pOutbufSize = sizeof(struct ccipui_ioctlreq);
          ret = 0;
          PTRACEOUT_INT(ret);
       } return ret; // case AALUID_IOCTL_GETMSG_DESC:
@@ -405,7 +405,7 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
 //=============================================================================
 btInt
 process_send_message(struct ccidrv_session  *psess,
-                     struct aalui_ioctlreq *preq)
+                     struct ccipui_ioctlreq *preq)
 {
    btInt                              ret = 0;
    struct aal_device                 *pdev;
@@ -539,14 +539,14 @@ process_send_message(struct ccidrv_session  *psess,
 //=============================================================================
 btInt
 process_bind_request(struct ccidrv_session  *psess,
-                     struct aalui_ioctlreq *preq)
+                     struct ccipui_ioctlreq *preq)
 {
-   struct aal_device              *pdev         = NULL;
-   struct uidrv_event_bindcmplt   *bindcmplt    = NULL;
-   struct uidrv_event_unbindcmplt *unbindcmplt  = NULL;
-   struct aalui_extbindargs        bindevt      = {0};
-   struct aaldev_ownerSession     *ownerSessp   = NULL;
-   btInt                           ret          = 0;
+   struct aal_device                            *pdev         = NULL;
+   struct ccipdrv_event_afu_response_event      *bindcmplt    = NULL;
+   struct ccipdrv_event_afu_response_event      *unbindcmplt  = NULL;
+   struct ccipdrv_DeviceAttributes               bindevt      = {0};
+   struct aaldev_ownerSession                   *ownerSessp   = NULL;
+   btInt                                         ret          = 0;
 
 #if 1
 # define UIDRV_PROCESS_BIND_REQUEST_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -631,12 +631,9 @@ process_bind_request(struct ccidrv_session  *psess,
             bindcmplt = uidrv_event_bindcmplt_create(NULL, NULL, uid_errnumCouldNotClaimDevice, preq);
          } else {
             // Fill out the extended bind parameters
-            bindevt.m_apiver      = aalsess_pipmsgID(ownerSessp);
-            bindevt.m_pipver      = aaldev_pipid(pdev);
             bindevt.m_mappableAPI = aaldev_mappableAPI(pdev);
 
-            PDEBUG("Creating bind event with API ver 0x%" PRIx64 " and PIP ver 0x%" PRIx64 " MAPPABLE = 0x%x\n",
-                     bindevt.m_apiver, bindevt.m_pipver, bindevt.m_mappableAPI);
+            PDEBUG("Creating bind event MAPPABLE = 0x%x\n", bindevt.m_mappableAPI);
 
             // Create the completion event
             bindcmplt = uidrv_event_bindcmplt_create(preq->handle, &bindevt, uid_errnumOK, preq);
@@ -713,7 +710,7 @@ BIND_DONE:
    }
 
    // Enqueue the completion event
-   _aal_q_enqueue(ui_evtp_bindcmplt_to_qip(bindcmplt), &psess->m_eventq);
+   _aal_q_enqueue(ui_evtp_afuresponse_to_qip(bindcmplt), &psess->m_eventq);
    kosal_wake_up_interruptible( &psess->m_waitq );
 
    PTRACEOUT_INT(ret);
@@ -730,7 +727,7 @@ UNBIND_DONE:
    }
 
    // Enqueue the completion event
-   _aal_q_enqueue(ui_evtp_unbindcmplt_to_qip(unbindcmplt), &psess->m_eventq);
+   _aal_q_enqueue(ui_evtp_afuresponse_to_qip(unbindcmplt), &psess->m_eventq);
 
    // Unblock select() calls.
    kosal_wake_up_interruptible( &psess->m_waitq );
@@ -747,16 +744,16 @@ UNBIND_DONE:
 //              parameters are returned.
 // Interface: private
 // Inputs: unsigned long arg - pointer to user space event target
-//         struct aalui_ioctlreq *preq - request header
+//         struct ccipui_ioctlreq *preq - request header
 //         struct aal_q_item *pqitem - message to process
 // Outputs: length of output buffer is copied to *Outbufsize.
 //          return code: 0 == success
 // Comments: Kernel event is destroyed
 //=============================================================================
 btInt
-ccidrv_marshal_upstream_message( struct aalui_ioctlreq *preq,
+ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
                                  struct aal_q_item     *pqitem,
-                                 struct aalui_ioctlreq *resp,
+                                 struct ccipui_ioctlreq *resp,
                                  btWSSize              *pOutbufsize)
 {
    btInt    ret = 0;
@@ -773,131 +770,48 @@ ccidrv_marshal_upstream_message( struct aalui_ioctlreq *preq,
    ASSERT(NULL != pqitem);
    ASSERT(NULL != resp);
    ASSERT(NULL != pOutbufsize);
+   ASSERT(NULL != preq);
+
+   if((NULL == pqitem) || (NULL == resp) || (NULL == pOutbufsize) || (NULL == preq)){
+      PERR("Invalid input argument");
+      return -EINVAL;
+   }
 
    Outbufsize = *pOutbufsize;
    *pOutbufsize = 0; // Prepar
-   // Switch on message type
-   switch ( pqitem->m_id ) {
-      //--------------
-      // Bind Complete
-      //--------------
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_UID_BindComplete) {
-         // Copy the header portion of the response
-         resp->id        = (uid_msgIDs_e)pqitem->m_id;
-         resp->errcode   = qip_to_ui_evtp_bindcmplt(pqitem)->m_errno;
-         resp->handle    = qip_to_ui_evtp_bindcmplt(pqitem)->m_devhandle;
-         resp->context   = qip_to_ui_evtp_bindcmplt(pqitem)->m_context;
-         resp->tranID    = qip_to_ui_evtp_bindcmplt(pqitem)->m_tranID;
-         resp->size      = pqitem->m_length;
 
-         // Copy the body of the message
-         if ( ( resp->size + sizeof(struct aalui_ioctlreq) ) > Outbufsize ) {
-            ret = -EINVAL;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
+   // Copy the header portion of the request back
+   resp->id      = (uid_msgIDs_e)QI_QID(pqitem);
+   resp->errcode = qip_to_ui_evtp_afuresponse(pqitem)->m_errnum;
+   resp->handle  = qip_to_ui_evtp_afuresponse(pqitem)->m_devhandle;
+   resp->context = qip_to_ui_evtp_afuresponse(pqitem)->m_context;
+   resp->tranID  = qip_to_ui_evtp_afuresponse(pqitem)->m_tranID;
 
-         memcpy((char *)resp + sizeof(struct aalui_ioctlreq), &qip_to_ui_evtp_bindcmplt(pqitem)->m_extargs, (size_t)resp->size);
+   if ( preq->size < QI_LEN(pqitem) ) {
+      ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));  //BUG in Linux version
+      ret = -EINVAL;
+      PTRACEOUT_INT(ret);
+      return ret;
+   }
 
-         //Destroy the event
-         uidrv_event_bindcmplt_destroy(qip_to_ui_evtp_bindcmplt(pqitem));
-      } break; // case rspid_UID_BindComplete
+   // Payload size
+   resp->size    = QI_LEN(pqitem);
 
-      //----------------
-      // UnBind Complete
-      //----------------
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_UID_UnbindComplete) {
-         // Copy the header portion of the request back
-         resp->id      = (uid_msgIDs_e)pqitem->m_id;
-         resp->errcode = qip_to_ui_evtp_unbindcmplt(pqitem)->m_errno;
-         resp->context = qip_to_ui_evtp_unbindcmplt(pqitem)->m_context;
-         resp->tranID  = qip_to_ui_evtp_unbindcmplt(pqitem)->m_tranID;
-         resp->handle  = NULL;
-         resp->size    = 0;
+   // Make sure there is room to fit the message
+   if ( ( resp->size + (sizeof(struct ccipui_ioctlreq)) ) > Outbufsize ) {
+      ret = -EINVAL;
+      PTRACEOUT_INT(ret);
+      return ret;
+   }
+   // Copy the payload
+   memcpy(resp->payload, qip_to_ui_evtp_afuresponse(pqitem)->m_payload, (size_t)resp->size);
 
-         // Destroy the event
-         uidrv_event_Unbindcmplt_destroy(qip_to_ui_evtp_unbindcmplt(pqitem));
-      } break; // case rspid_UID_UnbindComplete
+   PVERBOSE("Sending Event Event ID = %d\n",((struct aalui_WSMEvent*)(resp->payload))->evtID );
 
-      //-------------
-      // AFU Response
-      //-------------
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_UID_Shutdown)
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_AFU_Response) {
-         ASSERT(NULL != preq);
+   //Destroy the event
+   ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
 
-         // Copy the header portion of the request back
-         resp->id      = (uid_msgIDs_e)QI_QID(pqitem);
-         resp->errcode = qip_to_ui_evtp_afuresponse(pqitem)->m_errnum;
-         resp->handle  = qip_to_ui_evtp_afuresponse(pqitem)->m_devhandle;
-         resp->context = qip_to_ui_evtp_afuresponse(pqitem)->m_context;
-         resp->tranID  = qip_to_ui_evtp_afuresponse(pqitem)->m_tranID;
-
-         if ( preq->size < QI_LEN(pqitem) ) {
-            ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));  //BUG in Linux version
-            ret = -EINVAL;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
-
-         resp->size    = QI_LEN(pqitem);
-
-         // Make sure there is room to fit the message
-         if ( ( resp->size + (sizeof(struct aalui_ioctlreq)-1) ) > Outbufsize ) {
-            ret = -EINVAL;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
-         // Copy the payload
-         memcpy(resp->payload, qip_to_ui_evtp_afuresponse(pqitem)->m_payload, (size_t)resp->size);
-
-         //Destroy the event
-         ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
-      } break; // case rspid_AFU_Response
-
-      //-------------
-      // WSM Response
-      //-------------
-      UIDRV_PROCESS_MESSAGE_CASE(rspid_WSM_Response) {
-         ASSERT(NULL != preq);
-
-         // Copy the header portion of the request back
-         resp->id      = (uid_msgIDs_e)QI_QID(pqitem);
-         resp->errcode = qip_to_ui_evtp_afuwsevent(pqitem)->m_errnum;
-         resp->handle  = qip_to_ui_evtp_afuwsevent(pqitem)->m_devhandle;
-         resp->context = qip_to_ui_evtp_afuwsevent(pqitem)->m_context;
-         resp->tranID  = qip_to_ui_evtp_afuwsevent(pqitem)->m_tranID;
-
-         if ( preq->size < QI_LEN(pqitem) ) {
-            ret = -EFAULT;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
-
-         resp->size = QI_LEN(pqitem);
-
-         // Copy the body of the message
-         if ( ( resp->size + sizeof(struct aalui_ioctlreq) ) > Outbufsize ) {
-            ret = -EINVAL;
-            PTRACEOUT_INT(ret);
-            return ret;
-         }
-
-         memcpy((char *)resp + sizeof(struct aalui_ioctlreq), qip_to_ui_evtp_afuwsevent(pqitem)->m_payload, (size_t)resp->size);
-
-         //Destroy the event
-         ccipdrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
-
-      } break; // case rspid_WSM_Response
-
-      default : {
-         ret = -EINVAL;
-         PTRACEOUT_INT(ret);
-         return ret;
-      } break;
-   } // switch (pqitem->m_id)
-
-   *pOutbufsize = resp->size + sizeof(struct aalui_ioctlreq);
+   *pOutbufsize = resp->size + sizeof(struct ccipui_ioctlreq);
 
    PTRACEOUT_INT(ret);
    return ret;
@@ -1077,42 +991,19 @@ int ccidrv_flush_eventqueue(  struct ccidrv_session *psess)
          DPRINTF( UIDRV_DBG_IOCTL, ": Invalid or corrupted request on flush\n" );
          continue;
       }
-
-      // Switch on message type
-      switch (pqitem->m_id) {
-         // Bind Complete
-         case rspid_UID_BindComplete:  {
-            uidrv_event_bindcmplt_destroy(qip_to_ui_evtp_bindcmplt(pqitem));
-         }
-         case rspid_UID_UnbindComplete: {
-            uidrv_event_Unbindcmplt_destroy(qip_to_ui_evtp_unbindcmplt(pqitem));
-            break;
-         }
-         case rspid_AFU_Response: {
-            DPRINTF( UIDRV_DBG_IOCTL, ": Flushing Response event\n" );
-            ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
-            break;
-         }
-
-         case rspid_WSM_Response: {
-            ccipdrv_event_afucwsevent_destroy(qip_to_ui_evtp_afuwsevent(pqitem));
-            break;
-         }
-
-         default:
-            DPRINTF( UIDRV_DBG_IOCTL, ": Encountered unknown event while flushing - leak\n" );
-
-      } // switch (pqitem->m_id)
-
+      DPRINTF( UIDRV_DBG_IOCTL, ": Flushing Response event\n" );
+      ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
    }
    return ret;
 }
 
-
+//=============================================================================
+// Name: ccidrv_valwsid
 /** @brief check if a provided wsid is on the list of known allocated wsids
  * @param[in] wsid_p pointer to workspace to validate
  * @return zero on success
  * grab the list lock, walk the list, and compare pointers. */
+//=============================================================================
 int ccidrv_valwsid(struct aal_wsid *wsid_p)
 {
    int retval = -EINVAL;

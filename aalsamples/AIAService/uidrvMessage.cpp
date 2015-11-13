@@ -67,9 +67,14 @@ void uidrvMessage::size(btWSSize PayloadSize)
    if ( NULL != m_pmessage ) {
       delete m_pmessage;
    }
-   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(aalui_ioctlreq);
-   m_pmessage = (struct message*)new btByte[m_msgsize];
+   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(ccipui_ioctlreq);
+   m_pmessage = (struct ccipui_ioctlreq*)new btByte[m_msgsize];
    memset(m_pmessage, 0, m_msgsize);
-   m_pmessage->m_ioctlreq.size = PayloadSize;
+   m_pmessage->size = PayloadSize;
 }
 
+btVirtAddr  uidrvMessage::payload() const
+{ ASSERT(NULL != m_pmessage);
+   btVirtAddr ptr = reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+   return reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+}

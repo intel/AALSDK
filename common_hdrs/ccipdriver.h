@@ -70,10 +70,6 @@
 #include <aalsdk/kernel/AALWorkspace.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 
-#include <aalsdk/CUnCopyable.h>
-
-
-
 BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
@@ -207,7 +203,7 @@ typedef enum
     ccipdrv_getFeatureRegion
 } ccipdrv_afuCmdID_e;
 
-struct aalui_AFUmessage
+struct aalui_CCIdrvMessage
 {
    btUnsigned64bitInt  apiver;     // Version of message handler [IN]
    btUnsigned64bitInt  pipver;     // Version of PIP interface [IN]
@@ -217,12 +213,12 @@ struct aalui_AFUmessage
 };
 
 #if   defined( __AAL_LINUX__ )
-# define AALUID_IOCTL_SENDMSG       _IOR ('x', 0x00, struct aalui_ioctlreq)
-# define AALUID_IOCTL_GETMSG_DESC   _IOR ('x', 0x01, struct aalui_ioctlreq)
-# define AALUID_IOCTL_GETMSG        _IOWR('x', 0x02, struct aalui_ioctlreq)
-# define AALUID_IOCTL_BINDDEV       _IOWR('x', 0x03, struct aalui_ioctlreq)
-# define AALUID_IOCTL_ACTIVATEDEV   _IOWR('x', 0x04, struct aalui_ioctlreq)
-# define AALUID_IOCTL_DEACTIVATEDEV _IOWR('x', 0x05, struct aalui_ioctlreq)
+# define AALUID_IOCTL_SENDMSG       _IOR ('x', 0x00, struct ccipui_ioctlreq)
+# define AALUID_IOCTL_GETMSG_DESC   _IOR ('x', 0x01, struct ccipui_ioctlreq)
+# define AALUID_IOCTL_GETMSG        _IOWR('x', 0x02, struct ccipui_ioctlreq)
+# define AALUID_IOCTL_BINDDEV       _IOWR('x', 0x03, struct ccipui_ioctlreq)
+# define AALUID_IOCTL_ACTIVATEDEV   _IOWR('x', 0x04, struct ccipui_ioctlreq)
+# define AALUID_IOCTL_DEACTIVATEDEV _IOWR('x', 0x05, struct ccipui_ioctlreq)
 #elif defined( __AAL_WINDOWS__ )
 # ifdef __AAL_USER__
 #    include <winioctl.h>
@@ -261,10 +257,10 @@ struct aalui_AFUmessage
 #endif // OS
 
 //=============================================================================
-// Name: aalui_ioctlreq
+// Name: ccipui_ioctlreq
 // Description: IOCTL message block
 //=============================================================================
-struct aalui_ioctlreq
+struct ccipui_ioctlreq
 {
    uid_msgIDs_e       id;           // ID of UI request [IN]
    stTransactionID_t  tranID;       // Transaction ID to identify result [IN]
@@ -275,10 +271,10 @@ struct aalui_ioctlreq
    btByte             payload[1];   // Beginning of optional payload [IN]
 };
 
-// TODO CASSERT( sizeof(struct aalui_ioctlreq)
+// TODO CASSERT( sizeof(struct ccipui_ioctlreq)
 
-#define aalui_ioAFUmessagep(i)   (struct aalui_AFUmessage *)(((char *)i) + sizeof(struct aalui_ioctlreq) )
-#define aalui_ioctlPayload(i)    (void *)(((char *)i) + sizeof(struct aalui_ioctlreq) )
+#define aalui_ioAFUmessagep(i)   (struct aalui_CCIdrvMessage *)(i->payload )
+#define aalui_ioctlPayload(i)    ((void *)(i->payload))
 #define aalui_ioctlPayloadSize(i)   ((i)->size)
 
 
@@ -327,6 +323,48 @@ struct ccidrvreq
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+//=============================================================================
+// Name: aalui_AFUResponse
+// Type[Dir]: Event/Response [OUT]
+// Object: AFU engine
+// Command ID: reqid_UID_SendAFU
+// fields: context - user defined data associated with descriptor
+//         afutskTranID - transaction ID of AFU task
+//         respID - ID code of response
+//         mode - mode the descriptor ran
+//         data - 32 buyte data returned by AFU
+// Description: Returned AFU response to a request
+// Comments:
+//=============================================================================
+typedef enum
+{
+   uid_afurespUndefinedResponse=0,
+   uid_afurespInputDescriptorComplete,
+   uid_afurespOutputDescriptorComplete,
+   uid_afurespEndofTask,
+   uid_afurespTaskStarted,
+   uid_afurespTaskStopped,
+   uid_afurespSetContext,
+   uid_afurespTaskComplete,
+   uid_afurespSetGetCSRComplete,
+   uid_afurespAFUCreateComplete,
+   uid_afurespAFUDestroyComplete,
+   uid_afurespActivateComplete,
+   uid_afurespDeactivateComplete,
+   uid_afurespInitializeComplete,
+   uid_afurespFreeComplete,
+   uid_afurespUndefinedRequest,
+   uid_afurespFirstUserResponse = 0xf000
+} uid_afurespID_e;
+
+struct aalui_AFUResponse
+{
+   btUnsigned32bitInt  respID;
+   btUnsigned64bitInt  evtData;
+   btUnsignedInt       payloadsize;
+};
+#define aalui_AFURespPayload(__ptr) ( ((btVirtAddr)(__ptr)) + sizeof(struct aalui_AFUResponse) )
 
 //=============================================================================
 // Name: aalui_Shutdown
@@ -406,41 +444,23 @@ struct aalui_WSMEvent
 
 
 //=============================================================================
-// Name: aalui_extbindargs
-// TYpe pDir]; Request[IN] Response[OUT]
-// Description: Extended bind arguments.
-// Comments: This object is used to specify arguments to the PIP during the
-//           bind operation and to receive attributes back in the bind complete
+// Name: ccipdrv_DeviceAttributes
+// Request[IN] Response[OUT]
+// Description: Debice attirpbues.
+// Comments: This object is used to notify the device owner of attributes
+//           any specific attributes the device publishes
 //=============================================================================
-struct aalui_extbindargs
+struct ccipdrv_DeviceAttributes
 {
-   btUnsigned64bitInt m_apiver;        // Version of message handler
-   btUnsigned64bitInt m_pipver;        // Version of PIP interface
-   btUnsigned32bitInt m_mappableAPI;   // Permits direct CSR mapping
-   btObjectType       m_pipattrib;     // Attribute block (TBD)
+   btWSSize           m_size;             // Size of the attibute block
+   btUnsigned32bitInt m_mappableAPI;      // Permits direct CSR mapping To be Deprecated
+   btByte             m_devattrib[1];     // Attribute block (TBD)
 };
-
-
 
 END_C_DECLS
 
 END_NAMESPACE(AAL)
 
-//=============================================================================
-// Name: IAIATransaction
-// Description: Interface to IAIATransaction object which abstracts the
-//              and AIA downstream message.
-// Comments:
-//=============================================================================
-class UAIA_API IAIATransaction : public CUnCopyable
-{
-public:
-   virtual ~IAIATransaction(){};
-   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
-   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
-   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
-   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
-};
 
 #endif // __AALSDK_CCIP_DRIVER_H__
 

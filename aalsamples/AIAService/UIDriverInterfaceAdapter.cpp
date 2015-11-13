@@ -56,23 +56,23 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
 #if   defined( __AAL_WINDOWS__ )
    DWORD                 bytes = 0;
    OVERLAPPED            overlappedIO;
-   struct aalui_ioctlreq resp;
-   struct aalui_ioctlreq req;
+   struct ccipui_ioctlreq resp;
+   struct ccipui_ioctlreq req;
    HANDLE                hEvent;
 
    req.context = (btObjectType)wsid;
 
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
-   memset(&resp, 0, sizeof(struct aalui_ioctlreq));
-   memset(&req, 0, sizeof(struct aalui_ioctlreq));
+   memset(&resp, 0, sizeof(struct ccipui_ioctlreq));
+   memset(&req, 0, sizeof(struct ccipui_ioctlreq));
    req.context = reinterpret_cast<btObjectType>(wsid);
 
    hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
    overlappedIO.hEvent = hEvent;
 
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_MMAP,
-                         &req, sizeof(struct aalui_ioctlreq),
-                         &resp, sizeof(struct aalui_ioctlreq),
+                         &req, sizeof(struct ccipui_ioctlreq),
+                         &resp, sizeof(struct ccipui_ioctlreq),
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -331,7 +331,7 @@ void UIDriverInterfaceAdapter::Close() {
 btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 {
 
-   struct aalui_ioctlreq ioctlMessage;
+   struct ccipui_ioctlreq ioctlMessage;
 
 
    if ( !IsOK() ) {
@@ -359,14 +359,14 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
    
    hEvent = CreateEvent(NULL, TRUE, FALSE,NULL);
    bytes = 0;
-   memset(&ioctlMessage, 0, sizeof(struct aalui_ioctlreq));
+   memset(&ioctlMessage, 0, sizeof(struct ccipui_ioctlreq));
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
 
    Lock();
    overlappedIO.hEvent = hEvent;
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_POLL,
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
                            &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -384,14 +384,14 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
       }
    }
 
-   memset(&ioctlMessage, 0, sizeof(struct aalui_ioctlreq));
+   memset(&ioctlMessage, 0, sizeof(struct ccipui_ioctlreq));
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
    overlappedIO.hEvent = hEvent;
 
    // retrieve the size of the payload buffer in ioctlMessage.size
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_GETMSG_DESC,
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
                            &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -409,7 +409,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
       }
 
    }
-   ASSERT(sizeof(struct aalui_ioctlreq) == bytes);
+   ASSERT(sizeof(struct ccipui_ioctlreq) == bytes);
 
    uidrvMessagep->size(ioctlMessage.size);
 
@@ -454,7 +454,7 @@ FAILED: // If got here then DeviceIoControl failed.
          AutoLock(this);
 
          // Check for messages first
-         memset(&ioctlMessage,0, sizeof(struct aalui_ioctlreq));
+         memset(&ioctlMessage,0, sizeof(struct ccipui_ioctlreq));
          if( ( ret = ioctl(m_fdClient, AALUID_IOCTL_GETMSG_DESC, &ioctlMessage) ) == 0 ) {
 
             uidrvMessagep->size(ioctlMessage.size);
@@ -510,7 +510,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    }
 
    // Build the low level message
-   struct aalui_ioctlreq *reqp = reinterpret_cast<struct aalui_ioctlreq *> (new char[ sizeof(struct aalui_ioctlreq) + pMessage->getPayloadSize() ]);
+   struct ccipui_ioctlreq *reqp = reinterpret_cast<struct ccipui_ioctlreq *> (new char[ sizeof(struct ccipui_ioctlreq) + pMessage->getPayloadSize() ]);
 
    reqp->id = pMessage->getMsgID();
    reqp->tranID = pMessage->getTranID();
@@ -552,7 +552,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
    DWORD      bytes,bytes_to_send;
    btHANDLE  hEvent;
    OVERLAPPED overlappedIO;
-   bytes_to_send = sizeof(struct aalui_ioctlreq) + reqp->size;
+   bytes_to_send = sizeof(struct ccipui_ioctlreq) + reqp->size;
    bytes = 0;
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
    hEvent = CreateEvent(NULL, TRUE, FALSE,NULL);

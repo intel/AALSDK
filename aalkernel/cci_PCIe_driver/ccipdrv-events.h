@@ -77,13 +77,9 @@
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
-
-
-
-//=============================================================================
 //=============================================================================
 // Name: ccipdrv_event_afu_response_event
-// Description: AFU Reponse event. Sent to report various AFU responses
+// @brief AFU Reponse event. Sent to report various AFU responses
 //=============================================================================
 //=============================================================================
 struct ccipdrv_event_afu_response_event
@@ -102,13 +98,6 @@ struct ccipdrv_event_afu_response_event
    btObjectType      m_context;
    btUnsignedInt     m_payloadsize;
    btByte            m_payload[1];
-
-/*
-   union{
-      struct aalui_AFUResponse *m_response;
-      btVirtAddr                m_payload;
-   };
-*/
 
 };
 
@@ -164,146 +153,220 @@ ccipdrv_event_shutdown_event_create(ui_shutdownreason_e reason,
 static inline
 struct ccipdrv_event_afu_response_event *
 ccipdrv_event_afu_afuinavlidrequest_create(btObjectType       devhandle,
-                                         stTransactionID_t *tranID,
-                                         btObjectType       context,
-                                         uid_errnum_e       eno)
+                                           stTransactionID_t *tranID,
+                                           btObjectType       context,
+                                            uid_errnum_e       eno)
 {
-
+   struct aalui_AFUResponse *response = NULL;
    struct ccipdrv_event_afu_response_event *This =
-      (struct ccipdrv_event_afu_response_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_response_event) );
+      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_AFUResponse));
 
    if ( NULL == This ) {
       return NULL;
    }
-   memset(This, 0, sizeof(struct ccipdrv_event_afu_response_event));
-#if 0
+
    This->m_devhandle = devhandle;
    This->m_errnum    = eno;
    This->m_context   = context;
    This->m_tranID    = *tranID;
 
-   // Allocate the RWB (NOTE: m_payload is union-ed with the m_response pointer)
-   This->m_response = (struct aalui_AFUResponse *)kosal_kmalloc(sizeof(struct aalui_AFUResponse));
-   if ( unlikely( NULL == This->m_response ) ) {
-       This->m_errnum = uid_errnumNoMem;
-   } else {
-       This->m_response->respID  = uid_afurespUndefinedRequest;
-       This->m_response->evtData = 0;
-       This->m_response->payloadsize = 0;
-       AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
-   }
+   // Point at the payload
+   response = (struct aalui_AFUResponse*)This->m_payload;
 
+   response->respID  = uid_afurespUndefinedRequest;
+   response->evtData = 0;
+   response->payloadsize = 0;
+
+   AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
    AALQ_QID(This) = rspid_AFU_Response;
 
    // Initialize the queue item
    kosal_list_init(&AALQ_QUEUE(This));
-#endif
+
    return This;
 }
 
 //=============================================================================
-// Name: ccipdrv_event_afuresponse_destroy
-// Description: Destructor
+// Name: ccipdrv_event_afu_afucsrmap_create
+// Description: Constructor
 //=============================================================================
 static inline
-void
-ccipdrv_event_afuresponse_destroy(struct ccipdrv_event_afu_response_event *This)
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_afuallocws_create( btObjectType      devhandle,
+                                     btWSID            wsid,
+                                     btVirtAddr        ptr,
+                                     btPhysAddr        physptr,
+                                     btWSSize          size,
+                                     stTransactionID_t tranID,
+                                     btObjectType      context,
+                                     uid_errnum_e      errnum)
 {
-   kosal_kfree(This, sizeof(struct ccipdrv_event_afu_response_event) + AALQ_QLEN(This));
+   struct aalui_WSMEvent * WSEvent = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kmalloc(sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_WSMEvent));
+
+   if ( NULL == This ) {
+      return NULL;
+   }
+
+   This->m_devhandle                = devhandle;
+   This->m_errnum                   = errnum;
+   This->m_context                  = context;
+   This->m_tranID                   = tranID;
+
+   // Point at the payload
+   WSEvent = (struct aalui_WSMEvent*)This->m_payload;
+
+   WSEvent->evtID            = uid_wseventAllocate;
+   WSEvent->wsParms.wsid     = wsid;
+   WSEvent->wsParms.ptr      = ptr;
+   WSEvent->wsParms.physptr  = physptr;
+   WSEvent->wsParms.size     = size;
+
+   AALQ_QID(This)                   = rspid_WSM_Response;
+   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
+
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+   return This;
+}
+
+
+//=============================================================================
+// Name: ccipdrv_event_afu_afufreecws_create
+// Description: Constructor
+//=============================================================================
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_afufreecws_create( btObjectType      devhandle,
+                                     stTransactionID_t tranID,
+                                     btObjectType      context,
+                                     uid_errnum_e      eno)
+{
+   struct aalui_WSMEvent * WSEvent = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_response_event)+ sizeof(struct aalui_WSMEvent) );
+   if ( NULL == This ) {
+      return NULL;
+   }
+
+   This->m_devhandle     = devhandle;
+   This->m_errnum        = eno;
+   This->m_context       = context;
+   This->m_tranID        = tranID;
+
+   // Point at the payload
+   WSEvent = (struct aalui_WSMEvent*)This->m_payload;
+   WSEvent->evtID = uid_wseventFree;
+
+   // no payload
+   AALQ_QID(This)  = rspid_WSM_Response;
+   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
+
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+   return This;
 }
 
 //=============================================================================
+// Name: ccipdrv_event_afu_afugetmmiomap_create
+// Description: Constructor
 //=============================================================================
-// Name: ccipdrv_event_afu_workspace_event
-// Description: Event sent by the PIP to signal that an AFU workspace operation
-//              has  completed
-//=============================================================================
-//=============================================================================
-struct ccipdrv_event_afu_workspace_event
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_afugetmmiomap_create( btObjectType      devhandle,
+                                        btWSID            wsid,
+                                        btPhysAddr        physptr,
+                                        btWSSize          size,
+                                        btWSSize          csrsize,
+                                        btWSSize          csrspacing,
+                                        stTransactionID_t tranID,
+                                        btObjectType      context,
+                                        uid_errnum_e      errnum)
 {
-#define qip_to_ui_evtp_afuwsevent(pqi)  kosal_container_of(pqi, struct ccipdrv_event_afu_workspace_event, m_qitem)
-#define ui_evtp_afucwsevent_to_qip(evt) ( &AALQI(evt) )
-   //
-   // Including the macro effectively causes this object to be derived from
-   // aal_q_item
-   //
-   _DECLARE_AALQ_TYPE;
+   struct aalui_WSMEvent * WSEvent = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_WSMEvent));
 
-   btObjectType          m_devhandle;
-   btVirtAddr            m_payload;
-   struct aalui_WSMEvent m_WSEvent;
-   uid_errnum_e          m_errnum;
-   stTransactionID_t     m_tranID;
-   btObjectType          m_context;
-};
+   if ( NULL == This ) {
+      return NULL;
+   }
 
+   This->m_devhandle                   = devhandle;
+   This->m_errnum                      = errnum;
+   This->m_context                     = context;
+   This->m_tranID                      = tranID;
 
-//=============================================================================
-// Name: uidrv_event_bindcmplt
-// Description: Bind Complete
-//=============================================================================
-struct uidrv_event_bindcmplt {
-#define qip_to_ui_evtp_bindcmplt(pqi) (container_of( pqi, struct uidrv_event_bindcmplt, m_qitem ) )
-#define ui_evtp_bindcmplt_to_qip(evt) ( &AALQI(evt) )
-   //
-   // Including the macro effectively causes this object to be derived from
-   // aal_q_item
-   //
-   _DECLARE_AALQ_TYPE;
+   // Point at the payload
+   WSEvent = (struct aalui_WSMEvent*)This->m_payload;
+   WSEvent->evtID               = uid_wseventMMIOMap;
+   WSEvent->wsParms.wsid        = wsid;
+   WSEvent->wsParms.ptr         = NULL;
+   WSEvent->wsParms.physptr     = physptr;
+   WSEvent->wsParms.size        = size;
+   WSEvent->wsParms.itemsize    = csrsize;
+   WSEvent->wsParms.itemspacing = csrspacing;
 
-   struct aalui_extbindargs     m_extargs;
-   btObjectType                *m_devhandle;
-   uid_errnum_e                 m_errno;
-   stTransactionID_t            m_tranID;
-   btAny                        m_context;
+   // Payload
+   AALQ_QID(This)  = rspid_WSM_Response;
+   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
 
-};
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+   return This;
+}
 
 //=============================================================================
 // Name: uidrv_event_bindcmplt_create
 // Description: Constructor
 //=============================================================================
-static inline struct uidrv_event_bindcmplt *
+static inline struct ccipdrv_event_afu_response_event *
                 uidrv_event_bindcmplt_create( btObjectType m_devhandle,
-                                              struct aalui_extbindargs *extargs,
+                                              struct ccipdrv_DeviceAttributes *attributes,
                                               uid_errnum_e errno,
-                                              struct aalui_ioctlreq  *preq)
+                                              struct ccipui_ioctlreq  *preq)
 {
-   struct uidrv_event_bindcmplt * This =
-                        kmalloc(sizeof(struct uidrv_event_bindcmplt),GFP_KERNEL);
+   struct ccipdrv_DeviceAttributes           *pattrib       = NULL;
+   btWSSize                                   payloadsize   = 0;
+   struct ccipdrv_event_afu_response_event   *This          = NULL;
+
+   if( NULL != attributes){
+      // Payload size is the size of the attribute object minus 1 for the array entry
+      //  plus the size of the variable data
+      payloadsize = (sizeof(struct ccipdrv_DeviceAttributes)-1) + attributes->m_size;
+   }
+
+   // Allocate object
+   This =  (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof( struct ccipdrv_event_afu_response_event) +
+                                                                      payloadsize );
    if(This == NULL){
       return NULL;
    }
 
    This->m_devhandle = m_devhandle;
-   This->m_errno = errno;
-   if(extargs){
-      This->m_extargs = *extargs;
+   This->m_errnum    = errno;
+   This->m_context   = preq->context;
+   This->m_tranID    = preq->tranID;
+
+   if(attributes){
+
+      // Point at payload
+      pattrib = (struct ccipdrv_DeviceAttributes*)This->m_payload;
+
+      // Copy the main body
+      *pattrib = *attributes;
+
+      // Now copy the payload
+      memcpy(pattrib->m_devattrib,attributes->m_devattrib, attributes->m_size);
    }
 
-   This->m_context = preq->context;
-   This->m_tranID = preq->tranID;
-
-   AALQ_QID(This) = rspid_UID_BindComplete;
-
-   // The payload for this message will be the bindargs
-   AALQ_QLEN(This) = sizeof(struct aalui_extbindargs);
+   AALQ_QID(This)    = rspid_UID_BindComplete;
+   AALQ_QLEN(This)   = payloadsize;
 
    // Initialize the queue item
    kosal_list_init(&AALQ_QUEUE(This));
    return This;
 }
-
-
-//=============================================================================
-// Name: uidrv_event_bindcmplt_destroy
-// Description: Destructor
-//=============================================================================
-static inline void uidrv_event_bindcmplt_destroy(struct uidrv_event_bindcmplt *This)
-{
-   kfree(This);
-}
-
 
 //=============================================================================
 // Name: uidrv_event_unbindcmplt
@@ -328,211 +391,37 @@ struct uidrv_event_unbindcmplt
 // Name: uidrv_event_Unbindcmplt_create
 // Description: Constructor
 //=============================================================================
-static inline struct uidrv_event_unbindcmplt *
+static inline struct ccipdrv_event_afu_response_event *
                      uidrv_event_Unbindcmplt_create(uid_errnum_e errno,
-                                                    struct aalui_ioctlreq  *preq)
+                                                    struct ccipui_ioctlreq  *preq)
 {
-   struct uidrv_event_unbindcmplt * This =
-                        kmalloc(sizeof(struct uidrv_event_bindcmplt),GFP_KERNEL);
+   struct ccipdrv_event_afu_response_event * This =
+                        (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc(sizeof(struct ccipdrv_event_afu_response_event));
    if(This == NULL){
       return NULL;
    }
 
    This->m_context   = preq->context;
    This->m_tranID    = preq->tranID;
-
-
-   This->m_errno     = errno;
+   This->m_errnum    = errno;
 
    AALQ_QID(This)    = rspid_UID_UnbindComplete;
    AALQ_QLEN(This)   = 0;
 
-
-   // Initialize the queue item
-   kosal_list_init(&AALQ_QUEUE(This));
-   return This;
-}
-
-
-//=============================================================================
-// Name: uidrv_event_Unbindcmplt_destroy
-// Description: Destructor
-//=============================================================================
-static inline void uidrv_event_Unbindcmplt_destroy(struct uidrv_event_unbindcmplt *This)
-{
-   kfree(This);
-}
-
-
-//=============================================================================
-// Name: ccipdrv_event_afu_afucsrmap_create
-// Description: Constructor
-//=============================================================================
-static inline
-struct ccipdrv_event_afu_workspace_event *
-ccipdrv_event_afu_afuallocws_create(btObjectType      devhandle,
-                                  btWSID            wsid,
-                                  btVirtAddr        ptr,
-                                  btPhysAddr        physptr,
-                                  btWSSize          size,
-                                  stTransactionID_t tranID,
-                                  btObjectType      context,
-                                  uid_errnum_e      errnum)
-{
-   struct ccipdrv_event_afu_workspace_event *This =
-      (struct ccipdrv_event_afu_workspace_event *)kosal_kmalloc(sizeof(struct ccipdrv_event_afu_workspace_event));
-
-   if ( NULL == This ) {
-      return NULL;
-   }
-
-   This->m_devhandle                = devhandle;
-   This->m_WSEvent.evtID            = uid_wseventAllocate;
-   This->m_WSEvent.wsParms.wsid     = wsid;
-   This->m_WSEvent.wsParms.ptr      = ptr;
-   This->m_WSEvent.wsParms.physptr  = physptr;
-   This->m_WSEvent.wsParms.size     = size;
-   This->m_payload                  = (btVirtAddr)&This->m_WSEvent;
-   This->m_errnum                   = errnum;
-   This->m_context                  = context;
-   This->m_tranID                   = tranID;
-
-
-   AALQ_QID(This)                   = rspid_WSM_Response;
-
-   // Payload
-   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
-
-   // Initialize the queue item
-   kosal_list_init(&AALQ_QUEUE(This));
-   return This;
-}
-
-
-//=============================================================================
-// Name: ccipdrv_event_afu_afufreecws_create
-// Description: Constructor
-//=============================================================================
-static inline
-struct ccipdrv_event_afu_workspace_event *
-ccipdrv_event_afu_afufreecws_create(btObjectType      devhandle,
-                                  stTransactionID_t tranID,
-                                  btObjectType      context,
-                                  uid_errnum_e      eno)
-{
-   struct ccipdrv_event_afu_workspace_event *This =
-      (struct ccipdrv_event_afu_workspace_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_workspace_event) );
-   if ( NULL == This ) {
-      return NULL;
-   }
-
-   This->m_devhandle     = devhandle;
-   This->m_WSEvent.evtID = uid_wseventFree;
-   This->m_payload       = (btVirtAddr)&This->m_WSEvent;
-   This->m_errnum        = eno;
-   This->m_context       = context;
-   This->m_tranID        = tranID;
-
-   // no payload
-   AALQ_QID(This)  = rspid_WSM_Response;
-   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
-
    // Initialize the queue item
    kosal_list_init(&AALQ_QUEUE(This));
    return This;
 }
 
 //=============================================================================
-// Name: ccipdrv_event_afu_afugetphysws_create
-// Description: Constructor
-//=============================================================================
-static inline
-struct ccipdrv_event_afu_workspace_event *
-ccipdrv_event_afu_afugetphysws_create(btObjectType      devhandle,
-                                    btPhysAddr        ptr,
-                                    stTransactionID_t tranID,
-                                    btObjectType      context,
-                                    uid_errnum_e      errnum)
-{
-   struct ccipdrv_event_afu_workspace_event *This =
-      (struct ccipdrv_event_afu_workspace_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_workspace_event) );
-   if ( NULL == This ) {
-      return NULL;
-   }
-
-   This->m_devhandle               = devhandle;
-   This->m_WSEvent.evtID           = uid_wseventGetPhys;
-   This->m_WSEvent.wsParms.physptr = ptr;
-   This->m_payload                 = (btVirtAddr)&This->m_WSEvent;
-   This->m_errnum                  = errnum;
-   This->m_context                 = context;
-   This->m_tranID                  = tranID;
-
-   // no payload
-   AALQ_QID(This)  = rspid_WSM_Response;
-   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
-
-   // Initialize the queue item
-   kosal_list_init(&AALQ_QUEUE(This));
-   return This;
-}
-
-
-//=============================================================================
-// Name: ccipdrv_event_afu_afugetcsrmap_create
-// Description: Constructor
-//=============================================================================
-static inline
-struct ccipdrv_event_afu_workspace_event *
-ccipdrv_event_afu_afugetcsrmap_create( btObjectType      devhandle,
-                                       btWSID            wsid,
-                                       btPhysAddr        physptr,
-                                       btWSSize          size,
-                                       btWSSize          csrsize,
-                                       btWSSize          csrspacing,
-                                       stTransactionID_t tranID,
-                                       btObjectType      context,
-                                       uid_errnum_e      errnum)
-{
-   struct ccipdrv_event_afu_workspace_event *This =
-      (struct ccipdrv_event_afu_workspace_event *)kosal_kmalloc( sizeof(struct ccipdrv_event_afu_workspace_event) );
-
-   if ( NULL == This ) {
-      return NULL;
-   }
-
-   This->m_devhandle                   = devhandle;
-   This->m_WSEvent.evtID               = uid_wseventMMIOMap;
-   This->m_WSEvent.wsParms.wsid        = wsid;
-   This->m_WSEvent.wsParms.ptr         = NULL;
-   This->m_WSEvent.wsParms.physptr     = physptr;
-   This->m_WSEvent.wsParms.size        = size;
-   This->m_WSEvent.wsParms.itemsize    = csrsize;
-   This->m_WSEvent.wsParms.itemspacing = csrspacing;
-   This->m_payload                     = (btVirtAddr)&This->m_WSEvent;
-   This->m_errnum                      = errnum;
-   This->m_context                     = context;
-   This->m_tranID                      = tranID;
-
-   // Payload
-   AALQ_QID(This)  = rspid_WSM_Response;
-   AALQ_QLEN(This) = sizeof(struct aalui_WSMEvent);
-
-   // Initialize the queue item
-   kosal_list_init(&AALQ_QUEUE(This));
-   return This;
-}
-
-
-//=============================================================================
-// Name: ccipdrv_event_afucwsevent_destroy
+// Name: ccipdrv_event_afuresponse_destroy
 // Description: Destructor
 //=============================================================================
 static inline
 void
-ccipdrv_event_afucwsevent_destroy(struct ccipdrv_event_afu_workspace_event *This)
+ccipdrv_event_afuresponse_destroy(struct ccipdrv_event_afu_response_event *This)
 {
-   kosal_kfree(This, sizeof(struct ccipdrv_event_afu_workspace_event));
+   kosal_kfree(This, sizeof(struct ccipdrv_event_afu_response_event) + AALQ_QLEN(This));
 }
 
 

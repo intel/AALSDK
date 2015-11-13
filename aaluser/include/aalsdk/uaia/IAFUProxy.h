@@ -39,8 +39,9 @@
 #ifndef __AALSDK_IAFUPROXY_H__
 #define __AALSDK_IAFUPROXY_H__
 
-#include <aalsdk/AALTypes.h>
 #include <aalsdk/kernel/ccipdriver.h>
+#include <aalsdk/AALTypes.h>
+#include <aalsdk/CUnCopyable.h>
 
 //#include <aalsdk/CAALBase.h>                    // CAALBase
 //#include <aalsdk/AALEvent.h>                    // IEvent
@@ -53,6 +54,22 @@
 //#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
 
 //#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
+
+//=============================================================================
+// Name: IAIATransaction
+// Description: Interface to IAIATransaction object which abstracts the
+//              and AIA downstream message.
+// Comments:
+//=============================================================================
+class UAIA_API IAIATransaction : public CUnCopyable
+{
+public:
+   virtual ~IAIATransaction(){};
+   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
+   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
+   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
+   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
+};
 
 //==========================================================================
 // Name: IUIDriverEvent
