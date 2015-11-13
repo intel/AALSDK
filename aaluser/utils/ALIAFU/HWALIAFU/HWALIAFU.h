@@ -87,12 +87,14 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
       m_pAALService(NULL),
       m_pAFUProxy(NULL),
       m_tidSaved(),
+      m_pSvcClient(NULL),
       m_mapWkSpc(),
       m_MMIORmap(NULL),
-      m_uMSGmap(NULL)
+      m_MMIORsize(0),
+      m_uMSGmap(NULL),
+      m_uMSGsize(0)
    {
-
-	   // TODO: at some point, these probably go into init() and be exposed based
+      // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
       if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
          m_bIsOK = false;
@@ -117,7 +119,7 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
       if ( EObjOK != SetInterface(iidAFUProxyClient, dynamic_cast<IAFUProxyClient *>(this)) ){
          m_bIsOK = false;
       }  // for AFUProy
-   }
+   }  // DECLARE_AAL_SERVICE_CONSTRUCTOR()
 
    virtual btBool init(IBase               *pclientBase,
                        NamedValueSet const &optArgs,
