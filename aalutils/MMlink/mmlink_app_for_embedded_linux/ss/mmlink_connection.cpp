@@ -29,7 +29,7 @@
 #include <string.h>
 #include <sys/param.h>
 
-#include "dprint.h"
+#include "printf.h"
 #include "mmlink_connection.h"
 
 const char *mmlink_connection::UNKNOWN = "UNKNOWN\n";
@@ -61,7 +61,7 @@ int mmlink_connection::handle_receive()
     }
     else
     {
-      DPRINT("%s: error on socket %d: %d (%s)\n", __func__, conn, errno, strerror(errno));
+      printf("%s: error on socket %d: %d (%s)\n", __func__, conn, errno, strerror(errno));
       fail = -errno;
     }
   } 
@@ -97,7 +97,7 @@ int mmlink_connection::handle_management()
   {
     if (m_buf[i] == '|') 
     {
-      DPRINT("found a pipe\n");
+      printf("found a pipe\n");
       // If bound, set to data mode
       if (is_bound())
       {
@@ -106,7 +106,7 @@ int mmlink_connection::handle_management()
       }
 
       // If not bound, close.
-      DPRINT("%d: rejecting attempt to convert unbound connection to data.\n", socket());
+      printf("%d: rejecting attempt to convert unbound connection to data.\n", socket());
       fail = -1;
       break;
     }
@@ -143,7 +143,7 @@ int mmlink_connection::handle_management_command(char *cmd)
 {
   int fail = 0;
 
-  DPRINT("mmlink_connection::handle_management_command('%s')\n", cmd);
+  printf("mmlink_connection::handle_management_command('%s')\n", cmd);
   // Ignore empty string.
   if (!*cmd)
     return 0;
@@ -167,14 +167,14 @@ int mmlink_connection::handle_unbound_command(char *cmd)
   sprintf(expect_handle + strlen("HANDLE "), "%08X", get_server_id());
   if (0 == strcmp(expect_handle, cmd))
   {
-    DPRINT("%d: accepted handle value ('%s'), setting to bound state\n", socket(), cmd);
+    printf("%d: accepted handle value ('%s'), setting to bound state\n", socket(), cmd);
 
     bind();
     send(OK, strlen(OK));
   }
   else
   {
-    DPRINT("%d: closing socket: incorrect HANDLE value (expected: '%s'; got: '%s')\n", socket(), expect_handle, cmd);
+    printf("%d: closing socket: incorrect HANDLE value (expected: '%s'; got: '%s')\n", socket(), expect_handle, cmd);
     fail = -1;
   }
 
@@ -184,12 +184,12 @@ int mmlink_connection::handle_unbound_command(char *cmd)
 int mmlink_connection::handle_data()
 {
   m_buf[m_buf_end] = '\0';
-  DPRINT("%d (data): ", socket());
+  printf("%d (data): ", socket());
   for (int i = 0; i < m_buf_end; ++i) 
   {
-    DPRINT("%02X ", m_buf[i]);
+    printf("%02X ", m_buf[i]);
   }
-  DPRINT("\n");
+  printf("\n");
   m_buf_end = 0;
 }
 

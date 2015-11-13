@@ -58,7 +58,6 @@ int main(int argc, char **argv)
     sscanf(argv[i], "--sysfs=%s", sys_file);
   }
 
-
   struct sockaddr_in sock;
   sock.sin_family = AF_INET;
   sock.sin_port = htons(port);

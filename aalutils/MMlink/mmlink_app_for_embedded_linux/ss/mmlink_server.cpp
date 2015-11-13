@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "dprint.h"
+#include "printf.h"
 #include "mm_debug_link_interface.h"
 #include "mmlink_connection.h"
 #include "mmlink_server.h"
@@ -89,12 +89,11 @@ int mmlink_server::setup_listen_socket(void)
 
   if (m_listen < 0)
   {
-    DPRINT("Socket creation failed: %d\n", errno);
     printf("Socket creation failed: %d\n", errno);
     return errno;
   }
-  DPRINT("m_listen: %d\n", m_listen);
-  printf("TCP socket listening on socket # %d\n", m_listen );
+  printf("m_listen: %d\n", m_listen);
+
   // Allow reconnect sooner, after server exit.
   int optval = 1;
   int err = 
@@ -102,7 +101,6 @@ int mmlink_server::setup_listen_socket(void)
 
   if (err < 0)
   {
-    DPRINT("setsockopt failed: %d\n", errno);
     printf("setsockopt failed: %d\n", errno);
     return errno;
   }
@@ -117,10 +115,11 @@ int mmlink_server::run(char* filename)
 
   if (err = m_driver->open(filename))
   {
+	printf("failed to init driver \n");
     fprintf(stderr, "failed to init driver (%d).\n", err);
     return err;
   }
-  printf("System file opened\n");
+
   // Todo: modulate timeout based on number of connections, expectation of data.
   struct timeval tv;
   tv.tv_sec  = 0;
@@ -144,7 +143,7 @@ int mmlink_server::run(char* filename)
     return errno;
   }
 
-  DPRINT("listening on ip: %s; port: %d\n", inet_ntoa(m_addr.sin_addr),
+  printf("listening on ip: %s; port: %d\n", inet_ntoa(m_addr.sin_addr),
     htons(m_addr.sin_port)); 
 
   while (m_running)
@@ -225,7 +224,7 @@ int mmlink_server::run(char* filename)
     {
       bool can_write_host = FD_ISSET(data_conn->socket(), &writefds);
       bool can_read_driver = FD_ISSET(m_driver->get_fd(), &readfds);
-      err = handle_t2h(data_conn, can_read_driver, can_write_host);
+      err = handle_t2h(data_conn, can_read_driver, can_write_host); //TODO add logic to check if driver has data to be read
 
       if (err)
         break;
@@ -233,13 +232,13 @@ int mmlink_server::run(char* filename)
       // Transfer command data from the data socket to the driver.
       bool can_write_driver = FD_ISSET(m_driver->get_fd(), &writefds);
       bool can_read_host = FD_ISSET(data_conn->socket(), &readfds);
-      err = handle_h2t(data_conn, can_read_host, can_write_driver);
+      err = handle_h2t(data_conn, can_read_host, can_write_driver); //TODO add logic to check if host has data to be written to driver
 
       if (err < 0)
       { 
         m_num_connections--;
         data_conn->close_connection();
-        DPRINT("closed data connection due to handle_h2t return value, now have %d\n", m_num_connections);
+        printf("closed data connection due to handle_h2t return value, now have %d\n", m_num_connections);
       }
     }
 
@@ -248,9 +247,13 @@ int mmlink_server::run(char* filename)
     {
       mmlink_connection *pc = *(m_conn + i);
       if (!pc->is_open())
+      {
         continue;
+      }
       if (pc->is_data())
-        continue;
+      {
+		 continue;
+	   }
 
       if (FD_ISSET(pc->socket(), &readfds)) 
       {
@@ -258,7 +261,7 @@ int mmlink_server::run(char* filename)
         if (fail)
         {
           --m_num_connections;
-          DPRINT("%d: handle_receive() returned %d, closing connection, now have %d\n", 
+          printf("%d: handle_receive() returned %d, closing connection, now have %d\n",
             pc->socket(), fail, m_num_connections);
           pc->close_connection();
         }
@@ -268,13 +271,13 @@ int mmlink_server::run(char* filename)
           if (fail)
           {
             --m_num_connections;
-            DPRINT("%d: handle_management() returned %d, closing connection, now have %d\n", 
+            printf("%d: handle_management() returned %d, closing connection, now have %d\n",
               pc->socket(), fail, m_num_connections);
             pc->close_connection();
           } 
           else if (pc->is_data())
           {
-            DPRINT("%d: converted to data\n", pc->socket());
+            printf("%d: converted to data\n", pc->socket());
             // A management connection was converted to data. There can be only one.
             close_other_data_connection(pc);
             m_h2t_pending = true;
@@ -283,7 +286,7 @@ int mmlink_server::run(char* filename)
       }
     }
   }
-  DPRINT("goodbye with code %d\n", err);
+  printf("goodbye with code %d\n", err);
 
   return err;
 }
@@ -291,7 +294,7 @@ int mmlink_server::run(char* filename)
 void mmlink_server::print_stats(void)
 {
 #ifdef ENABLE_MMLINK_STATS
-  DPRINT("mmlink_connection::print_stats()\n");
+  printf("mmlink_connection::print_stats()\n");
 
   m_h2t_stats->print();
   m_t2h_stats->print();
@@ -307,7 +310,6 @@ mmlink_connection *mmlink_server::handle_accept()
   // Find an mmlink_connection for this new connection,
   // or NULL if none available.
   mmlink_connection *pc = get_unused_connection();
-
   socket = ::accept(m_listen, (struct sockaddr *)&incoming_addr, &len);
   if (socket < 0)
   {
@@ -320,15 +322,15 @@ mmlink_connection *mmlink_server::handle_accept()
     {
       ++m_num_connections;
       pc->socket(socket);
-      DPRINT("I have %d connections now; latest socket is %d\n", m_num_connections, socket);
+      printf("I have %d connections now; latest socket is %d\n", m_num_connections, socket);
       // The 1st connection is bound upon connection.  The 2nd connection will 
       // be bound if it sends the correct handle.
       if (m_num_connections == 1)
       {
-        DPRINT("%d: binding first connection\n", pc->socket()); 
+        printf("%d: binding first connection\n", pc->socket());
         pc->bind();
       }
-      DPRINT("%d: Accepted connection request from %s\n", pc->socket(), inet_ntoa(incoming_addr.sin_addr));
+      printf("%d: Accepted connection request from %s\n", pc->socket(), inet_ntoa(incoming_addr.sin_addr));
     }
     else
     {
@@ -369,6 +371,7 @@ mmlink_connection *mmlink_server::get_unused_connection()
   for (int i = 0; i < MAX_CONNECTIONS; ++i)
     if (!m_conn[i]->is_open())
     {
+
       pc = *(m_conn + i);
       break;
     }
@@ -385,7 +388,7 @@ void mmlink_server::close_other_data_connection(mmlink_connection *pc)
       continue;
     if (other_pc->is_open() && other_pc->is_data())
     {
-      DPRINT("closing old data connection in favor of new one\n");
+      printf("closing old data connection in favor of new one\n");
       m_num_connections--;
       other_pc->close_connection();
     }
@@ -421,8 +424,9 @@ int mmlink_server::handle_t2h(mmlink_connection *data_conn, bool can_read_driver
 
   // Try to get more data.
   if (can_read_driver)
+  {
     m_driver->read();
-
+  }
   if (m_driver->is_empty())
   {
     // Still no t2h data; done here.
@@ -439,16 +443,16 @@ int mmlink_server::handle_t2h(mmlink_connection *data_conn, bool can_read_driver
     while (total_sent < m_driver->buf_end())
     {
       ssize_t sent = data_conn->send(m_driver->buf() + total_sent, m_driver->buf_end() - total_sent);
-      // DPRINT("t2h sent: %u (%d of %d)\n", sent, total_sent, m_driver->buf_end());
+      // printf("t2h sent: %u (%d of %d)\n", sent, total_sent, m_driver->buf_end());
 
 //      if (sent == 8 && !printed8)
 //      {
 //        // printed8 = true;
 //        for (int i = 0; i < sent; ++i)
 //        {
-//          DPRINT_RAW("0x%02X; ", m_driver->buf()[i]);
+//          printf_RAW("0x%02X; ", m_driver->buf()[i]);
 //        }
-//        DPRINT_RAW("\n");
+//        printf_RAW("\n");
 //      }
 
       if (sent < 0) 
@@ -480,7 +484,7 @@ int mmlink_server::handle_t2h(mmlink_connection *data_conn, bool can_read_driver
     int rem = m_driver->buf_end() - total_sent;
     if (rem > 0) 
     {
-      DPRINT("t2h rem: %d; total_sent: %d; m_h2t_pending: %d\n", rem, total_sent, m_t2h_pending);
+      printf("t2h rem: %d; total_sent: %d; m_h2t_pending: %d\n", rem, total_sent, m_t2h_pending);
       if (total_sent > 0)
       {
         m_t2h_pending = true;
@@ -511,7 +515,7 @@ int mmlink_server::handle_h2t(mmlink_connection *data_conn, bool can_read_host, 
     return 0;
   }
 
-  // DPRINT("h2t_ready: m_h2t_pending: %d; can_read_host: %d; can_write_driver: %d\n", m_h2t_pending, can_read_host, can_write_driver);
+  // printf("h2t_ready: m_h2t_pending: %d; can_read_host: %d; can_write_driver: %d\n", m_h2t_pending, can_read_host, can_write_driver);
 
   // If no stored data, try to get some.
   if (can_read_host)
@@ -544,13 +548,13 @@ int mmlink_server::handle_h2t(mmlink_connection *data_conn, bool can_read_host, 
       if (errno == EAGAIN)
       {
         // Try again later
-        DPRINT("handle_h2t(): driver returned EAGAIN\n");
+        printf("handle_h2t(): driver returned EAGAIN\n");
         break;
       }
       else
       {
         // Not sure if this can happen.
-        DPRINT("handle_h2t(): driver returned error %d (%s)\n", errno, strerror(errno));
+        printf("handle_h2t(): driver returned error %d (%s)\n", errno, strerror(errno));
       }
     }
     if (sent == 0)
@@ -562,13 +566,13 @@ int mmlink_server::handle_h2t(mmlink_connection *data_conn, bool can_read_host, 
   }
 //  if (total_sent > 0)
 //  {
-//    DPRINT("sent on %d: %d bytes\n", data_conn->socket(), total_sent);
+//    printf("sent on %d: %d bytes\n", data_conn->socket(), total_sent);
 //    for (int i = 0; i < total_sent; ++i)
 //    {
 //      unsigned char the_byte = data_conn->buf()[i];
-//      DPRINT_RAW("%s\\x%02X", (the_byte == 0x7C) ? "\n" : "", the_byte);
+//      printf_RAW("%s\\x%02X", (the_byte == 0x7C) ? "\n" : "", the_byte);
 //    }
-//    DPRINT_RAW("\n");
+//    printf_RAW("\n");
 //  }
 
   if (total_sent > 0)
@@ -577,7 +581,7 @@ int mmlink_server::handle_h2t(mmlink_connection *data_conn, bool can_read_host, 
   int rem = data_conn->buf_end() - total_sent;
   if (rem > 0) 
   {
-    // DPRINT("h2t rem: %d; total_sent: %d; m_h2t_pending: %d\n", rem, total_sent, m_h2t_pending);
+    // printf("h2t rem: %d; total_sent: %d; m_h2t_pending: %d\n", rem, total_sent, m_h2t_pending);
     m_h2t_pending = true;
     if (total_sent > 0)
     {
