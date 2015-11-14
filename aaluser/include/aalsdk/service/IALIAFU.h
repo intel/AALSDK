@@ -311,16 +311,11 @@ public:
    ///
    #define AALPERF_DATATYPE         btUnsigned64bitInt
    #define AALPERF_VERSION          "Version"           // Start with Version 0
-   #define AALPERF_PORT0_READ_HIT   "Port0_Read_Hit"
-   #define AALPERF_PORT0_WRITE_HIT  "Port0_Write_Hit"
-   #define AALPERF_PORT0_READ_MISS  "Port0_Read_Miss"
-   #define AALPERF_PORT0_WRITE_MISS "Port0_Write_Miss"
-   #define AALPERF_PORT0_EVICTIONS  "Port0_Evictions"
-   #define AALPERF_PORT1_READ_HIT   "Port1_Read_Hit"
-   #define AALPERF_PORT1_WRITE_HIT  "Port1_Write_Hit"
-   #define AALPERF_PORT1_READ_MISS  "Port1_Read_Miss"
-   #define AALPERF_PORT1_WRITE_MISS "Port1_Write_Miss"
-   #define AALPERF_PORT1_EVICTIONS  "Port1_Evictions"
+   #define AALPERF_READ_HIT         "Read_Hit"
+   #define AALPERF_WRITE_HIT        "Write_Hit"
+   #define AALPERF_READ_MISS        "Read_Miss"
+   #define AALPERF_WRITE_MISS       "Write_Miss"
+   #define AALPERF_EVICTIONS        "Evictions"
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
