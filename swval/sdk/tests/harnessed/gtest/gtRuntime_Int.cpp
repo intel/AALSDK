@@ -65,49 +65,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class SynchronizingRTClient : public CallTrackingIRuntimeClient
-{
-public:
-   SynchronizingRTClient(btApplicationContext Ctx=NULL) :
-      CallTrackingIRuntimeClient(Ctx)
-   {
-      EXPECT_TRUE(m_Bar.Create(1, true));
-   }
-
-   virtual void runtimeStarted(IRuntime            *pRT,
-                               const NamedValueSet &optArgs)
-   {
-      CallTrackingIRuntimeClient::runtimeStarted(pRT, optArgs);
-      EXPECT_TRUE(m_Bar.Post(1));
-   }
-
-   virtual void runtimeStartFailed(const IEvent &e)
-   {
-      CallTrackingIRuntimeClient::runtimeStartFailed(e);
-      EXPECT_TRUE(m_Bar.Post(1));
-   }
-
-   void Wait()
-   {
-      EXPECT_TRUE(m_Bar.Wait());
-   }
-
-protected:
-   Barrier m_Bar;
-};
-
-class Runtime_Int_f_2 : public TRuntime_Int_f<SynchronizingRTClient>
-{
-protected:
-   virtual void TearDown()
-   {
-      m_RuntimeClient.ClearLog();
-      TRuntime_Int_f<SynchronizingRTClient>::TearDown();
-   }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
+#if 0
 TEST_F(Runtime_Int_f_2, aal0783)
 {
 
@@ -139,6 +97,6 @@ TEST_F(Runtime_Int_f_2, aal0783)
 
    stop();
 }
-
+#endif
 
 
