@@ -63,10 +63,19 @@ protected:
    }
 };
 
+class Runtime_Int_f_2 : public TRuntime_Int_f<SynchronizingIRuntimeClient>
+{
+protected:
+   virtual void TearDown()
+   {
+      m_RuntimeClient.ClearLog();
+      TRuntime_Int_f<SynchronizingIRuntimeClient>::TearDown();
+   }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
-#if 0
-TEST_F(Runtime_Int_f_2, aal0783)
+TEST_F(Runtime_Int_f_2, DISABLED_aal0783)
 {
 
    NamedValueSet args;
@@ -94,9 +103,8 @@ TEST_F(Runtime_Int_f_2, aal0783)
 
    EXPECT_TRUE(args == *pNVS);
 
-
    stop();
 }
-#endif
+
 
 
