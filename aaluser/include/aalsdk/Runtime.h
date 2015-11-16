@@ -246,7 +246,7 @@ public:
 
    /// @brief     Returns status of Runtime
    /// @return    void
-   virtual btBool IsOK()                                                                        = 0;
+   virtual btBool                       IsOK()                                                  = 0;
 
 protected:
    // Only Runtime can be destroyed. Interface may be to a proxy.
