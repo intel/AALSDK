@@ -122,6 +122,7 @@ MODULE_PARM_DESC(debug, "debug level");
 module_param    (debug, int, 0444);
 #endif // __AAL_LINUX__
 
+extern void aaldev_release_device(struct device *pdev);
 
 // Declare standard entry points
 static int
@@ -143,8 +144,7 @@ void
 aalbus_unregister_class_device(struct aal_classdevice *classdevice);
 
 int
-aalbus_register_device(struct aal_device *dev,
-                       struct bus_type *bustype);
+aalbus_register_device(struct aal_device *dev);
 void
 aalbus_unregister_device(struct aal_device *dev);
 
@@ -710,27 +710,26 @@ aalbus_resume(struct device *dev)
 //               reconfigure request. If there are drivers installed they will
 //               be probed to determine if any support this device.
 // Interface:
-// Inputs: dev - device to register
-//         bustype - bus to register with if not AAL. Used for sub-buses  TODO MAY NOT NEED THIS
+// Inputs: paaldev - device to register
 // Outputs: none.
 // Comments:
 //=============================================================================
 int
-aalbus_register_device(struct aal_device *dev, struct bus_type *bustype)
+aalbus_register_device(struct aal_device *paaldev)
 {
    struct update_config_parms parms;
 
-   kosal_printk_level(KERN_INFO, "Registering device %s\n", dev->m_basename);
+   kosal_printk_level(KERN_INFO, "Registering device %s\n", aaldev_devname(paaldev));
 
-   if ( unlikely( !aaldev_init(dev) ) ) {
+   if ( unlikely( !aaldev_init(paaldev) ) ) {
       kosal_printk_level(KERN_ERR, "Device registration failed\n");
       return -1;
    }
 
    // Do not permit multiple registrations
-   kosal_printk_level(KERN_INFO, "Checking device registered 0x%p\n", dev);
-   ASSERT(!aaldev_is_registered(dev));
-   if ( aaldev_is_registered(dev) ) {
+   kosal_printk_level(KERN_INFO, "Checking device registered 0x%p\n", paaldev);
+   ASSERT(!aaldev_is_registered(paaldev));
+   if ( aaldev_is_registered(paaldev) ) {
       kosal_printk_level(KERN_WARNING, "Device already registered with AAL Bus\n");
       return -1;
    }
@@ -741,15 +740,22 @@ aalbus_register_device(struct aal_device *dev, struct bus_type *bustype)
       return -1;
    }
 
+   aaldev_to_basedev(paaldev).bus = &aalBus.m_bustype;
 
-   aaldev_to_basedev(dev).bus = &aalBus.m_bustype;
+   // Add this device to the bus' list of devices
+   if (0 !=  kosal_sem_get_user_alertable(&aalBus.alloc_list_sem)) {
+      DPRINTF(AALBUS_DBG_MOD, " Failed to acquire allocate list semaphore\n");
+      return -1;
+   } else {
+      list_add(&paaldev->m_alloc_list, &aalBus.alloc_list_head);
+      kosal_sem_put(&aalBus.alloc_list_sem);
+   }
 
-   kosal_printk_level(KERN_INFO, "ownerlist %p, address of ownerlist %p -- these should be EQUAL\n",
-                         &dev->m_ownerlist, dev->m_ownerlist.next);
+   paaldev->m_dev.release = aaldev_release_device; // System method
 
    // device_register(&AALDEVBASE(dev));
-   if ( device_register(&aaldev_to_basedev(dev)) ) {
-      kosal_printk_level(KERN_ERR, "device_register() failed; could not register device %s\n", dev->m_basename);
+   if ( device_register(&aaldev_to_basedev(paaldev)) ) {
+      PERR("device_register() failed; could not register device %s\n", paaldev->m_basename);
       kosal_sem_put(&aalBus.m_sem);
       return -1;
    }
@@ -760,16 +766,13 @@ aalbus_register_device(struct aal_device *dev, struct bus_type *bustype)
       parms.Handler    = aalBus.config_update_event_handler.EventHandler;
       parms.updateType = krms_ccfgUpdate_DevAdded;
       parms.pid        = 0;
-      aalbus_config_update_event(&aaldev_to_basedev(dev), &parms);
+      aalbus_config_update_event(&aaldev_to_basedev(paaldev), &parms);
    }
 
-   aaldev_set_registered(dev);
+   aaldev_set_registered(paaldev);
    kosal_sem_put(&aalBus.m_sem);
 
-   kosal_printk_level(KERN_INFO, "ownerlist %p, address of ownerlist %p -- these should STILL be EQUAL\n",
-                         &dev->m_ownerlist, dev->m_ownerlist.next);
-
-   kosal_printk_level(KERN_INFO, "Done registering device %s\n", aaldev_basename(dev));
+   DPRINTF(AALBUS_DBG_MOD,  "Done registering device %s\n",aaldev_devname(paaldev));
 
    return 0;
 }

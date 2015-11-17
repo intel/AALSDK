@@ -72,7 +72,7 @@
 #define __AALSDK_KERNEL_AALRM_SERVER_H__
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/aalrm.h>
-#include <aalsdk/kernel/aaldevice.h>
+
 
 BEGIN_NAMESPACE(AAL)
 

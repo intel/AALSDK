@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: Dispatchables.h
+//        FILE: aas/Dispatchables.h
 //     CREATED: May 15, 2015
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
@@ -79,6 +79,20 @@ protected:
    IRuntimeClient *m_pRTClient;
    const IEvent   *m_pEvent;
 };
+
+// @brief Causes a Service Object to be detrsoyed
+class DestroyServiceObject : public IDispatchable
+{
+public:
+   DestroyServiceObject(ISvcsFact *pSvcsFact,
+                        IBase     *pService);
+
+   virtual void operator() ();
+protected:
+   ISvcsFact *m_pSvcsFact;
+   IBase     *m_pService;
+};
+
 
 /// @brief Delivers IServiceClient::serviceReleased(TransactionID const & );
 class ServiceReleased : public IDispatchable

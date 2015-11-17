@@ -170,11 +170,7 @@ process_send_message(struct uidrv_session  *psess,
    //--------------------------------------------------------------------------
    switch ( preq->id ) {
 
-      // Send a message to the Workspace manager interface
-      UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendWSM) // TODO these will go to WS mgr interface
-
       // Send a message to the AFU via the PIP message handler
-      UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendPIP)
       UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendAFU) {
          // Get the handle and validate
          pdev = aaldev_handle_to_devp(preq->handle);
@@ -221,7 +217,7 @@ process_send_message(struct uidrv_session  *psess,
          // The aalsess_pipSendMessage macros calls the aal_pipmsghandler::sendMessage() vector
          //    where the aal_pipmsghandler is the messaging interface to the PIP.  The actual
          //    implementation of sendMessage will be in the PIP implementation as indicated above.
-         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage, ownSessp);
+         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage);
          pipMessage.m_message = NULL;
 
          PTRACEOUT_INT(ret);

@@ -51,7 +51,7 @@
 #include <aalsdk/service/HWCCIAFUService.h>
 #include <aalsdk/service/ASECCIAFUService.h>
 #include <aalsdk/service/SWSimCCIAFUService.h>
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 #include "CCIAFU.h"
 

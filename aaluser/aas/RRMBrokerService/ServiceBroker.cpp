@@ -39,7 +39,7 @@
 
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"  // Defines InProc Service Factory
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 #include "aalsdk/aas/ServiceHost.h"
 #include "aalsdk/CAALEvent.h"
 #include "aalsdk/AALLoggerExtern.h"              // AAL Logger
@@ -65,6 +65,20 @@ AAL_END_SVC_MOD()
 
 BEGIN_NAMESPACE(AAL)
 
+struct shutdown_thread_parms
+{
+   shutdown_thread_parms(ServiceBroker       *pfact,
+                         TransactionID const &rTranID,
+                         btTime               timeout) :
+      m_this(pfact),
+      m_rTranID(rTranID),
+      m_timeout(timeout)
+   {}
+
+   ServiceBroker *m_this;
+   TransactionID  m_rTranID;
+   btTime         m_timeout;
+};
 
 //=============================================================================
 // Name: init
@@ -95,7 +109,7 @@ btBool ServiceBroker::init(IBase *pclientBase,
    TransactionID tid = TransactionID();
    m_Transactions[tid] = rtid;
    if ( !m_pRMSvcHost->InstantiateService( getRuntime(),
-                                           dynamic_cast<IBase*>(this), NamedValueSet(), tid ) ) {
+                                           dynamic_cast<IBase*>(this), optArgs, tid ) ) {
       // Remove pending transaction
       m_Transactions.erase(tid);
       initFailed( new CExceptionTransactionEvent( NULL,
@@ -207,6 +221,32 @@ void ServiceBroker::serviceReleased(TransactionID const &rTranID)
 {
    AutoLock(this);
 
+   btTime timeout = -1;
+
+   struct shutdown_thread_parms *pparms =
+                                    new struct shutdown_thread_parms(this,
+                                                                     rTranID,
+                                                                     timeout);
+   // FIXME: get original timeout
+
+   //--------------------------------------------
+   // Create the Shutdown thread object
+   //  The Shutdown thread is self destructive so
+   //  no need to keep pointer nor do a Join()
+   //  as the ~OSLThread will clean up
+   //  resources from unjoined threads
+   //--------------------------------------------
+
+   // Important to Lock here and in thread to ensure that the assignment
+   //  is complete before thread runs.
+   {
+      AutoLock(this);
+      m_pShutdownThread = new OSLThread(ServiceBroker::ShutdownThread,
+                                        OSLThread::THREADPRIORITY_NORMAL,
+                                        pparms);
+   }
+
+#if 0    // old SDK
    // Resource Manager is Released. Get the original TID from rTranID
    TransactionID tid = *(reinterpret_cast<TransactionID *>(rTranID.Context()));
 
@@ -214,7 +254,7 @@ void ServiceBroker::serviceReleased(TransactionID const &rTranID)
    getRuntime()->schedDispatchable(new ServiceReleased(getServiceClient(),
                                                        this,
                                                        tid));
-
+#endif
 }
 
 //=============================================================================
@@ -388,20 +428,7 @@ ServiceHost * ServiceBroker::findServiceHost(std::string const &sName)
 // AAL core that it has completed.
 //------------------------------------------------------------------------------
 
-struct shutdown_thread_parms
-{
-   shutdown_thread_parms(ServiceBroker       *pfact,
-                         TransactionID const &rTranID,
-                         btTime               timeout) :
-      m_this(pfact),
-      m_rTranID(rTranID),
-      m_timeout(timeout)
-   {}
 
-   ServiceBroker *m_this;
-   TransactionID  m_rTranID;
-   btTime         m_timeout;
-};
 //=============================================================================
 // Name: Release
 // Description: Release the service
@@ -410,26 +437,19 @@ struct shutdown_thread_parms
 //=============================================================================
 btBool ServiceBroker::Release(TransactionID const &rTranID, btTime timeout)
 {
-   struct shutdown_thread_parms *pparms =
-                                    new struct shutdown_thread_parms(this,
-                                                                     rTranID,
-                                                                     timeout);
-   //--------------------------------------------
-   // Create the Shutdown thread object
-   //  The Shutdown thread is self destructive so
-   //  no need to keep pointer nor do a Join()
-   //  as the ~OSLThread will clean up
-   //  resources from unjoined threads
-   //--------------------------------------------
+   // save contents of rTranID for proper release in DoShutdown()
+   m_releaseTid = rTranID;
 
-   // Important to Lock here and in thread to ensure that the assignment
-   //  is complete before thread runs.
-   {
-      AutoLock(this);
-      m_pShutdownThread = new OSLThread(ServiceBroker::ShutdownThread,
-                                        OSLThread::THREADPRIORITY_NORMAL,
-                                        pparms);
+   // TODO: follow down release chain of tunneled TransactionIDs (it's lost somewhere...)
+
+   if (m_ResMgrBase != NULL) {
+      // copy the contents of the rTranID for later and store in a new TransactionID
+      // for this release transaction
+      TransactionID tid(static_cast<btApplicationContext>(new TransactionID(rTranID)));
+
+      dynamic_ptr<IAALService>(iidService, m_ResMgrBase)->Release(tid, timeout);
    }
+
    return true;
 }
 
@@ -451,7 +471,8 @@ void ServiceBroker::ShutdownThread(OSLThread *pThread,
    ServiceBroker *This = static_cast<ServiceBroker *>(pparms->m_this);
    This->DoShutdown(pparms->m_rTranID, pparms->m_timeout);
 
-   // Destroy the thread and parms
+   // Destroy parms and encapsulated context
+   delete static_cast<TransactionID *>(pparms->m_rTranID.Context());
    delete pparms;
 }
 
@@ -542,17 +563,12 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
                                                                          errSystemTimeout,
                                                                          reasSystemTimeout,
                                                                          const_cast<btString>(strSystemTimeout)) );
-      } else {
-         // Now release the Resource Manager. Final Release event sent in Released() callback
-         dynamic_ptr<IAALService>(iidService, m_ResMgrBase)->Release(TransactionID(reinterpret_cast<btApplicationContext>(new TransactionID(rTranID)) ));
-
-         return true;
+         return false;
       }
    }
 
-
-
-   return false;
+   ServiceBase::Release(m_releaseTid, timeout);
+   return true;
 }  // ServiceBroker::DoShutdown
 
 void ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,

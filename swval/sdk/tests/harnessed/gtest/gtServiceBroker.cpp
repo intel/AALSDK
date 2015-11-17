@@ -7,7 +7,7 @@
 #include "swvalsvcmod.h"
 
 #include <aalsdk/aas/ServiceHost.h>
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 #include <_ServiceBroker.h>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ public:
       m_pTransport(NULL),
       m_pMarshaller(NULL),
       m_pUnMarshaller(NULL),
-      m_SvcModule(m_SvcsFactory)
+      m_SvcModule(&m_SvcsFactory)
    {}
 
    virtual void SetUp()
@@ -142,13 +142,18 @@ TEST_F(ServiceBroker_f_1, aal0710)
 
    EXPECT_TRUE(m_pSvcBroker->init(&SvcClient, nvs, tid));
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
-
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
 
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -180,12 +185,14 @@ TEST_F(ServiceBroker_f_1, aal0711)
                               manifest,
                               tid);
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
 
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(1).MethodName());
+
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -215,13 +222,18 @@ TEST_F(ServiceBroker_f_1, aal0712)
                               &SvcClient,
                               manifest,
                               tid);
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
-
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -257,13 +269,19 @@ TEST_F(ServiceBroker_f_1, aal0713)
                               &SvcClient,
                               manifest,
                               tid);
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(1).MethodName());
 
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -301,13 +319,18 @@ TEST_F(ServiceBroker_f_1, aal0714)
                               &SvcClient,
                               manifest,
                               tid);
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
-
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeClient", m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -379,18 +402,18 @@ TEST_F(ServiceBroker_f_2, aal0715)
                               &SvcClient,
                               manifest,
                               tid);
-
-   EXPECT_EQ(4, m_Runtime.LogEntries()) << m_Runtime;
 /*
-IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::getRuntimeClient()
 IRuntime::getRuntimeProxy(btObjectType pClient)
 IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
 IRuntime::schedDispatchable(btObjectType pDisp)
 */
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(3).MethodName());
+   EXPECT_EQ(5, m_Runtime.LogEntries()) << m_Runtime;
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(4).MethodName());
 
    btObjectType x = NULL;
-   m_Runtime.Entry(3).GetParam("pDisp", &x);
+   m_Runtime.Entry(4).GetParam("pDisp", &x);
    ASSERT_NONNULL(x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);

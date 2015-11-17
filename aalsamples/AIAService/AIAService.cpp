@@ -42,14 +42,14 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALLoggerExtern.h"
-#include "aalsdk/uaia/AIA.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
 #include "aalsdk/aas/AALInProcServiceFactory.h"
 #include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/osal/ThreadGroup.h"
 
 #include "AIA-internal.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 #include "ALIAFUProxy.h"
 
 
@@ -386,6 +386,20 @@ void AIAService::SendMessage( AAL::btHANDLE devHandle,
    m_uida.SendMessage(devHandle, pMessage, pProxyClient);
 
 }
+
+
+AAL::btBool AIAService::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+{
+   return m_uida.MapWSID(Size, wsid, pRet);
+}
+
+void AIAService::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)
+{
+   m_uida.UnMapWSID(ptr, Size);
+}
+
+
+
 
 //=============================================================================
 // Name: MessageDeliveryThread

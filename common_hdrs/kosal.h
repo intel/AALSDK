@@ -220,6 +220,14 @@ typedef void * kosal_ownermodule;
 #define CCIV4_DBG_CMD       ((KOSAL_UINT)1 <<  5)
 #define CCIV4_DBG_CFG       ((KOSAL_UINT)1 <<  6)
 
+#define CCIPCIE_DBG_MOD       ((KOSAL_UINT)1 <<  0)
+#define CCIPCIE_DBG_DEV       ((KOSAL_UINT)1 <<  1)
+#define CCIPCIE_DBG_AFU       ((KOSAL_UINT)1 <<  2)
+#define CCIPCIE_DBG_MAFU      ((KOSAL_UINT)1 <<  3)
+#define CCIPCIE_DBG_MMAP      ((KOSAL_UINT)1 <<  4)
+#define CCIPCIE_DBG_CMD       ((KOSAL_UINT)1 <<  5)
+#define CCIPCIE_DBG_CFG       ((KOSAL_UINT)1 <<  6)
+
 #define FAPDIAG_DBG_MOD    ((KOSAL_UINT)1 <<  0)
 
 

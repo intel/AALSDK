@@ -53,10 +53,9 @@
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
 
-
-#include <aalsdk/service/ICCIAFU.h>
-#include <aalsdk/service/CCIAFUService.h>
-#include <aalsdk/service/ICCIClient.h>
+/*#include <aalsdk/service/ICCIAFU.h>
+#include <aalsdk/service/ICCIClient.h>*/
+#include <aalsdk/service/IALIAFU.h>
 
 #include <string.h>
 
@@ -104,7 +103,7 @@ using namespace AAL;
 #define CSR_DST_ADDR             0x1a24
 #define CSR_CTL                  0x1a2c
 #define CSR_CFG                  0x1a34
-#define CSR_CIPUCTL              0x280
+//#define CSR_CIPUCTL              0x280  /* should not be used */
 #define CSR_NUM_LINES            0x1a28
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x1a00
@@ -272,7 +271,7 @@ IRuntime * RuntimeClient::getRuntime()
 ///          The Service Client contains the application logic.
 ///
 /// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
-class HelloALINLBApp: public CAASBase, public IServiceClient, public ICCIClient
+class HelloALINLBApp: public CAASBase, public IServiceClient, public IALIBuffer_Client
 {
 public:
    enum WorkspaceType   ///<Type of Workspace being allocated
@@ -287,17 +286,16 @@ public:
 
    btInt run();    ///< Return 0 if success
 
-   // <ICCIClient>
-   virtual void OnWorkspaceAllocated(TransactionID const &TranID,
+   // <IALIBuffer_Client>
+   virtual void bufferAllocated(TransactionID const &TranID,
                                      btVirtAddr WkspcVirt,
-                                     btPhysAddr WkspcPhys,
                                      btWSSize WkspcSize);
 
-   virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
+   virtual void bufferAllocateFailed(const IEvent &Event);
 
-   virtual void OnWorkspaceFreed(TransactionID const &TranID);
+   virtual void bufferFreed(TransactionID const &TranID);
 
-   virtual void OnWorkspaceFreeFailed(const IEvent &Event);
+   virtual void bufferFreeFailed(const IEvent &Event);
    // </ICCIClient>
 
    // <begin IServiceClient interface>
@@ -316,12 +314,14 @@ public:
    // <end IServiceClient interface>
 
 protected:
-   IBase         *m_pAALService;    // The generic AAL Service interface for the AFU.
-   RuntimeClient *m_runtimeClient;
-   ICCIAFU       *m_NLBService;
-   CSemaphore     m_Sem;            // For synchronizing with the AAL runtime.
-   btUnsignedInt  m_wsfreed;        // Simple counter used for when we free workspaces
-   btInt          m_Result;         // Returned result value; 0 if success
+   RuntimeClient *m_runtimeClient;     ///< This application's runtime client instanct
+   IBase         *m_pAALService;       ///< The generic AAL Service interface for the AFU.
+   IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
+   IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
+   IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
+   CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
+   btUnsignedInt  m_wsfreed;           ///< Simple counter used for when we free workspaces
+   btInt          m_Result;            ///< Returned result value; 0 if success
 
    // Workspace info
    btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
@@ -341,9 +341,11 @@ protected:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
-   m_pAALService(NULL),
    m_runtimeClient(rtc),
-   m_NLBService(NULL),
+   m_pAALService(NULL),
+   m_pALIBufferService(NULL),
+   m_pALIMMIOService(NULL),
+   m_pALIResetService(NULL),
    m_wsfreed(0),
    m_Result(0),
    m_DSMVirt(NULL),
@@ -358,8 +360,10 @@ HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
 
 {
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
-   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+   SetInterface(iidALI_BUFF_Service_Client, dynamic_cast<IALIBuffer_Client *>(this));
    m_Sem.Create(0, 1);
+   // m_bIsOK, inherited from CAASBase, will generally be true here.
+   // Set it to false if any construction fails.
 }
 
 HelloALINLBApp::~HelloALINLBApp()
@@ -384,12 +388,14 @@ btInt HelloALINLBApp::run()
 
 #if defined( HWAFU )                /* Use FPGA hardware */
 
-//   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
+   // TODO: backdoor - this should all be figured out be the resource manager
+   // the service library name of the requested service
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   // the AFUID (to be passed to AIA)
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+   // indicate that this service needs to allocate an AIAService, too (to talk to the AFU)
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
-   //ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
 
@@ -403,7 +409,10 @@ btInt HelloALINLBApp::run()
 
 #endif
 
+   // backdoor
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   // in future, everything should be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
    MSG("Allocating Service");
 
@@ -417,63 +426,76 @@ btInt HelloALINLBApp::run()
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
    //         A better design would do all appropriate clean-up.
-   if(0 == m_Result){
+   if( IsOK() ){
 
       //=============================
       // Now we have the NLB Service
       //   now we can use it
       //=============================
       MSG("Running Test");
-#if 0
-      // Initialize the source and destination buffers
-      memset( m_InputVirt,  0xAF, m_InputSize);    // Input initialized to AFter
-      memset( m_OutputVirt, 0xBE, m_OutputSize);   // Output initialized to BEfore
 
+#if 0 /* Setting to 0 turns off actul NLB functionality for debug purposes */
 
       // Clear the DSM
-      ::memset((void *)m_DSMVirt, 0, m_DSMSize);
+      ::memset( m_DSMVirt, 0, m_DSMSize);
 
+      // Initialize the source and destination buffers
+      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
+      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+
+      struct CacheLine {                           // Operate on cache lines
+         btUnsigned32bitInt uint[16];
+      };
+      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
+      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+         pCL[i].uint[15] = i;
+      };                         // Cache-Line[n] is zero except last uint = n
+
+
+      // Original code puts DSM Reset prior to AFU Reset, but ccipTest
+      //    reverses that. We are following ccipTest here.
+
+      // Initiate AFU Reset
+      m_pALIResetService->afuReset();
+
+
+      // Initiate DSM Reset
       // Set DSM base, high then low
-      m_NLBService->CSRWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
 
       // If ASE, give it some time to catch up
       #if defined ( ASEAFU )
       SleepSec(5);
       #endif /* ASE AFU */
 
-
-      // Assert Device Reset
-      m_NLBService->CSRWrite(CSR_CTL, 0);
-
-      // De-assert Device Reset
-      m_NLBService->CSRWrite(CSR_CTL, 1);
+      __sync_synchronize();
 
       // Set input workspace address
-      m_NLBService->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
+      m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
 
       // Set output workspace address
-      m_NLBService->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
+      m_pALIMMIOService->mmioWrite32(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
 
       // Set the number of cache lines for the test
-      m_NLBService->CSRWrite(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
+      m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
 
       // Set the test mode
-      m_NLBService->CSRWrite(CSR_CFG, 0);
+      m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
 
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                          (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);
       // Start the test
-      m_NLBService->CSRWrite(CSR_CTL, 3);
+      m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
 
       // Wait for test completion
-      while( 0 == *StatusAddr ) {
+      while( 0 == ((*StatusAddr)&0x1) ) {
          SleepMicro(100);
       }
       MSG("Done Running Test");
 
       // Stop the device
-      m_NLBService->CSRWrite(CSR_CTL, 7);
+      m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
       if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
@@ -487,12 +509,15 @@ btInt HelloALINLBApp::run()
       //  Once again all of this is done in a simple
       //  state machine via callbacks
 #endif
+
       MSG("Done Running Test");
       // Release the Workspaces and wait for all three then Release the Service
       m_wsfreed = 0;  // Reset the counter
-      m_NLBService->WorkspaceFree(m_InputVirt,  TransactionID((btID)HelloALINLBApp::WKSPC_IN));
-      m_NLBService->WorkspaceFree(m_OutputVirt, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
-      m_NLBService->WorkspaceFree(m_DSMVirt,    TransactionID((btID)HelloALINLBApp::WKSPC_DSM));
+
+      m_pALIBufferService->bufferFree(m_InputVirt,  TransactionID((btID)HelloALINLBApp::WKSPC_IN));
+      m_pALIBufferService->bufferFree(m_OutputVirt, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
+      m_pALIBufferService->bufferFree(m_DSMVirt,    TransactionID((btID)HelloALINLBApp::WKSPC_DSM));
+
       m_Sem.Wait();
    }
 
@@ -506,30 +531,55 @@ btInt HelloALINLBApp::run()
 void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
+   // Documentation says HWALIAFU Service publishes IAALService as subclass interface
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
-
-   // Documentation says CCIAFU Service publishes ICCIAFU as subclass interface
-   m_NLBService = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
-
-   ASSERT(NULL != m_NLBService);
-   if ( NULL == m_NLBService ) {
+   if ( NULL == m_pAALService ) {
+      m_bIsOK = false;
       return;
    }
+
+   // Documentation says HWALIAFU Service publishes
+   //    IALIBuffer as subclass interface
+   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+   ASSERT(NULL != m_pALIBufferService);
+   if ( NULL == m_pALIBufferService ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   // Documentation says HWALIAFU Service publishes
+   //    IALIMMIO as subclass interface
+   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+   ASSERT(NULL != m_pALIMMIOService);
+   if ( NULL == m_pALIMMIOService ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   // Documentation says HWALIAFU Service publishes
+   //    IALIReset as subclass interface
+   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+   ASSERT(NULL != m_pALIResetService);
+   if ( NULL == m_pALIResetService ) {
+      m_bIsOK = false;
+      return;
+   }
+
 
    MSG("Service Allocated");
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((btID) HelloALINLBApp::WKSPC_DSM));
-
+   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((btID) HelloALINLBApp::WKSPC_DSM));
 }
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 {
-   ERR("Failed to allocate a Service");
+   ERR("Failed to allocate Service");
     PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
+   m_bIsOK = false;
 
    m_Sem.Post(1);
 }
@@ -545,13 +595,13 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  {
     ERR("Failed to release a Service");
     PrintExceptionDescription(rEvent);
+    m_bIsOK = false;
     m_Sem.Post(1);
  }
 
-// <ICCIClient>
-void HelloALINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
+// <ALIBuffer_Client>
+void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
                                           btVirtAddr           WkspcVirt,
-                                          btPhysAddr           WkspcPhys,
                                           btWSSize             WkspcSize)
 {
    AutoLock(this);
@@ -560,26 +610,26 @@ void HelloALINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
       case WKSPC_DSM: {
          m_DSMVirt = WkspcVirt;
-         m_DSMPhys = WkspcPhys;
+         m_DSMPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
          m_DSMSize = WkspcSize;
-         MSG("Got DSM");
-         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_IN));
+         MSG("Got DSM. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
+         m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_IN));
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
-         m_InputPhys = WkspcPhys;
+         m_InputPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
          m_InputSize = WkspcSize;
-         MSG("Got Input Workspace");
+         MSG("Got Input Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
 
          // Now get Output workspace
-         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
+         m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
       } break;
       case WKSPC_OUT : {
          m_OutputVirt = WkspcVirt;
-         m_OutputPhys = WkspcPhys;
+         m_OutputPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
          m_OutputSize = WkspcSize;
 
-         MSG("Got Output Workspace");
+         MSG("Got Output Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
 
          // Got all workspaces so unblock the Run() thread
          m_Sem.Post(1);
@@ -587,21 +637,23 @@ void HelloALINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
 
       default : {
          ++m_Result;
+         m_bIsOK = false;
          ERR("Invalid workspace type: " << TranID.ID());
       } break;
    }
 }
 
-void HelloALINLBApp::OnWorkspaceAllocateFailed(const IEvent &rEvent)
+void HelloALINLBApp::bufferAllocateFailed(const IEvent &rEvent)
 {
    ERR("OnWorkspaceAllocateFailed");
    PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
+   m_bIsOK = false;
 
    m_Sem.Post(1);
 }
 
-void HelloALINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
+void HelloALINLBApp::bufferFreed(TransactionID const &TranID)
 {
    MSG("OnWorkspaceFreed");
    if(++m_wsfreed == 3){
@@ -611,11 +663,12 @@ void HelloALINLBApp::OnWorkspaceFreed(TransactionID const &TranID)
 
 }
 
-void HelloALINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
+void HelloALINLBApp::bufferFreeFailed(const IEvent &rEvent)
 {
-   ERR("OnWorkspaceAllocateFailed");
+   ERR("OnWorkspaceFreeFailed");
    PrintExceptionDescription(rEvent);
    ++m_Result;                     // Remember the error
+   m_bIsOK = false;
    m_Sem.Post(1);
 }
 
@@ -623,6 +676,10 @@ void HelloALINLBApp::OnWorkspaceFreeFailed(const IEvent &rEvent)
  void HelloALINLBApp::serviceEvent(const IEvent &rEvent)
 {
    ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+   // The state machine may or may not stop here. It depends upon what happened.
+   // A fatal error implies no more messages and so none of the other Post()
+   //    will wake up.
+   // OTOH, a notification message will simply print and continue.
 }
 // <end IServiceClient interface>
 

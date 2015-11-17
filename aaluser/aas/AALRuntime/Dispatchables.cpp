@@ -43,12 +43,13 @@
 #include "aalsdk/Runtime.h"
 #include "_RuntimeImpl.h"
 #include "aalsdk/CAALEvent.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 /// @addtogroup AAL Runtime
 /// @{
 
 BEGIN_NAMESPACE(AAL)
+
 
 ServiceAllocated::ServiceAllocated(IServiceClient      *pSvcClient,
                                    IRuntimeClient      *pRTClient,
@@ -124,7 +125,19 @@ void ServiceAllocateFailed::operator() ()
    if ( NULL != m_pRTClient ) {
       m_pRTClient->runtimeAllocateServiceFailed(*m_pEvent);
    }
+   delete this;
+}
 
+
+DestroyServiceObject::DestroyServiceObject(ISvcsFact *pSvcsFact,
+                                           IBase     *pService) :
+m_pSvcsFact(pSvcsFact),
+m_pService(pService)
+{}
+
+void DestroyServiceObject::operator() ()
+{
+   m_pSvcsFact->DestroyServiceObject(m_pService);
    delete this;
 }
 

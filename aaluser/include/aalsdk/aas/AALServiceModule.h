@@ -354,7 +354,7 @@ public:
    ///
    /// Constructed with a concrete instance of the ISvcsFact interface within the
    ///  well-known entry point of the dynamically-loaded Service executable.
-   AALServiceModule(ISvcsFact &fact);
+   AALServiceModule(ISvcsFact *fact);
 
    // <IServiceModule>
    virtual btBool Construct(IRuntime            *pRuntime,
@@ -425,7 +425,7 @@ protected:
    typedef list_type::iterator       list_iter;
    typedef list_type::const_iterator list_citer;
 
-   ISvcsFact           &m_SvcsFact;
+   ISvcsFact           *m_SvcsFact;
    IRuntimeClient      *m_RuntimeClient;
    btUnsignedInt        m_pendingcount;
    CSemaphore           m_srvcCount;

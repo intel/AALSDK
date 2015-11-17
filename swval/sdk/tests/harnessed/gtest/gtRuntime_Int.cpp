@@ -4,8 +4,6 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include <aalsdk/Dispatchables.h>
-
 template <typename RTClient,  // EmptyIRuntimeClient, CallTrackingIRuntimeClient
           typename RT=Runtime>
 class TRuntime_Int_f : public ::testing::Test

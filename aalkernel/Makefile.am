@@ -83,7 +83,8 @@ aalresourcemgr_server \
 aalresourcemgr_client \
 aal_uidriver \
 spl2_pip_dksm \
-cciv4_driver
+cciv4_driver \
+cci_PCIe_driver
 
 aalsdkhdrsdir=$(includedir)/aalsdk
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel
@@ -97,6 +98,7 @@ include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
 include/aalsdk/kernel/aaldevice.h \
+include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/aalids.h \
 include/aalsdk/kernel/aalinterface.h \
 include/aalsdk/kernel/aalmafu-events.h \
@@ -117,6 +119,7 @@ include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
 include/aalsdk/kernel/spl2defs.h \

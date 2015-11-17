@@ -50,7 +50,7 @@
 
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -98,6 +98,9 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       m_bIsOK = false;
       return;
    }
+
+   // Get the client of the Runtime we are running under.
+   m_RuntimeClient = pAALRuntime->getRuntimeClient();
 
    // Get a new Runtime Proxy for use by this Service.
    //  This proxy must be released when deleted.
@@ -210,9 +213,6 @@ btBool ServiceBase::_init(IBase               *pclientBase,
       m_optArgs = optArgs;
    }
 
-   // Get the client of the Runtime we are running under.
-   m_RuntimeClient = getRuntime()->getRuntimeClient();
-
    // Check that mandatory initialization has occurred
 
    // If no completion event then this is the direct superclass
@@ -254,9 +254,11 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
 
    // TODO IS THIS A VALID PATH
    ASSERT(false);
+/*
    return getRuntime()->schedDispatchable( new ServiceAllocateFailed(getServiceClient(),
                                                                      getRuntimeClient(),
                                                                      ptheEvent) );
+                                                                     */
 }
 
 btBool ServiceBase::sendmsg()

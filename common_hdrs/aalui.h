@@ -99,7 +99,7 @@
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/AALTransactionID_s.h>
 #include <aalsdk/kernel/AALWorkspace.h>
-#include <aalsdk/kernel/aaldevice.h>
+#include <aalsdk/kernel/iaaldevice.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -123,8 +123,6 @@ typedef enum
    reqid_UID_Shutdown,              // Request that the Service session shutdown
 
    reqid_UID_SendAFU,               // Send AFU a message
-   reqid_UID_SendPIP,               // Send PIP a message
-   reqid_UID_SendWSM,               // Send to Workspace Manager
 
    // Response and Event IDs
    rspid_UID_Shutdown=0xF000,       // Service is shutdown
@@ -393,7 +391,8 @@ typedef enum
    uid_wseventAllocate=0,
    uid_wseventFree,
    uid_wseventGetPhys,
-   uid_wseventCSRMap
+   uid_wseventCSRMap,
+   uid_wseventMMIOMap
 } uid_wseventID_e;
 
 struct aalui_WSMEvent

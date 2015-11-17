@@ -64,8 +64,13 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// SWSimALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase,
-                                    public IALIAFU
+class SWSIMALIAFU_API SWSimALIAFU : public ServiceBase/*,
+                                    public IServiceClient,     // for AIA
+                                    public IALIMMIO,
+                                    public IALIBuffer,
+                                    public IALIUMsg,
+                                    public IALIReset/*
+                                    public IALIPerf*/
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -75,12 +80,29 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(SWSimALIAFU, ServiceBase),
       m_NextPhys(0)
    {
-      if ( EObjOK != SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+/*
+      // TODO: at some point, these probably go into init() and be exposed based
+      //       on the actual capabilities
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
          m_bIsOK = false;
       }
-      if ( EObjOK != SetInterface(iidSWSIMALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+
+      if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
          m_bIsOK = false;
       }
+
+      if ( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
+         m_bIsOK = false;
+      }
+//      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
+      if ( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ){
+         m_bIsOK = false;
+      } // for AIA
+*/
    }
 
    virtual btBool init(IBase               *pclientBase,
@@ -90,21 +112,6 @@ public:
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
 
-   // <IALIAFU>
-   virtual void WorkspaceAllocate(btWSSize             Length,
-                                  TransactionID const &TranID);
-
-   virtual void     WorkspaceFree(btVirtAddr           Address,
-                                  TransactionID const &TranID);
-
-   virtual btBool         CSRRead(btCSROffset Offset,
-                                  btCSRValue *pValue);
-
-   virtual btBool        CSRWrite(btCSROffset Offset,
-                                  btCSRValue  Value);
-   virtual btBool      CSRWrite64(btCSROffset Offset,
-                                  bt64bitCSR  Value);
-   // </IALIAFU>
 
 protected:
    struct WkspcAlloc

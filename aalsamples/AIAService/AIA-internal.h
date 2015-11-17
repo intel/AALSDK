@@ -80,9 +80,14 @@ public:
 
 void operator() ()
 {
-   {  m_pClient->AFUEvent(*m_pEvent);
-      delete m_pEvent;
+   // Process TransactionID
+   const TransactionID &msgTid = dynamic_cast<const IUIDriverEvent*>(evtUIDriverClientEvent, m_pEvent)->msgTranID(); // FIXME check for errors
+   if (msgTid.Filter() && msgTid.Handler() != NULL) {
+      msgTid.Handler()(*m_pEvent);
+   } else {
+      m_pClient->AFUEvent(*m_pEvent);
    }
+   delete m_pEvent;
    delete this;
 }
 
@@ -134,6 +139,10 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       void AFUProxyAdd(AAL::IBase *pAFUProxy);
 
       void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
+
+      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+      void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
+
 
    protected:
       void SemWait(void);

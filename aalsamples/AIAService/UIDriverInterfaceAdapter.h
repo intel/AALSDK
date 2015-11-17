@@ -38,7 +38,7 @@
 //****************************************************************************
 #ifndef __UIDRVERINTERFACEADAPTER_H__
 #define __UIDRVERINTERFACEADAPTER_H__
-#include <aalsdk/kernel/aalui.h>  // uid_msgIDs_e, uid_errnum_e, aalui_ioctlreq
+#include <aalsdk/kernel/ccipdriver.h>  // uid_msgIDs_e, uid_errnum_e, aalui_ioctlreq
 
 #include <aalsdk/AALTypes.h>
 

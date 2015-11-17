@@ -4,7 +4,7 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 template <typename Factory, // EmptyISvcsFact, CallTrackingISvcsFact
           typename Module=AALServiceModule>
@@ -18,7 +18,7 @@ protected:
 
    virtual void SetUp()
    {
-      m_pModule = new(std::nothrow) Module(m_Factory);
+      m_pModule = new(std::nothrow) Module(&m_Factory);
       ASSERT_NONNULL(m_pModule);
 
       EXPECT_TRUE(m_pModule->IsOK());
@@ -96,7 +96,7 @@ protected:
 
    virtual void SetUp()
    {
-      m_pModule = new(std::nothrow) Module(m_Factory);
+      m_pModule = new(std::nothrow) Module(&m_Factory);
       ASSERT_NONNULL(m_pModule);
 
       EXPECT_TRUE(m_pModule->IsOK());
@@ -197,7 +197,7 @@ protected:
 
    virtual void SetUp()
    {
-      m_pModule = new(std::nothrow) Module(m_Factory);
+      m_pModule = new(std::nothrow) Module(&m_Factory);
       ASSERT_NONNULL(m_pModule);
 
       EXPECT_TRUE(m_pModule->IsOK());
@@ -566,13 +566,16 @@ TEST_F(AALServiceModule_f_5, aal0677)
 
       ASSERT_LE(1, m_pSvcBase[i]->LogEntries()) << *m_pSvcBase[i];
       EXPECT_STREQ("ServiceBase::Release", m_pSvcBase[i]->Entry(0).MethodName());
-
-      // getRuntimeProxy(), schedDispatchable()
-      ASSERT_EQ(2, m_Runtime[i].LogEntries()) << m_Runtime[i];
-      EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime[i].Entry(1).MethodName());
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+      ASSERT_EQ(3, m_Runtime[i].LogEntries()) << m_Runtime[i];
+      EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime[i].Entry(2).MethodName());
 
       btObjectType x = NULL;
-      m_Runtime[i].Entry(1).GetParam("pDisp", &x);
+      m_Runtime[i].Entry(2).GetParam("pDisp", &x);
 
       ASSERT_NONNULL(x);
       IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
@@ -656,14 +659,18 @@ TEST_F(AALServiceModule_f_2, aal0721)
    EXPECT_TRUE(ServiceInitialized(m_pSvcBase, tid));
 
    EXPECT_TRUE(ServiceInstanceRegistered(m_pSvcBase));
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
+*/
+   ASSERT_EQ(3, m_Runtime.LogEntries()) << m_Runtime;
 
-   EXPECT_EQ(2, m_Runtime.LogEntries());
-
-   EXPECT_STREQ("IRuntime::getRuntimeProxy", m_Runtime.Entry(0).MethodName());
-
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeClient",  m_Runtime.Entry(0).MethodName());
+   EXPECT_STREQ("IRuntime::getRuntimeProxy",   m_Runtime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_Runtime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_Runtime.Entry(1).GetParam("pDisp", &x);
+   m_Runtime.Entry(2).GetParam("pDisp", &x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
    ASSERT_NONNULL(pDisp);
@@ -696,6 +703,7 @@ TEST_F(AALServiceModule_f_1, aal0723)
    EXPECT_FALSE(ServiceInitFailed(&base, pEvent));
 }
 
+#if DEPRECATED
 TEST_F(AALServiceModule_f_3, aal0724)
 {
    // When the IBase * parameter to AALServiceModule::ServiceInitFailed() is valid, the same is
@@ -709,7 +717,7 @@ TEST_F(AALServiceModule_f_3, aal0724)
 
    EXPECT_TRUE(ServiceInitFailed(m_pSvcBase, NULL));
 
-   EXPECT_EQ(1, m_Factory.LogEntries());
+   ASSERT_EQ(1, m_Factory.LogEntries()) << m_Factory;
    EXPECT_STREQ("ISvcsFact::DestroyServiceObject", m_Factory.Entry(0).MethodName());
 
    btObjectType x = NULL;
@@ -719,7 +727,7 @@ TEST_F(AALServiceModule_f_3, aal0724)
 
    YIELD_WHILE( GlobalTestConfig::GetInstance().CurrentThreads() > threads );
 
-   ASSERT_EQ(1, m_SvcClient.LogEntries());
+   ASSERT_EQ(1, m_SvcClient.LogEntries()) << m_SvcClient;
    EXPECT_STREQ("IServiceClient::serviceAllocateFailed", m_SvcClient.Entry(0).MethodName());
 
    x = (btObjectType)1;
@@ -735,6 +743,7 @@ TEST_F(AALServiceModule_f_3, aal0724)
    EXPECT_NULL(x); // This is about all we can do, because the IDispatchable will delete itself.
 */
 }
+#endif
 
 TEST_F(AALServiceModule_f_0, EmptyRoutines)
 {
@@ -766,7 +775,7 @@ class TServiceBase_f : public ::testing::Test
 protected:
    TServiceBase_f() :
       m_Factory(),
-      m_Module(m_Factory),
+      m_Module(&m_Factory),
       m_IRuntime(),
       m_RTClient(),
       m_pTransport(NULL),
@@ -804,7 +813,7 @@ protected:
       EXPECT_EQ(dynamic_cast<IAALMarshaller *>(m_pMarshaller),     &m_pSB->marshall());
       EXPECT_EQ(dynamic_cast<IAALUnMarshaller *>(m_pUnMarshaller), &m_pSB->unmarshall());
 
-      EXPECT_NULL(m_pSB->getRuntimeClient());
+      EXPECT_EQ(dynamic_cast<IRuntimeClient *>(&m_RTClient), m_pSB->getRuntimeClient());
       EXPECT_NULL(m_pSB->getServiceClient());
       EXPECT_NULL(m_pSB->getServiceClientBase());
    }
@@ -927,7 +936,7 @@ TEST(ServiceBaseTest, aal0681)
    };
 
    EmptyISvcsFact   factory;
-   AALServiceModule mod(factory);
+   AALServiceModule mod(&factory);
 
    EmptyIRuntime    rt;
    rt.getRuntimeProxyReturnsThisValue(dynamic_cast<IRuntime *>(&rt));
@@ -1032,15 +1041,14 @@ TEST_F(ServiceBase_f_2, aal0684)
 3   ServiceBase::getServiceClient()
 4   ServiceBase::getServiceClientBase()
 5   ServiceBase::_init(btObjectType pclientBase, const TransactionID &rtid, const NamedValueSet &optArgs, btObjectType pcmpltEvent)
-6   ServiceBase::getRuntime()
-7   ServiceBase::init(btObjectType pclientBase, const NamedValueSet &optArgs, const TransactionID &rtid)
-8   ServiceBase::getRuntimeClient()
+6   ServiceBase::init(btObjectType pclientBase, const NamedValueSet &optArgs, const TransactionID &rtid)
+7   ServiceBase::getRuntimeClient()
 */
-   EXPECT_EQ(9, m_pSB->LogEntries()) << *m_pSB;
-   EXPECT_STREQ("ServiceBase::init", m_pSB->Entry(7).MethodName());
+   EXPECT_EQ(8, m_pSB->LogEntries()) << *m_pSB;
+   EXPECT_STREQ("ServiceBase::init", m_pSB->Entry(6).MethodName());
 
    TransactionID tid2;
-   m_pSB->Entry(7).GetParam("rtid", tid2);
+   m_pSB->Entry(6).GetParam("rtid", tid2);
    EXPECT_EQ(tid.ID(), tid2.ID());
 }
 
@@ -1055,14 +1063,15 @@ TEST_F(ServiceBase_f_1, aal0685)
 
    EXPECT_FALSE(m_pSB->Release(tid, AAL_INFINITE_WAIT));
 /*
-   IRuntime::getRuntimeProxy(btObjectType pClient)
-   IRuntime::schedDispatchable(btObjectType pDisp)
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
 */
-   ASSERT_EQ(2, m_IRuntime.LogEntries()) << m_IRuntime;
+   ASSERT_EQ(3, m_IRuntime.LogEntries()) << m_IRuntime;
 
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_IRuntime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_IRuntime.Entry(2).MethodName());
    btObjectType x = NULL;
-   m_IRuntime.Entry(1).GetParam("pDisp", &x);
+   m_IRuntime.Entry(2).GetParam("pDisp", &x);
 
    ASSERT_NONNULL(x);
    delete reinterpret_cast<IDispatchable *>(x);
@@ -1125,23 +1134,25 @@ TEST_F(ServiceBase_f_1, aal0689)
 
    m_pSB->allocService(&base, nvs, tid);
 
+   // getRuntimeClient()
    // getRuntimeProxy() is called from the c'tor.
    // allocService() is called from ServiceBase::allocService().
-   EXPECT_EQ(2, m_IRuntime.LogEntries());
-   EXPECT_STREQ("IRuntime::allocService", m_IRuntime.Entry(1).MethodName());
+   ASSERT_EQ(3, m_IRuntime.LogEntries()) << m_IRuntime;
+   ASSERT_STREQ("IRuntime::allocService", m_IRuntime.Entry(2).MethodName());
 
-   EXPECT_EQ(3, m_IRuntime.Entry(1).Params());
+   EXPECT_EQ(3, m_IRuntime.Entry(2).Params());
 
    btObjectType x = NULL;
-   m_IRuntime.Entry(1).GetParam("pClient", &x);
+   m_IRuntime.Entry(2).GetParam("pClient", &x);
    EXPECT_EQ(reinterpret_cast<IBase *>(x), dynamic_cast<IBase *>(&base));
 
    INamedValueSet const *pNVS = NULL;
-   m_IRuntime.Entry(1).GetParam("rManifest", &pNVS);
+   m_IRuntime.Entry(2).GetParam("rManifest", &pNVS);
+   ASSERT_NONNULL(pNVS);
    EXPECT_TRUE(nvs == *pNVS);
 
    TransactionID tid2;
-   m_IRuntime.Entry(1).GetParam("rTranID", tid2);
+   m_IRuntime.Entry(2).GetParam("rTranID", tid2);
    EXPECT_EQ(tid.ID(), tid2.ID());
 }
 
@@ -1157,15 +1168,16 @@ TEST_F(ServiceBase_f_1, aal0690)
 
    EXPECT_TRUE(m_Module.ServiceInstanceRegistered(m_pSB));
 /*
-   IRuntime::getRuntimeProxy(btObjectType pClient)
-   IRuntime::schedDispatchable(btObjectType pDisp)
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::schedDispatchable(btObjectType pDisp)
 */
-   EXPECT_EQ(2, m_IRuntime.LogEntries()) << m_IRuntime;
+   EXPECT_EQ(3, m_IRuntime.LogEntries()) << m_IRuntime;
 
-   EXPECT_STREQ("IRuntime::schedDispatchable", m_IRuntime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::schedDispatchable", m_IRuntime.Entry(2).MethodName());
 
    btObjectType x = NULL;
-   m_IRuntime.Entry(1).GetParam("pDisp", &x);
+   m_IRuntime.Entry(2).GetParam("pDisp", &x);
 
    IDispatchable *pDisp = reinterpret_cast<IDispatchable *>(x);
 
@@ -1187,10 +1199,14 @@ TEST_F(ServiceBase_f_1, aal0725)
    EXPECT_TRUE(m_Module.ServiceInstanceRegistered(m_pSB));
    EXPECT_TRUE(m_pSB->ReleaseComplete());
    EXPECT_FALSE(m_Module.ServiceInstanceRegistered(m_pSB));
+/*
+IRuntime::getRuntimeClient()
+IRuntime::getRuntimeProxy(btObjectType pClient)
+IRuntime::releaseRuntimeProxy()
+*/
+   ASSERT_EQ(3, m_IRuntime.LogEntries()) << m_IRuntime;
 
-   EXPECT_EQ(2, m_IRuntime.LogEntries()) << m_IRuntime;
-
-   EXPECT_STREQ("IRuntime::releaseRuntimeProxy", m_IRuntime.Entry(1).MethodName());
+   EXPECT_STREQ("IRuntime::releaseRuntimeProxy", m_IRuntime.Entry(2).MethodName());
 
    m_pSB = NULL;
 }

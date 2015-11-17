@@ -58,7 +58,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalkernel], [4.1.7], [joe.grecco@intel.com])
+AC_INIT([aalkernel], [4.5.0], [joe.grecco@intel.com])
 AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -84,6 +84,7 @@ AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([SPL2PIP],  [spl2pip],  [4],[2],[0])
 AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [4],[2],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -201,8 +202,41 @@ AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driv
                  cciv4_driver/kbuild/cciv4_PIPsession.c:cciv4_driver/cciv4_PIPsession.c
                  cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c  
                  cciv4_driver/kbuild/cciv4_sim_mafu_pip.c:cciv4_driver/cciv4_sim_mafu_pip.c      
-                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c                                                                                    
+                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c 
+                 cciv4_driver/kbuild/ccip_def.h:cciv4_driver/ccip_def.h
+                 cciv4_driver/kbuild/ccip_fme_mmio.h:cciv4_driver/ccip_fme_mmio.h 
+                 cciv4_driver/kbuild/ccip_fme_mmio.c:cciv4_driver/ccip_fme_mmio.c
+                 cciv4_driver/kbuild/ccip_port_mmio.h:cciv4_driver/ccip_port_mmio.h 
+                 cciv4_driver/kbuild/ccip_port_mmio.c:cciv4_driver/ccip_port_mmio.c 
+                 cciv4_driver/kbuild/ccip_sim_mmio.c:cciv4_driver/ccip_sim_mmio.c
+                 cciv4_driver/kbuild/ccip_perf_counters.c:cciv4_driver/ccip_perf_counters.c  
+                 cciv4_driver/kbuild/ccip_perf_counters.h:cciv4_driver/ccip_perf_counters.h   
                  cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
+
+
+AC_CONFIG_FILES([cci_PCIe_driver/kbuild/Makefile:cci_PCIe_driver/Kbuild.in])
+AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/cci_pcie_driver_main.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_internal.h:cci_PCIe_driver/cci_pcie_driver_internal.h
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_simulator.c:cci_PCIe_driver/cci_pcie_driver_simulator.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_simulator.h:cci_PCIe_driver/cci_pcie_driver_simulator.h
+                 cci_PCIe_driver/kbuild/ccip_sim_mmio.c:cci_PCIe_driver/ccip_sim_mmio.c             
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_PIPsession.c:cci_PCIe_driver/cci_pcie_driver_PIPsession.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_PIPsession.h:cci_PCIe_driver/cci_pcie_driver_PIPsession.h
+                 cci_PCIe_driver/kbuild/cci_pcie_common.c:cci_PCIe_driver/cci_pcie_common.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_pdde_linux.c:cci_PCIe_driver/cci_pcie_driver_pdde_linux.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.c:cci_PCIe_driver/cci_pcie_driver_umapi_linux.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_common.c:cci_PCIe_driver/cci_pcie_driver_umapi_common.c
+                 cci_PCIe_driver/kbuild/cci_pcie_driver_umapi_linux.h:cci_PCIe_driver/cci_pcie_driver_umapi_linux.h
+                 cci_PCIe_driver/kbuild/ccip_defs.h:cci_PCIe_driver/ccip_defs.h
+                 cci_PCIe_driver/kbuild/ccipdrv-events.h:cci_PCIe_driver/ccipdrv-events.h
+                 cci_PCIe_driver/kbuild/ccip_fme.c:cci_PCIe_driver/ccip_fme.c
+                 cci_PCIe_driver/kbuild/ccip_fme.h:cci_PCIe_driver/ccip_fme.h
+                 cci_PCIe_driver/kbuild/ccip_port.c:cci_PCIe_driver/ccip_port.c
+                 cci_PCIe_driver/kbuild/ccip_port.h:cci_PCIe_driver/ccip_port.h
+                 cci_PCIe_driver/kbuild/ccip_afu.c:cci_PCIe_driver/ccip_afu.c
+                 cci_PCIe_driver/kbuild/ccip_stap.c:cci_PCIe_driver/ccip_stap.c
+                 cci_PCIe_driver/kbuild/ccip_pr.c:cci_PCIe_driver/ccip_pr.c
+                 cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile
@@ -210,7 +244,8 @@ AC_CONFIG_FILES([Makefile
                  aalresourcemgr_client/Makefile
                  aal_uidriver/Makefile
                  spl2_pip_dksm/Makefile
-                 cciv4_driver/Makefile])
+                 cciv4_driver/Makefile
+                 cci_PCIe_driver/Makefile])
 
 AC_OUTPUT
 

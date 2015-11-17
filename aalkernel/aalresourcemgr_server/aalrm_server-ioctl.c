@@ -136,6 +136,7 @@ void aalrms_event_config_update(struct aal_device *pdev,
    pcfgUpdate->devattrs.Handle      = pdev;                 // Device Handle
    pcfgUpdate->devattrs.devid       = pdev->m_devid;        // Copy over the device ID
    pcfgUpdate->devattrs.maxOwners   = pdev->m_maxowners;    // Max mumber of owners
+
    //---------------------------------------------
    // Set the variable length portion of the event
    //   this consists  of an array of PIDs
@@ -173,6 +174,7 @@ void aalrms_event_config_update(struct aal_device *pdev,
    DPRINTF(AALRMS_DBG_IOCTL,"bustype: %x\n", pcfgUpdate->devattrs.devid.m_devaddr.m_bustype);
    DPRINTF(AALRMS_DBG_IOCTL,"busnum: %x\n", pcfgUpdate->devattrs.devid.m_devaddr.m_busnum);
    DPRINTF(AALRMS_DBG_IOCTL,"devicenum: %x\n", pcfgUpdate->devattrs.devid.m_devaddr.m_devicenum);
+   DPRINTF(AALRMS_DBG_IOCTL,"funcnum: %x\n", pcfgUpdate->devattrs.devid.m_devaddr.m_functnum);
    DPRINTF(AALRMS_DBG_IOCTL,"subdevnum: %x\n\n", pcfgUpdate->devattrs.devid.m_devaddr.m_subdevnum);
 
 
@@ -494,8 +496,7 @@ int aalrms_processDeviceRequest(struct aalrm_server_session *psess,
    // Send the message on its way.
 
    ret = aalsess_pipSendMessage(&ownerSess)(&ownerSess,
-                                            pipMessage,
-                                            &ownerSess);
+                                            pipMessage);
    if ( 0 == ret ) {
       ASSERT(NULL == eventp); // memory leak otherwise.
       goto DONE;

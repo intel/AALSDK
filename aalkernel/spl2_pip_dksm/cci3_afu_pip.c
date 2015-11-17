@@ -83,8 +83,7 @@
 
 static int
 AFUCommand(struct aaldev_ownerSession *,
-           struct aal_pipmessage,
-           void *);
+           struct aal_pipmessage);
 
 
 //=============================================================================
@@ -115,14 +114,12 @@ struct aal_ipip CCIAFUpip = {
 // Interface: public
 // Inputs: pownerSess - Session between App and device
 //         Message - Message to process
-//         MessageContext - used by UIDRV (TODO deprecate)
 // Outputs: none.
 // Comments:
 //=============================================================================
 int
 AFUCommand(struct aaldev_ownerSession *pownerSess,
-           struct aal_pipmessage       Message,
-           void                       *MessageContext)
+           struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);

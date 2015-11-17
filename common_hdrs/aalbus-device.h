@@ -100,21 +100,8 @@
 
 BEGIN_NAMESPACE(AAL)
 
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//                               AAL Device
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-#define  AAL_DEVICE_VERSION   0x0001000000000200
 
-// KObject length restrictions disapppear in 2.6.31 and later
-#if   defined( __AAL_LINUX__ )
-# if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
-#    define BUS_ID_SIZE 20
-# endif
-#elif defined( __AAL_WINDOWS__ )
-# define BUS_ID_SIZE 20
-#endif // OS
+
 
 //=============================================================================
 // Name: aal_device_factory
@@ -177,9 +164,6 @@ aaldev_create_device(struct mafu_CreateAFU *,
 btInt
 aaldev_destroy_device(struct aal_device * );
 
-
-#define AAL_AFU_DEVICE_BASENAME     "AALAFU"
-
 // Used by the matching routines to mask individual fields of the ID
 #define AAL_DEV_ID_MASK_VENDOR      (0x1 <<  1)
 #define AAL_DEV_ID_MASK_AHMGUID     (0x1 <<  2)
@@ -223,30 +207,6 @@ struct aal_uiapi {
    int (*valwsid)(struct aal_wsid *);
 };
 
-//=============================================================================
-// Name: aaldev_ownerSession
-// Description: Represents an instance of a session between a device and its
-//              owner. This is the primary object shared between PIP and UIDrv.
-//=============================================================================
-struct aaldev_ownerSession {
-   // UI Message Adaptor
-   struct aal_uiapi  *m_uiapi;     // Message handler interface
-   btObjectType       m_UIHandle;  // UI Handle
-
-   // PIP
-   btObjectType       m_PIPHandle; // PIP Handle
-   kosal_list_head    m_wshead;    // Head of the workspace list for this device
-   struct aal_device *m_device;    // Device owned by the session
-};
-
-#define aalsess_pipSendMessage(os)  (aaldev_pipmsgHandlerp((os)->m_device)->sendMessage)
-#define aalsess_pipmsgID(os)        ((aaldev_pipid((os)->m_device)))
-#define aalsess_uimsgHandlerp(os)   ((os)->m_uiapi)
-#define aalsess_aaldevicep(os)      ((os)->m_device)
-#define aalsess_aalpipp(os)         (aaldev_pipp( aalsess_aaldevicep(os) ) )
-#define aalsess_pipHandle(os)       ((os)->m_PIPHandle)
-#define aalsess_uiHandle(os)        ((os)->m_UIHandle)
-#define aalsess_add_ws(os,ih)       kosal_list_add_head(&ih, &(os)->m_wshead);
 
 
 //=============================================================================
@@ -319,173 +279,6 @@ aaldev_owner_init(struct aaldev_owner *pdevown,
    pdevown->m_manifest = manifest;
    ownerSess_Init(&pdevown->m_sess);
 }
-
-
-struct aal_device; // Forward reference
-
-// Prototype for call back used in doForeachOwner
-typedef btInt (*aaldev_OwnerProcessor_t)(struct aal_device *,
-                                         struct aaldev_owner *);
-
-
-
-
-//=============================================================================
-// Name: aal_device
-// Description: AAL specific device object definition
-//=============================================================================
-struct aal_device {
-   btUnsigned64bitInt m_version;       // Interface version
-#define AAL_DEVICE_FLAG_IS_REGISTERED 0x00000001
-   btUnsigned16bitInt m_flags;
-
-   // AAL_DEVICE Public interface
-   struct {
-      aaldev_AddOwner_e    (*addOwner)(struct aal_device * ,
-                                       btPID ,
-                                       btObjectType ,
-                                       pkosal_list_head );
-      aaldev_AddOwner_e     (*isOwner)(struct aal_device * ,
-                                       btPID );
-      aaldev_AddOwner_e (*removeOwner)(struct aal_device * ,
-                                       btPID );
-      aaldev_AddOwner_e (*updateOwner)(struct aal_device * ,
-                                       btPID ,
-                                       struct aaldev_ownerSession * ,
-                                       pkosal_list_head );
-      struct aaldev_ownerSession *
-                    (*getOwnerSession)(struct aal_device * ,
-                                       btPID );
-
-      struct aaldev_owner *
-                     (*doForeachOwner)(struct aal_device * ,
-                                       aaldev_OwnerProcessor_t );
-      btInt                 (*quiesce)(struct aal_device * ,
-                                       struct aaldev_owner * );
-      btInt                  (*remove)(struct aal_device * );
-      void            (*releasedevice)(pkosal_os_dev );
-   } i;
-
-   // Convenience macros
-   #define dev_addOwner(p,id,m,s)    (p)->i.addOwner(p,id,m,s)
-   #define dev_isOwner(p,id,m,s)     (p)->i.addOwner(p,id)
-   #define dev_removeOwner(p,id)     (p)->i.removeOwner(p,id)
-   #define dev_updateOwner(p,o,s,l)  (p)->i.updateOwner(p,o,s,l)
-   #define dev_OwnerSession(p,o)     (p)->i.getOwnerSession(p,o)
-   #define dev_doForeachOwner(p,f)   (p)->i.doForeachOwner(p,f)
-   #define dev_quiesce(p,o)          (p)->i.quiesce(p,o)
-   #define dev_remove(p)             (p)->i.remove(p)
-   #define dev_hasRelease(p)         (NULL != (p)->i.releasedevice)
-   #define dev_setrelease(p,f)       (p)->i.releasedevice=f
-   #define dev_release(p,d)          (p)->i.releasedevice(d)
-
-   // Device specific information
-   struct aal_device_id m_devid;       // Device ID
-
-   //-----------------------
-   // Interface plug-ins
-   //-----------------------
-#if DEPRECATED //NOT USED
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,23)
-   int (*m_uevent)(struct aal_device *dev, struct kobj_uevent_env *env);
-#else
-   int (*m_uevent)(struct aal_device *dev,
-                   char             **envp,
-                   int                num_envp,
-                   char              *buffer,
-                   int                buffer_size);
-#endif
-#endif // DEPRECATED
-
-   // PIP Interface bindings
-   struct aal_interface *m_ipip;           // PIP service interface container
-   struct aal_ipip      *m_pip;            // PIP interface
-   btObjectType          m_pipContext;     // PIP specific context
-
-
-   btInt                 m_devstate;       // Device state 1 - if activated 0 - if quiescent
-   kosal_list_head       m_ownerlist;      // List of owning sessions
-   kosal_mutex           m_listsem;        // Lock used for protecting list manipulations
-   btUnsigned32bitInt    m_numowners;      // Number of owners
-   btUnsigned32bitInt    m_maxowners;      // MAximum number of owners
-   btUnsigned16bitInt    m_mappableAPI;    // Supports direct access to PIP
-
-   kosal_mutex           m_sem;            // Private mutex
-
-   struct aal_bus       *m_bus;            // AAL Bus interface
-
-   kosal_os_dev          m_dev;            // Device base class
-   char                  m_basename[BUS_ID_SIZE];
-   btUnsigned64bitInt    m_validator;      // Used for validation
-   /* allocation list.  head is in aal_bus_type.alloc_list_head */
-   kosal_list_head 	    m_alloc_list;
-
-};
-
-//-----------------
-//   Casting Macros
-//-----------------
-#define basedev_to_aaldev(dev)           ( kosal_container_of(dev, struct aal_device, m_dev) )
-#define aaldev_to_basedev(dev)           ((dev)->m_dev)
-
-#define aaldev_is_registered(p)          flag_is_set((p)->m_flags, AAL_DEVICE_FLAG_IS_REGISTERED)
-#define aaldev_set_registered(p)         flag_setf((p)->m_flags,   AAL_DEVICE_FLAG_IS_REGISTERED)
-#define aaldev_clr_registered(p)         flag_clrf((p)->m_flags,   AAL_DEVICE_FLAG_IS_REGISTERED)
-
-//-----------------------
-// aal_device Accesssors
-//-----------------------
-#define aaldev_pipid(d)                  ((d)->m_devid.m_pipGUID)                // PIP IID
-#define aaldev_pipp(d)                   ((d)->m_pip)                            // PIP pointer
-#define aaldev_pipmsgHandlerp(d)         ( &(aaldev_pipp(d))->m_messageHandler ) // Message handler
-#define aaldev_pip_interface(d)          ((d)->m_ipip)                           // PIP interface container object
-#define aaldev_pip_context(d)            ((d)->m_pipContext)                     // Context
-#define aaldev_pip_context_to_obj(t,d)   ( (t) (d->m_pipContext) )               // Context cast to type
-
-#if   defined( __AAL_LINUX__ )
-#  if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)
-#     define aaldev_devname(dev)              ( dev_name(&aaldev_to_basedev(dev)) )
-#  else
-#     define aaldev_devname(dev)              ((dev)->m_dev.bus_id)
-#  endif
-#elif defined( __AAL_WINDOWS__ )
-#     define aaldev_devname(dev)              ((dev)->m_dev.m_basename)
-#endif // OS
-
-
-#define aaldev_bus(dev)                  (*(dev)->m_bus)
-#define aaldev_busp(dev)                 ((dev)->m_bus)
-#define aaldev_basedriverp(d)            (aaldev_to_basedev(d).driver)
-
-#define aaldev_basename(dev)             ((dev)->m_basename)
-
-#define aaldev_devid(dev)                ((dev)->m_devid)
-#define aaldev_devid_devtype(dev)        (((dev)->m_devid).m_devicetype)
-#define aaldev_devid_ahmguid(dev)        (((dev)->m_devid).m_ahmGUID)
-#define aaldev_devid_pipguid(dev)        (((dev)->m_devid).m_pipGUID)
-#define aaldev_devid_afuguid(dev)        (((dev)->m_devid).m_afuGUID)
-#define aaldev_devid_afuguidl(dev)       (((dev)->m_devid).m_afuGUIDl)
-#define aaldev_devid_afuguidh(dev)       (((dev)->m_devid).m_afuGUIDh)
-#define aaldev_devid_vendorid(dev)       (((dev)->m_devid).m_vendor)
-
-#define aaldev_devaddr(dev)              ((dev)->m_devid.m_devaddr)
-#define aaldev_devaddr_bustype(dev)      (aaldev_devaddr(dev).m_bustype)
-#define aaldev_devaddr_busnum(dev)       (aaldev_devaddr(dev).m_busnum)
-#define aaldev_devaddr_devnum(dev)       (aaldev_devaddr(dev).m_devicenum)
-#define aaldev_devaddr_subdevnum(dev)    (aaldev_devaddr(dev).m_subdevnum)
-
-// Utility macros
-#define aaldev_haspip(devp)              (NULL != (devp)->m_pip)
-#define aaldev_mappableAPI(devp)         ((devp)->m_mappableAPI)
-#define aaldev_allowsDirectAPI(devp)     (AAL_DEV_APIMAP_NONE != (devp)->m_mappableAPI)
-#define aaldev_allowsAPIMode(devp, m)    ( ((devp)->m_mappableAPI & (m)) == (m) )
-
-//-----------------
-// Utility
-//-----------------
-#define link_aalchild_to_parent(c,p)     ((c)->m_dev.parent =  &((p)->m_dev))
-#define is_driver_device_owner(drvp,dev) ( aaldrv_to_basep(drvp) == aaldev_basedriverp(dev) )
-
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

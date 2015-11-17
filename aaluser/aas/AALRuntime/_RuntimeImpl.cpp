@@ -43,7 +43,7 @@
 // Runtime definitions
 #include "aalsdk/AALTypes.h"
 #include "aalsdk/aas/ServiceHost.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 #include "_RuntimeImpl.h"
 #include "_MessageDelivery.h"
@@ -731,6 +731,7 @@ btBool _runtime::ProcessConfigParms(const NamedValueSet &rConfigParms)
       // Using back door because thats all we know.
       ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, sName);
       optArgs.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+      optArgs.Add(AALRUNTIME_CONFIG_RECORD, pConfigRecord);      // add runtime's config record to forward parameters
 
       // Allocate the service.
       allocService(this, optArgs, TransactionID(Broker));

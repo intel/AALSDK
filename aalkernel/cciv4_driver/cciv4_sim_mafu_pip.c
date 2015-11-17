@@ -80,12 +80,10 @@
 #include "cciv4_PIPsession.h"
 
 int MAFUCommandHandler(struct aaldev_ownerSession * ,
-                       struct aal_pipmessage ,
-                       void * );
+                       struct aal_pipmessage  );
 
 int CMAFUCommandHandler(struct aaldev_ownerSession * ,
-                        struct aal_pipmessage ,
-                        void * );
+                        struct aal_pipmessage );
 
 struct uidrv_event_afu_response_event *
                   do_mafucmdCreateAFU( struct aaldev_ownerSession *,
@@ -133,8 +131,7 @@ struct aal_ipip cciv4_simMAFUpip =
 //=============================================================================
 int
 MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
-                   struct aal_pipmessage       Message,
-                   void                       *MessageContext)
+                   struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -556,8 +553,7 @@ struct aal_ipip cciv4_simCMAFUpip =
 //=============================================================================
 int
 CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
-                    struct aal_pipmessage       Message,
-                    void                       *MessageContext)
+                    struct aal_pipmessage       Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);

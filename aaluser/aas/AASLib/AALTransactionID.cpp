@@ -377,7 +377,10 @@ btBool TransactionID::operator == (const TransactionID &rhs) const
 // Name: ~TransactionID
 // Description: Destructor
 //=============================================================================
-TransactionID::~TransactionID() {}
+TransactionID::~TransactionID() {
+
+   int x=1;
+}
 
 //=============================================================================
 // Name: operator <<

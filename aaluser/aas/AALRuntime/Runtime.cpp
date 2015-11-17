@@ -43,7 +43,7 @@
 #include "aalsdk/Runtime.h"
 #include "_RuntimeImpl.h"
 #include "aalsdk/CAALEvent.h"
-#include "aalsdk/Dispatchables.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 /// @addtogroup AAL Runtime
 /// @{

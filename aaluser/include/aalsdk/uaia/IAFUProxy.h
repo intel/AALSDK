@@ -39,18 +39,37 @@
 #ifndef __AALSDK_IAFUPROXY_H__
 #define __AALSDK_IAFUPROXY_H__
 
+#include <aalsdk/kernel/ccipdriver.h>
 #include <aalsdk/AALTypes.h>
+#include <aalsdk/CUnCopyable.h>
+
 //#include <aalsdk/CAALBase.h>                    // CAALBase
 //#include <aalsdk/AALEvent.h>                    // IEvent
 //#include <aalsdk/AALTransactionID.h>
 //#include <aalsdk/uaia/uidrvMessage.h>           // uidrvMessageRoute
-#include <aalsdk/uaia/AIA.h>                      // IAFUDev, IAFUTransaction, IAFUCSRMap
+//#include <aalsdk/uaia/AIA.h>                      // IAFUDev, IAFUTransaction, IAFUCSRMap
 //#include <aalsdk/uaia/IUAIASession.h>           // IuAIASession
 //#include <aalsdk/uaia/AALuAIA_Messaging.h>      // UIDriverClient_uidrvMarshaler_t
 
-#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
+//#include <aalsdk/kernel/aalui.h>                // aalui_extbindargs
 
 //#include <aalsdk/utils/AALWorkSpaceUtilities.h> // WorkSpaceMapper
+
+//=============================================================================
+// Name: IAIATransaction
+// Description: Interface to IAIATransaction object which abstracts the
+//              and AIA downstream message.
+// Comments:
+//=============================================================================
+class UAIA_API IAIATransaction : public CUnCopyable
+{
+public:
+   virtual ~IAIATransaction(){};
+   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
+   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
+   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
+   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
+};
 
 //==========================================================================
 // Name: IUIDriverEvent
@@ -100,6 +119,11 @@ public:
    ~IAFUProxy(){};
    // Send a message to the device
    virtual AAL::btBool SendTransaction( IAIATransaction *pAFUmessage )       = 0;
+
+   // Map/Unmap Workspace IDs to virtual memory addresses
+   virtual AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet) = 0;
+   virtual void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)           = 0;
+
 #if 0
    // Accessors to memory mapped regions
    virtual AAL::btVirtAddr getCSRBase()                                       = 0;

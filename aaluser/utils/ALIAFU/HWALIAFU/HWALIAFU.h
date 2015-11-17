@@ -44,10 +44,15 @@
 //****************************************************************************
 #ifndef __HWALIAFU_H__
 #define __HWALIAFU_H__
+#include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/HWALIAFUService.h>
+//#include <aalsdk/aas/AALDeviceService.h>
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ICCIClient.h>
+
+#include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
+//#include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
+#include <aalsdk/uaia/IAFUProxy.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -64,23 +69,57 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// HWALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_FPGA)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class HWALIAFU_API HWALIAFU : public HWAFUWkspcDelegate<MASTER_VIRT_MODE>,
-                              public IALIAFU
+class HWALIAFU_API HWALIAFU : public ServiceBase,
+                              public IServiceClient,     // for AIA
+                              public IAFUProxyClient,
+                              public IALIMMIO,
+                              public IALIBuffer,
+                              public IALIUMsg,
+                              public IALIReset/*
+                              public IALIPerf*/
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 public:
    // <DeviceServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU, HWAFUWkspcDelegate<MASTER_VIRT_MODE>)
+DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
+      m_pAALService(NULL),
+      m_pAFUProxy(NULL),
+      m_tidSaved(),
+      m_pSvcClient(NULL),
+      m_mapWkSpc(),
+      m_MMIORmap(NULL),
+      m_MMIORsize(0),
+      m_uMSGmap(NULL),
+      m_uMSGsize(0)
    {
-      if ( EObjOK != SetInterface(iidALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+      // TODO: at some point, these probably go into init() and be exposed based
+      //       on the actual capabilities
+      if ( EObjOK !=  SetInterface(iidALI_MMIO_Service, dynamic_cast<IALIMMIO *>(this)) ) {
          m_bIsOK = false;
       }
-      if ( EObjOK != SetInterface(iidHWALIAFU, dynamic_cast<IALIAFU *>(this)) ) {
+
+      if ( EObjOK != SetInterface(iidALI_UMSG_Service, dynamic_cast<IALIUMsg *>(this)) ){
          m_bIsOK = false;
       }
-   }
+
+      if ( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
+         m_bIsOK = false;
+      }
+//      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
+      if ( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ){
+         m_bIsOK = false;
+      } // for AIA
+
+      if ( EObjOK != SetInterface(iidAFUProxyClient, dynamic_cast<IAFUProxyClient *>(this)) ){
+         m_bIsOK = false;
+      }  // for AFUProy
+   }  // DECLARE_AAL_SERVICE_CONSTRUCTOR()
 
    virtual btBool init(IBase               *pclientBase,
                        NamedValueSet const &optArgs,
@@ -89,21 +128,79 @@ public:
    virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
    // </DeviceServiceBase>
 
-   // <IALIAFU>
-   virtual void WorkspaceAllocate(btWSSize             Length,
-                                  TransactionID const &TranID);
+   // <IALIMMIO>
+   virtual btVirtAddr   mmioGetAddress( void );
+   virtual btCSROffset  mmioGetLength( void );
 
-   virtual void     WorkspaceFree(btVirtAddr           Address,
-                                  TransactionID const &TranID);
+   virtual btBool   mmioRead32( const btCSROffset Offset,       btUnsigned32bitInt * const pValue);
+   virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
+   virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
+   virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   // </IALIMMIO>
 
-   virtual btBool         CSRRead(btCSROffset CSR,
-                                  btCSRValue *pValue);
+   // <IALIBuffer>
+   virtual void bufferAllocate( btWSSize             Length,
+                                TransactionID const &TranID,
+                                NamedValueSet       *pOptArgs = NULL );
+   virtual void     bufferFree( btVirtAddr           Address,
+                                TransactionID const &TranID);
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
+   // </IALIBuffer>
 
-   virtual btBool        CSRWrite(btCSROffset CSR,
-                                  btCSRValue  Value);
-   virtual btBool      CSRWrite64(btCSROffset CSR,
-                                  bt64bitCSR  Value);
-   // </IALIAFU>
+   // <IALIUMsg>
+   virtual btUnsignedInt umsgGetNumber( void );
+   virtual btVirtAddr   umsgGetAddress( const btUnsignedInt UMsgNumber );
+   virtual bool      umsgSetAttributes( NamedValueSet const &nvsArgs);
+   // </IALIUMsg>
+
+   // <IALIReset>
+   virtual IALIReset::e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL);
+   virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL);
+   // </IALIReset>
+
+   // <IServiceClient>
+   virtual void serviceAllocated(IBase               *pServiceBase,
+                                 TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
+   virtual void serviceAllocateFailed(const IEvent &rEvent);
+   virtual void serviceReleased(TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
+   virtual void serviceReleaseFailed(const IEvent &rEvent);
+   virtual void serviceEvent(const IEvent &rEvent);
+   // </IServiceClient>
+
+   // <IAFUProxyClient>
+   virtual void AFUEvent(AAL::IEvent const &theEvent);
+   // </IAFUProxyClient>
+
+   enum InitTransaction {
+      GetMMIO = 1,
+      GetUMSG
+   };
+
+protected:
+   IAALService         *m_pAALService;
+   IAFUProxy           *m_pAFUProxy;
+   TransactionID        m_tidSaved;
+   IBase               *m_pSvcClient;
+   btVirtAddr           m_MMIORmap;
+   btUnsigned32bitInt   m_MMIORsize;
+   btVirtAddr           m_uMSGmap;
+   btUnsigned32bitInt   m_uMSGsize;
+
+   struct ReleaseContext {
+      const TransactionID   TranID;
+      const btTime          timeout;
+      ReleaseContext(const TransactionID &rtid, btTime to) :
+         TranID(rtid),
+         timeout(to)
+      {}
+   };
+
+
+   // Map to store workspace parameters
+   typedef std::map<btVirtAddr, struct aalui_WSMParms> mapWkSpc_t;
+   mapWkSpc_t m_mapWkSpc;
+
 };
 
 /// @}

@@ -139,7 +139,7 @@ btPhysAddr SWSimALIAFU::NextPhys()
    m_NextPhys = (tmp + 1) << LOG2_CL;
    return p;
 }
-
+/*
 void SWSimALIAFU::WorkspaceAllocate(btWSSize             Length,
                                     TransactionID const &TranID)
 {
@@ -656,7 +656,7 @@ void SWSimALIAFU::SimTrput()
    pAFUDSM->start_overhead = 2;
    pAFUDSM->end_overhead   = 1;
 }
-
+*/
 END_NAMESPACE(AAL)
 
 

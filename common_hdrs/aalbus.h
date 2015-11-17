@@ -180,8 +180,7 @@ void
 aalbus_def_unregister_class_device(struct aal_classdevice *classdevice);
 static inline
 btInt
-aalbus_def_register_device(struct aal_device *dev,
-                           pkosal_bus_type bustype);
+aalbus_def_register_device(struct aal_device *dev);
 static inline
 void
 aalbus_def_unregister_device(struct aal_device *dev);
@@ -254,8 +253,7 @@ struct aal_bus {
    _DECLARE_DEVFACTORY_TYPE;
 
    // Device bus methods
-   btInt                   (*register_device)( struct aal_device *dev,
-                                               pkosal_bus_type bustype );
+   btInt                   (*register_device)( struct aal_device *dev );
    void                    (*unregister_device)( struct aal_device *dev );
 
 
@@ -314,10 +312,9 @@ struct aal_bus {
 //=============================================================================
 static inline
 btInt
-aalbus_def_register_device(struct aal_device *dev,
-                           pkosal_bus_type    bustype )
+aalbus_def_register_device(struct aal_device *dev)
 {
-   return aalbus_get_bus()->register_device(dev, bustype);
+   return aalbus_get_bus()->register_device(dev);
 }
 static inline
 void

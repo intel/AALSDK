@@ -167,9 +167,9 @@ private:
    virtual void                  runtimeStopped(IRuntime * )            { ASSERT(false); /*empty*/}
    virtual void              runtimeStartFailed(const IEvent & )        { ASSERT(false); /*empty*/}
    virtual void               runtimeStopFailed(const IEvent & )        { ASSERT(false); /*empty*/}
-   virtual void    runtimeAllocateServiceFailed(IEvent const & )        { ASSERT(false); /*empty*/}
+   virtual void    runtimeAllocateServiceFailed(IEvent const & )        { /*ignored*/}
    virtual void runtimeAllocateServiceSucceeded(IBase               * ,
-                                                TransactionID const & ) { ASSERT(false); /*empty*/}
+                                                TransactionID const & ) { /*ignored*/}
    virtual void                    runtimeEvent(const IEvent & )        { ASSERT(false); /*empty*/}
    // </IRuntimeClient>
 

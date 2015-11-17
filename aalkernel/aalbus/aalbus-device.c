@@ -312,7 +312,7 @@ aaldev_create_device(struct mafu_CreateAFU *pRequest,
       DPRINTF(AALBUS_DBG_MOD, ": AFU device created but not registered.  Action flags = %x\n",pRequest->actionflags);
       return paaldevice;
 
-   } else if( 0 != aal_bus_p->register_device(paaldevice, NULL) ) {
+   } else if( 0 != aal_bus_p->register_device(paaldevice) ) {
       DPRINTF(AALBUS_DBG_MOD, ": AFU device failed to register!.\n");
       status = kosal_sem_get_user_alertable(&aal_bus_type_p->alloc_list_sem);
       if (0 != status) {
@@ -752,13 +752,13 @@ out:
 int
 aaldev_init(struct aal_device *pdev)
 {
-   kosal_printk_level(KERN_INFO, "Initializing 0x%p\n", pdev);
 
+#if 0
    if( unlikely( !aaldev_valid(pdev) ) ) {
       kosal_printk_level(KERN_ERR, "aaldev_initFailed\n");
       return 0;
    }
-
+#endif
    //  Initialize interface
    pdev->i.addOwner        = aaldev_addOwner;
    pdev->i.isOwner         = aaldev_isOwner;
