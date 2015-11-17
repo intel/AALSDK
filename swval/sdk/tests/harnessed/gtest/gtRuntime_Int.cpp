@@ -77,6 +77,7 @@ protected:
 
 TEST_F(Runtime_Int_f_2, DISABLED_aal0783)
 {
+   // When runtime start, then runtime stop is called with no intervening service allocation.
 
    NamedValueSet args;
 
@@ -106,5 +107,16 @@ TEST_F(Runtime_Int_f_2, DISABLED_aal0783)
    stop();
 }
 
+TEST_F(Runtime_Int_f_2, aal0784)
+{
+   // When runtime stop is called without a prior runtime start.
+
+   stop();
+   m_RuntimeClient.Wait();
+
+   ASSERT_EQ(1, m_RuntimeClient.LogEntries()) << m_RuntimeClient;
+
+   EXPECT_STREQ("IRuntimeClient::runtimeStopped", m_RuntimeClient.Entry(0).MethodName());
 
 
+}

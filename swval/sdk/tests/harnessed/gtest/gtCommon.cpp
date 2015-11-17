@@ -1284,7 +1284,7 @@ void CallTrackingIRuntimeClient::runtimeEvent(const IEvent &e)
 SynchronizingIRuntimeClient::SynchronizingIRuntimeClient(btApplicationContext Ctx) :
    CallTrackingIRuntimeClient(Ctx)
 {
-   m_Bar.Create(1, true);
+   m_Bar.Create(1, false);
 }
 
 void SynchronizingIRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &e)
@@ -1337,8 +1337,14 @@ void SynchronizingIRuntimeClient::runtimeEvent(const IEvent &e)
    Post();
 }
 
-btBool SynchronizingIRuntimeClient::Wait(btTime        Timeout) { return m_Bar.Wait(Timeout); }
-btBool SynchronizingIRuntimeClient::Post(btUnsignedInt Count)   { return m_Bar.Post(Count);   }
+btBool SynchronizingIRuntimeClient::Wait(btTime Timeout)
+{
+   btBool resWait  = m_Bar.Wait(Timeout);
+   btBool resReset = m_Bar.Reset();
+   return resWait && resReset;
+}
+
+btBool SynchronizingIRuntimeClient::Post(btUnsignedInt Count) { return m_Bar.Post(Count); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // ISvcsFact
