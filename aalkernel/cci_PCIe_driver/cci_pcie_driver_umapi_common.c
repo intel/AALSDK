@@ -96,8 +96,11 @@ btInt ccidrv_freewsid(struct aal_wsid *);
 btInt ccidrv_valwsid(struct aal_wsid *);
 btInt ccidrv_flush_eventqueue(  struct ccidrv_session *psess);
 
-btInt process_send_message( struct ccidrv_session  *,
-                            struct ccipui_ioctlreq *);
+btInt process_send_message(struct ccidrv_session  *,
+                           struct ccipui_ioctlreq *,
+                           struct ccipui_ioctlreq *,
+                           btWSSize               *);
+
 btInt process_bind_request( struct ccidrv_session  *psess,
                             struct ccipui_ioctlreq *preq);
 btInt ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
@@ -255,27 +258,23 @@ int ccidrv_session_destroy(struct ccidrv_session * psess)
 //         cmd - Command number
 //         preq - Pointer to Request (input buffer)
 //         InbufSize - Size of input buffer
-//         presp - Pointer to response (output vuffer)
+//         presp - Pointer to response (output buffer)
 //         pOutbufSize - Pointer to output buffer size
 // Outputs: number of bytes transfered to output buffer written to *pOutbufSize
 // Returns: status code: 0 == success
 // Comments: Entry point for all requests from user space
 //=============================================================================
 btInt
-ccidrv_messageHandler( struct ccidrv_session *psess,
-                       btUnsigned32bitInt     cmd,
+ccidrv_messageHandler( struct ccidrv_session  *psess,
+                       btUnsigned32bitInt      cmd,
                        struct ccipui_ioctlreq *preq,
-                       btWSSize               InbufSize,
+                       btWSSize                InbufSize,
                        struct ccipui_ioctlreq *presp,
-                       btWSSize              *pOutbufSize)
+                       btWSSize               *pOutbufSize)
 {
-   btInt    ret            = -EINVAL; // Assume failure
 
    // Variables used in the Device Allocate Messages
    struct aal_q_item *pqitem = NULL; // Generic request queue item
-
-   btWSSize OutbufSize     = *pOutbufSize;
-   *pOutbufSize            = 0; // prepare for error case
 
 #if 1
 # define UIDRV_IOCTL_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -296,53 +295,50 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
       // Get next queued message descriptor
       // This will contain things like its
       // size and type
+      //--------------------------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_GETMSG_DESC) {
+PVERBOSE("********* 1 *****************\n")
          // Make sure there is a message to be had
          if ( _aal_q_empty(&psess->m_eventq) ) {
             PERR("No Message available\n");
-            ret = -EAGAIN;
-            PTRACEOUT_INT(ret);
-            return ret;
+            PTRACEOUT_INT(-EAGAIN);
+            *pOutbufSize = 0;
+            return -EAGAIN;
          }
-
+PVERBOSE("********* 2 *****************\n")
          // Peek the head of the message queue
          pqitem = _aal_q_peek(&psess->m_eventq);
          if ( NULL == pqitem ) {
             PERR("Corrupt event queue\n");
-            ret = -EFAULT;
-            PTRACEOUT_INT(ret);
-            return ret;
+            PTRACEOUT_INT(-EFAULT);
+            *pOutbufSize = 0;
+            return -EFAULT;
          }
 
-         // Copy the original header into the response then
-         //   modify the parts as necessary.
-         if ( OutbufSize <= sizeof(struct ccipui_ioctlreq) ) {
-            memcpy(presp, preq, sizeof(struct ccipui_ioctlreq));
-         }
-
+PVERBOSE("********* 3 ***************** resp =  %p  req = %p  \n", presp, preq)
          // Return the type and total size of the message that will be returned
          presp->id   = (uid_msgIDs_e)QI_QID(pqitem);
          presp->size = QI_LEN(pqitem);
 
-         PVERBOSE("Getting Message Decriptor - size = %" PRIu64 "\n", preq->size);
+         PVERBOSE("Getting Message Decriptor - size = %" PRIu64 "\n", presp->size);
 
-         // GETMSG_DESC always returns size of ioctlreq (i.e., header)
-         *pOutbufSize = sizeof(struct ccipui_ioctlreq);
-         ret = 0;
-         PTRACEOUT_INT(ret);
-      } return ret; // case AALUID_IOCTL_GETMSG_DESC:
+         // No Payload
+         *pOutbufSize = 0;
+         PTRACEOUT_INT(0);
+      } return 0; // case AALUID_IOCTL_GETMSG_DESC:
 
 
       // Get the next message off of the queue
       // returns a copy of the message and moves the item to
       // the pending queue
+      //----------------------------------------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_GETMSG) {
          // Make sure there is a message to be had
          if ( _aal_q_empty(&psess->m_eventq) ) {
             PERR("No Message available\n");
-            ret = -EAGAIN;
-            PTRACEOUT_INT(ret);
-            return ret;
+            *pOutbufSize = 0;
+            PTRACEOUT_INT(-EAGAIN);
+            return -EAGAIN;
          }
 
          //------------------------
@@ -351,47 +347,51 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
          pqitem = _aal_q_dequeue(&psess->m_eventq);
          if ( NULL == pqitem ) {
             PERR("Invalid or corrupted request\n");
-            ret = -EFAULT;
-            PTRACEOUT_INT(ret);
-            return ret;
+            *pOutbufSize = 0;
+            PTRACEOUT_INT(-EFAULT);
+            return -EFAULT;
          }
 
          // Process the request
-         *pOutbufSize = OutbufSize;
-         return ccidrv_marshal_upstream_message(preq, pqitem, presp, pOutbufSize);
+        return ccidrv_marshal_upstream_message(preq, pqitem, presp, pOutbufSize);
       } break; // case  AALUID_IOCTL_GETMSG:
 
 
       // Send the message to the device or PIP (SW driver)
+      //-------------------------------------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_SENDMSG) {
-         return process_send_message(psess, preq);
+         return process_send_message(psess, preq, presp, pOutbufSize);
       } break;
 
       // Process Bind device
+      //--------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_BINDDEV) {
+         *pOutbufSize = 0;  // TODO Let function decide
          return process_bind_request(psess, preq);
       } break;
 
       // Activate device - This is a framework command that
       // causes a device to "appear" in to the system
       UIDRV_IOCTL_CASE(AALUID_IOCTL_ACTIVATEDEV) {
+         *pOutbufSize = 0;
          PERR("TODO\n");
       } break;
 
       // Deactivate device - This is a framework command that
       // causes a device to be removed from the system
       UIDRV_IOCTL_CASE(AALUID_IOCTL_DEACTIVATEDEV) {
+         *pOutbufSize = 0;
          PERR("TODO\n");
       } break;
 
       default : {
+         *pOutbufSize = 0;
          PERR("Invalid IOCTL = 0x%x\n", cmd);
       } break;
    } //  switch (cmd)
 
-   ret = -1;
-   PTRACEOUT_INT(ret);
-   return ret;
+   PTRACEOUT_INT(-1);
+   return -1;
 }
 
 //=============================================================================
@@ -400,12 +400,14 @@ ccidrv_messageHandler( struct ccidrv_session *psess,
 // Interface: public
 // Inputs: psess - session
 //         preq - request header
-// Outputs: negative number - transaction commplete
+// Outputs: pOutbufSize must be set to size of payload to return or zero if none
 // Comments: This is the function that
 //=============================================================================
 btInt
 process_send_message(struct ccidrv_session  *psess,
-                     struct ccipui_ioctlreq *preq)
+                     struct ccipui_ioctlreq *preq,
+                     struct ccipui_ioctlreq *presp,
+                     btWSSize               *pOutbufSize)
 {
    btInt                              ret = 0;
    struct aal_device                 *pdev;
@@ -464,15 +466,30 @@ process_send_message(struct ccidrv_session  *psess,
          // Wrap the message and transaction identification
          //  pipMessage is a generic message wrapper for all
          //  PIP message handlers
-         pipMessage.m_message = aalui_ioctlPayload(preq);
-         pipMessage.m_tranID = preq->tranID;
-         pipMessage.m_context = preq->context;
+         pipMessage.m_message       = aalui_ioctlPayload(preq);
+         pipMessage.m_response      = aalui_ioctlPayload(presp);
+         pipMessage.m_prespbufSize  = pOutbufSize;
+         pipMessage.m_tranID        = preq->tranID;
+         pipMessage.m_context       = preq->context;
 
          // Send the message on to the device specific command handler.
          //  This macro resolves to calling the low level, device specific, command
          //  handler called the Physical Interface Protocol (PIP).  This enabled devices
          //  served by this driver have custom low level drivers.
          ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage);
+
+         // If there is data to return the size of the response payload
+         //   as long as it will fit
+         if(*pipMessage.m_prespbufSize <= *pOutbufSize ){
+            *pOutbufSize = *pipMessage.m_prespbufSize;
+         }else{
+            *pOutbufSize =0;
+         }
+
+         // Set the response size in the header
+         presp->size = *pOutbufSize;
+
+         PDEBUG("Return message = %d bytes\n", (int)*pOutbufSize);
          pipMessage.m_message = NULL;
 
          PTRACEOUT_INT(ret);
@@ -507,19 +524,20 @@ process_send_message(struct ccidrv_session  *psess,
 
          // Unblock select() calls.
          kosal_wake_up_interruptible( &psess->m_waitq);
+
+         *pOutbufSize =0;
       } break; // case reqid_UID_Shutdown
 
       default : {
          PERR("Unrecognized send message option %d\n", preq->id);
-         ret = -EINVAL;
-         PTRACEOUT_INT(ret);
-      } return ret;
+         PTRACEOUT_INT(-EINVAL);
+         *pOutbufSize =0;
+      } return -EINVAL;
 
    } // switch (preq->id)
 
-   ret = 0;
-   PTRACEOUT_INT(ret);
-   return ret;
+   PTRACEOUT_INT(0);
+   return 0;
 } // process_send_message
 
 
@@ -576,7 +594,7 @@ process_bind_request(struct ccidrv_session  *psess,
          if ( unlikely( NULL == aaldev_pipp(pdev) ) ) {
             PERR("uid_errnumDeviceHasNoPIPAssigned\n");
             // Create error event
-            bindcmplt = uidrv_event_bindcmplt_create(NULL, NULL, uid_errnumDeviceHasNoPIPAssigned, preq);
+            bindcmplt = ccipdrv_event_bindcmplt_create(NULL, NULL, uid_errnumDeviceHasNoPIPAssigned, preq);
             goto BIND_DONE;
          }
 
@@ -589,7 +607,7 @@ process_bind_request(struct ccidrv_session  *psess,
          if ( NULL == ownerSessp ) {
             PERR("Process not owner of this device.\n");
             // Create error event
-            bindcmplt = uidrv_event_bindcmplt_create(NULL, NULL, uid_errnumNotDeviceOwner, preq);
+            bindcmplt = ccipdrv_event_bindcmplt_create(NULL, NULL, uid_errnumNotDeviceOwner, preq);
             goto BIND_DONE;
          }
 
@@ -607,7 +625,7 @@ process_bind_request(struct ccidrv_session  *psess,
          if ( unlikely( !aaldev_pipmsgHandlerp(pdev)->bindSession(ownerSessp) ) ) {
             PERR("uid_errnumCouldNotBindPipInterface\n");
             // Create error event
-            bindcmplt = uidrv_event_bindcmplt_create(NULL, NULL, uid_errnumCouldNotBindPipInterface, preq);
+            bindcmplt = ccipdrv_event_bindcmplt_create(NULL, NULL, uid_errnumCouldNotBindPipInterface, preq);
             goto BIND_DONE;
          }
          //----------------------------------------------------------------
@@ -628,17 +646,18 @@ process_bind_request(struct ccidrv_session  *psess,
             ) {
             PERR("Failed to update owner: uid_errnumCouldNotClaimDevice\n");
             // Create error event
-            bindcmplt = uidrv_event_bindcmplt_create(NULL, NULL, uid_errnumCouldNotClaimDevice, preq);
+            bindcmplt = ccipdrv_event_bindcmplt_create(NULL, NULL, uid_errnumCouldNotClaimDevice, preq);
          } else {
             // Fill out the extended bind parameters
             bindevt.m_mappableAPI = aaldev_mappableAPI(pdev);
+            bindevt.m_size =0;
 
             PDEBUG("Creating bind event MAPPABLE = 0x%x\n", bindevt.m_mappableAPI);
 
             // Create the completion event
-            bindcmplt = uidrv_event_bindcmplt_create(preq->handle, &bindevt, uid_errnumOK, preq);
+            bindcmplt = ccipdrv_event_bindcmplt_create(preq->handle, &bindevt, uid_errnumOK, preq);
          }
-
+         ret = 0;
       } goto BIND_DONE; // case reqid_UID_Bind
 
       //----------------------
@@ -670,7 +689,7 @@ process_bind_request(struct ccidrv_session  *psess,
          if ( unlikely( !aaldev_pipmsgHandlerp(pdev)->unBindSession(ownerSessp) ) ) {
              PERR("uid_errnumCouldNotUnBindPipInterface\n");
              // Create error event
-             unbindcmplt = uidrv_event_Unbindcmplt_create(uid_errnumCouldNotUnBindPipInterface,preq);
+             unbindcmplt = ccipdrv_event_Unbindcmplt_create(uid_errnumCouldNotUnBindPipInterface,preq);
              ret = -EINVAL;
              goto UNBIND_DONE;
          }
@@ -678,12 +697,12 @@ process_bind_request(struct ccidrv_session  *psess,
          // Update the owner's list
          if ( unlikely( !dev_removeOwner(pdev, psess->m_pid) ) ) {
             PERR("Failed to update owner\n");
-            unbindcmplt = uidrv_event_Unbindcmplt_create(uid_errnumNotDeviceOwner, preq);
+            unbindcmplt = ccipdrv_event_Unbindcmplt_create(uid_errnumNotDeviceOwner, preq);
             ret = -EINVAL;
          } else {
-            unbindcmplt = uidrv_event_Unbindcmplt_create(uid_errnumOK, preq);
+            unbindcmplt = ccipdrv_event_Unbindcmplt_create(uid_errnumOK, preq);
          }
-
+         ret = 0;
       } goto UNBIND_DONE; // case reqid_UID_UnBind
 
       default : {
@@ -757,7 +776,6 @@ ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
                                  btWSSize              *pOutbufsize)
 {
    btInt    ret = 0;
-   btWSSize Outbufsize;
 
 #if 1
 # define UIDRV_PROCESS_MESSAGE_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -777,9 +795,6 @@ ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
       return -EINVAL;
    }
 
-   Outbufsize = *pOutbufsize;
-   *pOutbufsize = 0; // Prepar
-
    // Copy the header portion of the request back
    resp->id      = (uid_msgIDs_e)QI_QID(pqitem);
    resp->errcode = qip_to_ui_evtp_afuresponse(pqitem)->m_errnum;
@@ -787,22 +802,18 @@ ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
    resp->context = qip_to_ui_evtp_afuresponse(pqitem)->m_context;
    resp->tranID  = qip_to_ui_evtp_afuresponse(pqitem)->m_tranID;
 
-   if ( preq->size < QI_LEN(pqitem) ) {
-      ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));  //BUG in Linux version
-      ret = -EINVAL;
+   // Make sure there is room for the payload
+   if ( *pOutbufsize < QI_LEN(pqitem) ) {
+      PERR("No room for event payload. Outbuf payload size = %d Event Payload = %d\n",(int) *pOutbufsize,  (int) QI_LEN(pqitem));
+      ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
+      *pOutbufsize = 0;
       PTRACEOUT_INT(ret);
-      return ret;
+      return -EINVAL;
    }
 
    // Payload size
-   resp->size    = QI_LEN(pqitem);
+   *pOutbufsize = resp->size = QI_LEN(pqitem);
 
-   // Make sure there is room to fit the message
-   if ( ( resp->size + (sizeof(struct ccipui_ioctlreq)) ) > Outbufsize ) {
-      ret = -EINVAL;
-      PTRACEOUT_INT(ret);
-      return ret;
-   }
    // Copy the payload
    memcpy(resp->payload, qip_to_ui_evtp_afuresponse(pqitem)->m_payload, (size_t)resp->size);
 
@@ -810,8 +821,6 @@ ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
 
    //Destroy the event
    ccipdrv_event_afuresponse_destroy(qip_to_ui_evtp_afuresponse(pqitem));
-
-   *pOutbufsize = resp->size + sizeof(struct ccipui_ioctlreq);
 
    PTRACEOUT_INT(ret);
    return ret;

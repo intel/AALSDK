@@ -197,8 +197,10 @@ typedef enum
 typedef enum
 {
     ccipdrv_afucmdWKSP_ALLOC=1,
+    ccipdrv_afucmdPort_AssertReset,
+    ccipdrv_afucmdPort_DeassertReset,
+    ccipdrv_afucmdPort_QuiesceAndAssertReset,
     ccipdrv_afucmdWKSP_FREE,
-
     ccipdrv_getMMIORmap,
     ccipdrv_getFeatureRegion
 } ccipdrv_afuCmdID_e;
@@ -268,7 +270,7 @@ struct ccipui_ioctlreq
    uid_errnum_e       errcode;      // Driver specific error number
    btHANDLE           handle;       // Device handle
    btWSSize           size;         // Size of payload section [IN]
-   btByte             payload[1];   // Beginning of optional payload [IN]
+   btByte             payload[];    // Beginning of optional payload [IN]
 };
 
 // TODO CASSERT( sizeof(struct ccipui_ioctlreq)
@@ -454,7 +456,7 @@ struct ccipdrv_DeviceAttributes
 {
    btWSSize           m_size;             // Size of the attibute block
    btUnsigned32bitInt m_mappableAPI;      // Permits direct CSR mapping To be Deprecated
-   btByte             m_devattrib[1];     // Attribute block (TBD)
+   btByte             m_devattrib[];      // Attribute block (TBD)
 };
 
 END_C_DECLS

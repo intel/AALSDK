@@ -99,9 +99,11 @@ struct aal_fops
 // Message/Transaction wrapper
 struct aal_pipmessage
 {
-   btVirtAddr        m_message;  // Message body
-   stTransactionID_t m_tranID;   // Transaction ID to identify result
-   btObjectType      m_context;  // Optional token
+   btVirtAddr        m_message;        // Message body
+   btVirtAddr        m_response;       // Response body
+   btWSSize         *m_prespbufSize;   // Response buffer size
+   stTransactionID_t m_tranID;         // Transaction ID to identify result
+   btObjectType      m_context;        // Optional token
 };
 
 // Message handler interface definition

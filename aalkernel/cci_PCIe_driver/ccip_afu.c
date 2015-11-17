@@ -156,11 +156,11 @@ struct cci_aal_device   *
    ASSERT(NULL != pcci_aaldev);
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev) = cci_dev_AFU;
+   cci_dev_type(pcci_aaldev)     = cci_dev_UAFU;
 
-   // Bind the AAL device to the Port's AFU object. This enables the driver
-   //   to get to the Port AFU object from the AAL device.
-   set_cci_dev_subclass(pcci_aaldev, &ccip_port_afu_dev(pportdev));
+   // Record parentage
+   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -264,6 +264,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
 
 
+
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error = uid_errnumInvalidRequest;
 
@@ -283,11 +284,25 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       return -EIO;
    }
 
+   // Assume returning nothing
+   *Message.m_prespbufSize            = 0;
+
    //=====================
    // Message processor
    //=====================
    switch ( pmsg->cmd ) {
       struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
+
+      AFU_COMMAND_CASE(ccipdrv_afucmdPort_AssertReset) {
+         if(0 != port_afu_deassert( cci_dev_pport(pdev) )){
+            // Failure event
+
+         }
+
+         // Success Event
+
+      } break;
+
       // Returns a workspace ID for the Config Space
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
@@ -301,8 +316,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             0,
-                                                             0,
                                                              Message.m_tranID,
                                                              Message.m_context,
                                                              uid_errnumPermission);
@@ -314,15 +327,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             //------------------------------------------------------------
             // Create the WSID object and add to the list for this session
             //------------------------------------------------------------
-
-PINFO("About to examine wsid.\n");
             if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
                PERR("Failed ccipdrv_getMMIOR map Parameter\n");
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
-                                                                0,
-                                                                0,
                                                                 0,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
@@ -353,8 +362,6 @@ PINFO("About to examine wsid.\n");
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
-                                                                   4,                                 // Return the CSR size in octets
-                                                                   4,                                 // Return the inter-CSR spacing octets
                                                                    Message.m_tranID,
                                                                    Message.m_context,
                                                                    uid_errnumOK);
@@ -364,7 +371,13 @@ PINFO("About to examine wsid.\n");
                retval = 0;
             }
          }
-
+#if 0
+         // Make this atomic
+         if(Message.m_respbufSize >= sizeof(btWSID)){
+            *Message.m_response = wsidobjp_to_wid(wsidp);
+            Message.m_respbufSize = sizeof(btWSID);
+         }
+#endif
          ccidrv_sendevent( aalsess_uiHandle(pownerSess),
                            aalsess_aaldevicep(pownerSess),
                            AALQIP(pafuws_evt),

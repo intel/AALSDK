@@ -293,68 +293,91 @@ int ccidrv_ioctl(struct inode *inode,
    struct ccidrv_session *psess = (struct ccidrv_session *) file->private_data;
 
    // Generic variables
-   int                    ret=0;
-   struct ccipui_ioctlreq  req;                 // User IOCTL header
+   int                     ret=0;
+   struct ccipui_ioctlreq  req;                       // User IOCTL header
 
-   struct ccipui_ioctlreq *pfullrequest = NULL; // Full message with var data
-   btWSSize               FullRequestSize;
-   btWSSize               Outbufsize;
+   struct ccipui_ioctlreq *pfullrequest      = NULL;  // Full message with var data
+   btWSSize                FullRequestSize   = 0;     // Size of the user buffer (header + payload)
+   btWSSize                Outbufsize        = 0;     // Size of usable return payload buffer
+   struct ccipui_ioctlreq *pfullresponse     = NULL;  // Buffer to put return response if any.
 
-   DPRINTF(UIDRV_DBG_MOD,"check point arg=0x%p\n", (void *)arg);
+   ASSERT(NULL != psess );
    if ( NULL == psess ) {
       PERR("No session for message\n");
       return -EINVAL;
    }
-   //---------------------
-   // Get the user request - TODO This implementation is inefficient as it requires
-   // 2 reads to get the entire contents of message. Should be redesigned  for more
-   // efficient transfer using read/write, mmap() or similar (JG)
-   //---------------------
 
+   //---------------------
+   // Get the user request
+   //---------------------
    // Read header
    if ( copy_from_user(&req, (void *)arg, sizeof(req)) ) {
       return -EFAULT;
    }
 
-   // Total user buffer size is the size of structure ccipui_ioctlreq + payload size
-   Outbufsize = FullRequestSize = sizeof(struct ccipui_ioctlreq) + aalui_ioctlPayloadSize(&req);
+   // Total user buffer size is the size of the header structure ccipui_ioctlreq + payload size
+   FullRequestSize = (sizeof(struct ccipui_ioctlreq)) + aalui_ioctlPayloadSize(&req);
 
-   // Check to see if there is a payload
+   // If there is a payload then allocate a bige enough buffer and copy it in.
    if ( FullRequestSize > sizeof(struct ccipui_ioctlreq) ) {
 
       PINFO("UIDRV is reading message with payload of size %" PRIu64 "\n", aalui_ioctlPayloadSize(&req));
-      pfullrequest = (struct ccipui_ioctlreq *) kosal_kmalloc(FullRequestSize);
+      pfullrequest = (struct ccipui_ioctlreq *) kosal_kzmalloc(FullRequestSize);
 
       // Read whole message
       if ( copy_from_user(pfullrequest, (void *)arg, FullRequestSize) ) {
          kosal_kfree(pfullrequest, FullRequestSize);
+         kosal_kfree(pfullresponse, FullRequestSize);
          return -EFAULT;
       }
    } else {
-      //Header is all there is
+      //Header is all there is. No need to read it again. Just point to req earlier.
       pfullrequest = &req;
    }
 
-   // Pass the message to OS independent processing
-   ret = ccidrv_messageHandler(psess,
-                              cmd,
-                              pfullrequest,
-                              FullRequestSize,
-                              pfullrequest,   // Pointer to output buffer
-                              &Outbufsize);   // Outbuf buffer size
+   // Allocate a temporary buffer for the response. Note that for simplicity the payload
+   //   of the original request will be used for the response as well. I.e., The response buffer
+   //   is the same size as the request buffer.  The response will be copied over the original
+   //   user mode request.
+   //-------------------------------------------------------------------------------------------
+   pfullresponse = (struct ccipui_ioctlreq *) kosal_kzmalloc(FullRequestSize);
 
-   if ( 0 != ret ) {
+   // Limit on response payload.  This will be changed by the request processor to the actual return size
+   //  or zero if no response data.
+   Outbufsize = aalui_ioctlPayloadSize(&req);
+
+   PDEBUG("Output Buffer Payload size = %d\n", Outbufsize);
+
+   *pfullresponse = req;   // Copy the original header for the response and change as needed
+   // Pass the message to OS independent processing. Note that some functions that don't return a
+   // payload use only the request header to return their data. So the whole response buffer must be passed.
+   ret = ccidrv_messageHandler(psess,
+                               cmd,
+                               pfullrequest,
+                               FullRequestSize,
+                               pfullresponse,                       // Pointer to output response
+                               &Outbufsize);                        // Outbuf buffer size
+
+   if(0 == ret){
+
+      btWSSize FullResponseSize = sizeof(struct ccipui_ioctlreq) + Outbufsize;
+
+      // Copy the Response back.
+      PINFO("UIDRV is writing %" PRIu64 "-byte response message with payload of size %" PRIu64 " bytes\n", FullResponseSize, pfullresponse->size);
+      ret = copy_to_user((void*)arg, pfullresponse, FullResponseSize);
+
+   }else{
       PDEBUG("ccidrv_messageHandler failed\n");
-   } else {
-      // Copy back response if any.
-      if ( 0 != Outbufsize ) {
-         PINFO("UIDRV is writing %" PRIu64 "-byte response message with payload of size %" PRIu64 " bytes\n", Outbufsize, pfullrequest->size);
-         ret = copy_to_user((void*)arg, pfullrequest, Outbufsize);
-      }
+      ret = -EINVAL;
+   }
+
+   // Free response buffer
+   if( NULL != pfullresponse){
+         kosal_kfree( pfullresponse, FullRequestSize);
    }
 
    // Free message copy if it had a payload
-   if ( &req != pfullrequest ) {
+   if( &req != pfullrequest ) {
       kosal_kfree(pfullrequest, FullRequestSize);
    }
 

@@ -215,7 +215,8 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    // Make it an FME by setting the type field and giving a pointer to the
    //  FME device object of the CCIP board device
    cci_dev_type(pcci_aaldev) = cci_dev_FME;
-   set_cci_dev_subclass(pcci_aaldev, ccip_dev_to_fme_dev(pccipdev));
+   cci_dev_pfme(pcci_aaldev) = ccip_dev_to_fme_dev(pccipdev);
+
 
    // Setup the AAL device's ID. This is the collection of attributes
    //  that uniquely identifies the AAL device, usually for the purpose

@@ -94,6 +94,8 @@ struct port_device
 
    struct ccip_device           *m_ccipdev;           // Parent board
 
+   struct fme_device            *m_fme;               // Parent FME
+
    // Used for being added to the list of devices.
    kosal_list_head               m_list;
 
@@ -144,6 +146,8 @@ struct port_device
 #define aaldev_to_ccip_port_device(plist)         kosal_list_entry(plist, struct port_device, m_list)
 #define ccip_port_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define ccip_port_psem(pdev)                  (&(pdev)->m_sem)
+
+#define ccip_port_dev_fme(pdev)               ((pdev)->m_fme)
 
 /// @brief creates a Port Device
 ///
@@ -197,6 +201,10 @@ bt32bitInt port_afu_deassert(struct port_device *pport_dev);
 
 extern struct aal_ipip cci_Portpip;
 extern struct aal_ipip cci_AFUpip;
+
+extern bt32bitInt port_afu_deassert(struct port_device *);
+extern bt32bitInt port_afu_reset(struct port_device *);
+extern bt32bitInt port_afu_quiesce_reset(struct port_device *);
 
 END_NAMESPACE(AAL)
 

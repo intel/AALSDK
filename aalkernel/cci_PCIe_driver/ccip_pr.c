@@ -149,11 +149,11 @@ struct cci_aal_device   *
    }
 
    // Make it a User AFU
-   cci_dev_type(pcci_aaldev) = cci_dev_AFU;
+   cci_dev_type(pcci_aaldev) = cci_dev_PR;
 
-   // Bind the AAL device to the Port's AFU object. This enables the driver
-   //   to get to the Port AFU object from the AAL device.
-   set_cci_dev_subclass(pcci_aaldev, &ccip_port_afu_dev(pportdev));
+   // Record parentage
+   cci_dev_pport(pcci_aaldev)    = pportdev;       // Save its port
+   cci_dev_pfme(pcci_aaldev)     = ccip_port_dev_fme(pportdev);
 
    // Device Address is the same as the Port. Set the AFU ID information
    // The following attributes describe the interfaces supported by the device
@@ -277,8 +277,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             0,
-                                                             0,
                                                              Message.m_tranID,
                                                              Message.m_context,
                                                              uid_errnumPermission);
@@ -295,8 +293,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
-                                                                0,
-                                                                0,
                                                                 0,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
@@ -327,8 +323,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
-                                                                   4,                                 // Return the CSR size in octets
-                                                                   4,                                 // Return the inter-CSR spacing octets
                                                                    Message.m_tranID,
                                                                    Message.m_context,
                                                                    uid_errnumOK);

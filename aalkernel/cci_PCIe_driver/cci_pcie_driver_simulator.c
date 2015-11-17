@@ -664,8 +664,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             0,
-                                                             0,
                                                              Message.m_tranID,
                                                              Message.m_context,
                                                              uid_errnumPermission);
@@ -682,8 +680,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
-                                                                0,
-                                                                0,
                                                                 0,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
@@ -714,8 +710,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
                                                                    cci_dev_len_cci_csr(pdev),         // Return the requested aperture size
-                                                                   4,                                 // Return the CSR size in octets
-                                                                   4,                                 // Return the inter-CSR spacing octets
                                                                    Message.m_tranID,
                                                                    Message.m_context,
                                                                    uid_errnumOK);

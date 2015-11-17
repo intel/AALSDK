@@ -278,8 +278,6 @@ ccipdrv_event_afu_afugetmmiomap_create( btObjectType      devhandle,
                                         btWSID            wsid,
                                         btPhysAddr        physptr,
                                         btWSSize          size,
-                                        btWSSize          csrsize,
-                                        btWSSize          csrspacing,
                                         stTransactionID_t tranID,
                                         btObjectType      context,
                                         uid_errnum_e      errnum)
@@ -304,8 +302,6 @@ ccipdrv_event_afu_afugetmmiomap_create( btObjectType      devhandle,
    WSEvent->wsParms.ptr         = NULL;
    WSEvent->wsParms.physptr     = physptr;
    WSEvent->wsParms.size        = size;
-   WSEvent->wsParms.itemsize    = csrsize;
-   WSEvent->wsParms.itemspacing = csrspacing;
 
    // Payload
    AALQ_QID(This)  = rspid_WSM_Response;
@@ -317,23 +313,23 @@ ccipdrv_event_afu_afugetmmiomap_create( btObjectType      devhandle,
 }
 
 //=============================================================================
-// Name: uidrv_event_bindcmplt_create
+// Name: ccipdrv_event_bindcmplt_create
 // Description: Constructor
 //=============================================================================
 static inline struct ccipdrv_event_afu_response_event *
-                uidrv_event_bindcmplt_create( btObjectType m_devhandle,
-                                              struct ccipdrv_DeviceAttributes *attributes,
-                                              uid_errnum_e errno,
-                                              struct ccipui_ioctlreq  *preq)
+                ccipdrv_event_bindcmplt_create( btObjectType devhandle,
+                                                struct ccipdrv_DeviceAttributes *pattributes,
+                                                uid_errnum_e errno,
+                                                struct ccipui_ioctlreq  *preq)
 {
    struct ccipdrv_DeviceAttributes           *pattrib       = NULL;
    btWSSize                                   payloadsize   = 0;
    struct ccipdrv_event_afu_response_event   *This          = NULL;
 
-   if( NULL != attributes){
+   if( NULL != pattributes){
       // Payload size is the size of the attribute object minus 1 for the array entry
       //  plus the size of the variable data
-      payloadsize = (sizeof(struct ccipdrv_DeviceAttributes)-1) + attributes->m_size;
+      payloadsize = (sizeof(struct ccipdrv_DeviceAttributes)) + pattributes->m_size;
    }
 
    // Allocate object
@@ -343,21 +339,22 @@ static inline struct ccipdrv_event_afu_response_event *
       return NULL;
    }
 
-   This->m_devhandle = m_devhandle;
+   This->m_devhandle = devhandle;
    This->m_errnum    = errno;
    This->m_context   = preq->context;
    This->m_tranID    = preq->tranID;
 
-   if(attributes){
+   if(pattributes){
 
       // Point at payload
       pattrib = (struct ccipdrv_DeviceAttributes*)This->m_payload;
 
       // Copy the main body
-      *pattrib = *attributes;
-
-      // Now copy the payload
-      memcpy(pattrib->m_devattrib,attributes->m_devattrib, attributes->m_size);
+      *pattrib = *pattributes;
+      if( 0 != pattributes->m_size){
+         // Now copy the payload
+         memcpy(pattrib->m_devattrib,pattributes->m_devattrib, pattributes->m_size);
+      }
    }
 
    AALQ_QID(This)    = rspid_UID_BindComplete;
@@ -392,7 +389,7 @@ struct uidrv_event_unbindcmplt
 // Description: Constructor
 //=============================================================================
 static inline struct ccipdrv_event_afu_response_event *
-                     uidrv_event_Unbindcmplt_create(uid_errnum_e errno,
+                     ccipdrv_event_Unbindcmplt_create(uid_errnum_e errno,
                                                     struct ccipui_ioctlreq  *preq)
 {
    struct ccipdrv_event_afu_response_event * This =

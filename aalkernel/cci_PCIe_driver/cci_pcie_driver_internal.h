@@ -114,7 +114,9 @@
 enum   cci_devtype{
    cci_dev_FME,
    cci_dev_Port,
-   cci_dev_AFU
+   cci_dev_UAFU,
+   cci_dev_STAP,
+   cci_dev_PR
 };
 
 //=============================================================================
@@ -171,22 +173,18 @@ struct cci_aal_device {
    struct cci_PIPsession     *m_pPIPSession;     // PIP session object
 
    enum   cci_devtype         m_devtype;        // Type of the subclass (e.g., FME, PORT, AFU)
-   union {
-      void                   *m_void;
-      struct fme_device      *m_pfme;
-      struct port_device     *m_pport;
-      struct afu_device      *m_afu;
-   };
+   struct fme_device         *m_pfme;
+   struct port_device        *m_pport;
+//   struct afu_device         *m_pafu;
+
 };
 
 
 #define pci_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
 
-#define cci_dev_to_pfme(pdev)                 (pdev->m_devtype == cci_dev_FME ? pdev->m_pfme : NULL)
-#define cci_dev_to_pport(pdev)                (pdev->m_devtype == cci_dev_PORT ? pdev->m_pport : NULL)
-#define cci_dev_to_pafu(pdev)                 (pdev->m_devtype == cci_dev_AFU ? pdev->m_pafu : NULL)
-
-#define set_cci_dev_subclass(pdev, psc)      (pdev->m_void = psc)
+#define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
+#define cci_dev_pport(pdev)                 ( pdev->m_pport )
+#define cci_dev_pafu(pdev)                  ( pdev->m_pafu )
 
 #define cci_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
    #define cci_dev_pci_dev_is_enabled(pdev)  ((pdev)->m_flags & CCI_DEV_FLAG_PCI_DEV_ENABLED)

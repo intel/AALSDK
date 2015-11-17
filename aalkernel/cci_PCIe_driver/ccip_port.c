@@ -156,8 +156,9 @@ struct cci_aal_device   *
 
    // Make it an Port by setting the type field and giving a pointer to the
    //  Port device object of the CCIP board device
-   cci_dev_type(pcci_aaldev) = cci_dev_Port;
-   set_cci_dev_subclass(pcci_aaldev, pportdev);
+   cci_dev_type(pcci_aaldev)  = cci_dev_Port;
+   cci_dev_pport(pcci_aaldev) = pportdev;
+   cci_dev_pfme(pcci_aaldev)  = ccip_port_dev_fme(pportdev);
 
    // Setup the AAL device's ID. This is the collection of attributes
    //  that uniquely identifies the AAL device, usually for the purpose
@@ -304,8 +305,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             0,
-                                                             0,
                                                              Message.m_tranID,
                                                              Message.m_context,
                                                              uid_errnumPermission);
@@ -322,8 +321,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
                                                                 0,
                                                                 (btPhysAddr)NULL,
-                                                                0,
-                                                                0,
                                                                 0,
                                                                 Message.m_tranID,
                                                                 Message.m_context,
@@ -354,8 +351,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
                                                                    cci_dev_len_cci_csr(pdev),         // Return the requested aperture size
-                                                                   4,                                 // Return the CSR size in octets
-                                                                   4,                                 // Return the inter-CSR spacing octets
                                                                    Message.m_tranID,
                                                                    Message.m_context,
                                                                    uid_errnumOK);
