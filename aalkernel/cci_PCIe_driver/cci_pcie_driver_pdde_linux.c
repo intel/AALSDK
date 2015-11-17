@@ -512,9 +512,8 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       struct CCIP_FME_HDR *pfme_hdr = ccip_fme_hdr(pfme_dev);
 
       int i=0;
-/*
+
       for(i=0;  0!= pfme_hdr->port_offsets[i].port_imp  ;i++){
-*/
          btPhysAddr pbarPhyAddr        = 0;
          btUnsigned32bitInt bar        = pfme_hdr->port_offsets[i].port_bar;
          btUnsigned64bitInt offset     = pfme_hdr->port_offsets[i].port_offset;
@@ -523,7 +522,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          PINFO("***** PORT %d MMIO region @ Bar %d offset %x *****\n",i , bar, pfme_hdr->port_offsets[i].port_offset);
 // TODO REMOVE - DEBUG FOR HW
          PINFO("***** DEBUG FORCING TO BAR 2*****\n");
-         bar = 2;
 
          // Check to see if the resource has already been acquired
          if(!ccip_has_resource(pccipdev, bar)){
@@ -586,7 +584,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
             goto ERR;
          }
-//      }// End for loop
+      }// End for loop
    }
 
    return pccipdev;
