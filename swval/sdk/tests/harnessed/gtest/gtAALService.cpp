@@ -4,7 +4,7 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 template <typename Factory, // EmptyISvcsFact, CallTrackingISvcsFact
           typename Module=AALServiceModule>

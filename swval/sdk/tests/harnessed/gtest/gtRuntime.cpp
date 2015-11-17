@@ -4,7 +4,7 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 
 template <typename RTClient,  // EmptyIRuntimeClient, CallTrackingIRuntimeClient
           typename RT=Runtime>
