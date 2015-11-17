@@ -572,9 +572,15 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
 <<<<<<< HEAD
+<<<<<<< HEAD
    m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
 ||||||| merged common ancestors
    m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
+||||||| merged common ancestors
+   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
+=======
+   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((btID) HelloALINLBApp::WKSPC_DSM));
+>>>>>>> 2075de1b95a0287fec490bc316b7f70e1af255bd
 
 =======
    m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((btID) HelloALINLBApp::WKSPC_DSM));
@@ -625,11 +631,17 @@ void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
          m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
 ||||||| merged common ancestors
          MSG("Got DSM");
+<<<<<<< HEAD
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
 =======
          MSG("Got DSM");
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_IN));
 >>>>>>> Fix Redmine 631
+||||||| merged common ancestors
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
+=======
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_IN));
+>>>>>>> 2075de1b95a0287fec490bc316b7f70e1af255bd
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
@@ -639,12 +651,18 @@ void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
 
          // Now get Output workspace
 <<<<<<< HEAD
+<<<<<<< HEAD
          m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
 ||||||| merged common ancestors
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
 =======
          m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
 >>>>>>> Fix Redmine 631
+||||||| merged common ancestors
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
+=======
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloALINLBApp::WKSPC_OUT));
+>>>>>>> 2075de1b95a0287fec490bc316b7f70e1af255bd
       } break;
       case WKSPC_OUT : {
          m_OutputVirt = WkspcVirt;
