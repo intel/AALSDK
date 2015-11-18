@@ -220,6 +220,7 @@ AAL::btVirtAddr                GetMMIOBufferTransaction::getPayloadPtr()const {r
 AAL::btWSSize                  GetMMIOBufferTransaction::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   GetMMIOBufferTransaction::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              GetMMIOBufferTransaction::getMsgID()const {return m_msgID;}
+struct AAL::aalui_WSMEvent     GetMMIOBufferTransaction::getWSIDEvent() const {return *(reinterpret_cast<struct AAL::aalui_WSMEvent*>(m_payload));}
 
 GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
    // unpack payload and free memory

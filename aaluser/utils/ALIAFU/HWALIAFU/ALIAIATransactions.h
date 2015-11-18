@@ -72,6 +72,9 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
 
    ~BufferAllocateTransaction();
 
@@ -82,6 +85,7 @@ private:
    AAL::btVirtAddr               m_payload;
    AAL::btWSSize                 m_size;
    AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
 
 }; // class BufferAllocateTransaction
 
@@ -103,6 +107,9 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
 
    ~BufferFreeTransaction();
 
@@ -113,6 +120,7 @@ private:
    AAL::btVirtAddr               m_payload;
    AAL::btWSSize                 m_size;
    AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
 
 };
 
@@ -133,6 +141,10 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   struct AAL::aalui_WSMEvent     getWSIDEvent() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
 
    ~GetMMIOBufferTransaction();
 
@@ -143,6 +155,7 @@ private:
    AAL::btVirtAddr               m_payload;
    AAL::btWSSize                 m_size;
    AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
 
 }; // class GetMMIOBufferTransaction
 
@@ -163,6 +176,9 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
 
    ~GetUMSGBufferTransaction();
 
@@ -173,6 +189,7 @@ private:
    AAL::btVirtAddr               m_payload;
    AAL::btWSSize                 m_size;
    AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
 
 }; // class GetUMSGBufferTransaction
 

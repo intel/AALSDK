@@ -346,8 +346,6 @@ int ccidrv_ioctl(struct inode *inode,
    //  or zero if no response data.
    Outbufsize = aalui_ioctlPayloadSize(&req);
 
-   PDEBUG("Output Buffer Payload size = %d\n", Outbufsize);
-
    *pfullresponse = req;   // Copy the original header for the response and change as needed
    // Pass the message to OS independent processing. Note that some functions that don't return a
    // payload use only the request header to return their data. So the whole response buffer must be passed.
@@ -363,7 +361,7 @@ int ccidrv_ioctl(struct inode *inode,
       btWSSize FullResponseSize = sizeof(struct ccipui_ioctlreq) + Outbufsize;
 
       // Copy the Response back.
-      PINFO("UIDRV is writing %" PRIu64 "-byte response message with payload of size %" PRIu64 " bytes\n", FullResponseSize, pfullresponse->size);
+      PINFO("UIDRV is writing %" PRIu64 "-byte response message with payload of size %" PRIu64 " bytes with %llx\n", FullResponseSize, pfullresponse->size, (btWSID)(*pfullresponse->payload));
       ret = copy_to_user((void*)arg, pfullresponse, FullResponseSize);
 
    }else{

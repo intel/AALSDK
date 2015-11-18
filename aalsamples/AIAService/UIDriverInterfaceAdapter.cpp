@@ -575,10 +575,13 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
       perror("UIDriverInterfaceAdapter::SendMessage");
       m_bIsOK = false;
    }
-   // Is there a response
+
+   pMessage->setErrno(reqp->errcode);
+
+   // Atomic operations return data in payload so if it's there copy back into the transaction
    if(reqp->size != 0) {
-      // Copy the reponse back into the transaction
-      memcpy(pMessage->getPayloadPtr(), aalui_ioctlPayload(reqp), (pMessage->getPayloadSize() < reqp->size ? pMessage->getPayloadSize() : reqp->size));
+      // Copy the response back into the transaction
+      memcpy(pMessage->getPayloadPtr(), aalui_ioctlPayload(reqp),  pMessage->getPayloadSize());
    }
 #endif // OS
 

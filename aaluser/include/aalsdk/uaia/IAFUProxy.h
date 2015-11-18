@@ -65,10 +65,13 @@ class UAIA_API IAIATransaction : public CUnCopyable
 {
 public:
    virtual ~IAIATransaction(){};
-   virtual  AAL::btVirtAddr                  getPayloadPtr()const   = 0;
-   virtual  AAL::btWSSize                    getPayloadSize()const  = 0;
-   virtual  AAL::stTransactionID_t  const    getTranID()const       = 0;
-   virtual  AAL::uid_msgIDs_e                getMsgID()const        = 0;
+   virtual  AAL::btVirtAddr                  getPayloadPtr()const          = 0;
+   virtual  AAL::btWSSize                    getPayloadSize()const         = 0;
+   virtual  AAL::stTransactionID_t  const    getTranID()const              = 0;
+   virtual  AAL::uid_msgIDs_e                getMsgID()const               = 0;
+   virtual  AAL::uid_errnum_e                getErrno()const               = 0;
+   virtual  void                             setErrno(AAL::uid_errnum_e)   = 0;
+
 };
 
 //==========================================================================

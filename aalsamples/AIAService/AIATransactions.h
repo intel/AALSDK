@@ -68,18 +68,20 @@ public:
    // Used by the AFU Proxy to bind to AFU device
    BindAFUDevice( AAL::TransactionID const &tranID = AAL::TransactionID() );
 
-   AAL::btBool                IsOK() const;
+   AAL::btBool                    IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
 
 private:
    AAL::uid_msgIDs_e             m_msgID;
    AAL::stTransactionID_t        m_tid_t;
    AAL::btBool                   m_bIsOK;
-
+   AAL::uid_errnum_e             m_errno;
 }; // class BindAFUDevice
 
 //=============================================================================
@@ -101,12 +103,14 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
 
 private:
    AAL::uid_msgIDs_e             m_msgID;
    AAL::stTransactionID_t        m_tid_t;
    AAL::btBool                   m_bIsOK;
-
+   AAL::uid_errnum_e             m_errno;
 }; // class BindAFUDevice
 
 //=============================================================================
@@ -126,7 +130,8 @@ public:
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
-
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
 private:
    AAL::uid_msgIDs_e             m_msgID;
    AAL::stTransactionID_t        m_tid_t;
@@ -134,7 +139,7 @@ private:
    AAL::btVirtAddr               m_payload;
    AAL::btWSSize                 m_size;
    AAL::btTime                   m_timeout;
-
+   AAL::uid_errnum_e             m_errno;
 }; // class BindAFUDevice
 
 #endif // __AALSDK_AIATRANSACTIONS_H__

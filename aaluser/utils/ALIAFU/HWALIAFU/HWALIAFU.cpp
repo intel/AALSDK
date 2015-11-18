@@ -321,7 +321,35 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
    if ( mmioTransaction.IsOK()/* && umsgTransaction.IsOK()*/) {
       // Will return to AFUEvent(), below.
       m_pAFUProxy->SendTransaction(&mmioTransaction);
-//      m_pAFUProxy->SendTransaction(&umsgTransaction);
+      if(uid_errnumOK == mmioTransaction.getErrno() ){
+         struct AAL::aalui_WSMEvent wsevt = mmioTransaction.getWSIDEvent();
+         std::cerr << " WSID " << std::hex << wsevt.wsParms.wsid;
+
+         // mmap
+         if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+            AAL_ERR( LM_All, "FATAL: MapWSID failed");
+         }
+
+         // Remember workspace parameters associated with virtual ptr (if we ever need it)
+         if (m_mapWkSpc.find(wsevt.wsParms.ptr) != m_mapWkSpc.end()) {
+            AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+         } else {
+            // store entire aalui_WSParms struct in map
+            m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
+         }
+
+         m_MMIORmap = wsevt.wsParms.ptr;
+         m_MMIORsize = wsevt.wsParms.size;
+         initComplete(m_tidSaved);
+      }else {
+         initFailed(new CExceptionTransactionEvent(NULL,
+                                                   m_tidSaved,
+                                                   errAFUWorkSpace,
+                                                   mmioTransaction.getErrno(),
+                                                   "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
+         return;
+      }
+      //      m_pAFUProxy->SendTransaction(&umsgTransaction);
    } else {
       initFailed(new CExceptionTransactionEvent(NULL,
                                                 m_tidSaved,

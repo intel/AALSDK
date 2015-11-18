@@ -263,10 +263,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // UI Driver message
    struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
 
-
+   // Save original response buffer size in case we return something
+   btWSSize         respBufSize     = *Message.m_prespbufSize;
 
    // if we return a request error, return this.  usually it's an invalid request error.
-   uid_errnum_e request_error = uid_errnumInvalidRequest;
+   uid_errnum_e request_error       = uid_errnumInvalidRequest;
+
+   // Assume returning nothing
+   *Message.m_prespbufSize          = 0;
 
    PINFO("In CCI Command handler, AFUCommand().\n");
 
@@ -283,9 +287,6 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       PDEBUG("Error: No device\n");
       return -EIO;
    }
-
-   // Assume returning nothing
-   *Message.m_prespbufSize            = 0;
 
    //=====================
    // Message processor
@@ -356,7 +357,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                          preq->ahmreq.u.wksp.m_wsid);
 
                PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_cci_csr(pdev), (int)cci_dev_len_cci_csr(pdev));
-
+#if 0
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
                                                                    wsidobjp_to_wid(wsidp),
@@ -367,22 +368,33 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    uid_errnumOK);
 
                PVERBOSE("Sending ccipdrv_getMMIORmap Event Event ID = %d\n",((struct aalui_WSMEvent*)(pafuws_evt->m_payload))->evtID );
-
+#endif
+               Message.m_errcode = uid_errnumOK;
                retval = 0;
             }
          }
-#if 0
-         // Make this atomic
-         if(Message.m_respbufSize >= sizeof(btWSID)){
-            *Message.m_response = wsidobjp_to_wid(wsidp);
-            Message.m_respbufSize = sizeof(btWSID);
+         PDEBUG("Buf size =  %u Try Returning WSID %llx\n",(unsigned int)respBufSize,  wsidobjp_to_wid(wsidp))
+         {
+            // Set up the return payload
+            struct aalui_WSMEvent WSID;
+            WSID.evtID          = uid_wseventMMIOMap;
+            WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+            WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
+            WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+
+            // Make this atomic. Check the orignal response buffer size for room
+            if(respBufSize >= sizeof(struct aalui_WSMEvent)){
+               *((struct aalui_WSMEvent*)Message.m_response) = WSID;
+               *Message.m_prespbufSize = sizeof(struct aalui_WSMEvent);
+            }
          }
-#endif
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)*Message.m_prespbufSize, *((btWSID*)Message.m_response)  );
+#if 0
          ccidrv_sendevent( aalsess_uiHandle(pownerSess),
                            aalsess_aaldevicep(pownerSess),
                            AALQIP(pafuws_evt),
                            Message.m_context);
-
+#endif
          if ( 0 != retval ) {
             goto ERROR;
          }

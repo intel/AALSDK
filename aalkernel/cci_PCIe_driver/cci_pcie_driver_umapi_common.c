@@ -260,9 +260,13 @@ int ccidrv_session_destroy(struct ccidrv_session * psess)
 //         InbufSize - Size of input buffer
 //         presp - Pointer to response (output buffer)
 //         pOutbufSize - Pointer to output buffer size
-// Outputs: number of bytes transfered to output buffer written to *pOutbufSize
+// Outputs: number of bytes in payload to return
 // Returns: status code: 0 == success
-// Comments: Entry point for all requests from user space
+// Comments: This function is responsible for making sure the response header
+//           is updated. E.g., Just returning a non-zero OutputBufsize does
+//           not update the response header size field.
+//           This is because the AALUID_IOCTL_GETMSG_DESC sets the size field
+//           in the header but does NOT return any payload.
 //=============================================================================
 btInt
 ccidrv_messageHandler( struct ccidrv_session  *psess,
@@ -275,6 +279,12 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
 
    // Variables used in the Device Allocate Messages
    struct aal_q_item *pqitem = NULL; // Generic request queue item
+
+   // Save the response buffer size
+   btWSSize               OutbufSize = *pOutbufSize;
+
+   // Assume no payload to return
+   *pOutbufSize = 0;
 
 #if 1
 # define UIDRV_IOCTL_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -293,37 +303,32 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
    switch ( cmd ) {
 
       // Get next queued message descriptor
-      // This will contain things like its
-      // size and type
+      // Returns infromation about teh upstream
+      //  message on the queue without returning the actual message
       //--------------------------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_GETMSG_DESC) {
-PVERBOSE("********* 1 *****************\n")
          // Make sure there is a message to be had
          if ( _aal_q_empty(&psess->m_eventq) ) {
             PERR("No Message available\n");
             PTRACEOUT_INT(-EAGAIN);
-            *pOutbufSize = 0;
             return -EAGAIN;
          }
-PVERBOSE("********* 2 *****************\n")
+
          // Peek the head of the message queue
          pqitem = _aal_q_peek(&psess->m_eventq);
          if ( NULL == pqitem ) {
             PERR("Corrupt event queue\n");
             PTRACEOUT_INT(-EFAULT);
-            *pOutbufSize = 0;
             return -EFAULT;
          }
 
-PVERBOSE("********* 3 ***************** resp =  %p  req = %p  \n", presp, preq)
          // Return the type and total size of the message that will be returned
+         //  but no paylod is returned so leave *pOutbufSize = 0
          presp->id   = (uid_msgIDs_e)QI_QID(pqitem);
          presp->size = QI_LEN(pqitem);
 
          PVERBOSE("Getting Message Decriptor - size = %" PRIu64 "\n", presp->size);
 
-         // No Payload
-         *pOutbufSize = 0;
          PTRACEOUT_INT(0);
       } return 0; // case AALUID_IOCTL_GETMSG_DESC:
 
@@ -336,7 +341,6 @@ PVERBOSE("********* 3 ***************** resp =  %p  req = %p  \n", presp, preq)
          // Make sure there is a message to be had
          if ( _aal_q_empty(&psess->m_eventq) ) {
             PERR("No Message available\n");
-            *pOutbufSize = 0;
             PTRACEOUT_INT(-EAGAIN);
             return -EAGAIN;
          }
@@ -347,45 +351,47 @@ PVERBOSE("********* 3 ***************** resp =  %p  req = %p  \n", presp, preq)
          pqitem = _aal_q_dequeue(&psess->m_eventq);
          if ( NULL == pqitem ) {
             PERR("Invalid or corrupted request\n");
-            *pOutbufSize = 0;
             PTRACEOUT_INT(-EFAULT);
             return -EFAULT;
          }
 
-         // Process the request
-        return ccidrv_marshal_upstream_message(preq, pqitem, presp, pOutbufSize);
+         // Process the request.
+         //   Function will update response header and pOutbufSize, Restore the
+         //   value of pOutBufSize
+         *pOutbufSize = OutbufSize;
+         return ccidrv_marshal_upstream_message(preq, pqitem, presp, pOutbufSize);
+
       } break; // case  AALUID_IOCTL_GETMSG:
 
 
       // Send the message to the device or PIP (SW driver)
       //-------------------------------------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_SENDMSG) {
+         // Process the request. Function will update response header and pOutbufSize
+         *pOutbufSize = OutbufSize;
          return process_send_message(psess, preq, presp, pOutbufSize);
       } break;
 
       // Process Bind device
       //--------------------
       UIDRV_IOCTL_CASE(AALUID_IOCTL_BINDDEV) {
-         *pOutbufSize = 0;  // TODO Let function decide
+         // Process the request. Function will update response header and pOutbufSize
          return process_bind_request(psess, preq);
       } break;
 
       // Activate device - This is a framework command that
       // causes a device to "appear" in to the system
       UIDRV_IOCTL_CASE(AALUID_IOCTL_ACTIVATEDEV) {
-         *pOutbufSize = 0;
          PERR("TODO\n");
       } break;
 
       // Deactivate device - This is a framework command that
       // causes a device to be removed from the system
       UIDRV_IOCTL_CASE(AALUID_IOCTL_DEACTIVATEDEV) {
-         *pOutbufSize = 0;
          PERR("TODO\n");
       } break;
 
       default : {
-         *pOutbufSize = 0;
          PERR("Invalid IOCTL = 0x%x\n", cmd);
       } break;
    } //  switch (cmd)
@@ -401,7 +407,7 @@ PVERBOSE("********* 3 ***************** resp =  %p  req = %p  \n", presp, preq)
 // Inputs: psess - session
 //         preq - request header
 // Outputs: pOutbufSize must be set to size of payload to return or zero if none
-// Comments: This is the function that
+// Comments:
 //=============================================================================
 btInt
 process_send_message(struct ccidrv_session  *psess,
@@ -428,12 +434,13 @@ process_send_message(struct ccidrv_session  *psess,
    ASSERT(NULL != psess);
    ASSERT(NULL != preq);
 
-   //--------------------------------------------------------------------------
+
    // Process the request copying in remaining request arguments as appropriate
    //--------------------------------------------------------------------------
    switch ( preq->id ) {
 
       // Send a message to the AFU via the PIP message handler
+      //------------------------------------------------------
       UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_SendAFU) {
          // Get the handle and validate
          pdev = aaldev_handle_to_devp(preq->handle);
@@ -471,6 +478,7 @@ process_send_message(struct ccidrv_session  *psess,
          pipMessage.m_prespbufSize  = pOutbufSize;
          pipMessage.m_tranID        = preq->tranID;
          pipMessage.m_context       = preq->context;
+         pipMessage.m_errcode       = uid_errnumOK;
 
          // Send the message on to the device specific command handler.
          //  This macro resolves to calling the low level, device specific, command
@@ -486,15 +494,17 @@ process_send_message(struct ccidrv_session  *psess,
             *pOutbufSize =0;
          }
 
-         // Set the response size in the header
-         presp->size = *pOutbufSize;
-
-         PDEBUG("Return message = %d bytes\n", (int)*pOutbufSize);
-         pipMessage.m_message = NULL;
+         // It is the responsibility of this function to update the
+         //   response header as the low-level driver (PIP) does not
+         //   see the message header.
+         presp->size             = *pOutbufSize;
+         presp->errcode          = pipMessage.m_errcode;
 
          PTRACEOUT_INT(ret);
       } return ret; // case reqid_UID_SendAFU
 
+      // Shutdown the driver for this process
+      //-------------------------------------
       UIDRV_PROCESS_SEND_MESSAGE_CASE(reqid_UID_Shutdown) {
          // Create shutdown  request object
          struct ccipdrv_event_afu_response_event *newreq;

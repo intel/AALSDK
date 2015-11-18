@@ -78,6 +78,8 @@ AAL::btVirtAddr                BindAFUDevice::getPayloadPtr()const {return NULL;
 AAL::btWSSize                  BindAFUDevice::getPayloadSize()const {return 0;}
 AAL::stTransactionID_t const   BindAFUDevice::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BindAFUDevice::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              BindAFUDevice::getErrno()const {return m_errno;}
+void                           BindAFUDevice::setErrno(AAL::uid_errnum_e errnum) {m_errno = errnum;}
 
 UnBindAFUDevice::UnBindAFUDevice( TransactionID const &tranID ) :
    m_msgID(reqid_UID_UnBind),
@@ -89,8 +91,8 @@ AAL::btVirtAddr                UnBindAFUDevice::getPayloadPtr()const {return NUL
 AAL::btWSSize                  UnBindAFUDevice::getPayloadSize()const {return 0;}
 AAL::stTransactionID_t const   UnBindAFUDevice::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              UnBindAFUDevice::getMsgID()const {return m_msgID;}
-
-
+AAL::uid_errnum_e              UnBindAFUDevice::getErrno()const {return m_errno;};
+void                           UnBindAFUDevice::setErrno(AAL::uid_errnum_e errnum) {m_errno = errnum;}
 ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) :
    m_msgID(reqid_UID_Shutdown),
    m_tid_t(tranID),
@@ -125,3 +127,5 @@ AAL::btVirtAddr                ShutdownMDT::getPayloadPtr()const {return m_paylo
 AAL::btWSSize                  ShutdownMDT::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   ShutdownMDT::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              ShutdownMDT::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              ShutdownMDT::getErrno()const {return m_errno;};
+void                           ShutdownMDT::setErrno(AAL::uid_errnum_e errnum) {m_errno = errnum;}
