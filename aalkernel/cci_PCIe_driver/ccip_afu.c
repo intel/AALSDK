@@ -175,7 +175,7 @@ struct cci_aal_device   *
    // Setup the MMIO region parameters
    cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
    cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
-   cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys(pafu_hdr);
+   cci_dev_phys_afu_mmio(pcci_aaldev)  =  ccip_portdev_phys_afu_mmio(pportdev->m_ccipdev,2) + pportdev->m_pport_hdr->ccip_port_next_afu.afu_id_offset;
 
    // Create the AAL device and attach it to the CCI device object
    pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name

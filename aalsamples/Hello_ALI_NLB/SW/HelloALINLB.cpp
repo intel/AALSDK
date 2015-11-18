@@ -434,7 +434,7 @@ btInt HelloALINLBApp::run()
       //=============================
       MSG("Running Test");
 
-#if 0 /* Setting to 0 turns off actul NLB functionality for debug purposes */
+      /* Setting to 0 turns off actul NLB functionality for debug purposes */
 
       // Clear the DSM
       ::memset( m_DSMVirt, 0, m_DSMSize);
@@ -462,6 +462,12 @@ btInt HelloALINLBApp::run()
       // Initiate DSM Reset
       // Set DSM base, high then low
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+
+      // Assert AFU reset
+      m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+      //De-Assert AFU reset
+      m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       // If ASE, give it some time to catch up
       #if defined ( ASEAFU )
@@ -508,7 +514,7 @@ btInt HelloALINLBApp::run()
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
       //  state machine via callbacks
-#endif
+
 
       MSG("Done Running Test");
       // Release the Workspaces and wait for all three then Release the Service
