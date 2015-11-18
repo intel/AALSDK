@@ -87,6 +87,7 @@ extern struct cci_aal_device   *
 
 extern struct cci_aal_device   *
                        cci_create_AAL_UAFU_Device( struct port_device  *,
+                                                   btPhysAddr,
                                                    struct CCIP_AFU_Header *,
                                                    struct aal_device_id *);
 
@@ -242,6 +243,12 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    // Enable MMIO-R
    cci_dev_set_allow_map_mmior_space(pcci_aaldev);
 
+
+   // Setup the MMIO region parameters
+   cci_dev_kvp_afu_mmio(pcci_aaldev)   = ccip_fmedev_kvp_afu_mmio(pccipdev);
+   cci_dev_len_afu_mmio(pcci_aaldev)   = ccip_fmedev_len_afu_mmio(pccipdev);
+   cci_dev_phys_afu_mmio(pcci_aaldev)  = ccip_fmedev_phys_afu_mmio(pccipdev);
+
    // Create the AAL device and attach it to the CCI device object
    pcci_aaldev->m_aaldev =  aaldev_create( "CCIPFME",           // AAL device base name
                                            &aalid,             // AAL ID
@@ -361,12 +368,17 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
    // Instantiate a User AFU if one is present
    {
       // Get the AFU header pointer by adding the offset to the port header address
-      struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)pportdev->m_pport_hdr) + pportdev->m_pport_hdr->ccip_port_next_afu.afu_id_offset);
+      struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)ccip_port_hdr(pportdev) ) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset);
+      btPhysAddr                     pafu_phys = ccip_port_phys_mmio(pportdev) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset;
 
       // If the device is present
       if(~0ULL != pafu_hdr->ccip_dfh.csr){
+
          // Instantiate it
-         pcci_aaldev = cci_create_AAL_UAFU_Device(pportdev, pafu_hdr, &aalid);
+         pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
+                                                    pafu_phys,
+                                                    pafu_hdr,
+                                                   &aalid);
          ASSERT(NULL != pcci_aaldev);
 
          if(NULL == pcci_aaldev){

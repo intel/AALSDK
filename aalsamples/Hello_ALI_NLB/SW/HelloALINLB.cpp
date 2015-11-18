@@ -434,6 +434,9 @@ btInt HelloALINLBApp::run()
       //=============================
       MSG("Running Test");
 
+#define SIMULATED
+
+#if !defined (SIMULATED)
       /* Setting to 0 turns off actul NLB functionality for debug purposes */
 
       // Clear the DSM
@@ -514,7 +517,7 @@ btInt HelloALINLBApp::run()
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
       //  state machine via callbacks
-
+#endif
 
       MSG("Done Running Test");
       // Release the Workspaces and wait for all three then Release the Service

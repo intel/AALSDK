@@ -344,13 +344,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                          wsidp,
                          preq->ahmreq.u.wksp.m_wsid);
 
-               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_cci_csr(pdev), (int)cci_dev_len_cci_csr(pdev));
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
 
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
                                                                    wsidobjp_to_wid(wsidp),
-                                                                   cci_dev_phys_cci_csr(pdev),        // Return the requested aperture
-                                                                   cci_dev_len_cci_csr(pdev),         // Return the requested aperture size
+                                                                   cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
+                                                                   cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
                                                                    Message.m_tranID,
                                                                    Message.m_context,
                                                                    uid_errnumOK);
@@ -598,8 +598,8 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
       // TO REST OF CHECKS
 
       // Map the PCIe BAR as the CSR region.
-      ptr = (void *) cci_dev_phys_cci_csr(pdev);
-      size = cci_dev_len_cci_csr(pdev);
+      ptr = (void *) cci_dev_phys_afu_mmio(pdev);
+      size = cci_dev_len_afu_mmio(pdev);
 
       PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
          ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),
@@ -662,7 +662,8 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 /// @param[in] pkvp_port_mmio - Port MMIO region
 /// @return    error code
 ///============================================================================
-struct port_device  *get_port_device( btVirtAddr pkvp_port_mmio)
+struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
+                                      btVirtAddr pkvp_port_mmio)
 {
    struct port_device      *pport_dev   = NULL;
    bt32bitInt               res         = 0;
@@ -685,6 +686,9 @@ struct port_device  *get_port_device( btVirtAddr pkvp_port_mmio)
 
    // Initialize the list head
    kosal_list_init(&ccip_port_list_head(pport_dev));
+
+   ccip_port_kvp_mmio(pport_dev)    = pkvp_port_mmio;
+   ccip_port_phys_mmio(pport_dev)   = pphys_port_mmio;
 
    // Get Port header
    ccip_port_hdr(pport_dev) = get_port_header(pkvp_port_mmio );

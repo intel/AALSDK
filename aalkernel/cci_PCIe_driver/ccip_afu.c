@@ -131,9 +131,10 @@ struct aal_ipip cci_AFUpip = {
 /// @return    AAL Device pointer
 ///============================================================================
 struct cci_aal_device   *
-            cci_create_AAL_UAFU_Device( struct port_device  * pportdev,
-                                        struct CCIP_AFU_Header *pafu_hdr,
-                                        struct aal_device_id *paalid)
+            cci_create_AAL_UAFU_Device( struct port_device        *pportdev,
+                                        btPhysAddr                 phys_mmio,
+                                        struct CCIP_AFU_Header    *pafu_hdr,
+                                        struct aal_device_id      *paalid)
 {
    struct cci_aal_device   *pcci_aaldev = NULL;
    int ret;
@@ -175,7 +176,7 @@ struct cci_aal_device   *
    // Setup the MMIO region parameters
    cci_dev_kvp_afu_mmio(pcci_aaldev)   = (btVirtAddr)pafu_hdr;
    cci_dev_len_afu_mmio(pcci_aaldev)   = CCI_MMIO_SIZE;
-   cci_dev_phys_afu_mmio(pcci_aaldev)  =  ccip_portdev_phys_afu_mmio(pportdev->m_ccipdev,2) + pportdev->m_pport_hdr->ccip_port_next_afu.afu_id_offset;
+   cci_dev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
 
    // Create the AAL device and attach it to the CCI device object
    pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name
@@ -356,7 +357,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                          wsidp,
                          preq->ahmreq.u.wksp.m_wsid);
 
-               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_cci_csr(pdev), (int)cci_dev_len_cci_csr(pdev));
+               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
 #if 0
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
@@ -785,8 +786,8 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
       // TO REST OF CHECKS
 
       // Map the PCIe BAR as the CSR region.
-      ptr = (void *) cci_dev_phys_cci_csr(pdev);
-      size = cci_dev_len_cci_csr(pdev);
+      ptr = (void *) cci_dev_phys_afu_mmio(pdev);
+      size = cci_dev_len_afu_mmio(pdev);
 
       PVERBOSE("Mapping CSR %s Aperture Physical=0x%p size=%" PRIuSIZE_T " at uvp=0x%p\n",
          ((WSID_CSRMAP_WRITEAREA == wsidp->m_id) ? "write" : "read"),

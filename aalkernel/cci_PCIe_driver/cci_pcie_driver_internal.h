@@ -149,7 +149,7 @@ struct cci_aal_device {
    int                        m_simulated;
 
    int                        m_protocolID;
-
+#if 0
    // PCI configuration space parameters
    btVirtAddr                 m_kvp_config;     // kv address after iomap
    btPhysAddr                 m_phys_config;    // Physical mmio address
@@ -159,7 +159,7 @@ struct cci_aal_device {
    btVirtAddr                 m_kvp_cci_csr;    // kv address of CSR space
    btPhysAddr                 m_phys_cci_csr;   // Physical address of CSR space
    size_t                     m_len_cci_csr;    // Bytes
-
+#endif
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
    btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
@@ -226,15 +226,6 @@ struct cci_aal_device {
 #define cci_is_simulated(pdev)             ((pdev)->m_simulated == 1)
 
 #define cci_dev_protocol(pdev)              ((pdev)->m_protocolID)
-
-#define cci_dev_kvp_config(pdev)            ((pdev)->m_kvp_config)
-#define cci_dev_phys_config(pdev)           ((pdev)->m_phys_config)
-#define cci_dev_len_config(pdev)            ((pdev)->m_len_config)
-#define cci_dev_mem_sessionp(pdev)          ((pdev)->m_pmem_session)
-
-#define cci_dev_phys_cci_csr(pdev)          ((pdev)->m_phys_cci_csr)
-#define cci_dev_kvp_cci_csr(pdev)           ((pdev)->m_kvp_cci_csr)
-#define cci_dev_len_cci_csr(pdev)           ((pdev)->m_len_cci_csr)
 
 #define cci_dev_phys_afu_mmio(pdev)         ((pdev)->m_phys_afu_mmio)
 #define cci_dev_kvp_afu_mmio(pdev)          ((pdev)->m_kvp_afu_mmio)

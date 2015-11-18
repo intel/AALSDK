@@ -99,7 +99,7 @@ int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *
 static char mmioafustring[]    = "CCIv4 MMIO test  \n";
 static char umesgafustring[]   = "CCIv4 UMSG test  \n";
 #endif
-
+#if 0
 static int
 CommandHandler(struct aaldev_ownerSession *,
                struct aal_pipmessage);
@@ -107,12 +107,12 @@ int
 cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
                struct aal_wsid *wsidp,
                btAny os_specific);
-
+#endif
 static
 struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
                                                      btVirtAddr bar2,
                                                      struct aal_device_id *pdevid);
-
+#if 0
 //=============================================================================
 // cci_simAFUpip
 // Description: Physical Interface Protocol Interface for the SPL2 AFU
@@ -134,7 +134,7 @@ struct aal_ipip cci_simAFUpip = {
    .binddevice    = NULL,      // Binds the PIP to the device
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
-
+#endif
 //=============================================================================
 // nextAFU_addr - Keeps the next available address for new AFUs
 //=============================================================================
@@ -371,7 +371,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
+         pportdev = get_port_device( virt_to_phys(ccip_portdev_kvp_afu_mmio(pccipdev,0)) + pfme_hdr->port_offsets[i].port_offset,
+                                     ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;
@@ -433,7 +434,7 @@ ERR:
    PTRACEOUT_INT(res);
    return NULL;
 }
-
+#if 0
 //=============================================================================
 // Name: cci_create_sim_afu
 // Description: Performs the functionality of the PCIe Probe functions for real
@@ -1005,3 +1006,4 @@ cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
    ERROR:
    return res;
 }
+#endif

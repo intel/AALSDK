@@ -520,8 +520,6 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          struct port_device *pportdev  = NULL;
 
          PINFO("***** PORT %d MMIO region @ Bar %d offset %x *****\n",i , bar, pfme_hdr->port_offsets[i].port_offset);
-// TODO REMOVE - DEBUG FOR HW
-         PINFO("***** DEBUG FORCING TO BAR 2*****\n");
 
          // Check to see if the resource has already been acquired
          if(!ccip_has_resource(pccipdev, bar)){
@@ -546,12 +544,11 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
             PDEBUG("Len: %zu\n", ccip_portdev_len_afu_mmio(pccipdev,bar));
          }
 
-
          // Discover and create Port device
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset );
+         pportdev = get_port_device( pbarPhyAddr + offset, ccip_portdev_kvp_afu_mmio(pccipdev,bar) + offset );
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
             res = -ENOMEM;

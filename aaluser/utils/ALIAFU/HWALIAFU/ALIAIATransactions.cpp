@@ -113,6 +113,8 @@ AAL::btVirtAddr                BufferAllocateTransaction::getPayloadPtr()const {
 AAL::btWSSize                  BufferAllocateTransaction::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   BufferAllocateTransaction::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BufferAllocateTransaction::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              BufferAllocateTransaction::getErrno()const {return m_errno;};
+void                           BufferAllocateTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
 
 BufferAllocateTransaction::~BufferAllocateTransaction() {
    // unpack payload and free memory
@@ -169,7 +171,8 @@ AAL::btVirtAddr                BufferFreeTransaction::getPayloadPtr()const {retu
 AAL::btWSSize                  BufferFreeTransaction::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   BufferFreeTransaction::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BufferFreeTransaction::getMsgID()const {return m_msgID;}
-
+AAL::uid_errnum_e              BufferFreeTransaction::getErrno()const {return m_errno;};
+void                           BufferFreeTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
 BufferFreeTransaction::~BufferFreeTransaction() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
@@ -221,7 +224,8 @@ AAL::btWSSize                  GetMMIOBufferTransaction::getPayloadSize()const {
 AAL::stTransactionID_t const   GetMMIOBufferTransaction::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              GetMMIOBufferTransaction::getMsgID()const {return m_msgID;}
 struct AAL::aalui_WSMEvent     GetMMIOBufferTransaction::getWSIDEvent() const {return *(reinterpret_cast<struct AAL::aalui_WSMEvent*>(m_payload));}
-
+AAL::uid_errnum_e              GetMMIOBufferTransaction::getErrno()const {return m_errno;};
+void                           GetMMIOBufferTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
 GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;

@@ -92,6 +92,8 @@ struct port_device
    struct CCIP_PORT_DFL_PR      *m_pport_pr;          // PORT PR DFL
    struct CCIP_PORT_DFL_STAP    *m_pport_stap;        // PORT Signal tap DFL
 
+   btPhysAddr                    m_phys_port_mmio;    // Base physical address
+   btVirtAddr                    m_kvp_port_mmio;     // Base kernel virtual address
    struct ccip_device           *m_ccipdev;           // Parent board
 
    struct fme_device            *m_fme;               // Parent FME
@@ -129,14 +131,10 @@ struct port_device
 #define ccip_port_devnum(pdev)                ((pdev)->m_devicenum)
 #define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
 
-#define ccip_port_fcnnum(pdev)                ((pdev)->m_functnum)
-
 #define ccip_port_mem_sessionp(pdev)          ((pdev)->m_pmem_session)
 
-#define ccip_port_mmio(pdev)                  ((pdev)->m_phys_port_mmio)
 #define ccip_port_kvp_mmio(pdev)              ((pdev)->m_kvp_port_mmio)
-#define ccip__port_len_mmio(pdev)             ((pdev)->m_len_port_mmio)
-
+#define ccip_port_phys_mmio(pdev)             ((pdev)->m_phys_port_mmio)
 #define ccip_port_to_ccidev(pdev)             ((pdev)->m_ccipdev)
 
 #define ccip_port_list_head(pdev)             ((pdev)->m_list)
@@ -151,9 +149,11 @@ struct port_device
 
 /// @brief creates a Port Device
 ///
+/// @param[in] pphys_port_mmio port mmio physical address
 /// @param[in] pkvp_port_mmio port mmio virtual address
 /// @return    port_device code
-struct port_device  *get_port_device( btVirtAddr pkvp_port_mmio);
+struct port_device  *get_port_device(  btPhysAddr pphys_port_mmio,
+                                       btVirtAddr pkvp_port_mmio);
 
 /// @brief  destroys a Port Device
 ///
