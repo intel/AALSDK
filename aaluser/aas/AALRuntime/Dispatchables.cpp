@@ -117,6 +117,8 @@ ServiceAllocateFailed::ServiceAllocateFailed(IBase 			*pService,
 ServiceAllocateFailed::ServiceAllocateFailed(IServiceClient *pSvcClient,
                                              IRuntimeClient *pRTClient,
                                              const IEvent   *pEvent) :
+   m_pService(NULL),
+   m_pSvcsFact(NULL),
    m_pSvcClient(pSvcClient),
    m_pRTClient(pRTClient),
    m_pEvent(pEvent)
