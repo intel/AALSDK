@@ -94,7 +94,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static int CommandHandler( struct aaldev_ownerSession *,
-                           struct aal_pipmessage);
+                           struct aal_pipmessage*);
 static int cci_mmap( struct aaldev_ownerSession *pownerSess,
                      struct aal_wsid *wsidp,
                      btAny os_specific);
@@ -134,7 +134,7 @@ struct aal_ipip cci_FMEpip = {
 //=============================================================================
 int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
-               struct aal_pipmessage       Message)
+               struct aal_pipmessage      *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -151,7 +151,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    int retval = 0;
 
    // UI Driver message
-   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
+   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message->m_message;
 
    // Used by WS allocation
    struct aal_wsid                        *wsidp            = NULL;
@@ -190,8 +190,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             Message.m_tranID,
-                                                             Message.m_context,
+                                                             Message->m_tranID,
+                                                             Message->m_context,
                                                              uid_errnumPermission);
             PERR("Direct API access not permitted on this device\n");
 
@@ -207,8 +207,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 0,
                                                                 (btPhysAddr)NULL,
                                                                 0,
-                                                                Message.m_tranID,
-                                                                Message.m_context,
+                                                                Message->m_tranID,
+                                                                Message->m_context,
                                                                 uid_errnumBadParameter);
                PERR("Bad WSID on ccipdrv_getMMIORmap\n");
 
@@ -236,8 +236,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
-                                                                   Message.m_tranID,
-                                                                   Message.m_context,
+                                                                   Message->m_tranID,
+                                                                   Message->m_context,
                                                                    uid_errnumOK);
 
                PVERBOSE("Sending ccipdrv_getMMIORmap Event\n");
@@ -249,7 +249,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ccidrv_sendevent( aalsess_uiHandle(pownerSess),
                            aalsess_aaldevicep(pownerSess),
                            AALQIP(pafuws_evt),
-                           Message.m_context);
+                           Message->m_context);
 
          if ( 0 != retval ) {
             goto ERROR;
@@ -265,14 +265,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
 
       pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                  &Message.m_tranID,
-                                                                  Message.m_context,
+                                                                  &Message->m_tranID,
+                                                                  Message->m_context,
                                                                   request_error);
 
      ccidrv_sendevent( pownerSess->m_UIHandle,
                        pownerSess->m_device,
                        AALQIP(pafuresponse_evt),
-                       Message.m_context);
+                       Message->m_context);
 
       retval = -EINVAL;
    } break;

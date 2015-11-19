@@ -496,7 +496,7 @@ int aalrms_processDeviceRequest(struct aalrm_server_session *psess,
    // Send the message on its way.
 
    ret = aalsess_pipSendMessage(&ownerSess)(&ownerSess,
-                                            pipMessage);
+                                            &pipMessage);
    if ( 0 == ret ) {
       ASSERT(NULL == eventp); // memory leak otherwise.
       goto DONE;

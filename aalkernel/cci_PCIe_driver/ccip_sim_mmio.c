@@ -429,7 +429,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset, port_hdr.ccip_port_capability.csr);
 
    // Port control csr
-   port_hdr.ccip_port_control.ccip_outstaning_request =0x1;
+   port_hdr.ccip_port_control.ccip_outstanding_request =0x1;
    port_hdr.ccip_port_control.afu_latny_rep =0x1;
    port_hdr.ccip_port_control.port_freeze =0x1;
    port_hdr.ccip_port_control.port_sftreset_control =0x1;
@@ -891,7 +891,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "port_id= %x \n",pport_dev->m_pport_hdr->ccip_port_capability.port_id);
       // PDEBUG( "usmg_size= %x \n",pport_dev->m_pport_hdr->ccip_port_capability.usmg_size);
 
-      PDEBUG( "ccip_outstaning_request= %x \n",pport_dev->m_pport_hdr->ccip_port_control.ccip_outstaning_request);
+      PDEBUG( "ccip_outstanding_request= %x \n",pport_dev->m_pport_hdr->ccip_port_control.ccip_outstanding_request);
       PDEBUG( "afu_latny_rep= %x \n",pport_dev->m_pport_hdr->ccip_port_control.afu_latny_rep);
       PDEBUG( "port_freeze= %x \n",pport_dev->m_pport_hdr->ccip_port_control.port_freeze);
       PDEBUG( "port_sftreset_control= %x \n",pport_dev->m_pport_hdr->ccip_port_control.port_sftreset_control);

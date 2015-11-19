@@ -636,17 +636,58 @@ bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 
 IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
 {
+   // Create the Transaction
+   AFUQuiesceAndHalt transaction;
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return e_Internal;
+   }
+
+   // Send transaction
+   // Will eventually trigger AFUEvent(), below.
+   m_pAFUProxy->SendTransaction(&transaction);
+
+   if(transaction.getErrno() != uid_errnumOK){
+      return e_Error_Quiesce_Timeout;
+   }
+
    return e_OK;
 }
 
 IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
 {
+   // Create the Transaction
+   AFUEnable transaction;
+
+   // Should never fail
+   if ( !transaction.IsOK() ) {
+      return e_Internal;
+   }
+
+   // Send transaction
+   // Will eventually trigger AFUEvent(), below.
+   m_pAFUProxy->SendTransaction(&transaction);
+
+   if(transaction.getErrno() != uid_errnumOK){
+      return e_Error_Quiesce_Timeout;
+   }
+
    return e_OK;
+
 }
 
 IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
 {
-   return e_OK;
+   IALIReset::e_Reset ret = afuQuiesceAndHalt();
+
+   if(ret != e_OK){
+      afuEnable();
+   }else{
+      ret = afuEnable();
+   }
+
+   return ret;
 }
 
 // ---------------------------------------------------------------------------

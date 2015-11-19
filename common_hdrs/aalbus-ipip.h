@@ -101,7 +101,7 @@ struct aal_pipmessage
 {
    btVirtAddr           m_message;        // Message body
    btVirtAddr           m_response;       // Response body
-   btWSSize            *m_prespbufSize;   // Response buffer size
+   btWSSize             m_respbufSize;    // Response buffer size
    stTransactionID_t    m_tranID;         // Transaction ID to identify result
    btObjectType         m_context;        // Optional token
    btUnsigned32bitInt   m_errcode;        // Errror
@@ -118,7 +118,7 @@ struct aal_pipmsghandler
 
    // Send a UI message to the PIP
    btInt (*sendMessage)(struct aaldev_ownerSession *,   // Owner Session
-                        struct aal_pipmessage);         // Message
+                        struct aal_pipmessage *);       // Message
 
 };
 

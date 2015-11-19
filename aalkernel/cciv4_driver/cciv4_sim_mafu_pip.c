@@ -80,10 +80,10 @@
 #include "cciv4_PIPsession.h"
 
 int MAFUCommandHandler(struct aaldev_ownerSession * ,
-                       struct aal_pipmessage  );
+                       struct aal_pipmessage  *);
 
 int CMAFUCommandHandler(struct aaldev_ownerSession * ,
-                        struct aal_pipmessage );
+                        struct aal_pipmessage *);
 
 struct uidrv_event_afu_response_event *
                   do_mafucmdCreateAFU( struct aaldev_ownerSession *,
@@ -131,7 +131,7 @@ struct aal_ipip cciv4_simMAFUpip =
 //=============================================================================
 int
 MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
-                   struct aal_pipmessage       Message)
+                   struct aal_pipmessage       *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -154,7 +154,7 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
    void *p_localpayload = NULL;
 
    // Get the UI Driver command
-   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message.m_message;
+   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message->m_message;
 
    int retval = 0;
    // Perform some basic checks while assigning the pdev
@@ -186,36 +186,36 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
 
          MAFU_COMMAND_CASE(aalui_mafucmdCreateAFU) {
 
-            pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, &Message, &req);
+            pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, Message, &req);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
          } break;
 
          MAFU_COMMAND_CASE(aalui_mafucmdDestroyAFU) {
 
-            pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, &Message, &req);
+            pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, Message, &req);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
           } break;
 
          default: {
             ASSERT(0);
             pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                       &Message.m_tranID,
-                                                                        Message.m_context,
+                                                                       &Message->m_tranID,
+                                                                        Message->m_context,
                                                                         uid_errnumBadParameter);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
             retval = -EINVAL;
          } break;
       }//switch (req.cmd)
@@ -250,8 +250,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -270,8 +270,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -302,8 +302,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_cci_csr(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -315,7 +315,7 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -335,8 +335,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -354,8 +354,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -386,8 +386,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_afu_mmio(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -399,7 +399,7 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -418,8 +418,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -438,8 +438,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -470,8 +470,8 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_afu_umsg(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -483,7 +483,7 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -494,14 +494,14 @@ MAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
          default: {
             ASSERT(0);
             pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                       &Message.m_tranID,
-                                                                        Message.m_context,
+                                                                       &Message->m_tranID,
+                                                                        Message->m_context,
                                                                         uid_errnumBadParameter);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
             retval = -EINVAL;
          } break;
       }//switch (pmsg->cmd)
@@ -553,7 +553,7 @@ struct aal_ipip cciv4_simCMAFUpip =
 //=============================================================================
 int
 CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
-                    struct aal_pipmessage       Message)
+                    struct aal_pipmessage       *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -576,7 +576,7 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
    void *p_localpayload = NULL;
 
    // Get the UI Driver command
-   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message.m_message;
+   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message->m_message;
 
    int retval = 0;
    // Perform some basic checks while assigning the pdev
@@ -608,36 +608,36 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
 
          MAFU_COMMAND_CASE(aalui_mafucmdCreateAFU) {
 
-            pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, &Message, &req);
+            pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, Message, &req);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
          } break;
 
          MAFU_COMMAND_CASE(aalui_mafucmdDestroyAFU) {
 
-            pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, &Message, &req);
+            pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, Message, &req);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
           } break;
 
          default: {
             ASSERT(0);
             pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                       &Message.m_tranID,
-                                                                        Message.m_context,
+                                                                       &Message->m_tranID,
+                                                                        Message->m_context,
                                                                         uid_errnumBadParameter);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
             retval = -EINVAL;
          } break;
       }//switch (req.cmd)
@@ -672,8 +672,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -692,8 +692,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -724,8 +724,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_cci_csr(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -737,7 +737,7 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -757,8 +757,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -776,8 +776,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -808,8 +808,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_afu_mmio(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -821,7 +821,7 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -840,8 +840,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                  0,
                                                                  0,
                                                                  0,
-                                                                 Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumPermission);
                 PERR("Direct API access not permitted on this device\n");
 
@@ -860,8 +860,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                     0,
                                                                     0,
                                                                     0,
-                                                                    Message.m_tranID,
-                                                                    Message.m_context,
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
                                                                     uid_errnumBadParameter);
                    PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -892,8 +892,8 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
                                      cciv4_dev_len_afu_umsg(pdev),         // Return the requested aperture size
                                      CCIV4_CSR_SIZE,                      // Return the CSR size in octets
                                      CCIV4_CSR_SPACING,                   // Return the inter-CSR spacing octets
-                                     Message.m_tranID,
-                                     Message.m_context,
+                                     Message->m_tranID,
+                                     Message->m_context,
                                      uid_errnumOK);
 
                    PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -905,7 +905,7 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
              pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                             aalsess_aaldevicep(pownerSess),
                                             AALQIP(pafuws_evt),
-                                            Message.m_context);
+                                            Message->m_context);
 
              if ( 0 != retval ) {
                 goto ERROR;
@@ -916,14 +916,14 @@ CMAFUCommandHandler(struct aaldev_ownerSession *pownerSess,
          default: {
             ASSERT(0);
             pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                       &Message.m_tranID,
-                                                                        Message.m_context,
+                                                                       &Message->m_tranID,
+                                                                        Message->m_context,
                                                                         uid_errnumBadParameter);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuresponse_evt),
-                                           Message.m_context);
+                                           Message->m_context);
             retval = -EINVAL;
          } break;
       }//switch (pmsg->cmd)

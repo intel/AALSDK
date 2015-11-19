@@ -180,7 +180,6 @@ BufferFreeTransaction::~BufferFreeTransaction() {
 }
 
 
-
 GetMMIOBufferTransaction::GetMMIOBufferTransaction( TransactionID const &tranID ) :
    m_msgID(reqid_UID_SendAFU),
    m_tid_t(tranID),
@@ -232,35 +231,27 @@ GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
    delete afumsg;
 }
 
-
-/*
-GetUMSGBufferTransaction::GetUMSGBufferTransaction( TransactionID const &tranID ) :
+AFUQuiesceAndHalt::AFUQuiesceAndHalt() :
    m_msgID(reqid_UID_SendAFU),
-   m_tid_t(tranID),
+   m_tid_t(),
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
    m_bufLength(0)
 {
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // BufferAllocate-AIATransaction.
+   // GetMMIOBufferTransaction-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage);
 
    // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = (new (std::nothrow) struct aalui_CCIdrvMessage);
-   struct ahm_req *req              = (new (std::nothrow) struct ahm_req);
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
 
    // fill out aalui_CCIdrvMessage
-   afumsg->cmd     = fappip_getuMSGmap;
-   afumsg->payload = (btVirtAddr) req;
-   afumsg->size    = sizeof(struct ahm_req);
-   afumsg->apiver  = AAL_AHMAPI_IID_1_0;
-   afumsg->pipver  = AAL_AHMPIP_IID_1_0;
-
-   req->u.wksp.m_wsid = WSID_MAP_UMSG;
+   afumsg->cmd     = ccipdrv_afucmdPort_afuQuiesceAndHalt;
+   afumsg->size    = 0;
 
    // package in AIA transaction
    m_payload = (btVirtAddr) afumsg;
-   m_size = sizeof(struct aalui_CCIdrvMessage);
 
    ASSERT(NULL != m_payload);
    if(NULL == m_payload){
@@ -270,18 +261,61 @@ GetUMSGBufferTransaction::GetUMSGBufferTransaction( TransactionID const &tranID 
    m_bIsOK = true;
 }
 
-AAL::btBool                    GetUMSGBufferTransaction::IsOK() const {return m_bIsOK;}
-AAL::btVirtAddr                GetUMSGBufferTransaction::getPayloadPtr()const {return m_payload;}
-AAL::btWSSize                  GetUMSGBufferTransaction::getPayloadSize()const {return m_size;}
-AAL::stTransactionID_t const   GetUMSGBufferTransaction::getTranID()const {return m_tid_t;}
-AAL::uid_msgIDs_e              GetUMSGBufferTransaction::getMsgID()const {return m_msgID;}
-
-GetUMSGBufferTransaction::~GetUMSGBufferTransaction() {
+AAL::btBool                    AFUQuiesceAndHalt::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUQuiesceAndHalt::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUQuiesceAndHalt::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUQuiesceAndHalt::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUQuiesceAndHalt::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUQuiesceAndHalt::getErrno()const {return m_errno;};
+void                           AFUQuiesceAndHalt::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUQuiesceAndHalt::~AFUQuiesceAndHalt() {
    // unpack payload and free memory
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
-   struct ahm_req          *req    = (ahm_req *)afumsg->payload;
-   delete req;
    delete afumsg;
 }
 
-*/
+AFUEnable::AFUEnable() :
+   m_msgID(reqid_UID_SendAFU),
+   m_tid_t(),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // GetMMIOBufferTransaction-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage);
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_afucmdPort_afuEnable;
+   afumsg->size    = 0;
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){
+      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    AFUEnable::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUEnable::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUEnable::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUEnable::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUEnable::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUEnable::getErrno()const {return m_errno;};
+void                           AFUEnable::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUEnable::~AFUEnable() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
+
+
+

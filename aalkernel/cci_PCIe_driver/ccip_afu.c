@@ -91,7 +91,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static int CommandHandler( struct aaldev_ownerSession *,
-                           struct aal_pipmessage);
+                           struct aal_pipmessage*);
 static int cci_mmap(struct aaldev_ownerSession *pownerSess,
                            struct aal_wsid *wsidp,
                            btAny os_specific);
@@ -245,7 +245,7 @@ struct cci_aal_device   *
 //=============================================================================
 int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
-               struct aal_pipmessage       Message)
+               struct aal_pipmessage      *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -260,20 +260,23 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // Overall return value for this function. Set before exiting if there is an error.
    //    retval = 0 means good return.
    int retval = 0;
-
-   // UI Driver message
-   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
-
-   // Save original response buffer size in case we return something
-   btWSSize         respBufSize     = *Message.m_prespbufSize;
-
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error       = uid_errnumInvalidRequest;
 
-   // Assume returning nothing
-   *Message.m_prespbufSize          = 0;
+   // UI Driver message
+   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message->m_message;
 
-   PINFO("In CCI Command handler, AFUCommand().\n");
+   // Save original response buffer size in case we return something
+   btWSSize         respBufSize     = Message->m_respbufSize;
+
+   // Assume returning nothing. By setting the response buffer size to 0
+   //   we tell the upstream side that there is no payload to copy back.
+   //   Setting it here means we don't have to set it (or forget to) in each
+   //   command.  We've recorded the payload buffer size above if we do need
+   //   intend to send a payload.
+   Message->m_respbufSize          = 0;
+
+   PTRACEIN;
 
    // Perform some basic checks while assigning the pdev
    ASSERT(NULL != pSess );
@@ -295,15 +298,32 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    switch ( pmsg->cmd ) {
       struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
 
-      AFU_COMMAND_CASE(ccipdrv_afucmdPort_AssertReset) {
-         if(0 != port_afu_deassert( cci_dev_pport(pdev) )){
+      AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuQuiesceAndHalt) {
+         if(0 != port_afu_quiesce_and_halt( cci_dev_pport(pdev) )){
             // Failure event
-
+            PERR("TIMEOUT\n");
+            Message->m_errcode = uid_errnumTimeout;
+            break;
          }
 
          // Success Event
+         Message->m_errcode = uid_errnumOK;
 
       } break;
+
+      AFU_COMMAND_CASE(ccipdrv_afucmdPort_afuEnable) {
+         if(0 != port_afu_Enable( cci_dev_pport(pdev) )){
+            PERR("TIMEOUT\n");
+            // Failure event
+            Message->m_errcode = uid_errnumTimeout;
+            break;
+         }
+
+         // Success Event
+         Message->m_errcode = uid_errnumOK;
+
+      } break;
+
 
       // Returns a workspace ID for the Config Space
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
@@ -318,8 +338,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             Message.m_tranID,
-                                                             Message.m_context,
+                                                             Message->m_tranID,
+                                                             Message->m_context,
                                                              uid_errnumPermission);
             PERR("Direct API access not permitted on this device\n");
 
@@ -335,8 +355,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 0,
                                                                 (btPhysAddr)NULL,
                                                                 0,
-                                                                Message.m_tranID,
-                                                                Message.m_context,
+                                                                Message->m_tranID,
+                                                                Message->m_context,
                                                                 uid_errnumBadParameter);
                PERR("Bad WSID on ccipdrv_getMMIORmap\n");
 
@@ -364,37 +384,37 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
-                                                                   Message.m_tranID,
-                                                                   Message.m_context,
+                                                                   Message->m_tranID,
+                                                                   Message->m_context,
                                                                    uid_errnumOK);
 
                PVERBOSE("Sending ccipdrv_getMMIORmap Event Event ID = %d\n",((struct aalui_WSMEvent*)(pafuws_evt->m_payload))->evtID );
 #endif
-               Message.m_errcode = uid_errnumOK;
+               Message->m_errcode = uid_errnumOK;
                retval = 0;
             }
          }
-         PDEBUG("Buf size =  %u Try Returning WSID %llx\n",(unsigned int)respBufSize,  wsidobjp_to_wid(wsidp))
+         PDEBUG("Buf size =  %u Try Returning WSID %llx\n",(unsigned int)respBufSize,  wsidobjp_to_wid(wsidp));
          {
             // Set up the return payload
             struct aalui_WSMEvent WSID;
-            WSID.evtID          = uid_wseventMMIOMap;
+            WSID.evtID           = uid_wseventMMIOMap;
             WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
             WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
             WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 
-            // Make this atomic. Check the orignal response buffer size for room
+            // Make this atomic. Check the original response buffer size for room
             if(respBufSize >= sizeof(struct aalui_WSMEvent)){
-               *((struct aalui_WSMEvent*)Message.m_response) = WSID;
-               *Message.m_prespbufSize = sizeof(struct aalui_WSMEvent);
+               *((struct aalui_WSMEvent*)Message->m_response) = WSID;
+               Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
             }
          }
-         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)*Message.m_prespbufSize, *((btWSID*)Message.m_response)  );
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, *((btWSID*)Message->m_response)  );
 #if 0
          ccidrv_sendevent( aalsess_uiHandle(pownerSess),
                            aalsess_aaldevicep(pownerSess),
                            AALQIP(pafuws_evt),
-                           Message.m_context);
+                           Message->m_context);
 #endif
          if ( 0 != retval ) {
             goto ERROR;
@@ -416,14 +436,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            NULL,
                                                            (btPhysAddr)NULL,
                                                            preq->ahmreq.u.wksp.m_size,
-                                                           Message.m_tranID,
-                                                           Message.m_context,
+                                                           Message->m_tranID,
+                                                           Message->m_context,
                                                            uid_errnumNoMem);
 
             ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
             goto ERROR;
          }
@@ -460,8 +480,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                NULL,
                                                kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
                                                preq->ahmreq.u.wksp.m_size,
-                                               Message.m_tranID,
-                                               Message.m_context,
+                                               Message->m_tranID,
+                                               Message->m_context,
                                                uid_errnumOK);
 
          PVERBOSE("Sending the WKSP Alloc event.\n");
@@ -469,7 +489,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ccidrv_sendevent(aalsess_uiHandle(pownerSess),
                                         aalsess_aaldevicep(pownerSess),
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
       } break; // case fappip_afucmdWKSP_VALLOC
 
@@ -487,15 +507,15 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             PDEBUG("WKSP_IOC_FREE: WS id can't be 0.\n");
             // Create the exception event
             pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                           Message.m_tranID,
-                                                           Message.m_context,
+                                                           Message->m_tranID,
+                                                           Message->m_context,
                                                            uid_errnumBadParameter);
 
             // Send the event
             ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
-                                           Message.m_context);
+                                           Message->m_context);
             retval = -EFAULT;
             goto ERROR;
          }
@@ -507,8 +527,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          if ( NULL == wsidp ) {
             // Create the exception event
             pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                           Message.m_tranID,
-                                                           Message.m_context,
+                                                           Message->m_tranID,
+                                                           Message->m_context,
                                                            uid_errnumBadParameter);
 
             PDEBUG("Sending WKSP_FREE Exception\n");
@@ -516,7 +536,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
             retval = -EFAULT;
             goto ERROR;
@@ -528,13 +548,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                   wsidp->m_type);
 
             pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                           Message.m_tranID,
-                                                           Message.m_context,
+                                                           Message->m_tranID,
+                                                           Message->m_context,
                                                            uid_errnumBadParameter);
             ccidrv_sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
             retval = -EFAULT;
             goto ERROR;
@@ -550,8 +570,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Create the  event
          pafuws_evt = ccipdrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                        Message.m_tranID,
-                                                        Message.m_context,
+                                                        Message->m_tranID,
+                                                        Message->m_context,
                                                         uid_errnumOK);
 
          PVERBOSE("Sending the WKSP Free event.\n");
@@ -559,7 +579,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ccidrv_sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
       } break; // case fappip_afucmdWKSP_FREE
 
       default: {
@@ -568,14 +588,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
 
          pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                     &Message.m_tranID,
-                                                                     Message.m_context,
+                                                                     &Message->m_tranID,
+                                                                     Message->m_context,
                                                                      request_error);
 
         ccidrv_sendevent( pownerSess->m_UIHandle,
                           pownerSess->m_device,
                           AALQIP(pafuresponse_evt),
-                          Message.m_context);
+                          Message->m_context);
 
          retval = -EINVAL;
       } break;

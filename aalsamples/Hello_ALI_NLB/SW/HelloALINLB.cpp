@@ -436,7 +436,14 @@ btInt HelloALINLBApp::run()
 
 #define SIMULATED
 
-#if !defined (SIMULATED)
+#if defined (SIMULATED)
+
+      // Initiate AFU Reset
+      if(IALIReset::e_OK != m_pALIResetService->afuReset()){
+         ERR("Reset Failed... as expected in simulation\n");
+      }
+
+#else
       /* Setting to 0 turns off actul NLB functionality for debug purposes */
 
       // Clear the DSM

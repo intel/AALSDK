@@ -337,7 +337,8 @@ public:
    virtual ~IALIReset() {}
 
    enum e_Reset {
-      e_OK,                      ///< Everything okay
+      e_OK,                      ///< Everything is okay
+      e_Internal,                ///< Internal failure
       e_Error_Quiesce_Timeout    ///< Could not disable completely, issued reset anyway
    };
 

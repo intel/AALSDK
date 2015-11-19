@@ -79,7 +79,7 @@
 
 int
 MAFUCommand(struct aaldev_ownerSession * ,
-            struct aal_pipmessage );
+            struct aal_pipmessage *);
 
 static void    spl2_sim_read_cci_csr(struct spl2_device * , btCSROffset );
 static void spl2_sim_write_cci_csr32(struct spl2_device * , btCSROffset , bt32bitCSR );
@@ -420,7 +420,7 @@ struct uidrv_event_afu_response_event *
 //=============================================================================
 int
 MAFUCommand(struct aaldev_ownerSession *pownerSess,
-            struct aal_pipmessage       Message)
+            struct aal_pipmessage       *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define MAFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -431,7 +431,7 @@ MAFUCommand(struct aaldev_ownerSession *pownerSess,
    struct mafu_request                    req;
 
    // Get the UI Driver command
-   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message.m_message;
+   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *)Message->m_message;
 
    int retval = 0;
 
@@ -447,36 +447,36 @@ MAFUCommand(struct aaldev_ownerSession *pownerSess,
 
       MAFU_COMMAND_CASE(aalui_mafucmdCreateAFU) {
 
-         pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, &Message, &req);
+         pafuresponse_evt = do_mafucmdCreateAFU(pownerSess, Message, &req);
 
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuresponse_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
       } break;
 
       MAFU_COMMAND_CASE(aalui_mafucmdDestroyAFU) {
 
-         pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, &Message, &req);
+         pafuresponse_evt = do_mafucmdDestroyAFU(pownerSess, Message, &req);
 
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuresponse_evt),
-                                        Message.m_context);
+                                        Message->m_context);
        } break;
 
       default: {
          ASSERT(0);
          pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                    &Message.m_tranID,
-                                                                     Message.m_context,
+                                                                    &Message->m_tranID,
+                                                                     Message->m_context,
                                                                      uid_errnumBadParameter);
 
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuresponse_evt),
-                                        Message.m_context);
+                                        Message->m_context);
          retval = -EINVAL;
       } break;
    }

@@ -193,6 +193,71 @@ private:
 
 }; // class GetUMSGBufferTransaction
 
+//=============================================================================
+// Name:          AFUQuiesceAndHalt
+// Description:   Quisce the AFU and put it into a halted state
+// Input:         None
+// Comments: This is an atomic transaction. Check error for result
+//=============================================================================
+class UAIA_API AFUQuiesceAndHalt : public IAIATransaction
+{
+public:
+   AFUQuiesceAndHalt();
+   AAL::btBool                    IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
+
+   ~AFUQuiesceAndHalt();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class AFUQuiesceAndHalt
+
+//=============================================================================
+// Name:          AFUEnable
+// Description:   Takes the AFU put of halted state
+// Input:         None
+// Comments: This is an atomic transaction. Check error for result
+//=============================================================================
+class UAIA_API AFUEnable : public IAIATransaction
+{
+public:
+   AFUEnable( );
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
+
+   ~AFUEnable();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class AFUEnable
 
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

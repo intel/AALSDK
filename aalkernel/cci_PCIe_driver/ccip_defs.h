@@ -838,7 +838,7 @@ struct CCIP_PORT_HDR {
             btUnsigned64bitInt port_freeze :1; //  Port Freeze
             btUnsigned64bitInt afu_latny_rep :1; // AFU Latency Tolerance Reorting
             btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt ccip_outstaning_request :1; // NO outstanding CCI-P requests, set to 1
+            btUnsigned64bitInt ccip_outstanding_request :1; // NO outstanding CCI-P requests, set to 1
             btUnsigned64bitInt rsvd :59;
          }; // end struct
       }; // end union

@@ -86,7 +86,7 @@
 
 static int
 AFUCommand(struct aaldev_ownerSession *,
-           struct aal_pipmessage);
+           struct aal_pipmessage*);
 
 
 //=============================================================================
@@ -600,7 +600,7 @@ ERROR:
 //=============================================================================
 int
 AFUCommand(struct aaldev_ownerSession *pownerSess,
-           struct aal_pipmessage       Message)
+           struct aal_pipmessage       *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -620,7 +620,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
    int retval = 0;
 
    // UI Driver message
-   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *) Message.m_message;
+   struct aalui_AFUmessage *pmsg = (struct aalui_AFUmessage *) Message->m_message;
 
    // Used to point to the response event
    struct uidrv_event_afu_response_event  *pafuresponse_evt = NULL;
@@ -680,7 +680,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
 
       AFU_COMMAND_CASE(fappip_afucmdSTART_SPL2_TRANSACTION) {
          if ( start_spl2_transaction(pownerSess,
-                                     &Message,
+                                     Message,
                                      NULL,
                                      (struct spl2req *)p_localpayload) ) {
             retval = -EIO;
@@ -690,7 +690,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
 
       AFU_COMMAND_CASE(fappip_afucmdSTOP_SPL2_TRANSACTION) {
          if ( stop_spl2_transaction( pownerSess,
-                                    &Message,
+                                     Message,
                                      NULL) ) {
             retval = -EIO;
             goto ERROR;
@@ -700,7 +700,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
 
       AFU_COMMAND_CASE(fappip_afucmdSET_SPL2_CONTEXT_WORKSPACE) {
          if ( set_spl2_context_workspace(pownerSess,
-                                         &Message,
+                                         Message,
                                          NULL,
                                          (struct spl2req *)p_localpayload) ) {
             retval = -EIO;
@@ -718,8 +718,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              0,
                                                              0,
-                                                             Message.m_tranID,
-                                                             Message.m_context,
+                                                             Message->m_tranID,
+                                                             Message->m_context,
                                                              uid_errnumPermission);
             PERR("Direct API access not permitted on this device\n");
 
@@ -737,8 +737,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                                                 0,
                                                                 0,
                                                                 0,
-                                                                Message.m_tranID,
-                                                                Message.m_context,
+                                                                Message->m_tranID,
+                                                                Message->m_context,
                                                                 uid_errnumBadParameter);
                PERR("Bad WSID on fappip_getCSRmap\n");
 
@@ -767,8 +767,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                  spl2_dev_len_afu_csr(pdev),         // Return the requested aperture size
                                  SPL2PIP_CSR_SIZE,                   // Return the CSR size in octets
                                  SPL2PIP_CSR_SPACING,                // Return the inter-CSR spacing octets
-                                 Message.m_tranID,
-                                 Message.m_context,
+                                 Message->m_tranID,
+                                 Message->m_context,
                                  uid_errnumOK);
 
                PVERBOSE("Sending uid_wseventCSRMap Event\n");
@@ -780,7 +780,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                         aalsess_aaldevicep(pownerSess),
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
          if ( 0 != retval ) {
             goto ERROR;
@@ -806,8 +806,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       if( !spl2_sessionp_is_tranowner(sessp){
          // Device is currently busy.
           pafuresponse_evt = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                             &Message.m_tranID,
-                                                             Message.m_context,
+                                                             &Message->m_tranID,
+                                                             Message->m_context,
                                                              NULL,
                                                              uid_errnumPermission);
           // Send the event
@@ -833,8 +833,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
             pafuresponse_evt = uidrv_event_afu_afucsrgetset_create(  pownerSess->m_device,
                                                                      pcsr_rwb,
                                                                      u,
-                                                                     &Message.m_tranID,
-                                                                     Message.m_context,
+                                                                     &Message->m_tranID,
+                                                                     Message->m_context,
                                                                      uid_errnumOK);
 
          }
@@ -845,8 +845,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          pafuresponse_evt = uidrv_event_afu_afucsrgetset_create( pownerSess->m_device,
                                                                  pcsr_rwb,
                                                                  index,
-                                                                 &Message.m_tranID,
-                                                                 Message.m_context,
+                                                                 &Message->m_tranID,
+                                                                 Message->m_context,
                                                                  uid_errnumOK);
       }
 
@@ -860,7 +860,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       pownerSess->m_uiapi->sendevent(sessp->m_pownerSess->m_UIHandle,
                                      pownerSess->m_device,
                                      AALQIP(pafuresponse_evt),
-                                     Message.m_context);
+                                     Message->m_context);
 
       break;
    }
@@ -886,8 +886,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuresponse_evt
                 = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                  &Message.m_tranID,
-                                                  Message.m_context,
+                                                  &Message->m_tranID,
+                                                  Message->m_context,
                                                   NULL,
                                                   uid_errnumDescArrayEmpty);
          // Send the event
@@ -904,8 +904,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
        PDEBUG("Error: Allocat desc info array failed:\n");
        // Create the event
        pafuresponse_evt = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                          &Message.m_tranID,
-                                                          Message.m_context,
+                                                          &Message->m_tranID,
+                                                          Message->m_context,
                                                           NULL,
                                                           uid_errnumNoMem);
        // Send the event
@@ -920,8 +920,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
        PDEBUG("Error: Copy submit_descriptors_req from user space failed:\n");
        // Create the event
        pafuresponse_evt = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                          &Message.m_tranID,
-                                                          Message.m_context,
+                                                          &Message->m_tranID,
+                                                          Message->m_context,
                                                           NULL,
                                                           uid_errnumCopyFromUser);
        // Send the event
@@ -937,8 +937,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuresponse_evt
                   = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                    &Message.m_tranID,
-                                                    Message.m_context,
+                                                    &Message->m_tranID,
+                                                    Message->m_context,
                                                     NULL,
                                                     uid_errnumBadParameter);
          // Send the event
@@ -961,8 +961,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuresponse_evt
                    = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                     &Message.m_tranID,
-                                                     Message.m_context,
+                                                     &Message->m_tranID,
+                                                     Message->m_context,
                                                      NULL,
                                                      uid_errnumBadParameter);
          // Send the event
@@ -981,8 +981,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuresponse_evt
                    = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                     &Message.m_tranID,
-                                                     Message.m_context,
+                                                     &Message->m_tranID,
+                                                     Message->m_context,
                                                      NULL,
                                                      uid_errnumBadParameter);
          // Send the event
@@ -1011,8 +1011,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
 
       pafuresponse_evt
                  = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                   &Message.m_tranID,
-                                                   Message.m_context,
+                                                   &Message->m_tranID,
+                                                   Message->m_context,
                                                    NULL,
                                                    uid_errnumOK);
        // Send the event
@@ -1043,14 +1043,14 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                                         NULL,
                                                         (btPhysAddr)NULL,
                                                         req.u.wksp.m_size,
-                                                        Message.m_tranID,
-                                                        Message.m_context,
+                                                        Message->m_tranID,
+                                                        Message->m_context,
                                                         uid_errnumNoMem);
 
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
          retval = -EPERM;
          goto ERROR;
@@ -1063,14 +1063,14 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                                            NULL,
                                                            (btPhysAddr)NULL,
                                                            req.u.wksp.m_size,
-                                                           Message.m_tranID,
-                                                           Message.m_context,
+                                                           Message->m_tranID,
+                                                           Message->m_context,
                                                            uid_errnumNoMem);
 
             pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                            pownerSess->m_device,
                                            AALQIP(pafuws_evt),
-                                           Message.m_context);
+                                           Message->m_context);
 
             goto ERROR;
          }
@@ -1109,8 +1109,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
                                             NULL,
                                             pmem_sess->m_virtmem.m_pte_array_physaddr,
                                             req.u.wksp.m_size,
-                                            Message.m_tranID,
-                                            Message.m_context,
+                                            Message->m_tranID,
+                                            Message->m_context,
                                             uid_errnumOK);
 
       PVERBOSE("Sending the WKSP Alloc event.\n");
@@ -1118,7 +1118,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       pownerSess->m_uiapi->sendevent(aalsess_uiHandle(pownerSess),
                                      aalsess_aaldevicep(pownerSess),
                                      AALQIP(pafuws_evt),
-                                     Message.m_context);
+                                     Message->m_context);
 
    } break; // case fappip_afucmdWKSP_VALLOC
 
@@ -1137,15 +1137,15 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          PDEBUG("WKSP_IOC_FREE: WS id can't be 0.\n");
          // Create the exception event
          pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                        Message.m_tranID,
-                                                        Message.m_context,
+                                                        Message->m_tranID,
+                                                        Message->m_context,
                                                         uid_errnumBadParameter);
 
          // Send the event
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
          retval = -EFAULT;
          goto ERROR;
       }
@@ -1157,8 +1157,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       if ( NULL == wsidp ) {
          // Create the exception event
          pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                        Message.m_tranID,
-                                                        Message.m_context,
+                                                        Message->m_tranID,
+                                                        Message->m_context,
                                                         uid_errnumBadParameter);
 
          PDEBUG("Sending WKSP_FREE Exception\n");
@@ -1166,7 +1166,7 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
          retval = -EFAULT;
          goto ERROR;
@@ -1181,8 +1181,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
           // Create the event
           pafuresponse_evt
                     = uidrv_event_afutrancmplt_create(pownerSess->m_device,
-                                                      &Message.m_tranID,
-                                                      Message.m_context,
+                                                      &Message->m_tranID,
+                                                      Message->m_context,
                                                       NULL,
                                                       uid_errnumBadParameter);
           // Send the event
@@ -1198,13 +1198,13 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
          PDEBUG( "Virtual free failed due to bad xsid index. Should be 0, but is %d\n",
                 index_from_xsid(xsid));
          pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                        Message.m_tranID,
-                                                        Message.m_context,
+                                                        Message->m_tranID,
+                                                        Message->m_context,
                                                         uid_errnumBadParameter);
          pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                         pownerSess->m_device,
                                         AALQIP(pafuws_evt),
-                                        Message.m_context);
+                                        Message->m_context);
 
          retval = -EFAULT;
          goto ERROR;
@@ -1219,8 +1219,8 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
 
       // Create the  event
       pafuws_evt = uidrv_event_afu_afufreecws_create(pownerSess->m_device,
-                                                     Message.m_tranID,
-                                                     Message.m_context,
+                                                     Message->m_tranID,
+                                                     Message->m_context,
                                                      uid_errnumOK);
 
       PVERBOSE("Sending the WKSP Free event.\n");
@@ -1228,21 +1228,21 @@ AFUCommand(struct aaldev_ownerSession *pownerSess,
       pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                      pownerSess->m_device,
                                      AALQIP(pafuws_evt),
-                                     Message.m_context);
+                                     Message->m_context);
    } break; // case fappip_afucmdWKSP_FREE
 
    default: {
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
 
       pafuresponse_evt = uidrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                  &Message.m_tranID,
-                                                                  Message.m_context,
+                                                                  &Message->m_tranID,
+                                                                  Message->m_context,
                                                                   request_error);
 
       pownerSess->m_uiapi->sendevent(pownerSess->m_UIHandle,
                                      pownerSess->m_device,
                                      AALQIP(pafuresponse_evt),
-                                     Message.m_context);
+                                     Message->m_context);
 
       retval = -EINVAL;
    } break;

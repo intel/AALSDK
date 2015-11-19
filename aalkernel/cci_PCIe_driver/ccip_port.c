@@ -95,7 +95,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static int CommandHandler( struct aaldev_ownerSession *,
-                           struct aal_pipmessage);
+                           struct aal_pipmessage*);
 static int cci_mmap(struct aaldev_ownerSession *pownerSess,
                            struct aal_wsid *wsidp,
                            btAny os_specific);
@@ -180,6 +180,10 @@ struct cci_aal_device   *
    aaldevid_pipguid(*paalid)             = CCIP_PORT_PIPIID;
    aaldevid_vendorid(*paalid)            = AAL_vendINTC;
 
+   cci_dev_phys_afu_mmio(pcci_aaldev)    = ccip_port_phys_mmio(pportdev);
+   cci_dev_kvp_afu_mmio(pcci_aaldev)     = ccip_port_kvp_mmio(pportdev);
+
+
    // Set the interface permissions
    // Enable MMIO-R
    cci_dev_set_allow_map_mmior_space(pcci_aaldev);
@@ -249,7 +253,7 @@ struct cci_aal_device   *
 //=============================================================================
 int
 CommandHandler(struct aaldev_ownerSession *pownerSess,
-               struct aal_pipmessage       Message)
+               struct aal_pipmessage      *Message)
 {
 #if (1 == ENABLE_DEBUG)
 #define AFU_COMMAND_CASE(x) case x : PDEBUG("%s\n", #x);
@@ -265,16 +269,23 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    //    retval = 0 means good return.
    int retval = 0;
 
-   // UI Driver message
-   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message.m_message;
-
-   // Used by WS allocation
-   struct aal_wsid                        *wsidp            = NULL;
-
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error = uid_errnumInvalidRequest;
 
-   PINFO("In CCI Command handler, AFUCommand().\n");
+   // UI Driver message
+   struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message->m_message;
+
+   // Save original response buffer size in case we return something
+   btWSSize         respBufSize     = Message->m_respbufSize;
+
+   // Assume returning nothing. By setting the response buffer size to 0
+   //   we tell the upstream side that there is no payload to copy back.
+   //   Setting it here means we don't have to set it (or forget to) in each
+   //   command.  We've recorded the payload buffer size above if we do need
+   //   intend to send a payload.
+   Message->m_respbufSize          = 0;
+
+   PTRACEIN;
 
    // Perform some basic checks while assigning the pdev
    ASSERT(NULL != pSess );
@@ -294,10 +305,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // Message processor
    //=====================
    switch ( pmsg->cmd ) {
-      struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
+      struct ccipdrv_event_afu_response_event   *pafuws_evt       = NULL;
+      struct aal_wsid                           *wsidp            = NULL;
+
       // Returns a workspace ID for the Config Space
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
-         struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+         struct ccidrvreq *preq     = (struct ccidrvreq *)pmsg->payload;
+
+
 
          if ( !cci_dev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
@@ -305,8 +320,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              0,
                                                              (btPhysAddr)NULL,
                                                              0,
-                                                             Message.m_tranID,
-                                                             Message.m_context,
+                                                             Message->m_tranID,
+                                                             Message->m_context,
                                                              uid_errnumPermission);
             PERR("Direct API access not permitted on this device\n");
 
@@ -322,8 +337,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 0,
                                                                 (btPhysAddr)NULL,
                                                                 0,
-                                                                Message.m_tranID,
-                                                                Message.m_context,
+                                                                Message->m_tranID,
+                                                                Message->m_context,
                                                                 uid_errnumBadParameter);
                PERR("Bad WSID on ccipdrv_getMMIORmap\n");
 
@@ -351,8 +366,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                    wsidobjp_to_wid(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
-                                                                   Message.m_tranID,
-                                                                   Message.m_context,
+                                                                   Message->m_tranID,
+                                                                   Message->m_context,
                                                                    uid_errnumOK);
 
                PVERBOSE("Sending ccipdrv_getMMIORmap Event\n");
@@ -364,7 +379,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          ccidrv_sendevent( aalsess_uiHandle(pownerSess),
                            aalsess_aaldevicep(pownerSess),
                            AALQIP(pafuws_evt),
-                           Message.m_context);
+                           Message->m_context);
 
          if ( 0 != retval ) {
             goto ERROR;
@@ -373,6 +388,43 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       } break;
 
 
+      AFU_COMMAND_CASE(ccipdrv_getFeatureRegion) {
+         struct ccidrvreq     *preq       = (struct ccidrvreq *)pmsg->payload;
+         struct aalui_WSMEvent WSID;
+         btWSID                featurenum = preq->ahmreq.u.wksp.m_wsid;
+         btPhysAddr            pFeature   = 0;
+
+         PVERBOSE("Getting feature ID %u\n",(unsigned int)featurenum);
+
+         pFeature = get_port_feature(cci_dev_pport(pdev),featurenum );
+         if(0 == pFeature){
+            Message->m_errcode = uid_errnumBadParameter;
+            PTRACEOUT;
+            return 0;
+         }
+
+         wsidp = ccidrv_getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+         if ( NULL == wsidp ) {
+            PERR("Could not allocate workspace ID\n");
+            retval = -ENOMEM;
+            /* generate a failure event back to the caller? */
+            goto ERROR;
+         }
+
+         wsidp->m_type = WSM_TYPE_MMIO;
+
+         WSID.evtID           = uid_wseventMMIOMap;
+         WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+
+         // Make this atomic. Check the orignal response buffer size for room
+         if(respBufSize >= sizeof(struct aalui_WSMEvent)){
+            *((struct aalui_WSMEvent*)Message->m_response) = WSID;
+            Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
+         }
+      } break;
+
 
    default: {
       struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;
@@ -380,14 +432,14 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       PDEBUG("Unrecognized command %" PRIu64 " or 0x%" PRIx64 " in AFUCommand\n", pmsg->cmd, pmsg->cmd);
 
       pafuresponse_evt = ccipdrv_event_afu_afuinavlidrequest_create(pownerSess->m_device,
-                                                                  &Message.m_tranID,
-                                                                  Message.m_context,
+                                                                  &Message->m_tranID,
+                                                                  Message->m_context,
                                                                   request_error);
 
      ccidrv_sendevent( pownerSess->m_UIHandle,
                        pownerSess->m_device,
                        AALQIP(pafuresponse_evt),
-                       Message.m_context);
+                       Message->m_context);
 
       retval = -EINVAL;
    } break;
@@ -747,22 +799,24 @@ struct CCIP_PORT_HDR *get_port_header( btVirtAddr pkvp_port_mmio )
 /// @param[in] Feature_ID - Feature ID to search for
 /// @return    NULL = failure
 ///============================================================================
-btVirtAddr get_port_feature( struct port_device *pport_dev,
+btPhysAddr get_port_feature( struct port_device *pport_dev,
                              btUnsigned64bitInt Feature_ID )
 {
    struct CCIP_DFH         port_dfh;
-   btVirtAddr              pkvp_port = NULL;
-
+   btVirtAddr              pkvp_port   = NULL;
+   btPhysAddr              pphys_port  = 0;
 
    PTRACEIN;
-   PINFO(" get_port_feature ENTER\n");
 
    if( ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset ==0)   {
       PERR("NO PORT features are available \n");
-      return NULL;
+      return 0;
    }
    // read PORT Device feature Header
    pkvp_port = ((btVirtAddr)ccip_port_hdr(pport_dev)) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
+
+   // Track the physical address as we walk the list
+   pphys_port = ccip_port_phys_mmio(pport_dev) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
 
    do {
       // Peek at the Header
@@ -770,17 +824,20 @@ btVirtAddr get_port_feature( struct port_device *pport_dev,
 
      // Device feature ID
       if(Feature_ID == port_dfh.Feature_ID){
+         PVERBOSE("Feature found.\n");
          PTRACEOUT;
-         return pkvp_port;
+         return pphys_port;
       }
+
       // Point at next feature header.
       pkvp_port = pkvp_port + port_dfh.next_DFH_offset;
+      pphys_port = pphys_port + port_dfh.next_DFH_offset;
 
    }while(0 != port_dfh.next_DFH_offset ); // end while
 
-   PINFO(" get_port_featurelist EXIT \n");
+   PVERBOSE("Feature not found\n");
    PTRACEOUT;
-   return NULL;
+   return 0;
 }
 
 ///============================================================================
@@ -878,13 +935,13 @@ ERR:
 }
 
 ///============================================================================
-/// Name: port_afu_deassert
-/// @brief   Port Re Enable
+/// Name: port_afu_Enable
+/// @brief   Port Enable
 ///
 /// @param[in] pport_dev port device pointer
 /// @return    error code
 ///============================================================================
-bt32bitInt port_afu_deassert(struct port_device *pport_dev)
+bt32bitInt port_afu_Enable(struct port_device *pport_dev)
 {
 
    bt32bitInt res = 0;
@@ -921,13 +978,13 @@ bt32bitInt port_afu_reset(struct port_device *pport_dev)
    }
 
    // afu/port Quiesce reset
-   res = port_afu_quiesce_reset(pport_dev);
+   res = port_afu_quiesce_and_halt(pport_dev);
    if (0 != res) {
       goto ERR;
    }
 
    // afu/port enable
-   res = port_afu_deassert(pport_dev);
+   res = port_afu_Enable(pport_dev);
    if (0 != res) {
       goto ERR;
    }
@@ -938,13 +995,13 @@ ERR:
 }
 
 ///============================================================================
-/// Name: port_afu_quiesce_reset
+/// Name: port_afu_quiesce_and_halt
 /// @brief   Port Quiesce Reset
 ///
 /// @param[in] pport_dev port device pointer
 /// @return    error code
 ///============================================================================
-bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev)
+bt32bitInt port_afu_quiesce_and_halt(struct port_device *pport_dev)
 {
    bt32bitInt res = 0;
    btTime delay = 10;
@@ -961,16 +1018,16 @@ bt32bitInt port_afu_quiesce_reset(struct port_device *pport_dev)
    ccip_port_hdr(pport_dev)->ccip_port_control.port_sftreset_control = 0x1;
 
    // All CCI-P request at port complete
-   // Set to 1 When all outstanding requests initiated bu this port have been drained
-   while (CCIP_PORT_OUTSTADREQ_COMPLETE != ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstaning_request)
+   // Set to 1 When all outstanding requests initiated by this port have been drained
+   while (CCIP_PORT_OUTSTADREQ_COMPLETE != ccip_port_hdr(pport_dev)->ccip_port_control.ccip_outstanding_request)
    {
       // Sleep
       kosal_udelay(delay);
 
-      // total dealy
+      // total delay
       totaldelay = totaldelay + delay;
 
-      // if total delay is more then 1 millisecond , return erroor
+      // if total delay is more then 1 millisecond , return error
       if (totaldelay > CCIP_PORT_OUTSTADREQ_TIMEOUT)   {
          res = -ETIME;
          goto ERR;

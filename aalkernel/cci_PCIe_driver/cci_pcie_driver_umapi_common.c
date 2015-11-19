@@ -475,7 +475,7 @@ process_send_message(struct ccidrv_session  *psess,
          //  PIP message handlers
          pipMessage.m_message       = aalui_ioctlPayload(preq);
          pipMessage.m_response      = aalui_ioctlPayload(presp);
-         pipMessage.m_prespbufSize  = pOutbufSize;
+         pipMessage.m_respbufSize   = *pOutbufSize;
          pipMessage.m_tranID        = preq->tranID;
          pipMessage.m_context       = preq->context;
          pipMessage.m_errcode       = uid_errnumOK;
@@ -484,12 +484,12 @@ process_send_message(struct ccidrv_session  *psess,
          //  This macro resolves to calling the low level, device specific, command
          //  handler called the Physical Interface Protocol (PIP).  This enabled devices
          //  served by this driver have custom low level drivers.
-         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, pipMessage);
+         ret = aalsess_pipSendMessage(ownSessp)(ownSessp, &pipMessage);
 
          // If there is data to return the size of the response payload
          //   as long as it will fit
-         if(*pipMessage.m_prespbufSize <= *pOutbufSize ){
-            *pOutbufSize = *pipMessage.m_prespbufSize;
+         if(pipMessage.m_respbufSize <= *pOutbufSize ){
+            *pOutbufSize = pipMessage.m_respbufSize;
          }else{
             *pOutbufSize =0;
          }

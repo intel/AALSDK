@@ -155,7 +155,8 @@ typedef enum
    uid_errnumInvalidRequest,                     // 23
    uid_errnumInvalidDeviceAddr,                  // 24
    uid_errnumCouldNotDestroy,                    // 25
-   uid_errnumDeviceBusy                          // 26
+   uid_errnumDeviceBusy,                         // 26
+   uid_errnumTimeout                             // 27
 } uid_errnum_e;
 
 typedef enum
@@ -197,9 +198,9 @@ typedef enum
 typedef enum
 {
     ccipdrv_afucmdWKSP_ALLOC=1,
-    ccipdrv_afucmdPort_AssertReset,
-    ccipdrv_afucmdPort_DeassertReset,
-    ccipdrv_afucmdPort_QuiesceAndAssertReset,
+    ccipdrv_afucmdPort_afuReset,
+    ccipdrv_afucmdPort_afuEnable,
+    ccipdrv_afucmdPort_afuQuiesceAndHalt,
     ccipdrv_afucmdWKSP_FREE,
     ccipdrv_getMMIORmap,
     ccipdrv_getFeatureRegion
@@ -434,7 +435,6 @@ typedef enum
    uid_wseventAllocate=0,
    uid_wseventFree,
    uid_wseventGetPhys,
-   uid_wseventCSRMap,
    uid_wseventMMIOMap
 } uid_wseventID_e;
 
