@@ -4,8 +4,6 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include "swvalsvcmod.h"
-
 #include <aalsdk/aas/ServiceHost.h>
 #include <aalsdk/aas/Dispatchables.h>
 #include <_ServiceBroker.h>
@@ -350,6 +348,7 @@ TEST_F(ServiceBroker_f_2, aal0715)
    // service host object, and invokes ServiceHost::InstantiateService() on the object.
 
    class aal0715SvcClient : public ISwvalSvcClient,
+                            public IServiceClient,
                             public CAASBase
    {
    public:

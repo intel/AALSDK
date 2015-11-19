@@ -1214,6 +1214,52 @@ void CallTrackingIServiceClient::serviceEvent(const IEvent &e)
    l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
 }
 
+SynchronizingIServiceClient::SynchronizingIServiceClient(btApplicationContext Ctx) :
+   CallTrackingIServiceClient(Ctx)
+{
+   m_Bar.Create(1, false);
+}
+
+void SynchronizingIServiceClient::serviceAllocated(IBase               *pBase,
+                                                   TransactionID const &tid)
+{
+   CallTrackingIServiceClient::serviceAllocated(pBase, tid);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceAllocateFailed(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceAllocateFailed(e);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceReleased(TransactionID const &tid)
+{
+   CallTrackingIServiceClient::serviceReleased(tid);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceReleaseFailed(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceReleaseFailed(e);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceEvent(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceEvent(e);
+   Post();
+}
+
+btBool SynchronizingIServiceClient::Wait(btTime Timeout)
+{
+   btBool resWait  = m_Bar.Wait(Timeout);
+   btBool resReset = m_Bar.Reset();
+   return resWait && resReset;
+}
+
+btBool SynchronizingIServiceClient::Post(btUnsignedInt Count) { return m_Bar.Post(Count); }
+
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntimeClient
 
@@ -1777,5 +1823,86 @@ btBool CallTrackingServiceModule::ServiceInitFailed(IBase        *pService,
    l->AddParam("pService", reinterpret_cast<btObjectType>(pService));
    l->AddParam("pEvent",   reinterpret_cast<btObjectType>( const_cast<IEvent *>(pEvent) ));
    return EmptyServiceModule::ServiceInitFailed(pService, pEvent);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void AllocSwvalMod(AAL::IRuntime            *pRuntime,
+                   AAL::IBase               *pClientBase,
+                   const AAL::TransactionID &tid)
+{
+   NamedValueSet configrec;
+
+   configrec.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalmod");
+   configrec.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   NamedValueSet manifest;
+
+   manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrec);
+   manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "swval module");
+
+   pRuntime->allocService(pClientBase, manifest, tid);
+}
+
+void AllocSwvalSvcMod(AAL::IRuntime            *pRuntime,
+                      AAL::IBase               *pClientBase,
+                      const AAL::TransactionID &tid)
+{
+   NamedValueSet configrec;
+
+   configrec.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalsvcmod");
+   configrec.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   NamedValueSet manifest;
+
+   manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrec);
+   manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "swval service module");
+
+   pRuntime->allocService(pClientBase, manifest, tid);
+}
+
+
+EmptySwvalSvcClient::EmptySwvalSvcClient(btApplicationContext Ctx) :
+   EmptyIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void EmptySwvalSvcClient::DidSomething(const AAL::TransactionID & , int ) {}
+
+
+CallTrackingSwvalSvcClient::CallTrackingSwvalSvcClient(btApplicationContext Ctx) :
+   CallTrackingIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void CallTrackingSwvalSvcClient::DidSomething(const AAL::TransactionID &tid, int val)
+{
+   MethodCallLogEntry *l = AddToLog("ISwvalSvcClient::DidSomething");
+   l->AddParam("tid", tid);
+   l->AddParam("val", val);
+}
+
+
+SynchronizingSwvalSvcClient::SynchronizingSwvalSvcClient(btApplicationContext Ctx) :
+   SynchronizingIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void SynchronizingSwvalSvcClient::DidSomething(const AAL::TransactionID &tid, int val)
+{
+   MethodCallLogEntry *l = AddToLog("ISwvalSvcClient::DidSomething");
+   l->AddParam("tid", tid);
+   l->AddParam("val", val);
+
+   Post();
 }
 

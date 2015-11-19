@@ -47,24 +47,11 @@ public:
 };
 
 #define iidSwvalSvcClient __INTC_IID(INTC_sysSampleAFU, 0x00ff)
-class ISwvalSvcClient : public AAL::IServiceClient
+class ISwvalSvcClient
 {
 public:
    virtual ~ISwvalSvcClient() {}
-
-   virtual void DidSomething(const AAL::TransactionID & ,
-                             int ) = 0;
-
-   // <IServiceClient>
-
-   virtual void      serviceAllocated(AAL::IBase               *pServiceBase,
-                                      AAL::TransactionID const &rTranID = AAL::TransactionID()) = 0;
-   virtual void serviceAllocateFailed(const AAL::IEvent &rEvent)                                = 0;
-   virtual void       serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID()) = 0;
-   virtual void  serviceReleaseFailed(const AAL::IEvent &rEvent)                                = 0;
-   virtual void          serviceEvent(const AAL::IEvent &rEvent)                                = 0;
-
-   // </IServiceClient>
+   virtual void DidSomething(const AAL::TransactionID & , int ) = 0;
 };
 
 #endif // __SWVALSVCMOD_H__

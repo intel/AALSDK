@@ -13,6 +13,9 @@
 #include <aalsdk/Runtime.h>
 using namespace AAL;
 
+#include "swvalmod.h"
+#include "swvalsvcmod.h"
+
 #include "gtest/gtest.h"
 
 #define MINUTES_IN_TERMS_OF_MILLIS(__x) ( ((AAL::btTime)__x) * ((AAL::btTime)60000) )
@@ -332,6 +335,7 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 
 #endif // __AAL_LINUX__
 
+////////////////////////////////////////////////////////////////////////////////
 
 class ThreadRegistry : public CriticalSection
 {
@@ -760,6 +764,25 @@ public:
    virtual void          serviceEvent(const IEvent & );
 };
 
+class SynchronizingIServiceClient : public CallTrackingIServiceClient
+{
+public:
+   SynchronizingIServiceClient(btApplicationContext Ctx=NULL);
+
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & );
+   virtual void serviceAllocateFailed(const IEvent & );
+   virtual void       serviceReleased(TransactionID const & );
+   virtual void  serviceReleaseFailed(const IEvent & );
+   virtual void          serviceEvent(const IEvent & );
+
+   btBool Wait(btTime        Timeout=AAL_INFINITE_WAIT);
+   btBool Post(btUnsignedInt Count=1);
+
+protected:
+   Barrier m_Bar;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // IRuntimeClient
 
@@ -1084,6 +1107,41 @@ public:
    virtual btBool  ServiceInitFailed(IBase * , IEvent        const * );
 
    // </IServiceModuleCallback>
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// sw validation module / service module
+
+void    AllocSwvalMod(AAL::IRuntime * ,
+                      AAL::IBase    * ,
+                      const AAL::TransactionID & );
+
+void AllocSwvalSvcMod(AAL::IRuntime * ,
+                      AAL::IBase    * ,
+                      const AAL::TransactionID & );
+
+class EmptySwvalSvcClient : public ISwvalSvcClient,
+                            public EmptyIServiceClient
+{
+public:
+   EmptySwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
+};
+
+class CallTrackingSwvalSvcClient : public ISwvalSvcClient,
+                                   public CallTrackingIServiceClient
+{
+public:
+   CallTrackingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
+};
+
+class SynchronizingSwvalSvcClient : public ISwvalSvcClient,
+                                    public SynchronizingIServiceClient
+{
+public:
+   SynchronizingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
 #endif // __GTCOMMON_H__

@@ -4,9 +4,6 @@
 #endif // HAVE_CONFIG_H
 #include "gtCommon.h"
 
-#include "swvalmod.h"
-#include "swvalsvcmod.h"
-
 TEST(OSAL_DynLinkLibrary, aal0209)
 {
    // When DynLinkLibrary::DynLinkLibrary() cannot find the loadable library specified by
