@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,53 +27,53 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     SignalTapService/Makefile
 ##  Author:
-##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     11/19/2015    JG   Initial version based on canonical Service makefile
 ##******************************************************************************
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_CCI_NLB/SW \
-Hello_SPL_LB/SW \
-Sudoku_SPL/SW \
-LinkedList_SPL/SW \
-Hello_ALI_NLB/SW  \
-SignalTapService \
-AIAService
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-MFLAGS  =
 ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+else
+CPPFLAGS += -DENABLE_DEBUG=1
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+all: libsigtapservice.so libsigtapservice.so.0
 
-.PHONY:all clean
+libsigtapservice.so: libsigtapservice.so.0.0.0
+	ln -sf libsigtapservice.so.0.0.0 libsigtapservice.so
 
-doc docs: docclean
-	doc/output/./test.sh
-	doxygen doc/Doxyfile
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
+libsigtapservice.so.0: libsigtapservice.so.0.0.0
+	ln -sf libsigtapservice.so.0.0.0 libsigtapservice.so.0
 
-.PHONY:doc docs docclean docsclean
+libsigtapservice.so.0.0.0: libsigtapservice.o
+	$(CXX) -fPIC -shared -Wl,-soname -Wl,libsigtapservice.so.0 libsigtapservice.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libsigtapservice.so.0.0.0
+
+libsigtapservice.o: SigTapService.cpp SigTapService.h Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libsigtapservice.o SigTapService.cpp
+
+clean:
+	$(RM) libsigtapservice.so libsigtapservice.so.0 libsigtapservice.so.0.0.0 libsigtapservice.o
+
+.PHONY: all clean
