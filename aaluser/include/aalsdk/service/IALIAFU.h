@@ -65,6 +65,7 @@ BEGIN_NAMESPACE(AAL)
 #define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
 #define iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
 #define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+#define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 
 
 /// @file
@@ -84,6 +85,7 @@ BEGIN_NAMESPACE(AAL)
 ///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
 ///   iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
 ///   iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+///   iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 /// <TODO: LIST INTERFACES HERE>
 ///
 /// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
@@ -114,6 +116,10 @@ BEGIN_NAMESPACE(AAL)
 /// @brief  Provide access to the MMIO region exposed by the AFU to the Application.
 /// @note   There is no client for this Service Interface because all of its methods
 ///            are synchronous (and fast)
+/// @note   This service interface is obtained from an IBase via iidALI_MMIO_Service
+/// @code
+///         m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+/// @endcode
 ///
 class IALIMMIO
 {
@@ -155,13 +161,19 @@ public:
    /// @param[in]  Value  Value to write.
    /// @return     True if the write was successful.
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
-};
+
+}; // class IALIMMIO
+
 
 /// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
 /// @note   Consider splitting into two interfaces. Do not need the more complex
 ///            Transaction oriented interface for most use cases. Alternatively have
 ///            asynchronous response to rarely used umsgSetAttributes call
 ///            IServiceClient::serviceEvent().
+/// @note   This service interface is obtained from an IBase via iidALI_UMSG_Service
+/// @code
+///         m_pALIUMsgService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
+/// @endcode
 ///
 class IALIUMsg
 {
@@ -198,9 +210,16 @@ public:
    ///            must be mapped in to user space.
    /// @return True of worked. At this point, no reason it would every fail.
    virtual bool umsgSetAttributes( NamedValueSet const &nvsArgs) = 0;
-};
+
+}; // class IALIUMsg
+
 
 /// @brief  Buffer Allocation Service Interface of IALI
+///
+/// @note   This service interface is obtained from an IBase via iidALI_BUFF_Service
+/// @code
+///         m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+/// @endcode
 ///
 class IALIBuffer
 {
@@ -241,9 +260,16 @@ public:
    ///                the AFU will be accessing the byte at the address that was passed in.
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address) = 0;
 
-};
+}; // class IALIBuffer
+
 
 /// @brief  Buffer Allocation Service Client Interface of IALI
+///
+/// @note   This interface is implemented by the client and set in the IBase
+///         of the client object as an iidALI_BUFF_Service_Client.
+/// @code
+///         SetInterface(iidALI_BUFF_Service_Client, dynamic_cast<IALIBuffer_Client *>(this));
+/// @endcode
 ///
 class IALIBuffer_Client
 {
@@ -285,9 +311,16 @@ public:
    /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
    ///
    virtual void bufferFreeFailed( IEvent const &rEvent ) = 0;
-};
+
+}; // class IALIBuffer_Client
+
 
 /// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_PERF_Service
+/// @code
+///         m_pALIPerfService = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
+/// @endcode
 ///
 class IALIPerf
 {
@@ -327,9 +360,15 @@ public:
 
    virtual void performanceCountersGet ( INamedValueSet const **ppResult,
                                          NamedValueSet const  *pOptArgs = NULL) = 0;
-};
+}; // class IALIPerf
+
 
 /// @brief  Reset the AFU Link Interface to this AFU (synchronous)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_RSET_Service
+/// @code
+///         m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+/// @endcode
 ///
 class IALIReset
 {
@@ -362,7 +401,6 @@ public:
    ///                the provided timeout. (Currently no way to set timeout).
    ///
    virtual e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL) = 0;
-//   virtual e_Reset afuQuiesceAndReset( NamedValueSet const *pOptArgs = NULL) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
@@ -395,16 +433,20 @@ public:
    ///                the provided timeout. (Currently no way to set timeout).
    ///
    virtual e_Reset afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
-};
+}; // class IALIReset
 
-// TODO:
-/// MAFU: Reconfigure (Deactivate, Activate?)
+
 /// NOTE: this will be a service that is not typically exported by the ALI Service. Rather,
 ///       it will be allocated by requesting a PR_ID (an AFU_ID associated with a PR),
 ///       along with if necessary additional meta information such as bus:function:number of
 ///       the PCIe device.
 
 /// @brief  Provide Reconfiguration Services (asynchronous and controlled by driver)
+///
+/// @note   This service interface is obtained from an IBase via iidALI_CONF_Service
+/// @code
+///         m_pALIReconfigureService = dynamic_ptr<IALIReconfigure>(iidALI_CONF_Service, pServiceBase);
+/// @endcode
 ///
 class IALIReconfigure
 {
@@ -459,9 +501,16 @@ public:
    ///
    virtual void reconfActivate( TransactionID const &rTranID,
                                 NamedValueSet const *pOptArgs = NULL) = 0;
-};
+}; // class IALIReconfigure
+
 
 /// @brief  Reconfiguration Callback
+///
+/// @note   This interface is implemented by the client and set in the IBase
+///         of the client object as an iidALI_CONF_Service_Client.
+/// @code
+///         SetInterface(iidALI_CONF_Service_Client, dynamic_cast<IALIReconfigure_Client *>(this));
+/// @endcode
 ///
 class IALIReconfigure_Client
 {
@@ -518,7 +567,35 @@ public:
    /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
    ///
    virtual void activateFailed( IEvent const &rEvent ) = 0;
-};
+
+}; // class IALIReconfigure_Client
+
+
+/// NOTE: this will be a service that is not typically exported by the ALI Service. Rather,
+///       it will be allocated by requesting the STAP_ID (an AFU_ID associated with a Signal Tap)
+///       along with if necessary additional meta information such as bus:function:number of
+///       the PCIe device.
+
+/// @brief  Access Signal Tap PCIe mmio space
+///
+/// @note   This service interface is obtained from an IBase via iidALI_STAP_Service
+/// @code
+///         m_pALISignalTapService = dynamic_ptr<IALISignalTap>(iidALI_STAP_Service, pServiceBase);
+/// @endcode
+///
+class IALISignalTap
+{
+public:
+   virtual ~IALISignalTap() {}
+
+   /// @brief  Obtain an mmio map for the Signal Tap region.
+   ///
+   /// @return User mode pointer to region if succeeds, NULL otherwise.
+   ///
+   virtual btVirtAddr stpGetAddress( void ) = 0;
+
+}; // class IALISignalTap
+
 
 
 
