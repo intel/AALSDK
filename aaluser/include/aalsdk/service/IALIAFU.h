@@ -229,14 +229,14 @@ public:
    /// @brief Allocate a Workspace.
    ///
    /// @param[in]  Length   Requested length, in bytes.
-   /// @param[in]  TranID   Returned in the notification event.
+   /// @param[out] Bufferptr   Buffer Pointer.
    /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
    ///
    /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
-   virtual void bufferAllocate( btWSSize             Length,
-                                TransactionID const &TranID,
-                                NamedValueSet       *pOptArgs = NULL ) = 0;
+   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet       *pOptArgs = NULL ) = 0;
 
    /// @brief Free a previously-allocated Workspace.
    ///
@@ -247,8 +247,7 @@ public:
    ///
    /// On success, a notification is sent via IALIBUFFER::bufferFreed.
    /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
-   virtual void bufferFree( btVirtAddr           Address,
-                            TransactionID const &TranID) = 0;
+   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address) = 0;
 
    /// @brief Retrieve the location at which the AFU can access the passed in virtual address.
    ///
@@ -261,58 +260,6 @@ public:
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address) = 0;
 
 }; // class IALIBuffer
-
-
-/// @brief  Buffer Allocation Service Client Interface of IALI
-///
-/// @note   This interface is implemented by the client and set in the IBase
-///         of the client object as an iidALI_BUFF_Service_Client.
-/// @code
-///         SetInterface(iidALI_BUFF_Service_Client, dynamic_cast<IALIBuffer_Client *>(this));
-/// @endcode
-///
-class IALIBuffer_Client
-{
-public:
-   virtual ~IALIBuffer_Client() {}
-
-   /// @brief Notification callback for workspace allocation success.
-   ///
-   /// Sent in response to a successful workspace allocation request (IALIBUFFER::bufferAllocate).
-   ///
-   /// @param[in]  TranID     The transaction ID provided in the call to IALIBUFFER::bufferAllocate.
-   /// @param[in]  WkspcVirt  The user virtual address of the newly-allocated workspace.
-   /// @param[in]  WkspcSize  The size in bytes of the allocation.
-   ///
-   virtual void bufferAllocated( TransactionID const &rTranID,
-                                 btVirtAddr           WkspcVirt,
-                                 btWSSize             WkspcSize ) = 0;
-
-   /// @brief Notification callback for workspace allocation failure.
-   ///
-   /// Sent in response to a failed workspace allocation request (IALIBUFFER::bufferAllocate).
-   ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   ///
-   virtual void bufferAllocateFailed( IEvent const &rEvent ) = 0;
-
-   /// @brief Notification callback for workspace free success.
-   ///
-   /// Sent in response to a successful free workspace request (IALIBUFFER::bufferFree).
-   ///
-   /// @param[in]  TranID  The transaction ID provided in the call to IALIBUFFER::bufferFree.
-   ///
-   virtual void bufferFreed( TransactionID const &rTranID ) = 0;
-
-   /// @brief Notification callback for workspace free failure.
-   ///
-   /// Sent in response to a failed free workspace request (IALIBUFFER::bufferFree).
-   ///
-   /// @param[in]  Event  An IExceptionTransactionEvent describing the failure.
-   ///
-   virtual void bufferFreeFailed( IEvent const &rEvent ) = 0;
-
-}; // class IALIBuffer_Client
 
 
 /// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous)

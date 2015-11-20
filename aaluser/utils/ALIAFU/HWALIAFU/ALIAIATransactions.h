@@ -65,13 +65,14 @@
 class UAIA_API BufferAllocateTransaction : public IAIATransaction
 {
 public:
-   BufferAllocateTransaction( AAL::TransactionID const &tranID, AAL::btWSSize len );
+   BufferAllocateTransaction( AAL::btWSSize len );
    AAL::btBool                IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;
    AAL::btWSSize                  getPayloadSize() const;
    AAL::stTransactionID_t const   getTranID() const;
    AAL::uid_msgIDs_e              getMsgID() const;
+   struct AAL::aalui_WSMEvent     getWSIDEvent() const;
    AAL::uid_errnum_e              getErrno()const;
    void                           setErrno(AAL::uid_errnum_e);
 
@@ -100,7 +101,7 @@ private:
 class UAIA_API BufferFreeTransaction : public IAIATransaction
 {
 public:
-   BufferFreeTransaction( AAL::TransactionID const &tranID, AAL::btWSID wsid );
+   BufferFreeTransaction( AAL::btWSID wsid );
    AAL::btBool                IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;
@@ -134,7 +135,7 @@ private:
 class UAIA_API GetMMIOBufferTransaction : public IAIATransaction
 {
 public:
-   GetMMIOBufferTransaction( AAL::TransactionID const &tranID );
+   GetMMIOBufferTransaction();
    AAL::btBool                IsOK() const;
 
    AAL::btVirtAddr                getPayloadPtr() const;

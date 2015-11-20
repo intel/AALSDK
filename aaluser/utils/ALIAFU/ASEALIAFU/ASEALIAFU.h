@@ -122,11 +122,10 @@ public:
    // </IALIMMIO>
 
    // <IALIBuffer>
-   virtual void bufferAllocate( btWSSize             Length,
-                                TransactionID const &TranID,
-                                NamedValueSet       *pOptArgs = NULL ){};
-   virtual void     bufferFree( btVirtAddr           Address,
-                                TransactionID const &TranID){};
+   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet       *pOptArgs = NULL ){};
+   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address){};
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address){};
    // </IALIBuffer>
 

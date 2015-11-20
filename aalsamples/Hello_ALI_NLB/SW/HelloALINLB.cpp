@@ -49,9 +49,11 @@
 /// WHEN:          WHO:     WHAT:
 /// 06/09/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
-#include <aalsdk/AAL.h>
+//#include <aalsdk/AAL.h>
+#include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
+#include <aalsdk/kernel/ccipdriver.h>
 
 /*#include <aalsdk/service/ICCIAFU.h>
 #include <aalsdk/service/ICCIClient.h>*/
@@ -113,26 +115,42 @@ using namespace AAL;
 /// @{
 
 
-
-/// @brief   Define our Runtime client class so that we can receive the runtime started/stopped notifications.
+/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
+///          The Service Client contains the application logic.
 ///
-/// We implement a Service client within, to handle AAL Service allocation/free.
-/// We also implement a Semaphore for synchronization with the AAL runtime.
-class RuntimeClient : public CAASBase,
-                      public IRuntimeClient
+/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
+class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
-   RuntimeClient();
-   ~RuntimeClient();
+   enum WorkspaceType   ///<Type of Workspace being allocated
+   {
+      WKSPC_DSM, ///< Device Status Memory
+      WKSPC_IN,  ///< Input workspace
+      WKSPC_OUT  ///< Output workspace
+   };
 
-   void end();
+   HelloALINLBApp();
+   ~HelloALINLBApp();
 
-   IRuntime* getRuntime();
+   btInt run();    ///< Return 0 if success
 
-   btBool isOK();
+   // <begin IServiceClient interface>
+   void serviceAllocated(IBase *pServiceBase,
+                         TransactionID const &rTranID);
+
+   void serviceAllocateFailed(const IEvent &rEvent);
+
+   void serviceReleased(const AAL::TransactionID&);
+
+   void serviceReleaseFailed(const AAL::IEvent&);
+
+   void serviceFreed(TransactionID const &rTranID);
+
+   void serviceEvent(const IEvent &rEvent);
+   // <end IServiceClient interface>
 
    // <begin IRuntimeClient interface>
-   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent);
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};
 
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
@@ -149,172 +167,12 @@ public:
                                         TransactionID const &rTranID);
 
    void runtimeEvent(const IEvent &rEvent);
-   
+
+   btBool isOK()  {return m_isOK;}
 
    // <end IRuntimeClient interface>
-
-
 protected:
-   IRuntime        *m_pRuntime;  // Pointer to AAL runtime instance.
-   Runtime          m_Runtime;   // AAL Runtime
-   btBool           m_isOK;      // Status
-   CSemaphore       m_Sem;       // For synchronizing with the AAL runtime.
-};
-
-///////////////////////////////////////////////////////////////////////////////
-///
-///  MyRuntimeClient Implementation
-///
-///////////////////////////////////////////////////////////////////////////////
-RuntimeClient::RuntimeClient() :
-    m_Runtime(this),        // Instantiate the AAL Runtime
-    m_pRuntime(NULL),
-    m_isOK(false)
-{
-   NamedValueSet configArgs;
-   NamedValueSet configRecord;
-
-   // Publish our interface
-   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
-
-   m_Sem.Create(0, 1);
-
-   // Using Hardware Services requires the Remote Resource Manager Broker Service
-   //  Note that this could also be accomplished by setting the environment variable
-   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
-#if defined( HWAFU )
-   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
-   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
-#endif
-
-   if(!m_Runtime.start(configArgs)){
-      m_isOK = false;
-      return;
-   }
-   m_Sem.Wait();
-}
-
-RuntimeClient::~RuntimeClient()
-{
-    m_Sem.Destroy();
-}
-
-btBool RuntimeClient::isOK()
-{
-   return m_isOK;
-}
-
-void RuntimeClient::runtimeCreateOrGetProxyFailed(const IEvent &rEvent)
-{
-    ERR("Runtime Create or Get Proxy failed");
-    PrintExceptionDescription(rEvent);
-}
-
-void RuntimeClient::runtimeStarted(IRuntime            *pRuntime,
-                                    const NamedValueSet &rConfigParms)
- {
-    // Save a copy of our runtime interface instance.
-    m_pRuntime = pRuntime;
-    m_isOK = true;
-    m_Sem.Post(1);
- }
-
-void RuntimeClient::end()
-{
-   m_Runtime.stop();
-   m_Sem.Wait();
-}
-
-void RuntimeClient::runtimeStopped(IRuntime *pRuntime)
- {
-    MSG("Runtime stopped");
-    m_isOK = false;
-    m_Sem.Post(1);
- }
-
-void RuntimeClient::runtimeStartFailed(const IEvent &rEvent)
-{
-   ERR("Runtime start failed");
-   PrintExceptionDescription(rEvent);
-}
-
-void RuntimeClient::runtimeStopFailed(const IEvent &rEvent)
-{
-    MSG("Runtime stop failed");
-}
-
-void RuntimeClient::runtimeAllocateServiceFailed( IEvent const &rEvent)
-{
-   ERR("Runtime AllocateService failed");
-   PrintExceptionDescription(rEvent);
-
-}
-
-void RuntimeClient::runtimeAllocateServiceSucceeded(IBase *pClient,
-                                                    TransactionID const &rTranID)
-{
-    MSG("Runtime Allocate Service Succeeded");
-}
-
-void RuntimeClient::runtimeEvent(const IEvent &rEvent)
-{
-    MSG("Generic message handler (runtime)");
-}
-
-IRuntime * RuntimeClient::getRuntime()
-{
-   return m_pRuntime;
-}
-
-
-/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
-///          The Service Client contains the application logic.
-///
-/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
-class HelloALINLBApp: public CAASBase, public IServiceClient, public IALIBuffer_Client
-{
-public:
-   enum WorkspaceType   ///<Type of Workspace being allocated
-   {
-      WKSPC_DSM, ///< Device Status Memory
-      WKSPC_IN,  ///< Input workspace
-      WKSPC_OUT  ///< Output workspace
-   };
-
-   HelloALINLBApp(RuntimeClient * rtc);
-   ~HelloALINLBApp();
-
-   btInt run();    ///< Return 0 if success
-
-   // <IALIBuffer_Client>
-   virtual void bufferAllocated(TransactionID const &TranID,
-                                     btVirtAddr WkspcVirt,
-                                     btWSSize WkspcSize);
-
-   virtual void bufferAllocateFailed(const IEvent &Event);
-
-   virtual void bufferFreed(TransactionID const &TranID);
-
-   virtual void bufferFreeFailed(const IEvent &Event);
-   // </ICCIClient>
-
-   // <begin IServiceClient interface>
-   void serviceAllocated(IBase *pServiceBase,
-                         TransactionID const &rTranID);
-
-   void serviceAllocateFailed(const IEvent &rEvent);
-
-    void serviceReleased(const AAL::TransactionID&);
-
-    void serviceReleaseFailed(const AAL::IEvent&);
-
-   void serviceFreed(TransactionID const &rTranID);
-
-   void serviceEvent(const IEvent &rEvent);
-   // <end IServiceClient interface>
-
-protected:
-   RuntimeClient *m_runtimeClient;     ///< This application's runtime client instanct
+   Runtime        m_Runtime;           ///< AAL Runtime
    IBase         *m_pAALService;       ///< The generic AAL Service interface for the AFU.
    IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
@@ -322,6 +180,7 @@ protected:
    CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
    btUnsignedInt  m_wsfreed;           ///< Simple counter used for when we free workspaces
    btInt          m_Result;            ///< Returned result value; 0 if success
+   btBool         m_isOK;
 
    // Workspace info
    btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
@@ -340,8 +199,8 @@ protected:
 ///  Implementation
 ///
 ///////////////////////////////////////////////////////////////////////////////
-HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
-   m_runtimeClient(rtc),
+HelloALINLBApp::HelloALINLBApp() :
+   m_Runtime(this),
    m_pAALService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
@@ -356,12 +215,30 @@ HelloALINLBApp::HelloALINLBApp(RuntimeClient *rtc) :
    m_InputSize(0),
    m_OutputVirt(NULL),
    m_OutputPhys(0),
-   m_OutputSize(0)
+   m_OutputSize(0),
+   m_isOK(false)
 
 {
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
-   SetInterface(iidALI_BUFF_Service_Client, dynamic_cast<IALIBuffer_Client *>(this));
+   SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
    m_Sem.Create(0, 1);
+
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
+
+   // Using Hardware Services requires the Remote Resource Manager Broker Service
+   //  Note that this could also be accomplished by setting the environment variable
+   //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+#if defined( HWAFU )
+   configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
+   configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
+#endif
+
+   if(!m_Runtime.start(configArgs)){
+      m_isOK = false;
+      return;
+   }
+   m_Sem.Wait();
    // m_bIsOK, inherited from CAASBase, will generally be true here.
    // Set it to false if any construction fails.
 }
@@ -419,7 +296,7 @@ btInt HelloALINLBApp::run()
    // Allocate the Service and allocate the required workspace.
    //   This happens in the background via callbacks (simple state machine).
    //   When everything is set we do the real work here in the main thread.
-   m_runtimeClient->getRuntime()->allocService(dynamic_cast<IBase *>(this), Manifest);
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
 
    m_Sem.Wait();
 
@@ -527,15 +404,20 @@ btInt HelloALINLBApp::run()
 #endif
 
       MSG("Done Running Test");
+
       // Release the Workspaces and wait for all three then Release the Service
       m_wsfreed = 0;  // Reset the counter
-      m_pALIBufferService->bufferFree(m_InputVirt,  TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
-      m_pALIBufferService->bufferFree(m_OutputVirt, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
-      m_pALIBufferService->bufferFree(m_DSMVirt,    TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_DSM));
+      m_pALIBufferService->bufferFree(m_InputVirt);
+      m_pALIBufferService->bufferFree(m_OutputVirt);
+      m_pALIBufferService->bufferFree(m_DSMVirt);
+      // Freed all three so now Release() the Service through the Services IAALService::Release() method
+      (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+      m_Sem.Wait();
+
+      m_Runtime.stop();
       m_Sem.Wait();
    }
 
-   m_runtimeClient->end();
    return m_Result;
 }
 
@@ -580,12 +462,38 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
       return;
    }
 
-
    MSG("Service Allocated");
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-   m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloALINLBApp::WKSPC_DSM));
+   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return;
+   }
+   m_DSMSize = LPBK1_DSM_SIZE;
+
+   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return;
+   }
+   m_InputSize = LPBK1_BUFFER_SIZE;
+
+   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return;
+   }
+
+   m_OutputSize = LPBK1_BUFFER_SIZE;
+   m_Sem.Post(1);
+}
+void HelloALINLBApp::runtimeStarted( IRuntime            *pRuntime,
+                                     const NamedValueSet &rConfigParms)
+{
+   m_isOK = true;
+   m_Sem.Post(1);
 }
 
 void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
@@ -613,79 +521,6 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
     m_Sem.Post(1);
  }
 
-// <ALIBuffer_Client>
-void HelloALINLBApp::bufferAllocated(TransactionID const &TranID,
-                                          btVirtAddr           WkspcVirt,
-                                          btWSSize             WkspcSize)
-{
-   AutoLock(this);
-
-   switch ( (HelloALINLBApp::WorkspaceType)TranID.ID() ) {
-
-      case WKSPC_DSM: {
-         m_DSMVirt = WkspcVirt;
-         m_DSMPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
-         m_DSMSize = WkspcSize;
-         MSG("Got DSM. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
-         m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_IN));
-      }break;
-      case WKSPC_IN : {
-         m_InputVirt = WkspcVirt;
-         m_InputPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
-         m_InputSize = WkspcSize;
-         MSG("Got Input Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
-
-         // Now get Output workspace
-         m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloALINLBApp::WKSPC_OUT));
-      } break;
-      case WKSPC_OUT : {
-         m_OutputVirt = WkspcVirt;
-         m_OutputPhys = m_pALIBufferService->bufferGetIOVA( WkspcVirt );
-         m_OutputSize = WkspcSize;
-
-         MSG("Got Output Workspace. Virtual: 0x" << std::hex << (btUnsigned64bitInt)WkspcVirt << ". IOVA: 0x" << std::hex << m_pALIBufferService->bufferGetIOVA(WkspcVirt) << std::dec);
-
-         // Got all workspaces so unblock the Run() thread
-         m_Sem.Post(1);
-      } break;
-
-      default : {
-         ++m_Result;
-         m_bIsOK = false;
-         ERR("Invalid workspace type: " << TranID.ID());
-      } break;
-   }
-}
-
-void HelloALINLBApp::bufferAllocateFailed(const IEvent &rEvent)
-{
-   ERR("OnWorkspaceAllocateFailed");
-   PrintExceptionDescription(rEvent);
-   ++m_Result;                     // Remember the error
-   m_bIsOK = false;
-
-   m_Sem.Post(1);
-}
-
-void HelloALINLBApp::bufferFreed(TransactionID const &TranID)
-{
-   MSG("OnWorkspaceFreed");
-   if(++m_wsfreed == 3){
-      // Freed all three so now Release() the Service through the Services IAALService::Release() method
-      (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
-   }
-
-}
-
-void HelloALINLBApp::bufferFreeFailed(const IEvent &rEvent)
-{
-   ERR("OnWorkspaceFreeFailed");
-   PrintExceptionDescription(rEvent);
-   ++m_Result;                     // Remember the error
-   m_bIsOK = false;
-   m_Sem.Post(1);
-}
-
 
  void HelloALINLBApp::serviceEvent(const IEvent &rEvent)
 {
@@ -696,6 +531,41 @@ void HelloALINLBApp::bufferFreeFailed(const IEvent &rEvent)
    // OTOH, a notification message will simply print and continue.
 }
 // <end IServiceClient interface>
+ void HelloALINLBApp::runtimeStopped(IRuntime *pRuntime)
+  {
+     MSG("Runtime stopped");
+     m_isOK = false;
+     m_Sem.Post(1);
+  }
+
+ void HelloALINLBApp::runtimeStartFailed(const IEvent &rEvent)
+ {
+    ERR("Runtime start failed");
+    PrintExceptionDescription(rEvent);
+ }
+
+ void HelloALINLBApp::runtimeStopFailed(const IEvent &rEvent)
+ {
+     MSG("Runtime stop failed");
+ }
+
+ void HelloALINLBApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
+ {
+    ERR("Runtime AllocateService failed");
+    PrintExceptionDescription(rEvent);
+
+ }
+
+ void HelloALINLBApp::runtimeAllocateServiceSucceeded(IBase *pClient,
+                                                     TransactionID const &rTranID)
+ {
+     MSG("Runtime Allocate Service Succeeded");
+ }
+
+ void HelloALINLBApp::runtimeEvent(const IEvent &rEvent)
+ {
+     MSG("Generic message handler (runtime)");
+ }
 
 /// @} group HelloALINLB
 
@@ -710,9 +580,8 @@ void HelloALINLBApp::bufferFreeFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
-   RuntimeClient  runtimeClient;
-   HelloALINLBApp theApp(&runtimeClient);
-   if(!runtimeClient.isOK()){
+   HelloALINLBApp theApp;
+   if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
       exit(1);
    }

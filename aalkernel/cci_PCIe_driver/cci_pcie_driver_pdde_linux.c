@@ -577,8 +577,10 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
 
          PDEBUG("Creating Allocatable objects\n");
 
-         // Instantiate allocatable objects including AFUs if present. Subdevice is 1 based
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
+         // Instantiate allocatable objects including AFUs if present.
+         //   Subdevice addresses start at 10x the 1 based port number to leave room for
+         //   10 devices beneath the port. E.e., STAP, PR, User AFU
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, (i+1)) * 10){
             goto ERR;
          }
       }// End for loop

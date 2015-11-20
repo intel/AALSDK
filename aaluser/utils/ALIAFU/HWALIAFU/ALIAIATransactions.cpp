@@ -70,9 +70,8 @@ USING_NAMESPACE(AAL)
 ///////////////////////////////////////////////////////////////////////////////
 
 
-BufferAllocateTransaction::BufferAllocateTransaction( TransactionID const &tranID, btWSSize len ) :
+BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
    m_msgID(reqid_UID_SendAFU),
-   m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
@@ -113,6 +112,7 @@ AAL::btVirtAddr                BufferAllocateTransaction::getPayloadPtr()const {
 AAL::btWSSize                  BufferAllocateTransaction::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   BufferAllocateTransaction::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BufferAllocateTransaction::getMsgID()const {return m_msgID;}
+struct AAL::aalui_WSMEvent     BufferAllocateTransaction::getWSIDEvent() const {return *(reinterpret_cast<struct AAL::aalui_WSMEvent*>(m_payload));}
 AAL::uid_errnum_e              BufferAllocateTransaction::getErrno()const {return m_errno;};
 void                           BufferAllocateTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
 
@@ -123,11 +123,8 @@ BufferAllocateTransaction::~BufferAllocateTransaction() {
 }
 
 
-
-
-BufferFreeTransaction::BufferFreeTransaction( TransactionID const &tranID, btWSID wsid ) :
+BufferFreeTransaction::BufferFreeTransaction( btWSID wsid ) :
    m_msgID(reqid_UID_SendAFU),
-   m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),
@@ -180,9 +177,8 @@ BufferFreeTransaction::~BufferFreeTransaction() {
 }
 
 
-GetMMIOBufferTransaction::GetMMIOBufferTransaction( TransactionID const &tranID ) :
+GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    m_msgID(reqid_UID_SendAFU),
-   m_tid_t(tranID),
    m_bIsOK(false),
    m_payload(NULL),
    m_size(0),

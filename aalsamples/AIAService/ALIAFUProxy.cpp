@@ -174,7 +174,6 @@ void ALIAFUProxy::AFUEvent( AAL::IEvent const &theEvent)
       break;
       case rspid_UID_UnbindComplete:
       {
-         std::cerr<<"Got rspid_UID_UnbindComplete event" << std::endl;
          m_pAIA->AFUProxyRelease(this);
          ServiceBase::Release( TransactionID(puidEvent->msgTranID()),
                                AAL_INFINITE_WAIT);

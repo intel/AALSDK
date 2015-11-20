@@ -76,133 +76,6 @@ BEGIN_NAMESPACE(AAL)
 //
 // ===========================================================================
 
-//
-// Dispatchable for IALIBuffer_Client::bufferAllocated
-//
-class BufferAllocated : public IDispatchable
-{
-public:
-   BufferAllocated(IALIBuffer_Client *pRecipient,
-                   TransactionID     TranID,
-                   btVirtAddr        WkspcVirt,
-                   btPhysAddr        WkspcPhys,
-                   btWSSize          WkspcSize) :
-      m_pRecipient(pRecipient),
-      m_TranID(TranID),
-      m_WkspcVirt(WkspcVirt),
-      m_WkspcPhys(WkspcPhys),
-      m_WkspcSize(WkspcSize)
-   {
-      ASSERT(NULL != m_pRecipient);
-   }
-
-   virtual void operator() ()
-   {
-	   // TODO: IALIBuffer_Client::bufferAllocated doen't take a physical address anymore
-	   //       Remove from dispatchable
-	   // 	  m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcPhys, m_WkspcSize);
-	   m_pRecipient->bufferAllocated(m_TranID, m_WkspcVirt, m_WkspcSize);
-	   delete this;
-   }
-
-protected:
-   IALIBuffer_Client *m_pRecipient;
-   TransactionID     m_TranID;
-   btVirtAddr        m_WkspcVirt;
-   btPhysAddr        m_WkspcPhys;
-   btWSSize          m_WkspcSize;
-};
-
-//
-// Dispatchable for IALIBuffer_Client::bufferAllocateFailed
-//
-class BufferAllocateFailed : public IDispatchable
-{
-public:
-   BufferAllocateFailed(IALIBuffer_Client *pRecipient,
-                        IEvent            *pExcept) :
-      m_pRecipient(pRecipient),
-      m_pExcept(pExcept)
-   {
-      ASSERT(NULL != m_pRecipient);
-      ASSERT(NULL != m_pExcept);
-   }
-   ~BufferAllocateFailed()
-   {
-      if ( NULL != m_pExcept ) {
-         delete m_pExcept;
-      }
-   }
-
-   virtual void operator() ()
-   {
-      m_pRecipient->bufferAllocateFailed(*m_pExcept);
-      delete this;
-   }
-
-protected:
-   IALIBuffer_Client *m_pRecipient;
-   IEvent     *m_pExcept;
-};
-
-//
-// Dispatchable for IALIBuffer_Client::bufferFreed
-//
-class BufferFreed : public IDispatchable
-{
-public:
-   BufferFreed(IALIBuffer_Client   *pRecipient,
-               TransactionID        TranID) :
-      m_pRecipient(pRecipient),
-      m_TranID(TranID)
-   {
-      ASSERT(NULL != m_pRecipient);
-   }
-
-   virtual void operator() ()
-   {
-      m_pRecipient->bufferFreed(m_TranID);
-      delete this;
-   }
-
-protected:
-   IALIBuffer_Client   *m_pRecipient;
-   TransactionID m_TranID;
-};
-
-//
-// Dispatchable for IALIBuffer_Client::bufferFreeFailed
-//
-class BufferFreeFailed : public IDispatchable
-{
-public:
-   BufferFreeFailed(IALIBuffer_Client *pRecipient,
-                    IEvent            *pExcept) :
-      m_pRecipient(pRecipient),
-      m_pExcept(pExcept)
-   {
-      ASSERT(NULL != m_pRecipient);
-      ASSERT(NULL != m_pExcept);
-   }
-   ~BufferFreeFailed()
-   {
-      if ( NULL != m_pExcept ) {
-         delete m_pExcept;
-      }
-   }
-
-   virtual void operator() ()
-   {
-      m_pRecipient->bufferFreeFailed(*m_pExcept);
-      delete this;
-   }
-
-protected:
-   IALIBuffer_Client *m_pRecipient;
-   IEvent     *m_pExcept;
-};
-
-
 
 // ===========================================================================
 //
@@ -309,11 +182,10 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
    // Set transaction IDs so that AFUEvent() can distinguish between MMIO and
    // UMSG events (both are uid_wseventCSRMap events)
-   TransactionID mmioTid(GetMMIO);
    TransactionID umsgTid(GetUMSG);
 
    // Create the Transactions
-   GetMMIOBufferTransaction mmioTransaction(mmioTid);
+   GetMMIOBufferTransaction mmioTransaction;
 /*
    GetUMSGBufferTransaction umsgTransaction(umsgTid);
 */
@@ -323,7 +195,6 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
       m_pAFUProxy->SendTransaction(&mmioTransaction);
       if(uid_errnumOK == mmioTransaction.getErrno() ){
          struct AAL::aalui_WSMEvent wsevt = mmioTransaction.getWSIDEvent();
-         std::cerr << " WSID " << std::hex << wsevt.wsParms.wsid;
 
          // mmap
          if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
@@ -477,41 +348,47 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // bufferAllocate. Allocate a shared buffer (formerly known as workspace).
 //
-void HWALIAFU::bufferAllocate(btWSSize Length,
-                              TransactionID const &TranID,
-                              NamedValueSet *pOptArgs)
+AAL::uid_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
+                                            btVirtAddr    *pBufferptr,
+                                            NamedValueSet *pOptArgs)
 {
    AutoLock(this);
-
-   // TODO: Create a transaction id that wraps the original from the application,
-//	   TransactionID tid(new(std::nothrow) TransactionID(TranID));
+   *pBufferptr = NULL;
 
    // Create the Transaction
-   BufferAllocateTransaction transaction(TranID, Length);
+   BufferAllocateTransaction transaction(Length);
 
    // Check the parameters
    if ( transaction.IsOK() ) {
       // Will return to AFUEvent, below.
       m_pAFUProxy->SendTransaction(&transaction);
-   } else {
-      IEvent *pExcept = new (std::nothrow) CExceptionTransactionEvent(m_pSvcClient,
-                                                                      TranID,
-                                                                      errAFUWorkSpace,
-                                                                      reasAFUNoMemory,
-                                                                      "BufferAllocate transaction validity check failed");
-      getRuntime()->schedDispatchable(
-         new (std::nothrow)
-            BufferAllocateFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
-                                 pExcept)
-            );
+   } else{
+      return uid_errnumSystem;
    }
+
+   if(uid_errnumOK != transaction.getErrno() ){
+      return transaction.getErrno();
+
+   }
+   struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
+
+   // mmap
+   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+      AAL_ERR( LM_All, "FATAL: MapWSID failed");
+      return uid_errnumSystem;
+   }
+   // store entire aalui_WSParms struct in map
+   m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
+
+   *pBufferptr = wsevt.wsParms.ptr;
+   return uid_errnumOK;
+
 }
 
 //
 // bufferFree. Release previously allocated buffer.
 //
-void HWALIAFU::bufferFree( btVirtAddr           Address,
-                             TransactionID const &TranID)
+AAL::uid_errnum_e HWALIAFU::bufferFree( btVirtAddr           Address)
 {
    AutoLock(this);
    // TODO: Create a transaction id that wraps the original from the application,
@@ -521,21 +398,12 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i == m_mapWkSpc.end()) {  // not found
       AAL_ERR(LM_All, "Tried to free non-existent Buffer");
-      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                     TranID,
-                                                                     errMemory,
-                                                                     reasInvalidParameter,
-                                                                     "Tried to free non-existent Buffer");
-      getRuntime()->schedDispatchable(
-         new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
-                                                        pExcept)
-             );
-      return;
+      return uid_errnumBadParameter;
    }
    // workspace id is in i->second.wsid
 
    // Create the Transaction
-   BufferFreeTransaction transaction(TranID, i->second.wsid);
+   BufferFreeTransaction transaction(i->second.wsid);
 
    // Check the parameters
    if ( transaction.IsOK() ) {
@@ -551,16 +419,9 @@ void HWALIAFU::bufferFree( btVirtAddr           Address,
       m_mapWkSpc.erase(i);
 
    } else {
-      IEvent *pExcept = new(std::nothrow) CExceptionTransactionEvent(dynamic_cast<IBase *>(this),
-                                                                     TranID,
-                                                                     errMemory,
-                                                                     reasUnknown,
-                                                                     "AFUTran validity check failed");
-      getRuntime()->schedDispatchable(
-         new(std::nothrow) BufferFreeFailed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client, this),
-                                                        pExcept)
-             );
+      return uid_errnumSystem;
    }
+   return uid_errnumOK;
 }
 
 //
@@ -717,113 +578,6 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
          switch(pResult->evtID)
          {
-         //------------------------
-         // Workspace allocate
-         //------------------------
-         case uid_wseventAllocate:
-            {
-
-            // mmap
-            if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-               AAL_ERR( LM_All, "FATAL: MapWSID failed");   // TODO: throw bufferAllocateFailed, etc.
-            }
-
-            // Remember workspace parameters associated with virtual ptr
-            if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
-               AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-            } else {
-               // store entire aalui_WSParms struct in map
-               m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
-            }
-
-            getRuntime()->schedDispatchable(
-                        new(std::nothrow) BufferAllocated(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
-                                                                                         m_pSvcClient),
-                                                          puidEvent->msgTranID(),
-                                                          pResult->wsParms.ptr,
-                                                          pResult->wsParms.physptr,
-                                                          pResult->wsParms.size)
-                            );
-            } break;
-         //------------------------
-         // Workspace free
-         //------------------------
-         case uid_wseventFree:
-            {
-               // TODO: Forget workspace parameters here, not in bufferFree().
-               getRuntime()->schedDispatchable(
-                            new(std::nothrow) BufferFreed(dynamic_ptr<IALIBuffer_Client>(iidALI_BUFF_Service_Client,
-                                                                                             m_pSvcClient),
-                                                              puidEvent->msgTranID())
-                                );
-
-            } break;
-         //-----------------------
-         // Initial GetMMIO/GetUMSG transactions
-         //-----------------------
-         case uid_wseventMMIOMap:
-            {
-               if (puidEvent->msgTranID().m_intID == GetMMIO) {
-
-                  //
-                  // GetMMIO
-                  //
-
-                  // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-                  struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-                  // mmap
-                  if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-                     AAL_ERR( LM_All, "FATAL: MapWSID failed");
-                  }
-
-                  // Remember workspace parameters associated with virtual ptr (if we ever need it)
-                  if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
-                     AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-                  } else {
-                     // store entire aalui_WSParms struct in map
-                     m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
-                  }
-
-                  m_MMIORmap = pResult->wsParms.ptr;
-                  m_MMIORsize = pResult->wsParms.size;
-
-               } else if (puidEvent->msgTranID().m_intID == GetUMSG) {
-
-                  //
-                  // GetUMSG
-                  //
-
-                  // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-                  struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-                  // TODO: handle unmap event
-
-                  // mmap
-                  if (!m_pAFUProxy->MapWSID(pResult->wsParms.size, pResult->wsParms.wsid, &pResult->wsParms.ptr)) {
-                     AAL_ERR( LM_All, "FATAL: MapWSID failed");
-                  }
-
-                  // Remember workspace parameters associated with virtual ptr
-                  if (m_mapWkSpc.find(pResult->wsParms.ptr) != m_mapWkSpc.end()) {
-                     AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-                  } else {
-                     // store entire aalui_WSParms struct in map
-                     m_mapWkSpc[pResult->wsParms.ptr] = pResult->wsParms;
-                  }
-
-                  m_uMSGmap = pResult->wsParms.ptr;
-                  m_uMSGsize = pResult->wsParms.size;
-
-               } else {
-                  ASSERT(false); // unexpected transaction ID
-               }
-
-               // init is complete when MMIOmap and uMSGmap are both set
-               if (m_MMIORmap != NULL /*&& m_uMSGmap != NULL*/) {
-                  initComplete(m_tidSaved);
-               }
-            }break;
 
          default:
             ASSERT(false); // unexpected WSM_Response evtID
