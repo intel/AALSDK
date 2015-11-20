@@ -316,6 +316,27 @@ protected:
       TRuntime_Int_f_1<SynchronizingIRuntimeClient, SynchronizingIServiceClient>::TearDown();
    }
 
+   void VerifyServiceAllocFailed(SynchronizingIRuntimeClient *pRTClient)
+   {
+      pRTClient->Wait();
+      ASSERT_EQ(1, pRTClient->LogEntries());
+      EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", pRTClient->Entry(0).MethodName());
+      btObjectType x = NULL;
+      pRTClient->Entry(0).GetParam("e", &x);
+      ASSERT_NONNULL(x);
+   }
+
+   void VerifyServiceAllocFailed(SynchronizingIServiceClient *pSvcClient)
+   {
+      pSvcClient->Wait();
+      ASSERT_EQ(1, pSvcClient->LogEntries());
+      EXPECT_STREQ("IServiceClient::serviceAllocateFailed", pSvcClient->Entry(0).MethodName());
+
+      btObjectType x = NULL;
+      pSvcClient->Entry(0).GetParam("e", &x);
+      ASSERT_NONNULL(x);
+   }
+
    NamedValueSet m_StartParams;
 };
 
@@ -375,6 +396,50 @@ protected:
       TRuntime_Int_f_1<SynchronizingIRuntimeClient, SynchronizingSwvalSvcClient>::TearDown();
    }
 
+   std::pair<IBase * , ISwvalSvcMod * > VerifyServiceAllocSuccess(SynchronizingIRuntimeClient *pRTClient,
+                                                                  const TransactionID         &tid)
+   {
+      pRTClient->Wait();
+      EXPECT_EQ(1, pRTClient->LogEntries());
+      EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceSucceeded", pRTClient->Entry(0).MethodName());
+
+      btObjectType x = NULL;
+      pRTClient->Entry(0).GetParam("pServiceBase", &x);
+      EXPECT_NONNULL(x);
+
+      IBase *pServiceBase = reinterpret_cast<IBase *>(x);
+      ISwvalSvcMod *pService = dynamic_ptr<ISwvalSvcMod>(iidSwvalSvc, pServiceBase);
+      EXPECT_NONNULL(pService);
+
+      TransactionID tid2;
+      pRTClient->Entry(0).GetParam("tid", tid2);
+      EXPECT_TRUE(tid2 == tid);
+
+      return std::make_pair(pServiceBase, pService);
+   }
+
+   std::pair<IBase * , ISwvalSvcMod * > VerifyServiceAllocSuccess(SynchronizingSwvalSvcClient *pSvcClient,
+                                                                  const TransactionID         &tid)
+   {
+      pSvcClient->Wait();
+      EXPECT_EQ(1, pSvcClient->LogEntries());
+      EXPECT_STREQ("IServiceClient::serviceAllocated", pSvcClient->Entry(0).MethodName());
+
+      btObjectType x = NULL;
+      pSvcClient->Entry(0).GetParam("pBase", &x);
+      EXPECT_NONNULL(x);
+
+      IBase *pServiceBase = reinterpret_cast<IBase *>(x);
+      ISwvalSvcMod *pService = dynamic_ptr<ISwvalSvcMod>(iidSwvalSvc, pServiceBase);
+      EXPECT_NONNULL(pService);
+
+      TransactionID tid2;
+      pSvcClient->Entry(0).GetParam("tid", tid2);
+      EXPECT_TRUE(tid2 == tid);
+
+      return std::make_pair(pServiceBase, pService);
+   }
+
    NamedValueSet m_StartParams;
 };
 
@@ -417,13 +482,7 @@ TEST_F(Runtime_Int_f_3, aal0792)
 
    m_pRuntime->allocService(&SvcClient, manifest, tid);
 
-
-   m_RuntimeClient.Wait();
-   ASSERT_EQ(1, m_RuntimeClient.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
-   btObjectType x = NULL;
-   m_RuntimeClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
+   VerifyServiceAllocFailed(&m_RuntimeClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0793)
@@ -438,21 +497,8 @@ TEST_F(Runtime_Int_f_3, aal0793)
 
    m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
 
-   m_ServiceClient.Wait();
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceAllocateFailed", m_ServiceClient.Entry(0).MethodName());
-
-   btObjectType x = NULL;
-   m_ServiceClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
-
-
-   m_RuntimeClient.Wait();
-   ASSERT_EQ(1, m_RuntimeClient.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
-   x = NULL;
-   m_RuntimeClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
+   VerifyServiceAllocFailed(&m_ServiceClient);
+   VerifyServiceAllocFailed(&m_RuntimeClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0794)
@@ -470,21 +516,8 @@ TEST_F(Runtime_Int_f_3, aal0794)
 
    m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
 
-   m_ServiceClient.Wait();
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceAllocateFailed", m_ServiceClient.Entry(0).MethodName());
-
-   btObjectType x = NULL;
-   m_ServiceClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
-
-
-   m_RuntimeClient.Wait();
-   ASSERT_EQ(1, m_RuntimeClient.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
-   x = NULL;
-   m_RuntimeClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
+   VerifyServiceAllocFailed(&m_ServiceClient);
+   VerifyServiceAllocFailed(&m_RuntimeClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0795)
@@ -506,21 +539,8 @@ TEST_F(Runtime_Int_f_3, aal0795)
 
    m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
 
-   m_ServiceClient.Wait();
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceAllocateFailed", m_ServiceClient.Entry(0).MethodName());
-
-   btObjectType x = NULL;
-   m_ServiceClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
-
-
-   m_RuntimeClient.Wait();
-   ASSERT_EQ(1, m_RuntimeClient.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
-   x = NULL;
-   m_RuntimeClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
+   VerifyServiceAllocFailed(&m_ServiceClient);
+   VerifyServiceAllocFailed(&m_RuntimeClient);
 }
 
 TEST_F(Runtime_Int_f_3, aal0796)
@@ -547,21 +567,8 @@ TEST_F(Runtime_Int_f_3, aal0796)
 
    m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
 
-   m_ServiceClient.Wait();
-   ASSERT_EQ(1, m_ServiceClient.LogEntries());
-   EXPECT_STREQ("IServiceClient::serviceAllocateFailed", m_ServiceClient.Entry(0).MethodName());
-
-   btObjectType x = NULL;
-   m_ServiceClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
-
-
-   m_RuntimeClient.Wait();
-   ASSERT_EQ(1, m_RuntimeClient.LogEntries());
-   EXPECT_STREQ("IRuntimeClient::runtimeAllocateServiceFailed", m_RuntimeClient.Entry(0).MethodName());
-   x = NULL;
-   m_RuntimeClient.Entry(0).GetParam("e", &x);
-   ASSERT_NONNULL(x);
+   VerifyServiceAllocFailed(&m_ServiceClient);
+   VerifyServiceAllocFailed(&m_RuntimeClient);
 }
 
 TEST_F(Runtime_Int_f_3, DISABLED_aal0797)
@@ -633,6 +640,70 @@ TEST_F(Runtime_Int_f_4, aal0798)
 
    m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
 
+   std::pair<IBase *, ISwvalSvcMod *> svcres = VerifyServiceAllocSuccess(&m_ServiceClient, tid);
+   std::pair<IBase *, ISwvalSvcMod *> rtres  = VerifyServiceAllocSuccess(&m_RuntimeClient, tid);
+
+   EXPECT_EQ(svcres.first,  rtres.first);
+   EXPECT_EQ(svcres.second, rtres.second);
+
+
+
+   TransactionID tid2;
+   TransactionID tid3;
+   tid3.ID(999);
+
+   svcres.second->DoSomething(tid3, 0);
+   m_ServiceClient.Wait();
+
+   ASSERT_EQ(2, m_ServiceClient.LogEntries());
+   EXPECT_STREQ("ISwvalSvcClient::DidSomething", m_ServiceClient.Entry(1).MethodName());
+
+   m_ServiceClient.Entry(1).GetParam("tid", tid2);
+   EXPECT_TRUE(tid2 == tid3);
+
+   int i = 0;
+   m_ServiceClient.Entry(1).GetParam("val", &i);
+   EXPECT_EQ(1, i);
+
+   EXPECT_EQ(1, m_RuntimeClient.LogEntries());
+
+
+   EXPECT_TRUE(dynamic_ptr<IAALService>(iidService, svcres.first)->Release(tid3));
+   m_ServiceClient.Wait();
+
+   ASSERT_EQ(3, m_ServiceClient.LogEntries());
+   EXPECT_STREQ("IServiceClient::serviceReleased", m_ServiceClient.Entry(2).MethodName());
+
+   m_ServiceClient.Entry(2).GetParam("tid", tid);
+   EXPECT_TRUE(tid == tid3);
+
+   EXPECT_EQ(1, m_RuntimeClient.LogEntries());
+
+}
+
+TEST_F(Runtime_Int_f_4, aal0799)
+{
+   // When the IBase * to Runtime::allocService() implements IServiceClient.
+   //
+   // manifest has..
+   //  * AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED
+   //
+   // config record has..
+   //  * AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME
+   //
+   // AAL_BEGIN_SVC_MOD()
+
+   NamedValueSet manifest;
+   NamedValueSet configrec;
+
+   configrec.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalsvcmod");
+   manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrec);
+
+   TransactionID tid;
+   tid.ID(799);
+
+   m_pRuntime->allocService(&m_ServiceClient, manifest, tid);
+
    m_ServiceClient.Wait();
    ASSERT_EQ(1, m_ServiceClient.LogEntries());
    EXPECT_STREQ("IServiceClient::serviceAllocated", m_ServiceClient.Entry(0).MethodName());
@@ -671,8 +742,6 @@ TEST_F(Runtime_Int_f_4, aal0798)
    ASSERT_EQ(2, m_ServiceClient.LogEntries());
    EXPECT_STREQ("ISwvalSvcClient::DidSomething", m_ServiceClient.Entry(1).MethodName());
 
-   m_ServiceClient.Entry(1).GetParam("tid", tid2);
-   EXPECT_TRUE(tid2 == tid3);
 
    int i = 0;
    m_ServiceClient.Entry(1).GetParam("val", &i);
@@ -695,6 +764,7 @@ TEST_F(Runtime_Int_f_4, aal0798)
 
 
 
+
 /*
    NamedValueSet configrec;
 
@@ -709,3 +779,4 @@ TEST_F(Runtime_Int_f_4, aal0798)
    pRuntime->allocService(pClientBase, manifest, tid);
 
 */
+

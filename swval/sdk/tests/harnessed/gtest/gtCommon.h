@@ -890,8 +890,8 @@ public:
 
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop() {}
-   virtual void                allocService(IBase                * ,
-                                            NamedValueSet const & = NamedValueSet(),
+   virtual void                allocService(IBase               * ,
+                                            NamedValueSet const & ,
                                             TransactionID const & = TransactionID()) {}
    virtual btBool         schedDispatchable(IDispatchable * );
    virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
@@ -923,8 +923,8 @@ public:
    virtual btBool                     start(const NamedValueSet & );
    virtual void                        stop();
    virtual void                allocService(IBase                * ,
-                                            NamedValueSet const &rManifest = NamedValueSet(),
-                                            TransactionID const &rTranID   = TransactionID());
+                                            NamedValueSet const &rManifest,
+                                            TransactionID const &rTranID = TransactionID());
    virtual btBool         schedDispatchable(IDispatchable * );
    virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
    virtual btBool       releaseRuntimeProxy();

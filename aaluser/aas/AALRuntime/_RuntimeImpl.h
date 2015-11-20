@@ -107,8 +107,8 @@ public:
    //                       description and any configuration parameters.
    void allocService(Runtime                 *pProxy,
                      IBase                   *pClient,
-                     NamedValueSet const     &rManifest = NamedValueSet(),
-                     TransactionID const     &rTranID   = TransactionID());
+                     NamedValueSet const     &rManifest,
+                     TransactionID const     &rTranID = TransactionID());
 
    // <IRuntime> - Needed so that internal services can use the Runtime
    //              without involving Application's Runtime Proxy.  Can't use
@@ -121,8 +121,8 @@ public:
    //           rManifest - Reference to manifest containing Service
    //                       description and any configuration parameters.
    virtual void                 allocService(IBase               *pClient,
-                                             NamedValueSet const &rManifest = NamedValueSet(),
-                                             TransactionID const &rTranID   = TransactionID());
+                                             NamedValueSet const &rManifest,
+                                             TransactionID const &rTranID = TransactionID());
    virtual btBool          schedDispatchable(IDispatchable *pdispatchable);
    virtual IRuntime *        getRuntimeProxy(IRuntimeClient * )      {/*unsupported*/ ASSERT(false); return NULL;  }
    virtual btBool        releaseRuntimeProxy()                       {/*unsupported*/ ASSERT(false); return false; }
