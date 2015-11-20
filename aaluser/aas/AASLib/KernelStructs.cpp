@@ -261,6 +261,7 @@ std::ostream & operator << (std::ostream &s, const aal_device_addr &devaddr)
                  "bustype:     " << devaddr.m_bustype << "\n\t"
                  "busnum:      " << devaddr.m_busnum << "\n\t"
                  "devicenum:   " << devaddr.m_devicenum << "\n\t"
+                 "functnum:    " << devaddr.m_functnum<< "\n\t"
                  "subdevnum:   " << devaddr.m_subdevnum << "\n";
 
    // reset flag and fill state

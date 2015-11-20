@@ -860,6 +860,7 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
    nvs.Add(keyRegBusType,              static_cast<bt32bitInt>(cfgUpdate.devattrs.devid.m_devaddr.m_bustype));
    nvs.Add(keyRegBusNumber,            cfgUpdate.devattrs.devid.m_devaddr.m_busnum);
    nvs.Add(keyRegDeviceNumber,         cfgUpdate.devattrs.devid.m_devaddr.m_devicenum);
+   nvs.Add(keyRegfuntionNumber,        cfgUpdate.devattrs.devid.m_devaddr.m_functnum);
    nvs.Add(keyRegChannelNumber,        cfgUpdate.devattrs.devid.m_devaddr.m_subdevnum);
 
    nvs.Add(keyRegDeviceType,           cfgUpdate.devattrs.devid.m_devicetype);

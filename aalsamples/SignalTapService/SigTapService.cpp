@@ -48,11 +48,10 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
+#include <aalsdk/kernel/ccipdriver.h>
 
-#include <aalsdk/service/ICCIClient.h>
 #include "SigTapService.h"
 
 #ifdef INFO
@@ -76,7 +75,6 @@
 //=============================================================================
 // Typedefs and Constants
 //=============================================================================
-#if 0
 #ifndef SIGTAPSERVICE_VERSION_CURRENT
 # define SIGTAPSERVICE_VERSION_CURRENT  4
 #endif // SIGTAPSERVICE_VERSION_CURRENT
@@ -120,37 +118,134 @@
 AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libsigtapservice, SIGTAP_SERVICE_API, SIGTAPSERVICE_VERSION, SIGTAPSERVICE_VERSION_CURRENT, SIGTAPSERVICE_VERSION_REVISION, SIGTAPSERVICE_VERSION_AGE)
    /* No commands other than default, at the moment. */
 AAL_END_SVC_MOD()
-#endif
+
 
 USING_NAMESPACE(AAL)
 
 btBool SigTapService::init( IBase               *pclientBase,
                             NamedValueSet const &optArgs,
-                            TransactionID const &TranID)
+                            TransactionID const &rTranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-   ASSERT( NULL != pClient );
-   if ( NULL == pClient ) {
-      /// ObjectCreatedExceptionEvent Constructor.
-      initFailed( new CExceptionTransactionEvent( this,
-                                                  TranID,
-                                                  errBadParameter,
-                                                  reasMissingInterface,
-                                                  "Client did not publish ICCIClient Interface") );
-      return false;
+
+   NamedValueSet Manifest, ConfigRecord;
+
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+
+   // the AFUID of Signal Tap device
+   ConfigRecord.Add(keyRegAFU_ID, CCIP_STAP_AFUID);
+
+   // indicate that this service needs to allocate an AIAService, too (to talk to the AFU)
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+
+   // backdoor
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   // in future, everything should be figured out by just giving the service name
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "HWALI");
+
+   // Save the transaction ID for the final completion
+   m_TranID = rTranID;
+
+   allocService(dynamic_ptr<IBase>(iidBase, this), Manifest, TransactionID());
+   return true;
+
+}
+
+btBool SigTapService::Release(TransactionID const &rTranID, btTime timeout)
+{
+   m_TranID  = rTranID;
+   m_timeout = timeout;
+
+   ASSERT(m_pAALService != NULL);
+   return m_pAALService->Release(TransactionID(), timeout);
+}
+
+/*
+ * IServiceClient methods (callbacks from AIA service)
+ */
+
+// Service allocated callback
+void SigTapService::serviceAllocated( IBase               *pServiceBase,
+                                      TransactionID const &rTranID)
+{
+   // Store ResMgrService pointer
+   m_ALIMMIO = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+   if (!m_ALIMMIO) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing ALIMMIO interface."));
+      return;
    }
 
+   // Store AAL service pointer
+   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
+   if (!m_pAALService) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_TranID,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "Error: Missing service base interface."));
+      return;
+   }
 
+   // Get MMIO buffer
+   m_mmio = m_ALIMMIO->mmioGetAddress();
+   ASSERT(NULL != m_mmio);
 
-   initComplete(TranID);
-   return true;
+   if(NULL == m_mmio) {
+      // TODO: handle error
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_TranID,
+                                                 errMemory,
+                                                 reasMissingInterface,
+                                                 "Error: Could not get memory interface\n."));
+      return;
+   }else{
+      initComplete(m_TranID);
+   }
 }
 
-btBool SigTapService::Release(TransactionID const &TranID, btTime timeout)
+// Service allocated failed callback
+void SigTapService::serviceAllocateFailed(const IEvent &rEvent)
 {
-   return ServiceBase::Release(TranID, timeout);
+   m_bIsOK = false;
+
+   initFailed(new CExceptionTransactionEvent( NULL,
+                                              m_TranID,
+                                              errAllocationFailure,
+                                              reasUnknown,
+                                              "Error: Failed to allocate ALI."));
+
 }
 
+// Service released callback
+void SigTapService::serviceReleased(TransactionID const &rTranID)
+{
+   ServiceBase::Release(m_TranID, m_timeout);
+}
+
+// Service released failed callback
+void SigTapService::serviceReleaseFailed(const IEvent &rEvent)
+{
+   m_bIsOK = false;
+   // TODO EMPTY
+}
+
+// Callback for generic events
+void SigTapService::serviceEvent(const IEvent &rEvent)
+{
+   // TODO: handle unexpected events
+   ASSERT(false);
+}
+
+AAL::btVirtAddr SigTapService::stpGetAddress( void )
+{
+   return m_mmio;
+}
 
 #if defined( __AAL_WINDOWS__ )
 

@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,54 +27,54 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     samples/SigTap/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     11/19/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_CCI_NLB/SW \
-Hello_SPL_LB/SW \
-Sudoku_SPL/SW \
-LinkedList_SPL/SW \
-Hello_ALI_NLB/SW  \
-SignalTapService \
-SigTapSample/SW \
-AIAService
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-MFLAGS  =
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
 ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+else
+CPPFLAGS += -DENABLE_DEBUG=1
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+all: ccisigtap
 
-.PHONY: all clean
+ccisigtap: SigTap.o
+	$(CXX) $(CPPFLAGS) -o ccisigtap SigTap.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-doc docs: docclean
-	doc/output/./test.sh
-	doxygen doc/Doxyfile
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
+SigTap.o: SigTap.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 $(CFLAGS) -c -o SigTap.o SigTap.cpp
 
-.PHONY:doc docs docclean docsclean
+clean:
+	$(RM) ccisigtap SigTap.o
+
+.PHONY:all clean

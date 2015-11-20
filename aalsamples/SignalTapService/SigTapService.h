@@ -47,7 +47,6 @@
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/aas/AALService.h>
 
-BEGIN_NAMESPACE(AAL)
 
 /// @addtogroup SWSimALIAFU
 /// @{
@@ -62,38 +61,58 @@ BEGIN_NAMESPACE(AAL)
 ///
 /// SWSimALIAFU is selected by passing the Named Value pair (ALIAFU_NVS_KEY_TARGET, ALIAFU_NVS_VAL_TARGET_SWSIM)
 /// in the arguments to IRuntime::allocService when requesting a ALIAFU.
-class SigTapService : public ServiceBase/*,
-                                    public IServiceClient,     // for AIA
-                                    public IALIMMIO,
-                                    public IALIBuffer,
-                                    public IALIUMsg,
-                                    public IALIReset/*
-                                    public IALIPerf*/
+class SigTapService : public AAL::ServiceBase,
+                      public AAL::IServiceClient,     // for HWALIAFU
+                      public AAL::IALISignalTap
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 public:
    // <ServiceBase>
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(SigTapService, ServiceBase)
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(SigTapService, AAL::ServiceBase),
+   m_ALIMMIO(NULL),
+   m_mmio(NULL),
+   m_pAALService(NULL)
    {
-
+      SetInterface(iidServiceClient, dynamic_cast<AAL::IServiceClient *>(this));
+      SetInterface(iidALI_STAP_Service, dynamic_cast<AAL::IALISignalTap *>(this));
    }
 
-   virtual btBool init(IBase               *pclientBase,
-                       NamedValueSet const &optArgs,
-                       TransactionID const &rtid);
+   virtual AAL::btBool init( AAL::IBase               *pclientBase,
+                             AAL::NamedValueSet const &optArgs,
+                             AAL::TransactionID const &rtid);
 
-   virtual btBool Release(TransactionID const &TranID, btTime timeout=AAL_INFINITE_WAIT);
+   virtual AAL::btBool Release(AAL::TransactionID const &TranID, AAL::btTime timeout=AAL_INFINITE_WAIT);
    // </ServiceBase>
+
+   // <ALISignalTap>
+   virtual AAL::btVirtAddr stpGetAddress( void );
+   // </ALISignalTap>
+
+   // <IServiceClient>
+   virtual void serviceAllocated(AAL::IBase               *pServiceBase,
+                                 AAL::TransactionID const &rTranID = AAL::TransactionID());
+   virtual void serviceAllocateFailed(const AAL::IEvent &rEvent);
+
+   virtual void serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID());
+
+   virtual void serviceReleaseFailed(const AAL::IEvent &rEvent);
+
+   virtual void serviceEvent(const AAL::IEvent &rEvent);
+
+   // <IServiceClient>
 
 
 protected:
-
+   AAL::TransactionID          m_TranID;
+   AAL::IALIMMIO              *m_ALIMMIO;
+   AAL::btVirtAddr             m_mmio;
+   AAL::IAALService           *m_pAALService;
+   AAL::btTime                 m_timeout;
 };
 /// @}
 
-END_NAMESPACE(AAL)
 
 #endif // __SIGTAPSERVICE_H__
 

@@ -745,6 +745,8 @@
 //                                                                  Which slot (PCI) or socket (FSB, QPI) on this bus */
 #define keyRegChannelNumber               "AAL_keyRegChannelNumber"
 //#define keyRegChannelNumber               AAL_RegKey(0x0013)   /* DataType: bt32bitInt
+
+#define keyRegfuntionNumber               "AAL_keyRegfuntionNumber"
 //                                                                  Channel on the device, e.g. SPL interface (0) or
 //                                                                  sub-device number. -1 if not defined */
 #define keyRegDeviceAddress               "AAL_keyRegDeviceAddress"

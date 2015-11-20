@@ -340,6 +340,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
 
    //=======================================
    // Instantiate a Signal Tap device
+   aaldevid_devaddr_subdevnum(aalid)++;
    pcci_aaldev = cci_create_AAL_SignalTap_Device(pportdev, &aalid);
    ASSERT(NULL != pcci_aaldev);
 
@@ -353,11 +354,12 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
 
    //========================
    // Instantiate a PR Device
+   aaldevid_devaddr_subdevnum(aalid)++;
    pcci_aaldev = cci_create_AAL_PR_Device(pportdev, &aalid);
    ASSERT(NULL != pcci_aaldev);
 
    if(NULL == pcci_aaldev){
-      PDEBUG("ERROR: Creating Signal Tap device\n");
+      PDEBUG("ERROR: Creating PR device\n");
       return false;     // TODO This is a BUG if we get here but should cleanup correctly.
    }
 
@@ -375,6 +377,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       if(~0ULL != pafu_hdr->ccip_dfh.csr){
 
          // Instantiate it
+         aaldevid_devaddr_subdevnum(aalid)++;
          pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
                                                     pafu_phys,
                                                     pafu_hdr,

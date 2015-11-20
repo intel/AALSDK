@@ -37,6 +37,11 @@ CPPFLAGS ?=
 CXX      ?= g++
 LDFLAGS  ?=
 
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
+
+
 ifneq (,$(ndebug))
 else
 CPPFLAGS += -DENABLE_DEBUG=1
@@ -71,7 +76,7 @@ libsigtapservice.so.0.0.0: libsigtapservice.o
 	$(CXX) -fPIC -shared -Wl,-soname -Wl,libsigtapservice.so.0 libsigtapservice.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libsigtapservice.so.0.0.0
 
 libsigtapservice.o: SigTapService.cpp SigTapService.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC -g -O2 -c -o libsigtapservice.o SigTapService.cpp
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o libsigtapservice.o SigTapService.cpp
 
 clean:
 	$(RM) libsigtapservice.so libsigtapservice.so.0 libsigtapservice.so.0.0.0 libsigtapservice.o
