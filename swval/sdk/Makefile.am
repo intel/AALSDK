@@ -69,7 +69,7 @@ include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
-include/aalsdk/Dispatchables.h \
+include/aalsdk/aas/Dispatchables.h \
 include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \

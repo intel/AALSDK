@@ -890,7 +890,7 @@ build_working_tree_in_tree() {
    fi
 
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
-
+cd sw 
    print_title     "in working tree : configure"
    checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'

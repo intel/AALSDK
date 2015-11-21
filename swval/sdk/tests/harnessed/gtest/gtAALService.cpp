@@ -702,7 +702,7 @@ TEST_F(AALServiceModule_f_1, aal0723)
 
    EXPECT_FALSE(ServiceInitFailed(&base, pEvent));
 }
-
+#if DEPRECATED
 TEST_F(AALServiceModule_f_3, aal0724)
 {
    // When the IBase * parameter to AALServiceModule::ServiceInitFailed() is valid, the same is
@@ -742,7 +742,7 @@ TEST_F(AALServiceModule_f_3, aal0724)
    EXPECT_NULL(x); // This is about all we can do, because the IDispatchable will delete itself.
 */
 }
-
+#endif
 TEST_F(AALServiceModule_f_0, EmptyRoutines)
 {
    m_pModule->serviceAllocated(NULL, TransactionID());

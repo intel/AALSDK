@@ -1,4 +1,3 @@
-
 //******************************************************************************
 // Part of the Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 //
