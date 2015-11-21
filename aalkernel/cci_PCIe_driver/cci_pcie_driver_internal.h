@@ -82,7 +82,7 @@
 
 #include <aalsdk/kernel/aalqueue.h>
 #include <aalsdk/kernel/iaaldevice.h>
-
+#include <aalsdk/kernel/aalwsservice.h>
 
 /////////////////////////////////////////////////////////////////////////////
 #ifndef DRV_VERSION
@@ -246,74 +246,14 @@ struct cci_aal_device {
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
-//=============================================================================
-//=============================================================================
-//                                PROTOTYPES
-//=============================================================================
-//=============================================================================
-struct ccip_device;   // forward reference
-struct port_device;
-
-extern int ccidrv_initDriver(void/*callback*/);
-struct ccip_device * create_ccidevice(void);
-void  destroy_ccidevice(struct ccip_device *pccidev);
-extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
-btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *,
-                                                   btUnsigned32bitInt);
-extern struct cci_aal_device* cci_create_aal_device(void);
-extern int cci_destroy_aal_device( struct cci_aal_device*);
-extern int cci_publish_aaldevice(struct cci_aal_device *);
-extern void cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev);
-extern void cci_remove_device(struct ccip_device *);
-extern void cci_release_device(struct device *pdev);
-extern void ccidrv_exitDriver(void);
-
-extern int ccidrv_initUMAPI(void);
-void ccidrv_exitUMAPI(void);
-
-extern struct ccidrv_session * ccidrv_session_create(btPID );
-extern btInt ccidrv_session_destroy(struct ccidrv_session * );
-extern struct aal_wsid *find_wsid( const struct ccidrv_session *ccidrv_sess_p,
-                                   struct aal_wsid *check_wsid_p);
-extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
-extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
-                                        unsigned long long id);
-extern btInt
-ccidrv_sendevent( btObjectType,
-                  struct aal_device *,
-                  struct aal_q_item *,
-                  btObjectType);
 
 
-
-#if 0
-void cci_release_device( struct device *pdev );
-
-extern int
-cci_sim_mmap(struct aaldev_ownerSession* pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
-
-extern int
-cci_publish_aaldevice(struct cci_aal_device *);
-
-
-
-extern int
-cci_destroy_device(struct cci_aal_device* );
-
-extern void
-cci_remove_device(struct cci_aal_device *);
-
-
-extern void
-cci_flush_all_wsids(struct cci_PIPsession *psess);
-#endif
 //=============================================================================
 //=============================================================================
 //                                INLINE PRIMITIVES
 //=============================================================================
 //=============================================================================
+
 //=============================================================================
 // Name: cci_getBARAddress
 // Description: Called during the device probe by cci_pci_probe
@@ -355,6 +295,69 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
    return 1;
 }
 
+//=============================================================================
+//=============================================================================
+//                                PROTOTYPES
+//=============================================================================
+//=============================================================================
+struct ccip_device;   // forward reference
+struct port_device;
+
+extern int ccidrv_initDriver(void/*callback*/);
+struct ccip_device * create_ccidevice(void);
+void  destroy_ccidevice(struct ccip_device *pccidev);
+extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
+btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *,
+                                                   btUnsigned32bitInt);
+extern struct cci_aal_device* cci_create_aal_device(void);
+extern int cci_destroy_aal_device( struct cci_aal_device*);
+extern int cci_publish_aaldevice(struct cci_aal_device *);
+extern void cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev);
+extern void cci_remove_device(struct ccip_device *);
+extern void cci_release_device(struct device *pdev);
+extern void ccidrv_exitDriver(void);
+
+extern int ccidrv_initUMAPI(void);
+void ccidrv_exitUMAPI(void);
+
+extern struct ccidrv_session * ccidrv_session_create(btPID );
+extern btInt ccidrv_session_destroy(struct ccidrv_session * );
+extern struct aal_wsid *find_wsid( const struct ccidrv_session *,
+                                   btWSID);
+extern struct aal_wsid * ccidrv_valwsid(btWSID);
+extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
+extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
+                                        unsigned long long id);
+extern btInt
+ccidrv_sendevent( btObjectType,
+                  struct aal_device *,
+                  struct aal_q_item *,
+                  btObjectType);
+
+
+#if 0
+void cci_release_device( struct device *pdev );
+
+extern int
+cci_sim_mmap(struct aaldev_ownerSession* pownerSess,
+               struct aal_wsid *wsidp,
+               btAny os_specific);
+
+extern int
+cci_publish_aaldevice(struct cci_aal_device *);
+
+
+
+extern int
+cci_destroy_device(struct cci_aal_device* );
+
+extern void
+cci_remove_device(struct cci_aal_device *);
+
+
+extern void
+cci_flush_all_wsids(struct cci_PIPsession *psess);
+#endif
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 

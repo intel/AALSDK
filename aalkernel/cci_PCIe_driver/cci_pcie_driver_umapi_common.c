@@ -90,10 +90,7 @@ btInt ccidrv_sendevent( void *,
                                struct aal_device *,
                                struct aal_q_item *,
                                void *);
-struct aal_wsid* ccidrv_getwsid( struct aal_device *,
-                                        btUnsigned64bitInt );
-btInt ccidrv_freewsid(struct aal_wsid *);
-btInt ccidrv_valwsid(struct aal_wsid *);
+
 btInt ccidrv_flush_eventqueue(  struct ccidrv_session *psess);
 
 btInt process_send_message(struct ccidrv_session  *,
@@ -107,6 +104,7 @@ btInt ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
                                        struct aal_q_item     *pqitem,
                                        struct ccipui_ioctlreq *resp,
                                        btWSSize              *pOutbufsize);
+struct aal_wsid *ccidrv_valwsid(btWSID);
 
 extern struct um_APIdriver thisDriver;
 
@@ -899,10 +897,13 @@ ccidrv_sendevent(btObjectType       sesHandle, // Session handle  TODO this and 
 // Comments:
 //=============================================================================
 struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
-                               unsigned long long id)
+                                unsigned long long id)
 {
+   static btUnsigned64bitInt     nextWSID = 1;
+
    struct aal_wsid * pwsid = NULL;
    int status;
+
 
 #ifdef __i386__
    pwsid = (struct aal_wsid * )__get_free_page(GFP_KERNEL);
@@ -915,11 +916,19 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
       return NULL;
    }
 
-   DPRINTF (UIDRV_DBG_FILE, ": Created WSID %p for device %p id %llx \n", pwsid, pdev, id);
+   // Check the WSID for roll over. This gives us a very large number of WSIDs before
+   //   roll over.
+   if( 0 == wsid_to_wsidHandle(nextWSID) ){
+      nextWSID = 1;
+   }
+
    pwsid->m_device = pdev;
+   pwsid->m_handle = wsid_to_wsidHandle(nextWSID);
    pwsid->m_id = id;
    kosal_list_init(&pwsid->m_list);
    kosal_list_init(&pwsid->m_alloc_list);
+
+   PDEBUG(": Created WSID %llu [Handle %llx] for device id %llx \n", nextWSID, pwsid->m_handle, id);
 
    /* get list manipulation semaphore */
    status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
@@ -938,6 +947,8 @@ struct aal_wsid* ccidrv_getwsid(struct aal_device *pdev,
 
    /* release semaphore */
    kosal_sem_put(&thisDriver.wsid_list_sem);
+
+   nextWSID++;
 
    return pwsid;
 }
@@ -965,9 +976,8 @@ btInt ccidrv_freewsid(struct aal_wsid *pwsid)
    }
 
    /* search for the provided wsid on the known list */
-   status = ccidrv_valwsid(pwsid);
-   if (0 != status) {
-      return status;
+   if (NULL ==  ccidrv_valwsid( pwsid_to_wsidhandle(pwsid) )) {
+      return -EINVAL;
    }
 
    status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
@@ -1019,44 +1029,44 @@ int ccidrv_flush_eventqueue(  struct ccidrv_session *psess)
 //=============================================================================
 // Name: ccidrv_valwsid
 /** @brief check if a provided wsid is on the list of known allocated wsids
- * @param[in] wsid_p pointer to workspace to validate
+ * @param[in] wsidHandle handle to workspace to validate
  * @return zero on success
  * grab the list lock, walk the list, and compare pointers. */
 //=============================================================================
-int ccidrv_valwsid(struct aal_wsid *wsid_p)
+struct aal_wsid *ccidrv_valwsid(btWSID wsidHandle)
 {
-   int retval = -EINVAL;
    int status;
    struct aal_wsid *listwsid_p;
 
-   if (NULL == wsid_p) {
-      PERR(": wsid was NULL\n");
-      return retval;
+   if( 0 == wsidHandle) {
+      PERR(": wsid was 0\n");
+      return NULL;
    }
 
    status = kosal_sem_get_krnl_alertable(&thisDriver.wsid_list_sem);
    if (0 != status) {
       PERR(": couldn't get list semaphore\n");
-      return status;
+      kosal_sem_put(&thisDriver.wsid_list_sem);
+      return NULL;
    }
 
    kosal_list_for_each_entry(listwsid_p, &thisDriver.wsid_list_head, m_alloc_list, struct aal_wsid) {
-      if (listwsid_p == wsid_p) {
-         retval = 0;
-         break;
+      if (listwsid_p->m_handle == wsidHandle) {
+         kosal_sem_put(&thisDriver.wsid_list_sem);
+         return listwsid_p;
       }
    }
 
    kosal_sem_put(&thisDriver.wsid_list_sem);
 
-   PINFO(": wsid %p%s on list\n", wsid_p, (retval >= 0 ? "" : " not"));
+   PINFO(": wsid %llu not on list\n", wsidHandle);
 
-   return retval;
+   return NULL;
 }
 
 /** @brief search for a given wsid in the provided uidrv_session
- * @param[in] uidrv_sess_p pointer to uidrv session to dig through
- * @param[in] wsid_p pointer to workspace ID to check
+ * @param[in] ccidrv_sess_p pointer to uidrv session to dig through
+ * @param[in] wsidHandle to workspace ID to check
  * @return NULL if pointer is not found, wsid_p if it is
  *
  * both input pointers are assumed already to be non-NULL.
@@ -1065,23 +1075,25 @@ int ccidrv_valwsid(struct aal_wsid *wsid_p)
  * even leaked out of the workspace manager?  shouldn't everything out here be
  * manipulated through completely opaque workspace IDs (long long int)?
  */
-struct aal_wsid *find_wsid(const struct ccidrv_session *ccidrv_sess_p,
-                           struct aal_wsid *check_wsid_p)
+struct aal_wsid *find_wsid( const struct ccidrv_session *ccidrv_sess_p,
+                            btWSID wsidHandle)
 {
    const struct aaldev_owner *owner_p;
    const struct aaldev_ownerSession *ownersess_p;
-   const struct aal_wsid *cur_wsid_p = NULL;
+   struct aal_wsid *cur_wsid_p = NULL;
 
+   PDEBUG("Looking for WSID Handle %llx\n", wsidHandle);
 
    /* start by checking if the passed wsid is even valid */
-   if (0 != ccidrv_valwsid(check_wsid_p)) {
+   if (NULL == ccidrv_valwsid(wsidHandle)) {
+      PERR("WSID Invalid\n");
       return NULL;
    }
 
    /* if this session is not associated with a device, don't bother checking
     * ownership of the wsid, since there may not be any.  */
    if (kosal_list_is_empty(&ccidrv_sess_p->m_devicelist)) {
-      return check_wsid_p;
+      return ccidrv_valwsid(wsidHandle);
    }
 
    /* if this session is associated with a device, (IE m_devicelist is not
@@ -1092,27 +1104,21 @@ struct aal_wsid *find_wsid(const struct ccidrv_session *ccidrv_sess_p,
     *   struct aaldev_owner which contains
     *     struct aaldev_ownerSession which contains the list head of
     *       struct aal_wsid */
-   DPRINTF( UIDRV_DBG_MMAP, "looking at list head %p for wsid %p\n",
-      &(ccidrv_sess_p->m_devicelist), check_wsid_p );
+  PVERBOSE("looking at list head %p for wsid %llx\n", &(ccidrv_sess_p->m_devicelist), wsidHandle );
    kosal_list_for_each_entry(owner_p, &(ccidrv_sess_p->m_devicelist), m_devicelist, struct aaldev_owner) {
-      DPRINTF( UIDRV_DBG_MMAP, "examining owner_p %p\n", owner_p);
+      PVERBOSE("examining owner_p %p\n", owner_p);
       ownersess_p = &(owner_p->m_sess);
 
       kosal_list_for_each_entry(cur_wsid_p, &(ownersess_p->m_wshead), m_list, struct aal_wsid) {
-         if (cur_wsid_p == check_wsid_p) {
-            DPRINTF( UIDRV_DBG_MMAP, "  wsid ID %lld at %p found\n",
-               cur_wsid_p->m_id, check_wsid_p);
-            return check_wsid_p;
+         if (cur_wsid_p->m_handle == wsidHandle) {
+            PVERBOSE("  wsid ID %lld at %p found\n",cur_wsid_p->m_handle, cur_wsid_p);
+            return cur_wsid_p;
          }
       }
    }
 
-   DPRINTF( UIDRV_DBG_MMAP, "wsid %p NOT found on any owner lists\n",
-      check_wsid_p);
-#if 0
+   PVERBOSE("wsid %llu NOT found on any owner lists\n", wsidHandle);
+
    return NULL;
-#else
-   return check_wsid_p;
-#endif
 }
 

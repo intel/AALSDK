@@ -320,7 +320,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
-                                                                   wsidobjp_to_wid(wsidp),
+                                                                    pwsid_to_wsidhandle(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
                                                                    Message->m_tranID,
@@ -398,7 +398,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Create the event
          pafuws_evt = ccipdrv_event_afu_afuallocws_create(
                                                aalsess_aaldevicep(pownerSess),
-                                               wsidobjp_to_wid(wsidp), // make the wsid appear page aligned for mmap
+                                               pwsid_to_wsidhandle(wsidp), // make the wsid appear page aligned for mmap
                                                NULL,
                                                kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
                                                preq->ahmreq.u.wksp.m_size,
@@ -443,7 +443,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          // Get the workspace ID object
-         wsidp = wsid_to_wsidobjp(preq->ahmreq.u.wksp.m_wsid);
+         wsidp = ccidrv_valwsid(preq->ahmreq.u.wksp.m_wsid);
 
          ASSERT(wsidp);
          if ( NULL == wsidp ) {

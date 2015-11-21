@@ -103,6 +103,14 @@ BEGIN_NAMESPACE(AAL)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define AAL_CHECK_WORKSPACE( pws )          ( NULL != pws && (btUnsigned32bitInt)pws->m_superpage[0] == pws->m_id )
 
+
+
+//=============================================================================
+//=============================================================================
+//                                WORKSPACE
+//=============================================================================
+//=============================================================================
+
 //=============================================================================
 // Name: aal_wsid
 // Description: Wrapper object for the workspace ID
@@ -118,6 +126,7 @@ struct aal_wsid
 {
    struct aal_device *m_device;     // Device
    btWSID             m_id;         // ID, and pointer to workspace structure
+   btWSID             m_handle;     // Handle passed up to user mode
    enum wstype        m_type;       // Type of allocation
    btWSSize           m_size;       // Size of workspace
    kosal_list_head    m_list;       // Device owner list it is on
@@ -143,15 +152,28 @@ struct aal_wsid
 
 #  elif defined ( __AAL_LINUX__ )
 
-// TODO This seems VERY dangerous.
+
+#     define wsid_to_wsidHandle(wsid)  ((btWSID)( (wsid) <<21 ))
+//#     define wsidHandle_to_wsid(h)     ( ((btWSID)(off)) >>21 )
+
+//#     define pgoff_to_wsid(off)        ( ((btWSID)(off)) >>19 )
+#     define pgoff_to_wsidHandle(off)  ((btWSID)off<<12)
+
+#     define pwsid_to_wsidhandle(pwsid) ((btWSID)(pwsid->m_handle))
+
+
+// DEPRECATING
+#     define pgoff_to_wsidobj(off)  ( (struct aal_wsid *)( (off) | 0xfff0000000000000ULL) )
 #     define wsidobjp_to_wid(id)    ( (btWSID)(id) << PAGE_SHIFT )
 #     define wsid_to_wsidobjp(id)   ( (struct aal_wsid *)( ( (btWSID)(id) >> PAGE_SHIFT ) | 0xfff0000000000000ULL ) )
 
-#     define pgoff_to_wsidobj(off)  ( (struct aal_wsid *)( (off) | 0xfff0000000000000ULL) )
+
 #  endif
 #endif
 
 struct aaldev_ownerSession; //forward reference
+
+
 
 //=============================================================================
 // Name: aalwsservice

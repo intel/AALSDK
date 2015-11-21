@@ -366,7 +366,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 
@@ -375,8 +375,12 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             *((struct aalui_WSMEvent*)Message->m_response) = WSID;
             Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
          }
-         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, *((btWSID*)Message->m_response)  );
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
          Message->m_errcode = uid_errnumOK;
+
+         // Add the new wsid onto the session
+         aalsess_add_ws(pownerSess, wsidp->m_list);
+
       } break;
 
       AFU_COMMAND_CASE(ccipdrv_afucmdWKSP_ALLOC)
@@ -386,7 +390,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aal_wsid     *wsidp       = NULL;
          struct aalui_WSMEvent WSID;
 
-         PDEBUG( "Allocating %d bytes \n", preq->ahmreq.u.wksp.m_size)
+         PDEBUG( "Allocating %lu bytes \n", (unsigned long)preq->ahmreq.u.wksp.m_size);
+
          // Normal flow -- create the needed workspace.
          krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(preq->ahmreq.u.wksp.m_size);
          if (NULL == krnl_virt) {
@@ -420,7 +425,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
-         WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
          WSID.wsParms.physptr = (btWSID)krnl_virt;
          WSID.wsParms.size    = preq->ahmreq.u.wksp.m_size;
 
@@ -429,7 +434,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             *((struct aalui_WSMEvent*)Message->m_response) = WSID;
             Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
          }
-         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, *((btWSID*)Message->m_response)  );
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
          Message->m_errcode = uid_errnumOK;
 
       } break; // case fappip_afucmdWKSP_VALLOC
@@ -451,7 +456,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          // Get the workspace ID object
-         wsidp = wsid_to_wsidobjp(preq->ahmreq.u.wksp.m_wsid);
+         wsidp = ccidrv_valwsid(preq->ahmreq.u.wksp.m_wsid);
 
          ASSERT(wsidp);
          if ( NULL == wsidp ) {
@@ -587,14 +592,14 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
    pSess = (struct cci_PIPsession *) aalsess_pipHandle(pownerSess);
    ASSERT(pSess);
    if ( NULL == pSess ) {
-      PDEBUG("CCIV4 Simulator mmap: no Session");
+      PDEBUG("CCI AFU mmap: no Session");
       goto ERROR;
    }
 
    pdev = cci_PIPsessionp_to_ccidev(pSess);
    ASSERT(pdev);
    if ( NULL == pdev ) {
-      PDEBUG("CCIV4 Simulator mmap: no device");
+      PDEBUG("CCI AFU mmap: no device");
       goto ERROR;
    }
 

@@ -295,7 +295,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
 
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 

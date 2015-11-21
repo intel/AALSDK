@@ -363,7 +363,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
-                                                                   wsidobjp_to_wid(wsidp),
+                                                                    pwsid_to_wsidhandle(wsidp),
                                                                    cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
                                                                    cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
                                                                    Message->m_tranID,
@@ -414,7 +414,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          wsidp->m_type = WSM_TYPE_MMIO;
 
          WSID.evtID           = uid_wseventMMIOMap;
-         WSID.wsParms.wsid    = wsidobjp_to_wid(wsidp);
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
          WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
          WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
 

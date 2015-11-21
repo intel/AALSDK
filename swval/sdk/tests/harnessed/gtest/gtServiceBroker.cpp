@@ -7,7 +7,7 @@
 #include "swvalsvcmod.h"
 
 #include <aalsdk/aas/ServiceHost.h>
-#include <aalsdk/Dispatchables.h>
+#include <aalsdk/aas/Dispatchables.h>
 #include <_ServiceBroker.h>
 
 ////////////////////////////////////////////////////////////////////////////////

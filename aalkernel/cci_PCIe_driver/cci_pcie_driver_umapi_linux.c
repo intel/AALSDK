@@ -515,12 +515,10 @@ ccidrv_mmap  (struct file *file, struct vm_area_struct *vma)
       DPRINTF( UIDRV_DBG_MMAP, "Invalid session\n");
       goto failed;
    }
-
-   /* Get the WSID Object from the offset */
-   wsidp = pgoff_to_wsidobj(vma->vm_pgoff);
+   PDEBUG("WSID offset %lu  handle is %llx\n",vma->vm_pgoff, pgoff_to_wsidHandle(vma->vm_pgoff));
 
    /* check wsidp vs known list of wsids */
-   wsidp = find_wsid(psess, wsidp);
+   wsidp = find_wsid(psess, pgoff_to_wsidHandle(vma->vm_pgoff));
    if (NULL == wsidp) {
       DPRINTF( UIDRV_DBG_MMAP, "WSID not found on list owned WSIDs\n");
       goto failed;

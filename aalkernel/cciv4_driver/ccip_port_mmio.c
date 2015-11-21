@@ -570,7 +570,6 @@ bt32bitInt afu_re_enable(btVirtAddr pkvp_port_mmio )
 bt32bitInt afu_port_reset(btVirtAddr pkvp_port_mmio )
 {
    bt32bitInt res =0;
-   struct CCIP_PORT_CONTROL port_control;
 
    PINFO(" Enter \n");
 

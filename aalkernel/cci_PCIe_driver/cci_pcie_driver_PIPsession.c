@@ -238,11 +238,12 @@ cci_flush_all_wsids(struct cci_PIPsession *psess)
    PVERBOSE("Freeing allocated workspaces.\n");
 
    list_for_each_entry_safe(wsidp, tmp, &pownerSess->m_wshead, m_list) {
+      if( WSM_TYPE_VIRTUAL == wsidp->m_type){
+         kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
 
-      kosal_free_contiguous_mem((btAny)wsidp->m_id, wsidp->m_size);
-
-      // remove the wsid from the device and destroy
-      PVERBOSE("Done Freeing PWS with id 0x%llx.\n", wsidp->m_id);
+         // remove the wsid from the device and destroy
+         PVERBOSE("Done Freeing PWS with id 0x%llx.\n",pwsid_to_wsidhandle(wsidp));
+      }
 
       list_del_init(&wsidp->m_list);
 

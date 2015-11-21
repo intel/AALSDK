@@ -1033,7 +1033,7 @@ int print_sim_port_device(struct port_device *pport_dev)
 
 
       PDEBUG( "USER AFU  END \n \n");
-
+ //     pafu_hdr = NULL;  // COMPILER COMPLAINS VARIABLE NOT USED UNLESS WE DO THIS
    }
 
 

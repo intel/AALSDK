@@ -233,12 +233,12 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
                // Return the event with all of the appropriate aperture descriptor information
                pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
-                                                                   wsidobjp_to_wid(wsidp),
-                                                                   cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
-                                                                   cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
-                                                                   Message->m_tranID,
-                                                                   Message->m_context,
-                                                                   uid_errnumOK);
+                                                                    pwsid_to_wsidhandle(wsidp),
+                                                                    cci_dev_phys_afu_mmio(pdev),        // Return the requested aperture
+                                                                    cci_dev_len_afu_mmio(pdev),         // Return the requested aperture size
+                                                                    Message->m_tranID,
+                                                                    Message->m_context,
+                                                                    uid_errnumOK);
 
                PVERBOSE("Sending ccipdrv_getMMIORmap Event\n");
 
