@@ -47,6 +47,7 @@
 #include "aalsdk/kernel/ccipdriver.h"
 
 #include "ALIAIATransactions.h"
+#include "aalsdk/service/IALIAFU.h"
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
@@ -313,5 +314,174 @@ AFUEnable::~AFUEnable() {
    delete afumsg;
 }
 
+
+UmsgGetNumber::UmsgGetNumber() :
+   m_msgID(reqid_UID_SendAFU),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // BufferAllocate-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_afucmdGetNumUmsgs;
+   afumsg->size    = sizeof(struct ahm_req);
+
+   // fill out ahm_req
+   req->u.mem_uv2id.mem_id = 0;
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    UmsgGetNumber::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                UmsgGetNumber::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  UmsgGetNumber::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   UmsgGetNumber::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              UmsgGetNumber::getMsgID()const {return m_msgID;}
+AAL::btUnsignedInt             UmsgGetNumber::getNumber() const {return (reinterpret_cast<struct ahm_req *>(m_payload)->u.mem_uv2id.mem_id);}
+AAL::uid_errnum_e              UmsgGetNumber::getErrno()const {return m_errno;};
+void                           UmsgGetNumber::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+
+UmsgGetNumber::~UmsgGetNumber() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;     // FIXME: use C++ style casts
+   delete afumsg;
+}
+
+UmsgGetBaseAddress::UmsgGetBaseAddress() :
+   m_msgID(reqid_UID_SendAFU),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // GetMMIOBufferTransaction-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
+   afumsg->size    = sizeof(struct ahm_req);
+
+   req->u.wksp.m_wsid = WSID_MAP_MMIOR;
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){
+      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    UmsgGetBaseAddress::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                UmsgGetBaseAddress::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  UmsgGetBaseAddress::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   UmsgGetBaseAddress::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              UmsgGetBaseAddress::getMsgID()const {return m_msgID;}
+struct AAL::aalui_WSMEvent     UmsgGetBaseAddress::getWSIDEvent() const {return *(reinterpret_cast<struct AAL::aalui_WSMEvent*>(m_payload));}
+AAL::uid_errnum_e              UmsgGetBaseAddress::getErrno()const {return m_errno;};
+void                           UmsgGetBaseAddress::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+UmsgGetBaseAddress::~UmsgGetBaseAddress() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
+
+UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
+   m_msgID(reqid_UID_SendAFU),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+
+   if( ENamedValuesOK != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+      AAL_ERR( LM_All,"Missing Parameter or Key");
+      return;
+   }
+   eBasicTypes nvsType;
+   if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
+      AAL_ERR( LM_All,"Unable to get key value type.");
+      return;
+   }
+
+   if(btUnsigned64bitInt_t !=  nvsType){
+      AAL_ERR( LM_All,"Bad value type.");
+      return;
+   }
+
+   btUnsigned64bitInt  val;
+   if(ENamedValuesOK !=  nvsArgs.Get(UMSG_HINT_MASK_KEY, &val)){
+      AAL_ERR( LM_All,"Unable to get key value type.");
+      return;
+   }
+
+
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // GetMMIOBufferTransaction-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_afucmdSetUmsgMode;
+   afumsg->size    = sizeof(struct ahm_req);
+   req->u.wksp.m_wsid = val;
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){
+      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    UmsgSetAttributes::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                UmsgSetAttributes::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  UmsgSetAttributes::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   UmsgSetAttributes::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              UmsgSetAttributes::getMsgID()const {return m_msgID;}
+struct AAL::aalui_WSMEvent     UmsgSetAttributes::getWSIDEvent() const {return *(reinterpret_cast<struct AAL::aalui_WSMEvent*>(m_payload));}
+AAL::uid_errnum_e              UmsgSetAttributes::getErrno()const {return m_errno;};
+void                           UmsgSetAttributes::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+UmsgSetAttributes::~UmsgSetAttributes() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
 
 

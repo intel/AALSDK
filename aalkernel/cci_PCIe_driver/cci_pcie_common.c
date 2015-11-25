@@ -455,6 +455,8 @@ cci_release_device(struct device *pdev)
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
 #endif // ENABLE_DEBUG
 
+
+
    PTRACEIN;
 
    PDEBUG("Called with struct aal_device * 0x%p\n", paaldev);

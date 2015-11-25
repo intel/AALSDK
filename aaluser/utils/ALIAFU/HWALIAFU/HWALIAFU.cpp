@@ -459,7 +459,10 @@ btPhysAddr HWALIAFU::bufferGetIOVA( btVirtAddr Address)
 //
 btUnsignedInt HWALIAFU::umsgGetNumber( void )
 {
-   return m_uMSGsize / 4096;  // one page per UMsg
+   UmsgGetNumber transaction;
+   m_pAFUProxy->SendTransaction(&transaction);
+   btUnsignedInt temp = transaction.getNumber();
+   return temp;
 }
 
 //
@@ -467,6 +470,22 @@ btUnsignedInt HWALIAFU::umsgGetNumber( void )
 //
 btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 {
+   // If we've never gotten the map getit now
+   if(NULL == m_uMSGmap){
+      UmsgGetBaseAddress transaction;
+
+      m_pAFUProxy->SendTransaction(&transaction);
+      if(uid_errnumOK != transaction.getErrno()){
+         return NULL;
+      }
+      struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
+
+      // mmap
+      if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+         AAL_ERR( LM_All,"FATAL: MapWSID failed");
+         return NULL;
+      }
+   }
    // Umsgs are separated by 1 Page + 1 CL
    // Malicious call could overflow and cause wrap to invalid address.
    // TODO: Check if there is any problem with using a different address
@@ -488,7 +507,30 @@ btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
 //
 bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
-	return false;
+
+   if( ENamedValuesOK != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+      AAL_ERR( LM_All,"Missing Parameter or Key");
+      return false;
+   }
+   eBasicTypes nvsType;
+   if(ENamedValuesOK !=  nvsArgs.Type(UMSG_HINT_MASK_KEY, &nvsType)){
+      AAL_ERR( LM_All,"Unable to get key value type.");
+      return false;
+   }
+
+   if(btUnsigned64bitInt_t !=  nvsType){
+      AAL_ERR( LM_All,"Bad value type.");
+      return false;
+   }
+
+   UmsgSetAttributes transaction(nvsArgs);
+
+   m_pAFUProxy->SendTransaction(&transaction);
+   if(uid_errnumOK != transaction.getErrno()){
+      return false;
+   }
+
+   return true;
 }
 
 // ---------------------------------------------------------------------------

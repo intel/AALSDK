@@ -177,6 +177,7 @@ protected:
    IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
    IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
+   IALIUMsg      *m_pALIuMSGService;   ///< Pointer to uMSg Service
    CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
    btUnsignedInt  m_wsfreed;           ///< Simple counter used for when we free workspaces
    btInt          m_Result;            ///< Returned result value; 0 if success
@@ -299,6 +300,43 @@ btInt HelloALINLBApp::run()
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
 
    m_Sem.Wait();
+   if(!m_isOK){
+      ERR("Allocation failed\n");
+      m_Runtime.stop();
+      m_Sem.Wait();
+      return -1;
+   }
+   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
+   //   In workspaceAllocated() callback we allocate the rest
+   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return -1;
+   }
+   m_DSMSize = LPBK1_DSM_SIZE;
+
+   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return -1;
+   }
+   m_InputSize = LPBK1_BUFFER_SIZE;
+
+   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+      m_bIsOK = false;
+      m_Sem.Post(1);
+      return -1;
+   }
+
+   m_OutputSize = LPBK1_BUFFER_SIZE;
+
+   btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
+   btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
+
+   NamedValueSet nvs;
+   nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
+
+//   btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
 
    // If all went well run test.
    //   NOTE: If not successful we simply bail.
@@ -410,6 +448,7 @@ btInt HelloALINLBApp::run()
       m_pALIBufferService->bufferFree(m_InputVirt);
       m_pALIBufferService->bufferFree(m_OutputVirt);
       m_pALIBufferService->bufferFree(m_DSMVirt);
+
       // Freed all three so now Release() the Service through the Services IAALService::Release() method
       (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
       m_Sem.Wait();
@@ -462,31 +501,16 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
       return;
    }
 
+   // Documentation says HWALIAFU Service publishes
+   //    IALIReset as subclass interface
+   m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
+   ASSERT(NULL != m_pALIuMSGService);
+   if ( NULL == m_pALIuMSGService ) {
+      m_bIsOK = false;
+      return;
+   }
+
    MSG("Service Allocated");
-
-   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
-   //   In workspaceAllocated() callback we allocate the rest
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
-      m_bIsOK = false;
-      m_Sem.Post(1);
-      return;
-   }
-   m_DSMSize = LPBK1_DSM_SIZE;
-
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
-      m_bIsOK = false;
-      m_Sem.Post(1);
-      return;
-   }
-   m_InputSize = LPBK1_BUFFER_SIZE;
-
-   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
-      m_bIsOK = false;
-      m_Sem.Post(1);
-      return;
-   }
-
-   m_OutputSize = LPBK1_BUFFER_SIZE;
    m_Sem.Post(1);
 }
 void HelloALINLBApp::runtimeStarted( IRuntime            *pRuntime,

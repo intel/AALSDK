@@ -68,7 +68,7 @@
 //****************************************************************************
 #include "aalsdk/kernel/kosal.h"
 
-#define MODULE_FLAGS CCIV4_DBG_MOD
+#define MODULE_FLAGS CCIPCIE_DBG_MOD
 
 #include "aalsdk/kernel/aalbus.h"              // for AAL_vendINTC
 #include "aalsdk/kernel/aalui-events.h"
@@ -79,7 +79,7 @@
 
 #include "cci_pcie_driver_PIPsession.h"
 #include "cci_pcie_driver_internal.h"
-
+#include "ccip_port.h"
 #include "aalsdk/kernel/aalmafu-events.h"
 
 
@@ -113,8 +113,8 @@ session_create(struct aaldev_ownerSession *pownerSess)
 
    // Save the device for this AFU. (Saved when the AFU was created)
    cci_PIPsessionp_to_ccidev(pSess) = aaldev_pip_context_to_obj(struct cci_aal_device *, pSess->paaldev);
-   //pSess->pCCIV4dev = aaldev_pip_context_to_obj(struct cci_aal_device *, pSess->paaldev);
-   PDEBUG("CCIv4 PIP Session Created.\n");
+
+   PDEBUG("CCI PIP Session Created.\n");
 
    return pSess;
 }
@@ -190,14 +190,46 @@ int session_destroy(struct cci_PIPsession *pSess)
 //=============================================================================
 int UnbindSession(struct aaldev_ownerSession *pownerSess)
 {
-   struct cci_PIPsession *pSess = (struct cci_PIPsession *)pownerSess->m_PIPHandle;
-   struct cci_aal_device     *pdev  = cci_PIPsessionp_to_ccidev(pSess);
+   struct cci_PIPsession      *pSess         = (struct cci_PIPsession *)pownerSess->m_PIPHandle;
+   struct cci_aal_device      *pdev          = cci_PIPsessionp_to_ccidev(pSess);
+   struct CCIP_PORT_DFL_UMSG  *puMsgvirt     = NULL;
 
    PDEBUG("UnBinding UI Session\n");
 
    // Stop all on-going processing
    kosal_sem_get_krnl( cci_dev_psem(pdev) );
-   // TODO STOP STUFF HERE
+
+   // If this is a uAFU make sure it is stopped
+   if( cci_dev_UAFU ==  cci_dev_type(pdev) ){
+      PDEBUG("Quiescing User AFU\n");
+      if(true == get_port_feature( cci_dev_pport(pdev),
+                                   CCIP_PORT_DFLID_USMG,
+                                   NULL,
+                                   (btVirtAddr*)&puMsgvirt)){
+         btTime delay = 10;
+         btTime totaldelay = 0;
+
+         // Disable uMSGis running
+         puMsgvirt->ccip_umsg_capability.status_umsg_engine = 0;
+         // TODO DO WE NEED TO WAUT FOR Status == 0?
+         while(1 == puMsgvirt->ccip_umsg_capability.umsg_init_status){
+            // Sleep
+            kosal_udelay(delay);
+            // total delay
+            totaldelay = totaldelay + delay;
+            if (totaldelay > 100)   {
+               PDEBUG("Timed out waiting for uMSG engine to stop\n");
+               break;
+            }
+         }
+         puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
+      }
+
+      // Reset the AFU
+      port_afu_quiesce_and_halt( cci_dev_pport(pdev));
+      port_afu_Enable( cci_dev_pport(pdev));
+   }
+
    kosal_sem_put( cci_dev_psem(pdev) );
 
    // Free all allocated workspaces not yet freed

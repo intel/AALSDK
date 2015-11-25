@@ -180,7 +180,8 @@ struct cci_aal_device {
 };
 
 
-#define pci_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
+#define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
+#define aaldev_to_cci_aal_device(ptr)        kosal_container_of(ptr, struct aal_device, m_aaldev)
 
 #define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
 #define cci_dev_pport(pdev)                 ( pdev->m_pport )
@@ -241,8 +242,8 @@ struct cci_aal_device {
 
 
 #define cci_dev_list_head(pdev)             ((pdev)->m_list)
-#define cci_list_to_cci_aal_device(plist)     kosal_list_entry(plist, struct cci_aal_device, m_list)
-#define aaldev_to_cci_aal_device(plist)         kosal_list_entry(plist, struct cci_aal_device, m_list)
+#define cci_list_to_cci_aal_device(plist)    kosal_list_entry(plist, struct cci_aal_device, m_list)
+
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 

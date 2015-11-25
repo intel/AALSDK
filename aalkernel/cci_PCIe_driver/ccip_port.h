@@ -176,7 +176,10 @@ struct CCIP_PORT_HDR * get_port_header( btVirtAddr );
 /// @return    error code
 bt32bitInt get_port_featurelist(struct port_device *,btVirtAddr );
 
-btPhysAddr get_port_feature( struct port_device *,btUnsigned64bitInt );
+btBool get_port_feature( struct port_device *,
+                             btUnsigned64bitInt ,
+                             btPhysAddr *,
+                             btVirtAddr *);
 
 
 extern struct aal_ipip cci_Portpip;

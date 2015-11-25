@@ -95,6 +95,8 @@ BEGIN_NAMESPACE(AAL)
 // Max number of pci bars to scan
 #define CCIP_MAX_PCIBAR             5
 
+#define CCIP_UMSG_SIZE              (0x1000)
+
 ///=================================================================
 /// Enumerations
 ///=================================================================
@@ -981,9 +983,9 @@ struct CCIP_PORT_DFL_UMSG {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt no_umsg_alloc_port :8; // number of umag allocated to this port
-            btUnsigned64bitInt status_usmg_engine :1; //  enable umsg engine for this ort 1-enable 0-disable
-            btUnsigned64bitInt umsg_init_satus :1; // usmg initialization status
+            btUnsigned64bitInt no_umsg_alloc_port :8; // number of umsg allocated to this port
+            btUnsigned64bitInt status_umsg_engine :1; //  enable umsg engine for this ort 1-enable 0-disable
+            btUnsigned64bitInt umsg_init_status :1;    // usmg initialization status
             btUnsigned64bitInt rsvd :54;
          }; // end struct
       }; // end union

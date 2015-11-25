@@ -203,8 +203,11 @@ typedef enum
     ccipdrv_afucmdPort_afuEnable,
     ccipdrv_afucmdPort_afuQuiesceAndHalt,
     ccipdrv_afucmdWKSP_FREE,
+    ccipdrv_afucmdGet_UmsgBase,
     ccipdrv_getMMIORmap,
-    ccipdrv_getFeatureRegion
+    ccipdrv_getFeatureRegion,
+    ccipdrv_afucmdGetNumUmsgs,
+    ccipdrv_afucmdSetUmsgMode
 } ccipdrv_afuCmdID_e;
 
 struct aalui_CCIdrvMessage

@@ -513,14 +513,14 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 
    // USMG capability
    offset = offset + OFFSET;
-   port_umsg.ccip_umsg_capability.no_umsg_alloc_port =0x7;
-   port_umsg.ccip_umsg_capability.status_usmg_engine =0x1;
-   port_umsg.ccip_umsg_capability.umsg_init_satus =0x1;
+   port_umsg.ccip_umsg_capability.no_umsg_alloc_port =0x8;
+   port_umsg.ccip_umsg_capability.status_umsg_engine =0x0;
+   port_umsg.ccip_umsg_capability.umsg_init_status =0x1;
    write_ccip_csr64(ptr,offset,port_umsg.ccip_umsg_capability.csr);
 
    //USMG base address
    offset = offset + OFFSET;
-   port_umsg.ccip_umsg_base_address.umsg_base_address =0xfff0101;
+   port_umsg.ccip_umsg_base_address.umsg_base_address =0x0;
    write_ccip_csr64(ptr,offset,port_umsg.ccip_umsg_base_address.csr);
 
    // USMG Mode
@@ -961,8 +961,8 @@ int print_sim_port_device(struct port_device *pport_dev)
 
 
       PDEBUG( "no_umsg_alloc_port = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.no_umsg_alloc_port);
-      PDEBUG( "status_usmg_engine = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.status_usmg_engine);
-      PDEBUG( "umsg_init_satus = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.umsg_init_satus);
+      PDEBUG( "status_umsg_engine = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.status_umsg_engine);
+      PDEBUG( "umsg_init_status = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.umsg_init_status);
 
 
       PDEBUG( "umsg_base_address = %lx \n",( long unsigned int)pport_dev->m_pport_umsg->ccip_umsg_base_address.umsg_base_address);

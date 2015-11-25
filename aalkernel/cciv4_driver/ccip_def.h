@@ -1070,7 +1070,7 @@ struct CCIP_PORT_UMSG_DFL {
          struct {
             btUnsigned64bitInt no_umsg_alloc_port :8; // number of umag allocated to this port
             btUnsigned64bitInt status_usmg_engine :1; //  enable umsg engine for this ort 1-enable 0-disable
-            btUnsigned64bitInt umsg_init_satus :1; // usmg initialization status
+            btUnsigned64bitInt umsg_init_status :1; // usmg initialization status
             btUnsigned64bitInt rsvd :54;
          }; // end struct
       }; // end union

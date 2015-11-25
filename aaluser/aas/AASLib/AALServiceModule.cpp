@@ -150,7 +150,7 @@ void AALServiceModule::Destroy()
 
 //=============================================================================
 // Name: ServiceReleased()
-// Description: Callback invoked when a Servcie has been released
+// Description: Callback invoked when a Service has been released
 // Interface: public
 // Inputs: none
 // Outputs: none.

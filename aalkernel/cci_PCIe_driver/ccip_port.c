@@ -393,11 +393,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct aalui_WSMEvent WSID;
          btWSID                featurenum = preq->ahmreq.u.wksp.m_wsid;
          btPhysAddr            pFeature   = 0;
+         btVirtAddr            pvFeature  = 0;
 
          PVERBOSE("Getting feature ID %u\n",(unsigned int)featurenum);
 
-         pFeature = get_port_feature(cci_dev_pport(pdev),featurenum );
-         if(0 == pFeature){
+          if( true != get_port_feature(cci_dev_pport(pdev),featurenum, &pFeature, &pvFeature)){
             Message->m_errcode = uid_errnumBadParameter;
             PTRACEOUT;
             return 0;
@@ -799,8 +799,10 @@ struct CCIP_PORT_HDR *get_port_header( btVirtAddr pkvp_port_mmio )
 /// @param[in] Feature_ID - Feature ID to search for
 /// @return    NULL = failure
 ///============================================================================
-btPhysAddr get_port_feature( struct port_device *pport_dev,
-                             btUnsigned64bitInt Feature_ID )
+btBool get_port_feature( struct port_device *pport_dev,
+                             btUnsigned64bitInt Feature_ID,
+                             btPhysAddr *pPhysAddr,
+                             btVirtAddr *pVirtAddr)
 {
    struct CCIP_DFH         port_dfh;
    btVirtAddr              pkvp_port   = NULL;
@@ -810,7 +812,7 @@ btPhysAddr get_port_feature( struct port_device *pport_dev,
 
    if( ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset ==0)   {
       PERR("NO PORT features are available \n");
-      return 0;
+      return false;
    }
    // read PORT Device feature Header
    pkvp_port = ((btVirtAddr)ccip_port_hdr(pport_dev)) + ccip_port_hdr(pport_dev)->ccip_port_dfh.next_DFH_offset;
@@ -825,8 +827,15 @@ btPhysAddr get_port_feature( struct port_device *pport_dev,
      // Device feature ID
       if(Feature_ID == port_dfh.Feature_ID){
          PVERBOSE("Feature found.\n");
+         if(NULL!= pPhysAddr){
+            *pPhysAddr = pphys_port;
+         }
+         if(NULL!= pVirtAddr){
+            *pVirtAddr = pkvp_port;
+         }
          PTRACEOUT;
-         return pphys_port;
+
+         return true;
       }
 
       // Point at next feature header.
@@ -837,7 +846,7 @@ btPhysAddr get_port_feature( struct port_device *pport_dev,
 
    PVERBOSE("Feature not found\n");
    PTRACEOUT;
-   return 0;
+   return false;
 }
 
 ///============================================================================

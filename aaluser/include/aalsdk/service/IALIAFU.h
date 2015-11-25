@@ -175,6 +175,8 @@ public:
 ///         m_pALIUMsgService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
 /// @endcode
 ///
+
+#define UMSG_HINT_MASK_KEY "UMSG_HINT_MASK_KEY"
 class IALIUMsg
 {
 public:

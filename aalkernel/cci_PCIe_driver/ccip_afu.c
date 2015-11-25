@@ -119,7 +119,22 @@ struct aal_ipip cci_AFUpip = {
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
 
+//=============================================================================
+// Name: cci_release_uafu_device
+// Description: callback for notification that an AAL Device is being destroyed.
+// Interface: public
+// Inputs: pdev: kernel-provided generic device structure.
+// Outputs: none.
+// Comments:
+//=============================================================================
+void
+cci_release_uafu_device(struct device *pdev)
+{
+// TODO RESET AFU
+   PTRACEIN;
 
+   PTRACEOUT;
+}
 
 ///============================================================================
 /// Name: cci_create_AAL_UAFU_Device
@@ -231,8 +246,6 @@ struct cci_aal_device   *
    PTRACEOUT;
    return pcci_aaldev;
 }
-
-
 
 //=============================================================================
 // Name: CommandHandler
@@ -426,7 +439,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          // Set up the return payload
          WSID.evtID           = uid_wseventAllocate;
          WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
-         WSID.wsParms.physptr = (btWSID)krnl_virt;
+         WSID.wsParms.physptr = (btWSID)kosal_virt_to_phys(krnl_virt);
          WSID.wsParms.size    = preq->ahmreq.u.wksp.m_size;
 
          // Make this atomic. Check the original response buffer size for room
@@ -485,6 +498,151 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          Message->m_errcode = uid_errnumOK;
 
       } break; // case fappip_afucmdWKSP_FREE
+
+      //============================
+      //  Get number of uMSGs
+      //============================
+      AFU_COMMAND_CASE(ccipdrv_afucmdGetNumUmsgs) {
+         struct ccidrvreq    *presp                         = (struct ccidrvreq *)Message->m_response;
+         struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
+
+         if(false == get_port_feature( cci_dev_pport(pdev),
+                                       CCIP_PORT_DFLID_USMG,
+                                       NULL,
+                                       (btVirtAddr*)&puMsgvirt)){
+            Message->m_errcode = uid_errnumNoMap;
+            break;
+         }
+         PVERBOSE("uMSG feature Header %p\n", puMsgvirt);
+
+         PVERBOSE("Returning number of uMSGs = %d.\n",puMsgvirt->ccip_umsg_capability.no_umsg_alloc_port);
+         presp->ahmreq.u.mem_uv2id.mem_id = puMsgvirt->ccip_umsg_capability.no_umsg_alloc_port;
+         Message->m_respbufSize = respBufSize;
+         Message->m_errcode = uid_errnumOK;
+
+      } break; // case ccipdrv_afucmdGetNumUmsgs
+
+      //============================
+      //  Set uMSG Mode
+      //============================
+      AFU_COMMAND_CASE(ccipdrv_afucmdSetUmsgMode) {
+         struct ccidrvreq    *preq                          = (struct ccidrvreq *)pmsg->payload;
+         struct CCIP_PORT_DFL_UMSG            *puMsgvirt    = NULL;
+
+         if(false == get_port_feature( cci_dev_pport(pdev),
+                                       CCIP_PORT_DFLID_USMG,
+                                       NULL,
+                                       (btVirtAddr*)&puMsgvirt)){
+            Message->m_errcode = uid_errnumNoMap;
+            break;
+         }
+         PVERBOSE("uMSG feature Header %llx\n", (0xFFFFFFFF & preq->ahmreq.u.wksp.m_wsid));
+
+         puMsgvirt->ccip_umsg_mode.umsg_hit = (0xFFFFFFFF & preq->ahmreq.u.wksp.m_wsid);
+         Message->m_errcode = uid_errnumOK;
+
+      } break; // case ccipdrv_afucmdSetUmsgMode
+
+      AFU_COMMAND_CASE(ccipdrv_afucmdGet_UmsgBase)
+      {
+         struct ccidrvreq              *preq          = (struct ccidrvreq *)pmsg->payload;
+         struct CCIP_PORT_DFL_UMSG     *puMsgvirt     = NULL;
+         btVirtAddr                     krnl_virt     = NULL;
+         struct aal_wsid               *wsidp         = NULL;
+         struct aalui_WSMEvent          WSID;
+         btWSSize                       size          = 0;
+
+         if(false == get_port_feature( cci_dev_pport(pdev),
+                                       CCIP_PORT_DFLID_USMG,
+                                       NULL,
+                                       (btVirtAddr*)&puMsgvirt)){
+            Message->m_errcode = uid_errnumNoMap;
+            break;
+         }
+
+         if( 0 != puMsgvirt->ccip_umsg_base_address.umsg_base_address){
+            Message->m_errcode = uid_errnumInvalidRequest;
+            PERR("uMSG base already set\n");
+            break;
+         }
+         size = puMsgvirt->ccip_umsg_capability.no_umsg_alloc_port * CCIP_UMSG_SIZE;
+         PDEBUG( "Allocating %lu bytes for uMSG\n", (unsigned long)size);
+
+         // Normal flow -- create the needed workspace.
+         krnl_virt = (btVirtAddr)kosal_alloc_contiguous_mem_nocache(size);
+         if (NULL == krnl_virt) {
+            Message->m_errcode = uid_errnumNoMem;
+            break;
+         }
+
+         // Set the uMSG area
+         puMsgvirt->ccip_umsg_base_address.umsg_base_address = kosal_virt_to_phys(krnl_virt);
+         PDEBUG("uMSG @ %p [%" PRIxPHYS_ADDR "]\n", krnl_virt, (btPhysAddr)puMsgvirt->ccip_umsg_base_address.umsg_base_address);
+
+         // Enable uMsg operation
+         puMsgvirt->ccip_umsg_capability.status_umsg_engine = 1;
+         {
+            // Wait for the uMSG engine to start
+            btTime delay = 10;
+            btTime totaldelay = 0;
+
+            while(0 == puMsgvirt->ccip_umsg_capability.umsg_init_status)
+            {
+               // Sleep
+               kosal_udelay(delay);
+
+               // total delay
+               totaldelay = totaldelay + delay;
+               if (totaldelay > 1000)   {
+                  PDEBUG("Timed out waitng for uMSG engine to start\n");
+                  Message->m_errcode = uid_errnumTimeout;
+                  puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
+                  kosal_kfree(krnl_virt, size);
+                  return 0;
+               }
+            }
+         }
+
+         //------------------------------------------------------------
+         // Create the WSID object and add to the list for this session
+         //------------------------------------------------------------
+         wsidp = ccidrv_getwsid(pownerSess->m_device, (btWSID)krnl_virt);
+         if ( NULL == wsidp ) {
+            PERR("Couldn't allocate task workspace\n");
+            retval = -ENOMEM;
+            /* send a failure event back to the caller? */
+            goto ERROR;
+         }
+
+         wsidp->m_size = size;
+         wsidp->m_type = WSM_TYPE_VIRTUAL;
+         PDEBUG("Creating uMSG WSID %p.\n", wsidp);
+
+         // Add the new wsid onto the session
+         aalsess_add_ws(pownerSess, wsidp->m_list);
+
+         PINFO("CCI uMSG wsid=0x%" PRIx64 " phys=0x%" PRIxPHYS_ADDR  " kvp=0x%" PRIx64 " size=%" PRIu64 " success!\n",
+                  preq->ahmreq.u.wksp.m_wsid,
+                  kosal_virt_to_phys((btVirtAddr)wsidp->m_id),
+                  wsidp->m_id,
+                  wsidp->m_size);
+
+         // Set up the return payload
+         WSID.evtID           = uid_wseventAllocate;
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.physptr = (btWSID) puMsgvirt->ccip_umsg_base_address.umsg_base_address;
+         WSID.wsParms.size    = size;
+
+         // Make this atomic. Check the original response buffer size for room
+         if(respBufSize >= sizeof(struct aalui_WSMEvent)){
+            *((struct aalui_WSMEvent*)Message->m_response) = WSID;
+            Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
+         }
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
+         Message->m_errcode = uid_errnumOK;
+
+      } break; // case ccipdrv_afucmdGet_UmsgBase
+
 
       default: {
          struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;

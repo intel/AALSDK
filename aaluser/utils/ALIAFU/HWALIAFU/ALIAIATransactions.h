@@ -260,5 +260,107 @@ private:
 
 }; // class AFUEnable
 
+//=============================================================================
+// Name:          UmsgGetNumber
+// Description:   Get the number of uMSGs are available
+// Input: devHandl - Device Handle received from Resource Manager
+// Comments: Atomic
+//=============================================================================
+class UAIA_API UmsgGetNumber : public IAIATransaction
+{
+public:
+   UmsgGetNumber();
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   AAL::btUnsignedInt             getNumber() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
+
+   ~UmsgGetNumber();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class UmsgGetNumber
+
+//=============================================================================
+// Name:          UmsgGetBaseAddress
+// Description:   Get the base address of the uMSG area.
+// Input: devHandl - Device Handle received from Resource Manager
+// Comments: Atomic
+//=============================================================================
+class UAIA_API UmsgGetBaseAddress : public IAIATransaction
+{
+public:
+   UmsgGetBaseAddress();
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   struct AAL::aalui_WSMEvent     getWSIDEvent() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
+
+   ~UmsgGetBaseAddress();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class UmsgGetBaseAddress
+
+//=============================================================================
+// Name:          UmsgSetAttributes
+// Description:   Set the attibutes of the uMSG.
+// Input: devHandl - Device Handle received from Resource Manager
+// Comments: Atomic
+//=============================================================================
+class UAIA_API UmsgSetAttributes : public IAIATransaction
+{
+public:
+   UmsgSetAttributes(AAL::NamedValueSet const &);
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   struct AAL::aalui_WSMEvent     getWSIDEvent() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+
+
+   ~UmsgSetAttributes();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class umsgSetAttributes
+
 #endif // __AALSDK_AIATRANSACTIONS_H__
 
