@@ -211,17 +211,17 @@ int UnbindSession(struct aaldev_ownerSession *pownerSess)
 
          // Disable uMSGis running
          puMsgvirt->ccip_umsg_capability.status_umsg_engine = 0;
-         // TODO DO WE NEED TO WAUT FOR Status == 0?
          while(1 == puMsgvirt->ccip_umsg_capability.umsg_init_status){
             // Sleep
             kosal_udelay(delay);
-            // total delay
+
             totaldelay = totaldelay + delay;
             if (totaldelay > 100)   {
                PDEBUG("Timed out waiting for uMSG engine to stop\n");
                break;
             }
          }
+         // Force the address to zero
          puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
       }
 
