@@ -594,10 +594,10 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                // total delay
                totaldelay = totaldelay + delay;
                if (totaldelay > 1000)   {
-                  PDEBUG("Timed out waitng for uMSG engine to start\n");
+                  PDEBUG("Timed out waiting for uMSG engine to start\n");
                   Message->m_errcode = uid_errnumTimeout;
                   puMsgvirt->ccip_umsg_base_address.umsg_base_address = 0;
-                  kosal_kfree(krnl_virt, size);
+                  kosal_free_contiguous_mem(krnl_virt, size);
                   return 0;
                }
             }

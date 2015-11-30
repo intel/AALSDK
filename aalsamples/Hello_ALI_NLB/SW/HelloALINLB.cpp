@@ -332,11 +332,15 @@ btInt HelloALINLBApp::run()
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
+  if(NULL != uMsg0){
 
-   NamedValueSet nvs;
-   nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
+     NamedValueSet nvs;
+     nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
 
-//   btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+     btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+  }else{
+     ERR("No uMSG support");
+  }
 
    // If all went well run test.
    //   NOTE: If not successful we simply bail.

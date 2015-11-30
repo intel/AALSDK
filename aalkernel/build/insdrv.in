@@ -87,6 +87,11 @@ declare -ra DRIVER_SETS=(\
 'cci-sim' \
 'cciv4' \
 'cciv4-sim' \
+'spl' \
+'spl-pci' \
+'cci-pci' \
+'spl-nhm' \
+'spl-jkt'\
 )
 
 declare -r DEV_PERMS='a+rw'
@@ -139,7 +144,16 @@ declare mod_path
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
-
+         
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
       ;; # base
       cci)
          mod="@AALBUS_DRV_NAME@.ko"
@@ -329,7 +343,267 @@ declare mod_path
          fi
          printf "[ OK ]\n"
       ;; # cciv4-sim (sim=4)
-       
+      ##  The following are to be deprecated 
+      spl)
+         mod="aalbus.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrms.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrmc.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="spl2pip.ko"
+         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # spl
+
+      spl-pci|spl_pci)
+         mod="aalbus.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrms.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrmc.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="spl2pip.ko"
+         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=11 ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # spl-pci (nopcie=0)
+      
+     cci-pci|cci_pci)
+         mod="aalbus.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrms.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrmc.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="spl2pip.ko"
+         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=10 ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # cci-pci (nopcie=10)
+
+      spl-nhm|spl_nhm)
+         mod="aalbus.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrms.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrmc.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="spl2pip.ko"
+         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=2 ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # spl-nhm (nopcie=2)
+
+      spl-jkt|spl_jkt)
+         mod="aalbus.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrms.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aalrmc.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="aaluidrv.ko"
+         mod_path="${BUILD_DIR}/aal_uidriver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="spl2pip.ko"
+         mod_path="${BUILD_DIR}/spl2_pip_dksm/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" nopcie=3 ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # spl-jkt (nopcie=3)       
+      ##  End of deprecated options
       *)
          print_help
          die "$1 is not a valid driver set."
@@ -339,10 +613,15 @@ declare mod_path
 
 ${SLEEP} 3
 
+${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for uidrv"
+
+## To be deprecated
+if [ -e '/dev/aalui' ]; then
+     ${CHMOD} "${DEV_PERMS}" '/dev/aalui'     || die "dev file perms for aalui"
+     ${LS} -l '/dev/aalui'
+fi
 ${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
 ${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
-${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for aalui"
-
 ${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/uidrv'
 
 exit 0
