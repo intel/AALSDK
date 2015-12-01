@@ -314,6 +314,7 @@ btInt HelloALINLBApp::run()
       return -1;
    }
    m_DSMSize = LPBK1_DSM_SIZE;
+   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
    if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
       m_bIsOK = false;
@@ -321,6 +322,7 @@ btInt HelloALINLBApp::run()
       return -1;
    }
    m_InputSize = LPBK1_BUFFER_SIZE;
+   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 
    if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
@@ -329,6 +331,7 @@ btInt HelloALINLBApp::run()
    }
 
    m_OutputSize = LPBK1_BUFFER_SIZE;
+   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
