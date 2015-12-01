@@ -13,6 +13,9 @@
 #include <aalsdk/Runtime.h>
 using namespace AAL;
 
+#include "swvalmod.h"
+#include "swvalsvcmod.h"
+
 #include "gtest/gtest.h"
 
 #define MINUTES_IN_TERMS_OF_MILLIS(__x) ( ((AAL::btTime)__x) * ((AAL::btTime)60000) )
@@ -27,7 +30,11 @@ using namespace AAL;
 #endif // OS
 
 #if defined( __AAL_LINUX__ )
+BEGIN_NAMESPACE(AAL)
+   BEGIN_NAMESPACE(Testing)
 AAL::btUIntPtr DbgOSLThreadCount();
+   END_NAMESPACE(Testing)
+END_NAMESPACE(AAL)
 #endif // __AAL_LINUX__
 class GlobalTestConfig
 {
@@ -44,7 +51,7 @@ public:
 #if   defined( __AAL_WINDOWS__ )
 # error TODO implement GlobalTestConfig::CurrentThreads() for Windows.
 #elif defined( __AAL_LINUX__ )
-      return DbgOSLThreadCount();
+      return AAL::Testing::DbgOSLThreadCount();
 #endif // OS
    }
 
@@ -328,6 +335,7 @@ std::ostream & LD_LIBRARY_PATH(std::ostream &os);
 
 #endif // __AAL_LINUX__
 
+////////////////////////////////////////////////////////////////////////////////
 
 class ThreadRegistry : public CriticalSection
 {
@@ -560,87 +568,8 @@ void __membfn##ReturnsThisValue(__rettype );
 __rettype __cls::__membfn##ReturnsThisValue() const { return __membvar; } \
 void __cls::__membfn##ReturnsThisValue(__rettype x) { __membvar = x;    }
 
-class EmptyIServiceClient : public AAL::IServiceClient,
-                            public AAL::CAASBase
-{
-public:
-   EmptyIServiceClient(btApplicationContext Ctx=NULL);
-   virtual void      serviceAllocated(IBase               * ,
-                                      TransactionID const & ) {}
-   virtual void serviceAllocateFailed(const IEvent & )        {}
-   virtual void       serviceReleased(TransactionID const & ) {}
-   virtual void  serviceReleaseFailed(const IEvent & )        {}
-   virtual void          serviceEvent(const IEvent & )        {}
-};
-
-class EmptyIRuntimeClient : public AAL::IRuntimeClient,
-                            public AAL::CAASBase
-{
-public:
-   EmptyIRuntimeClient(btApplicationContext Ctx=NULL);
-   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        {}
-   virtual void                  runtimeStarted(IRuntime            * ,
-                                                const NamedValueSet & ) {}
-   virtual void                  runtimeStopped(IRuntime * )            {}
-   virtual void              runtimeStartFailed(const IEvent & )        {}
-   virtual void               runtimeStopFailed(const IEvent & )        {}
-   virtual void    runtimeAllocateServiceFailed(IEvent const & )        {}
-   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
-                                                TransactionID const & ) {}
-   virtual void                    runtimeEvent(const IEvent & )        {}
-};
-
-class EmptyISvcsFact : public AAL::ISvcsFact
-{
-public:
-   EmptyISvcsFact();
-
-   virtual IBase * CreateServiceObject(AALServiceModule * ,
-                                       IRuntime         * );
-   virtual void   DestroyServiceObject(IBase * ) { }
-   virtual btBool    InitializeService(IBase               * ,
-                                       IBase               * ,
-                                       TransactionID const & ,
-                                       NamedValueSet const & );
-   DECLARE_RETVAL_ACCESSORS(CreateServiceObject, IBase *)
-   DECLARE_RETVAL_ACCESSORS(InitializeService,   btBool)
-protected:
-   IBase  *m_CreateServiceObject_returns;
-   btBool  m_InitializeService_returns;
-};
-
-class EmptyIRuntime : public AAL::IRuntime,
-                      public AAL::CAASBase
-{
-public:
-   EmptyIRuntime(btApplicationContext Ctx=NULL);
-
-   virtual btBool                     start(const NamedValueSet & );
-   virtual void                        stop() {}
-   virtual void                allocService(IBase                * ,
-                                            NamedValueSet const & = NamedValueSet(),
-                                            TransactionID const & = TransactionID()) {}
-   virtual btBool         schedDispatchable(IDispatchable * );
-   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
-   virtual btBool       releaseRuntimeProxy();
-   virtual IRuntimeClient *getRuntimeClient();
-   virtual btBool                      IsOK();
-
-   DECLARE_RETVAL_ACCESSORS(start,               btBool           )
-   DECLARE_RETVAL_ACCESSORS(schedDispatchable,   btBool           )
-   DECLARE_RETVAL_ACCESSORS(getRuntimeProxy,     IRuntime *       )
-   DECLARE_RETVAL_ACCESSORS(releaseRuntimeProxy, btBool           )
-   DECLARE_RETVAL_ACCESSORS(getRuntimeClient,    IRuntimeClient * )
-   DECLARE_RETVAL_ACCESSORS(IsOK,                btBool           )
-
-protected:
-   btBool          m_start_returns;
-   btBool          m_schedDispatchable_returns;
-   IRuntime       *m_getRuntimeProxy_returns;
-   btBool          m_releaseRuntimeProxy_returns;
-   IRuntimeClient *m_getRuntimeClient_returns;
-   btBool          m_IsOK_returns;
-};
+////////////////////////////////////////////////////////////////////////////////
+// IAALTransport
 
 class EmptyIAALTransport : public AAL::IAALTransport
 {
@@ -666,6 +595,9 @@ protected:
    btcString m_getmsg_returns;
    int       m_putmsg_returns;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// IAALMarshaller
 
 class EmptyIAALMarshaller : public AAL::IAALMarshaller
 {
@@ -744,6 +676,9 @@ protected:
    NamedValueSet m_NVS;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// IAALUnMarshaller
+
 class EmptyIAALUnMarshaller : public AAL::IAALUnMarshaller
 {
 public:
@@ -800,6 +735,206 @@ protected:
    NamedValueSet m_NVS;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// IServiceClient
+
+class EmptyIServiceClient : public AAL::IServiceClient,
+                            public AAL::CAASBase
+{
+public:
+   EmptyIServiceClient(btApplicationContext Ctx=NULL);
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & ) {}
+   virtual void serviceAllocateFailed(const IEvent & )        {}
+   virtual void       serviceReleased(TransactionID const & ) {}
+   virtual void  serviceReleaseFailed(const IEvent & )        {}
+   virtual void          serviceEvent(const IEvent & )        {}
+};
+
+class CallTrackingIServiceClient : public EmptyIServiceClient,
+                                   public MethodCallLog
+{
+public:
+   CallTrackingIServiceClient(btApplicationContext Ctx=NULL);
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & );
+   virtual void serviceAllocateFailed(const IEvent & );
+   virtual void       serviceReleased(TransactionID const & );
+   virtual void  serviceReleaseFailed(const IEvent & );
+   virtual void          serviceEvent(const IEvent & );
+};
+
+class SynchronizingIServiceClient : public CallTrackingIServiceClient
+{
+public:
+   SynchronizingIServiceClient(btApplicationContext Ctx=NULL);
+
+   virtual void      serviceAllocated(IBase               * ,
+                                      TransactionID const & );
+   virtual void serviceAllocateFailed(const IEvent & );
+   virtual void       serviceReleased(TransactionID const & );
+   virtual void  serviceReleaseFailed(const IEvent & );
+   virtual void          serviceEvent(const IEvent & );
+
+   btBool Wait(btTime        Timeout=AAL_INFINITE_WAIT);
+   btBool Post(btUnsignedInt Count=1);
+
+protected:
+   Barrier m_Bar;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// IRuntimeClient
+
+class EmptyIRuntimeClient : public AAL::IRuntimeClient,
+                            public AAL::CAASBase
+{
+public:
+   EmptyIRuntimeClient(btApplicationContext Ctx=NULL);
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & )        {}
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & ) {}
+   virtual void                  runtimeStopped(IRuntime * )            {}
+   virtual void              runtimeStartFailed(const IEvent & )        {}
+   virtual void               runtimeStopFailed(const IEvent & )        {}
+   virtual void    runtimeAllocateServiceFailed(IEvent const & )        {}
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & ) {}
+   virtual void                    runtimeEvent(const IEvent & )        {}
+};
+
+class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
+                                   public MethodCallLog
+{
+public:
+   CallTrackingIRuntimeClient(btApplicationContext Ctx=NULL);
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & );
+   virtual void                  runtimeStopped(IRuntime * );
+   virtual void              runtimeStartFailed(const IEvent & );
+   virtual void               runtimeStopFailed(const IEvent & );
+   virtual void    runtimeAllocateServiceFailed(IEvent const & );
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & );
+   virtual void                    runtimeEvent(const IEvent & );
+};
+
+class SynchronizingIRuntimeClient : public CallTrackingIRuntimeClient
+{
+public:
+   SynchronizingIRuntimeClient(btApplicationContext Ctx=NULL);
+
+   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
+   virtual void                  runtimeStarted(IRuntime            * ,
+                                                const NamedValueSet & );
+   virtual void                  runtimeStopped(IRuntime * );
+   virtual void              runtimeStartFailed(const IEvent & );
+   virtual void               runtimeStopFailed(const IEvent & );
+   virtual void    runtimeAllocateServiceFailed(IEvent const & );
+   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
+                                                TransactionID const & );
+   virtual void                    runtimeEvent(const IEvent & );
+
+   btBool Wait(btTime        Timeout=AAL_INFINITE_WAIT);
+   btBool Post(btUnsignedInt Count=1);
+
+protected:
+   Barrier m_Bar;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// ISvcsFact
+
+class EmptyISvcsFact : public AAL::ISvcsFact
+{
+public:
+   EmptyISvcsFact();
+
+   virtual IBase * CreateServiceObject(AALServiceModule * ,
+                                       IRuntime         * );
+   virtual void   DestroyServiceObject(IBase * ) { }
+   virtual btBool    InitializeService(IBase               * ,
+                                       IBase               * ,
+                                       TransactionID const & ,
+                                       NamedValueSet const & );
+   DECLARE_RETVAL_ACCESSORS(CreateServiceObject, IBase *)
+   DECLARE_RETVAL_ACCESSORS(InitializeService,   btBool)
+protected:
+   IBase  *m_CreateServiceObject_returns;
+   btBool  m_InitializeService_returns;
+};
+
+class CallTrackingISvcsFact : public EmptyISvcsFact,
+                              public MethodCallLog
+{
+public:
+   CallTrackingISvcsFact() {}
+   virtual IBase * CreateServiceObject(AALServiceModule * ,
+                                       IRuntime         * );
+   virtual void   DestroyServiceObject(IBase * );
+   virtual btBool    InitializeService(IBase               * ,
+                                       IBase               * ,
+                                       TransactionID const & ,
+                                       NamedValueSet const & );
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// IRuntime
+
+class EmptyIRuntime : public AAL::IRuntime,
+                      public AAL::CAASBase
+{
+public:
+   EmptyIRuntime(btApplicationContext Ctx=NULL);
+
+   virtual btBool                     start(const NamedValueSet & );
+   virtual void                        stop() {}
+   virtual void                allocService(IBase               * ,
+                                            NamedValueSet const & ,
+                                            TransactionID const & = TransactionID()) {}
+   virtual btBool         schedDispatchable(IDispatchable * );
+   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
+   virtual btBool       releaseRuntimeProxy();
+   virtual IRuntimeClient *getRuntimeClient();
+   virtual btBool                      IsOK();
+
+   DECLARE_RETVAL_ACCESSORS(start,               btBool           )
+   DECLARE_RETVAL_ACCESSORS(schedDispatchable,   btBool           )
+   DECLARE_RETVAL_ACCESSORS(getRuntimeProxy,     IRuntime *       )
+   DECLARE_RETVAL_ACCESSORS(releaseRuntimeProxy, btBool           )
+   DECLARE_RETVAL_ACCESSORS(getRuntimeClient,    IRuntimeClient * )
+   DECLARE_RETVAL_ACCESSORS(IsOK,                btBool           )
+
+protected:
+   btBool          m_start_returns;
+   btBool          m_schedDispatchable_returns;
+   IRuntime       *m_getRuntimeProxy_returns;
+   btBool          m_releaseRuntimeProxy_returns;
+   IRuntimeClient *m_getRuntimeClient_returns;
+   btBool          m_IsOK_returns;
+};
+
+class CallTrackingIRuntime : public EmptyIRuntime,
+                             public MethodCallLog
+{
+public:
+   CallTrackingIRuntime(btApplicationContext Ctx=NULL);
+   virtual btBool                     start(const NamedValueSet & );
+   virtual void                        stop();
+   virtual void                allocService(IBase                * ,
+                                            NamedValueSet const &rManifest,
+                                            TransactionID const &rTranID = TransactionID());
+   virtual btBool         schedDispatchable(IDispatchable * );
+   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
+   virtual btBool       releaseRuntimeProxy();
+   virtual IRuntimeClient *getRuntimeClient();
+   virtual btBool                      IsOK();
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// IServiceBase
+
 class EmptyIServiceBase : public AAL::IServiceBase,
                           public AAL::CAASBase
 {
@@ -838,6 +973,26 @@ protected:
    NamedValueSet     m_OptArgs_returns;
 };
 
+class CallTrackingIServiceBase : public EmptyIServiceBase,
+                                 public MethodCallLog
+{
+public:
+   CallTrackingIServiceBase(btApplicationContext Ctx=NULL);
+
+   virtual btBool                     initComplete(TransactionID const &rtid);
+   virtual btBool                       initFailed(IEvent const *ptheEvent);
+   virtual btBool                  ReleaseComplete();
+   virtual NamedValueSet const &           OptArgs() const;
+   virtual IServiceClient *       getServiceClient() const;
+   virtual IBase *            getServiceClientBase() const;
+   virtual IRuntime *                   getRuntime() const;
+   virtual IRuntimeClient *       getRuntimeClient() const;
+   virtual AALServiceModule *  getAALServiceModule() const;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// ServiceBase
+
 class EmptyServiceBase : public AAL::ServiceBase
 {
 public:
@@ -859,118 +1014,6 @@ public:
 
 protected:
    btBool m_init_returns;
-};
-
-class EmptyServiceModule : public AAL::IServiceModule,
-                           public AAL::IServiceModuleCallback
-{
-public:
-   EmptyServiceModule();
-
-   // <IServiceModule>
-   virtual btBool Construct(IRuntime            *pAALRUNTIME,
-                            IBase               *Client,
-                            TransactionID const &tid = TransactionID(),
-                            NamedValueSet const &optArgs = NamedValueSet());
-   virtual void     Destroy();
-   // </IServiceModule>
-
-   // <IServiceModuleCallback>
-
-   virtual void      ServiceReleased(IBase * );
-   virtual btBool ServiceInitialized(IBase * , TransactionID const & );
-   virtual btBool  ServiceInitFailed(IBase * , IEvent        const * );
-
-   // </IServiceModuleCallback>
-
-   DECLARE_RETVAL_ACCESSORS(Construct,          btBool)
-   DECLARE_RETVAL_ACCESSORS(ServiceInitialized, btBool)
-   DECLARE_RETVAL_ACCESSORS(ServiceInitFailed,  btBool)
-
-protected:
-   btBool m_Construct_returns;
-   btBool m_ServiceInitialized_returns;
-   btBool m_ServiceInitFailed_returns;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class CallTrackingIServiceClient : public EmptyIServiceClient,
-                                   public MethodCallLog
-{
-public:
-   CallTrackingIServiceClient(btApplicationContext Ctx=NULL);
-   virtual void      serviceAllocated(IBase               * ,
-                                      TransactionID const & );
-   virtual void serviceAllocateFailed(const IEvent & );
-   virtual void       serviceReleased(TransactionID const & );
-   virtual void  serviceReleaseFailed(const IEvent & );
-   virtual void          serviceEvent(const IEvent & );
-};
-
-class CallTrackingIRuntimeClient : public EmptyIRuntimeClient,
-                                   public MethodCallLog
-{
-public:
-   CallTrackingIRuntimeClient(btApplicationContext Ctx=NULL);
-   virtual void   runtimeCreateOrGetProxyFailed(IEvent const & );
-   virtual void                  runtimeStarted(IRuntime            * ,
-                                                const NamedValueSet & );
-   virtual void                  runtimeStopped(IRuntime * );
-   virtual void              runtimeStartFailed(const IEvent & );
-   virtual void               runtimeStopFailed(const IEvent & );
-   virtual void    runtimeAllocateServiceFailed(IEvent const & );
-   virtual void runtimeAllocateServiceSucceeded(IBase               * ,
-                                                TransactionID const & );
-   virtual void                    runtimeEvent(const IEvent & );
-};
-
-class CallTrackingISvcsFact : public EmptyISvcsFact,
-                              public MethodCallLog
-{
-public:
-   CallTrackingISvcsFact() {}
-   virtual IBase * CreateServiceObject(AALServiceModule * ,
-                                       IRuntime         * );
-   virtual void   DestroyServiceObject(IBase * );
-   virtual btBool    InitializeService(IBase               * ,
-                                       IBase               * ,
-                                       TransactionID const & ,
-                                       NamedValueSet const & );
-};
-
-class CallTrackingIRuntime : public EmptyIRuntime,
-                             public MethodCallLog
-{
-public:
-   CallTrackingIRuntime(btApplicationContext Ctx=NULL);
-   virtual btBool                     start(const NamedValueSet & );
-   virtual void                        stop();
-   virtual void                allocService(IBase                * ,
-                                            NamedValueSet const &rManifest = NamedValueSet(),
-                                            TransactionID const &rTranID   = TransactionID());
-   virtual btBool         schedDispatchable(IDispatchable * );
-   virtual IRuntime *       getRuntimeProxy(IRuntimeClient * );
-   virtual btBool       releaseRuntimeProxy();
-   virtual IRuntimeClient *getRuntimeClient();
-   virtual btBool                      IsOK();
-};
-
-class CallTrackingIServiceBase : public EmptyIServiceBase,
-                                 public MethodCallLog
-{
-public:
-   CallTrackingIServiceBase(btApplicationContext Ctx=NULL);
-
-   virtual btBool                     initComplete(TransactionID const &rtid);
-   virtual btBool                       initFailed(IEvent const *ptheEvent);
-   virtual btBool                  ReleaseComplete();
-   virtual NamedValueSet const &           OptArgs() const;
-   virtual IServiceClient *       getServiceClient() const;
-   virtual IBase *            getServiceClientBase() const;
-   virtual IRuntime *                   getRuntime() const;
-   virtual IRuntimeClient *       getRuntimeClient() const;
-   virtual AALServiceModule *  getAALServiceModule() const;
 };
 
 class CallTrackingServiceBase : public EmptyServiceBase,
@@ -1008,6 +1051,41 @@ public:
    // </IServiceBase>
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// IServiceModule / IServiceModuleCallback
+
+class EmptyServiceModule : public AAL::IServiceModule,
+                           public AAL::IServiceModuleCallback
+{
+public:
+   EmptyServiceModule();
+
+   // <IServiceModule>
+   virtual btBool Construct(IRuntime            *pAALRUNTIME,
+                            IBase               *Client,
+                            TransactionID const &tid = TransactionID(),
+                            NamedValueSet const &optArgs = NamedValueSet());
+   virtual void     Destroy();
+   // </IServiceModule>
+
+   // <IServiceModuleCallback>
+
+   virtual void      ServiceReleased(IBase * );
+   virtual btBool ServiceInitialized(IBase * , TransactionID const & );
+   virtual btBool  ServiceInitFailed(IBase * , IEvent        const * );
+
+   // </IServiceModuleCallback>
+
+   DECLARE_RETVAL_ACCESSORS(Construct,          btBool)
+   DECLARE_RETVAL_ACCESSORS(ServiceInitialized, btBool)
+   DECLARE_RETVAL_ACCESSORS(ServiceInitFailed,  btBool)
+
+protected:
+   btBool m_Construct_returns;
+   btBool m_ServiceInitialized_returns;
+   btBool m_ServiceInitFailed_returns;
+};
+
 class CallTrackingServiceModule : public EmptyServiceModule,
                                   public MethodCallLog
 {
@@ -1029,6 +1107,41 @@ public:
    virtual btBool  ServiceInitFailed(IBase * , IEvent        const * );
 
    // </IServiceModuleCallback>
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// sw validation module / service module
+
+void    AllocSwvalMod(AAL::IRuntime * ,
+                      AAL::IBase    * ,
+                      const AAL::TransactionID & );
+
+void AllocSwvalSvcMod(AAL::IRuntime * ,
+                      AAL::IBase    * ,
+                      const AAL::TransactionID & );
+
+class EmptySwvalSvcClient : public ISwvalSvcClient,
+                            public EmptyIServiceClient
+{
+public:
+   EmptySwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
+};
+
+class CallTrackingSwvalSvcClient : public ISwvalSvcClient,
+                                   public CallTrackingIServiceClient
+{
+public:
+   CallTrackingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
+};
+
+class SynchronizingSwvalSvcClient : public ISwvalSvcClient,
+                                    public SynchronizingIServiceClient
+{
+public:
+   SynchronizingSwvalSvcClient(btApplicationContext Ctx=NULL);
+   virtual void DidSomething(const AAL::TransactionID & , int );
 };
 
 #endif // __GTCOMMON_H__

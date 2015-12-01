@@ -90,8 +90,8 @@
 
 BEGIN_C_DECLS
 
-static AAL::bt32bitInt  gltInitCount = 0;
-static lt_dladvise gltdladvise;
+static AAL::bt32bitInt gAALltInitCount = 0;
+static lt_dladvise     gAALltdladvise;
 
 void __attribute__ ((constructor)) on_load(void)
 {
@@ -100,7 +100,7 @@ void __attribute__ ((constructor)) on_load(void)
    }
 
    if ( 0 == lt_dlinit() ) {
-      ++gltInitCount;
+      ++gAALltInitCount;
    } else {
       fprintf(stderr, "OSAL:on_load() : lt_dlinit() failed.\n");
    }
@@ -116,8 +116,8 @@ void __attribute__ ((destructor)) on_unload(void)
       fprintf(stderr, "OSAL:on_unload() : aalsdk_ltdl_lock() failed.\n");
    }
 
-   if ( gltInitCount > 0 ) {
-      --gltInitCount;
+   if ( gAALltInitCount > 0 ) {
+      --gAALltInitCount;
       lt_dlexit();
    }
 
@@ -164,6 +164,7 @@ OSAL_END_MOD()
 #endif
 
 
+BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 //=============================================================================
@@ -196,7 +197,7 @@ OSAL_END_MOD()
 //=============================================================================
 OSAL_API 
 //unsigned long FindLowestBitSet64( __int64 value)
-unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value)
+unsigned long FindLowestBitSet64(btUnsigned64bitInt value)
 {
 #if (8 == sizeof_void_ptr)
 # if defined( __AAL_LINUX__ )
@@ -506,4 +507,6 @@ unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value)
    #endif // OS
 
 #endif // #if 0
+
+END_NAMESPACE(AAL)
 

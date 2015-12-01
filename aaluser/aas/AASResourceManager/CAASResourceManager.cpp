@@ -303,12 +303,6 @@ int CResMgr::Parse_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
          Retval = DoRequestDevice( fdServer, pIoctlReq);
          break;
       } // End of case reqid_URMS_ReleaseDevice:
-#if 0 //TODO DEPRECATED
-      case reqid_URMS_ReleaseDevice: {
-         Retval = DoReleaseDevice( fdServer, pIoctlReq);
-         break;
-      } // End of case reqid_ReleaseDevice:
-#endif
       case reqid_RS_Registrar: {
          Retval = DoRegistrar( fdServer, pIoctlReq);
          break;

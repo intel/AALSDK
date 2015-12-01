@@ -144,7 +144,6 @@ int parsecmds(struct aalscanCmdLine * , int , char *[] );
 
 
 const char *gCoreAALServiceRootNames[] = {
-   "libaalclp",
    "libaalrt",
    "libAAS",
    "libAASRegistrar",
@@ -153,7 +152,6 @@ const char *gCoreAALServiceRootNames[] = {
    "libALIAFU",
    "libASEALIAFU",
    "libASECCIAFU",
-   "libASE",
    "libASESPLAFU",
    "libCCIAFU",
    "libHWALIAFU",

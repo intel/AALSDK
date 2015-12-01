@@ -219,7 +219,7 @@ public:
    ///            rTranID - Transaction ID
    /// @return    void
    virtual void                 allocService(IBase                *pClient,
-                                             NamedValueSet const  &rManifest = NamedValueSet(),
+                                             NamedValueSet const  &rManifest,
                                              TransactionID const  &rTranID   = TransactionID()) = 0;
 
    /// @brief     Schedule a Dispatchable
@@ -246,7 +246,7 @@ public:
 
    /// @brief     Returns status of Runtime
    /// @return    void
-   virtual btBool IsOK()                                                                        = 0;
+   virtual btBool                       IsOK()                                                  = 0;
 
 protected:
    // Only Runtime can be destroyed. Interface may be to a proxy.
@@ -274,8 +274,8 @@ public:
    virtual btBool                      start(const NamedValueSet &rconfigParms);
    virtual void                         stop();
    virtual void                 allocService(IBase               *pClient,
-                                             NamedValueSet const &rManifest = NamedValueSet(),
-                                             TransactionID const &rTranID   = TransactionID());
+                                             NamedValueSet const &rManifest,
+                                             TransactionID const &rTranID = TransactionID());
    virtual btBool          schedDispatchable(IDispatchable *pdispatchable);
    virtual IRuntime *        getRuntimeProxy(IRuntimeClient *pClient);
    virtual btBool        releaseRuntimeProxy();

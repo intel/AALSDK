@@ -54,6 +54,8 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 /// Abstraction of Critical Sections (Mutex).
 class OSAL_API CriticalSection
 {
@@ -120,25 +122,6 @@ private:
 #endif // OS
    }
 
-#if DEPRECATED
-
-   /// Try to obtain the critical section. (non-blocking)
-   AAL::btBool TryLock()
-   {
-#if   defined( __AAL_WINDOWS__ )
-      if ( !TryEnterCriticalSection(&m_Lock) ) {
-         return false;
-      }
-#elif defined( __AAL_LINUX__ )
-      if ( 0 != pthread_mutex_trylock(&m_Lock) ) {
-         return false;
-      }
-#endif // OS
-      return true;
-   }
-
-#endif // DEPRECATED
-
 #if   defined( __AAL_WINDOWS__ )
                 CRITICAL_SECTION m_Lock;
 #elif defined( __AAL_LINUX__ )
@@ -151,7 +134,7 @@ private:
 
 
 /// It is possible that the object may be immutable or in a const method so safely cast away the const
-#define AutoLock(__p) _AutoLock __LockObj(const_cast<CriticalSection *>(dynamic_cast<CriticalSection const *>(__p)))
+#define AutoLock(__p) AAL::_AutoLock __LockObj(const_cast<AAL::CriticalSection *>(dynamic_cast<AAL::CriticalSection const *>(__p)))
 /// Stack-based convenience auto-Mutex objects. Use AutoLock to declare.
 class _AutoLock
 {
@@ -225,64 +208,7 @@ protected:
    CriticalSection *m_p;
 };
 
-
-#if DEPRECATED
-#define AutoUnlock(p) _AutoUnlock UnLockObj(p)
-class _AutoUnlock
-{
-public:
-   CriticalSection *m_p;
-   _AutoUnlock(CriticalSection *p)
-   {
-      m_p = p;
-      m_p->Unlock();
-   }
-
-   ~_AutoUnlock()
-   {
-      if ( NULL != m_p ) {
-         m_p->Lock();
-         m_p = NULL;
-      }
-   }
-};
-#endif // DEPRECATED
-
-
-#if DEPRECATED
-#define TryAutoLock(p) _TryAutoLock LockObj(const_cast<CriticalSection *>(dynamic_cast< CriticalSection const *>(p)))
-#define GotAutoLock() LockObj.GotLock()
-
-#define ifTryAutoLock(p) _TryAutoLock LockObj(const_cast<CriticalSection *>(dynamic_cast< CriticalSection const *>(p))) ; if(LockObj.GotLock())
-class _TryAutoLock
-{
-public:
-   CriticalSection *m_p;
-   _TryAutoLock(CriticalSection *p)
-   {
-      m_p = p;
-      m_locked = m_p->TryLock();
-   }
-
-   ~_TryAutoLock()
-   {
-      if ( NULL != m_p ) {
-          m_p->Unlock();
-          m_p = NULL;
-      }
-   }
-
-   btBool GotLock()
-   {
-      if ( NULL != m_p ) {
-         return m_locked;
-      }
-      return false;
-   }
-protected:
-   btBool m_locked;
-};
-#endif // DEPRECATED
+END_NAMESPACE(AAL)
 
 /// @}
 

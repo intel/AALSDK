@@ -47,53 +47,57 @@
 #include <aalsdk/osal/Barrier.h>
 #include <aalsdk/osal/Thread.h>
 #include <aalsdk/osal/IDispatchable.h>
+
 /// @addtogroup OSAL
 /// @{
+
+BEGIN_NAMESPACE(AAL)
+
 class IThreadGroup
 {
 public:
    virtual ~IThreadGroup() {}
 
    /// @brief Basic status check.
-   virtual AAL::btBool                   IsOK() const          = 0;
+   virtual btBool                   IsOK() const          = 0;
 
    /// @brief Retrieve a snapshot of the current number of threads, which may be less than that originally
    /// in the thread group when created. Threads remove themselves from the group as they exit.
-   virtual AAL::btUnsignedInt   GetNumThreads() const          = 0;
+   virtual btUnsignedInt   GetNumThreads() const          = 0;
 
    /// @brief Retrieve a snapshot of the number of work items in the queue, which is not guaranteed to
    /// be true even upon the return of this call (threads may have consumed more work).
-   virtual AAL::btUnsignedInt GetNumWorkItems() const          = 0;
+   virtual btUnsignedInt GetNumWorkItems() const          = 0;
 
    /// @brief  Add a work item to the queue for processing.
    /// returns false, and does not queue the item, if the thread group is stopped or draining.
-   virtual AAL::btBool                    Add(IDispatchable *) = 0;
+   virtual btBool                    Add(IDispatchable *) = 0;
 
    /// @brief   Wait for all worker threads to exit.
-   virtual AAL::btBool                   Join(AAL::btTime )    = 0;
+   virtual btBool                   Join(btTime )         = 0;
 
    /// @brief   Halt the dispatching of all queued work items and prevent new work items from being added.
    /// Any work items residing in the queue at the time of the call are removed and deleted, without
    /// being executed.
-   virtual void                          Stop()                = 0;
+   virtual void                     Stop()                = 0;
 
    /// @brief   Resume a Stopped thread group.
    /// returns false if the thread group could not be resumed; otherwise true.
-   virtual AAL::btBool                  Start()                = 0;
+   virtual btBool                  Start()                = 0;
 
    /// @brief   Execute all of the work items currently in the work queue, waiting until they are all
    /// complete before returning. Prevent new work items from being added to the thread group
    /// while draining.
    /// return false if the queue could not be drained; otherwise true.
-   virtual AAL::btBool                  Drain()                = 0;
+   virtual btBool                  Drain()                = 0;
 
-   virtual AAL::btBool                  Destroy(AAL::btTime )  = 0;
+   virtual btBool                Destroy(btTime )         = 0;
 
 protected:
-   virtual AAL::btBool       CreateWorkerThread(ThreadProc ,
-                                                OSLThread::ThreadPriority ,
-                                                void * )       = 0;
-   virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime )  = 0;
+   virtual btBool     CreateWorkerThread(ThreadProc ,
+                                         OSLThread::ThreadPriority ,
+                                         void * )         = 0;
+   virtual btBool WaitForAllWorkersToStart(btTime )       = 0;
 };
 
 
@@ -109,30 +113,30 @@ class OSAL_API OSLThreadGroup : public IThreadGroup,
 {
 public:
    ///  Default Min thread is to let the TG decide. Max < min then Max == Min
-   OSLThreadGroup(AAL::btUnsignedInt        uiMinThreads=0,
-                  AAL::btUnsignedInt        uiMaxThreads=0,
+   OSLThreadGroup(btUnsignedInt             uiMinThreads=0,
+                  btUnsignedInt             uiMaxThreads=0,
                   OSLThread::ThreadPriority nPriority=OSLThread::THREADPRIORITY_NORMAL,
-                  AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+                  btTime                    JoinTimeout=AAL_INFINITE_WAIT);
 
    virtual ~OSLThreadGroup();
 
    // <IThreadGroup>
-   virtual AAL::btBool                   IsOK() const               { return NULL != m_pState;            }
-   virtual AAL::btUnsignedInt   GetNumThreads() const               { return m_pState->GetNumThreads();   }
-   virtual AAL::btUnsignedInt GetNumWorkItems() const               { return m_pState->GetNumWorkItems(); }
-   virtual AAL::btBool                    Add(IDispatchable *pDisp) { return m_pState->Add(pDisp);        }
-   virtual AAL::btBool                   Join(AAL::btTime timeout)  { return m_pState->Join(timeout);     }
-   virtual AAL::btBool                  Drain()                     { return m_pState->Drain();           }
-   virtual void                          Stop()                     { m_pState->Stop();                   }
-   virtual AAL::btBool                  Start()                     { return m_pState->Start();           }
-   virtual AAL::btBool                Destroy(AAL::btTime Timeout);
+   virtual btBool                   IsOK() const               { return NULL != m_pState;            }
+   virtual btUnsignedInt   GetNumThreads() const               { return m_pState->GetNumThreads();   }
+   virtual btUnsignedInt GetNumWorkItems() const               { return m_pState->GetNumWorkItems(); }
+   virtual btBool                    Add(IDispatchable *pDisp) { return m_pState->Add(pDisp);        }
+   virtual btBool                   Join(btTime timeout)       { return m_pState->Join(timeout);     }
+   virtual btBool                  Drain()                     { return m_pState->Drain();           }
+   virtual void                     Stop()                     { m_pState->Stop();                   }
+   virtual btBool                  Start()                     { return m_pState->Start();           }
+   virtual btBool                Destroy(btTime Timeout);
    // </IThreadGroup>
 
 protected:
-   virtual AAL::btBool CreateWorkerThread(ThreadProc fn, OSLThread::ThreadPriority pri, void *context)
+   virtual btBool CreateWorkerThread(ThreadProc fn, OSLThread::ThreadPriority pri, void *context)
    { return m_pState->CreateWorkerThread(fn, pri, context); }
 
-   virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout)
+   virtual btBool WaitForAllWorkersToStart(btTime Timeout)
    { return m_pState->WaitForAllWorkersToStart(Timeout); }
 
 private:
@@ -148,19 +152,19 @@ private:
 #define THRGRPSTATE_FLAG_SELF_JOIN 0x00000002
 #define THRGRPSTATE_FLAG_JOINING   0x00000004
    public:
-      ThrGrpState(AAL::btUnsignedInt NumThreads);
+      ThrGrpState(btUnsignedInt NumThreads);
       virtual ~ThrGrpState();
 
       // <IThreadGroup>
-      virtual AAL::btBool                   IsOK() const { return flag_is_set(m_Flags, THRGRPSTATE_FLAG_OK); }
-      virtual AAL::btUnsignedInt   GetNumThreads() const;
-      virtual AAL::btUnsignedInt GetNumWorkItems() const;
-      virtual AAL::btBool                    Add(IDispatchable * );
-      virtual AAL::btBool                   Join(AAL::btTime );
-      virtual AAL::btBool                  Drain();
-      virtual void                          Stop();
-      virtual AAL::btBool                  Start();
-      virtual AAL::btBool                Destroy(AAL::btTime );
+      virtual btBool                   IsOK() const { return flag_is_set(m_Flags, THRGRPSTATE_FLAG_OK); }
+      virtual btUnsignedInt   GetNumThreads() const;
+      virtual btUnsignedInt GetNumWorkItems() const;
+      virtual btBool                    Add(IDispatchable * );
+      virtual btBool                   Join(btTime );
+      virtual btBool                  Drain();
+      virtual void                     Stop();
+      virtual btBool                  Start();
+      virtual btBool                Destroy(btTime );
       // </IThreadGroup>
 
    protected:
@@ -176,22 +180,22 @@ private:
       typedef thr_list_t::iterator        thr_list_iter;
       typedef thr_list_t::const_iterator  const_thr_list_iter;
 
-      eState             m_eState;
-      AAL::btUnsignedInt m_Flags;
-      AAL::btTime        m_WorkSemTimeout;
-      AAL::btTID         m_Joiner;
-      Barrier            m_ThrStartBarrier;
-      Barrier            m_ThrJoinBarrier;
-      Barrier            m_ThrExitBarrier;
-      CSemaphore         m_WorkSem;
+      eState        m_eState;
+      btUnsignedInt m_Flags;
+      btTime        m_WorkSemTimeout;
+      btTID         m_Joiner;
+      Barrier       m_ThrStartBarrier;
+      Barrier       m_ThrJoinBarrier;
+      Barrier       m_ThrExitBarrier;
+      CSemaphore    m_WorkSem;
 
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4251)
 #endif // _MSC_VER
-      work_queue_t       m_workqueue;
-      thr_list_t         m_RunningThreads;
-      thr_list_t         m_ExitedThreads;
+      work_queue_t  m_workqueue;
+      thr_list_t    m_RunningThreads;
+      thr_list_t    m_ExitedThreads;
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif // _MSC_VER
@@ -208,20 +212,20 @@ private:
          /// The returned Barrier object is NULL if tid is a member of the thread group workers
          ///  (self-referential Drain()). If an external Drain(), then the caller must wait on
          ///  the Barrier until the Drain() is complete.
-         Barrier * Begin(AAL::btTID tid, AAL::btUnsignedInt items);
+         Barrier * Begin(btTID tid, btUnsignedInt items);
 
          /// Unregisters tid as a participant in the current Drain(). pDrainBarrier must be
          ///  NULL if tid is a member of the thread group workers. Adjust m_DrainNestLevel.
          ///
          /// return true if tid found to be a Drain()'er.
-         AAL::btBool End(AAL::btTID tid, Barrier *pDrainBarrier);
+         btBool End(btTID tid, Barrier *pDrainBarrier);
 
          /// External Drain()'ers block on m_DrainBarrier to wait for Drain() completion.
          /// In the case of self-referential Join() and self-referential Destroy(), a worker is
          ///  forced to self-terminate before it can Post() the Barrier object stored within
          ///  the OSLThreadGroupNestedBarrierPostD. We Post() that Barrier here so that external
          ///  drainers can resume.
-         AAL::btBool ReleaseAllDrainers();
+         btBool ReleaseAllDrainers();
 
          /// A thread group worker may execute a self-referential Drain(), and go on to execute
          ///  a self-referential Join() or Destroy(). When this happens, the worker will self-
@@ -231,7 +235,7 @@ private:
          void ForciblyCompleteWorkItem();
 
          /// Query the current Drain() nesting level (number of overlapping Drain() calls).
-         AAL::btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
+         btUnsignedInt DrainNestLevel() const { return m_DrainNestLevel; }
 
          /// Signal that the last participant in the current Drain() is hands-off the thread group.
          void AllDrainersAreDone();
@@ -262,7 +266,7 @@ private:
             DrainManager  *m_pDrainMgr;
          };
 
-         typedef std::list<AAL::btTID>           drainer_list_t;
+         typedef std::list<btTID>                drainer_list_t;
          typedef drainer_list_t::iterator        drainer_list_iter;
 
          typedef std::list<NestedBarrierPostD *> nested_list_t;
@@ -272,8 +276,8 @@ private:
          void DestructMembers();
 
          ThrGrpState       *m_pTGS;
-         AAL::btUnsignedInt m_DrainNestLevel;
-         AAL::btTime        m_WaitTimeout;
+         btUnsignedInt      m_DrainNestLevel;
+         btTime             m_WaitTimeout;
          Barrier            m_DrainBarrier;       // follows the # of work items involved in the Drain().
          Barrier            m_DrainerDoneBarrier; // becomes signaled when the last nested Drain()'er is hands-off.
          drainer_list_t     m_SelfDrainers;
@@ -284,14 +288,14 @@ private:
 
       DrainManager       m_DrainManager;
 
-      AAL::btTime PollingInterval() const { return 50; /* millis */ }
+      btTime PollingInterval() const { return 50; /* millis */ }
 
       // <IThreadGroup>
-      virtual AAL::btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
-      virtual AAL::btBool WaitForAllWorkersToStart(AAL::btTime Timeout);
+      virtual btBool CreateWorkerThread(ThreadProc , OSLThread::ThreadPriority , void * );
+      virtual btBool WaitForAllWorkersToStart(btTime Timeout);
       // </IThreadGroup>
 
-      AAL::btBool          Quiesce(AAL::btTime);
+      btBool               Quiesce(btTime );
       void         DestructMembers();
 
       void        WorkerHasStarted(OSLThread * );
@@ -299,7 +303,7 @@ private:
       void WorkerIsSelfTerminating(OSLThread * );
 
       /// returns NULL if tid not in group.
-      OSLThread * ThreadRunningInThisGroup(AAL::btTID ) const;
+      OSLThread * ThreadRunningInThisGroup(btTID ) const;
 
       eState GetWorkItem(IDispatchable * &pWork);
       eState       State() const { return m_eState; }
@@ -311,31 +315,34 @@ private:
    /// lpParms is a ThrGrpState.
    static void ExecProc(OSLThread *pThread, void *lpParms);
 
-   AAL::btBool  m_bDestroyed;
-   AAL::btTime  m_JoinTimeout;
+   btBool       m_bDestroyed;
+   btTime       m_JoinTimeout;
    ThrGrpState *m_pState;
 };
 
 /// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
 ///
 /// Waits for the thread group to dispatch pDisp and then destroys the thread group before returning.
-AAL::btBool   FireAndWait(IDispatchable            *pDisp,
-                          AAL::btUnsignedInt        MinThrs=0,
-                          AAL::btUnsignedInt        MaxThrs=0,
-                          OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
-                          AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+btBool   FireAndWait(IDispatchable            *pDisp,
+                     btUnsignedInt             MinThrs=0,
+                     btUnsignedInt             MaxThrs=0,
+                     OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                     btTime                    JoinTimeout=AAL_INFINITE_WAIT);
 
 /// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
 ///
 /// pDisp is not guaranteed to have dispatched prior to returning from this function.
 /// An OSLThread is created to ensure that the thread group is destroyed and its memory reclaimed
 ///  upon dispatching pDisp. The thread self-destructs after reclaiming the thread group resources.
-AAL::btBool FireAndForget(IDispatchable            *pDisp,
-                          AAL::btUnsignedInt        MinThrs=0,
-                          AAL::btUnsignedInt        MaxThrs=0,
-                          OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
-                          AAL::btTime               JoinTimeout=AAL_INFINITE_WAIT);
+btBool FireAndForget(IDispatchable            *pDisp,
+                     btUnsignedInt             MinThrs=0,
+                     btUnsignedInt             MaxThrs=0,
+                     OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                     btTime                    JoinTimeout=AAL_INFINITE_WAIT);
+
+END_NAMESPACE(AAL)
+
+/// @}
 
 #endif // __AALSDK_OSAL_THREADGROUP_H__
 
-/// @}

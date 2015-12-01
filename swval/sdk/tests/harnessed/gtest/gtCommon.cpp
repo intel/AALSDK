@@ -842,8 +842,8 @@ void MethodCallLogEntry::AddParam(btcString name, const TransactionID &value)
 
    stTransactionID_t tidStruct = (stTransactionID_t)value;
 
-   key = var + std::string(".m_ID");
-   m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_ID));
+   key = var + std::string(".m_Context");
+   m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Context));
 
    key = var + std::string(".m_Handler");
    m_NVS.Add(key.c_str(), reinterpret_cast<btObjectType>(tidStruct.m_Handler));
@@ -901,8 +901,8 @@ void MethodCallLogEntry::GetParam(btcString name, TransactionID &tid) const
 
    stTransactionID_t tidStruct;
 
-   key = var + std::string(".m_ID");
-   m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_ID));
+   key = var + std::string(".m_Context");
+   m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Context));
 
    key = var + std::string(".m_Handler");
    m_NVS.Get(key.c_str(), reinterpret_cast<btObjectType *>(&tidStruct.m_Handler));
@@ -1003,72 +1003,7 @@ std::ostream & operator << (std::ostream &os, const MethodCallLog &l)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-EmptyIServiceClient::EmptyIServiceClient(btApplicationContext Ctx) :
-   CAASBase(Ctx)
-{
-   if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
-      m_bIsOK = false;
-   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-EmptyIRuntimeClient::EmptyIRuntimeClient(btApplicationContext Ctx) :
-   CAASBase(Ctx)
-{
-   if ( EObjOK != SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)) ) {
-      m_bIsOK = false;
-   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-EmptyISvcsFact::EmptyISvcsFact() :
-   m_CreateServiceObject_returns(NULL),
-   m_InitializeService_returns(true)
-{}
-
-IBase * EmptyISvcsFact::CreateServiceObject(AALServiceModule * ,
-                                            IRuntime         * ) { return m_CreateServiceObject_returns; }
-
-btBool EmptyISvcsFact::InitializeService(IBase               * ,
-                                         IBase               * ,
-                                         TransactionID const & ,
-                                         NamedValueSet const & ) { return m_InitializeService_returns; }
-
-IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, CreateServiceObject, IBase * , m_CreateServiceObject_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, InitializeService,   btBool ,  m_InitializeService_returns)
-
-
-EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
-   CAASBase(Ctx),
-   m_start_returns(true),
-   m_schedDispatchable_returns(true),
-   m_getRuntimeProxy_returns(NULL),
-   m_releaseRuntimeProxy_returns(true),
-   m_getRuntimeClient_returns(NULL),
-   m_IsOK_returns(true)
-{
-   if ( EObjOK != SetInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) ) {
-      m_bIsOK = false;
-   }
-}
-
-btBool                      EmptyIRuntime::start(const NamedValueSet & ) { return m_start_returns;               }
-btBool          EmptyIRuntime::schedDispatchable(IDispatchable * )       { return m_schedDispatchable_returns;   }
-IRuntime *        EmptyIRuntime::getRuntimeProxy(IRuntimeClient * )      { return m_getRuntimeProxy_returns;     }
-btBool        EmptyIRuntime::releaseRuntimeProxy()                       { return m_releaseRuntimeProxy_returns; }
-IRuntimeClient * EmptyIRuntime::getRuntimeClient()                       { return m_getRuntimeClient_returns;    }
-btBool                       EmptyIRuntime::IsOK()                       { return m_IsOK_returns;                }
-
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, start,               btBool,            m_start_returns              )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, schedDispatchable,   btBool,            m_schedDispatchable_returns  )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeProxy,     IRuntime * ,       m_getRuntimeProxy_returns    )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy, btBool,            m_releaseRuntimeProxy_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,    IRuntimeClient * , m_getRuntimeClient_returns   )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                btBool,            m_IsOK_returns               )
-
+// IAALTransport
 
 EmptyIAALTransport::EmptyIAALTransport() :
    m_connectremote_returns(true),
@@ -1090,6 +1025,8 @@ IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, disconnect,     btBool,    m_disc
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, getmsg,         btcString, m_getmsg_returns        )
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALTransport, putmsg,         int,       m_putmsg_returns        )
 
+////////////////////////////////////////////////////////////////////////////////
+// IAALMarshaller
 
 EmptyIAALMarshaller::EmptyIAALMarshaller() :
    m_pmsgp_returns(NULL)
@@ -1178,6 +1115,9 @@ char const * EmptyIAALMarshaller::pmsgp(btWSSize *len) { return m_pmsgp_returns;
 
 IMPLEMENT_RETVAL_ACCESSORS(EmptyIAALMarshaller, pmsgp, char const *, m_pmsgp_returns)
 
+////////////////////////////////////////////////////////////////////////////////
+// IAALUnMarshaller
+
 EmptyIAALUnMarshaller::EmptyIAALUnMarshaller() {}
 
 ENamedValues   EmptyIAALUnMarshaller::Empty()                                              { return m_NVS.Empty();               }
@@ -1227,97 +1167,16 @@ ENamedValues EmptyIAALUnMarshaller::Get(btStringKey Name, btObjectArray         
 
 void EmptyIAALUnMarshaller::importmsg(char const *pmsg, btWSSize len) {}
 
+////////////////////////////////////////////////////////////////////////////////
+// IServiceClient
 
-EmptyIServiceBase::EmptyIServiceBase(btApplicationContext Ctx) :
-   AAL::CAASBase(Ctx),
-   m_initComplete_returns(false),
-   m_initFailed_returns(false),
-   m_ReleaseComplete_returns(false),
-   m_getServiceClient_returns(NULL),
-   m_getServiceClientBase_returns(NULL),
-   m_getRuntime_returns(NULL),
-   m_getRuntimeClient_returns(NULL),
-   m_getAALServiceModule_returns(NULL)
+EmptyIServiceClient::EmptyIServiceClient(btApplicationContext Ctx) :
+   CAASBase(Ctx)
 {
-   if ( EObjOK != SetInterface(iidServiceBase, this) ) {
+   if ( EObjOK != SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this)) ) {
       m_bIsOK = false;
    }
 }
-
-btBool                    EmptyIServiceBase::initComplete(TransactionID const & ) { return m_initComplete_returns;         }
-btBool                      EmptyIServiceBase::initFailed(IEvent const * )        { return m_initFailed_returns;           }
-btBool                 EmptyIServiceBase::ReleaseComplete()                       { return m_ReleaseComplete_returns;      }
-NamedValueSet const &          EmptyIServiceBase::OptArgs()                 const { return m_OptArgs_returns;              }
-IServiceClient *      EmptyIServiceBase::getServiceClient()                 const { return m_getServiceClient_returns;     }
-IBase *           EmptyIServiceBase::getServiceClientBase()                 const { return m_getServiceClientBase_returns; }
-IRuntime *                  EmptyIServiceBase::getRuntime()                 const { return m_getRuntime_returns;           }
-IRuntimeClient *      EmptyIServiceBase::getRuntimeClient()                 const { return m_getRuntimeClient_returns;     }
-AALServiceModule * EmptyIServiceBase::getAALServiceModule()                 const { return m_getAALServiceModule_returns;  }
-
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initComplete,         btBool,                m_initComplete_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initFailed,           btBool,                m_initFailed_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, ReleaseComplete,      btBool,                m_ReleaseComplete_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, OptArgs,              NamedValueSet const &, m_OptArgs_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClient,     IServiceClient *,      m_getServiceClient_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClientBase, IBase *,               m_getServiceClientBase_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntime,           IRuntime *,            m_getRuntime_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntimeClient,     IRuntimeClient *,      m_getRuntimeClient_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getAALServiceModule,  AALServiceModule *,    m_getAALServiceModule_returns)
-
-EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
-                                   IRuntime         *pAALRUNTIME,
-                                   IAALTransport    *ptransport,
-                                   IAALMarshaller   *marshaller,
-                                   IAALUnMarshaller *unmarshaller) :
-   ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller),
-   m_init_returns(false)
-{}
-
-btBool EmptyServiceBase::init(IBase * ,
-                              NamedValueSet const & ,
-                              TransactionID const & ) { return m_init_returns; }
-
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceBase, init, btBool, m_init_returns)
-
-void EmptyServiceBase::ServiceClient(IServiceClient *pSvcClient)
-{
-   m_pclient = pSvcClient;
-}
-
-void EmptyServiceBase::ServiceClientBase(IBase *pBase)
-{
-   m_pclientbase = pBase;
-}
-
-void EmptyServiceBase::RT(IRuntime *pRT)
-{
-   m_Runtime = pRT;
-}
-
-
-
-EmptyServiceModule::EmptyServiceModule() :
-   m_Construct_returns(NULL),
-   m_ServiceInitialized_returns(false),
-   m_ServiceInitFailed_returns(false)
-{}
-
-btBool EmptyServiceModule::Construct(IRuntime            *pAALRUNTIME,
-                                     IBase               *Client,
-                                     TransactionID const &tid,
-                                     NamedValueSet const &optArgs) { return m_Construct_returns; }
-void          EmptyServiceModule::Destroy()         {}
-void  EmptyServiceModule::ServiceReleased(IBase * ) {}
-btBool EmptyServiceModule::ServiceInitialized(IBase * , TransactionID const & )
-{ return m_ServiceInitialized_returns; }
-btBool EmptyServiceModule::ServiceInitFailed(IBase * , IEvent const * )
-{ return m_ServiceInitFailed_returns; }
-
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, Construct,          btBool, m_Construct_returns         )
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitialized, btBool, m_ServiceInitialized_returns)
-IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitFailed,  btBool, m_ServiceInitFailed_returns )
-
-////////////////////////////////////////////////////////////////////////////////
 
 CallTrackingIServiceClient::CallTrackingIServiceClient(btApplicationContext Ctx) :
    EmptyIServiceClient(Ctx)
@@ -1355,6 +1214,62 @@ void CallTrackingIServiceClient::serviceEvent(const IEvent &e)
    l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
 }
 
+SynchronizingIServiceClient::SynchronizingIServiceClient(btApplicationContext Ctx) :
+   CallTrackingIServiceClient(Ctx)
+{
+   m_Bar.Create(1, false);
+}
+
+void SynchronizingIServiceClient::serviceAllocated(IBase               *pBase,
+                                                   TransactionID const &tid)
+{
+   CallTrackingIServiceClient::serviceAllocated(pBase, tid);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceAllocateFailed(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceAllocateFailed(e);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceReleased(TransactionID const &tid)
+{
+   CallTrackingIServiceClient::serviceReleased(tid);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceReleaseFailed(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceReleaseFailed(e);
+   Post();
+}
+
+void SynchronizingIServiceClient::serviceEvent(const IEvent &e)
+{
+   CallTrackingIServiceClient::serviceEvent(e);
+   Post();
+}
+
+btBool SynchronizingIServiceClient::Wait(btTime Timeout)
+{
+   btBool resWait  = m_Bar.Wait(Timeout);
+   btBool resReset = m_Bar.Reset();
+   return resWait && resReset;
+}
+
+btBool SynchronizingIServiceClient::Post(btUnsignedInt Count) { return m_Bar.Post(Count); }
+
+////////////////////////////////////////////////////////////////////////////////
+// IRuntimeClient
+
+EmptyIRuntimeClient::EmptyIRuntimeClient(btApplicationContext Ctx) :
+   CAASBase(Ctx)
+{
+   if ( EObjOK != SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
 
 CallTrackingIRuntimeClient::CallTrackingIRuntimeClient(btApplicationContext Ctx) :
    EmptyIRuntimeClient(Ctx)
@@ -1412,7 +1327,89 @@ void CallTrackingIRuntimeClient::runtimeEvent(const IEvent &e)
    l->AddParam("e", reinterpret_cast<btObjectType>( & const_cast<IEvent &>(e) ));
 }
 
+SynchronizingIRuntimeClient::SynchronizingIRuntimeClient(btApplicationContext Ctx) :
+   CallTrackingIRuntimeClient(Ctx)
+{
+   m_Bar.Create(1, false);
+}
 
+void SynchronizingIRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const &e)
+{
+   CallTrackingIRuntimeClient::runtimeCreateOrGetProxyFailed(e);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeStarted(IRuntime            *pRuntime,
+                                                 const NamedValueSet &nvs)
+{
+   CallTrackingIRuntimeClient::runtimeStarted(pRuntime, nvs);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeStopped(IRuntime *pRuntime)
+{
+   CallTrackingIRuntimeClient::runtimeStopped(pRuntime);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeStartFailed(const IEvent &e)
+{
+   CallTrackingIRuntimeClient::runtimeStartFailed(e);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeStopFailed(const IEvent &e)
+{
+   CallTrackingIRuntimeClient::runtimeStopFailed(e);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeAllocateServiceFailed(IEvent const &e)
+{
+   CallTrackingIRuntimeClient::runtimeAllocateServiceFailed(e);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
+                                                                  TransactionID const &tid)
+{
+   CallTrackingIRuntimeClient::runtimeAllocateServiceSucceeded(pServiceBase, tid);
+   Post();
+}
+
+void SynchronizingIRuntimeClient::runtimeEvent(const IEvent &e)
+{
+   CallTrackingIRuntimeClient::runtimeEvent(e);
+   Post();
+}
+
+btBool SynchronizingIRuntimeClient::Wait(btTime Timeout)
+{
+   btBool resWait  = m_Bar.Wait(Timeout);
+   btBool resReset = m_Bar.Reset();
+   return resWait && resReset;
+}
+
+btBool SynchronizingIRuntimeClient::Post(btUnsignedInt Count) { return m_Bar.Post(Count); }
+
+////////////////////////////////////////////////////////////////////////////////
+// ISvcsFact
+
+EmptyISvcsFact::EmptyISvcsFact() :
+   m_CreateServiceObject_returns(NULL),
+   m_InitializeService_returns(true)
+{}
+
+IBase * EmptyISvcsFact::CreateServiceObject(AALServiceModule * ,
+                                            IRuntime         * ) { return m_CreateServiceObject_returns; }
+
+btBool EmptyISvcsFact::InitializeService(IBase               * ,
+                                         IBase               * ,
+                                         TransactionID const & ,
+                                         NamedValueSet const & ) { return m_InitializeService_returns; }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, CreateServiceObject, IBase * , m_CreateServiceObject_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyISvcsFact, InitializeService,   btBool ,  m_InitializeService_returns)
 
 IBase * CallTrackingISvcsFact::CreateServiceObject(AALServiceModule *container,
                                                    IRuntime         *pRuntime)
@@ -1442,6 +1439,36 @@ btBool CallTrackingISvcsFact::InitializeService(IBase               *newService,
    return EmptyISvcsFact::InitializeService(newService, Client, rtid, optArgs);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// IRuntime
+
+EmptyIRuntime::EmptyIRuntime(btApplicationContext Ctx) :
+   CAASBase(Ctx),
+   m_start_returns(true),
+   m_schedDispatchable_returns(true),
+   m_getRuntimeProxy_returns(NULL),
+   m_releaseRuntimeProxy_returns(true),
+   m_getRuntimeClient_returns(NULL),
+   m_IsOK_returns(true)
+{
+   if ( EObjOK != SetInterface(iidRuntime, dynamic_cast<IRuntime *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+btBool                      EmptyIRuntime::start(const NamedValueSet & ) { return m_start_returns;               }
+btBool          EmptyIRuntime::schedDispatchable(IDispatchable * )       { return m_schedDispatchable_returns;   }
+IRuntime *        EmptyIRuntime::getRuntimeProxy(IRuntimeClient * )      { return m_getRuntimeProxy_returns;     }
+btBool        EmptyIRuntime::releaseRuntimeProxy()                       { return m_releaseRuntimeProxy_returns; }
+IRuntimeClient * EmptyIRuntime::getRuntimeClient()                       { return m_getRuntimeClient_returns;    }
+btBool                       EmptyIRuntime::IsOK()                       { return m_IsOK_returns;                }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, start,               btBool,            m_start_returns              )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, schedDispatchable,   btBool,            m_schedDispatchable_returns  )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeProxy,     IRuntime * ,       m_getRuntimeProxy_returns    )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, releaseRuntimeProxy, btBool,            m_releaseRuntimeProxy_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, getRuntimeClient,    IRuntimeClient * , m_getRuntimeClient_returns   )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIRuntime, IsOK,                btBool,            m_IsOK_returns               )
 
 CallTrackingIRuntime::CallTrackingIRuntime(btApplicationContext Ctx) :
    EmptyIRuntime(Ctx)
@@ -1501,6 +1528,44 @@ btBool CallTrackingIRuntime::IsOK()
    return EmptyIRuntime::IsOK();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// IServiceBase
+
+EmptyIServiceBase::EmptyIServiceBase(btApplicationContext Ctx) :
+   AAL::CAASBase(Ctx),
+   m_initComplete_returns(false),
+   m_initFailed_returns(false),
+   m_ReleaseComplete_returns(false),
+   m_getServiceClient_returns(NULL),
+   m_getServiceClientBase_returns(NULL),
+   m_getRuntime_returns(NULL),
+   m_getRuntimeClient_returns(NULL),
+   m_getAALServiceModule_returns(NULL)
+{
+   if ( EObjOK != SetInterface(iidServiceBase, this) ) {
+      m_bIsOK = false;
+   }
+}
+
+btBool                    EmptyIServiceBase::initComplete(TransactionID const & ) { return m_initComplete_returns;         }
+btBool                      EmptyIServiceBase::initFailed(IEvent const * )        { return m_initFailed_returns;           }
+btBool                 EmptyIServiceBase::ReleaseComplete()                       { return m_ReleaseComplete_returns;      }
+NamedValueSet const &          EmptyIServiceBase::OptArgs()                 const { return m_OptArgs_returns;              }
+IServiceClient *      EmptyIServiceBase::getServiceClient()                 const { return m_getServiceClient_returns;     }
+IBase *           EmptyIServiceBase::getServiceClientBase()                 const { return m_getServiceClientBase_returns; }
+IRuntime *                  EmptyIServiceBase::getRuntime()                 const { return m_getRuntime_returns;           }
+IRuntimeClient *      EmptyIServiceBase::getRuntimeClient()                 const { return m_getRuntimeClient_returns;     }
+AALServiceModule * EmptyIServiceBase::getAALServiceModule()                 const { return m_getAALServiceModule_returns;  }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initComplete,         btBool,                m_initComplete_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, initFailed,           btBool,                m_initFailed_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, ReleaseComplete,      btBool,                m_ReleaseComplete_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, OptArgs,              NamedValueSet const &, m_OptArgs_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClient,     IServiceClient *,      m_getServiceClient_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getServiceClientBase, IBase *,               m_getServiceClientBase_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntime,           IRuntime *,            m_getRuntime_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getRuntimeClient,     IRuntimeClient *,      m_getRuntimeClient_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyIServiceBase, getAALServiceModule,  AALServiceModule *,    m_getAALServiceModule_returns)
 
 CallTrackingIServiceBase::CallTrackingIServiceBase(btApplicationContext Ctx) :
    EmptyIServiceBase(Ctx)
@@ -1562,6 +1627,38 @@ AALServiceModule * CallTrackingIServiceBase::getAALServiceModule() const
    return EmptyIServiceBase::getAALServiceModule();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// ServiceBase
+
+EmptyServiceBase::EmptyServiceBase(AALServiceModule *container,
+                                   IRuntime         *pAALRUNTIME,
+                                   IAALTransport    *ptransport,
+                                   IAALMarshaller   *marshaller,
+                                   IAALUnMarshaller *unmarshaller) :
+   ServiceBase(container, pAALRUNTIME, ptransport, marshaller, unmarshaller),
+   m_init_returns(false)
+{}
+
+btBool EmptyServiceBase::init(IBase * ,
+                              NamedValueSet const & ,
+                              TransactionID const & ) { return m_init_returns; }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceBase, init, btBool, m_init_returns)
+
+void EmptyServiceBase::ServiceClient(IServiceClient *pSvcClient)
+{
+   m_pclient = pSvcClient;
+}
+
+void EmptyServiceBase::ServiceClientBase(IBase *pBase)
+{
+   m_pclientbase = pBase;
+}
+
+void EmptyServiceBase::RT(IRuntime *pRT)
+{
+   m_Runtime = pRT;
+}
 
 CallTrackingServiceBase::CallTrackingServiceBase(AALServiceModule *container,
                                                  IRuntime         *pAALRUNTIME,
@@ -1659,6 +1756,29 @@ AALServiceModule * CallTrackingServiceBase::getAALServiceModule() const
    return EmptyServiceBase::getAALServiceModule();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// IServiceModule / IServiceModuleCallback
+
+EmptyServiceModule::EmptyServiceModule() :
+   m_Construct_returns(NULL),
+   m_ServiceInitialized_returns(false),
+   m_ServiceInitFailed_returns(false)
+{}
+
+btBool EmptyServiceModule::Construct(IRuntime            *pAALRUNTIME,
+                                     IBase               *Client,
+                                     TransactionID const &tid,
+                                     NamedValueSet const &optArgs) { return m_Construct_returns; }
+void          EmptyServiceModule::Destroy()         {}
+void  EmptyServiceModule::ServiceReleased(IBase * ) {}
+btBool EmptyServiceModule::ServiceInitialized(IBase * , TransactionID const & )
+{ return m_ServiceInitialized_returns; }
+btBool EmptyServiceModule::ServiceInitFailed(IBase * , IEvent const * )
+{ return m_ServiceInitFailed_returns; }
+
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, Construct,          btBool, m_Construct_returns         )
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitialized, btBool, m_ServiceInitialized_returns)
+IMPLEMENT_RETVAL_ACCESSORS(EmptyServiceModule, ServiceInitFailed,  btBool, m_ServiceInitFailed_returns )
 
 CallTrackingServiceModule::CallTrackingServiceModule() {}
 
@@ -1704,3 +1824,85 @@ btBool CallTrackingServiceModule::ServiceInitFailed(IBase        *pService,
    l->AddParam("pEvent",   reinterpret_cast<btObjectType>( const_cast<IEvent *>(pEvent) ));
    return EmptyServiceModule::ServiceInitFailed(pService, pEvent);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void AllocSwvalMod(AAL::IRuntime            *pRuntime,
+                   AAL::IBase               *pClientBase,
+                   const AAL::TransactionID &tid)
+{
+   NamedValueSet configrec;
+
+   configrec.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalmod");
+   configrec.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   NamedValueSet manifest;
+
+   manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrec);
+   manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "swval module");
+
+   pRuntime->allocService(pClientBase, manifest, tid);
+}
+
+void AllocSwvalSvcMod(AAL::IRuntime            *pRuntime,
+                      AAL::IBase               *pClientBase,
+                      const AAL::TransactionID &tid)
+{
+   NamedValueSet configrec;
+
+   configrec.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libswvalsvcmod");
+   configrec.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE, true);
+
+   NamedValueSet manifest;
+
+   manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &configrec);
+   manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "swval service module");
+
+   pRuntime->allocService(pClientBase, manifest, tid);
+}
+
+
+EmptySwvalSvcClient::EmptySwvalSvcClient(btApplicationContext Ctx) :
+   EmptyIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void EmptySwvalSvcClient::DidSomething(const AAL::TransactionID & , int ) {}
+
+
+CallTrackingSwvalSvcClient::CallTrackingSwvalSvcClient(btApplicationContext Ctx) :
+   CallTrackingIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void CallTrackingSwvalSvcClient::DidSomething(const AAL::TransactionID &tid, int val)
+{
+   MethodCallLogEntry *l = AddToLog("ISwvalSvcClient::DidSomething");
+   l->AddParam("tid", tid);
+   l->AddParam("val", val);
+}
+
+
+SynchronizingSwvalSvcClient::SynchronizingSwvalSvcClient(btApplicationContext Ctx) :
+   SynchronizingIServiceClient(Ctx)
+{
+   if ( EObjOK != SetInterface(iidSwvalSvcClient, dynamic_cast<ISwvalSvcClient *>(this)) ) {
+      m_bIsOK = false;
+   }
+}
+
+void SynchronizingSwvalSvcClient::DidSomething(const AAL::TransactionID &tid, int val)
+{
+   MethodCallLogEntry *l = AddToLog("ISwvalSvcClient::DidSomething");
+   l->AddParam("tid", tid);
+   l->AddParam("val", val);
+
+   Post();
+}
+

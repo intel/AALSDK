@@ -67,8 +67,9 @@
 # include <unistd.h>
 #endif // OS
 
+BEGIN_NAMESPACE(AAL)
 
-const AAL::btInt OSLThread::sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORITY_COUNT] =
+const btInt OSLThread::sm_PriorityTranslationTable[(btInt)THREADPRIORITY_COUNT] =
 {
 #if   defined( __AAL_WINDOWS__ )
    THREAD_PRIORITY_TIME_CRITICAL,
@@ -85,7 +86,7 @@ const AAL::btInt OSLThread::sm_PriorityTranslationTable[(AAL::btInt)THREADPRIORI
 #endif // OS
 };
 
-const AAL::btInt OSLThread::sm_DefaultPriority =
+const btInt OSLThread::sm_DefaultPriority =
                OSLThread::sm_PriorityTranslationTable[THREADPRIORITY_NORMAL];
 
 
@@ -103,7 +104,7 @@ const AAL::btInt OSLThread::sm_DefaultPriority =
 OSLThread::OSLThread(ThreadProc                     pProc,
                      OSLThread::ThreadPriority      nPriority,
                      void                          *pContext,
-                     AAL::btBool                    ThisThread) :
+                     btBool                         ThisThread) :
 #if   defined( __AAL_WINDOWS__ )
    m_hEvent(NULL),
    m_hJoinEvent(NULL),
@@ -121,7 +122,7 @@ OSLThread::OSLThread(ThreadProc                     pProc,
 
    if ( ( nPriority >= 0 ) &&
         ( (unsigned)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
-      m_nPriority = OSLThread::sm_PriorityTranslationTable[(AAL::btInt)nPriority];
+      m_nPriority = OSLThread::sm_PriorityTranslationTable[(btInt)nPriority];
    } else {
       m_nPriority = OSLThread::sm_DefaultPriority;
    }
@@ -269,8 +270,8 @@ OSLThread::~OSLThread()
 #elif defined( __AAL_LINUX__ )
 
    // The thread is exiting. Post to the internal semaphore so that all waiters can wake (Wait() / Signal()).
-   AAL::btInt CurrentCount = 0;
-   AAL::btInt MaxCount     = 0;
+   btInt CurrentCount = 0;
+   btInt MaxCount     = 0;
 
    m_Semaphore.CurrCounts(CurrentCount, MaxCount);
    m_Semaphore.Post(INT_MAX - CurrentCount);
@@ -375,7 +376,7 @@ void OSLThread::Signal()
 // Outputs: none.
 // Comments:
 //=============================================================================
-void OSLThread::Wait(AAL::btTime ulMilliseconds)
+void OSLThread::Wait(btTime ulMilliseconds)
 {
 #if   defined( __AAL_WINDOWS__ )
 
@@ -430,7 +431,7 @@ void OSLThread::Join()
          }
 #if ENABLE_ASSERT
          else {
-            const AAL::btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
+            const btBool OSLThread_attempt_to_Join_when_already_Joined_or_Detached = false;
             ASSERT(OSLThread_attempt_to_Join_when_already_Joined_or_Detached);
          }
 #endif // ENABLE_ASSERT
@@ -470,7 +471,7 @@ void OSLThread::Detach()
          }
 #if ENABLE_ASSERT
          else {
-            const AAL::btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
+            const btBool OSLThread_attempt_to_Detach_when_already_Joined_or_Detached = false;
             ASSERT(OSLThread_attempt_to_Detach_when_already_Joined_or_Detached);
          }
 #endif // ENABLE_ASSERT
@@ -513,7 +514,7 @@ void OSLThread::Cancel()
          }
 #if ENABLE_ASSERT
          else {
-            const AAL::btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
+            const btBool OSLThread_attempt_to_Cancel_when_already_Joined = false;
             ASSERT(OSLThread_attempt_to_Cancel_when_already_Joined);
          }
 #endif // ENABLE_ASSERT
@@ -537,7 +538,7 @@ void OSLThread::Cancel()
 #endif // OS
 }
 
-AAL::btBool OSLThread::IsThisThread(AAL::btID id) const
+btBool OSLThread::IsThisThread(btID id) const
 {
 #if   defined( __AAL_WINDOWS__ )
    return id == m_tid;
@@ -554,7 +555,7 @@ AAL::btBool OSLThread::IsThisThread(AAL::btID id) const
 // Outputs: none.
 // Comments:
 //=============================================================================
-AAL::btTID OSLThread::tid()
+btTID OSLThread::tid()
 {
    return m_tid;
 }
@@ -571,9 +572,9 @@ AAL::btTID OSLThread::tid()
 OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 {
    if ( ( nPriority >= 0 ) &&
-        ( (AAL::btUnsignedInt)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
+        ( (btUnsignedInt)nPriority < (sizeof(OSLThread::sm_PriorityTranslationTable) / sizeof(OSLThread::sm_PriorityTranslationTable[0])) ) ) {
 
-      AAL::btInt pri = OSLThread::sm_PriorityTranslationTable[nPriority];
+      btInt pri = OSLThread::sm_PriorityTranslationTable[nPriority];
 
 #if   defined( __AAL_WINDOWS__ )
 
@@ -601,15 +602,15 @@ OSAL_API void SetThreadPriority(OSLThread::ThreadPriority nPriority)
 // Outputs: none.
 // Comments:
 //=============================================================================
-AAL::btPID GetProcessID()
+btPID GetProcessID()
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   return (AAL::btPID) ::GetCurrentProcessId();
+   return (btPID) ::GetCurrentProcessId();
 
 #elif defined( __AAL_LINUX__ )
 
-   return (AAL::btPID) ::getpid();
+   return (btPID) ::getpid();
 
 #endif // OS
 }
@@ -622,20 +623,20 @@ AAL::btPID GetProcessID()
 // Outputs: none.
 // Comments:
 //=============================================================================
-AAL::btTID GetThreadID()
+btTID GetThreadID()
 {
 #if   defined( __AAL_WINDOWS__ )
 
-   return (AAL::btTID) ::GetCurrentThreadId();
+   return (btTID) ::GetCurrentThreadId();
 
 #elif defined( __AAL_LINUX__ )
 
-   return (AAL::btTID) ::pthread_self();
+   return (btTID) ::pthread_self();
 
 #endif // OS
 }
 
-AAL::btBool ThreadIDEqual(AAL::btTID x, AAL::btTID y)
+btBool ThreadIDEqual(btTID x, btTID y)
 {
 #if   defined( __AAL_WINDOWS__ )
 
@@ -648,7 +649,7 @@ AAL::btBool ThreadIDEqual(AAL::btTID x, AAL::btTID y)
 #endif // OS
 }
 
-void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
+void ExitCurrentThread(btUIntPtr ExitStatus)
 {
 #if   defined( __AAL_WINDOWS__ )
 
@@ -670,7 +671,7 @@ void ExitCurrentThread(AAL::btUIntPtr ExitStatus)
 // Outputs: none.
 // Comments:
 //=============================================================================
-OSAL_API AAL::btInt GetNumProcessors()
+OSAL_API btInt GetNumProcessors()
 {
 #if   defined( __AAL_WINDOWS__ )
 
@@ -688,18 +689,20 @@ OSAL_API AAL::btInt GetNumProcessors()
 }
 */
 
-OSAL_API AAL::btUnsigned32bitInt GetRand(AAL::btUnsigned32bitInt *storage)
+OSAL_API btUnsigned32bitInt GetRand(btUnsigned32bitInt *storage)
 {
    ASSERT(NULL != storage);
 #if   defined( __AAL_WINDOWS__ )
    unsigned int seed = (unsigned int)*storage;
    ::rand_s(&seed);
-   return (*storage = (AAL::btUnsigned32bitInt)seed);
+   return (*storage = (btUnsigned32bitInt)seed);
 #elif defined( __AAL_LINUX__ )
-   unsigned int            seed = (unsigned int)*storage;
-   AAL::btUnsigned32bitInt val  = (AAL::btUnsigned32bitInt) ::rand_r(&seed);
-   *storage = (AAL::btUnsigned32bitInt)seed;
+   unsigned int       seed = (unsigned int)*storage;
+   btUnsigned32bitInt val  = (btUnsigned32bitInt) ::rand_r(&seed);
+   *storage = (btUnsigned32bitInt)seed;
    return val;
 #endif // OS
 }
+
+END_NAMESPACE(AAL)
 

@@ -42,8 +42,12 @@
 #ifndef __AALSDK_OSAL_TIMER_H__
 #define __AALSDK_OSAL_TIMER_H__
 #include <aalsdk/AALTypes.h>
+
 /// @addtogroup OSAL
 /// @{
+
+BEGIN_NAMESPACE(AAL)
+
 class OSAL_API Timer
 {
 public:
@@ -71,19 +75,19 @@ public:
    // == 0 if *this == other
    int Compare(const Timer &other) const;
 
-   void      AsSeconds(double & )                          const;
-   void AsMilliSeconds(double & )                          const;
-   void AsMicroSeconds(double & )                          const;
-   void  AsNanoSeconds(double & )                          const;
+   void      AsSeconds(double & )                     const;
+   void AsMilliSeconds(double & )                     const;
+   void AsMicroSeconds(double & )                     const;
+   void  AsNanoSeconds(double & )                     const;
 
-   void      AsSeconds(AAL::btUnsigned64bitInt & )         const;
-   void AsMilliSeconds(AAL::btUnsigned64bitInt & )         const;
-   void AsMicroSeconds(AAL::btUnsigned64bitInt & )         const;
-   void  AsNanoSeconds(AAL::btUnsigned64bitInt & )         const;
+   void      AsSeconds(btUnsigned64bitInt & )         const;
+   void AsMilliSeconds(btUnsigned64bitInt & )         const;
+   void AsMicroSeconds(btUnsigned64bitInt & )         const;
+   void  AsNanoSeconds(btUnsigned64bitInt & )         const;
 
-   std::string NormalizedUnits()                           const;
-   std::string Normalized(AAL::btUnsigned64bitInt * =NULL,
-                          double                  * =NULL) const;
+   std::string NormalizedUnits()                      const;
+   std::string Normalized(btUnsigned64bitInt * =NULL,
+                          double             * =NULL) const;
 
 #if   defined( __AAL_WINDOWS__ )
    operator LARGE_INTEGER ()   const { return m_Start; }
@@ -118,57 +122,10 @@ inline bool  operator >= (const Timer &l, const Timer &r) { return l.Compare(r) 
 inline bool  operator == (const Timer &l, const Timer &r) { return l.Compare(r) == 0; }
 inline bool  operator != (const Timer &l, const Timer &r) { return l.Compare(r) != 0; }
 
-#if DEPRECATED
+END_NAMESPACE(AAL)
 
-#ifdef _MSCVER
-
-#define MAXUL	4294967296.0     // 2^32
-#define AdjustFrom1601 94354843740667904
-#define AdjustFrom1970 2208988800.0
-
-class OSAL_API Timer {
-public:
-	Timer();
-	void Start();
-	void Start(LONGLONG nStart);
-	LONGLONG Stop();
-	LONGLONG DurationInt();
-	double Interval();
-	double Duration(bool bStop=false);
-
-	LARGE_INTEGER	nlFreq;
-private:
-	LARGE_INTEGER	nlStart;
-	LARGE_INTEGER	nlEnd;
-};
-
-#endif // _MSCVER
-
-#ifdef __AAL_LINUX__
-#include <sys/time.h>
-
-class Timer {
-public:
-public:
-	struct timeval m_tStart;
-	struct timeval m_tEnd;
-
-	void GetTime(struct timeval * pTime);
-	double TimeToDouble(struct timeval * pTime);
-	Timer();
-	void Start();
-	void Stop();
-	double Interval();
-	double Duration(bool bStop=false);
-};
-
-unsigned long GetTickCount();
-
-#endif // __AAL_LINUX__
-
-double OSAL_API GetRTPTime();
-
-#endif // DEPRECATED
+/// @}
 
 #endif // __AALSDK_OSAL_TIMER_H__
-/// @}
+
+

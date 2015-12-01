@@ -48,6 +48,8 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 /// Interface to dynamically-loaded shared libraries.
 class OSAL_API DynLinkLibrary
 {
@@ -61,15 +63,17 @@ public:
    /// @retval  NULL  On failure.
    void * GetSymAddress(const std::string &SymbolName);
    /// Internal state check.
-   AAL::btBool IsOK() { return NULL != m_hDLL; }
+   btBool IsOK() { return NULL != m_hDLL; }
 
 private:
-   AAL::btObjectType m_hDLL;
+   btObjectType m_hDLL;
 
    DynLinkLibrary();
    DynLinkLibrary(const DynLinkLibrary & );
    DynLinkLibrary & operator = (const DynLinkLibrary & );
 };
+
+END_NAMESPACE(AAL)
 
 /// @}
 

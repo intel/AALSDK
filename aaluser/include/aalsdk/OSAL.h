@@ -41,72 +41,18 @@
 # include <aalsdk/AALDefs.h>
 # include <aalsdk/AALTypes.h>
 
-
 /// @addtogroup OSAL
 /// @{
 
-#define RESMGR_UTILSAFU_BACKDOOR(__cr, __mfst)                                 \
-do                                                                             \
-{                                                                              \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libUtilsAFU"); \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME,     "libAASUAIA");  \
-   __mfst.Add(AAL_FACTORY_CREATE_SERVICENAME,                  "UtilsAFU");    \
-}while(0)
-
-#define RESMGR_SAMPLEENCODER_BACKDOOR(__cr, __mfst)                                           \
-do                                                                                            \
-{                                                                                             \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSampleEncoderAFUService"); \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME,     "libAASUAIA");                 \
-   __cr.Add(AAL_FACTORY_CREATE_CONFIGRECORD_SERVICENAME,       "Encoder");                    \
-   __mfst.Add(AAL_FACTORY_CREATE_SERVICENAME,                  "Encoder");                    \
-}while(0)
-
-
-#if DEPRECATED
-#ifdef __AAL_LINUX__
-//=============================================================================
-// Macros and constants
-//=============================================================================
-
-// --- Increment --- long int version -----------------------------------------
-inline long InterlockedIncrement (volatile long * pCounter)
-{
-   int result;
-
-   asm volatile ("lock; xaddl %0, %1" :
-		 "=r" (result),
-		 "=m" (*pCounter) :
-		 "0" (1),
-		 "m" (*pCounter));
-
-   return (long) result + 1;
-}
-
-// --- Decrement --- long int versions ----------------------------------------
-inline long InterlockedDecrement (volatile long * pCounter)
-{
-   int result;
-
-   asm volatile ("lock; xaddl %0, %1" :
-
-		 "=r" (result),
-		 "=m" (*pCounter) :
-		  "0" (-1),
-		  "m" (*pCounter));
-
-   return (long) result - 1;
-}
-
-#endif // __AAL_LINUX__
-#endif // DEPRECATED
+BEGIN_NAMESPACE(AAL)
 
 /// Find the first bit set, scanning low to high.
 /// @param[in] value is input bitmask
-OSAL_API unsigned long FindLowestBitSet64(AAL::btUnsigned64bitInt value);
+OSAL_API unsigned long FindLowestBitSet64(btUnsigned64bitInt value);
+
+END_NAMESPACE(AAL)
 
 /// @}
-
 
 # include <aalsdk/osal/Timer.h>
 # include <aalsdk/osal/Sleep.h>

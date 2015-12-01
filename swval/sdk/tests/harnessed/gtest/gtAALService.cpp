@@ -703,6 +703,7 @@ TEST_F(AALServiceModule_f_1, aal0723)
    EXPECT_FALSE(ServiceInitFailed(&base, pEvent));
 }
 #if DEPRECATED
+#if DEPRECATED
 TEST_F(AALServiceModule_f_3, aal0724)
 {
    // When the IBase * parameter to AALServiceModule::ServiceInitFailed() is valid, the same is

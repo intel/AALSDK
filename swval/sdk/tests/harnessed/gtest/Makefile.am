@@ -44,6 +44,7 @@ gtEnvVar.cpp \
 gtMDS.cpp \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
+gtRuntime_Int.cpp \
 gtSem.cpp \
 gtServiceBroker.cpp \
 gtServiceHost.cpp \
@@ -53,6 +54,7 @@ gtThreadGroup.cpp \
 gtThreadGroup.h \
 gtThreadGroupSR.cpp \
 gtTimer.cpp \
+gtTransactionID.cpp \
 main.cpp
 
 bat_CPPFLAGS=\
@@ -132,6 +134,7 @@ gtNVSTester.cpp \
 gtNVSTester.h \
 gtOSServiceModule.cpp \
 gtRuntime.cpp \
+gtRuntime_Int.cpp \
 gtSem.cpp \
 gtSeqRand.cpp \
 gtSeqRand.h \
@@ -143,6 +146,7 @@ gtThreadGroup.cpp \
 gtThreadGroup.h \
 gtThreadGroupSR.cpp \
 gtTimer.cpp \
+gtTransactionID.cpp \
 main.cpp
 
 endif

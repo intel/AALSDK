@@ -98,9 +98,27 @@ void ServiceAllocated::operator() ()
    delete this;
 }
 
+ServiceAllocateFailed::ServiceAllocateFailed(IBase 			*pService,
+											 ISvcsFact 		*pSvcsFact,
+											 IServiceClient *pSvcClient,
+                                             IRuntimeClient *pRTClient,
+                                             const IEvent   *pEvent) :
+   m_pService(pService),
+   m_pSvcsFact(pSvcsFact),
+   m_pSvcClient(pSvcClient),
+   m_pRTClient(pRTClient),
+   m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcClient || NULL != m_pRTClient);
+   ASSERT(NULL != m_pEvent);
+}
+
+
 ServiceAllocateFailed::ServiceAllocateFailed(IServiceClient *pSvcClient,
                                              IRuntimeClient *pRTClient,
                                              const IEvent   *pEvent) :
+   m_pService(NULL),
+   m_pSvcsFact(NULL),
    m_pSvcClient(pSvcClient),
    m_pRTClient(pRTClient),
    m_pEvent(pEvent)
@@ -125,6 +143,12 @@ void ServiceAllocateFailed::operator() ()
    if ( NULL != m_pRTClient ) {
       m_pRTClient->runtimeAllocateServiceFailed(*m_pEvent);
    }
+
+   //If the Factory and Object are present then clean-up there.
+   if(m_pSvcsFact){
+	   m_pSvcsFact->DestroyServiceObject(m_pService);
+   }
+
    delete this;
 }
 

@@ -5,7 +5,7 @@
 
 #include "swvalsvcmod.h"
 
-class CDidSomethingDisp : public IDispatchable
+class CDidSomethingDisp : public AAL::IDispatchable
 {
 public:
    CDidSomethingDisp(ISwvalSvcClient          *pClient,

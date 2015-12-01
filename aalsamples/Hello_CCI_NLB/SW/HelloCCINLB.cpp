@@ -498,9 +498,9 @@ btInt HelloCCINLBApp::run()
       MSG("Done Running Test");
       // Release the Workspaces and wait for all three then Release the Service
       m_wsfreed = 0;  // Reset the counter
-      m_NLBService->WorkspaceFree(m_InputVirt,  TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));
-      m_NLBService->WorkspaceFree(m_OutputVirt, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_OUT));
-      m_NLBService->WorkspaceFree(m_DSMVirt,    TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_DSM));
+      m_NLBService->WorkspaceFree(m_InputVirt,  TransactionID((btID)HelloCCINLBApp::WKSPC_IN));
+      m_NLBService->WorkspaceFree(m_OutputVirt, TransactionID((btID)HelloCCINLBApp::WKSPC_OUT));
+      m_NLBService->WorkspaceFree(m_DSMVirt,    TransactionID((btID)HelloCCINLBApp::WKSPC_DSM));
       m_Sem.Wait();
    }
 
@@ -529,7 +529,7 @@ void HelloCCINLBApp::serviceAllocated(IBase *pServiceBase,
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((bt32bitInt) HelloCCINLBApp::WKSPC_DSM));
+   m_NLBService->WorkspaceAllocate(LPBK1_DSM_SIZE, TransactionID((btID) HelloCCINLBApp::WKSPC_DSM));
 
 }
 
@@ -571,7 +571,7 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          m_DSMPhys = WkspcPhys;
          m_DSMSize = WkspcSize;
          MSG("Got DSM");
-         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_IN));
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloCCINLBApp::WKSPC_IN));
       }break;
       case WKSPC_IN : {
          m_InputVirt = WkspcVirt;
@@ -580,7 +580,7 @@ void HelloCCINLBApp::OnWorkspaceAllocated(TransactionID const &TranID,
          MSG("Got Input Workspace");
 
          // Now get Output workspace
-         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((bt32bitInt)HelloCCINLBApp::WKSPC_OUT));
+         m_NLBService->WorkspaceAllocate(LPBK1_BUFFER_SIZE, TransactionID((btID)HelloCCINLBApp::WKSPC_OUT));
       } break;
       case WKSPC_OUT : {
          m_OutputVirt = WkspcVirt;

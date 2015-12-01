@@ -69,7 +69,6 @@ include/aalsdk/OSAL.h \
 include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
-include/aalsdk/aas/Dispatchables.h \
 include/aalsdk/Runtime.h \
 include/aalsdk/CUnCopyable.h \
 include/aalsdk/IServiceClient.h \
@@ -83,7 +82,8 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
-include/aalsdk/aas/ServiceHost.h 
+include/aalsdk/aas/ServiceHost.h \
+include/aalsdk/aas/Dispatchables.h 
 
 aalclphdrs_HEADERS=\
 include/aalsdk/aalclp/aalclp.h
@@ -110,6 +110,7 @@ include/aalsdk/kernel/aalbus-ipip.h \
 include/aalsdk/kernel/aalbus_iupdate_config.h \
 include/aalsdk/kernel/aaldefs.h \
 include/aalsdk/kernel/aaldevice.h \
+include/aalsdk/kernel/iaaldevice.h \
 include/aalsdk/kernel/aalids.h \
 include/aalsdk/kernel/aalinterface.h \
 include/aalsdk/kernel/aalmafu-events.h \
@@ -129,6 +130,7 @@ include/aalsdk/kernel/aalwsservice.h \
 include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
+include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \

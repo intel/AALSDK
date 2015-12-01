@@ -44,9 +44,11 @@
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/CUnCopyable.h>
 
-BEGIN_NAMESPACE(AAL)
 /// @addtogroup OSAL
 /// @{
+
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
@@ -103,6 +105,7 @@ private:
 
 END_NAMESPACE(AAL)
 
+/// @}
+
 #endif // __AALSDK_OSAL_ENV_H__
 
-/// @}

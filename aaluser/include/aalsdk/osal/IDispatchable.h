@@ -53,6 +53,8 @@
 /// @addtogroup Dispatchable
 /// @{
 
+BEGIN_NAMESPACE(AAL)
+
 /// @brief Object used to schedule work
 class OSAL_API IDispatchable
 {
@@ -137,6 +139,8 @@ protected:
    DispatchableGroup() {}
    std::list<IDispatchable *> m_DispList;
 };
+
+END_NAMESPACE(AAL)
 
 /// @}
 

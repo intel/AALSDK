@@ -161,7 +161,7 @@ std::ostream & operator << (std::ostream &s, const stTransactionID_t &tranid)
 
    s << std::hex << std::uppercase << std::showbase << std::boolalpha <<
          "stTransactionID_t at " << reinterpret_cast<const void*>(&tranid) <<
-         "\n\tContextPtr:      " << reinterpret_cast<const void*>(tranid.m_ID) <<
+         "\n\tContextPtr:      " << reinterpret_cast<const void*>(tranid.m_Context) <<
          "\n\tEventHandler:    " << reinterpret_cast<const void*>(tranid.m_Handler) <<
          "\n\tFilter:          " << tranid.m_Filter <<
          "\n\tId:              " << tranid.m_intID <<

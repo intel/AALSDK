@@ -47,6 +47,7 @@
 /// @addtogroup OSAL
 /// @{
 
+BEGIN_NAMESPACE(AAL)
 
 /// Interface abstraction for the Barrier synchronization primitive.
 ///
@@ -70,13 +71,13 @@ public:
    ///
    /// @retval  true   The Barrier was created.
    /// @retval  false  An error occurred during creation.
-   AAL::btBool Create(AAL::btUnsignedInt UnlockCount, AAL::btBool bAutoReset=false);
+   btBool Create(btUnsignedInt UnlockCount, btBool bAutoReset=false);
 
    /// Destroy the Barrier, releasing its resources.
    ///
    /// @retval  true   The Barrier was destroyed.
    /// @retval  false  Barrier not initialized or an error occurred during destruction.
-   AAL::btBool Destroy();
+   btBool Destroy();
 
    /// Reset the Barrier to locked (manual-reset Barrier, only).
    ///
@@ -84,7 +85,7 @@ public:
    ///
    /// @retval  true   The Barrier was reset.
    /// @retval  false  Barrier not initialized or error during the reset attempt.
-   AAL::btBool Reset(AAL::btUnsignedInt UnlockCount=0);
+   btBool Reset(btUnsignedInt UnlockCount=0);
 
    /// Get the current values of the Barrier counts.
    ///
@@ -93,7 +94,7 @@ public:
    ///
    /// @retval  true   The counts were retrieved.
    /// @retval  false  Barrier not initialized.
-   AAL::btBool CurrCounts(AAL::btUnsignedInt &rCurCount, AAL::btUnsignedInt &rUnlockCount);
+   btBool CurrCounts(btUnsignedInt &rCurCount, btUnsignedInt &rUnlockCount);
 
    /// Increment the current count by the minimum of nCount and the unlock count - current count.
    ///
@@ -102,23 +103,23 @@ public:
    ///
    /// @retval  true   The operation was successful. Does not necessarily indicate that threads were resumed.
    /// @retval  false  Barrier not initialized or error during the post attempt.
-   AAL::btBool Post(AAL::btUnsignedInt nCount);
+   btBool Post(btUnsignedInt nCount);
 
    /// Causes all Blocked Threads to unblock with a failure.
    ///
    /// @retval  true   All waiters became unblocked and will return false from their Wait() calls.
    /// @retval  false  Barrier not initialized or error during the unblock attempt.
-   AAL::btBool UnblockAll();
+   btBool UnblockAll();
 
    /// Returns the current number of waiters.
    /// NOTE: This is a snapshot and may change by the time the caller examines the value.
-   AAL::btUnsignedInt NumWaiters() const;
+   btUnsignedInt NumWaiters() const;
 
    /// Wait for the Barrier count to become equal to the unlock count.
    ///
    /// @retval  false  Barrier not initialized, failed wait attempt, or this call was canceled by
    ///          UnblockAll().
-   AAL::btBool Wait();
+   btBool Wait();
 
    /// Wait for the Barrier count to become equal to the unlock count, or until a timeout expires.
    ///
@@ -129,17 +130,17 @@ public:
    /// @retval  true   The count became equal to the unlock count before the Timeout expired.
    /// @retval  false  Barrier not initialized, failed wait attempt, this call was canceled by
    ///                 UnblockAll(), or Timeout expired.
-   AAL::btBool Wait(AAL::btTime Timeout);
+   btBool Wait(btTime Timeout);
 
 private:
-   AAL::btUnsignedInt m_Flags;
+   btUnsignedInt m_Flags;
 #define BARRIER_FLAG_INIT       0x00000001
 #define BARRIER_FLAG_AUTO_RESET 0x00000002
 #define BARRIER_FLAG_RESETTING  0x00000004
 #define BARRIER_FLAG_UNBLOCKING 0x00000008
 #define BARRIER_FLAG_DESTROYING 0x00000010
-   AAL::btUnsignedInt m_UnlockCount;
-   AAL::btUnsignedInt m_CurCount;
+   btUnsignedInt m_UnlockCount;
+   btUnsignedInt m_CurCount;
 
    // We always reference m_AutoResetManager within the context of the Barrier
    //  locks, so there is no need to be concerned with locking within AutoResetManager.
@@ -156,7 +157,7 @@ private:
       void AddWaiter(_AutoLock * );
       void RemoveWaiter();
 
-      AAL::btUnsignedInt NumWaiters() const;
+      btUnsignedInt NumWaiters() const;
 
       void AutoResetBegin();
       void AutoResetEnd();
@@ -164,20 +165,20 @@ private:
       void WaitForAllWaitersToExit(_AutoLock * );
 
    protected:
-      Barrier           *m_pBarrier;
-      AAL::btUnsignedInt m_NumWaiters;    // number of threads blocked in Wait() calls on a locked Barrier.
-      AAL::btUnsignedInt m_NumPreWaiters; // number of threads blocked in Wait() by an auto-reset.
-      AAL::btTime        m_WaitTimeout;
+      Barrier       *m_pBarrier;
+      btUnsignedInt  m_NumWaiters;    // number of threads blocked in Wait() calls on a locked Barrier.
+      btUnsignedInt  m_NumPreWaiters; // number of threads blocked in Wait() by an auto-reset.
+      btTime         m_WaitTimeout;
 #if   defined( __AAL_WINDOWS__ )
-      HANDLE             m_hREvent;       // manual-reset event for auto-reset done.
-      HANDLE             m_hZEvent;       // manual-reset event for zero waiters.
+      HANDLE         m_hREvent;       // manual-reset event for auto-reset done.
+      HANDLE         m_hZEvent;       // manual-reset event for zero waiters.
 #elif defined( __AAL_LINUX__ )
-      pthread_cond_t     m_Rcondition;
-      pthread_cond_t     m_Zcondition;
+      pthread_cond_t m_Rcondition;
+      pthread_cond_t m_Zcondition;
 #endif // OS
 
       void WaitForAutoResetCompletion(_AutoLock *  );
-      void WaitForAutoResetCompletion(_AutoLock * , AAL::btTime );
+      void WaitForAutoResetCompletion(_AutoLock * , btTime );
    };
 
    AutoResetManager   m_AutoResetManager;
@@ -190,6 +191,8 @@ private:
 
    friend class AutoResetManager;
 };
+
+END_NAMESPACE(AAL)
 
 /// @}
 
