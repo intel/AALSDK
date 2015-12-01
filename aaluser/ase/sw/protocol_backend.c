@@ -62,6 +62,58 @@ void scope_function()
 
 
 /*
+ * DPI: CONFIG path data exchange
+ */
+void sv2c_config_dex(const char *str)
+{
+  sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_config_filepath, str);
+#ifdef ASE_DEBUG
+  printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
+#endif
+  
+  // Check for existance of file
+  if ( access(sv2c_config_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_config_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
+ * DPI: SCRIPT path data exchange
+ */
+void sv2c_script_dex(const char *str)
+{
+  sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_script_filepath, str);
+#ifdef ASE_DEBUG
+  printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
+#endif
+
+  // Check for existance of file
+  if ( access(sv2c_script_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_script_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
  * DPI: WriteLine Data exchange
  */
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
@@ -135,6 +187,22 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 }
 
 
+/*
+ * DPI: MMIO update 
+ */ 
+void mmio_update_dex (int *addr, uint64_t *data)
+{
+  FUNC_CALL_ENTRY;
+  
+  uint64_t *mmio_addr;
+  mmio_addr = (uint64_t*)((uint64_t)ase_csr_base + (uint64_t)*addr);
+
+  *mmio_addr = (uint64_t) *data;
+
+  FUNC_CALL_EXIT;
+}
+
+
 // -----------------------------------------------------------------------
 // vbase/pbase exchange THREAD
 // when an allocate request is received, the buffer is copied into a
@@ -150,6 +218,9 @@ int ase_listener()
     */
   // DPI buffer
   struct buffer_t ase_buffer;
+
+  // Logger string
+  char logger_str[ASE_LOGGER_LEN];
 
   // Prepare an empty buffer
   ase_empty_buffer(&ase_buffer);
@@ -178,15 +249,23 @@ int ase_listener()
       // Write buffer information to file
       if ( (ase_buffer.is_csrmap == 0) || (ase_buffer.is_privmem == 0) )
 	{
-	  // Write Workspace info to workspace log file
-	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
-	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (uint64_t*)ase_buffer.vbase);
-	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (uint64_t*)ase_buffer.fake_paddr);
-	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (uint32_t*)(ase_buffer.fake_paddr >> 6));
-	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
-	  fprintf(fp_workspace_log, "\n");
+	  // Zero out string
+	  memset (logger_str, '\0', ASE_LOGGER_LEN);
 	  
+	  // Format workspace info string
+	  sprintf(logger_str + strlen(logger_str), "Workspace %d Allocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Write to CCI logger module | Placeholder
+	  // *FIXME* 
+	  // buffer_messages ( logger_str );
+
 	  // Flush info to file
+	  fprintf(fp_workspace_log, "%s", logger_str);
 	  fflush(fp_workspace_log);
 	}
       
@@ -227,39 +306,47 @@ int ase_listener()
     }
 
 
-  /*
-   * UMSG listener
-   */
-  // Message string
-  char umsg_str[SIZEOF_UMSG_PACK_T];
-  /* int ii; */
-  umsg_pack_t inst;
+#if 0 
+/*   /\* */
+/*    * UMSG listener */
+/*    *\/ */
+/*   // Message string */
+/*   char umsg_str[SIZEOF_UMSG_PACK_T]; */
+/*   /\* int ii; *\/ */
+/*   umsg_pack_t inst; */
 
-  // Cleanse receptacle string
-  /* umsg_data = malloc(CL_BYTE_WIDTH); */
-  memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T );
-  /* memset (umsg_data, '\0', CL_BYTE_WIDTH ); */
+/*   // Cleanse receptacle string */
+/*   /\* umsg_data = malloc(CL_BYTE_WIDTH); *\/ */
+/*   memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T ); */
+/*   /\* memset (umsg_data, '\0', CL_BYTE_WIDTH ); *\/ */
   
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
-    {
-/* #ifdef ASE_DEBUG */
-/*       printf("ASERxMsg => UMSG Received \n");       */
-/* #endif */
-      // Tokenize messgae to get msg_id & umsg_data
-      // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
-      memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T);
+/*   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT) */
+/*     { */
+/* /\* #ifdef ASE_DEBUG *\/ */
+/* /\*       printf("ASERxMsg => UMSG Received \n");       *\/ */
+/* /\* #endif *\/ */
+/*       // Tokenize messgae to get msg_id & umsg_data */
+/*       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data ); */
+/*       memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T); */
       
-/* #ifdef ASE_DEBUG */
-/*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); */
-/*       for(ii = 0 ; ii < 64; ii++) */
-/* 	printf("%02X", (int)inst.data[ii]); */
-/*       printf("\n"); */
-/* #endif */
+/* /\* #ifdef ASE_DEBUG *\/ */
+/* /\*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); *\/ */
+/* /\*       for(ii = 0 ; ii < 64; ii++) *\/ */
+/* /\* 	printf("%02X", (int)inst.data[ii]); *\/ */
+/* /\*       printf("\n"); *\/ */
+/* /\* #endif *\/ */
       
-      // UMSG dispatch
-      umsg_dispatch(0, 1, inst.hint, inst.id, inst.data);
-    }
+/*       // UMSG dispatch */
+/*       umsg_dispatch(0, 1, inst.hint, inst.id, inst.data); */
+/*     } */
+#endif
 
+  /*
+   * UMSG compare routine
+   * *FIXME*: Profiling and costliness analysis needed here
+   * *FIXME*: Notification service needs to be built
+   */
+  
 
   /*
    * SIMKILL message handler
@@ -346,6 +433,7 @@ void calc_phys_memory_ranges()
   END_YELLOW_FONTCOLOR;
 
   // Internal check messages
+#if 0
   if (cfg->enable_capcm)
     {
       if (capcm_size > (uint64_t)8*1024*1024*1024 )
@@ -375,6 +463,7 @@ void calc_phys_memory_ranges()
 	  END_RED_FONTCOLOR;
 	}
     }
+#endif
 }
 
 
@@ -399,16 +488,16 @@ int ase_init()
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Evaluate PWD
-  ase_run_path = malloc(ASE_FILEPATH_LEN);
+  ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
   // Evaluate Session directory
-  ase_workdir_path = malloc(ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
-  sprintf(ase_workdir_path, "%s/work/", ase_run_path);
+  sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : ASE Run path =>\n");
@@ -419,7 +508,7 @@ int ase_init()
 
   // Generate timstamp (used as session ID)
   put_timestamp();
-  tstamp_filepath = malloc(ASE_FILEPATH_LEN);
+  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(tstamp_filepath, ase_workdir_path);
   strcat(tstamp_filepath, TSTAMP_FILENAME);
 
@@ -485,11 +574,15 @@ int ase_ready()
 {
   FUNC_CALL_ENTRY;
 
+  // App run command
+  app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
+  memset (app_run_cmd, '\0', ASE_FILEPATH_LEN);
+
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
 
   // Indicate readiness with .ase_ready file
-  ase_ready_filepath = malloc (ASE_FILEPATH_LEN);
+  ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
   ase_ready_fd = fopen( ase_ready_filepath, "w");
   fprintf(ase_ready_fd, "%d", ase_pid);
@@ -511,7 +604,16 @@ int ase_ready()
   if (cfg->ase_mode == ASE_MODE_REGRESSION) 
     {
       printf("Starting ase_regress.sh script...\n");
-      system("./ase_regress.sh &");  
+      if ( strlen(sv2c_script_filepath) != 0 )
+	{
+	  strcpy(app_run_cmd, sv2c_script_filepath);
+	  strcat(app_run_cmd, " &");
+	}
+      else
+	{
+	  strcpy(app_run_cmd, "./ase_regress.sh &");  
+	}
+      system(app_run_cmd);
     }
   else
     {
@@ -607,9 +709,11 @@ void ase_umsg_init(uint64_t dsm_base)
 
   // CIRBSTAT setup (completed / ready)
   *cirbstat = cfg->num_umsg_log2 << 4 | 0x1 << 0;
-  printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
-  printf ("        CIRBSTAT addr = %p\n", cirbstat);
+#ifdef ASE_DEBUG
+  printf ("        DSM base      = %p\n", (void*)dsm_base);
+  printf ("        CIRBSTAT addr = %p\n", (void*)cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
+#endif
 
   FUNC_CALL_EXIT;
 }
@@ -683,24 +787,33 @@ void ase_config_parse(char *filename)
   // int tmp_umsg_log2;
 
   char *ase_cfg_filepath;
-  ase_cfg_filepath = malloc(256);
-  sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+  ase_cfg_filepath = ase_malloc(256);
+  memset (ase_cfg_filepath, '\0', 256);
+  if ( strlen(sv2c_config_filepath) != 0 )
+    {
+      // strcpy(ase_cfg_filepath, sv2c_config_filepath);
+      sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
+    }
+  else
+    {
+      sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+    }
 
   // Allocate space to store ASE config
-  cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );
+  cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
   if (cfg == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
       END_RED_FONTCOLOR;
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
+    /* #ifdef SIM_SIDE */
       start_simkill_countdown();
-    #else
-      exit(1);
-    #endif
+    /* #else */
+    /*   exit(1); */
+    /* #endif */
     }
-  line = malloc(sizeof(char) * 80);
+  line = ase_malloc(sizeof(char) * 80);
 
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;

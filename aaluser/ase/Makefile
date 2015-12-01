@@ -38,19 +38,23 @@
 #########################################################################
 # Provides a template for compiling ASE with RTL CAFU sources in VCS
 # and Questasim
+# For a full experience, roll your own Makefile
 #
 ##########################################################################
 
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 4.1.7
+ASE_VERSION = 4.1.7-CCIP
 
 # ASE Debug
-ASE_DEBUG = 0
+ASE_DEBUG = 1
 
 # Timescale
 TIMESCALE = 1ns/1ns
+
+# ASE Source directory
+ASE_SRCDIR = $(shell pwd)
 
 #########################################################################
 #                          Default options                              #
@@ -68,9 +72,11 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include -Wall 
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
+CC_OPT+= -Wall -std=c99 -D_POSIX_C_SOURCE=200809L
+# -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 
+CC_OPT+= -D ASE_DEBUG=1 -D ASE_MSG_VIEW=1 -pedantic
 endif
 
 ## Print information ##
@@ -107,24 +113,22 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
-# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1
 
 ## VCS elaboration
-SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
+SNPS_VCS_OPT = -nc -R -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
 
 ## Simulation options
-VCS_SIM_OPT = -l run.log -ucli -do vcs_run.tcl
-# ifeq ($(ASE_DEBUG), 1)
-# VCS_SIM_OPT+=  -cm line+fsm+cond+tgl+branch
-# endif
+VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 
 
 #########################################################################
@@ -219,15 +223,15 @@ vcs_build:
 	@echo "#                                                          #"
 	@echo "############################################################"
 	make sw_build
+	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
 ifdef DUT_VHD_SRC_LIST
 	vhdlan $(SNPS_VHDLAN_OPT) -f $(DUT_VHD_SRC_LIST) 
 endif
 ifdef DUT_VLOG_SRC_LIST
 	vlogan $(SNPS_VLOGAN_OPT) -f $(DUT_VLOG_SRC_LIST)
 endif
-	vlogan $(SNPS_VLOGAN_OPT) $(ASEHW_FILE_LIST) 
 ifeq ($(CC), gcc)
-	vcs $(SNPS_VCS_OPT) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_TOP) $(ASE_LD_SWITCHES)
+	vcs $(SNPS_VCS_OPT) $(ASE_TOP) $(WORK)/$(ASE_SHOBJ_SO) $(ASE_LD_SWITCHES)
 endif
 
 
@@ -267,7 +271,8 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-	./$(WORK)/ase_simv $(VCS_SIM_OPT)
+#	./$(WORK)/ase_simv $(VCS_SIM_OPT)
+	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim $(MENT_VSIM_OPT) $(ASE_TOP) 
@@ -277,6 +282,7 @@ else
 	@echo "############################################################"
   endif
 endif
+#	python scripts/ipc_clean.py
 
 # Open Wave file
 wave: check
@@ -287,17 +293,26 @@ else
 	vsim -view vsim.wlf
   endif
 endif
+
+
 #########################################################################
 #                            Clean all                                  #
 #########################################################################
 clean: header
-	rm -rf work/ *.log *.tsv AN.DB/ | echo "Never mind"
+	rm -rf work/ *.log *.tsv AN.DB/ | echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
+	rm -rf profile* simprofile*
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean
 	./distclean.sh
 
 
+
+#########################################################################
+#                            Leak Check                                 #
+#########################################################################
+src_check: 
+	scan-build-3.5 make sw_build
 

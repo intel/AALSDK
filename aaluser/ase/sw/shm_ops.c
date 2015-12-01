@@ -50,7 +50,7 @@ pthread_mutex_t lock;
 // CSR Map
 /* uint32_t csr_map[CSR_MAP_SIZE/4]; */
 uint32_t csr_write_cnt = 0;
-uint32_t *ase_csr_base;
+uint64_t *ase_csr_base;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -150,7 +150,7 @@ void session_init()
 
   // Creating CSR map 
   printf("  [APP]  Creating CSR map...\n");
-  csr_region = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+  csr_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   csr_region->memsize = CSR_MAP_SIZE;
   csr_region->is_csrmap = 1;
   allocate_buffer(csr_region);
@@ -265,7 +265,7 @@ void csr_write(uint32_t csr_offset, uint32_t data)
   printf("  [APP]  CSR Write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
   END_YELLOW_FONTCOLOR;
   
-  usleep(100);
+  //  usleep(100);
   
   FUNC_CALL_EXIT;
 }
@@ -334,6 +334,9 @@ void allocate_buffer(struct buffer_t *mem)
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
+    #ifdef ASE_DEBUG
+      printf("  DEBUG memname => %s\n", mem->memname);
+    #endif      
       /* mem->is_csrmap = 1; */
     }
   else
@@ -371,7 +374,7 @@ void allocate_buffer(struct buffer_t *mem)
 // Pin ASE CSR base, so CSR Writes can be managed
 if (buffer_index_count == 0)
   {
-      ase_csr_base = (uint32_t*)mem->vbase;
+      ase_csr_base = (uint64_t*)mem->vbase;
       //      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
   }
 
@@ -440,13 +443,13 @@ void deallocate_buffer(struct buffer_t *mem)
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
   char *mq_name;
-  mq_name = malloc (ASE_MQ_NAME_LEN);
+  mq_name = ase_malloc (ASE_MQ_NAME_LEN);
   memset(mq_name, '\0', ASE_MQ_NAME_LEN);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory region %s ...", mem->memname);
   END_YELLOW_FONTCOLOR;
-  usleep(50000);                                   // Short duration wait for sanity
+  // usleep(50000);                                   // Short duration wait for sanity
 
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ
   mem->metadata = HDR_MEM_DEALLOC_REQ;
@@ -521,8 +524,8 @@ void umas_init(uint32_t umsg_mode)
   else
     {
       // Initialize 
-      umas = (struct buffer_t *)malloc(sizeof(struct buffer_t));
-      umas->memsize = 32 * 1024;
+      umas = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+      umas->memsize = NUM_UMSG_PER_AFU * ASE_PAGESIZE;
       umas->is_umas = 1;
       allocate_buffer (umas);
 
@@ -555,6 +558,7 @@ void umas_init(uint32_t umsg_mode)
  * Action     : Form a message and send it down a message queue
  *
  */
+#if 0
 void umsg_send(int umas_id, char *umsg_data)
 {
 
@@ -593,7 +597,7 @@ void umsg_send(int umas_id, char *umsg_data)
 
   mqueue_send(app2sim_umsg_tx, umsg_str);
 }
-
+#endif
 
 /*
  * umas_deinit : Deinitialize UMAS region
@@ -610,7 +614,7 @@ void umas_deinit()
   END_RED_FONTCOLOR;
 }
 
-
+#if 0
 /*
  * setup_spl_cxt_pte : Create SPL Page table and Contexts
  * Setup SPL context and page tables using ASE memory allocation
@@ -621,8 +625,8 @@ void setup_spl_cxt_pte(struct buffer_t *dsm, struct buffer_t *afu_cxt)
   FUNC_CALL_ENTRY;
 
   // Allocate spaces for shared buffers
-  spl_pt  = (struct buffer_t *)malloc(sizeof(struct buffer_t));
-  spl_cxt = (struct buffer_t *)malloc(sizeof(struct buffer_t));
+  spl_pt  = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  spl_cxt = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
   uint64_t num_2mb_chunks;
   uint64_t *spl_pt_addr;
@@ -788,4 +792,4 @@ void spl_driver_stop()
 
   FUNC_CALL_EXIT;
 }
-
+#endif

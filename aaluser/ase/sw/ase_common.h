@@ -76,7 +76,7 @@
  * SYSTEM FACTS
  * 
  * *******************************************************************************/
-#define FPGA_ADDR_WIDTH       38
+#define FPGA_ADDR_WIDTH       48
 #define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
 #define CL_ALIGN_SHIFT        6
 
@@ -99,6 +99,9 @@
 #define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
 #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
 
+#define NUM_UMSG_PER_AFU               8
+
+#if 0 
 /*
  * SPL constants
  */
@@ -119,7 +122,7 @@
 //                                Byte Offset  Attribute  Width  Comments
 #define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
 #define      DSM_STATUS            0x40         // RO      512b   test status and error info
-
+#endif
 
 /* *******************************************************************************
  *
@@ -131,6 +134,9 @@
 
 // ASE filepath length
 #define ASE_FILEPATH_LEN  256
+
+// ASE logger len
+#define ASE_LOGGER_LEN    1024
 
 // work Directory location
 char *ase_workdir_path;
@@ -147,6 +153,13 @@ char *ipclist_filepath;
 
 // Ready filepath
 char *ase_ready_filepath;
+
+// CONFIG,SCRIPT parameter paths received from SV (initial)
+char *sv2c_config_filepath;
+char *sv2c_script_filepath;
+
+// ASE-APP run command
+char *app_run_cmd;
 
 // ASE Mode macros
 #define ASE_MODE_DAEMON_NO_SIMKILL   1
@@ -216,7 +229,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |    
-  int is_csrmap;                  // Flag memory as DSM              |   
+  int is_csrmap;                  // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
@@ -231,7 +244,7 @@ extern struct buffer_t *end;       // Tail pointer
 // CSR fake physical base address
 extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
 // DPI side CSR base, offsets updated on CSR writes
-extern uint32_t *ase_csr_base;      
+extern uint64_t *ase_csr_base;      
 // Timestamp reference time
 extern struct timeval start;
 
@@ -271,7 +284,7 @@ struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
 
 // Mem-ops functions
-void ase_mqueue_setup();
+// void ase_mqueue_setup();
 void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
@@ -294,6 +307,7 @@ void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
 char* ase_eval_session_directory();
+char* ase_malloc (size_t);
 
 // Message queue operations
 void ipc_init();
@@ -356,20 +370,6 @@ extern "C" {
  * MESSAGING IPC
  *
  * ********************************************************************/
-// Buffer exchange messages
-/* #define APP2SIM_SMQ_PREFIX          "app2sim_bufping_smq." */
-/* #define SIM2APP_SMQ_PREFIX          "sim2app_bufpong_smq." */
-/* // CSR write messages */
-/* #define APP2SIM_CSR_WR_SMQ_PREFIX   "app2sim_csr_wr_smq." */
-/* // UMSG control messages from APP to SIM */
-/* #define APP2SIM_UMSG_SMQ_PREFIX     "app2sim_umsg_smq." */
-/* // Interrupt message from SIM to APP */
-/* #if 0 */
-/* #define SIM2APP_INTR_SMQ_PREFIX     "sim2app_intr_smq." */
-/* #endif */
-/* // Simkill control messages */
-/* #define APP2SIM_SIMKILL_SMQ_PREFIX  "app2sim_simkill_smq." */
-
 // Message Queue establishment status
 #define MQ_NOT_ESTABLISHED 0x0
 #define MQ_ESTABLISHED     0xCAFE
@@ -499,6 +499,7 @@ extern void simkill();
 extern void sw_simkill_request();
 extern void csr_write_init();
 extern void csr_write_dispatch(int, int, int);
+extern void buffer_messages(char *);
 /* extern void umsg_init(); */
 extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
@@ -514,13 +515,20 @@ void start_simkill_countdown();
 void run_clocks(int num_clocks);
 
 // CSR Write 
+#if 0
 void csr_write_dex(cci_pkt *csr);
 void csr_write_completed();
+#endif
 
 // Read system memory line
 void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
 // Write system memory line
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
+
+// MMIO request 
+void mmio_dispatch(int init, int wren, int addr, long int data, int dwidth);
+// MMIO Read response
+void mmio_update_dex(int *addr, uint64_t *data64);
 
 // CAPCM functions
 extern void capcm_init();
@@ -533,7 +541,8 @@ void ase_umsg_init();
 
 /*
  * Request/Response options
- */ 
+ */
+#if 0 
 // TX0 channel
 #define ASE_TX0_RDLINE       0x4
 // TX1 channel
@@ -541,6 +550,7 @@ void ase_umsg_init();
 #define ASE_TX1_WRLINE       0x2
 #define ASE_TX1_WRFENCE      0x5   // CCI 1.8
 #define ASE_TX1_INTRVALID    0x8   // CCI 1.8
+#endif
 // RX0 channel
 #define ASE_RX0_CSR_WRITE    0x0
 #define ASE_RX0_WR_RESP      0x1
@@ -561,6 +571,8 @@ FILE *ase_ready_fd;
 // ASE seed 
 uint64_t ase_addr_seed;
 
+// ASE error file
+FILE *error_fp;
 
 /*
  * QPI-CA private memory implementation

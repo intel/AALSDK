@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #######################################################################
 # generate_ase_environment.py : Generate AFU paths, include directories as a
 # Makefile snippet for ASE builds
@@ -32,7 +34,7 @@ else:
 
 ### Supported file extensions
 # USERs may modify this if needed
-VLOG_EXTENSIONS = [ ".sv", ".vs", ".v" ] 
+VLOG_EXTENSIONS = [ ".svh", ".sv", ".vs", ".v" ] 
 VHD_EXTENSIONS = [ ".vhd" ]
 
 VHDL_FILE_LIST = "vhdl_files.list"
@@ -139,7 +141,7 @@ else:
         loc = os.path.abspath(loc)        
         if (os.path.isdir(str(loc))):            
             valid_dirlist.append(loc)
-            str_dirlist = str_dirlist + loc + " "
+            str_dirlist = str_dirlist + loc + "/ "
             print ("\t",loc)
     # If no legal directories, error out
     if len(valid_dirlist) == 0:
@@ -166,7 +168,7 @@ print("")
 print("Finding VHDL files ... ")
 str = ""
 for extn in VHD_EXTENSIONS:
-    str = str + commands_getoutput("find " + str_dirlist + " -type f -name *" + extn)
+    str = str + commands_getoutput("find -L " + str_dirlist + " -type f -name *" + extn)
     if len(str) != 0:
         str = str + "\n\n"
 if len(str.strip()) != 0:
@@ -181,7 +183,7 @@ print("")
 print("Finding {System}Verilog files ... ")
 str = ""
 for extn in VLOG_EXTENSIONS:
-    str = str + commands_getoutput("find " + str_dirlist + " -type f -name *" + extn)
+    str = str + commands_getoutput("find -L " + str_dirlist + " -type f -name *" + extn)
     if len(str) != 0:
         str = str + "\n\n"
 if len(str) != 0:
@@ -194,7 +196,7 @@ else:
 # Recursively find and add directory locations for VH
 print("")
 print("Finding include directories ... ")
-str = commands_getoutput("find " + str_dirlist + " -type d")
+str = commands_getoutput("find -L " + str_dirlist + " -type d")
 str = str.replace("\n", "+")
 if len(str) != 0:
     print("DUT_INCDIR = " + str)
@@ -202,7 +204,7 @@ if len(str) != 0:
 
 # Find ASE HW files ###
 pwd = commands_getoutput("pwd").strip()
-ase_hw_files_str = commands_getoutput ("find " + pwd + "/hw/ -name *.v -or -name *.sv")
+ase_hw_files_str = commands_getoutput ("find -L " + pwd + "/hw/ -name *.v -or -name *.sv")
 if len(ase_hw_files_str) == 0:
     ase_functions.begin_red_fontcolor()
     print("ERROR: ASE files could not be found, please ensure you run this script in the <AALSDK>/ase directory\n")
@@ -218,21 +220,21 @@ fd.write("\n\n")
 # Recursively find and add directory locations for ASE HW files
 print("")
 print("Finding include directories ... ")
-str = commands_getoutput("find " + pwd + "/hw/ -type d")
+str = commands_getoutput("find -L " + pwd + "/hw/ -type d")
 str = str.replace("\n", "+")
 if len(str) != 0:
     print("ASE_INCDIR = " + str)
     fd.write("ASE_INCDIR = " + str + "\n\n")
 
 # Find ASE SW files
-ase_sw_files_str = commands_getoutput ("find " + pwd + "/sw/ -name *.c")
+ase_sw_files_str = commands_getoutput ("find -L " + pwd + "/sw/ -name *.c")
 ase_sw_files_str = ase_sw_files_str.replace("\n", " \\\n\t")
 ase_sw_files_str = ase_sw_files_str[:-1]
 fd.write("ASESW_FILE_LIST = ")
 fd.write(ase_sw_files_str)
 fd.write("\n\n")
 
-fd.write("ASE_TOP = cci_emulator")
+fd.write("ASE_TOP = ase_top")
 fd.write("\n\n")
 
 # Update SIMULATOR

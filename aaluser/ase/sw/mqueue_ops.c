@@ -91,7 +91,7 @@ void mqueue_create(char* mq_name_suffix)
   char *mq_path;
   int ret;
   
-  mq_path = malloc (ASE_FILEPATH_LEN);
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
 /* #ifdef ASE_DEBUG */
@@ -134,7 +134,8 @@ int mqueue_open(char *mq_name, int perm_flag)
   int mq;
   char *mq_path;
 
-  mq_path = malloc (ASE_FILEPATH_LEN);
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
+  memset (mq_path, '\0', ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
   
 /* #ifdef ASE_DEBUG */
@@ -190,7 +191,11 @@ void mqueue_close(int mq)
   ret = close (mq);
   if (ret == -1) 
     {
+#ifdef SIM_SIDE
+ #ifdef ASE_DEBUG
       printf("Error closing IPC\n");
+ #endif
+#endif
     }
 
   FUNC_CALL_EXIT;
@@ -207,13 +212,20 @@ void mqueue_destroy(char* mq_name_suffix)
   char *mq_path;
   int ret;
 
-  mq_path = malloc (ASE_FILEPATH_LEN);
-  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
-  
-  ret = unlink ( mq_path );
-  if (ret == -1) 
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
+  if (mq_path != NULL) 
     {
-      printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
+      memset (mq_path, '\0', ASE_FILEPATH_LEN);
+      sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix); 
+      ret = unlink ( mq_path );
+      if (ret == -1) 
+	{
+	  printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
+	}
+    }
+  else
+    {
+      printf("Could not remove MQ, please clean by removing work directory\n");
     }
   
   FUNC_CALL_EXIT;
