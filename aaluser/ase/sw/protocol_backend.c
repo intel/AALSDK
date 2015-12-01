@@ -344,6 +344,7 @@ int ase_listener()
   /*
    * UMSG compare routine
    * *FIXME*: Profiling and costliness analysis needed here
+   * *FIXME*: Notification service needs to be built
    */
   
 

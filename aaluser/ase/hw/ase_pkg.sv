@@ -291,11 +291,17 @@ package ase_pkg;
       logic [8:0]  tid;  
       } CfgHdr_t;
    parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
+
+   // MMIO header
+   typedef struct packed {
+      logic [8:0] tid; 
+      } MMIOHdr_t;
+   parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
+   
       
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
-   parameter CCIP_MMIO_TID_WIDTH    = 9;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
 

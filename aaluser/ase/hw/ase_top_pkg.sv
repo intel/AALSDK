@@ -1,112 +1,120 @@
-// Date: 10/8/2015
-// Compliant with CCI-P spec v0.58
+// Date: 11/4/2015
+// Compliant with CCI-P spec v0.6
 package ase_top_pkg;
+//=====================================================================
+// CCI-P interface defines
+//=====================================================================
 
-   parameter CCIP_CLDATA_WIDTH      = 512;
-   parameter CCIP_CFGDATA_WIDTH     = 64;
-   parameter CCIP_CFG_ADDR_MASK     = 16'h7fff;        // AFU developers ignore this
+parameter CCIP_CLDATA_WIDTH      = 512;
+parameter CCIP_MMIODATA_WIDTH     = 64;
 
-   //=====================================================================
-   // CCI-P Field paramters
-   //=====================================================================
-   // Request Type  Encodings
-   //----------------------------------------------------------------------
-   parameter CCIP_REQ_TYPE_WIDTH          = 4'h4;
-   parameter CCIP_REQ_WRLINE_I            = 4'h1;
-   parameter CCIP_REQ_WRLINE_M            = 4'h2;
-   parameter CCIP_REQ_WRFENCE             = 4'h5;
-   parameter CCIP_REQ_RDLINE_S            = 4'h4;
-   parameter CCIP_REQ_RDLINE_I            = 4'h6;
-   parameter CCIP_REQ_INTR                = 4'h8;
+// Request Type  Encodings
+//----------------------------------------------------------------------
+typedef enum logic [3:0] {
+    eREQ_WRLINE_I  = 4'h1,      // Memory Write with FPGA Cache Hint=Invalid
+    eREQ_WRLINE_M  = 4'h2,      // Memory Write with FPGA Cache Hint=Modified
+    eREQ_WRFENCE   = 4'h5,      // Memory Write Fence ** NOT SUPPORTED FOR VC_VA channel **
+    eREQ_RDLINE_S  = 4'h4,      // Memory Read with FPGA Cache Hint=Shared
+    eREQ_RDLINE_I  = 4'h6,      // Memory Read with FPGA Cache Hint=Invalid
+    eREQ_INTR      = 4'h8       // Interrupt the CPU ** NOT SUPPORTED CURRENTLY **
+} t_ccip_req;
+// Response Type  Encodings
+//----------------------------------------------------------------------
+typedef enum logic [3:0] {
+    eRSP_WRLINE = 4'h1,         // Memory Write
+    eRSP_RDLINE = 4'h4,         // Memory Read
+    eRSP_INTR   = 4'h8,         // Interrupt delivered to the CPU ** NOT SUPPORTED CURRENTLY **
+    eRSP_UMSG   = 4'hF          // UMsg received ** NOT SUPPORTED CURRENTLY **
+} t_ccip_rsp;
+//
+// Virtual Channel Select
+//----------------------------------------------------------------------
+typedef enum logic [1:0] {
+    eVC_VA  = 2'b00,
+    eVC_VL0 = 2'b01,
+    eVC_VH0 = 2'b10,
+    eVC_VH1 = 2'b11
+} t_ccip_vc;
+//
+// Structures for Request and Response headers
+//----------------------------------------------------------------------
+typedef struct packed {
+    t_ccip_vc       vc_sel;
+    logic           sop;
+    logic           rsvd1;
+    logic [1:0]     length;
+    t_ccip_req      req_type;
+    logic [5:0]     rsvd0;
+    logic [41:0]    address;
+    logic [15:0]    mdata;
+} t_ccip_ReqMemHdr;
+parameter CCIP_TX_MEMHDR_WIDTH = $bits(t_ccip_ReqMemHdr);
+
+typedef struct packed {
+    t_ccip_vc       vc_used;
+    logic           poison;
+    logic           hit_miss;
+    logic           fmt;
+    logic           rsvd0;
+    logic [1:0]     cl_num;
+    t_ccip_rsp      resp_type;
+    logic [15:0]    mdata;
+} t_ccip_RspMemHdr;
+parameter CCIP_RX_MEMHDR_WIDTH = $bits(t_ccip_RspMemHdr);
+
+typedef struct packed {
+    logic [15:0]    address;    // 4B aligned Mmio address
+    logic [1:0]     length;     // 2'b00- 4B, 2'b01- 8B, 2'b10- 64B
+    logic           poison;
+    logic [8:0]     tid;
+} t_ccip_Req_MmioHdr;
+parameter CCIP_RX_MMIOHDR_WIDTH = $bits(t_ccip_Req_MmioHdr);
+
+typedef struct packed {
+    logic [8:0]     tid;        // Returnd back from Request header
+} t_ccip_Rsp_MmioHdr;
+parameter CCIP_TX_MMIOHDR_WIDTH = $bits(t_ccip_Rsp_MmioHdr);
+
+//------------------------------------------------------------------------
+// CCI-P Input & Output bus structures 
+// 
+// Users are encouraged to use these for AFU development
+//------------------------------------------------------------------------
+typedef struct {
+    // Channel 0 : Memory Reads
+    t_ccip_ReqMemHdr              C0Hdr;          // Request Header
+    logic                         C0RdValid;      // Request Rd Valid
+
+    // Channel 1 : Memory Writes
+    t_ccip_ReqMemHdr              C1Hdr;          // Request Header
+    logic [CCIP_CLDATA_WIDTH-1:0] C1Data;         // Request Data
+    logic                         C1WrValid;      // Request Wr Valid
+    logic                         C1IntrValid;    // Request Intr Valid
+
+    // Channel 3 : Mmio
+   t_ccip_Rsp_MmioHdr            C2Hdr;          // Response Header
+    logic                         C2MmioRdValid;  // Response Read Valid
+    logic [CCIP_MMIODATA_WIDTH-1:0]C2Data;         // Response Data
+} t_if_ccip_Tx;
 
 
-   // Response Type  Encodings
-   //----------------------------------------------------------------------
-   parameter CCIP_RSP_WRLINE              = 4'h1;
-   parameter CCIP_RSP_RDLINE              = 4'h4;
-   parameter CCIP_RSP_INTR                = 4'h8;
-   parameter CCIP_RSP_UMSG                = 4'hf;
-   //
-   // Virtual Channel Select
-   //----------------------------------------------------------------------
-   parameter CCIP_VC_SEL_WIDTH = 2'h2;
-   parameter CCIP_VC_VA  = 2'b00;
-   parameter CCIP_VC_VL0 = 2'b01;
-   parameter CCIP_VC_VH0 = 2'b10;
-   parameter CCIP_VC_VH1 = 2'b11;
-   //----------------------------------------------------------------------
-   typedef struct packed {
-      logic [CCIP_VC_SEL_WIDTH-1:0] vc_sel;
-      logic 			    sop;
-      logic 			    rsvd1;
-      logic [1:0] 		    length;
-      logic [3:0] 		    req_type;
-      logic [5:0] 		    rsvd0;
-      logic [41:0] 		    address;
-      logic [15:0] 		    mdata;
-   } cci_p_RqMemHdr;
-   parameter CCIP_TXHDR_WIDTH = $bits(cci_p_RqMemHdr);
+typedef struct {
+    // Channel 0: Memory Reads, Mmio
+    logic                        C0TxAlmFull;    //  C0 Request Channel Almost Full
+    t_ccip_RspMemHdr             C0Hdr;          //  Response/Request Header
+    logic [CCIP_CLDATA_WIDTH-1:0]C0Data;         //  Response Data
+    logic                        C0WrValid;      //  Response Wr Valid
+    logic                        C0RdValid;      //  Response Rd Valid
+    logic                        C0UMsgValid;    //  Request UMsg Valid
+    logic                        C0MmioRdValid;  //  Request MMIO Rd Valid
+    logic                        C0MmioWrValid;  //  Request MMIO Wr Valid
 
-   typedef struct 		    packed {
-      logic [CCIP_VC_SEL_WIDTH-1:0] vc_used;
-      logic 			    poison;
-      logic 			    hit_miss;
-      logic 			    fmt;
-      logic 			    rsvd0;
-      logic [1:0] 		    cl_num;
-      logic [3:0] 		    resp_type;
-      logic [15:0] 		    mdata;
-   } cci_p_RspMemHdr;
-   parameter CCIP_RXHDR_WIDTH = $bits(cci_p_RspMemHdr);
+    // Channel 1: Memory Writes
+    logic                        C1TxAlmFull;    //  C1 Request Channel Almost Full
+    t_ccip_RspMemHdr             C1Hdr;          //  Response Header
+    logic                        C1WrValid;      //  Response Wr Valid
+    logic                        C1IntrValid;    //  Response Interrupt Valid
 
-   typedef struct 		    packed {
-      logic [7:0] 		    tid;        // delete me: temporarily used for testing
-      logic [15:0] 		    address;    // 4B aligned MMIO address
-      logic [1:0] 		    rsvd0;
-      logic [1:0] 		    length;
-   } cci_p_ReqCfgHdr;
-   parameter CCIP_RXCFGHDR_WIDTH = $bits(cci_p_ReqCfgHdr);
-
-   /* PM: Delete me: Temporarily used for testing */
-   typedef struct 		    packed {
-      logic 			    length;
-      logic [7:0] 		    tid;
-   } cci_p_RspCfgHdr;
-   parameter CCIP_TXCFGHDR_WIDTH = $bits(cci_p_RspCfgHdr);
-
-   typedef struct 		    {
-      cci_p_RqMemHdr                C0Hdr;          // Tx hdr
-      logic                         C0RdValid;      // Tx hdr is valid
-
-      cci_p_RqMemHdr                C1Hdr;          // Tx hdr
-      logic [CCIP_CLDATA_WIDTH-1:0] C1Data;         // Tx data
-      logic                         C1WrValid;      // Tx hdr is valid
-      logic                         C1IntrValid;    // Tx interrupt valid
-
-      logic                         CfgRdValid;
-      logic [CCIP_CFGDATA_WIDTH-1:0] CfgRdData;
-      cci_p_RspCfgHdr               CfgHdr;         // Delete this. Temporarily added for testing
-   } cci_p_TxData_if;
-
-
-   typedef struct 		     {
-      cci_p_RspMemHdr              C0Hdr;          //  Rx hdr
-      logic [CCIP_CLDATA_WIDTH-1:0]  C0Data;         //  Rx data
-      logic 			     C0WrValid;      //  Rx hdr carries a write response
-      logic 			     C0RdValid;      //  Rx hdr carries a read response
-      logic 			     C0CfgValid;     //  Rx hdr carries a cfg write
-      logic 			     C0IntrValid;    //  Rx interrupt cmp
-      logic 			     C0UMsgValid;    //  Rx UMsg valid
-
-      cci_p_RspMemHdr              C1Hdr;          //  Rx hdr
-      logic 			     C1WrValid;      //  Rx hdr carries a write response
-      logic 			     C1IntrValid;    //  Rx interrupt cmp
-      logic 			     C0TxAlmFull;    //  Tx channel is almost full
-      logic 			     C1TxAlmFull;    //  Tx channel is almost full
-
-      logic 			     CfgRdValid;
-      logic 			     CfgWrValid;
-      cci_p_ReqCfgHdr              CfgHdr;
-   } cci_p_RxData_if;
+} t_if_ccip_Rx;
 
 endpackage

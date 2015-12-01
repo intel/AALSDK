@@ -81,7 +81,7 @@ module latency_pipe
    // Register stages (instantiated here, not connected)
    genvar 			 ii;
    generate
-      for(ii = 0; ii < NUM_DELAY; ii = ii + 1) begin
+      for(ii = 0; ii < NUM_DELAY; ii = ii + 1) begin : reg_array_gen
 	 register
 	       #(
 		 .REG_WIDTH (PIPE_WIDTH)
@@ -99,8 +99,8 @@ module latency_pipe
    // Pipeline stages connected here
    genvar 		    jj;
    generate
-      for(jj = 1; jj < NUM_DELAY; jj = jj + 1) begin
-	 assign pipe_in_tmp[jj] = pipe_out_tmp[jj - 1];
+      for(jj = 1; jj < NUM_DELAY; jj = jj + 1) begin : connect_gen
+	 assign pipe_in_tmp[jj] = pipe_out_tmp[jj - 1]; 
       end
    endgenerate
 

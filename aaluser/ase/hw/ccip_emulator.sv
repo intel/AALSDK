@@ -34,21 +34,18 @@
  *              Intel Corporation
  *
  * MAJOR UPGRADES:
- * - RRS: Wed Aug 10 22:17:28 PDT 2011
- *   Completed FIFO'ing all channels in all directions
- * - RRS: Tue Jun 17 16:46:06 PDT 2014
- *   Started cleaning up code to add latency model
- *   Connect up new transactions CCI 1.8
- * - RRS: Tue Dec 23 11:01:28 PST 2014
- *   Optimizing ASE for performance
- *   Added return path FIFOs for marshalling
- * - RRS: Tue Oct 21 13:33:34 PDT 2015
- *   CCIP migration
- * 
+ * Wed Aug 10 22:17:28 PDT 2011   | Completed FIFO'ing all channels in all directions
+ * Tue Jun 17 16:46:06 PDT 2014   | Started cleaning up code to add latency model
+ *                                | Connect up new transactions CCI 1.8
+ * Tue Dec 23 11:01:28 PST 2014   | Optimizing ASE for performance
+ *                                | Added return path FIFOs for marshalling
+ * Tue Oct 21 13:33:34 PDT 2015   | CCIP migration
+ *
  */
 
 import ase_pkg::*;
-import ase_top_pkg::*;
+import ccip_if_pkg::*;
+// import ase_top_pkg::*;
 
 `include "platform.vh"
 
@@ -58,115 +55,122 @@ module ccip_emulator
    output logic vl_clk_LPdomain_64ui,
    output logic vl_clk_LPdomain_32ui,
    output logic vl_clk_LPdomain_16ui,
-   output logic ffs_vl_LP32ui_lp2sy_SystemReset_n,
-   output logic ffs_vl_LP32ui_lp2sy_SoftReset_n,
-   input 	cci_p_TxData_if ffs_LP16ui_sTxData_afu,
-   output 	cci_p_RxData_if ffs_LP16ui_sRxData_afu
+   output logic ffs_LP16ui_afu_SoftReset_n,
+   input 	t_if_ccip_Tx ffs_LP16ui_sTxData_afu,
+   output 	t_if_ccip_Rx ffs_LP16ui_sRxData_afu
    );
 
-   
+
    /*
     * CCIP breakout
-    */ 
+    */
    // Clock/reset
-   logic 	clk_16ui ;
-   logic 	clk_32ui ;
-   logic 	clk_64ui ;
-   logic 	sys_reset_n;
-   logic 	sw_reset_n;
-   // Config
-   // logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData; 
-   // logic 			     CfgRdDataValid;
-   // logic [CCIP_CFG_HDR_WIDTH-1:0]    CfgHeader;
-   // logic 			     CfgWrValid;
-   // logic 			     CfgRdValid;
+   logic 			      Clk16UI ;
+   logic 			      Clk32UI ;
+   logic 			      Clk64UI ;
+   logic 			      SoftReset_n;
    // Tx0
-   TxHdr_t                           C0TxHdr;
-   logic 	C0TxRdValid;
+   TxHdr_t                            C0TxHdr;
+   logic 	                      C0TxRdValid;
    // Tx1
-   TxHdr_t                           C1TxHdr;
-   logic [CCIP_DATA_WIDTH-1:0] C1TxData;
-   logic 		       C1TxWrValid;
-   logic 		       C1TxIntrValid;
+   TxHdr_t                            C1TxHdr;
+   logic [CCIP_DATA_WIDTH-1:0]        C1TxData;
+   logic 		              C1TxWrValid;
+   logic 		              C1TxIntrValid;
    // Tx2
-   logic [CCIP_MMIO_RDHDR_WIDTH-1:0] C2TxHdr;
-   logic 			     C2TxMMIORdValid;
-   logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData;   
+   logic [CCIP_MMIO_TID_WIDTH-1:0]    C2TxHdr;
+   logic                              C2TxMMIORdValid;
+   logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData;
    // Rx0
    logic 			      C0RxMMIOWrValid;
-   logic 			      C0RxMMIORdValid;   
+   logic 			      C0RxMMIORdValid;
    logic [CCIP_DATA_WIDTH-1:0] 	      C0RxData;
-   RxHdr_t                           C0RxHdr;
+   RxHdr_t                            C0RxHdr;
    logic 			      C0RxRdValid;
    logic 			      C0RxWrValid;
    logic 			      C0RxUMsgValid;
    // Rx1
-   RxHdr_t                           C1RxHdr;
+   RxHdr_t                            C1RxHdr;
    logic 			      C1RxWrValid;
    logic 			      C1RxIntrValid;
    // Almost full signals
    logic 			      C0TxAlmFull;
    logic 			      C1TxAlmFull;
 
+
+   /*
+    * ASE's reset signal
+    */
+   logic 			      sys_reset_n;
+
+
    /*
     * Remapping ASE CCIP to cvl_pkg struct
-    */ 
-   // always @(*) begin
-   //    // Rx OUT
-   //    ffs_LP16ui_sRxData_afu.C0Hdr <= { C0RxHdr.vc, 
-   // 					C0RxHdr.poison, 
-   // 					C0RxHdr.hitmiss, 
-   // 					1'b0, 
-   // 					C0RxHdr.clnum,
-   // 					C0RxHdr.resptype,
-   // 					C0RxHdr.mdata
-   // 					};
-   //    ffs_LP16ui_sRxData_afu.C0Data <= C0RxData;
-   //    ffs_LP16ui_sRxData_afu.C0WrValid <= C0RxWrValid;
-   //    ffs_LP16ui_sRxData_afu.C0RdValid <= C0RxRdValid;      
-   //    ffs_LP16ui_sRxData_afu.C0IntrValid <= C0RxIntrValid;
-   //    ffs_LP16ui_sRxData_afu.C0UMsgValid <= C0RxUMsgValid;
-   //    ffs_LP16ui_sRxData_afu.C1Hdr  <= { C1RxHdr.vc, 
-   // 					 C1RxHdr.poison, 
-   // 					 C1RxHdr.hitmiss, 
-   // 					 1'b0, 
-   // 					 C1RxHdr.clnum,
-   // 					 C1RxHdr.resptype,
-   // 					 C1RxHdr.mdata
-   // 					 };
-   //    ffs_LP16ui_sRxData_afu.C1WrValid <= C1RxWrValid;
-   //    ffs_LP16ui_sRxData_afu.C1IntrValid <= C1RxIntrValid;
-   //    // ffs_LP16ui_sRxData_afu.InitDn <= lp_initdone;
-   //    ffs_LP16ui_sRxData_afu.CfgWrValid <= CfgWrValid;
-   //    ffs_LP16ui_sRxData_afu.CfgRdValid <= CfgRdValid;
-   //    ffs_LP16ui_sRxData_afu.CfgHdr     <= CfgHeader;
-   //    // Tx OUT
-   //    { C0TxHdr.vc,
-   // 	C0TxHdr.sop,
-   // 	C0TxHdr.rsvd70,
-   // 	C0TxHdr.len,
-   // 	C0TxHdr.reqtype,
-   // 	C0TxHdr.rsvd63_58,
-   // 	C0TxHdr.addr,
-   // 	C0TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C0Hdr;
-   //    C0TxRdValid <= ffs_LP16ui_sTxData_afu.C0RdValid;
-   //    { C1TxHdr.vc,
-   // 	C1TxHdr.sop,
-   // 	C1TxHdr.rsvd70,
-   // 	C1TxHdr.len,
-   // 	C1TxHdr.reqtype,
-   // 	C1TxHdr.rsvd63_58,
-   // 	C1TxHdr.addr,
-   // 	C1TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C1Hdr;
-   //    C1TxData <= ffs_LP16ui_sTxData_afu.C1Data;
-   //    C1TxWrValid <= ffs_LP16ui_sTxData_afu.C1WrValid;
-   //    C1TxIntrValid <= ffs_LP16ui_sTxData_afu.C1IntrValid;      
-   //    CfgRdDataValid <= ffs_LP16ui_sTxData_afu.CfgRdValid;
-   //    CfgRdData <= ffs_LP16ui_sTxData_afu.CfgRdData;      
-   //    // Almost full signals
-   //    ffs_LP16ui_sRxData_afu.C0TxAlmFull = C0TxAlmFull;
-   //    ffs_LP16ui_sRxData_afu.C1TxAlmFull = C1TxAlmFull;     	
-   // end
+    */
+   assign vl_clk_LPdomain_16ui = Clk16UI;
+   assign vl_clk_LPdomain_32ui = Clk32UI;
+   assign vl_clk_LPdomain_64ui = Clk64UI;
+
+   assign ffs_LP16ui_afu_SoftReset_n = SoftReset_n;
+
+   // Rx/Tx mappint
+   always @(*) begin
+      // Rx OUT
+      // ffs_LP16ui_sRxData_afu.C0Hdr <= { C0RxHdr.vc,
+      // 					C0RxHdr.poison,
+      // 					C0RxHdr.hitmiss,
+      // 					1'b0,
+      // 					C0RxHdr.clnum,
+      // 					C0RxHdr.resptype,
+      // 					C0RxHdr.mdata
+      // 					};
+      ffs_LP16ui_sRxData_afu.C0Hdr <= t_ccip_RspMemHdr'(C0RxHdr);
+      ffs_LP16ui_sRxData_afu.C0Data <= C0RxData;
+      ffs_LP16ui_sRxData_afu.C0WrValid <= C0RxWrValid;
+      ffs_LP16ui_sRxData_afu.C0RdValid <= C0RxRdValid;
+      ffs_LP16ui_sRxData_afu.C0UMsgValid <= C0RxUMsgValid;
+      //    ffs_LP16ui_sRxData_afu.C1Hdr  <= { C1RxHdr.vc,
+      // 					 C1RxHdr.poison,
+      // 					 C1RxHdr.hitmiss,
+      // 					 1'b0,
+      // 					 C1RxHdr.clnum,
+      // 					 C1RxHdr.resptype,
+      // 					 C1RxHdr.mdata
+      // 					 };
+      ffs_LP16ui_sRxData_afu.C1Hdr <= t_ccip_RspMemHdr'(C1RxHdr);
+      ffs_LP16ui_sRxData_afu.C1WrValid <= C1RxWrValid;
+      ffs_LP16ui_sRxData_afu.C1IntrValid <= C1RxIntrValid;
+      // Tx OUT
+      // { C0TxHdr.vc,
+      // 	C0TxHdr.sop,
+      // 	C0TxHdr.rsvd70,
+      // 	C0TxHdr.len,
+      // 	C0TxHdr.reqtype,
+      // 	C0TxHdr.rsvd63_58,
+      // 	C0TxHdr.addr,
+      // 	C0TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C0Hdr;
+      C0TxHdr <= TxHdr_t'(ffs_LP16ui_sTxData_afu.C0Hdr);
+      C0TxRdValid <= ffs_LP16ui_sTxData_afu.C0RdValid;
+      //    { C1TxHdr.vc,
+      // 	C1TxHdr.sop,
+      // 	C1TxHdr.rsvd70,
+      // 	C1TxHdr.len,
+      // 	C1TxHdr.reqtype,
+      // 	C1TxHdr.rsvd63_58,
+      // 	C1TxHdr.addr,
+      // 	C1TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C1Hdr;
+      C1TxHdr <= TxHdr_t'(ffs_LP16ui_sTxData_afu.C1Hdr);
+      C1TxData <= ffs_LP16ui_sTxData_afu.C1Data;
+      C1TxWrValid <= ffs_LP16ui_sTxData_afu.C1WrValid;
+      C1TxIntrValid <= ffs_LP16ui_sTxData_afu.C1IntrValid;
+      C2TxHdr <= MMIOHdr_t'(ffs_LP16ui_sTxData_afu.C2Hdr);
+      C2TxData <= ffs_LP16ui_sTxData_afu.C2Data;
+      C2TxMMIORdValid <= ffs_LP16ui_sTxData_afu.C2MmioRdValid;
+      // Almost full signals
+      ffs_LP16ui_sRxData_afu.C0TxAlmFull = C0TxAlmFull;
+      ffs_LP16ui_sRxData_afu.C1TxAlmFull = C1TxAlmFull;
+   end
+
    
    /*
     * DPI import/export functions
@@ -201,8 +205,8 @@ module ccip_emulator
 
    // CONFIG, SCRIPT DEX operations
    import "DPI-C" function void sv2c_config_dex(string str);
-   import "DPI-C" function void sv2c_script_dex(string str);     
-      
+   import "DPI-C" function void sv2c_script_dex(string str);
+
    // Data exchange for READ, WRITE system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
    import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata, inout bit [511:0] wr_data );
@@ -232,32 +236,32 @@ module ccip_emulator
     * RUN =>
     * cd <work>
     * ./<simulator> +CONFIG=<path_to_cfg> +SCRIPT=<path_to_run_SEE_README>
-    * 
-    */ 
+    *
+    */
    string config_filepath;
-   string script_filepath;   
+   string script_filepath;
 `ifdef ASE_DEBUG
    initial begin
       if ($value$plusargs("CONFIG=%S", config_filepath)) begin
-	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 `BEGIN_YELLOW_FONTCOLOR;
 	 $display("  [DEBUG]  Config = %s", config_filepath);
-	 `END_YELLOW_FONTCOLOR;	 
+	 `END_YELLOW_FONTCOLOR;
       end
    end
 
    initial begin
       if ($value$plusargs("SCRIPT=%S", script_filepath)) begin
-	 `BEGIN_YELLOW_FONTCOLOR;	 
+	 `BEGIN_YELLOW_FONTCOLOR;
 	 $display("  [DEBUG]  Script = %s", script_filepath);
-	 `END_YELLOW_FONTCOLOR;	 
+	 `END_YELLOW_FONTCOLOR;
       end
    end
 `else
    initial $value$plusargs("CONFIG=%S", config_filepath);
-   initial $value$plusargs("SCRIPT=%S", script_filepath);   
+   initial $value$plusargs("SCRIPT=%S", script_filepath);
 `endif
-   
-   
+
+
    /*
     * FUNCTION: Return absolute value
     */
@@ -269,8 +273,8 @@ module ccip_emulator
 
    // Finish logger command
    int finish_logger = 0;
-   
-   
+
+
    /* ***************************************************************************
     * CCI signals declarations
     * ***************************************************************************
@@ -298,9 +302,9 @@ module ccip_emulator
    // LP initdone & reset registered signals
    // logic 			  lp_initdone_q;
    logic 			  lp_initdone;
-      
+
    // Internal 800 Mhz clock (for creating synchronized clocks)
-   logic 			  clk_8ui;  
+   logic 			  clk_8ui;
 
    /*
     * Overflow/underflow signal checks
@@ -325,10 +329,10 @@ module ccip_emulator
    logic [2:0] 			  ase_clk_rollover = 3'b111;
 
    // ASE clock
-   assign clk = clk_32ui;
-   assign clk_16ui = ase_clk_rollover[0];
-   assign clk_32ui = ase_clk_rollover[1];
-   assign clk_64ui = ase_clk_rollover[2];
+   assign clk = Clk16UI;
+   assign Clk16UI = ase_clk_rollover[0];
+   assign Clk32UI = ase_clk_rollover[1];
+   assign Clk64UI = ase_clk_rollover[2];
 
    // 800 Mhz internal reference clock
    initial begin : clk8ui_proc
@@ -358,7 +362,7 @@ module ccip_emulator
    //       0        |     0               1     |
    //       0        |     1               0     |
    //       1        |     1               1     |
-   assign sw_reset_n = sys_reset_n && sw_reset_trig;
+   assign SoftReset_n = sys_reset_n && sw_reset_trig;
 
 
    /*
@@ -561,7 +565,7 @@ module ccip_emulator
 // `endif
 	 // $fclose(log_fd);
 	 finish_logger = 1;
-	 
+
 	 // Command to close logfd
 	 $finish;
       end
@@ -573,13 +577,13 @@ module ccip_emulator
     */
    // logic cci_logger_msg_en;
    // string cci_logger_msg;
-      
+
    // task buffer_messages (int init, string log_string);
    //    begin
    // 	 if (init == 1) begin
-   // 	    cci_logger_msg_en = 0;	    
+   // 	    cci_logger_msg_en = 0;
    // 	 end
-   // 	 else begin	    
+   // 	 else begin
    // 	    cci_logger_msg = log_string;
    // 	    cci_logger_msg_en = 1;
    // 	    @(posedge clk);
@@ -587,28 +591,28 @@ module ccip_emulator
    // 	 end
    //    end
    // endtask
-   
+
 
    /*
     * Unified message watcher daemon
     */
    always @(posedge clk) begin : daemon_proc
-//      if (lp_initdone) begin      
+//      if (lp_initdone) begin
 	 ase_listener();
 //      end
    end
 
-   
+
    /* *******************************************************************
     * Staging incoming requests for fulfillment
     *            | LOWLAT | PCIE
     * OME2       |   1    |  0
     * BDX+FPGA   |   1    |  2
-    *     
+    *
     * CCIP is assumed to be an overall unordered interface with QPI +
     * n*PCIE downstream ports. ASE intends to present one CCIP port to
     * the AFU
-    * 
+    *
     * *******************************************************************/
    // CAFU->ASE CH0
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
@@ -668,8 +672,8 @@ module ccip_emulator
       .underflow        ( tx0_underflow ),
       .count            ( )
       );
-   
-   
+
+
    // CAFU->ASE CH1 (TX1)
    // Latency scoreboard (latency modeling and shuffling)
    outoforder_wrf_channel
@@ -800,10 +804,10 @@ module ccip_emulator
       .underflow  ( as2cf_fifo_ch1_underflow )
       );
 
-   
+
    /*
     * RX0 Channel management
-    * - Read response 
+    * - Read response
     * - Can block due
     */
 
@@ -811,9 +815,9 @@ module ccip_emulator
    /*
     * RX1 Channel management
     *
-    */  
-   
-   
+    */
+
+
 
    /* *******************************************************************
     * Inactivity management block
@@ -837,9 +841,8 @@ module ccip_emulator
    assign any_valid =    C0RxUMsgValid
 			 || C0RxWrValid
 			 || C0RxRdValid
-			 || CfgWrValid
 			 || C1RxWrValid
-			 || C0TxRdValid   
+			 || C0TxRdValid
 			 || C1TxWrValid ;
 
 
@@ -925,7 +928,7 @@ module ccip_emulator
       // 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");
       // 	 capcm_init();
       // end
-      
+
       // Link layer ready signal
       wait (lp_initdone == 1'b1);
       $display("SIM-SV: CCI InitDone is HIGH...");
@@ -935,7 +938,7 @@ module ccip_emulator
 
    end
 
-   
+
    /*
     * Latency pipe : For LP_InitDone delay
     * This block simulates the latency between a generic reset and QLP
@@ -970,20 +973,6 @@ module ccip_emulator
       end
    endtask
 
-   // Almostfull disobedience warning
-   // always @(posedge clk) begin
-   //    if ( tx_c0_almostfull && tx_c0_rdvalid ) begin
-   // 	 `BEGIN_YELLOW_FONTCOLOR;
-   // 	 $display ("SIM-SV: t = ", $time, " => *** TX-CH0 almostfull was HIGH and READ request was seen !! ***");
-   // 	 `END_YELLOW_FONTCOLOR;
-   //    end
-   //    if ( tx_c1_almostfull && tx_c1_wrvalid ) begin
-   // 	 `BEGIN_YELLOW_FONTCOLOR;
-   // 	 $display ("SIM-SV: t = ", $time, " => *** TX-CH1 almostfull was HIGH and WRITE request was seen !! ***");
-   // 	 `END_YELLOW_FONTCOLOR;
-   //    end
-   // end
-
    // Flow error messages
    always @(posedge clk) begin : overflow_error
       if (tx0_overflow) begin
@@ -1007,103 +996,103 @@ module ccip_emulator
     * - XZ checker
     * - Data hazard warning
     */
-   ccip_sniffer ccip_sniffer
-     (
-      .clk            (clk               ),
-      .sys_reset_n    (sys_reset_n       ),
-      .sw_reset_n     (sw_reset_n        ),
-      .C0TxHdr        (C0TxHdr           ),
-      .C0TxRdValid    (C0TxRdValid       ),
-      .C0TxAlmFull    (C0TxAlmFull       ),
-      .C1TxHdr        (C1TxHdr           ),
-      .C1TxData       (C1TxData          ),
-      .C1TxWrValid    (C1TxWrValid       ),
-      .C1TxAlmFull    (C1TxAlmFull       ),
-      .C1TxIntrValid  (C1TxIntrValid     ),
-      .CfgRdData      (CfgRdData         ),
-      .CfgRdDataValid (CfgRdDataValid    ),
-      .CfgHeader      (CfgHeader         ),
-      .CfgWrValid     (CfgWrValid        ),
-      .CfgRdValid     (CfgRdValid        ),
-      .C0RxHdr        (C0RxHdr           ),
-      .C0RxData       (C0RxData          ),
-      .C0RxRdValid    (C0RxRdValid       ),
-      .C0RxWrValid    (C0RxWrValid       ),
-      .C0RxUmsgValid  (C0RxUmsgValid     ),
-      .C0RxIntrValid  (C0RxIntrValid     ),
-      .C1RxHdr        (C1RxHdr           ),
-      .C1RxWrValid    (C1RxWrValid       ),
-      .C1RxIntrValid  (C1RxIntrValid     )
-      );
-   
+   // ccip_sniffer ccip_sniffer
+   //   (
+   //    .clk            (clk               ),
+   //    .sys_reset_n    (sys_reset_n       ),
+   //    .sw_reset_n     (SoftReset_n        ),
+   //    .C0TxHdr        (C0TxHdr           ),
+   //    .C0TxRdValid    (C0TxRdValid       ),
+   //    .C0TxAlmFull    (C0TxAlmFull       ),
+   //    .C1TxHdr        (C1TxHdr           ),
+   //    .C1TxData       (C1TxData          ),
+   //    .C1TxWrValid    (C1TxWrValid       ),
+   //    .C1TxAlmFull    (C1TxAlmFull       ),
+   //    .C1TxIntrValid  (C1TxIntrValid     ),
+   //    .CfgRdData      (CfgRdData         ),
+   //    .CfgRdDataValid (CfgRdDataValid    ),
+   //    .CfgHeader      (CfgHeader         ),
+   //    .CfgWrValid     (CfgWrValid        ),
+   //    .CfgRdValid     (CfgRdValid        ),
+   //    .C0RxHdr        (C0RxHdr           ),
+   //    .C0RxData       (C0RxData          ),
+   //    .C0RxRdValid    (C0RxRdValid       ),
+   //    .C0RxWrValid    (C0RxWrValid       ),
+   //    .C0RxUmsgValid  (C0RxUmsgValid     ),
+   //    .C0RxIntrValid  (C0RxIntrValid     ),
+   //    .C1RxHdr        (C1RxHdr           ),
+   //    .C1RxWrValid    (C1RxWrValid       ),
+   //    .C1RxIntrValid  (C1RxIntrValid     )
+   //    );
 
-   
+
+
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
    // Read response checking
    int unsigned read_check_array[*];
    always @(posedge clk) begin : read_array_checkproc
       if (C0TxRdValid) begin
-	 read_check_array[C0TxHeader.mdata] = C0TxHeader.addr;
+	 read_check_array[C0TxHdr.mdata] = C0TxHdr.addr;
       end
       if (C0RxRdValid) begin
-	 if (read_check_array.exists(C0RxHeader.mdata))
-	   read_check_array.delete(C0RxHeader.mdata);
+	 if (read_check_array.exists(C0RxHdr.mdata))
+	   read_check_array.delete(C0RxHdr.mdata);
       end
    end
-      
+
    // Write response checking
    int unsigned write_check_array[*];
    always @(posedge clk) begin : write_array_checkproc
-      if (C1TxWrValid && (C1TxHeader.mdata != CCIP_TX1_WRFENCE)) begin
-	 write_check_array[C1TxHeader.mdata] = C1TxHeader.addr;
+      if (C1TxWrValid && (C1TxHdr.mdata != CCIP_TX1_WRFENCE)) begin
+	 write_check_array[C1TxHdr.mdata] = C1TxHdr.addr;
       end
       if (C1RxWrValid) begin
-	 if (write_check_array.exists(C1RxHeader.mdata))
-	   write_check_array.delete(C1RxHeader.mdata);
+	 if (write_check_array.exists(C1RxHdr.mdata))
+	   write_check_array.delete(C1RxHdr.mdata);
       end
       if (C1RxWrValid) begin
-	 if (write_check_array.exists(C0RxHeader.mdata))
-	   write_check_array.delete(C0RxHeader.mdata);
+	 if (write_check_array.exists(C0RxHdr.mdata))
+	   write_check_array.delete(C0RxHdr.mdata);
       end
    end
 `endif
 
-   
+
    /*
     * CCI Logger module
     */
-   ccip_logger ccip_logger
-     (
-      // Logger control
-      .enable_logger    (cfg.enable_cl_view),
-      .finish_logger    (finish_logger     ),
-      // CCIP ports
-      .clk            (clk               ),
-      .sys_reset_n    (sys_reset_n       ),
-      .sw_reset_n     (sw_reset_n        ),
-      .C0TxHdr        (C0TxHdr           ),
-      .C0TxRdValid    (C0TxRdValid       ),
-      .C0TxAlmFull    (C0TxAlmFull       ),
-      .C1TxHdr        (C1TxHdr           ),
-      .C1TxData       (C1TxData          ),
-      .C1TxWrValid    (C1TxWrValid       ),
-      .C1TxAlmFull    (C1TxAlmFull       ),
-      .C1TxIntrValid  (C1TxIntrValid     ),
-      .CfgRdData      (CfgRdData         ),
-      .CfgRdDataValid (CfgRdDataValid    ),
-      .CfgHeader      (CfgHeader         ),
-      .CfgWrValid     (CfgWrValid        ),
-      .CfgRdValid     (CfgRdValid        ),
-      .C0RxHdr        (C0RxHdr           ),
-      .C0RxData       (C0RxData          ),
-      .C0RxRdValid    (C0RxRdValid       ),
-      .C0RxWrValid    (C0RxWrValid       ),
-      .C0RxUmsgValid  (C0RxUmsgValid     ),
-      .C0RxIntrValid  (C0RxIntrValid     ),
-      .C1RxHdr        (C1RxHdr           ),
-      .C1RxWrValid    (C1RxWrValid       ),
-      .C1RxIntrValid  (C1RxIntrValid     )
-      );
-   
+   // ccip_logger ccip_logger
+   //   (
+   //    // Logger control
+   //    .enable_logger    (cfg.enable_cl_view),
+   //    .finish_logger    (finish_logger     ),
+   //    // CCIP ports
+   //    .clk            (clk               ),
+   //    .sys_reset_n    (sys_reset_n       ),
+   //    .sw_reset_n     (SoftReset_n       ),
+   //    .C0TxHdr        (C0TxHdr           ),
+   //    .C0TxRdValid    (C0TxRdValid       ),
+   //    .C0TxAlmFull    (C0TxAlmFull       ),
+   //    .C1TxHdr        (C1TxHdr           ),
+   //    .C1TxData       (C1TxData          ),
+   //    .C1TxWrValid    (C1TxWrValid       ),
+   //    .C1TxAlmFull    (C1TxAlmFull       ),
+   //    .C1TxIntrValid  (C1TxIntrValid     ),
+   //    .CfgRdData      (CfgRdData         ),
+   //    .CfgRdDataValid (CfgRdDataValid    ),
+   //    .CfgHeader      (CfgHeader         ),
+   //    .CfgWrValid     (CfgWrValid        ),
+   //    .CfgRdValid     (CfgRdValid        ),
+   //    .C0RxHdr        (C0RxHdr           ),
+   //    .C0RxData       (C0RxData          ),
+   //    .C0RxRdValid    (C0RxRdValid       ),
+   //    .C0RxWrValid    (C0RxWrValid       ),
+   //    .C0RxUmsgValid  (C0RxUmsgValid     ),
+   //    .C0RxIntrValid  (C0RxIntrValid     ),
+   //    .C1RxHdr        (C1RxHdr           ),
+   //    .C1RxWrValid    (C1RxWrValid       ),
+   //    .C1RxIntrValid  (C1RxIntrValid     )
+   //    );
+
 endmodule // cci_emulator

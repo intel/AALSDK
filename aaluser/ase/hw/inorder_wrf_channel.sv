@@ -1,4 +1,5 @@
-`include "ase_global.vh"
+import ase_pkg::*;
+
 `include "platform.vh"
 
 module inorder_wrf_channel

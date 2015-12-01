@@ -35,7 +35,7 @@ module mmio_block
 
 
    /*
-    *
+    * ASE MMIO signals
     */
    // MMIO read tid counter
    logic [CCIP_MMIO_TID_WIDTH-1:0] 	     tid_counter;
