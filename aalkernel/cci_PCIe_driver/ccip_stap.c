@@ -313,6 +313,9 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          Message->m_errcode = uid_errnumOK;
          retval = 0;
 
+         // Add the new wsid onto the session
+         aalsess_add_ws(pownerSess, wsidp->m_list);
+
       } break;
 
       default: {
