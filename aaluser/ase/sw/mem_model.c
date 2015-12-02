@@ -41,7 +41,7 @@
 // Message queues opened by DPI
 int app2sim_rx;           // app2sim mesaage queue in RX mode
 int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
+int app2sim_mmioreq_rx;    // CSR Write listener MQ in RX mode
 int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
 int app2sim_simkill_rx;   // Simkill listener in RX mode
 #if 0
@@ -57,7 +57,7 @@ int self_destruct_in_progress = 0;
 
 // ---------------------------------------------------------------------
 // ase_mqueue_setup() : Set up DPI message queues
-// Set up app2sim_rx, sim2app_tx and app2sim_csr_wr_rx message queues
+// Set up app2sim_rx, sim2app_tx and app2sim_mmio_rx message queues
 // ---------------------------------------------------------------------
 #if 0
 void ase_mqueue_setup()
@@ -73,7 +73,7 @@ void ase_mqueue_setup()
   // Depending on the calling function, activate the required queues
   app2sim_rx         = mqueue_create(APP2SIM_SMQ_PREFIX,         O_CREAT|O_RDONLY );
   sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
-  app2sim_csr_wr_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
+  app2sim_mmio_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
   app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
 #if 0
   sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
@@ -97,7 +97,8 @@ void ase_mqueue_teardown()
   // Close message queues
   mqueue_close(app2sim_rx);       
   mqueue_close(sim2app_tx);       
-  mqueue_close(app2sim_csr_wr_rx);
+  mqueue_close(app2sim_mmioreq_rx);
+  mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
 #if 0
   mqueue_close(sim2app_intr_tx);       
@@ -202,9 +203,11 @@ void ase_alloc_action(struct buffer_t *mem)
 
   struct buffer_t *new_buf;
 
-  /* BEGIN_YELLOW_FONTCOLOR; */
-  /* printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname); */
-  /* END_YELLOW_FONTCOLOR; */
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Obtain a file descriptor
   mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
@@ -267,7 +270,9 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
       // If UMSG is enabled, write information to CSR region
+#if 0
       ase_umsg_init(mem->pbase);
+#endif
     }
 
   FUNC_CALL_EXIT;
@@ -445,7 +450,8 @@ uint64_t get_range_checked_physaddr(uint32_t size)
       // Generate a random physical address for system memory
       ret_fake_paddr = sysmem_phys_lo + ase_rand64() % sysmem_size;
       // 2MB align and sanitize
-      ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;          
+      // ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;          
+      ret_fake_paddr = ret_fake_paddr & PHYS_ADDR_PREFIX_MASK ;          
 
       // Check for conditions
       // Is address in sysmem range, go back

@@ -77,7 +77,7 @@
  * 
  * *******************************************************************************/
 #define FPGA_ADDR_WIDTH       48
-#define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
+#define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000
 #define CL_ALIGN_SHIFT        6
 
 // Width of a cache line in bytes
@@ -244,7 +244,8 @@ extern struct buffer_t *end;       // Tail pointer
 // CSR fake physical base address
 extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
 // DPI side CSR base, offsets updated on CSR writes
-extern uint64_t *ase_csr_base;      
+// extern uint64_t *ase_csr_base;      
+uint64_t *ase_csr_base;      
 // Timestamp reference time
 extern struct timeval start;
 
@@ -258,6 +259,14 @@ extern struct timeval start;
 #define HDR_MEM_ALLOC_REQ    0x7F
 #define HDR_MEM_ALLOC_REPLY  0xFF
 #define HDR_MEM_DEALLOC_REQ  0x0F
+
+// MMIO widths
+#define MMIO_WRITE           0xAA88
+#define MMIO_READ_REQ        0xBB88
+#define MMIO_READ_RSP        0xBBFF
+
+#define MMIO_WIDTH_32        32
+#define MMIO_WIDTH_64        64
 
 // UMSG info structure
 typedef struct {
@@ -345,9 +354,13 @@ extern "C" {
   void session_deinit();
   void allocate_buffer(struct buffer_t *);
   void deallocate_buffer(struct buffer_t *);
-  void csr_write(uint32_t, uint32_t);
-  uint32_t csr_read(uint32_t);
+  void mmio_write32(uint32_t index, uint32_t data);
+  void mmio_write64(uint32_t index, uint64_t data);
+  void mmio_read32(uint32_t index, uint32_t *data);
+  void mmio_read64(uint32_t index, uint64_t *data);
+  // uint32_t csr_read(uint32_t);
   // SPL bridge functions *FIXME*
+#if 0
   void setup_spl_cxt_pte(struct buffer_t *, struct buffer_t *);
   void spl_driver_dsm_setup(struct buffer_t *);
   void spl_driver_reset(struct buffer_t *);
@@ -358,6 +371,7 @@ extern "C" {
   void umas_init(uint32_t);
   void umsg_send(int, char *);
   void umas_deinit();
+#endif
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -378,7 +392,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  5
+#define ASE_MQ_INSTANCES  6
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -433,14 +447,14 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // simulator environment.
 // ------------------------------------------------------------------
 // ASE message view #define - Print messages as they go around
-// #define ASE_MSG_VIEW
+#define ASE_MSG_VIEW
 
 // Enable debug info from linked lists 
 // #define ASE_LL_VIEW
 
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
-// #define ASE_BUFFER_VIEW
+#define ASE_BUFFER_VIEW
 
 
 
@@ -622,4 +636,28 @@ int ase_pid;
 FILE *fp_workspace_log;
 
 #endif
+
+
+/*
+ * IPC MQ fd names
+ */
+#ifdef SIM_SIDE
+int app2sim_rx;           // app2sim mesaage queue in RX mode
+int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_rx;   // MMIO Request path
+int sim2app_mmiorsp_tx;   // MMIO Response path
+int app2sim_umsg_rx;      // UMSG    message queue in RX mode
+int app2sim_simkill_rx;   // app2sim message queue in RX mode
+#else
+int app2sim_tx;           // app2sim mesaage queue in RX mode
+int sim2app_rx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_tx;   // MMIO Request path
+int sim2app_mmiorsp_rx;   // MMIO Response path
+int app2sim_umsg_tx;      // UMSG    message queue in RX mode
+int app2sim_simkill_tx;   // app2sim message queue in RX mode
 #endif
+
+
+#endif // End _ASE_COMMON_H_
+
+

@@ -37,6 +37,9 @@ module mmio_block
    /*
     * ASE MMIO signals
     */
+   // MMIO dispatch
+   export "DPI-C" task mmio_dispatch;
+      
    // MMIO read tid counter
    logic [CCIP_MMIO_TID_WIDTH-1:0] 	     tid_counter;
 
@@ -67,9 +70,9 @@ module mmio_block
 
    // MMIO dispatch unit
    task mmio_dispatch(int initialize ,           // Init channel
-		      int     mmio_wren_in , // write = 1, read = 0
-		      int     mmio_addr_in , // MMIO address
-		      longint mmio_data_in , // WrOnly data
+		      int     mmio_wren_in ,     // write = 1, read = 0
+		      int     mmio_addr_in ,     // MMIO address
+		      longint mmio_data_in ,     // WrOnly data
 		      int     mmio_dwidth_in     // WrOnly dwidth
 		      );
       CfgHdr_t hdr;

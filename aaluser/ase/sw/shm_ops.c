@@ -35,21 +35,21 @@
 #include "ase_common.h"
 
 // Message queues opened by APP
-int app2sim_tx;           // app2sim mesaage queue in TX mode
-int sim2app_rx;           // sim2app mesaage queue in RX mode
-int app2sim_csr_wr_tx;    // CSR Write MQ in TX mode
-int app2sim_umsg_tx;      // UMSG MQ in TX mode
-#if 0
-int sim2app_intr_rx;      // INTR MQ in RX mode
-#endif
-int app2sim_simkill_tx;   // Simkill MQ in TX mode
+/* int app2sim_tx;           // app2sim mesaage queue in TX mode */
+/* int sim2app_rx;           // sim2app mesaage queue in RX mode */
+/* int app2sim_mmio_tx;      // MMIO read write request */
+/* int app2sim_umsg_tx;      // UMSG MQ in TX mode */
+/* #if 0 */
+/* int sim2app_intr_rx;      // INTR MQ in RX mode */
+/* #endif */
+/* int app2sim_simkill_tx;   // Simkill MQ in TX mode */
 
 // Lock
 pthread_mutex_t lock;
 
 // CSR Map
 /* uint32_t csr_map[CSR_MAP_SIZE/4]; */
-uint32_t csr_write_cnt = 0;
+uint32_t mmio_write_cnt = 0;
 uint64_t *ase_csr_base;
 
 // MQ established
@@ -125,7 +125,7 @@ void session_init()
   END_YELLOW_FONTCOLOR;
 
 #if 0
-  app2sim_csr_wr_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
+  app2sim_mmio_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
   app2sim_tx         = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
   sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
   app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
@@ -135,10 +135,11 @@ void session_init()
 #endif
 
   app2sim_tx         = mqueue_open(mq_array[0].name, mq_array[0].perm_flag);
-  app2sim_csr_wr_tx  = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
+  app2sim_mmioreq_tx = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
   app2sim_umsg_tx    = mqueue_open(mq_array[2].name, mq_array[2].perm_flag);
   app2sim_simkill_tx = mqueue_open(mq_array[3].name, mq_array[3].perm_flag);
   sim2app_rx         = mqueue_open(mq_array[4].name, mq_array[4].perm_flag);
+  sim2app_mmiorsp_rx = mqueue_open(mq_array[5].name, mq_array[5].perm_flag);
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
@@ -210,8 +211,9 @@ void session_deinit()
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
   // #endif
-
-  mqueue_close(app2sim_csr_wr_tx);
+  
+  mqueue_close(app2sim_mmioreq_tx);
+  mqueue_close(sim2app_mmiorsp_rx);
   mqueue_close(app2sim_tx);
   mqueue_close(sim2app_rx);
   mqueue_close(app2sim_umsg_tx);
@@ -233,65 +235,182 @@ void session_deinit()
 
 
 /*
- * csr_write : Write data to a location in CSR region (index = 0)
+ * MMIO Write 32-bit
  */
-void csr_write(uint32_t csr_offset, uint32_t data)
+void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
 
-  char csr_wr_str[ASE_MQ_MSGSIZE];
-  uint32_t *csr_vaddr;
-
-  // Update CSR Region
-  csr_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + csr_offset);
-  *csr_vaddr = data;
+  char mmio_str[ASE_MQ_MSGSIZE];
+  uint32_t *mmio_vaddr;
 
   // ---------------------------------------------------
   // Form a csr_write message
-  //                     -----------------
-  // CSR_write message:  | offset | data |
-  //                     -----------------
+  //                     -------------------------
+  // CSR_write message:  | width | offset | data |
+  //                     -------------------------
   // ---------------------------------------------------
+
+  // Update CSR Region
+  mmio_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + offset);
+  *mmio_vaddr = data;
+  
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
   // Send message
-  sprintf(csr_wr_str, "%u %u", csr_offset, data);
-  mqueue_send(app2sim_csr_wr_tx, csr_wr_str);
+  sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
+  mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Display
-  csr_write_cnt++;
+  mmio_write_cnt++;
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  CSR Write #%d : offset = 0x%x, data = 0x%08x\n", csr_write_cnt, csr_offset, data);
+  printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
   END_YELLOW_FONTCOLOR;
-  
-  //  usleep(100);
-  
+
   FUNC_CALL_EXIT;
 }
 
 
 /*
- * csr_read : CSR read operation
- *            Read back from DSM space
+ * MMIO Write 64-bit
  */
-uint32_t csr_read(uint32_t csr_offset)
+void mmio_write64 (uint32_t offset, uint64_t data)
 {
   FUNC_CALL_ENTRY;
 
-  uint32_t csr_data;
-  uint32_t *csr_vaddr; 
+  char mmio_str[ASE_MQ_MSGSIZE];
+  uint64_t *mmio_vaddr;
 
-  csr_vaddr = (uint32_t*)((uint64_t)ase_csr_base + csr_offset); 
-  csr_data = *csr_vaddr;
+  // ---------------------------------------------------
+  // Form a csr_write message
+  //                     -------------------------
+  // CSR_write message:  | width | offset | data |
+  //                     -------------------------
+  // ---------------------------------------------------
+
+  // Update CSR Region
+  mmio_vaddr = (uint64_t*)((uint64_t)csr_region->vbase + offset);
+  *mmio_vaddr = data;
   
+  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+    session_init();
+
+  // Send message
+  sprintf(mmio_str, "%u %u %u %lu", MMIO_WRITE, MMIO_WIDTH_64, offset, data);
+  mqueue_send(app2sim_mmioreq_tx, mmio_str);
+
+  // Display
+  mmio_write_cnt++;
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  CSR Read\t: offset = 0x%x, data = 0x%08x\n", csr_offset, csr_data);
+  printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
+}
 
-  return csr_data;
+
+/* *********************************************************************
+ * MMIO Read
+ * *********************************************************************
+ *
+ * Request packet
+ * ---------------------------------------
+ * | MMIO_READ_REQ | MMIO_WIDTH | Offset |
+ * ---------------------------------------
+ *
+ * Response packet
+ * -------------------------------------
+ * | MMIO_READ_RSP | MMIO_WIDTH | Data |
+ * -------------------------------------
+ *
+ */
+/*
+ * MMIO Read 32-bit
+ */
+void mmio_read32(uint32_t offset, uint32_t *data)
+{
+  FUNC_CALL_ENTRY;
+
+  char mmio_str[ASE_MQ_MSGSIZE];
+  uint64_t *mmio_vaddr;
+  char *pch;
+  
+  int msg_type;
+  uint32_t mmio_data;
+
+  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+    session_init();
+
+  // Send MMIO Read Request
+  sprintf(mmio_str, "%u %u %u", MMIO_READ_REQ, MMIO_WIDTH_32, offset);
+  mqueue_send(app2sim_mmioreq_tx, mmio_str);
+
+  // Receive MMIO Read Response
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+
+  pch = strtok(mmio_str, " ");
+  msg_type = atoi(pch);
+  if (msg_type == MMIO_READ_RSP)
+    {
+      pch = strtok(NULL, " ");
+      mmio_data = atoi(pch);
+      *data = mmio_data;
+    }
+  else
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [DEBUG-CATERR] MMIO_RSP MQ message type is unidentified\n");
+      END_RED_FONTCOLOR;
+    }
+
+
+  FUNC_CALL_EXIT;
+}
+
+
+/*
+ * MMIO Read 64-bit
+ */
+void mmio_read64(uint32_t offset, uint64_t *data)
+{
+  FUNC_CALL_ENTRY;
+
+  char mmio_str[ASE_MQ_MSGSIZE];
+  uint64_t *mmio_vaddr;
+  char *pch;
+  
+  int msg_type;
+  uint64_t mmio_data;
+
+  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+    session_init();
+
+  // Send MMIO Read Request
+  sprintf(mmio_str, "%u %u %u", MMIO_READ_REQ, MMIO_WIDTH_32, offset);
+  mqueue_send(app2sim_mmioreq_tx, mmio_str);
+
+  // Receive MMIO Read Response
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+
+  pch = strtok(mmio_str, " ");
+  msg_type = atoi(pch);
+  if (msg_type == MMIO_READ_RSP)
+    {
+      pch = strtok(NULL, " ");
+      mmio_data = atol(pch);
+      *data = mmio_data;
+    }
+  else
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [DEBUG-CATERR] MMIO_RSP MQ message type is unidentified\n");
+      END_RED_FONTCOLOR;
+    }
+
+  FUNC_CALL_EXIT;
 }
 
 
@@ -370,13 +489,15 @@ void allocate_buffer(struct buffer_t *mem)
       /* ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR); */
       exit(1);
     }
-
-// Pin ASE CSR base, so CSR Writes can be managed
-if (buffer_index_count == 0)
-  {
+  
+  // Pin ASE CSR base, so CSR Writes can be managed
+  if (buffer_index_count == 0)
+    {
       ase_csr_base = (uint64_t*)mem->vbase;
-      //      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
-  }
+    #ifdef ASE_DEBUG
+      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
+    #endif
+    }
 
   // Extend memory to required size
   ftruncate(mem->fd_app, (off_t)mem->memsize);
@@ -511,6 +632,7 @@ void shm_dbg_memtest(struct buffer_t *mem)
  *             Create a ASE_PAGESIZE * 4KB Umsg region
  * Requires buffer_t handles to UMAS and CSR regions
  */
+#if 0
 void umas_init(uint32_t umsg_mode) 
 {
   uint32_t csr_umsgbase;
@@ -545,7 +667,7 @@ void umas_init(uint32_t umsg_mode)
       END_YELLOW_FONTCOLOR;
     }
 }
-
+#endif
 
 /*
  * Send Unordered Msg (usmg)
@@ -603,6 +725,7 @@ void umsg_send(int umas_id, char *umsg_data)
  * umas_deinit : Deinitialize UMAS region
  *               Deallocate region and unlink
  */
+#if 0
 void umas_deinit()
 {
   // Disable UMSGBASE
@@ -613,6 +736,7 @@ void umas_deinit()
   printf("  [APP]  UMAS deinitialized. \n");  
   END_RED_FONTCOLOR;
 }
+#endif 
 
 #if 0
 /*

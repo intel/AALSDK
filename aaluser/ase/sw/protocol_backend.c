@@ -40,12 +40,15 @@
 // ---------------------------------------------------------------
 // Message queues descriptors
 // ---------------------------------------------------------------
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
-int app2sim_umsg_rx;      // UMSG    message queue in RX mode
-int app2sim_simkill_rx;   // app2sim message queue in RX mode
+/* int app2sim_rx;           // app2sim mesaage queue in RX mode */
+/* int sim2app_tx;           // sim2app mesaage queue in TX mode */
+/* int app2sim_mmioreq_rx;   // MMIO Request path */
+/* int sim2app_mmiorsp_tx;   // MMIO Response path */
+/* int app2sim_umsg_rx;      // UMSG    message queue in RX mode */
+/* int app2sim_simkill_rx;   // app2sim message queue in RX mode */
+#if 0
 int sim2app_intr_tx;      // sim2app message queue in TX mode
+#endif
 
 // Global test complete counter
 // Keeps tabs of how many session_deinits were received
@@ -280,7 +283,7 @@ int ase_listener()
    * CSR Write listener
    */
   // Message string
-  char csr_wr_str[ASE_MQ_MSGSIZE];
+  char mmio_str[ASE_MQ_MSGSIZE];
   char *pch;
   char ase_msg_data[CL_BYTE_WIDTH];
   uint32_t csr_offset;
@@ -290,16 +293,16 @@ int ase_listener()
   memset(ase_msg_data, '\0', sizeof(ase_msg_data));
 
   // Receive csr_write packet
-  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
       // Tokenize message to get CSR offset and data
-      pch = strtok(csr_wr_str, " ");
+      pch = strtok(mmio_str, " ");
       csr_offset = atoi(pch);
       pch = strtok(NULL, " ");
       csr_data = atoi(pch);
 
       // CSRWrite Dispatch
-      csr_write_dispatch ( 0, csr_offset, csr_data );
+      // csr_write_dispatch ( 0, csr_offset, csr_data );
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
@@ -527,10 +530,11 @@ int ase_init()
 
   // Open message queues
   app2sim_rx         = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
-  app2sim_csr_wr_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
+  app2sim_mmioreq_rx = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
   app2sim_umsg_rx    = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
   app2sim_simkill_rx = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
   sim2app_tx         = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  sim2app_mmiorsp_tx = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");

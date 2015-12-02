@@ -78,7 +78,7 @@ module ccip_emulator
    logic 		              C1TxWrValid;
    logic 		              C1TxIntrValid;
    // Tx2
-   logic [CCIP_MMIO_TID_WIDTH-1:0]    C2TxHdr;
+   MMIOHdr_t                          C2TxHdr;
    logic                              C2TxMMIORdValid;
    logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData;
    // Rx0
@@ -188,12 +188,15 @@ module ccip_emulator
    export "DPI-C" task ase_config_dex;
 
    // CSR Write Dispatch
-   export "DPI-C" task csr_write_dispatch;
+   // export "DPI-C" task csr_write_dispatch;
    // Unordered message dispatch
    // export "DPI-C" task umsg_dispatch;
 
    // CAPCM initilize
    // import "DPI-C" context task capcm_init();
+
+   // // MMIO dispatch
+   // export "DPI-C" task mmio_dispatch;
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
@@ -365,11 +368,12 @@ module ccip_emulator
    assign SoftReset_n = sys_reset_n && sw_reset_trig;
 
 
-   /*
+   /* ******************************************************************
+    *
     * run_clocks : Run 'n' clocks
     * Software controlled event trigger for watching signals
     *
-    */
+    * *****************************************************************/
    task run_clocks (int num_clks);
       int clk_iter;
       begin
@@ -380,97 +384,36 @@ module ccip_emulator
    endtask
 
 
-   /*
-    * CSR Write infrastructure
-    * csr_write_dispatch: A Single task to dispatch CSR Writes
-    */
-   parameter int CSR_FIFO_WIDTH = 16 + 32;
-
-   logic [CSR_FIFO_WIDTH-1:0] csrff_din;
-   logic [CSR_FIFO_WIDTH-1:0] csrff_dout;
-   logic 		      csrff_write;
-   logic 		      csrff_pop;
-   logic 		      csrff_read;
-   logic 		      csrff_valid;
-   logic 		      csrff_full;
-   logic 		      csrff_empty;
-   logic 		      csrff_overflow;
-   logic 		      csrff_underflow;
-
-   logic [15:0] 	      csr_address;
-   logic [13:0] 	      csr_index;
-   logic [31:0] 	      csr_value;
-
-   logic 		      cwlp_valid;
-   logic [15:0] 	      cwlp_address;
-   logic [31:0] 	      cwlp_data;
+   /* ******************************************************************    
+    * DUMMY BLOCK
+    * 
+    * *****************************************************************/
 
 
-   task csr_write_dispatch(int init, int csr_addr_in, int csr_data_in);
-      begin
-	 if (init) begin
-	    cwlp_valid = 0;
-	    cwlp_address = 0;
-	    cwlp_data = 0;
-	 end
-	 else begin
-	    cwlp_valid = 0;
-	    run_clocks(1);
-	    {cwlp_address, cwlp_data} = {csr_addr_in[15:0], csr_data_in};
-	    cwlp_valid = 1;
-	    run_clocks(1);
-	    cwlp_valid = 0;
-	 end
-      end
-   endtask
-
-   // Latency pipe with stages
-   // <CSRvalid>|<CSR address>|<CSR Data>
-   // CSR latency implementation
-   latency_pipe
-     #(
-       .NUM_DELAY  (`CSR_WRITE_LATRANGE),
-       .PIPE_WIDTH ( 1 + CSR_FIFO_WIDTH)
-       )
-   csrwr_latpipe
+   
+   /* ******************************************************************
+    *
+    * MMIO block
+    * CSR Write/Read is managed through this interface.
+    * 
+    * *****************************************************************/
+   mmio_block mmio_block
      (
-      .clk      (clk),
-      .rst      (~sys_reset_n),
-      .pipe_in  ({cwlp_valid,  cwlp_address,   cwlp_data}),
-      .pipe_out ({csrff_write, csrff_din[47:32], csrff_din[31:0]})
+      .clk           (clk),
+      .rst           (~sys_reset_n),
+      // MMIO request
+      .mmio_hdr      (C0RxHdr),
+      .mmio_wrvalid  (C0RxMMIOWrValid),
+      .mmio_rdvalid  (C0RxMMIORdValid),
+      .mmio_data     (C0RxData),
+      // MMIO response
+      .mmio_rspvalid (C2TxMMIORdValid),
+      .mmio_rsptid   (C2TxHdr),
+      .mmio_rspdata  (C2TxData),
+      // Control
+      .cfg_pop       (0)
       );
-
-
-   // CSR write FIFO
-   ase_fifo
-     #(
-       .DATA_WIDTH     ( CSR_FIFO_WIDTH ),
-       .DEPTH_BASE2    ( 10 ),
-       .ALMFULL_THRESH ( 960 )
-       )
-   csrwr_fifo
-     (
-      .clk        ( clk ),
-      .rst        ( ~sys_reset_n ),
-      .wr_en      ( csrff_write ),
-      .data_in    ( csrff_din ),
-      .rd_en      ( csrff_pop ),
-      .data_out   ( csrff_dout ),
-      .data_out_v ( csrff_valid ),
-      .alm_full   ( csrff_full ),
-      .full       (  ),
-      .empty      ( csrff_empty ),
-      .count      (  ),
-      .overflow   ( csrff_overflow ),
-      .underflow  ( csrff_underflow )
-      );
-
-   assign csrff_pop = ~csrff_empty && csrff_read;
-   assign csr_address = csrff_dout[47:32];
-   assign csr_index = csr_address[15:2];
-   assign csr_value = csrff_dout[31:0];
-
-
+     
 
    /* ******************************************************************
     *
@@ -479,31 +422,35 @@ module ccip_emulator
     *
     * *****************************************************************/
 
-   parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
+   // parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
 
-   logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
-   logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
-   logic 		       umsgff_write;
-   logic 		       umsgff_pop;
-   logic 		       umsgff_read;
-   logic 		       umsgff_valid;
-   logic 		       umsgff_full;
-   logic 		       umsgff_empty;
-   logic 		       umsgff_overflow;
-   logic 		       umsgff_underflow;
+   // logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
+   // logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
+   // logic 		       umsgff_write;
+   // logic 		       umsgff_pop;
+   // logic 		       umsgff_read;
+   // logic 		       umsgff_valid;
+   // logic 		       umsgff_full;
+   // logic 		       umsgff_empty;
+   // logic 		       umsgff_overflow;
+   // logic 		       umsgff_underflow;
 
-   int 			       umsg_data_slot;
-   int 			       umsg_hint_slot;
-   int 			       umsg_data_slot_old = 255;
-   int 			       umsg_hint_slot_old = 255;
-   umsg_t                      umsg_array[`UMSG_MAX_MSG];
+   // int 			       umsg_data_slot;
+   // int 			       umsg_hint_slot;
+   // int 			       umsg_data_slot_old = 255;
+   // int 			       umsg_hint_slot_old = 255;
+   // umsg_t                      umsg_array[`UMSG_MAX_MSG];
 
-   logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
-   logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
+   // logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
+   // logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
 
-   /*
+   
+   /* ******************************************************************    
+    *
     * Config data exchange - Supplied by ase.cfg
-    */
+    * Configuration of ASE managed by a text file, modifiable runtime
+    * 
+    * *****************************************************************/
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
 	 cfg.ase_mode           = cfg_in.ase_mode         ;
@@ -518,11 +465,14 @@ module ccip_emulator
    endtask
 
 
-   /*
+   
+   /* ******************************************************************    
+    *
     * This call is made on ERRORs requiring a shutdown
     * simkill is called from software, and is the final step before
     * graceful closedown
-    */
+    * 
+    * *****************************************************************/
    task simkill();
       begin
 	 $display("SIM-SV: Simulation kill command received...");
@@ -810,7 +760,15 @@ module ccip_emulator
     * - Read response
     * - Can block due
     */
-
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 sw_reset_trig <= 1'b0;	 
+      end
+      else begin
+	 sw_reset_trig <= 1'b0;	 
+      end
+   end
+   
 
    /*
     * RX1 Channel management
@@ -901,10 +859,11 @@ module ccip_emulator
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
-      csr_write_dispatch(1, 0, 0);
+      // csr_write_dispatch(1, 0, 0);
       // umsg_dispatch(1, 0, 0, 0, 0);
       // buffer_messages (1, "ASE");
-
+      mmio_block.mmio_dispatch (1, 0, 0, 0, 0);
+            
       // Globally write CONFIG, SCRIPT paths
       if (config_filepath.len() != 0) begin
 	 sv2c_config_dex(config_filepath);

@@ -117,7 +117,7 @@ SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1
 
 ## VCS elaboration
-SNPS_VCS_OPT = -nc -R -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
+SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
@@ -287,7 +287,7 @@ endif
 # Open Wave file
 wave: check
 ifeq ($(SIMULATOR), VCS)
-	dve -vpd inter.vpd || dve -vpd inter.vpd -full64
+	dve -vpd `find . -name inter.vpd` || dve -vpd `find . -name inter.vpd` -full64
 else
   ifeq ($(SIMULATOR), QUESTA)
 	vsim -view vsim.wlf
