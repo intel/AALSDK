@@ -41,19 +41,19 @@
 
 //READ: This ia a read-only test with no data checking. AFU reads CSR_NUM_LINES starting from CSR_SRC_ADDR.
 //This test is used to stress the read path and measure 100% read bandwidth and latency.
-
+#include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
 // cool off fpga cache.
-btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
 
-   const btInt StopTimeoutMillis = 250;
+ /*  const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
 
    m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
@@ -92,14 +92,14 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    //Set DSM base, high then low
    //m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
-   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
+   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);*/
 
    /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
    }*/
 
    // Assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+/*   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
@@ -287,7 +287,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
       ERR("Workspace free failed");
       return 1;
    }
-
+*/
    return res;
 }
 

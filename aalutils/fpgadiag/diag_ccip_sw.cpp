@@ -44,18 +44,18 @@
 // 2. UMsg without data
 // 3. UMsg with data
 // 4. CSR write
-
+#include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 {
 	btInt res = 0;
 	btWSSize  sz = CL(cmd.begincls);
 
-	m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, 		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+/*	m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, 		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
 	m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
     m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
     m_pCCIAFU->WorkspaceAllocate(MAX_UMSG_SIZE,		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_UMSG));
@@ -84,7 +84,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 
     volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
-    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
+    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();*/
 
     /*if ( 0 != ResetHandshake() ) {
     	return 1;
@@ -99,7 +99,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	}*/
 
     //Set DSM base, high then low
-    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
+/*    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
     m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
    // Assert Device Reset
@@ -314,7 +314,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
         ERR("Workspace free failed");
         return 1;
      }
-
+*/
       return res;
 }
 

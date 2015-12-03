@@ -35,8 +35,7 @@
 //
 // HISTORY:
 // WHEN:          WHO:     WHAT:
-// 05/30/2013     TSW      Initial version.
-// 07/30/2105     SC	   fpgadiag version@endverbatim
+// 10/15/2015     SC	   fpgadiag version.@endverbatim
 //****************************************************************************
 
 //SW: This test measures the full round trip data movement latency between CPU and FPGA.
@@ -45,16 +44,16 @@
 // 2. UMsg without data
 // 3. UMsg with data
 // 4. CSR write
-#include <aalsdk/kernel/aalui.h>
-#include "diag_defaults.h"
-#include "diag-common.h"
-#include "nlb-specific.h"
-#include "diag-nlb-common.h"
 
-btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
+#include "ccis_diag_defaults.h"
+#include "ccis_diag-common.h"
+#include "nlb-specific.h"
+#include "ccis_diag-nlb-common.h"
+
+btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
 	btInt res = 0;
-	/*btWSSize  sz = CL(cmd.begincls);
+	btWSSize  sz = CL(cmd.begincls);
 
 	m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, 		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
 	m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -87,7 +86,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
     volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
-    if ( 0 != ResetHandshake() ) {
+    /*if ( 0 != ResetHandshake() ) {
     	return 1;
 	}
 
@@ -97,10 +96,11 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 
 	if ( 0 != ResetHandshake() ) {
 		return 1;
-	}
+	}*/
 
-	ReadQLPCounters();
-	SaveQLPCounters();
+    //Set DSM base, high then low
+    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
+    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
@@ -159,6 +159,19 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
     {
 	 cfg |= (csr_type)NLB_TEST_MODE_WT;
     }
+   // Select the channel.
+     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_QPI))
+     {
+      cfg |= (csr_type)NLB_TEST_MODE_QPI;
+     }
+     else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0))
+     {
+      cfg |= (csr_type)NLB_TEST_MODE_PCIE0;
+     }
+     else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE1))
+     {
+      cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
+     }
 
    m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
 
@@ -175,8 +188,8 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		  //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
-   cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+		  //0123456789 0123456789 01234567890 0123456789012
+   cout << "Cachelines Read_Count Write_Count 'Clocks(@"
 	    << Normalized(cmd)  << ")'";
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
@@ -263,11 +276,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
 		 SleepNano(500);
 	   }
 
-	   ReadQLPCounters();
-
 	   PrintOutput(cmd, (sz / CL(1)));
-
-	   SaveQLPCounters();
 
 	   //Increment number of cachelines
 	   sz += CL(1);
@@ -285,8 +294,6 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
    m_pCCIAFU->CSRWrite(CSR_UMSG_BASE, 0);
 
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
-
-   ReadQLPCounters();
 
    if ( 0 != pAFUDSM->test_error ) {
 	   ++res;
@@ -306,12 +313,12 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
      if ( !m_pMyApp->ClientOK() ) {
         ERR("Workspace free failed");
         return 1;
-     }*/
+     }
 
       return res;
 }
 
-void  CNLBSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
+void  CNLBCcipSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
@@ -321,12 +328,7 @@ void  CNLBSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 
 	  cout << setw(10) << cls 					<< ' '
 	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   << ' '
-	       << setw(12) << GetQLPCounter(0)      << ' '
-	       << setw(12) << GetQLPCounter(1)      << ' '
-	       << setw(13) << GetQLPCounter(2)      << ' '
-	       << setw(13) << GetQLPCounter(3)      << ' '
-	       << setw(10) << GetQLPCounter(10)     << ' ';
+	       << setw(11) << pAFUDSM->num_writes   ;
 
 	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		  ticks = rawticks - startpenalty;

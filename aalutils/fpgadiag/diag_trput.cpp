@@ -43,16 +43,16 @@
 //and no dependency between read and writes. It reads CSR_NUM_LINES starting from
 //CSR_SRC_ADDR location and writes CSR_NUM_LINS to CSR_DST_ADDR. It is also used
 //to measure 50% read + 50% write bandwidth.
-
+#include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBTrput::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
-   btWSSize  sz = CL(cmd.begincls);
+   /*btWSSize  sz = CL(cmd.begincls);
 
    m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
    m_pCCIAFU->WorkspaceAllocate(wssize, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -234,7 +234,7 @@ btInt CNLBTrput::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    if ( !m_pMyApp->ClientOK() ) {
       ERR("Workspace free failed");
       return 1;
-   }
+   }*/
 
    return res;
 }

@@ -34,7 +34,8 @@
 ##     07/21/2015    TSW   Initial version
 ##******************************************************************************
 SUBDIRS=\
-fpgadiag
+fpgadiag #\ 
+#ccis_fpgadiag
 
 MFLAGS  =
 ifneq (,$(ndebug))
