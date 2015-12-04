@@ -313,7 +313,7 @@ void UIDriverClient::Open(const char *devName)
 
    std::string strName;
    if ( devName == NULL ) {
-      strName="/dev/uidrv";
+      strName="/dev/aalui";
    } else {
 	   strName = devName;
    }
@@ -631,9 +631,10 @@ UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
       break;
 
    case reqid_UID_SendAFU:
+   case reqid_UID_SendWSM:
       ioctlCMD = AALUID_IOCTL_SENDMSG;
       break;
-    default:
+   default:
       std::cerr << "UIDRV: Unknown command class" << std::endl;
       rThis.IsOK(false);    //ERROR
       break;

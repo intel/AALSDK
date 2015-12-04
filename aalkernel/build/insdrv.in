@@ -613,16 +613,19 @@ declare mod_path
 
 ${SLEEP} 3
 
-${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for uidrv"
+#${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for uidrv"
 
 ## To be deprecated
 if [ -e '/dev/aalui' ]; then
      ${CHMOD} "${DEV_PERMS}" '/dev/aalui'     || die "dev file perms for aalui"
      ${LS} -l '/dev/aalui'
+else
+     ${CHMOD} "${DEV_PERMS}" '/dev/uidrv'     || die "dev file perms for uidrv"
+     ${LS} -l '/dev/uidrv'
 fi
 ${CHMOD} "${DEV_PERMS}" '/dev/aalrms'    || die "dev file perms for aalrms"
 ${CHMOD} "${DEV_PERMS}" '/dev/aalresmgr' || die "dev file perms for aalresmgr"
-${LS} -l '/dev/aalrms' '/dev/aalresmgr' '/dev/uidrv'
+${LS} -l '/dev/aalrms' '/dev/aalresmgr' 
 
 exit 0
 
