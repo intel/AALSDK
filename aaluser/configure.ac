@@ -67,6 +67,8 @@ dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [3],[4],[0])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [3],[4],[0])
 AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [4],[2],[0])
+AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([RRM],          [librrm],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [4],[2],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[0],[0])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [2],[0],[0])
@@ -179,6 +181,8 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
+                 include/aalsdk/rm/ResMgrService.h
+                 include/aalsdk/rm/RRMService.h
                  include/aalsdk/registrar/AASRegistrarService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h

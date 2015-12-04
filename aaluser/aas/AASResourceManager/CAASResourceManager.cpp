@@ -92,38 +92,15 @@
                                            // Also defines debug LogMask_t bitmasks for detailed debugging of Resource Manager
 #include "aalsdk/kernel/KernelStructs.h"   // various operator<<
 #include "aalsdk/utils/ResMgrUtilities.h"  // string, name, and GUID inter-conversion operators
-
+#include "aalsdk/rm/ResMgrService.h"
 
 BEGIN_NAMESPACE(AAL)
 
-
-
-
-#ifndef RESMGRSERVICE_VERSION_CURRENT
-# define RESMGRSERVICE_VERSION_CURRENT  1
-#endif // RESMGRSERVICE_VERSION_CURRENT
-#ifndef RESMGRSERVICE_VERSION_REVISION
-# define RESMGRSERVICE_VERSION_REVISION 0
-#endif // RESMGRSERVICE_VERSION_REVISION
-#ifndef RESMGRSERVICE_VERSION_AGE
-# define RESMGRSERVICE_VERSION_AGE      0
-#endif // RESMGRSERVICE_VERSION_AGE
-#ifndef RESMGRSERVICE_VERSION
-# define RESMGRSERVICE_VERSION          "1.0.0"
-#endif // RESMGRSERVICE_VERSION
-
-#ifndef __declspec
-#   define __declspec(x)
-#endif // __declspec
-#define RESMGR_SERVICE_API    __declspec(0)
-
-// FIXME: left out Windows-specific defines (lazy me)
-
 #define SERVICE_FACTORY AAL::InProcSvcsFact< CResMgr >
 
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libAASResMgr, RESMGR_SERVICE_API, RESMGRSERVICE_VERSION, RESMGRSERVICE_VERSION_CURRENT, RESMGRSERVICE_VERSION_REVISION, RESMGRSERVICE_VERSION_AGE)
+RESMGR_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-AAL_END_SVC_MOD()
+RESMGR_END_SVC_MOD()
 
 
 

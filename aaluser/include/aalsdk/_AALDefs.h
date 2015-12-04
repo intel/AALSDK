@@ -235,90 +235,96 @@
 // OSAL_API functions as being imported from a DLL, wheras this DLL sees symbols
 // defined with this macro as being exported.
 # ifdef OSAL_EXPORTS
-#    define OSAL_API                     __declspec(dllexport)
+#    define OSAL_API                      __declspec(dllexport)
 # else
-#    define OSAL_API                     __declspec(dllimport)
+#    define OSAL_API                      __declspec(dllimport)
 # endif // OSAL_EXPORTS
 # ifdef AALRUNTIME_EXPORTS
-#    define AALRUNTIME_API                     __declspec(dllexport)
+#    define AALRUNTIME_API                __declspec(dllexport)
 # else
-#    define AALRUNTIME_API                     __declspec(dllimport)
+#    define AALRUNTIME_API                __declspec(dllimport)
 # endif // AALRUNTIME_EXPORTS
 # ifdef AASLIB_EXPORTS
-#    define AASLIB_API                   __declspec(dllexport)
+#    define AASLIB_API                    __declspec(dllexport)
 # else
-#    define AASLIB_API                   __declspec(dllimport)
+#    define AASLIB_API                    __declspec(dllimport)
 # endif // AASLIB_EXPORTS
 # ifdef UAIA_EXPORTS
-#    define UAIA_API                     __declspec(dllexport)
+#    define UAIA_API                      __declspec(dllexport)
 # else
-#    define UAIA_API                     __declspec(dllimport)
+#    define UAIA_API                      __declspec(dllimport)
 # endif // UAIA_EXPORTS
 # ifdef AASEDS_EXPORTS
-#    define AASEDS_API                   __declspec(dllexport)
+#    define AASEDS_API                    __declspec(dllexport)
 # else
-#    define AASEDS_API                   __declspec(dllimport)
+#    define AASEDS_API                    __declspec(dllimport)
 # endif // AASEDS_EXPORTS
 # ifdef AALRESMGR_EXPORTS
 #     define AALRESOURCEMANAGERCLIENT_API __declspec(dllexport)
 #     define AALRESOURCEMANAGER_API       __declspec(dllexport)
+#     define RESMGR_SERVICE_API           __declspec(dllexport)
 # else
 #     define AALRESOURCEMANAGERCLIENT_API __declspec(dllimport)
 #     define AALRESOURCEMANAGER_API       __declspec(dllimport)
-# endif // XL Resource Manager
+#     define RESMGR_SERVICE_API           __declspec(dllimport)
+# endif // Resource Manager
 # ifdef AASREGISTRAR_EXPORTS
-#    define AASREGISTRAR_API             __declspec(dllexport)
-#    define AASRESOURCEMANAGERCLIENT_API __declspec(dllexport)
+#    define AASREGISTRAR_API              __declspec(dllexport)
 # else
-#    define AASREGISTRAR_API             __declspec(dllimport)
-#    define AASRESOURCEMANAGERCLIENT_API __declspec(dllimport)
+#    define AASREGISTRAR_API              __declspec(dllimport)
 # endif // AASREGISTRAR_EXPORTS
 # ifdef FAPTRANS1_EXPORTS
-#    define FAPTRANS1_API                __declspec(dllexport)
+#    define FAPTRANS1_API                 __declspec(dllexport)
 # else
-#    define FAPTRANS1_API                __declspec(dllimport)
+#    define FAPTRANS1_API                 __declspec(dllimport)
 # endif // FAPTRANS1_EXPORTS
 # ifdef FAPTRANS2_EXPORTS
-#    define FAPTRANS2_API                __declspec(dllexport)
+#    define FAPTRANS2_API                 __declspec(dllexport)
 # else
-#    define FAPTRANS2_API                __declspec(dllimport)
+#    define FAPTRANS2_API                 __declspec(dllimport)
 # endif // FAPTRANS2_EXPORTS
 # ifdef MAFUTRANS_EXPORTS
-#    define MAFUTRANS_API                __declspec(dllexport)
+#    define MAFUTRANS_API                 __declspec(dllexport)
 # else
-#    define MAFUTRANS_API                __declspec(dllimport)
+#    define MAFUTRANS_API                 __declspec(dllimport)
 # endif // MAFUTRANS_EXPORTS
-# ifdef RRMBROKER_EXPORTS
-#    define RRMBROKER_API                __declspec(dllexport)
+# ifdef RRM_EXPORTS
+#    define RRM_API                       __declspec(dllexport)
 # else
-#    define RRMBROKER_API                __declspec(dllimport)
+#    define RRM_API                       __declspec(dllimport)
+# endif // RRM_EXPORTS
+# ifdef RRMBROKER_EXPORTS
+#    define RRMBROKER_API                 __declspec(dllexport)
+# else
+#    define RRMBROKER_API                 __declspec(dllimport)
 # endif // RRMBROKER_EXPORTS
 #else
 # define __declspec(x)
 // OSAL
-# define OSAL_API                        __declspec(0)
+# define OSAL_API                         __declspec(0)
 // AALRUNTIME
-# define AALRUNTIME_API                        __declspec(0)
+# define AALRUNTIME_API                   __declspec(0)
 // AASLib
-# define AASLIB_API                      __declspec(0)
+# define AASLIB_API                       __declspec(0)
 // uAIA
-# define UAIA_API                        __declspec(0)
+# define UAIA_API                         __declspec(0)
 // AASEDS
-# define AASEDS_API                      __declspec(0)
+# define AASEDS_API                       __declspec(0)
 // Registrar
-# define AASREGISTRAR_API                __declspec(0)
+# define AASREGISTRAR_API                 __declspec(0)
 // Resource Manager Client
-# define AASRESOURCEMANAGERCLIENT_API    __declspec(0)
-// XL Resource Manager
 # define AALRESOURCEMANAGERCLIENT_API     __declspec(0)
+// Resource Manager
 # define AALRESOURCEMANAGER_API           __declspec(0)
+# define RESMGR_SERVICE_API               __declspec(0)
 // libFAPTrans1
-# define FAPTRANS1_API                   __declspec(0)
+# define FAPTRANS1_API                    __declspec(0)
 // libFAPTrans2
-# define FAPTRANS2_API                   __declspec(0)
+# define FAPTRANS2_API                    __declspec(0)
 // libMAFUTrans
-# define MAFUTRANS_API                   __declspec(0)
-# define RRMBROKER_API                   __declspec(0)
+# define MAFUTRANS_API                    __declspec(0)
+# define RRM_API                          __declspec(0)
+# define RRMBROKER_API                    __declspec(0)
 #endif // OS
 
 
