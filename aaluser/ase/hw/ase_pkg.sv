@@ -319,10 +319,5 @@ package ase_pkg;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
-   /*
-    * DPI functions
-    */ 
-      
-
 
 endpackage

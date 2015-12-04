@@ -413,19 +413,25 @@ module ccip_emulator
    parameter int 			     MMIOREQ_FIFO_WIDTH = 2 + CCIP_CFG_HDR_WIDTH + CCIP_DATA_WIDTH;
 
    logic [MMIOREQ_FIFO_WIDTH-1:0] 	     mmioreq_din;
-   logic [MMIOREQ_FIFO_WIDTH-1:0] 	     mmioreq_dout;
    logic 				     mmioreq_write;
    logic 				     mmioreq_pop;
    logic 				     mmioreq_read;
    logic 				     mmioreq_valid;
    logic 				     mmioreq_full;
    logic 				     mmioreq_empty;
-
-   logic [CCIP_MMIO_INDEX_WIDTH-1:0] 	     cwlp_header;
+   int 					     mmioreq_count;
+      
+   logic [CCIP_CFG_HDR_WIDTH-1:0] 	     cwlp_header;
    logic [CCIP_DATA_WIDTH-1:0] 		     cwlp_data;
    logic 				     cwlp_wrvalid;
    logic 				     cwlp_rdvalid;
 
+   logic 				     mmio_wrvalid;
+   logic 				     mmio_rdvalid;
+   logic [CCIP_DATA_WIDTH-1:0] 		     mmio_data512;
+   logic [CCIP_CFG_HDR_WIDTH-1:0] 	     mmio_hdrvec;
+ 	     
+   
    // MMIO dispatch unit
    task mmio_dispatch (int initialize, mmio_t mmio_pkt);
       CfgHdr_t hdr;
@@ -491,24 +497,18 @@ module ccip_emulator
       .rst        ( ~sys_reset_n ),
       .wr_en      ( mmioreq_write ),
       .data_in    ( mmioreq_din ),
-      .rd_en      ( mmioreq_pop ),
-      .data_out   ( mmioreq_dout ),
+      .rd_en      ( mmioreq_read && ~mmioreq_empty ),
+      .data_out   ( {mmio_wrvalid, mmio_rdvalid, mmio_hdrvec, mmio_data512} ),
       .data_out_v ( mmioreq_valid ),
       .alm_full   ( mmioreq_full ),
       .full       (  ),
       .empty      ( mmioreq_empty ),
-      .count      (  ),
+      .count      ( mmioreq_count ),
       .overflow   (  ),
       .underflow  (  )
       );
 
-   assign mmioreq_pop  = 0;
- // ~mmioreq_empty && cfg_pop;
-   assign mmio_wrvalid = ~mmioreq_empty;
-   assign mmio_data    = mmioreq_dout[CCIP_DATA_WIDTH-1:0];
-   assign mmio_hdr     = CfgHdr_t'( mmioreq_dout[(CCIP_DATA_WIDTH+CCIP_CFG_HDR_WIDTH-1):CCIP_DATA_WIDTH] );
-
-
+   
    /*
     * MMIO Read response
     */
@@ -702,9 +702,7 @@ module ccip_emulator
     * Unified message watcher daemon
     */
    always @(posedge clk) begin : daemon_proc
-//      if (lp_initdone) begin
-	 ase_listener();
-//      end
+      ase_listener();
    end
 
 
@@ -822,7 +820,6 @@ module ccip_emulator
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
-   // always @(posedge clk) begin
    always @(posedge clk) begin : channel_random_proc
       if (~sys_reset_n) begin
 	 tx_to_rx_channel	<= 1;
@@ -848,6 +845,7 @@ module ccip_emulator
    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
    logic 			 as2cf_fifo_ch0_write;
    logic 			 as2cf_fifo_ch0_read;
+   logic 			 as2cf_fifo_ch0_pop;
    logic 			 as2cf_fifo_ch0_full;
    logic 			 as2cf_fifo_ch0_empty;
    logic 			 as2cf_fifo_ch0_overflow;
@@ -865,7 +863,10 @@ module ccip_emulator
    logic 			 as2cf_fifo_ch1_valid;
 
 
-   // CH0 coded as {mmiowrvalid, mmiordvalid, rdvalid, wrvalid, umsgvalid, hdr, data}
+   /*
+    * as2cf_fifo_ch0
+    * Format: {mmiowrvalid, mmiordvalid, rdvalid, wrvalid, umsgvalid, hdr, data}
+    */   
    ase_fifo
      #(
        .DATA_WIDTH (ASE_RX0_PATHWIDTH)
@@ -876,7 +877,7 @@ module ccip_emulator
       .rst        ( ~sys_reset_n ),
       .wr_en      ( as2cf_fifo_ch0_write ),
       .data_in    ( as2cf_fifo_ch0_din ),
-      .rd_en      ( as2cf_fifo_ch0_read ),
+      .rd_en      ( as2cf_fifo_ch0_pop ),
       .data_out   ( as2cf_fifo_ch0_dout ),
       .data_out_v ( as2cf_fifo_ch0_valid ),
       .alm_full   ( as2cf_fifo_ch0_full ),
@@ -887,7 +888,14 @@ module ccip_emulator
       .underflow  ( as2cf_fifo_ch0_underflow )
       );
 
-   // CH1 coded as {intrvalid, wrvalid, hdr}
+   assign as2cf_fifo_ch0_pop = ~as2cf_fifo_ch0_empty & as2cf_fifo_ch0_read;
+   
+   
+   
+   /*
+    * as2cf_fifo_ch1
+    * Format:  {intrvalid, wrvalid, hdr}
+    */
    ase_fifo
      #(
        .DATA_WIDTH (ASE_RX1_PATHWIDTH)
@@ -912,22 +920,53 @@ module ccip_emulator
 
    /*
     * RX0 Channel management
-    * - Read response
-    * - Can block due
-    */
+    * ------------------------------------------------------------
+    * - MMIO Request management
+    *   When request is seen in mmioreq_* FIFO, it is forwarded to as2cf_fifo_ch0
+    *    
+    * 
+    */ 
+
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 sw_reset_trig <= 1'b0;
+	 C0RxMMIOWrValid <= 1'b0;
+	 C0RxMMIORdValid <= 1'b0;
+	 C0RxWrValid <= 1'b0;
+	 C0RxRdValid <= 1'b0;
+	 C0RxUMsgValid <= 1'b0;
+	 C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
+	 C0RxData <= {CCIP_DATA_WIDTH{1'b0}};
+	 mmioreq_read <= 1'b0;	 
       end
       else begin
-	 sw_reset_trig <= 1'b0;
+	 if (~mmioreq_empty) begin
+	    C0RxMMIOWrValid <= mmio_wrvalid && mmioreq_valid;
+	    C0RxMMIORdValid <= mmio_rdvalid && mmioreq_valid;
+	    C0RxWrValid <= 1'b0;
+	    C0RxRdValid <= 1'b0;
+	    C0RxUMsgValid <= 1'b0;
+	    C0RxHdr <= RxHdr_t'(mmio_hdrvec);
+	    C0RxData <= mmio_data512;	 	    
+	    mmioreq_read <= 1'b1;	 
+	 end
+	 else begin
+	    C0RxMMIOWrValid <= 1'b0;
+	    C0RxMMIORdValid <= 1'b0;
+	    C0RxWrValid <= 1'b0;
+	    C0RxRdValid <= 1'b0;
+	    C0RxUMsgValid <= 1'b0;
+	    C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
+	    C0RxData <= {CCIP_DATA_WIDTH{1'b0}};	 
+	    mmioreq_read <= 1'b0;	 
+	 end
       end
    end
 
-
+   
    /*
     * RX1 Channel management
-    *
+    * --------------------------------------------------------------
+    * 
     */
 
 
