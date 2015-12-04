@@ -37,8 +37,8 @@
 // WHEN:          WHO:     WHAT:
 // 07/14/2015     SC      Initial version.@endverbatim
 //****************************************************************************
-#ifndef __FPGADIAG_DEFS_H__
-#define __FPGADIAG_DEFS_H__
+#ifndef __CCIS_FPGADIAG_DEFS_H__
+#define __CCIS_FPGADIAG_DEFS_H__
 #include <unistd.h>  // isatty()
 #include <new>       // std::nothrow
 #include <string>
@@ -88,7 +88,7 @@ using namespace std;
 #define GHZ(x)                       ((x) * 1000000000ULL)
 #define __FREQ_CONST(x)              x##ULL
 
-#define DEFAULT_FPGA_CLK_FREQ        MHZ(400)
+#define DEFAULT_FPGA_CLK_FREQ        MHZ(200)
 #define DEFAULT_NLB_CONT_TIMEOUT_SEC 0
 #define DEFAULT_NLB_CONT_TIMEOUT_NS  NANOSEC_PER_MILLI(1)
 #define DEFAULT_NLB_DSM_SIZE         ((wkspc_size_type)MB(4))
@@ -132,5 +132,5 @@ typedef AAL::btUnsigned64bitInt u64_type;
 #endif // sizeof_void_ptr
 
 
-#endif // __FPGADIAG_DEFS_H__
+#endif // __CCIS_FPGADIAG_DEFS_H__
 

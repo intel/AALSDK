@@ -41,7 +41,7 @@
 
 //LPBK1: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
 //On test completion, the software compares the source and destination buffers.
-
+#include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -49,20 +49,27 @@
 
 // non-continuous mode.
 // no cache treatment.
-btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd)
 {
    btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
    uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
 
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
+
+   /*if( uid_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
+      return 1;
+   }
+   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(wssize, &(m_pMyApp->InputVirtRef()))){
+       return 1;
+    }
+   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(wssize, &(m_pMyApp->OutputVirtRef()))){
+      return 1;
+   }
 
    // Synchronize with the workspace allocation event notifications.
-   m_pMyApp->ClientWait();
-
-   if ( !m_pMyApp->ClientOK() ) {
+   m_pMyApp->Wait();
+cout<<"Wkspcs created\n";
+   if ( !m_pMyApp->isOK() ) {
       ERR("Workspace allocation failed");
       return 1;
    }
@@ -91,24 +98,24 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    if ( 0 != ResetHandshake() ) {
       return 1;
    }
-
+   cout<<"Handshake reset\n";
    ReadQLPCounters();
    SaveQLPCounters();
 
    // Assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // De-assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
    // Set input workspace address
-   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+   m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
    // Set output workspace address
-   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+   m_pALIMMIOService->mmioWrite32(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the test mode
    csr_type cfg = (csr_type)NLB_TEST_MODE_LPBK1;
@@ -128,7 +135,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
    }
 
-   m_pCCIAFU->CSRWrite(CSR_CFG, cfg);
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, cfg);
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -143,10 +150,10 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    while ( sz <= CL(cmd.endcls) )
    {
 	   // Set the number of cache lines for the test
-	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	   // Start the test
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
 	   // Wait for test completion
 	   while ( 0 == pAFUDSM->test_complete ) {
@@ -154,7 +161,7 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   }
 
 	   // Stop the device
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
 	   ReadQLPCounters();
 
@@ -166,16 +173,16 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 	   sz += CL(1);
 
 	   // Assert Device Reset
-		m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
 		// Clear the DSM status fields
 		::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
 		// De-assert Device Reset
-		m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+		m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
    }
 
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // Verify the buffers
    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
@@ -188,20 +195,21 @@ btInt CNLBLpbk1::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
       ++res;
    }
 
+
    // Clean up..
 
    // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pALIBufferService->bufferFree(m_pMyApp->InputVirt());
+   m_pALIBufferService->bufferFree(m_pMyApp->OutputVirt());
+   m_pALIBufferService->bufferFree(m_pMyApp->DSMVirt());
 
    // Synchronize with the workspace free event notifications.
-   m_pMyApp->ClientWait();
+   m_pMyApp->Wait();
 
-   if ( !m_pMyApp->ClientOK() ) {
+   if ( !m_pMyApp->isOK() ) {
       ERR("Workspace free failed");
       return 1;
-   }
+   }*/
 
    return res;
 }

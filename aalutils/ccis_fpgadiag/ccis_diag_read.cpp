@@ -41,17 +41,17 @@
 
 //READ: This ia a read-only test with no data checking. AFU reads CSR_NUM_LINES starting from CSR_SRC_ADDR.
 //This test is used to stress the read path and measure 100% read bandwidth and latency.
-#include <aalsdk/kernel/aalui.h>
-#include "diag_defaults.h"
-#include "diag-common.h"
+
+#include "ccis_diag_defaults.h"
+#include "ccis_diag-common.h"
 #include "nlb-specific.h"
-#include "diag-nlb-common.h"
+#include "ccis_diag-nlb-common.h"
 
 // cool off fpga cache.
-btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
+btInt CNLBRead::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
    btInt res = 0;
-   /*btWSSize  sz = CL(cmd.begincls);
+   btWSSize  sz = CL(cmd.begincls);
 
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
@@ -286,7 +286,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
       ERR("Workspace free failed");
       return 1;
    }
-*/
+
    return res;
 }
 

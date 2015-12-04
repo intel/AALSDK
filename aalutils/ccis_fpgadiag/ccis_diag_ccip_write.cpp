@@ -42,18 +42,18 @@
 //WRITE: This is a write only test with no data checking. AFU writes CSR_NUM_LINES
 //starting from CSR_DST_ADDR location. This test is used to stress the write
 //path and measure 100% write bandwidth and latency.
-#include <aalsdk/kernel/aalui.h>
-#include "diag_defaults.h"
-#include "diag-common.h"
-#include "nlb-specific.h"
-#include "diag-nlb-common.h"
 
-btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
+#include "ccis_diag_defaults.h"
+#include "ccis_diag-common.h"
+#include "nlb-specific.h"
+#include "ccis_diag-nlb-common.h"
+
+btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
 
-  /* m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
+   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
 
    // Overloading the "input" workspace here to be the buffer we use to cool down the cache.
    m_pCCIAFU->WorkspaceAllocate(MAX_NLB_WRITE_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -79,11 +79,11 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
 
-*/
+
    /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->InputPhys(), m_pMyApp->InputSize()) ) {
       return 1;
    }*/
-/*
+
    // Assert Device Reset
    m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
@@ -268,7 +268,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
       ERR("Workspace free failed");
       return 1;
    }
-*/
+
    return res;
 }
 

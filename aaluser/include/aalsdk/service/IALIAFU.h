@@ -67,6 +67,14 @@ BEGIN_NAMESPACE(AAL)
 #define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 
+/// Key for selecting an AFU delegate.
+#define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
+/// Value - selects ASECCIAFU
+# define ALIAFU_NVS_VAL_TARGET_ASE   "ALIAFUTarget_ASE"
+/// Value - selects HWCCIAFU
+# define ALIAFU_NVS_VAL_TARGET_FPGA  "ALIAFUTarget_FPGA"
+/// Value - selects SWSimCCIAFU
+# define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
 
 /// @file
 /// @brief AFU Link Interface (ALI).

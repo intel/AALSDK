@@ -239,6 +239,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // UI Driver message
    struct aalui_CCIdrvMessage *pmsg = (struct aalui_CCIdrvMessage *) Message->m_message;
 
+   // Save original response buffer size in case we return something
+   btWSSize         respBufSize     = Message->m_respbufSize;
 
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error = uid_errnumInvalidRequest;
@@ -267,80 +269,59 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       // Returns a workspace ID for the Config Space
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
-
-         // Used to hold the workspace ID
+         struct aalui_WSMEvent WSID;
          struct aal_wsid   *wsidp            = NULL;
 
          if ( !cci_dev_allow_map_mmior_space(pdev) ) {
             PERR("Failed ccipdrv_getMMIOR map Permission\n");
-            pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
-                                                             0,
-                                                             (btPhysAddr)NULL,
-                                                             0,
-                                                             Message->m_tranID,
-                                                             Message->m_context,
-                                                             uid_errnumPermission);
             PERR("Direct API access not permitted on this device\n");
-
-            retval = -EPERM;
-         } else {
-
-            //------------------------------------------------------------
-            // Create the WSID object and add to the list for this session
-            //------------------------------------------------------------
-            if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
-               PERR("Failed ccipdrv_getMMIOR map Parameter\n");
-               pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create(pownerSess->m_device,
-                                                                0,
-                                                                (btPhysAddr)NULL,
-                                                                0,
-                                                                Message->m_tranID,
-                                                                Message->m_context,
-                                                                uid_errnumBadParameter);
-               PERR("Bad WSID on ccipdrv_getMMIORmap\n");
-
-               retval = -EINVAL;
-            } else {
-
-               wsidp = ccidrv_getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
-               if ( NULL == wsidp ) {
-                  PERR("Could not allocate workspace\n");
-                  retval = -ENOMEM;
-                  /* generate a failure event back to the caller? */
-                  goto ERROR;
-               }
-
-               wsidp->m_type = WSM_TYPE_MMIO;
-               PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
-                         ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
-                         wsidp,
-                         preq->ahmreq.u.wksp.m_wsid);
-
-               PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
-
-               // Return the event with all of the appropriate aperture descriptor information
-               pafuws_evt = ccipdrv_event_afu_afugetmmiomap_create( pownerSess->m_device,
-                                                                    pwsid_to_wsidhandle(wsidp),
-                                                                   cci_dev_phys_afu_mmio(pdev),       // Return the requested aperture
-                                                                   cci_dev_len_afu_mmio(pdev),        // Return the requested aperture size
-                                                                   Message->m_tranID,
-                                                                   Message->m_context,
-                                                                   uid_errnumOK);
-
-               PVERBOSE("Sending ccipdrv_getMMIORmap Event\n");
-
-               retval = 0;
-            }
+            Message->m_errcode = uid_errnumPermission;
+            break;
          }
 
-         ccidrv_sendevent( aalsess_uiHandle(pownerSess),
-                           aalsess_aaldevicep(pownerSess),
-                           AALQIP(pafuws_evt),
-                           Message->m_context);
+         //------------------------------------------------------------
+         // Create the WSID object and add to the list for this session
+         //------------------------------------------------------------
+         if ( WSID_MAP_MMIOR != preq->ahmreq.u.wksp.m_wsid ) {
+            PERR("Failed ccipdrv_getMMIOR map Parameter\n");
 
-         if ( 0 != retval ) {
+            PERR("Bad WSID on ccipdrv_getMMIORmap\n");
+            Message->m_errcode = uid_errnumBadParameter;
+            break;
+         }
+
+         wsidp = ccidrv_getwsid(pownerSess->m_device, preq->ahmreq.u.wksp.m_wsid);
+         if ( NULL == wsidp ) {
+            PERR("Could not allocate workspace\n");
+            retval = -ENOMEM;
+            /* generate a failure event back to the caller? */
             goto ERROR;
          }
+
+         wsidp->m_type = WSM_TYPE_MMIO;
+         PDEBUG("Getting CSR %s Aperature WSID %p using id %llx .\n",
+                   ((WSID_CSRMAP_WRITEAREA == preq->ahmreq.u.wksp.m_wsid) ? "Write" : "Read"),
+                   wsidp,
+                   preq->ahmreq.u.wksp.m_wsid);
+
+         PDEBUG("Apt = %" PRIxPHYS_ADDR " Len = %d.\n",cci_dev_phys_afu_mmio(pdev), (int)cci_dev_len_afu_mmio(pdev));
+
+         // Set up the return payload
+         WSID.evtID           = uid_wseventMMIOMap;
+         WSID.wsParms.wsid    = pwsid_to_wsidhandle(wsidp);
+         WSID.wsParms.physptr = cci_dev_phys_afu_mmio(pdev);
+         WSID.wsParms.size    = cci_dev_len_afu_mmio(pdev);
+
+         // Make this atomic. Check the original response buffer size for room
+         if(respBufSize >= sizeof(struct aalui_WSMEvent)){
+            *((struct aalui_WSMEvent*)Message->m_response) = WSID;
+            Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
+         }
+         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
+         Message->m_errcode = uid_errnumOK;
+
+         // Add the new wsid onto the session
+         aalsess_add_ws(pownerSess, wsidp->m_list);
 
       } break;
 

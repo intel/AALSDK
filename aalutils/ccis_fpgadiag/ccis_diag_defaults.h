@@ -1,5 +1,5 @@
-#ifndef __DIAG_DEFAULTS_H__
-#define __DIAG_DEFAULTS_H__
+#ifndef __CCIS_DIAG_DEFAULTS_H__
+#define __CCIS_DIAG_DEFAULTS_H__
 
 #include "nlb-specific.h"
 
@@ -8,8 +8,8 @@
 #define DEFAULT_DSMPHYS     	0
 #define DEFAULT_SRCPHYS     	0
 #define DEFAULT_DSTPHYS     	0
-#define DEFAULT_WARMFPGACACHE "off"
-#define DEFAULT_COOLFPGACACHE "on"
+#define DEFAULT_WARMFPGACACHE 	"off"
+#define DEFAULT_COOLFPGACACHE 	"on"
 #define DEFAULT_COOLCPUCACHE 	"off"
 #define DEFAULT_NOBW        	"off"
 #define DEFAULT_TABULAR     	"on"
@@ -26,10 +26,10 @@
 #define DEFAULT_TOSEC       	0
 #define DEFAULT_TOMIN       	0
 #define DEFAULT_TOHOUR      	0
-#define DEFAULT_POLL       	"on"
-#define DEFAULT_CSR_WRITE  	"off"
-#define DEFAULT_UMSG_DATA  	"off"
-#define DEFAULT_UMSG_HINT  	"off"
+#define DEFAULT_POLL       		"on"
+#define DEFAULT_CSR_WRITE  		"off"
+#define DEFAULT_UMSG_DATA  		"off"
+#define DEFAULT_UMSG_HINT  		"off"
 #define DEFAULT_AUTO_CH			"on"
 #define DEFAULT_QPI				"off"
 #define DEFAULT_PCIE0			"off"

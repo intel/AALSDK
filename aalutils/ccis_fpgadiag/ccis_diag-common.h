@@ -4,9 +4,9 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
 
-#include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ALIAFUService.h>
-//#include <aalsdk/service/IALIClient.h>
+#include <aalsdk/service/ICCIAFU.h>
+#include <aalsdk/service/CCIAFUService.h>
+#include <aalsdk/service/ICCIClient.h>
 
 //#include <aalsdk/utils/SingleAFUApp.h>
 //#include <aalsdk/utils/Utilities.h>
@@ -16,7 +16,7 @@
 #include <aalsdk/utils/NLBVAFU.h>
 
 #include <string>
-#include "diag-nlb-common.h"
+#include "ccis_diag-nlb-common.h"
 
 using namespace AAL;
 
@@ -51,9 +51,9 @@ btBool gWaitForDebuggerAttach = true;
 // CMyCCIClient
 
 // Ugly hack so that Doxygen produces the correct class diagrams.
-/*#define CMyALIClient CMyfpgasaneALIClient
+#define CMyCCIClient CMyfpgasaneCCIClient
 
-class CMyALIClient : public IALIClient,
+class CMyCCIClient : public ICCIClient,
                      public CAASBase
 {
 public:
@@ -71,9 +71,9 @@ public:
       WKSPC_UMSG  ///< UMsg workspace
    };
 
-   CMyALIClient();
+   CMyCCIClient();
 
-   // <IALIClient>
+   // <ICCIClient>
    virtual void      OnWorkspaceAllocated(TransactionID const &TranID,
                                           btVirtAddr           WkspcVirt,
                                           btPhysAddr           WkspcPhys,
@@ -84,22 +84,22 @@ public:
    virtual void          OnWorkspaceFreed(TransactionID const &TranID);
 
    virtual void     OnWorkspaceFreeFailed(const IEvent &Event);
-   // </IALIClient>
+   // </ICCIClient>
 
    btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.
    btVirtAddr InputVirt()  const { return m_InputVirt;  } ///< Accessor for the Input workspace.
    btVirtAddr OutputVirt() const { return m_OutputVirt; } ///< Accessor for the Output workspace.
-   btVirtAddr UMsgVirt()   const { return m_UMsgVirt;   } ///< Accessor for the UMsg workspace.
+   btVirtAddr UMsgVirt() const { return m_UMsgVirt; 	} ///< Accessor for the UMsg workspace.
 
    btPhysAddr DSMPhys()    const { return m_DSMPhys;    } ///< Accessor for the DSM workspace.
    btPhysAddr InputPhys()  const { return m_InputPhys;  } ///< Accessor for the Input workspace.
    btPhysAddr OutputPhys() const { return m_OutputPhys; } ///< Accessor for the Output workspace.
-   btPhysAddr UMsgPhys()   const { return m_UMsgPhys;   } ///< Accessor for the UMsg workspace.
+   btPhysAddr UMsgPhys()   const { return m_UMsgPhys; 	} ///< Accessor for the UMsg workspace.
 
    btWSSize   DSMSize()    const { return m_DSMSize;    } ///< Accessor for the DSM workspace.
    btWSSize   InputSize()  const { return m_InputSize;  } ///< Accessor for the Input workspace.
    btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
-   btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
+   btWSSize   UMsgSize()   const { return m_UMsgSize; 	} ///< Accessor for the UMsg workspace.
 
 
    /// @brief Wait on the client's internal semaphore.
@@ -156,9 +156,9 @@ protected:
    btInt      m_Wkspcs;     ///< current number of workspaces allocated.
    CSemaphore m_Sem;        ///< client's internal semaphore.
 };
-*/
-/// The default ALIAFU Delegate.
-#define DEFAULT_TARGET_AFU ALIAFU_NVS_VAL_TARGET_FPGA
+
+/// The default CCIAFU Delegate.
+#define DEFAULT_TARGET_AFU CCIAFU_NVS_VAL_TARGET_FPGA
 
 
 /// The default Test Mode.
@@ -180,15 +180,6 @@ class CMyApp : public IRuntimeClient,
 			   public CAASBase
 {
 public:
-
-   enum WorkspaceType
-   {
-	  WKSPC_DSM, ///< Device Status Memory
-	  WKSPC_IN,  ///< Input workspace
-	  WKSPC_OUT,  ///< Output workspace
-	  WKSPC_UMSG  ///< UMsg workspace
-   };
-
    CMyApp();
    virtual ~CMyApp();
 
@@ -215,23 +206,6 @@ public:
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
    // </IServiceClient>
 
-   btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.
-   btVirtAddr InputVirt()  const { return m_InputVirt;  } ///< Accessor for the Input workspace.
-   btVirtAddr OutputVirt() const { return m_OutputVirt; } ///< Accessor for the Output workspace.
-   btVirtAddr UMsgVirt()   const { return m_UMsgVirt;   } ///< Accessor for the UMsg workspace.
-
-   btPhysAddr DSMPhys()    const { return m_DSMPhys;    } ///< Accessor for the DSM workspace.
-   btPhysAddr InputPhys()  const { return m_InputPhys;  } ///< Accessor for the Input workspace.
-   btPhysAddr OutputPhys() const { return m_OutputPhys; } ///< Accessor for the Output workspace.
-   btPhysAddr UMsgPhys()   const { return m_UMsgPhys;   } ///< Accessor for the UMsg workspace.
-
-   btWSSize   DSMSize()    const { return m_DSMSize;    } ///< Accessor for the DSM workspace.
-   btWSSize   InputSize()  const { return m_InputSize;  } ///< Accessor for the Input workspace.
-   btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
-   btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
-
-   btBool isOK()  {return m_isOK;}
-
    void Wait() { m_Sem.Wait();  }
    void Post() { m_Sem.Post(1); }
    void Stop();
@@ -251,41 +225,41 @@ public:
    /// @brief Accessor for the test mode.
    std::string TestMode() const             { return m_TestMode;   }
 
+   /// @brief Wait on the m_CCIClient's internal semaphore.
+   void ClientWait()       { m_CCIClient.ClientWait();  }
+   /// @brief Determine m_CCIClient's status.
+   btBool ClientOK() const { return m_CCIClient.IsOK(); }
+
+   btVirtAddr DSMVirt()    const { return m_CCIClient.DSMVirt();    } ///< Accessor for the DSM workspace.
+   btVirtAddr InputVirt()  const { return m_CCIClient.InputVirt();  } ///< Accessor for the Input workspace.
+   btVirtAddr OutputVirt() const { return m_CCIClient.OutputVirt(); } ///< Accessor for the Output workspace.
+   btVirtAddr UMsgVirt()   const { return m_CCIClient.UMsgVirt(); 	} ///< Accessor for the UMsg workspace.
+
+   btPhysAddr DSMPhys()    const { return m_CCIClient.DSMPhys();    } ///< Accessor for the DSM workspace.
+   btPhysAddr InputPhys()  const { return m_CCIClient.InputPhys();  } ///< Accessor for the Input workspace.
+   btPhysAddr OutputPhys() const { return m_CCIClient.OutputPhys(); } ///< Accessor for the Output workspace.
+   btPhysAddr UMsgPhys()   const { return m_CCIClient.UMsgPhys(); 	} ///< Accessor for the UMsg workspace.
+
+   btWSSize   DSMSize()    const { return m_CCIClient.DSMSize();    } ///< Accessor for the DSM workspace.
+   btWSSize   InputSize()  const { return m_CCIClient.InputSize();  } ///< Accessor for the Input workspace.
+   btWSSize   OutputSize() const { return m_CCIClient.OutputSize(); } ///< Accessor for the Output workspace.
+   btWSSize   UMsgSize()   const { return m_CCIClient.UMsgSize(); 	} ///< Accessor for the UMsg workspace.
+
+
+
    operator IAALService * () { return m_pAALService;  }
 
-   operator IALIMMIO * ()   { return m_pALIMMIOService; }
-   operator IALIBuffer * () { return m_pALIBufferService; }
-   operator IALIReset * ()  { return m_pALIResetService; }
-   operator IALIUMsg * ()   { return m_pALIuMSGService; }
+   operator ICCIAFU * () { return m_pProprietary; }
 
 protected:
    std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
    btInt        m_DevTarget; ///< The NVS value used to select the Sub Device.
    std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
-   //CMyALIClient m_ALIClient; ///< The ICCIClient used to communicate with the allocated Service.
-   //Runtime      m_Runtime;           ///< AAL Runtime
+   CMyCCIClient m_CCIClient; ///< The ICCIClient used to communicate with the allocated Service.
    IRuntime    *m_pRuntime;
    IAALService *m_pAALService;
    CSemaphore   m_Sem;
-   IALIBuffer  *m_pALIBufferService; ///< Pointer to Buffer Service
-   IALIMMIO    *m_pALIMMIOService;   ///< Pointer to MMIO Service
-   IALIReset   *m_pALIResetService;  ///< Pointer to AFU Reset Service
-   IALIUMsg    *m_pALIuMSGService;   ///< Pointer to uMSg Service
-   btBool       m_isOK;
-
-   // Workspace info
-   btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
-   btPhysAddr     m_DSMPhys;        ///< DSM workspace physical address.
-   btWSSize       m_DSMSize;        ///< DSM workspace size in bytes.
-   btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
-   btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
-   btWSSize       m_InputSize;      ///< Input workspace size in bytes.
-   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
-   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
-   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
-   btVirtAddr 	  m_UMsgVirt;   	///< UMsg workspace virtual address.
-   btPhysAddr 	  m_UMsgPhys;   	///< UMsg workspace physical address.
-   btWSSize   	  m_UMsgSize;   	///< UMsg workspace size in bytes.
+   ICCIAFU     *m_pProprietary;
 };
 
 
@@ -296,7 +270,7 @@ class INLB
 {
 public:
    virtual ~INLB() {}
-   virtual btInt RunTest(const NLBCmdLine &cmd) = 0;
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize) = 0;
 
    std::string ReadBandwidth()  const { return m_RdBw; }
    std::string WriteBandwidth() const { return m_WrBw; }
@@ -304,15 +278,10 @@ public:
 protected:
    INLB(CMyApp *pMyApp) :
       m_pMyApp(pMyApp),
-      m_pALIMMIOService((IALIMMIO *) *pMyApp), // uses type cast operator from ISingleAFUApp.
-      m_pALIBufferService((IALIBuffer *) *pMyApp),
-      m_pALIResetService((IALIReset *) *pMyApp),
-      m_pALIuMSGService((IALIUMsg *) *pMyApp)
+      m_pCCIAFU((ICCIAFU *) *pMyApp) // uses type cast operator from ISingleAFUApp.
    {
       ASSERT(NULL != m_pMyApp);
-      ASSERT(NULL != m_pALIMMIOService);
-      ASSERT(NULL != m_pALIBufferService);
-      ASSERT(NULL != m_pALIResetService);
+      ASSERT(NULL != m_pCCIAFU);
 
       btInt i;
       for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
@@ -335,10 +304,7 @@ protected:
    void EnableCSRPrint(bool bEnable, bool bReplay=true);
 
    CMyApp     *m_pMyApp;
-   IALIBuffer *m_pALIBufferService; ///< Pointer to Buffer Service
-   IALIMMIO   *m_pALIMMIOService;   ///< Pointer to MMIO Service
-   IALIReset  *m_pALIResetService;  ///< Pointer to AFU Reset Service
-   IALIUMsg   *m_pALIuMSGService;   ///< Pointer to uMSg Service
+   ICCIAFU    *m_pCCIAFU;
    bt32bitCSR  m_QLPCounters[QLP_NUM_COUNTERS];
    bt32bitCSR  m_SavedQLPCounters[QLP_NUM_COUNTERS];
    std::string m_RdBw;
@@ -351,7 +317,7 @@ public:
    CNLBLpbk1(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -361,7 +327,7 @@ public:
 	CNLBRead(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -371,7 +337,7 @@ public:
 	CNLBWrite(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -382,7 +348,7 @@ public:
    CNLBTrput(CMyApp *pMyApp) :
       INLB(pMyApp)
    {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -393,16 +359,17 @@ public:
 	CNLBSW(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+
 class CNLBCcipLpbk1 : public INLB
 {
 public:
 	CNLBCcipLpbk1(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 class CNLBCcipRead : public INLB
@@ -411,7 +378,7 @@ public:
 	CNLBCcipRead(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -421,7 +388,7 @@ public:
 	CNLBCcipWrite(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
 
@@ -431,17 +398,61 @@ public:
 	CNLBCcipTrput(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
-
 class CNLBCcipSW : public INLB
 {
 public:
 	CNLBCcipSW(CMyApp *pMyApp) :
       INLB(pMyApp)
     {}
-   virtual btInt RunTest(const NLBCmdLine &cmd);
+   virtual btInt RunTest(const NLBCmdLine &cmd, btWSSize wssize);
    virtual void  PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls);
 };
+/*class PrintFormatter : public INLB
+{
+public:
+
+	void PrintFormatter::PrintNLBTabular(std::ostream &os, const NLBCmdLine &cmd) const throw()
+	{
+	   //CNLBWorkload *pNLBWkld = dynamic_cast<CNLBWorkload *>(m_pWkld);
+	   //CNLBMetrics   m        = pNLBWkld->GetMetrics();
+
+		nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
+
+	   if ( flag_is_set(cmd.cmdflags, NLB_TABULAR_DO_HDR) ) {
+	           //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+	      os << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Ticks(@"
+	         << cmd.clkfreq << ")'";
+
+	      if ( flag_is_clr(cmd.cmdflags, NLB_TABULAR_NO_BW) ) {
+	              // 01234567890123 01234567890123
+	         os << "   Rd_Bandwidth   Wr_Bandwidth";
+	      }
+
+	      os << std::endl;
+	   }
+
+	   //os << setw(10) << m.Size().CacheLines() << ' '
+	   os << setw(10) << pAFUDSM->num_reads    << ' '
+	      << setw(11) << pAFUDSM->num_writes   << ' ';
+	     /* << setw(12) << m.CacheReadHits()     << ' '
+	      << setw(12) << m.CacheWriteHits()    << ' '
+	      << setw(13) << m.CacheReadMisses()   << ' '
+	      << setw(13) << m.CacheWriteMisses()  << ' '
+	      << setw(10) << m.CacheEvictions()    << ' '
+	      << setw(16) << m.Ticks();*/
+
+	  /*if ( flag_is_clr(cmd.cmdflags, NLB_TABULAR_NO_BW) ) {
+		   std::string RdBw = CalcReadBandwidth(cmd);
+	      os << "  "
+	         << setw(14) << RdBw << ' '
+	         << setw(14) << CalcWriteBandwidth(cmd);
+	   }
+
+	   os << std::endl;
+
+	}
+};*/
 #endif

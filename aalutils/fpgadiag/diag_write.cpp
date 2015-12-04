@@ -42,16 +42,16 @@
 //WRITE: This is a write only test with no data checking. AFU writes CSR_NUM_LINES
 //starting ffffrom CSR_DST_ADDR locaion. This test is used to stress the write
 //path and measure 100% write bandwidth and latency.
-
+#include <aalsdk/kernel/aalui.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
 #include "diag-nlb-common.h"
 
-btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
+btInt CNLBWrite::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
-   btWSSize  sz = CL(cmd.begincls);
+  /* btWSSize  sz = CL(cmd.begincls);
 
    m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
 
@@ -269,7 +269,7 @@ btInt CNLBWrite::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
    if ( !m_pMyApp->ClientOK() ) {
       ERR("Workspace free failed");
       return 1;
-   }
+   }*/
 
    return res;
 }

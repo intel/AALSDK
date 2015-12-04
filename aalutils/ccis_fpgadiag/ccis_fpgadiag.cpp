@@ -25,8 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file fpgadiag.cpp
-/// @brief Uses XL and IALIAFU to interact with ALI.
-/// @ingroup ALIapp
+/// @brief Uses XL and ICCIAFU to interact with CCI.
+/// @ingroup cciapp
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -47,19 +47,20 @@
 //****************************************************************************
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
-#include <aalsdk/kernel/aalui.h>
 
-#include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/ALIAFUService.h>
-//#include <aalsdk/service/IALIClient.h>
+#include <aalsdk/service/ICCIAFU.h>
+#include <aalsdk/service/CCIAFUService.h>
+#include <aalsdk/service/ICCIClient.h>
 
+//#include <aalsdk/utils/SingleAFUApp.h>
+//#include <aalsdk/utils/Utilities.h>
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
 
 #include <aalsdk/utils/NLBVAFU.h>
-#include "diag-nlb-common.h"
-#include "diag-common.h"
-#include "diag_defaults.h"
+#include "ccis_diag-nlb-common.h"
+#include "ccis_diag-common.h"
+#include "ccis_diag_defaults.h"
 
 #define AALSDK_COPYRIGHT_STMNT "Copyright (c) 2003-2015, Intel Corporation" //TODO add in appropriate header file
 
@@ -90,9 +91,9 @@ USING_NAMESPACE(AAL)
 btBool gWaitForDebuggerAttach = true;
 #endif // DBG_HOOK
 
-//#define iidIALIAFU __AAL_IID(AAL_sysAAL, 0x0007)
+//#define iidICCIAFU __AAL_IID(AAL_sysAAL, 0x0007)
 
-/// @addtogroup ALIapp
+/// @addtogroup cciapp
 /// @{
 
 BEGIN_C_DECLS
@@ -206,27 +207,12 @@ CMyApp::CMyApp() :
    m_DevTarget(DEFAULT_TARGET_DEV),
    m_pRuntime(NULL),
    m_pAALService(NULL),
-   m_pALIBufferService(NULL),
-   m_pALIMMIOService(NULL),
-   m_pALIResetService(NULL),
-   m_pALIuMSGService(NULL),
-   m_isOK(false),
-   m_DSMVirt(NULL),
-   m_DSMPhys(0),
-   m_DSMSize(0),
-   m_InputVirt(NULL),
-   m_InputPhys(0),
-   m_InputSize(0),
-   m_OutputVirt(NULL),
-   m_OutputPhys(0),
-   m_OutputSize(0),
-   m_UMsgVirt(NULL),
-   m_UMsgPhys(0),
-   m_UMsgSize(0)
+   m_pProprietary(NULL)
 {
 	m_Sem.Create(0, 1);
-	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+	SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this)); //TODO check if CCIAFU expects ICCIClient
     SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
+	SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(&m_CCIClient));
 }
 
 CMyApp::~CMyApp()
@@ -263,16 +249,16 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 
    m_pRuntime = pRT;
 
-   btcString AFUName = "ALIAFU";
+   btcString AFUName = "CCIAFU";
 
    INFO("Allocating " << AFUName << " Service");
 
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-  if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
+  if ( 0 == strcmp(AFUTarget().c_str(), "CCIAFUTarget_FPGA") ) {      // Use FPGA hardware
 
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWCCIAFU");
   	   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
   	   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
@@ -280,22 +266,22 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	   {
   		   ConfigRecord.Add(keyRegChannelNumber, DevTarget());
   	   }
-  }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
+  }else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
 
 	   Manifest.Add(keyRegHandle, 20);
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASECCIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-  	}else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {       // default is Software Simulator
+  	}else if ( 0 == strcasecmp(AFUTarget().c_str(), "CCIAFUTarget_SWSIM") ) {       // default is Software Simulator
 
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
+  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimCCIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
   	}
 
   	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
   	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
-  	Manifest.Add(ALIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
+  	Manifest.Add(CCIAFU_NVS_KEY_TARGET, AFUTarget().c_str());
 
    #if DBG_HOOK
   	INFO(Manifest);
@@ -330,35 +316,13 @@ void CMyApp::runtimeAllocateServiceFailed(IEvent const &e)
 }
 
 void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
-											            TransactionID const &tid)
+											 TransactionID const &tid)
 {
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
 
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
-      m_bIsOK = false;
-      return;
-   }
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
+   ASSERT(NULL != m_pProprietary);
 
    INFO("Service Allocated (rt)");
 }
@@ -401,86 +365,11 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 {
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
-   }
+   m_pProprietary = dynamic_ptr<ICCIAFU>(iidCCIAFU, pServiceBase);
+   ASSERT(NULL != m_pProprietary);
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIMMIO as subclass interface
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
-   m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
-   ASSERT(NULL != m_pALIuMSGService);
-   if ( NULL == m_pALIuMSGService ) {
-      m_bIsOK = false;
-      return;
-   }
    INFO("Service Allocated");
-
-   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
-   //   In workspaceAllocated() callback we allocate the rest
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
-   }
-   m_DSMSize = NLB_DSM_SIZE;
-   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
-
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
-   }
-   m_InputSize = MAX_NLB_WKSPC_SIZE;
-   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-
-   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
-   }
-   m_OutputSize = MAX_NLB_WKSPC_SIZE;
-   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
-
-   btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
-   btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
-   if(NULL != uMsg0){
-
-      NamedValueSet nvs;
-      nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
-
-      btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
-   }else{
-      ERR("No uMSG support");
-   }
-
    Post();
 }
 
@@ -496,11 +385,6 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
 
 void CMyApp::serviceFreed(TransactionID const &tid)
 {
-	// Release the Workspaces
-	 m_pALIBufferService->bufferFree(m_InputVirt);
-	 m_pALIBufferService->bufferFree(m_OutputVirt);
-	 m_pALIBufferService->bufferFree(m_DSMVirt);
-
 	INFO("Service Freed");
 	Post();
 }
@@ -521,7 +405,7 @@ void CMyApp::serviceEvent(const IEvent &e)
 void CMyApp::serviceReleased(TransactionID const &tid)
 {
 	INFO("Service Released");
-   Post();
+    Post();
 }
 void CMyApp::serviceReleaseFailed(const IEvent &e)
 {
@@ -532,6 +416,119 @@ void CMyApp::serviceReleaseFailed(const IEvent &e)
    ERR("Service Release Failed");
    Post();
 }
+///////////////////////////////////////////////////////////////////////////////////
+
+CMyCCIClient::CMyCCIClient() :
+   m_DSMVirt(NULL),
+   m_DSMPhys(0),
+   m_DSMSize(0),
+   m_InputVirt(NULL),
+   m_InputPhys(0),
+   m_InputSize(0),
+   m_OutputVirt(NULL),
+   m_OutputPhys(0),
+   m_OutputSize(0),
+   m_UMsgVirt(NULL),
+   m_UMsgPhys(0),
+   m_UMsgSize(0),
+   m_Wkspcs(0)
+{
+   m_Sem.Create(0, INT_MAX);
+   SetInterface(iidCCIClient, dynamic_cast<ICCIClient *>(this));
+}
+
+void CMyCCIClient::OnWorkspaceAllocated(TransactionID const &TranID,
+                                        btVirtAddr           WkspcVirt,
+                                        btPhysAddr           WkspcPhys,
+                                        btWSSize             WkspcSize)
+{
+   btBool GotOne = true;
+   AutoLock(this);
+
+   switch ( (CMyCCIClient::WorkspaceType)TranID.ID() ) {
+      case WKSPC_DSM : {
+         DSM(WkspcVirt, WkspcPhys, WkspcSize);
+         INFO("Got DSM");
+      } break;
+      case WKSPC_IN : {
+         Input(WkspcVirt, WkspcPhys, WkspcSize);
+         INFO("Got Input Workspace");
+      } break;
+      case WKSPC_OUT : {
+         Output(WkspcVirt, WkspcPhys, WkspcSize);
+         INFO("Got Output Workspace");
+      } break;
+      case WKSPC_UMSG: {
+		   UMsg(WkspcVirt, WkspcPhys, WkspcSize);
+		   INFO("Got UMsg Workspace");
+		} break;
+      default : {
+         GotOne = false;
+         ERR("Invalid workspace type: " << TranID.ID());
+      } break;
+   }
+
+   if ( GotOne ) {
+      ++m_Wkspcs;
+      if ( 3 == m_Wkspcs ) {
+         ClientPost();
+      }
+   }
+}
+
+void CMyCCIClient::OnWorkspaceAllocateFailed(const IEvent & /*unused*/)
+{
+   AutoLock(this);
+   m_bIsOK = false;
+   ClientPost();
+}
+
+void CMyCCIClient::OnWorkspaceFreed(TransactionID const &TranID)
+{
+   btBool FreedOne = true;
+   AutoLock(this);
+
+   switch ( (CMyCCIClient::WorkspaceType)TranID.ID() ) {
+      case WKSPC_DSM : {
+         DSM(NULL, 0, 0);
+         INFO("Freed DSM");
+      } break;
+      case WKSPC_IN : {
+         Input(NULL, 0, 0);
+         INFO("Freed Input Workspace");
+      } break;
+      case WKSPC_OUT : {
+         Output(NULL, 0, 0);
+         INFO("Freed Output Workspace");
+      } break;
+      case WKSPC_UMSG : {
+		  Output(NULL, 0, 0);
+		  INFO("Freed UMsg Workspace");
+	   } break;
+      default : {
+         FreedOne = false;
+         ERR("Invalid workspace type");
+      } break;
+   }
+
+   if ( FreedOne ) {
+      --m_Wkspcs;
+      if ( 0 == m_Wkspcs ) {
+         ClientPost();
+      }
+   }
+}
+
+void CMyCCIClient::OnWorkspaceFreeFailed(const IEvent & /*unused*/)
+{
+   AutoLock(this);
+   m_bIsOK = false;
+   ClientPost();
+}
+
+void CMyCCIClient::ClientWait() { m_Sem.Wait();  }
+
+void CMyCCIClient::ClientPost() { m_Sem.Post(1); }
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -612,8 +609,8 @@ int main(int argc, char *argv[])
    myapp.DevTarget(gCmdLine.DevTarget);
    myapp.TestMode(gCmdLine.TestMode);
 
-   if ( (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_ASE)) ||
-        (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_SWSIM)) ) {
+   if ( (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_ASE)) ||
+        (0 == myapp.AFUTarget().compare(CCIAFU_NVS_VAL_TARGET_SWSIM)) ) {
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
@@ -640,7 +637,7 @@ int main(int argc, char *argv[])
 	   CNLBLpbk1 nlblpbk1(&myapp);
 
 	   cout << " * Data Copy " << flush;
-	   res = nlblpbk1.RunTest(gCmdLine);
+	   res = nlblpbk1.RunTest(gCmdLine, MAX_NLB_LPBK1_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
 		  cout << PASS << "PASS - DATA VERIFIED";
@@ -657,7 +654,7 @@ int main(int argc, char *argv[])
 	   CNLBRead nlbread(&myapp);
 
 	   cout << " * Read Bandwidth from Memory " << flush;
-	   res = nlbread.RunTest(gCmdLine);
+	   res = nlbread.RunTest(gCmdLine, MAX_NLB_READ_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
 		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -674,7 +671,7 @@ int main(int argc, char *argv[])
 	   CNLBWrite nlbwrite(&myapp);
 
 	   cout << " * Write Bandwidth to Memory " << flush;
-	   res = nlbwrite.RunTest(gCmdLine);
+	   res = nlbwrite.RunTest(gCmdLine, MAX_NLB_WRITE_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
 		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -690,7 +687,7 @@ int main(int argc, char *argv[])
 	   CNLBTrput nlbtrput(&myapp);
 
 	   cout << " * Simultaneous Read/Write Bandwidth " << flush;
-	   res = nlbtrput.RunTest(gCmdLine);
+	   res = nlbtrput.RunTest(gCmdLine, MAX_NLB_TRPUT_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
 		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
@@ -707,7 +704,7 @@ int main(int argc, char *argv[])
 	   CNLBSW nlbsw(&myapp);
 
 	   cout << " * SW test " << flush;
-	   res = nlbsw.RunTest(gCmdLine);
+	   res = nlbsw.RunTest(gCmdLine, MAX_NLB_SW_WKSPC);
 	   totalres += res;
 	   if ( 0 == res ) {
 		  cout << PASS << "PASS - DATA VERIFIED";
@@ -718,83 +715,82 @@ int main(int argc, char *argv[])
 			<< endl;
    }
    else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
-      {
-   		// Run NLB ccip test, which performs sw data verification.
-   		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
+   {
+		// Run NLB ccip test, which performs sw data verification.
+		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
 
-   		cout << " * Data Copy - CCIP LPBK1" << flush;
-   		res = nlbccip_lpbk1.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFIED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-      }
-      else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
-      {
-   		// Run NLB ccip read test.
-   		CNLBCcipRead nlbccip_read(&myapp);
+		cout << " * Data Copy - CCIP LPBK1" << flush;
+		res = nlbccip_lpbk1.RunTest(gCmdLine, MAX_NLB_CCIP_LPBK1_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+   }
+   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_READ)))
+   {
+		// Run NLB ccip read test.
+		CNLBCcipRead nlbccip_read(&myapp);
 
-   		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
-   		res = nlbccip_read.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
-     {
-   		// Run NLB ccip write test.
-   		CNLBCcipWrite nlbccip_write(&myapp);
+		cout << " * Read Bandwidth from Memory - CCIP READ" << flush;
+		res = nlbccip_read.RunTest(gCmdLine, MAX_NLB_CCIP_READ_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_WRITE)))
+  {
+		// Run NLB ccip write test.
+		CNLBCcipWrite nlbccip_write(&myapp);
 
-   		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
-   		res = nlbccip_write.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
-     {
-   		// Run NLB ccip trput test.
-   		CNLBCcipTrput nlbccip_trput(&myapp);
+		cout << " * Write Bandwidth from Memory - CCIP WRITE" << flush;
+		res = nlbccip_write.RunTest(gCmdLine, MAX_NLB_CCIP_WRITE_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_TRPUT)))
+  {
+		// Run NLB ccip trput test.
+		CNLBCcipTrput nlbccip_trput(&myapp);
 
-   		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
-   		res = nlbccip_trput.RunTest(gCmdLine);
-   		totalres += res;
-   		if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
-   		} else {
-   		  cout << FAIL << "ERROR";
-   		}
-   		cout << NORMAL << endl;
-     }
-     else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
-     {
-   	   // Run an SW Test..
-   	   // * report bandwidth in GiB/s
-   	   CNLBCcipSW nlbccip_sw(&myapp);
+		cout << " * Simultaneous Read/Write Bandwidth - CCIP TRPUT" << flush;
+		res = nlbccip_trput.RunTest(gCmdLine, MAX_NLB_CCIP_TRPUT_WKSPC);
+		totalres += res;
+		if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFICATION DISABLED";
+		} else {
+		  cout << FAIL << "ERROR";
+		}
+		cout << NORMAL << endl;
+  }
+  else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_SW)))
+  {
+	   // Run an SW Test..
+	   // * report bandwidth in GiB/s
+	   CNLBCcipSW nlbccip_sw(&myapp);
 
-   	   cout << " * CCIP-SW test " << flush;
-   	   res = nlbccip_sw.RunTest(gCmdLine);
-   	   totalres += res;
-   	   if ( 0 == res ) {
-   		  cout << PASS << "PASS - DATA VERIFIED";
-   	   } else {
-   		  cout << FAIL << "ERROR";
-   	   }
-   	   cout << NORMAL << endl
-   			<< endl;
-     }
-
+	   cout << " * CCIP-SW test " << flush;
+	   res = nlbccip_sw.RunTest(gCmdLine, MAX_NLB_CCIP_SW_WKSPC);
+	   totalres += res;
+	   if ( 0 == res ) {
+		  cout << PASS << "PASS - DATA VERIFIED";
+	   } else {
+		  cout << FAIL << "ERROR";
+	   }
+	   cout << NORMAL << endl
+			<< endl;
+  }
    INFO("Stopping the AAL Runtime");
    myapp.Stop();
 
@@ -810,19 +806,19 @@ int main(int argc, char *argv[])
 btInt INLB::ResetHandshake()
 {
    btInt      res = 0;
-   bt32bitCSR csr;
-   bt32bitCSR tmp;
+   btCSRValue csr;
+   btCSRValue tmp;
 
-   volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMPhys();
+   volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
    const btInt StatusTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StatusTimeoutMillis);
 
    // Assert CAFU Reset
    csr = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &csr);
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &csr);
    flag_setf(csr, CIPUCTL_RESET_BIT);
-   m_pALIMMIOService->mmioWrite32(QLP_CSR_CIPUCTL, csr);
+   m_pCCIAFU->CSRWrite(QLP_CSR_CIPUCTL, csr);
 
    // Poll CAFU Status until ready.
    do
@@ -830,7 +826,7 @@ btInt INLB::ResetHandshake()
       SleepNano(500);
       MaxPoll -= 500;
       csr = 0;
-      m_pALIMMIOService->mmioRead32(QLP_CSR_CAFU_STATUS, &csr);
+      m_pCCIAFU->CSRRead(QLP_CSR_CAFU_STATUS, &csr);
    }while( flag_is_clr(csr, CAFU_STATUS_READY_BIT) && (MaxPoll >= 0) );
 
    if ( MaxPoll < 0 ) {
@@ -840,12 +836,12 @@ btInt INLB::ResetHandshake()
 
    // De-assert CAFU Reset
    csr = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &csr);
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &csr);
    flag_clrf(csr, CIPUCTL_RESET_BIT);
-   m_pALIMMIOService->mmioWrite32(QLP_CSR_CIPUCTL, csr);
+   m_pCCIAFU->CSRWrite(QLP_CSR_CIPUCTL, csr);
 
    tmp = 0;
-   m_pALIMMIOService->mmioRead32(QLP_CSR_CIPUCTL, &tmp);
+   m_pCCIAFU->CSRRead(QLP_CSR_CIPUCTL, &tmp);
    ASSERT(csr == tmp);
 
 
@@ -856,7 +852,7 @@ btInt INLB::ResetHandshake()
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // Set DSM base, high then low
-   m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+   m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
 
    // Poll for AFU ID
    do
@@ -911,26 +907,26 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
    // Assert Device Reset
-   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // De-assert Device Reset
-   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
 
    // Set input workspace address
-   m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(CoolPhys));
+   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(CoolPhys));
 
    // Set the number of cache lines for the test
-   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, CoolSize / CL(1));
+   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, CoolSize / CL(1));
 
    // Set the test mode
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
+   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
 
    // Start the test
-   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
 
 
    // Wait for test completion
@@ -939,8 +935,8 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    }
 
    // Stop the device
-   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
-   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
 
    // Check the device status
    if ( 0 != pAFUDSM->test_error ) {
@@ -961,8 +957,8 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
 void INLB::ReadQLPCounters()
 {
-   bt32bitCSR perf[2];
-   bt32bitCSR i;
+   btCSRValue perf[2];
+   btCSRValue i;
 
    for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
       switch ( i ) {
@@ -975,11 +971,11 @@ void INLB::ReadQLPCounters()
             perf[0] = 0;
             perf[1] = 0;
 
-            m_pALIMMIOService->mmioWrite32(QLP_CSR_ADDR_PERF1C, i);
-            m_pALIMMIOService->mmioRead32(QLP_CSR_ADDR_PERF1, &perf[0]);
+            m_pCCIAFU->CSRWrite(QLP_CSR_ADDR_PERF1C, i);
+            m_pCCIAFU->CSRRead(QLP_CSR_ADDR_PERF1, &perf[0]);
 
-            m_pALIMMIOService->mmioWrite32(QLP_CSR_ADDR_PERF1C, (btCSRValue)(1 << 31) | i);
-            m_pALIMMIOService->mmioRead32(QLP_CSR_ADDR_PERF1, &perf[1]);
+            m_pCCIAFU->CSRWrite(QLP_CSR_ADDR_PERF1C, (btCSRValue)(1 << 31) | i);
+            m_pCCIAFU->CSRRead(QLP_CSR_ADDR_PERF1, &perf[1]);
 
             m_QLPCounters[i] = perf[0] + perf[1];
 
@@ -1024,6 +1020,7 @@ std::string INLB::CalcReadBandwidth(const NLBCmdLine &cmd)
    bt32bitCSR rds          = pAFUDSM->num_reads;
    bt64bitCSR ticks;
 
+
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))// cont mode
    {
 	   ticks = rawticks - startpenalty;
@@ -1044,6 +1041,7 @@ std::string INLB::CalcReadBandwidth(const NLBCmdLine &cmd)
 
    oss.precision(3);
    oss.setf(std::ios::fixed, std::ios::floatfield);
+
    oss << bw << " GB/s";
 
    return oss.str();
@@ -1162,7 +1160,7 @@ END_C_DECLS
 
 
 /**
-@addtogroup ALIapp
+@addtogroup cciapp
 @{
 
 @verbatim
@@ -1173,26 +1171,26 @@ It is designed to show working examples of the AAL programming model and APIs.@e
 This Sample demonstrates the following:
 
 <ul>
-  <li>An IALIClient implementation.</li>
+  <li>An ICCIClient implementation.</li>
   <li>Use of the ISingleAFUApp class template.</li>
-  <li>Runtime selection of AFU targets with ALIAFU.</li>
-  <li>Native Loopback with IALIAFU.</li>
+  <li>Runtime selection of AFU targets with CCIAFU.</li>
+  <li>Native Loopback with ICCIAFU.</li>
 </ul>
 
-This sample is designed to be used with ALIAFU.
+This sample is designed to be used with CCIAFU.
 
 1 Summary of Operation
 
-ALIapp relies on its instantiation of ISingleAFUApp inherited by CMyApp to
+cciapp relies on its instantiation of ISingleAFUApp inherited by CMyApp to
 perform the brunt of the XL runtime interaction. An XL Runtime object is declared
 in main() to handle the runtime startup and shutdown.
 
 An object instance of CMyApp is declared in main(), and the selection of AFU target
-implementation is specified based on the command line parameters to ALIapp.
+implementation is specified based on the command line parameters to cciapp.
 
 Some AFU-specific Runtime parameter configuration is performed prior to passing the
 CMyApp instance to the Runtime's start routine. When the override of ISingleAFUApp::OnRuntimeStarted
-is called, an instance of ALIAFU is requested.
+is called, an instance of CCIAFU is requested.
 
 The service allocation request is satisfied by ISingleAFUApp::serviceAllocated, which
 pulses the internal semaphore, waking the thread blocked in main(). Once awake, some basic
@@ -1208,26 +1206,26 @@ Finally, the Native Loopback test status is reported, and the application exits.
 2.0 Online Help
 
 @code
-$ ALIapp --help
+$ cciapp --help
 
 Usage:
-   ALIapp [--target=<TARGET>]
+   cciapp [--target=<TARGET>]
 
       <TARGET> = one of { fpga ase swsim }@endcode
 
-2.1 ALI FPGA (HWALIAFU)
+2.1 CCI FPGA (HWCCIAFU)
 
 Prerequisites for running the sample with an FPGA:
 <ul>
-  <li>The ALI AAL device drivers must be loaded.</li>
+  <li>The CCI AAL device drivers must be loaded.</li>
   <li>The AAL Resource Manager must be running.</li>
-  <li>The FPGA module connected to the system must be programmed with an appropriate ALI AFU bit stream.</li>
+  <li>The FPGA module connected to the system must be programmed with an appropriate CCI AFU bit stream.</li>
 </ul>
 
 @code
-$ ALIapp --target=fpga@endcode
+$ cciapp --target=fpga@endcode
 
-2.2 ALI AFU Simulation Environment (ASEALIAFU)
+2.2 CCI AFU Simulation Environment (ASECCIAFU)
 
 Prerequisites for running the sample with ASE:
 <ul>
@@ -1235,9 +1233,9 @@ Prerequisites for running the sample with ASE:
 </ul>
 
 @code
-$ ALIapp --target=ase@endcode
+$ cciapp --target=ase@endcode
 
-2.3 ALI Software Simulation (SWSimALIAFU)
+2.3 CCI Software Simulation (SWSimCCIAFU)
 
 Prerequisites for running the sample with Software Simulation:
 <ul>
@@ -1245,7 +1243,7 @@ Prerequisites for running the sample with Software Simulation:
 </ul>
 
 @code
-$ ALIapp --target=swsim@endcode
+$ cciapp --target=swsim@endcode
 
 @}
 */

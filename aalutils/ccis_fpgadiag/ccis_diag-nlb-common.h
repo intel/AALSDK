@@ -38,8 +38,8 @@
 // 06/09/2013     TSW      Initial version.
 // 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
-#ifndef __DIAG_NLB_COMMON_H__
-#define __DIAG_NLB_COMMON_H__
+#ifndef __CCIS_DIAG_NLB_COMMON_H__
+#define __CCIS_DIAG_NLB_COMMON_H__
 #include <aalsdk/aalclp/aalclp.h>
 
 #include "utils.h"
@@ -48,17 +48,16 @@ BEGIN_C_DECLS
 
 #define HIGH 0xffffffff
 
-# define NLB_TESTMODE_LPBK1 	   "TestMode_lpbk1"
-# define NLB_TESTMODE_READ  	   "TestMode_read"
-# define NLB_TESTMODE_WRITE 	   "TestMode_write"
-# define NLB_TESTMODE_TRPUT 	   "TestMode_trput"
-# define NLB_TESTMODE_SW    	   "TestMode_sw"
+# define NLB_TESTMODE_LPBK1 	 "TestMode_lpbk1"
+# define NLB_TESTMODE_READ  	 "TestMode_read"
+# define NLB_TESTMODE_WRITE 	 "TestMode_write"
+# define NLB_TESTMODE_TRPUT 	 "TestMode_trput"
+# define NLB_TESTMODE_SW    	 "TestMode_sw"
 # define NLB_TESTMODE_CCIP_LPBK1 "TestMode_cciplpbk1"
 # define NLB_TESTMODE_CCIP_READ  "TestMode_ccipread"
 # define NLB_TESTMODE_CCIP_WRITE "TestMode_ccipwrite"
 # define NLB_TESTMODE_CCIP_TRPUT "TestMode_cciptrput"
-# define NLB_TESTMODE_CCIP_SW    "TestMode_ccipsw"
-
+# define NLB_TESTMODE_CCIP_SW	 "TestMode_ccipsw"
 struct NLBDefaults
 {
    wkspc_size_type mincls;
@@ -71,7 +70,7 @@ struct NLBDefaults
    freq_type       clkfreq;
    const char     *warmfpgacache;
    const char     *coolfpgacache;
-   const char	   *coolcpucache;
+   const char	  *coolcpucache;
    const char     *nobw;
    const char     *tabular;
    const char     *suppresshdr;
@@ -157,11 +156,11 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_CLKFREQ      		(u64_type)0x00800000  /* --clock-freq X    (fpga clock frequency, default=200 MHz)        */
 
 #define NLB_CMD_FLAGS_TO          		(NLB_CMD_FLAG_TONSEC | \
-                                        NLB_CMD_FLAG_TOUSEC | \
-                                        NLB_CMD_FLAG_TOMSEC | \
-                                        NLB_CMD_FLAG_TOSEC  | \
-                                        NLB_CMD_FLAG_TOMIN  | \
-                                        NLB_CMD_FLAG_TOHOUR)
+										 NLB_CMD_FLAG_TOUSEC | \
+										 NLB_CMD_FLAG_TOMSEC | \
+										 NLB_CMD_FLAG_TOSEC  | \
+										 NLB_CMD_FLAG_TOMIN  | \
+										 NLB_CMD_FLAG_TOHOUR)
 
 #define NLB_CMD_FLAG_CSRS         		(u64_type)0x01000000  /* --csrs            (show CSR read/write)                          */
 
@@ -175,14 +174,14 @@ struct NLBCmdLine
 #define NLB_CMD_FLAG_POLL         		(u64_type)0x40000000   /* --poll            notice sent from CPU to FPGA via poll         */
 #define NLB_CMD_FLAG_CSR_WRITE    		(u64_type)0x200000000  /* --csr-write       notice sent from CPU to FPGA via csr-write    */
 #define NLB_CMD_FLAG_UMSG_DATA    		(u64_type)0x400000000  /* --umsg-data       notice sent from CPU to FPGA via umsg-data    */
-#define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  /* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	   */
+#define NLB_CMD_FLAG_UMSG_HINT    		(u64_type)0x800000000  /* --umsg-hint       notice sent from CPU to FPGA via umsg-hint	  */
 
-#define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							            */
+#define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							      */
 
-#define NLB_CMD_FLAG_AUTO_CH			(u64_type)0x2000000000 /* --auto-ch			 Distribute data among QPI, PCIe0 and PCIe1 channels    */
-#define NLB_CMD_FLAG_QPI				(u64_type)0x4000000000 /* --qpi			    Data transferred on QPI channel						        */
-#define NLB_CMD_FLAG_PCIE0				(u64_type)0x8000000000 /* --pcie0		    Data transferred on PCIe0  channel					        */
-#define NLB_CMD_FLAG_PCIE1				(u64_type)0x10000000000/* --pcie1		    Data transferred on PCIe1  channel			   	        */
+#define NLB_CMD_FLAG_AUTO_CH			(u64_type)0x2000000000 /* --auto-ch			Distribute data among QPI, PCIe0 and PCIe1 channels    */
+#define NLB_CMD_FLAG_QPI				(u64_type)0x4000000000 /* --qpi			    Data transferred on QPI channel						   */
+#define NLB_CMD_FLAG_PCIE0				(u64_type)0x8000000000 /* --pcie0		    Data transferred on PCIe0  channel					   */
+#define NLB_CMD_FLAG_PCIE1				(u64_type)0x10000000000/* --pcie1		    Data transferred on PCIe1  channel			   	       */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */
@@ -327,5 +326,5 @@ END_C_DECLS
 
 
 
-#endif // __DIAG_NLB_COMMON_H__
+#endif // __CCIS_DIAG_NLB_COMMON_H__
 

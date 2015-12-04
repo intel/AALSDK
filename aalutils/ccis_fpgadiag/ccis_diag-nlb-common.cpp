@@ -38,9 +38,8 @@
 // 06/09/2013     TSW      Initial version.
 // 01/07/2015	  SC	   fpgadiag version.@endverbatim
 //****************************************************************************
-#include "diag-nlb-common.h"
-#include <aalsdk/kernel/ccipdriver.h>
-#include <aalsdk/service/IALIAFU.h>
+#include "ccis_diag-nlb-common.h"
+#include <aalsdk/service/ICCIAFU.h>
 
 /* All fn's return non-zero on error, unless otherwise noted. */
 
@@ -123,11 +122,11 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
 
    	   if ( (0 == strcmp("--target", option)) || (0 == strcmp("--t", option))) {
          if ( 0 == strcasecmp("fpga", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_FPGA);
+        	 nlbcl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_FPGA);
          } else if ( 0 == strcasecmp("ase", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_ASE);
+        	 nlbcl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_ASE);
          } else if ( 0 == strcasecmp("swsim", value) ) {
-        	 nlbcl->AFUTarget = std::string(ALIAFU_NVS_VAL_TARGET_SWSIM);
+        	 nlbcl->AFUTarget = std::string(CCIAFU_NVS_VAL_TARGET_SWSIM);
          } else {
             cout << "Invalid value for --target : " << value << endl;
             return 4;
@@ -655,7 +654,7 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       }
    }
 
-   fprintf(fp, "      <FREQ>      = --clock-freq=T    OR --f=T,   Clock frequency in Hz,                          Default=400 MHz\n");
+   fprintf(fp, "      <FREQ>      = --clock-freq=T    OR --f=T,   Clock frequency in Hz,                          Default=200 MHz\n");
 
    if ( 0 == strcasecmp(test.c_str(), "READ")  ||
 	    0 == strcasecmp(test.c_str(), "WRITE") ||

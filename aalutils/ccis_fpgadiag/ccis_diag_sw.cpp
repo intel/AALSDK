@@ -45,16 +45,16 @@
 // 2. UMsg without data
 // 3. UMsg with data
 // 4. CSR write
-#include <aalsdk/kernel/aalui.h>
-#include "diag_defaults.h"
-#include "diag-common.h"
-#include "nlb-specific.h"
-#include "diag-nlb-common.h"
 
-btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
+#include "ccis_diag_defaults.h"
+#include "ccis_diag-common.h"
+#include "nlb-specific.h"
+#include "ccis_diag-nlb-common.h"
+
+btInt CNLBSW::RunTest(const NLBCmdLine &cmd, btWSSize wssize)
 {
 	btInt res = 0;
-	/*btWSSize  sz = CL(cmd.begincls);
+	btWSSize  sz = CL(cmd.begincls);
 
 	m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, 		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
 	m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
@@ -306,7 +306,7 @@ btInt CNLBSW::RunTest(const NLBCmdLine &cmd)
      if ( !m_pMyApp->ClientOK() ) {
         ERR("Workspace free failed");
         return 1;
-     }*/
+     }
 
       return res;
 }
