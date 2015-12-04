@@ -1,12 +1,18 @@
 # set -v
 
+<<<<<<< HEAD
 gcc -g -o alloc_test \
     alloc_test.c \
+=======
+gcc -g -o nlb_test \
+    nlbv11_all_test.c \
+>>>>>>> 23c89f94d68c0f6761c0bfb4db3b91c9ba738146
     ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c \
     ../../sw/mqueue_ops.c ../../sw/error_report.c \
     -lrt -lm -I ../../sw/ \
     -D ASE_DEBUG
 
+<<<<<<< HEAD
 # gcc -g -o nlb_test \
 #     nlbv11_all_test.c \
 #     ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c \
@@ -14,6 +20,8 @@ gcc -g -o alloc_test \
 #     -lrt -lm -I ../../sw/ \
 #     -D ASE_DEBUG
 
+=======
+>>>>>>> 23c89f94d68c0f6761c0bfb4db3b91c9ba738146
 
 # gcc -g -o spl_basic spl_basic.c \
 #    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c \
@@ -27,7 +35,11 @@ gcc -g -o alloc_test \
 
 # gcc -g -o msg_create_test msg_create_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt -lm 
 
+<<<<<<< HEAD
 # gcc -g -o umsg_test umsg_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt -lm  -I ../../sw/ 
+=======
+gcc -g -o umsg_test umsg_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt -lm  -I ../../sw/ 
+>>>>>>> 23c89f94d68c0f6761c0bfb4db3b91c9ba738146
 
 # gcc -g -o mq_test mq_test.c ../ase_debug_stub.c \
 #     -D SIM_SIDE=1 -I $VCS_HOME/include/ -lrt -I ../../sw/ -lm -D ASE_DEBUG=1 \

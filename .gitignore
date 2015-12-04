@@ -41,3 +41,10 @@ testsuite
 
 # symlinks we must ignore
 kernel
+
+*.o
+*.so
+*.0
+*/nlb_test
+*/spl_shm
+*/umsg_test

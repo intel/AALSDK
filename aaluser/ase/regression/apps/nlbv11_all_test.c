@@ -333,7 +333,10 @@ int main(int argc, char *argv[])
   deallocate_buffer(buf1);
   deallocate_buffer(buf2);
   deallocate_buffer(dsm);
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23c89f94d68c0f6761c0bfb4db3b91c9ba738146
   session_deinit();
 
   return 0;

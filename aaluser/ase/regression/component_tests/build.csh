@@ -43,8 +43,12 @@
 #     -I ../../sw/ -lrt
 # inotify_test.c
 
+<<<<<<< HEAD
 # gcc -g -o inotify_test inotify_test.c -I../../sw/ -lrt
 
 gcc -g -o struct_typecast struct_typecast.c ../../sw/ase_ops.c ../../sw/error_report.c -I../../sw/ -lrt
 
 
+=======
+gcc -g -o inotify_test inotify_test.c -I../../sw/ -lrt
+>>>>>>> 23c89f94d68c0f6761c0bfb4db3b91c9ba738146
