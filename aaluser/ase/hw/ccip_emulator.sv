@@ -103,7 +103,6 @@ module ccip_emulator
     */
    logic 			      sys_reset_n;
 
-
    /*
     * Remapping ASE CCIP to cvl_pkg struct
     */
@@ -171,12 +170,13 @@ module ccip_emulator
       ffs_LP16ui_sRxData_afu.C1TxAlmFull = C1TxAlmFull;
    end
 
-   
+
    /*
     * DPI import/export functions
     */
    // Scope function
    import "DPI-C" function void scope_function();
+   // import "DPI-C" function void ccip_emulator_scope_function();
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
@@ -192,11 +192,11 @@ module ccip_emulator
    // Unordered message dispatch
    // export "DPI-C" task umsg_dispatch;
 
+   // MMIO dispatch
+   export "DPI-C" task mmio_dispatch;
+
    // CAPCM initilize
    // import "DPI-C" context task capcm_init();
-
-   // // MMIO dispatch
-   // export "DPI-C" task mmio_dispatch;
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
@@ -221,6 +221,7 @@ module ccip_emulator
    cci_pkt rx0_pkt, rx1_pkt;
 
    // Scope generator
+   // initial ccip_emulator_scope_function();
    initial scope_function();
 
 
@@ -384,36 +385,190 @@ module ccip_emulator
    endtask
 
 
-   /* ******************************************************************    
+   /* ******************************************************************
     * DUMMY BLOCK
-    * 
+    *
     * *****************************************************************/
 
 
-   
+
    /* ******************************************************************
     *
     * MMIO block
     * CSR Write/Read is managed through this interface.
-    * 
+    *
     * *****************************************************************/
-   mmio_block mmio_block
+   // MMIO read tid counter
+   logic [CCIP_MMIO_TID_WIDTH-1:0] 	     mmio_tid_counter;
+
+   // TID:Address tuple storage
+   int 					     unsigned tid_array[*];
+
+   /*
+    * CSR Read/Write infrastructure
+    * csr_write_dispatch: A Single task to dispatch CSR Writes
+    * Storage format = <wrvalid, rdvalid, hdr_width, data_width>
+    *
+    */
+   parameter int 			     MMIOREQ_FIFO_WIDTH = 2 + CCIP_CFG_HDR_WIDTH + CCIP_DATA_WIDTH;
+
+   logic [MMIOREQ_FIFO_WIDTH-1:0] 	     mmioreq_din;
+   logic [MMIOREQ_FIFO_WIDTH-1:0] 	     mmioreq_dout;
+   logic 				     mmioreq_write;
+   logic 				     mmioreq_pop;
+   logic 				     mmioreq_read;
+   logic 				     mmioreq_valid;
+   logic 				     mmioreq_full;
+   logic 				     mmioreq_empty;
+
+   logic [CCIP_MMIO_INDEX_WIDTH-1:0] 	     cwlp_header;
+   logic [CCIP_DATA_WIDTH-1:0] 		     cwlp_data;
+   logic 				     cwlp_wrvalid;
+   logic 				     cwlp_rdvalid;
+
+   // MMIO dispatch unit
+   task mmio_dispatch (int initialize, mmio_t mmio_pkt);
+      CfgHdr_t hdr;
+      begin
+	 if (initialize) begin
+	    cwlp_wrvalid = 0;
+	    cwlp_rdvalid = 0;
+	    cwlp_header  = 0;
+	    cwlp_data    = 0;
+	    mmio_tid_counter  = 0;
+	 end
+	 else begin
+	    if (mmio_pkt.write_en == MMIO_WRITE) begin
+	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
+	       hdr.poison = 1'b0;
+	       hdr.tid    = 9'b0;
+	       if (mmio_pkt.width == 32) begin
+		  hdr.len = 2'b0;
+		  cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
+		  cwlp_data = {480'b0, mmio_pkt.data[31:0]};
+	       end
+	       else if (mmio_pkt.width == 64) begin
+		  hdr.len = 2'b01;
+		  cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
+		  cwlp_data = {448'b0, mmio_pkt.data[63:0]};
+	       end
+	       cwlp_wrvalid = 1;
+	       cwlp_rdvalid = 0;
+	    end
+	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
+	       cwlp_data    = 0;
+	       hdr.index    = {2'b0, mmio_pkt.addr[15:2]};
+	       hdr.len      = 2'b01;
+	       hdr.poison   = 1'b0;
+	       hdr.tid      = mmio_tid_counter;
+	       cwlp_header  = CCIP_CFG_HDR_WIDTH'(hdr);
+	       cwlp_wrvalid = 0;
+	       cwlp_rdvalid = 1;
+	       tid_array[ mmio_tid_counter ] = hdr.index;
+    	       mmio_tid_counter  = mmio_tid_counter + 1;
+	    end
+	    @(posedge clk);
+	    cwlp_wrvalid = 0;
+	    cwlp_rdvalid = 0;
+	 end
+      end
+   endtask
+
+   // CSR readreq/write FIFO data
+   assign mmioreq_din = {cwlp_wrvalid, cwlp_rdvalid, cwlp_header, cwlp_data};
+   assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid;
+      
+   // Request staging
+   ase_fifo
+     #(
+       .DATA_WIDTH     ( MMIOREQ_FIFO_WIDTH ),
+       .DEPTH_BASE2    ( 4 ),
+       .ALMFULL_THRESH ( 12 )
+       )
+   mmioreq_fifo
      (
-      .clk           (clk),
-      .rst           (~sys_reset_n),
-      // MMIO request
-      .mmio_hdr      (C0RxHdr),
-      .mmio_wrvalid  (C0RxMMIOWrValid),
-      .mmio_rdvalid  (C0RxMMIORdValid),
-      .mmio_data     (C0RxData),
-      // MMIO response
-      .mmio_rspvalid (C2TxMMIORdValid),
-      .mmio_rsptid   (C2TxHdr),
-      .mmio_rspdata  (C2TxData),
-      // Control
-      .cfg_pop       (0)
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( mmioreq_write ),
+      .data_in    ( mmioreq_din ),
+      .rd_en      ( mmioreq_pop ),
+      .data_out   ( mmioreq_dout ),
+      .data_out_v ( mmioreq_valid ),
+      .alm_full   ( mmioreq_full ),
+      .full       (  ),
+      .empty      ( mmioreq_empty ),
+      .count      (  ),
+      .overflow   (  ),
+      .underflow  (  )
       );
-     
+
+   assign mmioreq_pop  = 0;
+ // ~mmioreq_empty && cfg_pop;
+   assign mmio_wrvalid = ~mmioreq_empty;
+   assign mmio_data    = mmioreq_dout[CCIP_DATA_WIDTH-1:0];
+   assign mmio_hdr     = CfgHdr_t'( mmioreq_dout[(CCIP_DATA_WIDTH+CCIP_CFG_HDR_WIDTH-1):CCIP_DATA_WIDTH] );
+
+
+   /*
+    * MMIO Read response
+    */
+//    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
+
+//    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_din;
+//    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
+//    logic 			   mmioresp_write;
+//    logic 			   mmioresp_pop;
+//    logic 			   mmioresp_read;
+//    logic 			   mmioresp_valid;
+//    logic 			   mmioresp_full;
+//    logic 			   mmioresp_empty;
+
+//    import "DPI-C" function void mmio_update_dex(int mmioaddr64, bit [63:0] mmiodata );
+
+//    // Response staging FIFO
+//    ase_fifo
+//      #(
+//        .DATA_WIDTH     ( MMIORESP_FIFO_WIDTH ),
+//        .DEPTH_BASE2    ( 4 ),
+//        .ALMFULL_THRESH ( 10 )
+//        )
+//    mmioresp_fifo
+//      (
+//       .clk        ( clk ),
+//       .rst        ( rst ),
+//       .wr_en      ( mmioresp_write ),
+//       .data_in    ( mmioresp_din ),
+//       .rd_en      ( mmioresp_pop ),
+//       .data_out   ( mmioresp_dout ),
+//       .data_out_v ( mmioresp_valid ),
+//       .alm_full   ( mmioresp_full ),
+//       .full       (  ),
+//       .empty      ( mmioresp_empty ),
+//       .count      (  ),
+//       .overflow   (  ),
+//       .underflow  (  )
+//       );
+
+//    assign mmioresp_din = { mmio_rsptid, mmio_rspdata };
+//    assign mmioresp_write = mmio_rspvalid;
+
+   // FIFO writes to memory
+   // always @(posedge clk) begin
+   //    if (rst) begin
+   // 	 mmio_dispatch (1, {0, 0, 0, 0, 0});
+   //    end
+   //    else begin
+   // 	 // if (~mmioresp_empty) begin
+   // 	 //    mmioresp_read <= 1;
+   // 	 //    mmio_update_dex( {tid_array[ mmioresp_dout[MMIORESP_FIFO_WIDTH-1:CCIP_MMIO_RDDATA_WIDTH] ], 2'b0} , mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0]);
+   // 	 // end
+   // 	 // else begin
+   // 	 //    mmioresp_read <= 0;
+   // 	 // end
+   //    end
+   // end
+
+
 
    /* ******************************************************************
     *
@@ -444,12 +599,12 @@ module ccip_emulator
    // logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
    // logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
 
-   
-   /* ******************************************************************    
+
+   /* ******************************************************************
     *
     * Config data exchange - Supplied by ase.cfg
     * Configuration of ASE managed by a text file, modifiable runtime
-    * 
+    *
     * *****************************************************************/
    task ase_config_dex(ase_cfg_t cfg_in);
       begin
@@ -459,19 +614,19 @@ module ccip_emulator
 	 cfg.enable_reuse_seed  = cfg_in.enable_reuse_seed;
 	 cfg.num_umsg_log2      = cfg_in.num_umsg_log2    ;
 	 cfg.enable_cl_view     = cfg_in.enable_cl_view   ;
-	 cfg.enable_capcm       = cfg_in.enable_capcm     ;
-	 cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
+	 // cfg.enable_capcm       = cfg_in.enable_capcm     ;
+	 // cfg.memmap_sad_setting = cfg_in.memmap_sad_setting    ;
       end
    endtask
 
 
-   
-   /* ******************************************************************    
+
+   /* ******************************************************************
     *
     * This call is made on ERRORs requiring a shutdown
     * simkill is called from software, and is the final step before
     * graceful closedown
-    * 
+    *
     * *****************************************************************/
    task simkill();
       begin
@@ -686,7 +841,7 @@ module ccip_emulator
     * - as2cf_fifo_ch1
     *
     * *******************************************************************/
-   parameter int 		 ASE_RX0_PATHWIDTH = 4 + CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
+   parameter int 		 ASE_RX0_PATHWIDTH = 5 + CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
    parameter int 		 ASE_RX1_PATHWIDTH = 2 + CCIP_RX_HDR_WIDTH;
 
    logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
@@ -710,7 +865,7 @@ module ccip_emulator
    logic 			 as2cf_fifo_ch1_valid;
 
 
-   // CH0 coded as {intrvalid, umsgvalid, wrvalid, rdvalid, cfgvalid, hdr, data}
+   // CH0 coded as {mmiowrvalid, mmiordvalid, rdvalid, wrvalid, umsgvalid, hdr, data}
    ase_fifo
      #(
        .DATA_WIDTH (ASE_RX0_PATHWIDTH)
@@ -762,13 +917,13 @@ module ccip_emulator
     */
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 sw_reset_trig <= 1'b0;	 
+	 sw_reset_trig <= 1'b0;
       end
       else begin
-	 sw_reset_trig <= 1'b0;	 
+	 sw_reset_trig <= 1'b0;
       end
    end
-   
+
 
    /*
     * RX1 Channel management
@@ -859,11 +1014,8 @@ module ccip_emulator
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
-      // csr_write_dispatch(1, 0, 0);
-      // umsg_dispatch(1, 0, 0, 0, 0);
-      // buffer_messages (1, "ASE");
-      mmio_block.mmio_dispatch (1, 0, 0, 0, 0);
-            
+      mmio_dispatch (1, '{0, 0, 0, 0, 0});
+      
       // Globally write CONFIG, SCRIPT paths
       if (config_filepath.len() != 0) begin
 	 sv2c_config_dex(config_filepath);

@@ -211,7 +211,7 @@ help: header
 ## Build ASE Software objects and shared library ##
 sw_build:
 	mkdir -p $(WORK)
-	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) ; cd - 
+	cd $(WORK) ; $(CC) $(CC_OPT) -c $(ASESW_FILE_LIST) || exit 1 ; cd - 
 	cd $(WORK) ; $(CC) -g -shared -o $(ASE_SHOBJ_SO) `ls *.o` $(ASE_LD_SWITCHES) ; cd -
 	nm $(WORK)/$(ASE_SHOBJ_SO) > $(WORK)/$(ASE_SHOBJ_NAME).nm
 
@@ -299,7 +299,7 @@ endif
 #                            Clean all                                  #
 #########################################################################
 clean: header
-	rm -rf work/ *.log *.tsv AN.DB/ | echo "make: Didn't clean up work"
+	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
 	rm -rf profile* simprofile*

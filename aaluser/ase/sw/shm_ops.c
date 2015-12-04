@@ -241,7 +241,13 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
 
+  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+    session_init();
+
   char mmio_str[ASE_MQ_MSGSIZE];
+  mmio_t *mmio_pkt;
+  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
+
   uint32_t *mmio_vaddr;
 
   // ---------------------------------------------------
@@ -251,15 +257,30 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   //                     -------------------------
   // ---------------------------------------------------
 
+  mmio_pkt->type = MMIO_WRITE;
+  mmio_pkt->width = MMIO_WIDTH_32;
+  mmio_pkt->addr = offset;
+  mmio_pkt->data = (uint64_t)data;
+  mmio_pkt->resp_en = 0;
+  
+#ifdef ASE_DEBUG
+  printf("mmio_pkt => %x %d %d %llx %d\n", 
+	 mmio_pkt->type,
+	 mmio_pkt->width,
+	 mmio_pkt->addr,
+	 mmio_pkt->data,
+	 mmio_pkt->resp_en);
+#endif
+
   // Update CSR Region
   mmio_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + offset);
   *mmio_vaddr = data;
   
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
-    session_init();
-
   // Send message
-  sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
+
+  //sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Display
@@ -279,7 +300,13 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 {
   FUNC_CALL_ENTRY;
 
+  if (mq_exist_status == MQ_NOT_ESTABLISHED)
+    session_init();
+
   char mmio_str[ASE_MQ_MSGSIZE];
+  mmio_t *mmio_pkt;
+  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
+
   uint64_t *mmio_vaddr;
 
   // ---------------------------------------------------
@@ -293,11 +320,15 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   mmio_vaddr = (uint64_t*)((uint64_t)csr_region->vbase + offset);
   *mmio_vaddr = data;
   
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
-    session_init();
+  mmio_pkt->type = MMIO_WRITE;
+  mmio_pkt->width = MMIO_WIDTH_64;
+  mmio_pkt->addr = offset;
+  mmio_pkt->data = (uint64_t)data;
 
   // Send message
-  sprintf(mmio_str, "%u %u %u %lu", MMIO_WRITE, MMIO_WIDTH_64, offset, data);
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
+  //sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Display
@@ -308,6 +339,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 
   FUNC_CALL_EXIT;
 }
+
 
 
 /* *********************************************************************

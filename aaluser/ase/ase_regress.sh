@@ -37,4 +37,5 @@ export LD_LIBRARY_PATH=${ASE_WORKDIR}/../../../myinst/usr/local/lib/
 # ./helloSPLlb
 
 cd ${ASE_WORKDIR}/../regression/apps
-./nlb_test 32768
+# ./nlb_test 32768
+./alloc_test

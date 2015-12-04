@@ -63,6 +63,17 @@ void scope_function()
   scope = svGetScope();
 }
 
+/* svScope ccip_emulator_scope; */
+/* void ccip_emulator_scope_function() */
+/* { */
+/*   ccip_emulator_scope = svGetScope(); */
+/* } */
+
+/* svScope mmio_block_scope; */
+/* void mmio_block_scope_function() */
+/* { */
+/*   mmio_block_scope = svGetScope(); */
+/* } */
 
 /*
  * DPI: CONFIG path data exchange
@@ -72,7 +83,9 @@ void sv2c_config_dex(const char *str)
   sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(sv2c_config_filepath, str);
 #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
+  END_YELLOW_FONTCOLOR;
 #endif
   
   // Check for existance of file
@@ -98,7 +111,9 @@ void sv2c_script_dex(const char *str)
   sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(sv2c_script_filepath, str);
 #ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
+  END_YELLOW_FONTCOLOR;
 #endif
 
   // Check for existance of file
@@ -214,6 +229,7 @@ void mmio_update_dex (int *addr, uint64_t *data)
 // -----------------------------------------------------------------------
 int ase_listener()
 {
+  // svSetScope( svGetScopeFromName("ase_top.ccip_emulator.mmio_dispatch") );
   //   FUNC_CALL_ENTRY;
 
    /*
@@ -285,24 +301,87 @@ int ase_listener()
   // Message string
   char mmio_str[ASE_MQ_MSGSIZE];
   char *pch;
-  char ase_msg_data[CL_BYTE_WIDTH];
-  uint32_t csr_offset;
-  uint32_t csr_data;
+  // char ase_msg_data[CL_BYTE_WIDTH];
+  /* uint32_t mmio_type; */
+  /* uint32_t mmio_size; */
+  /* uint32_t mmio_offset; */
+  /* uint32_t mmio_data32; */
+  /* uint64_t mmio_data64; */
+  struct mmio_t *mmio_pkt;
+  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
   // Cleanse receptacle string
-  memset(ase_msg_data, '\0', sizeof(ase_msg_data));
+  // memset(ase_msg_data, '\0', sizeof(ase_msg_data));
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
 
   // Receive csr_write packet
   if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
-      // Tokenize message to get CSR offset and data
-      pch = strtok(mmio_str, " ");
-      csr_offset = atoi(pch);
-      pch = strtok(NULL, " ");
-      csr_data = atoi(pch);
+/* #ifdef ASE_DEBUG */
+/*       printf("mmio_str = %s\n", mmio_str); */
+/* #endif */
+      /* pch = strtok(mmio_str, " "); */
+      /* mmio_pkt->type = atoi (pch); */
+      /* pch = strtok(NULL, " "); */
+      /* mmio_pkt->width = atoi (pch); */
+      /* pch = strtok(NULL, " "); */
+      /* mmio_pkt->addr = atoi (pch); */
+      /* pch = strtok(NULL, " "); */
+      /* mmio_pkt->data = atoi (pch); */
+      /* mmio_pkt->resp_en = 0; */
+      memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(mmio_t));
+#ifdef ASE_DEBUG
+      printf("  [DEBUG]  mmio_pkt => %x %d %d %llx %d\n", 
+	     mmio_pkt->type,
+	     mmio_pkt->width,
+	     mmio_pkt->addr,
+	     mmio_pkt->data,
+	     mmio_pkt->resp_en);
+#endif
+      mmio_dispatch (0, mmio_pkt);
 
-      // CSRWrite Dispatch
-      // csr_write_dispatch ( 0, csr_offset, csr_data );
+#if 0
+      if (mmio_pkt->type == MMIO_WRITE)
+	{
+	  mmio_dispatch (0, mmio_pkt);
+	  /* if (mmio_size == MMIO_WIDTH_32) */
+	  /*   { */
+	  /*     pch = strtok(NULL, " "); */
+	  /*     mmio_ = atoi (pch);	       */
+	  /*     mmio_dispatch (0, 1, mmio_offset, mmio_data32, MMIO_WIDTH_32); */
+	  /*   } */
+	  /* else if (mmio_size == MMIO_WIDTH_64) */
+	  /*   { */
+	  /*     pch = strtok(NULL, " "); */
+	  /*     mmio_data64 = atol (pch); */
+	  /*     #ifdef ASE_DEBUG */
+	  /*     printf("  [DEBUG]  mmio_write_64 : %x | %llx\n", mmio_offset, (unsigned long long)mmio_data64); */
+	  /*     #endif */
+	  /*     mmio_dispatch (0, 1, mmio_offset, mmio_data64, MMIO_WIDTH_64); */
+	  /*   } */
+	  /* else */
+	  /*   { */
+	  /*     printf("  [DEBUG-MMIOWR]  It should have never reached here !!!!\n"); */
+	  /*   } */
+	}
+      else if (mmio_pkt->type == MMIO_READ_REQ)
+	{
+	  if (mmio_pkt->width == MMIO_WIDTH_32)
+	    {
+	    }
+	  else if (mmio_pkt->width == MMIO_WIDTH_64)
+	    {
+	    }
+	  else
+	    {
+	      printf("  [DEBUG-MMIORD]  It should have never reached here !!!!\n");
+	    }
+	}
+      else
+	{
+	  printf("  [DEBUG-MMIO]  It should have never reached here !!!!\n");
+	}
+#endif
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
@@ -396,43 +475,43 @@ void calc_phys_memory_ranges()
 #endif
 
   // Memmory map calculation
-  if (cfg->enable_capcm)
-    {
-      capcm_size = (uint64_t)( pow(2, cipuctl_21_19 + 1) * 1024 * 1024 * 1024);
-      sysmem_size = (uint64_t)( (uint64_t)pow(2, FPGA_ADDR_WIDTH) - capcm_size);
+  /* if (cfg->enable_capcm) */
+  /*   { */
+  /*     capcm_size = (uint64_t)( pow(2, cipuctl_21_19 + 1) * 1024 * 1024 * 1024); */
+  /*     sysmem_size = (uint64_t)( (uint64_t)pow(2, FPGA_ADDR_WIDTH) - capcm_size); */
 
-      // Place CAPCM based on CIPUCTL[22]
-      if (cipuctl_22 == 0)
-	{
-	  capcm_phys_lo = 0;
-	  capcm_phys_hi = capcm_size - 1;
-	  sysmem_phys_lo = capcm_size;
-	  sysmem_phys_hi = (uint64_t)pow(2, FPGA_ADDR_WIDTH) - 1;
-	}
-      else
-	{
-	  capcm_phys_hi = (uint64_t)pow(2,FPGA_ADDR_WIDTH) - 1;
-	  capcm_phys_lo = capcm_phys_hi + 1 - capcm_size;
-	  sysmem_phys_lo = 0;
-	  sysmem_phys_hi = sysmem_phys_lo + sysmem_size;
-	}
-    }
-  else
-    {
+  /*     // Place CAPCM based on CIPUCTL[22] */
+  /*     if (cipuctl_22 == 0) */
+  /* 	{ */
+  /* 	  capcm_phys_lo = 0; */
+  /* 	  capcm_phys_hi = capcm_size - 1; */
+  /* 	  sysmem_phys_lo = capcm_size; */
+  /* 	  sysmem_phys_hi = (uint64_t)pow(2, FPGA_ADDR_WIDTH) - 1; */
+  /* 	} */
+  /*     else */
+  /* 	{ */
+  /* 	  capcm_phys_hi = (uint64_t)pow(2,FPGA_ADDR_WIDTH) - 1; */
+  /* 	  capcm_phys_lo = capcm_phys_hi + 1 - capcm_size; */
+  /* 	  sysmem_phys_lo = 0; */
+  /* 	  sysmem_phys_hi = sysmem_phys_lo + sysmem_size; */
+  /* 	} */
+  /*   } */
+  /* else */
+  /*   { */
       sysmem_size = (uint64_t)pow(2, FPGA_ADDR_WIDTH);
       sysmem_phys_lo = 0;
       sysmem_phys_hi = sysmem_size-1;
-      capcm_size = 0;
-      capcm_phys_lo = 0;
-      capcm_phys_hi = 0;
-    }
+      /* capcm_size = 0; */
+      /* capcm_phys_lo = 0; */
+      /* capcm_phys_hi = 0; */
+    /* } */
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n",
 	 sysmem_phys_lo, sysmem_phys_hi, sysmem_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
-  if (cfg->enable_capcm)
-    printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n",
-	   capcm_phys_lo, capcm_phys_hi, capcm_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(capcm_phys_hi+1)/(uint64_t)pow(1024, 3) );
+  /* if (cfg->enable_capcm) */
+  /*   printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n", */
+  /* 	   capcm_phys_lo, capcm_phys_hi, capcm_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(capcm_phys_hi+1)/(uint64_t)pow(1024, 3) ); */
   END_YELLOW_FONTCOLOR;
 
   // Internal check messages
@@ -688,7 +767,12 @@ void start_simkill_countdown()
 
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");
+
+  // Set scope
   svSetScope(scope);
+  /* svSetScope(ccip_emulator_scope); */
+  /* svSetScope(mmio_block_scope); */
+
   simkill();
 
   FUNC_CALL_EXIT;
@@ -857,12 +941,12 @@ void ase_config_parse(char *filename)
 	      	cfg->ase_num_tests = value;
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
-	      else if (strcmp (parameter,"ENABLE_CAPCM") == 0)
-	      	cfg->enable_capcm = value;
-	      else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0)
-	      	cfg->memmap_sad_setting = value;
-	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0)
-		cfg->num_umsg_log2 = value;
+	      /* else if (strcmp (parameter,"ENABLE_CAPCM") == 0) */
+	      /* 	cfg->enable_capcm = value; */
+	      /* else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0) */
+	      /* 	cfg->memmap_sad_setting = value; */
+	      /* else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0) */
+	      /* 	cfg->num_umsg_log2 = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
 	      else

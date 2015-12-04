@@ -33,13 +33,16 @@ module mmio_block
     input logic 			     cfg_pop
     );
 
-
+   /*
+    * Scope function
+    */
+   // import "DPI-C" function void mmio_block_scope_function();
+   // initial mmio_block_scope_function();
+   
+   
    /*
     * ASE MMIO signals
     */
-   // MMIO dispatch
-   export "DPI-C" task mmio_dispatch;
-      
    // MMIO read tid counter
    logic [CCIP_MMIO_TID_WIDTH-1:0] 	     tid_counter;
 
@@ -201,6 +204,7 @@ module mmio_block
    always @(posedge clk) begin
       if (rst) begin
 	 mmioresp_read <= 0;
+	 mmio_dispatch (1, 0, 0, 0, 0);	 
       end
       else begin
 	 if (~mmioresp_empty) begin

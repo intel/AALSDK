@@ -185,12 +185,27 @@ package ase_pkg;
       int 	  enable_reuse_seed;
       int 	  num_umsg_log2;
       int 	  enable_cl_view;
-      int 	  enable_capcm;
-      int 	  memmap_sad_setting;
+      // int 	  enable_capcm;
+      // int 	  memmap_sad_setting;
    } ase_cfg_t;
    ase_cfg_t cfg;
 
+   /*
+    * MMIO packet
+    */  
+   typedef struct {
+      int 	  write_en;
+      int 	  width;
+      int 	  addr;
+      longint 	  data;
+      int 	  resp_en;
+      } mmio_t;
+   
 
+   parameter int  MMIO_WRITE    = 32'hAA88;
+   parameter int  MMIO_READ_REQ = 32'hBB88;
+   parameter int  MMIO_READ_RSP = 32'hBBFF;
+   
    /*
     * UMSG Hint/Data state machine
     */

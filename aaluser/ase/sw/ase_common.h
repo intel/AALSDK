@@ -447,7 +447,7 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // simulator environment.
 // ------------------------------------------------------------------
 // ASE message view #define - Print messages as they go around
-#define ASE_MSG_VIEW
+// #define ASE_MSG_VIEW
 
 // Enable debug info from linked lists 
 // #define ASE_LL_VIEW
@@ -456,6 +456,16 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // *FIXME*: Connect to ase.cfg
 #define ASE_BUFFER_VIEW
 
+/*
+ * MMIO transaction packet
+ */
+typedef struct mmio_t {
+  int type;
+  int width;
+  int addr;
+  long long data;
+  int resp_en;
+} mmio_t;
 
 
 /* *********************************************************************
@@ -540,17 +550,18 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
 void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
 
 // MMIO request 
-void mmio_dispatch(int init, int wren, int addr, long int data, int dwidth);
+// void mmio_dispatch(int init, int wren, int addr, long long data, int dwidth);
+void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 // MMIO Read response
-void mmio_update_dex(int *addr, uint64_t *data64);
+void mmio_response(struct mmio_t *mmio_pkt);
 
 // CAPCM functions
-extern void capcm_init();
+// extern void capcm_init();
 
 // UMSG functions
-void ase_umsg_init();
+// void ase_umsg_init();
 /* int umsg_listener(); */
-void ase_umsg_init();
+// void ase_umsg_init();
 
 
 /*
@@ -602,13 +613,14 @@ FILE *error_fp;
  * CAPCM_CHUNKSIZE : Large CA private memories are chained together in
  * default 1 GB chunks.
  */
+#if 0
 #define CAPCM_BASENAME "/capcm"
 #define CAPCM_CHUNKSIZE (1024*1024*1024UL)
 uint64_t capcm_num_buffers;
 
 // CAPCM buffer chain info (each buffer holds 1 GB)
 struct buffer_t *capcm_buf;
-
+#endif
 
 /*
  * IPC cleanup on catastrophic errors
@@ -624,10 +636,12 @@ uint64_t sysmem_size;
 uint64_t sysmem_phys_lo;
 uint64_t sysmem_phys_hi;
 
+#if 0
 // CAPCM
 uint64_t capcm_size;
 uint64_t capcm_phys_lo;
 uint64_t capcm_phys_hi;
+#endif
 
 // ASE PID
 int ase_pid;
