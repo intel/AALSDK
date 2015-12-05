@@ -53,22 +53,8 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
 
- /*  const btInt StopTimeoutMillis = 250;
+   const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
-
-   m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-   m_pCCIAFU->WorkspaceAllocate(wssize,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-
-   // Overloading the "output" workspace here to be the buffer we use to cool down the cache.
-   m_pCCIAFU->WorkspaceAllocate(MAX_NLB_READ_WKSPC, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-
-   // Synchronize with the workspace allocation event notifications.
-   m_pMyApp->ClientWait();
-
-   if ( !m_pMyApp->ClientOK() ) {
-      ERR("Workspace allocation failed");
-      return 1;
-   }
 
    const btUnsigned32bitInt ReadBufData = 0xc0cac01a;
 
@@ -89,31 +75,32 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
-   //Set DSM base, high then low
-   //m_pCCIAFU->CSRWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
-   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
-   m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);*/
-
    /*if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
    }*/
 
-   // Assert Device Reset
-/*   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+   // Initiate AFU Reset
+   m_pALIResetService->afuReset();
 
-   // Clear the DSM status fields
-   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
+   //Set DSM base, high then low
+   m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+
+   // Assert Device Reset
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    // De-assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
+
+   __sync_synchronize();
 
    // Set input workspace address
-   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+   m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+
 
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
-
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
    csr_type cfg = (csr_type)NLB_TEST_MODE_READ;
+
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
 	  {
 		cfg |= (csr_type)NLB_TEST_MODE_CONT;
@@ -147,13 +134,13 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    //if --warm-fpga-cache is mentioned
     if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
       {
-   	   m_pCCIAFU->CSRWrite(CSR_CFG, NLB_TEST_MODE_READ);
+    	m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ);
 
    	   // Set the number of cache lines for the test
-   	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(cmd.endcls)); //TODO min of endcls or 1024(cache size)
+    	m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(cmd.endcls)); //TODO min of endcls or 1024(cache size)
 
    	   // Start the test
-   	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+    	m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
    	   // Wait for test completion
    	   while ( 0 == pAFUDSM->test_complete ) {
@@ -161,13 +148,13 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    	   }
 
    	   // Stop the device
-   	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+   	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
    	   //Re-set the test mode
-   	   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   	   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
       }
 
-   m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
+    m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -205,19 +192,19 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    while ( sz <= CL(cmd.endcls))
       {
 	   // Assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
 	   // Clear the DSM status fields
 	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
 	   // De-assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
 	   // Set the number of cache lines for the test
-	   m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	   // Start the test
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
 	   // In cont mode, send a stop signal after timeout. Wait till DSM complete register goes high
 	   if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
@@ -228,7 +215,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 		   }
 
 		   // Stop the device
-		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
 		   //wait for DSM register update or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
@@ -250,7 +237,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 		   }
 
 		   // Stop the device
-		   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 	   }
 
 	   PrintOutput(cmd, (sz / CL(1)));
@@ -267,27 +254,12 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
       }
 
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    if ( 0 != pAFUDSM->test_error ) {
       ++res;
    }
 
-   // Clean up..
-
-   // Release the Workspaces
-   m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-   m_pCCIAFU->WorkspaceFree(pCoolOffUsrVirt,     TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-   m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-
-   // Synchronize with the workspace free event notifications.
-   m_pMyApp->ClientWait();
-
-   if ( !m_pMyApp->ClientOK() ) {
-      ERR("Workspace free failed");
-      return 1;
-   }
-*/
    return res;
 }
 

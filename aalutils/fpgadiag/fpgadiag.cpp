@@ -614,6 +614,10 @@ int main(int argc, char *argv[])
 
    if ( (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_SWSIM)) ) {
+	  /********** Remove/Edit this when ase and/or swsim are supported ********/
+	  cout << FAIL << "No Support yet for ase and swsim. Please set --target=fpga and try again." << NORMAL << endl;
+	  return 0;
+	  /********** **************************************************** ********/
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
@@ -949,15 +953,6 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    return res;
 }
-
-/*void INLB::EnableCSRPrint(bool bEnable, bool bReplay)
-{
-	IQPILinkProtocol *pQLP = m_pFactory->QLPBackDoor();
-
-	   if ( NULL != pQLP ) {
-	      pQLP->EnableCSRPrint(bEnable, bReplay);
-	   }
-}*/
 
 void INLB::ReadQLPCounters()
 {
