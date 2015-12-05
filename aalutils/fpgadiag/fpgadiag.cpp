@@ -273,11 +273,28 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
 
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-  	   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-  	   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-  	   if(-1 != DevTarget())
-  	   {
+
+  	   if(0 == strcmp(TestMode().c_str(), "TestMode_ccipread") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_ccipwrite") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_cciptrput")){
+
+  		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_cciplpbk1")){
+
+  		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+
+  	   }else{
+
+  		  cout << "Unsupported Test mode." << endl;
+  		  exit(1);
+  	   }
+
+  	   if(-1 != DevTarget()){
+
   		   ConfigRecord.Add(keyRegChannelNumber, DevTarget());
   	   }
   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
