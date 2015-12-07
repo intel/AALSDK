@@ -48,7 +48,7 @@
 
 #include "AIATransactions.h"
 
-USING_NAMESPACE(AAL);
+BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 // Name: ALIAFUProxy
@@ -207,6 +207,5 @@ btBool ALIAFUProxy::Release(AAL::TransactionID const &rtid, AAL::btTime timeout)
    return true;
 }
 
-
-
+END_NAMESPACE(AAL)
 

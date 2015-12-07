@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,57 +24,29 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file uidrvMessaging.cpp
-/// @brief Implementation uidrvMessage class. This is an abstraction of the low
-///        level message structure used by the driver interface.
+/// @file AIAService.h
+/// @brief AAL Service Module definitions for AIAService
 /// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHOR: Tim Whisonant, Intel Corporation.
-///         Joseph Grecco, Intel Corporation.
+/// AUTHORS: Tim Whisonant, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
-/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
-/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
+/// 12/7/2015      TSW      Initial version.@endverbatim
 //****************************************************************************
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif // HAVE_CONFIG_H
+#ifndef __AALSDK_AIA_AIASERVICE_H__
+#define __AALSDK_AIA_AIASERVICE_H__
+#include <aalsdk/osal/OSServiceModule.h>
 
-#include "uidrvMessage.h"
-#include "aalsdk/AALBase.h" // IBase
+#define AIASERVICE_SVC_MOD         "@AIASERVICE_SVC_MOD@" AAL_SVC_MOD_EXT
+#define AIASERVICE_SVC_ENTRY_POINT "@AIASERVICE_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
 
+#define AIASERVICE_BEGIN_SVC_MOD(__svcfactory) AAL_BEGIN_SVC_MOD(__svcfactory, @AIASERVICE_SVC_MOD@, AIASERVICE_API, AIASERVICE_VERSION, AIASERVICE_VERSION_CURRENT, AIASERVICE_VERSION_REVISION, AIASERVICE_VERSION_AGE)
+#define AIASERVICE_END_SVC_MOD()               AAL_END_SVC_MOD()
 
-USING_NAMESPACE(AAL)
+AAL_DECLARE_MOD(@AIASERVICE_SVC_MOD@, AIASERVICE_API)
 
-uidrvMessage::uidrvMessage() :
-   m_pmessage(NULL)
-{}
+#endif // __AALSDK_AIA_AIASERVICE_H__
 
-uidrvMessage::~uidrvMessage()
-{
-   if ( NULL != m_pmessage ) {
-      delete m_pmessage;
-      m_pmessage = NULL;
-   }
-}
-
-void uidrvMessage::size(btWSSize PayloadSize)
-{
-   if ( NULL != m_pmessage ) {
-      delete m_pmessage;
-   }
-   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(ccipui_ioctlreq);
-   m_pmessage = (struct ccipui_ioctlreq*)new btByte[m_msgsize];
-   memset(m_pmessage, 0, m_msgsize);
-   m_pmessage->size = PayloadSize;
-}
-
-btVirtAddr  uidrvMessage::payload() const
-{ ASSERT(NULL != m_pmessage);
-   btVirtAddr ptr = reinterpret_cast<btVirtAddr>(m_pmessage->payload);
-   return reinterpret_cast<btVirtAddr>(m_pmessage->payload);
-}

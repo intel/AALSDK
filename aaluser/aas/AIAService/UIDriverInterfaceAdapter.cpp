@@ -47,7 +47,7 @@
 
 #include "UIDriverInterfaceAdapter.h"
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 {
@@ -587,3 +587,6 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
 
    return true;
 }  // UIDriverInterfaceAdapter::SendMessage
+
+END_NAMESPACE(AAL)
+

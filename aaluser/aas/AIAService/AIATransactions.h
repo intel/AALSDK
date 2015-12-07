@@ -38,10 +38,9 @@
 /// WHEN:          WHO:     WHAT:
 /// 09/23/2015     JG       Initial version@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AIATRANSACTIONS_H__
-#define __AALSDK_AIATRANSACTIONS_H__
+#ifndef __AALSDK_AIASERVICE_AIATRANSACTIONS_H__
+#define __AALSDK_AIASERVICE_AIATRANSACTIONS_H__
 #include <aalsdk/kernel/aalids.h>
-//#include <aalsdk/kernel/ccipdriver.h>
 
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/osal/OSServiceModule.h>
@@ -55,6 +54,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+BEGIN_NAMESPACE(AAL)
+
 //=============================================================================
 // Name:          BindAFUDevice
 // Description:   Send a Bind operation to the Driver stack
@@ -62,7 +63,7 @@
 //        tranID   - Transaction ID
 // Comments:
 //=============================================================================
-class UAIA_API BindAFUDevice : public IAIATransaction
+class AIASERVICE_API BindAFUDevice : public IAIATransaction
 {
 public:
    // Used by the AFU Proxy to bind to AFU device
@@ -91,7 +92,7 @@ private:
 //        tranID   - Transaction ID
 // Comments:
 //=============================================================================
-class UAIA_API UnBindAFUDevice : public IAIATransaction
+class AIASERVICE_API UnBindAFUDevice : public IAIATransaction
 {
 public:
    // Used by the AFU Proxy to bind to AFU device
@@ -118,7 +119,7 @@ private:
 // Description:   Send a shutdown message to UIDrv to kill MDT
 // Comments:
 //=============================================================================
-class UAIA_API ShutdownMDT : public IAIATransaction
+class AIASERVICE_API ShutdownMDT : public IAIATransaction
 {
 public:
    // Used by the AFU Proxy to bind to AFU device
@@ -142,5 +143,7 @@ private:
    AAL::uid_errnum_e             m_errno;
 }; // class BindAFUDevice
 
-#endif // __AALSDK_AIATRANSACTIONS_H__
+END_NAMESPACE(AAL)
+
+#endif // __AALSDK_AIASERVICE_AIATRANSACTIONS_H__
 

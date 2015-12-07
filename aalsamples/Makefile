@@ -42,8 +42,7 @@ Sudoku_SPL/SW \
 LinkedList_SPL/SW \
 Hello_ALI_NLB/SW  \
 SignalTapService \
-SigTapSample/SW \
-AIAService
+SigTapSample/SW
 
 MFLAGS  =
 ifneq (,$(ndebug))

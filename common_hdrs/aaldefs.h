@@ -275,6 +275,11 @@
 # else
 #    define AASLIB_API                    __declspec(dllimport)
 # endif // AASLIB_EXPORTS
+# ifdef AIASERVICE_EXPORTS
+#    define AIASERVICE_API                __declspec(dllexport)
+# else
+#    define AIASERVICE_API                __declspec(dllimport)
+# endif // AIASERVICE_EXPORTS
 # ifdef UAIA_EXPORTS
 #    define UAIA_API                      __declspec(dllexport)
 # else
@@ -332,6 +337,8 @@
 # define AALRUNTIME_API                   __declspec(0)
 // AASLib
 # define AASLIB_API                       __declspec(0)
+// AIAService
+# define AIASERVICE_API                   __declspec(0)
 // uAIA
 # define UAIA_API                         __declspec(0)
 // AASEDS
