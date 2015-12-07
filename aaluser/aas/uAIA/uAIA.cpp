@@ -685,7 +685,7 @@ uAIASession * CAIA::CreateAIASession(IBase                *pOwnerBase,
                                      btEventHandler        EventHandler,
                                      ServiceBase          *pServiceBase)
 {
-   return new uAIASession(pOwnerBase, *this, (btApplicationContext)pDevService, EventHandler, pServiceBase);
+   return new uAIASession(pOwnerBase, this, (btApplicationContext)pDevService, EventHandler, pServiceBase);
 }
 
 void CAIA::DestroyAIASession(uAIASession *pSess)

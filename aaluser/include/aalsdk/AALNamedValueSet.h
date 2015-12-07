@@ -338,10 +338,10 @@ protected:
 class AASLIB_API FormattedNVS
 {
 public:
-   const NamedValueSet &m_nvs;
+   const NamedValueSet *m_nvs;
    const btInt          m_tab;
    const btBool         m_fDebug;
-   FormattedNVS(const NamedValueSet &nvs, btInt tab=0, btBool fDebug=false) :
+   FormattedNVS(const NamedValueSet *nvs, btInt tab=0, btBool fDebug=false) :
       m_nvs(nvs), m_tab(tab), m_fDebug(fDebug) {}
    const FormattedNVS & operator = (const FormattedNVS &other ) { return *this; }
 };
@@ -359,7 +359,7 @@ public:
 //=============================================================================
 inline std::ostream & operator << (std::ostream &s, const FormattedNVS &fnvs)
 {
-   fnvs.m_nvs.Write(s, fnvs.m_tab);
+   fnvs.m_nvs->Write(s, fnvs.m_tab);
    // TODO: add debug (which is really just a human-readable form of the numeric keys) and both
    //       hex and dec output of numerics. Debug format is NOT intended for being read back in!
    return s;
