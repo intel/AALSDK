@@ -324,11 +324,11 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
   mmio_pkt->data = (uint64_t)data;
+  mmio_pkt->resp_en = 0;
 
   // Send message
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
-  //sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Display
@@ -365,38 +365,31 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   FUNC_CALL_ENTRY;
 
   char mmio_str[ASE_MQ_MSGSIZE];
-  uint64_t *mmio_vaddr;
-  char *pch;
-  
-  int msg_type;
-  uint32_t mmio_data;
+  mmio_t *mmio_pkt;
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
   // Send MMIO Read Request
-  sprintf(mmio_str, "%u %u %u", MMIO_READ_REQ, MMIO_WIDTH_32, offset);
+  /* sprintf(mmio_str, "%u %u %u", MMIO_READ_REQ, MMIO_WIDTH_32, offset); */
+  mmio_pkt->type = MMIO_READ_REQ;
+  mmio_pkt->width = MMIO_WIDTH_32;
+  mmio_pkt->addr = offset;
+  mmio_pkt->data = 0;
+  mmio_pkt->resp_en = 0;
+  
+  // Send MMIO Request
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-
-  pch = strtok(mmio_str, " ");
-  msg_type = atoi(pch);
-  if (msg_type == MMIO_READ_RSP)
-    {
-      pch = strtok(NULL, " ");
-      mmio_data = atoi(pch);
-      *data = mmio_data;
-    }
-  else
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("  [DEBUG-CATERR] MMIO_RSP MQ message type is unidentified\n");
-      END_RED_FONTCOLOR;
-    }
-
+  
+  // Typecast back to mmio_pkt, and update data
+  memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t));
+  *data = (uint32_t)mmio_pkt->data;
 
   FUNC_CALL_EXIT;
 }
@@ -410,37 +403,30 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   FUNC_CALL_ENTRY;
 
   char mmio_str[ASE_MQ_MSGSIZE];
-  uint64_t *mmio_vaddr;
-  char *pch;
-  
-  int msg_type;
-  uint64_t mmio_data;
+  mmio_t *mmio_pkt;
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
   // Send MMIO Read Request
-  sprintf(mmio_str, "%u %u %u", MMIO_READ_REQ, MMIO_WIDTH_32, offset);
+  mmio_pkt->type = MMIO_READ_REQ;
+  mmio_pkt->width = MMIO_WIDTH_64;
+  mmio_pkt->addr = offset;
+  mmio_pkt->data = 0;
+  mmio_pkt->resp_en = 0;
+  
+  // Send MMIO Request
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-
-  pch = strtok(mmio_str, " ");
-  msg_type = atoi(pch);
-  if (msg_type == MMIO_READ_RSP)
-    {
-      pch = strtok(NULL, " ");
-      mmio_data = atol(pch);
-      *data = mmio_data;
-    }
-  else
-    {
-      BEGIN_RED_FONTCOLOR;
-      printf("  [DEBUG-CATERR] MMIO_RSP MQ message type is unidentified\n");
-      END_RED_FONTCOLOR;
-    }
+  
+  // Typecast back to mmio_pkt, and update data
+  memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t));
+  *data = (uint64_t)mmio_pkt->data;
 
   FUNC_CALL_EXIT;
 }

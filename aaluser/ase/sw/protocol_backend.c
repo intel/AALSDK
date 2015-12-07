@@ -296,39 +296,19 @@ int ase_listener()
 
 
   /*
-   * CSR Write listener
+   * MMIO request listener
    */
   // Message string
   char mmio_str[ASE_MQ_MSGSIZE];
-  char *pch;
-  // char ase_msg_data[CL_BYTE_WIDTH];
-  /* uint32_t mmio_type; */
-  /* uint32_t mmio_size; */
-  /* uint32_t mmio_offset; */
-  /* uint32_t mmio_data32; */
-  /* uint64_t mmio_data64; */
   struct mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
   // Cleanse receptacle string
-  // memset(ase_msg_data, '\0', sizeof(ase_msg_data));
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
 
   // Receive csr_write packet
   if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
-/* #ifdef ASE_DEBUG */
-/*       printf("mmio_str = %s\n", mmio_str); */
-/* #endif */
-      /* pch = strtok(mmio_str, " "); */
-      /* mmio_pkt->type = atoi (pch); */
-      /* pch = strtok(NULL, " "); */
-      /* mmio_pkt->width = atoi (pch); */
-      /* pch = strtok(NULL, " "); */
-      /* mmio_pkt->addr = atoi (pch); */
-      /* pch = strtok(NULL, " "); */
-      /* mmio_pkt->data = atoi (pch); */
-      /* mmio_pkt->resp_en = 0; */
       memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(mmio_t));
 #ifdef ASE_DEBUG
       printf("  [DEBUG]  mmio_pkt => %x %d %d %llx %d\n", 
@@ -339,49 +319,6 @@ int ase_listener()
 	     mmio_pkt->resp_en);
 #endif
       mmio_dispatch (0, mmio_pkt);
-
-#if 0
-      if (mmio_pkt->type == MMIO_WRITE)
-	{
-	  mmio_dispatch (0, mmio_pkt);
-	  /* if (mmio_size == MMIO_WIDTH_32) */
-	  /*   { */
-	  /*     pch = strtok(NULL, " "); */
-	  /*     mmio_ = atoi (pch);	       */
-	  /*     mmio_dispatch (0, 1, mmio_offset, mmio_data32, MMIO_WIDTH_32); */
-	  /*   } */
-	  /* else if (mmio_size == MMIO_WIDTH_64) */
-	  /*   { */
-	  /*     pch = strtok(NULL, " "); */
-	  /*     mmio_data64 = atol (pch); */
-	  /*     #ifdef ASE_DEBUG */
-	  /*     printf("  [DEBUG]  mmio_write_64 : %x | %llx\n", mmio_offset, (unsigned long long)mmio_data64); */
-	  /*     #endif */
-	  /*     mmio_dispatch (0, 1, mmio_offset, mmio_data64, MMIO_WIDTH_64); */
-	  /*   } */
-	  /* else */
-	  /*   { */
-	  /*     printf("  [DEBUG-MMIOWR]  It should have never reached here !!!!\n"); */
-	  /*   } */
-	}
-      else if (mmio_pkt->type == MMIO_READ_REQ)
-	{
-	  if (mmio_pkt->width == MMIO_WIDTH_32)
-	    {
-	    }
-	  else if (mmio_pkt->width == MMIO_WIDTH_64)
-	    {
-	    }
-	  else
-	    {
-	      printf("  [DEBUG-MMIORD]  It should have never reached here !!!!\n");
-	    }
-	}
-      else
-	{
-	  printf("  [DEBUG-MMIO]  It should have never reached here !!!!\n");
-	}
-#endif
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
@@ -440,7 +377,7 @@ int ase_listener()
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
-
+      
       // If in regression mode or SW-simkill mode
       if (  (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL) ||
 	   ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))

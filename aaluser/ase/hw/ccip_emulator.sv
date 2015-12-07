@@ -308,7 +308,7 @@ module ccip_emulator
    logic 			  lp_initdone;
 
    // Internal 800 Mhz clock (for creating synchronized clocks)
-   logic 			  clk_8ui;
+   logic 			  Clk8UI;
 
    /*
     * Overflow/underflow signal checks
@@ -341,18 +341,18 @@ module ccip_emulator
    // 800 Mhz internal reference clock
    initial begin : clk8ui_proc
       begin
-   	 clk_8ui = 0;
+   	 Clk8UI = 0;
    	 forever begin
    	    #`CLK_8UI_TIME;
-   	    clk_8ui = 1'b0;
+   	    Clk8UI = 1'b0;
    	    #`CLK_8UI_TIME;
-   	    clk_8ui = 1'b1;
+   	    Clk8UI = 1'b1;
    	 end
       end
    end
 
    // 200 Mhz clock
-   always @(posedge clk_8ui) begin : clk_rollover_ctr
+   always @(posedge Clk8UI) begin : clk_rollover_ctr
       ase_clk_rollover	<= ase_clk_rollover - 1;
    end
 
@@ -482,7 +482,7 @@ module ccip_emulator
 
    // CSR readreq/write FIFO data
    assign mmioreq_din = {cwlp_wrvalid, cwlp_rdvalid, cwlp_header, cwlp_data};
-   assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid;
+   assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid; 
       
    // Request staging
    ase_fifo
@@ -508,46 +508,59 @@ module ccip_emulator
       .underflow  (  )
       );
 
+   CfgHdr_t DBG_cfgheader;
+   assign DBG_cfgheader = CfgHdr_t'(cwlp_header);
+    
+
+   // CSR activity engine *FIXME*
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 sw_reset_trig <= 0;	 
+      end
+      else begin
+	 sw_reset_trig <= 1;	 
+      end
+   end
    
    /*
     * MMIO Read response
     */
-//    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
-
-//    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_din;
-//    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
-//    logic 			   mmioresp_write;
-//    logic 			   mmioresp_pop;
-//    logic 			   mmioresp_read;
-//    logic 			   mmioresp_valid;
-//    logic 			   mmioresp_full;
-//    logic 			   mmioresp_empty;
+   parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
+   
+   logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_din;
+   logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
+   logic 			   mmioresp_write;
+   logic 			   mmioresp_pop;
+   logic 			   mmioresp_read;
+   logic 			   mmioresp_valid;
+   logic 			   mmioresp_full;
+   logic 			   mmioresp_empty;
 
 //    import "DPI-C" function void mmio_update_dex(int mmioaddr64, bit [63:0] mmiodata );
 
-//    // Response staging FIFO
-//    ase_fifo
-//      #(
-//        .DATA_WIDTH     ( MMIORESP_FIFO_WIDTH ),
-//        .DEPTH_BASE2    ( 4 ),
-//        .ALMFULL_THRESH ( 10 )
-//        )
-//    mmioresp_fifo
-//      (
-//       .clk        ( clk ),
-//       .rst        ( rst ),
-//       .wr_en      ( mmioresp_write ),
-//       .data_in    ( mmioresp_din ),
-//       .rd_en      ( mmioresp_pop ),
-//       .data_out   ( mmioresp_dout ),
-//       .data_out_v ( mmioresp_valid ),
-//       .alm_full   ( mmioresp_full ),
-//       .full       (  ),
-//       .empty      ( mmioresp_empty ),
-//       .count      (  ),
-//       .overflow   (  ),
-//       .underflow  (  )
-//       );
+   // Response staging FIFO
+   ase_fifo
+     #(
+       .DATA_WIDTH     ( MMIORESP_FIFO_WIDTH ),
+       .DEPTH_BASE2    ( 3 ),
+       .ALMFULL_THRESH ( 5 )
+       )
+   mmioresp_fifo
+     (
+      .clk        ( clk ),
+      .rst        ( rst ),
+      .wr_en      ( C2TxMMIORdValid ),
+      .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
+      .rd_en      ( ~mmioresp_empty & mmioresp_read ),
+      .data_out   ( mmioresp_dout ),
+      .data_out_v ( mmioresp_valid ),
+      .alm_full   ( mmioresp_full ),
+      .full       (  ),
+      .empty      ( mmioresp_empty ),
+      .count      (  ),
+      .overflow   (  ),
+      .underflow  (  )
+      );
 
 //    assign mmioresp_din = { mmio_rsptid, mmio_rspdata };
 //    assign mmioresp_write = mmio_rspvalid;

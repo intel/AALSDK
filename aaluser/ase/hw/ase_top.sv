@@ -69,7 +69,7 @@ module ase_top();
       .vl_clk_LPdomain_16ui		  (vl_clk_LPdomain_16ui         ),
       .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
       .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
-      .ffs_LP16ui_sRxData_afu		  (       )
+      .ffs_LP16ui_sRxData_afu		  (ffs_LP16ui_sRxData_afu       )
       );
 
 endmodule
