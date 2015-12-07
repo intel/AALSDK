@@ -208,17 +208,17 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 /*
  * DPI: MMIO update 
  */ 
-void mmio_update_dex (int *addr, uint64_t *data)
-{
-  FUNC_CALL_ENTRY;
+/* void mmio_response_dex (int *addr, uint64_t *data) */
+/* { */
+/*   FUNC_CALL_ENTRY; */
   
-  uint64_t *mmio_addr;
-  mmio_addr = (uint64_t*)((uint64_t)ase_csr_base + (uint64_t)*addr);
+/*   uint64_t *mmio_addr; */
+/*   mmio_addr = (uint64_t*)((uint64_t)ase_csr_base + (uint64_t)*addr); */
 
-  *mmio_addr = (uint64_t) *data;
+/*   *mmio_addr = (uint64_t) *data; */
 
-  FUNC_CALL_EXIT;
-}
+/*   FUNC_CALL_EXIT; */
+/* } */
 
 
 // -----------------------------------------------------------------------
