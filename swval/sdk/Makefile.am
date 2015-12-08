@@ -14,6 +14,7 @@ SUBDIRS=\
 aas/OSAL \
 aas/AASLib \
 aas/AALRuntime \
+aas/AIAService \
 aas/RRMBrokerService \
 aas/AASRegistrar \
 aas/uAIA \
@@ -283,6 +284,10 @@ include/aalsdk/faptrans/MAFUTransService.h.in
 OSAL_EXTRA=\
 include/aalsdk/osal/OSALService.h.in
 
+RM_EXTRA=\
+include/aalsdk/rm/ResMgrService.h.in \
+include/aalsdk/rm/RRMService.h.in
+
 SERVICE_EXTRA=\
 include/aalsdk/service/CCIAFUService.h.in \
 include/aalsdk/service/HWCCIAFUService.h.in \
@@ -298,6 +303,7 @@ include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
+include/aalsdk/uaia/AIAService.h.in \
 include/aalsdk/uaia/uAIAService.h.in
 
 EXTRA_DIST=\
@@ -310,6 +316,7 @@ $(ASE_EXTRA) \
 $(CLP_EXTRA) \
 $(FAPTRANS_EXTRA) \
 $(OSAL_EXTRA) \
+$(RM_EXTRA) \
 $(SERVICE_EXTRA) \
 $(UAIA_EXTRA)
 

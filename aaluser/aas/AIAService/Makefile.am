@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -29,38 +29,39 @@
 ##  Content:
 ##     libuAIA: Intel(R) Accelerator Abstraction Layer Library
 ##        Accelerator Abstraction Services
-##     aas/uAIA/Makefile.am
+##     aas/AIAService/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
 ##  History:
-##     06/27/2013    TSW   Initial version
+##     12/7/2015    TSW   Initial version
 ##******************************************************************************
 
-# We _are_ dlopen'ing AASUAIA.
+# We _are_ dlopen'ing libaia.
 
-lib_LTLIBRARIES=libAASUAIA.la
+lib_LTLIBRARIES=libaia.la
 
-libAASUAIA_la_SOURCES=\
-AALuAIA_Messaging.cpp \
-AALuAIA_UIDriverClient.cpp \
-AFUdev.cpp \
-AFUpkg.cpp \
-uAIA.cpp \
-uAIADllMain.cpp \
-uAIASession.cpp \
+libaia_la_SOURCES=\
+AIADllMain.cpp \
+AIA-internal.h \
+AIAService.cpp \
+AIATransactions.cpp \
+AIATransactions.h \
+ALIAFUProxy.cpp \
+ALIAFUProxy.h \
+UIDriverInterfaceAdapter.cpp \
+UIDriverInterfaceAdapter.h \
 uidrvMessage.cpp \
-FAP10.cpp \
-FAP20.cpp \
-MAFUTransactions.cpp
+uidrvMessage.h
 
-libAASUAIA_la_CPPFLAGS=\
+libaia_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include
 
-libAASUAIA_la_LDFLAGS=\
+libaia_la_LDFLAGS=\
 -module \
--version-info $(AASUAIA_VERSION_CURRENT):$(AASUAIA_VERSION_REVISION):$(AASUAIA_VERSION_AGE)
+-version-info $(AIASERVICE_VERSION_CURRENT):$(AIASERVICE_VERSION_REVISION):$(AIASERVICE_VERSION_AGE)
 
-libAASUAIA_la_LIBADD=\
+libaia_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la

@@ -36,8 +36,8 @@
 /// WHEN:          WHO:     WHAT:
 /// 09/02/2015     JG       Created @endverbatim
 //****************************************************************************
-#ifndef __UIDRVERINTERFACEADAPTER_H__
-#define __UIDRVERINTERFACEADAPTER_H__
+#ifndef __AALSDK_AIASERVICE_UIDRVERINTERFACEADAPTER_H__
+#define __AALSDK_AIASERVICE_UIDRVERINTERFACEADAPTER_H__
 #include <aalsdk/kernel/ccipdriver.h>  // uid_msgIDs_e, uid_errnum_e, aalui_ioctlreq
 
 #include <aalsdk/AALTypes.h>
@@ -55,14 +55,15 @@
 # error Define UIDriverInterfaceAdapter IPC for unknown OS.
 #endif // __AAL_UNKNOWN_OS__
 
+BEGIN_NAMESPACE(AAL)
 
 //==========================================================================
 // Name: UIDriverInterfaceAdapter
 // Description: The UIDriverInterfaceAdapter is a wrapper object around the
 //              low level driver interface.
 //==========================================================================
-class UAIA_API UIDriverInterfaceAdapter : private CriticalSection,
-                                          public CUnCopyable
+class AIASERVICE_API UIDriverInterfaceAdapter : private CriticalSection,
+                                                public  CUnCopyable
 {
    public:
       // Constructor
@@ -101,6 +102,7 @@ class UAIA_API UIDriverInterfaceAdapter : private CriticalSection,
 
 }; // class UIDriverInterfaceAdapter{}
 
+END_NAMESPACE(AAL)
 
-#endif // __UIDRVERINTERFACEADAPTER_H__
+#endif // __AALSDK_AIASERVICE_UIDRVERINTERFACEADAPTER_H__
 

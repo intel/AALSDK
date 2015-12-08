@@ -40,21 +40,21 @@
 /// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
 /// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AIA_UIDRVMESSAGE_H__
-#define __AALSDK_AIA_UIDRVMESSAGE_H__
+#ifndef __AALSDK_AIASERVICE_UIDRVMESSAGE_H__
+#define __AALSDK_AIASERVICE_UIDRVMESSAGE_H__
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/AALBase.h>      // IBase
 #include <aalsdk/kernel/ccipdriver.h> // uid_msgIDs_e, uid_errnum_e
 
 #include <aalsdk/CUnCopyable.h>
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 //==========================================================================
 // Name: uidrvMessage
 // Description: Wrapper for messages coming from IOCTLS
 //==========================================================================
-class UAIA_API uidrvMessage : public CUnCopyable
+class AIASERVICE_API uidrvMessage : public CUnCopyable
 {
 
 public:
@@ -85,5 +85,7 @@ protected:
 
 }; // end of class uidrvMessage
 
-#endif // __AALSDK_AIA_UIDRVMESSAGE_H__
+END_NAMESPACE(AAL)
+
+#endif // __AALSDK_AIASERVICE_UIDRVMESSAGE_H__
 

@@ -36,15 +36,15 @@
 /// WHEN:          WHO:     WHAT:
 /// 9/15/2015      JG       Initial version
 //****************************************************************************
-#ifndef __AALSDK_ALIAFUPROXY_H__
-#define __AALSDK_ALIAFUPROXY_H__
-#
+#ifndef __AALSDK_AIASERVICE_ALIAFUPROXY_H__
+#define __AALSDK_AIASERVICE_ALIAFUPROXY_H__
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/INTCDefs.h>
 #include <aalsdk/uaia/IAFUProxy.h>
 
 #include "AIA-internal.h"
 
+BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
 // Name: ALIAFUProxy
@@ -52,9 +52,9 @@
 //              layer and implementation details of the Accelerated Function
 //              Unit (AFU). It provides a local representation of the AFU.
 //=============================================================================
-class UAIA_API ALIAFUProxy : public AAL::ServiceBase,
-                             public IAFUProxy,
-                             public IAFUProxyClient
+class AIASERVICE_API ALIAFUProxy : public AAL::ServiceBase,
+                                   public IAFUProxy,
+                                   public IAFUProxyClient
 {
 public:
 
@@ -99,9 +99,9 @@ protected:
    AAL::IBase            *m_pAIABase;
    AIAService            *m_pAIA;
    btHANDLE               m_devHandle;
-
-
 };
 
-#endif //__AALSDK_ALIAFUPROXY_H__
+END_NAMESPACE(AAL)
+
+#endif // __AALSDK_AIASERVICE_ALIAFUPROXY_H__
 
