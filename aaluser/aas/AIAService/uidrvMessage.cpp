@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,49 +24,60 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AALResourceManagerClient.h
-/// @brief AALResourceManagerClient - Public Interface to ResourceManagerClient
-/// @ingroup ResMgr
+/// @file uidrvMessaging.cpp
+/// @brief Implementation uidrvMessage class. This is an abstraction of the low
+///        level message structure used by the driver interface.
+/// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHOR: Joseph Grecco, Intel Corporation.
-///          
+/// AUTHOR: Tim Whisonant, Intel Corporation.
+///         Joseph Grecco, Intel Corporation.
+///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 08/20/2014     JG       Initial version started
-/// 06/25/2015     JG       Removed XL from name@endverbatim
+/// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AALRESOURCEMANAGERCLIENT_H__
-#define __AALSDK_AALRESOURCEMANAGERCLIENT_H__
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/kernel/aalrm_client.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
+#include "uidrvMessage.h"
+#include "aalsdk/AALBase.h" // IBase
+
 
 BEGIN_NAMESPACE(AAL)
 
+uidrvMessage::uidrvMessage() :
+   m_pmessage(NULL)
+{}
 
-//=============================================================================
-// Constants and Events for methods in IResourceManagerClientService
-//=============================================================================
-
-//=============================================================================
-// Name: IResourceManagerClient
-// Description: Interface implemented by Resource Manager Clients
-//=============================================================================
-class AALRESOURCEMANAGERCLIENT_API IResourceManagerClient
+uidrvMessage::~uidrvMessage()
 {
-public:
-   virtual ~IResourceManagerClient(){};
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+      m_pmessage = NULL;
+   }
+}
 
-   virtual void resourceAllocated( NamedValueSet const &nvsInstancerecord,
-                                   TransactionID const &tid ) = 0;
-   virtual void resourceRequestFailed( NamedValueSet const &nvsManifest,
-                                       const IEvent &rEvent ) = 0;
-   virtual void resourceManagerException( const IEvent &rEvent ) = 0;
+void uidrvMessage::size(btWSSize PayloadSize)
+{
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+   }
+   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(ccipui_ioctlreq);
+   m_pmessage = (struct ccipui_ioctlreq*)new btByte[m_msgsize];
+   memset(m_pmessage, 0, m_msgsize);
+   m_pmessage->size = PayloadSize;
+}
 
-};
+btVirtAddr  uidrvMessage::payload() const
+{ ASSERT(NULL != m_pmessage);
+   btVirtAddr ptr = reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+   return reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+}
 
 END_NAMESPACE(AAL)
-
-#endif // __AALSDK_AALRESOURCEMANAGERCLIENT_H__
 

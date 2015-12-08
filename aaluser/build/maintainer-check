@@ -890,7 +890,7 @@ build_working_tree_in_tree() {
    fi
 
    [ -d "${cpath}" ] || cmd ${MKDIR} -p "${cpath}"
-cd sw 
+
    print_title     "in working tree : configure"
    checkpoint      "${cpath}" 'cfg' || run_configure "./configure" "${SRCDIR}" "${cfg_opts}"
    pass_checkpoint "${cpath}" 'cfg'
@@ -1164,7 +1164,9 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'ALIAFUService.h.in' \
 'ASEALIAFUService.h.in' \
 'HWALIAFUService.h.in' \
-'SWSimALIAFUService.h.in'\
+'SWSimALIAFUService.h.in' \
+'RRMService.h.in' \
+'ResMgrService.h.in'\
 )
 declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'aalclp.h' \
@@ -1196,6 +1198,8 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'ASEALIAFUService.h' \
 'HWALIAFUService.h' \
 'SWSimALIAFUService.h' \
+'RRMService.h' \
+'ResMgrService.h' \
 'aalbus-device.h' \
 'aalbus.h' \
 'aalbus_imonitorconfig.h' \

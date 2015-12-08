@@ -64,30 +64,33 @@ AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
 dnl ############################################################################
-AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [3],[4],[0])
-AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [3],[4],[0])
-AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [4],[2],[0])
-AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [4],[2],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [2],[0],[0])
-AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [1],[0],[0])
-AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [3],[4],[0])
-AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [4],[2],[0])
-AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [4],[2],[0])
-AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[1],[0])
-AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [4],[2],[0])
-AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [4],[2],[0])
-AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [4],[2],[0])
-AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [4],[2],[0])
-AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [4],[2],[0])
-AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [4],[2],[0])
-AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [4],[2],[0])
-AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [4],[2],[0])
-AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [2],[0],[0])
-AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [4],[2],[0])
-AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [4],[2],[0])
-AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [4],[2],[0])
-AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [4],[2],[0])
+AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [0],[0],[0])
+AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [0],[0],[0])
+AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([RRM],          [librrm],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [0],[0],[0])
+AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [0],[0],[0])
+AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [0],[0],[0])
+AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [0],[0],[0])
+AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [0],[0],[0])
+AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [0],[0],[0])
+AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
+AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
+AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [0],[0],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -179,7 +182,10 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
+                 include/aalsdk/rm/ResMgrService.h
+                 include/aalsdk/rm/RRMService.h
                  include/aalsdk/registrar/AASRegistrarService.h
+                 include/aalsdk/uaia/AIAService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/CCIAFUService.h
@@ -201,6 +207,7 @@ AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
                  aas/AALRuntime/Makefile
+                 aas/AIAService/Makefile
                  aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile

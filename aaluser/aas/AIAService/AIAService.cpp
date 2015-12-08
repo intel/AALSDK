@@ -44,8 +44,8 @@
 #include "aalsdk/AALLoggerExtern.h"
 #include "aalsdk/kernel/ccipdriver.h"
 
+#include "aalsdk/uaia/AIAService.h"
 #include "aalsdk/aas/AALInProcServiceFactory.h"
-#include "aalsdk/osal/OSServiceModule.h"
 #include "aalsdk/osal/ThreadGroup.h"
 
 #include "AIA-internal.h"
@@ -57,50 +57,23 @@
 // Implements the AIA entry point for the
 // load and bind operation
 //========================================
-#ifndef AIASERVICE_VERSION_CURRENT
-# define AIASERVICE_VERSION_CURRENT  4
-#endif // AIASERVICE_VERSION_CURRENT
-#ifndef AIASERVICE_VERSION_REVISION
-# define AIASERVICE_VERSION_REVISION 2
-#endif // AIASERVICE_VERSION_REVISION
-#ifndef AIASERVICE_VERSION_AGE
-# define AIASERVICE_VERSION_AGE      0
-#endif // AIASERVICE_VERSION_AGE
-#ifndef AIASERVICE_VERSION
-# define AIASERVICE_VERSION          "4.2.0"
-#endif // AIASERVICE_VERSION
-
-#if defined ( __AAL_WINDOWS__ )
-# ifdef AIA_SERVICE_EXPORTS
-#    define AIA_SERVICE_API __declspec(dllexport)
-# else
-#    define AIA_SERVICE_API __declspec(dllimport)
-# endif // AIA_SERVICE_EXPORTS
-#else
-# ifndef __declspec
-#    define __declspec(x)
-# endif // __declspec
-# define AIA_SERVICE_API    __declspec(0)
-#endif // __AAL_WINDOWS__
-
-#define SERVICE_FACTORY AAL::InProcSingletonSvcsFact< AIAService >
+#define SERVICE_FACTORY AAL::InProcSingletonSvcsFact< AAL::AIAService >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libaia, AIA_SERVICE_API, AIASERVICE_VERSION, AIASERVICE_VERSION_CURRENT, AIASERVICE_VERSION_REVISION, AIASERVICE_VERSION_AGE)
+AIASERVICE_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-AAL_END_SVC_MOD()
+AIASERVICE_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
 #endif // __AAL_WINDOWS__
 
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -654,4 +627,6 @@ void AIAService::ShutdownDisp::ReleaseChildren(TransactionID const &tid)
       }
    }
 }
+
+END_NAMESPACE(AAL)
 

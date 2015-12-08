@@ -31,11 +31,14 @@ dnl ############################################################################
 AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [1],[1],[1])
 AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [1],[1],[1])
 AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [1],[1],[1])
+AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [1],[1],[1])
+AALSDK_LTLIB_VERSION([RRM],          [librrm],          [1],[1],[1])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [1],[1],[1])
 AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [1],[1],[1])
+AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [1],[1],[1])
 AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [1],[1],[1])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [1],[1],[1])
@@ -158,7 +161,10 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/faptrans/FAP10Service.h
                  include/aalsdk/faptrans/FAP20Service.h
                  include/aalsdk/faptrans/MAFUTransService.h
+                 include/aalsdk/rm/ResMgrService.h
+                 include/aalsdk/rm/RRMService.h
                  include/aalsdk/registrar/AASRegistrarService.h
+                 include/aalsdk/uaia/AIAService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/CCIAFUService.h
@@ -180,6 +186,7 @@ AC_CONFIG_FILES([Makefile
                  aas/OSAL/Makefile
                  aas/AASLib/Makefile
                  aas/AALRuntime/Makefile
+                 aas/AIAService/Makefile
                  aas/RRMBrokerService/Makefile
                  aas/AASRegistrar/Makefile
                  aas/uAIA/Makefile

@@ -37,8 +37,8 @@
 /// WHEN:          WHO:     WHAT:
 /// 8/21/2015      JG       Initial version
 //****************************************************************************
-#ifndef __AALSDK_AIA_INTERNAL_H__
-#define __AALSDK_AIA_INTERNAL_H__
+#ifndef __AALSDK_AIASERVICE_AIA_INTERNAL_H__
+#define __AALSDK_AIASERVICE_AIA_INTERNAL_H__
 
 #include <aalsdk/aas/AALService.h>                 // ServiceBase
 #include <aalsdk/uaia/IAFUProxy.h>                 // AFUProxy
@@ -60,6 +60,8 @@
 //=============================================================================
 //=============================================================================
 #define AIA_SERVICE_BASE_INTERFACE "AIA_Service_Base_Interface"
+
+BEGIN_NAMESPACE(AAL)
 
 //============================================================================
 // AAL Service Client
@@ -104,7 +106,7 @@ protected:
 // Description: Implementation of the AFU Interface Adapter Service
 // Comments:
 //=============================================================================
-class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
+class AIASERVICE_API AIAService : public AAL::ServiceBase, public AAL::IServiceClient
 {
    public:
 
@@ -209,6 +211,7 @@ class UAIA_API AIAService: public AAL::ServiceBase, public AAL::IServiceClient
       enum state                 m_state;
 };
 
+END_NAMESPACE(AAL)
 
-#endif // __AALSDK_AIA_INTERNAL_H__
+#endif // __AALSDK_AIASERVICE_AIA_INTERNAL_H__
 

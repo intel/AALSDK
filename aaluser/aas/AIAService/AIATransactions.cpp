@@ -58,7 +58,7 @@
 #endif // __AAL_WINDOWS__
 
 
-USING_NAMESPACE(AAL)
+BEGIN_NAMESPACE(AAL)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,3 +129,7 @@ AAL::stTransactionID_t const   ShutdownMDT::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              ShutdownMDT::getMsgID()const {return m_msgID;}
 AAL::uid_errnum_e              ShutdownMDT::getErrno()const {return m_errno;};
 void                           ShutdownMDT::setErrno(AAL::uid_errnum_e errnum) {m_errno = errnum;}
+
+END_NAMESPACE(AAL)
+
+

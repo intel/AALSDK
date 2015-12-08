@@ -144,8 +144,6 @@ public:
 
    void serviceReleaseFailed(const AAL::IEvent&);
 
-   void serviceFreed(TransactionID const &rTranID);
-
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
 

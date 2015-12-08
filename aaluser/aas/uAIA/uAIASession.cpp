@@ -65,7 +65,7 @@ IAFUDev *CBindDevEvent::pAFUDev() const { return dynamic_cast<IAFUDev *>(m_pdev)
 
 
 uAIASession::uAIASession(IBase                *pOwnerBase,
-                         CAIA                 &rAIA,
+                         CAIA                 *rAIA,
                          btApplicationContext  Context,
                          btEventHandler        DefaultEventHandler,
                          ServiceBase          *pServiceBase) :
@@ -73,7 +73,7 @@ uAIASession::uAIASession(IBase                *pOwnerBase,
    m_bIsOK(false),
    m_BaseProxy(rAIA),
    m_ruAIA(rAIA),
-   m_OwnerReturnAddress(dynamic_ptr<IBase>(iidBase, &rAIA), DefaultEventHandler, Context),
+   m_OwnerReturnAddress(dynamic_ptr<IBase>(iidBase, rAIA), DefaultEventHandler, Context),
    m_returnAddress(dynamic_cast<IBase *>(this), uAIASession::MessageHandler, this),
    m_pServiceBase(pServiceBase)
 {
@@ -88,7 +88,7 @@ void uAIASession::Bind(btObjectType         Handle,
                        NamedValueSet        nvsOptions,
                        TransactionID const &tid)
 {
-   m_ruAIA.SendMessage(
+   m_ruAIA->SendMessage(
                         BindDevice(m_AIAMarshaller,
                                                   Handle,
                                                   nvsOptions,
@@ -100,7 +100,7 @@ void uAIASession::Bind(btObjectType         Handle,
 void uAIASession::UnBind(btObjectType         Handle,
                          TransactionID const &tid)
 {
-   m_ruAIA.SendMessage( 
+   m_ruAIA->SendMessage(
                         UnBindDevice(m_AIAMarshaller,
                                                     Handle,
                                                     tid,
