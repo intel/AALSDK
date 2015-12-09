@@ -31,7 +31,7 @@
 # gcc -g -o reusable_seed reusable_seed.c ../../sw/error_report.c -lrt -lm -D SIM_SIDE=1 -I $VCS_HOME/include/
 
 # gcc -g -o remote_start remote_start.c \
-#    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c \
+#    ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/app_backend.c ../../sw/mqueue_ops.c ../../sw/error_report.c \
 #     -lrt -lm 
 
 # gcc -g -o read_file read_file.c

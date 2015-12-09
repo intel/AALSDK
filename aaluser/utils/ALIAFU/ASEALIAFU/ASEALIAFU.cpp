@@ -50,11 +50,15 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#if 0
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
 #include <aalsdk/service/ICCIClient.h>
 #include <aalsdk/ase/ase_common.h>
+#endif
+
+#include "ALIAIATransactions.h"
 
 #include "ASEALIAFU.h"
 
@@ -63,7 +67,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup ASEALIAFU
 /// @{
 
+#if 0
 CriticalSection ASEALIAFU::sm_ASEMtx;
+#endif
 
 btBool ASEALIAFU::init(IBase               *pclientBase,
                        NamedValueSet const &optArgs,
@@ -86,12 +92,73 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
   return true;
 }
 
+
+
 btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
   session_deinit();
   return ServiceBase::Release(TranID, timeout);
 }
 
+
+// ---------------------------------------------------------
+// MMIO actions
+// ---------------------------------------------------------
+//
+// mmioGetAddress. Return address of MMIO space.
+//
+btVirtAddr HWALIAFU::mmioGetAddress( void )
+{
+   return m_MMIORmap;
+}
+
+//
+// mmioGetLength. Return length of MMIO space.
+//
+btCSROffset HWALIAFU::mmioGetLength( void )
+{
+   return m_MMIORsize;
+}
+
+//
+// mmioRead32. Read 32bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
+{
+
+   return true;
+}
+
+//
+// mmioWrite32. Write 32bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
+{
+
+   return true;
+}
+
+//
+// mmioRead64. Read 64bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
+{
+
+   return true;
+}
+
+//
+// mmioWrite64. Write 64bit CSR. Offset given in bytes.
+//
+btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
+{
+
+   return true;
+}
+
+// -----------------------------------------------------
+// Buffer allocation
+// -----------------------------------------------------
 
 
 /// @}

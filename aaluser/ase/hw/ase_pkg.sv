@@ -202,9 +202,14 @@ package ase_pkg;
       } mmio_t;
    
 
+   // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
    parameter int  MMIO_READ_REQ     = 32'hBB88;
-   // parameter int  MMIO_READ_RSP = 32'hBBFF;
+
+   // Length
+   parameter int  MMIO_WIDTH_32 = 32;
+   parameter int  MMIO_WIDTH_64 = 64;
+   
    
    /*
     * UMSG Hint/Data state machine

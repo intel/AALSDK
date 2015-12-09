@@ -111,7 +111,7 @@ void sv2c_script_dex(const char *str)
 /*
  * DPI: WriteLine Data exchange
  */
-void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
+void wr_memline_dex(cci_pkt *pkt, longint *cl_addr, int *mdata, char *wr_data )
 {
   FUNC_CALL_ENTRY;
   uint64_t* wr_target_vaddr = (uint64_t*)NULL;
@@ -189,13 +189,22 @@ void mmio_response (struct mmio_t *mmio_pkt)
 {
   FUNC_CALL_ENTRY;
   
-  uint64_t *mmio_addr;
+  uint64_t *mmio_addr64;
+  uint32_t *mmio_addr32;
   char *mmio_str;
 
   if (mmio_pkt->type == MMIO_READ_REQ)
     {
-      mmio_addr = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
-      *mmio_addr = (uint64_t) mmio_pkt->data;
+      if (mmio_pkt->width == MMIO_WIDTH_32) 
+	{
+	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
+	  *mmio_addr32 = (uint32_t) mmio_pkt->data;
+	}
+      else if (mmio_pkt->width == MMIO_WIDTH_64)
+	{
+	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
+	  *mmio_addr64 = (uint64_t) mmio_pkt->data;
+	}
     }
 
   mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE);
@@ -321,7 +330,6 @@ int ase_listener()
   /*
    * SIMKILL message handler
    */
-#if 1 
   char ase_simkill_str[ASE_MQ_MSGSIZE];
   memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==ASE_MSG_PRESENT)
@@ -342,7 +350,6 @@ int ase_listener()
 	  start_simkill_countdown();
 	}
     }
-#endif
 
   //  FUNC_CALL_EXIT;
   return 0;
@@ -571,7 +578,7 @@ int ase_ready()
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        $SHELL   | Run:\n");
-  printf("        ---------+-----------------------------------------\n");
+  printf("        ---------+---------------------------------------------------\n");
   printf("        bash     | export ASE_WORKDIR=%s\n", ase_run_path);
   printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
@@ -665,8 +672,6 @@ void start_simkill_countdown()
 
   // Set scope
   svSetScope(scope);
-  /* svSetScope(ccip_emulator_scope); */
-  /* svSetScope(mmio_block_scope); */
 
   simkill();
 

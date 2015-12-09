@@ -327,7 +327,7 @@ ASE_EXTRA=\
 ase/sw/mqueue_ops.c \
 ase/sw/mem_model.c \
 ase/sw/ipc_mgmt_ops.c \
-ase/sw/shm_ops.c \
+ase/sw/app_backend.c \
 ase/sw/tstamp_ops.c \
 ase/sw/error_report.c \
 ase/sw/linked_list_ops.c \

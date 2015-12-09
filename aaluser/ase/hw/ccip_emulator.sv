@@ -157,8 +157,6 @@ module ccip_emulator
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
 
-   // CSR Write Dispatch
-   // export "DPI-C" task csr_write_dispatch;
    // Unordered message dispatch
    // export "DPI-C" task umsg_dispatch;
 
@@ -422,16 +420,15 @@ module ccip_emulator
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.poison = 1'b0;
 	       hdr.tid    = 9'b0;
-	       if (mmio_pkt.width == 32) begin
-		  hdr.len = 2'b0;
-		  cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
+	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
+		  hdr.len = 2'b00;
 		  cwlp_data = {480'b0, mmio_pkt.data[31:0]};
 	       end
-	       else if (mmio_pkt.width == 64) begin
+	       else if (mmio_pkt.width == MMIO_WIDTH_64) begin
 		  hdr.len = 2'b01;
-		  cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
 		  cwlp_data = {448'b0, mmio_pkt.data[63:0]};
 	       end
+	       cwlp_header = CCIP_CFG_HDR_WIDTH'(hdr);
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
 	       mmio_pkt.resp_en = 1;
@@ -444,13 +441,17 @@ module ccip_emulator
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
 	       hdr.index    = {2'b0, mmio_pkt.addr[15:2]};
-	       hdr.len      = 2'b01;
+	       if (mmio_pkt.width == MMIO_WIDTH_32) begin
+		  hdr.len      = 2'b00;
+	       end
+	       else if (mmio_pkt.width == MMIO_WIDTH_64) begin
+		  hdr.len      = 2'b01;
+	       end
 	       hdr.poison   = 1'b0;
 	       hdr.tid      = mmio_tid_counter;
 	       cwlp_header  = CCIP_CFG_HDR_WIDTH'(hdr);
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 1;
-	       tid_array[ mmio_tid_counter ] = hdr.index;
     	       mmio_tid_counter  = mmio_tid_counter + 1;
 	       @(posedge clk);
 	       cwlp_wrvalid = 0;

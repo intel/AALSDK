@@ -18,7 +18,7 @@ HWSIM_BLD_CMD = "ls"
 
 ## 1
 SWAPP_DIR     = str(ASE_WORKDIR) + "/regression/apps/"
-SWAPP_BLD_CMD = "gcc -g -o app nlbv11_all_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/shm_ops.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt"
+SWAPP_BLD_CMD = "gcc -g -o app nlbv11_all_test.c ../../sw/tstamp_ops.c ../../sw/ase_ops.c ../../sw/app_backend.c ../../sw/mqueue_ops.c ../../sw/error_report.c -lrt"
 HWSIM_RUN_CMD = "make sim &" 
 SWAPP_RUN_CMD = "./app"
 

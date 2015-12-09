@@ -227,7 +227,7 @@ if len(str) != 0:
     fd.write("ASE_INCDIR = " + str + "\n\n")
 
 # Find ASE SW files
-ase_sw_files_str = commands_getoutput ("find -L " + pwd + "/sw/ -name *.c")
+ase_sw_files_str = commands_getoutput ("find -L " + pwd + "/sw/ -name *.c ! -name app_backend.c")
 ase_sw_files_str = ase_sw_files_str.replace("\n", " \\\n\t")
 ase_sw_files_str = ase_sw_files_str[:-1]
 fd.write("ASESW_FILE_LIST = ")
