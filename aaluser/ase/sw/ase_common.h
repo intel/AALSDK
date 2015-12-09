@@ -34,9 +34,6 @@
  */
 
 
-/*
- * Prevent recursive declarations
- */
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
@@ -85,7 +82,9 @@
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
 // CSR memory map size
-#define CSR_MAP_SIZE            64*1024
+// #define CSR_MAP_SIZE            64*1024
+#define MMIO_LENGTH                512*1024   // 512 KB MMIO size
+#define MMIO_AFU_OFFSET            256*1024
 
 // Size of page
 #define ASE_PAGESIZE   0x1000        // 4096 bytes
@@ -101,28 +100,6 @@
 
 #define NUM_UMSG_PER_AFU               8
 
-#if 0 
-/*
- * SPL constants
- */
-#define SPL_DSM_BASEL_OFF 0x1000 //0x910
-#define SPL_DSM_BASEH_OFF 0x1004 //0x914
-#define SPL_CXT_BASEL_OFF 0x1008 //0x918 // SPL Context Physical address
-#define SPL_CXT_BASEH_OFF 0x100c //0x91c 
-#define SPL_CH_CTRL_OFF   0x1010 //0x920
-
-/*
- * AFU constants
- */
-#define AFU_DSM_BASEL_OFF 0x8A00
-#define AFU_DSM_BASEH_OFF 0x8A04
-#define AFU_CXT_BASEL_OFF 0x8A08
-#define AFU_CXT_BASEH_OFF 0x8A0c
-
-//                                Byte Offset  Attribute  Width  Comments
-#define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
-#define      DSM_STATUS            0x40         // RO      512b   test status and error info
-#endif
 
 /* *******************************************************************************
  *
@@ -229,7 +206,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |    
-  int is_csrmap;                  // Flag memory as CSR map          |   
+  int is_mmiomap;                  // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
@@ -242,10 +219,12 @@ struct buffer_t                   //  Descriptiion                    Computed b
 extern struct buffer_t *head;      // Head pointer
 extern struct buffer_t *end;       // Tail pointer
 // CSR fake physical base address
-extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
+// extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
 // DPI side CSR base, offsets updated on CSR writes
-// extern uint64_t *ase_csr_base;      
-uint64_t *ase_csr_base;      
+// extern uint64_t *mmio_afu_vbase;      
+//uint64_t *mmio_afu_vbase;
+uint64_t *mmio_afu_vbase;  
+    
 // Timestamp reference time
 extern struct timeval start;
 
@@ -261,9 +240,8 @@ extern struct timeval start;
 #define HDR_MEM_DEALLOC_REQ  0x0F
 
 // MMIO widths
-#define MMIO_WRITE           0xAA88
+#define MMIO_WRITE_REQ       0xAA88
 #define MMIO_READ_REQ        0xBB88
-#define MMIO_READ_RSP        0xBBFF
 
 #define MMIO_WIDTH_32        32
 #define MMIO_WIDTH_64        64
@@ -358,20 +336,6 @@ extern "C" {
   void mmio_write64(uint32_t index, uint64_t data);
   void mmio_read32(uint32_t index, uint32_t *data);
   void mmio_read64(uint32_t index, uint64_t *data);
-  // uint32_t csr_read(uint32_t);
-  // SPL bridge functions *FIXME*
-#if 0
-  void setup_spl_cxt_pte(struct buffer_t *, struct buffer_t *);
-  void spl_driver_dsm_setup(struct buffer_t *);
-  void spl_driver_reset(struct buffer_t *);
-  void spl_driver_afu_setup(struct buffer_t *);
-  void spl_driver_start(uint64_t *);
-  void spl_driver_stop();
-  // UMSG subsystem
-  void umas_init(uint32_t);
-  void umsg_send(int, char *);
-  void umas_deinit();
-#endif
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -522,7 +486,7 @@ typedef struct {
 extern void simkill();
 extern void sw_simkill_request();
 /* extern void csr_write_init(); */
-extern void csr_write_dispatch(int, int, int);
+// extern void csr_write_dispatch(int, int, int);
 extern void buffer_messages(char *);
 /* extern void umsg_init(); */
 extern void umsg_dispatch(int, int, int, int, char*);
@@ -538,12 +502,6 @@ void ase_config_parse(char*);
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
 
-// CSR Write 
-#if 0
-void csr_write_dex(cci_pkt *csr);
-void csr_write_completed();
-#endif
-
 // Read system memory line
 void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
 // Write system memory line
@@ -555,9 +513,6 @@ void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 // MMIO Read response
 void mmio_response(struct mmio_t *mmio_pkt);
 
-// CAPCM functions
-// extern void capcm_init();
-
 // UMSG functions
 // void ase_umsg_init();
 /* int umsg_listener(); */
@@ -567,15 +522,6 @@ void mmio_response(struct mmio_t *mmio_pkt);
 /*
  * Request/Response options
  */
-#if 0 
-// TX0 channel
-#define ASE_TX0_RDLINE       0x4
-// TX1 channel
-#define ASE_TX1_WRTHRU       0x1
-#define ASE_TX1_WRLINE       0x2
-#define ASE_TX1_WRFENCE      0x5   // CCI 1.8
-#define ASE_TX1_INTRVALID    0x8   // CCI 1.8
-#endif
 // RX0 channel
 #define ASE_RX0_CSR_WRITE    0x0
 #define ASE_RX0_WR_RESP      0x1
@@ -599,28 +545,6 @@ uint64_t ase_addr_seed;
 // ASE error file
 FILE *error_fp;
 
-/*
- * QPI-CA private memory implementation
- *
- * Caching agent private memory is enabled in hw/platform.vh. This
- * block is enabled only in the simulator, application has no need to
- * see this.  The buffer is implemented in /dev/shm for performance
- * reasons. Linux swap space is used to make memory management very
- * efficient.
- *
- * CAPCM_BASENAME : Memory basename is concatenated with index and a
- * timestamp
- * CAPCM_CHUNKSIZE : Large CA private memories are chained together in
- * default 1 GB chunks.
- */
-#if 0
-#define CAPCM_BASENAME "/capcm"
-#define CAPCM_CHUNKSIZE (1024*1024*1024UL)
-uint64_t capcm_num_buffers;
-
-// CAPCM buffer chain info (each buffer holds 1 GB)
-struct buffer_t *capcm_buf;
-#endif
 
 /*
  * IPC cleanup on catastrophic errors
@@ -635,13 +559,6 @@ FILE *local_ipc_fp;
 uint64_t sysmem_size;
 uint64_t sysmem_phys_lo;
 uint64_t sysmem_phys_hi;
-
-#if 0
-// CAPCM
-uint64_t capcm_size;
-uint64_t capcm_phys_lo;
-uint64_t capcm_phys_hi;
-#endif
 
 // ASE PID
 int ase_pid;
@@ -669,7 +586,7 @@ int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
-#endif
+#endif // End SIM_SIDE
 
 
 #endif // End _ASE_COMMON_H_

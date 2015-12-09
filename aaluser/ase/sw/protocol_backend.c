@@ -37,18 +37,6 @@
 
 #include "ase_common.h"
 
-// ---------------------------------------------------------------
-// Message queues descriptors
-// ---------------------------------------------------------------
-/* int app2sim_rx;           // app2sim mesaage queue in RX mode */
-/* int sim2app_tx;           // sim2app mesaage queue in TX mode */
-/* int app2sim_mmioreq_rx;   // MMIO Request path */
-/* int sim2app_mmiorsp_tx;   // MMIO Response path */
-/* int app2sim_umsg_rx;      // UMSG    message queue in RX mode */
-/* int app2sim_simkill_rx;   // app2sim message queue in RX mode */
-#if 0
-int sim2app_intr_tx;      // sim2app message queue in TX mode
-#endif
 
 // Global test complete counter
 // Keeps tabs of how many session_deinits were received
@@ -63,17 +51,6 @@ void scope_function()
   scope = svGetScope();
 }
 
-/* svScope ccip_emulator_scope; */
-/* void ccip_emulator_scope_function() */
-/* { */
-/*   ccip_emulator_scope = svGetScope(); */
-/* } */
-
-/* svScope mmio_block_scope; */
-/* void mmio_block_scope_function() */
-/* { */
-/*   mmio_block_scope = svGetScope(); */
-/* } */
 
 /*
  * DPI: CONFIG path data exchange
@@ -208,17 +185,26 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 /*
  * DPI: MMIO update 
  */ 
-/* void mmio_response_dex (int *addr, uint64_t *data) */
-/* { */
-/*   FUNC_CALL_ENTRY; */
+void mmio_response (struct mmio_t *mmio_pkt)
+{
+  FUNC_CALL_ENTRY;
   
-/*   uint64_t *mmio_addr; */
-/*   mmio_addr = (uint64_t*)((uint64_t)ase_csr_base + (uint64_t)*addr); */
+  uint64_t *mmio_addr;
+  char *mmio_str;
 
-/*   *mmio_addr = (uint64_t) *data; */
+  if (mmio_pkt->type == MMIO_READ_REQ)
+    {
+      mmio_addr = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
+      *mmio_addr = (uint64_t) mmio_pkt->data;
+    }
 
-/*   FUNC_CALL_EXIT; */
-/* } */
+  mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE);
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt));
+  mqueue_send(sim2app_mmiorsp_tx, mmio_str);
+
+  FUNC_CALL_EXIT;
+}
 
 
 // -----------------------------------------------------------------------
@@ -229,7 +215,6 @@ void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
 // -----------------------------------------------------------------------
 int ase_listener()
 {
-  // svSetScope( svGetScopeFromName("ase_top.ccip_emulator.mmio_dispatch") );
   //   FUNC_CALL_ENTRY;
 
    /*
@@ -252,9 +237,9 @@ int ase_listener()
 	  ase_alloc_action(&ase_buffer);
 	  ase_buffer.is_privmem = 0;
 	  if (ase_buffer.index == 0)
-	    ase_buffer.is_csrmap = 1;
+	    ase_buffer.is_mmiomap = 1;
 	  else
-	    ase_buffer.is_csrmap = 0;
+	    ase_buffer.is_mmiomap = 0;
 	}
       // if DEALLOC request is received
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
@@ -266,7 +251,7 @@ int ase_listener()
       ase_buffer_oneline(&ase_buffer);
       
       // Write buffer information to file
-      if ( (ase_buffer.is_csrmap == 0) || (ase_buffer.is_privmem == 0) )
+      if ( (ase_buffer.is_mmiomap == 0) || (ase_buffer.is_privmem == 0) )
 	{
 	  // Zero out string
 	  memset (logger_str, '\0', ASE_LOGGER_LEN);
@@ -322,43 +307,9 @@ int ase_listener()
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
+
     }
 
-
-#if 0 
-/*   /\* */
-/*    * UMSG listener */
-/*    *\/ */
-/*   // Message string */
-/*   char umsg_str[SIZEOF_UMSG_PACK_T]; */
-/*   /\* int ii; *\/ */
-/*   umsg_pack_t inst; */
-
-/*   // Cleanse receptacle string */
-/*   /\* umsg_data = malloc(CL_BYTE_WIDTH); *\/ */
-/*   memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T ); */
-/*   /\* memset (umsg_data, '\0', CL_BYTE_WIDTH ); *\/ */
-  
-/*   if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT) */
-/*     { */
-/* /\* #ifdef ASE_DEBUG *\/ */
-/* /\*       printf("ASERxMsg => UMSG Received \n");       *\/ */
-/* /\* #endif *\/ */
-/*       // Tokenize messgae to get msg_id & umsg_data */
-/*       // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data ); */
-/*       memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T); */
-      
-/* /\* #ifdef ASE_DEBUG *\/ */
-/* /\*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); *\/ */
-/* /\*       for(ii = 0 ; ii < 64; ii++) *\/ */
-/* /\* 	printf("%02X", (int)inst.data[ii]); *\/ */
-/* /\*       printf("\n"); *\/ */
-/* /\* #endif *\/ */
-      
-/*       // UMSG dispatch */
-/*       umsg_dispatch(0, 1, inst.hint, inst.id, inst.data); */
-/*     } */
-#endif
 
   /*
    * UMSG compare routine
@@ -370,6 +321,7 @@ int ase_listener()
   /*
    * SIMKILL message handler
    */
+#if 1 
   char ase_simkill_str[ASE_MQ_MSGSIZE];
   memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==ASE_MSG_PRESENT)
@@ -390,6 +342,7 @@ int ase_listener()
 	  start_simkill_countdown();
 	}
     }
+#endif
 
   //  FUNC_CALL_EXIT;
   return 0;
@@ -494,6 +447,8 @@ void calc_phys_memory_ranges()
 int ase_init()
 {
   FUNC_CALL_ENTRY;
+
+  setvbuf(stdout, NULL, _IONBF, 0);
 
   // Register SIGINT and listen to it
   signal(SIGTERM, start_simkill_countdown);

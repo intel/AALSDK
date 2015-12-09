@@ -115,49 +115,19 @@ module ccip_emulator
    // Rx/Tx mappint
    always @(*) begin
       // Rx OUT
-      // ffs_LP16ui_sRxData_afu.C0Hdr <= { C0RxHdr.vc,
-      // 					C0RxHdr.poison,
-      // 					C0RxHdr.hitmiss,
-      // 					1'b0,
-      // 					C0RxHdr.clnum,
-      // 					C0RxHdr.resptype,
-      // 					C0RxHdr.mdata
-      // 					};
       ffs_LP16ui_sRxData_afu.C0Hdr <= t_ccip_RspMemHdr'(C0RxHdr);
       ffs_LP16ui_sRxData_afu.C0Data <= C0RxData;
       ffs_LP16ui_sRxData_afu.C0WrValid <= C0RxWrValid;
       ffs_LP16ui_sRxData_afu.C0RdValid <= C0RxRdValid;
       ffs_LP16ui_sRxData_afu.C0UMsgValid <= C0RxUMsgValid;
-      //    ffs_LP16ui_sRxData_afu.C1Hdr  <= { C1RxHdr.vc,
-      // 					 C1RxHdr.poison,
-      // 					 C1RxHdr.hitmiss,
-      // 					 1'b0,
-      // 					 C1RxHdr.clnum,
-      // 					 C1RxHdr.resptype,
-      // 					 C1RxHdr.mdata
-      // 					 };
+      ffs_LP16ui_sRxData_afu.C0MmioRdValid <= C0RxMMIORdValid;
+      ffs_LP16ui_sRxData_afu.C0MmioWrValid <= C0RxMMIOWrValid;
       ffs_LP16ui_sRxData_afu.C1Hdr <= t_ccip_RspMemHdr'(C1RxHdr);
       ffs_LP16ui_sRxData_afu.C1WrValid <= C1RxWrValid;
       ffs_LP16ui_sRxData_afu.C1IntrValid <= C1RxIntrValid;
       // Tx OUT
-      // { C0TxHdr.vc,
-      // 	C0TxHdr.sop,
-      // 	C0TxHdr.rsvd70,
-      // 	C0TxHdr.len,
-      // 	C0TxHdr.reqtype,
-      // 	C0TxHdr.rsvd63_58,
-      // 	C0TxHdr.addr,
-      // 	C0TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C0Hdr;
       C0TxHdr <= TxHdr_t'(ffs_LP16ui_sTxData_afu.C0Hdr);
       C0TxRdValid <= ffs_LP16ui_sTxData_afu.C0RdValid;
-      //    { C1TxHdr.vc,
-      // 	C1TxHdr.sop,
-      // 	C1TxHdr.rsvd70,
-      // 	C1TxHdr.len,
-      // 	C1TxHdr.reqtype,
-      // 	C1TxHdr.rsvd63_58,
-      // 	C1TxHdr.addr,
-      // 	C1TxHdr.mdata  } <= ffs_LP16ui_sTxData_afu.C1Hdr;
       C1TxHdr <= TxHdr_t'(ffs_LP16ui_sTxData_afu.C1Hdr);
       C1TxData <= ffs_LP16ui_sTxData_afu.C1Data;
       C1TxWrValid <= ffs_LP16ui_sTxData_afu.C1WrValid;
@@ -213,6 +183,10 @@ module ccip_emulator
    // Data exchange for READ, WRITE system/CAPCM memory line
    import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
    import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata, inout bit [511:0] wr_data );
+
+   // MMIO response
+   import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
+   mmio_t mmio_resp_pkt;
 
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
@@ -420,7 +394,7 @@ module ccip_emulator
    logic 				     mmioreq_full;
    logic 				     mmioreq_empty;
    int 					     mmioreq_count;
-      
+
    logic [CCIP_CFG_HDR_WIDTH-1:0] 	     cwlp_header;
    logic [CCIP_DATA_WIDTH-1:0] 		     cwlp_data;
    logic 				     cwlp_wrvalid;
@@ -430,8 +404,8 @@ module ccip_emulator
    logic 				     mmio_rdvalid;
    logic [CCIP_DATA_WIDTH-1:0] 		     mmio_data512;
    logic [CCIP_CFG_HDR_WIDTH-1:0] 	     mmio_hdrvec;
- 	     
-   
+
+
    // MMIO dispatch unit
    task mmio_dispatch (int initialize, mmio_t mmio_pkt);
       CfgHdr_t hdr;
@@ -444,7 +418,7 @@ module ccip_emulator
 	    mmio_tid_counter  = 0;
 	 end
 	 else begin
-	    if (mmio_pkt.write_en == MMIO_WRITE) begin
+	    if (mmio_pkt.write_en == MMIO_WRITE_REQ) begin
 	       hdr.index  = {2'b0, mmio_pkt.addr[15:2]};
 	       hdr.poison = 1'b0;
 	       hdr.tid    = 9'b0;
@@ -460,6 +434,12 @@ module ccip_emulator
 	       end
 	       cwlp_wrvalid = 1;
 	       cwlp_rdvalid = 0;
+	       mmio_pkt.resp_en = 1;
+	       @(posedge clk);
+	       cwlp_wrvalid = 0;
+	       cwlp_rdvalid = 0;
+	       run_clocks(`MMIO_WRITE_LATRANGE);
+	       mmio_response(mmio_pkt);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
@@ -472,18 +452,20 @@ module ccip_emulator
 	       cwlp_rdvalid = 1;
 	       tid_array[ mmio_tid_counter ] = hdr.index;
     	       mmio_tid_counter  = mmio_tid_counter + 1;
+	       @(posedge clk);
+	       cwlp_wrvalid = 0;
+	       cwlp_rdvalid = 0;
+	       mmio_resp_pkt = mmio_pkt;
+	       run_clocks(`MMIO_READ_LATRANGE);
 	    end
-	    @(posedge clk);
-	    cwlp_wrvalid = 0;
-	    cwlp_rdvalid = 0;
 	 end
       end
    endtask
 
    // CSR readreq/write FIFO data
    assign mmioreq_din = {cwlp_wrvalid, cwlp_rdvalid, cwlp_header, cwlp_data};
-   assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid; 
-      
+   assign mmioreq_write = cwlp_wrvalid | cwlp_rdvalid;
+
    // Request staging
    ase_fifo
      #(
@@ -510,23 +492,23 @@ module ccip_emulator
 
    CfgHdr_t DBG_cfgheader;
    assign DBG_cfgheader = CfgHdr_t'(cwlp_header);
-    
+
 
    // CSR activity engine *FIXME*
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 sw_reset_trig <= 0;	 
+	 sw_reset_trig <= 0;
       end
       else begin
-	 sw_reset_trig <= 1;	 
+	 sw_reset_trig <= 1;
       end
    end
-   
+
    /*
     * MMIO Read response
     */
    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
-   
+
    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_din;
    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
    logic 			   mmioresp_write;
@@ -535,8 +517,6 @@ module ccip_emulator
    logic 			   mmioresp_valid;
    logic 			   mmioresp_full;
    logic 			   mmioresp_empty;
-
-//    import "DPI-C" function void mmio_update_dex(int mmioaddr64, bit [63:0] mmiodata );
 
    // Response staging FIFO
    ase_fifo
@@ -562,24 +542,21 @@ module ccip_emulator
       .underflow  (  )
       );
 
-//    assign mmioresp_din = { mmio_rsptid, mmio_rspdata };
-//    assign mmioresp_write = mmio_rspvalid;
-
    // FIFO writes to memory
-   // always @(posedge clk) begin
-   //    if (rst) begin
-   // 	 mmio_dispatch (1, {0, 0, 0, 0, 0});
-   //    end
-   //    else begin
-   // 	 // if (~mmioresp_empty) begin
-   // 	 //    mmioresp_read <= 1;
-   // 	 //    mmio_update_dex( {tid_array[ mmioresp_dout[MMIORESP_FIFO_WIDTH-1:CCIP_MMIO_RDDATA_WIDTH] ], 2'b0} , mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0]);
-   // 	 // end
-   // 	 // else begin
-   // 	 //    mmioresp_read <= 0;
-   // 	 // end
-   //    end
-   // end
+   always @(posedge clk) begin
+      if (rst) begin
+	 mmioresp_read <= 0;
+      end
+      else begin
+   	 if (~mmioresp_empty) begin
+   	    mmioresp_read <= 1;
+   	    mmio_response ( mmio_resp_pkt );
+   	 end
+   	 else begin
+   	    mmioresp_read <= 0;
+   	 end
+      end
+   end
 
 
 
@@ -879,7 +856,7 @@ module ccip_emulator
    /*
     * as2cf_fifo_ch0
     * Format: {mmiowrvalid, mmiordvalid, rdvalid, wrvalid, umsgvalid, hdr, data}
-    */   
+    */
    ase_fifo
      #(
        .DATA_WIDTH (ASE_RX0_PATHWIDTH)
@@ -902,9 +879,9 @@ module ccip_emulator
       );
 
    assign as2cf_fifo_ch0_pop = ~as2cf_fifo_ch0_empty & as2cf_fifo_ch0_read;
-   
-   
-   
+
+
+
    /*
     * as2cf_fifo_ch1
     * Format:  {intrvalid, wrvalid, hdr}
@@ -936,9 +913,9 @@ module ccip_emulator
     * ------------------------------------------------------------
     * - MMIO Request management
     *   When request is seen in mmioreq_* FIFO, it is forwarded to as2cf_fifo_ch0
-    *    
-    * 
-    */ 
+    *
+    *
+    */
 
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -949,7 +926,7 @@ module ccip_emulator
 	 C0RxUMsgValid <= 1'b0;
 	 C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
 	 C0RxData <= {CCIP_DATA_WIDTH{1'b0}};
-	 mmioreq_read <= 1'b0;	 
+	 mmioreq_read <= 1'b0;
       end
       else begin
 	 if (~mmioreq_empty) begin
@@ -959,8 +936,8 @@ module ccip_emulator
 	    C0RxRdValid <= 1'b0;
 	    C0RxUMsgValid <= 1'b0;
 	    C0RxHdr <= RxHdr_t'(mmio_hdrvec);
-	    C0RxData <= mmio_data512;	 	    
-	    mmioreq_read <= 1'b1;	 
+	    C0RxData <= mmio_data512;
+	    mmioreq_read <= 1'b1;
 	 end
 	 else begin
 	    C0RxMMIOWrValid <= 1'b0;
@@ -969,17 +946,17 @@ module ccip_emulator
 	    C0RxRdValid <= 1'b0;
 	    C0RxUMsgValid <= 1'b0;
 	    C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
-	    C0RxData <= {CCIP_DATA_WIDTH{1'b0}};	 
-	    mmioreq_read <= 1'b0;	 
+	    C0RxData <= {CCIP_DATA_WIDTH{1'b0}};
+	    mmioreq_read <= 1'b0;
 	 end
       end
    end
 
-   
+
    /*
     * RX1 Channel management
     * --------------------------------------------------------------
-    * 
+    *
     */
 
 
@@ -1067,7 +1044,7 @@ module ccip_emulator
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, 0, 0});
-      
+
       // Globally write CONFIG, SCRIPT paths
       if (config_filepath.len() != 0) begin
 	 sv2c_config_dex(config_filepath);

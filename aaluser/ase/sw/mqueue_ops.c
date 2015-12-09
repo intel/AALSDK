@@ -244,9 +244,9 @@ void mqueue_send(int mq, char* str)
   FUNC_CALL_ENTRY;
   
   write(mq, str, ASE_MQ_MSGSIZE);  
-#ifdef ASE_MSG_VIEW
-  printf("ASEmsg TX => %s\n", str);
-#endif
+/* #ifdef ASE_MSG_VIEW */
+/*   printf("ASEmsg TX => %s\n", str); */
+/* #endif */
   
   FUNC_CALL_EXIT;
 }

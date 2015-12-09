@@ -50,7 +50,8 @@ pthread_mutex_t lock;
 // CSR Map
 /* uint32_t csr_map[CSR_MAP_SIZE/4]; */
 uint32_t mmio_write_cnt = 0;
-uint64_t *ase_csr_base;
+uint32_t mmio_read_cnt = 0;
+uint64_t *mmio_afu_vbase;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -68,7 +69,7 @@ struct buffer_t *spl_pt;
 struct buffer_t *spl_cxt;
 
 // CSR map storage
-struct buffer_t *csr_region;
+struct buffer_t *mmio_region;
 
 /*
  * Send SIMKILL
@@ -97,6 +98,8 @@ void session_init()
 {
   FUNC_CALL_ENTRY;
 
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   ipc_init();
 
   // Initialize lock
@@ -124,16 +127,6 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
-#if 0
-  app2sim_mmio_tx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX, O_WRONLY);
-  app2sim_tx         = mqueue_create(APP2SIM_SMQ_PREFIX, O_WRONLY);
-  sim2app_rx         = mqueue_create(SIM2APP_SMQ_PREFIX, O_RDONLY);
-  app2sim_umsg_tx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX, O_WRONLY);
-  app2sim_simkill_tx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_WRONLY);
-  //#if 0
-  sim2app_intr_rx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX, O_RDONLY);
-#endif
-
   app2sim_tx         = mqueue_open(mq_array[0].name, mq_array[0].perm_flag);
   app2sim_mmioreq_tx = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
   app2sim_umsg_tx    = mqueue_open(mq_array[2].name, mq_array[2].perm_flag);
@@ -150,33 +143,18 @@ void session_init()
   printf("  [APP]  Session started\n");
 
   // Creating CSR map 
-  printf("  [APP]  Creating CSR map...\n");
-  csr_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  csr_region->memsize = CSR_MAP_SIZE;
-  csr_region->is_csrmap = 1;
-  allocate_buffer(csr_region);
+  printf("  [APP]  Creating MMIO region...\n");
+  mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  mmio_region->memsize = MMIO_LENGTH;
+  mmio_region->is_mmiomap = 1;
+  allocate_buffer(mmio_region);
+  mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
+  printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
 
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
-
-
-/*
- * Start ASE RTL simulator
- */
-/* void ase_remote_start_simulator() */
-/* { */
-/*   int ret; */
-/*   ret = system("cd $ASE_WORKDIR ; make sim &"); */
-/*   if (ret == -1) */
-/*     { */
-/*       BEGIN_RED_FONTCOLOR; */
-/*       printf("APP-C : Problem starting simulator, check if executable exists\n"); */
-/*       END_RED_FONTCOLOR; */
-/*       exit(1); */
-/*     } */
-/* } */
 
 
 /*
@@ -191,7 +169,7 @@ void session_deinit()
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating CSR map\n");
   END_YELLOW_FONTCOLOR;
-  deallocate_buffer(csr_region);
+  deallocate_buffer(mmio_region);
 
   if (umas_exist_status == UMAS_ESTABLISHED) 
     {
@@ -217,9 +195,6 @@ void session_deinit()
   mqueue_close(app2sim_tx);
   mqueue_close(sim2app_rx);
   mqueue_close(app2sim_umsg_tx);
-#if 0
-  mqueue_close(sim2app_intr_rx);
-#endif
   mqueue_close(app2sim_simkill_tx);
 
   BEGIN_YELLOW_FONTCOLOR;
@@ -257,7 +232,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   //                     -------------------------
   // ---------------------------------------------------
 
-  mmio_pkt->type = MMIO_WRITE;
+  mmio_pkt->type = MMIO_WRITE_REQ;
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
   mmio_pkt->data = (uint64_t)data;
@@ -273,7 +248,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 #endif
 
   // Update CSR Region
-  mmio_vaddr = (uint32_t*)((uint64_t)csr_region->vbase + offset);
+  mmio_vaddr = (uint32_t*)((uint64_t)mmio_region->vbase + offset);
   *mmio_vaddr = data;
   
   // Send message
@@ -287,6 +262,14 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   mmio_write_cnt++;
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
+
+  // Wait until MMIO response comes back and discard
+  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+#ifdef ASE_DEBUG  
+  printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt);
+#endif
+
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -317,10 +300,10 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   // ---------------------------------------------------
 
   // Update CSR Region
-  mmio_vaddr = (uint64_t*)((uint64_t)csr_region->vbase + offset);
+  mmio_vaddr = (uint64_t*)((uint64_t)mmio_region->vbase + offset);
   *mmio_vaddr = data;
   
-  mmio_pkt->type = MMIO_WRITE;
+  mmio_pkt->type = MMIO_WRITE_REQ;
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
   mmio_pkt->data = (uint64_t)data;
@@ -335,6 +318,14 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   mmio_write_cnt++;
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
+
+  // Wait until MMIO response comes back and discard
+  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+  memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+#ifdef ASE_DEBUG  
+  printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt);
+#endif
+
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -383,13 +374,24 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
+  // Display
+  mmio_read_cnt++;
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
+
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+
+#ifdef ASE_DEBUG  
+  printf("  [APP]  MMIO Read #%d completed\n", mmio_read_cnt);
+#endif
   
+  END_YELLOW_FONTCOLOR;
+
   // Typecast back to mmio_pkt, and update data
-  memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t));
-  *data = (uint32_t)mmio_pkt->data;
+  /* memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t)); */
+  /* *data = (uint32_t)mmio_pkt->data; */
 
   FUNC_CALL_EXIT;
 }
@@ -420,13 +422,24 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
+  // Display
+  mmio_read_cnt++;
+
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
+
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+
+#ifdef ASE_DEBUG  
+  printf("  [APP]  MMIO Read #%d completed\n", mmio_write_cnt);
+#endif
   
   // Typecast back to mmio_pkt, and update data
-  memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t));
-  *data = (uint64_t)mmio_pkt->data;
+  /* memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t)); */
+  /* *data = (uint64_t)mmio_pkt->data; */
+  END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
@@ -467,20 +480,20 @@ void allocate_buffer(struct buffer_t *mem)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
   if(buffer_index_count == 0)
-    /* if (mem->is_csrmap == 1)  */
+    /* if (mem->is_mmiomap == 1)  */
     {
       strcpy(mem->memname, "/csr.");
       strcat(mem->memname, get_timestamp(0) );
     #ifdef ASE_DEBUG
       printf("  DEBUG memname => %s\n", mem->memname);
     #endif      
-      /* mem->is_csrmap = 1; */
+      /* mem->is_mmiomap = 1; */
     }
   else
     {
       sprintf(mem->memname, "/buf%d.", buffer_index_count);
       strcat(mem->memname, get_timestamp(0) );
-      /* mem->is_csrmap = 0; */
+      /* mem->is_mmiomap = 0; */
     }
 
   // Disable private memory flag
@@ -511,18 +524,18 @@ void allocate_buffer(struct buffer_t *mem)
   // Pin ASE CSR base, so CSR Writes can be managed
   if (buffer_index_count == 0)
     {
-      ase_csr_base = (uint64_t*)mem->vbase;
+      mmio_afu_vbase = (uint64_t*)mem->vbase;
     #ifdef ASE_DEBUG
-      printf("  [APP]  ASE CSR virtual base = %p\n", ase_csr_base);
+      printf("  [APP]  ASE CSR virtual base = %p\n", mmio_afu_vbase);
     #endif
     }
 
   // Extend memory to required size
   ftruncate(mem->fd_app, (off_t)mem->memsize);
 
-  // Set ase_csr_base
+  // Set mmio_afu_vbase
   //  if (buffer_index_count == 0)
-  // ase_csr_base = (uint32_t*)mem->vbase;
+  // mmio_afu_vbase = (uint32_t*)mem->vbase;
 
   // Autogenerate buffer index
   mem->index = buffer_index_count++;
@@ -756,182 +769,3 @@ void umas_deinit()
 }
 #endif 
 
-#if 0
-/*
- * setup_spl_cxt_pte : Create SPL Page table and Contexts
- * Setup SPL context and page tables using ASE memory allocation
- * mechanism. SPL will read this from simulated memory regions.
- */
-void setup_spl_cxt_pte(struct buffer_t *dsm, struct buffer_t *afu_cxt)
-{
-  FUNC_CALL_ENTRY;
-
-  // Allocate spaces for shared buffers
-  spl_pt  = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-  spl_cxt = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
-
-  uint64_t num_2mb_chunks;
-  uint64_t *spl_pt_addr;
-  uint64_t afu_cxt_2mb_align;
-  int ii;
-  uint64_t *spl_cxt_vaddr;
-
-  // Calculate number of 2MB chunks
-  num_2mb_chunks = afu_cxt->memsize /(2*1024*1024);
-  if (afu_cxt->memsize - num_2mb_chunks*(2*1024*1024) > 0)
-    num_2mb_chunks++;
-
-  // Print info
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("   AFU CXT size = 0x%x bytes | Number of 2 MB chunks = %lu\n", afu_cxt->memsize, num_2mb_chunks);
-  END_YELLOW_FONTCOLOR;
-
-  // Allocate SPL page table
-  spl_pt->memsize = CL_BYTE_WIDTH * num_2mb_chunks;
-  allocate_buffer(spl_pt);
-
-  // Calculate SPL_PT address and AFU_CXT 2MB bounds
-  for(ii = 0; ii < num_2mb_chunks; ii = ii + 1)
-    {
-      afu_cxt_2mb_align = (uint64_t)afu_cxt->fake_paddr + (uint64_t)(ii*CCI_CHUNK_SIZE);
-      spl_pt_addr       = (uint64_t*)((uint64_t)spl_pt->vbase + CL_BYTE_WIDTH*ii);
-      *spl_pt_addr      = afu_cxt_2mb_align;
-    }
-
-  // SPL context
-  spl_cxt->memsize = 64; // 2 cache lines // but allocating 4 KB
-  allocate_buffer(spl_cxt);
-  spl_cxt_vaddr = (uint64_t*)spl_cxt->vbase;
-  spl_cxt_vaddr[0] = spl_pt->fake_paddr;
-  spl_cxt_vaddr[1] = afu_cxt->vbase;
-  spl_cxt_vaddr[2] = (uint64_t)(num_2mb_chunks << 32) | 0x1;
-  spl_cxt_vaddr[3] = 1;
-
-  FUNC_CALL_EXIT;
-
-}
-
-
-/*
- * SPL Setup DSM: Sets up SPL DSM
- */
-void spl_driver_dsm_setup(struct buffer_t *dsm)
-{
-  FUNC_CALL_ENTRY;
-
-  uint32_t dsm_base_addrl, dsm_base_addrh;
-  uint32_t *dsm_afuid_addr;
-
-  dsm_base_addrh= (uint64_t)dsm->fake_paddr >>32;
-  dsm_base_addrl= (uint32_t)dsm->fake_paddr;
-  dsm_afuid_addr= (uint32_t*)(dsm->vbase + DSM_AFU_ID);
-  *(dsm_afuid_addr+0x0) = 0x0;
-  *(dsm_afuid_addr+0x1) = 0x0;
-  *(dsm_afuid_addr+0x2) = 0x0;
-  *(dsm_afuid_addr+0x3) = 0x0;
-
-  // Write SPL context ASE physical address & DSM address
-  csr_write(SPL_DSM_BASEH_OFF, (uint32_t)dsm_base_addrh);
-  csr_write(SPL_DSM_BASEL_OFF, (uint32_t)dsm_base_addrl);
-  /* csr_write(SPL_CXT_BASEH_OFF, (spl_cxt->fake_paddr >> 32)); */
-  /* csr_write(SPL_CXT_BASEL_OFF, spl_cxt->fake_paddr); */
-
-  // Poll for SPL_ID and print
-  while(*dsm_afuid_addr==0)
-    {
-      usleep(5000);
-    }
-  // sleep(1);
-  printf("\n*** SPL ID %x %x %x %x***\n",
-	 *(dsm_afuid_addr+0x3), *(dsm_afuid_addr+0x2), *(dsm_afuid_addr+0x1), *dsm_afuid_addr);
-
-  FUNC_CALL_EXIT;
-
-}
-
-
-/*
- * SPL Reset
- */
-void spl_driver_reset(struct buffer_t *dsm)
-{
-  FUNC_CALL_ENTRY;
-
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Issuing SPL Reset\n");
-  END_YELLOW_FONTCOLOR;
-  csr_write( SPL_CH_CTRL_OFF, 0x1 );
-  usleep(20);
-  csr_write( SPL_CH_CTRL_OFF, 0x0 );
-
-  FUNC_CALL_EXIT;
-
-}
-
-
-/*
- * AFU DSM poll - signature check
- */
-void spl_driver_afu_setup(struct buffer_t *dsm)
-{
-  FUNC_CALL_ENTRY;
-
-  uint32_t dsm_base_addrl, dsm_base_addrh;
-  uint32_t *dsm_afuid_addr;
-
-  printf("Polling AFU_ID...\n");
-  dsm_base_addrh= (uint64_t)dsm->fake_paddr >>32;
-  dsm_base_addrl= (uint32_t)dsm->fake_paddr;
-  dsm_afuid_addr  = (uint32_t*)(dsm->vbase + DSM_AFU_ID);
-  *(dsm_afuid_addr+0x0) = 0x0;
-  *(dsm_afuid_addr+0x1) = 0x0;
-  *(dsm_afuid_addr+0x2) = 0x0;
-  *(dsm_afuid_addr+0x3) = 0x0;
-  csr_write(AFU_DSM_BASEH_OFF, (uint32_t)dsm_base_addrh);
-  csr_write(AFU_DSM_BASEL_OFF, (uint32_t)dsm_base_addrl);
-
-  while(*dsm_afuid_addr==0)
-    {
-      usleep(5000);
-    }
-
-  printf("\n*** AFU_ID %x %x %x %x***\n", *(dsm_afuid_addr+0x3), *(dsm_afuid_addr+0x2), *(dsm_afuid_addr+0x1), *dsm_afuid_addr);
-}
-
-/*
- * SPL Driver Transaction start
- */
-// void spl_driver_start(struct buffer_t *dsm, struct buffer_t *afu_cxt)
-void spl_driver_start(uint64_t *afu_cxt_vbase)
-{
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("APP-C : Starting SPL ... ");
-  csr_write(SPL_CXT_BASEH_OFF, (spl_cxt->fake_paddr >> 32));
-  csr_write(SPL_CXT_BASEL_OFF, spl_cxt->fake_paddr);
-  /* csr_write(AFU_CXT_BASEH_OFF, (afu_cxt->vbase >> 32)); */
-  /* csr_write(AFU_CXT_BASEL_OFF, afu_cxt->vbase); */
-  csr_write(AFU_CXT_BASEH_OFF, (uint32_t)((uint64_t)afu_cxt_vbase >> 32) );
-  csr_write(AFU_CXT_BASEL_OFF, (uint32_t)((uint64_t)afu_cxt_vbase) );
-  csr_write(SPL_CH_CTRL_OFF, 0x2);
-  printf("DONE\n");
-  END_YELLOW_FONTCOLOR;
-
-  FUNC_CALL_EXIT;
-}
-
-
-/*
- * SPL Driver Transaction stop
- */
-void spl_driver_stop()
-{
-  FUNC_CALL_ENTRY;
-
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  APP-C : Stopping SPL ");
-  END_YELLOW_FONTCOLOR;
-  csr_write(SPL_CH_CTRL_OFF, 0x0);
-
-  FUNC_CALL_EXIT;
-}
-#endif
