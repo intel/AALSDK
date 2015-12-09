@@ -457,6 +457,9 @@ int ase_init()
   signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
   signal(SIGHUP,  start_simkill_countdown);
 
+  // Ignore SIGPIPE *FIXME*: Look for more elegant solution
+  signal(SIGPIPE, SIG_IGN);
+
   // Get PID
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
