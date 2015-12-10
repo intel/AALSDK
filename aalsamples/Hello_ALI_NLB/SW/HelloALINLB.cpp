@@ -122,12 +122,6 @@ using namespace AAL;
 class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
-   enum WorkspaceType   ///<Type of Workspace being allocated
-   {
-      WKSPC_DSM, ///< Device Status Memory
-      WKSPC_IN,  ///< Input workspace
-      WKSPC_OUT  ///< Output workspace
-   };
 
    HelloALINLBApp();
    ~HelloALINLBApp();
@@ -304,14 +298,14 @@ btInt HelloALINLBApp::run()
       m_Sem.Wait();
       return -1;
    }
-   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
-   //   In workspaceAllocated() callback we allocate the rest
+   // Allocate 3 Workspaces .
    if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       return -1;
    }
    m_DSMSize = LPBK1_DSM_SIZE;
+   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
    if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
       m_bIsOK = false;
@@ -319,6 +313,7 @@ btInt HelloALINLBApp::run()
       return -1;
    }
    m_InputSize = LPBK1_BUFFER_SIZE;
+   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 
    if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
@@ -327,6 +322,7 @@ btInt HelloALINLBApp::run()
    }
 
    m_OutputSize = LPBK1_BUFFER_SIZE;
+   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
@@ -351,7 +347,7 @@ btInt HelloALINLBApp::run()
       //=============================
       MSG("Running Test");
 
-#define SIMULATED
+//#define SIMULATED
 
 #if defined (SIMULATED)
 
@@ -401,7 +397,7 @@ btInt HelloALINLBApp::run()
       SleepSec(5);
       #endif /* ASE AFU */
 
-      __sync_synchronize();
+
 
       // Set input workspace address
       m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
