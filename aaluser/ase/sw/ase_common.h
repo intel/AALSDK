@@ -469,13 +469,11 @@ struct ase_cfg_t *cfg;
  */
 // CCI transaction packet
 typedef struct {
-  long long meta;
+  int       write_en;
+  long      mdata;
+  long long cl_addr;
   long long qword[8];
-  int       cfgvalid;
-  int       wrvalid;
-  int       rdvalid;
-  int       intrvalid;
-  int       umsgvalid; 	       
+  int       resp_en;
 } cci_pkt;
 
 
@@ -503,9 +501,9 @@ void start_simkill_countdown();
 void run_clocks(int num_clocks);
 
 // Read system memory line
-void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
+void rd_memline_dex( cci_pkt *pkt );
 // Write system memory line
-void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
+void wr_memline_dex( cci_pkt *pkt );
 
 // MMIO request 
 // void mmio_dispatch(int init, int wren, int addr, long long data, int dwidth);

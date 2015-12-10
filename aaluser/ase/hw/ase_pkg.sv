@@ -94,6 +94,60 @@ package ase_pkg;
    parameter CCIP_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
 
+   
+   /* ***********************************************************
+    * CCI-P headers
+    * RxHdr, TxHdr, CCIP Packets
+    * ***********************************************************/
+   // RxHdr
+   typedef struct packed {
+      logic [1:0] vc;       // 27:26  // Virtual channel select
+      logic       poison;   // 25     // Poison bit
+      logic       hitmiss;  // 24     // Hit/miss indicator
+      logic       format;   // 23     // Multi-CL enable
+      logic       rsvd22;   // 22     // X
+      logic [1:0] clnum;    // 21:20  // Cache line number
+      logic [3:0] resptype; // 19:16  // Response type
+      logic [15:0] mdata;   // 15:0   // Metadata
+   } RxHdr_t;
+   parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
+
+   // TxHdr
+   typedef struct packed {
+      logic [1:0]  vc;       // 73:72  // Virtual channel select
+      logic 	   sop;      // 71     // Start of packet
+      logic 	   rsvd70;   // 70     // X
+      logic [1:0]  len;      // 69:68  // Length
+      logic [3:0]  reqtype;  // 67:64  // Request Type
+      logic [5:0]  rsvd63_58;// 63:58  // X
+      logic [41:0] addr;     // 57:16  // Address
+      logic [15:0] mdata;    // 15:0   // Metadata
+   } TxHdr_t;
+   parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
+
+   // CfgHdr
+   typedef struct packed {
+      logic [15:0] index;
+      logic [1:0]  len;
+      logic 	   poison;
+      logic [8:0]  tid;
+      } CfgHdr_t;
+   parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
+
+   // MMIO header
+   typedef struct packed {
+      logic [8:0] tid;
+      } MMIOHdr_t;
+   parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
+
+
+   // Config channel
+   parameter CCIP_MMIO_ADDR_WIDTH   = 16;
+   parameter CCIP_MMIO_INDEX_WIDTH  = 14;
+   parameter CCIP_MMIO_RDDATA_WIDTH = 64;
+
+
+   
    /*
     * TX header deconstruction
     */
@@ -164,13 +218,12 @@ package ase_pkg;
     * CCI Transaction packet
     */
    typedef struct {
-      longint     meta;
+      int         write_en;
+      int 	  vc;
+      int 	  mdata;
+      longint 	  cl_addr;
       longint     qword[8];
-      int 	  cfgvalid;
-      int 	  wrvalid;
-      int 	  rdvalid;
-      int 	  intrvalid;
-      int 	  umsgvalid;
+      int 	  resp_en;
    } cci_pkt;
 
 
@@ -192,7 +245,7 @@ package ase_pkg;
 
    /*
     * MMIO packet
-    */  
+    */
    typedef struct {
       int 	  write_en;
       int 	  width;
@@ -200,7 +253,7 @@ package ase_pkg;
       longint 	  data;
       int 	  resp_en;
       } mmio_t;
-   
+
 
    // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
@@ -209,8 +262,8 @@ package ase_pkg;
    // Length
    parameter int  MMIO_WIDTH_32 = 32;
    parameter int  MMIO_WIDTH_64 = 64;
-   
-   
+
+
    /*
     * UMSG Hint/Data state machine
     */
@@ -244,85 +297,113 @@ package ase_pkg;
       logic [CCIP_DATA_WIDTH-1:0] 	 ret;
       int 				 i;
       begin
-	 ret[  63:00  ] = pkt.qword[0] ;
-	 ret[ 127:64  ] = pkt.qword[1] ;
-	 ret[ 191:128 ] = pkt.qword[2] ;
-	 ret[ 255:192 ] = pkt.qword[3] ;
-	 ret[ 319:256 ] = pkt.qword[4] ;
-	 ret[ 383:320 ] = pkt.qword[5] ;
-	 ret[ 447:384 ] = pkt.qword[6] ;
-	 ret[ 511:448 ] = pkt.qword[7] ;
-	 return ret;
+   	 ret[  63:00  ] = pkt.qword[0] ;
+   	 ret[ 127:64  ] = pkt.qword[1] ;
+   	 ret[ 191:128 ] = pkt.qword[2] ;
+   	 ret[ 255:192 ] = pkt.qword[3] ;
+   	 ret[ 319:256 ] = pkt.qword[4] ;
+   	 ret[ 383:320 ] = pkt.qword[5] ;
+   	 ret[ 447:384 ] = pkt.qword[6] ;
+   	 ret[ 511:448 ] = pkt.qword[7] ;
+   	 return ret;
       end
    endfunction
 
    /*
     * FUNCTION: Pack data vector into qwords[0:7]
     */
-   function automatic void pack_vector_to_ccipkt (input [511:0] vec, ref cci_pkt pkt);
+   // function automatic void pack_vector_to_ccipkt (input [511:0] vec,
+   // 						  ref cci_pkt pkt);
+   //    begin
+   // 	 pkt.qword[0] =  vec[  63:00 ];
+   // 	 pkt.qword[1] =  vec[ 127:64  ];
+   // 	 pkt.qword[2] =  vec[ 191:128 ];
+   // 	 pkt.qword[3] =  vec[ 255:192 ];
+   // 	 pkt.qword[4] =  vec[ 319:256 ];
+   // 	 pkt.qword[5] =  vec[ 383:320 ];
+   // 	 pkt.qword[6] =  vec[ 447:384 ];
+   // 	 pkt.qword[7] =  vec[ 511:448 ];
+   //    end
+   // endfunction
+
+
+   /*
+    * FUNCTION: conv_gbsize_to_num_bytes
+    * Converts GB size to num_bytes
+    */
+   function automatic longint conv_gbsize_to_num_bytes(int gb_size);
       begin
-	 pkt.qword[0] =  vec[  63:00 ];
-	 pkt.qword[1] =  vec[ 127:64  ];
-	 pkt.qword[2] =  vec[ 191:128 ];
-	 pkt.qword[3] =  vec[ 255:192 ];
-	 pkt.qword[4] =  vec[ 319:256 ];
-	 pkt.qword[5] =  vec[ 383:320 ];
-	 pkt.qword[6] =  vec[ 447:384 ];
-	 pkt.qword[7] =  vec[ 511:448 ];
+	 return (gb_size*1024*1024*1024);
       end
    endfunction
 
 
-   /* ***********************************************************
-    * CCI-P headers
-    * RxHdr, TxHdr, CCIP Packets
-    * ***********************************************************/
-   // RxHdr
-   typedef struct packed {
-      logic [1:0] vc;       // 27:26  // Virtual channel select
-      logic       poison;   // 25     // Poison bit
-      logic       hitmiss;  // 24     // Hit/miss indicator
-      logic       format;   // 23     // Multi-CL enable
-      logic       rsvd22;   // 22     // X
-      logic [1:0] clnum;    // 21:20  // Cache line number
-      logic [3:0] resptype; // 19:16  // Response type
-      logic [15:0] mdata;   // 15:0   // Metadata
-   } RxHdr_t;
-   parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
+   /*
+    * FUNCTION: Return absolute value
+    */
+   function automatic int abs_val(int num);
+      begin
+	 return (num < 0) ? ~num : num;
+      end
+   endfunction
 
-   // TxHdr
-   typedef struct packed {
-      logic [1:0]  vc;       // 73:72  // Virtual channel select
-      logic 	   sop;      // 71     // Start of packet
-      logic 	   rsvd70;   // 70     // X
-      logic [1:0]  len;      // 69:68  // Length
-      logic [3:0]  reqtype;  // 67:64  // Request Type
-      logic [5:0]  rsvd63_58;// 63:58  // X
-      logic [41:0] addr;     // 57:16  // Address
-      logic [15:0] mdata;    // 15:0   // Metadata
-   } TxHdr_t;
-   parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
-   // CfgHdr
-   typedef struct packed {
-      logic [15:0] index;
-      logic [1:0]  len;
-      logic 	   poison;
-      logic [8:0]  tid;  
-      } CfgHdr_t;
-   parameter CCIP_CFG_HDR_WIDTH    = $bits(CfgHdr_t);
+   /*
+    * Request type checkers
+    */
+   // Read request checker
+   function automatic logic check_if_rdreq(input logic [3:0] reqtype);
+      begin
+	 case (reqtype)
+	   CCIP_TX0_RDLINE_S : return 1'b1;
+	   CCIP_TX0_RDLINE_I : return 1'b1;
+	   CCIP_TX0_RDLINE_E : return 1'b1;
+	   default           : return 1'b0;
+	 endcase
+      end
+   endfunction
 
-   // MMIO header
-   typedef struct packed {
-      logic [8:0] tid; 
-      } MMIOHdr_t;
-   parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
+   // Write type checker
+   function automatic logic check_if_wrreq(input logic [3:0] reqtype);
+      begin
+	 case (reqtype)
+	   CCIP_TX1_WRLINE_I : return 1'b1;
+	   CCIP_TX1_WRLINE_M : return 1'b1;
+	   default           : return 1'b0;	   
+	 endcase
+      end
+   endfunction
+
    
-      
-   // Config channel
-   parameter CCIP_MMIO_ADDR_WIDTH   = 16;
-   parameter CCIP_MMIO_INDEX_WIDTH  = 14;
-   parameter CCIP_MMIO_RDDATA_WIDTH = 64;
+   /*
+    * FUNCTION: Cast TxHdr_t to cci_pkt
+    */
+   function automatic void cast_txhdr_to_ccipkt (ref   cci_pkt               pkt,
+						 input int                   write_en,
+						 input TxHdr_t               txhdr,
+						 input [CCIP_DATA_WIDTH-1:0] txdata);
+      begin
+	 // Write enable
+	 pkt.write_en = int'(write_en);
+	 // Metadata
+	 pkt.vc       = int'(txhdr.vc);	 
+	 pkt.mdata    = int'(txhdr.mdata);
+	 // cache line address
+	 pkt.cl_addr  = longint'(txhdr.addr);
+	 // Qword assignment
+	 pkt.qword[0] =  txdata[  63:00 ];
+	 pkt.qword[1] =  txdata[ 127:64  ];
+	 pkt.qword[2] =  txdata[ 191:128 ];
+	 pkt.qword[3] =  txdata[ 255:192 ];
+	 pkt.qword[4] =  txdata[ 319:256 ];
+	 pkt.qword[5] =  txdata[ 383:320 ];
+	 pkt.qword[6] =  txdata[ 447:384 ];
+	 pkt.qword[7] =  txdata[ 511:448 ];
+	 // Response
+	 pkt.resp_en = 0;
+      end
+   endfunction
+
 
 
 endpackage

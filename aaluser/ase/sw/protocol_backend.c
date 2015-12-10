@@ -111,37 +111,22 @@ void sv2c_script_dex(const char *str)
 /*
  * DPI: WriteLine Data exchange
  */
-void wr_memline_dex(cci_pkt *pkt, longint *cl_addr, int *mdata, char *wr_data )
+void wr_memline_dex(cci_pkt *pkt)
 {
   FUNC_CALL_ENTRY;
-  uint64_t* wr_target_vaddr = (uint64_t*)NULL;
-  uint64_t fake_wr_addr = 0;
-  int i;
 
-  // Generate fake byte address
-  fake_wr_addr = (uint64_t)(*cl_addr) << 6;
-  // Decode virtual address
-  wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)fake_wr_addr);
+  uint64_t phys_addr;
+  uint64_t *wr_target_vaddr = (uint64_t*)NULL;
 
-  // Mem-copy from TX1 packet to system memory
-  memcpy(wr_target_vaddr, wr_data, CL_BYTE_WIDTH);
+  // Get cl_addr, deduce wr_target_vaddr
+  phys_addr = (uint64_t)pkt->cl_addr << 6;
+  wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
 
-  //////////// Write this to RX-path //////////////
-  // Zero out data buffer
-  for(i = 0; i < 8; i++)
-    pkt->qword[i] = 0x0;
+  // Write to memory
+  memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
 
-  // Loop around metadata
-  pkt->meta = (ASE_RX0_WR_RESP << 14) | (*mdata);
-
-  // Valid signals
-  pkt->cfgvalid = 0;
-  pkt->wrvalid  = 1;
-  pkt->rdvalid  = 0;
-  pkt->intrvalid = 0;
-  pkt->umsgvalid = 0;
-
-  // ase_write_cnt++;
+  // Enable response
+  pkt->resp_en = 1;
 
   FUNC_CALL_EXIT;
 }
@@ -150,40 +135,29 @@ void wr_memline_dex(cci_pkt *pkt, longint *cl_addr, int *mdata, char *wr_data )
 /*
  * DPI: ReadLine Data exchange
  */
-void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
+void rd_memline_dex(cci_pkt *pkt )
 {
   FUNC_CALL_ENTRY;
 
-  uint64_t fake_rd_addr = 0;
-  uint64_t* rd_target_vaddr = (uint64_t*) NULL;
+  uint64_t phys_addr;
+  uint64_t *rd_target_vaddr = (uint64_t*)NULL;
 
-  // Fake CL address to fake address conversion
-  fake_rd_addr = (uint64_t)(*cl_addr) << 6;
+  // Get cl_addr, deduce rd_target_vaddr
+  phys_addr = (uint64_t)pkt->cl_addr << 6;
+  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+  
+  // Read from memory
+  memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
 
-  // Calculate Virtualized SHIM address (translation table)
-  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)fake_rd_addr);
-
-  // Copy data to memory
-  memcpy(pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
-
-  // Loop around metadata
-  pkt->meta = (ASE_RX0_RD_RESP << 14) | (*mdata);
-
-  // Valid signals
-  pkt->cfgvalid = 0;
-  pkt->wrvalid  = 0;
-  pkt->rdvalid  = 1;
-  pkt->intrvalid = 0;
-  pkt->umsgvalid = 0;
-
-  // ase_read_cnt++;
+  // Enable response
+  pkt->resp_en = 1; 
 
   FUNC_CALL_EXIT;
 }
 
 
 /*
- * DPI: MMIO update 
+ * DPI: MMIO response
  */ 
 void mmio_response (struct mmio_t *mmio_pkt)
 {
@@ -216,12 +190,18 @@ void mmio_response (struct mmio_t *mmio_pkt)
 }
 
 
-// -----------------------------------------------------------------------
-// vbase/pbase exchange THREAD
-// when an allocate request is received, the buffer is copied into a
-// linked list. The reply consists of the pbase, fakeaddr and fd_ase.
-// When a deallocate message is received, the buffer is invalidated.
-// -----------------------------------------------------------------------
+/* ********************************************************************
+ * ASE Listener thread
+ * --------------------------------------------------------------------
+ * vbase/pbase exchange THREAD
+ * when an allocate request is received, the buffer is copied into a
+ * linked list. The reply consists of the pbase, fakeaddr and fd_ase.
+ * When a deallocate message is received, the buffer is invalidated.
+ *
+ * MMIO Request 
+ * Calls MMIO Dispatch task in ccip_emulator
+ *
+ * *******************************************************************/
 int ase_listener()
 {
   //   FUNC_CALL_ENTRY;

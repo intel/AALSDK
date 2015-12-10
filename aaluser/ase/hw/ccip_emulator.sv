@@ -146,41 +146,34 @@ module ccip_emulator
     */
    // Scope function
    import "DPI-C" function void scope_function();
-   // import "DPI-C" function void ccip_emulator_scope_function();
+
    // ASE Initialize function
    import "DPI-C" context task ase_init();
    // Indication that ASE is ready
    import "DPI-C" function void ase_ready();
+
    // Global listener function
    import "DPI-C" context task ase_listener();
 
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
-
    // Unordered message dispatch
    // export "DPI-C" task umsg_dispatch;
-
    // MMIO dispatch
    export "DPI-C" task mmio_dispatch;
-
-   // CAPCM initilize
-   // import "DPI-C" context task capcm_init();
 
    // Start simulation structures teardown
    import "DPI-C" context task start_simkill_countdown();
    // Signal to kill simulation
    export "DPI-C" task simkill;
 
-   // Signal to cci_logger to write string to log file
-   // export "DPI-C" task buffer_messages;
-
    // CONFIG, SCRIPT DEX operations
    import "DPI-C" function void sv2c_config_dex(string str);
    import "DPI-C" function void sv2c_script_dex(string str);
 
-   // Data exchange for READ, WRITE system/CAPCM memory line
-   import "DPI-C" function void rd_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata );
-   import "DPI-C" function void wr_memline_dex(inout cci_pkt foo, inout int cl_addr, inout int mdata, inout bit [511:0] wr_data );
+   // Data exchange for READ, WRITE system
+   import "DPI-C" function void rd_memline_dex(inout cci_pkt foo );
+   import "DPI-C" function void wr_memline_dex(inout cci_pkt foo );
 
    // MMIO response
    import "DPI-C" function void mmio_response(inout mmio_t mmio_pkt);
@@ -189,22 +182,9 @@ module ccip_emulator
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
-   // Declare packets for each channel
-   cci_pkt rx0_pkt, rx1_pkt;
-
    // Scope generator
    // initial ccip_emulator_scope_function();
    initial scope_function();
-
-
-   /*
-    * FUNCTION: Convert CAPCM_GB_SIZE to NUM_BYTES
-    */
-   function automatic longint conv_gbsize_to_num_bytes(int gb_size);
-      begin
-	 return (gb_size*1024*1024*1024);
-      end
-   endfunction
 
 
    /*
@@ -237,15 +217,6 @@ module ccip_emulator
    initial $value$plusargs("SCRIPT=%S", script_filepath);
 `endif
 
-
-   /*
-    * FUNCTION: Return absolute value
-    */
-   function automatic int abs_val(int num);
-      begin
-	 return (num < 0) ? ~num : num;
-      end
-   endfunction
 
    // Finish logger command
    int finish_logger = 0;
@@ -391,7 +362,7 @@ module ccip_emulator
    logic 				     mmioreq_valid;
    logic 				     mmioreq_full;
    logic 				     mmioreq_empty;
-   int 					     mmioreq_count;
+   logic [4:0] 				     mmioreq_count;
 
    logic [CCIP_CFG_HDR_WIDTH-1:0] 	     cwlp_header;
    logic [CCIP_DATA_WIDTH-1:0] 		     cwlp_data;
@@ -529,7 +500,7 @@ module ccip_emulator
    mmioresp_fifo
      (
       .clk        ( clk ),
-      .rst        ( rst ),
+      .rst        ( ~sys_reset_n ),
       .wr_en      ( C2TxMMIORdValid ),
       .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
       .rd_en      ( ~mmioresp_empty & mmioresp_read ),
@@ -545,7 +516,7 @@ module ccip_emulator
 
    // FIFO writes to memory
    always @(posedge clk) begin
-      if (rst) begin
+      if (~sys_reset_n) begin
 	 mmioresp_read <= 0;
       end
       else begin
@@ -668,78 +639,89 @@ module ccip_emulator
    endtask
 
 
-   /*
-    * Task : String logs to cci_logger
-    */
-   // logic cci_logger_msg_en;
-   // string cci_logger_msg;
-
-   // task buffer_messages (int init, string log_string);
-   //    begin
-   // 	 if (init == 1) begin
-   // 	    cci_logger_msg_en = 0;
-   // 	 end
-   // 	 else begin
-   // 	    cci_logger_msg = log_string;
-   // 	    cci_logger_msg_en = 1;
-   // 	    @(posedge clk);
-   // 	    cci_logger_msg_en = 0;
-   // 	 end
-   //    end
-   // endtask
-
-
-   /*
+   /* *******************************************************************
+    *
     * Unified message watcher daemon
-    */
+    * - Looks for MMIO Requests, buffer requests
+    *
+    * *******************************************************************/
    always @(posedge clk) begin : daemon_proc
       ase_listener();
    end
 
 
    /* *******************************************************************
-    * Staging incoming requests for fulfillment
-    *            | LOWLAT | PCIE
-    * OME2       |   1    |  0
-    * BDX+FPGA   |   1    |  2
     *
-    * CCIP is assumed to be an overall unordered interface with QPI +
-    * n*PCIE downstream ports. ASE intends to present one CCIP port to
-    * the AFU
+    * TX to RX channel FULFILLMENT
+    *
+    * -------------------------------------------------------------------
+    * stg0       | stg1        | stg2      | stg3
+    * -------------------------------------------------
+    * latbuf_out | cast & fulfill | Response
+    *            | tx_pkt         | tx_pkt_q
     *
     * *******************************************************************/
-   // CAFU->ASE CH0
-   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch0_header;
-   logic 			 cf2as_latbuf_ch0_pop;
-   logic 			 cf2as_latbuf_ch0_read;
-   logic 			 cf2as_latbuf_ch0_empty;
-   logic 			 cf2as_latbuf_ch0_empty_q;
-   logic 			 cf2as_latbuf_ch0_valid;
-   logic [31:0] 		 cf2as_latbuf_ch0_claddr;
-   logic [13:0] 		 cf2as_latbuf_ch0_meta;
+   // Read response staging signals
+   logic [CCIP_DATA_WIDTH-1:0] rdrsp_data_in, rdrsp_data_out;
+   RxHdr_t                     rdrsp_hdr_in, rdrsp_hdr_out;
+   logic 		       rdrsp_write;
+   logic 		       rdrsp_read;
+   logic 		       rdrsp_full;
+   logic 		       rdrsp_empty;
+   logic 		       rdrsp_valid;
 
-   // CAFU->ASE CH0
-   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_ch1_header;
-   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data;
-   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_0;
-   logic [CCIP_DATA_WIDTH-1:0] 	 cf2as_latbuf_ch1_data_1;
-   logic 			 cf2as_latbuf_ch1_pop;
-   logic 			 cf2as_latbuf_ch1_read_0;
-   logic 			 cf2as_latbuf_ch1_read_1;
-   logic 			 cf2as_latbuf_ch1_read;
-   logic 			 cf2as_latbuf_ch1_empty;
-   logic 			 cf2as_latbuf_ch1_empty_q;
-   logic 			 cf2as_latbuf_ch1_valid;
-   logic [41:0] 		 cf2as_latbuf_ch1_claddr;
-   logic [41:0] 		 cf2as_latbuf_ch1_claddr_0;
-   logic [41:0] 		 cf2as_latbuf_ch1_claddr_1;
-   logic [15:0] 		 cf2as_latbuf_ch1_meta;
-   logic [15:0] 		 cf2as_latbuf_ch1_meta_0;
-   logic [15:0] 		 cf2as_latbuf_ch1_meta_1;
+   // Write response 0 staging signals
+   logic [CCIP_DATA_WIDTH-1:0] wr0rsp_data_in, wr0rsp_data_out;
+   RxHdr_t                     wr0rsp_hdr_in, wr0rsp_hdr_out;
+   logic 		       wr0rsp_write;
+   logic 		       wr0rsp_read;
+   logic 		       wr0rsp_full;
+   logic 		       wr0rsp_empty;
+   logic 		       wr0rsp_valid;
 
-   // CAFU->ASE CH0 (TX0)
-   // Composed as {header, data}
-   // Latency scoreboard (for latency modeling and shuffling)
+   // Write response 1 staging signals
+   logic [CCIP_DATA_WIDTH-1:0] wr1rsp_data_in, wr1rsp_data_out;
+   RxHdr_t                     wr1rsp_hdr_in, wr1rsp_hdr_out;
+   logic 		       wr1rsp_write;
+   logic 		       wr1rsp_read;
+   logic 		       wr1rsp_full;
+   logic 		       wr1rsp_empty;
+   logic 		       wr1rsp_valid;
+
+   // Declare packets for each channel
+   cci_pkt Tx0toRx0_pkt, Tx0toRx0_pkt_q;
+
+   cci_pkt Tx1toRx0_pkt, Tx1toRx0_pkt_q;
+   cci_pkt Tx1toRx1_pkt, Tx1toRx1_pkt_q;
+
+   logic Tx0toRx0_pkt_vld, Tx0toRx0_pkt_vld_q;
+
+   logic Tx1toRx0_pkt_vld, Tx1toRx0_pkt_vld_q;
+   logic Tx1toRx1_pkt_vld, Tx1toRx1_pkt_vld_q;
+
+
+   // cf2as_latbuf_ch0 signals
+   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
+   TxHdr_t                       cf2as_latbuf_tx0hdr;
+   logic                         cf2as_latbuf_ch0_empty;
+   logic                         cf2as_latbuf_ch0_read;
+
+
+   // cf2as_latbuf_ch1 signals
+   logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
+   logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
+   TxHdr_t                       cf2as_latbuf_tx1hdr;
+   logic 		         cf2as_latbuf_ch1_empty;
+   logic 		         cf2as_latbuf_ch1_read;
+
+   int 				 wrresp_tx2rx_chsel;
+
+
+   /*
+    * CAFU->ASE CH0 (TX0)
+    * Formed as {TxHdr_t}
+    * Latency scoreboard (for latency modeling and shuffling)
+    */
    outoforder_wrf_channel
      #(
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
@@ -756,20 +738,81 @@ module ccip_emulator
       .meta_in		( CCIP_TX_HDR_WIDTH'(C0TxHdr)),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
-      .meta_out		( cf2as_latbuf_ch0_header ),
+      .meta_out		( cf2as_latbuf_tx0hdr_vec ),
       .data_out		(  ),
-      .valid_out	( cf2as_latbuf_ch0_valid ),
-      .read_en		( cf2as_latbuf_ch0_pop ),
+      .valid_out	(  ),
+      .read_en		( ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read ),
       .empty		( cf2as_latbuf_ch0_empty ),
-      .full             ( tx_c0_almostfull ),
+      .full             ( C0TxAlmFull ),
       .overflow         ( tx0_overflow ),
       .underflow        ( tx0_underflow ),
       .count            ( )
       );
 
+   assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
 
-   // CAFU->ASE CH1 (TX1)
-   // Latency scoreboard (latency modeling and shuffling)
+   // stage 1 - Pop read request
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 cf2as_latbuf_ch0_read <= 1'b0;
+	 Tx0toRx0_pkt_vld           <= 1'b0;
+      end
+      else begin
+	 // TX0 - Read Request
+	 if ( ~cf2as_latbuf_ch0_empty && check_if_rdreq(cf2as_latbuf_tx0hdr.reqtype) && ~rdrsp_full ) begin
+	    cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
+				  0,
+				  cf2as_latbuf_tx0hdr,
+				  {CCIP_DATA_WIDTH{1'b0}} );
+	    rd_memline_dex(Tx0toRx0_pkt);
+	    cf2as_latbuf_ch0_read <= 1'b1;
+	    Tx0toRx0_pkt_vld <= 1'b1;
+	 end
+	 // Default case
+	 else begin
+	    cf2as_latbuf_ch0_read <= 1'b0;
+	    Tx0toRx0_pkt_vld <= 1'b0;
+	 end
+      end
+   end
+
+   // Register Tx0toRx0_pkt
+   always @(posedge clk) begin
+      Tx0toRx0_pkt_q     <= Tx0toRx0_pkt;
+      Tx0toRx0_pkt_vld_q <= Tx0toRx0_pkt_vld;
+   end
+
+   // Stage 2 - Stage read response
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
+	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
+	 rdrsp_write <= 1'b0;
+      end
+      else begin
+	 if (Tx0toRx0_pkt_vld_q) begin
+	    rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt_q);
+	    rdrsp_hdr_in.vc       <= Tx0toRx0_pkt_q.vc;
+	    rdrsp_hdr_in.poison   <= 1'b0;
+	    rdrsp_hdr_in.hitmiss  <= 1'b0;
+	    rdrsp_hdr_in.format   <= 1'b0;
+	    rdrsp_hdr_in.rsvd22   <= 1'b0;
+	    rdrsp_hdr_in.clnum    <= 2'b0;
+	    rdrsp_hdr_in.resptype <= CCIP_RX0_RD_RESP;
+	    rdrsp_hdr_in.mdata    <= Tx0toRx0_pkt_q.mdata;
+	    rdrsp_write           <= 1'b0;
+	 end
+	 else begin
+	    rdrsp_write <= 1'b0;
+	 end
+      end
+   end
+
+   /*
+    * CAFU->ASE CH1 (TX1)
+    * Formed as {TxHdr_t, <data_512>}
+    * Latency scoreboard (latency modeling and shuffling)
+    */
    outoforder_wrf_channel
      #(
        .NUM_WAIT_STATIONS(LATBUF_NUM_TRANSACTIONS),
@@ -786,138 +829,234 @@ module ccip_emulator
       .meta_in		( CCIP_TX_HDR_WIDTH'(C1TxHdr) ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
-      .meta_out		( cf2as_latbuf_ch1_header ),
-      .data_out		( cf2as_latbuf_ch1_data ),
-      .valid_out	( cf2as_latbuf_ch1_valid ),
-      .read_en		( cf2as_latbuf_ch1_pop ),
+      .meta_out		( cf2as_latbuf_tx1hdr_vec ),
+      .data_out		( cf2as_latbuf_tx1data ),
+      .valid_out	(  ),
+      .read_en		( ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read  ),
       .empty		( cf2as_latbuf_ch1_empty ),
-      .full             ( tx_c1_almostfull ),
+      .full             ( C1TxAlmFull ),
       .overflow         ( tx1_overflow ),
       .underflow        ( tx1_underflow ),
       .count            ( )
       );
 
-
-   /*
-    * Return response channel
-    * PROBLEM: MUXing between channels 0 and 1 causes dropped transactions
-    *          Replacing with FIFO doesnt seem to change occurance of problem
-    *          Restricting write responses to TX1 seems to be a temporary solution
-    *
-    * DIVE:
-    * - Problem seems to be when ch0_write gets dropped, conditions unknown
-    */
-   int 	 tx_to_rx_channel;
+   assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
-   always @(posedge clk) begin : channel_random_proc
-      if (~sys_reset_n) begin
-	 tx_to_rx_channel	<= 1;
+   function automatic int wrresp_tx2rx_chsel_iter();
+      begin
+	 return 1;
+	 // return (abs_val($random) % 2);
       end
-      else if (cf2as_latbuf_ch1_valid) begin
-	 // tx_to_rx_channel	<= abs_val($random) % 2;
-	 tx_to_rx_channel	<= 1;
-	 // tx_to_rx_channel	<= 0;
+   endfunction
+
+   // TX1 fulfillment flow
+   // stage 1 - pop write request
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 cf2as_latbuf_ch0_read <= 1'b0;
+	 Tx1toRx0_pkt_vld      <= 1'b0;
+	 Tx1toRx1_pkt_vld	  <= 1'b0;
+     end
+      else begin
+	 if (~cf2as_latbuf_ch1_empty && check_if_wrreq(cf2as_latbuf_tx1hdr.reqtype) && (wrresp_tx2rx_chsel_iter() == 0) && ~wr0rsp_full) begin
+	    cast_txhdr_to_ccipkt( Tx1toRx0_pkt,
+				  1,
+				  cf2as_latbuf_tx1hdr,
+				  cf2as_latbuf_tx1data);
+	    wr_memline_dex(Tx1toRx0_pkt);
+	    cf2as_latbuf_ch1_read <= 1'b1;
+	    Tx1toRx0_pkt_vld      <= 1'b1;
+	    Tx1toRx1_pkt_vld	  <= 1'b0;
+	 end
+	 if (~cf2as_latbuf_ch1_empty && check_if_wrreq(cf2as_latbuf_tx1hdr.reqtype) && (wrresp_tx2rx_chsel_iter() == 1) && ~wr1rsp_full) begin
+	    cast_txhdr_to_ccipkt( Tx1toRx1_pkt,
+				  1,
+				  cf2as_latbuf_tx1hdr,
+				  cf2as_latbuf_tx1data);
+	    wr_memline_dex(Tx1toRx1_pkt);
+	    cf2as_latbuf_ch1_read <= 1'b1;
+	    Tx1toRx0_pkt_vld      <= 1'b0;
+	    Tx1toRx1_pkt_vld	  <= 1'b1;
+	 end
+	 else begin
+	    cf2as_latbuf_ch0_read <= 1'b0;
+	    Tx1toRx0_pkt_vld      <= 1'b0;
+	    Tx1toRx1_pkt_vld	  <= 1'b0;
+	 end
+      end
+   end // always @ (posedge clk)
+
+   // Register tx1_pkt
+   always @(posedge clk) begin
+      Tx1toRx0_pkt_q      <= Tx1toRx0_pkt;
+      Tx1toRx1_pkt_q      <= Tx1toRx1_pkt;
+      Tx1toRx0_pkt_vld_q  <= Tx1toRx0_pkt_vld;
+      Tx1toRx1_pkt_vld_q  <= Tx1toRx1_pkt_vld;
+   end
+
+   // Stage 2 - Tx1toRx0 write process
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+	 wr0rsp_write   <= 1'b0;
+      end
+      else begin
+	 if (Tx1toRx0_pkt_vld_q) begin
+	    wr0rsp_hdr_in.vc       <= Tx1toRx0_pkt_q.vc;
+	    wr0rsp_hdr_in.poison   <= 1'b0;
+	    wr0rsp_hdr_in.hitmiss  <= 1'b0;
+	    wr0rsp_hdr_in.format   <= 1'b0;
+	    wr0rsp_hdr_in.rsvd22   <= 1'b0;
+	    wr0rsp_hdr_in.clnum    <= 2'b0;
+	    wr0rsp_hdr_in.resptype <= CCIP_RX0_WR_RESP;
+	    wr0rsp_hdr_in.mdata    <= Tx1toRx0_pkt_q.mdata;
+	    wr0rsp_write           <= 1'b0;
+	 end
+	 else begin
+	    wr0rsp_write   <= 1'b0;
+	 end
+      end
+   end
+
+   // Stage 2 - Tx1toRx1 write process
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 wr1rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+	 wr1rsp_write   <= 1'b0;
+      end
+      else begin
+	 if (Tx1toRx0_pkt_vld_q) begin
+	    wr1rsp_hdr_in.vc       <= Tx1toRx1_pkt_q.vc;
+	    wr1rsp_hdr_in.poison   <= 1'b0;
+	    wr1rsp_hdr_in.hitmiss  <= 1'b0;
+	    wr1rsp_hdr_in.format   <= 1'b0;
+	    wr1rsp_hdr_in.rsvd22   <= 1'b0;
+	    wr1rsp_hdr_in.clnum    <= 2'b0;
+	    wr1rsp_hdr_in.resptype <= CCIP_RX0_WR_RESP;
+	    wr1rsp_hdr_in.mdata    <= Tx1toRx1_pkt_q.mdata;
+	    wr1rsp_write           <= 1'b0;
+	 end
+	 else begin
+	    wr1rsp_write   <= 1'b0;
+	 end
       end
    end
 
 
    /* *******************************************************************
-    * Response path management
-    * - as2cf_fifo_ch0
-    * - as2cf_fifo_ch1
+    * RESPONSE PATHS
+    * -------------------------------------------------------------------
+    * as2cf_rdresp_fifo    | Read Response staging
+    * as2cf_wrresp_fifo    | Write Response staging
+    * as2cf_umsg_fifo      | Unordered message staging *FIXME*
     *
     * *******************************************************************/
-   parameter int 		 ASE_RX0_PATHWIDTH = 5 + CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
-   parameter int 		 ASE_RX1_PATHWIDTH = 2 + CCIP_RX_HDR_WIDTH;
 
-   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_din;
-   logic [ASE_RX0_PATHWIDTH-1:0] as2cf_fifo_ch0_dout;
-   logic 			 as2cf_fifo_ch0_write;
-   logic 			 as2cf_fifo_ch0_read;
-   logic 			 as2cf_fifo_ch0_pop;
-   logic 			 as2cf_fifo_ch0_full;
-   logic 			 as2cf_fifo_ch0_empty;
-   logic 			 as2cf_fifo_ch0_overflow;
-   logic 			 as2cf_fifo_ch0_underflow;
-   logic 			 as2cf_fifo_ch0_valid;
-
-   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_din;
-   logic [ASE_RX1_PATHWIDTH-1:0] as2cf_fifo_ch1_dout;
-   logic 			 as2cf_fifo_ch1_write;
-   logic 			 as2cf_fifo_ch1_read;
-   logic 			 as2cf_fifo_ch1_full;
-   logic 			 as2cf_fifo_ch1_empty;
-   logic 			 as2cf_fifo_ch1_overflow;
-   logic 			 as2cf_fifo_ch1_underflow;
-   logic 			 as2cf_fifo_ch1_valid;
-
+   logic [CCIP_RX_HDR_WIDTH-1:0] rdrsp_hdr_out_vec;
+   logic [CCIP_RX_HDR_WIDTH-1:0] wr0rsp_hdr_out_vec;
+   logic [CCIP_RX_HDR_WIDTH-1:0] wr1rsp_hdr_out_vec;
 
    /*
-    * as2cf_fifo_ch0
-    * Format: {mmiowrvalid, mmiordvalid, rdvalid, wrvalid, umsgvalid, hdr, data}
+    * RX0 Read Response staging
     */
    ase_fifo
      #(
-       .DATA_WIDTH (ASE_RX0_PATHWIDTH)
+       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH ),
+       .DEPTH_BASE2    ( 8 ),
+       .ALMFULL_THRESH ( 250 )
        )
-   as2cf_fifo_ch0
+   rdrsp_fifo
      (
-      .clk        ( clk ),
-      .rst        ( ~sys_reset_n ),
-      .wr_en      ( as2cf_fifo_ch0_write ),
-      .data_in    ( as2cf_fifo_ch0_din ),
-      .rd_en      ( as2cf_fifo_ch0_pop ),
-      .data_out   ( as2cf_fifo_ch0_dout ),
-      .data_out_v ( as2cf_fifo_ch0_valid ),
-      .alm_full   ( as2cf_fifo_ch0_full ),
-      .full       ( ),
-      .empty      ( as2cf_fifo_ch0_empty ),
-      .count      ( ),
-      .overflow   ( as2cf_fifo_ch0_overflow ),
-      .underflow  ( as2cf_fifo_ch0_underflow )
+      .clk             ( clk ),
+      .rst             ( ~sys_reset_n ),
+      .wr_en           ( rdrsp_write ),
+      .data_in         ( { CCIP_RX_HDR_WIDTH'(rdrsp_hdr_in), rdrsp_data_in } ),
+      .rd_en           ( ~rdrsp_empty && rdrsp_read ),
+      .data_out        ( { rdrsp_hdr_out_vec, rdrsp_data_out } ),
+      .data_out_v      ( rsrsp_valid ),
+      .alm_full        ( rdrsp_full ),
+      .full            (),
+      .empty           ( rdrsp_empty ),
+      .count           (),
+      .overflow        (),
+      .underflow       ()
       );
 
-   assign as2cf_fifo_ch0_pop = ~as2cf_fifo_ch0_empty & as2cf_fifo_ch0_read;
-
-
+   assign rdrsp_hdr = RxHdr_t'(rdrsp_hdr_out_vec);
 
    /*
-    * as2cf_fifo_ch1
-    * Format:  {intrvalid, wrvalid, hdr}
+    * RX0 Write Response staging
     */
    ase_fifo
      #(
-       .DATA_WIDTH (ASE_RX1_PATHWIDTH)
+       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
+       .DEPTH_BASE2    ( 7 ),
+       .ALMFULL_THRESH ( 120 )
        )
-   as2cf_fifo_ch1
+   wr0rsp_fifo
      (
-      .clk        ( clk ),
-      .rst        ( ~sys_reset_n ),
-      .wr_en      ( as2cf_fifo_ch1_write ),
-      .data_in    ( as2cf_fifo_ch1_din ),
-      .rd_en      ( as2cf_fifo_ch1_read ),
-      .data_out   ( as2cf_fifo_ch1_dout ),
-      .data_out_v ( as2cf_fifo_ch1_valid ),
-      .alm_full   ( as2cf_fifo_ch1_full ),
-      .full       ( ),
-      .empty      ( as2cf_fifo_ch1_empty ),
-      .count      ( ),
-      .overflow   ( as2cf_fifo_ch1_overflow ),
-      .underflow  ( as2cf_fifo_ch1_underflow )
+      .clk             ( clk ),
+      .rst             ( ~sys_reset_n ),
+      .wr_en           ( wr0rsp_write ),
+      .data_in         ( CCIP_RX_HDR_WIDTH'(wr0rsp_hdr_in) ),
+      .rd_en           ( ~wr0rsp_empty && wr0rsp_read ),
+      .data_out        ( wr0rsp_hdr_out_vec ),
+      .data_out_v      ( wr0rsp_valid ),
+      .alm_full        ( wr0rsp_full ),
+      .full            (),
+      .empty           ( wr0rsp_empty ),
+      .count           (),
+      .overflow        (),
+      .underflow       ()
       );
 
+   assign wr0rsp_hdr = RxHdr_t'(wr0rsp_hdr_out_vec);
 
    /*
+    * RX1 Write Response staging
+    */
+   ase_fifo
+     #(
+       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
+       .DEPTH_BASE2    ( 7 ),
+       .ALMFULL_THRESH ( 120 )
+       )
+   wr1rsp_fifo
+     (
+      .clk             ( clk ),
+      .rst             ( ~sys_reset_n ),
+      .wr_en           ( wr1rsp_write ),
+      .data_in         ( CCIP_RX_HDR_WIDTH'(wr1rsp_hdr_in) ),
+      .rd_en           ( ~wr1rsp_empty && wr1rsp_read ),
+      .data_out        ( wr1rsp_hdr_out_vec ),
+      .data_out_v      ( wr1rsp_valid ),
+      .alm_full        ( wr1rsp_full ),
+      .full            (),
+      .empty           ( wr1rsp_empty ),
+      .count           (),
+      .overflow        (),
+      .underflow       ()
+      );
+
+   assign wr1rsp_hdr = RxHdr_t'(wr1rsp_hdr_out_vec);
+
+
+   /* *******************************************************************
     * RX0 Channel management
-    * ------------------------------------------------------------
+    * -------------------------------------------------------------------
     * - MMIO Request management
-    *   When request is seen in mmioreq_* FIFO, it is forwarded to as2cf_fifo_ch0
+    *   When request is seen in mmioreq_fifo, it is forwarded to
+    *   CCIP-RX0
+    * - Read Response
+    *   When response is seen in as2cf_rdresp_fifo, it is forwarded to
+    *   CCIP-RX0
+    * - Write response
+    *   When response is seen in as2cf_wrresp_fifo & tx2rx_chsel == 0, it
+    *   is forwarded to CCIP-RX0
     *
-    *
-    */
-
+    * *******************************************************************/
    always @(posedge clk) begin
       if (~sys_reset_n) begin
 	 C0RxMMIOWrValid <= 1'b0;
@@ -928,6 +1067,8 @@ module ccip_emulator
 	 C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
 	 C0RxData <= {CCIP_DATA_WIDTH{1'b0}};
 	 mmioreq_read <= 1'b0;
+	 rdrsp_read <= 1'b0;
+	 wr0rsp_read <= 1'b0;
       end
       else begin
 	 if (~mmioreq_empty) begin
@@ -939,6 +1080,20 @@ module ccip_emulator
 	    C0RxHdr <= RxHdr_t'(mmio_hdrvec);
 	    C0RxData <= mmio_data512;
 	    mmioreq_read <= 1'b1;
+	    rdrsp_read <= 1'b0;
+	    wr0rsp_read <= 1'b0;
+	 end
+	 else if (~rdrsp_empty) begin
+	    C0RxMMIOWrValid <= 1'b0;
+	    C0RxMMIORdValid <= 1'b0;
+	    C0RxWrValid <= 1'b0;
+	    C0RxRdValid <= rdrsp_valid;
+	    C0RxUMsgValid <= 1'b0;
+	    C0RxHdr <= rdrsp_hdr_out;
+	    C0RxData <= rdrsp_data_out;
+	    mmioreq_read <= 1'b0;
+	    rdrsp_read <= 1'b1;
+	    wr0rsp_read <= 1'b0;
 	 end
 	 else begin
 	    C0RxMMIOWrValid <= 1'b0;
@@ -949,16 +1104,31 @@ module ccip_emulator
 	    C0RxHdr <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
 	    C0RxData <= {CCIP_DATA_WIDTH{1'b0}};
 	    mmioreq_read <= 1'b0;
+	    rdrsp_read <= 1'b0;
+	    wr0rsp_read <= 1'b0;
 	 end
       end
    end
 
 
-   /*
+   /* *******************************************************************
     * RX1 Channel management
     * --------------------------------------------------------------
+    * - Write response
+    *   When response is seen in as2cf_wrresp_fifo & tx2rx_chsel == 1, it
+    *   is forwarded to CCIP-RX1
     *
-    */
+    * *******************************************************************/
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
+	 C1RxWrValid <= 1'b0;
+	 C1RxIntrValid <= 1'b0;
+	 wr1rsp_read <= 1'b0;
+      end
+      else begin
+      end
+   end
 
 
 
