@@ -9,9 +9,13 @@ declare -r SCRIPT_NAME='run-bat'
 
 declare ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM}"
 
+declare WANTLOGFILE=false
 declare WANTDISTCC=false
 while [ $# -gt 0 ]; do
    case $1 in
+      --log)
+         WANTLOGFILE=true
+      ;;
       --distcc)
          WANTDISTCC=true
       ;;
@@ -22,6 +26,7 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-setup ${WANTDISTCC}
+setup ${WANTLOGFILE} ${WANTDISTCC}
 run_bat ${ARGS}
+show_test_result $?
 exit $?
