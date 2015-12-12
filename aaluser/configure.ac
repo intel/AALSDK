@@ -227,10 +227,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/HWSPLAFU/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
                  utils/SPLAFU/SWSimSPLAFU/Makefile
-                 utils/cciapp/Makefile
-                 utils/splapp/Makefile
-                 utils/splapp2/Makefile
-                 utils/splapp3/Makefile
                  utils/CCILib/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
