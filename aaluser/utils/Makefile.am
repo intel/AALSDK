@@ -39,6 +39,5 @@ data_model \
 fpgasane \
 CCIAFU \
 SPLAFU \
-CCILib \
 ALIAFU
 

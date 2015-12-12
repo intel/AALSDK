@@ -86,7 +86,6 @@ AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [0],[0],[0])
-AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
@@ -227,7 +226,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/SPLAFU/HWSPLAFU/Makefile
                  utils/SPLAFU/ASESPLAFU/Makefile
                  utils/SPLAFU/SWSimSPLAFU/Makefile
-                 utils/CCILib/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile

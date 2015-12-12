@@ -225,7 +225,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aas", "aas", "{D1260D1D-EE0
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ccilib", "ccilib", "{DAD854CB-0B63-4B4E-AEDA-6633544F0A23}"
 	ProjectSection(SolutionItems) = preProject
-		..\include\aalsdk\ccilib\CCILib.h = ..\include\aalsdk\ccilib\CCILib.h
 		..\include\aalsdk\ccilib\ICCIDevice.h = ..\include\aalsdk\ccilib\ICCIDevice.h
 		..\include\aalsdk\ccilib\ICCIDeviceFactory.h = ..\include\aalsdk\ccilib\ICCIDeviceFactory.h
 		..\include\aalsdk\ccilib\ICCIWorkspace.h = ..\include\aalsdk\ccilib\ICCIWorkspace.h
