@@ -260,16 +260,10 @@ include/aalsdk/rm/RegDBSkeleton.h
 servicehdrs_HEADERS=\
 include/aalsdk/service/ICCIAFU.h \
 include/aalsdk/service/ICCIClient.h \
-include/aalsdk/service/ISPLAFU.h \
-include/aalsdk/service/ISPLClient.h \
 include/aalsdk/service/CCIAFUService.h \
 include/aalsdk/service/HWCCIAFUService.h \
 include/aalsdk/service/ASECCIAFUService.h \
 include/aalsdk/service/SWSimCCIAFUService.h \
-include/aalsdk/service/SPLAFUService.h \
-include/aalsdk/service/HWSPLAFUService.h \
-include/aalsdk/service/ASESPLAFUService.h \
-include/aalsdk/service/SWSimSPLAFUService.h \
 include/aalsdk/service/IALIAFU.h \
 include/aalsdk/service/ALIAFUService.h \
 include/aalsdk/service/HWALIAFUService.h \
@@ -383,10 +377,6 @@ include/aalsdk/service/CCIAFUService.h.in \
 include/aalsdk/service/HWCCIAFUService.h.in \
 include/aalsdk/service/ASECCIAFUService.h.in \
 include/aalsdk/service/SWSimCCIAFUService.h.in \
-include/aalsdk/service/SPLAFUService.h.in \
-include/aalsdk/service/HWSPLAFUService.h.in \
-include/aalsdk/service/ASESPLAFUService.h.in \
-include/aalsdk/service/SWSimSPLAFUService.h.in \
 include/aalsdk/service/ALIAFUService.h.in \
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \

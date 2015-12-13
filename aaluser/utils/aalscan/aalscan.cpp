@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+n// Copyright (c) 2014-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -73,18 +73,14 @@ $ aalscan
 3.4.0 libAASRegistrar
 3.4.0 libAASUAIA
 0.0.0 libASECCIAFU
-0.0.0 libASESPLAFU
 0.0.0 libCCIAFU
 0.0.0 libHWCCIAFU
-0.0.0 libHWSPLAFU
 3.4.0 libOSAL
 0.0.0 librrmbroker
 0.0.0 libsampleafu1
 0.0.0 libsampleafu2
 0.0.0 libsamplebroker
-0.0.0 libSPLAFU
 0.0.0 libSWSimCCIAFU
-0.0.0 libSWSimSPLAFU
 0.0.0 libAALRUNTIME@endverbatim
 
 @}

@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Intel Corporation
+n// Copyright (c) 2014, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -123,25 +123,6 @@
 #define SWSIMCCIAFU_VERSION_AGE       0
 #define SWSIMCCIAFU_VERSION           "0.0.0"
 
-#define SPLAFU_VERSION_CURRENT        0
-#define SPLAFU_VERSION_REVISION       0
-#define SPLAFU_VERSION_AGE            0
-#define SPLAFU_VERSION                "0.0.0"
-
-#define HWSPLAFU_VERSION_CURRENT      0
-#define HWSPLAFU_VERSION_REVISION     0
-#define HWSPLAFU_VERSION_AGE          0
-#define HWSPLAFU_VERSION              "0.0.0"
-
-#define ASESPLAFU_VERSION_CURRENT     0
-#define ASESPLAFU_VERSION_REVISION    0
-#define ASESPLAFU_VERSION_AGE         0
-#define ASESPLAFU_VERSION             "0.0.0"
-
-#define SWSIMSPLAFU_VERSION_CURRENT   0
-#define SWSIMSPLAFU_VERSION_REVISION  0
-#define SWSIMSPLAFU_VERSION_AGE       0
-#define SWSIMSPLAFU_VERSION           "0.0.0"
 
 #define STDC_HEADERS  1
 #define HAVE_STDINT_H 1

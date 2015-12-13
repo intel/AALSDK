@@ -229,9 +229,6 @@ AAS_END_MOD()
          /// @defgroup ICCIAFU ICCIAFU - Service interface for interacting with CCI-attached AFU's.
          /// @ingroup AFU 
 
-         /// @defgroup ISPLAFU ISPLAFU - Service interface for interacting with SPL-attached AFU's.
-         /// @ingroup AFU
-
 /// @defgroup UserModeServiceSDK User Mode Service SDK
 /// @brief The User Mode Service SDK provides tools to facilitate designing and building compliant AAL User Mode Services.
 ///
@@ -349,22 +346,6 @@ AAS_END_MOD()
       /// @ingroup CCIAFU 
       /// @brief Simulated CCI access via ICCIAFU.
 
-   /// @defgroup SPLAFU SPLAFU - Generalized Implementation of ISPLAFU
-   /// @ingroup UtilityAFUs
-   /// @brief Facilitates @ref HWSPLAFU "Hardware", @ref ASESPLAFU "ASE", and @ref SWSimSPLAFU "Software-simulated SPL" access via ISPLAFU.
-
-      /// @defgroup HWSPLAFU HWSPLAFU - FPGA Implementation of ISPLAFU
-      /// @ingroup SPLAFU 
-      /// @brief Hardware SPL access via ISPLAFU.
-
-      /// @defgroup ASESPLAFU ASESPLAFU - ASE Implementation of ISPLAFU
-      /// @ingroup SPLAFU 
-      /// @brief ASE-based SPL access via ISPLAFU.
-
-      /// @defgroup SWSimSPLAFU SWSimSPLAFU - Software Implementation of ISPLAFU
-      /// @ingroup SPLAFU 
-      /// @brief Simulated SPL access via ISPLAFU.
-
 /// @defgroup UtilApps AALSDK Utility Applications
 /// @brief Applications that provide information about the current AALSDK installation.
 
@@ -404,7 +385,6 @@ AAS_END_MOD()
           <li>@ref AFU                   "Accelerator Function Unit (AFU)"</li>
             <ul>
               <li>@ref ICCIAFU  "CCI Service Interface"</li>
-              <li>@ref ISPLAFU  "SPL Service Interface"</li>
             </ul>
        </ul>
      <li>@ref SysServices          "System Services"</li>
@@ -429,12 +409,6 @@ AAS_END_MOD()
         <li>@ref HWCCIAFU     "HWCCIAFU"</li>
         <li>@ref ASECCIAFU    "ASECCIAFU"</li>
         <li>@ref SWSimCCIAFU  "SWSimCCIAFU"</li>
-      </ul>
-      <li>@ref SPLAFU      "SPLAFU"</li>
-      <ul>
-        <li>@ref HWSPLAFU     "HWSPLAFU"</li>
-        <li>@ref ASESPLAFU    "ASESPLAFU"</li>
-        <li>@ref SWSimSPLAFU  "SWSimSPLAFU"</li>
       </ul>
     </ul>
   <li>@ref UtilApps "AALSDK Utility Applications"</li>

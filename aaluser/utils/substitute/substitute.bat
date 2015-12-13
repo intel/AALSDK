@@ -11,8 +11,4 @@
 %1 %2\service\HWCCIAFUService.h.in %2\service\HWCCIAFUService.h @HWCCIAFU_SVC_MOD@ libHWCCIAFU
 %1 %2\service\ASECCIAFUService.h.in %2\service\ASECCIAFUService.h @ASECCIAFU_SVC_MOD@ libASECCIAFU
 %1 %2\service\SWSimCCIAFUService.h.in %2\service\SWSimCCIAFUService.h @SWSIMCCIAFU_SVC_MOD@ libSWSimCCIAFU
-%1 %2\service\SPLAFUService.h.in %2\service\SPLAFUService.h @SPLAFU_SVC_MOD@ libSPLAFU
-%1 %2\service\HWSPLAFUService.h.in %2\service\HWSPLAFUService.h @HWSPLAFU_SVC_MOD@ libHWSPLAFU
-%1 %2\service\ASESPLAFUService.h.in %2\service\ASESPLAFUService.h @ASESPLAFU_SVC_MOD@ libASESPLAFU
-%1 %2\service\SWSimSPLAFUService.h.in %2\service\SWSimSPLAFUService.h @SWSIMSPLAFU_SVC_MOD@ libSWSimSPLAFU
 %1 %2\service\UtilsAFUService.h.in %2\service\UtilsAFUService.h @UTILSAFU_SVC_MOD@ libUtilsAFU
