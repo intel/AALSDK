@@ -78,10 +78,6 @@ AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
-AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [0],[0],[0])
-AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [0],[0],[0])
-AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
@@ -183,10 +179,6 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/uaia/AIAService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h
-                 include/aalsdk/service/CCIAFUService.h
-                 include/aalsdk/service/HWCCIAFUService.h
-                 include/aalsdk/service/ASECCIAFUService.h
-                 include/aalsdk/service/SWSimCCIAFUService.h
                  include/aalsdk/service/ALIAFUService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
@@ -210,10 +202,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
                  utils/fpgasane/Makefile
-                 utils/CCIAFU/Makefile
-                 utils/CCIAFU/HWCCIAFU/Makefile
-                 utils/CCIAFU/ASECCIAFU/Makefile
-                 utils/CCIAFU/SWSimCCIAFU/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile

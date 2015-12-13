@@ -103,25 +103,25 @@ n// Copyright (c) 2014, Intel Corporation
 #define SAMPLEAFU2_VERSION_AGE        0
 #define SAMPLEAFU2_VERSION            "0.0.0"
 
-#define CCIAFU_VERSION_CURRENT        0
-#define CCIAFU_VERSION_REVISION       0
-#define CCIAFU_VERSION_AGE            0
-#define CCIAFU_VERSION                "0.0.0"
+#define ALIAFU_VERSION_CURRENT        0
+#define ALIAFU_VERSION_REVISION       0
+#define ALIAFU_VERSION_AGE            0
+#define ALIAFU_VERSION                "0.0.0"
 
-#define HWCCIAFU_VERSION_CURRENT      0
-#define HWCCIAFU_VERSION_REVISION     0
-#define HWCCIAFU_VERSION_AGE          0
-#define HWCCIAFU_VERSION              "0.0.0"
+#define HWALIAFU_VERSION_CURRENT      0
+#define HWALIAFU_VERSION_REVISION     0
+#define HWALIAFU_VERSION_AGE          0
+#define HWALIAFU_VERSION              "0.0.0"
 
-#define ASECCIAFU_VERSION_CURRENT     0
-#define ASECCIAFU_VERSION_REVISION    0
-#define ASECCIAFU_VERSION_AGE         0
-#define ASECCIAFU_VERSION             "0.0.0"
+#define ASEALIAFU_VERSION_CURRENT     0
+#define ASEALIAFU_VERSION_REVISION    0
+#define ASEALIAFU_VERSION_AGE         0
+#define ASEALIAFU_VERSION             "0.0.0"
 
-#define SWSIMCCIAFU_VERSION_CURRENT   0
-#define SWSIMCCIAFU_VERSION_REVISION  0
-#define SWSIMCCIAFU_VERSION_AGE       0
-#define SWSIMCCIAFU_VERSION           "0.0.0"
+#define SWSIMALIAFU_VERSION_CURRENT   0
+#define SWSIMALIAFU_VERSION_REVISION  0
+#define SWSIMALIAFU_VERSION_AGE       0
+#define SWSIMALIAFU_VERSION           "0.0.0"
 
 
 #define STDC_HEADERS  1

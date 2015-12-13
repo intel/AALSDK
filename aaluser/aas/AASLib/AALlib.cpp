@@ -226,7 +226,7 @@ AAS_END_MOD()
       /// @defgroup AFU Accelerator Function Unit
       /// @ingroup Services
 
-         /// @defgroup ICCIAFU ICCIAFU - Service interface for interacting with CCI-attached AFU's.
+         /// @defgroup IALIAFU IALIAFU - Service interface for interacting with ALI-attached AFU's.
          /// @ingroup AFU 
 
 /// @defgroup UserModeServiceSDK User Mode Service SDK
@@ -330,21 +330,21 @@ AAS_END_MOD()
 /// @defgroup UtilityAFUs AALSDK Utility AFUs
 /// @brief Utility AALSDK Accelerator Function Units.
 
-   /// @defgroup CCIAFU CCIAFU - Generalized Implementation of ICCIAFU
+   /// @defgroup ALIAFU ALIAFU - Generalized Implementation of IALIAFU
    /// @ingroup UtilityAFUs
-   /// @brief Facilitates @ref HWCCIAFU "Hardware", @ref ASECCIAFU "ASE", and @ref SWSimCCIAFU "Software-simulated CCI" access via ICCIAFU.
+   /// @brief Facilitates @ref HWALIAFU "Hardware", @ref ASEALIAFU "ASE", and @ref SWSimALIAFU "Software-simulated ALI" access via IALIAFU.
 
-      /// @defgroup HWCCIAFU HWCCIAFU - FPGA Implementation of ICCIAFU
-      /// @ingroup CCIAFU 
-      /// @brief Hardware CCI access via ICCIAFU.
+      /// @defgroup HWALIAFU HWALIAFU - FPGA Implementation of IALIAFU
+      /// @ingroup ALIAFU 
+      /// @brief Hardware ALI access via IALIAFU.
 
-      /// @defgroup ASECCIAFU ASECCIAFU - ASE Implementation of ICCIAFU
-      /// @ingroup CCIAFU 
-      /// @brief ASE-based CCI access via ICCIAFU.
+      /// @defgroup ASEALIAFU ASEALIAFU - ASE Implementation of IALIAFU
+      /// @ingroup ALIAFU 
+      /// @brief ASE-based ALI access via IALIAFU.
 
-      /// @defgroup SWSimCCIAFU SWSimCCIAFU - Software Implementation of ICCIAFU
-      /// @ingroup CCIAFU 
-      /// @brief Simulated CCI access via ICCIAFU.
+      /// @defgroup SWSimALIAFU SWSimALIAFU - Software Implementation of IALIAFU
+      /// @ingroup ALIAFU 
+      /// @brief Simulated ALI access via IALIAFU.
 
 /// @defgroup UtilApps AALSDK Utility Applications
 /// @brief Applications that provide information about the current AALSDK installation.
@@ -384,7 +384,7 @@ AAS_END_MOD()
           <li>@ref Dispatchable          "Dispatchable - Scheduleable Objects"</li>
           <li>@ref AFU                   "Accelerator Function Unit (AFU)"</li>
             <ul>
-              <li>@ref ICCIAFU  "CCI Service Interface"</li>
+              <li>@ref IALIAFU  "ALI Service Interface"</li>
             </ul>
        </ul>
      <li>@ref SysServices          "System Services"</li>
@@ -404,11 +404,11 @@ AAS_END_MOD()
   <li>@ref Debugging "Internal Debugging Facilities"</li>
   <li>@ref UtilityAFUs "AALSDK Utility AFUs"</li>
     <ul>
-      <li>@ref CCIAFU      "CCIAFU"</li>
+      <li>@ref ALIAFU      "ALIAFU"</li>
       <ul>
-        <li>@ref HWCCIAFU     "HWCCIAFU"</li>
-        <li>@ref ASECCIAFU    "ASECCIAFU"</li>
-        <li>@ref SWSimCCIAFU  "SWSimCCIAFU"</li>
+        <li>@ref HWALIAFU     "HWALIAFU"</li>
+        <li>@ref ASEALIAFU    "ASEALIAFU"</li>
+        <li>@ref SWSimALIAFU  "SWSimALIAFU"</li>
       </ul>
     </ul>
   <li>@ref UtilApps "AALSDK Utility Applications"</li>

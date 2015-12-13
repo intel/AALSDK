@@ -223,14 +223,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "aas", "aas", "{D1260D1D-EE0
 		..\include\aalsdk\aas\AALRUNTIMEMessages.h = ..\include\aalsdk\aas\AALRUNTIMEMessages.h
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ccilib", "ccilib", "{DAD854CB-0B63-4B4E-AEDA-6633544F0A23}"
-	ProjectSection(SolutionItems) = preProject
-		..\include\aalsdk\ccilib\ICCIDevice.h = ..\include\aalsdk\ccilib\ICCIDevice.h
-		..\include\aalsdk\ccilib\ICCIDeviceFactory.h = ..\include\aalsdk\ccilib\ICCIDeviceFactory.h
-		..\include\aalsdk\ccilib\ICCIWorkspace.h = ..\include\aalsdk\ccilib\ICCIWorkspace.h
-		..\include\aalsdk\ccilib\IOutputSynchronizer.h = ..\include\aalsdk\ccilib\IOutputSynchronizer.h
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "eds", "eds", "{F4E7CC11-57D1-46B3-9565-E23AAE345BD5}"
 	ProjectSection(SolutionItems) = preProject
 		..\include\aalsdk\eds\AASEventDeliveryService.h = ..\include\aalsdk\eds\AASEventDeliveryService.h
@@ -333,17 +325,17 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XLSample2", "..\samples\App
 		{1B86C2F9-3553-4F05-8695-EA1B4594DE12} = {1B86C2F9-3553-4F05-8695-EA1B4594DE12}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCCIAFU", "..\samples\CCIAFU\libCCIAFU.vcxproj", "{617C6B8E-1FE4-44EB-958E-BC7826B415F8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libALIAFU", "..\samples\ALIAFU\libALIAFU.vcxproj", "{617C6B8E-1FE4-44EB-958E-BC7826B415F8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{314AD84F-1736-415A-98BD-33129F049FE3} = {314AD84F-1736-415A-98BD-33129F049FE3}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libSWSimCCIAFU", "..\samples\CCIAFU\SWSimCCIAFU\libSWSimCCIAFU.vcxproj", "{8F1536CF-1B37-408C-B523-CD928E985C59}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libSWSimALIAFU", "..\samples\ALIAFU\SWSimALIAFU\libSWSimALIAFU.vcxproj", "{8F1536CF-1B37-408C-B523-CD928E985C59}"
 	ProjectSection(ProjectDependencies) = postProject
 		{314AD84F-1736-415A-98BD-33129F049FE3} = {314AD84F-1736-415A-98BD-33129F049FE3}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHWCCIAFU", "..\samples\CCIAFU\HWCCIAFU\libHWCCIAFU.vcxproj", "{FA11797F-C243-400D-A4CF-6A0CC696F49C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHWALIAFU", "..\samples\ALIAFU\HWALIAFU\libHWALIAFU.vcxproj", "{FA11797F-C243-400D-A4CF-6A0CC696F49C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{314AD84F-1736-415A-98BD-33129F049FE3} = {314AD84F-1736-415A-98BD-33129F049FE3}
 	EndProjectSection
