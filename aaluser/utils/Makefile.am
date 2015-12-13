@@ -37,6 +37,6 @@ SUBDIRS=\
 aalscan \
 data_model \
 fpgasane \
-SPLAFU \
+CCIAFU \
 ALIAFU
 
