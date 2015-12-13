@@ -53,7 +53,7 @@
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/service/ICCIClient.h>
+// #include <aalsdk/service/ICCIClient.h>
 #include <aalsdk/ase/ase_common.h>
 
 #include "ASEALIAFU.h"
@@ -69,17 +69,20 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
                        NamedValueSet const &optArgs,
                        TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-   ASSERT( NULL != pClient );
-   if ( NULL == pClient ) {
-      /// ObjectCreatedExceptionEvent Constructor.
-      initFailed( new CExceptionTransactionEvent( this,
-                                                  TranID,
-                                                  errBadParameter,
-                                                  reasMissingInterface,
-                                                  "Client did not publish ICCIClient Interface") );
-      return false;
-   }
+// NOTE: caller must publish IServiceClient, and depending on its needs some others,
+//       but not CCIClient. This needs to check for the correct Client.
+//
+//   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
+//   ASSERT( NULL != pClient );
+//   if ( NULL == pClient ) {
+//      /// ObjectCreatedExceptionEvent Constructor.
+//      initFailed( new CExceptionTransactionEvent( this,
+//                                                  TranID,
+//                                                  errBadParameter,
+//                                                  reasMissingInterface,
+//                                                  "Client did not publish ICCIClient Interface") );
+//      return false;
+//   }
 
   session_init();
   initComplete(TranID);

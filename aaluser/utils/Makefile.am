@@ -36,6 +36,8 @@
 SUBDIRS=\
 aalscan \
 data_model \
-fpgasane \
 ALIAFU
 
+# temporarily removed
+# fpgasane \
+# 

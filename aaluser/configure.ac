@@ -201,12 +201,15 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
-                 utils/fpgasane/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])
 
+# temporarily removed fpgasane
+#                 utils/fpgasane/Makefile
+
+                 
 AC_OUTPUT
 
 dnl ############################################################################
