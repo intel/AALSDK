@@ -80,10 +80,10 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    // De-assert Device Reset
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
-   __sync_synchronize();
+   //__sync_synchronize();
 
    // Set output workspace address
-   m_pALIMMIOService->mmioWrite32(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+   m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
