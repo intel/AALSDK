@@ -775,13 +775,12 @@ module ccip_emulator
 
    assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
    assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
-   // assign Tx0toRx0_pkt_vld    = cf2as_latbuf_ch0_valid;
-      
+         
    // stage 1 - Pop read request   
    always @(posedge clk) begin
       if (~sys_reset_n) begin
    	 cf2as_latbuf_ch0_read <= 1'b0;
-   	 // Tx0toRx0_pkt_vld           <= 1'b0;
+   	 Tx0toRx0_pkt_vld           <= 1'b0;
       end
       else begin
    	 // TX0 - Read Request
@@ -790,16 +789,19 @@ module ccip_emulator
    				  0,
    				  cf2as_latbuf_tx0hdr,
    				  {CCIP_DATA_WIDTH{1'b0}} );
-	    // if (Tx0toRx0_pkt_vld)
-	    if (cf2as_latbuf_ch0_valid)
-   	      rd_memline_dex(Tx0toRx0_pkt);
+	    if (cf2as_latbuf_ch0_valid) begin	       
+   	       rd_memline_dex(Tx0toRx0_pkt);
+   	       Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
+	    end
+	    else begin
+	       Tx0toRx0_pkt_vld <= 1'b0;
+	    end
    	    cf2as_latbuf_ch0_read <= ~cf2as_latbuf_ch0_empty;
-   	    Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
    	 end
    	 // Default case
    	 else begin
    	    cf2as_latbuf_ch0_read <= 1'b0;
-   	    // Tx0toRx0_pkt_vld <= 1'b0;
+   	    Tx0toRx0_pkt_vld <= 1'b0;
    	 end
       end
    end
@@ -874,7 +876,8 @@ module ccip_emulator
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
    function automatic int wrresp_tx2rx_chsel_iter();
       begin
-	 return 1;
+	 return 0;
+	 // return 1;	 
 	 // return (abs_val($random) % 2);
       end
    endfunction
@@ -893,22 +896,24 @@ module ccip_emulator
 				  1,
 				  cf2as_latbuf_tx1hdr,
 				  cf2as_latbuf_tx1data);
-	    if (cf2as_latbuf_ch1_valid)
-	      wr_memline_dex(Tx1toRx0_pkt);
+	    if (cf2as_latbuf_ch1_valid) begin
+	       wr_memline_dex(Tx1toRx0_pkt);
+	       Tx1toRx0_pkt_vld   <= cf2as_latbuf_ch1_valid;
+	       Tx1toRx1_pkt_vld	  <= 1'b0;
+	    end
 	    cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty;
-	    Tx1toRx0_pkt_vld      <= cf2as_latbuf_ch1_valid;
-	    Tx1toRx1_pkt_vld	  <= 1'b0;
 	 end
 	 if (~cf2as_latbuf_ch1_empty && wrreq_flag && (wrresp_tx2rx_chsel_iter() == 1) && ~wr1rsp_full) begin
 	    cast_txhdr_to_ccipkt( Tx1toRx1_pkt,
 				  1,
 				  cf2as_latbuf_tx1hdr,
 				  cf2as_latbuf_tx1data);
-	    if (cf2as_latbuf_ch1_valid)
-	      wr_memline_dex(Tx1toRx1_pkt);
+	    if (cf2as_latbuf_ch1_valid) begin
+	       wr_memline_dex(Tx1toRx1_pkt);
+	       Tx1toRx0_pkt_vld   <= 1'b0;
+	       Tx1toRx1_pkt_vld	  <= cf2as_latbuf_ch1_valid;
+	    end
 	    cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty; // 1'b1;
-	    Tx1toRx0_pkt_vld      <= 1'b0;
-	    Tx1toRx1_pkt_vld	  <= cf2as_latbuf_ch1_valid;
 	 end
 	 else begin
 	    cf2as_latbuf_ch1_read <= 1'b0;

@@ -382,7 +382,8 @@ void calc_phys_memory_ranges()
   sysmem_phys_hi = sysmem_size-1;
 
   // Calculate address mask
-  PHYS_ADDR_PREFIX_MASK = ((sysmem_phys_hi >> CL_ALIGN) << CL_ALIGN);
+  // PHYS_ADDR_PREFIX_MASK = ((sysmem_phys_hi >> CL_ALIGN) << CL_ALIGN);
+  PHYS_ADDR_PREFIX_MASK = ((sysmem_phys_hi >> MEMBUF_2MB_ALIGN) << MEMBUF_2MB_ALIGN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  PHYS_ADDR_PREFIX_MASK = %llx\n", (long long)PHYS_ADDR_PREFIX_MASK);
