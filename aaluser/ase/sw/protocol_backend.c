@@ -172,12 +172,14 @@ void mmio_response (struct mmio_t *mmio_pkt)
       if (mmio_pkt->width == MMIO_WIDTH_32) 
 	{
 	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
-	  *mmio_addr32 = (uint32_t) mmio_pkt->data;
+	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
+	  // *mmio_addr32 = (uint32_t) mmio_pkt->data;
 	}
       else if (mmio_pkt->width == MMIO_WIDTH_64)
 	{
 	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
-	  *mmio_addr64 = (uint64_t) mmio_pkt->data;
+	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));	  
+	  // *mmio_addr64 = (uint64_t) mmio_pkt->data;
 	}
     }
 
@@ -285,11 +287,11 @@ int ase_listener()
     {
       memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(mmio_t));
 #ifdef ASE_DEBUG
-      printf("  [DEBUG]  mmio_pkt => %x %d %d %llx %d\n", 
+      printf("  [DEBUG]  mmio_pkt => %x %d %x %llx %d\n", 
 	     mmio_pkt->type,
 	     mmio_pkt->width,
 	     mmio_pkt->addr,
-	     mmio_pkt->data,
+	     mmio_pkt->qword[0],
 	     mmio_pkt->resp_en);
 #endif
       mmio_dispatch (0, mmio_pkt);
@@ -341,15 +343,15 @@ int ase_listener()
  */
 void calc_phys_memory_ranges()
 {
-  uint32_t cipuctl_22;
-  uint32_t cipuctl_21_19;
+  /* uint32_t cipuctl_22; */
+  /* uint32_t cipuctl_21_19; */
 
-  cipuctl_22    = (cfg->memmap_sad_setting & 0xF) >> 3;
-  cipuctl_21_19 = (cfg->memmap_sad_setting & 0x7);
+  /* cipuctl_22    = (cfg->memmap_sad_setting & 0xF) >> 3; */
+  /* cipuctl_21_19 = (cfg->memmap_sad_setting & 0x7); */
 
-#ifdef ASE_DEBUG
-  printf("        CIPUCTL[22] = %d | CIPUCTL[21:19] = %d\n", cipuctl_22, cipuctl_21_19 );
-#endif
+/* #ifdef ASE_DEBUG */
+/*   printf("        CIPUCTL[22] = %d | CIPUCTL[21:19] = %d\n", cipuctl_22, cipuctl_21_19 ); */
+/* #endif */
 
   // Memmory map calculation
   /* if (cfg->enable_capcm) */
@@ -375,9 +377,18 @@ void calc_phys_memory_ranges()
   /*   } */
   /* else */
   /*   { */
-      sysmem_size = (uint64_t)pow(2, FPGA_ADDR_WIDTH);
-      sysmem_phys_lo = 0;
-      sysmem_phys_hi = sysmem_size-1;
+  sysmem_size = cfg->phys_memory_available_gb * pow(1024, 3);
+  sysmem_phys_lo = 0;
+  sysmem_phys_hi = sysmem_size-1;
+
+  // Calculate address mask
+  PHYS_ADDR_PREFIX_MASK = ((sysmem_phys_hi >> CL_ALIGN) << CL_ALIGN);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  PHYS_ADDR_PREFIX_MASK = %llx\n", (long long)PHYS_ADDR_PREFIX_MASK);
+  END_YELLOW_FONTCOLOR;
+#endif
+
       /* capcm_size = 0; */
       /* capcm_phys_lo = 0; */
       /* capcm_phys_hi = 0; */
@@ -664,6 +675,7 @@ void start_simkill_countdown()
  *                 Set up CSR addresses to indicate existance
  *                 and features of the UMSG system
  */
+#if 0
 void ase_umsg_init(uint64_t dsm_base)
 {
   FUNC_CALL_ENTRY;
@@ -685,7 +697,7 @@ void ase_umsg_init(uint64_t dsm_base)
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 /*
  * Parse strings and remove unnecessary characters
@@ -788,10 +800,11 @@ void ase_config_parse(char *filename)
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
-  cfg->enable_capcm = 0;
-  cfg->memmap_sad_setting = 0;
-  cfg->num_umsg_log2 = 5;
+  /* cfg->enable_capcm = 0; */
+  /* cfg->memmap_sad_setting = 0; */
+  /* cfg->num_umsg_log2 = 5; */
   cfg->enable_cl_view = 1;
+  cfg->phys_memory_available_gb = 256;
 
   // Find ase.cfg OR not
   // if ( access (ASE_CONFIG_FILE, F_OK) != -1 )
@@ -829,6 +842,20 @@ void ase_config_parse(char *filename)
 	      /* 	cfg->num_umsg_log2 = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
+	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
+		{
+		  if (value < 0)
+		    {
+		      BEGIN_RED_FONTCOLOR;
+		      printf("SIM-C : Physical memory size is negative in %s\n", ASE_CONFIG_FILE);
+		      printf("        Reverting to default 256 GB\n");
+		      END_RED_FONTCOLOR;
+		    }
+		  else
+		    {
+		      cfg->phys_memory_available_gb = value;
+		    }
+		}
 	      else
 	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
 	    }
@@ -873,29 +900,29 @@ void ase_config_parse(char *filename)
 
 
       // CAPCM size implementation
-      if (cfg->enable_capcm != 0)
-	{
-	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0))
-	    {
-	      BEGIN_YELLOW_FONTCOLOR;
-	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE);
-	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting);
-	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n");
-	      cfg->memmap_sad_setting = 2;
-	      END_YELLOW_FONTCOLOR;
-	    }
-	}
+      /* if (cfg->enable_capcm != 0) */
+      /* 	{ */
+      /* 	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0)) */
+      /* 	    { */
+      /* 	      BEGIN_YELLOW_FONTCOLOR; */
+      /* 	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE); */
+      /* 	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting); */
+      /* 	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n"); */
+      /* 	      cfg->memmap_sad_setting = 2; */
+      /* 	      END_YELLOW_FONTCOLOR; */
+      /* 	    } */
+      /* 	} */
 
       // UMSG implementation
-      if (cfg->num_umsg_log2 == 0)
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE);
-	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2);
-	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n");
-	  cfg->num_umsg_log2 = 5;
-	  END_YELLOW_FONTCOLOR;
-	}
+      /* if (cfg->num_umsg_log2 == 0) */
+      /* 	{ */
+      /* 	  BEGIN_YELLOW_FONTCOLOR; */
+      /* 	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE); */
+      /* 	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2); */
+      /* 	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n"); */
+      /* 	  cfg->num_umsg_log2 = 5; */
+      /* 	  END_YELLOW_FONTCOLOR; */
+      /* 	} */
 
       // Close file
       fclose(fp);
@@ -932,21 +959,24 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... DISABLED \n");
 
   // UMSG
-  printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2);
+  /* printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2); */
 
   // CAPCM
-  if (cfg->enable_capcm != 0)
-    {
-      printf("        CA Private memory          ... ENABLED\n");
-    }
-  else
-    printf("        CA Private memory          ... DISABLED\n");
+  /* if (cfg->enable_capcm != 0) */
+  /*   { */
+  /*     printf("        CA Private memory          ... ENABLED\n"); */
+  /*   } */
+  /* else */
+  /*   printf("        CA Private memory          ... DISABLED\n"); */
 
   // CL view
   if (cfg->enable_cl_view != 0)
     printf("        ASE Transaction view       ... ENABLED\n");
   else
     printf("        ASE Transaction view       ... DISABLED\n");
+
+  // GBs of physical memory available
+  printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
 
   END_YELLOW_FONTCOLOR;
 

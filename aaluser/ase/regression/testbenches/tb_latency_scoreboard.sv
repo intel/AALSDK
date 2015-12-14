@@ -1,4 +1,4 @@
-`include "ase_global.vh"
+import ase_pkg::*;
 
 module tb_latency_scoreboard();
 
@@ -12,7 +12,7 @@ module tb_latency_scoreboard();
    logic 		  overflow, underflow;
    
    // Buffer
-   inorder_wrf_channel
+   outoforder_wrf_channel
      #(
        .NUM_TRANSACTIONS (4),
        .HDR_WIDTH  (HDR_WIDTH), 
@@ -69,7 +69,7 @@ module tb_latency_scoreboard();
    initial begin
       #5000;
 // `ifdef ASE_DEBUG
-      $display (buffer.checkunit.check_array);
+//      $display (buffer.checkunit.check_array);
 // `endif
       $finish;     
    end

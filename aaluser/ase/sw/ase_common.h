@@ -73,9 +73,9 @@
  * SYSTEM FACTS
  * 
  * *******************************************************************************/
-#define FPGA_ADDR_WIDTH       48
-#define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000
-#define CL_ALIGN_SHIFT        6
+/* #define FPGA_ADDR_WIDTH       48 */
+/* #define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000 */
+#define CL_ALIGN          6
 
 // Width of a cache line in bytes
 #define CL_BYTE_WIDTH        64
@@ -94,9 +94,9 @@
  * Unordered Message (UMSG) Address space
  */
 // UMSG specific CSRs
-#define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address
-#define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
-#define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
+/* #define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address */
+/* #define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode */
+/* #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT */
 
 #define NUM_UMSG_PER_AFU               8
 
@@ -427,7 +427,7 @@ typedef struct mmio_t {
   int type;
   int width;
   int addr;
-  long long data;
+  long long qword[8];
   int resp_en;
 } mmio_t;
 
@@ -451,10 +451,11 @@ struct ase_cfg_t
   int ase_timeout;
   int ase_num_tests;
   int enable_reuse_seed;
-  int num_umsg_log2;
+  /* int num_umsg_log2; */
   int enable_cl_view;
-  int enable_capcm;
-  int memmap_sad_setting;
+  int phys_memory_available_gb;
+  /* int enable_capcm; */
+  /* int memmap_sad_setting; */
 };
 struct ase_cfg_t *cfg;
 
@@ -563,6 +564,9 @@ int ase_pid;
 
 // Workspace information log (information dump of 
 FILE *fp_workspace_log;
+
+// Physical address mask - used to constrain generated addresses
+uint64_t PHYS_ADDR_PREFIX_MASK;
 
 #endif
 

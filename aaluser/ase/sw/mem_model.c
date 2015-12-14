@@ -38,13 +38,13 @@
 
 #include "ase_common.h"
 
+#if 0
 // Message queues opened by DPI
 int app2sim_rx;           // app2sim mesaage queue in RX mode
 int sim2app_tx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_rx;    // CSR Write listener MQ in RX mode
 int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
 int app2sim_simkill_rx;   // Simkill listener in RX mode
-#if 0
 int sim2app_intr_tx;      // INTR message queue in TX mode
 #endif
 

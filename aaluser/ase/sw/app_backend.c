@@ -65,8 +65,8 @@ struct buffer_t *umas;
 uint32_t glbl_umsgmode_csr;
 
 // Instances for SPL page table and context
-struct buffer_t *spl_pt;
-struct buffer_t *spl_cxt;
+/* struct buffer_t *spl_pt; */
+/* struct buffer_t *spl_cxt; */
 
 // CSR map storage
 struct buffer_t *mmio_region;
@@ -167,7 +167,7 @@ void session_deinit()
 
   // Um-mapping CSR region
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Deallocating CSR map\n");
+  printf("  [APP]  Deallocating MMIO map\n");
   END_YELLOW_FONTCOLOR;
   deallocate_buffer(mmio_region);
 
@@ -219,23 +219,26 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
-  char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+  char mmio_str[ASE_MQ_MSGSIZE];  
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+
+  char csr_data_str[CL_BYTE_WIDTH];
+  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+  // mmio_pkt->qword[0] = (long long)data;
+  memcpy(csr_data_str, &data, sizeof(uint32_t));
+
   uint32_t *mmio_vaddr;
+  mmio_vaddr = (uint32_t*)((uint64_t)mmio_region->vbase + offset);
 
-  // ---------------------------------------------------
-  // Form a csr_write message
-  //                     -------------------------
-  // CSR_write message:  | width | offset | data |
-  //                     -------------------------
-  // ---------------------------------------------------
-
+  // Prepare MMIO pkt
   mmio_pkt->type = MMIO_WRITE_REQ;
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
-  mmio_pkt->data = (uint64_t)data;
+  memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint32_t));
+  //  mmio_pkt->data = (uint64_t)data;
   mmio_pkt->resp_en = 0;
   
 #ifdef ASE_DEBUG
@@ -243,19 +246,15 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 	 mmio_pkt->type,
 	 mmio_pkt->width,
 	 mmio_pkt->addr,
-	 mmio_pkt->data,
+	 mmio_pkt->qword[0],
 	 mmio_pkt->resp_en);
 #endif
 
   // Update CSR Region
-  mmio_vaddr = (uint32_t*)((uint64_t)mmio_region->vbase + offset);
-  *mmio_vaddr = data;
+  memcpy(mmio_vaddr, (char*)csr_data_str, sizeof(uint32_t));
   
   // Send message
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
-
-  //sprintf(mmio_str, "%u %u %u %u", MMIO_WRITE, MMIO_WIDTH_32, offset, data);
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   // Display
@@ -265,7 +264,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 
   // Wait until MMIO response comes back and discard
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+
 #ifdef ASE_DEBUG  
   printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt);
 #endif
@@ -286,11 +285,18 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
-  char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
+  char mmio_str[ASE_MQ_MSGSIZE];
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+
+  char csr_data_str[CL_BYTE_WIDTH];
+  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+  memcpy(csr_data_str, &data, sizeof(uint64_t));
+
   uint64_t *mmio_vaddr;
+  mmio_vaddr = (uint64_t*)((uint64_t)mmio_region->vbase + offset);
 
   // ---------------------------------------------------
   // Form a csr_write message
@@ -298,21 +304,29 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   // CSR_write message:  | width | offset | data |
   //                     -------------------------
   // ---------------------------------------------------
-
   // Update CSR Region
-  mmio_vaddr = (uint64_t*)((uint64_t)mmio_region->vbase + offset);
-  *mmio_vaddr = data;
+  memcpy(mmio_vaddr, csr_data_str, sizeof(uint64_t));
+  // *mmio_vaddr = data;
   
   mmio_pkt->type = MMIO_WRITE_REQ;
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
-  mmio_pkt->data = (uint64_t)data;
+  // mmio_pkt->data = (uint64_t)data;
+  memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint64_t));
   mmio_pkt->resp_en = 0;
 
   // Send message
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
+
+#ifdef ASE_DEBUG
+  printf("mmio_pkt => %x %d %d %llx %d\n", 
+	 mmio_pkt->type,
+	 mmio_pkt->width,
+	 mmio_pkt->addr,
+	 mmio_pkt->qword[0],
+	 mmio_pkt->resp_en);
+#endif
 
   // Display
   mmio_write_cnt++;
@@ -358,6 +372,9 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
 
+  char csr_data_str[CL_BYTE_WIDTH];
+  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
@@ -366,7 +383,8 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   mmio_pkt->type = MMIO_READ_REQ;
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
-  mmio_pkt->data = 0;
+  memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
+  // mmio_pkt->data = 0;
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
@@ -389,10 +407,6 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   
   END_YELLOW_FONTCOLOR;
 
-  // Typecast back to mmio_pkt, and update data
-  /* memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t)); */
-  /* *data = (uint32_t)mmio_pkt->data; */
-
   FUNC_CALL_EXIT;
 }
 
@@ -407,6 +421,9 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
 
+  char csr_data_str[CL_BYTE_WIDTH];
+  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
 
@@ -414,7 +431,8 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   mmio_pkt->type = MMIO_READ_REQ;
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
-  mmio_pkt->data = 0;
+  memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
+  // mmio_pkt->data = 0;
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
@@ -503,7 +521,6 @@ void allocate_buffer(struct buffer_t *mem)
   // Tue May  5 19:24:21 PDT 2015
   // https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
   // S_IREAD | S_IWRITE are obselete
-  // mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IREAD|S_IWRITE);
   mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_app < 0)
     {

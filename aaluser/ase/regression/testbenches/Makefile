@@ -7,11 +7,9 @@ channel:
 	+vcs+loopreport +vcs+loopdetect \
 	-cm line+cond+fsm+tgl+branch+assert -cm_tgl mda -cm_cond basic+allops -cm_dir coverage \
 	tb_latency_scoreboard.sv \
-	../../hw/stream_checker.sv \
-	../../hw/inorder_wrf_channel.sv \
 	../../hw/ase_fifo.sv \
 	../../hw/sdp_ram.sv \
-#	../../hw/outoforder_wrf_channel.sv \
+	../../hw/outoforder_wrf_channel.sv \
 
 fifo:
 	vcs -j 4 -full64 -nc  -sverilog -override_timescale=10ps/10ps +define+ASE_DEBUG \
@@ -34,6 +32,9 @@ prng:
 	../../hw/latency_scoreboard.sv \
 	../../hw/ase_fifo.sv \
 	../../hw/sdp_ram.sv
+
+string:
+	vcs -full64 -nc -sverilog ../../hw/ase_pkg.sv ../../hw/ccip_logger.sv string_test.sv -debug_all +incdir+../../hw/
 
 
 ################################################

@@ -236,8 +236,9 @@ package ase_pkg;
       int 	  ase_timeout;
       int 	  ase_num_tests;
       int 	  enable_reuse_seed;
-      int 	  num_umsg_log2;
+      // int 	  num_umsg_log2;
       int 	  enable_cl_view;
+      int 	  phys_memory_available_gb;
       // int 	  enable_capcm;
       // int 	  memmap_sad_setting;
    } ase_cfg_t;
@@ -250,7 +251,7 @@ package ase_pkg;
       int 	  write_en;
       int 	  width;
       int 	  addr;
-      longint 	  data;
+      longint 	  qword[8];
       int 	  resp_en;
       } mmio_t;
 
@@ -400,7 +401,7 @@ package ase_pkg;
 	 pkt.qword[6] =  txdata[ 447:384 ];
 	 pkt.qword[7] =  txdata[ 511:448 ];
 	 // Response
-	 pkt.resp_en = 0;
+	 pkt.resp_en  = 0;
       end
    endfunction
 

@@ -96,7 +96,7 @@ module outoforder_wrf_channel
    parameter int 		  FIFO_WIDTH = TID_WIDTH + HDR_WIDTH + DATA_WIDTH;
 
    // Tracking ID
-   logic [TID_WIDTH-1:0] 	  tid_counter;
+   // logic [TID_WIDTH-1:0] 	  tid_counter;
    logic [TID_WIDTH-1:0] 	  tid_in;
    logic [TID_WIDTH-1:0] 	  tid_out;
 
@@ -682,8 +682,19 @@ module outoforder_wrf_channel
    assign empty = stg3_empty;
 
    // Count
-   assign count = stg1_count + q_count + latbuf_count + stg3_count;
-
+   // assign count = stg1_count + q_count + latbuf_count + stg3_count;
+   always @(posedge clk) begin
+      if (rst) begin
+	 count <= 0;	 
+      end
+      else begin
+	 case ({write_en, read_en})
+	   2'b01   : count <= count - 1;	   
+	   2'b10   : count <= count + 1;	   
+	   default : count <= count;	     
+	 endcase
+      end
+   end
    
    /*
     * Transaction IN-OUT checker
