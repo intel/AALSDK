@@ -500,7 +500,7 @@ void allocate_buffer(struct buffer_t *mem)
   if(buffer_index_count == 0)
     /* if (mem->is_mmiomap == 1)  */
     {
-      strcpy(mem->memname, "/csr.");
+      strcpy(mem->memname, "/mmio.");
       strcat(mem->memname, get_timestamp(0) );
     #ifdef ASE_DEBUG
       printf("  DEBUG memname => %s\n", mem->memname);
