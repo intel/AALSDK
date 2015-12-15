@@ -1,5 +1,4 @@
-#!/bin/bash
-## Copyright (c) 2014-2015, Intel Corporation
+## Copyright (c) 2015, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -25,13 +24,44 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 ##****************************************************************************
+##     Intel(R) Accelerator Abstraction Layer Library Software Developer
+##        Kit (SDK)
 ##  Content:
-##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
-##        Software Developer Kit (SDK)
-##****************************************************************************
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/SampleBrokerService/SW:$PWD/Hello_AAL_Service/SW"
-if [ $# -gt 0 ]; then
-   for d in $@ ; do
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$d"
-   done
-fi
+##     libuAIA: Intel(R) Accelerator Abstraction Layer Library
+##        Accelerator Abstraction Services
+##     aas/AIAService/Makefile.am
+##  Author:
+##     Tim Whisonant, Intel Corporation
+##  History:
+##     12/7/2015    TSW   Initial version
+##******************************************************************************
+
+# We _are_ dlopen'ing libaia.
+
+lib_LTLIBRARIES=libaia.la
+
+libaia_la_SOURCES=\
+AIADllMain.cpp \
+AIA-internal.h \
+AIAService.cpp \
+AIATransactions.cpp \
+AIATransactions.h \
+ALIAFUProxy.cpp \
+ALIAFUProxy.h \
+UIDriverInterfaceAdapter.cpp \
+UIDriverInterfaceAdapter.h \
+uidrvMessage.cpp \
+uidrvMessage.h
+
+libaia_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libaia_la_LDFLAGS=\
+-module \
+-version-info $(AIASERVICE_VERSION_CURRENT):$(AIASERVICE_VERSION_REVISION):$(AIASERVICE_VERSION_AGE)
+
+libaia_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la

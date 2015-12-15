@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2007-2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,40 +24,60 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AASLib.h
-/// @brief 
-/// @ingroup AALCore
+/// @file uidrvMessaging.cpp
+/// @brief Implementation uidrvMessage class. This is an abstraction of the low
+///        level message structure used by the driver interface.
+/// @ingroup uAIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
-/// AUTHORS: Tim Whisonant, Intel Corporation
+/// AUTHOR: Tim Whisonant, Intel Corporation.
+///         Joseph Grecco, Intel Corporation.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 01/24/2013     TSW      Create convenience header for AASLib.@endverbatim
+/// 1/22/2013      TSW      uidrvMessage::uidrvMessageRoute -> uidrvMessageRoute{}
+/// 03/12/2013     JG       Changed uidrvMessage to support link-less ioctlreq
+/// 09/15/2015     JG       Removed message route and fixed up for 4.0@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AASLIB_H__
-#define __AALSDK_AASLIB_H__
-#include <aalsdk/AALDefs.h>
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/utils/Utilities.h>
-#include <aalsdk/utils/ResMgrUtilities.h>
-#include <aalsdk/utils/AALWorkSpaceUtilities.h>
-#include <aalsdk/OSAL.h>
-#include <aalsdk/CCountedObject.h>
-#include <aalsdk/AALNamedValueSet.h>
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/AASystem.h>
-#include <aalsdk/AALBase.h>
-#include <aalsdk/AALEvent.h>
-#include <aalsdk/CAALBase.h>
-#include <aalsdk/CAALEvent.h>
-#include <aalsdk/utils/AALEventUtilities.h>
-#include <aalsdk/aas/AALServiceModule.h>
-#include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/aas/AALService.h>
-#include <aalsdk/AALNVSMarshaller.h>
-//#include <aalsdk/aas/AALIPCServiceFactory.h>
-#endif // __AALSDK_AASLIB_H__
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
+#include "uidrvMessage.h"
+#include "aalsdk/AALBase.h" // IBase
+
+
+BEGIN_NAMESPACE(AAL)
+
+uidrvMessage::uidrvMessage() :
+   m_pmessage(NULL)
+{}
+
+uidrvMessage::~uidrvMessage()
+{
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+      m_pmessage = NULL;
+   }
+}
+
+void uidrvMessage::size(btWSSize PayloadSize)
+{
+   if ( NULL != m_pmessage ) {
+      delete m_pmessage;
+   }
+   m_msgsize  = (btUnsignedInt)PayloadSize + sizeof(ccipui_ioctlreq);
+   m_pmessage = (struct ccipui_ioctlreq*)new btByte[m_msgsize];
+   memset(m_pmessage, 0, m_msgsize);
+   m_pmessage->size = PayloadSize;
+}
+
+btVirtAddr  uidrvMessage::payload() const
+{ ASSERT(NULL != m_pmessage);
+   btVirtAddr ptr = reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+   return reinterpret_cast<btVirtAddr>(m_pmessage->payload);
+}
+
+END_NAMESPACE(AAL)
 

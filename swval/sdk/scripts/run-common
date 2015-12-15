@@ -24,6 +24,7 @@ declare -r RM="`which rm`" 2>/dev/null
 [ "x${RM}" = x ] && die "no rm?"
 
 declare VPATH=''
+declare USELOG=false
 declare LOGFILE=''
 declare KILLED=false
 
@@ -44,9 +45,9 @@ trap 'on_sigint' SIGINT
 PASS() {
    [ -t 1 ] && printf "\x1b[1;32m"
    ${CAT} <<END
-PASS   ___         ___           ___           ___
+       ___         ___           ___           ___
       /\\  \\       /\\  \\         /\\__\\         /\\__\\
-     /::\\  \\     /::\\  \\       /:/ _/_       /:/ _/
+     /::\\  \\     /::\\  \\       /:/ _/_       /:/ _/_
     /:/\\:\\__\\   /:/\\:\\  \\     /:/ /\\  \\     /:/ /\\  \\
    /:/ /:/  /  /:/ /::\\  \\   /:/ /::\\  \\   /:/ /::\\  \\
   /:/_/:/  /  /:/_/:/\\:\\__\\ /:/_/:/\\:\\__\\ /:/_/:/\\:\\__\\
@@ -62,7 +63,7 @@ END
 FAIL() {
    [ -t 1 ] && printf "\x1b[1;31m"
    ${CAT} <<END
-FAIL   ___           ___                       ___
+       ___           ___                       ___
       /\\  \\         /\\  \\          ___        /\\__\\
      /::\\  \\       /::\\  \\        /\\  \\      /:/  /
     /:/\\:\\  \\     /:/\\:\\  \\       \\:\\  \\    /:/  /
@@ -77,8 +78,22 @@ END
    [ -t 1 ] && printf "\x1b[0m"
 }
 
-# $1 [optional] bool : whether or not the user wants distcc.
+show_test_result() {
+   local -ri res=$1
+   if [ 0 -eq ${res} ]; then
+      PASS
+   else
+      FAIL
+   fi
+   return ${res}
+}
+
+# $1 bool : whether to redirect stdout to a log file.
+# $2 [optional] bool : whether or not the user wants distcc.
 setup() {
+   USELOG=$1
+   shift
+
    local wantdistcc=false
    if [ $# -gt 0 ]; then
       wantdistcc=$1
@@ -193,11 +208,15 @@ run_bat() {
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
 
-   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
-   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
-
-   exec ${cmd} >>"${LOGFILE}"
-   return $?
+   if ${USELOG} ; then
+      printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+      printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
+      exec ${cmd} >>"${LOGFILE}"
+      return $?
+   else
+      ${cmd}
+      return $?
+   fi
 }
 
 run_nightly() {
@@ -208,11 +227,15 @@ run_nightly() {
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
 
-   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
-   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
-
-   exec ${cmd} >>"${LOGFILE}"
-   return $?
+   if ${USELOG} ; then
+      printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+      printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
+      exec ${cmd} >>"${LOGFILE}"
+      return $?
+   else
+      ${cmd}
+      return $?
+   fi
 }
 
 run_weekly() {
@@ -223,11 +246,15 @@ run_weekly() {
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
 
-   printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
-   printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
-
-   exec ${cmd} >>"${LOGFILE}"
-   return $?
+   if ${USELOG} ; then
+      printf "\n%s\n" "${GIT_COMMIT_HASH}" >>"${LOGFILE}"
+      printf "%s\n\n" "${cmd}" >>"${LOGFILE}"
+      exec ${cmd} >>"${LOGFILE}"
+      return $?
+   else
+      ${cmd}
+      return $?
+   fi
 }
 
 run_everything() {

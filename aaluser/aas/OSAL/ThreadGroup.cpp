@@ -771,22 +771,22 @@ void OSLThreadGroup::ThrGrpState::DrainManager::WaitForAllDrainersDone()
    class BarrierWaitDisp : public IDispatchable
    {
    public:
-      BarrierWaitDisp(Barrier &b, btTime Timeout) :
+      BarrierWaitDisp(Barrier *b, btTime Timeout) :
          m_Barrier(b),
          m_Timeout(Timeout)
       {}
       virtual void operator() ()
       {
-         m_Barrier.Wait(m_Timeout);
+         m_Barrier->Wait(m_Timeout);
       }
    protected:
-      Barrier &m_Barrier;
+      Barrier *m_Barrier;
       btTime   m_Timeout;
    };
 
    AutoLock(m_pTGS);
 
-   BarrierWaitDisp disp(m_DrainerDoneBarrier, m_WaitTimeout);
+   BarrierWaitDisp disp(&m_DrainerDoneBarrier, m_WaitTimeout);
 
    while ( m_DrainNestLevel > 0 ) {
       __LockObj.UnlockedDispatch(&disp);

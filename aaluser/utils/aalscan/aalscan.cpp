@@ -73,18 +73,14 @@ $ aalscan
 3.4.0 libAASRegistrar
 3.4.0 libAASUAIA
 0.0.0 libASECCIAFU
-0.0.0 libASESPLAFU
 0.0.0 libCCIAFU
 0.0.0 libHWCCIAFU
-0.0.0 libHWSPLAFU
 3.4.0 libOSAL
 0.0.0 librrmbroker
 0.0.0 libsampleafu1
 0.0.0 libsampleafu2
 0.0.0 libsamplebroker
-0.0.0 libSPLAFU
 0.0.0 libSWSimCCIAFU
-0.0.0 libSWSimSPLAFU
 0.0.0 libAALRUNTIME@endverbatim
 
 @}
@@ -144,25 +140,18 @@ int parsecmds(struct aalscanCmdLine * , int , char *[] );
 
 
 const char *gCoreAALServiceRootNames[] = {
-   "libaalrt",
    "libAAS",
    "libAASRegistrar",
    "libAASResMgr",
    "libAASUAIA",
    "libALIAFU",
    "libASEALIAFU",
-   "libASECCIAFU",
-   "libASESPLAFU",
-   "libCCIAFU",
    "libHWALIAFU",
-   "libHWCCIAFU",
-   "libHWSPLAFU",
    "libOSAL",
-   "librrmbroker",
-   "libSPLAFU",
    "libSWSimALIAFU",
-   "libSWSimCCIAFU",
-   "libSWSimSPLAFU"
+   "libaalrt",
+   "libaia",
+   "librrmbroker"
 };
 
 OSServiceModule gServiceModules[sizeof(gCoreAALServiceRootNames)/sizeof(gCoreAALServiceRootNames[0])];

@@ -53,7 +53,6 @@ CAALWorkSpaceUtilities.cpp \
 CCountedObject.cpp \
 CNamedValueSet.cpp \
 KernelStructs.cpp \
-RegDBProxy.cpp \
 ResMgrUtilities.cpp
 
 libAAS_la_CPPFLAGS=\

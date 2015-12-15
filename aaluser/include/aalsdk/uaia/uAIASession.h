@@ -109,12 +109,12 @@ class UAIA_API uAIASession: public CAASBase, public IuAIASession
 {
 public:
    uAIASession(IBase                *pOwnerBase,
-               CAIA                 &rAIA,
+               CAIA                 *rAIA,
                btApplicationContext  Context,
                btEventHandler        DefaultEventHandler,
                ServiceBase          *pServiceBase);
 
-   CAIA & ruAIA()      { return m_ruAIA; }
+   CAIA & ruAIA()      { return *m_ruAIA; }
    btBool IsOK() const { return m_bIsOK; }
 
    //------------
@@ -170,8 +170,8 @@ public:
 protected:
    btBool                          m_bIsOK;
    IBase                          *m_Owner;
-   IBase                          &m_BaseProxy;
-   CAIA                           &m_ruAIA;
+   IBase                          *m_BaseProxy;
+   CAIA                           *m_ruAIA;
    uidrvMessageRoute               m_OwnerReturnAddress;
    uidrvMessageRoute               m_returnAddress;
    btInt                           m_refcount;

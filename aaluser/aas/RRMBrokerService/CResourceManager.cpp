@@ -55,6 +55,8 @@
 
 #include "aalsdk/osal/Env.h"
 
+#include "aalsdk/rm/RRMService.h"
+
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks */
 //   #pragma warning( push)
 //   #pragma warning(disable:68)       // warning: integer conversion resulted in a change of sign.
@@ -71,22 +73,18 @@
 #endif
 
 
-
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::CResourceManager >
-
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-#define RRM_VERSION_CURRENT  0
-#define RRM_VERSION_REVISION 0
-#define RRM_VERSION_AGE      0
-#define RRM_VERSION          "0.0.0"
 
-AAL_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY, librrm, AALRESOURCEMANAGER_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::CResourceManager >
+
+RRM_BEGIN_BUILTIN_SVC_MOD(SERVICE_FACTORY)
    // Only default service commands for now.
-AAL_END_SVC_MOD()
+RRM_END_SVC_MOD()
+
 
 BEGIN_NAMESPACE(AAL)
 

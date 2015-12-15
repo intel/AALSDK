@@ -10,9 +10,13 @@ declare -r SCRIPT_NAME='run-nightly'
 declare -ri REPEAT=200
 declare     ARGS="--gtest_print_time=0 --gtest_shuffle --gtest_random_seed=${RANDOM} --gtest_repeat=${REPEAT}"
 
+declare WANTLOGFILE=false
 declare WANTDISTCC=false
 while [ $# -gt 0 ]; do
    case $1 in
+      --log)
+         WANTLOGFILE=true
+      ;;
       --distcc)
          WANTDISTCC=true
       ;;
@@ -23,6 +27,7 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-setup ${WANTDISTCC}
+setup ${WANTLOGFILE} ${WANTDISTCC}
 run_nightly ${ARGS}
+show_test_result $?
 exit $?

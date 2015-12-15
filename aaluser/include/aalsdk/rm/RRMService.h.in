@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,40 +24,29 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AASLib.h
-/// @brief 
-/// @ingroup AALCore
-/// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
-///
-/// AUTHORS: Tim Whisonant, Intel Corporation
-///
-/// HISTORY:
-/// WHEN:          WHO:     WHAT:
-/// 01/24/2013     TSW      Create convenience header for AASLib.@endverbatim
+// @file RRMService.h
+// @brief AAL Service Module definitions for RRM
+// @ingroup
+// @verbatim
+// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+//
+// AUTHORS: Tim Whisonant, Intel Corporation
+//
+// HISTORY:
+// WHEN:          WHO:     WHAT:
+// 12/03/2015     TSW      Initial version.@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AASLIB_H__
-#define __AALSDK_AASLIB_H__
-#include <aalsdk/AALDefs.h>
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/utils/Utilities.h>
-#include <aalsdk/utils/ResMgrUtilities.h>
-#include <aalsdk/utils/AALWorkSpaceUtilities.h>
-#include <aalsdk/OSAL.h>
-#include <aalsdk/CCountedObject.h>
-#include <aalsdk/AALNamedValueSet.h>
-#include <aalsdk/AALTransactionID.h>
-#include <aalsdk/AASystem.h>
-#include <aalsdk/AALBase.h>
-#include <aalsdk/AALEvent.h>
-#include <aalsdk/CAALBase.h>
-#include <aalsdk/CAALEvent.h>
-#include <aalsdk/utils/AALEventUtilities.h>
-#include <aalsdk/aas/AALServiceModule.h>
-#include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/aas/AALService.h>
-#include <aalsdk/AALNVSMarshaller.h>
-//#include <aalsdk/aas/AALIPCServiceFactory.h>
-#endif // __AALSDK_AASLIB_H__
+#ifndef __RM_RRMSERVICE_H__
+#define __RM_RRMSERVICE_H__
+#include <aalsdk/osal/OSServiceModule.h>
+
+#define RRM_SVC_MOD         "@RRM_SVC_MOD@" AAL_SVC_MOD_EXT
+#define RRM_SVC_ENTRY_POINT "@RRM_SVC_MOD@" AAL_SVC_MOD_ENTRY_SUFFIX
+
+#define RRM_BEGIN_BUILTIN_SVC_MOD(__svcfactory) AAL_BEGIN_BUILTIN_SVC_MOD(__svcfactory, @RRM_SVC_MOD@, RRM_API, RRM_VERSION, RRM_VERSION_CURRENT, RRM_VERSION_REVISION, RRM_VERSION_AGE)
+#define RRM_END_SVC_MOD()                       AAL_END_SVC_MOD()
+
+AAL_DECLARE_MOD(@RRM_SVC_MOD@, RRM_API)
+
+#endif // __RM_RRMSERVICE_H__
 

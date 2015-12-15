@@ -33,17 +33,25 @@
 ##  History:
 ##     11/18/2014    TSW   Initial version
 ##******************************************************************************
+
+## NOTE: Removing SPL support but will add back in something similar, so 
+##       leaving in the code but not attempting to build (SPL will not build)
+## NOTE: Removed CCI-S support, but difference between Hello_CCI_NLB and
+##       Hello_ALI_NLB is useful, so leaving Hello_CCI_NLB in place for now.
 SUBDIRS=\
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
-Hello_CCI_NLB/SW \
-Hello_SPL_LB/SW \
-Sudoku_SPL/SW \
-LinkedList_SPL/SW \
 Hello_ALI_NLB/SW  \
 SignalTapService \
-SigTapSample/SW \
-AIAService
+SigTapSample/SW
+
+#Removed SUBDIRS
+#SUBDIRS=\
+#Hello_CCI_NLB/SW \
+#Hello_SPL_LB/SW \
+#Sudoku_SPL/SW \
+#LinkedList_SPL/SW \
+
 
 MFLAGS  =
 ifneq (,$(ndebug))

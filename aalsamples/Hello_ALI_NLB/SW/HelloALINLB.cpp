@@ -100,17 +100,17 @@ using namespace AAL;
 #define LPBK1_BUFFER_SIZE        CL(1)
 
 #define LPBK1_DSM_SIZE           MB(4)
-#define CSR_AFU_DSM_BASEH        0x1a04
-#define CSR_SRC_ADDR             0x1a20
-#define CSR_DST_ADDR             0x1a24
-#define CSR_CTL                  0x1a2c
-#define CSR_CFG                  0x1a34
+//#define CSR_AFU_DSM_BASEH        0x1a04
+#define CSR_SRC_ADDR             0x0120
+#define CSR_DST_ADDR             0x0128
+#define CSR_CTL                  0x0138
+#define CSR_CFG                  0x0140
 //#define CSR_CIPUCTL              0x280  /* should not be used */
-#define CSR_NUM_LINES            0x1a28
+#define CSR_NUM_LINES            0x0130
 #define DSM_STATUS_TEST_COMPLETE 0x40
-#define CSR_AFU_DSM_BASEL        0x1a00
-#define CSR_AFU_DSM_BASEH        0x1a04
-
+#define CSR_AFU_DSM_BASEL        0x0110
+#define CSR_AFU_DSM_BASEH        0x0114
+#	define NLB_TEST_MODE_PCIE0		0x2000
 /// @addtogroup HelloCCINLB
 /// @{
 
@@ -122,12 +122,6 @@ using namespace AAL;
 class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
-   enum WorkspaceType   ///<Type of Workspace being allocated
-   {
-      WKSPC_DSM, ///< Device Status Memory
-      WKSPC_IN,  ///< Input workspace
-      WKSPC_OUT  ///< Output workspace
-   };
 
    HelloALINLBApp();
    ~HelloALINLBApp();
@@ -143,8 +137,6 @@ public:
    void serviceReleased(const AAL::TransactionID&);
 
    void serviceReleaseFailed(const AAL::IEvent&);
-
-   void serviceFreed(TransactionID const &rTranID);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -306,14 +298,14 @@ btInt HelloALINLBApp::run()
       m_Sem.Wait();
       return -1;
    }
-   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
-   //   In workspaceAllocated() callback we allocate the rest
+   // Allocate 3 Workspaces .
    if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
       return -1;
    }
    m_DSMSize = LPBK1_DSM_SIZE;
+   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
    if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
       m_bIsOK = false;
@@ -321,6 +313,7 @@ btInt HelloALINLBApp::run()
       return -1;
    }
    m_InputSize = LPBK1_BUFFER_SIZE;
+   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 
    if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
@@ -329,6 +322,7 @@ btInt HelloALINLBApp::run()
    }
 
    m_OutputSize = LPBK1_BUFFER_SIZE;
+   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
@@ -403,19 +397,19 @@ btInt HelloALINLBApp::run()
       SleepSec(5);
       #endif /* ASE AFU */
 
-      __sync_synchronize();
+
 
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite32(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
 
       // Set the test mode
-      m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
+      m_pALIMMIOService->mmioWrite32(CSR_CFG,0);
 
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
                                          (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);

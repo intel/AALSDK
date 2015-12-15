@@ -58,7 +58,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalkernel], [4.5.0], [joe.grecco@intel.com])
+AC_INIT([aalkernel], [5.0.0], [joe.grecco@intel.com])
 AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -78,13 +78,12 @@ AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
 dnl ############################################################################
 dnl ## Module Versioning #######################################################
 dnl ############################################################################
-AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([SPL2PIP],  [spl2pip],  [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [5],[0],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -162,36 +161,6 @@ AC_CONFIG_LINKS([aal_uidriver/kbuild/aaluidrv-file.c:aal_uidriver/aaluidrv-file.
                  aal_uidriver/kbuild/aalui-events-int.h:aal_uidriver/aalui-events-int.h
                  aal_uidriver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
-AC_CONFIG_FILES([spl2_pip_dksm/kbuild/Makefile:spl2_pip_dksm/Kbuild.in])
-AC_CONFIG_LINKS([spl2_pip_dksm/kbuild/buf-desc.h:spl2_pip_dksm/buf-desc.h
-                 spl2_pip_dksm/kbuild/buf-desc-table.h:spl2_pip_dksm/buf-desc-table.h
-                 spl2_pip_dksm/kbuild/buf-desc-table-impl.h:spl2_pip_dksm/buf-desc-table-impl.h
-                 spl2_pip_dksm/kbuild/buf-mem-type.h:spl2_pip_dksm/buf-mem-type.h
-                 spl2_pip_dksm/kbuild/cci3_afu_pip.c:spl2_pip_dksm/cci3_afu_pip.c
-                 spl2_pip_dksm/kbuild/cci3_pip_mmap.c:spl2_pip_dksm/cci3_pip_mmap.c
-                 spl2_pip_dksm/kbuild/kernver-utils.h:spl2_pip_dksm/kernver-utils.h
-                 spl2_pip_dksm/kbuild/mem-internal-fops.h:spl2_pip_dksm/mem-internal-fops.h
-                 spl2_pip_dksm/kbuild/mem-internal-ioctl.h:spl2_pip_dksm/mem-internal-ioctl.h
-                 spl2_pip_dksm/kbuild/mem-pte.h:spl2_pip_dksm/mem-pte.h
-                 spl2_pip_dksm/kbuild/mem-sess.h:spl2_pip_dksm/mem-sess.h
-                 spl2_pip_dksm/kbuild/mem-virt.h:spl2_pip_dksm/mem-virt.h
-                 spl2_pip_dksm/kbuild/mem-virt-impl.h:spl2_pip_dksm/mem-virt-impl.h
-                 spl2_pip_dksm/kbuild/spl2_afu_pip.c:spl2_pip_dksm/spl2_afu_pip.c
-                 spl2_pip_dksm/kbuild/spl2diag.h:spl2_pip_dksm/spl2diag.h
-                 spl2_pip_dksm/kbuild/spl2_mafu_pip.c:spl2_pip_dksm/spl2_mafu_pip.c
-                 spl2_pip_dksm/kbuild/spl2mem.h:spl2_pip_dksm/spl2mem.h
-                 spl2_pip_dksm/kbuild/spl2mem-kern.h:spl2_pip_dksm/spl2mem-kern.h
-                 spl2_pip_dksm/kbuild/spl2_pip_internal.h:spl2_pip_dksm/spl2_pip_internal.h
-                 spl2_pip_dksm/kbuild/spl2_pip_main.c:spl2_pip_dksm/spl2_pip_main.c
-                 spl2_pip_dksm/kbuild/spl2_pip_mmap.c:spl2_pip_dksm/spl2_pip_mmap.c
-                 spl2_pip_dksm/kbuild/spl2_pip_nopcie.c:spl2_pip_dksm/spl2_pip_nopcie.c
-                 spl2_pip_dksm/kbuild/spl2_pip_public.h:spl2_pip_dksm/spl2_pip_public.h
-                 spl2_pip_dksm/kbuild/spl2_primitives.c:spl2_pip_dksm/spl2_primitives.c
-                 spl2_pip_dksm/kbuild/spl2_session.c:spl2_pip_dksm/spl2_session.c
-                 spl2_pip_dksm/kbuild/spl2_session.h:spl2_pip_dksm/spl2_session.h
-                 spl2_pip_dksm/kbuild/xsid.h:spl2_pip_dksm/xsid.h
-                 spl2_pip_dksm/kbuild/kOSAL.c:kOSAL/kOSAL.c])
-
 AC_CONFIG_FILES([cciv4_driver/kbuild/Makefile:cciv4_driver/Kbuild.in])
 AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driver_main.c
                  cciv4_driver/kbuild/cciv4_driver_internal.h:cciv4_driver/cciv4_driver_internal.h
@@ -243,7 +212,6 @@ AC_CONFIG_FILES([Makefile
                  aalresourcemgr_server/Makefile
                  aalresourcemgr_client/Makefile
                  aal_uidriver/Makefile
-                 spl2_pip_dksm/Makefile
                  cciv4_driver/Makefile
                  cci_PCIe_driver/Makefile])
 

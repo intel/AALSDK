@@ -480,7 +480,7 @@ struct shutdown_handler_thread_parms
 {
 shutdown_handler_thread_parms(ServiceBroker                 *pfact,
                               ServiceBroker::Servicemap_itr  itr,
-                              CSemaphore                    &srvcCount,
+                              CSemaphore                    *srvcCount,
                               btTime                         timeout) :
    m_this(pfact),
    m_itr(itr),
@@ -491,7 +491,7 @@ shutdown_handler_thread_parms(ServiceBroker                 *pfact,
    ServiceBroker                 *m_this;
    ServiceBroker::Servicemap_itr  m_itr;
    btTime                         m_timeout;
-   CSemaphore                    &m_srvcCount;
+   CSemaphore                    *m_srvcCount;
 };
 
 //=============================================================================
@@ -541,7 +541,7 @@ btBool ServiceBroker::DoShutdown(TransactionID const &rTranID,
          // Technically should join on these threads
          new OSLThread(ServiceBroker::ShutdownHandlerThread,
                        OSLThread::THREADPRIORITY_NORMAL,
-                       new shutdown_handler_thread_parms(this, itr, srvcCount, timeout));
+                       new shutdown_handler_thread_parms(this, itr, &srvcCount, timeout));
 
          DEBUG_CERR("ServiceBroker::DoShutdown - returned from IServiceModule->Shutdown()\n");
       }
@@ -579,7 +579,7 @@ void ServiceBroker::ShutdownHandlerThread(OSLThread *pThread,
             static_cast<struct shutdown_handler_thread_parms *>(pContext);
    ServiceBroker *This = static_cast<ServiceBroker *>(pparms->m_this);
 
-   This->ShutdownHandler(pparms->m_itr, pparms->m_srvcCount);
+   This->ShutdownHandler(pparms->m_itr, *pparms->m_srvcCount);
 
    // Destroy the thread and parms
    delete pparms;

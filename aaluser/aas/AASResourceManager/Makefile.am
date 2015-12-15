@@ -39,10 +39,8 @@ lib_LTLIBRARIES=libAASResMgr.la
 
 libAASResMgr_la_SOURCES=\
 CAASResourceManager.cpp \
-CRegistrarDatabase.cpp \
 InstanceRecord.cpp \
-RegDBSkeleton.cpp \
-ResMgrAlgorithms.cpp
+ResMgrAlgorithms.cpp	
 
 libAASResMgr_la_CPPFLAGS=\
 -DREGISTRAR_DATABASE_PATH=\"$(datadir)/aalsdk/RegistrarRepository/linux\" \

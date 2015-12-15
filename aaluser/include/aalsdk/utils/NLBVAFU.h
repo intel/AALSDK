@@ -82,13 +82,13 @@ BEGIN_NAMESPACE(AAL)
 #   define QLP_PERF_CACHE_WR_MISS 3
 #   define QLP_PERF_EVICTIONS     10
 
-#define CSR_AFU_DSM_BASEL         	0x1a00
-#define CSR_AFU_DSM_BASEH         	0x1a04
-#define CSR_SRC_ADDR              	0x1a20
-#define CSR_DST_ADDR              	0x1a24
-#define CSR_NUM_LINES             	0x1a28
-#define CSR_CTL                   	0x1a2c
-#define CSR_CFG                   	0x1a34
+#define CSR_AFU_DSM_BASEL         	0x0110
+#define CSR_AFU_DSM_BASEH         	0x0114
+#define CSR_SRC_ADDR              	0x0120
+#define CSR_DST_ADDR              	0x0128
+#define CSR_NUM_LINES             	0x0130
+#define CSR_CTL                   	0x0138
+#define CSR_CFG                   	0x0140
 #define CSR_UMSG_BASE				0x03F4
 #define CSR_UMSG_MODE				0x03F8
 #define CSR_CIRBSTAT				0x0278

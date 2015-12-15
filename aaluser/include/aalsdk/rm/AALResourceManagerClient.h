@@ -37,8 +37,8 @@
 /// 08/20/2014     JG       Initial version started
 /// 06/25/2015     JG       Removed XL from name@endverbatim
 //****************************************************************************
-#ifndef __AALSDK_AASRESOURCEMANAGERCLIENT_H__
-#define __AALSDK_AASRESOURCEMANAGERCLIENT_H__
+#ifndef __AALSDK_AALRESOURCEMANAGERCLIENT_H__
+#define __AALSDK_AALRESOURCEMANAGERCLIENT_H__
 #include <aalsdk/AALTransactionID.h>
 #include <aalsdk/kernel/aalrm_client.h>
 
@@ -68,5 +68,5 @@ public:
 
 END_NAMESPACE(AAL)
 
-#endif // __AALSDK_XL_AASRESOURCEMANAGERCLIENT_H__
+#endif // __AALSDK_AALRESOURCEMANAGERCLIENT_H__
 

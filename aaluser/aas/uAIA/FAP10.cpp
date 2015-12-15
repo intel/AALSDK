@@ -884,7 +884,7 @@ std::string    SubmitTask_VMaster_AFUTransaction::GetError()     { return m_Erro
 ////////////////////                                     //////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-#if 0
+#if 1
 //=============================================================================
 // Name:          WkSp_Single_Allocate_AFUTransaction:: various functions
 // Description:   Encapsulates the request for a single workspace

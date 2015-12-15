@@ -5,7 +5,7 @@ shopt -o -s nounset
 
 declare -r SCRIPT_NAME='create-dist'
 
-declare -r SAMPLES_VERSION='4.1.7'
+declare -r SAMPLES_VERSION='5.0.0'
 
 die() {
    printf "%s\n" ${1+"$@"}

@@ -123,6 +123,7 @@ typedef enum
    reqid_UID_Shutdown,              // Request that the Service session shutdown
 
    reqid_UID_SendAFU,               // Send AFU a message
+   reqid_UID_SendWSM,               // Send to Workspace Manager
 
    // Response and Event IDs
    rspid_UID_Shutdown=0xF000,       // Service is shutdown

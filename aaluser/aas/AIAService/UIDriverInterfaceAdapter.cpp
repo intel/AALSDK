@@ -1,4 +1,4 @@
-// Copyright (c) 2008-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,9 +24,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file AALuAIA_UIDriverClient.cpp
-/// @brief Implements the object wrapper for the AAL Universal Device Driver.
-/// @ingroup uAIA
+/// @file UIDriverInterfaceAdapter.cpp
+/// @brief Implements the Interface Adapter between the OS specific driver
+///        interface and the portable AAL framework..
+/// @ingroup AIA
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 ///
@@ -34,57 +35,44 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 11/17/2008     JG       Initial version started
-/// 12/10/2008     HM       Added Logger
-/// 01/04/2009     HM       Updated Copyright
-/// 02/01/2009     HM       Put "About to Wait" into Logger at Debug level
-/// 06/22/2009     JG       Made changes to marshaller to support UAIA
-///                         accessor necessary to break build dependency that
-///                         Interfered with plug-in model. Now marshaller is
-///                         accessed from this library through a pointer.
-/// 01/07/2010     AC       Fix a valgrind memory error bug.
-/// 02/11/2010     JG       Added support for glib version 4.4
-/// 03/12/2013     JG       Added Windows support for mmap() and poll()@endverbatim
+/// 08/21/2015     JG       Initial version started
+///                @endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-
-#include "aalsdk/uaia/AALuAIA_UIDriverClient.h"
 #include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/kernel/ccipdriver.h"
 
+#include "UIDriverInterfaceAdapter.h"
 
 BEGIN_NAMESPACE(AAL)
 
-IUIDriverClientEvent::~IUIDriverClientEvent() {}
-IUIDriverClientEventExceptionEvent::~IUIDriverClientEventExceptionEvent() {}
-
-
-btBool UIDriverClient::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
+btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 {
    ASSERT(NULL != pRet);
 
 #if   defined( __AAL_WINDOWS__ )
    DWORD                 bytes = 0;
    OVERLAPPED            overlappedIO;
-   struct aalui_ioctlreq resp;
-   struct aalui_ioctlreq req;
+   struct ccipui_ioctlreq resp;
+   struct ccipui_ioctlreq req;
    HANDLE                hEvent;
 
    req.context = (btObjectType)wsid;
 
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
-   memset(&resp, 0, sizeof(struct aalui_ioctlreq));
-   memset(&req, 0, sizeof(struct aalui_ioctlreq));
+   memset(&resp, 0, sizeof(struct ccipui_ioctlreq));
+   memset(&req, 0, sizeof(struct ccipui_ioctlreq));
    req.context = reinterpret_cast<btObjectType>(wsid);
 
    hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
    overlappedIO.hEvent = hEvent;
 
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_MMAP,
-                         &req, sizeof(struct aalui_ioctlreq),
-                         &resp, sizeof(struct aalui_ioctlreq),
+                         &req, sizeof(struct ccipui_ioctlreq),
+                         &resp, sizeof(struct ccipui_ioctlreq),
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -110,22 +98,22 @@ btBool UIDriverClient::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
 
 }
 
-void UIDriverClient::UnMapWSID(btVirtAddr ptr, btWSSize Size)
+void UIDriverInterfaceAdapter::UnMapWSID(btVirtAddr ptr, btWSSize Size)
 {
 #ifdef __AAL_LINUX__
    munmap(ptr, Size);
 #endif // __AAL_LINUX__
 
 #ifdef __AAL_WINDOWS__
-// TODO UIDriverClient uses munmap - need equiv for Windows.
+// TODO UIDriverInterfaceAdapter uses munmap - need equiv for Windows.
 #endif // __AAL_WINDOWS__
 }
 
 //==========================================================================
-// Name: UIDriverClient
+// Name: UIDriverInterfaceAdapter
 // Description: Constructor
 //==========================================================================
-UIDriverClient::UIDriverClient() :
+UIDriverInterfaceAdapter::UIDriverInterfaceAdapter() :
 #if   defined( __AAL_WINDOWS__ )
    m_hClient(INVALID_HANDLE_VALUE),
 #elif defined( __AAL_LINUX__ )
@@ -135,10 +123,10 @@ UIDriverClient::UIDriverClient() :
 {}
 
 //==========================================================================
-// Name: ~UIDriverClient
+// Name: ~UIDriverInterfaceAdapter
 // Description: Destructor
 //==========================================================================
-UIDriverClient::~UIDriverClient()
+UIDriverInterfaceAdapter::~UIDriverInterfaceAdapter()
 {
 #if   defined( __AAL_WINDOWS__ )
    if ( INVALID_HANDLE_VALUE != m_hClient ) {
@@ -151,24 +139,6 @@ UIDriverClient::~UIDriverClient()
 #endif // OS
 
    m_bIsOK = false;
-}
-
-//==========================================================================
-// Name:  operator <<
-// Description: Defines a manipulator that can take arguments
-//              Since an operator takes at most 1 argument the multiple
-//              arguments must be passed through a function object which
-//              contains the actual manipulator pointer and its args
-//==========================================================================
-UIDriverClient & UIDriverClient::operator << (const UIDriverClient_uidrvManip &m)
-{
-     //Invoke the helper that runs the manipulator
-     return m.m_fop( *this,
-                      m.m_cmd,
-                      m.m_payload,
-                      &m.m_tid,
-                      m.m_mgsRoutep,
-                      m.m_DevObject);
 }
 
 
@@ -287,7 +257,7 @@ static HANDLE OpenFirstDevice(const GUID *pinterface_guid)
 // Name: Open
 // Description: Open the channel to the service
 //==========================================================================
-void UIDriverClient::Open(const char *devName)
+void UIDriverInterfaceAdapter::Open(const char *devName)
 {
    // Open the device
 #if   defined( __AAL_WINDOWS__ )
@@ -313,7 +283,7 @@ void UIDriverClient::Open(const char *devName)
 
    std::string strName;
    if ( devName == NULL ) {
-      strName="/dev/aalui";
+      strName="/dev/uidrv";
    } else {
 	   strName = devName;
    }
@@ -327,13 +297,13 @@ void UIDriverClient::Open(const char *devName)
 #endif // OS
 
    m_bIsOK = true;
-}  // UIDriverClient::Open
+}  // UIDriverInterfaceAdapter::Open
 
 //==========================================================================
 // Name: Close
 // Description: lose the channel to the service
 //==========================================================================
-void UIDriverClient::Close() {
+void UIDriverInterfaceAdapter::Close() {
 #if   defined( __AAL_WINDOWS__ )
 
    if ( INVALID_HANDLE_VALUE != m_hClient ) {
@@ -351,16 +321,17 @@ void UIDriverClient::Close() {
    }
 
 #endif // OS
-}  // UIDriverClient::Close
+}  // UIDriverInterfaceAdapter::Close
 
 //==========================================================================
 // Name: GetMessage
 // Description: Polls for messages and returns when one is available
 // Comment:
 //==========================================================================
-btBool UIDriverClient::GetMessage(uidrvMessage *uidrvMessagep)
+btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 {
-   struct aalui_ioctlreq ioctlMessage;
+
+   struct ccipui_ioctlreq ioctlMessage;
 
 
    if ( !IsOK() ) {
@@ -388,14 +359,14 @@ btBool UIDriverClient::GetMessage(uidrvMessage *uidrvMessagep)
    
    hEvent = CreateEvent(NULL, TRUE, FALSE,NULL);
    bytes = 0;
-   memset(&ioctlMessage, 0, sizeof(struct aalui_ioctlreq));
+   memset(&ioctlMessage, 0, sizeof(struct ccipui_ioctlreq));
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
 
    Lock();
    overlappedIO.hEvent = hEvent;
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_POLL,
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
                            &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -413,14 +384,14 @@ btBool UIDriverClient::GetMessage(uidrvMessage *uidrvMessagep)
       }
    }
 
-   memset(&ioctlMessage, 0, sizeof(struct aalui_ioctlreq));
+   memset(&ioctlMessage, 0, sizeof(struct ccipui_ioctlreq));
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
    overlappedIO.hEvent = hEvent;
 
    // retrieve the size of the payload buffer in ioctlMessage.size
    if ( !DeviceIoControl(m_hClient, AALUID_IOCTL_GETMSG_DESC,
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
-                           &ioctlMessage, sizeof(struct aalui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
+                           &ioctlMessage, sizeof(struct ccipui_ioctlreq),
                            &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
@@ -438,7 +409,7 @@ btBool UIDriverClient::GetMessage(uidrvMessage *uidrvMessagep)
       }
 
    }
-   ASSERT(sizeof(struct aalui_ioctlreq) == bytes);
+   ASSERT(sizeof(struct ccipui_ioctlreq) == bytes);
 
    uidrvMessagep->size(ioctlMessage.size);
 
@@ -483,7 +454,7 @@ FAILED: // If got here then DeviceIoControl failed.
          AutoLock(this);
 
          // Check for messages first
-         memset(&ioctlMessage,0, sizeof(struct aalui_ioctlreq));
+         memset(&ioctlMessage,0, sizeof(struct ccipui_ioctlreq));
          if( ( ret = ioctl(m_fdClient, AALUID_IOCTL_GETMSG_DESC, &ioctlMessage) ) == 0 ) {
 
             uidrvMessagep->size(ioctlMessage.size);
@@ -498,43 +469,90 @@ FAILED: // If got here then DeviceIoControl failed.
 
       }
 
-      AAL_VERBOSE(LM_UAIA, "UIDriverClient::GetMessage: About to wait" << std::endl);
+      AAL_VERBOSE(LM_UAIA, "UIDriverInterfaceAdapter::GetMessage: About to wait" << std::endl);
 
       ret = poll(pollfds, 1, -1);
       if ( ret != 1 ) {   // expect a 1 here, generally
-         AAL_DEBUG(LM_UAIA, "UIDriverClient::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << std::endl);
+         AAL_DEBUG(LM_UAIA, "UIDriverInterfaceAdapter::GetMessage: Returned value from poll() is not 1 as expected, but " << ret << std::endl);
       }
 
    // TODO: HM 20090605 Joe and I both think this logic is buggy. Revisit.
    } while( ( 0 == ret ) || ( -EAGAIN != ret ) );
 
 FAILED: // If got here then the poll failed
-   perror("UIDriverClient::GetMessage:poll");
+   perror("UIDriverInterfaceAdapter::GetMessage:poll");
    return false;
 
 #endif // OS
-}  // UIDriverClient::GetMessage
+
+}  // UIDriverInterfaceAdapter::GetMessage
 
 
 //==========================================================================
 // Name: SendMessage
 // Description: Sends a message down RMC connection
 //==========================================================================
-btBool UIDriverClient::SendMessage(btUnsigned64bitInt cmd, struct aalui_ioctlreq *reqp)
+btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
+                                             IAIATransaction *pMessage,
+                                             IAFUProxyClient *pProxyClient)
 {
+
+#if   defined( __AAL_WINDOWS__ )
+   DWORD cmd;
+#elif defined( __AAL_LINUX__ )
+   int cmd;
+#endif
 
    AutoLock(this);
 
    if ( !IsOK() ) {
-      return true;
+      return false;
    }
 
-#if   defined( __AAL_WINDOWS__ )
+   // Build the low level message
+   struct ccipui_ioctlreq *reqp = reinterpret_cast<struct ccipui_ioctlreq *> (new char[ sizeof(struct ccipui_ioctlreq) + pMessage->getPayloadSize() ]);
 
+   reqp->id = pMessage->getMsgID();
+   reqp->tranID = pMessage->getTranID();
+   reqp->handle = devHandle;
+   reqp->context = pProxyClient;
+   reqp->size = pMessage->getPayloadSize();
+
+   memcpy(aalui_ioctlPayload(reqp), pMessage->getPayloadPtr(), pMessage->getPayloadSize());
+
+   // Determine which low-level command should be used to send down the stack
+   switch ( pMessage->getMsgID() ) {
+
+    case reqid_UID_Bind:
+    case reqid_UID_ExtendedBindInfo:
+    case reqid_UID_UnBind:
+       cmd = AALUID_IOCTL_BINDDEV;
+       break;
+
+    case reqid_UID_Activate:
+       cmd = AALUID_IOCTL_ACTIVATEDEV;
+       break;
+
+    case reqid_UID_Deactivate:
+       cmd = AALUID_IOCTL_DEACTIVATEDEV;
+       break;
+
+    case reqid_UID_SendAFU:
+    case reqid_UID_Shutdown:
+       cmd = AALUID_IOCTL_SENDMSG;
+       break;
+     default:
+       std::cerr << "UIDRV: Unknown command class" << std::endl;
+       return false;
+       break;
+    }
+
+
+#if   defined( __AAL_WINDOWS__ )
    DWORD      bytes,bytes_to_send;
    btHANDLE  hEvent;
    OVERLAPPED overlappedIO;
-   bytes_to_send = sizeof(struct aalui_ioctlreq) + reqp->size;
+   bytes_to_send = sizeof(struct ccipui_ioctlreq) + reqp->size;
    bytes = 0;
    memset(&overlappedIO, 0, sizeof(OVERLAPPED));
    hEvent = CreateEvent(NULL, TRUE, FALSE,NULL);
@@ -553,99 +571,22 @@ btBool UIDriverClient::SendMessage(btUnsigned64bitInt cmd, struct aalui_ioctlreq
    CloseHandle(hEvent);
 
 #elif defined( __AAL_LINUX__ )
-
    if ( -1 == ioctl(m_fdClient, cmd, reqp) ) {
-      perror("UIDriverClient::SendMessage");
+      perror("UIDriverInterfaceAdapter::SendMessage");
       m_bIsOK = false;
    }
 
+   pMessage->setErrno(reqp->errcode);
+
+   // Atomic operations return data in payload so if it's there copy back into the transaction
+   if(reqp->size != 0) {
+      // Copy the response back into the transaction
+      memcpy(pMessage->getPayloadPtr(), aalui_ioctlPayload(reqp),  pMessage->getPayloadSize());
+   }
 #endif // OS
 
    return true;
-}  // UIDriverClient::SendMessage
-
-
-BEGIN_C_DECLS
-
-//==========================================================================
-// Name: msgMarshaller
-// Description: This function is a helper method that is responsible for
-//              building the appropriate method to send to the RMC. This
-//              is called by the << operator
-// Inputs: rThis  - reference to the instance of this UIDriverClient
-//         cmd    - Commmand ID
-//         stTidp - Pointer to transactionID structure
-//         payload - Wrapper for a payload.  Passed by value so that
-//                   it can garbage collect itself. I.e., if the buffer
-//                   was malloced (newed) it will delete.  The buffer owner
-//                   is responsible for wrapping in a Payload that does the
-//                   correct thing.
-//         mgsRoutep - Routing object used to route the return message
-//                     (NOTE: Object must remain in scope until message delivered)
-//         Handle - Device Handle
-// Comment: This version requires that the payload and all of its subpayloads
-//            be contiguous. Function creates a single contiguous message
-//            to be sent downsteam.
-//==========================================================================
-UIDriverClient & msgMarshaller(UIDriverClient           &rThis,
-                               uid_msgIDs_e              cmd,
-                               UIDriverClient_msgPayload payload,
-                               stTransactionID_t const  *stTidp,
-                               uidrvMessageRoute        *mgsRoutep,
-                               btObjectType              Handle)
-{
-   struct aalui_ioctlreq *preq = reinterpret_cast<struct aalui_ioctlreq*>(new char[sizeof(struct aalui_ioctlreq) + (size_t)payload.size()]);
-   unsigned long ioctlCMD;
-   char * ppayload = reinterpret_cast<char*>((preq))+sizeof(struct aalui_ioctlreq);
-
-   preq->id      = cmd;
-   preq->size    = payload.size();
-   preq->tranID  = *stTidp;
-   preq->context = mgsRoutep;
-   preq->handle  = Handle;
-
-   memcpy(ppayload, payload.ptr(), (size_t)payload.size());
-
-#if 0
-   cout <<"########CHECK########\n"
-   		<<"\n\treq="
-		<<std::hex<<&req
-   		<<"\n\treq.payload="
-   		<< std::hex<< req.payload << endl;    // payloads are often binary and of unknown length
-#endif
-
-   switch ( cmd ) {
-
-   case reqid_UID_Bind:
-   case reqid_UID_ExtendedBindInfo:
-   case reqid_UID_UnBind:
-      ioctlCMD = AALUID_IOCTL_BINDDEV;
-      break;
-
-   case reqid_UID_Activate:
-      ioctlCMD = AALUID_IOCTL_ACTIVATEDEV;
-      break;
-
-   case reqid_UID_Deactivate:
-      ioctlCMD = AALUID_IOCTL_DEACTIVATEDEV;
-      break;
-
-   case reqid_UID_SendAFU:
-   case reqid_UID_SendWSM:
-      ioctlCMD = AALUID_IOCTL_SENDMSG;
-      break;
-   default:
-      std::cerr << "UIDRV: Unknown command class" << std::endl;
-      rThis.IsOK(false);    //ERROR
-      break;
-   }
-
-   UIDriverClient &ret = rThis.Send(ioctlCMD, preq);
-   return ret;
-}  // UIDriverClient::msgMarshaller
-
-END_C_DECLS
-
+}  // UIDriverInterfaceAdapter::SendMessage
 
 END_NAMESPACE(AAL)
 

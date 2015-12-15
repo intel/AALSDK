@@ -92,38 +92,15 @@
                                            // Also defines debug LogMask_t bitmasks for detailed debugging of Resource Manager
 #include "aalsdk/kernel/KernelStructs.h"   // various operator<<
 #include "aalsdk/utils/ResMgrUtilities.h"  // string, name, and GUID inter-conversion operators
-
+#include "aalsdk/rm/ResMgrService.h"
 
 BEGIN_NAMESPACE(AAL)
 
-
-
-
-#ifndef RESMGRSERVICE_VERSION_CURRENT
-# define RESMGRSERVICE_VERSION_CURRENT  1
-#endif // RESMGRSERVICE_VERSION_CURRENT
-#ifndef RESMGRSERVICE_VERSION_REVISION
-# define RESMGRSERVICE_VERSION_REVISION 0
-#endif // RESMGRSERVICE_VERSION_REVISION
-#ifndef RESMGRSERVICE_VERSION_AGE
-# define RESMGRSERVICE_VERSION_AGE      0
-#endif // RESMGRSERVICE_VERSION_AGE
-#ifndef RESMGRSERVICE_VERSION
-# define RESMGRSERVICE_VERSION          "1.0.0"
-#endif // RESMGRSERVICE_VERSION
-
-#ifndef __declspec
-#   define __declspec(x)
-#endif // __declspec
-#define RESMGR_SERVICE_API    __declspec(0)
-
-// FIXME: left out Windows-specific defines (lazy me)
-
 #define SERVICE_FACTORY AAL::InProcSvcsFact< CResMgr >
 
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libAASResMgr, RESMGR_SERVICE_API, RESMGRSERVICE_VERSION, RESMGRSERVICE_VERSION_CURRENT, RESMGRSERVICE_VERSION_REVISION, RESMGRSERVICE_VERSION_AGE)
+RESMGR_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-AAL_END_SVC_MOD()
+RESMGR_END_SVC_MOD()
 
 
 
@@ -150,6 +127,7 @@ CResMgr::~CResMgr()
    // means it is not in the GetMsg poll. However, in the future, should there
    // need to be an asynchronous ending (e.g. from SIGHUP), then have to handle
    // popping out of the poll here via a special ioctl.
+   std::cerr << "~CResMgr\n";
    if( m_fdServer >= 0 ) {
       close (m_fdServer);
       m_fdServer = -1;
@@ -158,10 +136,12 @@ CResMgr::~CResMgr()
       delete m_pIoctlReq;
       m_pIoctlReq = NULL;
    }
+#if 0
    if( m_pRegDBSkeleton ){
       delete m_pRegDBSkeleton;
       m_pRegDBSkeleton = NULL;
    }
+#endif
 } // end of CResMgr::~CResMgr
 
 //=============================================================================
@@ -554,6 +534,8 @@ int CResMgr::DoReleaseDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 //=============================================================================
 int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 {
+
+#if 0
    AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: reqid_Registrar seen\n");
    int Retval;
 
@@ -563,7 +545,6 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       pRegistrarCmdResp_t pRCR =
             reinterpret_cast<pRegistrarCmdResp_t> (pIoctlReq->payload);
       AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar: RECEIVED RegistrarCmdResp is:\n" << *pRCR << std::endl);
-
       // execute the database command, collect the response in pResp
       // TODO: use auto_ptr here, see how it affects other calls using the pointer type
       pRegistrarCmdResp_t pResp = m_pRegDBSkeleton->ParseCommand(pRCR);
@@ -608,6 +589,7 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       Retval = EINVAL;
    }
    return Retval;
+#endif
 } // CResMgr::DoRegistrar
 
 //=============================================================================
@@ -624,12 +606,15 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 int CResMgr::DoShutdown(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 {
    AAL_DEBUG(LM_ResMgr,"CResMgr::DoShutdown\n");
+#if 0
    m_pRegDBSkeleton->Database()->Close();
+#endif
    {
        AutoLock(this);
        m_state = eCRMS_Stopping;                 // Signal main loop to shut down
        // TODO - DoShutdown code
    }
+
    return 0;
 } // CResMgr::DoShutdown
 
@@ -875,12 +860,12 @@ btBool CResMgr::init( IBase *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &rtid)
 {
-
-		m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
-		ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
-		if(NULL == m_pAALServiceClient)
-		{
-         initFailed(new CExceptionTransactionEvent( this,
+   pAALLogger()->AddToMask(LM_ResMgr, LOG_VERBOSE);
+   m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
+   ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
+   if(NULL == m_pAALServiceClient)
+   {
+      initFailed(new CExceptionTransactionEvent( this,
                                                     rtid,
                                                     errBadParameter,
                                                     reasMissingInterface,
@@ -895,7 +880,7 @@ btBool CResMgr::init( IBase *pclientBase,
 	      AAL_ERR(LM_ResMgr,"CResMgr::CResMgr sees m_fdServer set, will reset and lose file\n");
 	      m_fdServer = -1;
 	   }
-
+#if 0
 	   // Have a path, get the database up
 	   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
 	   if (m_pRegDBSkeleton) {
@@ -904,7 +889,7 @@ btBool CResMgr::init( IBase *pclientBase,
 	      AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
 	      goto getout_1;
 	   }
-
+#endif
 	   // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
 	   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
 	   if( m_pIoctlReq ){
@@ -923,9 +908,10 @@ btBool CResMgr::init( IBase *pclientBase,
 	                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
 	      goto getout_3;
 	   }
-
+#if 0
 	   // Don't use one of these objects unless bIsOK returns true
 	   m_bIsOK = m_pRegDBSkeleton->IsOK();
+#endif
 	   m_state = eCRMS_Running;
 
 	    // Start up configuration updates
@@ -942,7 +928,9 @@ btBool CResMgr::init( IBase *pclientBase,
 	getout_3:
 	   delete m_pIoctlReq; m_pIoctlReq = NULL;
 	getout_2:
+#if 0
 	   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
+#endif
 	getout_1:
 	   return false;
 }
@@ -1089,7 +1077,7 @@ btBool CResMgr::Release(TransactionID const &rTranID, btTime timeout)
     }
     // Wait for actual shutdown
     while (m_state != eCRMS_Stopping) {
-        SleepMilli(10);
+        SleepMilli(100);
     }
     // call parent release method
     return ServiceBase::Release(rTranID, timeout);
