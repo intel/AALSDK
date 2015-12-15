@@ -1,8 +1,0 @@
-9 7 AIAName
-	9 8 FSBV1AIA
-9 10 Executable
-	9 13 libFAP_AIA.so
-9 12 __RecordName
-	9 21 AIAName_FAPAIAPackage
-9 20 ---- End of NVS ----
-	9999 

@@ -59,7 +59,6 @@
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/ResMgr.h>                // Definitions for user mode RM users
 #include <aalsdk/IServiceClient.h>        // IServiceClient
-#include <aalsdk/rm/RegDBSkeleton.h>      // Brings in the skeleton, which brings in the database
 #include <aalsdk/rm/InstanceRecord.h>     // InstRecMap
 
 #include <aalsdk/AAL.h>                   // for service declaration
@@ -81,9 +80,6 @@ public:
    NamedValueSet m_nvs;             // container value semantics, copyable
 }; // nvsContainer
 
-typedef std::map<DatabaseKey_t, nvsContainer>   nvsMap_t; // Map [primary key, NVS Container]
-typedef nvsMap_t::iterator                      nvsMap_itr_t;
-typedef nvsMap_t::const_iterator                nvsMap_citr_t;
 
 typedef std::list<nvsContainer>                 nvsList_t; // List [NVS Container]
 typedef nvsList_t::iterator                     nvsList_itr_t;
@@ -128,7 +124,6 @@ class CResMgr : public ServiceBase, public IResMgrService
 {
 private:
    std::string             m_sResMgrDevName;    // name of the generic pipe this server is servicing
-   RegDBSkeleton          *m_pRegDBSkeleton;    // The skeleton is the interface to the database
    struct aalrm_ioctlreq  *m_pIoctlReq;         // Kernel message data structure
    int                     m_fdServer;          // file handle for m_szResMgrDeviceName
    btBool                  m_bIsOK;             // True if this object is functioning correctly
@@ -151,7 +146,7 @@ private:
 
    // Accessors & Mutators not yet used externally
    const std::string       sResMgrDevName()     { return m_sResMgrDevName; }
-   RegDBSkeleton *         pRegDBSkeleton()     { return m_pRegDBSkeleton; }
+
    // No copying allowed
    CResMgr(const CResMgr & );
    CResMgr & operator = (const CResMgr & );
@@ -180,7 +175,6 @@ public:
 //           const std::string &sDevName = "/dev/aalrms");
     DECLARE_AAL_SERVICE_CONSTRUCTOR(CResMgr, ServiceBase),
         m_sResMgrDevName ("/dev/aalrms"),
-        m_pRegDBSkeleton (NULL),
         m_pIoctlReq (NULL),
         m_fdServer (-1),
         m_bIsOK (false),

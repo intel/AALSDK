@@ -1,8 +1,0 @@
-9 7 AIAName
-	9 7 NullPIP
-9 10 Executable
-	9 20 libAASNullPIP_AIA.so
-9 12 __RecordName
-	9 22 AIAName_NullPIPPackage
-9 20 ---- End of NVS ----
-	9999 

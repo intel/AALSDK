@@ -49,7 +49,6 @@
 #ifndef __AALSDK_RM_CREGISTRARDATABASE_H__
 #define __AALSDK_RM_CREGISTRARDATABASE_H__
 #include <aalsdk/AALTypes.h>
-#include <aalsdk/registrar/RegDBProxy.h>
 #include <aalsdk/osal/CriticalSection.h>
 #include <aalsdk/AALEvent.h>
 

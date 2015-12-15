@@ -347,7 +347,7 @@ btInt HelloALINLBApp::run()
       //=============================
       MSG("Running Test");
 
-//#define SIMULATED
+#define SIMULATED
 
 #if defined (SIMULATED)
 

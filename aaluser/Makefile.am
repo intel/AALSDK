@@ -101,7 +101,6 @@ aas/AASLib \
 aas/AALRuntime \
 aas/AIAService \
 aas/RRMBrokerService \
-aas/AASRegistrar \
 aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
@@ -152,7 +151,6 @@ include/aalsdk/CCountedObject.h \
 include/aalsdk/INamedValueSet.h \
 include/aalsdk/INTCDefs.h \
 include/aalsdk/OSAL.h \
-include/aalsdk/Registrar.h \
 include/aalsdk/ResMgr.h \
 include/aalsdk/uAIALib.h \
 include/aalsdk/Runtime.h \
@@ -241,21 +239,12 @@ include/aalsdk/osal/Thread.h \
 include/aalsdk/osal/Timer.h \
 include/aalsdk/osal/IDispatchable.h
 
-registrarhdrs_HEADERS=\
-include/aalsdk/registrar/AASRegistrar.h \
-include/aalsdk/registrar/AASRegistrarService.h \
-include/aalsdk/registrar/CAASRegistrar.h \
-include/aalsdk/registrar/RegDBProxy.h \
-include/aalsdk/registrar/RegDBStub.h
-
 rmhdrs_HEADERS=\
 include/aalsdk/rm/AALResourceManager.h \
 include/aalsdk/rm/AALResourceManagerClient.h \
 include/aalsdk/rm/AALResourceManagerProxy.h \
 include/aalsdk/rm/CAASResourceManager.h \
-include/aalsdk/rm/CRegistrarDatabase.h \
-include/aalsdk/rm/InstanceRecord.h \
-include/aalsdk/rm/RegDBSkeleton.h
+include/aalsdk/rm/InstanceRecord.h 
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/ICCIAFU.h \
@@ -298,31 +287,8 @@ include/aalsdk/utils/ResMgrUtilities.h \
 include/aalsdk/utils/SingleAFUApp.h \
 include/aalsdk/utils/Utilities.h
 
-
-regrepodir=$(datadir)/aalsdk/RegistrarRepository
-regrepolinuxdir=$(regrepodir)/linux
-
-regrepo_DATA=\
-RegistrarRepository/AASRegistrarDatabase.linux \
-RegistrarRepository/AASRegistrarDatabase.linux.backup \
-RegistrarRepository/AASRegistrarDatabase.win \
-RegistrarRepository/AASRegistrarDatabase.win.backup \
-RegistrarRepository/GenDB.linux \
-RegistrarRepository/GenDB.win
-
-regrepolinux_DATA=\
-RegistrarRepository/linux/1.nvs \
-RegistrarRepository/linux/2.nvs \
-RegistrarRepository/linux/3.nvs \
-RegistrarRepository/linux/4.nvs \
-RegistrarRepository/linux/5.nvs
-
-
 AAS_EXTRA=\
 include/aalsdk/aas/AASService.h.in
-
-AASREGISTRAR_EXTRA=\
-include/aalsdk/registrar/AASRegistrarService.h.in
 
 ASE_EXTRA=\
 ase/sw/mqueue_ops.c \

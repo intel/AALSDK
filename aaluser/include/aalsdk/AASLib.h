@@ -54,7 +54,6 @@
 #include <aalsdk/CAALBase.h>
 #include <aalsdk/CAALEvent.h>
 #include <aalsdk/utils/AALEventUtilities.h>
-#include <aalsdk/registrar/AASRegistrar.h>
 #include <aalsdk/aas/AALServiceModule.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
 #include <aalsdk/aas/AALService.h>
