@@ -82,7 +82,6 @@ aalbus \
 aalresourcemgr_server \
 aalresourcemgr_client \
 aal_uidriver \
-spl2_pip_dksm \
 cciv4_driver \
 cci_PCIe_driver
 

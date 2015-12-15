@@ -54,7 +54,7 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
 
-#include <aalsdk/service/ICCIClient.h>
+//#include <aalsdk/service/ICCIClient.h>
 #include "SWSimALIAFU.h"
 
 #include <aalsdk/utils/NLBVAFU.h>
@@ -89,18 +89,21 @@ btBool SWSimALIAFU::init(IBase               *pclientBase,
                          NamedValueSet const &optArgs,
                          TransactionID const &TranID)
 {
-   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
-   ASSERT( NULL != pClient );
-   if ( NULL == pClient ) {
-      /// ObjectCreatedExceptionEvent Constructor.
-      initFailed( new CExceptionTransactionEvent( this,
-                                                  TranID,
-                                                  errBadParameter,
-                                                  reasMissingInterface,
-                                                  "Client did not publish ICCIClient Interface") );
-      return false;
-   }
-
+   // NOTE: caller must publish IServiceClient, and depending on its needs some others,
+   //       but not CCIClient. This needs to check for the correct Client.
+   //
+   //   ICCIClient *pClient = dynamic_ptr<ICCIClient>(iidCCIClient, getServiceClientBase());
+   //   ASSERT( NULL != pClient );
+   //   if ( NULL == pClient ) {
+   //      /// ObjectCreatedExceptionEvent Constructor.
+   //      initFailed( new CExceptionTransactionEvent( this,
+   //                                                  TranID,
+   //                                                  errBadParameter,
+   //                                                  reasMissingInterface,
+   //                                                  "Client did not publish ICCIClient Interface") );
+   //      return false;
+   //   }
+   
    btInt i;
 
    m_NextPhys = __PHYS_ADDR_CONST(1) << LOG2_CL;

@@ -7,12 +7,8 @@
 %1 %2\faptrans\FAP20Service.h.in %2\faptrans\FAP20Service.h @FAPTRANS2_SVC_MOD@ libFAPTrans2
 %1 %2\faptrans\MAFUTransService.h.in %2\faptrans\MAFUTransService.h @MAFUTRANS_SVC_MOD@ libMAFUTrans
 %1 %2\aas\AALRuntimeModule.h.in %2\aas\AALRuntimeModule.h @AALRUNTIME_SVC_MOD@ libaalrt
-%1 %2\service\CCIAFUService.h.in %2\service\CCIAFUService.h @CCIAFU_SVC_MOD@ libCCIAFU
-%1 %2\service\HWCCIAFUService.h.in %2\service\HWCCIAFUService.h @HWCCIAFU_SVC_MOD@ libHWCCIAFU
-%1 %2\service\ASECCIAFUService.h.in %2\service\ASECCIAFUService.h @ASECCIAFU_SVC_MOD@ libASECCIAFU
-%1 %2\service\SWSimCCIAFUService.h.in %2\service\SWSimCCIAFUService.h @SWSIMCCIAFU_SVC_MOD@ libSWSimCCIAFU
-%1 %2\service\SPLAFUService.h.in %2\service\SPLAFUService.h @SPLAFU_SVC_MOD@ libSPLAFU
-%1 %2\service\HWSPLAFUService.h.in %2\service\HWSPLAFUService.h @HWSPLAFU_SVC_MOD@ libHWSPLAFU
-%1 %2\service\ASESPLAFUService.h.in %2\service\ASESPLAFUService.h @ASESPLAFU_SVC_MOD@ libASESPLAFU
-%1 %2\service\SWSimSPLAFUService.h.in %2\service\SWSimSPLAFUService.h @SWSIMSPLAFU_SVC_MOD@ libSWSimSPLAFU
+%1 %2\service\ALIAFUService.h.in %2\service\ALIAFUService.h @ALIAFU_SVC_MOD@ libALIAFU
+%1 %2\service\HWALIAFUService.h.in %2\service\HWALIAFUService.h @HWALIAFU_SVC_MOD@ libHWALIAFU
+%1 %2\service\ASEALIAFUService.h.in %2\service\ASEALIAFUService.h @ASEALIAFU_SVC_MOD@ libASEALIAFU
+%1 %2\service\SWSimALIAFUService.h.in %2\service\SWSimALIAFUService.h @SWSIMALIAFU_SVC_MOD@ libSWSimALIAFU
 %1 %2\service\UtilsAFUService.h.in %2\service\UtilsAFUService.h @UTILSAFU_SVC_MOD@ libUtilsAFU

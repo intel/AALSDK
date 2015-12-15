@@ -42,15 +42,6 @@ AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [1],[1],[1])
 AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [1],[1],[1])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([CCIAFU],       [libCCIAFU],       [1],[1],[1])
-AALSDK_LTLIB_VERSION([HWCCIAFU],     [libHWCCIAFU],     [1],[1],[1])
-AALSDK_LTLIB_VERSION([ASECCIAFU],    [libASECCIAFU],    [1],[1],[1])
-AALSDK_LTLIB_VERSION([SWSIMCCIAFU],  [libSWSimCCIAFU],  [1],[1],[1])
-AALSDK_LTLIB_VERSION([SPLAFU],       [libSPLAFU],       [1],[1],[1])
-AALSDK_LTLIB_VERSION([HWSPLAFU],     [libHWSPLAFU],     [1],[1],[1])
-AALSDK_LTLIB_VERSION([ASESPLAFU],    [libASESPLAFU],    [1],[1],[1])
-AALSDK_LTLIB_VERSION([SWSIMSPLAFU],  [libSWSimSPLAFU],  [1],[1],[1])
-AALSDK_LTLIB_VERSION([CCILIB],       [libCCI],          [1],[1],[1])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [1],[1],[1])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [1],[1],[1])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [1],[1],[1])
@@ -167,14 +158,6 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/uaia/AIAService.h
                  include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h
-                 include/aalsdk/service/CCIAFUService.h
-                 include/aalsdk/service/HWCCIAFUService.h
-                 include/aalsdk/service/ASECCIAFUService.h
-                 include/aalsdk/service/SWSimCCIAFUService.h
-                 include/aalsdk/service/SPLAFUService.h
-                 include/aalsdk/service/HWSPLAFUService.h
-                 include/aalsdk/service/ASESPLAFUService.h
-                 include/aalsdk/service/SWSimSPLAFUService.h
                  include/aalsdk/service/ALIAFUService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
@@ -197,25 +180,15 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
                  utils/data_model/Makefile
-                 utils/fpgasane/Makefile
-                 utils/CCIAFU/Makefile
-                 utils/CCIAFU/HWCCIAFU/Makefile
-                 utils/CCIAFU/ASECCIAFU/Makefile
-                 utils/CCIAFU/SWSimCCIAFU/Makefile
-                 utils/SPLAFU/Makefile
-                 utils/SPLAFU/HWSPLAFU/Makefile
-                 utils/SPLAFU/ASESPLAFU/Makefile
-                 utils/SPLAFU/SWSimSPLAFU/Makefile
-                 utils/cciapp/Makefile
-                 utils/splapp/Makefile
-                 utils/splapp2/Makefile
-                 utils/splapp3/Makefile
-                 utils/CCILib/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])
 
+# temporarily removed fpgasane
+#                 utils/fpgasane/Makefile
+
+                 
 AC_CONFIG_FILES([tests/Makefile
                  tests/harnessed/Makefile
                  tests/harnessed/gtest/Makefile

@@ -1142,7 +1142,6 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'AASService.h.in' \
 'AASEDSService.h.in' \
 'AASRegistrarService.h.in' \
-'CCILib.h.in' \
 'configure.ac' \
 'COPYING' \
 'Doxyfile.in' \
@@ -1153,14 +1152,6 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'OSALService.h.in' \
 'uAIAService.h.in' \
 'AALRuntimeModule.h.in' \
-'CCIAFUService.h.in' \
-'ASECCIAFUService.h.in' \
-'HWCCIAFUService.h.in' \
-'SWSimCCIAFUService.h.in' \
-'SPLAFUService.h.in' \
-'ASESPLAFUService.h.in' \
-'HWSPLAFUService.h.in' \
-'SWSimSPLAFUService.h.in' \
 'ALIAFUService.h.in' \
 'ASEALIAFUService.h.in' \
 'HWALIAFUService.h.in' \
@@ -1186,14 +1177,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'Readme.MultiPackage.txt' \
 'uAIAService.h' \
 'AALRuntimeModule.h' \
-'CCIAFUService.h' \
-'ASECCIAFUService.h' \
-'HWCCIAFUService.h' \
-'SWSimCCIAFUService.h' \
-'SPLAFUService.h' \
-'ASESPLAFUService.h' \
-'HWSPLAFUService.h' \
-'SWSimSPLAFUService.h' \
 'ALIAFUService.h' \
 'ASEALIAFUService.h' \
 'HWALIAFUService.h' \

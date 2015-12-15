@@ -1,1 +1,0 @@
-devcon remove root\AAL

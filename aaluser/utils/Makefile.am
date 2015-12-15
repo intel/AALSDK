@@ -36,13 +36,8 @@
 SUBDIRS=\
 aalscan \
 data_model \
-fpgasane \
-CCIAFU \
-SPLAFU \
-cciapp \
-splapp \
-splapp2 \
-splapp3 \
-CCILib \
 ALIAFU
 
+# temporarily removed
+# fpgasane \
+# 
