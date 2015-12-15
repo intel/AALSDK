@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
+   /*if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
    {
 	   // Run NLB Lpbk1, which performs sw data verification.
 	   CNLBLpbk1 nlblpbk1(&myapp);
@@ -753,7 +753,7 @@ int main(int argc, char *argv[])
 	   cout << NORMAL << endl
 			<< endl;
    }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   else */if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
       {
    		// Run NLB ccip test, which performs sw data verification.
    		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
