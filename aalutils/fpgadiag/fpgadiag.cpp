@@ -317,7 +317,12 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
 
-  	   }else{
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_ccipsw")){
+
+ 		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+ 		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+
+ 	   }else{
 
   		  cout << "Unsupported Test mode." << endl;
   		  exit(1);
@@ -958,7 +963,7 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ|NLB_TEST_MODE_PCIE1); // non-continuous mode
 
    // Start the test
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);

@@ -55,19 +55,6 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	btInt res = 0;
 	btWSSize  sz = CL(cmd.begincls);
 
-/*	m_pCCIAFU->WorkspaceAllocate(NLB_DSM_SIZE, 		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-	m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-    m_pCCIAFU->WorkspaceAllocate(wssize,       		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-    m_pCCIAFU->WorkspaceAllocate(MAX_UMSG_SIZE,		TransactionID((bt32bitInt)CMyCCIClient::WKSPC_UMSG));
-
-    // Synchronize with the workspace allocation event notifications.
-    m_pMyApp->ClientWait();
-
-    if ( !m_pMyApp->ClientOK() ) {
-	   ERR("Workspace allocation failed");
-	   return 1;
-    }
-
     // We need to initialize the input and output buffers, so we need addresses suitable
     // for dereferencing in user address space.
     // volatile, because the FPGA will be updating the buffers, too.
@@ -84,55 +71,48 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 
     volatile btVirtAddr pOutputUsrVirt = m_pMyApp->OutputVirt();
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
-    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();*/
+    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
-    /*if ( 0 != ResetHandshake() ) {
-    	return 1;
-	}
-
+    /*
 	if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
 		return 1;
 	}
+*/
 
-	if ( 0 != ResetHandshake() ) {
-		return 1;
-	}*/
+    // Initiate AFU Reset
+    m_pALIResetService->afuReset();
 
     //Set DSM base, high then low
-/*    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEH, m_pMyApp->DSMPhys() >> 32);
-    m_pCCIAFU->CSRWrite(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys() & 0xffffffff);
+    m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
 
-   // Assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+    // Assert Device Reset
+    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-   // Clear the DSM status fields
-   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
-
-   // De-assert Device Reset
-   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+    // De-assert Device Reset
+    m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
    // Set input workspace address
-   m_pCCIAFU->CSRWrite(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
+    m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->InputPhys()));
 
    // Set output workspace address
-   m_pCCIAFU->CSRWrite(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
+    m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) || flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))
    {
 	   btUnsigned32bitInt umsg_base_cl = CACHELINE_ALIGNED_ADDR(m_pMyApp->UMsgPhys()) & 0xfffffffc;
-	   m_pCCIAFU->CSRWrite(CSR_UMSG_BASE, (umsg_base_cl | 0x1));
+	   m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, (umsg_base_cl | 0x1));
 
 	   btUnsigned32bitInt umsgmode_csr_val = (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)) ? HIGH : 0;
-	   m_pCCIAFU->CSRWrite(CSR_UMSG_MODE, umsgmode_csr_val);
+	   m_pALIMMIOService->mmioWrite32(CSR_UMSG_MODE, umsgmode_csr_val);
 
-	   btCSRValue umsg_status = 0;
+	   btUnsigned32bitInt umsg_status = 0;
 	   do {
-		   m_pCCIAFU->CSRRead(CSR_CIRBSTAT, &umsg_status);
+		   m_pALIMMIOService->mmioRead32(CSR_CIRBSTAT, &umsg_status);
 	   }while(0 == (umsg_status & 0x1));
 
    }
    // Set the test mode
-   m_pCCIAFU->CSRWrite(CSR_CFG, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
    csr_type cfg = (csr_type)NLB_TEST_MODE_SW;
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
@@ -173,7 +153,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
       cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
      }
 
-   m_pCCIAFU->CSRWrite(CSR_CFG, (csr_type)cfg);
+     m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)cfg);
 
 #if   defined( __AAL_WINDOWS__ )
 #error TODO
@@ -203,19 +183,19 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
    while ( sz <= CL(cmd.endcls))
    {
 	   // Assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
 	   // Clear the DSM status fields
 	   ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
 	   // De-assert Device Reset
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 1);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
 	  // Set the number of cache lines for the test
-	  m_pCCIAFU->CSRWrite(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
+	   m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(sz / CL(1)));
 
 	  // Start the test
-	  m_pCCIAFU->CSRWrite(CSR_CTL, 3);
+	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
 	  timeout = Timer() + Timer(&ts);
 
@@ -240,7 +220,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	  //3. CPU -> FPGA message. Select notice type
 	  if( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CSR_WRITE))
 	  {
-		  m_pCCIAFU->CSRWrite(CSR_SW_NOTICE, 0x10101010);
+		  m_pALIMMIOService->mmioWrite32(CSR_SW_NOTICE, 0x10101010);
 	  }
 	  else if( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) || flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))
 	  {
@@ -255,6 +235,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 
 	  // Wait for test completion
 	  timeout = Timer() + Timer(&ts);
+
 	  while ( ( 0 == pAFUDSM->test_complete ) &&
 			   ( 0 == res) )
 	  {
@@ -267,7 +248,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 
 
 	   // Stop the device
-	   m_pCCIAFU->CSRWrite(CSR_CTL, 7);
+	  m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
 	   while ( ( 0 == pAFUDSM->test_complete ) &&
 			 ( MaxPoll >= 0 ) )
@@ -291,30 +272,14 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
    }
    //Disable UMsgs upon test completion
-   m_pCCIAFU->CSRWrite(CSR_UMSG_BASE, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);
 
-   m_pCCIAFU->CSRWrite(CSR_CTL, 0);
+   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    if ( 0 != pAFUDSM->test_error ) {
 	   ++res;
    }
 
-   // Clean up..
-
-     // Release the Workspaces
-     m_pCCIAFU->WorkspaceFree(pInputUsrVirt,       TransactionID((bt32bitInt)CMyCCIClient::WKSPC_IN));
-     m_pCCIAFU->WorkspaceFree(pOutputUsrVirt,      TransactionID((bt32bitInt)CMyCCIClient::WKSPC_OUT));
-     m_pCCIAFU->WorkspaceFree(pUMsgUsrVirt,        TransactionID((bt32bitInt)CMyCCIClient::WKSPC_UMSG));
-     m_pCCIAFU->WorkspaceFree((btVirtAddr)pAFUDSM, TransactionID((bt32bitInt)CMyCCIClient::WKSPC_DSM));
-
-     // Synchronize with the workspace free event notifications.
-     m_pMyApp->ClientWait();
-
-     if ( !m_pMyApp->ClientOK() ) {
-        ERR("Workspace free failed");
-        return 1;
-     }
-*/
       return res;
 }
 
