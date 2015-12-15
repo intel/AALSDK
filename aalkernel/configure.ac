@@ -58,7 +58,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalkernel], [4.5.0], [joe.grecco@intel.com])
+AC_INIT([aalkernel], [5.0.0], [joe.grecco@intel.com])
 AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -78,12 +78,12 @@ AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
 dnl ############################################################################
 dnl ## Module Versioning #######################################################
 dnl ############################################################################
-AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [4],[2],[0])
-AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [4],[2],[0])
+AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [5],[0],[0])
+AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [5],[0],[0])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
