@@ -224,6 +224,7 @@ package ase_pkg;
       longint 	  cl_addr;
       longint     qword[8];
       int 	  resp_en;
+      int 	  resp_channel;	  
    } cci_pkt;
 
 
@@ -353,57 +354,29 @@ package ase_pkg;
     * Request type checkers
     */
    // Read request checker
-   function automatic logic check_if_rdreq(input logic [3:0] reqtype);
-      begin
-	 case (reqtype)
-	   CCIP_TX0_RDLINE_S : return 1'b1;
-	   CCIP_TX0_RDLINE_I : return 1'b1;
-	   CCIP_TX0_RDLINE_E : return 1'b1;
-	   default           : return 1'b0;
-	 endcase
-      end
-   endfunction
+   // function automatic logic check_if_rdreq(input logic [3:0] reqtype);
+   //    begin
+   // 	 case (reqtype)
+   // 	   CCIP_TX0_RDLINE_S : return 1'b1;
+   // 	   CCIP_TX0_RDLINE_I : return 1'b1;
+   // 	   CCIP_TX0_RDLINE_E : return 1'b1;
+   // 	   default           : return 1'b0;
+   // 	 endcase
+   //    end
+   // endfunction
 
    // Write type checker
-   function automatic logic check_if_wrreq(input logic [3:0] reqtype);
-      begin
-	 case (reqtype)
-	   CCIP_TX1_WRLINE_I : return 1'b1;
-	   CCIP_TX1_WRLINE_M : return 1'b1;
-	   default           : return 1'b0;	   
-	 endcase
-      end
-   endfunction
+   // function automatic logic check_if_wrreq(input logic [3:0] reqtype);
+   //    begin
+   // 	 case (reqtype)
+   // 	   CCIP_TX1_WRLINE_I : return 1'b1;
+   // 	   CCIP_TX1_WRLINE_M : return 1'b1;
+   // 	   default           : return 1'b0;	   
+   // 	 endcase
+   //    end
+   // endfunction
 
    
-   /*
-    * FUNCTION: Cast TxHdr_t to cci_pkt
-    */
-   function automatic void cast_txhdr_to_ccipkt (ref   cci_pkt               pkt,
-						 input int                   write_en,
-						 input TxHdr_t               txhdr,
-						 input [CCIP_DATA_WIDTH-1:0] txdata);
-      begin
-	 // Write enable
-	 pkt.write_en = int'(write_en);
-	 // Metadata
-	 pkt.vc       = int'(txhdr.vc);	 
-	 pkt.mdata    = int'(txhdr.mdata);
-	 // cache line address
-	 pkt.cl_addr  = longint'(txhdr.addr);
-	 // Qword assignment
-	 pkt.qword[0] =  txdata[  63:00 ];
-	 pkt.qword[1] =  txdata[ 127:64  ];
-	 pkt.qword[2] =  txdata[ 191:128 ];
-	 pkt.qword[3] =  txdata[ 255:192 ];
-	 pkt.qword[4] =  txdata[ 319:256 ];
-	 pkt.qword[5] =  txdata[ 383:320 ];
-	 pkt.qword[6] =  txdata[ 447:384 ];
-	 pkt.qword[7] =  txdata[ 511:448 ];
-	 // Response
-	 pkt.resp_en  = 0;
-      end
-   endfunction
 
 
 

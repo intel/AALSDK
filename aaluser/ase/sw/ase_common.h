@@ -476,6 +476,7 @@ typedef struct {
   long long cl_addr;
   long long qword[8];
   int       resp_en;
+  int       resp_channel;
 } cci_pkt;
 
 
