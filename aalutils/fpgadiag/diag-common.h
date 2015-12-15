@@ -38,12 +38,6 @@ using namespace AAL;
 # define ERR(x)
 #endif
 
-// Change DBG_HOOK to 1 if you want an opportunity to attach the debugger.
-// After attaching, set gWaitForDebuggerAttach to 0 via the debugger to unblock the app.
-#define DBG_HOOK 0
-#if DBG_HOOK
-btBool gWaitForDebuggerAttach = true;
-#endif // DBG_HOOK
 
 /// @brief cciapp-specific instantiation of ICCIClient that receives the event notifications
 ///        sent by the ICCIAFU.

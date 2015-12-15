@@ -201,6 +201,36 @@ END_C_DECLS
 
 #define NANOSEC_PER_MILLI(x)      ((x) * 1000 * 1000)
 
+//////////////////////////////////////////////////////////////////////////////
+
+
+inline std::ostream & PASS(std::ostream &os)
+{
+   if ( isatty(1) ) {
+      const char Esc[] = { 0x1b, '[', '3', '2', 'm', 0 };
+      os << Esc;
+   }
+   return os;
+}
+inline std::ostream & FAIL(std::ostream &os)
+{
+   if ( isatty(1) ) {
+      const char Esc[] = { 0x1b, '[', '3', '1', 'm', 0 };
+      os << Esc;
+   }
+   return os;
+}
+inline std::ostream & NORMAL(std::ostream &os)
+{
+   if ( isatty(1) ) {
+      const char Esc[] = { 0x1b, '[', '0', 'm', 0 };
+      os << Esc;
+   }
+   return os;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 CMyApp::CMyApp() :
    m_AFUTarget(DEFAULT_TARGET_AFU),
    m_DevTarget(DEFAULT_TARGET_DEV),
@@ -231,7 +261,7 @@ CMyApp::CMyApp() :
 
 CMyApp::~CMyApp()
 {
-   Stop();
+//   Stop();
    m_Sem.Destroy();
 }
 
@@ -273,11 +303,33 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
 
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-  	   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
-  	   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-  	   if(-1 != DevTarget())
-  	   {
+
+  	   if(0 == strcmp(TestMode().c_str(), "TestMode_ccipread") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_ccipwrite") ||
+		  0 == strcmp(TestMode().c_str(), "TestMode_cciptrput")){
+
+  		   ConfigRecord.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
+  		   Manifest.Add(keyRegAFU_ID,"751E795F-7DA4-4CC6-8309-935132BCA9B6");
+
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_cciplpbk1")){
+
+  		   ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+  		   Manifest.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
+
+  	   }else if(0 == strcmp(TestMode().c_str(), "TestMode_ccipsw")){
+
+ 		   ConfigRecord.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+ 		   Manifest.Add(keyRegAFU_ID,"A944F6E7-15D3-4D95-9452-15DBD47C76BD");
+
+ 	   }else{
+
+  		  cout << "Unsupported Test mode." << endl;
+  		  exit(1);
+  	   }
+
+  	   if(-1 != DevTarget()){
+
   		   ConfigRecord.Add(keyRegChannelNumber, DevTarget());
   	   }
   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
@@ -489,6 +541,14 @@ void CMyApp::serviceAllocateFailed(const IEvent &e)
    if ( AAL_IS_EXCEPTION(e.SubClassID()) ) {
       PrintExceptionDescription(e);
    }
+
+  if ( e.Has(iidExTranEvent) &&
+	   0 == strcmp (dynamic_ref<IExceptionTransactionEvent>(iidExTranEvent, e).Description(), "Resources unavailable")) {
+         //ExceptionTransaction
+
+	  cout << FAIL << TestMode() << " is unsupported in the current bitstream loaded. Please program the correct bitstream and try again." << NORMAL << endl;
+   }
+
    m_bIsOK = false;
    ERR("Service Allocate Failed");
    Post();
@@ -533,36 +593,6 @@ void CMyApp::serviceReleaseFailed(const IEvent &e)
    Post();
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-
-inline std::ostream & PASS(std::ostream &os)
-{
-   if ( isatty(1) ) {
-      const char Esc[] = { 0x1b, '[', '3', '2', 'm', 0 };
-      os << Esc;
-   }
-   return os;
-}
-inline std::ostream & FAIL(std::ostream &os)
-{
-   if ( isatty(1) ) {
-      const char Esc[] = { 0x1b, '[', '3', '1', 'm', 0 };
-      os << Esc;
-   }
-   return os;
-}
-inline std::ostream & NORMAL(std::ostream &os)
-{
-   if ( isatty(1) ) {
-      const char Esc[] = { 0x1b, '[', '0', 'm', 0 };
-      os << Esc;
-   }
-   return os;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 int main(int argc, char *argv[])
 {
    btInt res      = 0;
@@ -589,9 +619,9 @@ int main(int argc, char *argv[])
 
 #if DBG_HOOK
    cerr << "Waiting for debugger attach.." << endl;
-   while ( gWaitForDebuggerAttach ) {
+  /* while ( gWaitForDebuggerAttach ) {
       SleepSec(1);
-   }
+   }*/
    // Init the AAL logger.
    pAALLogger()->AddToMask(LM_All, 8); // All subsystems
    pAALLogger()->SetDestination(ILogger::CERR);
@@ -614,6 +644,10 @@ int main(int argc, char *argv[])
 
    if ( (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_SWSIM)) ) {
+	  /********** Remove/Edit this when ase and/or swsim are supported ********/
+	  cout << FAIL << "No Support yet for ase and swsim. Please set --target=fpga and try again." << NORMAL << endl;
+	  return 0;
+	  /********** **************************************************** ********/
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;
@@ -631,6 +665,8 @@ int main(int argc, char *argv[])
 
    if ( !myapp.IsOK() ) {
       // runtime start failed.
+	  myapp.Stop();
+	  myapp.Wait(); // For runtime stopped notification.
       return 5;
    }
 
@@ -927,7 +963,7 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ|NLB_TEST_MODE_PCIE1); // non-continuous mode
 
    // Start the test
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
@@ -949,15 +985,6 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
 
    return res;
 }
-
-/*void INLB::EnableCSRPrint(bool bEnable, bool bReplay)
-{
-	IQPILinkProtocol *pQLP = m_pFactory->QLPBackDoor();
-
-	   if ( NULL != pQLP ) {
-	      pQLP->EnableCSRPrint(bEnable, bReplay);
-	   }
-}*/
 
 void INLB::ReadQLPCounters()
 {
