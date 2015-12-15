@@ -1141,7 +1141,6 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'doxygen.m4' \
 'AASService.h.in' \
 'AASEDSService.h.in' \
-'AASRegistrarService.h.in' \
 'configure.ac' \
 'COPYING' \
 'Doxyfile.in' \
