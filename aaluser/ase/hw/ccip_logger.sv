@@ -97,8 +97,12 @@ module ccip_logger
    always @(posedge clk) begin
       SoftReset_n_q	<= SoftReset_n;
    end
+   
+   // Config header
+   CfgHdr_t C0RxMMIOHdr;
+   assign C0RxMMIOHdr = CfgHdr_t'(C0RxHdr);
 
-
+   
    /*
     * Buffer channels, request and response types
     */
@@ -234,6 +238,18 @@ module ccip_logger
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU Config Write *******************/
+	 if (C0RxMMIOWrValid) begin
+	    if (cfg.enable_cl_view)  $display("%d\tMMIOWrReq\t%x\t%d bytes\t%s\n",
+					      $time,
+					      C0RxMMIOHdr.index,
+					      4^(1 + C0RxMMIOHdr.len),
+					      csr_data(4^(1 + C0RxMMIOHdr.len), C0RxData)  );
+	    $fwrite(log_fd, "%d\tMMIOWrReq\t%x\t%d bytes\t%s\n",
+		    $time,
+		    C0RxMMIOHdr.index,
+		    4^(1 + C0RxMMIOHdr.len),
+		    csr_data(4^(1 + C0RxMMIOHdr.len), C0RxData)  );
+	 end 
 	 // if (CfgWrValid) begin
 	 //    if (cfg.enable_cl_view) $display("%d\tCfgWrite\t%x\t%d bytes\t%s",
 	 //    				     $time,

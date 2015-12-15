@@ -1166,12 +1166,9 @@ module ccip_emulator
     *   is forwarded to CCIP-RX0
     *
     * *******************************************************************/  
-   int 				 C0RxSel;
-      
    // Output channel
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 C0RxSel         <= 0;	 
    	 C0RxMMIOWrValid <= 1'b0;
    	 C0RxMMIORdValid <= 1'b0;
    	 C0RxWrValid     <= 1'b0;
@@ -1197,6 +1194,7 @@ module ccip_emulator
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
+		   mmioreq_read    <= ~mmioreq_empty;	    
 		   rx0_state <= RxMMIOForward;		   
 		end
 		else if (~rdrsp_empty) begin
@@ -1219,7 +1217,8 @@ module ccip_emulator
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
 		C0RxData        <= mmio_data512;
-		mmioreq_read    <= ~mmioreq_empty;	    
+		// mmioreq_read    <= ~mmioreq_empty;	    
+		mmioreq_read    <= 1'b0;		
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
