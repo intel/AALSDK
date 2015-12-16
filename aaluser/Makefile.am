@@ -118,7 +118,6 @@ faptranshdrsdir=$(aalsdkhdrsdir)/faptrans
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel
 encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 osalhdrsdir=$(aalsdkhdrsdir)/osal
-registrarhdrsdir=$(aalsdkhdrsdir)/registrar
 rmhdrsdir=$(aalsdkhdrsdir)/rm
 servicehdrsdir=$(aalsdkhdrsdir)/service
 uaiahdrsdir=$(aalsdkhdrsdir)/uaia
@@ -343,11 +342,8 @@ include/aalsdk/uaia/AIAService.h.in \
 include/aalsdk/uaia/uAIAService.h.in
 
 EXTRA_DIST=\
-$(regrepo_DATA) \
-$(regrepolinux_DATA) \
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
-$(AASREGISTRAR_EXTRA) \
 $(ASE_EXTRA) \
 $(CLP_EXTRA) \
 $(DOC_EXTRA) \
