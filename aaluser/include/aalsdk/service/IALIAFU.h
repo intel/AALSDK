@@ -301,6 +301,12 @@ public:
    /// The user virtual address that the application uses to access a buffer may or
    ///    may not be directly usable by the AFU. The general assumption is that it is not.
    ///
+   /// NOTE: The mapping from virtual address to IOVA is not particularly fast. The user
+   ///    of this interface is urged to allocate large buffers, obtain the IOVA once, and
+   ///    then sub-allocate. Within a buffer, the virtual and IOVA addresses; e.g. if the
+   ///    virtual address is 0x6000 and the IOVA is 0x1000, then 5 bytes into the buffer
+   ///    will be at virtual address 0x6005 and at IOVA 0x1005.
+   ///
    /// @param[in]  Address User virtual address to be converted to AFU-addressable location
    /// @return     A value that can be passed to the AFU such that when the AFU uses it,
    ///                the AFU will be accessing the byte at the address that was passed in.
