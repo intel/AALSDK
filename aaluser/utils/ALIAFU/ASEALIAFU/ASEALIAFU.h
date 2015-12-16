@@ -122,10 +122,10 @@ public:
    // </IALIMMIO>
 
    // <IALIBuffer>
-   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet       *pOptArgs = NULL ){};
-   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address){};
+   virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address){};
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address){};
    // </IALIBuffer>
 

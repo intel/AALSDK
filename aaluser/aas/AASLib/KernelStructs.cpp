@@ -660,7 +660,7 @@ std::ostream& operator << (std::ostream& s, const uid_errnum_e& enumeration)
 } // std::ostream& operator << of uid_errnum_e
 #endif
 
-
+#if 0
 //=============================================================================
 // Name:        std::ostream& operator << of fappip_afuCmdID_e
 // Description: writes a description of the object to the ostream
@@ -702,7 +702,7 @@ std::ostream & operator << (std::ostream &s, const fappip_afuCmdID_e &enumeratio
    // s.flags(defaultFlags);
    return s;
 } // std::ostream& operator << of fappip_afuCmdID_e
-
+#endif
 
 //=============================================================================
 // Name:        std::ostream& operator << of uid_mgtAfuCmdID_e
@@ -942,7 +942,7 @@ AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::rms_msgIDs_e 
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::rms_result_e &x)             { return AAL::operator << (s, x); }
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aalrms_requestdevice &x)     { return AAL::operator << (s, x); }
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::aalrm_ioctlreq &x)           { return AAL::operator << (s, x); }
-AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::fappip_afuCmdID_e &x)        { return AAL::operator << (s, x); }
+//AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::fappip_afuCmdID_e &x)        { return AAL::operator << (s, x); }
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_msgIDs_e &x)             { return AAL::operator << (s, x); }
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_errnum_e &x)             { return AAL::operator << (s, x); }
 AASLIB_API std::ostream & operator << (std::ostream &s, const AAL::uid_mgtAfuCmdID_e &x)        { return AAL::operator << (s, x); }

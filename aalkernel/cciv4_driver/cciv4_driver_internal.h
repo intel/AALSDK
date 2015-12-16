@@ -74,7 +74,7 @@
 #include "aalsdk/kernel/aalui.h"
 #include "aalsdk/kernel/aalui-events.h"
 #include "aalsdk/kernel/aalmafu.h"
-#include "aalsdk/kernel/vafu2defs.h"
+//#include "aalsdk/kernel/vafu2defs.h"
 
 #include "cciv4_PIPsession.h"
 

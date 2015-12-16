@@ -16,7 +16,6 @@ aas/AASLib \
 aas/AALRuntime \
 aas/AIAService \
 aas/RRMBrokerService \
-aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
@@ -29,7 +28,6 @@ aalclphdrsdir=$(aalsdkhdrsdir)/aalclp
 asehdrsdir=$(aalsdkhdrsdir)/ase
 ccilibhdrsdir=$(aalsdkhdrsdir)/ccilib
 edshdrsdir=$(aalsdkhdrsdir)/eds
-faptranshdrsdir=$(aalsdkhdrsdir)/faptrans
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel
 encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 osalhdrsdir=$(aalsdkhdrsdir)/osal
@@ -73,7 +71,6 @@ include/aalsdk/IServiceClient.h \
 include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
-include/aalsdk/aas/AALDeviceService.h \
 include/aalsdk/aas/AALInProcServiceFactory.h \
 include/aalsdk/aas/AALIPCServiceFactory.h \
 include/aalsdk/aas/AALService.h \
@@ -91,14 +88,6 @@ ase/sw/ase_common.h
 
 edshdrs_HEADERS=\
 include/aalsdk/eds/AASEventDeliveryService.h 
-
-faptranshdrs_HEADERS=\
-include/aalsdk/faptrans/FAP10.h \
-include/aalsdk/faptrans/FAP10Service.h \
-include/aalsdk/faptrans/FAP20.h \
-include/aalsdk/faptrans/FAP20Service.h \
-include/aalsdk/faptrans/MAFUTransactions.h \
-include/aalsdk/faptrans/MAFUTransService.h
 
 kernelhdrs_HEADERS=\
 include/aalsdk/kernel/aalbus-device.h \
@@ -122,22 +111,19 @@ include/aalsdk/kernel/aalrm-services.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/AALWorkspace.h \
 include/aalsdk/kernel/aalwsservice.h \
 include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/spl2defs.h \
+include/aalsdk/kernel/aalui.h \
+include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
 
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
 
 osalhdrs_HEADERS=\
 include/aalsdk/osal/CriticalSection.h \
@@ -168,16 +154,7 @@ include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
 
 uaiahdrs_HEADERS=\
-include/aalsdk/uaia/AALuAIA_Messaging.h \
-include/aalsdk/uaia/AALuAIA_UIDriverClient.h \
 include/aalsdk/uaia/AIA.h \
-include/aalsdk/uaia/FAPPIP_AFUdev.h \
-include/aalsdk/uaia/IUAIASession.h \
-include/aalsdk/uaia/uAIADefs.h \
-include/aalsdk/uaia/uAIA.h \
-include/aalsdk/uaia/uAIAService.h \
-include/aalsdk/uaia/uAIASession.h \
-include/aalsdk/uaia/uidrvMessage.h \
 include/aalsdk/uaia/IAFUProxy.h
 
 utilshdrs_HEADERS=\
@@ -229,11 +206,6 @@ ase/README
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
 
-FAPTRANS_EXTRA=\
-include/aalsdk/faptrans/FAP10Service.h.in \
-include/aalsdk/faptrans/FAP20Service.h.in \
-include/aalsdk/faptrans/MAFUTransService.h.in
-
 OSAL_EXTRA=\
 include/aalsdk/osal/OSALService.h.in
 
@@ -248,15 +220,14 @@ include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
-include/aalsdk/uaia/AIAService.h.in \
-include/aalsdk/uaia/uAIAService.h.in
+include/aalsdk/uaia/AIAService.h.in 
+
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
 $(ASE_EXTRA) \
 $(CLP_EXTRA) \
-$(FAPTRANS_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \

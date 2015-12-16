@@ -44,8 +44,6 @@
 #endif // HAVE_CONFIG_H
 
 #include "aalsdk/AALTypes.h"
-#include "aalsdk/uaia/uAIADefs.h"
-
 
 #ifdef __AAL_WINDOWS__
 

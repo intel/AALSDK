@@ -57,6 +57,43 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup IALIAFU
 /// @{
 
+
+//-----------------------------------------------------------------------------
+// Request message IDs
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   ali_errnumOK = 0,
+   ali_errnumBadDevHandle,                       // 1
+   ali_errnumCouldNotClaimDevice,                // 2
+   ali_errnumNoAppropriateInterface,             // 3
+   ali_errnumDeviceHasNoPIPAssigned,             // 4
+   ali_errnumCouldNotBindPipInterface,           // 5
+   ali_errnumCouldNotUnBindPipInterface,         // 6
+   ali_errnumNotDeviceOwner,                     // 7
+   ali_errnumSystem,                             // 8
+   ali_errnumAFUTransaction,                     // 9
+   ali_errnumAFUTransactionNotFound,             // 10
+   ali_errnumDuplicateStartingAFUTransactionID,  // 11
+   ali_errnumBadParameter,                       // 12
+   ali_errnumNoMem,                              // 13
+   ali_errnumNoMap,                              // 14
+   ali_errnumBadMapping,                         // 15
+   ali_errnumPermission,                         // 16
+   ali_errnumInvalidOpOnMAFU,                    // 17
+   ali_errnumPointerOutOfWorkspace,              // 18
+   ali_errnumNoAFUBindToChannel,                 // 19
+   ali_errnumCopyFromUser,                       // 20
+   ali_errnumDescArrayEmpty,                     // 21
+   ali_errnumCouldNotCreate,                     // 22
+   ali_errnumInvalidRequest,                     // 23
+   ali_errnumInvalidDeviceAddr,                  // 24
+   ali_errnumCouldNotDestroy,                    // 25
+   ali_errnumDeviceBusy,                         // 26
+   ali_errnumTimeout                             // 27
+} ali_errnum_e;
+
+
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
@@ -244,7 +281,7 @@ public:
    ///
    /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
-   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet       *pOptArgs = NULL ) = 0;
 
@@ -257,7 +294,7 @@ public:
    ///
    /// On success, a notification is sent via IALIBUFFER::bufferFreed.
    /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
-   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address) = 0;
+   virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address) = 0;
 
    /// @brief Retrieve the location at which the AFU can access the passed in virtual address.
    ///
