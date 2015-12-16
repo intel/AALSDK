@@ -116,7 +116,6 @@ edshdrsdir=$(aalsdkhdrsdir)/eds
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel
 encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 osalhdrsdir=$(aalsdkhdrsdir)/osal
-registrarhdrsdir=$(aalsdkhdrsdir)/registrar
 rmhdrsdir=$(aalsdkhdrsdir)/rm
 servicehdrsdir=$(aalsdkhdrsdir)/service
 utilshdrsdir=$(aalsdkhdrsdir)/utils
@@ -314,8 +313,6 @@ UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
 
 EXTRA_DIST=\
-$(regrepo_DATA) \
-$(regrepolinux_DATA) \
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
 $(ASE_EXTRA) \

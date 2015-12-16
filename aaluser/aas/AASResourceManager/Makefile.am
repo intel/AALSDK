@@ -43,7 +43,6 @@ InstanceRecord.cpp \
 ResMgrAlgorithms.cpp	
 
 libAASResMgr_la_CPPFLAGS=\
--DREGISTRAR_DATABASE_PATH=\"$(datadir)/aalsdk/RegistrarRepository/linux\" \
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include
 
@@ -59,7 +58,6 @@ AASResourceManager_SOURCES=\
 AASResourceManager.cpp
 
 AASResourceManager_CPPFLAGS=\
--DREGISTRAR_DATABASE_PATH=\"$(datadir)/aalsdk/RegistrarRepository/linux\" \
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include
 
