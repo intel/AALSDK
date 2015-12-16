@@ -127,7 +127,6 @@ CResMgr::~CResMgr()
    // means it is not in the GetMsg poll. However, in the future, should there
    // need to be an asynchronous ending (e.g. from SIGHUP), then have to handle
    // popping out of the poll here via a special ioctl.
-   std::cerr << "~CResMgr\n";
    if( m_fdServer >= 0 ) {
       close (m_fdServer);
       m_fdServer = -1;
@@ -860,7 +859,7 @@ btBool CResMgr::init( IBase *pclientBase,
                       NamedValueSet const &optArgs,
                       TransactionID const &rtid)
 {
-   pAALLogger()->AddToMask(LM_ResMgr, LOG_VERBOSE);
+   pAALLogger()->AddToMask(LM_ResMgr, LOG_ERR);
    m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
    ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
    if(NULL == m_pAALServiceClient)
