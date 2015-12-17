@@ -39,7 +39,7 @@ libASE_la_SOURCES=\
 ase_common.h \
 mqueue_ops.c \
 ase_ops.c \
-shm_ops.c \
+app_backend.c \
 tstamp_ops.c \
 error_report.c 
 

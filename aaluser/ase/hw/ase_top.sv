@@ -26,85 +26,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * **************************************************************************
- * 
- * Module Info: Generic register block & Latency pipe
- * Language   : System{Verilog} | C/C++
+ *
+ * Module Info: ASE top-level
+ *              (hides ASE machinery, makes finding cci_std_afu easy)
+ * Language   : System{Verilog}
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- * 
- */
+ *
+ * **************************************************************************/
 
-module register
-  #(
-    parameter REG_WIDTH = 1
-    )
-   (
-    input logic 		 clk,
-    input logic 		 rst,
-    input logic [REG_WIDTH-1:0]  d,
-    output logic [REG_WIDTH-1:0] q
-    );
+import ccip_if_pkg::*;
+
+`timescale 1ns/1ns
+
+module ase_top();
 
 
-   // DFF behaviour
-   always @( posedge clk or posedge rst ) begin
-      if (rst)
-	q	<= 0;
-      else
-	q	<= d;
-   end
+   logic vl_clk_LPdomain_64ui;
+   logic vl_clk_LPdomain_32ui;
+   logic vl_clk_LPdomain_16ui;
+   logic ffs_LP16ui_afu_SoftReset_n;
+   t_if_ccip_Tx ffs_LP16ui_sTxData_afu;
+   t_if_ccip_Rx ffs_LP16ui_sRxData_afu;
 
-endmodule
-
-
-/*
- * latency_pipe : A generic N-stage, W-width pipeline that delays
- * input by a known number of clocks
- */
-module latency_pipe
-  #(
-    parameter NUM_DELAY = 5,
-    parameter PIPE_WIDTH = 1
-    )
-   (
-    input logic 		  clk,
-    input logic 		  rst,
-    input logic [PIPE_WIDTH-1:0]  pipe_in,
-    output logic [PIPE_WIDTH-1:0] pipe_out
-    );
-
-   logic [PIPE_WIDTH-1:0] 	 pipe_in_tmp [0:NUM_DELAY-1];
-   logic [PIPE_WIDTH-1:0] 	 pipe_out_tmp [0:NUM_DELAY-1];
+   // CCI-P emulator
+   ccip_emulator ccip_emulator
+     (
+      .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui         ),
+      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
+      .vl_clk_LPdomain_16ui               (vl_clk_LPdomain_16ui         ),
+      .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
+      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
+      .ffs_LP16ui_sRxData_afu             (ffs_LP16ui_sRxData_afu       )
+      );
 
 
-   // Register stages (instantiated here, not connected)
-   genvar 			 ii;
-   generate
-      for(ii = 0; ii < NUM_DELAY; ii = ii + 1) begin : reg_array_gen
-	 register
-	       #(
-		 .REG_WIDTH (PIPE_WIDTH)
-		 )
-	 reg_i
-	       (
-		.clk (clk),
-		.rst (rst),
-		.d   (pipe_in_tmp[ii]),
-		.q   (pipe_out_tmp[ii])
-		);
-      end
-   endgenerate
-
-   // Pipeline stages connected here
-   genvar 		    jj;
-   generate
-      for(jj = 1; jj < NUM_DELAY; jj = jj + 1) begin : connect_gen
-	 assign pipe_in_tmp[jj] = pipe_out_tmp[jj - 1]; 
-      end
-   endgenerate
-
-   assign pipe_in_tmp[0] = pipe_in;
-   assign pipe_out = pipe_out_tmp[NUM_DELAY-1];
+   // CCIP AFU
+   ccip_std_afu ccip_std_afu
+     (
+      .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
+      .vl_clk_LPdomain_16ui		  (vl_clk_LPdomain_16ui         ),
+      .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
+      .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
+      .ffs_LP16ui_sRxData_afu		  (ffs_LP16ui_sRxData_afu       )
+      );
 
 endmodule

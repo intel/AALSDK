@@ -255,38 +255,43 @@ AAS_EXTRA=\
 include/aalsdk/aas/AASService.h.in
 
 ASE_EXTRA=\
-ase/sw/mqueue_ops.c \
-ase/sw/mem_model.c \
+ase/sw/ase_ops.c \
+ase/sw/Makefile \
 ase/sw/ipc_mgmt_ops.c \
-ase/sw/shm_ops.c \
+ase/sw/mem_model.c \
+ase/sw/protocol_backend.c \
+ase/sw/ase_common.h \
 ase/sw/tstamp_ops.c \
+ase/sw/mqueue_ops.c \
+ase/sw/app_backend.c \
 ase/sw/error_report.c \
 ase/sw/linked_list_ops.c \
-ase/sw/capcm_ops.c \
-ase/sw/ase_common.h \
-ase/sw/protocol_backend.c \
 ase/sw/randomness_control.c \
-ase/sw/ase_ops.c \
-ase/ase.cfg \
-ase/ase_regress.sh \
 ase/Makefile \
+ase/README \
+ase/ase.cfg \
 ase/distclean.sh \
+ase/LICENSE.txt \
+ase/ase_regress.sh \
+ase/hw/outoforder_wrf_channel.sv \
 ase/hw/counter.sv \
-ase/hw/platform.vh \
+ase/hw/ccip_if_pkg.sv \
+ase/hw/ase_global.vh \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
+ase/hw/ccip_emulator.sv \
+ase/hw/ccip_logger.sv \
+ase/hw/ccip_sniffer.sv \
+ase/hw/ase_top.sv \
 ase/hw/sdp_ram.sv \
-ase/hw/cci_emulator.sv \
-ase/hw/latency_scoreboard.sv \
-ase/hw/ase_global.vh \
-ase/hw/cci_sniffer.sv \
 ase/hw/stream_checker.sv \
+ase/hw/ase_pkg.sv \
+ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
-ase/scripts/ase_setup.csh \
-ase/scripts/ase_functions.py \
 ase/scripts/ipc_clean.py \
-ase/README
+ase/scripts/ase_functions.py \
+ase/scripts/ase_setup.csh
 
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in

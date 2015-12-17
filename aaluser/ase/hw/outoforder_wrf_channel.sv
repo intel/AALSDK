@@ -49,21 +49,22 @@
  *   - The state machine is kicked off.
  *
  * GENERICS:
- * - NUM_TRANSACTIONS : Number of transactions in latency buffer
+ * - NUM_WAIT_STATIONS : Number of transactions in latency buffer
  * - FIFO_FULL_THRESH : FIFO full threshold
  * - FIFO_DEPTH_BASE2 : FIFO depth radix
  *
  */
 
-`include "ase_global.vh"
+import ase_pkg::*;
+
 `include "platform.vh"
 
 
-module latency_scoreboard
+module outoforder_wrf_channel
   #(
-    parameter int NUM_TRANSACTIONS = 16,
-    parameter int HDR_WIDTH = 61,
-    parameter int DATA_WIDTH = 512,
+    parameter int NUM_WAIT_STATIONS = 16,
+    parameter int HDR_WIDTH = CCIP_TX_HDR_WIDTH,
+    parameter int DATA_WIDTH = CCIP_DATA_WIDTH,
     parameter int COUNT_WIDTH = 8,
     parameter int FIFO_FULL_THRESH = 5,
     parameter int FIFO_DEPTH_BASE2 = 3,
@@ -74,11 +75,11 @@ module latency_scoreboard
     input logic 		  clk,
     input logic 		  rst,
     // Transaction in
-    input logic [HDR_WIDTH-1:0]   meta_in,
+    input 			  TxHdr_t meta_in,
     input logic [DATA_WIDTH-1:0]  data_in,
     input logic 		  write_en,
     // Transaction out
-    output logic [HDR_WIDTH-1:0]  meta_out,
+    output 			  TxHdr_t meta_out,
     output logic [DATA_WIDTH-1:0] data_out,
     output logic 		  valid_out,
     input logic 		  read_en,
@@ -95,7 +96,7 @@ module latency_scoreboard
    parameter int 		  FIFO_WIDTH = TID_WIDTH + HDR_WIDTH + DATA_WIDTH;
 
    // Tracking ID
-   logic [TID_WIDTH-1:0] 	  tid_counter;
+   // logic [TID_WIDTH-1:0] 	  tid_counter;
    logic [TID_WIDTH-1:0] 	  tid_in;
    logic [TID_WIDTH-1:0] 	  tid_out;
 
@@ -109,13 +110,13 @@ module latency_scoreboard
 
 
    // Setup slot usage order
-   int 				  slot_lookup[NUM_TRANSACTIONS];
+   int 				  slot_lookup[NUM_WAIT_STATIONS];
 
    // Initialize slot usage order
    initial begin
       int i;
       // Serial order
-      for(i = 0 ; i < NUM_TRANSACTIONS ; i = i + 1) begin
+      for(i = 0 ; i < NUM_WAIT_STATIONS ; i = i + 1) begin
       	 slot_lookup[i] = i;
       end
       // Shuffle data using internal function
@@ -129,8 +130,8 @@ module latency_scoreboard
    logic 			  wrfence_pop;
 
    // Latbuf control and status
-   logic [0:NUM_TRANSACTIONS-1]   latbuf_status;
-   logic [0:NUM_TRANSACTIONS-1]   latbuf_ready;
+   logic [0:NUM_WAIT_STATIONS-1]  latbuf_status;
+   logic [0:NUM_WAIT_STATIONS-1]  latbuf_ready;
    logic 			  latbuf_empty;
    logic 			  latbuf_full;
    logic 			  latbuf_almfull;
@@ -139,7 +140,7 @@ module latency_scoreboard
    logic 			  latbuf_pop;
    int 				  latbuf_count;
    logic 			  latbuf_anyready;
-
+   
    // Stage 1 signals
    logic [HDR_WIDTH-1:0] 	  stg1_meta;
    logic [DATA_WIDTH-1:0] 	  stg1_data;
@@ -186,10 +187,8 @@ module latency_scoreboard
    int 				  jj;
    int 				  ii;
 
-   // logic [FIFO_WIDTH-1:0] 	  reg_stg3_din;
-   // logic 			  reg_stg3_wen;
-   // logic 			  reg_latbuf_pop;
-
+   logic [CCIP_TX_HDR_WIDTH-1:0]  meta_out_vec;
+  
 
    /*
     * Flow errors
@@ -242,7 +241,7 @@ module latency_scoreboard
 		     } transact_t;
 
    // Array of stored transactions
-   transact_t records[NUM_TRANSACTIONS] ;
+   transact_t records[NUM_WAIT_STATIONS] ;
 
    /*
     * Find a next free slot
@@ -251,8 +250,8 @@ module latency_scoreboard
       int 				     find_iter;
       int 				     ret_free_slot;
       begin
-   	 for(find_iter = push_ptr; find_iter < push_ptr + NUM_TRANSACTIONS; find_iter = find_iter + 1) begin
-	    ret_free_slot = slot_lookup[find_iter % NUM_TRANSACTIONS];
+   	 for(find_iter = push_ptr; find_iter < push_ptr + NUM_WAIT_STATIONS; find_iter = find_iter + 1) begin
+	    ret_free_slot = slot_lookup[find_iter % NUM_WAIT_STATIONS];
    	    if ((records[ret_free_slot].record_valid == 0) && (records[ret_free_slot].state == LatSc_Disabled)) begin
    	       push_ptr = find_iter;
    	       return ret_free_slot;
@@ -272,8 +271,8 @@ module latency_scoreboard
       int sel_slot;
       int prev_pop_slot_num;
       begin
-	 for(pop_iter = pop_ptr; pop_iter < pop_ptr + NUM_TRANSACTIONS ; pop_iter = pop_iter + 1) begin
-	    sel_slot = pop_iter % NUM_TRANSACTIONS;
+	 for(pop_iter = pop_ptr; pop_iter < pop_ptr + NUM_WAIT_STATIONS ; pop_iter = pop_iter + 1) begin
+	    sel_slot = pop_iter % NUM_WAIT_STATIONS;
 	    if ( (records[sel_slot].ready_to_go == 1) && (records[sel_slot].state == LatSc_DoneReady) ) begin
 	       pop_ptr = pop_iter; 
 	       return sel_slot;
@@ -292,49 +291,47 @@ module latency_scoreboard
 	 // Select a random latency
 	 case ( meta )
 	   // ReadLine
-	   `ASE_TX0_RDLINE:
+	   CCIP_TX0_RDLINE_S:
 	     begin
-	   	ret_random_lat = $urandom_range (`RDLINE_LATRANGE);
+	   	ret_random_lat = $urandom_range (`RDLINE_S_LATRANGE);
 	     end
+
+	   CCIP_TX0_RDLINE_I:
+	     begin
+	   	ret_random_lat = $urandom_range (`RDLINE_I_LATRANGE);
+	     end
+
+	   // CCIP_TX0_RDLINE_E:
+	   //   begin
+	   // 	ret_random_lat = $urandom_range (`RDLINE_E_LATRANGE);
+	   //   end
 
 	   // WriteLine
-	   `ASE_TX1_WRLINE:
+	   CCIP_TX1_WRLINE_M:
 	     begin
-		ret_random_lat = $urandom_range (`WRLINE_LATRANGE);
+		ret_random_lat = $urandom_range (`WRLINE_M_LATRANGE);
 	     end
 
-	   // WriteThru
-	   `ASE_TX1_WRTHRU:
+	   CCIP_TX1_WRLINE_I:
 	     begin
-		ret_random_lat = $urandom_range (`WRTHRU_LATRANGE);
-	     end
-
-	   // WriteFence
-	   `ASE_TX1_WRFENCE:
-	     begin
-`ifdef ASE_DEBUG
-		`BEGIN_YELLOW_FONTCOLOR;
-		$display("SIM-SV: %m =>  WriteFence must not enter latency model");
-		`END_YELLOW_FONTCOLOR;
-`endif
-		ret_random_lat = 1;
+		ret_random_lat = $urandom_range (`WRLINE_I_LATRANGE);
 	     end
 
 	   // IntrValid
-	   `ASE_TX1_INTRVALID:
-	     begin
-		ret_random_lat = $urandom_range (`INTR_LATRANGE);
-	     end
+	   // `CCI_TX1_INTRVALID:
+	   //   begin
+	   // 	ret_random_lat = $urandom_range (`INTR_LATRANGE);
+	   //   end
 
 	   // Unspecified type (warn but specify latency
 	   default:
 	     begin
-`ifdef ASE_DEBUG
-		`BEGIN_YELLOW_FONTCOLOR;
-		$display("SIM-SV: %m =>");
-		$display("No Latency model available for meta type %x, using LAT_UNDEFINED", meta);
-		`END_YELLOW_FONTCOLOR;
-`endif
+// `ifdef ASE_DEBUG
+// 		`BEGIN_YELLOW_FONTCOLOR;
+// 		$display("SIM-SV: %m =>");
+// 		$display("No Latency model available for meta type %x, using LAT_UNDEFINED", meta);
+// 		`END_YELLOW_FONTCOLOR;
+// `endif
 		ret_random_lat = `LAT_UNDEFINED;
 	     end
 
@@ -361,7 +358,7 @@ module latency_scoreboard
       .clk        (clk),
       .rst        (rst),
       .wr_en      (write_en),
-      .data_in    ({tid_in, meta_in, data_in}),
+      .data_in    ({tid_in, CCIP_TX_HDR_WIDTH'(meta_in), data_in}),
       .rd_en      (stg1_pop),
       .data_out   ({stg1_tid, stg1_meta, stg1_data}),
       .data_out_v (stg1_valid),
@@ -375,7 +372,7 @@ module latency_scoreboard
 
    // Assert WriteFence
    always @(*) begin
-      if (~stg1_empty && (stg1_meta[`TX_META_TYPERANGE]==`ASE_TX1_WRFENCE))
+      if (~stg1_empty && (stg1_meta[`TX_META_TYPERANGE]==CCIP_TX1_WRFENCE))
 	assert_wrfence	<= 1;
       else
 	assert_wrfence	<= 0;
@@ -384,13 +381,11 @@ module latency_scoreboard
    // Filter WRFENCE
    always @(posedge clk) begin
       q_din		<= {stg1_tid, stg1_meta, stg1_data};
-      // q_push		<= ~stg1_empty && (~assert_wrfence && ~q_full);      
       q_push		<= stg1_valid && (~assert_wrfence && ~q_full);      
-      // stg1_pop	<= ~stg1_empty && ((~assert_wrfence && ~q_full) || wrfence_pop );
    end
-   // assign q_din    = {stg1_tid, stg1_meta, stg1_data};
+
    assign stg1_pop = ~stg1_empty && ((~assert_wrfence && ~q_full) || (assert_wrfence && wrfence_pop));
-   // assign q_push   = ~stg1_empty && (~assert_wrfence && ~q_full);
+
 
    // WriteFence passthru/trap FSM
    always @(posedge clk) begin
@@ -491,8 +486,8 @@ module latency_scoreboard
 
    // Assign latbuf_count & other status signals
    assign latbuf_empty = (latbuf_count == 0) ? 1 : 0;
-   assign latbuf_full  = (latbuf_count == NUM_TRANSACTIONS) ? 1 : 0;
-   assign latbuf_almfull = (latbuf_count >= (NUM_TRANSACTIONS-1)) ? 1 : 0;
+   assign latbuf_full  = (latbuf_count == NUM_WAIT_STATIONS) ? 1 : 0;
+   assign latbuf_almfull = (latbuf_count >= (NUM_WAIT_STATIONS-1)) ? 1 : 0;
    assign latbuf_anyready = |latbuf_ready;
 
 
@@ -502,7 +497,7 @@ module latency_scoreboard
    genvar 				     gen_i;
    generate
       // Managing each slot in transaction record
-      for (gen_i = 0 ; gen_i < NUM_TRANSACTIONS ; gen_i = gen_i + 1) begin
+      for (gen_i = 0 ; gen_i < NUM_WAIT_STATIONS ; gen_i = gen_i + 1) begin : blkgen_latbuf_slot
 	 logic record_valid_reg;
 	 logic ready_to_go_reg;
 	 
@@ -671,7 +666,7 @@ module latency_scoreboard
       .wr_en      (stg3_wen),
       .data_in    (stg3_din),
       .rd_en      (read_en),
-      .data_out   ({tid_out, meta_out, data_out}),
+      .data_out   ({tid_out, meta_out_vec, data_out}),
       .data_out_v (valid_out),
       .alm_full   (stg3_full),
       .full       (),
@@ -681,11 +676,25 @@ module latency_scoreboard
       .underflow  (stg3_underflow)
       );
 
+   // Recast vector to struct form   
+   assign meta_out = TxHdr_t'(meta_out_vec);
+         
    assign empty = stg3_empty;
 
    // Count
-   assign count = stg1_count + q_count + latbuf_count + stg3_count;
-
+   // assign count = stg1_count + q_count + latbuf_count + stg3_count;
+   always @(posedge clk) begin
+      if (rst) begin
+	 count <= 0;	 
+      end
+      else begin
+	 case ({write_en, read_en})
+	   2'b01   : count <= count - 1;	   
+	   2'b10   : count <= count + 1;	   
+	   default : count <= count;	     
+	 endcase
+      end
+   end
    
    /*
     * Transaction IN-OUT checker
@@ -693,7 +702,7 @@ module latency_scoreboard
     */
 `ifdef ASE_DEBUG
    stream_checker #(HDR_WIDTH, TID_WIDTH)
-   checkunit (clk, write_en, meta_in, tid_in, valid_out, meta_out, tid_out);   
+   checkunit (clk, write_en, CCIP_TX_HDR_WIDTH'(meta_in), tid_in, valid_out, meta_out_vec, tid_out);   
 `endif
 
-endmodule // latency_scoreboard
+endmodule // outoforder_wrf_channel
