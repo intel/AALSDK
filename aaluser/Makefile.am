@@ -101,7 +101,6 @@ aas/AASLib \
 aas/AALRuntime \
 aas/AIAService \
 aas/RRMBrokerService \
-aas/uAIA \
 aas/AASResourceManager \
 ase/sw \
 clp \
@@ -114,15 +113,13 @@ aalclphdrsdir=$(aalsdkhdrsdir)/aalclp
 asehdrsdir=$(aalsdkhdrsdir)/ase
 ccilibhdrsdir=$(aalsdkhdrsdir)/ccilib
 edshdrsdir=$(aalsdkhdrsdir)/eds
-faptranshdrsdir=$(aalsdkhdrsdir)/faptrans
 kernelhdrsdir=$(aalsdkhdrsdir)/kernel
 encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 osalhdrsdir=$(aalsdkhdrsdir)/osal
-registrarhdrsdir=$(aalsdkhdrsdir)/registrar
 rmhdrsdir=$(aalsdkhdrsdir)/rm
 servicehdrsdir=$(aalsdkhdrsdir)/service
-uaiahdrsdir=$(aalsdkhdrsdir)/uaia
 utilshdrsdir=$(aalsdkhdrsdir)/utils
+uaiahdrsdir=$(aalsdkhdrsdir)/uaia
 
 aalsdkhdrs_HEADERS=\
 include/aalsdk/AALBase.h \
@@ -159,7 +156,6 @@ include/aalsdk/IServiceClient.h \
 include/aalsdk/IResConfig.h
 
 aashdrs_HEADERS=\
-include/aalsdk/aas/AALDeviceService.h \
 include/aalsdk/aas/AALInProcServiceFactory.h \
 include/aalsdk/aas/AALIPCServiceFactory.h \
 include/aalsdk/aas/AALService.h \
@@ -177,14 +173,6 @@ ase/sw/ase_common.h
 
 edshdrs_HEADERS=\
 include/aalsdk/eds/AASEventDeliveryService.h 
-
-faptranshdrs_HEADERS=\
-include/aalsdk/faptrans/FAP10.h \
-include/aalsdk/faptrans/FAP10Service.h \
-include/aalsdk/faptrans/FAP20.h \
-include/aalsdk/faptrans/FAP20Service.h \
-include/aalsdk/faptrans/MAFUTransactions.h \
-include/aalsdk/faptrans/MAFUTransService.h
 
 kernelhdrs_HEADERS=\
 include/aalsdk/kernel/aalbus-device.h \
@@ -208,22 +196,19 @@ include/aalsdk/kernel/aalrm-services.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/AALWorkspace.h \
 include/aalsdk/kernel/aalwsservice.h \
 include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
-include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/spl2defs.h \
+include/aalsdk/kernel/aalui.h \
+include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
 
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
 
 osalhdrs_HEADERS=\
 include/aalsdk/osal/CriticalSection.h \
@@ -254,16 +239,7 @@ include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
 
 uaiahdrs_HEADERS=\
-include/aalsdk/uaia/AALuAIA_Messaging.h \
-include/aalsdk/uaia/AALuAIA_UIDriverClient.h \
 include/aalsdk/uaia/AIA.h \
-include/aalsdk/uaia/FAPPIP_AFUdev.h \
-include/aalsdk/uaia/IUAIASession.h \
-include/aalsdk/uaia/uAIADefs.h \
-include/aalsdk/uaia/uAIA.h \
-include/aalsdk/uaia/uAIAService.h \
-include/aalsdk/uaia/uAIASession.h \
-include/aalsdk/uaia/uidrvMessage.h \
 include/aalsdk/uaia/IAFUProxy.h
 
 utilshdrs_HEADERS=\
@@ -279,24 +255,28 @@ AAS_EXTRA=\
 include/aalsdk/aas/AASService.h.in
 
 ASE_EXTRA=\
-ase/sw/mqueue_ops.c \
-ase/sw/mem_model.c \
+ase/sw/ase_ops.c \
+ase/sw/Makefile \
 ase/sw/ipc_mgmt_ops.c \
-ase/sw/app_backend.c \
+ase/sw/mem_model.c \
+ase/sw/protocol_backend.c \
+ase/sw/ase_common.h \
 ase/sw/tstamp_ops.c \
+ase/sw/mqueue_ops.c \
+ase/sw/app_backend.c \
 ase/sw/error_report.c \
 ase/sw/linked_list_ops.c \
-ase/sw/ase_common.h \
-ase/sw/protocol_backend.c \
 ase/sw/randomness_control.c \
-ase/sw/ase_ops.c \
-ase/ase.cfg \
-ase/ase_regress.sh \
 ase/Makefile \
+ase/README \
+ase/ase.cfg \
 ase/distclean.sh \
+ase/LICENSE.txt \
+ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
 ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
+ase/hw/ase_global.vh \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
@@ -309,10 +289,9 @@ ase/hw/ase_pkg.sv \
 ase/hw/platform.vh \
 ase/scripts/generate_ase_environment.py \
 ase/scripts/vcs_icc.make \
-ase/scripts/ase_setup.csh \
-ase/scripts/ase_functions.py \
 ase/scripts/ipc_clean.py \
-ase/README
+ase/scripts/ase_functions.py \
+ase/scripts/ase_setup.csh
 
 CLP_EXTRA=\
 include/aalsdk/aalclp/aalclp.h.in
@@ -321,11 +300,6 @@ DOC_EXTRA=\
 doc/Doxyfile.in \
 doc/DoxygenLayout.xml \
 doc/intel_rgb_62.png
-
-FAPTRANS_EXTRA=\
-include/aalsdk/faptrans/FAP10Service.h.in \
-include/aalsdk/faptrans/FAP20Service.h.in \
-include/aalsdk/faptrans/MAFUTransService.h.in
 
 OSAL_EXTRA=\
 include/aalsdk/osal/OSALService.h.in
@@ -341,19 +315,14 @@ include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
-include/aalsdk/uaia/AIAService.h.in \
-include/aalsdk/uaia/uAIAService.h.in
+include/aalsdk/uaia/AIAService.h.in 
 
 EXTRA_DIST=\
-$(regrepo_DATA) \
-$(regrepolinux_DATA) \
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
-$(AASREGISTRAR_EXTRA) \
 $(ASE_EXTRA) \
 $(CLP_EXTRA) \
 $(DOC_EXTRA) \
-$(FAPTRANS_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \

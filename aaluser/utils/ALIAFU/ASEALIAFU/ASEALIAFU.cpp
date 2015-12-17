@@ -51,6 +51,8 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include <aalsdk/kernel/aalui.h>
+
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
@@ -157,7 +159,7 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
 // -----------------------------------------------------
 // Buffer allocation API
 // -----------------------------------------------------
-AAL::uid_errnum_e ASEALIAFU::bufferAllocate( btWSSize Length,
+AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
 					     btVirtAddr    *pBufferptr,
 					     NamedValueSet *pOptArgs)
 {
@@ -176,7 +178,7 @@ AAL::uid_errnum_e ASEALIAFU::bufferAllocate( btWSSize Length,
        ( 0 == buf->fake_paddr ) ) 
     {
       std::cout << "Error Allocating ASE buffer ... EXITING\n";
-      return uid_errnumNoMem;
+      return ali_errnumNoMem;
     }
 
   *pBufferptr = (btVirtAddr)buf->vbase;
@@ -190,17 +192,17 @@ AAL::uid_errnum_e ASEALIAFU::bufferAllocate( btWSSize Length,
   
   m_mapWkSpc[(btVirtAddr)buf->vbase] = wsParms;
 
-  return uid_errnumOK;
+  return ali_errnumOK;
 }
 
 
-AAL::uid_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
+AAL::ali_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
 {
   // Find in map and remove
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i == m_mapWkSpc.end()) {  // not found
       AAL_ERR(LM_All, "Tried to free non-existent Buffer");
-      return uid_errnumBadParameter;
+      return ali_errnumBadParameter;
    }
 
   struct aalui_WSMParms wsParms;
@@ -209,7 +211,7 @@ AAL::uid_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
   // Call ase_common:deallocate_buffer_by_index
   deallocate_buffer_by_index((int)wsParms.wsid);
   
-  return uid_errnumOK;
+  return ali_errnumOK;
 }
 
 
@@ -230,6 +232,45 @@ btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
 
    // not found
    return 0;
+}
+
+
+// ---------------------------------------------------------------------------
+// IALIUMsg interface implementation
+// ---------------------------------------------------------------------------
+
+//
+// umsgGetNumber. Return number of UMSGs.
+//
+btUnsignedInt ASEALIAFU::umsgGetNumber( void )
+{
+  return true;
+}
+
+//
+// umsgGetAddress. Get address of specific UMSG.
+//
+btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
+{
+  return 0;
+}
+
+
+void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
+			       const btUnsigned64bitInt Value )
+{
+
+}  // umsgTrigger64
+
+
+//
+// umsgSetAttributes. Set UMSG attributes.
+//
+// TODO: not implemented
+//
+bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+{
+   return true;
 }
 
 

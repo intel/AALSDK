@@ -139,16 +139,18 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    // </IALIMMIO>
 
    // <IALIBuffer>
-   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet       *pOptArgs = NULL );
-   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address);
+   virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address);
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
    // </IALIBuffer>
 
    // <IALIUMsg>
    virtual btUnsignedInt umsgGetNumber( void );
    virtual btVirtAddr   umsgGetAddress( const btUnsignedInt UMsgNumber );
+   virtual void          umsgTrigger64( const btVirtAddr pUMsg,
+                                        const btUnsigned64bitInt Value );
    virtual bool      umsgSetAttributes( NamedValueSet const &nvsArgs);
    // </IALIUMsg>
 

@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 4.1.7-CCIP
+ASE_VERSION = 5.0.0
 
 # ASE Debug
 ASE_DEBUG = 1
@@ -114,7 +114,7 @@ ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
-SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1
+SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca

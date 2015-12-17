@@ -156,6 +156,12 @@ create_samples_dist() {
 
    ${FIND} "${SAMPLES_TMPDIR}/Samples" -type f \( -iname "*.vcxproj" -o -iname "*.vcxproj.filters" \) -delete
 
+   ## for 5.0.0 strip out irrelevant samples that will not build
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Hello_CCI_NLB"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Hello_SPL_LB"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Sudoku_SPL"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/LinkedList_SPL"
+   
    pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
    ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" "Samples"
    popd >/dev/null 2>&1

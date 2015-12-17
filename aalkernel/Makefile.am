@@ -111,22 +111,18 @@ include/aalsdk/kernel/aalrm-services.h \
 include/aalsdk/kernel/AALTransactionID_s.h \
 include/aalsdk/kernel/aaltypes.h \
 include/aalsdk/kernel/aalui-events.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/AALWorkspace.h \
 include/aalsdk/kernel/aalwsservice.h \
 include/aalsdk/kernel/ahmpip.h \
 include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
+include/aalsdk/kernel/spl2defs.h \
+include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
-include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
-
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
 
 if COND_AAL_MODPROBE_CONFIG
 modprobeconfdir=@AAL_MODPROBE_CONFIG_PATH@

@@ -57,7 +57,7 @@
                                           // Types, Events, aalrm, aalrm_server, aalrm_client
                                           // Interestingly, for just operator<<, not needed
 #include <aalsdk/kernel/aalui.h>          // user mode UI users, as well
-#include <aalsdk/kernel/fappip.h>         // FAP PIP interface
+//#include <aalsdk/kernel/fappip.h>         // FAP PIP interface
 #include <aalsdk/kernel/aalmafu.h>        // MAFU interface
 #include <aalsdk/kernel/AALWorkspace.h>   // TTASK_MODE, TDESC_TYPE
 
@@ -114,7 +114,7 @@ AASLIB_API std::ostream & operator << (std::ostream & , const aalrm_ioctlreq    
 
 
 //-------------------------------   FAP   --------------------------------
-AASLIB_API std::ostream & operator << (std::ostream & , const fappip_afuCmdID_e  & );
+//AASLIB_API std::ostream & operator << (std::ostream & , const fappip_afuCmdID_e  & );
 
 //-------------------------------   U I   --------------------------------
 
@@ -149,7 +149,7 @@ AASLIB_API std::ostream & operator << (std::ostream & , const AAL::rms_result_e 
 AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aalrms_requestdevice     & );
 AASLIB_API std::ostream & operator << (std::ostream & , const AAL::aalrm_ioctlreq           & );
 
-AASLIB_API std::ostream & operator << (std::ostream & , const AAL::fappip_afuCmdID_e  & );
+//AASLIB_API std::ostream & operator << (std::ostream & , const AAL::fappip_afuCmdID_e  & );
 
 AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_msgIDs_e       & );
 AASLIB_API std::ostream & operator << (std::ostream & , const AAL::uid_errnum_e       & );

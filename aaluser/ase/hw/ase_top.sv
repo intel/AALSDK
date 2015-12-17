@@ -50,6 +50,9 @@ module ase_top();
    t_if_ccip_Tx ffs_LP16ui_sTxData_afu;
    t_if_ccip_Rx ffs_LP16ui_sRxData_afu;
 
+   logic [1:0] ffs_LP16ui_afu_PwrState;   // CCI-P AFU Power State
+   logic       ffs_LP16ui_afu_Error;      // CCI-P Protocol Error Detected
+   
    // CCI-P emulator
    ccip_emulator ccip_emulator
      (
@@ -57,6 +60,8 @@ module ase_top();
       .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
       .vl_clk_LPdomain_16ui               (vl_clk_LPdomain_16ui         ),
       .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
+      .ffs_LP16ui_afu_PwrState            (ffs_LP16ui_afu_PwrState      ),
+      .ffs_LP16ui_afu_Error               (ffs_LP16ui_afu_Error         ),
       .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
       .ffs_LP16ui_sRxData_afu             (ffs_LP16ui_sRxData_afu       )
       );
@@ -65,9 +70,12 @@ module ase_top();
    // CCIP AFU
    ccip_std_afu ccip_std_afu
      (
+      .vl_clk_LPdomain_64ui               (vl_clk_LPdomain_64ui         ),
       .vl_clk_LPdomain_32ui               (vl_clk_LPdomain_32ui         ),
       .vl_clk_LPdomain_16ui		  (vl_clk_LPdomain_16ui         ),
       .ffs_LP16ui_afu_SoftReset_n         (ffs_LP16ui_afu_SoftReset_n   ),
+      .ffs_LP16ui_afu_PwrState            (ffs_LP16ui_afu_PwrState      ),
+      .ffs_LP16ui_afu_Error               (ffs_LP16ui_afu_Error         ),
       .ffs_LP16ui_sTxData_afu		  (ffs_LP16ui_sTxData_afu       ),
       .ffs_LP16ui_sRxData_afu		  (ffs_LP16ui_sRxData_afu       )
       );
