@@ -4,9 +4,9 @@ package ccip_if_pkg;
 //=====================================================================
 // CCI-P interface defines
 //=====================================================================
-
+parameter CCIP_VERSION_NUMBER    = 12'h060;
 parameter CCIP_CLDATA_WIDTH      = 512;
-parameter CCIP_MMIODATA_WIDTH     = 64;
+parameter CCIP_MMIODATA_WIDTH    = 64;
 
 // Request Type  Encodings
 //----------------------------------------------------------------------

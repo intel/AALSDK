@@ -52,14 +52,24 @@ import ccip_if_pkg::*;
 // CCI to Memory translator module
 module ccip_emulator
   (
-   output logic vl_clk_LPdomain_64ui,
-   output logic vl_clk_LPdomain_32ui,
-   output logic vl_clk_LPdomain_16ui,
-   output logic ffs_LP16ui_afu_SoftReset_n,
-   input 	t_if_ccip_Tx ffs_LP16ui_sTxData_afu,
-   output 	t_if_ccip_Rx ffs_LP16ui_sRxData_afu
+   // Clocks and reset
+   output logic       vl_clk_LPdomain_64ui,
+   output logic       vl_clk_LPdomain_32ui,
+   output logic       vl_clk_LPdomain_16ui,
+   output logic       ffs_LP16ui_afu_SoftReset_n,
+   // Power and error   
+   output logic [1:0] ffs_LP16ui_afu_PwrState, // CCI-P AFU Power State
+   output logic       ffs_LP16ui_afu_Error, // CCI-P Protocol Error Detected   
+   // Data ports
+   input 	      t_if_ccip_Tx ffs_LP16ui_sTxData_afu,
+   output 	      t_if_ccip_Rx ffs_LP16ui_sRxData_afu
    );
-
+   
+   // Power and error // TBD
+    assign ffs_LP16ui_afu_PwrState = 2'b0;
+   assign ffs_LP16ui_afu_Error = 1'b0;
+   
+   
 
    /*
     * CCIP breakout
