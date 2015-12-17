@@ -325,7 +325,7 @@ btInt HelloALINLBApp::run()
    m_DSMSize = LPBK1_DSM_SIZE;
    m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
-   if(0 != m_DSMPhys){
+   if(0 == m_DSMPhys){
       m_bIsOK = false;
       m_Result = -1;
       goto done_2;
@@ -341,7 +341,7 @@ btInt HelloALINLBApp::run()
 
    m_InputSize = LPBK1_BUFFER_SIZE;
    m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-   if(0 != m_InputPhys){
+   if(0 == m_InputPhys){
       m_bIsOK = false;
       m_Result = -1;
       goto done_3;
@@ -356,7 +356,7 @@ btInt HelloALINLBApp::run()
 
    m_OutputSize = LPBK1_BUFFER_SIZE;
    m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
-   if(0 != m_OutputPhys){
+   if(0 == m_OutputPhys){
       m_bIsOK = false;
       m_Result = -1;
       goto done_4;
