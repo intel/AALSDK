@@ -266,7 +266,9 @@ void ase_alloc_action(struct buffer_t *mem)
       // Pin CSR address
       mmio_afu_vbase = (uint64_t*) mem->pbase;
 #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
+      END_YELLOW_FONTCOLOR;
 #endif
 
       // If UMSG is enabled, write information to CSR region

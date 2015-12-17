@@ -207,10 +207,21 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |    
-  int is_mmiomap;                  // Flag memory as CSR map          |   
+  int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
+
+/*
+ * Workspace meta list
+ */
+struct wsmeta_t 
+{
+  int      index;
+  uint64_t *buf_structaddr;
+  struct wsmeta_t *next;
+};
+
 
 // Compute buffer_t size 
 #define BUFSIZE     sizeof(struct buffer_t)
@@ -268,8 +279,8 @@ void ll_print_info(struct buffer_t *);
 void ll_traverse_print();
 void ll_append_buffer(struct buffer_t *);
 void ll_remove_buffer(struct buffer_t *);
-struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
+struct buffer_t* ll_search_buffer(int);
 
 // Mem-ops functions
 // void ase_mqueue_setup();
@@ -307,7 +318,7 @@ void mqueue_send(int, char*);
 int mqueue_recv(int, char*);
 
 // Debug interface
-void shm_dbg_memtest(struct buffer_t *);
+// void shm_dbg_memtest(struct buffer_t *);
 
 // Timestamp functions
 void put_timestamp();
@@ -328,11 +339,15 @@ void create_ipc_listfile();
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-  // Shared memory alloc/dealloc operations
+  // Session control
   void session_init();
   void session_deinit();
+  // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *);
   void deallocate_buffer(struct buffer_t *);
+  void deallocate_buffer_by_index(int);
+  void append_wsmeta(struct wsmeta_t *);
+  // MMIO activity
   void mmio_write32(uint32_t index, uint32_t data);
   void mmio_write64(uint32_t index, uint64_t data);
   void mmio_read32(uint32_t index, uint32_t *data);

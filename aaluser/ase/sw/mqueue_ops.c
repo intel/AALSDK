@@ -242,8 +242,9 @@ void mqueue_destroy(char* mq_name_suffix)
 void mqueue_send(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
+  int ret;
   
-  write(mq, str, ASE_MQ_MSGSIZE);  
+  ret = write(mq, str, ASE_MQ_MSGSIZE);  
 /* #ifdef ASE_MSG_VIEW */
 /*   printf("ASEmsg TX => %s\n", str); */
 /* #endif */

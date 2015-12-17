@@ -179,7 +179,10 @@ struct buffer_t* ll_search_buffer(int search_index)
     }
 
   // When found, return pointer to buffer
-  return search_ptr;
+  if (search_index == search_ptr->index)
+    return search_ptr;
+  else
+    return NULL;
 
   FUNC_CALL_EXIT;
 }

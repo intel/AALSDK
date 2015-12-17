@@ -71,6 +71,11 @@ uint32_t glbl_umsgmode_csr;
 // CSR map storage
 struct buffer_t *mmio_region;
 
+// Workspace metadata table
+struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL;
+struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;
+
+
 /*
  * Send SIMKILL
  */
@@ -238,7 +243,6 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
   memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint32_t));
-  //  mmio_pkt->data = (uint64_t)data;
   mmio_pkt->resp_en = 0;
   
 #ifdef ASE_DEBUG
@@ -311,7 +315,6 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   mmio_pkt->type = MMIO_WRITE_REQ;
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
-  // mmio_pkt->data = (uint64_t)data;
   memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint64_t));
   mmio_pkt->resp_en = 0;
 
@@ -384,7 +387,6 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
   memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
-  // mmio_pkt->data = 0;
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
@@ -400,10 +402,15 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+  memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
   printf("  [APP]  MMIO Read #%d completed\n", mmio_read_cnt);
 #endif
+  
+  // Write data
+  data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
+  *data = (uint32_t)mmio_pkt->qword[0];
   
   END_YELLOW_FONTCOLOR;
 
@@ -432,7 +439,6 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
   memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
-  // mmio_pkt->data = 0;
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
@@ -449,14 +455,16 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   // Receive MMIO Read Response
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+  memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
   printf("  [APP]  MMIO Read #%d completed\n", mmio_write_cnt);
 #endif
   
   // Typecast back to mmio_pkt, and update data
-  /* memcpy(mmio_pkt, (mmio_t*)mmio_pkt, sizeof(mmio_t)); */
-  /* *data = (uint64_t)mmio_pkt->data; */
+  data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
+  *data = (uint64_t)mmio_pkt->qword[0];
+
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -568,9 +576,9 @@ void allocate_buffer(struct buffer_t *mem)
   mem->next = NULL;
 
   // If memtest is enabled
-#ifdef ASE_MEMTEST_ENABLE
-  shm_dbg_memtest(mem);
-#endif
+/* #ifdef ASE_MEMTEST_ENABLE */
+/*   shm_dbg_memtest(mem); */
+/* #endif */
 
   // Message queue must be enabled when using DPI (else debug purposes only)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
@@ -593,6 +601,13 @@ void allocate_buffer(struct buffer_t *mem)
 #ifdef ASE_BUFFER_VIEW
   ase_buffer_info(mem);
 #endif
+
+  // book-keeping WSmeta
+  struct wsmeta_t *ws;
+  ws = (struct wsmeta_t *) malloc(sizeof(struct wsmeta_t));
+  ws->index = mem->index;
+  ws->buf_structaddr = (uint64_t*)mem;  
+  append_wsmeta(ws);
 
   pthread_mutex_unlock(&lock);
 
@@ -626,7 +641,7 @@ void deallocate_buffer(struct buffer_t *mem)
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
   mqueue_send(app2sim_tx, tmp_msg);
-
+  
   // Unmap the memory accordingly
   ret = munmap((void*)mem->vbase, (size_t)mem->memsize);
   if(0 != ret)
@@ -646,6 +661,90 @@ void deallocate_buffer(struct buffer_t *mem)
 
 
 /*
+ * Appends and maintains a Workspace Meta Linked List (wsmeta_t)
+ * <index, buffer_t<vaddr>> linkedlist
+ */
+void append_wsmeta(struct wsmeta_t *new)
+{
+  FUNC_CALL_ENTRY;
+
+  if (wsmeta_head == NULL) 
+    {
+      wsmeta_head = new;
+      wsmeta_end = new;
+    }
+  
+  wsmeta_end->next = new;
+  new->next = NULL;
+  wsmeta_end = new;
+
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  struct wsmeta_t *wsptr;
+  printf("WSMeta traversal START =>\n");
+  wsptr = wsmeta_head;
+  while(wsptr != NULL)
+    {
+      printf("\t%d %p\n", wsptr->index, wsptr->buf_structaddr );
+      wsptr = wsptr->next;
+    }
+  printf("WSMeta traversal END\n");
+  END_YELLOW_FONTCOLOR;
+#endif
+
+  FUNC_CALL_EXIT;
+}
+
+
+/*
+ * deallocate_buffer_by_index:
+ * Find a workspace by ID and then call deallocate_buffer
+ */
+void deallocate_buffer_by_index(int search_index)
+{
+  FUNC_CALL_ENTRY;
+
+  int wsid;
+  uint64_t *bufptr = (uint64_t*) NULL;
+  struct wsmeta_t *wsptr;
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Deallocate request index = %d ... ", search_index);
+
+  // Traverse wsmeta_t
+  wsptr = wsmeta_head;
+  while (wsptr != NULL)
+    {
+      if (wsptr->index == search_index)
+	{
+	  wsid = wsptr->index;
+	  bufptr = wsptr->buf_structaddr;
+	  printf("FOUND\n");
+	  break;
+	}
+      else
+	{
+	  wsptr = wsptr->next;
+	}
+    }
+  END_YELLOW_FONTCOLOR;
+  
+  // Call deallocate
+  if (bufptr != NULL)    
+    deallocate_buffer((struct buffer_t *)bufptr);
+  else
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  Buffer pointer was returned as NULL\n");
+      END_RED_FONTCOLOR;
+    }
+
+  FUNC_CALL_EXIT;
+}
+
+
+// struct buffer_t *mem 
+
+/*
  * shm_dbg_memtest : A memory read write test (DEBUG feature)
  * To run the test ASE_MEMTEST_ENABLE must be enabled.
  * - This test runs alongside a process ase_dbg_memtest.
@@ -655,6 +754,7 @@ void deallocate_buffer(struct buffer_t *mem)
  *   This reads all the data, verifies it is 0xCAFEBABE and writes 0x00000000 there
  * PURPOSE: To make sure all the shared memory regions are initialised correctly
  */
+#if 0
 void shm_dbg_memtest(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
@@ -673,7 +773,7 @@ void shm_dbg_memtest(struct buffer_t *mem)
 
   FUNC_CALL_ENTRY;
 }
-
+#endif
 
 /*
  * umas_init : Set up UMAS region
