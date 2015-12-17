@@ -92,7 +92,7 @@ BEGIN_NAMESPACE(AAL)
 #define CSR_UMSG_BASE				0x03F4
 #define CSR_UMSG_MODE				0x03F8
 #define CSR_CIRBSTAT				0x0278
-#define CSR_SW_NOTICE				0x1B00
+#define CSR_SW_NOTICE				0x158
 #   define NLB_TEST_MODE_LPBK1    	0x000
 #   define NLB_TEST_MODE_WB       	0x000
 #   define NLB_TEST_MODE_WT       	0x001
