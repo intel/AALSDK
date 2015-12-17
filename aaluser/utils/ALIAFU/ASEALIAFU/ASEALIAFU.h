@@ -40,7 +40,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/20/2015     HM       Initial version.@endverbatim
+/// 07/20/2015     HM       Initial version.
+/// 12/16/2015     RRS      Integration with ASE App-backend.@endverbatim
 //****************************************************************************
 #ifndef __ASEALIAFU_H__
 #define __ASEALIAFU_H__
@@ -124,9 +125,9 @@ public:
    // <IALIBuffer>
    virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet       *pOptArgs = NULL ){};
-   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address){};
-   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address){};
+                                             NamedValueSet       *pOptArgs = NULL );
+   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address);
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
    // </IALIBuffer>
 
    // <IALIUMsg>
@@ -156,9 +157,18 @@ protected:
    typedef map_t::iterator                map_iter;
    typedef map_t::const_iterator          const_map_iter;
 
+   btVirtAddr           m_MMIORmap;
+   btUnsigned32bitInt   m_MMIORsize;
+   btVirtAddr           m_uMSGmap;
+   btUnsigned32bitInt   m_uMSGsize;
+
    btCSRValue             m_Last3c4;
    btCSRValue             m_Last3cc;
    map_t                  m_WkspcMap;
+
+   // Map to store workspace parameters
+   typedef std::map<btVirtAddr, struct aalui_WSMParms> mapWkSpc_t;
+   mapWkSpc_t m_mapWkSpc;  
 
    static CriticalSection sm_ASEMtx;
 };

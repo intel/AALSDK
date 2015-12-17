@@ -630,6 +630,8 @@ void deallocate_buffer(struct buffer_t *mem)
   mq_name = ase_malloc (ASE_MQ_NAME_LEN);
   memset(mq_name, '\0', ASE_MQ_NAME_LEN);
 
+  ase_buffer_info(mem);
+
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory region %s ...", mem->memname);
   END_YELLOW_FONTCOLOR;

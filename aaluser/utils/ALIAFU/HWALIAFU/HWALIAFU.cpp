@@ -361,7 +361,7 @@ AAL::uid_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
    // Check the parameters
    if ( transaction.IsOK() ) {
       // Will return to AFUEvent, below.
-      m_pAFUProxy->SendTransaction(&transaction);
+     m_pAFUProxy->SendTransaction(&transaction);
    } else{
       return uid_errnumSystem;
    }

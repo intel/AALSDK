@@ -65,8 +65,8 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-#define  HWAFU
-//#define  ASEAFU
+// #define  HWAFU
+#define  ASEAFU
 
 using namespace std;
 using namespace AAL;
@@ -110,7 +110,7 @@ using namespace AAL;
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x0110
 #define CSR_AFU_DSM_BASEH        0x0114
-#	define NLB_TEST_MODE_PCIE0		0x2000
+#define NLB_TEST_MODE_PCIE0      0x2000
 /// @addtogroup HelloCCINLB
 /// @{
 
@@ -266,13 +266,13 @@ btInt HelloALINLBApp::run()
    // indicate that this service needs to allocate an AIAService, too (to talk to the AFU)
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
-   #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
+#elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
    Manifest.Add(keyRegHandle, 20);
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
-   #else                            /* default is Software Simulator */
+   MSG("ALI/ASE Simulation NLB");
+#else                            /* default is Software Simulator */
 
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
@@ -347,17 +347,18 @@ btInt HelloALINLBApp::run()
       //=============================
       MSG("Running Test");
 
-#define SIMULATED
+      // #define SIMULATED
 
-#if defined (SIMULATED)
+// #if defined (SIMULATED)
 
-      // Initiate AFU Reset
-      if(IALIReset::e_OK != m_pALIResetService->afuReset()){
-         ERR("Reset Failed... as expected in simulation\n");
-      }
+//       // Initiate AFU Reset
+//       if(IALIReset::e_OK != m_pALIResetService->afuReset()){
+//          ERR("Reset Failed... as expected in simulation\n");
+//       }
 
-#else
+// #else
       /* Setting to 0 turns off actul NLB functionality for debug purposes */
+      MSG("Here");
 
       // Clear the DSM
       ::memset( m_DSMVirt, 0, m_DSMSize);
@@ -393,9 +394,9 @@ btInt HelloALINLBApp::run()
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       // If ASE, give it some time to catch up
-      #if defined ( ASEAFU )
-      SleepSec(5);
-      #endif /* ASE AFU */
+      // #if defined ( ASEAFU )
+      // SleepSec(5);
+      // #endif /* ASE AFU */
 
 
 
@@ -437,7 +438,7 @@ btInt HelloALINLBApp::run()
       // Now clean up Workspaces and Release.
       //  Once again all of this is done in a simple
       //  state machine via callbacks
-#endif
+// #endif
 
       MSG("Done Running Test");
 
