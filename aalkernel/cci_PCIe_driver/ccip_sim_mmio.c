@@ -589,25 +589,18 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,port_stap.ccip_port_stap.csr);
 
    // First AFU offset is the next free location (ptr + OFFSET) - the base address of Port HDR afuptr
-   //offset = (ptr + OFFSET) - afuptr;
+   offset = (ptr + OFFSET) - afuptr;
 
-   PERR("1 \n");
-   offset =0x6000;
-   PERR("2 \n");
    // User AFU - re write the value
    port_hdr.ccip_port_next_afu.afu_id_offset=offset;
-   PERR("3 \n");
    write_ccip_csr64(afuptr, afu_id_offset, port_hdr.ccip_port_next_afu.csr);
 
-   PERR("4 \n");
+   ptr = afuptr + port_hdr.ccip_port_next_afu.csr;
 
-   ptr = afuptr + offset;
-
-   PERR("5 \n");
-
-   //PINFO("AFU offset is %x beyond PORT header at %p = %p\n", offset, afuptr, ptr );
+   PINFO("AFU offset is %x beyond PORT header at %p = %p\n", offset, afuptr, ptr );
 
    offset = 0;
+
    // Port header
    afu_hdr.ccip_dfh.Type = CCIP_DFType_afu;
    afu_hdr.ccip_dfh.next_DFH_offset =0x0;
