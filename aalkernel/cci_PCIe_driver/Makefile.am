@@ -99,7 +99,9 @@ ccip_port.h \
 ccip_port.c \
 ccip_afu.c \
 ccip_stap.c \
-ccip_pr.c
+ccip_pr.c \
+ccip_perfmon.c \
+ccip_perfmon.h
 
 
 kbuild/@CCIPCIEDRV_DRV_NAME@.ko: kbuild/Module.symvers

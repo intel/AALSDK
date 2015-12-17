@@ -362,5 +362,32 @@ private:
 
 }; // class umsgSetAttributes
 
+class UAIA_API PerfCounterGet : public IAIATransaction
+{
+public:
+   PerfCounterGet(AAL::btWSSize size);
+   AAL::btBool                IsOK() const;
+
+   AAL::btVirtAddr                getPayloadPtr() const;
+   AAL::btWSSize                  getPayloadSize() const;
+   AAL::stTransactionID_t const   getTranID() const;
+   AAL::uid_msgIDs_e              getMsgID() const;
+   struct AAL::aalui_WSMEvent     getWSIDEvent() const;
+   AAL::uid_errnum_e              getErrno()const;
+   void                           setErrno(AAL::uid_errnum_e);
+   AAL::btVirtAddr                getBuffer() const;
+
+   ~PerfCounterGet();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+}; // class PerfCounterGet
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

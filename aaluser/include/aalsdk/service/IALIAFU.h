@@ -306,6 +306,13 @@ public:
    #define AALPERF_READ_MISS        "Read_Miss"
    #define AALPERF_WRITE_MISS       "Write_Miss"
    #define AALPERF_EVICTIONS        "Evictions"
+
+   #define AALPERF_PCIE0_READ       "PCIe 0 Read"
+   #define AALPERF_PCIE0_WRITE      "PCIe 0 Write"
+   #define AALPERF_PCIE1_READ       "RPCIe 1 Read"
+   #define AALPERF_PCIE1_WRITE      "PCIe 1 Write"
+   #define AALPERF_UPI_READ          "UPI Read"
+   #define AALPERF_UPI_WRITE        "UPI Write"
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
@@ -315,7 +322,7 @@ public:
    /// }
    /// @endcode
 
-   virtual void performanceCountersGet ( INamedValueSet const **ppResult,
+   virtual void performanceCountersGet ( INamedValueSet const *pResult,
                                          NamedValueSet const  *pOptArgs = NULL) = 0;
 }; // class IALIPerf
 
