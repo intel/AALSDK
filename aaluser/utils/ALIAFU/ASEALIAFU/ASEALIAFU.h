@@ -130,9 +130,11 @@ public:
    // </IALIBuffer>
 
    // <IALIUMsg>
-   virtual btUnsignedInt umsgGetNumber( void ){};
-   virtual btVirtAddr   umsgGetAddress( const btUnsignedInt UMsgNumber ){};
-   virtual bool      umsgSetAttributes( NamedValueSet const &nvsArgs){};
+   virtual btUnsignedInt umsgGetNumber(     void ){};
+   virtual btVirtAddr    umsgGetAddress(    const btUnsignedInt UMsgNumber ){};
+   virtual void          umsgTrigger64(     const btVirtAddr pUMsg,
+                                            const btUnsigned64bitInt Value ){};
+   virtual bool          umsgSetAttributes( NamedValueSet const &nvsArgs){};
    // </IALIUMsg>
 
    // <IALIReset>

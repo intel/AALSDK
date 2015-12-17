@@ -501,6 +501,12 @@ btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
    }
 }
 
+void HWALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
+                              const btUnsigned64bitInt Value )
+{
+   *reinterpret_cast<btUnsigned64bitInt*>(pUMsg) = Value;
+}  // umsgTrigger64
+
 //
 // umsgSetAttributes. Set UMSG attributes.
 //
