@@ -534,6 +534,9 @@ void mmio_response(struct mmio_t *mmio_pkt);
 /* int umsg_listener(); */
 // void ase_umsg_init();
 
+// Buffer message injection
+void buffer_msg_inject (char *);
+
 
 /*
  * Request/Response options

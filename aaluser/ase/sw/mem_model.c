@@ -264,7 +264,7 @@ void ase_alloc_action(struct buffer_t *mem)
   if (mem->index == 0)
     {
       // Pin CSR address
-      mmio_afu_vbase = (uint64_t*) mem->pbase;
+      mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
 #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
@@ -393,6 +393,7 @@ void ase_destroy()
 //   This reads all the data, verifies it is 0xCAFEBABE and writes 0x00000000 there
 // PURPOSE: To make sure all the shared memory regions are initialised correctly
 // -------------------------------------------------------------------------------
+#if 0
 void ase_dbg_memtest(struct buffer_t *mem)
 {
   uint32_t *memptr;
@@ -427,8 +428,7 @@ void ase_dbg_memtest(struct buffer_t *mem)
       END_YELLOW_FONTCOLOR;
     }
 }
-
-
+#endif
 
 
 /*

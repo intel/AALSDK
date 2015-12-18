@@ -75,7 +75,17 @@ int main(int argc, char *argv[])
 
   mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
   mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
-  
+
+
+  uint64_t *data_l, *data_h;
+
+  mmio_read64(0x008, data_l);
+  mmio_read64(0x010, data_h);
+
+  printf("AFUID = %llx %llx\n", 
+	 (unsigned long long)*data_h, 
+	 (unsigned long long)*data_l);
+ 
   mmio_write32(CSR_CTL, 0);
   
   mmio_write32(CSR_CTL, 1);
