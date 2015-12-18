@@ -118,8 +118,8 @@ encoderhdrsdir=$(kernelhdrsdir)/encoder_sample_kbae
 osalhdrsdir=$(aalsdkhdrsdir)/osal
 rmhdrsdir=$(aalsdkhdrsdir)/rm
 servicehdrsdir=$(aalsdkhdrsdir)/service
-utilshdrsdir=$(aalsdkhdrsdir)/utils
 uaiahdrsdir=$(aalsdkhdrsdir)/uaia
+utilshdrsdir=$(aalsdkhdrsdir)/utils
 
 aalsdkhdrs_HEADERS=\
 include/aalsdk/AALBase.h \

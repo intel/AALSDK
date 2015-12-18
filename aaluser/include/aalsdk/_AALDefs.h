@@ -273,26 +273,6 @@
 #     define AALRESOURCEMANAGER_API       __declspec(dllimport)
 #     define RESMGR_SERVICE_API           __declspec(dllimport)
 # endif // Resource Manager
-# ifdef AASREGISTRAR_EXPORTS
-#    define AASREGISTRAR_API              __declspec(dllexport)
-# else
-#    define AASREGISTRAR_API              __declspec(dllimport)
-# endif // AASREGISTRAR_EXPORTS
-# ifdef FAPTRANS1_EXPORTS
-#    define FAPTRANS1_API                 __declspec(dllexport)
-# else
-#    define FAPTRANS1_API                 __declspec(dllimport)
-# endif // FAPTRANS1_EXPORTS
-# ifdef FAPTRANS2_EXPORTS
-#    define FAPTRANS2_API                 __declspec(dllexport)
-# else
-#    define FAPTRANS2_API                 __declspec(dllimport)
-# endif // FAPTRANS2_EXPORTS
-# ifdef MAFUTRANS_EXPORTS
-#    define MAFUTRANS_API                 __declspec(dllexport)
-# else
-#    define MAFUTRANS_API                 __declspec(dllimport)
-# endif // MAFUTRANS_EXPORTS
 # ifdef RRM_EXPORTS
 #    define RRM_API                       __declspec(dllexport)
 # else
@@ -317,19 +297,11 @@
 # define UAIA_API                         __declspec(0)
 // AASEDS
 # define AASEDS_API                       __declspec(0)
-// Registrar
-# define AASREGISTRAR_API                 __declspec(0)
 // Resource Manager Client
 # define AALRESOURCEMANAGERCLIENT_API     __declspec(0)
 // Resource Manager
 # define AALRESOURCEMANAGER_API           __declspec(0)
 # define RESMGR_SERVICE_API               __declspec(0)
-// libFAPTrans1
-# define FAPTRANS1_API                    __declspec(0)
-// libFAPTrans2
-# define FAPTRANS2_API                    __declspec(0)
-// libMAFUTrans
-# define MAFUTRANS_API                    __declspec(0)
 # define RRM_API                          __declspec(0)
 # define RRMBROKER_API                    __declspec(0)
 #endif // OS
