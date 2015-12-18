@@ -81,8 +81,6 @@ SUBDIRS=\
 aalbus \
 aalresourcemgr_server \
 aalresourcemgr_client \
-aal_uidriver \
-cciv4_driver \
 cci_PCIe_driver
 
 aalsdkhdrsdir=$(includedir)/aalsdk
@@ -124,9 +122,6 @@ include/aalsdk/kernel/kosal.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/splpip.h \
 include/aalsdk/kernel/vafu2defs.h
-
-encoderhdrs_HEADERS=\
-include/aalsdk/kernel/encoder_sample_kbae/encoder_kbae-public.h
 
 if COND_AAL_MODPROBE_CONFIG
 modprobeconfdir=@AAL_MODPROBE_CONFIG_PATH@
