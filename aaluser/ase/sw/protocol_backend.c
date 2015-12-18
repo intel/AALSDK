@@ -37,15 +37,6 @@
 
 #include "ase_common.h"
 
-// ---------------------------------------------------------------
-// Message queues descriptors
-// ---------------------------------------------------------------
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
-int app2sim_umsg_rx;      // UMSG    message queue in RX mode
-int app2sim_simkill_rx;   // app2sim message queue in RX mode
-int sim2app_intr_tx;      // sim2app message queue in TX mode
 
 // Global test complete counter
 // Keeps tabs of how many session_deinits were received
@@ -62,39 +53,80 @@ void scope_function()
 
 
 /*
+ * DPI: CONFIG path data exchange
+ */
+void sv2c_config_dex(const char *str)
+{
+  sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_config_filepath, str);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
+  END_YELLOW_FONTCOLOR;
+#endif
+  
+  // Check for existance of file
+  if ( access(sv2c_config_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_config_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
+ * DPI: SCRIPT path data exchange
+ */
+void sv2c_script_dex(const char *str)
+{
+  sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
+  strcpy(sv2c_script_filepath, str);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
+  END_YELLOW_FONTCOLOR;
+#endif
+
+  // Check for existance of file
+  if ( access(sv2c_script_filepath, F_OK) == 0 )
+    {
+      printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
+    }
+  else 
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");  
+      memset(sv2c_script_filepath, '\0', ASE_FILEPATH_LEN);
+      END_YELLOW_FONTCOLOR;
+    }
+}
+
+
+/*
  * DPI: WriteLine Data exchange
  */
-void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
+void wr_memline_dex(cci_pkt *pkt)
 {
   FUNC_CALL_ENTRY;
-  uint64_t* wr_target_vaddr = (uint64_t*)NULL;
-  uint64_t fake_wr_addr = 0;
-  int i;
 
-  // Generate fake byte address
-  fake_wr_addr = (uint64_t)(*cl_addr) << 6;
-  // Decode virtual address
-  wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)fake_wr_addr);
+  uint64_t phys_addr;
+  uint64_t *wr_target_vaddr = (uint64_t*)NULL;
 
-  // Mem-copy from TX1 packet to system memory
-  memcpy(wr_target_vaddr, wr_data, CL_BYTE_WIDTH);
+  // Get cl_addr, deduce wr_target_vaddr
+  phys_addr = (uint64_t)pkt->cl_addr << 6;
+  wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
 
-  //////////// Write this to RX-path //////////////
-  // Zero out data buffer
-  for(i = 0; i < 8; i++)
-    pkt->qword[i] = 0x0;
+  // Write to memory
+  memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
 
-  // Loop around metadata
-  pkt->meta = (ASE_RX0_WR_RESP << 14) | (*mdata);
-
-  // Valid signals
-  pkt->cfgvalid = 0;
-  pkt->wrvalid  = 1;
-  pkt->rdvalid  = 0;
-  pkt->intrvalid = 0;
-  pkt->umsgvalid = 0;
-
-  // ase_write_cnt++;
+  // Enable response
+  pkt->resp_en = 1;
 
   FUNC_CALL_EXIT;
 }
@@ -103,44 +135,75 @@ void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data )
 /*
  * DPI: ReadLine Data exchange
  */
-void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata )
+void rd_memline_dex(cci_pkt *pkt )
 {
   FUNC_CALL_ENTRY;
 
-  uint64_t fake_rd_addr = 0;
-  uint64_t* rd_target_vaddr = (uint64_t*) NULL;
+  uint64_t phys_addr;
+  uint64_t *rd_target_vaddr = (uint64_t*)NULL;
 
-  // Fake CL address to fake address conversion
-  fake_rd_addr = (uint64_t)(*cl_addr) << 6;
+  // Get cl_addr, deduce rd_target_vaddr
+  phys_addr = (uint64_t)pkt->cl_addr << 6;
+  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+  
+  // Read from memory
+  memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
 
-  // Calculate Virtualized SHIM address (translation table)
-  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)fake_rd_addr);
-
-  // Copy data to memory
-  memcpy(pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
-
-  // Loop around metadata
-  pkt->meta = (ASE_RX0_RD_RESP << 14) | (*mdata);
-
-  // Valid signals
-  pkt->cfgvalid = 0;
-  pkt->wrvalid  = 0;
-  pkt->rdvalid  = 1;
-  pkt->intrvalid = 0;
-  pkt->umsgvalid = 0;
-
-  // ase_read_cnt++;
+  // Enable response
+  pkt->resp_en = 1; 
 
   FUNC_CALL_EXIT;
 }
 
 
-// -----------------------------------------------------------------------
-// vbase/pbase exchange THREAD
-// when an allocate request is received, the buffer is copied into a
-// linked list. The reply consists of the pbase, fakeaddr and fd_ase.
-// When a deallocate message is received, the buffer is invalidated.
-// -----------------------------------------------------------------------
+/*
+ * DPI: MMIO response
+ */ 
+void mmio_response (struct mmio_t *mmio_pkt)
+{
+  FUNC_CALL_ENTRY;
+  
+  uint64_t *mmio_addr64;
+  uint32_t *mmio_addr32;
+  char *mmio_str;
+
+  if (mmio_pkt->type == MMIO_READ_REQ)
+    {
+      if (mmio_pkt->width == MMIO_WIDTH_32) 
+	{
+	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
+	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
+	  // *mmio_addr32 = (uint32_t) mmio_pkt->data;
+	}
+      else if (mmio_pkt->width == MMIO_WIDTH_64)
+	{
+	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
+	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));	  
+	  // *mmio_addr64 = (uint64_t) mmio_pkt->data;
+	}
+    }
+
+  mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE);
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt));
+  mqueue_send(sim2app_mmiorsp_tx, mmio_str);
+
+  FUNC_CALL_EXIT;
+}
+
+
+/* ********************************************************************
+ * ASE Listener thread
+ * --------------------------------------------------------------------
+ * vbase/pbase exchange THREAD
+ * when an allocate request is received, the buffer is copied into a
+ * linked list. The reply consists of the pbase, fakeaddr and fd_ase.
+ * When a deallocate message is received, the buffer is invalidated.
+ *
+ * MMIO Request 
+ * Calls MMIO Dispatch task in ccip_emulator
+ *
+ * *******************************************************************/
 int ase_listener()
 {
   //   FUNC_CALL_ENTRY;
@@ -150,6 +213,9 @@ int ase_listener()
     */
   // DPI buffer
   struct buffer_t ase_buffer;
+
+  // Logger string
+  char logger_str[ASE_LOGGER_LEN];
 
   // Prepare an empty buffer
   ase_empty_buffer(&ase_buffer);
@@ -162,9 +228,9 @@ int ase_listener()
 	  ase_alloc_action(&ase_buffer);
 	  ase_buffer.is_privmem = 0;
 	  if (ase_buffer.index == 0)
-	    ase_buffer.is_csrmap = 1;
+	    ase_buffer.is_mmiomap = 1;
 	  else
-	    ase_buffer.is_csrmap = 0;
+	    ase_buffer.is_mmiomap = 0;
 	}
       // if DEALLOC request is received
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
@@ -176,17 +242,25 @@ int ase_listener()
       ase_buffer_oneline(&ase_buffer);
       
       // Write buffer information to file
-      if ( (ase_buffer.is_csrmap == 0) || (ase_buffer.is_privmem == 0) )
+      if ( (ase_buffer.is_mmiomap == 0) || (ase_buffer.is_privmem == 0) )
 	{
-	  // Write Workspace info to workspace log file
-	  fprintf(fp_workspace_log, "Workspace %d =>\n", ase_buffer.index);
-	  fprintf(fp_workspace_log, "             Host App Virtual Addr  = %p\n", (uint64_t*)ase_buffer.vbase);
-	  fprintf(fp_workspace_log, "             HW Physical Addr       = %p\n", (uint64_t*)ase_buffer.fake_paddr);
-	  fprintf(fp_workspace_log, "             HW CacheAligned Addr   = %p\n", (uint32_t*)(ase_buffer.fake_paddr >> 6));
-	  fprintf(fp_workspace_log, "             Workspace Size (bytes) = %d\n", ase_buffer.memsize);
-	  fprintf(fp_workspace_log, "\n");
+	  // Zero out string
+	  memset (logger_str, '\0', ASE_LOGGER_LEN);
 	  
+	  // Format workspace info string
+	  sprintf(logger_str + strlen(logger_str), "Workspace %d Allocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Write to CCI logger module | Placeholder
+	  // *FIXME* 
+	  // buffer_messages ( logger_str );
+
 	  // Flush info to file
+	  fprintf(fp_workspace_log, "%s", logger_str);
 	  fflush(fp_workspace_log);
 	}
       
@@ -198,68 +272,42 @@ int ase_listener()
 
 
   /*
-   * CSR Write listener
+   * MMIO request listener
    */
   // Message string
-  char csr_wr_str[ASE_MQ_MSGSIZE];
-  char *pch;
-  char ase_msg_data[CL_BYTE_WIDTH];
-  uint32_t csr_offset;
-  uint32_t csr_data;
+  char mmio_str[ASE_MQ_MSGSIZE];
+  struct mmio_t *mmio_pkt;
+  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
   // Cleanse receptacle string
-  memset(ase_msg_data, '\0', sizeof(ase_msg_data));
+  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
 
   // Receive csr_write packet
-  if(mqueue_recv(app2sim_csr_wr_rx, (char*)csr_wr_str)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
-      // Tokenize message to get CSR offset and data
-      pch = strtok(csr_wr_str, " ");
-      csr_offset = atoi(pch);
-      pch = strtok(NULL, " ");
-      csr_data = atoi(pch);
-
-      // CSRWrite Dispatch
-      csr_write_dispatch ( 0, csr_offset, csr_data );
+      memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(mmio_t));
+#ifdef ASE_DEBUG
+      printf("  [DEBUG]  mmio_pkt => %x %d %x %llx %d\n", 
+	     mmio_pkt->type,
+	     mmio_pkt->width,
+	     mmio_pkt->addr,
+	     mmio_pkt->qword[0],
+	     mmio_pkt->resp_en);
+#endif
+      mmio_dispatch (0, mmio_pkt);
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
+
     }
 
 
   /*
-   * UMSG listener
+   * UMSG compare routine
+   * *FIXME*: Profiling and costliness analysis needed here
+   * *FIXME*: Notification service needs to be built
    */
-  // Message string
-  char umsg_str[SIZEOF_UMSG_PACK_T];
-  /* int ii; */
-  umsg_pack_t inst;
-
-  // Cleanse receptacle string
-  /* umsg_data = malloc(CL_BYTE_WIDTH); */
-  memset (umsg_str, '\0', SIZEOF_UMSG_PACK_T );
-  /* memset (umsg_data, '\0', CL_BYTE_WIDTH ); */
   
-  if (mqueue_recv(app2sim_umsg_rx, (char*)umsg_str ) == ASE_MSG_PRESENT)
-    {
-/* #ifdef ASE_DEBUG */
-/*       printf("ASERxMsg => UMSG Received \n");       */
-/* #endif */
-      // Tokenize messgae to get msg_id & umsg_data
-      // sscanf (umsg_str, "%d %d %s", &umsg_id, &umsg_hint, umsg_data );
-      memcpy(&inst, umsg_str, SIZEOF_UMSG_PACK_T);
-      
-/* #ifdef ASE_DEBUG */
-/*       printf("SIM-C : [ASE_DEBUG] Ready for UMSG dispatch %d %d \n", inst.id, inst.hint); */
-/*       for(ii = 0 ; ii < 64; ii++) */
-/* 	printf("%02X", (int)inst.data[ii]); */
-/*       printf("\n"); */
-/* #endif */
-      
-      // UMSG dispatch
-      umsg_dispatch(0, 1, inst.hint, inst.id, inst.data);
-    }
-
 
   /*
    * SIMKILL message handler
@@ -271,7 +319,7 @@ int ase_listener()
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
-
+      
       // If in regression mode or SW-simkill mode
       if (  (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL) ||
 	   ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
@@ -295,57 +343,67 @@ int ase_listener()
  */
 void calc_phys_memory_ranges()
 {
-  uint32_t cipuctl_22;
-  uint32_t cipuctl_21_19;
+  /* uint32_t cipuctl_22; */
+  /* uint32_t cipuctl_21_19; */
 
-  cipuctl_22    = (cfg->memmap_sad_setting & 0xF) >> 3;
-  cipuctl_21_19 = (cfg->memmap_sad_setting & 0x7);
+  /* cipuctl_22    = (cfg->memmap_sad_setting & 0xF) >> 3; */
+  /* cipuctl_21_19 = (cfg->memmap_sad_setting & 0x7); */
 
-#ifdef ASE_DEBUG
-  printf("        CIPUCTL[22] = %d | CIPUCTL[21:19] = %d\n", cipuctl_22, cipuctl_21_19 );
-#endif
+/* #ifdef ASE_DEBUG */
+/*   printf("        CIPUCTL[22] = %d | CIPUCTL[21:19] = %d\n", cipuctl_22, cipuctl_21_19 ); */
+/* #endif */
 
   // Memmory map calculation
-  if (cfg->enable_capcm)
-    {
-      capcm_size = (uint64_t)( pow(2, cipuctl_21_19 + 1) * 1024 * 1024 * 1024);
-      sysmem_size = (uint64_t)( (uint64_t)pow(2, FPGA_ADDR_WIDTH) - capcm_size);
+  /* if (cfg->enable_capcm) */
+  /*   { */
+  /*     capcm_size = (uint64_t)( pow(2, cipuctl_21_19 + 1) * 1024 * 1024 * 1024); */
+  /*     sysmem_size = (uint64_t)( (uint64_t)pow(2, FPGA_ADDR_WIDTH) - capcm_size); */
 
-      // Place CAPCM based on CIPUCTL[22]
-      if (cipuctl_22 == 0)
-	{
-	  capcm_phys_lo = 0;
-	  capcm_phys_hi = capcm_size - 1;
-	  sysmem_phys_lo = capcm_size;
-	  sysmem_phys_hi = (uint64_t)pow(2, FPGA_ADDR_WIDTH) - 1;
-	}
-      else
-	{
-	  capcm_phys_hi = (uint64_t)pow(2,FPGA_ADDR_WIDTH) - 1;
-	  capcm_phys_lo = capcm_phys_hi + 1 - capcm_size;
-	  sysmem_phys_lo = 0;
-	  sysmem_phys_hi = sysmem_phys_lo + sysmem_size;
-	}
-    }
-  else
-    {
-      sysmem_size = (uint64_t)pow(2, FPGA_ADDR_WIDTH);
-      sysmem_phys_lo = 0;
-      sysmem_phys_hi = sysmem_size-1;
-      capcm_size = 0;
-      capcm_phys_lo = 0;
-      capcm_phys_hi = 0;
-    }
+  /*     // Place CAPCM based on CIPUCTL[22] */
+  /*     if (cipuctl_22 == 0) */
+  /* 	{ */
+  /* 	  capcm_phys_lo = 0; */
+  /* 	  capcm_phys_hi = capcm_size - 1; */
+  /* 	  sysmem_phys_lo = capcm_size; */
+  /* 	  sysmem_phys_hi = (uint64_t)pow(2, FPGA_ADDR_WIDTH) - 1; */
+  /* 	} */
+  /*     else */
+  /* 	{ */
+  /* 	  capcm_phys_hi = (uint64_t)pow(2,FPGA_ADDR_WIDTH) - 1; */
+  /* 	  capcm_phys_lo = capcm_phys_hi + 1 - capcm_size; */
+  /* 	  sysmem_phys_lo = 0; */
+  /* 	  sysmem_phys_hi = sysmem_phys_lo + sysmem_size; */
+  /* 	} */
+  /*   } */
+  /* else */
+  /*   { */
+  sysmem_size = cfg->phys_memory_available_gb * pow(1024, 3);
+  sysmem_phys_lo = 0;
+  sysmem_phys_hi = sysmem_size-1;
+
+  // Calculate address mask
+  PHYS_ADDR_PREFIX_MASK = ((sysmem_phys_hi >> MEMBUF_2MB_ALIGN) << MEMBUF_2MB_ALIGN);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  PHYS_ADDR_PREFIX_MASK = %llx\n", (long long)PHYS_ADDR_PREFIX_MASK);
+  END_YELLOW_FONTCOLOR;
+#endif
+
+      /* capcm_size = 0; */
+      /* capcm_phys_lo = 0; */
+      /* capcm_phys_hi = 0; */
+    /* } */
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n",
 	 sysmem_phys_lo, sysmem_phys_hi, sysmem_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
-  if (cfg->enable_capcm)
-    printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n",
-	   capcm_phys_lo, capcm_phys_hi, capcm_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(capcm_phys_hi+1)/(uint64_t)pow(1024, 3) );
+  /* if (cfg->enable_capcm) */
+  /*   printf("        Private memory range => 0x%016lx-0x%016lx | %ld~%ld GB\n", */
+  /* 	   capcm_phys_lo, capcm_phys_hi, capcm_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(capcm_phys_hi+1)/(uint64_t)pow(1024, 3) ); */
   END_YELLOW_FONTCOLOR;
 
   // Internal check messages
+#if 0
   if (cfg->enable_capcm)
     {
       if (capcm_size > (uint64_t)8*1024*1024*1024 )
@@ -375,6 +433,7 @@ void calc_phys_memory_ranges()
 	  END_RED_FONTCOLOR;
 	}
     }
+#endif
 }
 
 
@@ -387,6 +446,8 @@ int ase_init()
 {
   FUNC_CALL_ENTRY;
 
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   // Register SIGINT and listen to it
   signal(SIGTERM, start_simkill_countdown);
   signal(SIGINT , start_simkill_countdown);
@@ -394,21 +455,24 @@ int ase_init()
   signal(SIGKILL, start_simkill_countdown); // *FIXME*: This possibly doesnt work //
   signal(SIGHUP,  start_simkill_countdown);
 
+  // Ignore SIGPIPE *FIXME*: Look for more elegant solution
+  signal(SIGPIPE, SIG_IGN);
+
   // Get PID
   ase_pid = getpid();
   printf("SIM-C : PID of simulator is %d\n", ase_pid);
 
   // Evaluate PWD
-  ase_run_path = malloc(ASE_FILEPATH_LEN);
+  ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
   // Evaluate Session directory
-  ase_workdir_path = malloc(ASE_FILEPATH_LEN);
+  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
-  sprintf(ase_workdir_path, "%s/work/", ase_run_path);
+  sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : ASE Run path =>\n");
@@ -419,7 +483,7 @@ int ase_init()
 
   // Generate timstamp (used as session ID)
   put_timestamp();
-  tstamp_filepath = malloc(ASE_FILEPATH_LEN);
+  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(tstamp_filepath, ase_workdir_path);
   strcat(tstamp_filepath, TSTAMP_FILENAME);
 
@@ -438,10 +502,11 @@ int ase_init()
 
   // Open message queues
   app2sim_rx         = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
-  app2sim_csr_wr_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
+  app2sim_mmioreq_rx = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
   app2sim_umsg_rx    = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
   app2sim_simkill_rx = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
   sim2app_tx         = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  sim2app_mmiorsp_tx = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -485,11 +550,15 @@ int ase_ready()
 {
   FUNC_CALL_ENTRY;
 
+  // App run command
+  app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
+  memset (app_run_cmd, '\0', ASE_FILEPATH_LEN);
+
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
 
   // Indicate readiness with .ase_ready file
-  ase_ready_filepath = malloc (ASE_FILEPATH_LEN);
+  ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
   ase_ready_fd = fopen( ase_ready_filepath, "w");
   fprintf(ase_ready_fd, "%d", ase_pid);
@@ -500,7 +569,7 @@ int ase_ready()
   printf("SIM-C : ** ATTENTION : BEFORE running the software application **\n");
   printf("        Run the following command into terminal where application will run (copy-and-paste) =>\n");
   printf("        $SHELL   | Run:\n");
-  printf("        ---------+-----------------------------------------\n");
+  printf("        ---------+---------------------------------------------------\n");
   printf("        bash     | export ASE_WORKDIR=%s\n", ase_run_path);
   printf("        tcsh/csh | setenv ASE_WORKDIR %s\n", ase_run_path);
   printf("        For any other $SHELL, consult your Linux administrator\n");
@@ -511,7 +580,16 @@ int ase_ready()
   if (cfg->ase_mode == ASE_MODE_REGRESSION) 
     {
       printf("Starting ase_regress.sh script...\n");
-      system("./ase_regress.sh &");  
+      if ( strlen(sv2c_script_filepath) != 0 )
+	{
+	  strcpy(app_run_cmd, sv2c_script_filepath);
+	  strcat(app_run_cmd, " &");
+	}
+      else
+	{
+	  strcpy(app_run_cmd, "./ase_regress.sh &");  
+	}
+      system(app_run_cmd);
     }
   else
     {
@@ -582,7 +660,10 @@ void start_simkill_countdown()
 
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");
+
+  // Set scope
   svSetScope(scope);
+
   simkill();
 
   FUNC_CALL_EXIT;
@@ -594,6 +675,7 @@ void start_simkill_countdown()
  *                 Set up CSR addresses to indicate existance
  *                 and features of the UMSG system
  */
+#if 0
 void ase_umsg_init(uint64_t dsm_base)
 {
   FUNC_CALL_ENTRY;
@@ -607,13 +689,15 @@ void ase_umsg_init(uint64_t dsm_base)
 
   // CIRBSTAT setup (completed / ready)
   *cirbstat = cfg->num_umsg_log2 << 4 | 0x1 << 0;
-  printf ("        DSM base      = %p\n", (uint32_t*)dsm_base);
-  printf ("        CIRBSTAT addr = %p\n", cirbstat);
+#ifdef ASE_DEBUG
+  printf ("        DSM base      = %p\n", (void*)dsm_base);
+  printf ("        CIRBSTAT addr = %p\n", (void*)cirbstat);
   printf ("        *cirbstat     = %08x\n", *cirbstat);
+#endif
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 /*
  * Parse strings and remove unnecessary characters
@@ -683,34 +767,44 @@ void ase_config_parse(char *filename)
   // int tmp_umsg_log2;
 
   char *ase_cfg_filepath;
-  ase_cfg_filepath = malloc(256);
-  sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+  ase_cfg_filepath = ase_malloc(256);
+  memset (ase_cfg_filepath, '\0', 256);
+  if ( strlen(sv2c_config_filepath) != 0 )
+    {
+      // strcpy(ase_cfg_filepath, sv2c_config_filepath);
+      sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
+    }
+  else
+    {
+      sprintf(ase_cfg_filepath, "%s/%s", ase_run_path, ASE_CONFIG_FILE);
+    }
 
   // Allocate space to store ASE config
-  cfg = (struct ase_cfg_t *)malloc( sizeof(struct ase_cfg_t) );
+  cfg = (struct ase_cfg_t *)ase_malloc( sizeof(struct ase_cfg_t) );
   if (cfg == NULL)
     {
       BEGIN_RED_FONTCOLOR;
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
       END_RED_FONTCOLOR;
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
+    /* #ifdef SIM_SIDE */
       start_simkill_countdown();
-    #else
-      exit(1);
-    #endif
+    /* #else */
+    /*   exit(1); */
+    /* #endif */
     }
-  line = malloc(sizeof(char) * 80);
+  line = ase_malloc(sizeof(char) * 80);
 
   // Default values
   cfg->ase_mode = ASE_MODE_DAEMON_NO_SIMKILL;
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
-  cfg->enable_capcm = 0;
-  cfg->memmap_sad_setting = 0;
-  cfg->num_umsg_log2 = 5;
+  /* cfg->enable_capcm = 0; */
+  /* cfg->memmap_sad_setting = 0; */
+  /* cfg->num_umsg_log2 = 5; */
   cfg->enable_cl_view = 1;
+  cfg->phys_memory_available_gb = 256;
 
   // Find ase.cfg OR not
   // if ( access (ASE_CONFIG_FILE, F_OK) != -1 )
@@ -740,14 +834,28 @@ void ase_config_parse(char *filename)
 	      	cfg->ase_num_tests = value;
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
-	      else if (strcmp (parameter,"ENABLE_CAPCM") == 0)
-	      	cfg->enable_capcm = value;
-	      else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0)
-	      	cfg->memmap_sad_setting = value;
-	      else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0)
-		cfg->num_umsg_log2 = value;
+	      /* else if (strcmp (parameter,"ENABLE_CAPCM") == 0) */
+	      /* 	cfg->enable_capcm = value; */
+	      /* else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0) */
+	      /* 	cfg->memmap_sad_setting = value; */
+	      /* else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0) */
+	      /* 	cfg->num_umsg_log2 = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
+	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
+		{
+		  if (value < 0)
+		    {
+		      BEGIN_RED_FONTCOLOR;
+		      printf("SIM-C : Physical memory size is negative in %s\n", ASE_CONFIG_FILE);
+		      printf("        Reverting to default 256 GB\n");
+		      END_RED_FONTCOLOR;
+		    }
+		  else
+		    {
+		      cfg->phys_memory_available_gb = value;
+		    }
+		}
 	      else
 	      	printf("SIM-C : In config file %s, Parameter type %s is unidentified \n", ASE_CONFIG_FILE, parameter);
 	    }
@@ -792,29 +900,29 @@ void ase_config_parse(char *filename)
 
 
       // CAPCM size implementation
-      if (cfg->enable_capcm != 0)
-	{
-	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0))
-	    {
-	      BEGIN_YELLOW_FONTCOLOR;
-	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE);
-	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting);
-	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n");
-	      cfg->memmap_sad_setting = 2;
-	      END_YELLOW_FONTCOLOR;
-	    }
-	}
+      /* if (cfg->enable_capcm != 0) */
+      /* 	{ */
+      /* 	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0)) */
+      /* 	    { */
+      /* 	      BEGIN_YELLOW_FONTCOLOR; */
+      /* 	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE); */
+      /* 	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting); */
+      /* 	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n"); */
+      /* 	      cfg->memmap_sad_setting = 2; */
+      /* 	      END_YELLOW_FONTCOLOR; */
+      /* 	    } */
+      /* 	} */
 
       // UMSG implementation
-      if (cfg->num_umsg_log2 == 0)
-	{
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE);
-	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2);
-	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n");
-	  cfg->num_umsg_log2 = 5;
-	  END_YELLOW_FONTCOLOR;
-	}
+      /* if (cfg->num_umsg_log2 == 0) */
+      /* 	{ */
+      /* 	  BEGIN_YELLOW_FONTCOLOR; */
+      /* 	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE); */
+      /* 	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2); */
+      /* 	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n"); */
+      /* 	  cfg->num_umsg_log2 = 5; */
+      /* 	  END_YELLOW_FONTCOLOR; */
+      /* 	} */
 
       // Close file
       fclose(fp);
@@ -851,21 +959,24 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... DISABLED \n");
 
   // UMSG
-  printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2);
+  /* printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2); */
 
   // CAPCM
-  if (cfg->enable_capcm != 0)
-    {
-      printf("        CA Private memory          ... ENABLED\n");
-    }
-  else
-    printf("        CA Private memory          ... DISABLED\n");
+  /* if (cfg->enable_capcm != 0) */
+  /*   { */
+  /*     printf("        CA Private memory          ... ENABLED\n"); */
+  /*   } */
+  /* else */
+  /*   printf("        CA Private memory          ... DISABLED\n"); */
 
   // CL view
   if (cfg->enable_cl_view != 0)
     printf("        ASE Transaction view       ... ENABLED\n");
   else
     printf("        ASE Transaction view       ... DISABLED\n");
+
+  // GBs of physical memory available
+  printf("        Amount of physical memory  ... %d GB\n", cfg->phys_memory_available_gb);
 
   END_YELLOW_FONTCOLOR;
 

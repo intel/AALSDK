@@ -85,14 +85,12 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tfd_ase      = %d \n",    mem->fd_ase);
   printf("\tindex       = %d \n",    mem->index);
   printf("\tvalid       = %x \n",    mem->valid);
-  printf("\tAPPVirtBase = %p \n",    (uint32_t*)mem->vbase); 
-  printf("\tSIMVirtBase = %p \n",    (uint32_t*)mem->pbase); 
+  printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
+  printf("\tSIMVirtBase = %p \n",    (void *)mem->pbase); 
   printf("\tBufferSize  = %x \n",    mem->memsize);  
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
-  printf("\tPhysAddr LO = %p\n", (uint32_t*)mem->fake_paddr); 
-  printf("\tPhysAddr HI = %p\n", (uint32_t*)mem->fake_paddr_hi);
-  /* printf("\tIsDSM       = %d\n", mem->is_csrmap);  */
-  /* printf("\tIsPrivMem   = %d\n", mem->is_privmem);  */
+  printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
+  printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
   BEGIN_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -112,12 +110,6 @@ void ase_buffer_oneline(struct buffer_t *mem)
   else
     printf("REMOVED ");
   printf("%5s \t", mem->memname);
-  /* printf("%p  ", (uint32_t*)mem->vbase); */
-  /* printf("%p  ", (uint32_t*)mem->pbase); */
-  /* printf("%p (%08x) ", (uint32_t*)mem->fake_paddr, (uint32_t)(mem->fake_paddr >> 6) ); */
-  /* printf("%x  ", mem->memsize); */
-  /* printf("%d  ", mem->is_csrmap); */
-  /* printf("%d  ", mem->is_privmem); */
   printf("\n");
 
   END_YELLOW_FONTCOLOR;
@@ -238,7 +230,7 @@ char* ase_eval_session_directory()
   /* struct stat s; */
   /* int err; */
     
-  workdir_path = malloc (ASE_FILEPATH_LEN);
+  workdir_path = ase_malloc (ASE_FILEPATH_LEN);
   if (!workdir_path) return NULL;
 
   // Evaluate basename location
@@ -254,7 +246,7 @@ char* ase_eval_session_directory()
   } else {
      *workdir_path = '\0';
   }
-  strcat( workdir_path, "/work/" ); 
+  // strcat( workdir_path, "/work/" );  || RRS:
 
   // *FIXME*: Idiot-proof the work directory
 
@@ -287,4 +279,36 @@ char* ase_eval_session_directory()
 //
 //  return workdir_path;
 //}
+
+
+/*
+ * ASE malloc 
+ * Malloc wrapped with ASE closedown if failure accures
+ */
+char* ase_malloc (size_t size)
+{
+  FUNC_CALL_ENTRY;
+
+  char *buffer;
+  buffer = malloc (size);
+  if (buffer == NULL)
+    {
+      ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
+    #ifdef SIM_SIDE
+      printf("SIM-C : Malloc failed\n");
+      start_simkill_countdown();
+    #else
+      printf("  [APP] Malloc failed\n");
+      exit(1);
+    #endif
+    }   
+  else
+    {
+      memset (buffer, '\0', size);
+    }
+
+  FUNC_CALL_EXIT;
+  return buffer;
+}
+
 
