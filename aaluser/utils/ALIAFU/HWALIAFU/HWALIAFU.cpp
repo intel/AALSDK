@@ -632,7 +632,7 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 }
 
 
-void HWALIAFU::performanceCountersGet ( INamedValueSet const *pResult,
+btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
                                         NamedValueSet const  *pOptArgs )
 {
 
@@ -640,50 +640,48 @@ void HWALIAFU::performanceCountersGet ( INamedValueSet const *pResult,
    size = sizeof(struct  CCIP_PERF_COUNTERS);
    struct  CCIP_PERF_COUNTERS *pPref =NULL;
 
+   if( NULL == pResult)
+      return  false;
+
    // Create the Transaction
    PerfCounterGet transaction(size);
 
    // Should never fail
    if ( !transaction.IsOK() ) {
-      return ;
+      return  false;
    }
 
    // Send transaction
    // Will eventually trigger AFUEvent(), below.
    m_pAFUProxy->SendTransaction(&transaction);
    if(transaction.getErrno() != uid_errnumOK){
-         return ;
+         return false;
       }
 
-   if(NULL == transaction.getBuffer() )
-   {
-     return ;
+   if(NULL == transaction.getBuffer() )  {
+     return false;
    }
-
 
    pPref = (struct  CCIP_PERF_COUNTERS *)transaction.getBuffer();
 
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->version.name,pPref->version.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->num_counters.name,pPref->num_counters.value);
+   pResult->Add(pPref->version.name,pPref->version.value);
+   pResult->Add(pPref->num_counters.name,pPref->num_counters.value);
 
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->read_hit.name,pPref->read_hit.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->write_hit.name,pPref->write_hit.value);
+   pResult->Add(pPref->read_hit.name,pPref->read_hit.value);
+   pResult->Add(pPref->write_hit.name,pPref->write_hit.value);
+   pResult->Add(pPref->read_miss.name,pPref->read_miss.value);
+   pResult->Add(pPref->write_miss.name,pPref->write_miss.value);
+   pResult->Add(pPref->evictions.name,pPref->evictions.value);
 
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->read_miss.name,pPref->read_miss.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->write_miss.name,pPref->write_miss.value);
+   pResult->Add(pPref->pcie0_read.name,pPref->pcie0_read.value);
+   pResult->Add(pPref->pcie0_write.name,pPref->pcie0_write.value);
+   pResult->Add(pPref->pcie1_read.name,pPref->pcie1_read.value);
+   pResult->Add(pPref->pcie1_write.name,pPref->pcie1_write.value);
+   pResult->Add(pPref->upi_read.name,pPref->upi_read.value);
+   pResult->Add(pPref->upi_write.name,pPref->upi_write.value);
 
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->evictions.name,pPref->evictions.value);
 
-
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->pcie0_read.name,pPref->pcie0_read.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->pcie0_write.name,pPref->pcie0_write.value);
-
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->pcie1_read.name,pPref->pcie1_read.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->pcie1_write.name,pPref->pcie1_write.value);
-
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->upi_read.name,pPref->upi_read.value);
-   const_cast <INamedValueSet*>(pResult)->Add(pPref->upi_write.name,pPref->upi_write.value);
-
+   return true;
 }
 
 

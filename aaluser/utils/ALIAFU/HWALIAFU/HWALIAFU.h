@@ -176,7 +176,7 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    // </IAFUProxyClient>
 
    //<IALIPerf>
-   virtual void performanceCountersGet ( INamedValueSet const *pResult,
+   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
                                           NamedValueSet const  *pOptArgs ) ;
    //</IALIPerf>
 

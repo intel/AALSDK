@@ -90,13 +90,13 @@ static ssize_t perf_monitor_attrib_show_hr(struct device *pdev,
                                            struct device_attribute *attr,
                                            char *buf)
 {
-   struct fme_device* pfme_dev = dev_get_drvdata(pdev);
-   if(NULL == pfme_dev )
-   {
-     return (snprintf(buf,PAGE_SIZE,"%d\n",0));
-
-   }
    struct CCIP_PERF_COUNTERS perf_mon;
+   struct fme_device* pfme_dev = dev_get_drvdata(pdev);
+
+   if(NULL == pfme_dev )  {
+     return (snprintf(buf,PAGE_SIZE,"%d\n",0));
+   }
+
    get_perfmonitor_snapshot(pfme_dev, &perf_mon);
 
    return (snprintf(buf,PAGE_SIZE,   "%s : %lu \n"
@@ -129,26 +129,7 @@ static ssize_t perf_monitor_attrib_show_hr(struct device *pdev,
 
 }
 
-///============================================================================
-/// Name: perf_monitor_attrib_store_hr
-/// @brief store CCIP Performance counters
-///
-/// @param[in] pdev - device pointer
-/// @param[in] attr - device attribute.
-/// @param[in] buf - char buffer.
-/// @param[in] size - char buffer size
-/// @return    size of buffer
-///============================================================================
-static ssize_t perf_monitor_attrib_store_hr(struct device *pdev,
-                                            struct device_attribute *attr,
-                                            const char *buf,
-                                            size_t size)
-{
-   int temp = 0;
-   sscanf(buf,"%d", &temp);
-   return size;
-}
-DEVICE_ATTR(perfmon_hr_0,0644, perf_monitor_attrib_show_hr,perf_monitor_attrib_store_hr);
+DEVICE_ATTR(perfmon_hr_0,0444, perf_monitor_attrib_show_hr,NULL);
 
 ///============================================================================
 /// Name: perf_monitor_attrib_show_bin
@@ -160,15 +141,16 @@ DEVICE_ATTR(perfmon_hr_0,0644, perf_monitor_attrib_show_hr,perf_monitor_attrib_s
 /// @return    size of buffer
 ///============================================================================
 static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
-                                            struct bin_attribute *bin_attr,
+                                            struct device_attribute *bin_attr,
                                             char *buf)
 {
+   struct CCIP_PERF_COUNTERS perf_mon;
    struct fme_device* pfme_dev= dev_get_drvdata(pdev);
-   if(NULL == pfme_dev )
-   {
+
+   if(NULL == pfme_dev )  {
       return (snprintf(buf,PAGE_SIZE,"%d\n",0));
    }
-   struct CCIP_PERF_COUNTERS perf_mon;
+
    get_perfmonitor_snapshot(pfme_dev, &perf_mon);
 
    return (snprintf(buf,PAGE_SIZE,  "%lu  "
@@ -182,7 +164,7 @@ static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
                                     "%lu  "
                                     "%lu  "
                                     "%lu  "
-                                    "%lu  ",
+                                    "%lu  "
                                     "%lu  ",
                                      (unsigned long int) perf_mon.num_counters.value,
                                      (unsigned long int) perf_mon.version.value ,
@@ -198,29 +180,11 @@ static ssize_t perf_monitor_attrib_show_bin(struct device *pdev,
                                      (unsigned long int) perf_mon.upi_read.value ,
                                      (unsigned long int) perf_mon.upi_write.value
                                     ));
+
  }
 
-///============================================================================
-/// Name: perf_monitor_attrib_store_bin
-/// @brief store CCIP Performance counters
-///
-/// @param[in] pdev - device pointer
-/// @param[in] attr - device attribute.
-/// @param[in] buf - char buffer.
-/// @param[in] size - char buffer size.
-/// @return    size of buffer
-///============================================================================
-static ssize_t perf_monitor_attrib_store_bin(struct device *pdev,
-                                             struct bin_attribute *bin_attr,
-                                             const char *buf,
-                                             size_t size)
-{
-   int temp = 0;
-   sscanf(buf,"%d", &temp);
-   return size;
-}
 
-DEVICE_ATTR(perfmon_bin_0,0644, perf_monitor_attrib_show_bin,perf_monitor_attrib_store_bin);
+DEVICE_ATTR(perfmon_bin_0,0444, perf_monitor_attrib_show_bin,NULL);
 
 
 ///============================================================================
@@ -232,16 +196,17 @@ DEVICE_ATTR(perfmon_bin_0,0644, perf_monitor_attrib_show_bin,perf_monitor_attrib
 /// @return    error code
 ///============================================================================
 bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
-                                struct CCIP_PERF_COUNTERS* pPerf)
+                                    struct CCIP_PERF_COUNTERS* pPerf)
 {
   
    bt32bitInt res =0;
-   PINFO("Enter  \n");
-   if((NULL == pfme_dev)&& (NULL == pPerf))
-   {
-      res =-1;
+
+   PTRACEIN;
+
+   if((NULL == pfme_dev)&& (NULL == pPerf))  {
       PERR("Invalid Input pointers  \n");
-      return res;
+      res= -EINVAL;
+      goto ERR;
    }
    pPerf->version.value = PERF_MONITOR_VERSION;
    pPerf->num_counters.value = PERF_MONITOR_COUNT;
@@ -286,10 +251,11 @@ bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
    //un freeze
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.freeze =0x0;
  
-
-
-   PINFO("EXIT  \n");
+   PTRACEOUT_INT(res);
    return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 }
 
 ///============================================================================
@@ -308,20 +274,21 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 {
    bt32bitInt res =0;
    bt32bitInt counter =0;
-   PINFO("Enter \n");
+
+   PTRACEIN;
 
    ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctl.fabric_evt_code =event_code;
 
-   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.event_code)
-   {
+   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.event_code)  {
+
       counter++;
-      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)
-      {
+      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)    {
          PERR("Max Try \n");
-         break;
+         res = -ETIME;
+         goto ERR;
       }
 
-   }
+   } // end while
 
    switch (event_code)
    {
@@ -334,7 +301,7 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
 
       case  Fabric_PCIe0_Write:
       {
-       pPerf->pcie0_read.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
+       pPerf->pcie0_write.value= ccip_fme_perf(pfme_dev)->ccip_fpmon_fab_ctr.fabric_counter;
       }
       break;
 
@@ -366,13 +333,18 @@ bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
       default:
       {
        // Error
-       PERR("invalid Cache Event code  \n");
+       PERR("Invalid Cache Event code  \n");
+       res= -EINVAL;
       }
       break;
 
       }
 
+   PTRACEOUT_INT(res);
    return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 
 }
 
@@ -393,19 +365,20 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
    bt32bitInt counter =0;
    btUnsigned64bitInt total =0;
 
-   PINFO(" Enter  \n");
+   PTRACEIN;
+
    ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctl.cache_event =event_code;
 
-   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.event_code)
-   {
+   while (event_code != ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.event_code)   {
+
       counter++;
-      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)
-      {
+      if (counter > CACHE_EVENT_COUNTER_MAX_TRY)   {
          PERR("Max Try \n");
-         break;
+         res = -ETIME;
+         goto ERR;
       }
 
-   }
+   } // end while
 
    total= ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_0.cache_counter + ccip_fme_perf(pfme_dev)->ccip_fpmon_ch_ctr_1.cache_counter;
 
@@ -445,13 +418,18 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
     default:
     {
        // Error
-       PERR("invalid Cache Event code  \n");
+       PERR("Invalid Cache Event code  \n");
+       res= -EINVAL;
     }
     break;
 
    }
 
+   PTRACEOUT_INT(res);
    return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 
 }
 
@@ -468,14 +446,24 @@ bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
 {
    int res =0;
 
-   PINFO("Enter  \n");
+   PTRACEIN;
+   if( (NULL == ppcidev) && (NULL == pfme_dev))  {
+
+       PERR("Invalid input pointers \n");
+       res = -EINVAL;
+       goto ERR;
+    }
+
    device_create_file(&(ppcidev->dev),&dev_attr_perfmon_hr_0);
    device_create_file(&(ppcidev->dev),&dev_attr_perfmon_bin_0);
 
    dev_set_drvdata(&(ppcidev->dev),pfme_dev);
-   PINFO(" Exit  \n");
 
+   PTRACEOUT_INT(res);
    return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 }
 
 ///============================================================================
@@ -488,28 +476,47 @@ bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
 bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev)
 {
    int res =0;
-   PINFO("Enter  \n");
+
+   PTRACEIN;
+
+   if( (NULL == ppcidev) ) {
+       PERR("Invalid input pointers \n");
+       res = -EINVAL;
+       goto ERR;
+    }
 
    device_remove_file(&(ppcidev->dev),&dev_attr_perfmon_hr_0);
    device_remove_file(&(ppcidev->dev),&dev_attr_perfmon_bin_0);
 
-   PINFO("Exit  \n");
-
+   PTRACEOUT_INT(res);
    return res;
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 }
 
-
+///============================================================================
+/// Name:    get_perfmon_counters
+/// @brief   get  performance counters
+///
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
+/// @return    error code
+///============================================================================
 bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
                                 struct CCIP_PERF_COUNTERS* pPerfCounter)
 {
    int res =0;
-   PINFO("Enter  \n");
 
-   if( (NULL == pfme_dev) && (NULL == pPerfCounter))
-   {
-      res =-1;
-      return -1;
+   PTRACEIN;
+
+   if( (NULL == pfme_dev) && (NULL == pPerfCounter))  {
+      PERR("Invalid input pointers \n");
+      res =-EINVAL;
+      goto ERR;
    }
+
+   memset(pPerfCounter,0,sizeof(struct CCIP_PERF_COUNTERS));
 
    strncpy(pPerfCounter->num_counters.name ,NUM_COUNTERS,sizeof(NUM_COUNTERS));
    strncpy(pPerfCounter->version.name ,PMONITOR_VERSION,sizeof(PMONITOR_VERSION));
@@ -534,26 +541,14 @@ bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
    pPerfCounter->num_counters.value=PERF_MONITOR_COUNT;
    pPerfCounter->num_counters.value=PERF_MONITOR_VERSION;
 
-   pPerfCounter->read_hit.value=0x77;
-   pPerfCounter->write_hit.value=0x88;
-   pPerfCounter->read_miss.value=0x33;
-   pPerfCounter->write_miss.value=0x33;
-   pPerfCounter->evictions.value=0x22;
+   res= get_perfmonitor_snapshot(pfme_dev,pPerfCounter);
 
-   pPerfCounter->pcie0_read.value=0x25;
-   pPerfCounter->pcie0_write.value=0x66;
-
-   pPerfCounter->pcie1_read.value=0x88;
-   pPerfCounter->pcie1_write.value=0x99;
-
-   pPerfCounter->upi_read.value=0x69;
-   pPerfCounter->upi_write.value=0x28;
-
-   //res= get_perfmonitor_snapshot(pfme_dev,pPerfCounter);
-
-
-   PINFO("Exit  \n");
+   PTRACEOUT_INT(res);
    return res;
+
+ERR:
+   PTRACEOUT_INT(res);
+   return  res;
 
 }
 

@@ -156,6 +156,7 @@ bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
 /// @return    error code
 bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
                                 struct CCIP_PERF_COUNTERS* pPerfCounter);
+
 END_NAMESPACE(AAL)
 
 #endif //__AALKERNEL_CCIP_PERFMON_DEF_H_

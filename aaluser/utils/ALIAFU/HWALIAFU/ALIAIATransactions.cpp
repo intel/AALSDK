@@ -491,8 +491,8 @@ PerfCounterGet::PerfCounterGet(btWSSize size) :
    m_size(0),
    m_bufLength(0)
 {
-   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // BufferAllocate-AIATransaction.
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
+   // must allocate enough memory , so playload returns performance counters
    //
    m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req ) + size ;
 
@@ -527,7 +527,7 @@ void                           PerfCounterGet::setErrno(AAL::uid_errnum_e errnum
 
 PerfCounterGet::~PerfCounterGet() {
    // unpack payload and free memory
-   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;     // FIXME: use C++ style casts
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
    delete afumsg;
 }
 
