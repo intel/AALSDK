@@ -52,7 +52,6 @@
 #include "aalsdk/aas/Dispatchables.h"
 #include "ALIAFUProxy.h"
 
-
 //========================================
 // Implements the AIA entry point for the
 // load and bind operation

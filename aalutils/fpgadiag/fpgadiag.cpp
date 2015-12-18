@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
       return 5;
    }
 
-   if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
+   /*if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_LPBK1)))
    {
 	   // Run NLB Lpbk1, which performs sw data verification.
 	   CNLBLpbk1 nlblpbk1(&myapp);
@@ -753,7 +753,7 @@ int main(int argc, char *argv[])
 	   cout << NORMAL << endl
 			<< endl;
    }
-   else if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
+   else*/ if ( (0 == myapp.TestMode().compare(NLB_TESTMODE_CCIP_LPBK1)))
       {
    		// Run NLB ccip test, which performs sw data verification.
    		CNLBCcipLpbk1 nlbccip_lpbk1(&myapp);
@@ -944,6 +944,9 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
       *pCoolOff = CoolOffData;
    }
 
+   //Set DSM base, high then low
+   m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
+
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
    // Assert Device Reset
@@ -956,18 +959,17 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
    // Set input workspace address
-   m_pALIMMIOService->mmioWrite32(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(CoolPhys));
+   m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(CoolPhys));
 
    // Set the number of cache lines for the test
    m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, CoolSize / CL(1));
 
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
-   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ|NLB_TEST_MODE_PCIE1); // non-continuous mode
+   m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ); // non-continuous mode
 
    // Start the test
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
-
 
    // Wait for test completion
    while ( 0 == pAFUDSM->test_complete ) {

@@ -69,17 +69,6 @@
 #define __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 #include "aalsdk/kernel/kosal.h"
 
-#if 0
-#include "aalsdk/kernel/aalbus-device.h"
-
-#include "aalsdk/kernel/aalui.h"
-#include "aalsdk/kernel/aalui-events.h"
-#include "aalsdk/kernel/aalmafu.h"
-#include "aalsdk/kernel/vafu2defs.h"
-
-#include "cciv4_PIPsession.h"
-#endif
-
 #include <aalsdk/kernel/aalqueue.h>
 #include <aalsdk/kernel/iaaldevice.h>
 #include <aalsdk/kernel/aalwsservice.h>

@@ -406,7 +406,8 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    write_ccip_csr64(ptr,offset,port_hdr.ccip_port_afuidh.csr);
 
    //port next afu offset
-   port_hdr.ccip_port_next_afu.afu_id_offset=0x0;        // Temporary value
+   port_hdr.ccip_port_next_afu.csr = 0;				// Make sure the whole things is zero
+   port_hdr.ccip_port_next_afu.afu_id_offset=0x0;   // Temporary value. Will be filled in when we know the end
    offset = offset + OFFSET;
    afu_id_offset = offset;       // Save this so it can be populated at the end
    write_ccip_csr64(ptr,offset,port_hdr.ccip_port_next_afu.csr) ;
@@ -595,7 +596,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_hdr.ccip_port_next_afu.afu_id_offset=offset;
    write_ccip_csr64(afuptr, afu_id_offset, port_hdr.ccip_port_next_afu.csr);
 
-   ptr = afuptr + port_hdr.ccip_port_next_afu.csr;
+    ptr = afuptr + port_hdr.ccip_port_next_afu.csr;
 
    PINFO("AFU offset is %x beyond PORT header at %p = %p\n", offset, afuptr, ptr );
 

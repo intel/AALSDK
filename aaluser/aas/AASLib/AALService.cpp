@@ -51,7 +51,7 @@
 #include "aalsdk/aas/AALService.h"
 #include "aalsdk/AALLogger.h"
 #include "aalsdk/aas/Dispatchables.h"
-
+#include <aalsdk/osal/Sleep.h>
 BEGIN_NAMESPACE(AAL)
 
 //=============================================================================
@@ -175,14 +175,12 @@ btBool ServiceBase::ReleaseComplete()
          getRuntime()->releaseRuntimeProxy();
          m_Runtime = NULL;
       }
-
-      // Object should not access anything after this call
-      Released();
    }
 
    // We must constrain the scope of the AutoLock above to prevent dereferencing
-   // this after deleting it below.
-
+   //  this after deleting it below. Note that the ServiceBase destructor will notify
+   //  the Service Container that it has been destroyed. allowing the SErvice library to
+   //  be removed if desired.
    delete this;
    return true;
 }

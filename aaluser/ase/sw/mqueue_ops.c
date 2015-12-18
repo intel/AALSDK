@@ -48,10 +48,11 @@ void ipc_init()
   int ipc_iter;
 
   strcpy(mq_array[0].name, "app2sim_bufping_smq");
-  strcpy(mq_array[1].name, "app2sim_csr_wr_smq");
+  strcpy(mq_array[1].name, "app2sim_mmioreq_smq");
   strcpy(mq_array[2].name, "app2sim_umsg_smq");
   strcpy(mq_array[3].name, "app2sim_simkill_smq");
   strcpy(mq_array[4].name, "sim2app_bufpong_smq");
+  strcpy(mq_array[5].name, "sim2app_mmiorsp_smq");
   
   // Calculate path 
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -63,12 +64,14 @@ void ipc_init()
   mq_array[2].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[3].perm_flag = O_RDONLY|O_NONBLOCK;
   mq_array[4].perm_flag = O_WRONLY;
+  mq_array[5].perm_flag = O_WRONLY;
 #else
   mq_array[0].perm_flag = O_WRONLY;
   mq_array[1].perm_flag = O_WRONLY;
   mq_array[2].perm_flag = O_WRONLY;
   mq_array[3].perm_flag = O_WRONLY;
   mq_array[4].perm_flag = O_RDONLY;  
+  mq_array[5].perm_flag = O_RDONLY;  
 #endif 
 
   // Remove IPCs if already there
@@ -91,7 +94,7 @@ void mqueue_create(char* mq_name_suffix)
   char *mq_path;
   int ret;
   
-  mq_path = malloc (ASE_FILEPATH_LEN);
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
 
 /* #ifdef ASE_DEBUG */
@@ -134,7 +137,8 @@ int mqueue_open(char *mq_name, int perm_flag)
   int mq;
   char *mq_path;
 
-  mq_path = malloc (ASE_FILEPATH_LEN);
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
+  memset (mq_path, '\0', ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
   
 /* #ifdef ASE_DEBUG */
@@ -190,7 +194,11 @@ void mqueue_close(int mq)
   ret = close (mq);
   if (ret == -1) 
     {
+#ifdef SIM_SIDE
+ #ifdef ASE_DEBUG
       printf("Error closing IPC\n");
+ #endif
+#endif
     }
 
   FUNC_CALL_EXIT;
@@ -207,13 +215,20 @@ void mqueue_destroy(char* mq_name_suffix)
   char *mq_path;
   int ret;
 
-  mq_path = malloc (ASE_FILEPATH_LEN);
-  sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix);
-  
-  ret = unlink ( mq_path );
-  if (ret == -1) 
+  mq_path = ase_malloc (ASE_FILEPATH_LEN);
+  if (mq_path != NULL) 
     {
-      printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
+      memset (mq_path, '\0', ASE_FILEPATH_LEN);
+      sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name_suffix); 
+      ret = unlink ( mq_path );
+      if (ret == -1) 
+	{
+	  printf("Message queue %s could not be removed, please remove manually\n", mq_name_suffix);
+	}
+    }
+  else
+    {
+      printf("Could not remove MQ, please clean by removing work directory\n");
     }
   
   FUNC_CALL_EXIT;
@@ -227,8 +242,9 @@ void mqueue_destroy(char* mq_name_suffix)
 void mqueue_send(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
+  int ret;
   
-  write(mq, str, ASE_MQ_MSGSIZE);  
+  ret = write(mq, str, ASE_MQ_MSGSIZE);  
 /* #ifdef ASE_MSG_VIEW */
 /*   printf("ASEmsg TX => %s\n", str); */
 /* #endif */

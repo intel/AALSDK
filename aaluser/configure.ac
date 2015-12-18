@@ -39,7 +39,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalsdk], [4.5.0], [joe.grecco@intel.com])
+AC_INIT([aalsdk], [5.0.0], [joe.grecco@intel.com])
 AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -70,12 +70,7 @@ AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [0],[0],[0])
 AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRM],          [librrm],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([AASREGISTRAR], [libAASRegistrar], [0],[0],[0])
 AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
-AALSDK_LTLIB_VERSION([AASUAIA],      [libAASUAIA],      [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
@@ -170,14 +165,9 @@ AC_CONFIG_FILES([doc/Doxyfile])
 AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/aas/AASService.h
                  include/aalsdk/aas/AALRuntimeModule.h
-                 include/aalsdk/faptrans/FAP10Service.h
-                 include/aalsdk/faptrans/FAP20Service.h
-                 include/aalsdk/faptrans/MAFUTransService.h
                  include/aalsdk/rm/ResMgrService.h
                  include/aalsdk/rm/RRMService.h
-                 include/aalsdk/registrar/AASRegistrarService.h
                  include/aalsdk/uaia/AIAService.h
-                 include/aalsdk/uaia/uAIAService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/ALIAFUService.h
                  include/aalsdk/service/HWALIAFUService.h
@@ -192,8 +182,6 @@ AC_CONFIG_FILES([Makefile
                  aas/AALRuntime/Makefile
                  aas/AIAService/Makefile
                  aas/RRMBrokerService/Makefile
-                 aas/AASRegistrar/Makefile
-                 aas/uAIA/Makefile
                  aas/AASResourceManager/Makefile])
 
 AC_CONFIG_FILES([ase/sw/Makefile

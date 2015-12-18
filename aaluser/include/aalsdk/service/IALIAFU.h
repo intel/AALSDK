@@ -57,6 +57,43 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup IALIAFU
 /// @{
 
+
+//-----------------------------------------------------------------------------
+// Request message IDs
+//-----------------------------------------------------------------------------
+typedef enum
+{
+   ali_errnumOK = 0,
+   ali_errnumBadDevHandle,                       // 1
+   ali_errnumCouldNotClaimDevice,                // 2
+   ali_errnumNoAppropriateInterface,             // 3
+   ali_errnumDeviceHasNoPIPAssigned,             // 4
+   ali_errnumCouldNotBindPipInterface,           // 5
+   ali_errnumCouldNotUnBindPipInterface,         // 6
+   ali_errnumNotDeviceOwner,                     // 7
+   ali_errnumSystem,                             // 8
+   ali_errnumAFUTransaction,                     // 9
+   ali_errnumAFUTransactionNotFound,             // 10
+   ali_errnumDuplicateStartingAFUTransactionID,  // 11
+   ali_errnumBadParameter,                       // 12
+   ali_errnumNoMem,                              // 13
+   ali_errnumNoMap,                              // 14
+   ali_errnumBadMapping,                         // 15
+   ali_errnumPermission,                         // 16
+   ali_errnumInvalidOpOnMAFU,                    // 17
+   ali_errnumPointerOutOfWorkspace,              // 18
+   ali_errnumNoAFUBindToChannel,                 // 19
+   ali_errnumCopyFromUser,                       // 20
+   ali_errnumDescArrayEmpty,                     // 21
+   ali_errnumCouldNotCreate,                     // 22
+   ali_errnumInvalidRequest,                     // 23
+   ali_errnumInvalidDeviceAddr,                  // 24
+   ali_errnumCouldNotDestroy,                    // 25
+   ali_errnumDeviceBusy,                         // 26
+   ali_errnumTimeout                             // 27
+} ali_errnum_e;
+
+
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
@@ -174,11 +211,21 @@ public:
 
 
 /// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
-/// @note   Consider splitting into two interfaces. Do not need the more complex
-///            Transaction oriented interface for most use cases. Alternatively have
-///            asynchronous response to rarely used umsgSetAttributes call
-///            IServiceClient::serviceEvent().
 /// @note   This service interface is obtained from an IBase via iidALI_UMSG_Service
+/// @note   Once you have a pointer from umsgGetAddress(), you can write anything
+///            to it, for up to 64-bytes, in any manner whatsoever. E.g. if you want
+///            to atomically write a 16-byte value, you can do so using an SSE
+///            intrinsic. If the processor supports AVX512, then one could atomically
+///            write 64-bytes at once.
+/// @note   If you write to a UMsg atomically, you should get one UMsg signal. If you
+///            write to a UMsg atomically N times very quickly, the FPGA might get less
+///            than N UMsg signals.
+/// @note   If you write a single value that ends up being multiple writes from the point
+///            of the view of the processor, then the FPGA will probably see multiple writes,
+///            although it might not. An example of this would where where used memcpy()
+///            to copy 64 bytes to the UMsg address. This might optimize to 4 pipelined
+///            16-byte writes in a row. What the FPGA sees in such a situation is
+///            non-deterministic.
 /// @code
 ///         m_pALIUMsgService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
 /// @endcode
@@ -200,6 +247,17 @@ public:
    /// @param[in] Index of UMsg. Index starts from 0 and runs to umsgGetNumber()-1
    /// @return    The virtual address of the cache line which, if written, sends a UMsg
    virtual btVirtAddr    umsgGetAddress( const btUnsignedInt UMsgNumber ) = 0;
+
+   /// @brief     Convenience function to write 64-bit entity to UMsg.
+   /// @note      This is the only uMsg triggering method supported by ASE, so
+   ///               use it for ASE compatibility.
+   /// @note      This is intended to be fast, so there is no check. Passing a bad
+   ///               address will probably result in a GPF.
+   /// @param[in] pUMsg is pointer returned from umgGetAddress
+   /// @param[in] Value is 64-bit value to write
+   /// @return    The virtual address of the cache line which, if written, sends a UMsg
+   virtual void    umsgTrigger64( const btVirtAddr pUMsg,
+                                  const btUnsigned64bitInt Value ) = 0;
 
    /// @brief  Set attributes associated with the UMsg region and/or
    ///            individual UMsgs, depending on the arguments.
@@ -244,7 +302,7 @@ public:
    ///
    /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
-   virtual AAL::uid_errnum_e bufferAllocate( btWSSize             Length,
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
                                              NamedValueSet       *pOptArgs = NULL ) = 0;
 
@@ -257,12 +315,18 @@ public:
    ///
    /// On success, a notification is sent via IALIBUFFER::bufferFreed.
    /// On failure, an error notification is sent via IALIBUFFER::bufferFreeFailed.
-   virtual AAL::uid_errnum_e bufferFree( btVirtAddr           Address) = 0;
+   virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address) = 0;
 
    /// @brief Retrieve the location at which the AFU can access the passed in virtual address.
    ///
    /// The user virtual address that the application uses to access a buffer may or
    ///    may not be directly usable by the AFU. The general assumption is that it is not.
+   ///
+   /// NOTE: The mapping from virtual address to IOVA is not particularly fast. The user
+   ///    of this interface is urged to allocate large buffers, obtain the IOVA once, and
+   ///    then sub-allocate. Within a buffer, the virtual and IOVA addresses; e.g. if the
+   ///    virtual address is 0x6000 and the IOVA is 0x1000, then 5 bytes into the buffer
+   ///    will be at virtual address 0x6005 and at IOVA 0x1005.
    ///
    /// @param[in]  Address User virtual address to be converted to AFU-addressable location
    /// @return     A value that can be passed to the AFU such that when the AFU uses it,

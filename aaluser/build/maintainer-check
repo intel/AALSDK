@@ -1141,16 +1141,11 @@ declare -ra COPYRIGHT_USER_CHECKED_NAMES=(\
 'doxygen.m4' \
 'AASService.h.in' \
 'AASEDSService.h.in' \
-'AASRegistrarService.h.in' \
 'configure.ac' \
 'COPYING' \
 'Doxyfile.in' \
-'FAP10Service.h.in' \
-'FAP20Service.h.in' \
-'MAFUTransService.h.in' \
 'Makefile.am' \
 'OSALService.h.in' \
-'uAIAService.h.in' \
 'AALRuntimeModule.h.in' \
 'ALIAFUService.h.in' \
 'ASEALIAFUService.h.in' \
@@ -1165,8 +1160,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'AASService.h' \
 'AASEDSService.h' \
 'AASRegistrarService.h' \
-'FAP10Service.h' \
-'FAP20Service.h' \
 'ltmain.sh' \
 'MAFUTransService.h' \
 'nlb-lpbk1.cpp' \
@@ -1210,17 +1203,14 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'ahmpipdefs.h' \
 'ahmpip.h' \
 'ccidefs.h' \
-'encoder_sample_kbae' \
-'fappip.h' \
 'kosal.h' \
 'README.REPO' \
-'spl2defs.h' \
-'splpip.h' \
-'vafu2defs.h' \
-'encoder_kbae-public.h' \
 'iaaldevice.h' \
 'ccipdriver.h' \
 'ccipdrv-events.h' \
+'spl2defs.h' \
+'fappip.h' \
+'vafu2defs.h' \
 )
 
 declare -ra COPYRIGHT_KERNEL_CHECKED_PREFIXES=(\

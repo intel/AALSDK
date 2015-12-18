@@ -181,7 +181,7 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
    // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
 
    // Set transaction IDs so that AFUEvent() can distinguish between MMIO and
-   // UMSG events (both are uid_wseventCSRMap events)
+   // UMSG events (both are ali_wseventCSRMap events)
    TransactionID umsgTid(GetUMSG);
 
    // Create the Transactions
@@ -348,7 +348,7 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // bufferAllocate. Allocate a shared buffer (formerly known as workspace).
 //
-AAL::uid_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
+AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
                                             btVirtAddr    *pBufferptr,
                                             NamedValueSet *pOptArgs)
 {
@@ -363,11 +363,12 @@ AAL::uid_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
       // Will return to AFUEvent, below.
       m_pAFUProxy->SendTransaction(&transaction);
    } else{
-      return uid_errnumSystem;
+      return ali_errnumSystem;
    }
 
    if(uid_errnumOK != transaction.getErrno() ){
-      return transaction.getErrno();
+      AAL_ERR( LM_All, "FATAL:buffer allocate error = " << transaction.getErrno());
+      return ali_errnumSystem;
 
    }
    struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
@@ -375,20 +376,20 @@ AAL::uid_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
    // mmap
    if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
       AAL_ERR( LM_All, "FATAL: MapWSID failed");
-      return uid_errnumSystem;
+      return ali_errnumSystem;
    }
    // store entire aalui_WSParms struct in map
    m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
 
    *pBufferptr = wsevt.wsParms.ptr;
-   return uid_errnumOK;
+   return ali_errnumOK;
 
 }
 
 //
 // bufferFree. Release previously allocated buffer.
 //
-AAL::uid_errnum_e HWALIAFU::bufferFree( btVirtAddr           Address)
+AAL::ali_errnum_e HWALIAFU::bufferFree( btVirtAddr           Address)
 {
    AutoLock(this);
    // TODO: Create a transaction id that wraps the original from the application,
@@ -398,7 +399,7 @@ AAL::uid_errnum_e HWALIAFU::bufferFree( btVirtAddr           Address)
    mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
    if (i == m_mapWkSpc.end()) {  // not found
       AAL_ERR(LM_All, "Tried to free non-existent Buffer");
-      return uid_errnumBadParameter;
+      return ali_errnumBadParameter;
    }
    // workspace id is in i->second.wsid
 
@@ -419,9 +420,9 @@ AAL::uid_errnum_e HWALIAFU::bufferFree( btVirtAddr           Address)
       m_mapWkSpc.erase(i);
 
    } else {
-      return uid_errnumSystem;
+      return ali_errnumSystem;
    }
-   return uid_errnumOK;
+   return ali_errnumOK;
 }
 
 //
@@ -499,6 +500,12 @@ btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
       return m_uMSGmap + offset;
    }
 }
+
+void HWALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
+                              const btUnsigned64bitInt Value )
+{
+   *reinterpret_cast<btUnsigned64bitInt*>(pUMsg) = Value;
+}  // umsgTrigger64
 
 //
 // umsgSetAttributes. Set UMSG attributes.

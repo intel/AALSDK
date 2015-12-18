@@ -50,7 +50,6 @@
 #include <aalsdk/AALIDDefs.h>
 #include <aalsdk/INTCDefs.h>
 #include <aalsdk/AASLib.h>
-#include <aalsdk/uAIALib.h>
 
 #endif // __AALSDK_AAL_H__
 

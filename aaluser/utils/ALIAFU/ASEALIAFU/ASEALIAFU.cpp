@@ -44,18 +44,19 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 07/20/2015     HM       Initial version.@endverbatim
+/// 07/20/2015     HM       Initial version.
+/// 12/16/2015     RRS      Integration with ASE App-backend.@endverbatim
 //****************************************************************************
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include <aalsdk/kernel/aalui.h>
+
 #include <aalsdk/AAL.h>
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aas/AALInProcServiceFactory.h>
-// #include <aalsdk/service/ICCIClient.h>
 #include <aalsdk/ase/ase_common.h>
-
 #include "ASEALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
@@ -89,12 +90,188 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
   return true;
 }
 
+
+
 btBool ASEALIAFU::Release(TransactionID const &TranID, btTime timeout)
 {
   session_deinit();
   return ServiceBase::Release(TranID, timeout);
 }
 
+
+// ---------------------------------------------------------
+// MMIO actions
+// ---------------------------------------------------------
+//
+// mmioGetAddress. Return address of MMIO space.
+//
+btVirtAddr ASEALIAFU::mmioGetAddress( void )
+{
+  m_MMIORmap =  (btVirtAddr)mmio_afu_vbase;
+  return m_MMIORmap;
+}
+
+//
+// mmioGetLength. Return length of MMIO space.
+//
+btCSROffset ASEALIAFU::mmioGetLength( void )
+{
+  m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
+  return m_MMIORsize;		
+}
+
+//
+// mmioRead32. Read 32bit CSR. Offset given in bytes.
+//
+btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
+{
+  mmio_read32(Offset, pValue);
+  return true;
+}
+
+//
+// mmioWrite32. Write 32bit CSR. Offset given in bytes.
+//
+btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
+{
+  mmio_write32(Offset, Value);
+  return true;
+}
+
+//
+// mmioRead64. Read 64bit CSR. Offset given in bytes.
+//
+btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
+{
+  mmio_read64(Offset, (uint64_t*)pValue);
+  return true;
+}
+
+//
+// mmioWrite64. Write 64bit CSR. Offset given in bytes.
+//
+btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
+{
+  mmio_write64(Offset, Value);
+  return true;
+}
+
+// -----------------------------------------------------
+// Buffer allocation API
+// -----------------------------------------------------
+AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
+					     btVirtAddr    *pBufferptr,
+					     NamedValueSet *pOptArgs)
+{
+  struct buffer_t *buf;
+  int ret;
+
+  buf = (struct buffer_t *) malloc (sizeof(struct buffer_t));
+  memset(buf, 0, sizeof(buffer_t));
+
+  buf->memsize = (uint32_t)Length;
+  // ASECCIAFU::sm_ASEMtx.Lock();
+  allocate_buffer(buf);
+  //ASECCIAFU::sm_ASEMtx.Unlock();
+  if ( ( ASE_BUFFER_VALID != buf->valid )   ||
+       ( MAP_FAILED == (void *)buf->vbase ) ||
+       ( 0 == buf->fake_paddr ) ) 
+    {
+      std::cout << "Error Allocating ASE buffer ... EXITING\n";
+      return ali_errnumNoMem;
+    }
+
+  *pBufferptr = (btVirtAddr)buf->vbase;
+
+  // Add info to Workspace map
+  struct aalui_WSMParms wsParms;
+  wsParms.wsid = buf->index;
+  wsParms.ptr = (btVirtAddr)buf->vbase;
+  wsParms.physptr = buf->fake_paddr;
+  wsParms.size = buf->memsize;
+  
+  m_mapWkSpc[(btVirtAddr)buf->vbase] = wsParms;
+
+  return ali_errnumOK;
+}
+
+
+AAL::ali_errnum_e ASEALIAFU::bufferFree( btVirtAddr Address)
+{
+  // Find in map and remove
+   mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
+   if (i == m_mapWkSpc.end()) {  // not found
+      AAL_ERR(LM_All, "Tried to free non-existent Buffer");
+      return ali_errnumBadParameter;
+   }
+
+  struct aalui_WSMParms wsParms;
+  wsParms = i->second;
+
+  // Call ase_common:deallocate_buffer_by_index
+  deallocate_buffer_by_index((int)wsParms.wsid);
+  
+  return ali_errnumOK;
+}
+
+
+// Exactly the same as HWALIAFU::bufferGetIOVA
+btPhysAddr ASEALIAFU::bufferGetIOVA( btVirtAddr Address)
+{
+   mapWkSpc_t::iterator i = m_mapWkSpc.find(Address);
+   if (i != m_mapWkSpc.end()) {
+      return i->second.physptr;
+   }
+
+   for (mapWkSpc_t::iterator i = m_mapWkSpc.begin(); i != m_mapWkSpc.end(); i++)
+     {
+       if (Address < i->second.ptr + i->second.size) {
+         return i->second.physptr + (Address - i->second.ptr);
+       }
+     }
+
+   // not found
+   return 0;
+}
+
+
+// ---------------------------------------------------------------------------
+// IALIUMsg interface implementation
+// ---------------------------------------------------------------------------
+
+//
+// umsgGetNumber. Return number of UMSGs.
+//
+btUnsignedInt ASEALIAFU::umsgGetNumber( void )
+{
+  return true;
+}
+
+//
+// umsgGetAddress. Get address of specific UMSG.
+//
+btVirtAddr ASEALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
+{
+  return 0;
+}
+
+
+void ASEALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
+			       const btUnsigned64bitInt Value )
+{
+
+}  // umsgTrigger64
+
+
+//
+// umsgSetAttributes. Set UMSG attributes.
+//
+// TODO: not implemented
+//
+bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
+{
+   return true;
+}
 
 
 /// @}

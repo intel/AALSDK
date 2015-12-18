@@ -28,35 +28,27 @@
 /// @brief Basic ALI AFU interaction.
 /// @ingroup HelloALINLB
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Intel(R) Accelerator Abstraction Layer Sample Application
 ///
 ///    This application is for example purposes only.
-///    It is not intended to represent a model for developing commercially-deployable applications.
+///    It is not intended to represent a model for developing commercially-
+///       deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
 ///
-/// This Sample demonstrates the following:
-///    - The basic structure of an AAL program using the AAL APIs.
-///    - The ICCI and ICCIClient interfaces of ALI AFU Service.
-///    - System initialization and shutdown.
-///    - Use of interface IDs (iids).
-///    - Accessing object interfaces through the Interface functions.
+/// This Sample demonstrates how to use the basic ALI APIs.
 ///
-/// This sample is designed to be used with the CCIAFU Service.
+/// This sample is designed to be used with the xyzALIAFU Service.
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 06/09/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
 //****************************************************************************
-//#include <aalsdk/AAL.h>
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
-#include <aalsdk/AALLoggerExtern.h> // Logger
-#include <aalsdk/kernel/ccipdriver.h>
+#include <aalsdk/AALLoggerExtern.h>
 
-/*#include <aalsdk/service/ICCIAFU.h>
-#include <aalsdk/service/ICCIClient.h>*/
 #include <aalsdk/service/IALIAFU.h>
 
 #include <string.h>
@@ -100,25 +92,23 @@ using namespace AAL;
 #define LPBK1_BUFFER_SIZE        CL(1)
 
 #define LPBK1_DSM_SIZE           MB(4)
-//#define CSR_AFU_DSM_BASEH        0x1a04
 #define CSR_SRC_ADDR             0x0120
 #define CSR_DST_ADDR             0x0128
 #define CSR_CTL                  0x0138
 #define CSR_CFG                  0x0140
-//#define CSR_CIPUCTL              0x280  /* should not be used */
 #define CSR_NUM_LINES            0x0130
 #define DSM_STATUS_TEST_COMPLETE 0x40
 #define CSR_AFU_DSM_BASEL        0x0110
 #define CSR_AFU_DSM_BASEH        0x0114
 #	define NLB_TEST_MODE_PCIE0		0x2000
-/// @addtogroup HelloCCINLB
+
+/// @addtogroup HelloALINLB
 /// @{
 
 
-/// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
-///          The Service Client contains the application logic.
+/// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
+///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
 ///
-/// When we request an AFU (Service) from AAL, the request will be fulfilled by calling into this interface.
 class HelloALINLBApp: public CAASBase, public IRuntimeClient, public IServiceClient
 {
 public:
@@ -142,7 +132,7 @@ public:
    // <end IServiceClient interface>
 
    // <begin IRuntimeClient interface>
-   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};
+   void runtimeCreateOrGetProxyFailed(IEvent const &rEvent){};    // Not Used
 
    void runtimeStarted(IRuntime            *pRuntime,
                        const NamedValueSet &rConfigParms);
@@ -169,9 +159,7 @@ protected:
    IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
    IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
-   IALIUMsg      *m_pALIuMSGService;   ///< Pointer to uMSg Service
    CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
-   btUnsignedInt  m_wsfreed;           ///< Simple counter used for when we free workspaces
    btInt          m_Result;            ///< Returned result value; 0 if success
    btBool         m_isOK;
 
@@ -192,13 +180,16 @@ protected:
 ///  Implementation
 ///
 ///////////////////////////////////////////////////////////////////////////////
+
+/// @brief   Constructor registers this objects client interfaces and starts
+///          the AAL Runtime. The member m_bisOK is used to indicate an error.
+///
 HelloALINLBApp::HelloALINLBApp() :
    m_Runtime(this),
    m_pAALService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIResetService(NULL),
-   m_wsfreed(0),
    m_Result(0),
    m_DSMVirt(NULL),
    m_DSMPhys(0),
@@ -212,58 +203,75 @@ HelloALINLBApp::HelloALINLBApp() :
    m_isOK(false)
 
 {
+   // Register our Client side interfaces so that the Service can acquire them.
+   //   SetInterface() is inherited from CAASBase
    SetInterface(iidServiceClient, dynamic_cast<IServiceClient *>(this));
    SetInterface(iidRuntimeClient, dynamic_cast<IRuntimeClient *>(this));
+
+   // Initialize our internal semaphore
    m_Sem.Create(0, 1);
 
-   NamedValueSet configArgs;
-   NamedValueSet configRecord;
+   // Start the AAL Runtime, setting any startup options via a NamedValueSet
 
    // Using Hardware Services requires the Remote Resource Manager Broker Service
    //  Note that this could also be accomplished by setting the environment variable
    //   AALRUNTIME_CONFIG_BROKER_SERVICE to librrmbroker
+   NamedValueSet configArgs;
+   NamedValueSet configRecord;
+
 #if defined( HWAFU )
+   // Specify that the remote resource manager is to be used.
    configRecord.Add(AALRUNTIME_CONFIG_BROKER_SERVICE, "librrmbroker");
    configArgs.Add(AALRUNTIME_CONFIG_RECORD, &configRecord);
 #endif
 
+   // Start the Runtime and wait for the callback by sitting on the semaphore.
+   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_isOK appropriately.
    if(!m_Runtime.start(configArgs)){
       m_isOK = false;
       return;
    }
    m_Sem.Wait();
-   // m_bIsOK, inherited from CAASBase, will generally be true here.
-   // Set it to false if any construction fails.
+
 }
 
+/// @brief   Destructor
+///
 HelloALINLBApp::~HelloALINLBApp()
 {
    m_Sem.Destroy();
 }
 
+/// @brief   run() is called from main performs the following:
+///             - Allocate the appropriate ALI Service depending
+///               on whether a hardware, ASE or software implementation is desired.
+///             - Allocates the necessary buffers to be used by the NLB AFU algorithm
+///             - Executes the NLB algorithm
+///             - Cleans up.
+///
 btInt HelloALINLBApp::run()
 {
    cout <<"========================"<<endl;
    cout <<"= Hello ALI NLB Sample ="<<endl;
    cout <<"========================"<<endl;
 
-   // Request our AFU.
+   // Request the Servcie we are interested in.
 
    // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  This code is work around code and subject to change. But it does
-   //  illustrate the utility of having different implementations of a service all
+   //  mechanism.  Since the Resource Manager Implementation is a sample, it is subject to change.
+   //  This example does illustrate the utility of having different implementations of a service all
    //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
-
-   // TODO: backdoor - this should all be figured out be the resource manager
-   // the service library name of the requested service
+   // Service Library to use
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
-   // the AFUID (to be passed to AIA)
+
+   // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
-   // indicate that this service needs to allocate an AIAService, too (to talk to the AFU)
+
+   // indicate that this service needs to allocate an AIAService, too to talk to the HW
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
    #elif defined ( ASEAFU )         /* Use ASE based RTL simulation */
@@ -273,91 +281,95 @@ btInt HelloALINLBApp::run()
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
    #else                            /* default is Software Simulator */
-
+#if 0 // NOT CURRRENTLY SUPPORTED
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
-
+#endif
+   return -1;
 #endif
 
-   // backdoor
+   // Add the Config Record to the Manifest describing what we want to allocate
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
-   // in future, everything should be figured out by just giving the service name
+   // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
+
    MSG("Allocating Service");
 
-   // Allocate the Service and allocate the required workspace.
-   //   This happens in the background via callbacks (simple state machine).
-   //   When everything is set we do the real work here in the main thread.
+   // Allocate the Service and wait for it to complete by sitting on the
+   //   semaphore. The serviceAllocated() callback will be called if successful.
+   //   If allocation fails the serviceAllocateFailed() should set m_isOK appropriately.
+   //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
+   //    are collected.)
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
-
    m_Sem.Wait();
    if(!m_isOK){
       ERR("Allocation failed\n");
-      m_Runtime.stop();
-      m_Sem.Wait();
-      return -1;
+      goto done_0;
    }
-   // Allocate 3 Workspaces .
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
+
+   // Now that we have the Service and have saved the IALIBuffer interface pointer
+   //  we can now Allocate the 3 Workspaces used by the NLB algorithm. The buffer allocate
+   //  function is synchronous so no need to wait on the semaphore
+
+   // Device Status Memory (DSM) is a structure defined by the NLB implementation.
+
+   // User Virtual address of the pointer is returned directly in the function
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
       m_bIsOK = false;
-      m_Sem.Post(1);
-      return -1;
+      m_Result = -1;
+      goto done_1;
    }
+
+   // Save the size and get the IOVA from teh User Virtual address. The HW only uses IOVA.
    m_DSMSize = LPBK1_DSM_SIZE;
    m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if(0 == m_DSMPhys){
+      m_bIsOK = false;
+      m_Result = -1;
+      goto done_2;
+   }
+
+   // Repeat for the Input and Output Buffers
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
-      return -1;
+      m_Result = -1;
+      goto done_2;
    }
+
    m_InputSize = LPBK1_BUFFER_SIZE;
    m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
+   if(0 == m_InputPhys){
+      m_bIsOK = false;
+      m_Result = -1;
+      goto done_3;
+   }
 
-   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       m_Sem.Post(1);
-      return -1;
+      m_Result = -1;
+      goto done_3;
    }
 
    m_OutputSize = LPBK1_BUFFER_SIZE;
    m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
+   if(0 == m_OutputPhys){
+      m_bIsOK = false;
+      m_Result = -1;
+      goto done_4;
+   }
 
-   btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
-   btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
-  if(NULL != uMsg0){
 
-     NamedValueSet nvs;
-     nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
 
-     btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
-  }else{
-     ERR("No uMSG support");
-  }
-
-   // If all went well run test.
-   //   NOTE: If not successful we simply bail.
-   //         A better design would do all appropriate clean-up.
-   if( IsOK() ){
-
-      //=============================
-      // Now we have the NLB Service
-      //   now we can use it
-      //=============================
-      MSG("Running Test");
-
-//#define SIMULATED
-
-#if defined (SIMULATED)
-
-      // Initiate AFU Reset
-      if(IALIReset::e_OK != m_pALIResetService->afuReset()){
-         ERR("Reset Failed... as expected in simulation\n");
-      }
-
-#else
-      /* Setting to 0 turns off actul NLB functionality for debug purposes */
+   //=============================
+   // Now we have the NLB Service
+   //   now we can use it
+   //=============================
+   MSG("Running Test");
+   if(true == m_bIsOK){
 
       // Clear the DSM
       ::memset( m_DSMVirt, 0, m_DSMSize);
@@ -433,38 +445,39 @@ btInt HelloALINLBApp::run()
       } else {
          MSG("Output matches Input!");
       }
-
-      // Now clean up Workspaces and Release.
-      //  Once again all of this is done in a simple
-      //  state machine via callbacks
-#endif
-
-      MSG("Done Running Test");
-
-      // Release the Workspaces and wait for all three then Release the Service
-      m_wsfreed = 0;  // Reset the counter
-      m_pALIBufferService->bufferFree(m_InputVirt);
-      m_pALIBufferService->bufferFree(m_OutputVirt);
-      m_pALIBufferService->bufferFree(m_DSMVirt);
-
-      // Freed all three so now Release() the Service through the Services IAALService::Release() method
-      (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
-      m_Sem.Wait();
-
-      m_Runtime.stop();
-      m_Sem.Wait();
    }
+   MSG("Done Running Test");
+
+   // Clean-up and return
+done_4:
+   m_pALIBufferService->bufferFree(m_OutputVirt);
+done_3:
+   m_pALIBufferService->bufferFree(m_InputVirt);
+done_2:
+   m_pALIBufferService->bufferFree(m_DSMVirt);
+
+done_1:
+   // Freed all three so now Release() the Service through the Services IAALService::Release() method
+   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+   m_Sem.Wait();
+
+done_0:
+   m_Runtime.stop();
+   m_Sem.Wait();
 
    return m_Result;
 }
 
-// We must implement the IServiceClient interface (IServiceClient.h):
+//=================
+//  IServiceClient
+//=================
 
 // <begin IServiceClient interface>
 void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
-   // Documentation says HWALIAFU Service publishes IAALService as subclass interface
+   // Save the IBase for the Service. Through it we can get any other
+   //  interface implemented by the Service
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
    if ( NULL == m_pAALService ) {
@@ -473,7 +486,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    }
 
    // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface
+   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
    m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
    ASSERT(NULL != m_pALIBufferService);
    if ( NULL == m_pALIBufferService ) {
@@ -482,7 +495,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    }
 
    // Documentation says HWALIAFU Service publishes
-   //    IALIMMIO as subclass interface
+   //    IALIMMIO as subclass interface. Used to set/get MMIO Region
    m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
    ASSERT(NULL != m_pALIMMIOService);
    if ( NULL == m_pALIMMIOService ) {
@@ -491,7 +504,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
    }
 
    // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
+   //    IALIReset as subclass interface. Used for resetting the AFU
    m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
    ASSERT(NULL != m_pALIResetService);
    if ( NULL == m_pALIResetService ) {
@@ -499,22 +512,7 @@ void HelloALINLBApp::serviceAllocated(IBase *pServiceBase,
       return;
    }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
-   m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
-   ASSERT(NULL != m_pALIuMSGService);
-   if ( NULL == m_pALIuMSGService ) {
-      m_bIsOK = false;
-      return;
-   }
-
    MSG("Service Allocated");
-   m_Sem.Post(1);
-}
-void HelloALINLBApp::runtimeStarted( IRuntime            *pRuntime,
-                                     const NamedValueSet &rConfigParms)
-{
-   m_isOK = true;
    m_Sem.Post(1);
 }
 
@@ -553,6 +551,24 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
    // OTOH, a notification message will simply print and continue.
 }
 // <end IServiceClient interface>
+
+
+ //=================
+ //  IRuntimeClient
+ //=================
+
+  // <begin IRuntimeClient interface>
+ // Because this simple example has one object implementing both IRuntieCLient and IServiceClient
+ //   some of these interfaces are redundant. We use the IServiceClient in such cases and ignore
+ //   the RuntimeClient equivalent e.g.,. runtimeAllocateServiceSucceeded()
+
+ void HelloALINLBApp::runtimeStarted( IRuntime            *pRuntime,
+                                      const NamedValueSet &rConfigParms)
+ {
+    m_isOK = true;
+    m_Sem.Post(1);
+ }
+
  void HelloALINLBApp::runtimeStopped(IRuntime *pRuntime)
   {
      MSG("Runtime stopped");
@@ -569,13 +585,14 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  void HelloALINLBApp::runtimeStopFailed(const IEvent &rEvent)
  {
      MSG("Runtime stop failed");
+     m_isOK = false;
+     m_Sem.Post(1);
  }
 
  void HelloALINLBApp::runtimeAllocateServiceFailed( IEvent const &rEvent)
  {
     ERR("Runtime AllocateService failed");
     PrintExceptionDescription(rEvent);
-
  }
 
  void HelloALINLBApp::runtimeAllocateServiceSucceeded(IBase *pClient,
@@ -588,6 +605,7 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  {
      MSG("Generic message handler (runtime)");
  }
+ // <begin IRuntimeClient interface>
 
 /// @} group HelloALINLB
 
@@ -598,7 +616,7 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 // Inputs: none
 // Outputs: none
 // Comments: Main initializes the system. The rest of the example is implemented
-//           in the objects.
+//           in the object theApp.
 //=============================================================================
 int main(int argc, char *argv[])
 {

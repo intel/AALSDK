@@ -34,9 +34,6 @@
  */
 
 
-/*
- * Prevent recursive declarations
- */
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
@@ -76,16 +73,19 @@
  * SYSTEM FACTS
  * 
  * *******************************************************************************/
-#define FPGA_ADDR_WIDTH       38
-#define PHYS_ADDR_PREFIX_MASK (uint64_t)(-1) << FPGA_ADDR_WIDTH
-#define CL_ALIGN_SHIFT        6
+/* #define FPGA_ADDR_WIDTH       48 */
+/* #define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000 */
+#define CL_ALIGN          6
+#define MEMBUF_2MB_ALIGN  21
 
 // Width of a cache line in bytes
 #define CL_BYTE_WIDTH        64
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
 // CSR memory map size
-#define CSR_MAP_SIZE            64*1024
+// #define CSR_MAP_SIZE            64*1024
+#define MMIO_LENGTH                512*1024   // 512 KB MMIO size
+#define MMIO_AFU_OFFSET            256*1024
 
 // Size of page
 #define ASE_PAGESIZE   0x1000        // 4096 bytes
@@ -95,30 +95,11 @@
  * Unordered Message (UMSG) Address space
  */
 // UMSG specific CSRs
-#define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address
-#define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode
-#define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT
+/* #define ASE_UMSGBASE_CSROFF            0x3F4  // UMSG base address */
+/* #define ASE_UMSGMODE_CSROFF            0x3F8  // UMSG mode */
+/* #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT */
 
-/*
- * SPL constants
- */
-#define SPL_DSM_BASEL_OFF 0x1000 //0x910
-#define SPL_DSM_BASEH_OFF 0x1004 //0x914
-#define SPL_CXT_BASEL_OFF 0x1008 //0x918 // SPL Context Physical address
-#define SPL_CXT_BASEH_OFF 0x100c //0x91c 
-#define SPL_CH_CTRL_OFF   0x1010 //0x920
-
-/*
- * AFU constants
- */
-#define AFU_DSM_BASEL_OFF 0x8A00
-#define AFU_DSM_BASEH_OFF 0x8A04
-#define AFU_CXT_BASEL_OFF 0x8A08
-#define AFU_CXT_BASEH_OFF 0x8A0c
-
-//                                Byte Offset  Attribute  Width  Comments
-#define      DSM_AFU_ID            0            // RO      32b    non-zero value to uniquely identify the AFU
-#define      DSM_STATUS            0x40         // RO      512b   test status and error info
+#define NUM_UMSG_PER_AFU               8
 
 
 /* *******************************************************************************
@@ -131,6 +112,9 @@
 
 // ASE filepath length
 #define ASE_FILEPATH_LEN  256
+
+// ASE logger len
+#define ASE_LOGGER_LEN    1024
 
 // work Directory location
 char *ase_workdir_path;
@@ -147,6 +131,13 @@ char *ipclist_filepath;
 
 // Ready filepath
 char *ase_ready_filepath;
+
+// CONFIG,SCRIPT parameter paths received from SV (initial)
+char *sv2c_config_filepath;
+char *sv2c_script_filepath;
+
+// ASE-APP run command
+char *app_run_cmd;
 
 // ASE Mode macros
 #define ASE_MODE_DAEMON_NO_SIMKILL   1
@@ -216,10 +207,21 @@ struct buffer_t                   //  Descriptiion                    Computed b
   uint64_t fake_paddr;            // unique low FPGA_ADDR_WIDTH addr |   SIM
   uint64_t fake_paddr_hi;         // unique hi FPGA_ADDR_WIDTH addr  |   SIM
   int is_privmem;                 // Flag memory as a private memory |    
-  int is_csrmap;                  // Flag memory as DSM              |   
+  int is_mmiomap;                 // Flag memory as CSR map          |   
   int is_umas;                    // Flag memory as UMAS region      |
   struct buffer_t *next;
 };
+
+/*
+ * Workspace meta list
+ */
+struct wsmeta_t 
+{
+  int      index;
+  uint64_t *buf_structaddr;
+  struct wsmeta_t *next;
+};
+
 
 // Compute buffer_t size 
 #define BUFSIZE     sizeof(struct buffer_t)
@@ -229,9 +231,12 @@ struct buffer_t                   //  Descriptiion                    Computed b
 extern struct buffer_t *head;      // Head pointer
 extern struct buffer_t *end;       // Tail pointer
 // CSR fake physical base address
-extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
+// extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
 // DPI side CSR base, offsets updated on CSR writes
-extern uint32_t *ase_csr_base;      
+// extern uint64_t *mmio_afu_vbase;      
+//uint64_t *mmio_afu_vbase;
+uint64_t *mmio_afu_vbase;  
+    
 // Timestamp reference time
 extern struct timeval start;
 
@@ -245,6 +250,13 @@ extern struct timeval start;
 #define HDR_MEM_ALLOC_REQ    0x7F
 #define HDR_MEM_ALLOC_REPLY  0xFF
 #define HDR_MEM_DEALLOC_REQ  0x0F
+
+// MMIO widths
+#define MMIO_WRITE_REQ       0xAA88
+#define MMIO_READ_REQ        0xBB88
+
+#define MMIO_WIDTH_32        32
+#define MMIO_WIDTH_64        64
 
 // UMSG info structure
 typedef struct {
@@ -267,11 +279,11 @@ void ll_print_info(struct buffer_t *);
 void ll_traverse_print();
 void ll_append_buffer(struct buffer_t *);
 void ll_remove_buffer(struct buffer_t *);
-struct buffer_t* ll_search_buffer(int);
 uint32_t check_if_physaddr_used(uint64_t);
+struct buffer_t* ll_search_buffer(int);
 
 // Mem-ops functions
-void ase_mqueue_setup();
+// void ase_mqueue_setup();
 void ase_mqueue_teardown();
 int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
@@ -294,6 +306,7 @@ void ase_str_to_buffer_t(char *, struct buffer_t *);
 int ase_dump_to_file(struct buffer_t*, char*);
 uint64_t ase_rand64();
 char* ase_eval_session_directory();
+char* ase_malloc (size_t);
 
 // Message queue operations
 void ipc_init();
@@ -305,7 +318,7 @@ void mqueue_send(int, char*);
 int mqueue_recv(int, char*);
 
 // Debug interface
-void shm_dbg_memtest(struct buffer_t *);
+// void shm_dbg_memtest(struct buffer_t *);
 
 // Timestamp functions
 void put_timestamp();
@@ -326,24 +339,19 @@ void create_ipc_listfile();
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-  // Shared memory alloc/dealloc operations
+  // Session control
   void session_init();
   void session_deinit();
+  // Shared memory alloc/dealloc operations
   void allocate_buffer(struct buffer_t *);
   void deallocate_buffer(struct buffer_t *);
-  void csr_write(uint32_t, uint32_t);
-  uint32_t csr_read(uint32_t);
-  // SPL bridge functions *FIXME*
-  void setup_spl_cxt_pte(struct buffer_t *, struct buffer_t *);
-  void spl_driver_dsm_setup(struct buffer_t *);
-  void spl_driver_reset(struct buffer_t *);
-  void spl_driver_afu_setup(struct buffer_t *);
-  void spl_driver_start(uint64_t *);
-  void spl_driver_stop();
-  // UMSG subsystem
-  void umas_init(uint32_t);
-  void umsg_send(int, char *);
-  void umas_deinit();
+  void deallocate_buffer_by_index(int);
+  void append_wsmeta(struct wsmeta_t *);
+  // MMIO activity
+  void mmio_write32(uint32_t index, uint32_t data);
+  void mmio_write64(uint32_t index, uint64_t data);
+  void mmio_read32(uint32_t index, uint32_t *data);
+  void mmio_read64(uint32_t index, uint64_t *data);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -356,20 +364,6 @@ extern "C" {
  * MESSAGING IPC
  *
  * ********************************************************************/
-// Buffer exchange messages
-/* #define APP2SIM_SMQ_PREFIX          "app2sim_bufping_smq." */
-/* #define SIM2APP_SMQ_PREFIX          "sim2app_bufpong_smq." */
-/* // CSR write messages */
-/* #define APP2SIM_CSR_WR_SMQ_PREFIX   "app2sim_csr_wr_smq." */
-/* // UMSG control messages from APP to SIM */
-/* #define APP2SIM_UMSG_SMQ_PREFIX     "app2sim_umsg_smq." */
-/* // Interrupt message from SIM to APP */
-/* #if 0 */
-/* #define SIM2APP_INTR_SMQ_PREFIX     "sim2app_intr_smq." */
-/* #endif */
-/* // Simkill control messages */
-/* #define APP2SIM_SIMKILL_SMQ_PREFIX  "app2sim_simkill_smq." */
-
 // Message Queue establishment status
 #define MQ_NOT_ESTABLISHED 0x0
 #define MQ_ESTABLISHED     0xCAFE
@@ -378,7 +372,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  5
+#define ASE_MQ_INSTANCES  6
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -440,8 +434,18 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
-// #define ASE_BUFFER_VIEW
+#define ASE_BUFFER_VIEW
 
+/*
+ * MMIO transaction packet
+ */
+typedef struct mmio_t {
+  int type;
+  int width;
+  int addr;
+  long long qword[8];
+  int resp_en;
+} mmio_t;
 
 
 /* *********************************************************************
@@ -463,10 +467,11 @@ struct ase_cfg_t
   int ase_timeout;
   int ase_num_tests;
   int enable_reuse_seed;
-  int num_umsg_log2;
+  /* int num_umsg_log2; */
   int enable_cl_view;
-  int enable_capcm;
-  int memmap_sad_setting;
+  int phys_memory_available_gb;
+  /* int enable_capcm; */
+  /* int memmap_sad_setting; */
 };
 struct ase_cfg_t *cfg;
 
@@ -481,13 +486,12 @@ struct ase_cfg_t *cfg;
  */
 // CCI transaction packet
 typedef struct {
-  long long meta;
+  int       write_en;
+  long      mdata;
+  long long cl_addr;
   long long qword[8];
-  int       cfgvalid;
-  int       wrvalid;
-  int       rdvalid;
-  int       intrvalid;
-  int       umsgvalid; 	       
+  int       resp_en;
+  int       resp_channel;
 } cci_pkt;
 
 
@@ -497,8 +501,9 @@ typedef struct {
 // DPI-C export(C to SV) calls
 extern void simkill();
 extern void sw_simkill_request();
-extern void csr_write_init();
-extern void csr_write_dispatch(int, int, int);
+/* extern void csr_write_init(); */
+// extern void csr_write_dispatch(int, int, int);
+extern void buffer_messages(char *);
 /* extern void umsg_init(); */
 extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
@@ -513,34 +518,26 @@ void ase_config_parse(char*);
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
 
-// CSR Write 
-void csr_write_dex(cci_pkt *csr);
-void csr_write_completed();
-
 // Read system memory line
-void rd_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata );
+void rd_memline_dex( cci_pkt *pkt );
 // Write system memory line
-void wr_memline_dex(cci_pkt *pkt, int *cl_addr, int *mdata, char *wr_data );
+void wr_memline_dex( cci_pkt *pkt );
 
-// CAPCM functions
-extern void capcm_init();
+// MMIO request 
+// void mmio_dispatch(int init, int wren, int addr, long long data, int dwidth);
+void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
+// MMIO Read response
+void mmio_response(struct mmio_t *mmio_pkt);
 
 // UMSG functions
-void ase_umsg_init();
+// void ase_umsg_init();
 /* int umsg_listener(); */
-void ase_umsg_init();
+// void ase_umsg_init();
 
 
 /*
  * Request/Response options
- */ 
-// TX0 channel
-#define ASE_TX0_RDLINE       0x4
-// TX1 channel
-#define ASE_TX1_WRTHRU       0x1
-#define ASE_TX1_WRLINE       0x2
-#define ASE_TX1_WRFENCE      0x5   // CCI 1.8
-#define ASE_TX1_INTRVALID    0x8   // CCI 1.8
+ */
 // RX0 channel
 #define ASE_RX0_CSR_WRITE    0x0
 #define ASE_RX0_WR_RESP      0x1
@@ -561,27 +558,8 @@ FILE *ase_ready_fd;
 // ASE seed 
 uint64_t ase_addr_seed;
 
-
-/*
- * QPI-CA private memory implementation
- *
- * Caching agent private memory is enabled in hw/platform.vh. This
- * block is enabled only in the simulator, application has no need to
- * see this.  The buffer is implemented in /dev/shm for performance
- * reasons. Linux swap space is used to make memory management very
- * efficient.
- *
- * CAPCM_BASENAME : Memory basename is concatenated with index and a
- * timestamp
- * CAPCM_CHUNKSIZE : Large CA private memories are chained together in
- * default 1 GB chunks.
- */
-#define CAPCM_BASENAME "/capcm"
-#define CAPCM_CHUNKSIZE (1024*1024*1024UL)
-uint64_t capcm_num_buffers;
-
-// CAPCM buffer chain info (each buffer holds 1 GB)
-struct buffer_t *capcm_buf;
+// ASE error file
+FILE *error_fp;
 
 
 /*
@@ -598,16 +576,38 @@ uint64_t sysmem_size;
 uint64_t sysmem_phys_lo;
 uint64_t sysmem_phys_hi;
 
-// CAPCM
-uint64_t capcm_size;
-uint64_t capcm_phys_lo;
-uint64_t capcm_phys_hi;
-
 // ASE PID
 int ase_pid;
 
 // Workspace information log (information dump of 
 FILE *fp_workspace_log;
 
+// Physical address mask - used to constrain generated addresses
+uint64_t PHYS_ADDR_PREFIX_MASK;
+
 #endif
-#endif
+
+
+/*
+ * IPC MQ fd names
+ */
+#ifdef SIM_SIDE
+int app2sim_rx;           // app2sim mesaage queue in RX mode
+int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_rx;   // MMIO Request path
+int sim2app_mmiorsp_tx;   // MMIO Response path
+int app2sim_umsg_rx;      // UMSG    message queue in RX mode
+int app2sim_simkill_rx;   // app2sim message queue in RX mode
+#else
+int app2sim_tx;           // app2sim mesaage queue in RX mode
+int sim2app_rx;           // sim2app mesaage queue in TX mode
+int app2sim_mmioreq_tx;   // MMIO Request path
+int sim2app_mmiorsp_rx;   // MMIO Response path
+int app2sim_umsg_tx;      // UMSG    message queue in RX mode
+int app2sim_simkill_tx;   // app2sim message queue in RX mode
+#endif // End SIM_SIDE
+
+
+#endif // End _ASE_COMMON_H_
+
+

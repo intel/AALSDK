@@ -38,13 +38,13 @@
 
 #include "ase_common.h"
 
+#if 0
 // Message queues opened by DPI
 int app2sim_rx;           // app2sim mesaage queue in RX mode
 int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_csr_wr_rx;    // CSR Write listener MQ in RX mode
+int app2sim_mmioreq_rx;    // CSR Write listener MQ in RX mode
 int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
 int app2sim_simkill_rx;   // Simkill listener in RX mode
-#if 0
 int sim2app_intr_tx;      // INTR message queue in TX mode
 #endif
 
@@ -57,8 +57,9 @@ int self_destruct_in_progress = 0;
 
 // ---------------------------------------------------------------------
 // ase_mqueue_setup() : Set up DPI message queues
-// Set up app2sim_rx, sim2app_tx and app2sim_csr_wr_rx message queues
+// Set up app2sim_rx, sim2app_tx and app2sim_mmio_rx message queues
 // ---------------------------------------------------------------------
+#if 0
 void ase_mqueue_setup()
 {
   FUNC_CALL_ENTRY;
@@ -72,7 +73,7 @@ void ase_mqueue_setup()
   // Depending on the calling function, activate the required queues
   app2sim_rx         = mqueue_create(APP2SIM_SMQ_PREFIX,         O_CREAT|O_RDONLY );
   sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
-  app2sim_csr_wr_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
+  app2sim_mmio_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
   app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
 #if 0
   sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
@@ -83,7 +84,7 @@ void ase_mqueue_setup()
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 // ---------------------------------------------------------------------
 // ase_mqueue_teardown(): Teardown DPI message queues
@@ -96,24 +97,13 @@ void ase_mqueue_teardown()
   // Close message queues
   mqueue_close(app2sim_rx);       
   mqueue_close(sim2app_tx);       
-  mqueue_close(app2sim_csr_wr_rx);
+  mqueue_close(app2sim_mmioreq_rx);
+  mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
 #if 0
   mqueue_close(sim2app_intr_tx);       
 #endif
   mqueue_close(app2sim_simkill_rx);
-
-#if 0
-  // Unlink message queues
-  mqueue_destroy(APP2SIM_SMQ_PREFIX);       
-  mqueue_destroy(SIM2APP_SMQ_PREFIX);       
-  mqueue_destroy(APP2SIM_CSR_WR_SMQ_PREFIX);
-  mqueue_destroy(APP2SIM_UMSG_SMQ_PREFIX);
-#if 0 
-  mqueue_destroy(SIM2APP_INTR_SMQ_PREFIX);
-#endif
-  mqueue_destroy(APP2SIM_SIMKILL_SMQ_PREFIX);
-#endif
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -213,12 +203,14 @@ void ase_alloc_action(struct buffer_t *mem)
 
   struct buffer_t *new_buf;
 
-  /* BEGIN_YELLOW_FONTCOLOR; */
-  /* printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname); */
-  /* END_YELLOW_FONTCOLOR; */
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("SIM-C : Adding a new buffer \"%s\"...\n", mem->memname);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Obtain a file descriptor
-  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IREAD|S_IWRITE);
+  mem->fd_ase = shm_open(mem->memname, O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_ase < 0)
     {
       /* perror("shm_open"); */
@@ -243,40 +235,15 @@ void ase_alloc_action(struct buffer_t *mem)
     }
   ftruncate(mem->fd_ase, (off_t)mem->memsize);
 
-  // CALCULATE A FAKE PHYSICAL ADDRESS
-  // Use the random number to generate a CSR pin 
-  // Generate a fake_paddr based on this and an offset using memsize(s)
-  /* if(mem->index == 0) */
-  /*   { */
-  /*     // Generate a pin address 38 bits wide and is 2MB aligned */
-  /*      csr_fake_pin = abs((rand() << 21) & 0x0000001FFFFFFFFF); */
-  /*     BEGIN_YELLOW_FONTCOLOR; */
-  /*     printf("SIM-C : CSR pinned fake_paddr = %p\n",(uint32_t*)csr_fake_pin); */
-  /*     END_YELLOW_FONTCOLOR; */
-      
-  /*     // Record DPI side CSR region virtual address */
-  /*     ase_csr_base = (uint32_t*)mem->pbase; */
-  /*   } */
-
   // Record fake address
-  mem->fake_paddr = get_range_checked_physaddr(mem->memsize); // csr_fake_pin + fpga_membase_so_far;
+  mem->fake_paddr = get_range_checked_physaddr(mem->memsize);
   mem->fake_paddr_hi = mem->fake_paddr + (uint64_t)mem->memsize;
-
-  // Generate a fake offset
-  /* mem->fake_off_lo = fake_off_low_bound; */
-  /* mem->fake_off_hi = fpga_membase_so_far + mem->memsize; */
-
-  // Calculate next low bound
-  // fake_off_low_bound = fake_off_low_bound + mem->memsize;
 
   // Received buffer is valid
   mem->valid = ASE_BUFFER_VALID;
 
-  // Aggregate all memory offsets so far
-  // fpga_membase_so_far+= mem->memsize;
-
   // Create a buffer and store the information
-  new_buf = malloc(BUFSIZE);
+  new_buf = (struct buffer_t *)ase_malloc(BUFSIZE);
   memcpy(new_buf, mem, BUFSIZE);
 
   // Append to linked list
@@ -296,8 +263,18 @@ void ase_alloc_action(struct buffer_t *mem)
 
   if (mem->index == 0)
     {
+      // Pin CSR address
+      mmio_afu_vbase = (uint64_t*) mem->pbase;
+#ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : Global CSR Base address = %p\n", (void*)mmio_afu_vbase);
+      END_YELLOW_FONTCOLOR;
+#endif
+
       // If UMSG is enabled, write information to CSR region
+#if 0
       ase_umsg_init(mem->pbase);
+#endif
     }
 
   FUNC_CALL_EXIT;
@@ -475,7 +452,8 @@ uint64_t get_range_checked_physaddr(uint32_t size)
       // Generate a random physical address for system memory
       ret_fake_paddr = sysmem_phys_lo + ase_rand64() % sysmem_size;
       // 2MB align and sanitize
-      ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;          
+      // ret_fake_paddr = ret_fake_paddr & 0x00003FFFE00000 ;          
+      ret_fake_paddr = ret_fake_paddr & PHYS_ADDR_PREFIX_MASK ;          
 
       // Check for conditions
       // Is address in sysmem range, go back
@@ -501,7 +479,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
  */
 uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 {
-  FUNC_CALL_ENTRY;
+  FUNC_CALL_ENTRY; 
 
   // Clean up address of signed-ness
   req_paddr = req_paddr & 0x0000003FFFFFFFFF;
@@ -518,7 +496,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   // For debug only
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
-  printf("req_paddr = %p | ", (uint64_t*)req_paddr);
+  printf("req_paddr = %p | ", (void *)req_paddr);
   END_YELLOW_FONTCOLOR;
 #endif
 
@@ -534,7 +512,7 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  // Debug only
 #ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, ase_pbase);
+	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
 	  END_YELLOW_FONTCOLOR;
 #endif
 	  return ase_pbase;
@@ -551,9 +529,21 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
       printf("@ERROR: ASE has detected a memory operation to an unallocated memory region.\n");
       printf("@ERROR: Simulation cannot continue, please check the code.\n");
       printf("@ERROR: Failure @ phys_addr = %016lx \n", req_paddr );
+      printf("@ERROR: See ERROR log file => ase_error.log");
       END_RED_FONTCOLOR;
+
+      // Write error to file
+      error_fp = fopen("ase_error.log", "wb");
+      fprintf(error_fp, "*** ASE stopped on an illegal memory access ERROR ***\n");
+      fprintf(error_fp, "        AFU requested access @ physical memory %p\n", (void*)req_paddr);
+      fprintf(error_fp, "        Address not found in requested workspaces listed in workspace_info.log\n");
+      fprintf(error_fp, "        Timestamped transaction to this address is listed in transactions.tsv\n");
+      fflush(error_fp);
+      fclose(error_fp);
+
       // ase_perror_teardown();
       // final_ipc_cleanup();
+      // Request SIMKILL
       start_simkill_countdown(); // RRS: exit(1);
     }
 
