@@ -76,7 +76,7 @@
 /* #define FPGA_ADDR_WIDTH       48 */
 /* #define PHYS_ADDR_PREFIX_MASK 0x0000FFFFFFE00000 */
 #define CL_ALIGN          6
-#define MEMBUF_2MB_ALIGN  21
+#define MEMBUF_2MB_ALIGN  22
 
 // Width of a cache line in bytes
 #define CL_BYTE_WIDTH        64
