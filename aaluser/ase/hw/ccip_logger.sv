@@ -237,6 +237,17 @@ module ccip_logger
    //    end
    // endtask
    
+   function string ret_spaces (int num);
+      string spaces;
+      int    ii;      
+      begin
+	 spaces = "";	 
+	 for (ii = 0; ii < num; ii = ii + 1) begin
+	    spaces = {spaces, " "};	    
+	 end
+	 return spaces;	 
+      end
+   endfunction
    
    /*
     * Watcher process
@@ -334,17 +345,19 @@ module ccip_logger
 	 //////////////////////// C0 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* MEM -> AFU Read Response *****************/
 	 if (C0RxRdValid) begin
-	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 	 				     $time,
 	 				     print_channel(C0RxHdr.vc),
 	 				     print_resptype(C0RxHdr.resptype),
 	 				     C0RxHdr.mdata,
+					     ret_spaces(12),
 	 				     C0RxData);
-	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\n",
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
 	 	    $time,
 	 	    print_channel(C0RxHdr.vc),
 	 	    print_resptype(C0RxHdr.resptype),
 	 	    C0RxHdr.mdata,
+		    ret_spaces(12),
 	 	    C0RxData);
 	 end
 	 /****************** MEM -> AFU Write Response *****************/
