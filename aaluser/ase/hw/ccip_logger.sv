@@ -174,47 +174,7 @@ module ccip_logger
       end
    endfunction
 
-   /*
-    * Format string to print on screen and file
-    */
-   // function automatic string format_string( ref string transact_type,
-   // 					    input int channel
-   // 					    );
-   //    string 					      str;      
-   //    begin
-   // 	 case (transact_type)
-   // 	   "MMIOWrite" :
-   // 	     begin		
-   // 	     end
-
-   // 	   "MMIOReadReq":
-   // 	     begin
-   // 	     end
-
-   // 	   "MMIOReadResp":
-   // 	     begin
-   // 	     end
-
-   // 	   "ReadReq":
-   // 	     begin
-   // 	     end
-
-   // 	   "ReadRsp":
-   // 	     begin
-   // 	     end
-
-   // 	   "WriteReq":
-   // 	     begin
-   // 	     end
-	   
-   // 	   "WriteRsp":
-   // 	     begin
-   // 	     end
-	   
-   // 	 endcase
-   //    end
-   // endfunction
-
+   // MMIO Request length
    function int mmioreq_length (logic [1:0] mmio_len);
       begin
 	 case (mmio_len)
@@ -225,18 +185,7 @@ module ccip_logger
       end
    endfunction // mmioreq_length
 
-   
-   /*
-    * Buffer info message sent from ASE page table
-    */
-   // export "DPI-C" task buffer_info_message;
-
-   // task buffer_info_message();
-   //    begin
-	 
-   //    end
-   // endtask
-   
+   // Space generator - formatting help
    function string ret_spaces (int num);
       string spaces;
       int    ii;      
@@ -248,6 +197,7 @@ module ccip_logger
 	 return spaces;	 
       end
    endfunction
+
    
    /*
     * Watcher process
@@ -284,18 +234,18 @@ module ccip_logger
 		    csr_data(mmioreq_length(C0RxMMIOHdr.len), C0RxData)  );
 	 end
 	 /******************* SW -> AFU MMIO Read *******************/
-	 // if (C0RxMMIORdValid) begin
-	 //    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdReq   \t%x\t%d bytes\ttid=%x\n",
-	 //    				     $time,
-	 //    				     C0RxMMIOHdr.index,
-	 //    				     mmioreq_length(C0RxMMIOHdr.len)
-	 //    				     C0RxMMIOHdr.tid);
-	 //    $fwrite(log_fd, "%d\t   \tMMIORdReq   \t%x\t%d bytes\ttid=%x\n",
-	 // 	    $time,
-	 // 	    C0RxMMIOHdr.index,
-	 // 	    mmioreq_length(C0RxMMIOHdr.len)
-	 // 	    C0RxMMIOHdr.tid);
-	 // end	 
+	 if (C0RxMMIORdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
+	    				     $time,
+	    				     C0RxMMIOHdr.tid,
+	    				     C0RxMMIOHdr.index,
+	    				     mmioreq_length(C0RxMMIOHdr.len));
+	    $fwrite(log_fd, "%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
+	    	    $time,
+	    	    C0RxMMIOHdr.tid,
+	    	    C0RxMMIOHdr.index,
+	    	    mmioreq_length(C0RxMMIOHdr.len));
+	 end	 
 	 //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> MEM Read Request *****************/
 	 if (C0TxRdValid) begin
