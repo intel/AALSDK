@@ -415,7 +415,8 @@ AAS_END_MOD()
     <ul>
       <li>@ref aalscan    "aalscan - Scan for AALSDK Service Modules"</li>
       <li>@ref data_model "data_model - Show the C/C++ data model for the current compiler"</li>
-    </ul>
+      <li>@ref fpgadiag "fpgadiag - Run diagnostics on the system with a provided bitstream"</li>
+      </ul>
 </ul>
 
 
