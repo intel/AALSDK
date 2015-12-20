@@ -188,6 +188,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
+                 utils/fpgadiag/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
