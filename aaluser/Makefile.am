@@ -276,7 +276,6 @@ ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
 ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
-ase/hw/ase_global.vh \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
