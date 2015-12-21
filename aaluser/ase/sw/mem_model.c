@@ -494,11 +494,11 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   struct buffer_t *trav_ptr;
 
   // For debug only
-#ifdef ASE_DEBUG
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("req_paddr = %p | ", (void *)req_paddr);
-  END_YELLOW_FONTCOLOR;
-#endif
+/* #ifdef ASE_DEBUG */
+/*   BEGIN_YELLOW_FONTCOLOR; */
+/*   printf("req_paddr = %p | ", (void *)req_paddr); */
+/*   END_YELLOW_FONTCOLOR; */
+/* #endif */
 
   // Search which buffer offset_from_pin lies in
   trav_ptr = head;
@@ -510,11 +510,11 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
 	  // Debug only
-#ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
-	  END_YELLOW_FONTCOLOR;
-#endif
+/* #ifdef ASE_DEBUG */
+/* 	  BEGIN_YELLOW_FONTCOLOR; */
+/* 	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase); */
+/* 	  END_YELLOW_FONTCOLOR; */
+/* #endif */
 	  return ase_pbase;
 	}
       else
