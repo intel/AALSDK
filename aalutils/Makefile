@@ -33,9 +33,9 @@
 ##  History:
 ##     07/21/2015    TSW   Initial version
 ##******************************************************************************
-SUBDIRS=\
-fpgadiag #\ 
-#ccis_fpgadiag
+
+# nothing to build right now
+SUBDIRS=
 
 MFLAGS  =
 ifneq (,$(ndebug))
