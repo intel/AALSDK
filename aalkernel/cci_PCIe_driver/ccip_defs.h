@@ -578,8 +578,8 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt cache_counter :48; //Cache counter
-            btUnsigned64bitInt rsvd :16;
+            btUnsigned64bitInt cache_counter : 60; //Cache counter
+            btUnsigned64bitInt event_code : 4;
          }; // end struct
       }; // end union
 
@@ -591,8 +591,8 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt cache_counter :48; //Cache counter
-            btUnsigned64bitInt rsvd :16;
+            btUnsigned64bitInt cache_counter : 60; //Cache counter
+            btUnsigned64bitInt event_code : 4;
          }; // end struct
       }; // end union
 
@@ -630,8 +630,8 @@ struct CCIP_FME_DFL_FPMON {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt fabric_counter :48; // Fabric event counter
-            btUnsigned64bitInt rsvd :16;
+            btUnsigned64bitInt fabric_counter : 60; // Fabric event counter
+            btUnsigned64bitInt event_code : 4;
          }; // end struct
       }; //end union
 

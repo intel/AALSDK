@@ -173,13 +173,23 @@ void mmio_response (struct mmio_t *mmio_pkt)
 	{
 	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
-	  // *mmio_addr32 = (uint32_t) mmio_pkt->data;
+	  *mmio_addr32 = (uint32_t) mmio_pkt->qword[0];
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG] mmio_rddata = %x\n", *mmio_addr32);
+	  END_YELLOW_FONTCOLOR;
+        #endif
 	}
       else if (mmio_pkt->width == MMIO_WIDTH_64)
 	{
 	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));	  
-	  // *mmio_addr64 = (uint64_t) mmio_pkt->data;
+	  *mmio_addr64 = (uint64_t) mmio_pkt->qword[0];
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG] mmio_rddata = %llx\n", (unsigned long long)*mmio_addr64);
+	  END_YELLOW_FONTCOLOR;
+        #endif
 	}
     }
 
@@ -225,17 +235,39 @@ int ase_listener()
       // ALLOC request received
       if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
 	{
+	  // Allocate action
 	  ase_alloc_action(&ase_buffer);
 	  ase_buffer.is_privmem = 0;
 	  if (ase_buffer.index == 0)
 	    ase_buffer.is_mmiomap = 1;
 	  else
 	    ase_buffer.is_mmiomap = 0;
+
+	  // Format workspace info string
+	  memset (logger_str, '\0', ASE_LOGGER_LEN);
+	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
+	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
+	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Inject buffer message
+	  buffer_msg_inject ( logger_str );
 	}
       // if DEALLOC request is received
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
 	{
+	  // Format workspace info string
+	  memset (logger_str, '\0', ASE_LOGGER_LEN);
+	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Deallocate action
 	  ase_dealloc_action(&ase_buffer);
+
+	  // Inject buffer message
+	  buffer_msg_inject ( logger_str );
 	}
       
       // Standard oneline message ---> Hides internal info
@@ -244,21 +276,6 @@ int ase_listener()
       // Write buffer information to file
       if ( (ase_buffer.is_mmiomap == 0) || (ase_buffer.is_privmem == 0) )
 	{
-	  // Zero out string
-	  memset (logger_str, '\0', ASE_LOGGER_LEN);
-	  
-	  // Format workspace info string
-	  sprintf(logger_str + strlen(logger_str), "Workspace %d Allocated =>\n", ase_buffer.index);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
-	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
-	  sprintf(logger_str + strlen(logger_str), "\t\tWorkspace Size (bytes) = %d\n", ase_buffer.memsize);
-	  sprintf(logger_str + strlen(logger_str), "\n");
-	  
-	  // Write to CCI logger module | Placeholder
-	  // *FIXME* 
-	  // buffer_messages ( logger_str );
-
 	  // Flush info to file
 	  fprintf(fp_workspace_log, "%s", logger_str);
 	  fflush(fp_workspace_log);

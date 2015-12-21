@@ -122,14 +122,14 @@ module ccip_logger
    function string print_reqtype (logic [3:0] req);
       begin
 	 case (req)
-	   CCIP_TX0_RDLINE_S : return "RdLine_S ";
-	   CCIP_TX0_RDLINE_I : return "RdLine_I ";
-	   CCIP_TX0_RDLINE_E : return "RdLine_E ";
-	   CCIP_TX1_WRLINE_I : return "WrLine_I ";
-	   CCIP_TX1_WRLINE_M : return "WrLine_M ";
-	   CCIP_TX1_WRFENCE  : return "WrFence  ";
-	   CCIP_TX1_INTRVALID: return "IntrReq  ";
-	   default           : return "* ERROR *";
+	   CCIP_TX0_RDLINE_S : return "RdLine_S   ";
+	   CCIP_TX0_RDLINE_I : return "RdLine_I   ";
+	   CCIP_TX0_RDLINE_E : return "RdLine_E   ";
+	   CCIP_TX1_WRLINE_I : return "WrLine_I   ";
+	   CCIP_TX1_WRLINE_M : return "WrLine_M   ";
+	   CCIP_TX1_WRFENCE  : return "WrFence    ";
+	   CCIP_TX1_INTRVALID: return "IntrReq    ";
+	   default           : return "** ERROR **";
 	 endcase
       end
    endfunction
@@ -138,12 +138,12 @@ module ccip_logger
    function string print_resptype (logic [3:0] resp);
       begin
 	 case (resp)
-	   CCIP_RX0_RD_RESP   : return "RdResp   ";
-	   CCIP_RX0_WR_RESP   : return "WrResp   ";
-	   CCIP_RX1_WR_RESP   : return "WrResp   ";
-	   CCIP_RX0_INTR_CMPLT: return "IntrResp ";
-	   CCIP_RX1_INTR_CMPLT: return "IntrResp ";
-	   default            : return "* ERROR *";
+	   CCIP_RX0_RD_RESP   : return "RdResp     ";
+	   CCIP_RX0_WR_RESP   : return "WrResp     ";
+	   CCIP_RX1_WR_RESP   : return "WrResp     ";
+	   CCIP_RX0_INTR_CMPLT: return "IntrResp   ";
+	   CCIP_RX1_INTR_CMPLT: return "IntrResp   ";
+	   default            : return "** ERROR **";
 	 endcase
       end
    endfunction
@@ -174,47 +174,30 @@ module ccip_logger
       end
    endfunction
 
-   /*
-    * Format string to print on screen and file
-    */
-   function automatic string format_string( ref string transact_type,
-					    input int channel
-					    );
-      string 					   str;      
+   // MMIO Request length
+   function int mmioreq_length (logic [1:0] mmio_len);
       begin
-	 case (transact_type)
-	   "MMIOWrite" :
-	     begin
-	     end
-
-	   "MMIOReadReq":
-	     begin
-	     end
-
-	   "MMIOReadResp":
-	     begin
-	     end
-
-	   "ReadReq":
-	     begin
-	     end
-
-	   "ReadRsp":
-	     begin
-	     end
-
-	   "WriteReq":
-	     begin
-	     end
-	   
-	   "WriteRsp":
-	     begin
-	     end
-	   
+	 case (mmio_len)
+	   2'b00 : return 4;
+	   2'b01 : return 8;
+	   2'b10 : return 64; 
 	 endcase
       end
+   endfunction // mmioreq_length
+
+   // Space generator - formatting help
+   function string ret_spaces (int num);
+      string spaces;
+      int    ii;      
+      begin
+	 spaces = "";	 
+	 for (ii = 0; ii < num; ii = ii + 1) begin
+	    spaces = {spaces, " "};	    
+	 end
+	 return spaces;	 
+      end
    endfunction
-   
+
    
    /*
     * Watcher process
@@ -237,45 +220,34 @@ module ccip_logger
 	    $fwrite(log_fd, log_string);
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
-	 /******************* SW -> AFU Config Write *******************/
+	 /******************* SW -> AFU MMIO Write *******************/
 	 if (C0RxMMIOWrValid) begin
-	    if (cfg.enable_cl_view)  $display("%d\tMMIOWrReq\t%x\t%d bytes\t%s\n",
+	    if (cfg.enable_cl_view)  $display("%d\t   \tMMIOWrReq   \t%x\t%d bytes\t%s\n",
 					      $time,
 					      C0RxMMIOHdr.index,
-					      4^(1 + C0RxMMIOHdr.len),
-					      csr_data(4^(1 + C0RxMMIOHdr.len), C0RxData)  );
-	    $fwrite(log_fd, "%d\tMMIOWrReq\t%x\t%d bytes\t%s\n",
+					      mmioreq_length(C0RxMMIOHdr.len),
+					      csr_data(mmioreq_length(C0RxMMIOHdr.len), C0RxData)  );
+	    $fwrite(log_fd, "%d\t   \tMMIOWrReq   \t  \t%x\t%d bytes\t%s\n",
 		    $time,
 		    C0RxMMIOHdr.index,
-		    4^(1 + C0RxMMIOHdr.len),
-		    csr_data(4^(1 + C0RxMMIOHdr.len), C0RxData)  );
-	 end 
-	 // if (CfgWrValid) begin
-	 //    if (cfg.enable_cl_view) $display("%d\tCfgWrite\t%x\t%d bytes\t%s",
-	 //    				     $time,
-	 //    				     CfgHeader.index,
-	 //    				     4^(1 + CfgHeader.num_bytes),
-	 //    				     csr_data(4^(1 + CfgHeader.num_bytes), C0RxData)  );
-	 //    $fwrite(log_fd, "%d\tCfgWrite\t%x\t%d bytes\t%s",
-	 //    	    $time,
-	 //    	    CfgHeader.index,
-	 //    	    4^(1 + CfgHeader.num_bytes),
-	 //    	    csr_data(4^(1 + CfgHeader.num_bytes), C0RxData)  );
-	 // end
-	 // /*************** SW -> AFU Config Read Request ****************/
-	 // if (CfgRdValid) begin
-	 //    if (cfg.enable_cl_view) $display("%d\tCfgRdReq\t%x",
-	 // 				     $time,
-	 // 				     CfgHeader.index);
-	 //    $fwrite(log_fd, "%d\tCfgRdReq\t%x",
-	 // 	    $time,
-	 // 	    CfgHeader.index);
-	 // end
-	 // /*************** AFU -> SW Config Read Response ***************/
-	 // if (CfgRdDataValid) begin
-	 // end
-	 // //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
-	 /******************* AFU -> MEM Read Request ******************/
+		    mmioreq_length(C0RxMMIOHdr.len),
+		    csr_data(mmioreq_length(C0RxMMIOHdr.len), C0RxData)  );
+	 end
+	 /******************* SW -> AFU MMIO Read *******************/
+	 if (C0RxMMIORdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
+	    				     $time,
+	    				     C0RxMMIOHdr.tid,
+	    				     C0RxMMIOHdr.index,
+	    				     mmioreq_length(C0RxMMIOHdr.len));
+	    $fwrite(log_fd, "%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
+	    	    $time,
+	    	    C0RxMMIOHdr.tid,
+	    	    C0RxMMIOHdr.index,
+	    	    mmioreq_length(C0RxMMIOHdr.len));
+	 end	 
+	 //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* AFU -> MEM Read Request *****************/
 	 if (C0TxRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
 	 				     $time,
@@ -308,20 +280,34 @@ module ccip_logger
 	 	    C1TxHdr.addr,
 	 	    C1TxData);
 	 end
+	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
+	 /******************* AFU -> SW MMIO Read Response *****************/
+	 if (C2TxMMIORdValid) begin
+	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdRsp   \t%x\t%x\n",
+					     $time,
+					     C2TxHdr.tid,
+					     C2TxData);
+	    $fwrite(log_fd, "%d\t   \tMMIORdRsp   \t%x\t%x\n",
+		    $time,
+		    C2TxHdr.tid,
+		    C2TxData);
+	 end	 
 	 //////////////////////// C0 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* MEM -> AFU Read Response *****************/
 	 if (C0RxRdValid) begin
-	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x",
+	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 	 				     $time,
 	 				     print_channel(C0RxHdr.vc),
 	 				     print_resptype(C0RxHdr.resptype),
 	 				     C0RxHdr.mdata,
+					     ret_spaces(12),
 	 				     C0RxData);
-	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%x\n",
+	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
 	 	    $time,
 	 	    print_channel(C0RxHdr.vc),
 	 	    print_resptype(C0RxHdr.resptype),
 	 	    C0RxHdr.mdata,
+		    ret_spaces(12),
 	 	    C0RxData);
 	 end
 	 /****************** MEM -> AFU Write Response *****************/

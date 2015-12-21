@@ -81,8 +81,6 @@ SUBDIRS=\
 aalbus \
 aalresourcemgr_server \
 aalresourcemgr_client \
-aal_uidriver \
-cciv4_driver \
 cci_PCIe_driver
 
 aalsdkhdrsdir=$(includedir)/aalsdk

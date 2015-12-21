@@ -75,8 +75,8 @@ class HWALIAFU_API HWALIAFU : public ServiceBase,
                               public IALIMMIO,
                               public IALIBuffer,
                               public IALIUMsg,
-                              public IALIReset/*
-                              public IALIPerf*/
+                              public IALIReset,
+                              public IALIPerf
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -107,8 +107,12 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
       if ( EObjOK != SetInterface(iidALI_BUFF_Service, dynamic_cast<IALIBuffer *>(this)) ){
          m_bIsOK = false;
       }
-//      SetInterface(        iidALI_PERF_Service,   dynamic_cast<IALIPerf *>(this)); // still to be defined
+
       if ( EObjOK != SetInterface(iidALI_RSET_Service, dynamic_cast<IALIReset *>(this)) ){
+         m_bIsOK = false;
+      }
+
+      if ( EObjOK != SetInterface(iidALI_PERF_Service, dynamic_cast<IALIPerf *>(this)) ){
          m_bIsOK = false;
       }
 
@@ -172,6 +176,12 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    // <IAFUProxyClient>
    virtual void AFUEvent(AAL::IEvent const &theEvent);
    // </IAFUProxyClient>
+
+   //<IALIPerf>
+   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
+                                          NamedValueSet const  *pOptArgs ) ;
+   //</IALIPerf>
+
 
    enum InitTransaction {
       GetMMIO = 1,
