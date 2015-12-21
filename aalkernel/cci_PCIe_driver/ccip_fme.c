@@ -79,7 +79,7 @@
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
-
+#include "ccip_perfmon.h"
 #include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "cci_pcie_driver_PIPsession.h"
@@ -240,7 +240,28 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       } break;
 
+      AFU_COMMAND_CASE(ccipdrv_getPerfMonitor) {
 
+         bt32bitInt res;
+         struct CCIP_PERF_COUNTERS perfcounter;
+         PVERBOSE("ccipdrv_getPerfMonitor \n");
+
+         res= get_perfmon_counters(cci_dev_pfme(pdev) ,&perfcounter);
+         if(0 != res )
+         {
+            Message->m_errcode = uid_errnumPermission;
+                   break;
+         }
+
+        if(respBufSize >= sizeof(struct CCIP_PERF_COUNTERS)){
+           PVERBOSE("ccipdrv_getPerfMonitor  Valid Buffer\n");
+           *((struct CCIP_PERF_COUNTERS*)Message->m_response) = perfcounter;
+           Message->m_respbufSize = sizeof(struct CCIP_PERF_COUNTERS);
+        }
+
+         Message->m_errcode = uid_errnumOK;
+
+      } break; // case ccipdrv_getPerfMonitor
 
    default: {
       struct ccipdrv_event_afu_response_event *pafuresponse_evt = NULL;

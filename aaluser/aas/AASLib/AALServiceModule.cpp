@@ -234,16 +234,15 @@ btBool AALServiceModule::ServiceInitFailed(IBase        *pService,
    }
 
    // Create the dispatchable for the Service allocate failed callback.
-   //  The Service object will be destroyed in the Destroy Service dispatchable
-   //  after the notifications.
-   ServiceAllocateFailed *pDisp = new ServiceAllocateFailed( pService,
-		   	   	   	   	   	   	   	   	   	   	   	   	   	 m_SvcsFact,
-														     pServiceBase->getServiceClient(),
-														     pServiceBase->getRuntimeClient(),
-														     pEvent);
+   ServiceAllocateFailed *pSAF = new ServiceAllocateFailed(pServiceBase->getServiceClient(),
+                                                           pServiceBase->getRuntimeClient(),
+                                                           pEvent);
+
+   // The Service object will be destroyed in the Destroy Service dispatchable.
+   DestroyServiceObject *pDSO = new DestroyServiceObject(m_SvcsFact, pService);
 
    // Notify the Service client and clean-up partially initialized Service
-   return FireAndForget(pDisp);
+   return FireAndForget( new DispatchableGroup(pSAF, pDSO) );
 }
 
 //=============================================================================

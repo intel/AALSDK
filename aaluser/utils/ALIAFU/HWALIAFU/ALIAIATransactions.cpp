@@ -484,4 +484,50 @@ UmsgSetAttributes::~UmsgSetAttributes() {
    delete afumsg;
 }
 
+PerfCounterGet::PerfCounterGet(btWSSize size) :
+   m_msgID(reqid_UID_SendAFU),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
+   // must allocate enough memory , so playload returns performance counters
+   //
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req ) + size ;
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_getPerfMonitor;
+   afumsg->size    = sizeof(struct ahm_req) ;
+
+// package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    PerfCounterGet::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                PerfCounterGet::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  PerfCounterGet::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   PerfCounterGet::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              PerfCounterGet::getMsgID()const {return m_msgID;}
+AAL::btVirtAddr                PerfCounterGet::getBuffer() const {return m_payload;}
+AAL::uid_errnum_e              PerfCounterGet::getErrno()const {return m_errno;};
+void                           PerfCounterGet::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+
+PerfCounterGet::~PerfCounterGet() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
 

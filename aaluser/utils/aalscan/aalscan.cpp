@@ -69,19 +69,15 @@ by the current AALSDK installation.
 
 @verbatim
 $ aalscan
-3.4.0 libAAS
-3.4.0 libAASRegistrar
-3.4.0 libAASUAIA
-0.0.0 libASECCIAFU
-0.0.0 libCCIAFU
-0.0.0 libHWCCIAFU
-3.4.0 libOSAL
-0.0.0 librrmbroker
-0.0.0 libsampleafu1
-0.0.0 libsampleafu2
-0.0.0 libsamplebroker
-0.0.0 libSWSimCCIAFU
-0.0.0 libAALRUNTIME@endverbatim
+0.0.0 libAAS
+0.0.0 libAASResMgr
+0.0.0 libASEALIAFU
+0.0.0 libHWALIAFU
+0.0.0 libOSAL
+0.0.0 libSWSimALIAFU
+0.0.0 libaalrt
+0.0.0 libaia
+0.0.0 librrmbroker@endverbatim
 
 @}
 */
@@ -141,10 +137,7 @@ int parsecmds(struct aalscanCmdLine * , int , char *[] );
 
 const char *gCoreAALServiceRootNames[] = {
    "libAAS",
-   "libAASRegistrar",
    "libAASResMgr",
-   "libAASUAIA",
-   "libALIAFU",
    "libASEALIAFU",
    "libHWALIAFU",
    "libOSAL",

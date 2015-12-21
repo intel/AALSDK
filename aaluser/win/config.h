@@ -58,30 +58,10 @@ n// Copyright (c) 2014, Intel Corporation
 #define AASEDS_VERSION_AGE            0
 #define AASEDS_VERSION                "4.1.0"
 
-#define AASREGISTRAR_VERSION_CURRENT  4
-#define AASREGISTRAR_VERSION_REVISION 1
-#define AASREGISTRAR_VERSION_AGE      0
-#define AASREGISTRAR_VERSION          "4.1.0"
-
 #define AASUAIA_VERSION_CURRENT       4
 #define AASUAIA_VERSION_REVISION      1
 #define AASUAIA_VERSION_AGE           0
 #define AASUAIA_VERSION               "4.1.0"
-
-#define FAPTRANS1_VERSION_CURRENT     1
-#define FAPTRANS1_VERSION_REVISION    0
-#define FAPTRANS1_VERSION_AGE         0
-#define FAPTRANS1_VERSION             "1.0.0"
-
-#define FAPTRANS2_VERSION_CURRENT     2
-#define FAPTRANS2_VERSION_REVISION    0
-#define FAPTRANS2_VERSION_AGE         0
-#define FAPTRANS2_VERSION             "2.0.0"
-
-#define MAFUTRANS_VERSION_CURRENT     0
-#define MAFUTRANS_VERSION_REVISION    0
-#define MAFUTRANS_VERSION_AGE         0
-#define MAFUTRANS_VERSION             "0.0.0"
 
 #define UTILSAFU_VERSION_CURRENT      0
 #define UTILSAFU_VERSION_REVISION     0

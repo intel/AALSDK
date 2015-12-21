@@ -127,9 +127,9 @@ protected:
 
    // Internal IServiceClient used to allocate Resource Manager
    void serviceAllocated(IBase *pServiceBase,
-                         TransactionID const &rTranID = TransactionID());
+                         TransactionID const &rTranID);
    void serviceAllocateFailed( const IEvent &rEvent);
-   void serviceReleased( TransactionID const &rTranID = TransactionID());
+   void serviceReleased( TransactionID const &rTranID);
    void serviceReleaseFailed( const IEvent &rEvent);
    void serviceEvent(const IEvent &rEvent);
 

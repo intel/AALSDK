@@ -207,7 +207,8 @@ typedef enum
     ccipdrv_getMMIORmap,
     ccipdrv_getFeatureRegion,
     ccipdrv_afucmdGetNumUmsgs,
-    ccipdrv_afucmdSetUmsgMode
+    ccipdrv_afucmdSetUmsgMode,
+    ccipdrv_getPerfMonitor
 } ccipdrv_afuCmdID_e;
 
 struct aalui_CCIdrvMessage
@@ -463,6 +464,39 @@ struct ccipdrv_DeviceAttributes
    btByte             m_devattrib[];      // Attribute block (TBD)
 };
 
+//=============================================================================
+// Name: PERFCOUNTER_EVENT
+// Request[IN] Response[OUT]
+// Description: performance counters.
+// Comments: This object is used to notify the device owner of attributes
+//           any specific attributes the device publishes
+//=============================================================================
+struct  PERFCOUNTER_EVENT
+{
+   char  name[50];
+   btUnsigned64bitInt value;
+   //btUnsigned64bitInt offset;
+   //btUnsigned64bitInt rsvd[9];
+};
+
+struct  CCIP_PERF_COUNTERS
+{
+   struct  PERFCOUNTER_EVENT num_counters;
+   struct  PERFCOUNTER_EVENT version;
+   struct  PERFCOUNTER_EVENT read_hit;
+   struct  PERFCOUNTER_EVENT write_hit;
+   struct  PERFCOUNTER_EVENT read_miss;
+   struct  PERFCOUNTER_EVENT write_miss;
+   struct  PERFCOUNTER_EVENT evictions;
+
+   struct  PERFCOUNTER_EVENT pcie0_read;
+   struct  PERFCOUNTER_EVENT pcie0_write;
+   struct  PERFCOUNTER_EVENT pcie1_read;
+   struct  PERFCOUNTER_EVENT pcie1_write;
+   struct  PERFCOUNTER_EVENT upi_read;
+   struct  PERFCOUNTER_EVENT upi_write;
+   struct  PERFCOUNTER_EVENT vtd_counter;
+};
 END_C_DECLS
 
 END_NAMESPACE(AAL)

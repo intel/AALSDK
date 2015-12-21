@@ -88,7 +88,7 @@ public:
    /// }
    /// @endcode
    virtual void serviceAllocated(IBase               *pServiceBase,
-                                 TransactionID const &rTranID = TransactionID()) = 0;
+                                 TransactionID const &rTranID)                   = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully allocate a service after a call to
@@ -103,7 +103,7 @@ public:
    /// @param[in] rTranID is reference to the TransactionID that was passed to
    ///               IAALService.Release().
    /// @return    void
-   virtual void serviceReleased(TransactionID const &rTranID = TransactionID())  = 0;
+   virtual void serviceReleased(TransactionID const &rTranID)                    = 0;
 
    /// @brief     Called by a Runtime object to indicate that it failed to
    ///               successfully Release a service after a call to

@@ -81,8 +81,6 @@ dnl ############################################################################
 AALKERNEL_DRIVER_VERSION([AALBUS],   [aalbus],   [5],[0],[0])
 AALKERNEL_DRIVER_VERSION([AALRMS],   [aalrms],   [5],[0],[0])
 AALKERNEL_DRIVER_VERSION([AALRMC],   [aalrmc],   [5],[0],[0])
-AALKERNEL_DRIVER_VERSION([AALUIDRV], [aaluidrv], [5],[0],[0])
-AALKERNEL_DRIVER_VERSION([CCIV4DRV], [cciv4drv], [5],[0],[0])
 AALKERNEL_DRIVER_VERSION([CCIPCIEDRV], [ccipciedrv], [5],[0],[0])
 
 dnl ############################################################################
@@ -152,36 +150,6 @@ AC_CONFIG_LINKS([aalresourcemgr_client/kbuild/aalrm-file.c:aalresourcemgr_client
                  aalresourcemgr_client/kbuild/aalrm-events-int.h:aalresourcemgr_client/aalrm-events-int.h
                  aalresourcemgr_client/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
-AC_CONFIG_FILES([aal_uidriver/kbuild/Makefile:aal_uidriver/Kbuild.in])
-AC_CONFIG_LINKS([aal_uidriver/kbuild/aaluidrv-file.c:aal_uidriver/aaluidrv-file.c
-                 aal_uidriver/kbuild/aaluidrv-int.h:aal_uidriver/aaluidrv-int.h
-                 aal_uidriver/kbuild/aaluidrv-main-linux.c:aal_uidriver/aaluidrv-main-linux.c
-                 aal_uidriver/kbuild/aaluidrv-mmap-linux.c:aal_uidriver/aaluidrv-mmap-linux.c
-                 aal_uidriver/kbuild/aaluidrv-message.c:aal_uidriver/aaluidrv-message.c
-                 aal_uidriver/kbuild/aalui-events-int.h:aal_uidriver/aalui-events-int.h
-                 aal_uidriver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
-
-AC_CONFIG_FILES([cciv4_driver/kbuild/Makefile:cciv4_driver/Kbuild.in])
-AC_CONFIG_LINKS([cciv4_driver/kbuild/cciv4_driver_main.c:cciv4_driver/cciv4_driver_main.c
-                 cciv4_driver/kbuild/cciv4_driver_internal.h:cciv4_driver/cciv4_driver_internal.h
-                 cciv4_driver/kbuild/cciv4_simulator.c:cciv4_driver/cciv4_simulator.c
-                 cciv4_driver/kbuild/cciv4_simulator.h:cciv4_driver/cciv4_simulator.h
-                 cciv4_driver/kbuild/cciv4_common.c:cciv4_driver/cciv4_common.c
-                 cciv4_driver/kbuild/cciv4_PIPsession.h:cciv4_driver/cciv4_PIPsession.h
-                 cciv4_driver/kbuild/cciv4_PIPsession.c:cciv4_driver/cciv4_PIPsession.c
-                 cciv4_driver/kbuild/cciv4_sim_afu_pip.c:cciv4_driver/cciv4_sim_afu_pip.c  
-                 cciv4_driver/kbuild/cciv4_sim_mafu_pip.c:cciv4_driver/cciv4_sim_mafu_pip.c      
-                 cciv4_driver/kbuild/cciv4_sim_afu_mmap.c:cciv4_driver/cciv4_sim_afu_mmap.c 
-                 cciv4_driver/kbuild/ccip_def.h:cciv4_driver/ccip_def.h
-                 cciv4_driver/kbuild/ccip_fme_mmio.h:cciv4_driver/ccip_fme_mmio.h 
-                 cciv4_driver/kbuild/ccip_fme_mmio.c:cciv4_driver/ccip_fme_mmio.c
-                 cciv4_driver/kbuild/ccip_port_mmio.h:cciv4_driver/ccip_port_mmio.h 
-                 cciv4_driver/kbuild/ccip_port_mmio.c:cciv4_driver/ccip_port_mmio.c 
-                 cciv4_driver/kbuild/ccip_sim_mmio.c:cciv4_driver/ccip_sim_mmio.c
-                 cciv4_driver/kbuild/ccip_perf_counters.c:cciv4_driver/ccip_perf_counters.c  
-                 cciv4_driver/kbuild/ccip_perf_counters.h:cciv4_driver/ccip_perf_counters.h   
-                 cciv4_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
-
 
 AC_CONFIG_FILES([cci_PCIe_driver/kbuild/Makefile:cci_PCIe_driver/Kbuild.in])
 AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/cci_pcie_driver_main.c
@@ -205,14 +173,14 @@ AC_CONFIG_LINKS([cci_PCIe_driver/kbuild/cci_pcie_driver_main.c:cci_PCIe_driver/c
                  cci_PCIe_driver/kbuild/ccip_afu.c:cci_PCIe_driver/ccip_afu.c
                  cci_PCIe_driver/kbuild/ccip_stap.c:cci_PCIe_driver/ccip_stap.c
                  cci_PCIe_driver/kbuild/ccip_pr.c:cci_PCIe_driver/ccip_pr.c
+                 cci_PCIe_driver/kbuild/ccip_perfmon.h:cci_PCIe_driver/ccip_perfmon.h
+                 cci_PCIe_driver/kbuild/ccip_perfmon.c:cci_PCIe_driver/ccip_perfmon.c
                  cci_PCIe_driver/kbuild/kOSAL.c:kOSAL/kOSAL.c])
 
 AC_CONFIG_FILES([Makefile
                  aalbus/Makefile
                  aalresourcemgr_server/Makefile
                  aalresourcemgr_client/Makefile
-                 aal_uidriver/Makefile
-                 cciv4_driver/Makefile
                  cci_PCIe_driver/Makefile])
 
 AC_OUTPUT

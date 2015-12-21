@@ -59,7 +59,7 @@ BEGIN_NAMESPACE(AAL)
 
 
 //-----------------------------------------------------------------------------
-// Request message IDs
+// Request message IDs. Subject to change.
 //-----------------------------------------------------------------------------
 typedef enum
 {
@@ -324,9 +324,9 @@ public:
    ///
    /// NOTE: The mapping from virtual address to IOVA is not particularly fast. The user
    ///    of this interface is urged to allocate large buffers, obtain the IOVA once, and
-   ///    then sub-allocate. Within a buffer, the virtual and IOVA addresses; e.g. if the
-   ///    virtual address is 0x6000 and the IOVA is 0x1000, then 5 bytes into the buffer
-   ///    will be at virtual address 0x6005 and at IOVA 0x1005.
+   ///    then sub-allocate. Within a buffer, the virtual and IOVA addresses track each other.
+   ///    E.g. if the virtual address is 0x6000 and the IOVA is 0x1000, then 5 bytes into 
+   ///    the buffer will be at virtual address 0x6005 and at IOVA 0x1005.
    ///
    /// @param[in]  Address User virtual address to be converted to AFU-addressable location
    /// @return     A value that can be passed to the AFU such that when the AFU uses it,
@@ -370,6 +370,13 @@ public:
    #define AALPERF_READ_MISS        "Read_Miss"
    #define AALPERF_WRITE_MISS       "Write_Miss"
    #define AALPERF_EVICTIONS        "Evictions"
+
+   #define AALPERF_PCIE0_READ       "PCIe 0 Read"
+   #define AALPERF_PCIE0_WRITE      "PCIe 0 Write"
+   #define AALPERF_PCIE1_READ       "RPCIe 1 Read"
+   #define AALPERF_PCIE1_WRITE      "PCIe 1 Write"
+   #define AALPERF_UPI_READ         "UPI Read"
+   #define AALPERF_UPI_WRITE        "UPI Write"
    ///
    /// @code
    /// INamedValueSet const *pResult = NULL;
@@ -379,7 +386,7 @@ public:
    /// }
    /// @endcode
 
-   virtual void performanceCountersGet ( INamedValueSet const **ppResult,
+   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
                                          NamedValueSet const  *pOptArgs = NULL) = 0;
 }; // class IALIPerf
 

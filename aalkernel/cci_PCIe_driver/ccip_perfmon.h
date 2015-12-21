@@ -55,94 +55,108 @@
 //  OF  THIS  SOFTWARE, EVEN IF ADVISED  OF  THE  POSSIBILITY  OF SUCH DAMAGE.
 //******************************************************************************
 //****************************************************************************
-/// @file ccip_def.h
+/// @file ccip_perfmon.h
 /// @brief  Definitions for ccip.
 /// @ingroup aalkernel_ccip
 /// @verbatim
-//        FILE: ccip_fme_mmio.h
+//        FILE: ccip_perfmon.h
 //     CREATED: Sept 24, 2015
 //      AUTHOR:
 //
-// PURPOSE:   This file contains the definations of the CCIP FME
-//             Device Feature List and CSR.
+// PURPOSE:
 // HISTORY:
 // COMMENTS:
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
 
 
-
-#ifndef __AALKERNEL_CCIP_FME_DEF_H_
-#define __AALKERNEL_CCIP_FME_DEF_H_
+#ifndef __AALKERNEL_CCIP_PERFMON_DEF_H_
+#define __AALKERNEL_CCIP_PERFMON_DEF_H_
 
 #include <aalsdk/kernel/aaltypes.h>
-#include "cciv4_driver_internal.h"
+#include <aalsdk/kernel/ccipdriver.h>
+#include "cci_pcie_driver_internal.h"
+#include "ccip_defs.h"
 
 BEGIN_NAMESPACE(AAL)
 
-/// @brief   read 64 bit control and status registers.
+#define CACHE_EVENT_COUNTER_MAX_TRY 30
+#define PERF_MONITOR_VERSION 1
+#define PERF_MONITOR_COUNT 11
+
+#define PMONITOR_VERSION        "version"
+#define NUM_COUNTERS            "number of counters"
+#define CACHE_READ_HIT          "Read_Hit"
+#define CACHE_WRITE_HIT         "Write_Hit"
+#define CACHE_READ_MISS         "Read_Miss"
+#define CACHE_WRITE_MISS        "Write_Miss"
+#define CACHE_EVICTIONS         "Evictions"
+#define FABRIC_PCIE0_READ       "PCIe 0 Read"
+#define FABRIC_PCIE0_WRITE      "PCIe 0 Write"
+#define FABRIC_PCIE1_READ       "PCIe 1 Read"
+#define FABRIC_PCIE1_WRITE      "PCIe 1 Write"
+#define FABRIC_UPI_READ         "UPI Read"
+#define FABRIC_UPI_WRITE        "UPI Write"
+#define VTD_COUNTER              "VT-d"
+
+
+/// Name:    create_perfmonitor
+/// @brief   creates performance monitor
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] ppcidev  pci device  pointer.
+/// @param[in] pfme_dev fme device pointer.
 /// @return    error code
-bt32bitInt get_fme_mmio(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+bt32bitInt create_perfmonitor(struct pci_dev* ppcidev,
+                              struct fme_device* pfme_dev);
 
-/// @brief   reads FME header from MMIO.
+/// Name:    remove_perfmonitor
+/// @brief   removes perfoemanceee counters
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] ppcidev  pci device  pointer.
 /// @return    error code
-bt32bitInt get_fme_dev_header(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+bt32bitInt remove_perfmonitor(struct pci_dev* ppcidev);
 
 
-/// @brief   reads FME header from MMIO.
+/// Name:    get_perfmonitor_counters
+/// @brief   get snapshot of performance counters
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
 /// @return    error code
-bt32bitInt get_fme_dev_featurelist(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+bt32bitInt get_perfmonitor_snapshot(struct fme_device *pfme_dev,
+                                    struct CCIP_PERF_COUNTERS* pPerf);
 
-/// @brief   reads FME Temperature Management CSR
+/// Name:    update_fabric_event_counters
+/// @brief   get Fabric performance counters
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] event_code performance counters event device pointer.
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
 /// @return    error code
-bt32bitInt get_fme_dev_tmp_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );;
+bt32bitInt update_fabric_event_counters(bt32bitInt event_code ,
+                                       struct fme_device *pfme_dev,
+                                       struct CCIP_PERF_COUNTERS* pPerf);
 
-/// @brief   reads FME Power Management CSR
+/// Name:    update_cache_event_counters
+/// @brief   get cache performance counters
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] event_code performance counters event device pointer.
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
 /// @return    error code
-bt32bitInt get_fme_dev_pm_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
+bt32bitInt update_cache_event_counters(bt32bitInt event_code ,
+                                       struct fme_device *pfme_dev,
+                                       struct CCIP_PERF_COUNTERS* pPerf);
 
-/// @brief   reads FME Global performance CSR
+/// Name:    get_perfmon_counters
+/// @brief   get  performance counters
 ///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
+/// @param[in] pfme_dev fme device pointer.
+/// @param[in] pPerf performance counters pointer
 /// @return    error code
-bt32bitInt get_fme_dev_fpmon_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME Global error CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_gerr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   reads FME PR CSR
-///
-/// @param[in] fme_device fme device pointer.
-/// @param[in] pkvp_fme_mmio fme mmio virtual address
-/// @return    error code
-bt32bitInt get_fme_dev_pr_rev0(struct fme_device *pfme_dev,btVirtAddr pkvp_fme_mmio );
-
-/// @brief   freee FME Device feature list memory
-///
-/// @param[in] fme_device fme device pointer .
-/// @return    void
-void ccip_fme_mem_free(struct fme_device *pfme_dev );
+bt32bitInt get_perfmon_counters(struct fme_device* pfme_dev,
+                                struct CCIP_PERF_COUNTERS* pPerfCounter);
 
 END_NAMESPACE(AAL)
 
-#endif /* __AALKERNEL_CCIP_FME_DEF_H_ */
+#endif //__AALKERNEL_CCIP_PERFMON_DEF_H_

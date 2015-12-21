@@ -52,7 +52,7 @@
 #    define AALCLP_API __declspec(dllexport)
 # else
 #    define AALCLP_API __declspec(dllimport)
-# endif // FAPTRANS1_EXPORTS
+# endif // AALCLP_EXPORTS
 #else
 # define __declspec(x)
 # define AALCLP_API    __declspec(0)

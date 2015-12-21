@@ -3,9 +3,6 @@
 %1 %2\eds\AASEDSService.h.in %2\eds\AASEDSService.h @AASEDS_SVC_MOD@ libAASEDS
 %1 %2\registrar\AASRegistrarService.h.in %2\registrar\AASRegistrarService.h @AASREGISTRAR_SVC_MOD@ libAASRegistrar
 %1 %2\uaia\uAIAService.h.in %2\uaia\uAIAService.h @AASUAIA_SVC_MOD@ libAASUAIA
-%1 %2\faptrans\FAP10Service.h.in %2\faptrans\FAP10Service.h @FAPTRANS1_SVC_MOD@ libFAPTrans1
-%1 %2\faptrans\FAP20Service.h.in %2\faptrans\FAP20Service.h @FAPTRANS2_SVC_MOD@ libFAPTrans2
-%1 %2\faptrans\MAFUTransService.h.in %2\faptrans\MAFUTransService.h @MAFUTRANS_SVC_MOD@ libMAFUTrans
 %1 %2\aas\AALRuntimeModule.h.in %2\aas\AALRuntimeModule.h @AALRUNTIME_SVC_MOD@ libaalrt
 %1 %2\service\ALIAFUService.h.in %2\service\ALIAFUService.h @ALIAFU_SVC_MOD@ libALIAFU
 %1 %2\service\HWALIAFUService.h.in %2\service\HWALIAFUService.h @HWALIAFU_SVC_MOD@ libHWALIAFU

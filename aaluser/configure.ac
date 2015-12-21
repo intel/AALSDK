@@ -70,9 +70,6 @@ AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [0],[0],[0])
 AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRM],          [librrm],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS1],    [libFAPTrans1],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([FAPTRANS2],    [libFAPTrans2],    [0],[0],[0])
-AALSDK_LTLIB_VERSION([MAFUTRANS],    [libMAFUTrans],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
@@ -191,6 +188,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  clp/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
+                 utils/fpgadiag/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
