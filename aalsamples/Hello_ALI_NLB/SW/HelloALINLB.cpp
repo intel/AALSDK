@@ -150,7 +150,7 @@ public:
 
    void runtimeEvent(const IEvent &rEvent);
 
-   btBool isOK()  {return m_isOK;}
+   btBool isOK()  {return m_bIsOK;}
 
    // <end IRuntimeClient interface>
 protected:
@@ -161,7 +161,6 @@ protected:
    IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
    CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt          m_Result;            ///< Returned result value; 0 if success
-   btBool         m_isOK;
 
    // Workspace info
    btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
@@ -199,9 +198,7 @@ HelloALINLBApp::HelloALINLBApp() :
    m_InputSize(0),
    m_OutputVirt(NULL),
    m_OutputPhys(0),
-   m_OutputSize(0),
-   m_isOK(false)
-
+   m_OutputSize(0)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -226,13 +223,13 @@ HelloALINLBApp::HelloALINLBApp() :
 #endif
 
    // Start the Runtime and wait for the callback by sitting on the semaphore.
-   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_isOK appropriately.
+   //   the runtimeStarted() or runtimeStartFailed() callbacks should set m_bIsOK appropriately.
    if(!m_Runtime.start(configArgs)){
-      m_isOK = false;
+	   m_bIsOK = false;
       return;
    }
    m_Sem.Wait();
-
+   m_bIsOK = true;
 }
 
 /// @brief   Destructor
@@ -271,6 +268,7 @@ btInt HelloALINLBApp::run()
    // the AFUID to be passed to the Resource Manager. It will be used to locate the appropriate device.
    ConfigRecord.Add(keyRegAFU_ID,"C000C966-0D82-4272-9AEF-FE5F84570612");
 
+
    // indicate that this service needs to allocate an AIAService, too to talk to the HW
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
 
@@ -298,12 +296,12 @@ btInt HelloALINLBApp::run()
 
    // Allocate the Service and wait for it to complete by sitting on the
    //   semaphore. The serviceAllocated() callback will be called if successful.
-   //   If allocation fails the serviceAllocateFailed() should set m_isOK appropriately.
+   //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
    //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
    //    are collected.)
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
    m_Sem.Wait();
-   if(!m_isOK){
+   if(!m_bIsOK){
       ERR("Allocation failed\n");
       goto done_0;
    }
@@ -565,14 +563,14 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  void HelloALINLBApp::runtimeStarted( IRuntime            *pRuntime,
                                       const NamedValueSet &rConfigParms)
  {
-    m_isOK = true;
+    m_bIsOK = true;
     m_Sem.Post(1);
  }
 
  void HelloALINLBApp::runtimeStopped(IRuntime *pRuntime)
   {
      MSG("Runtime stopped");
-     m_isOK = false;
+     m_bIsOK = false;
      m_Sem.Post(1);
   }
 
@@ -585,7 +583,7 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
  void HelloALINLBApp::runtimeStopFailed(const IEvent &rEvent)
  {
      MSG("Runtime stop failed");
-     m_isOK = false;
+     m_bIsOK = false;
      m_Sem.Post(1);
  }
 
