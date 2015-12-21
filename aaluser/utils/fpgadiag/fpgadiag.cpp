@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file fpgadiag.cpp
 /// @brief Uses XL and IALIAFU to interact with ALI.
-/// @ingroup ALIapp
+/// @ingroup
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -644,10 +644,6 @@ int main(int argc, char *argv[])
 
    if ( (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_SWSIM)) ) {
-	  /********** Remove/Edit this when ase and/or swsim are supported ********/
-	  cout << FAIL << "No Support yet for ase and swsim. Please set --target=fpga and try again." << NORMAL << endl;
-	  return 0;
-	  /********** **************************************************** ********/
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;

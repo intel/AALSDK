@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2014, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file diag_trput.cpp
-// @brief NLB VAFU template application file.
+// @brief NLB trput test application file.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
