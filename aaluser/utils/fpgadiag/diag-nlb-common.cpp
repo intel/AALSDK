@@ -560,29 +560,18 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    fprintf(fp, "      <DEVICE>    = --device=D        OR --d=D,   where D is the Sub-device Number,               ");
    fprintf(fp, "Default is not set\n");
 
-   if ( 0 == strcasecmp(test.c_str(), "SW") ||
-		0 == strcasecmp(test.c_str(), "CCIP-SW")){
-	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
-			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1 );
-   } else{
-	   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
-			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
-   }
+   fprintf(fp, "      <BEGIN>     = --begin=B         OR --b=B,   where %llu <= B <= %5llu,                          ",
+		   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
+
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_BEGINCL) ) {
       fprintf(fp, "%llu\n", nlbcl->begincls);
    } else {
 	  fprintf(fp, "Default=%llu\n", nlbcl->defaults.begincls);
    }
 
-   if ( 0 == strcasecmp(test.c_str(), "SW")||
-		0 == strcasecmp(test.c_str(), "CCIP-SW")){
-	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
-              nlbcl->defaults.mincls, nlbcl->defaults.maxcls-1);
-   }
-   else{
-	   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
+   fprintf(fp, "      <END>       = --end=E           OR --e=E,   where %llu <= E <= %5llu,                          ",
 			   nlbcl->defaults.mincls, nlbcl->defaults.maxcls);
-   }
+
    if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL) ) {
       fprintf(fp, "%llu\n", nlbcl->endcls);
    } else {
