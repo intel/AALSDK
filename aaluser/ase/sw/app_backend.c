@@ -57,12 +57,11 @@ uint64_t *mmio_afu_vbase;
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
 
 // UMSG specific status & global indicators
-uint32_t *dsm_cirbstat;
-uint32_t num_umsg_log2;
-uint32_t num_umsg;
+/* uint32_t *dsm_cirbstat; */
+/* uint32_t num_umsg_log2; */
+/* uint32_t num_umsg; */
 uint32_t umas_exist_status = UMAS_NOT_ESTABLISHED;
-struct buffer_t *umas;
-uint32_t glbl_umsgmode_csr;
+/* uint32_t glbl_umsgmode_csr; */
 
 // Instances for SPL page table and context
 /* struct buffer_t *spl_pt; */
@@ -70,6 +69,9 @@ uint32_t glbl_umsgmode_csr;
 
 // CSR map storage
 struct buffer_t *mmio_region;
+
+// UMAS region
+struct buffer_t *umas_region;
 
 // Workspace metadata table
 struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL;
@@ -132,15 +134,17 @@ void session_init()
   printf("  [APP]  Initializing simulation session ... ");
   END_YELLOW_FONTCOLOR;
 
-  app2sim_tx         = mqueue_open(mq_array[0].name, mq_array[0].perm_flag);
-  app2sim_mmioreq_tx = mqueue_open(mq_array[1].name, mq_array[1].perm_flag);
-  app2sim_umsg_tx    = mqueue_open(mq_array[2].name, mq_array[2].perm_flag);
-  app2sim_simkill_tx = mqueue_open(mq_array[3].name, mq_array[3].perm_flag);
-  sim2app_rx         = mqueue_open(mq_array[4].name, mq_array[4].perm_flag);
-  sim2app_mmiorsp_rx = mqueue_open(mq_array[5].name, mq_array[5].perm_flag);
+  app2sim_tx          = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
+  app2sim_mmioreq_tx  = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
+  app2sim_umsg_tx     = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
+  app2sim_simkill_tx  = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
+  sim2app_rx          = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
+  sim2app_mmiorsp_rx  = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
+  app2sim_portctrl_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
+
   BEGIN_YELLOW_FONTCOLOR;
 
   // Session start
@@ -151,10 +155,18 @@ void session_init()
   printf("  [APP]  Creating MMIO region...\n");
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
-  mmio_region->is_mmiomap = 1;
+  mmio_region->is_mmiomap = 1;  
   allocate_buffer(mmio_region);
   mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
+
+  // Create UMSG region
+  printf("  [APP]  Creating UMAS region... ");
+  umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  umas_region->memsize = UMAS_LENGTH;
+  umas_region->is_umas = 1;
+  allocate_buffer(umas_region);
+  
 
   END_YELLOW_FONTCOLOR;
 
@@ -180,7 +192,7 @@ void session_deinit()
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Deallocating UMAS\n");
-      deallocate_buffer(umas);
+      deallocate_buffer(umas_region);
       END_YELLOW_FONTCOLOR;
     }
 
@@ -189,11 +201,9 @@ void session_deinit()
   END_YELLOW_FONTCOLOR;
 
   // Send SIMKILL
-  // #ifdef UNIFIED_FLOW
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
-  // #endif
   
   mqueue_close(app2sim_mmioreq_tx);
   mqueue_close(sim2app_mmiorsp_rx);
@@ -201,6 +211,7 @@ void session_deinit()
   mqueue_close(sim2app_rx);
   mqueue_close(app2sim_umsg_tx);
   mqueue_close(app2sim_simkill_tx);
+  mqueue_close(app2sim_portctrl_tx);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf(" DONE\n");
@@ -236,7 +247,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   memcpy(csr_data_str, &data, sizeof(uint32_t));
 
   uint32_t *mmio_vaddr;
-  mmio_vaddr = (uint32_t*)((uint64_t)mmio_region->vbase + offset);
+  mmio_vaddr = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
 
   // Prepare MMIO pkt
   mmio_pkt->type = MMIO_WRITE_REQ;
@@ -300,7 +311,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
   memcpy(csr_data_str, &data, sizeof(uint64_t));
 
   uint64_t *mmio_vaddr;
-  mmio_vaddr = (uint64_t*)((uint64_t)mmio_region->vbase + offset);
+  mmio_vaddr = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
 
   // ---------------------------------------------------
   // Form a csr_write message
@@ -505,15 +516,24 @@ void allocate_buffer(struct buffer_t *mem)
   // called "/csr", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
-  if(buffer_index_count == 0)
+  // if(buffer_index_count == 0)
+  if(mem->is_mmiomap == 1)
     /* if (mem->is_mmiomap == 1)  */
     {
       strcpy(mem->memname, "/mmio.");
       strcat(mem->memname, get_timestamp(0) );
-    #ifdef ASE_DEBUG
-      printf("  DEBUG memname => %s\n", mem->memname);
-    #endif      
+    /* #ifdef ASE_DEBUG */
+    /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
+    /* #endif       */
       /* mem->is_mmiomap = 1; */
+    }
+  else if (mem->is_umas == 1) 
+    {
+      strcpy(mem->memname, "/umas.");
+      strcat(mem->memname, get_timestamp(0) );
+    /* #ifdef ASE_DEBUG */
+    /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
+    /* #endif             */
     }
   else
     {
@@ -551,7 +571,7 @@ void allocate_buffer(struct buffer_t *mem)
     {
       mmio_afu_vbase = (uint64_t*)mem->vbase;
     #ifdef ASE_DEBUG
-      printf("  [APP]  ASE CSR virtual base = %p\n", mmio_afu_vbase);
+      printf("  [APP]  ASE MMIO virtual base = %p\n", mmio_afu_vbase);
     #endif
     }
 

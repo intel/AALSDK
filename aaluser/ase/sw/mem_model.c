@@ -38,53 +38,8 @@
 
 #include "ase_common.h"
 
-#if 0
-// Message queues opened by DPI
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_mmioreq_rx;    // CSR Write listener MQ in RX mode
-int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
-int app2sim_simkill_rx;   // Simkill listener in RX mode
-int sim2app_intr_tx;      // INTR message queue in TX mode
-#endif
-
 // '1' indicates that teardown is in progress
 int self_destruct_in_progress = 0;
-
-// FPGA offset aggregator
-// uint64_t fpga_membase_so_far = 0;
-
-
-// ---------------------------------------------------------------------
-// ase_mqueue_setup() : Set up DPI message queues
-// Set up app2sim_rx, sim2app_tx and app2sim_mmio_rx message queues
-// ---------------------------------------------------------------------
-#if 0
-void ase_mqueue_setup()
-{
-  FUNC_CALL_ENTRY;
-
-#if 0
-  mq_unlink(APP2SIM_SMQ_PREFIX);
-  mq_unlink(SIM2APP_SMQ_PREFIX);
-  mq_unlink(APP2SIM_CSR_WR_SMQ_PREFIX);
-  mq_unlink(APP2SIM_UMSG_SMQ_PREFIX);
-
-  // Depending on the calling function, activate the required queues
-  app2sim_rx         = mqueue_create(APP2SIM_SMQ_PREFIX,         O_CREAT|O_RDONLY );
-  sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
-  app2sim_mmio_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
-  app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
-#if 0
-  sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
-#endif
-  app2sim_simkill_rx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_CREAT|O_RDONLY );
-
-#endif
-
-  FUNC_CALL_EXIT;
-}
-#endif
 
 // ---------------------------------------------------------------------
 // ase_mqueue_teardown(): Teardown DPI message queues
@@ -104,6 +59,7 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_intr_tx);       
 #endif
   mqueue_close(app2sim_simkill_rx);
+  mqueue_close(app2sim_portctrl_rx);
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -121,13 +77,6 @@ void ase_perror_teardown()
 {
   FUNC_CALL_ENTRY;
 
-  // close the log file first, if exists
-/* #ifdef ASE_CCI_TRANSACTION_LOGGER  */
-/*   printf("SIM-C : Terminating log file !!\n"); */
-/*   fclose(ase_cci_log_fd); */
-/* #endif */
-
-  //printf("PERROR: Goodbye, Cruel World\n");
   self_destruct_in_progress++;
 
   if (!self_destruct_in_progress)

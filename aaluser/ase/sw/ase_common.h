@@ -82,14 +82,14 @@
 #define CL_BYTE_WIDTH        64
 #define SIZEOF_1GB_BYTES     (uint64_t)pow(1024, 3)
 
+// Size of page
+#define ASE_PAGESIZE   0x1000        // 4096 bytes
+#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
+
 // CSR memory map size
 // #define CSR_MAP_SIZE            64*1024
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
 #define MMIO_AFU_OFFSET            256*1024
-
-// Size of page
-#define ASE_PAGESIZE   0x1000        // 4096 bytes
-#define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
 
 /*
  * Unordered Message (UMSG) Address space
@@ -100,6 +100,9 @@
 /* #define ASE_CIRBSTAT_CSROFF            0x278  // CIRBSTAT */
 
 #define NUM_UMSG_PER_AFU               8
+
+// UMAS region
+#define UMAS_LENGTH                    NUM_UMSG_PER_AFU * ASE_PAGESIZE
 
 
 /* *******************************************************************************
@@ -230,15 +233,12 @@ struct wsmeta_t
 // Head and tail pointers of DPI side Linked list
 extern struct buffer_t *head;      // Head pointer
 extern struct buffer_t *end;       // Tail pointer
-// CSR fake physical base address
-// extern uint64_t csr_fake_pin;      // Setting up a pinned fake_paddr (contiguous)
+
 // DPI side CSR base, offsets updated on CSR writes
-// extern uint64_t *mmio_afu_vbase;      
-//uint64_t *mmio_afu_vbase;
 uint64_t *mmio_afu_vbase;  
     
 // Timestamp reference time
-extern struct timeval start;
+// extern struct timeval start;
 
 // ASE buffer valid/invalid indicator
 // When a buffer is 'allocated' successfully, it will be valid, when
@@ -352,6 +352,8 @@ extern "C" {
   void mmio_write64(uint32_t index, uint64_t data);
   void mmio_read32(uint32_t index, uint32_t *data);
   void mmio_read64(uint32_t index, uint64_t *data);
+  // Driver activity
+  void aal_portctrl(char *);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -372,7 +374,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  6
+#define ASE_MQ_INSTANCES  7
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -524,12 +526,14 @@ void rd_memline_dex( cci_pkt *pkt );
 void wr_memline_dex( cci_pkt *pkt );
 
 // MMIO request 
-// void mmio_dispatch(int init, int wren, int addr, long long data, int dwidth);
 void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 // MMIO Read response
 void mmio_response(struct mmio_t *mmio_pkt);
 
 // UMSG functions
+
+// PORT control functions
+
 // void ase_umsg_init();
 /* int umsg_listener(); */
 // void ase_umsg_init();
@@ -601,6 +605,7 @@ int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
+int app2sim_portctrl_rx;  // Port Control messages in Rx mode
 #else
 int app2sim_tx;           // app2sim mesaage queue in RX mode
 int sim2app_rx;           // sim2app mesaage queue in TX mode
@@ -608,6 +613,7 @@ int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
+int app2sim_portctrl_tx;  // Port Control message in TX mode 
 #endif // End SIM_SIDE
 
 

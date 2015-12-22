@@ -93,7 +93,7 @@ package ase_pkg;
    parameter CCIP_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
 
-   
+
    /* ***********************************************************
     * CCI-P headers
     * RxHdr, TxHdr, CCIP Packets
@@ -139,6 +139,18 @@ package ase_pkg;
       } MMIOHdr_t;
    parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
 
+   // Umsg header
+   typedef struct packed {
+      logic [1:0] rsvd_27_26;  // 27:26 // Reserved
+      logic 	  poison;      // 25    // Poison bit
+      logic [4:0] rsvd_24_20;  // 24:20 // Reserved
+      logic [3:0] resp_type;   // 19:16 // Response type
+      logic       umsg_type;   // 15    // Umsg type
+      logic [8:0] rsvd_14_6;   // 14:6  // Reserved
+      logic [5:0] umsg_id;     // 5:0   // Umsg Id
+   } UMsgHdr_t;
+   parameter CCIP_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
+
 
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
@@ -146,7 +158,7 @@ package ase_pkg;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
 
-   
+
    /*
     * TX header deconstruction
     */
@@ -223,7 +235,7 @@ package ase_pkg;
       longint 	  cl_addr;
       longint     qword[8];
       int 	  resp_en;
-      int 	  resp_channel;	  
+      int 	  resp_channel;
    } cci_pkt;
 
 
@@ -270,7 +282,7 @@ package ase_pkg;
     */
 
    // UMSG control states
-   typedef enum   {UMsg_Idle, UMsg_ChangeOccured, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
+   typedef enum   {UMsg_Idle, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
 		  UMsg_StateEnum;
 
    // UMSG control structure

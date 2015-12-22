@@ -166,6 +166,7 @@ module ccip_emulator
 
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
+   
    // Unordered message dispatch
    // export "DPI-C" task umsg_dispatch;
    // MMIO dispatch
@@ -581,28 +582,37 @@ module ccip_emulator
     *
     * *****************************************************************/
 
-   // parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
+   parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
 
-   // logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
-   // logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
-   // logic 		       umsgff_write;
-   // logic 		       umsgff_pop;
-   // logic 		       umsgff_read;
-   // logic 		       umsgff_valid;
-   // logic 		       umsgff_full;
-   // logic 		       umsgff_empty;
-   // logic 		       umsgff_overflow;
-   // logic 		       umsgff_underflow;
+   logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
+   logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
+   logic 		       umsgff_write;
+   logic 		       umsgff_pop;
+   logic 		       umsgff_read;
+   logic 		       umsgff_valid;
+   logic 		       umsgff_full;
+   logic 		       umsgff_empty;
+   logic 		       umsgff_overflow;
+   logic 		       umsgff_underflow;
 
-   // int 			       umsg_data_slot;
-   // int 			       umsg_hint_slot;
-   // int 			       umsg_data_slot_old = 255;
-   // int 			       umsg_hint_slot_old = 255;
-   // umsg_t                      umsg_array[`UMSG_MAX_MSG];
+   // UMSG dispatch function
+   // task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [CCIP_DATA_WIDTH-1:0] umsg_data_in);
+   //    int 			       umas_iter;
+   //    begin
+   // 	 if (init) begin
+   // 	    for (umas_iter = 0; umas_iter < `UMSG_MAX_MSG; umas_iter = umas_iter + 1) begin
+   // 	       umsg_array[ umas_iter ].data   <= `CCI_DATA_WIDTH'b0;
+   // 	    end
+   // 	 end
+   // 	 else begin
+   // 	    run_clocks(1);
+   // 	    umsg_array[umsg_id].data        = umsg_data_in;
+   // 	    umsg_array[umsg_id].hint_enable = hint_en;
+   // 	 end
+   //    end
+   // endtask
 
-   // logic [0:`UMSG_MAX_MSG-1]   umsgff_write_array;
-   // logic [0:`UMSG_MAX_MSG-1]   umsg_valid;
-
+   
 
    /* ******************************************************************
     *
