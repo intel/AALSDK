@@ -165,7 +165,7 @@ aaldev_release_device(struct device *pdev)
    }
 
    // Destroy the device
-   kosal_printk_level(KERN_INFO, "Destroying AFU Device.\n");
+   DPRINTF(AALBUS_DBG_MOD, "Destroying AFU Device.\n");
    aaldev_factp(AALbusp).destroy(paaldev);
 }
 
@@ -708,15 +708,15 @@ aaldev_remove(struct aal_device *pdev)
 {
    int ret = 1;
 
-   kosal_printk_level(KERN_INFO, "Removing device %p\n", pdev);
+   DPRINTF(AALBUS_DBG_MOD, "Removing device %p\n", pdev);
 
    if ( unlikely( !aaldev_valid(pdev) ) ) {
-      kosal_printk_level(KERN_ERR, "Invalid device %p\n", pdev);
+	   DPRINTF(AALBUS_DBG_MOD, "Invalid device %p\n", pdev);
       return 0;
    }
 
    if ( unlikely( kosal_sem_get_user_alertable(&pdev->m_sem) ) ) {
-      kosal_printk_level(KERN_ERR, "kosal_sem_get_user_alertable interrupted\n");
+	   DPRINTF(AALBUS_DBG_MOD, "kosal_sem_get_user_alertable interrupted\n");
       return 0;
    }
 
@@ -724,7 +724,7 @@ aaldev_remove(struct aal_device *pdev)
    //  Eventually this should be changed to notify owners
    //  via a status update event to remove
    if ( unlikely( 0 != pdev->m_numowners ) ) {
-      kosal_printk_level(KERN_ERR, "Non-zero owner count : %u\n", pdev->m_numowners);
+	   DPRINTF(AALBUS_DBG_MOD, "Non-zero owner count : %u\n", pdev->m_numowners);
       ret = 0;
       goto out;
    }
@@ -734,7 +734,7 @@ aaldev_remove(struct aal_device *pdev)
                                               krms_ccfgUpdate_DevRemoved,
                                               0);
 
-   kosal_printk_level(KERN_INFO, "Done removing %p\n", pdev);
+   DPRINTF(AALBUS_DBG_MOD, "Done removing %p\n", pdev);
 
 out:
    kosal_sem_put(&pdev->m_sem);

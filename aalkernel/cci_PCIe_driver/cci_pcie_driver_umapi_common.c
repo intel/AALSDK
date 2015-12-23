@@ -307,7 +307,6 @@ ccidrv_messageHandler( struct ccidrv_session  *psess,
       UIDRV_IOCTL_CASE(AALUID_IOCTL_GETMSG_DESC) {
          // Make sure there is a message to be had
          if ( _aal_q_empty(&psess->m_eventq) ) {
-            PERR("No Message available\n");
             PTRACEOUT_INT(-EAGAIN);
             return -EAGAIN;
          }
