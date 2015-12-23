@@ -284,13 +284,14 @@ package ase_pkg;
    
    // Umsg command packet
    typedef struct {
-      int 	  umsg_id;
+      int 	  id;
+      int 	  hint;
       longint 	  qword[8];	  
    } umsgcmd_t;
    
 
    // UMSG control states
-   typedef enum   {UMsg_Idle, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}
+   typedef enum   {UMsgIdle, UMsgHintWait, UMsgSendHint, UMsgDataWait, UMsgSendData}
 		  UMsg_StateEnum;
 
    // UMSG control structure
@@ -301,10 +302,10 @@ package ase_pkg;
       // logic [CCIP_DATA_WIDTH-1:0] 	 data_q;
       logic 				 line_accessed;
       logic 				 hint_enable;
-      logic 				 hint_timer_started;
+      // logic 				 hint_timer_start;
       logic 				 hint_ready;
       logic 				 hint_pop;
-      logic 				 data_timer_started;
+      // logic 				 data_timer_start;
       logic 				 data_ready;
       logic 				 data_pop;
       UMsg_StateEnum                     state;

@@ -24,21 +24,33 @@
 
 int main(int argc, char *argv[])
 {
-  int num_cl = 8;
+  int num_cl;
   if (argc > 1) 
     {
       num_cl = atoi( argv[1] );
     }
   else
     {
-      num_cl = 16;
+      num_cl = 4;
     }
   printf("Num CL = %d\n", num_cl);
 
   session_init();
 
-  ase_portctrl("AFU_RESET");
+  // Port control
+  ase_portctrl("AFU_RESET 0");
+  ase_portctrl("UMSG_MODE 63");
+  usleep(100);
+  ase_portctrl("AFU_RESET 1");
+
+  // Send umsg
+  uint64_t umsgdata;
   
+  umsgdata = 0xCAFEBABEDECAFBAD;
+  umsg_send (1, &umsgdata);
+  umsgdata = 0xBABABABADEDEDADE;
+  umsg_send (7, &umsgdata);
+
   struct buffer_t *dsm, *src, *dst;
   
   dsm = (struct buffer_t *)malloc(sizeof(struct buffer_t));

@@ -40,8 +40,8 @@ parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
  * LP_INITDONE_READINESS_LATENCY = Amount of time LP takes to be ready after reset is released 
  */
 
- `define UMSG_HINT2DATA_DELAY          40
- `define UMSG_NOHINT_DATADELAY         50
+ // `define UMSG_HINT2DATA_DELAY          40
+ // `define UMSG_NOHINT_DATADELAY         50
  `define UMSG_DELAY_TIMER_LOG2         8
  // `define UMSG_MAX_MSG_LOG2             5
  // `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2

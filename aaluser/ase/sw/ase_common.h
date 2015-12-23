@@ -459,6 +459,7 @@ typedef struct mmio_t {
  */
 typedef struct umsgcmd_t {
   int       id;
+  int       hint;
   long long qword[8];
 } umsgcmd_t;
 
@@ -532,7 +533,7 @@ void ase_config_parse(char*);
 // Simulation control function
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
-void afu_softreset_trig();
+void afu_softreset_trig( int value);
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );

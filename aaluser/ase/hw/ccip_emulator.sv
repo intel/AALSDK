@@ -57,14 +57,14 @@ module ccip_emulator
    output logic       vl_clk_LPdomain_32ui,
    output logic       vl_clk_LPdomain_16ui,
    output logic       ffs_LP16ui_afu_SoftReset_n,
-   // Power and error   
+   // Power and error
    output logic [1:0] ffs_LP16ui_afu_PwrState, // CCI-P AFU Power State
-   output logic       ffs_LP16ui_afu_Error, // CCI-P Protocol Error Detected   
+   output logic       ffs_LP16ui_afu_Error, // CCI-P Protocol Error Detected
    // Data ports
    input 	      t_if_ccip_Tx ffs_LP16ui_sTxData_afu,
    output 	      t_if_ccip_Rx ffs_LP16ui_sRxData_afu
    );
-   
+
    // Power and error state
    assign ffs_LP16ui_afu_PwrState = 2'b0;
    assign ffs_LP16ui_afu_Error = 1'b0;
@@ -166,9 +166,10 @@ module ccip_emulator
 
    // ASE config data exchange (read from ase.cfg)
    export "DPI-C" task ase_config_dex;
-   
+
    // Unordered message dispatch
-   // export "DPI-C" task umsg_dispatch;
+   export "DPI-C" task umsg_dispatch;
+
    // MMIO dispatch
    export "DPI-C" task mmio_dispatch;
 
@@ -194,11 +195,11 @@ module ccip_emulator
 
    // Software controlled process - Run AFU Reset
    export "DPI-C" task afu_softreset_trig;
-   
+
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
-      
-   
+
+
    // Scope generator
    // initial ccip_emulator_scope_function();
    initial scope_function();
@@ -284,12 +285,13 @@ module ccip_emulator
    typedef enum 		  {
 				   RxIdle,
 				   RxMMIOForward,
+				   RxUMsgForward,
 				   RxReadResp,
 				   RxWriteResp
-				   } RxOutState;		 
+				   } RxOutState;
    RxOutState rx0_state;
    RxOutState rx1_state;
-   
+
    /*
     * Clock process: Operates the CAFU clock
     */
@@ -323,20 +325,20 @@ module ccip_emulator
    logic 			  sw_reset_trig ;
 
    // AFU Soft Reset Trigger
-   task afu_softreset_trig();
+   task afu_softreset_trig( int value );
       begin
-	 $display("SIM-SV: Issuing AFU Reset");	 
-	 sw_reset_trig = 0;
-	 run_clocks(`SOFT_RESET_DURATION);
-	 sw_reset_trig = 1;	 
+	 // $display("SIM-SV: Issuing AFU Reset");
+	 sw_reset_trig = value;
+	 // run_clocks(`SOFT_RESET_DURATION);
+	 // sw_reset_trig = 1;
       end
    endtask
 
-   
+
    /*
     * AFU reset - software & system resets
     */
-   // 
+   //
    //       0        |     0               0     | Initial reset
    //       0        |     0               1     |
    //       0        |     1               0     |
@@ -364,8 +366,8 @@ module ccip_emulator
     * Buffer message injection into ccip_logger
     * ---------------------------------------------------------------------------
     * Task sets buffer message to be posted into ccip_transactions.tsv log
-    * 
-    * ***************************************************************************/ 
+    *
+    * ***************************************************************************/
    string buffer_msg;
    logic  buffer_msg_en;
 
@@ -373,14 +375,14 @@ module ccip_emulator
    task buffer_msg_inject (string logstr);
       begin
 	 buffer_msg = logstr;
-	 buffer_msg_en = 1;	 
+	 buffer_msg_en = 1;
 	 @(posedge clk);
-	 buffer_msg_en = 0;	 
-	 @(posedge clk);	 
+	 buffer_msg_en = 0;
+	 @(posedge clk);
       end
    endtask
-   
-   
+
+
    /* ******************************************************************
     * DUMMY BLOCK
     *
@@ -579,7 +581,7 @@ module ccip_emulator
 	    mmio_resp_pkt.qword[4] = 0;
 	    mmio_resp_pkt.qword[5] = 0;
 	    mmio_resp_pkt.qword[6] = 0;
-	    mmio_resp_pkt.qword[7] = 0;	    
+	    mmio_resp_pkt.qword[7] = 0;
    	    mmio_response ( mmio_resp_pkt );
    	 end
    	 else begin
@@ -599,53 +601,253 @@ module ccip_emulator
 
    parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
 
-   logic [UMSG_FIFO_WIDTH-1:0] umsgfifo_din;
-   logic [UMSG_FIFO_WIDTH-1:0] umsgfifo_dout;
+   UMsgHdr_t                   umsgfifo_hdr_in;
+   logic [CCIP_DATA_WIDTH-1:0] umsgfifo_data_in;
+
+   logic [CCIP_DATA_WIDTH-1:0]     umsgfifo_data_out;
+   logic [CCIP_UMSG_HDR_WIDTH-1:0] umsgfifo_hdrvec_out;
+//   UMsgHdr_t                       umsgfifo_hdr_out;
+
    logic 		       umsgfifo_write;
-   logic 		       umsgfifo_pop;
+//   logic 		       umsgfifo_pop;
    logic 		       umsgfifo_read;
    logic 		       umsgfifo_valid;
    logic 		       umsgfifo_full;
    logic 		       umsgfifo_empty;
-   logic 		       umsgfifo_overflow;
-   logic 		       umsgfifo_underflow;
+   // logic 		       umsgfifo_overflow;
+   // logic 		       umsgfifo_underflow;
 
    // Data store
    logic [CCIP_DATA_WIDTH-1:0] umsg_latest_data_array [0:NUM_UMSG_PER_AFU-1];
-      
+
+   // Umsg engine
+   umsg_t umsg_array[NUM_UMSG_PER_AFU];
+
    // UMSG dispatch function
-   // task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [CCIP_DATA_WIDTH-1:0] umsg_data_in);
-   //    int 			       umas_iter;
-   //    begin
-   // 	 if (init) begin
-   // 	    for (umas_iter = 0; umas_iter < `UMSG_MAX_MSG; umas_iter = umas_iter + 1) begin
-   // 	       umsg_array[ umas_iter ].data   <= `CCI_DATA_WIDTH'b0;
-   // 	    end
-   // 	 end
-   // 	 else begin
-   // 	    run_clocks(1);
-   // 	    umsg_array[umsg_id].data        = umsg_data_in;
-   // 	    umsg_array[umsg_id].hint_enable = hint_en;
-   // 	 end
-   //    end
-   // endtask
    task umsg_dispatch (int init, umsgcmd_t umsg_pkt);
-      int umas_i;      
+      int ii;
       begin
 	 if (init) begin
-   	    for (umas_i = 0; umas_i < NUM_UMSG_PER_AFU; umas_i = umas_i + 1) begin
-   	       umsg_latest_data_array[umas_i]  <= {CCIP_DATA_WIDTH{1'b0}};
-   	    end	    
+   	    for (ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1) begin
+   	       umsg_latest_data_array[ii]   <= {CCIP_DATA_WIDTH{1'b0}};
+	       umsg_array[ii].line_accessed <= 0;
+	       umsg_array[ii].hint_enable   <= 0;
+   	    end
 	 end
 	 else begin
-	    
+	    umsg_array[ umsg_pkt.id ].line_accessed = 1;
+	    umsg_array[ umsg_pkt.id ].hint_enable   = umsg_pkt.hint;
+	    umsg_latest_data_array[umsg_pkt.id][  63:00  ] = umsg_pkt.qword[0] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 127:64  ] = umsg_pkt.qword[1] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 191:128 ] = umsg_pkt.qword[2] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 255:192 ] = umsg_pkt.qword[3] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 319:256 ] = umsg_pkt.qword[4] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 383:320 ] = umsg_pkt.qword[5] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 447:384 ] = umsg_pkt.qword[6] ;
+	    umsg_latest_data_array[umsg_pkt.id][ 511:448 ] = umsg_pkt.qword[7] ;
+	    run_clocks(1);
+	    umsg_array[ umsg_pkt.id ].line_accessed = 0;
 	 end
       end
    endtask
 
-   
+   // Umsg slot/hint selector
+   int 			       umsg_data_slot;
+   int 			       umsg_hint_slot;
+   int 			       umsg_data_slot_old = 255;
+   int 			       umsg_hint_slot_old = 255;
+
+   // UMSG Hint-to-Data time emulator (toaster style)
+   // New Umsg hints to same location are ignored
+   // If Data is same, hints dont get generated
+   genvar ii;
+   generate
+      for ( ii = 0; ii < NUM_UMSG_PER_AFU; ii = ii + 1 ) begin : umsg_engine
+
+	 // State machine
+	 always @(posedge clk) begin
+	    if (~sys_reset_n) begin
+	       umsg_array[ii].hint_timer <= 0;
+	       umsg_array[ii].data_timer <= 0;
+	       umsg_array[ii].hint_ready <= 0;
+	       umsg_array[ii].data_ready <= 0;
+	       umsg_array[ii].state      <= UMsgIdle;
+	    end
+	    else begin
+	       case (umsg_array[ii].state)
+		 // Wait here until activated
+		 UMsgIdle:
+		   begin
+		      umsg_array[ii].hint_ready <= 0;
+		      umsg_array[ii].data_ready <= 0;
+		      if (umsg_array[ii].line_accessed && umsg_array[ii].hint_enable) begin
+			 umsg_array[ii].hint_timer <= $urandom_range(`UMSG_START2HINT_LATRANGE);
+			 umsg_array[ii].data_timer <= 0;
+			 umsg_array[ii].state      <= UMsgHintWait;
+		      end
+		      else if (umsg_array[ii].line_accessed && ~umsg_array[ii].hint_enable) begin
+			 umsg_array[ii].hint_timer <= 0;
+		 	 umsg_array[ii].data_timer <= $urandom_range(`UMSG_START2DATA_LATRANGE);
+			 umsg_array[ii].state      <= UMsgDataWait;
+		      end
+		      else begin
+			 umsg_array[ii].hint_timer <= 0;
+			 umsg_array[ii].data_timer <= 0;
+			 umsg_array[ii].state      <= UMsgIdle;
+		      end
+		   end
+
+		 // Wait to send out hint, go to UMsgSendHint after t_hint ticks
+		 UMsgHintWait:
+		   begin
+		      if (umsg_array[ii].hint_timer <= 0) begin
+			 umsg_array[ii].hint_ready <= 1;
+			 umsg_array[ii].state      <= UMsgSendHint;
+		      end
+		      else begin
+			 umsg_array[ii].hint_ready <= 0;
+			 umsg_array[ii].hint_timer <= umsg_array[ii].hint_timer - 1;
+			 umsg_array[ii].state      <= UMsgHintWait;
+		      end
+		   end
+
+		 // Wait until hint popped by event queue
+		 UMsgSendHint:
+		   begin
+		      umsg_array[ii].hint_ready    <= 1;
+		      if (umsg_array[ii].hint_pop) begin
+			 umsg_array[ii].data_timer <= $urandom_range(`UMSG_HINT2DATA_LATRANGE);
+			 umsg_array[ii].state      <= UMsgDataWait;
+		      end
+		      else begin
+			 umsg_array[ii].data_timer <= 0;
+			 umsg_array[ii].state      <= UMsgSendHint;
+		      end
+		   end
+
+		 // Wait to send out data, go to UMsgSendData after t_data ticks
+		 UMsgDataWait:
+		   begin
+		      if (umsg_array[ii].data_timer <= 0) begin
+			 umsg_array[ii].data_ready <= 1;
+			 umsg_array[ii].state      <= UMsgSendData;
+		      end
+		      else begin
+			 umsg_array[ii].data_ready <= 0;
+			 umsg_array[ii].data_timer <= umsg_array[ii].data_timer - 1;
+			 umsg_array[ii].state      <= UMsgDataWait;
+		      end
+		   end
+
+		 // Wait until popped by event queue
+		 UMsgSendData:
+		   begin
+		      umsg_array[ii].data_ready <= 1;
+		      if (umsg_array[ii].data_pop) begin
+			 umsg_array[ii].state <= UMsgIdle;
+		      end
+		      else begin
+			 umsg_array[ii].state <= UMsgSendData;
+		      end
+		   end
+
+		 // lala-land
+		 default:
+		   begin
+		      umsg_array[ii].hint_timer <= 0;
+		      umsg_array[ii].data_timer <= 0;
+		      umsg_array[ii].hint_ready <= 0;
+		      umsg_array[ii].data_ready <= 0;
+		      umsg_array[ii].state      <= UMsgIdle;
+		   end
+	       endcase
+	    end
+	 end
+
+      end
+   endgenerate
+
+
+   // Find UMSG Hintable slot
+   function int find_umsg_hint ();
+      int ret_hint_slot;
+      int slot;
+      int start_iter;
+      int end_iter;
+      begin
+	 start_iter = 0;
+	 end_iter   = start_iter + NUM_UMSG_PER_AFU;
+   	 ret_hint_slot = 255;
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
+   	    if (umsg_array[slot].hint_ready && ~umsg_array[slot].data_ready) begin
+   	       ret_hint_slot = slot;
+	       umsg_hint_slot_old = ret_hint_slot;
+   	       break;
+   	    end
+   	 end
+   	 return ret_hint_slot;
+      end
+   endfunction
+
+   // Find UMSG Data slot to send
+   function int find_umsg_data();
+      int ret_data_slot;
+      int slot;
+      int start_iter;
+      int end_iter;
+      begin
+	 start_iter = 0;
+	 end_iter   = start_iter + NUM_UMSG_PER_AFU;
+   	 ret_data_slot = 255;
+   	 for (slot = start_iter ; slot < end_iter ; slot = slot + 1) begin
+   	    if (umsg_array[slot].data_ready) begin
+   	       ret_data_slot = slot;
+	       umsg_data_slot_old = ret_data_slot;
+   	       break;
+   	    end
+   	 end
+   	 return ret_data_slot;
+      end
+   endfunction
+
+   // Calculate slots for UMSGs
+   always @(posedge clk) begin : umsg_slot_finder_proc
+      umsg_data_slot = find_umsg_data();
+      umsg_hint_slot = find_umsg_hint();
+   end
+
+   // Pop HINT/DATA
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 umsgfifo_hdr_in    <= {CCIP_UMSG_HDR_WIDTH{1'b0}};
+	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
+	 umsgfifo_write     <= 0;
+      end
+      else begin
+	 if (~umsgfifo_empty && (umsg_hint_slot != 255)) begin
+	    umsgfifo_hdr_in.poison    <= 1'b0;
+	    umsgfifo_hdr_in.resp_type <= CCIP_RX0_UMSG;
+	    umsgfifo_hdr_in.umsg_type <= 1'b1;
+	    umsgfifo_hdr_in.umsg_id   <= umsg_hint_slot;
+	    umsgfifo_data_in          <= {CCIP_DATA_WIDTH{1'b0}};
+	    umsgfifo_write            <= 1'b1;
+	 end
+	 else if (~umsgfifo_empty && (umsg_data_slot != 255)) begin
+	    umsgfifo_hdr_in.poison    <= 1'b0;
+	    umsgfifo_hdr_in.resp_type <= CCIP_RX0_UMSG;
+	    umsgfifo_hdr_in.umsg_type <= 1'b0;
+	    umsgfifo_hdr_in.umsg_id   <= umsg_data_slot;
+	    umsgfifo_data_in          <= umsg_latest_data_array[umsg_data_slot];
+	    umsgfifo_write            <= 1'b1;
+	 end
+	 else begin
+	    umsgfifo_write <= 1'b0;
+	 end
+      end
+   end
+
    // UMSG events queue
-   ase_fifo 
+   ase_fifo
      #(
        .DATA_WIDTH     (UMSG_FIFO_WIDTH),
        .DEPTH_BASE2    (4),
@@ -656,10 +858,10 @@ module ccip_emulator
       .clk        ( clk ),
       .rst        ( ~sys_reset_n ),
       .wr_en      ( umsgfifo_write ),
-      .data_in    ( umsgfifo_din ),
+      .data_in    ( { CCIP_UMSG_HDR_WIDTH'(umsgfifo_hdr_in), umsgfifo_data_in} ),
       .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
-      .data_out   ( umsgfifo_dout ),
-      .data_out_v ( umsgfifo_valid ),
+      .data_out   ( { umsgfifo_hdrvec_out, umsgfifo_data_out} ),
+      .data_out_v (  ),
       .alm_full   ( mmiofifo_full ),
       .full       (  ),
       .empty      ( umsgfifo_empty ),
@@ -667,8 +869,10 @@ module ccip_emulator
       .overflow   (  ),
       .underflow  (  )
       );
-   
-     
+
+   //   assign umsgfifo_hdr_out = UmsgHdr_t'(umsgfifo_hdrvec_out);
+
+
    /* ******************************************************************
     *
     * Config data exchange - Supplied by ase.cfg
@@ -692,9 +896,9 @@ module ccip_emulator
 
    /* ******************************************************************
     * Count transactions
-    * Live count of transactions to be printed at end of simulation 
-    * 
-    * ******************************************************************/ 
+    * Live count of transactions to be printed at end of simulation
+    *
+    * ******************************************************************/
    int ase_rx0_mmiowrreq_cnt ;
    int ase_rx0_mmiordreq_cnt ;
    int ase_tx2_mmiordrsp_cnt ;
@@ -723,11 +927,11 @@ module ccip_emulator
 	 ase_rx0_umsgdata_cnt <= 0 ;
       end
       else begin
-	 if (C0RxMMIOWrValid) 
+	 if (C0RxMMIOWrValid)
 	   ase_rx0_mmiowrreq_cnt = ase_rx0_mmiowrreq_cnt + 1;
-	 if (C0RxMMIORdValid) 
+	 if (C0RxMMIORdValid)
 	   ase_rx0_mmiordreq_cnt = ase_rx0_mmiordreq_cnt + 1;
-	 if (C2TxMMIORdValid) 
+	 if (C2TxMMIORdValid)
 	   ase_tx2_mmiordrsp_cnt = ase_tx2_mmiordrsp_cnt + 1;
 	 if (C0TxRdValid)
 	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + 1;
@@ -740,10 +944,10 @@ module ccip_emulator
 	 if (C1RxWrValid)
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == CCIP_TX1_WRFENCE))
-	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;	 
+	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
       end
    end
-   
+
 
    /* ******************************************************************
     *
@@ -859,7 +1063,7 @@ module ccip_emulator
    logic Tx1toRx0_pkt_vld;
    logic Tx1toRx1_pkt_vld;
 
-   
+
    /*
     * FUNCTION: Cast TxHdr_t to cci_pkt
     */
@@ -871,7 +1075,7 @@ module ccip_emulator
 	 // Write enable
 	 pkt.write_en = int'(write_en);
 	 // Metadata
-	 pkt.vc       = int'(txhdr.vc);	 
+	 pkt.vc       = int'(txhdr.vc);
 	 pkt.mdata    = int'(txhdr.mdata);
 	 // cache line address
 	 pkt.cl_addr  = longint'(txhdr.addr);
@@ -888,15 +1092,15 @@ module ccip_emulator
 	 pkt.resp_en  = 0;
 	 // Response channel
 	 if (write_en) begin
-	    pkt.resp_channel = wrresp_tx2rx_chsel();	    
+	    pkt.resp_channel = wrresp_tx2rx_chsel();
 	 end
 	 else begin
-	    pkt.resp_channel = 0;	    
+	    pkt.resp_channel = 0;
 	 end
       end
    endfunction
 
-   
+
    // rdreq/wrreq checker
    logic rdreq_flag;
    logic wrreq_flag;
@@ -1066,7 +1270,7 @@ module ccip_emulator
       .count            ( cf2as_latbuf_ch1_count )
       );
 
-   
+
    assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
    assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
@@ -1079,13 +1283,13 @@ module ccip_emulator
 	 return (abs_val($random) % 2);
       end
    endfunction
-   
+
    // TX1 fulfillment flow
    always @(posedge clk) begin
       if (~sys_reset_n) begin
 	 cf2as_latbuf_ch1_read <= 0;
 	 Tx1toRx0_pkt_vld <= 0;
-	 Tx1toRx1_pkt_vld <= 0;	 
+	 Tx1toRx1_pkt_vld <= 0;
       end
       else if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full && wrreq_flag) begin
 	 cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty;
@@ -1094,22 +1298,22 @@ module ccip_emulator
 	 if ((Tx1toRx1_pkt.resp_channel == 0) && cf2as_latbuf_ch1_valid ) begin
 	    wr_memline_dex(Tx1toRx0_pkt);
 	    Tx1toRx0_pkt_vld <= 1;
-	    Tx1toRx1_pkt_vld <= 0;	 
+	    Tx1toRx1_pkt_vld <= 0;
 	 end
 	 else if ((Tx1toRx1_pkt.resp_channel == 1) && cf2as_latbuf_ch1_valid ) begin
-	    wr_memline_dex(Tx1toRx1_pkt);    
+	    wr_memline_dex(Tx1toRx1_pkt);
 	    Tx1toRx0_pkt_vld <= 0;
-	    Tx1toRx1_pkt_vld <= 1;	 
+	    Tx1toRx1_pkt_vld <= 1;
 	 end
       end
       else begin
 	 cf2as_latbuf_ch1_read <= 0;
 	 Tx1toRx0_pkt_vld <= 0;
-	 Tx1toRx1_pkt_vld <= 0;	 
+	 Tx1toRx1_pkt_vld <= 0;
       end
    end
-   
-   
+
+
    // Stage 2 - Tx1toRx0 write process
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1270,7 +1474,7 @@ module ccip_emulator
     *   When response is seen in as2cf_wrresp_fifo & tx2rx_chsel == 0, it
     *   is forwarded to CCIP-RX0
     *
-    * *******************************************************************/  
+    * *******************************************************************/
    // Output channel
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1281,10 +1485,11 @@ module ccip_emulator
    	 C0RxUMsgValid   <= 1'b0;
    	 C0RxHdr         <= RxHdr_t'({CCIP_RX_HDR_WIDTH{1'b0}});
    	 C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
+	 umsgfifo_read   <= 1'b0;
    	 mmioreq_read    <= 1'b0;
    	 rdrsp_read      <= 1'b0;
    	 wr0rsp_read     <= 1'b0;
-	 rx0_state       <= RxIdle;	 
+	 rx0_state       <= RxIdle;
       end
       else begin
 	 case (rx0_state)
@@ -1295,24 +1500,28 @@ module ccip_emulator
 		C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
+		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
-		   mmioreq_read    <= ~mmioreq_empty;	    
-		   rx0_state <= RxMMIOForward;		   
+		   mmioreq_read    <= ~mmioreq_empty;
+		   rx0_state <= RxMMIOForward;
+		end
+		else if (~umsgfifo_empty) begin
+		   rx0_state <= RxUMsgForward;
 		end
 		else if (~rdrsp_empty) begin
-		   rx0_state <= RxReadResp;		   
+		   rx0_state <= RxReadResp;
 		end
 		else if (~wr0rsp_empty) begin
-		   rx0_state <= RxWriteResp;		     
+		   rx0_state <= RxWriteResp;
 		end
 		else begin
-		   rx0_state <= RxIdle;		   
+		   rx0_state <= RxIdle;
 		end
 	     end
-	   
+
 	   RxMMIOForward:
 	     begin
 		C0RxMMIOWrValid <= mmio_wrvalid && mmioreq_valid;
@@ -1322,18 +1531,39 @@ module ccip_emulator
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
 		C0RxData        <= mmio_data512;
-		// mmioreq_read    <= ~mmioreq_empty;	    
-		mmioreq_read    <= 1'b0;		
+		umsgfifo_read   <= 1'b0;
+		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
-		   rx0_state <= RxMMIOForward;		   
+		   rx0_state <= RxMMIOForward;
 		end
 		else begin
-		   rx0_state <= RxIdle;		   
+		   rx0_state <= RxIdle;
 		end
 	     end
-	   
+
+	   RxUMsgForward:
+	     begin
+		C0RxMMIOWrValid <= 1'b0;
+		C0RxMMIORdValid <= 1'b0;
+		C0RxWrValid     <= 1'b0;
+		C0RxRdValid     <= 1'b0;
+		C0RxUMsgValid   <= 1'b1;
+		C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);
+		C0RxData        <= umsgfifo_data_out;
+		umsgfifo_read   <= 1'b1;
+		mmioreq_read    <= 1'b0;
+		rdrsp_read      <= 1'b0;
+		wr0rsp_read     <= 1'b0;
+		if (~umsgfifo_empty) begin
+		   rx0_state <= RxUMsgForward;
+		end
+		else begin
+		   rx0_state <= RxIdle;
+		end
+	     end
+
 	   RxReadResp:
 	     begin
 		C0RxMMIOWrValid <= 1'b0;
@@ -1343,17 +1573,18 @@ module ccip_emulator
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= rdrsp_hdr_out;
 		C0RxData        <= rdrsp_data_out;
+		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= ~rdrsp_empty;
 		wr0rsp_read     <= 1'b0;
 		if (~rdrsp_empty) begin
-		   rx0_state <= RxReadResp;		   
+		   rx0_state <= RxReadResp;
 		end
 		else begin
-		   rx0_state <= RxIdle;		   
+		   rx0_state <= RxIdle;
 		end
 	     end
-	   
+
 	   RxWriteResp:
 	     begin
 		C0RxMMIOWrValid <= 1'b0;
@@ -1363,17 +1594,18 @@ module ccip_emulator
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= wr0rsp_hdr_out;
 		C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
+		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= ~wr0rsp_empty;
 		if (~wr0rsp_empty) begin
-		   rx0_state <= RxWriteResp;		   
+		   rx0_state <= RxWriteResp;
 		end
 		else begin
-		   rx0_state <= RxIdle;		   
+		   rx0_state <= RxIdle;
 		end
 	     end
-	   
+
 	   default:
 	     begin
 		C0RxMMIOWrValid <= 1'b0;
@@ -1381,16 +1613,17 @@ module ccip_emulator
 		C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
+		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
 		wr0rsp_read     <= 1'b0;
-		rx0_state       <= RxIdle;		
+		rx0_state       <= RxIdle;
 	     end
-	   
+
 	 endcase
       end
    end // always @ (posedge clk)
-   
+
 
    /* *******************************************************************
     * RX1 Channel management
@@ -1406,7 +1639,7 @@ module ccip_emulator
 	 C1RxWrValid <= 1'b0;
 	 C1RxIntrValid <= 1'b0;
 	 wr1rsp_read <= 1'b0;
-	 rx1_state <= RxIdle;	 
+	 rx1_state <= RxIdle;
       end
       else begin
 	 case (rx1_state)
@@ -1416,13 +1649,13 @@ module ccip_emulator
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
 		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;		   
+		   rx1_state <= RxWriteResp;
 		end
 		else begin
-		   rx1_state <= RxIdle;		   
+		   rx1_state <= RxIdle;
 		end
 	     end
-	   
+
 	   RxWriteResp:
 	     begin
       		C1RxHdr       <= wr1rsp_hdr_out;
@@ -1430,13 +1663,13 @@ module ccip_emulator
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= ~wr1rsp_empty;
 		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;		   
+		   rx1_state <= RxWriteResp;
 		end
 		else begin
-		   rx1_state <= RxIdle;		   
+		   rx1_state <= RxIdle;
 		end
 	     end
-	   
+
 	   default:
 	     begin
       		C1RxWrValid   <= 1'b0;
@@ -1444,9 +1677,9 @@ module ccip_emulator
       		wr1rsp_read   <= 1'b0;
 		rx1_state     <= RxIdle;
 	     end
-	   
+
 	 endcase
-      end     
+      end
    end
 
 
@@ -1534,9 +1767,8 @@ module ccip_emulator
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
-      // afu_softreset_trig();
-      sw_reset_trig = 0;
-                  
+      umsg_dispatch (1, '{0, 0, '{0,0,0,0,0,0,0,0}});
+
       // Globally write CONFIG, SCRIPT paths
       if (config_filepath.len() != 0) begin
 	 sv2c_config_dex(config_filepath);
@@ -1551,9 +1783,10 @@ module ccip_emulator
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
       sys_reset_n = 0;
+      sw_reset_trig = 0;
       #100ns;
       sys_reset_n = 1;
-      sw_reset_trig = 1;      
+      sw_reset_trig = 1;
       #100ns;
 
       // Setting up CA-private memory

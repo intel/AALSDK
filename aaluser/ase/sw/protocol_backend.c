@@ -42,6 +42,9 @@
 // Keeps tabs of how many session_deinits were received
 int glbl_test_cmplt_cnt;
 
+// Global umsg mode, lookup before issuing UMSG
+int glbl_umsgmode;
+
 /*
  * Generate scope data
  */
@@ -303,14 +306,14 @@ int ase_listener()
   if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
       memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t));
-#ifdef ASE_DEBUG
-      printf("  [DEBUG]  mmio_pkt => %x %d %x %llx %d\n", 
-	     mmio_pkt->type,
-	     mmio_pkt->width,
-	     mmio_pkt->addr,
-	     mmio_pkt->qword[0],
-	     mmio_pkt->resp_en);
-#endif
+/* #ifdef ASE_DEBUG */
+/*       printf("  [DEBUG]  mmio_pkt => %x %d %x %llx %d\n",  */
+/* 	     mmio_pkt->type, */
+/* 	     mmio_pkt->width, */
+/* 	     mmio_pkt->addr, */
+/* 	     mmio_pkt->qword[0], */
+/* 	     mmio_pkt->resp_en); */
+/* #endif */
       mmio_dispatch (0, mmio_pkt);
 
       // *FIXME*: Synchronizer must go here... TEST CODE
@@ -332,31 +335,54 @@ int ase_listener()
   if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr) == ASE_MSG_PRESENT)
     {
       memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
+
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]);
+      END_YELLOW_FONTCOLOR;
+    #endif
+      // Hint trigger
+      umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;      
+      umsg_dispatch(0, umsg_pkt);
     }
 
 
   /*
    * Port Control message
+   * Format: <cmd> <value>
+   * -----------------------------------------------------------------
+   * Supported commands
+   * AFU_RESET  <0,1> 
+   * UMSG_MODE  <8-bit mask>
+   *
    */ 
   char *pch;
-  char portctrl_str[ASE_MQ_MSGSIZE];
-  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_str) == ASE_MSG_PRESENT) 
+  char portctrl_msgstr[ASE_MQ_MSGSIZE];
+  int portctrl_value;
+
+  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT) 
     {
-      pch = strtok(portctrl_str, " ");
+      pch = strtok(portctrl_msgstr, " ");
       if ( memcmp(pch, "AFU_RESET", 9) == 0) 
 	{
-        #ifdef ASE_DEBUG
-	  printf("  [DEBUG]  AFU Reset requested\n");
-        #endif
-	  // Soft Reset trigger here
-	  afu_softreset_trig();
+	  pch = strtok(NULL, " ");
+	  portctrl_value = (atoi(pch) != 0) ? 1 : 0 ;
+	  // Soft Reset trigger here	  
+	  afu_softreset_trig ( portctrl_value ); 
+	  printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
 	}
       else if ( memcmp(pch, "UMSG_MODE", 9) == 0)
 	{
-        #ifdef ASE_DEBUG
-	  printf("  [DEBUG]  UMsgMode set\n");
-        #endif
 	  // Umsg mode setting here
+	  pch = strtok(NULL, " ");
+	  glbl_umsgmode = atoi(pch) & 0xFF;
+	  printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode); 
+	}
+      else 
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("SIM-C : Undefined Port Control function ... IGNORING\n");
+	  END_RED_FONTCOLOR;
 	}
     }
   
@@ -721,35 +747,6 @@ void start_simkill_countdown()
   FUNC_CALL_EXIT;
 }
 
-
-/*
- * ase_umsg_init : SIM_SIDE UMSG setup
- *                 Set up CSR addresses to indicate existance
- *                 and features of the UMSG system
- */
-#if 0
-void ase_umsg_init(uint64_t dsm_base)
-{
-  FUNC_CALL_ENTRY;
-
-  uint32_t *cirbstat;
-
-  printf ("SIM-C : Enabling UMSG subsystem in ASE...\n");
-
-  // Calculate CIRBSTAT address
-  cirbstat = (uint32_t*)((uint64_t)(dsm_base + ASE_CIRBSTAT_CSROFF));
-
-  // CIRBSTAT setup (completed / ready)
-  *cirbstat = cfg->num_umsg_log2 << 4 | 0x1 << 0;
-#ifdef ASE_DEBUG
-  printf ("        DSM base      = %p\n", (void*)dsm_base);
-  printf ("        CIRBSTAT addr = %p\n", (void*)cirbstat);
-  printf ("        *cirbstat     = %08x\n", *cirbstat);
-#endif
-
-  FUNC_CALL_EXIT;
-}
-#endif
 
 /*
  * Parse strings and remove unnecessary characters

@@ -820,14 +820,14 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   umsgcmd_t *umsg_pkt;
     
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
+  memset((char*)umsg_pkt, '\0', sizeof(struct umsgcmd_t) );
 
-  memset((char*)umsg_pkt->qword, '0', sizeof(struct umsgcmd_t) );
   umsg_pkt->id = umsg_id;
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
 
-  char *umsg_str;
-  umsg_str = ase_malloc(ASE_MQ_MSGSIZE);
-  
+  /* char *umsg_str; */
+  /* umsg_str = ase_malloc(ASE_MQ_MSGSIZE); */
+
   // Send Umsg packet to simulator
   mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt );
 
@@ -835,7 +835,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
 }
 
 
-// void umsg_set_attri
+// void umsg_set_attribute
 
 /*
  * ase_portctrl: Send port control message to simulator
