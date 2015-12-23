@@ -258,18 +258,19 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	   }
 
 	   MaxPoll = StopTimeoutMillis;
+
+	   if ( 0 != pAFUDSM->test_error ) {
+		   cerr << "Test error bit was set in DSM.\n";
+		   ++res;
+		   break;
+	   }
    }
    //Disable UMsgs upon test completion
    //m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-   if ( 0 != pAFUDSM->test_error ) {
-	   cerr << "Test error bit was set in DSM.\n";
-	   ++res;
-   }
-
-      return res;
+   return res;
 }
 
 void  CNLBCcipSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
