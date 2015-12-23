@@ -352,8 +352,12 @@ extern "C" {
   void mmio_write64(uint32_t index, uint64_t data);
   void mmio_read32(uint32_t index, uint32_t *data);
   void mmio_read64(uint32_t index, uint64_t *data);
+  // UMSG functions
+  uint64_t* umsg_get_address(int umsg_id);
+  void umsg_send (int umsg_id, uint64_t *umsg_data);
+  
   // Driver activity
-  void aal_portctrl(char *);
+  void ase_portctrl(char *);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
@@ -450,6 +454,15 @@ typedef struct mmio_t {
 } mmio_t;
 
 
+/*
+ * Umsg transaction packet
+ */
+typedef struct umsgcmd_t {
+  int       id;
+  long long qword[8];
+} umsgcmd_t;
+
+
 /* *********************************************************************
  *
  * SIMULATION-ONLY (SIM_SIDE) declarations
@@ -507,7 +520,7 @@ extern void sw_simkill_request();
 // extern void csr_write_dispatch(int, int, int);
 extern void buffer_messages(char *);
 /* extern void umsg_init(); */
-extern void umsg_dispatch(int, int, int, int, char*);
+// extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
@@ -531,6 +544,7 @@ void mmio_dispatch(int init, struct mmio_t *mmio_pkt);
 void mmio_response(struct mmio_t *mmio_pkt);
 
 // UMSG functions
+void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
 // PORT control functions
 

@@ -266,8 +266,7 @@ package ase_pkg;
       longint 	  qword[8];
       int 	  resp_en;
       } mmio_t;
-
-
+   
    // Request types
    parameter int  MMIO_WRITE_REQ    = 32'hAA88;
    parameter int  MMIO_READ_REQ     = 32'hBB88;
@@ -280,6 +279,12 @@ package ase_pkg;
    /*
     * UMSG Hint/Data state machine
     */
+   // Umsg command packet
+   typedef struct {
+      int 	  umsg_id;
+      longint 	  qword[8];	  
+   } umsgcmd_t;
+   
 
    // UMSG control states
    typedef enum   {UMsg_Idle, UMsg_SendHint, UMsg_Waiting, UMsg_SendData}

@@ -315,7 +315,6 @@ int ase_listener()
 
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
-
     }
 
 
