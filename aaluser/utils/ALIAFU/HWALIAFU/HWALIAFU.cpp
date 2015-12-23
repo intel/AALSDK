@@ -486,6 +486,11 @@ btVirtAddr HWALIAFU::umsgGetAddress( const btUnsignedInt UMsgNumber )
          AAL_ERR( LM_All,"FATAL: MapWSID failed");
          return NULL;
       }
+      else
+      {
+     	  m_uMSGsize = wsevt.wsParms.size;
+		  m_uMSGmap = wsevt.wsParms.ptr;
+      }
    }
    // Umsgs are separated by 1 Page + 1 CL
    // Malicious call could overflow and cause wrap to invalid address.
@@ -515,7 +520,7 @@ void HWALIAFU::umsgTrigger64( const btVirtAddr pUMsg,
 bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 {
 
-   if( ENamedValuesOK != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+   if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
       AAL_ERR( LM_All,"Missing Parameter or Key");
       return false;
    }
