@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file nlb-specific.h (nlb-lpbk1)
-// @brief Shared header for hwval utilities.
+// @brief Shared header for fpgadiag utilities.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -41,4 +41,4 @@
 #define NLB_TITLE           "NLB Loopback 1"
 #define NLB_CREATE_WKLD     CreateNLBLpbk1Workload
 #define NLB_MIN_CL          1
-#define NLB_MAX_CL          0x10000
+#define NLB_MAX_CL          0xFFFF

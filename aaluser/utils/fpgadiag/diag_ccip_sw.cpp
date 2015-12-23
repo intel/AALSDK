@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2014, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file diag_sw.cpp
-// @brief NLB VAFU template application file.
+// @brief NLB SW test application file.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -97,20 +97,6 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
    // Set output workspace address
     m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_pMyApp->OutputPhys()));
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) || flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))
-   {
-	   btUnsigned32bitInt umsg_base_cl = CACHELINE_ALIGNED_ADDR(m_pMyApp->UMsgPhys()) & 0xfffffffc;
-	   m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, (umsg_base_cl | 0x1));
-
-	   btUnsigned32bitInt umsgmode_csr_val = (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)) ? HIGH : 0;
-	   m_pALIMMIOService->mmioWrite32(CSR_UMSG_MODE, umsgmode_csr_val);
-
-	   btUnsigned32bitInt umsg_status = 0;
-	   do {
-		   m_pALIMMIOService->mmioRead32(CSR_CIRBSTAT, &umsg_status);
-	   }while(0 == (umsg_status & 0x1));
-
-   }
    // Set the test mode
    m_pALIMMIOService->mmioWrite32(CSR_CFG, 0);
    csr_type cfg = (csr_type)NLB_TEST_MODE_SW;
@@ -164,7 +150,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -206,6 +192,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 		  if(Timer() > timeout )
 		  {
 			  res++;
+			  cerr << "Maximum timeout for CPU poll on Address N+1 was exceeded\n";
 			  break;
 		  }
 	  }
@@ -242,6 +229,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 		  if(Timer() > timeout )
 		  {
 			  res++;
+			  cerr << "Maximum Timeout for test complete was exceeded.\n";
 			  break;
 		  }
 	  }
@@ -253,8 +241,8 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	   while ( ( 0 == pAFUDSM->test_complete ) &&
 			 ( MaxPoll >= 0 ) )
 	   {
-		 MaxPoll -= 500;
-		 SleepNano(500);
+		 MaxPoll -= 1;
+		 SleepMilli(1);
 	   }
 
 	   PrintOutput(cmd, (sz / CL(1)));
@@ -269,14 +257,15 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 		   break;
 	   }
 
-	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+	   MaxPoll = StopTimeoutMillis;
    }
    //Disable UMsgs upon test completion
-   m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);
+   //m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
    if ( 0 != pAFUDSM->test_error ) {
+	   cerr << "Test error bit was set in DSM.\n";
 	   ++res;
    }
 

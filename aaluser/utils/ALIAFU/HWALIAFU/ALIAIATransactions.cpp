@@ -422,7 +422,7 @@ UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
    m_bufLength(0)
 {
 
-   if( ENamedValuesOK != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
+   if( true != nvsArgs.Has(UMSG_HINT_MASK_KEY)){
       AAL_ERR( LM_All,"Missing Parameter or Key");
       return;
    }
