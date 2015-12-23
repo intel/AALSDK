@@ -150,7 +150,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
@@ -241,8 +241,8 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 	   while ( ( 0 == pAFUDSM->test_complete ) &&
 			 ( MaxPoll >= 0 ) )
 	   {
-		 MaxPoll -= 500;
-		 SleepNano(500);
+		 MaxPoll -= 1;
+		 SleepMilli(1);
 	   }
 
 	   PrintOutput(cmd, (sz / CL(1)));
@@ -257,7 +257,7 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 		   break;
 	   }
 
-	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+	   MaxPoll = StopTimeoutMillis;
    }
    //Disable UMsgs upon test completion
    //m_pALIMMIOService->mmioWrite32(CSR_UMSG_BASE, 0);

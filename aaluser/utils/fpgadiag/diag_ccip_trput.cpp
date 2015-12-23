@@ -143,7 +143,7 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 #endif // OS
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
 
    while ( sz <= CL(cmd.endcls) )
@@ -177,8 +177,8 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 			   //wait for DSM register update or timeout
 			   while ( 0 == pAFUDSM->test_complete &&
 					 ( MaxPoll >= 0 )) {
-				   MaxPoll -= 500;
-				   SleepNano(500);
+				   MaxPoll -= 1;
+				   SleepMilli(1);
 			   }
 
 			   //Update timer.
@@ -189,8 +189,8 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 			   // Wait for test completion or timeout
 			   while ( 0 == pAFUDSM->test_complete &&
 					 ( MaxPoll >= 0 )) {
-				   MaxPoll -= 500;
-				   SleepNano(500);
+				   MaxPoll -= 1;
+				   SleepMilli(1);
 			   }
 
 			   // Stop the device
@@ -208,7 +208,7 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 		      ++res;
 		      break;
 		   }
-		   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+		   MaxPoll = StopTimeoutMillis;
        }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);

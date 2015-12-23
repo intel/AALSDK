@@ -55,7 +55,7 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
    uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
    // We need to initialize the input and output buffers, so we need addresses suitable
    // for dereferencing in user address space.
@@ -189,8 +189,8 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   //wait for DSM register update or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   //Update timer.
@@ -201,8 +201,8 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   // Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   // Stop the device
@@ -220,7 +220,7 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		  ++res;
 		  break;
 	   }
-	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+	   MaxPoll = StopTimeoutMillis;
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
