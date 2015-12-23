@@ -279,6 +279,9 @@ package ase_pkg;
    /*
     * UMSG Hint/Data state machine
     */
+   // Number of UMSGs per AFU
+   parameter int  NUM_UMSG_PER_AFU = 8;
+   
    // Umsg command packet
    typedef struct {
       int 	  umsg_id;
@@ -294,9 +297,9 @@ package ase_pkg;
    typedef struct {
       logic [`UMSG_DELAY_TIMER_LOG2-1:0] hint_timer;
       logic [`UMSG_DELAY_TIMER_LOG2-1:0] data_timer;
-      logic [CCIP_DATA_WIDTH-1:0] 	 data;
-      logic [CCIP_DATA_WIDTH-1:0] 	 data_q;
-      logic 				 change;
+      // logic [CCIP_DATA_WIDTH-1:0] 	 data;
+      // logic [CCIP_DATA_WIDTH-1:0] 	 data_q;
+      logic 				 line_accessed;
       logic 				 hint_enable;
       logic 				 hint_timer_started;
       logic 				 hint_ready;

@@ -355,7 +355,7 @@ extern "C" {
   // UMSG functions
   uint64_t* umsg_get_address(int umsg_id);
   void umsg_send (int umsg_id, uint64_t *umsg_data);
-  
+  void umsg_set_attribute(uint32_t hint_mask);
   // Driver activity
   void ase_portctrl(char *);
 #ifdef __cplusplus
@@ -532,6 +532,7 @@ void ase_config_parse(char*);
 // Simulation control function
 void start_simkill_countdown();
 void run_clocks(int num_clocks);
+void afu_softreset_trig();
 
 // Read system memory line
 void rd_memline_dex( cci_pkt *pkt );

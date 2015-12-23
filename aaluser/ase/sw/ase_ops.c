@@ -80,11 +80,11 @@ void ase_buffer_info(struct buffer_t *mem)
   FUNC_CALL_ENTRY;  
   
   BEGIN_YELLOW_FONTCOLOR;
-  printf("Shared BUFFER parameters...\n");
+  printf("BUFFER parameters...\n");
   printf("\tfd_app      = %d \n",    mem->fd_app);
   printf("\tfd_ase      = %d \n",    mem->fd_ase);
   printf("\tindex       = %d \n",    mem->index);
-  printf("\tvalid       = %x \n",    mem->valid);
+  printf("\tvalid       = %s \n",    (mem->valid == 0xffff) ? "VALID" : "INVALID" );
   printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
   printf("\tSIMVirtBase = %p \n",    (void *)mem->pbase); 
   printf("\tBufferSize  = %x \n",    mem->memsize);  

@@ -302,7 +302,7 @@ int ase_listener()
   // Receive csr_write packet
   if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
     {
-      memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(mmio_t));
+      memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t));
 #ifdef ASE_DEBUG
       printf("  [DEBUG]  mmio_pkt => %x %d %x %llx %d\n", 
 	     mmio_pkt->type,
@@ -319,10 +319,46 @@ int ase_listener()
 
 
   /*
-   * UMSG compare routine
+   * UMSG engine
    * *FIXME*: Profiling and costliness analysis needed here
    * *FIXME*: Notification service needs to be built
    */
+  char umsg_mapstr[ASE_MQ_MSGSIZE];
+  struct umsgcmd_t *umsg_pkt;
+  umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
+
+  // cleanse string before reading
+  memset(umsg_mapstr, '\0', ASE_MQ_MSGSIZE);
+  if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr) == ASE_MSG_PRESENT)
+    {
+      memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
+    }
+
+
+  /*
+   * Port Control message
+   */ 
+  char *pch;
+  char portctrl_str[ASE_MQ_MSGSIZE];
+  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_str) == ASE_MSG_PRESENT) 
+    {
+      pch = strtok(portctrl_str, " ");
+      if ( memcmp(pch, "AFU_RESET", 9) == 0) 
+	{
+        #ifdef ASE_DEBUG
+	  printf("  [DEBUG]  AFU Reset requested\n");
+        #endif
+	  // Soft Reset trigger here
+	  afu_softreset_trig();
+	}
+      else if ( memcmp(pch, "UMSG_MODE", 9) == 0)
+	{
+        #ifdef ASE_DEBUG
+	  printf("  [DEBUG]  UMsgMode set\n");
+        #endif
+	  // Umsg mode setting here
+	}
+    }
   
 
   /*
@@ -668,7 +704,7 @@ void start_simkill_countdown()
   // Print location of log files
   BEGIN_GREEN_FONTCOLOR;
   printf("SIM-C : Simulation generated log files\n");
-  printf("        Transactions file   | $ASE_WORKDIR/transactions.tsv\n");
+  printf("        Transactions file   | $ASE_WORKDIR/ccip_transactions.tsv\n");
   printf("        Workspaces info     | $ASE_WORKDIR/workspace_info.log\n");
   printf("        Protocol Warnings   | $ASE_WORKDIR/warnings.txt\n");
   printf("        ASE seed            | $ASE_WORKDIR/ase_seed.txt\n");

@@ -192,6 +192,9 @@ module ccip_emulator
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
+   // Software controlled process - Run AFU Reset
+   export "DPI-C" task afu_softreset_trig;
+   
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
       
@@ -262,7 +265,7 @@ module ccip_emulator
 
    // LP initdone & reset registered signals
    // logic 			  lp_initdone_q;
-   logic 			  lp_initdone;
+   // logic 			  lp_initdone;
 
    // Internal 800 Mhz clock (for creating synchronized clocks)
    logic 			  Clk8UI;
@@ -317,11 +320,23 @@ module ccip_emulator
    end
 
    // Reset management
-   logic 			  sw_reset_trig;
+   logic 			  sw_reset_trig ;
 
+   // AFU Soft Reset Trigger
+   task afu_softreset_trig();
+      begin
+	 $display("SIM-SV: Issuing AFU Reset");	 
+	 sw_reset_trig = 0;
+	 run_clocks(`SOFT_RESET_DURATION);
+	 sw_reset_trig = 1;	 
+      end
+   endtask
+
+   
    /*
     * AFU reset - software & system resets
     */
+   // 
    //       0        |     0               0     | Initial reset
    //       0        |     0               1     |
    //       0        |     1               0     |
@@ -504,14 +519,14 @@ module ccip_emulator
 
 
    // CSR activity engine *FIXME*
-   always @(posedge clk) begin
-      if (~sys_reset_n) begin
-	 sw_reset_trig <= 0;
-      end
-      else begin
-	 sw_reset_trig <= 1;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 sw_reset_trig <= 0;
+   //    end
+   //    else begin
+   // 	 sw_reset_trig <= 1;
+   //    end
+   // end
 
    /*
     * MMIO Read response
@@ -584,17 +599,20 @@ module ccip_emulator
 
    parameter int UMSG_FIFO_WIDTH = CCIP_RX_HDR_WIDTH + CCIP_DATA_WIDTH;
 
-   logic [UMSG_FIFO_WIDTH-1:0] umsgff_din;
-   logic [UMSG_FIFO_WIDTH-1:0] umsgff_dout;
-   logic 		       umsgff_write;
-   logic 		       umsgff_pop;
-   logic 		       umsgff_read;
-   logic 		       umsgff_valid;
-   logic 		       umsgff_full;
-   logic 		       umsgff_empty;
-   logic 		       umsgff_overflow;
-   logic 		       umsgff_underflow;
+   logic [UMSG_FIFO_WIDTH-1:0] umsgfifo_din;
+   logic [UMSG_FIFO_WIDTH-1:0] umsgfifo_dout;
+   logic 		       umsgfifo_write;
+   logic 		       umsgfifo_pop;
+   logic 		       umsgfifo_read;
+   logic 		       umsgfifo_valid;
+   logic 		       umsgfifo_full;
+   logic 		       umsgfifo_empty;
+   logic 		       umsgfifo_overflow;
+   logic 		       umsgfifo_underflow;
 
+   // Data store
+   logic [CCIP_DATA_WIDTH-1:0] umsg_latest_data_array [0:NUM_UMSG_PER_AFU-1];
+      
    // UMSG dispatch function
    // task umsg_dispatch(int init, int umas_en, int hint_en, int umsg_id, bit [CCIP_DATA_WIDTH-1:0] umsg_data_in);
    //    int 			       umas_iter;
@@ -611,9 +629,46 @@ module ccip_emulator
    // 	 end
    //    end
    // endtask
+   task umsg_dispatch (int init, umsgcmd_t umsg_pkt);
+      int umas_i;      
+      begin
+	 if (init) begin
+   	    for (umas_i = 0; umas_i < NUM_UMSG_PER_AFU; umas_i = umas_i + 1) begin
+   	       umsg_latest_data_array[umas_i]  <= {CCIP_DATA_WIDTH{1'b0}};
+   	    end	    
+	 end
+	 else begin
+	    
+	 end
+      end
+   endtask
 
    
-
+   // UMSG events queue
+   ase_fifo 
+     #(
+       .DATA_WIDTH     (UMSG_FIFO_WIDTH),
+       .DEPTH_BASE2    (4),
+       .ALMFULL_THRESH (12)
+       )
+   umsg_fifo
+     (
+      .clk        ( clk ),
+      .rst        ( ~sys_reset_n ),
+      .wr_en      ( umsgfifo_write ),
+      .data_in    ( umsgfifo_din ),
+      .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
+      .data_out   ( umsgfifo_dout ),
+      .data_out_v ( umsgfifo_valid ),
+      .alm_full   ( mmiofifo_full ),
+      .full       (  ),
+      .empty      ( umsgfifo_empty ),
+      .count      (  ),
+      .overflow   (  ),
+      .underflow  (  )
+      );
+   
+     
    /* ******************************************************************
     *
     * Config data exchange - Supplied by ase.cfg
@@ -1479,7 +1534,9 @@ module ccip_emulator
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
       mmio_dispatch (1, '{0, 0, 0, '{0,0,0,0,0,0,0,0}, 0});
-
+      // afu_softreset_trig();
+      sw_reset_trig = 0;
+                  
       // Globally write CONFIG, SCRIPT paths
       if (config_filepath.len() != 0) begin
 	 sv2c_config_dex(config_filepath);
@@ -1496,6 +1553,7 @@ module ccip_emulator
       sys_reset_n = 0;
       #100ns;
       sys_reset_n = 1;
+      sw_reset_trig = 1;      
       #100ns;
 
       // Setting up CA-private memory
@@ -1505,7 +1563,7 @@ module ccip_emulator
       // end
 
       // Link layer ready signal
-      wait (lp_initdone == 1);
+      // wait (lp_initdone == 1);
       $display("SIM-SV: CCI InitDone is HIGH...");
 
       // Indicate to APP that ASE is ready
@@ -1519,18 +1577,18 @@ module ccip_emulator
     * This block simulates the latency between a generic reset and QLP
     * InitDone
     */
-   latency_pipe
-     #(
-       .NUM_DELAY (`LP_INITDONE_READINESS_LATENCY),
-       .PIPE_WIDTH (1)
-       )
-   lp_initdone_lat
-     (
-      .clk (clk),
-      .rst (~sys_reset_n),
-      .pipe_in (sys_reset_n),
-      .pipe_out (lp_initdone)
-      );
+   // latency_pipe
+   //   #(
+   //     .NUM_DELAY (`LP_INITDONE_READINESS_LATENCY),
+   //     .PIPE_WIDTH (1)
+   //     )
+   // lp_initdone_lat
+   //   (
+   //    .clk (clk),
+   //    .rst (~sys_reset_n),
+   //    .pipe_in (sys_reset_n),
+   //    .pipe_out (lp_initdone)
+   //    );
 
 
    /*

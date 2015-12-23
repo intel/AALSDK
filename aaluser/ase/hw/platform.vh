@@ -28,8 +28,8 @@ parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
 /*
  * Relevant CSRs that control CCI or AFU behaviour
  */
-parameter CCI_RESET_CTRL_OFFSET = 14'h280;
-parameter CCI_RESET_CTRL_BITLOC = 24;
+// parameter CCI_RESET_CTRL_OFFSET = 14'h280;
+// parameter CCI_RESET_CTRL_BITLOC = 24;
 
 
 /*
@@ -43,8 +43,10 @@ parameter CCI_RESET_CTRL_BITLOC = 24;
  `define UMSG_HINT2DATA_DELAY          40
  `define UMSG_NOHINT_DATADELAY         50
  `define UMSG_DELAY_TIMER_LOG2         8
- `define UMSG_MAX_MSG_LOG2             5
- `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
+ // `define UMSG_MAX_MSG_LOG2             5
+ // `define UMSG_MAX_MSG                  2**`UMSG_MAX_MSG_LOG2
+
+ `define SOFT_RESET_DURATION           20
 
 /* OME5 */
  `ifdef BDX_FPGA

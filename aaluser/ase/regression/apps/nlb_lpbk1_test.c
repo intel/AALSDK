@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
   printf("Num CL = %d\n", num_cl);
 
   session_init();
+
+  ase_portctrl("AFU_RESET");
   
   struct buffer_t *dsm, *src, *dst;
   

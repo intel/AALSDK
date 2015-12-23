@@ -163,7 +163,7 @@ void session_init()
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
 
   // Create UMSG region
-  printf("  [APP]  Creating UMAS region... ");
+  printf("  [APP]  Creating UMAS region... \n");
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   umas_region->memsize = UMAS_LENGTH;
   umas_region->is_umas = 1;
@@ -185,12 +185,7 @@ void session_deinit()
 {
   FUNC_CALL_ENTRY;
 
-  // Um-mapping CSR region
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Deallocating MMIO map\n");
-  END_YELLOW_FONTCOLOR;
-  deallocate_buffer(mmio_region);
-
+  // Unmap UMAS region
   if (umas_exist_status == UMAS_ESTABLISHED) 
     {
       BEGIN_YELLOW_FONTCOLOR;
@@ -198,6 +193,12 @@ void session_deinit()
       deallocate_buffer(umas_region);
       END_YELLOW_FONTCOLOR;
     }
+
+  // Um-mapping CSR region
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [APP]  Deallocating MMIO map\n");
+  END_YELLOW_FONTCOLOR;
+  deallocate_buffer(mmio_region);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deinitializing simulation session ... ");
@@ -671,7 +672,9 @@ void deallocate_buffer(struct buffer_t *mem)
   mq_name = ase_malloc (ASE_MQ_NAME_LEN);
   memset(mq_name, '\0', ASE_MQ_NAME_LEN);
 
+#if 0
   ase_buffer_info(mem);
+#endif 
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Deallocating memory region %s ...", mem->memname);
@@ -815,16 +818,24 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   FUNC_CALL_ENTRY;
 
   umsgcmd_t *umsg_pkt;
-  
+    
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
 
   memset((char*)umsg_pkt->qword, '0', sizeof(struct umsgcmd_t) );
   umsg_pkt->id = umsg_id;
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
 
+  char *umsg_str;
+  umsg_str = ase_malloc(ASE_MQ_MSGSIZE);
+  
+  // Send Umsg packet to simulator
+  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt );
+
   FUNC_CALL_EXIT;
 }
 
+
+// void umsg_set_attri
 
 /*
  * ase_portctrl: Send port control message to simulator

@@ -231,6 +231,10 @@ char* get_timestamp(int dont_kill)
   
   sprintf(tstamp_str, "%lld", readback);
 
+/* #ifdef ASE_DEBUG */
+/*   printf("  [DEBUG] tstamp_str = %s\n", tstamp_str); */
+/* #endif */
+
   FUNC_CALL_EXIT;
 
   return tstamp_str;
