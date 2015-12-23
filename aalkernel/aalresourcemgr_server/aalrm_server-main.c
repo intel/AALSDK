@@ -98,7 +98,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 //=============================================================================
 
 // debug flags with default values
-btUnsignedInt debug = AALRMS_DBG_DEFAULT;
+btUnsignedInt debug = 0; //AALRMS_DBG_DEFAULT;
 
 // Major device number to use for the device nodes
 btInt majornum = 0;
@@ -109,7 +109,7 @@ btInt majornum = 0;
 //                                       insmod and permissions as seen from /sys
 //
 MODULE_PARM_DESC(debug, "debug level");
-module_param    (debug, int, 0444);
+module_param    (debug, int, 0644);
 
 MODULE_PARM_DESC(majornum, "major device number");
 module_param    (majornum, int, 0444);
@@ -134,7 +134,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 
    debug = temp;
 
-   printk(KERN_INFO DRV_NAME ": Attribute change - debug = %d\n", temp);
+   DPRINTF(AALRMS_DBG_MOD, ": Attribute change - debug = %d\n", temp);
    return size;
 }
 
@@ -431,7 +431,7 @@ int rm_server_init(void)
 
 
    if(driver_create_file(&rms_driver.m_driver,&driver_attr_debug)){
-       DPRINTF (AHMPIP_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
+       DPRINTF (AALRMS_DBG_MOD, ": Failed to create debug attribute - Unloading module\n");
        // Unregister the driver with the bus
        aalbus_get_bus()->unregister_driver( &rms_driver );
        return -EIO;
@@ -462,7 +462,7 @@ int rm_server_init(void)
    kosal_printk("Registering service interface 0x%Lx\n", (long long)AAL_RMSAPI_IID_01);
    ret = aalbus_get_bus()->register_service_interface(&rm_server_intfc);
    if(ret < 0){
-      kosal_printk_level(KERN_ERR, "Failed registeer service interface\n");
+	   DPRINTF(AALRMS_DBG_MOD, "Failed registeer service interface\n");
       //aalrm_server_removedriver(&rms_driver, &rms_class);
       aalbus_get_bus()->release_driver(&rms_driver, &rms_class);
       return ret;
@@ -493,7 +493,7 @@ void aalrm_server_exit(void)
    // Unregister drivers
    rm_server_destroy();
 
-   kosal_printk_level(KERN_INFO, "<- %s removed\n", DRV_DESCRIPTION);
+  DPRINTF(AALRMS_DBG_MOD,  "<- %s removed\n", DRV_DESCRIPTION);
    return;
 }
 

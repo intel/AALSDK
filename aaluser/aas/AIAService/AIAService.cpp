@@ -194,7 +194,7 @@ btBool AIAService::init( IBase *pclientBase,
    // Allocate an AFU Proxy. The AFU Proxy appears as a Service so will be returned
    //  via  serviceAllocated() to the caller of init(). The ServiceClient (owner) will be the caller of init()
    //  NOT the AIA. The AIA does have to keep a reference count of AFUProxies to properly shutdown.
-   AFUProxyGet(pclientBase, OptArgs(), rtid);
+   AFUProxyGet(pclientBase,optArgs, rtid);
 
    return true;
 }
