@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2014, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file diag_ccip_read.cpp
-// @brief NLB VAFU template application file.
+// @brief NLB Read test application file.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -54,7 +54,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    btWSSize  sz = CL(cmd.begincls);
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
    const btUnsigned32bitInt ReadBufData = 0xc0cac01a;
 
@@ -190,7 +190,7 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 #endif // OS
 
    while ( sz <= CL(cmd.endcls))
-      {
+   {
 	   // Assert Device Reset
 	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
@@ -220,8 +220,8 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 		   //wait for DSM register update or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   //Update timer.
@@ -232,8 +232,8 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 		   // Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 		         ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   // Stop the device
@@ -251,14 +251,16 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 		  ++res;
 		  break;
 	   }
-	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
-      }
+	   MaxPoll = StopTimeoutMillis;
+
+	   if ( 0 != pAFUDSM->test_error ) {
+		  cerr << "Error bit set in DSM.\n";
+	      ++res;
+	      break;
+	   }
+   }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
-
-   if ( 0 != pAFUDSM->test_error ) {
-      ++res;
-   }
 
    return res;
 }

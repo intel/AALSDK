@@ -161,6 +161,11 @@ create_samples_dist() {
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Hello_SPL_LB"
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Sudoku_SPL"
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/LinkedList_SPL"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/doc"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Scripts"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/SignalTapService"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/SigTapSample"
+   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/SampleBrokerService"
    
    pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
    ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" "Samples"

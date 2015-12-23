@@ -109,7 +109,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 // debug flag with default values
 
 btUnsignedInt debug = 0
-#if 1
+#if 0
   | AALBUS_DBG_MOD
   | AALBUS_DBG_FILE
   | AALBUS_DBG_MMAP
@@ -119,7 +119,7 @@ btUnsignedInt debug = 0
 
 #if   defined( __AAL_LINUX__ )
 MODULE_PARM_DESC(debug, "debug level");
-module_param    (debug, int, 0444);
+module_param    (debug, int, 0644);
 #endif // __AAL_LINUX__
 
 extern void aaldev_release_device(struct device *pdev);
@@ -580,7 +580,7 @@ int
 aalbus_uevent(struct device          *dev,
               struct kobj_uevent_env *env)
 {
-   kosal_printk_level(KERN_INFO, "Entered.\n");
+   PTRACEIN;
 #if 0
    if ( NULL != basedev_to_aaldev(dev)->m_uevent ) {
       return basedev_to_aaldev(dev)->m_uevent(basedev_to_aaldev(dev), env);
@@ -667,7 +667,7 @@ aalbus_remove(struct device *dev)
 void
 aalbus_shutdown(struct device *dev)
 {
-   kosal_printk_level(KERN_INFO, "Entered.\n");
+   PTRACEIN;
    return;
 }
 
@@ -682,7 +682,7 @@ aalbus_shutdown(struct device *dev)
 int
 aalbus_suspend(struct device *dev, pm_message_t state)
 {
-   kosal_printk_level(KERN_INFO, "Entered.\n");
+   PTRACEIN;
    return 0;
 }
 
@@ -698,7 +698,7 @@ aalbus_suspend(struct device *dev, pm_message_t state)
 int
 aalbus_resume(struct device *dev)
 {
-   kosal_printk_level(KERN_INFO, "Entered.\n");
+   PTRACEIN;
    return 0;
 }
 
@@ -719,7 +719,7 @@ aalbus_register_device(struct aal_device *paaldev)
 {
    struct update_config_parms parms;
 
-   kosal_printk_level(KERN_INFO, "Registering device %s\n", aaldev_devname(paaldev));
+   DPRINTF(AALBUS_DBG_MOD, "Registering device %s\n", aaldev_devname(paaldev));
 
    if ( unlikely( !aaldev_init(paaldev) ) ) {
       kosal_printk_level(KERN_ERR, "Device registration failed\n");
@@ -727,10 +727,9 @@ aalbus_register_device(struct aal_device *paaldev)
    }
 
    // Do not permit multiple registrations
-   kosal_printk_level(KERN_INFO, "Checking device registered 0x%p\n", paaldev);
    ASSERT(!aaldev_is_registered(paaldev));
    if ( aaldev_is_registered(paaldev) ) {
-      kosal_printk_level(KERN_WARNING, "Device already registered with AAL Bus\n");
+	   DPRINTF(AALBUS_DBG_MOD, "Device already registered with AAL Bus\n");
       return -1;
    }
 
@@ -1394,7 +1393,7 @@ aalbus_register_driver(struct aal_driver *driver)
    canaries_init(struct_aal_driver, driver);
 #endif // ENABLE_CANARIES
 
-   kosal_printk_level(KERN_INFO, "Registering device driver\n");
+   DPRINTF(AALBUS_DBG_MOD, ": Registering device driver\n");
 
    ASSERT(!aaldrv_is_registered(driver));
    if ( aaldrv_is_registered(driver) ) {
@@ -1402,7 +1401,7 @@ aalbus_register_driver(struct aal_driver *driver)
    }
 
    if ( NULL == driver->m_match ) {
-      kosal_printk_level(KERN_INFO, "No match method\n");
+	   DPRINTF(AALBUS_DBG_MOD, ": No match method\n");
    }
    // Point driver at bus. Bus performs canonical methods for driver
    aaldrv_to_base_busp(driver) = &aalBus.m_bustype;
@@ -1411,7 +1410,7 @@ aalbus_register_driver(struct aal_driver *driver)
    // Register driver with system.  Will cause devices to be probed
    ret = driver_register(aaldrv_to_basep(driver));
    if ( ret < 0 )   {
-      kosal_printk_level(KERN_INFO, "Driver_registration failed!\n");
+	   DPRINTF(AALBUS_DBG_MOD, ": Driver_registration failed!\n");
       return ret;
    }
 
@@ -1436,7 +1435,7 @@ aalbus_unregister_driver(struct aal_driver *driver)
    ASSERT(valid);
 #endif // ENABLE_CANARIES
 
-   kosal_printk_level(KERN_INFO, "Unregistering device driver\n");
+   DPRINTF(AALBUS_DBG_MOD, ": Unregistering device driver\n");
 
    ASSERT(aaldrv_is_registered(driver));
    if ( aaldrv_is_registered(driver) ) {
@@ -1444,7 +1443,7 @@ aalbus_unregister_driver(struct aal_driver *driver)
       aaldrv_clr_is_registered(driver);
    }
 
-   kosal_printk_level(KERN_INFO, "Done Unregistering device driver\n");
+   DPRINTF(AALBUS_DBG_MOD,  "Done Unregistering device driver\n");
 
 #if (1 == ENABLE_CANARIES)
    canaries_clear(struct_aal_driver, driver);
@@ -1505,7 +1504,7 @@ aalbus_register_class_device(struct aal_classdevice *pclassdevice)
 void
 aalbus_unregister_class_device(struct aal_classdevice *pclassdevice)
 {
-   kosal_printk_level(KERN_INFO, "Unregistering class device driver\n");
+   DPRINTF(AALBUS_DBG_MOD,  "Unregistering class device driver\n");
 
    ASSERT(aal_classdev_is_registered(pclassdevice));
    if ( aal_classdev_is_registered(pclassdevice) ) {
@@ -1591,7 +1590,7 @@ void
 aalbus_class_device_release(struct class_device *dev)
 #endif
 {
-   kosal_printk_level(KERN_INFO, "Default class device release handler\n");
+   DPRINTF(AALBUS_DBG_MOD,  "Default class device release handler\n");
    return;
 }
 
@@ -1606,7 +1605,7 @@ aalbus_class_device_release(struct class_device *dev)
 void
 aalbus_class_release(struct class *class)
 {
-   kosal_printk_level(KERN_INFO, "Entered\n");
+   DPRINTF(AALBUS_DBG_MOD,  "Entered\n");
    return;
 }
 
@@ -1621,7 +1620,7 @@ aalbus_class_release(struct class *class)
 void
 aalbus_class_devrelease(struct device *dev)
 {
-   kosal_printk_level(KERN_INFO, "Entered\n");
+   DPRINTF(AALBUS_DBG_MOD,  "Entered\n");
    return;
 }
 
@@ -1640,7 +1639,7 @@ aalbus_register_service_interface(struct aal_interface *pinterface)
 {
    int res;
 
-   kosal_printk_level(KERN_INFO, "Registering service interface 0x%" PRIx64 "\n", pinterface->m_iid);
+   DPRINTF(AALBUS_DBG_MOD,  "Registering service interface 0x%" PRIx64 "\n", pinterface->m_iid);
 
    ASSERT(!aalinterface_is_registered(pinterface));
 
@@ -1667,7 +1666,7 @@ aalbus_unregister_service_interface(struct aal_interface *pinterface)
 {
    int res;
 
-   kosal_printk_level(KERN_INFO, "Unregistering service interface 0x%Lx\n", pinterface->m_iid);
+   DPRINTF(AALBUS_DBG_MOD,  "Unregistering service interface 0x%Lx\n", pinterface->m_iid);
 
    ASSERT(aalinterface_is_registered(pinterface));
 
@@ -1729,7 +1728,7 @@ aalbus_get_service_interface(btIID iid)
 void
 aalbus_release_service_interface(struct aal_interface *pinterface)
 {
-   kosal_printk_level(KERN_INFO, "Releasing service interface 0x%Lx\n", pinterface->m_iid);
+   DPRINTF(AALBUS_DBG_MOD,  "Releasing service interface 0x%Lx\n", pinterface->m_iid);
 
    if ( unlikely( kosal_sem_get_user_alertable(&aalBus.m_sem) ) ) {
       ASSERT(false);
@@ -2011,7 +2010,7 @@ aalbus_send_config_update_event(struct aal_device *pdev,
 {
    struct update_config_parms parms;
 
-   kosal_printk_level(KERN_INFO, "Sending Update Event dev = %p\n", pdev);
+   DPRINTF(AALBUS_DBG_MOD,  "Sending Update Event dev = %p\n", pdev);
 
    ////////////////////////////////////////////////////////////////////////
    if ( aalBus.config_update_event_handler.EventHandler ) {
@@ -2048,42 +2047,42 @@ aalbus_config_update_event(struct device *pbasedev, void *data)
    struct update_config_parms *pparms = data;
 
    if ( !pdev ) {
-      kosal_printk_level(KERN_ERR, "NULL pdev\n");
+	   DPRINTF( AALBUS_DBG_MOD, "NULL pdev\n");
       return 0;
    }
 
-   printk(" \n===============================\n");
+   DPRINTF( AALBUS_DBG_MOD, "\n===============================\n");
 
    DPRINTF(AALBUS_DBG_MOD,"Type: ");
    switch ( pparms->updateType ) {
       case krms_ccfgUpdate_DevAdded:
-         printk(" Device Added\n");
+         DPRINTF( AALBUS_DBG_MOD," Device Added\n");
       break;
       case krms_ccfgUpdate_DevRemoved:
-         printk(" Device Removed\n");
+         DPRINTF( AALBUS_DBG_MOD," Device Removed\n");
       break;
       case krms_ccfgUpdate_DevOwnerAdded:
-         printk(" Owner Added\n");
+         DPRINTF( AALBUS_DBG_MOD," Owner Added\n");
       break;
       case krms_ccfgUpdate_DevOwnerUpdated:
-         printk(" Owner Updated\n");
+         DPRINTF( AALBUS_DBG_MOD," Owner Updated\n");
       break;
 
       case krms_ccfgUpdate_DevOwnerRemoved:
-         printk(" Owner Removed\n");
+         DPRINTF( AALBUS_DBG_MOD," Owner Removed\n");
       break;
       case krms_ccfgUpdate_DevActivated:
-         printk(" Device Activated\n");
+         DPRINTF( AALBUS_DBG_MOD," Device Activated\n");
       break;
       case krms_ccfgUpdate_DevQuiesced:
-         printk(" Device Quiecsed\n");
+         DPRINTF( AALBUS_DBG_MOD," Device Quiecsed\n");
       break;
 
       default:
-         printk(" Unknown\n");
+         DPRINTF( AALBUS_DBG_MOD," Unknown\n");
       break;
    }
-   kosal_printk_level(KERN_INFO, "On Device \"%s\" channel %d.\n",
+   DPRINTF( AALBUS_DBG_MOD, "On Device \"%s\" channel %d.\n",
               aaldev_devname(pdev),
               aaldev_devaddr_subdevnum(pdev));
 
@@ -2095,7 +2094,7 @@ aalbus_config_update_event(struct device *pbasedev, void *data)
                       pparms->pid,
                       aalBus.config_update_event_handler.context);
    }
-   printk(" \n===============================\n");
+   DPRINTF( AALBUS_DBG_MOD, "\n===============================\n");
 
    // Walk the chain down through all children
    device_for_each_child(pbasedev, data, aalbus_config_update_event);
@@ -2156,12 +2155,12 @@ aalbus_register_config_update_handler(aalbus_event_config_update_t EventHandler,
       DPRINTF (AALBUS_DBG_MOD, ": kosal_sem_get_user_alertable interrupted\n");
       return -EINTR;
    }
-   printk(" \n\n\n\n\n************************************************\n");
+   DPRINTF( AALBUS_DBG_MOD," \n\n\n\n\n************************************************\n");
    bus_for_each_dev(&aalBus.m_bustype,
                     NULL,
                     &parms,
                     aalbus_config_update_event);
-   printk("************************************************\n\n\n");
+   DPRINTF( AALBUS_DBG_MOD,"************************************************\n\n\n");
    kosal_sem_put(&aalBus.m_sem);
    return 0;
 }
@@ -2196,12 +2195,12 @@ int aalbus_walk_device_chain(void)
       DPRINTF (AALBUS_DBG_MOD, ": kosal_sem_get_user_alertable interrupted\n");
       return -EINTR;
    }
-   printk(" \n********** DEVICE CHAIN **************\n");
+   DPRINTF( AALBUS_DBG_MOD," \n********** DEVICE CHAIN **************\n");
    bus_for_each_dev( &aalBus.m_bustype,
                      NULL,
                      &parms,
                      aalbus_config_update_event );
-   printk("************* END DEVICE CHAIN **********\n\n\n");
+   DPRINTF( AALBUS_DBG_MOD,"************* END DEVICE CHAIN **********\n\n\n");
    kosal_sem_put(&aalBus.m_sem);
    return 0;
 }

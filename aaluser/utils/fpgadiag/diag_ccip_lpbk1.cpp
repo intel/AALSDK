@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2014, Intel Corporation
+// Copyright (c) 2015, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 // @file diag_lpbk1.cpp
-// @brief NLB VAFU template application file.
+// @brief NLB LPBK1 test application file.
 // @ingroup
 // @verbatim
 // Intel(R) QuickAssist Technology Accelerator Abstraction Layer
@@ -52,10 +52,10 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 {
    btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
-   uint_type NumCacheLines = (cmd.endcls - cmd.begincls) + 1;
+   uint_type NumCacheLines = cmd.begincls;
 
    const btInt StopTimeoutMillis = 250;
-   btInt MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+   btInt MaxPoll = StopTimeoutMillis;
 
    // We need to initialize the input and output buffers, so we need addresses suitable
    // for dereferencing in user address space.
@@ -160,8 +160,8 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 
    while ( sz <= CL(cmd.endcls) )
    {
-	   // Assert Device Reset
-	   m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+	    // Assert Device Reset
+	    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
 		// Clear the DSM status fields
 		::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
@@ -189,8 +189,8 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   //wait for DSM register update or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   //Update timer.
@@ -201,18 +201,33 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   // Wait for test completion or timeout
 		   while ( 0 == pAFUDSM->test_complete &&
 				 ( MaxPoll >= 0 )) {
-			   MaxPoll -= 500;
-			   SleepNano(500);
+			   MaxPoll -= 1;
+			   SleepMilli(1);
 		   }
 
 		   // Stop the device
 		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 	    }
 
-	    PrintOutput(cmd, (sz / CL(1)));
+	    PrintOutput(cmd, NumCacheLines);
+	    // Verify the buffers
+	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
+	    {
+	 	   cerr << "Data mismatch in Input and Output buffers.\n";
+	       ++res;
+	       break;
+	    }
+
+	    // Verify the device
+	    if ( 0 != pAFUDSM->test_error ) {
+	 	  cerr << "Error bit is in the DSM.\n";
+	      ++res;
+	      break;
+	    }
 
 	   //Increment number of cachelines
 	   sz += CL(1);
+	   NumCacheLines++;
 
 	   // Check the device status
 	   if ( MaxPoll < 0 ) {
@@ -220,21 +235,11 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		  ++res;
 		  break;
 	   }
-	   MaxPoll = NANOSEC_PER_MILLI(StopTimeoutMillis);
+
+	   MaxPoll = StopTimeoutMillis;
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
-
-   // Verify the buffers
-   if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
-   {
-      ++res;
-   }
-
-   // Verify the device
-   if ( 0 != pAFUDSM->test_error ) {
-      ++res;
-   }
 
    return res;
 }

@@ -65,11 +65,10 @@ module ccip_emulator
    output 	      t_if_ccip_Rx ffs_LP16ui_sRxData_afu
    );
    
-   // Power and error // TBD
-    assign ffs_LP16ui_afu_PwrState = 2'b0;
+   // Power and error state
+   assign ffs_LP16ui_afu_PwrState = 2'b0;
    assign ffs_LP16ui_afu_Error = 1'b0;
-   
-   
+
 
    /*
     * CCIP breakout
@@ -192,6 +191,10 @@ module ccip_emulator
    // Software controlled process - run clocks
    export "DPI-C" task run_clocks;
 
+   // cci_logger buffer message
+   export "DPI-C" task buffer_msg_inject;
+      
+   
    // Scope generator
    // initial ccip_emulator_scope_function();
    initial scope_function();
@@ -341,6 +344,27 @@ module ccip_emulator
    endtask
 
 
+   /* ***************************************************************************
+    * Buffer message injection into ccip_logger
+    * ---------------------------------------------------------------------------
+    * Task sets buffer message to be posted into ccip_transactions.tsv log
+    * 
+    * ***************************************************************************/ 
+   string buffer_msg;
+   logic  buffer_msg_en;
+
+   // Inject task
+   task buffer_msg_inject (string logstr);
+      begin
+	 buffer_msg = logstr;
+	 buffer_msg_en = 1;	 
+	 @(posedge clk);
+	 buffer_msg_en = 0;	 
+	 @(posedge clk);	 
+      end
+   endtask
+   
+   
    /* ******************************************************************
     * DUMMY BLOCK
     *
@@ -370,7 +394,6 @@ module ccip_emulator
 
    logic [MMIOREQ_FIFO_WIDTH-1:0] 	     mmioreq_din;
    logic 				     mmioreq_write;
-   logic 				     mmioreq_pop;
    logic 				     mmioreq_read;
    logic 				     mmioreq_valid;
    logic 				     mmioreq_full;
@@ -494,7 +517,6 @@ module ccip_emulator
     */
    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
 
-   logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_din;
    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
    logic 			   mmioresp_write;
    logic 			   mmioresp_read;
@@ -515,7 +537,7 @@ module ccip_emulator
       .rst        ( ~sys_reset_n ),
       .wr_en      ( C2TxMMIORdValid ),
       .data_in    ( {CCIP_MMIO_TID_WIDTH'(C2TxHdr), C2TxData} ),
-      .rd_en      ( mmioresp_read /* & mmioresp_empty */ ),
+      .rd_en      ( mmioresp_read & ~mmioresp_empty ),
       .data_out   ( mmioresp_dout ),
       .data_out_v ( mmioresp_valid ),
       .alm_full   ( mmioresp_full ),
@@ -534,6 +556,14 @@ module ccip_emulator
       else begin
    	 if (~mmioresp_empty) begin
    	    mmioresp_read <= ~mmioresp_empty;
+	    mmio_resp_pkt.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
+	    mmio_resp_pkt.qword[1] = 0;
+	    mmio_resp_pkt.qword[2] = 0;
+	    mmio_resp_pkt.qword[3] = 0;
+	    mmio_resp_pkt.qword[4] = 0;
+	    mmio_resp_pkt.qword[5] = 0;
+	    mmio_resp_pkt.qword[6] = 0;
+	    mmio_resp_pkt.qword[7] = 0;	    
    	    mmio_response ( mmio_resp_pkt );
    	 end
    	 else begin
@@ -1604,8 +1634,8 @@ module ccip_emulator
       .enable_logger    (cfg.enable_cl_view),
       .finish_logger    (finish_logger     ),
       // Buffer message injection
-      .log_string_en    (1'b0),
-      .log_string       (dummy_str),
+      .log_string_en    (buffer_msg_en     ),
+      .log_string       (buffer_msg        ),
       // CCIP ports
       .clk              (clk             ),
       .SoftReset_n      (SoftReset_n     ),

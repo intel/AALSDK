@@ -41,16 +41,17 @@
 SUBDIRS=\
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
-Hello_ALI_NLB/SW  \
-SignalTapService \
-SigTapSample/SW
+Hello_ALI_NLB/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\
 #Hello_CCI_NLB/SW \
 #Hello_SPL_LB/SW \
 #Sudoku_SPL/SW \
+#SampleBrokerService/SW \
 #LinkedList_SPL/SW \
+#SignalTapService \
+#SigTapSample/SW
 
 
 MFLAGS  =

@@ -72,8 +72,9 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
-CC_OPT+= -Wall -std=c99 -D_POSIX_C_SOURCE=200809L
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include 
+CC_OPT+= -Wall 
+# -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1 -pedantic
@@ -123,7 +124,7 @@ SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile
+SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile +prof
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
 

@@ -403,10 +403,10 @@ btInt HelloALINLBApp::run()
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       // If ASE, give it some time to catch up
+      /*
       #if defined ( ASEAFU )
       SleepSec(5);
-      #endif /* ASE AFU */
-
+      #endif*/ /* ASE AFU */
 
 
       // Set input workspace address

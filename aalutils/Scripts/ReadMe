@@ -1,0 +1,5 @@
+Removed newpcimem.c PCI_CONF.c pci.tar.gz to aalinternalonly/aalutils/Scripts
+in order to prevent any possible GPL contamination.
+
+Henry Mitchel 2015.12.23
+

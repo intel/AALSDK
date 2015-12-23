@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file fpgadiag.cpp
 /// @brief Uses XL and IALIAFU to interact with ALI.
-/// @ingroup ALIapp
+/// @ingroup
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -497,7 +497,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 
    // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
       m_bIsOK = false;
       Post();
       return;
@@ -505,7 +505,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_DSMSize = NLB_DSM_SIZE;
    m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
-   if( uid_errnumOK != m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
       m_bIsOK = false;
       Post();
       return;
@@ -513,7 +513,7 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_InputSize = MAX_NLB_WKSPC_SIZE;
    m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 
-   if( uid_errnumOK !=  m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
       m_bIsOK = false;
       Post();
       return;
@@ -521,16 +521,17 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
    m_OutputSize = MAX_NLB_WKSPC_SIZE;
    m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
 
+
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
-   btVirtAddr uMsg0 = m_pALIuMSGService->umsgGetAddress(0);
-   if(NULL != uMsg0){
+   m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
+   if(NULL != m_UMsgVirt){
 
-      NamedValueSet nvs;
-      nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
+	  NamedValueSet nvs;
+	  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
 
-      btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
    }else{
-      ERR("No uMSG support");
+	  ERR("No uMSG support");
    }
 
    Post();
@@ -644,10 +645,6 @@ int main(int argc, char *argv[])
 
    if ( (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_ASE)) ||
         (0 == myapp.AFUTarget().compare(ALIAFU_NVS_VAL_TARGET_SWSIM)) ) {
-	  /********** Remove/Edit this when ase and/or swsim are supported ********/
-	  cout << FAIL << "No Support yet for ase and swsim. Please set --target=fpga and try again." << NORMAL << endl;
-	  return 0;
-	  /********** **************************************************** ********/
       args.Add(SYSINIT_KEY_SYSTEM_NOKERNEL, true);
    } else {
       NamedValueSet ConfigRecord;

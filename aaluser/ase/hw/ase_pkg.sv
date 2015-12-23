@@ -55,7 +55,6 @@ package ase_pkg;
    // `define SYNC_RESET_POLARITY 0
 
    // Address widths
-   // `define PHYSADDR_WIDTH       38
    parameter PHYSCLADDR_WIDTH   =  42;
 
    /*
@@ -348,36 +347,5 @@ package ase_pkg;
 	 return (num < 0) ? ~num : num;
       end
    endfunction
-
-
-   /*
-    * Request type checkers
-    */
-   // Read request checker
-   // function automatic logic check_if_rdreq(input logic [3:0] reqtype);
-   //    begin
-   // 	 case (reqtype)
-   // 	   CCIP_TX0_RDLINE_S : return 1'b1;
-   // 	   CCIP_TX0_RDLINE_I : return 1'b1;
-   // 	   CCIP_TX0_RDLINE_E : return 1'b1;
-   // 	   default           : return 1'b0;
-   // 	 endcase
-   //    end
-   // endfunction
-
-   // Write type checker
-   // function automatic logic check_if_wrreq(input logic [3:0] reqtype);
-   //    begin
-   // 	 case (reqtype)
-   // 	   CCIP_TX1_WRLINE_I : return 1'b1;
-   // 	   CCIP_TX1_WRLINE_M : return 1'b1;
-   // 	   default           : return 1'b0;	   
-   // 	 endcase
-   //    end
-   // endfunction
-
-   
-
-
 
 endpackage
