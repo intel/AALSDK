@@ -84,6 +84,7 @@
 #include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "ccip_port.h"
+#include "ccip_perfmon.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
@@ -497,6 +498,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       print_sim_fme_device(pccipdev->m_pfme_dev);
 #endif
 
+      create_perfmonitor(pcidev,ccip_dev_to_fme_dev(pccipdev));
    }
 
 
@@ -604,6 +606,7 @@ ERR:
 
   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
      PVERBOSE("Freeing Port BAR 0\n");
+     remove_perfmonitor(pccipdev->m_pcidev);
      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
      pci_release_region(pcidev, 0);
 
