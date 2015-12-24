@@ -101,7 +101,11 @@ module ccip_logger
    // Config header
    CfgHdr_t C0RxMMIOHdr;
    assign C0RxMMIOHdr = CfgHdr_t'(C0RxHdr);
-
+   
+   // Umsg header
+   UMsgHdr_t C0RxUMsgHdr;
+   assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
+   
    
    /*
     * Buffer channels, request and response types
@@ -324,8 +328,30 @@ module ccip_logger
 	 	    C0RxHdr.mdata);
 	 end
 	 // /************* SW -> MEM -> AFU Unordered Message  ************/
-	 // if (C0RxUmsgValid) begin
-	 // end
+	 if (C0RxUMsgValid) begin
+	    if (C0RxUMsgHdr.umsg_type) begin
+	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgHint   \t%d\n",
+						$time,
+						C0RxUMsgHdr.umsg_id
+						);
+	       $fwrite(log_fd, "%d\t   \tUMsgHint   \t%d\n",
+		       $time,
+		       C0RxUMsgHdr.umsg_id
+		       );
+	    end
+	    else if (~C0RxUMsgHdr.umsg_type) begin
+	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgData   \t%d\t%x\n",
+						$time,
+						C0RxUMsgHdr.umsg_id,
+						C0RxData
+						);
+	       $fwrite(log_fd, "%d\t   \tUMsgData   \t%d\t%x\n",
+		       $time,
+		       C0RxUMsgHdr.umsg_id,
+		       C0RxData
+		       );
+	    end
+	 end
 	 // /**************** MEM -> AFU Interrupt Response  **************/
 	 // if (C0RxIntrValid) begin
 	 // end

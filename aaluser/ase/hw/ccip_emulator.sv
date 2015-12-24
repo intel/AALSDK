@@ -606,7 +606,7 @@ module ccip_emulator
 
    logic [CCIP_DATA_WIDTH-1:0]     umsgfifo_data_out;
    logic [CCIP_UMSG_HDR_WIDTH-1:0] umsgfifo_hdrvec_out;
-//   UMsgHdr_t                       umsgfifo_hdr_out;
+   // UMsgHdr_t                       umsgfifo_hdr_out;
 
    logic 		       umsgfifo_write;
 //   logic 		       umsgfifo_pop;
@@ -700,12 +700,12 @@ module ccip_emulator
 		 // Wait to send out hint, go to UMsgSendHint after t_hint ticks
 		 UMsgHintWait:
 		   begin
+		      umsg_array[ii].hint_ready <= 0;
+		      umsg_array[ii].data_ready <= 0;
 		      if (umsg_array[ii].hint_timer <= 0) begin
-			 umsg_array[ii].hint_ready <= 1;
 			 umsg_array[ii].state      <= UMsgSendHint;
 		      end
 		      else begin
-			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].hint_timer <= umsg_array[ii].hint_timer - 1;
 			 umsg_array[ii].state      <= UMsgHintWait;
 		      end
@@ -714,12 +714,14 @@ module ccip_emulator
 		 // Wait until hint popped by event queue
 		 UMsgSendHint:
 		   begin
-		      umsg_array[ii].hint_ready    <= 1;
+		      // umsg_array[ii].hint_ready <= 1;
 		      if (umsg_array[ii].hint_pop) begin
+			 umsg_array[ii].hint_ready <= 0;
 			 umsg_array[ii].data_timer <= $urandom_range(`UMSG_HINT2DATA_LATRANGE);
 			 umsg_array[ii].state      <= UMsgDataWait;
 		      end
 		      else begin
+			 umsg_array[ii].hint_ready <= 1;
 			 umsg_array[ii].data_timer <= 0;
 			 umsg_array[ii].state      <= UMsgSendHint;
 		      end
@@ -728,12 +730,14 @@ module ccip_emulator
 		 // Wait to send out data, go to UMsgSendData after t_data ticks
 		 UMsgDataWait:
 		   begin
+		      umsg_array[ii].hint_ready    <= 0;
+		      umsg_array[ii].data_ready    <= 0;
 		      if (umsg_array[ii].data_timer <= 0) begin
-			 umsg_array[ii].data_ready <= 1;
 			 umsg_array[ii].state      <= UMsgSendData;
 		      end
 		      else begin
-			 umsg_array[ii].data_ready <= 0;
+			 // umsg_array[ii].hint_ready <= 0;
+			 // umsg_array[ii].data_ready <= 0;
 			 umsg_array[ii].data_timer <= umsg_array[ii].data_timer - 1;
 			 umsg_array[ii].state      <= UMsgDataWait;
 		      end
@@ -742,12 +746,15 @@ module ccip_emulator
 		 // Wait until popped by event queue
 		 UMsgSendData:
 		   begin
-		      umsg_array[ii].data_ready <= 1;
 		      if (umsg_array[ii].data_pop) begin
-			 umsg_array[ii].state <= UMsgIdle;
+			 umsg_array[ii].hint_ready <= 0;
+			 umsg_array[ii].data_ready <= 0;
+			 umsg_array[ii].state      <= UMsgIdle;
 		      end
 		      else begin
-			 umsg_array[ii].state <= UMsgSendData;
+			 umsg_array[ii].hint_ready <= 0;
+			 umsg_array[ii].data_ready <= 1;
+			 umsg_array[ii].state      <= UMsgSendData;
 		      end
 		   end
 
@@ -817,32 +824,85 @@ module ccip_emulator
    end
 
    // Pop HINT/DATA
+   typedef enum {UPopIdle, UPopHint, UPopData, UPopWait} UmsgPopStateMachine;
+   UmsgPopStateMachine upop_state;
+
    always @(posedge clk) begin
       if (~sys_reset_n) begin
-	 umsgfifo_hdr_in    <= {CCIP_UMSG_HDR_WIDTH{1'b0}};
-	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
-	 umsgfifo_write     <= 0;
+   	 umsgfifo_hdr_in    <= {CCIP_UMSG_HDR_WIDTH{1'b0}};
+   	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
+   	 umsgfifo_write     <= 0;
+   	 for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
+   	    umsg_array[jj].hint_pop <= 1'b0;
+   	    umsg_array[jj].data_pop <= 1'b0;
+   	 end
+	 upop_state <= UPopIdle;
       end
       else begin
-	 if (~umsgfifo_empty && (umsg_hint_slot != 255)) begin
-	    umsgfifo_hdr_in.poison    <= 1'b0;
-	    umsgfifo_hdr_in.resp_type <= CCIP_RX0_UMSG;
-	    umsgfifo_hdr_in.umsg_type <= 1'b1;
-	    umsgfifo_hdr_in.umsg_id   <= umsg_hint_slot;
-	    umsgfifo_data_in          <= {CCIP_DATA_WIDTH{1'b0}};
-	    umsgfifo_write            <= 1'b1;
-	 end
-	 else if (~umsgfifo_empty && (umsg_data_slot != 255)) begin
-	    umsgfifo_hdr_in.poison    <= 1'b0;
-	    umsgfifo_hdr_in.resp_type <= CCIP_RX0_UMSG;
-	    umsgfifo_hdr_in.umsg_type <= 1'b0;
-	    umsgfifo_hdr_in.umsg_id   <= umsg_data_slot;
-	    umsgfifo_data_in          <= umsg_latest_data_array[umsg_data_slot];
-	    umsgfifo_write            <= 1'b1;
-	 end
-	 else begin
-	    umsgfifo_write <= 1'b0;
-	 end
+	 case (upop_state)
+	   UPopIdle:
+	     begin
+   		umsgfifo_write     <= 0;
+   		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
+   		   umsg_array[jj].hint_pop <= 1'b0;
+   		   umsg_array[jj].data_pop <= 1'b0;
+   		end
+		if (~umsgfifo_full && (umsg_hint_slot != 255)) begin
+		   upop_state <= UPopHint;
+		end
+   		else if (~umsgfifo_full && (umsg_data_slot != 255)) begin
+		   upop_state <= UPopData;
+		end
+		else begin
+		   upop_state <= UPopIdle;
+		end
+	     end
+
+	   UPopHint:
+	     begin
+   		umsgfifo_hdr_in.poison              <= 1'b0;
+   		umsgfifo_hdr_in.resp_type           <= CCIP_RX0_UMSG;
+   		umsgfifo_hdr_in.umsg_type           <= 1'b1;
+   		umsgfifo_hdr_in.umsg_id             <= umsg_hint_slot;
+   		umsgfifo_data_in                    <= {CCIP_DATA_WIDTH{1'b0}};
+   		umsgfifo_write                      <= 1'b1;
+   		umsg_array[umsg_hint_slot].hint_pop <= 1'b1;
+		upop_state                          <= UPopWait;
+	     end
+
+	   UPopData:
+	     begin
+   		umsgfifo_hdr_in.poison              <= 1'b0;
+   		umsgfifo_hdr_in.resp_type           <= CCIP_RX0_UMSG;
+   		umsgfifo_hdr_in.umsg_type           <= 1'b0;
+   		umsgfifo_hdr_in.umsg_id             <= umsg_data_slot;
+   		umsgfifo_data_in                    <= umsg_latest_data_array[umsg_data_slot];
+   		umsgfifo_write                      <= 1'b1;
+   		umsg_array[umsg_data_slot].data_pop <= 1'b1;
+		upop_state                          <= UPopWait;
+	     end
+
+	   UPopWait:
+	     begin
+   		umsgfifo_write     <= 0;
+   		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
+   		   umsg_array[jj].hint_pop <= 1'b0;
+   		   umsg_array[jj].data_pop <= 1'b0;
+   		end
+		upop_state         <= UPopIdle;		
+	     end
+
+	   default:
+	     begin
+   		umsgfifo_write                      <= 1'b0;
+   		for(int jj = 0; jj < NUM_UMSG_PER_AFU; jj = jj + 1) begin
+   		   umsg_array[jj].hint_pop <= 1'b0;
+   		   umsg_array[jj].data_pop <= 1'b0;
+   		end
+		upop_state <= UPopIdle;
+	     end
+
+	 endcase
       end
    end
 
@@ -861,8 +921,8 @@ module ccip_emulator
       .data_in    ( { CCIP_UMSG_HDR_WIDTH'(umsgfifo_hdr_in), umsgfifo_data_in} ),
       .rd_en      ( umsgfifo_read & ~umsgfifo_empty ),
       .data_out   ( { umsgfifo_hdrvec_out, umsgfifo_data_out} ),
-      .data_out_v (  ),
-      .alm_full   ( mmiofifo_full ),
+      .data_out_v ( umsgfifo_valid ),
+      .alm_full   ( umsgfifo_full ),
       .full       (  ),
       .empty      ( umsgfifo_empty ),
       .count      (  ),
@@ -870,7 +930,7 @@ module ccip_emulator
       .underflow  (  )
       );
 
-   //   assign umsgfifo_hdr_out = UmsgHdr_t'(umsgfifo_hdrvec_out);
+   // assign umsgfifo_hdr_out = UmsgHdr_t'(umsgfifo_hdrvec_out);
 
 
    /* ******************************************************************
@@ -911,6 +971,10 @@ module ccip_emulator
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
 
+   // Remap UmsgHdr for count purposes
+   UMsgHdr_t ase_umsghdr_map;
+   assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
+      
    // process
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -927,24 +991,32 @@ module ccip_emulator
 	 ase_rx0_umsgdata_cnt <= 0 ;
       end
       else begin
+	 // MMIO counts
 	 if (C0RxMMIOWrValid)
 	   ase_rx0_mmiowrreq_cnt = ase_rx0_mmiowrreq_cnt + 1;
 	 if (C0RxMMIORdValid)
 	   ase_rx0_mmiordreq_cnt = ase_rx0_mmiordreq_cnt + 1;
 	 if (C2TxMMIORdValid)
 	   ase_tx2_mmiordrsp_cnt = ase_tx2_mmiordrsp_cnt + 1;
+	 // Read counts
 	 if (C0TxRdValid)
 	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + 1;
 	 if (C0RxRdValid)
 	   ase_rx0_rdvalid_cnt = ase_rx0_rdvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype != CCIP_TX1_WRFENCE))
 	   ase_tx1_wrvalid_cnt = ase_tx1_wrvalid_cnt + 1;
+	 // Write counts
 	 if (C0RxWrValid)
 	   ase_rx0_wrvalid_cnt = ase_rx0_wrvalid_cnt + 1;
 	 if (C1RxWrValid)
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == CCIP_TX1_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
+	 // UMsg counts
+	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
+	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
+	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
+	   ase_rx0_umsgdata_cnt = ase_rx0_umsgdata_cnt + 1;	 
       end
    end
 
@@ -1549,7 +1621,7 @@ module ccip_emulator
 		C0RxMMIORdValid <= 1'b0;
 		C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
-		C0RxUMsgValid   <= 1'b1;
+		C0RxUMsgValid   <= umsgfifo_valid;
 		C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);
 		C0RxData        <= umsgfifo_data_out;
 		umsgfifo_read   <= 1'b1;
@@ -1806,25 +1878,6 @@ module ccip_emulator
 
 
    /*
-    * Latency pipe : For LP_InitDone delay
-    * This block simulates the latency between a generic reset and QLP
-    * InitDone
-    */
-   // latency_pipe
-   //   #(
-   //     .NUM_DELAY (`LP_INITDONE_READINESS_LATENCY),
-   //     .PIPE_WIDTH (1)
-   //     )
-   // lp_initdone_lat
-   //   (
-   //    .clk (clk),
-   //    .rst (~sys_reset_n),
-   //    .pipe_in (sys_reset_n),
-   //    .pipe_out (lp_initdone)
-   //    );
-
-
-   /*
     * ASE Flow control error monitoring
     */
    // Flow simkill
@@ -1924,7 +1977,6 @@ module ccip_emulator
    end
 `endif
 
-   string dummy_str;
 
    /*
     * CCI Logger module

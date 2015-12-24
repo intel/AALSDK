@@ -177,22 +177,22 @@ void mmio_response (struct mmio_t *mmio_pkt)
 	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
 	  *mmio_addr32 = (uint32_t) mmio_pkt->qword[0];
-        #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG] mmio_rddata = %x\n", *mmio_addr32);
-	  END_YELLOW_FONTCOLOR;
-        #endif
+        /* #ifdef ASE_DEBUG */
+	/*   BEGIN_YELLOW_FONTCOLOR; */
+	/*   printf("  [DEBUG] mmio_rddata = %x\n", *mmio_addr32); */
+	/*   END_YELLOW_FONTCOLOR; */
+        /* #endif */
 	}
       else if (mmio_pkt->width == MMIO_WIDTH_64)
 	{
 	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));	  
 	  *mmio_addr64 = (uint64_t) mmio_pkt->qword[0];
-        #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG] mmio_rddata = %llx\n", (unsigned long long)*mmio_addr64);
-	  END_YELLOW_FONTCOLOR;
-        #endif
+        /* #ifdef ASE_DEBUG */
+	/*   BEGIN_YELLOW_FONTCOLOR; */
+	/*   printf("  [DEBUG] mmio_rddata = %llx\n", (unsigned long long)*mmio_addr64); */
+	/*   END_YELLOW_FONTCOLOR; */
+        /* #endif */
 	}
     }
 
@@ -220,6 +220,46 @@ void mmio_response (struct mmio_t *mmio_pkt)
 int ase_listener()
 {
   //   FUNC_CALL_ENTRY;
+
+  /*
+   * Port Control message
+   * Format: <cmd> <value>
+   * -----------------------------------------------------------------
+   * Supported commands
+   * AFU_RESET  <0,1> 
+   * UMSG_MODE  <8-bit mask>
+   *
+   */ 
+  char *pch;
+  char portctrl_msgstr[ASE_MQ_MSGSIZE];
+  int portctrl_value;
+
+  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT) 
+    {
+      pch = strtok(portctrl_msgstr, " ");
+      if ( memcmp(pch, "AFU_RESET", 9) == 0) 
+	{
+	  pch = strtok(NULL, " ");
+	  portctrl_value = (atoi(pch) != 0) ? 1 : 0 ;
+	  // Soft Reset trigger here	  
+	  afu_softreset_trig ( portctrl_value ); 
+	  printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
+	}
+      else if ( memcmp(pch, "UMSG_MODE", 9) == 0)
+	{
+	  // Umsg mode setting here
+	  pch = strtok(NULL, " ");
+	  glbl_umsgmode = atoi(pch) & 0xFF;
+	  printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode); 
+	}
+      else 
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("SIM-C : Undefined Port Control function ... IGNORING\n");
+	  END_RED_FONTCOLOR;
+	}
+    }
+  
 
    /*
     * Buffer Replicator
@@ -336,56 +376,18 @@ int ase_listener()
     {
       memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
 
+      // Hint trigger
+      umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;      
+
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [DEBUG] umsg_pkt %d %d %llx\n", umsg_pkt->id, umsg_pkt->hint, umsg_pkt->qword[0]);
       END_YELLOW_FONTCOLOR;
     #endif
-      // Hint trigger
-      umsg_pkt->hint = (glbl_umsgmode >> umsg_pkt->id) & 0x1;      
+      // dispatch to event processing
       umsg_dispatch(0, umsg_pkt);
     }
 
-
-  /*
-   * Port Control message
-   * Format: <cmd> <value>
-   * -----------------------------------------------------------------
-   * Supported commands
-   * AFU_RESET  <0,1> 
-   * UMSG_MODE  <8-bit mask>
-   *
-   */ 
-  char *pch;
-  char portctrl_msgstr[ASE_MQ_MSGSIZE];
-  int portctrl_value;
-
-  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT) 
-    {
-      pch = strtok(portctrl_msgstr, " ");
-      if ( memcmp(pch, "AFU_RESET", 9) == 0) 
-	{
-	  pch = strtok(NULL, " ");
-	  portctrl_value = (atoi(pch) != 0) ? 1 : 0 ;
-	  // Soft Reset trigger here	  
-	  afu_softreset_trig ( portctrl_value ); 
-	  printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
-	}
-      else if ( memcmp(pch, "UMSG_MODE", 9) == 0)
-	{
-	  // Umsg mode setting here
-	  pch = strtok(NULL, " ");
-	  glbl_umsgmode = atoi(pch) & 0xFF;
-	  printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode); 
-	}
-      else 
-	{
-	  BEGIN_RED_FONTCOLOR;
-	  printf("SIM-C : Undefined Port Control function ... IGNORING\n");
-	  END_RED_FONTCOLOR;
-	}
-    }
-  
 
   /*
    * SIMKILL message handler

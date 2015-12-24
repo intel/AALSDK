@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
   ase_portctrl("UMSG_MODE 63");
   usleep(100);
   ase_portctrl("AFU_RESET 1");
+  // usleep(100);
+  // sleep(2);
 
   // Send umsg
   uint64_t umsgdata;

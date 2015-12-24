@@ -842,11 +842,19 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  * 
  * AFU_RESET
  * UMSG_MODE <mode_bits>[7:0]
+ * 
+ * ## WARNING ##: Do not remove __attribute__ optimization control
+ * The extra delay is required for portctrl command to be parsed 
+ * by simulator. Removing this CAN have unintended program control 
+ * or race conditions
  *
  */
-void ase_portctrl(char *ctrl_msg)
+void __attribute__((optimize("O0"))) ase_portctrl(char *ctrl_msg)
 {
   mqueue_send(app2sim_portctrl_tx, ctrl_msg);
+
+  // Allow simulator to parse message and sort itself out
+  usleep(1000);
 }
 
 
