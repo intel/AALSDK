@@ -96,7 +96,7 @@ MODULE_LICENSE    (DRV_LICENSE);
 
 // debug flags with default values
 btUnsignedInt debug = 0
-#if 1
+#if 0
    | AALRMC_DBG_DEFAULT
 #endif
 ;
@@ -110,7 +110,7 @@ btInt majornum = 0;
 //                                       insmod and permissions as seen from /sys
 //
 MODULE_PARM_DESC(debug, "debug level");
-module_param    (debug, int, 0444);
+module_param    (debug, int, 0644);
 
 MODULE_PARM_DESC(majornum, "major device number");
 module_param    (majornum, int, 0444);
@@ -136,7 +136,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
 
    debug = temp;
 
-   printk(KERN_INFO DRV_NAME ": Attribute change - debug = %d\n", temp);
+   DPRINTF(AALRMC_DBG_MOD,": Attribute change - debug = %d\n", temp);
    return size;
 }
 

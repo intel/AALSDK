@@ -126,6 +126,7 @@ module_param    (sim, ulong, S_IRUGO);
 //=============================================================================
 
 btUnsignedInt debug = 0
+#if 0
 /* Type and Level selection flags */
    | PTRACE_FLAG
    | PVERBOSE_FLAG
@@ -140,13 +141,14 @@ btUnsignedInt debug = 0
    | CCIV4_DBG_MMAP
    | CCIV4_DBG_CMD
    | CCIV4_DBG_CFG
+#endif
 ;
 
 /******************************************************************************
  * Debug parameter global definition
  */
 MODULE_PARM_DESC(debug, "module debug level");
-module_param    (debug, int, 0444);
+module_param    (debug, int, 0644);
 
 
 //=============================================================================

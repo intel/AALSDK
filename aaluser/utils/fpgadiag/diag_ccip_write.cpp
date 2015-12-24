@@ -235,13 +235,15 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
 		      break;
 		   }
 		   MaxPoll = StopTimeoutMillis;
-       }
+
+		   if ( 0 != pAFUDSM->test_error ) {
+			  cerr << "Error bit set in DSM.\n";
+		      ++res;
+		      break;
+		   }
+   }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
-
-   if ( 0 != pAFUDSM->test_error ) {
-      ++res;
-   }
 
    return res;
 }

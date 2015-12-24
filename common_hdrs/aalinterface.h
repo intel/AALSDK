@@ -141,16 +141,11 @@ aal_interface_find(kosal_list_head *list, btIID iid)
 {
    struct aal_interface *tmp = NULL;
 
-   kosal_printk("Looking for interface %" PRIuIID " on %p\n", iid, list);
-
    kosal_list_for_each_entry(tmp, list, m_list, struct aal_interface) {
-      kosal_printk("Looking at ID %" PRIuIID "\n", tmp->m_iid);
       if ( tmp->m_iid == iid ) {
-         kosal_printk("Interface found at %p\n", tmp);
          return tmp;
       }
    }
-   kosal_printk("Interface not found\n");
    return NULL;
 }
 
@@ -175,10 +170,8 @@ aal_interface_add(kosal_list_head      *list,
    if ( aal_interface_find(list, pinterface->m_iid) ) {
       kosal_sem_put(sem);
       // Already registered
-      kosal_printk("%p already registered\n", pinterface);
       return -1;
    }
-   kosal_printk("Adding Interface ID %" PRIuIID "\n", pinterface->m_iid);
    kosal_list_add(&pinterface->m_list, list);
    kosal_sem_put(sem);
 
