@@ -114,7 +114,7 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
-SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 
 ## VCS elaboration
@@ -130,7 +130,9 @@ endif
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
-
+ifeq ($(ASE_DEBUG), 1)
+VCS_SIM_OPT+= -cm line+cond+fsm+tgl+path
+endif
 
 #########################################################################
 #                         Questa Build Switches                         #
@@ -317,3 +319,6 @@ distclean: header clean
 src_check: 
 	scan-build-3.5 make sw_build
 
+coverage:
+	urg -dir ./work/coverage.vdb
+#	firefox urgReport/dashboard.html &
