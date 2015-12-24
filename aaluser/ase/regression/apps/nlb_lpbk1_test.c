@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
   // sleep(2);
 
   // Send umsg
-  uint64_t umsgdata;
-  
+  uint64_t umsgdata; 
   umsgdata = 0xCAFEBABEDECAFBAD;
   umsg_send (1, &umsgdata);
   umsgdata = 0xBABABABADEDEDADE;
