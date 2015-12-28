@@ -48,7 +48,7 @@ include ase_sources.mk
 ASE_VERSION = 5.0.0
 
 # ASE Debug
-ASE_DEBUG = 1
+ASE_DEBUG = 0
 
 # Timescale
 TIMESCALE = 1ns/1ns

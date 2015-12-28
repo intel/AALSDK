@@ -542,8 +542,11 @@ void allocate_buffer(struct buffer_t *mem)
   if(mem->is_mmiomap == 1)
     /* if (mem->is_mmiomap == 1)  */
     {
+#if 0
       strcpy(mem->memname, "/mmio.");
       strcat(mem->memname, get_timestamp(0) );
+#endif
+      sprintf(mem->memname, "/mmio.%s", get_timestamp(0));
     /* #ifdef ASE_DEBUG */
     /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
     /* #endif       */
@@ -551,16 +554,22 @@ void allocate_buffer(struct buffer_t *mem)
     }
   else if (mem->is_umas == 1) 
     {
+#if 0
       strcpy(mem->memname, "/umas.");
       strcat(mem->memname, get_timestamp(0) );
+#endif
+      sprintf(mem->memname, "/umas.%s", get_timestamp(0));
     /* #ifdef ASE_DEBUG */
     /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
     /* #endif             */
     }
   else
     {
+#if 0
       sprintf(mem->memname, "/buf%d.", buffer_index_count);
       strcat(mem->memname, get_timestamp(0) );
+#endif
+      sprintf(mem->memname, "/buf%d.%s", buffer_index_count, get_timestamp(0));
       /* mem->is_mmiomap = 0; */
     }
 
@@ -633,6 +642,7 @@ void allocate_buffer(struct buffer_t *mem)
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
+  // memcpy(tmp_msg, (char*)mem, sizeof(struct buffer_t));
   mqueue_send(app2sim_tx, tmp_msg);
 
   // Receive message from DPI with pbase populated
