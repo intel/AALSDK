@@ -32,3 +32,12 @@ gcc -g -o mmio_test \
     -lrt -lm -I ../../sw/ \
     -D ASE_DEBUG
 
+gcc -g -o alloc_dealloc alloc_dealloc.c \
+    ../../sw/tstamp_ops.c \
+    ../../sw/ase_ops.c \
+    ../../sw/app_backend.c \
+    ../../sw/mqueue_ops.c \
+    ../../sw/error_report.c \
+    -lrt -lm -I ../../sw/ \
+    -D ASE_DEBUG
+

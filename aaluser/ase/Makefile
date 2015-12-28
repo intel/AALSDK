@@ -48,7 +48,7 @@ include ase_sources.mk
 ASE_VERSION = 5.0.0
 
 # ASE Debug
-ASE_DEBUG = 0
+ASE_DEBUG = 1
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -305,7 +305,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf profile* simprofile*
+	rm -rf profile* simprofile* urgReport/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean

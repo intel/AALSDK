@@ -401,6 +401,7 @@ int ase_listener()
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
       
       // If in regression mode or SW-simkill mode
+#if 0
       if (  (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL) ||
 	   ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
 	   )
@@ -410,6 +411,32 @@ int ase_listener()
 	  run_clocks (500);
 	  ase_perror_teardown();
 	  start_simkill_countdown();
+	}
+#endif
+      if (cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL) 
+	{
+	  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
+	  printf("      : Reseting buffers ... Simulator RUNNING\n");
+	  ase_destroy();
+	  printf("SIM-C : Ready to run next manual test\n");
+	}
+      else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
+	{
+	  printf("SIM-C : ASE Timeout SIMKILL will happen soon\n"); 
+	}
+      else if (cfg->ase_mode == ASE_MODE_DAEMON_SW_SIMKILL) 
+	{
+	  printf("SIM-C : ASE recognized a SW simkill (see ase.cfg)... Simulator will EXIT\n");
+	  run_clocks (500);
+	  ase_perror_teardown();
+	  start_simkill_countdown();	  
+	}
+      else if ((cfg->ase_mode == ASE_MODE_REGRESSION) && (cfg->ase_num_tests == glbl_test_cmplt_cnt))
+	{
+	  printf("SIM-C : ASE completed %d tests (see ase.cfg)... Simulator will EXIT\n", cfg->ase_num_tests);
+	  run_clocks (500);
+	  ase_perror_teardown();
+	  start_simkill_countdown();	  
 	}
     }
 

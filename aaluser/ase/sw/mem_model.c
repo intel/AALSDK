@@ -210,7 +210,8 @@ void ase_alloc_action(struct buffer_t *mem)
   ase_dbg_memtest(mem);
 #endif
 
-  if (mem->index == 0)
+  // if (mem->index == 0)
+  if (mem->is_mmiomap == 0)
     {
       // Pin CSR address
       mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
@@ -221,9 +222,7 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
       // If UMSG is enabled, write information to CSR region
-#if 0
-      ase_umsg_init(mem->pbase);
-#endif
+      // *FIXME*: Maybe BB DFH has to be updated here
     }
 
   FUNC_CALL_EXIT;
@@ -283,7 +282,9 @@ void ase_empty_buffer(struct buffer_t *buf)
 
 
 // --------------------------------------------------------------------
-// ase_destroy : Destroy everything, called before exiting
+// ase_destroy : Destroy everything, called before exiting OR to
+// reset simulation environment
+//
 // OPERATION:
 // Traverse trough linked list
 // - Remove each shared memory region
@@ -296,36 +297,37 @@ void ase_destroy()
   struct buffer_t *ptr;
   int ret;
 
-  char rm_shm_path[50];
+  // char rm_shm_path[50];
 
   // Traverse through linked list
   ptr = head;
   while(ptr != NULL)
     {
+#if 0
       // Set rm_shm_path to NULLs
-      memset(rm_shm_path, '\0', sizeof(rm_shm_path));
-
+      // memset(rm_shm_path, '\0', sizeof(rm_shm_path));
+      
       // Unmap Shared memory
       ret = munmap((void*)ptr->pbase, (size_t)ptr->memsize);
       if (ret == -1)
 	ase_error_report("munmap", errno, ASE_OS_MEMMAP_ERR);
-      /* perror("munmap"); */
-
+      
       // Unlink related shared memory region
       if(shm_unlink(ptr->memname) != 0)
-	  ase_error_report("shm_unlink", errno, ASE_OS_SHM_ERR);
-	  /* perror("shm_unlink"); */
+	ase_error_report("shm_unlink", errno, ASE_OS_SHM_ERR);
       
       // Delete the SHM region
-      strcat(rm_shm_path, "rm -f /dev/shm");
-      strcat(rm_shm_path, ptr->memname);
-      system( rm_shm_path );
+      /* strcat(rm_shm_path, "rm -f /dev/shm"); */
+      /* strcat(rm_shm_path, ptr->memname); */
+      /* system( rm_shm_path ); */
       
       // Find and destroy node
       ll_remove_buffer(ptr);
       
       // Traverse to next node
       ptr = ptr->next;
+#endif
+      
     }
   
   FUNC_CALL_EXIT;

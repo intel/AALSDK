@@ -1011,62 +1011,6 @@ module ccip_emulator
    end
 
 
-   /* ******************************************************************
-    *
-    * This call is made on ERRORs requiring a shutdown
-    * simkill is called from software, and is the final step before
-    * graceful closedown
-    *
-    * *****************************************************************/
-   task simkill();
-      begin
-	 $display("SIM-SV: Simulation kill command received...");
-	 // Print transactions
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("Transaction counts => ");
-	 $display("\tMMIO WrReq = %d", ase_rx0_mmiowrreq_cnt );
-	 $display("\tMMIO RdReq = %d", ase_rx0_mmiordreq_cnt );
-	 $display("\tMMIO RdRsp = %d", ase_tx2_mmiordrsp_cnt );
-	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
-	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
-	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
-	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt   );
-	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt   );
-	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
-	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
-	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
-	 `END_YELLOW_FONTCOLOR;
-
-	 // Valid Count
-`ifdef ASE_DEBUG
-	 // Print errors
-	 `BEGIN_RED_FONTCOLOR;
-	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
-	   $display("\tREADs  : Response counts dont match request count !!");
-	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
-	   $display("\tWRITEs : Response counts dont match request count !!");
-	 `END_RED_FONTCOLOR;
-	 // Dropped transactions
-	 `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("cf2as_latbuf_ch0 dropped =>");
-	 // $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 // $display("cf2as_latbuf_ch1 dropped =>");
-	 // $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
-	 $display("Read Response checker =>");
-	 $display(read_check_array);
-	 $display("Write Response checker =>");
-	 $display(write_check_array);
-	 `END_YELLOW_FONTCOLOR;
-`endif
-	 // $fclose(log_fd);
-	 finish_logger = 1;
-
-	 // Command to close logfd
-	 $finish;
-      end
-   endtask
-
-
    /* *******************************************************************
     *
     * Unified message watcher daemon
@@ -2011,4 +1955,76 @@ module ccip_emulator
       .C1TxAlmFull      (C1TxAlmFull     )
       );
 
+
+   /* ******************************************************************
+    *
+    * This call is made on ERRORs requiring a shutdown
+    * simkill is called from software, and is the final step before
+    * graceful closedown
+    *
+    * *****************************************************************/
+   // Flag 
+   logic       simkill_started = 0;
+
+   // Simkill progress
+   task simkill();
+      begin
+	 simkill_started = 1;	 
+	 $display("SIM-SV: Simulation kill command received...");
+	 $display("      : Waiting for outstanding transactions to complete...");
+	 while( ~rdrsp_empty && 
+		~wr0rsp_empty && ~wr1rsp_empty && 
+		~umsgfifo_empty && 
+		~mmioresp_empty && ~mmioreq_empty 
+		&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty );
+	 run_clocks(100);	 
+	 $display("SIM-SV: Simkill will proceed");	 
+	 
+	 // Print transactions
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 $display("Transaction counts => ");
+	 $display("\tMMIO WrReq = %d", ase_rx0_mmiowrreq_cnt );
+	 $display("\tMMIO RdReq = %d", ase_rx0_mmiordreq_cnt );
+	 $display("\tMMIO RdRsp = %d", ase_tx2_mmiordrsp_cnt );
+	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
+	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
+	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
+	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt   );
+	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt   );
+	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
+	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
+	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
+	 `END_YELLOW_FONTCOLOR;
+
+	 // Valid Count
+`ifdef ASE_DEBUG
+	 // Print errors
+	 `BEGIN_RED_FONTCOLOR;
+	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
+	   $display("\tREADs  : Response counts dont match request count !!");
+	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
+	   $display("\tWRITEs : Response counts dont match request count !!");
+	 `END_RED_FONTCOLOR;
+	 // Dropped transactions
+	 `BEGIN_YELLOW_FONTCOLOR;
+	 // $display("cf2as_latbuf_ch0 dropped =>");
+	 // $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch1 dropped =>");
+	 // $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 $display("Read Response checker =>");
+	 $display(read_check_array);
+	 $display("Write Response checker =>");
+	 $display(write_check_array);
+	 `END_YELLOW_FONTCOLOR;
+`endif
+	 // $fclose(log_fd);
+	 finish_logger = 1;
+
+	 // Command to close logfd
+	 $finish;
+      end
+   endtask
+
+
+   
 endmodule // cci_emulator

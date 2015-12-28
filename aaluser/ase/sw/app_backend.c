@@ -79,6 +79,10 @@ struct buffer_t *umas_region;
 struct wsmeta_t *wsmeta_head = (struct wsmeta_t *) NULL;
 struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;
 
+// Buffer index count
+int asebuf_index_count = 0;    // global count/index
+int userbuf_index_count = 0;   // User count/index
+
 
 /*
  * Send SIMKILL
@@ -516,7 +520,6 @@ void allocate_buffer(struct buffer_t *mem)
   pthread_mutex_lock (&lock);
 
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
-  int static buffer_index_count = 0;
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Attempting to open a shared memory... ");
@@ -538,39 +541,18 @@ void allocate_buffer(struct buffer_t *mem)
   // called "/mmio", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
   memset(mem->memname, '\0', sizeof(mem->memname));
-  // if(buffer_index_count == 0)
   if(mem->is_mmiomap == 1)
-    /* if (mem->is_mmiomap == 1)  */
     {
-#if 0
-      strcpy(mem->memname, "/mmio.");
-      strcat(mem->memname, get_timestamp(0) );
-#endif
       sprintf(mem->memname, "/mmio.%s", get_timestamp(0));
-    /* #ifdef ASE_DEBUG */
-    /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
-    /* #endif       */
-      /* mem->is_mmiomap = 1; */
     }
   else if (mem->is_umas == 1) 
     {
-#if 0
-      strcpy(mem->memname, "/umas.");
-      strcat(mem->memname, get_timestamp(0) );
-#endif
       sprintf(mem->memname, "/umas.%s", get_timestamp(0));
-    /* #ifdef ASE_DEBUG */
-    /*   printf("  [DEBUG] memname => %s\n", mem->memname); */
-    /* #endif             */
     }
   else
     {
-#if 0
-      sprintf(mem->memname, "/buf%d.", buffer_index_count);
-      strcat(mem->memname, get_timestamp(0) );
-#endif
-      sprintf(mem->memname, "/buf%d.%s", buffer_index_count, get_timestamp(0));
-      /* mem->is_mmiomap = 0; */
+      sprintf(mem->memname, "/buf%d.%s", userbuf_index_count, get_timestamp(0));
+      userbuf_index_count++;
     }
 
   // Disable private memory flag
@@ -583,7 +565,6 @@ void allocate_buffer(struct buffer_t *mem)
   mem->fd_app = shm_open(mem->memname, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
   if(mem->fd_app < 0)
     {
-      /* ase_error_report("shm_open", errno, ASE_OS_SHM_ERR); */
       perror("shm_open");
       exit(1);
     }
@@ -593,28 +574,15 @@ void allocate_buffer(struct buffer_t *mem)
   if(mem->vbase == (uint64_t) MAP_FAILED)
     {
       perror("mmap");
-      /* ase_error_report("mmap", errno, ASE_OS_MEMMAP_ERR); */
       exit(1);
     }
   
-  // Pin ASE CSR base, so CSR Writes can be managed
-  if (buffer_index_count == 0)
-    {
-      mmio_afu_vbase = (uint64_t*)mem->vbase;
-    #ifdef ASE_DEBUG
-      printf("  [APP]  ASE MMIO virtual base = %p\n", mmio_afu_vbase);
-    #endif
-    }
-
   // Extend memory to required size
   ftruncate(mem->fd_app, (off_t)mem->memsize);
 
-  // Set mmio_afu_vbase
-  //  if (buffer_index_count == 0)
-  // mmio_afu_vbase = (uint32_t*)mem->vbase;
-
   // Autogenerate buffer index
-  mem->index = buffer_index_count++;
+  mem->index = asebuf_index_count;
+  asebuf_index_count++;
   BEGIN_YELLOW_FONTCOLOR;
   printf("SUCCESS\n");
   END_YELLOW_FONTCOLOR;
@@ -625,11 +593,6 @@ void allocate_buffer(struct buffer_t *mem)
   // Send an allocate command to DPI, metadata = ASE_MEM_ALLOC
   mem->metadata = HDR_MEM_ALLOC_REQ;
   mem->next = NULL;
-
-  // If memtest is enabled
-/* #ifdef ASE_MEMTEST_ENABLE */
-/*   shm_dbg_memtest(mem); */
-/* #endif */
 
   // Message queue must be enabled when using DPI (else debug purposes only)
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
@@ -642,7 +605,6 @@ void allocate_buffer(struct buffer_t *mem)
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
-  // memcpy(tmp_msg, (char*)mem, sizeof(struct buffer_t));
   mqueue_send(app2sim_tx, tmp_msg);
 
   // Receive message from DPI with pbase populated
@@ -654,7 +616,7 @@ void allocate_buffer(struct buffer_t *mem)
   ase_buffer_info(mem);
 #endif
 
-  // book-keeping WSmeta
+  // book-keeping WSmeta // used by ASEALIAFU
   struct wsmeta_t *ws;
   ws = (struct wsmeta_t *) malloc(sizeof(struct wsmeta_t));
   ws->index = mem->index;
