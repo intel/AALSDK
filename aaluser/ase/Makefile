@@ -114,25 +114,24 @@ SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
-# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
-ifeq ($(ASE_DEBUG), 1)
-SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
-SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile +prof
-# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
-endif
+# ifeq ($(ASE_DEBUG), 1)
+# SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
+# SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+# SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile +prof
+# # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
+# endif
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
-ifeq ($(ASE_DEBUG), 1)
-VCS_SIM_OPT+= -cm line+cond+fsm+tgl+path
-endif
+# ifeq ($(ASE_DEBUG), 1)
+# VCS_SIM_OPT+= -cm line+cond+fsm+tgl+path
+# endif
 
 #########################################################################
 #                         Questa Build Switches                         #

@@ -62,7 +62,8 @@ uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
 /* uint32_t *dsm_cirbstat; */
 /* uint32_t num_umsg_log2; */
 /* uint32_t num_umsg; */
-uint32_t umas_exist_status = UMAS_NOT_ESTABLISHED;
+uint32_t mmio_exist_status = NOT_ESTABLISHED;
+uint32_t umas_exist_status = NOT_ESTABLISHED;
 /* uint32_t glbl_umsgmode_csr; */
 
 // Instances for SPL page table and context
@@ -164,6 +165,7 @@ void session_init()
   mmio_region->is_mmiomap = 1;  
   allocate_buffer(mmio_region);
   mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
+  mmio_exist_status = ESTABLISHED;
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
 
   // Create UMSG region
@@ -173,6 +175,7 @@ void session_init()
   umas_region->is_umas = 1;
   allocate_buffer(umas_region);
   umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
+  umas_exist_status = ESTABLISHED;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
 
   END_YELLOW_FONTCOLOR;
@@ -190,13 +193,21 @@ void session_deinit()
   FUNC_CALL_ENTRY;
 
   // Unmap UMAS region
-  if (umas_exist_status == UMAS_ESTABLISHED) 
+  if (umas_exist_status == ESTABLISHED) 
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Deallocating UMAS\n");
       deallocate_buffer(umas_region);
       END_YELLOW_FONTCOLOR;
     }
+#ifdef ASE_DEBUG
+  else
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  No UMAS established\n");
+      END_RED_FONTCOLOR;
+    }
+#endif
 
   // Um-mapping CSR region
   BEGIN_YELLOW_FONTCOLOR;
@@ -659,6 +670,10 @@ void deallocate_buffer(struct buffer_t *mem)
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
   mqueue_send(app2sim_tx, tmp_msg);
+
+  // Wait for response to deallocate
+  mqueue_recv(sim2app_rx, tmp_msg);
+  ase_str_to_buffer_t(tmp_msg, mem);
   
   // Unmap the memory accordingly
   ret = munmap((void*)mem->vbase, (size_t)mem->memsize);

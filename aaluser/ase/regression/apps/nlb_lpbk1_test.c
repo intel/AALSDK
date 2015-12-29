@@ -128,9 +128,9 @@ int main(int argc, char *argv[])
   /* deallocate_buffer(src); */
   /* deallocate_buffer(dst); */
 
+  deallocate_buffer_by_index(4);
   deallocate_buffer_by_index(3);
   deallocate_buffer_by_index(2);
-  deallocate_buffer_by_index(1);
 
   session_deinit();
 

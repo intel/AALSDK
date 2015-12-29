@@ -98,6 +98,7 @@ void ase_perror_teardown()
 // memname and index populated. 
 // NOTE: This function must be called by DPI
 // ------------------------------------------------------------------
+#if 0
 int ase_recv_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
@@ -118,12 +119,13 @@ int ase_recv_msg(struct buffer_t *mem)
       return ASE_MSG_ABSENT;
     }
 }
-
+#endif
 
 // -------------------------------------------------------------------
 // ase_send_msg : Send a ase reply 
 // Convert a buffer_t to string and transmit string as a message
 // -------------------------------------------------------------------
+#if 0
 void ase_send_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
@@ -139,7 +141,7 @@ void ase_send_msg(struct buffer_t *mem)
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 // --------------------------------------------------------------------
 // DPI ALLOC buffer action - Allocate buffer action inside DPI
@@ -203,7 +205,8 @@ void ase_alloc_action(struct buffer_t *mem)
   mem->metadata = HDR_MEM_ALLOC_REPLY;
   
   // Convert buffer_t to string
-  ase_send_msg(mem);
+  mqueue_send(sim2app_tx, (char*)mem);
+  // ase_send_msg(mem);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
@@ -239,6 +242,7 @@ void ase_dealloc_action(struct buffer_t *buf)
 
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
+  dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
@@ -249,7 +253,15 @@ void ase_dealloc_action(struct buffer_t *buf)
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : Command to invalidate \"%s\" ...\n", dealloc_ptr->memname);
       END_YELLOW_FONTCOLOR;
-      dealloc_ptr->valid = ASE_BUFFER_INVALID;
+
+      // Mark buffer as invalid & deallocate
+      dealloc_ptr->valid = ASE_BUFFER_INVALID; 
+      munmap((void*)dealloc_ptr->vbase, (size_t)dealloc_ptr->memsize );
+      shm_unlink(dealloc_ptr->memname);
+      
+      // Respond back
+      dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
+      mqueue_send(sim2app_tx, (char*)dealloc_ptr);
     }
   else
     {
@@ -295,40 +307,29 @@ void ase_destroy()
   FUNC_CALL_ENTRY;
 
   struct buffer_t *ptr;
-  int ret;
+  ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
-  // char rm_shm_path[50];
-
-  // Traverse through linked list
-  ptr = head;
-  while(ptr != NULL)
-    {
-#if 0
-      // Set rm_shm_path to NULLs
-      // memset(rm_shm_path, '\0', sizeof(rm_shm_path));
-      
-      // Unmap Shared memory
-      ret = munmap((void*)ptr->pbase, (size_t)ptr->memsize);
-      if (ret == -1)
-	ase_error_report("munmap", errno, ASE_OS_MEMMAP_ERR);
-      
-      // Unlink related shared memory region
-      if(shm_unlink(ptr->memname) != 0)
-	ase_error_report("shm_unlink", errno, ASE_OS_SHM_ERR);
-      
-      // Delete the SHM region
-      /* strcat(rm_shm_path, "rm -f /dev/shm"); */
-      /* strcat(rm_shm_path, ptr->memname); */
-      /* system( rm_shm_path ); */
-      
-      // Find and destroy node
-      ll_remove_buffer(ptr);
-      
-      // Traverse to next node
-      ptr = ptr->next;
+#ifdef ASE_DEBUG
+  ll_traverse_print();
 #endif
-      
-    }
+
+  ptr = end;  
+  while((head != NULL)||(end != NULL))
+    {
+      ptr = end;
+      if(ptr->valid == ASE_BUFFER_VALID)
+	{
+	  ase_dealloc_action(ptr);
+	}
+      else
+	{
+	  ll_remove_buffer(ptr);
+	}
+    } 
+
+#ifdef ASE_DEBUG
+  ll_traverse_print();
+#endif
   
   FUNC_CALL_EXIT;
 }

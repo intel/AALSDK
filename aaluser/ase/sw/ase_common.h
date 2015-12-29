@@ -149,8 +149,8 @@ char *app_run_cmd;
 #define ASE_MODE_REGRESSION          4
 
 // UMAS establishment status
-#define UMAS_NOT_ESTABLISHED 0x0
-#define UMAS_ESTABLISHED     0xBEEF
+#define NOT_ESTABLISHED 0x0
+#define ESTABLISHED     0xBEEF
 
 /*
  * Console colors
@@ -247,9 +247,10 @@ uint64_t *mmio_afu_vbase;
 #define ASE_BUFFER_INVALID      0x0
 
 // Buffer allocate/deallocate message headers
-#define HDR_MEM_ALLOC_REQ    0x7F
-#define HDR_MEM_ALLOC_REPLY  0xFF
-#define HDR_MEM_DEALLOC_REQ  0x0F
+#define HDR_MEM_ALLOC_REQ     0x7F7F
+#define HDR_MEM_ALLOC_REPLY   0x77FF
+#define HDR_MEM_DEALLOC_REQ   0x00FF
+#define HDR_MEM_DEALLOC_REPLY 0x7700
 
 // MMIO widths
 #define MMIO_WRITE_REQ       0xAA88
