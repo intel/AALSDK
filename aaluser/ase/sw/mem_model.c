@@ -309,9 +309,9 @@ void ase_destroy()
   struct buffer_t *ptr;
   ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
-#ifdef ASE_DEBUG
-  ll_traverse_print();
-#endif
+/* #ifdef ASE_DEBUG */
+/*   ll_traverse_print(); */
+/* #endif */
 
   ptr = end;  
   while((head != NULL)||(end != NULL))
@@ -327,9 +327,9 @@ void ase_destroy()
 	}
     } 
 
-#ifdef ASE_DEBUG
-  ll_traverse_print();
-#endif
+/* #ifdef ASE_DEBUG */
+/*   ll_traverse_print(); */
+/* #endif */
   
   FUNC_CALL_EXIT;
 }

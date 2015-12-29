@@ -94,12 +94,6 @@ void session_init()
 
   ipc_init();
 
-  // Send portctrl command to start a session
-  char session_ctrlcmd[ASE_MQ_MSGSIZE];
-  memset(session_ctrlcmd, '\0', ASE_MQ_MSGSIZE);
-  sprintf(session_ctrlcmd, "ASE_INIT %d", getpid());
-  ase_portctrl(session_ctrlcmd);
-
   // Initialize lock
   if ( pthread_mutex_init(&lock, NULL) != 0)
     {
@@ -141,6 +135,15 @@ void session_init()
   // Session start
   printf(" DONE\n");
   printf("  [APP]  Session started\n");
+
+  // Send portctrl command to start a session
+  char session_ctrlcmd[ASE_MQ_MSGSIZE];
+  memset(session_ctrlcmd, '\0', ASE_MQ_MSGSIZE);
+  sprintf(session_ctrlcmd, "ASE_INIT %d", getpid());
+  ase_portctrl(session_ctrlcmd);
+
+  // Wait till session file is created
+  poll_for_session_id();
 
   // Creating CSR map 
   printf("  [APP]  Creating MMIO region...\n");

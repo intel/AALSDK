@@ -879,7 +879,7 @@ module ccip_emulator
    		   umsg_array[jj].hint_pop <= 1'b0;
    		   umsg_array[jj].data_pop <= 1'b0;
    		end
-		upop_state         <= UPopIdle;		
+		upop_state         <= UPopIdle;
 	     end
 
 	   default:
@@ -964,7 +964,7 @@ module ccip_emulator
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
    assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
-      
+
    // process
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1006,7 +1006,7 @@ module ccip_emulator
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
 	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
-	   ase_rx0_umsgdata_cnt = ase_rx0_umsgdata_cnt + 1;	 
+	   ase_rx0_umsgdata_cnt = ase_rx0_umsgdata_cnt + 1;
       end
    end
 
@@ -1196,7 +1196,7 @@ module ccip_emulator
       Tx0toRx0_pkt_q     <= Tx0toRx0_pkt;
       Tx0toRx0_pkt_vld_q <= Tx0toRx0_pkt_vld;
    end
-   
+
    // stage 1 - Pop read request
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1226,7 +1226,7 @@ module ccip_emulator
    	 end
       end
    end
-       
+
 
    // Stage 2 - Stage read response
    always @(posedge clk) begin
@@ -1245,11 +1245,11 @@ module ccip_emulator
 	 rdrsp_hdr_in.clnum    <= 2'b0;
 	 rdrsp_hdr_in.resptype <= CCIP_RX0_RD_RESP;
 	 rdrsp_hdr_in.mdata    <= Tx0toRx0_pkt_q.mdata;
-	 rdrsp_write           <= Tx0toRx0_pkt_vld_q;      
+	 rdrsp_write           <= Tx0toRx0_pkt_vld_q;
       end
    end
 
-   
+
    /*
     * CAFU->ASE CH1 (TX1)
     * Formed as {TxHdr_t, <data_512>}
@@ -1304,7 +1304,7 @@ module ccip_emulator
       Tx1toRx1_pkt_vld_q <= Tx1toRx1_pkt_vld;
    end
 
-   
+
    // TX1 fulfillment flow
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1350,10 +1350,10 @@ module ccip_emulator
    	 wr0rsp_hdr_in.clnum    <= 2'b0;
    	 wr0rsp_hdr_in.resptype <= CCIP_RX0_WR_RESP;
    	 wr0rsp_hdr_in.mdata    <= Tx1toRx0_pkt_q.mdata;
-   	 wr0rsp_write           <= Tx1toRx0_pkt_vld_q; 
+   	 wr0rsp_write           <= Tx1toRx0_pkt_vld_q;
       end
    end
-   
+
 
    // Stage 2 - Tx1toRx1 write process
    always @(posedge clk) begin
@@ -1370,7 +1370,7 @@ module ccip_emulator
    	 wr1rsp_hdr_in.clnum    <= 2'b0;
    	 wr1rsp_hdr_in.resptype <= CCIP_RX1_WR_RESP;
    	 wr1rsp_hdr_in.mdata    <= Tx1toRx1_pkt_q.mdata;
-   	 wr1rsp_write           <= Tx1toRx1_pkt_vld_q; 
+   	 wr1rsp_write           <= Tx1toRx1_pkt_vld_q;
       end
    end
 
@@ -1963,26 +1963,43 @@ module ccip_emulator
     * graceful closedown
     *
     * *****************************************************************/
-   // Flag 
+   // Flag
    logic       simkill_started = 0;
+   logic       memreq_outstanding;
+
+   // Check if memory requests are outstanding
+   // always (posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 memreq_outstanding <= 0;
+   //    end
+   //    else begin
+   // 	 if ((ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt) && (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))) begin
+   // 	    memreq_outstanding <= 1;
+   // 	 end
+   // 	 else begin
+   // 	    memreq_outstanding <= 0;
+   // 	 end
+   //    end
+   // end
 
    // Simkill progress
    task simkill();
+   // function void simkill();
       begin
-	 simkill_started = 1;	 
+	 simkill_started = 1;
 	 $display("SIM-SV: Simulation kill command received...");
 	 $display("        Waiting for outstanding transactions to complete...");
-	 while( ~rdrsp_empty && 
-		~wr0rsp_empty && ~wr1rsp_empty && 
-		~umsgfifo_empty && 
-		~mmioresp_empty && ~mmioreq_empty 
-		&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty )
+	 while( ~rdrsp_empty &&
+	 	~wr0rsp_empty && ~wr1rsp_empty &&
+	 	~umsgfifo_empty &&
+	 	~mmioresp_empty && ~mmioreq_empty
+	 	&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty )
 	   begin
-	      @(posedge clk);	      
+	      @(posedge clk);
 	   end
-	 run_clocks(100);	 
-	 $display("SIM-SV: Simkill will proceed");	 
-	 
+	 run_clocks(100);
+	 $display("SIM-SV: Simkill will proceed");
+
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
 	 $display("Transaction counts => ");
@@ -2026,8 +2043,9 @@ module ccip_emulator
 	 // Command to close logfd
 	 $finish;
       end
+   // endfunction
    endtask
 
 
-   
+
 endmodule // cci_emulator

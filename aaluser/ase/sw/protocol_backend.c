@@ -240,9 +240,6 @@ int ase_listener()
   if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT)
     {
       sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
-      BEGIN_RED_FONTCOLOR;
-      printf("portctrl_msgstr = %s %d", portctrl_msgstr, sizeof(portctrl_cmd));
-      END_RED_FONTCOLOR;
       // while(1);
       if ( memcmp(portctrl_cmd, "AFU_RESET", 9) == 0)
 	{
@@ -259,9 +256,13 @@ int ase_listener()
 	}
       else if ( memcmp(portctrl_cmd, "ASE_INIT", 8) == 0)
 	{
-	  BEGIN_RED_FONTCOLOR;
 	  printf("Session requested by PID = %d\n", portctrl_value);
-	  END_RED_FONTCOLOR;
+	  // Generate new timestamp
+	  put_timestamp();
+	  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
+	  sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
+	  // Print timestamp
+	  printf("SIM-C : Session ID => %s\n", get_timestamp(0) );	  
 	}
       else
 	{
@@ -583,6 +584,7 @@ int ase_init()
   ipc_init();
 
   // Generate timstamp (used as session ID)
+#if 0
   put_timestamp();
   tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
   strcpy(tstamp_filepath, ase_workdir_path);
@@ -590,7 +592,7 @@ int ase_init()
 
   // Print timestamp
   printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
-
+#endif
   // Create IPC cleanup setup
   create_ipc_listfile();
 
