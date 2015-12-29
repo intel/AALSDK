@@ -172,7 +172,7 @@ void ase_alloc_action(struct buffer_t *mem)
 
   // Add to IPC list
 #ifdef SIM_SIDE
-  add_to_ipc_list ("SHM", mem->memname);
+  //  add_to_ipc_list ("SHM", mem->memname);
 #endif
 
   // Mmap to pbase, find one with unique low 38 bit

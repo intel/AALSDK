@@ -1971,12 +1971,15 @@ module ccip_emulator
       begin
 	 simkill_started = 1;	 
 	 $display("SIM-SV: Simulation kill command received...");
-	 $display("      : Waiting for outstanding transactions to complete...");
+	 $display("        Waiting for outstanding transactions to complete...");
 	 while( ~rdrsp_empty && 
 		~wr0rsp_empty && ~wr1rsp_empty && 
 		~umsgfifo_empty && 
 		~mmioresp_empty && ~mmioreq_empty 
-		&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty );
+		&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty )
+	   begin
+	      @(posedge clk);	      
+	   end
 	 run_clocks(100);	 
 	 $display("SIM-SV: Simkill will proceed");	 
 	 

@@ -38,8 +38,8 @@
 struct buffer_t *head;
 struct buffer_t *end;
 
-uint64_t csr_fake_pin;
-struct timeval start;
+// uint64_t csr_fake_pin;
+// struct timeval start;
 
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
@@ -91,7 +91,7 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
-  BEGIN_YELLOW_FONTCOLOR;
+  END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
@@ -248,11 +248,14 @@ char* ase_eval_session_directory()
 #endif
       
   // Locate work directory
-  if( env_path) {
+  if( env_path) 
+    {
      strcat( workdir_path, env_path );
-  } else {
-     *workdir_path = '\0';
-  }
+    } 
+  else 
+    {
+      *workdir_path = '\0';
+    }
   // strcat( workdir_path, "/work/" );  || RRS:
 
   // *FIXME*: Idiot-proof the work directory

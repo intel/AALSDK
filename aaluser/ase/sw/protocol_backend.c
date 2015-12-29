@@ -225,32 +225,43 @@ int ase_listener()
    * Port Control message
    * Format: <cmd> <value>
    * -----------------------------------------------------------------
-   * Supported commands
-   * AFU_RESET  <0,1>
-   * UMSG_MODE  <8-bit mask>
+   * Supported commands       |
+   * ASE_INIT   <APP_PID>     | Session control - sends PID to 
+   *                          |
+   * AFU_RESET  <0,1>         | AFU reset handle
+   * UMSG_MODE  <8-bit mask>  | UMSG mode control
    *
    */
-  char *pch;
   char portctrl_msgstr[ASE_MQ_MSGSIZE];
+  char portctrl_cmd[ASE_MQ_MSGSIZE];
   int portctrl_value;
-
+  memset(portctrl_msgstr, '\0', ASE_MQ_MSGSIZE);
+  memset(portctrl_cmd, '\0', ASE_MQ_MSGSIZE);
   if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT)
     {
-      pch = strtok(portctrl_msgstr, " ");
-      if ( memcmp(pch, "AFU_RESET", 9) == 0)
+      sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
+      BEGIN_RED_FONTCOLOR;
+      printf("portctrl_msgstr = %s %d", portctrl_msgstr, sizeof(portctrl_cmd));
+      END_RED_FONTCOLOR;
+      // while(1);
+      if ( memcmp(portctrl_cmd, "AFU_RESET", 9) == 0)
 	{
-	  pch = strtok(NULL, " ");
-	  portctrl_value = (atoi(pch) != 0) ? 1 : 0 ;
-	  // Soft Reset trigger here
+	  // AFU Reset control
+	  portctrl_value = (portctrl_value != 0) ? 1 : 0 ;
 	  afu_softreset_trig ( portctrl_value );
 	  printf("SIM-C : Soft Reset set to %d\n", portctrl_value);
 	}
-      else if ( memcmp(pch, "UMSG_MODE", 9) == 0)
+      else if ( memcmp(portctrl_cmd, "UMSG_MODE", 9) == 0)
 	{
 	  // Umsg mode setting here
-	  pch = strtok(NULL, " ");
-	  glbl_umsgmode = atoi(pch) & 0xFF;
+	  glbl_umsgmode = portctrl_value & 0xFF;
 	  printf("SIM-C : UMSG Mode mask set to 0x%x\n", glbl_umsgmode);
+	}
+      else if ( memcmp(portctrl_cmd, "ASE_INIT", 8) == 0)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("Session requested by PID = %d\n", portctrl_value);
+	  END_RED_FONTCOLOR;
 	}
       else
 	{
