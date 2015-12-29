@@ -101,7 +101,6 @@ void mqueue_create(char* mq_name_suffix)
 /*   printf("mq_path = %s\n", mq_path); */
 /* #endif */
 
-  // ret = mkfifo(mq_path, 0666);
   ret = mkfifo(mq_path, S_IRUSR|S_IWUSR );
   if (ret == -1)
     {

@@ -56,7 +56,7 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
 #if 0
-  mqueue_close(sim2app_intr_tx);       
+  // mqueue_close(sim2app_intr_tx);       
 #endif
   mqueue_close(app2sim_simkill_rx);
   mqueue_close(app2sim_portctrl_rx);
@@ -172,7 +172,7 @@ void ase_alloc_action(struct buffer_t *mem)
 
   // Add to IPC list
 #ifdef SIM_SIDE
-  //  add_to_ipc_list ("SHM", mem->memname);
+  add_to_ipc_list ("SHM", mem->memname);
 #endif
 
   // Mmap to pbase, find one with unique low 38 bit
@@ -206,7 +206,6 @@ void ase_alloc_action(struct buffer_t *mem)
   
   // Convert buffer_t to string
   mqueue_send(sim2app_tx, (char*)mem);
-  // ase_send_msg(mem);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
@@ -262,6 +261,9 @@ void ase_dealloc_action(struct buffer_t *buf)
       // Respond back
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       mqueue_send(sim2app_tx, (char*)dealloc_ptr);
+
+      // Remove fd
+      close(dealloc_ptr->fd_ase);
     }
   else
     {
