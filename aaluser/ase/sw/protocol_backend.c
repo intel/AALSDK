@@ -411,7 +411,7 @@ int ase_listener()
       if (cfg->ase_mode == ASE_MODE_DAEMON_NO_SIMKILL)
 	{
 	  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
-	  printf("      : Reseting buffers ... Simulator RUNNING\n");
+	  printf("        Reseting buffers ... Simulator RUNNING\n");
 	  ase_destroy();
 	  printf("SIM-C : Ready to run next manual test\n");	  
 	}

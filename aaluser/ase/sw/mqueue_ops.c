@@ -140,9 +140,11 @@ int mqueue_open(char *mq_name, int perm_flag)
   memset (mq_path, '\0', ASE_FILEPATH_LEN);
   sprintf(mq_path, "%s/%s", ase_workdir_path, mq_name);
   
-/* #ifdef ASE_DEBUG */
-/*   printf("mq_path = %s\n", mq_path); */
-/* #endif */
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("  [DEBUG]  mq_path = %s\n", mq_path);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Dummy function to open WRITE only MQs
   // Named pipe requires non-blocking write-only move on from here
@@ -151,7 +153,11 @@ int mqueue_open(char *mq_name, int perm_flag)
   int dummy_fd;
   if (perm_flag == O_WRONLY)
     {
-      // printf("Opening IPC in write-only mode with dummy fd\n");
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("Opening IPC in write-only mode with dummy fd\n");
+      END_YELLOW_FONTCOLOR;
+    #endif
       dummy_fd = open(mq_path, O_RDONLY|O_NONBLOCK);
     }
 #endif

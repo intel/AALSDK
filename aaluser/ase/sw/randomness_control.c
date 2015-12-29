@@ -44,7 +44,7 @@ void ase_write_seed(uint64_t seed)
     {
       fprintf(fp_seed, "%lu", seed);
       fclose(fp_seed);
-    }
+    }  
 }
 
 
@@ -63,12 +63,14 @@ uint64_t ase_read_seed()
       printf("        Old seed unusable --- creating a new seed\n");
       new_seed = time(NULL);
       ase_write_seed(new_seed);      
+      // fclose(fp_seed);
       return new_seed;
     }
   else
     {
       fscanf(fp_seed, "%lu", &readback_seed);
       printf("SIM-C : Readback seed %lu\n", readback_seed);
+      fclose(fp_seed);
       return readback_seed;
     }
 }
