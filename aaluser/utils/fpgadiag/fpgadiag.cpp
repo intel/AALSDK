@@ -524,14 +524,10 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
-   if(NULL != m_UMsgVirt){
 
-	  NamedValueSet nvs;
-	  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
+   if(NULL == m_UMsgVirt){
 
-	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
-   }else{
-	  ERR("No uMSG support");
+   	  ERR("No uMSG support");
    }
 
    Post();
