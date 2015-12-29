@@ -321,3 +321,7 @@ src_check:
 coverage:
 	urg -dir ./work/coverage.vdb
 #	firefox urgReport/dashboard.html &
+
+fd-check:
+	cd ./$(WORK)/; valgrind --track-fds=yes ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
