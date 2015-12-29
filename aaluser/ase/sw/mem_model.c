@@ -70,7 +70,7 @@ void ase_mqueue_teardown()
 
 
 // ---------------------------------------------------------------
-// DPI Self destruct - Called if: error() occurs 
+// ASE graceful shutdown - Called if: error() occurs 
 // Deallocate & Unlink all shared memories and message queues
 // ---------------------------------------------------------------
 void ase_perror_teardown()

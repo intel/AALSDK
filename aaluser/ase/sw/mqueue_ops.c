@@ -258,7 +258,6 @@ void mqueue_send(int mq, char* str)
 // mqueue_recv(): Easy receive function
 // - Typecast message back to a required type
 // ------------------------------------------------------------------
-
 int mqueue_recv(int mq, char* str)
 {
   FUNC_CALL_ENTRY;
@@ -276,3 +275,5 @@ int mqueue_recv(int mq, char* str)
       return ASE_MSG_ABSENT;
     }   
 }
+
+
