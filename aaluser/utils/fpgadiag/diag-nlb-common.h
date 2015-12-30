@@ -47,6 +47,7 @@
 BEGIN_C_DECLS
 
 #define HIGH 0xffffffff
+#define LOW  0x00000000
 
 # define NLB_TESTMODE_LPBK1 	   "TestMode_lpbk1"
 # define NLB_TESTMODE_READ  	   "TestMode_read"
