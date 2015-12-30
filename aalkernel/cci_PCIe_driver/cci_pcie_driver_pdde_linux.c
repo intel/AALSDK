@@ -73,6 +73,7 @@
 
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/aalinterface.h"
+#include "aalsdk/kernel/ccip_defs.h"
 //#include "aalsdk/kernel/aalids.h"
 //#include "aalsdk/kernel/aalrm.h"
 //#include "aalsdk/kernel/aalqueue.h"
@@ -81,7 +82,6 @@
 
 #include "cci_pcie_driver_simulator.h"
 
-#include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "ccip_port.h"
 #include "ccip_perfmon.h"
@@ -127,7 +127,7 @@ module_param    (sim, ulong, S_IRUGO);
 //=============================================================================
 
 btUnsignedInt debug = 0
-#if 0
+#if 1
 /* Type and Level selection flags */
    | PTRACE_FLAG
    | PVERBOSE_FLAG

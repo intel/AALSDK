@@ -56,7 +56,7 @@
 //******************************************************************************
 //****************************************************************************
 /// @file ccip_defs.h
-/// @brief  Definitions for CCI-P compliant devices.
+/// @brief  Public definitions for CCI-P compliant devices.
 /// @ingroup aalkernel_ccip
 /// @verbatim
 //        FILE: ccip_defs.h
@@ -100,6 +100,13 @@ BEGIN_NAMESPACE(AAL)
 ///=================================================================
 /// Enumerations
 ///=================================================================
+enum e_CCIP_DEV_FEATURE_ID {
+	CCIP_DEVFID_Configuration,
+	CCIP_DEVFID_FME,
+	CCIP_DEVFID_PORT,
+	CCIP_DEVFID_SIGTAP,
+};
+
 
 /// CCIP Device type ID
 enum e_CCIP_DEVTPPE_ID {
@@ -210,6 +217,57 @@ enum e_CCIP_PR_Megafun_status {
    CCIP_PR_MF_rsvd1 = 0x6,
    CCIP_PR_MF_rsvd2 = 0x7
 };
+
+///=================================================================
+/// IDs used by the devices and objects
+///=================================================================
+
+// FPGA Management Engine GUID
+#define CCIP_FME_GUIDL              (0x82FE38F0F9E17764ULL)
+#define CCIP_FME_GUIDH              (0xBFAf2AE94A5246E3ULL)
+#define CCIP_FME_PIPIID             (0x4DDEA2705E7344D1ULL)
+
+#define CCIP_DEV_FME_SUBDEV         (-1)
+#define CCIP_DEV_PORT_SUBDEV(s)     (s + 0x10)
+#define CCIP_DEV_AFU_SUBDEV(s)      (s + 0x20)
+
+#define PORT_SUBDEV(s)              (s - 0x10 )
+#define AFU_SUBDEV(s)               (s - 0x20 )
+
+/// FPGA Port GUID
+#define CCIP_PORT_GUIDL             (0x9642B06C6B355B87ULL)
+#define CCIP_PORT_GUIDH             (0x3AB49893138D42EBULL)
+#define CCIP_PORT_PIPIID            (0x5E82B04A50E59F20ULL)
+
+/// AFU GUID
+#define CCIP_AFU_PIPIID             (0x26F67D4CAD054DFCULL)
+
+/// Signal Tap GUID
+#define CCIP_STAP_GUIDL             (0xB6B03A385883AB8DULL)
+#define CCIP_STAP_GUIDH             (0x022F85B12CC24C9DULL)
+#define CCIP_STAP_PIPIID            (0xA710C842F06E45E0ULL)
+#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
+
+/// Partial Reconfiguration GUID
+#define CCIP_PR_GUIDL               (0x83B54FD5E5216870ULL)
+#define CCIP_PR_GUIDH               (0xA3AAB28579A04572ULL)
+#define CCIP_PR_PIPIID              (0x7C4D41EA156C4D81ULL)
+
+
+/// Vender ID and Device ID
+#define CCIP_FPGA_VENDER_ID         0x8086
+
+/// PCI Device ID
+#define PCIe_DEVICE_ID_RCiEP0       0xBCBD
+#define PCIe_DEVICE_ID_RCiEP1       0xBCBE
+
+/// QPI Device ID
+#define PCIe_DEVICE_ID_RCiEP2       0xBCBC
+
+/// MMIO Space map
+#define FME_DFH_AFUIDL  0x8
+#define FME_DFH_AFUIDH  0x10
+#define FME_DFH_NEXTAFU 0x18
 
 
 /******************************************************************************
@@ -1191,112 +1249,6 @@ struct afu_device
 }; // end struct ccip_afu_device
 
 
-///============================================================================
-/// Name: ccip_device
-/// @brief  CCIP board device
-///============================================================================
-struct ccip_device
-{
-   // Used for being added to the global list of devices.
-   kosal_list_head            m_list;
-
-   // Head of the list of AAL devices created
-   kosal_list_head            m_devlisthead;
-
-   // Head of the list of ports devices
-   kosal_list_head            m_portlisthead;
-
-
-   struct fme_device         *m_pfme_dev;    // FME Device
-
-   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
-
-   btUnsignedInt              m_flags;
-
-   // Private semaphore
-   struct semaphore           m_sem;
-
-   int                        m_simulated;
-
-   enum aal_bus_types_e       m_bustype;
-   btUnsigned32bitInt         m_busNum;
-   btUnsigned32bitInt         m_devicenum;      // device number
-   btUnsigned32bitInt         m_functnum;       // function number
-
-   btInt                      m_resources;      // Bit mask indicating bars that have been reserved
-
-   // FME MMIO Space
-   btVirtAddr                 m_kvp_fme_mmio;   // kv address of MMIO space
-   btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
-   size_t                     m_len_fme_mmio;   // Bytes
-
-   btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
-   btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
-   size_t                     m_len_port_mmio[5];
-
-   // AFU MMIO Space
-   btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
-   btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
-   size_t                     m_len_afu_mmio;   // Bytes
-
-
-}; // end struct ccip_afu_device
-
-#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
-#define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
-#define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
-#define ccip_dev_to_port_dev(pdev)           ((pdev)->m_pfme_dev)
-
-#define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
-
-#define cci_dev_board_type(pdev)             ((pdev)->m_boardtype)
-
-#define ccip_set_simulated(pdev)             ((pdev)->m_simulated = 1)
-#define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
-#define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
-
-#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
-#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
-#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
-
-#define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
-#define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)
-#define ccip_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
-#define ccip_dev_psem(pdev)                  (&(pdev)->m_sem)
-
-#define ccip_dev_list_head(pdev)             ((pdev)->m_list)
-#define ccip_aal_dev_list(pdev)              ((pdev)->m_devlisthead)
-#define ccip_port_dev_list(pdev)             ((pdev)->m_portlisthead)
-
-#define ccip_fmedev_phys_afu_mmio(pdev)      ((pdev)->m_phys_fme_mmio)
-#define ccip_fmedev_kvp_afu_mmio(pdev)       ((pdev)->m_kvp_fme_mmio)
-#define ccip_fmedev_len_afu_mmio(pdev)       ((pdev)->m_len_fme_mmio)
-
-#define ccip_portdev_phys_afu_mmio(pdev,n)   ((pdev)->m_phys_port_mmio[n])
-#define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
-#define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
-
-#define ccip_dev_pcie_bustype(pdev)             ((pdev)->m_bustype)
-#define ccip_dev_pcie_busnum(pdev)              ((pdev)->m_busNum)
-#define ccip_dev_pcie_devnum(pdev)              ((pdev)->m_devicenum)
-#define ccip_dev_pcie_fcnnum(pdev)              ((pdev)->m_functnum)
-
-
-/// @brief   Writes 64 bit control and status registers.
-///
-/// @param[in]  baseAddress   base CSR address.
-/// @param[in]  offset        offset of CSR  .
-/// @param[in]  value    value  going to be write in CSR.
-/// @return   void
-int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value);
-
-/// @brief   read 64 bit control and status registers.
-///
-/// @param[in]  baseAddress   base CSR address.
-/// @param[in]  offset        offset of CSR  .
-/// @return    64 bit  CSR value
-bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
 
 /// @} group aalkernel_ccip
 

@@ -501,7 +501,7 @@ ccidrv_mmap  (struct file *file, struct vm_area_struct *vma)
    struct aal_device *pdev = NULL;
 
    PTRACEIN;
-   PVERBOSE("In UIDRV\n");
+   PVERBOSE("In UIDRV  MMAP\n");
 
    //////////////////////////////////////////////////////////////////////////////////
    if(vma->vm_pgoff == 0 ) {

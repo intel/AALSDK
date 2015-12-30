@@ -74,56 +74,6 @@ BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
-///=================================================================
-/// IDs used by the devices and objects
-///=================================================================
-
-// FPGA Management Engine GUID
-#define CCIP_FME_GUIDL              (0x82FE38F0F9E17764ULL)
-#define CCIP_FME_GUIDH              (0xBFAf2AE94A5246E3ULL)
-#define CCIP_FME_PIPIID             (0x4DDEA2705E7344D1ULL)
-
-#define CCIP_DEV_FME_SUBDEV         0
-#define CCIP_DEV_PORT_SUBDEV(s)     (s + 0x10)
-#define CCIP_DEV_AFU_SUBDEV(s)      (s + 0x20)
-
-#define PORT_SUBDEV(s)              (s - 0x10 )
-#define AFU_SUBDEV(s)               (s - 0x20 )
-
-/// FPGA Port GUID
-#define CCIP_PORT_GUIDL             (0x9642B06C6B355B87ULL)
-#define CCIP_PORT_GUIDH             (0x3AB49893138D42EBULL)
-#define CCIP_PORT_PIPIID            (0x5E82B04A50E59F20ULL)
-
-/// AFU GUID
-#define CCIP_AFU_PIPIID             (0x26F67D4CAD054DFCULL)
-
-/// Signal Tap GUID
-#define CCIP_STAP_GUIDL             (0xB6B03A385883AB8DULL)
-#define CCIP_STAP_GUIDH             (0x022F85B12CC24C9DULL)
-#define CCIP_STAP_PIPIID            (0xA710C842F06E45E0ULL)
-#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
-
-/// Partial Reconfiguration GUID
-#define CCIP_PR_GUIDL               (0x83B54FD5E5216870ULL)
-#define CCIP_PR_GUIDH               (0xA3AAB28579A04572ULL)
-#define CCIP_PR_PIPIID              (0x7C4D41EA156C4D81ULL)
-
-
-/// Vender ID and Device ID
-#define CCIP_FPGA_VENDER_ID         0x8086
-
-/// PCI Device ID
-#define PCIe_DEVICE_ID_RCiEP0       0xBCBD
-#define PCIe_DEVICE_ID_RCiEP1       0xBCBE
-
-/// QPI Device ID
-#define PCIe_DEVICE_ID_RCiEP2       0xBCBC
-
-/// MMIO Space map
-#define FME_DFH_AFUIDL  0x8
-#define FME_DFH_AFUIDH  0x10
-#define FME_DFH_NEXTAFU 0x18
 
 //-----------------------------------------------------------------------------
 // Request message IDs
@@ -157,7 +107,8 @@ typedef enum
    uid_errnumInvalidDeviceAddr,                  // 24
    uid_errnumCouldNotDestroy,                    // 25
    uid_errnumDeviceBusy,                         // 26
-   uid_errnumTimeout                             // 27
+   uid_errnumTimeout,                            // 27
+   uid_errnumNoAFU                               // 28
 } uid_errnum_e;
 
 typedef enum
@@ -198,26 +149,29 @@ typedef enum
 
 typedef enum
 {
-    ccipdrv_afucmdWKSP_ALLOC=1,
-    ccipdrv_afucmdPort_afuReset,
-    ccipdrv_afucmdPort_afuEnable,
-    ccipdrv_afucmdPort_afuQuiesceAndHalt,
-    ccipdrv_afucmdWKSP_FREE,
-    ccipdrv_afucmdGet_UmsgBase,
-    ccipdrv_getMMIORmap,
-    ccipdrv_getFeatureRegion,
-    ccipdrv_afucmdGetNumUmsgs,
-    ccipdrv_afucmdSetUmsgMode,
-    ccipdrv_getPerfMonitor
+   ccipdrv_afucmdWKSP_ALLOC=1,
+   ccipdrv_afucmdPort_afuReset,
+   ccipdrv_afucmdPort_afuEnable,
+   ccipdrv_afucmdPort_afuQuiesceAndHalt,
+   ccipdrv_afucmdWKSP_FREE,
+   ccipdrv_afucmdGet_UmsgBase,
+   ccipdrv_getMMIORmap,
+   ccipdrv_getFeatureRegion,
+   ccipdrv_afucmdGetNumUmsgs,
+   ccipdrv_afucmdSetUmsgMode,
+   ccipdrv_getPerfMonitor,
+   ccipdrv_activateAFU,
+   ccipdrv_deactivateAFU,
+   ccipdrv_configureAFU,
 } ccipdrv_afuCmdID_e;
 
 struct aalui_CCIdrvMessage
 {
-   btUnsigned64bitInt  apiver;     // Version of message handler [IN]
-   btUnsigned64bitInt  pipver;     // Version of PIP interface [IN]
-   btUnsigned64bitInt  cmd;        // Command [IN]
-   btWSSize            size;       // size of payload [IN]
-   btByte              payload[1]; // data [IN/OUT]
+//   btUnsigned64bitInt  apiver;     // Version of message handler [IN]
+//   btUnsigned64bitInt  pipver;     // Version of PIP interface [IN]
+   btUnsigned64bitInt  cmd;         // Command [IN]
+   btWSSize            size;        // size of payload [IN]
+   btByte              payload[];   // data [IN/OUT]
 };
 
 #if   defined( __AAL_LINUX__ )
@@ -250,7 +204,7 @@ struct aalui_CCIdrvMessage
 # define AAL_IOCTL_DRV_ID(__ctl_code) (((__ctl_code) >> 10) & 0x7)
 # define AAL_IOCTL_FN(__ctl_code)     (((__ctl_code) >> 2) & 0xff)
 
-                  // 0 - 0xff
+// 0 - 0xff
 # define UAIA_IOCTL(__index)          CTL_CODE(UAIA_DEVICE_TYPE, (UAIA_CUSTOM << 11) | (UAIA_DRV_ID << 8) | (__index), UAIA_METHOD, UAIA_ACCESS)
 
 # define AALUID_IOCTL_SENDMSG         UAIA_IOCTL(0x00)
@@ -296,8 +250,8 @@ struct ahm_req
          btWSSize m_pgsize;
       } wksp;
 
-// Special workspace IDs for CSR Aperture mapping
-// XXX These must match aaldevice.h:AAL_DEV_APIMAP_CSR*
+      // Special workspace IDs for CSR Aperture mapping
+      // XXX These must match aaldevice.h:AAL_DEV_APIMAP_CSR*
 #define WSID_CSRMAP_READAREA  0x00000001
 #define WSID_CSRMAP_WRITEAREA 0x00000002
 #define WSID_MAP_MMIOR        0x00000003

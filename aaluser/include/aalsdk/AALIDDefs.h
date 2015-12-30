@@ -730,6 +730,9 @@
 #define keyRegfuntionNumber               "AAL_keyRegfuntionNumber"
 //                                                                  Channel on the device, e.g. SPL interface (0) or
 //                                                                  sub-device number. -1 if not defined */
+
+#define keyRegInstanceNumber              "AAL_keyRegInstanceNumber"
+//                                                                  Instance identifier
 #define keyRegDeviceAddress               "AAL_keyRegDeviceAddress"
 //#define keyRegDeviceAddress               AAL_RegKey(0x0014)   /* DataType: btUnsigned64bitInt (also, btID, and the native key type of an NVS
 //                                                                  Encoded version of BusType, BusNumber, DeviceNumber, ChannelNumber */

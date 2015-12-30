@@ -118,6 +118,7 @@ include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/spl2defs.h \
 include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/ccipdriver.h \
+include/aalsdk/kernel/ccip_defs.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \
 include/aalsdk/kernel/vafu2defs.h

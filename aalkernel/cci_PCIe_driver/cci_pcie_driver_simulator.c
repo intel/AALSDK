@@ -71,13 +71,14 @@
 
 #include "aalsdk/kernel/aalids.h"
 #include "aalsdk/kernel/aalbus.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "cci_pcie_driver_PIPsession.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "aalsdk/kernel/iaaldevice.h"
 
-#include "ccip_defs.h"
+
 #include "ccip_fme.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_simulator.h"
@@ -401,8 +402,8 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
          PDEBUG("Creating Allocatable objects\n");
 
-         // Instantiate allocatable objects including AFUs if present. Port subdevice address is 1 based.
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i+1)){
+         // Instantiate allocatable objects including AFUs if present. Port subdevice address is 0 based.
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i)){
             goto ERR;
          }
       }// End for
@@ -541,7 +542,7 @@ int cci_create_sim_afu( btVirtAddr virtAddr,
    aaldevid_ahmguid(*paalid)  = HOST_AHM_GUID;
 
    // Create the AAL device
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCISIMAFU",
+   cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCISIMAFU",
                                         paalid,
                                         &cci_simAFUpip);
 

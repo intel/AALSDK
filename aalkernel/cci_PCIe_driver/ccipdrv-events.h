@@ -147,6 +147,51 @@ ccipdrv_event_shutdown_event_create(ui_shutdownreason_e reason,
 }
 
 //=============================================================================
+// Name: ccipdrv_event_activationchange_event_create
+// Inputs: reason - reason for the shutdown
+//         timeleft - If a timeout was given in the request how much is left
+//                    for user space shutdown.(i.e.,timeout-timeused in kernel)
+// Description: Constructor
+//=============================================================================
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_activationchange_event_create( uid_afurespID_e    respID,
+                                             btObjectType       devhandle,
+                                             stTransactionID_t *tranID,
+                                             btObjectType       context,
+                                             uid_errnum_e       errnum)
+{
+struct aalui_AFUResponse *response = NULL;
+struct ccipdrv_event_afu_response_event *This =
+(struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_AFUResponse));
+
+if ( NULL == This ) {
+return NULL;
+}
+
+This->m_devhandle = devhandle;
+This->m_errnum    = errnum;
+This->m_context   = context;
+This->m_tranID    = *tranID;
+
+// Point at the payload
+response = (struct aalui_AFUResponse*)This->m_payload;
+
+response->respID  = respID;
+response->evtData = 0;
+response->payloadsize = 0;
+
+AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
+AALQ_QID(This) = rspid_AFU_Response;
+
+// Initialize the queue item
+kosal_list_init(&AALQ_QUEUE(This));
+
+return This;
+}
+
+
+//=============================================================================
 // Name: ccipdrv_event_afu_afuinavlidrequest_create
 // Description: Constructor
 //=============================================================================
@@ -155,7 +200,7 @@ struct ccipdrv_event_afu_response_event *
 ccipdrv_event_afu_afuinavlidrequest_create(btObjectType       devhandle,
                                            stTransactionID_t *tranID,
                                            btObjectType       context,
-                                            uid_errnum_e       eno)
+                                           uid_errnum_e       eno)
 {
    struct aalui_AFUResponse *response = NULL;
    struct ccipdrv_event_afu_response_event *This =

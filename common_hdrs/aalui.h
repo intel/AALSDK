@@ -173,7 +173,8 @@ typedef enum
    uid_errnumInvalidRequest,                     // 23
    uid_errnumInvalidDeviceAddr,                  // 24
    uid_errnumCouldNotDestroy,                    // 25
-   uid_errnumDeviceBusy                          // 26
+   uid_errnumDeviceBusy,                         // 26
+   uid_errnumNoAFU                               // 27
 } uid_errnum_e;
 
 

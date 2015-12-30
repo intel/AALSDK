@@ -74,11 +74,11 @@
 
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
 
-#include "ccip_defs.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
@@ -167,16 +167,16 @@ struct cci_aal_device   *
    cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_pr(pportdev));
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPPR",           // AAL device base name
-                                           paalid,             // AAL ID
-                                           &cci_PRpip);
+   cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPPR",           // AAL device base name
+                                                       paalid,             // AAL ID
+                                                       &cci_PRpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
    //
 
    // Set how many owners are allowed access to this device simultaneously
-   pcci_aaldev->m_aaldev->m_maxowners = 1;
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
@@ -245,7 +245,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // if we return a request error, return this.  usually it's an invalid request error.
    uid_errnum_e request_error = uid_errnumInvalidRequest;
 
-   PINFO("In CCI Command handler, AFUCommand().\n");
+   PVERBOSE("In CCI Command handler, AFUCommand().\n");
 
    // Perform some basic checks while assigning the pdev
    ASSERT(NULL != pSess );
@@ -265,8 +265,90 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
    // Message processor
    //=====================
    switch ( pmsg->cmd ) {
+
       struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
+      AFU_COMMAND_CASE(ccipdrv_deactivateAFU) {
+
+         // Port for this AAL PR object
+         struct port_device  *pportdev = cci_dev_pport(pdev);
+
+         // Find the AFU device associated with this port
+         if(NULL == ccip_port_uafu_dev(pportdev)){
+            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
+                                                                     pownerSess->m_device,
+                                                                     &Message->m_tranID,
+                                                                     Message->m_context,
+                                                                     uid_errnumNoAFU);
+
+            ccidrv_sendevent(pownerSess->m_UIHandle,
+                             pownerSess->m_device,
+                             AALQIP(pafuws_evt),
+                             Message->m_context);
+
+            goto ERROR;
+         }
+
+         // Make sure device is not in use. If it is notify user and start time out timer.
+
+         // TODO FOR NOW JUST DO IT
+         cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
+         pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
+                                                                  pownerSess->m_device,
+                                                                  &Message->m_tranID,
+                                                                  Message->m_context,
+                                                                  uid_errnumOK);
+
+         ccidrv_sendevent(pownerSess->m_UIHandle,
+                          pownerSess->m_device,
+                          AALQIP(pafuws_evt),
+                          Message->m_context);
+
+
+
+      } break;
+
+      AFU_COMMAND_CASE(ccipdrv_activateAFU) {
+
+         // Port for this AAL PR object
+         struct port_device  *pportdev = cci_dev_pport(pdev);
+
+         // Find the AFU device associated with this port
+         if(NULL == ccip_port_uafu_dev(pportdev)){
+            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
+                                                                     pownerSess->m_device,
+                                                                     &Message->m_tranID,
+                                                                     Message->m_context,
+                                                                     uid_errnumNoAFU);
+
+            ccidrv_sendevent(pownerSess->m_UIHandle,
+                             pownerSess->m_device,
+                             AALQIP(pafuws_evt),
+                             Message->m_context);
+
+            goto ERROR;
+         }
+
+         // TODO FOR NOW JUST DO IT
+         cci_publish_aaldevice(ccip_port_uafu_dev(pportdev));
+         pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
+                                                                  pownerSess->m_device,
+                                                                  &Message->m_tranID,
+                                                                  Message->m_context,
+                                                                  uid_errnumOK);
+
+         ccidrv_sendevent(pownerSess->m_UIHandle,
+                          pownerSess->m_device,
+                          AALQIP(pafuws_evt),
+                          Message->m_context);
+
+
+
+      } break;
+
+
+
       // Returns a workspace ID for the Config Space
+
       AFU_COMMAND_CASE(ccipdrv_getMMIORmap) {
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
          struct aalui_WSMEvent WSID;

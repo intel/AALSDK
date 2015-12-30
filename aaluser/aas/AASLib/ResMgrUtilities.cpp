@@ -93,35 +93,35 @@ std::string GUIDStringFromStruct(AAL_GUID_t guidStruct)
    unsigned char *p = reinterpret_cast<unsigned char*>(&guidStruct);
 
    retval = HexFromUCharBuf( &p[0], 4) +
-            "-" +
-            HexFromUCharBuf( &p[4], 2 ) +
-            "-" +
-            HexFromUCharBuf( &p[6], 2 ) +
-            "-" +
-            HexFromUCharBuf( &p[8], 2 ) +
-            "-" +
-            HexFromUCharBuf( &p[10], 6 )
-            ;
+         "-" +
+         HexFromUCharBuf( &p[4], 2 ) +
+         "-" +
+         HexFromUCharBuf( &p[6], 2 ) +
+         "-" +
+         HexFromUCharBuf( &p[8], 2 ) +
+         "-" +
+         HexFromUCharBuf( &p[10], 6 )
+         ;
    return retval;
 #else
    std::ostringstream oss;
    oss << std::hex << std::setfill('0') << std::uppercase
-       << std::setw(8) << guidStruct.Data1
-       << "-"
-       << std::setw(4) << guidStruct.Data2
-       << "-"
-       << std::setw(4) << guidStruct.Data3   // includes version as first byte
-       << "-"
-       << HexFromUChar(guidStruct.Data4[0])
-       << HexFromUChar(guidStruct.Data4[1])
-       << "-"
-       << HexFromUChar(guidStruct.Data4[2])
-       << HexFromUChar(guidStruct.Data4[3])
-       << HexFromUChar(guidStruct.Data4[4])
-       << HexFromUChar(guidStruct.Data4[5])
-       << HexFromUChar(guidStruct.Data4[6])
-       << HexFromUChar(guidStruct.Data4[7])
-       ;
+         << std::setw(8) << guidStruct.Data1
+         << "-"
+         << std::setw(4) << guidStruct.Data2
+         << "-"
+         << std::setw(4) << guidStruct.Data3   // includes version as first byte
+         << "-"
+         << HexFromUChar(guidStruct.Data4[0])
+         << HexFromUChar(guidStruct.Data4[1])
+         << "-"
+         << HexFromUChar(guidStruct.Data4[2])
+         << HexFromUChar(guidStruct.Data4[3])
+         << HexFromUChar(guidStruct.Data4[4])
+         << HexFromUChar(guidStruct.Data4[5])
+         << HexFromUChar(guidStruct.Data4[6])
+         << HexFromUChar(guidStruct.Data4[7])
+         ;
    return oss.str();
 #endif
 
@@ -244,14 +244,14 @@ btBool GUIDStructFromString(const std::string& guidString, AAL_GUID_t* pguidStru
    iss >> pguidStruct->Data3;
 
    int trychar;
-                                       // Data 4[0], positions 19,20
+   // Data 4[0], positions 19,20
    if ((trychar = UCharFromHex( guidString[19], guidString[20])) >= 0) {
       pguidStruct->Data4[0] = trychar;
    } else {
       pguidStruct->Data4[0] = 0;
       fRetVal = false;
    }
-                                       // Data 4[1], positions 21,22
+   // Data 4[1], positions 21,22
    if ((trychar = UCharFromHex( guidString[21], guidString[22])) >= 0) {
       pguidStruct->Data4[1] = trychar;
    } else {
@@ -287,15 +287,15 @@ btBool GUIDStructFromString(const std::string& guidString, AAL_GUID_t* pguidStru
 std::string AFU_IDNameFromConfigStruct( const aalrms_configUpDateEvent& cfgUpdate)
 {
    // TODO - fix up to use the real m_afuGUID whenever it becomes a struct
-//#define USING_64_BIT_GUID
+   //#define USING_64_BIT_GUID
 #ifdef USING_64_BIT_GUID   /* the cfgUpdate.devattrs.devid.m_afuGUID field is 64-bit ulong */
    return GUIDStringFromStruct( GUIDStructFromU64( cfgUpdate.devattrs.devid.m_afuGUID)).c_str();
 #else
    return GUIDStringFromStruct(
-                GUIDStructFrom2xU64(
-                      cfgUpdate.devattrs.devid.m_afuGUIDh,
-                      cfgUpdate.devattrs.devid.m_afuGUIDl));
-//   return GUIDStringFromStruct( cfgUpdate.devattrs.devid.m_afuGUID).c_str();
+         GUIDStructFrom2xU64(
+               cfgUpdate.devattrs.devid.m_afuGUIDh,
+               cfgUpdate.devattrs.devid.m_afuGUIDl));
+   //   return GUIDStringFromStruct( cfgUpdate.devattrs.devid.m_afuGUID).c_str();
 #endif
 
 }  // end of AFU_IDNameFromConfigStruct
@@ -369,7 +369,8 @@ struct INFDA_structure // private to IntNameFromDeviceAddress
 {  // This structure will overlay a btNumberKey
    btUnsigned16bitInt subdevnum;
    btUnsigned16bitInt functnum;
-   btUnsigned16bitInt devicenum;
+   btByte             instanceNum;
+   btByte             devicenum;
    btByte             busnum;
    btByte             bustype;
 };
@@ -390,11 +391,12 @@ btNumberKey IntNameFromDeviceAddress(const aal_device_addr *paddr)
 {
    INFDA_union overload;
 
-   overload.inner.bustype   = paddr->m_bustype;
-   overload.inner.busnum    = paddr->m_busnum;
-   overload.inner.devicenum = paddr->m_devicenum;
-   overload.inner.functnum =  paddr->m_functnum;
-   overload.inner.subdevnum = paddr->m_subdevnum;
+   overload.inner.bustype     = paddr->m_bustype;
+   overload.inner.busnum      = paddr->m_busnum;
+   overload.inner.devicenum   = paddr->m_devicenum;
+   overload.inner.functnum    =  paddr->m_functnum;
+   overload.inner.subdevnum   = paddr->m_subdevnum;
+   overload.inner.instanceNum = paddr->m_instanceNum;
 
    return overload.Key;
 } // IntNameFromDeviceAddress
@@ -409,13 +411,14 @@ void DeviceAddressFromIntName(const btNumberKey &inKey, aal_device_addr *paddr)
 {
    INFDA_union overload;
 
-   overload.Key       = inKey;
+   overload.Key         = inKey;
 
-   paddr->m_bustype   = static_cast<aal_bus_types_e>(overload.inner.bustype);
-   paddr->m_busnum    = overload.inner.busnum;
-   paddr->m_devicenum = overload.inner.devicenum;
-   paddr->m_functnum  = overload.inner.functnum;
-   paddr->m_subdevnum = overload.inner.subdevnum;
+   paddr->m_bustype     = static_cast<aal_bus_types_e>(overload.inner.bustype);
+   paddr->m_busnum      = overload.inner.busnum;
+   paddr->m_devicenum   = overload.inner.devicenum;
+   paddr->m_functnum    = overload.inner.functnum;
+   paddr->m_subdevnum   = overload.inner.subdevnum;
+   paddr->m_instanceNum = overload.inner.instanceNum;
 
 }  // DeviceAddressFromIntName
 

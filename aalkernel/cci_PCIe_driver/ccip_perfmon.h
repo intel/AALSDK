@@ -75,8 +75,10 @@
 
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/ccipdriver.h>
+#include <aalsdk/kernel/ccip_defs.h>
 #include "cci_pcie_driver_internal.h"
-#include "ccip_defs.h"
+
+
 
 BEGIN_NAMESPACE(AAL)
 

@@ -74,11 +74,11 @@
 
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
 
-#include "ccip_defs.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
@@ -194,16 +194,16 @@ struct cci_aal_device   *
    cci_dev_phys_afu_mmio(pcci_aaldev)  = phys_mmio;
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPAFU",          // AAL device base name
-                                           &*paalid,             // AAL ID
-                                           &cci_AFUpip);
+   cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPAFU",          // AAL device base name
+                                                        &*paalid,             // AAL ID
+                                                        &cci_AFUpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
    //
 
    // Set how many owners are allowed access to this device simultaneously
-   pcci_aaldev->m_aaldev->m_maxowners = 1;
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
@@ -231,7 +231,10 @@ struct cci_aal_device   *
    //  If NULL is provided then only the canonical behavior is done
    dev_setrelease(cci_aaldev_to_aaldev(pcci_aaldev), cci_release_device);
 
-      // Device is ready for use.  Publish it with the Configuration Management Subsystem
+   // Record the uAFU in the port
+   ccip_port_uafu_dev(pportdev) = pcci_aaldev;
+
+   // Device is ready for use.  Publish it with the Configuration Management Subsystem
    ret = cci_publish_aaldevice(pcci_aaldev);
    ASSERT(ret == 0);
    if(0> ret){
@@ -240,6 +243,7 @@ struct cci_aal_device   *
                                                                   aaldevid_devaddr_fcnnum(*paalid),
                                                                   aaldevid_devaddr_subdevnum(*paalid));
       cci_destroy_aal_device(pcci_aaldev);
+      ccip_port_uafu_dev(pportdev) = NULL;
       return NULL;
    }
 
@@ -387,6 +391,11 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
             *((struct aalui_WSMEvent*)Message->m_response) = WSID;
             Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
+         }else{
+            PERR("No room to return WSID. Required sized %ld but size provided %ld\n", sizeof(struct aalui_WSMEvent), (long int)respBufSize);
+            Message->m_errcode = uid_errnumNoMem;
+            ccidrv_freewsid(wsidp);
+            break;
          }
          PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
          Message->m_errcode = uid_errnumOK;

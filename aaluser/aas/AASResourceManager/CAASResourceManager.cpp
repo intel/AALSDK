@@ -88,8 +88,8 @@
 #include "aalsdk/AALTypes.h"               // btUnsigned32bitInt, etc.
 #include "aalsdk/AALLoggerExtern.h"        // theLogger, a reference to a singleton ILogger interface
 #include "aalsdk/rm/CAASResourceManager.h" // Also brings in the skeleton, which brings in the database, the proxy, and <string>
-                                           // and <aas/kernel/aalrm_server.h>, the definition of aalrm_ioctlreq
-                                           // Also defines debug LogMask_t bitmasks for detailed debugging of Resource Manager
+// and <aas/kernel/aalrm_server.h>, the definition of aalrm_ioctlreq
+// Also defines debug LogMask_t bitmasks for detailed debugging of Resource Manager
 #include "aalsdk/kernel/KernelStructs.h"   // various operator<<
 #include "aalsdk/utils/ResMgrUtilities.h"  // string, name, and GUID inter-conversion operators
 #include "aalsdk/rm/ResMgrService.h"
@@ -99,13 +99,13 @@ BEGIN_NAMESPACE(AAL)
 #define SERVICE_FACTORY AAL::InProcSvcsFact< CResMgr >
 
 RESMGR_BEGIN_SVC_MOD(SERVICE_FACTORY)
-   /* No commands other than default, at the moment. */
+/* No commands other than default, at the moment. */
 RESMGR_END_SVC_MOD()
 
 
 
 const unsigned maxErrors =  10;           // abort (or in the future reset, perhaps) after this many errors have been seen
-                                          //    The value 0 means do not test
+//    The value 0 means do not test
 
 // FIXME: why an empty copy constructor? prevent copying?
 //CResMgr::CResMgr(const CResMgr & ) {/*empty*/}
@@ -191,8 +191,8 @@ int CResMgr::Get_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
 
       if (0 == iRetIoctl) {               // iRetIoctl = 0 means there is a message waiting, get it
          AAL_DEBUG(LM_ResMgr, "Get_AALRMS_Msg: AALRM_IOCTL_GETMSG_DESC succeeded:\n\tType = " << std::showbase <<
-                              pIoctlReq->id << "\n\tPayload length = " << std::hex << pIoctlReq->size <<
-                              " " << std::dec << pIoctlReq->size << std::endl);
+               pIoctlReq->id << "\n\tPayload length = " << std::hex << pIoctlReq->size <<
+               " " << std::dec << pIoctlReq->size << std::endl);
          // Get a payload buffer if required
          if (pIoctlReq->size) {                                   // do we need a buffer?
             pBuf = reinterpret_cast<btVirtAddr>(new(std::nothrow) btByte[pIoctlReq->size]); // yes we do, get a buffer
@@ -278,36 +278,36 @@ int CResMgr::Parse_AALRMS_Msg(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
    int Retval;
 
    switch ( pIoctlReq->id ) {
-      case reqid_URMS_RequestDevice: {
-         Retval = DoRequestDevice( fdServer, pIoctlReq);
-         break;
-      } // End of case reqid_URMS_ReleaseDevice:
-      case reqid_RS_Registrar: {
-         Retval = DoRegistrar( fdServer, pIoctlReq);
-         break;
-      } // end of case reqid_Registrar:
+   case reqid_URMS_RequestDevice: {
+      Retval = DoRequestDevice( fdServer, pIoctlReq);
+      break;
+   } // End of case reqid_URMS_ReleaseDevice:
+   case reqid_RS_Registrar: {
+      Retval = DoRegistrar( fdServer, pIoctlReq);
+      break;
+   } // end of case reqid_Registrar:
 
-      case evtid_KRMS_ConfigUpdate: {
-         Retval = DoConfigUpdate( fdServer, pIoctlReq);
-         break;
-      } // End of case evtid_KRMS_ConfigUpdate:
+   case evtid_KRMS_ConfigUpdate: {
+      Retval = DoConfigUpdate( fdServer, pIoctlReq);
+      break;
+   } // End of case evtid_KRMS_ConfigUpdate:
 
-      case reqid_Shutdown: {
-         Retval = DoShutdown( fdServer, pIoctlReq);
-         break;
-      } // End of case evtid_KRMS_ConfigUpdate:
+   case reqid_Shutdown: {
+      Retval = DoShutdown( fdServer, pIoctlReq);
+      break;
+   } // End of case evtid_KRMS_ConfigUpdate:
 
-      case reqid_Restart: {
-         Retval = DoRestart( fdServer, pIoctlReq);
-         break;
-      } // End of case evtid_KRMS_ConfigUpdate:
+   case reqid_Restart: {
+      Retval = DoRestart( fdServer, pIoctlReq);
+      break;
+   } // End of case evtid_KRMS_ConfigUpdate:
 
-      default: {
-         AAL_ERR(LM_ResMgr, "CResMgr::Parse_AALRMS_Msg: unknown pIoctlReq->id "
-               << pIoctlReq->id << std::endl);
-         Retval = EINVAL; // Invalid argument
-         break;
-      }
+   default: {
+      AAL_ERR(LM_ResMgr, "CResMgr::Parse_AALRMS_Msg: unknown pIoctlReq->id "
+            << pIoctlReq->id << std::endl);
+      Retval = EINVAL; // Invalid argument
+      break;
+   }
    } // End of switch (pIoctlReq->id)
 
    return Retval;
@@ -410,7 +410,7 @@ int CResMgr::DoRequestDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       NamedValueSet nvsGoal;
 
       if (ComputeGoalRecords( nvsManifest, listGoalRecords) &&
-              GetPolicyResults( listGoalRecords, nvsGoal)) {
+            GetPolicyResults( listGoalRecords, nvsGoal)) {
          // if success, have to return various things:
 
          // Get the handle from the GoalRecord NVS, which is a btObjectType, which is a void*
@@ -424,9 +424,9 @@ int CResMgr::DoRequestDevice(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
             // TODO: Give AFU records real device addresses
             btNumberKey index;
             if ( (ENamedValuesOK == nvsGoal.Get( keyRegDeviceAddress, &index)) &&
-                 (m_InstRecMap.Get( index, &pInstRec)) ) {
+                  (m_InstRecMap.Get( index, &pInstRec)) ) {
                pInstRec->IncrementAllocations();               // The equivalent decrement is in DoUpdateConfig, devOwnerRemoved
-                                                               // and also in failure cases below.
+               // and also in failure cases below.
             }
 
             pIoctlReq->result_code = rms_resultOK;             // This payload is valid
@@ -576,7 +576,7 @@ int CResMgr::DoRegistrar(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       Retval = Send_AALRMS_Msg(fdServer, pIoctlReq);
 
       // Delete the (now sent) response
-//       RegistrarCmdResp_Destroy(pResp); // Now handled in top loop
+      //       RegistrarCmdResp_Destroy(pResp); // Now handled in top loop
 
    } else { // No buffer provided by client, still have to clean up
       AAL_DEBUG(LM_ResMgr,"CResMgr::DoRegistrar:reqid_Registrar sees null payload. Invalid parameter. Sending clear message.\n");
@@ -609,9 +609,9 @@ int CResMgr::DoShutdown(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
    m_pRegDBSkeleton->Database()->Close();
 #endif
    {
-       AutoLock(this);
-       m_state = eCRMS_Stopping;                 // Signal main loop to shut down
-       // TODO - DoShutdown code
+      AutoLock(this);
+      m_state = eCRMS_Stopping;                 // Signal main loop to shut down
+      // TODO - DoShutdown code
    }
 
    return 0;
@@ -726,72 +726,72 @@ int CResMgr::DoConfigUpdate(int fdServer, struct aalrm_ioctlreq *pIoctlReq)
       //=======================================================================
 
       switch (id) {
-         case krms_ccfgUpdate_DevAdded: {
-            // TODO: when see MAFU (subdevnum == 0) then consult activation record
-            //       to initialize known afus.
+      case krms_ccfgUpdate_DevAdded: {
+         // TODO: when see MAFU (subdevnum == 0) then consult activation record
+         //       to initialize known afus.
 #if 0
-            // If a board, then need to activate it. Otherwise, all done
-            // Is it a board?
-            if(pcfgUpDate->devattrs.devid.m_devaddr.m_subdevnum == -1) {
+         // If a board, then need to activate it. Otherwise, all done
+         // Is it a board?
+         if(pcfgUpDate->devattrs.devid.m_devaddr.m_subdevnum == -1) {
 
-               // Re-initialize the ioctlreq. Note use of the payload, must be before clearing payload
-               pIoctlReq->req_handle = NULL;                // This is a new request, not a response
-               pIoctlReq->id = reqid_RM_DeviceRequest;
-               pIoctlReq->res_handle = pcfgUpDate->devattrs.Handle;
-               pIoctlReq->result_code = rms_resultOK;
+            // Re-initialize the ioctlreq. Note use of the payload, must be before clearing payload
+            pIoctlReq->req_handle = NULL;                // This is a new request, not a response
+            pIoctlReq->id = reqid_RM_DeviceRequest;
+            pIoctlReq->res_handle = pcfgUpDate->devattrs.Handle;
+            pIoctlReq->result_code = rms_resultOK;
 
-               // Clear out the current payload, pcfgUpDate will be NULL after this function returns
-               pcfgUpDate = static_cast<struct aalrms_configUpDateEvent*>(DestroyRMIoctlReqPayload( pIoctlReq)); // clear payload
+            // Clear out the current payload, pcfgUpDate will be NULL after this function returns
+            pcfgUpDate = static_cast<struct aalrms_configUpDateEvent*>(DestroyRMIoctlReqPayload( pIoctlReq)); // clear payload
 
-               // Create new payload
-               struct aalrms_DeviceRequest* pDevReq;
-               pIoctlReq->payload = pDevReq = new struct aalrms_DeviceRequest;    // will throw if no memory
-               pIoctlReq->size = sizeof(struct aalrms_DeviceRequest);
+            // Create new payload
+            struct aalrms_DeviceRequest* pDevReq;
+            pIoctlReq->payload = pDevReq = new struct aalrms_DeviceRequest;    // will throw if no memory
+            pIoctlReq->size = sizeof(struct aalrms_DeviceRequest);
 
-               // Initialize the payload, pDevReq is just for convenience
-               memset( pDevReq, 0, sizeof( struct aalrms_DeviceRequest));
-               pDevReq->reqid = aaldev_reqActivate;
-               pDevReq->subdeviceMask = AAL_DEVIDMASK_AFU(0) + AAL_DEVIDMASK_AFU(1) + AAL_DEVIDMASK_AFU(2) + AAL_DEVIDMASK_AFU(3);
+            // Initialize the payload, pDevReq is just for convenience
+            memset( pDevReq, 0, sizeof( struct aalrms_DeviceRequest));
+            pDevReq->reqid = aaldev_reqActivate;
+            pDevReq->subdeviceMask = AAL_DEVIDMASK_AFU(0) + AAL_DEVIDMASK_AFU(1) + AAL_DEVIDMASK_AFU(2) + AAL_DEVIDMASK_AFU(3);
 
-               AAL_VERBOSE(LM_ResMgr,
-                     "CResMgr::DoConfigUpdate:krms_ccfgUpdate_DevAdded: Sending Device_Request.\n");
+            AAL_VERBOSE(LM_ResMgr,
+                  "CResMgr::DoConfigUpdate:krms_ccfgUpdate_DevAdded: Sending Device_Request.\n");
 
-               // Send the response
-               Retval = Send_AALRMS_Msg(fdServer, pIoctlReq);
-            }  // if( ...m_subdevnum == -1)  /* is it a board? */
+            // Send the response
+            Retval = Send_AALRMS_Msg(fdServer, pIoctlReq);
+         }  // if( ...m_subdevnum == -1)  /* is it a board? */
 #endif
-            break;
+         break;
+      }
+      case krms_ccfgUpdate_DevRemoved: {
+         // Need to delete it from the Map
+         pInstRecExisting = NULL;
+         m_InstRecMap.Delete( instrecIndex);
+         break;
+      }
+      case krms_ccfgUpdate_DevOwnerAdded:
+         // Number of allocations was incremented during DeviceRequest
+         // OwnerAdded implies that the number of allocations should be one
+         //    more than before but we have no way to check, so don't care
+         break;
+      case krms_ccfgUpdate_DevOwnerUpdated:
+         // Don't care
+         break;
+      case krms_ccfgUpdate_DevOwnerRemoved: {
+         // Decrement the Number of Allocations that the RM is tracking
+         if ( ! pInstRecExisting->DecrementAllocations()) {
+            AAL_ERR(LM_ResMgr, "CResMgr::DoConfigUpdate DevOwnerRemoved failed\n");
+            return EPERM;
          }
-         case krms_ccfgUpdate_DevRemoved: {
-            // Need to delete it from the Map
-            pInstRecExisting = NULL;
-            m_InstRecMap.Delete( instrecIndex);
-            break;
-         }
-         case krms_ccfgUpdate_DevOwnerAdded:
-            // Number of allocations was incremented during DeviceRequest
-            // OwnerAdded implies that the number of allocations should be one
-            //    more than before but we have no way to check, so don't care
-            break;
-         case krms_ccfgUpdate_DevOwnerUpdated:
-            // Don't care
-            break;
-         case krms_ccfgUpdate_DevOwnerRemoved: {
-            // Decrement the Number of Allocations that the RM is tracking
-            if ( ! pInstRecExisting->DecrementAllocations()) {
-               AAL_ERR(LM_ResMgr, "CResMgr::DoConfigUpdate DevOwnerRemoved failed\n");
-               return EPERM;
-            }
-            break;
-         }
-         case krms_ccfgUpdate_DevActivated:
-            // Don't care
-            break;
-         case krms_ccfgUpdate_DevQuiesced:
-            // Don't care
-            break;
-         default:
-            break;
+         break;
+      }
+      case krms_ccfgUpdate_DevActivated:
+         // Don't care
+         break;
+      case krms_ccfgUpdate_DevQuiesced:
+         // Don't care
+         break;
+      default:
+         break;
       }  // switch (id)
 
    } // if (pcfgUpDate)
@@ -840,6 +840,7 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
    nvs.Add(keyRegDeviceNumber,         cfgUpdate.devattrs.devid.m_devaddr.m_devicenum);
    nvs.Add(keyRegfuntionNumber,        cfgUpdate.devattrs.devid.m_devaddr.m_functnum);
    nvs.Add(keyRegChannelNumber,        cfgUpdate.devattrs.devid.m_devaddr.m_subdevnum);
+   nvs.Add(keyRegInstanceNumber,	      cfgUpdate.devattrs.devid.m_devaddr.m_instanceNum);
 
    nvs.Add(keyRegDeviceType,           cfgUpdate.devattrs.devid.m_devicetype);
 
@@ -856,8 +857,8 @@ void CResMgr::NVSFromConfigUpdate(const aalrms_configUpDateEvent &cfgUpdate, Nam
  * Service initialization.
  */
 btBool CResMgr::init( IBase *pclientBase,
-                      NamedValueSet const &optArgs,
-                      TransactionID const &rtid)
+      NamedValueSet const &optArgs,
+      TransactionID const &rtid)
 {
    pAALLogger()->AddToMask(LM_ResMgr, LOG_DEBUG);
    m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
@@ -865,73 +866,73 @@ btBool CResMgr::init( IBase *pclientBase,
    if(NULL == m_pAALServiceClient)
    {
       initFailed(new CExceptionTransactionEvent( this,
-                                                    rtid,
-                                                    errBadParameter,
-                                                    reasMissingInterface,
-                                                    "Client did not publish IServiceClient Interface" ) );
-	    	return false;
-	    }
+            rtid,
+            errBadParameter,
+            reasMissingInterface,
+            "Client did not publish IServiceClient Interface" ) );
+      return false;
+   }
 
-	// TODO: how to pass parameters into service?
+   // TODO: how to pass parameters into service?
 
-	   // Set global file handle
-	   if (-1 != m_fdServer) {
-	      AAL_ERR(LM_ResMgr,"CResMgr::CResMgr sees m_fdServer set, will reset and lose file\n");
-	      m_fdServer = -1;
-	   }
+   // Set global file handle
+   if (-1 != m_fdServer) {
+      AAL_ERR(LM_ResMgr,"CResMgr::CResMgr sees m_fdServer set, will reset and lose file\n");
+      m_fdServer = -1;
+   }
 #if 0
-	   // Have a path, get the database up
-	   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
-	   if (m_pRegDBSkeleton) {
-	      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << std::endl);
-	   } else {
-	      AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
-	      goto getout_1;
-	   }
+   // Have a path, get the database up
+   m_pRegDBSkeleton = new(std::nothrow) RegDBSkeleton(m_pOptArgs);
+   if (m_pRegDBSkeleton) {
+      AAL_DEBUG(LM_ResMgr,"CResMgr created a RegDBSkeleton at " << static_cast<void*>(m_pRegDBSkeleton) << std::endl);
+   } else {
+      AAL_ERR(LM_ResMgr,"CResMgr could not create a RegDBSkeleton\n");
+      goto getout_1;
+   }
 #endif
-	   // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
-	   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
-	   if( m_pIoctlReq ){
-	      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << std::endl);
-	   } else {
-	      AAL_ERR(LM_ResMgr,"CResMgr could not create an aalrm_ioctlreq\n");
-	      goto getout_2;
-	   }
+   // Get a globally usable (or backup) ioctlreq. Not currently used (2008.09.11)
+   m_pIoctlReq = new(std::nothrow) struct aalrm_ioctlreq;
+   if( m_pIoctlReq ){
+      AAL_DEBUG(LM_ResMgr,"CResMgr created a aalrm_ioctlreq at " << static_cast<void*>(m_pIoctlReq) << std::endl);
+   } else {
+      AAL_ERR(LM_ResMgr,"CResMgr could not create an aalrm_ioctlreq\n");
+      goto getout_2;
+   }
 
-	   m_fdServer = open (m_sResMgrDevName.c_str(), O_RDWR);
-	   if (m_fdServer >= 0){                                      // success
-	      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << std::endl);
-	   } else {
-	      int saverr = errno;
-	      AAL_ERR(LM_ResMgr,"CResMgr open of " << m_sResMgrDevName << " failed with error code " << saverr
-	                                           << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
-	      goto getout_3;
-	   }
+   m_fdServer = open (m_sResMgrDevName.c_str(), O_RDWR);
+   if (m_fdServer >= 0){                                      // success
+      AAL_DEBUG(LM_ResMgr,"CResMgr opened file " << m_sResMgrDevName << " as file " << m_fdServer << std::endl);
+   } else {
+      int saverr = errno;
+      AAL_ERR(LM_ResMgr,"CResMgr open of " << m_sResMgrDevName << " failed with error code " << saverr
+            << ". Reason string is: " << pAALLogger()->GetErrorString(saverr) << std::endl);
+      goto getout_3;
+   }
 #if 0
-	   // Don't use one of these objects unless bIsOK returns true
-	   m_bIsOK = m_pRegDBSkeleton->IsOK();
+   // Don't use one of these objects unless bIsOK returns true
+   m_bIsOK = m_pRegDBSkeleton->IsOK();
 #endif
-	   m_state = eCRMS_Running;
+   m_state = eCRMS_Running;
 
-	    // Start up configuration updates
-	    // FIXME: check for errors
-	    EnableConfigUpdates(m_fdServer, m_pIoctlReq);
-
-
-	// schedule service allocated callback
-	initComplete(rtid);
-
-	return true;
+   // Start up configuration updates
+   // FIXME: check for errors
+   EnableConfigUpdates(m_fdServer, m_pIoctlReq);
 
 
-	getout_3:
-	   delete m_pIoctlReq; m_pIoctlReq = NULL;
-	getout_2:
+   // schedule service allocated callback
+   initComplete(rtid);
+
+   return true;
+
+
+   getout_3:
+   delete m_pIoctlReq; m_pIoctlReq = NULL;
+   getout_2:
 #if 0
-	   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
+   delete m_pRegDBSkeleton; m_pRegDBSkeleton = NULL;
 #endif
-	getout_1:
-	   return false;
+   getout_1:
+   return false;
 }
 
 /*
@@ -940,85 +941,85 @@ btBool CResMgr::init( IBase *pclientBase,
 int CResMgr::_run()
 {
 
-    int gmRetVal = 0;          // Get_AALRMS_Msg return code
-    int pmRetVal = 0;          // Parse_AALRMS_Msg return code
-    unsigned numErrors = 0;    // Incremental count of errors encountered
-    struct aalrm_ioctlreq *pIoctlReq;         // malloc'd ioctlreq
+   int gmRetVal = 0;          // Get_AALRMS_Msg return code
+   int pmRetVal = 0;          // Parse_AALRMS_Msg return code
+   unsigned numErrors = 0;    // Incremental count of errors encountered
+   struct aalrm_ioctlreq *pIoctlReq;         // malloc'd ioctlreq
 
-    do {
+   do {
 
-        // Get an ioctlreq and load it from the kernel
+      // Get an ioctlreq and load it from the kernel
 
-        pIoctlReq = new (std::nothrow) struct aalrm_ioctlreq;
+      pIoctlReq = new (std::nothrow) struct aalrm_ioctlreq;
 
-        if (pIoctlReq) {
-            gmRetVal = Get_AALRMS_Msg(fdServer(), pIoctlReq);
-        } else {
+      if (pIoctlReq) {
+         gmRetVal = Get_AALRMS_Msg(fdServer(), pIoctlReq);
+      } else {
+         AAL_ERR(LM_ResMgr,
+               "AASResourceManager[" << ++numErrors << "]::new struct aalrm_ioctlreq failed, out of memory.");
+         if (maxErrors && (numErrors >= maxErrors)) {
             AAL_ERR(LM_ResMgr,
-                    "AASResourceManager[" << ++numErrors << "]::new struct aalrm_ioctlreq failed, out of memory.");
+                  "AASResourceManager: Maximum errors, " << maxErrors << " exceeded, aborting with status 3.\n");
+            // FIXME: do proper cleanup before returning!
+            //delete pResMgr;         // clean up and get out
+            //exit (3);
+            return 3;
+         } else {
+            AAL_ERR(LM_ResMgr,
+                  "AASResourceManager: Pausing and retrying.\n");
+            sleep(1);
+            continue;
+         }
+      }
+
+      // If success, do something with the loaded ioctlreq, otherwise to error handling
+
+      if (0 == gmRetVal) {   // Successful retrieval of message, now handle it
+         pmRetVal = Parse_AALRMS_Msg(fdServer(), pIoctlReq);
+         if (0 == pmRetVal) {       // Success, just clean up
+            // Clean up pIoctlReq? Depends on the message pump model. For now, yes.
+            pIoctlReq = DestroyRMIoctlReq(pIoctlReq); // pIoctlReq is now Null
+         } else {
+            AAL_ERR(LM_ResMgr,
+                  "AASResourceManager[" << numErrors << "]::Parse_AALRMS_Msg failed with standard error code of " << gmRetVal << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal) << std::endl);
+            pIoctlReq = DestroyRMIoctlReq(pIoctlReq); // pIoctlReq is now Null
             if (maxErrors && (numErrors >= maxErrors)) {
-                AAL_ERR(LM_ResMgr,
-                        "AASResourceManager: Maximum errors, " << maxErrors << " exceeded, aborting with status 3.\n");
-                // FIXME: do proper cleanup before returning!
-                //delete pResMgr;         // clean up and get out
-                //exit (3);
-                return 3;
+               AAL_ERR(LM_ResMgr,
+                     "AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 4.\n");
+               // FIXME: do proper cleanup before returning!
+               //delete pResMgr;         // clean up and get out
+               //exit (4);
+               return 4;
+            }
+         }
+      } else { // Something else (Bad) happened - during message retrieval, try to handle it
+         ++numErrors;
+         if (gmRetVal > 0) {        // standard error (e.g. EINTR)
+            if (EINTR == gmRetVal) {
+               AAL_DEBUG(LM_ResMgr,
+                     "AASResourceManager[" << numErrors << "]::GetMsg returned EINTR due to handling Signal. Continuing.\n");
             } else {
-                AAL_ERR(LM_ResMgr,
-                        "AASResourceManager: Pausing and retrying.\n");
-                sleep(1);
-                continue;
+               AAL_ERR(LM_ResMgr,
+                     "AASResourceManager[" << numErrors << "]::GetMsg failed with standard error code of " << gmRetVal << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal) << std::endl);
             }
-        }
+         } else {                 // something completely unexpected happened
+            AAL_ERR(LM_ResMgr,
+                  "AASResourceManager[" << numErrors << "]::GetMsg returned completely unexpected (NEGATIVE) error code " << gmRetVal << std::endl);
+         }
+         pIoctlReq = DestroyRMIoctlReq(pIoctlReq);  // pIoctlReq is now Null
+         if (maxErrors && (numErrors >= maxErrors)) {
+            AAL_ERR(LM_ResMgr,
+                  "AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 5.\n");
+            // FIXME: do proper cleanup before returning!
+            //delete pResMgr;         // clean up and get out
+            //exit (5);
+            return 5;
+         }
+      } // end of else of if ( 0 == gmRetVal ), that is, end of the Get_AALRMS_Msg error handling clause
 
-        // If success, do something with the loaded ioctlreq, otherwise to error handling
+   } while (eCRMS_Running == state()); // Loop until turned off elsewhere by modifying the state
 
-        if (0 == gmRetVal) {   // Successful retrieval of message, now handle it
-            pmRetVal = Parse_AALRMS_Msg(fdServer(), pIoctlReq);
-            if (0 == pmRetVal) {       // Success, just clean up
-                                       // Clean up pIoctlReq? Depends on the message pump model. For now, yes.
-                pIoctlReq = DestroyRMIoctlReq(pIoctlReq); // pIoctlReq is now Null
-            } else {
-                AAL_ERR(LM_ResMgr,
-                        "AASResourceManager[" << numErrors << "]::Parse_AALRMS_Msg failed with standard error code of " << gmRetVal << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal) << std::endl);
-                pIoctlReq = DestroyRMIoctlReq(pIoctlReq); // pIoctlReq is now Null
-                if (maxErrors && (numErrors >= maxErrors)) {
-                    AAL_ERR(LM_ResMgr,
-                            "AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 4.\n");
-                    // FIXME: do proper cleanup before returning!
-                    //delete pResMgr;         // clean up and get out
-                    //exit (4);
-                    return 4;
-                }
-            }
-        } else { // Something else (Bad) happened - during message retrieval, try to handle it
-            ++numErrors;
-            if (gmRetVal > 0) {        // standard error (e.g. EINTR)
-                if (EINTR == gmRetVal) {
-                    AAL_DEBUG(LM_ResMgr,
-                            "AASResourceManager[" << numErrors << "]::GetMsg returned EINTR due to handling Signal. Continuing.\n");
-                } else {
-                    AAL_ERR(LM_ResMgr,
-                            "AASResourceManager[" << numErrors << "]::GetMsg failed with standard error code of " << gmRetVal << ". Reason string is: " << pAALLogger()->GetErrorString(gmRetVal) << std::endl);
-                }
-            } else {                 // something completely unexpected happened
-                AAL_ERR(LM_ResMgr,
-                        "AASResourceManager[" << numErrors << "]::GetMsg returned completely unexpected (NEGATIVE) error code " << gmRetVal << std::endl);
-            }
-            pIoctlReq = DestroyRMIoctlReq(pIoctlReq);  // pIoctlReq is now Null
-            if (maxErrors && (numErrors >= maxErrors)) {
-                AAL_ERR(LM_ResMgr,
-                        "AASResourceManager: Maximum errors, " << maxErrors << ", exceeded, aborting with status 5.\n");
-                // FIXME: do proper cleanup before returning!
-                //delete pResMgr;         // clean up and get out
-                //exit (5);
-                return 5;
-            }
-        } // end of else of if ( 0 == gmRetVal ), that is, end of the Get_AALRMS_Msg error handling clause
-
-    } while (eCRMS_Running == state()); // Loop until turned off elsewhere by modifying the state
-
-    return 0;
+   return 0;
 }
 
 /*
@@ -1026,8 +1027,8 @@ int CResMgr::_run()
  */
 void CResMgr::_resMgrThread(OSLThread *pThread, void *pContext)
 {
-    CResMgr *This = static_cast<CResMgr *>(pContext);
-    This->m_resMgrRetVal = This->_run();
+   CResMgr *This = static_cast<CResMgr *>(pContext);
+   This->m_resMgrRetVal = This->_run();
 }
 
 /*
@@ -1035,13 +1036,13 @@ void CResMgr::_resMgrThread(OSLThread *pThread, void *pContext)
  */
 int CResMgr::start(const TransactionID &rtid, btBool spawnThread)
 {
-    if (spawnThread) {
-        AutoLock(this);
-        m_pResMgrThread = new OSLThread(CResMgr::_resMgrThread, OSLThread::THREADPRIORITY_NORMAL, this);
-        return 0;   // FIXME: return value is discarded
-    } else {
-        return _run();
-    }
+   if (spawnThread) {
+      AutoLock(this);
+      m_pResMgrThread = new OSLThread(CResMgr::_resMgrThread, OSLThread::THREADPRIORITY_NORMAL, this);
+      return 0;   // FIXME: return value is discarded
+   } else {
+      return _run();
+   }
 }
 
 /*
@@ -1049,37 +1050,37 @@ int CResMgr::start(const TransactionID &rtid, btBool spawnThread)
  */
 btBool CResMgr::Release(TransactionID const &rTranID, btTime timeout)
 {
-    struct aalrm_ioctlreq req;
-    memset(&req, 0, sizeof(req));
-    req.id = reqid_Shutdown;
-    req.result_code = rms_resultOK;
-    req.data = rms_shutdownReasonMaint;
+   struct aalrm_ioctlreq req;
+   memset(&req, 0, sizeof(req));
+   req.id = reqid_Shutdown;
+   req.result_code = rms_resultOK;
+   req.data = rms_shutdownReasonMaint;
 
-    // If client explicitly released service, we still need to shut down.
-    // If we're cleaning up (e.g. because shutdown was initiated externally),
-    // we don't need to send the shutdown message again (in fact, we shouldn't,
-    // as this might cause us to loop).
-    if (m_state != eCRMS_Running) {
-        AAL_INFO(LM_ResMgr, "CResMgr::Release(): Resource Manager Service not "
-                            "running, skipping shutdown message.\n");
-    } else if (fdServer() != -1) {
-        AAL_INFO(LM_ResMgr, "CResMgr::Release(): sending shutdown command\n");
-        if (ioctl(fdServer(), AALRM_IOCTL_SENDMSG, &req) == -1) {
-            perror(
-                    "Send Shutdown message from AASResourceManager to itself, failed");
-        } else {
-            AAL_INFO(LM_ResMgr, "CResMgr::Release(): sent shutdown command\n");
-        }
-    } else {
-        AAL_WARNING(LM_ResMgr,
-                "CResMgr::Release(): file not open, no way to send shutdown command\n");
-    }
-    // Wait for actual shutdown
-    while (m_state != eCRMS_Stopping) {
-        SleepMilli(100);
-    }
-    // call parent release method
-    return ServiceBase::Release(rTranID, timeout);
+   // If client explicitly released service, we still need to shut down.
+   // If we're cleaning up (e.g. because shutdown was initiated externally),
+   // we don't need to send the shutdown message again (in fact, we shouldn't,
+   // as this might cause us to loop).
+   if (m_state != eCRMS_Running) {
+      AAL_INFO(LM_ResMgr, "CResMgr::Release(): Resource Manager Service not "
+            "running, skipping shutdown message.\n");
+   } else if (fdServer() != -1) {
+      AAL_INFO(LM_ResMgr, "CResMgr::Release(): sending shutdown command\n");
+      if (ioctl(fdServer(), AALRM_IOCTL_SENDMSG, &req) == -1) {
+         perror(
+               "Send Shutdown message from AASResourceManager to itself, failed");
+      } else {
+         AAL_INFO(LM_ResMgr, "CResMgr::Release(): sent shutdown command\n");
+      }
+   } else {
+      AAL_WARNING(LM_ResMgr,
+            "CResMgr::Release(): file not open, no way to send shutdown command\n");
+   }
+   // Wait for actual shutdown
+   while (m_state != eCRMS_Stopping) {
+      SleepMilli(100);
+   }
+   // call parent release method
+   return ServiceBase::Release(rTranID, timeout);
 }
 
 

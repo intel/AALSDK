@@ -72,8 +72,9 @@
 
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
+#include "aalsdk/kernel/ccip_defs.h"
+
 #include "ccip_perfmon.h"
-#include "ccip_defs.h"
 #include "ccip_fme.h"
 
 
