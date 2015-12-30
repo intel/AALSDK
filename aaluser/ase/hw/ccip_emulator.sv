@@ -45,7 +45,6 @@
 
 import ase_pkg::*;
 import ccip_if_pkg::*;
-// import ase_top_pkg::*;
 
 `include "platform.vh"
 
@@ -1809,7 +1808,7 @@ module ccip_emulator
 
       // Link layer ready signal
       // wait (lp_initdone == 1);
-      $display("SIM-SV: CCI InitDone is HIGH...");
+      // $display("SIM-SV: CCI InitDone is HIGH...");
 
       // Indicate to APP that ASE is ready
       ase_ready();
@@ -1988,17 +1987,17 @@ module ccip_emulator
       begin
 	 simkill_started = 1;
 	 $display("SIM-SV: Simulation kill command received...");
-	 $display("        Waiting for outstanding transactions to complete...");
-	 while( ~rdrsp_empty &&
-	 	~wr0rsp_empty && ~wr1rsp_empty &&
-	 	~umsgfifo_empty &&
-	 	~mmioresp_empty && ~mmioreq_empty
-	 	&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty )
-	   begin
-	      @(posedge clk);
-	   end
-	 run_clocks(100);
-	 $display("SIM-SV: Simkill will proceed");
+	 // $display("        Waiting for outstanding transactions to complete...");
+	 // while( ~rdrsp_empty &&
+	 // 	~wr0rsp_empty && ~wr1rsp_empty &&
+	 // 	~umsgfifo_empty &&
+	 // 	~mmioresp_empty && ~mmioreq_empty
+	 // 	&& ~cf2as_latbuf_ch0_empty && ~cf2as_latbuf_ch1_empty )
+	 //   begin
+	 //      @(posedge clk);
+	 //   end
+	 // run_clocks(100);
+	 // $display("SIM-SV: Simkill will proceed");
 
 	 // Print transactions
 	 `BEGIN_YELLOW_FONTCOLOR;

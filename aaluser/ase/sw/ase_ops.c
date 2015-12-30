@@ -300,10 +300,12 @@ char* ase_malloc (size_t size)
   FUNC_CALL_ENTRY;
 
   char *buffer;
-  buffer = malloc (size);
+
+  // buffer = malloc (size);
+  posix_memalign((void**)&buffer, (size_t)getpagesize(), size);
   if (buffer == NULL)
     {
-      ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
+      ase_error_report ("posix_memalign", errno, ASE_OS_MALLOC_ERR);
     #ifdef SIM_SIDE
       printf("SIM-C : Malloc failed\n");
       start_simkill_countdown();

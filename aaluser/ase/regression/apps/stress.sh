@@ -3,10 +3,11 @@
 while true
 do
     if pgrep "ase_simv" 
+#    if ps -p 134761
     then
 	echo "Running test"
-#	./nlb_test `shuf -i 4-65535 -n 1`
-	./nlb_test 4
+	./nlb_test `shuf -i 4-8000 -n 1`
+#	./nlb_test 4
 	sleep 1
     else
 	echo "Simulator not running... EXIT";

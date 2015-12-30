@@ -146,7 +146,7 @@ void session_init()
   poll_for_session_id();
 
   // Creating CSR map 
-  printf("  [APP]  Creating MMIO region...\n");
+  printf("  [APP]  Creating MMIO ...\n");
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
   mmio_region->is_mmiomap = 1;  
@@ -156,7 +156,7 @@ void session_init()
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
 
   // Create UMSG region
-  printf("  [APP]  Creating UMAS region... \n");
+  printf("  [APP]  Creating UMAS ... \n");
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
   umas_region->memsize = UMAS_LENGTH;
   umas_region->is_umas = 1;
@@ -615,7 +615,7 @@ void allocate_buffer(struct buffer_t *mem)
 
   // book-keeping WSmeta // used by ASEALIAFU
   struct wsmeta_t *ws;
-  ws = (struct wsmeta_t *) malloc(sizeof(struct wsmeta_t));
+  ws = (struct wsmeta_t *) ase_malloc(sizeof(struct wsmeta_t));
   ws->index = mem->index;
   ws->buf_structaddr = (uint64_t*)mem;  
   append_wsmeta(ws);
@@ -646,7 +646,7 @@ void deallocate_buffer(struct buffer_t *mem)
 #endif 
 
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Deallocating memory region %s ...", mem->memname);
+  printf("  [APP]  Deallocating memory %s ...", mem->memname);
   END_YELLOW_FONTCOLOR;
 
   // Send buffer with metadata = HDR_MEM_DEALLOC_REQ

@@ -689,7 +689,8 @@ void start_simkill_countdown()
 
   // Send a simulation kill command
   printf("SIM-C : Sending kill command...\n");
-
+  usleep(1000);
+  
   // Set scope
   svSetScope(scope);
 
