@@ -1,4 +1,4 @@
-// Copyright (c) 2006-2015, Intel Corporation
+// Copyright(c) 2006-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -499,7 +499,7 @@ AAS_END_MOD()
 
    * Other names and brands may be claimed as the property of others. 
         
-   Copyright 2003-2014, Intel Corporation.@endverbatim 
+   Copyright(c) 2003-2016, Intel Corporation.@endverbatim 
 
 
 Unless otherwise stated, any software source code reprinted in this document
@@ -507,7 +507,7 @@ is furnished under a software license and may only be used or copied in
 accordance with the terms of that license. Specifically:
 
 @verbatim
-Copyright (c) 2003-2014, Intel Corporation
+Copyright(c) 2003-2016, Intel Corporation
 
 Redistribution  and  use  in source  and  binary  forms,  with  or  without
 modification, are permitted provided that the following conditions are met:

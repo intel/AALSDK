@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -80,7 +80,7 @@
 #define DRV_DESCRIPTION       "Intel(R) AAL FPGA PCIe Device driver and CCI Physical Interface Protocol (PIP)"
 #define DRV_AUTHOR            "Joseph Grecco <joe.grecco@intel.com>"
 #define DRV_LICENSE           "Dual BSD/GPL"
-#define DRV_COPYRIGHT         "Copyright (c) 2015 Intel Corporation"
+#define DRV_COPYRIGHT         "Copyright(c) 2015-2016, Intel Corporation"
 
 #define DEVICE_BASENAME       "cci"
 

@@ -1,4 +1,4 @@
-n// Copyright (c) 2014, Intel Corporation
+n// Copyright(c) 2014-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@ n// Copyright (c) 2014, Intel Corporation
 //****************************************************************************
 #define AALSDK_PACKAGE                "aalsdk_splrm"
 #define AALSDK_PACKAGE_VERSION        "4.1.0"
-#define AALSDK_COPYRIGHT_STMNT        "Copyright (c) 2003-2014 Intel Corporation"
+#define AALSDK_COPYRIGHT_STMNT        "Copyright(c) 2003-2016, Intel Corporation"
 #define PACKAGE_BUGREPORT             "joe.grecco@intel.com"
 #define PACKAGE_URL                   ""
 #define GIT_COMMIT_ID                 "unknown"
