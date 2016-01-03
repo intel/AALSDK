@@ -38,7 +38,3 @@ aalscan \
 fpgadiag \
 data_model \
 ALIAFU
-
-# temporarily removed
-# fpgasane \
-# 
