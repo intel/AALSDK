@@ -316,6 +316,10 @@ include/aalsdk/service/SWSimALIAFUService.h.in
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
 
+UTILS_EXTRA=\
+utils/fpgadiag/fpgasane_nlb400_0.sh \
+utils/fpgadiag/fpgasane_nlb400_3.sh
+
 EXTRA_DIST=\
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
@@ -325,5 +329,6 @@ $(DOC_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \
-$(UAIA_EXTRA)
+$(UAIA_EXTRA) \
+$(UTILS_EXTRA)
 
