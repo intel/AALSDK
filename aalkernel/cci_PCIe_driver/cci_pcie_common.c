@@ -400,7 +400,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       if(~0ULL != pafu_hdr->ccip_dfh.csr){
 
          // Instantiate it
-    	 aaldevid_devaddr_instanceNum(aalid)++;
+         aaldevid_devaddr_instanceNum(aalid)++;
          pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
                                                     pafu_phys,
                                                     pafu_hdr,
@@ -408,7 +408,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
          ASSERT(NULL != pcci_aaldev);
 
          if(NULL == pcci_aaldev){
-            PDEBUG("ERROR: Creating Signal Tap device\n");
+            PDEBUG("ERROR: Creating User AFU device\n");
             return false;     // TODO This is a BUG if we get here but should cleanup correctly.
          }
 
@@ -455,9 +455,11 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 {
    ASSERT(NULL != pcci_aaldev);
    if(NULL == pcci_aaldev){
-      PERR("Attemptiong to destroy NULL pointer to cci_aal_device object\n");
+      PERR("Attempting to destroy NULL pointer to cci_aal_device object\n");
       return -EINVAL;
    }
+
+   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    kosal_kfree(pcci_aaldev, sizeof(struct cci_aal_device));
    return 0;
@@ -474,15 +476,14 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 void
 cci_release_device(struct device *pdev)
 {
-#if ENABLE_DEBUG
+
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
-#endif // ENABLE_DEBUG
-
-
+   struct cci_aal_device *pcci_aaldev = aaldev_to_cci_aal_device(paaldev);
 
    PTRACEIN;
 
    PDEBUG("Called with struct aal_device * 0x%p\n", paaldev);
+//   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    // DO NOT call factory release here. It will be done by the framework.
    PTRACEOUT;

@@ -82,7 +82,11 @@
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
-
+extern struct cci_aal_device   *
+                       cci_create_AAL_UAFU_Device( struct port_device  *,
+                                                   btPhysAddr,
+                                                   struct CCIP_AFU_Header *,
+                                                   struct aal_device_id *);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,6 +296,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          // TODO FOR NOW JUST DO IT
          cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
+         cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
          pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
                                                                   pownerSess->m_device,
                                                                   &Message->m_tranID,
@@ -329,7 +334,44 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          // TODO FOR NOW JUST DO IT
-         cci_publish_aaldevice(ccip_port_uafu_dev(pportdev));
+         {
+              // Get the AFU header pointer by adding the offset to the port header address
+              struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)ccip_port_hdr(pportdev) ) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset);
+              btPhysAddr                     pafu_phys = ccip_port_phys_mmio(pportdev) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset;
+              struct cci_aal_device         *pcci_aaldev = NULL;
+              struct aal_device_id           aalid;
+              struct aal_device             *paaldevice = NULL;
+
+              // Get the address of the PR. User AFU instance number always follows PR.
+              paaldevice = cci_aaldev_to_aaldev(pdev);
+              aalid = aaldev_devid(paaldevice);
+
+
+              // If the device is present
+              if(~0ULL != pafu_hdr->ccip_dfh.csr){
+
+                 // Instantiate it
+                 aaldevid_devaddr_instanceNum(aalid)++;
+                 pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
+                                                            pafu_phys,
+                                                            pafu_hdr,
+                                                           &aalid);
+                 ASSERT(NULL != pcci_aaldev);
+
+                 if(NULL == pcci_aaldev){
+                    PDEBUG("ERROR: Creating User AFU device\n");
+                    return false;     // TODO This is a BUG if we get here but should cleanup correctly.
+                 }
+
+                 // Add the device to the CCI Board device's device list
+                 kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+
+              } // End if(~0ULL == pafu_hdr->ccip_dfh.csr){
+           } //End block
+
+
+
+
          pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
                                                                   pownerSess->m_device,
                                                                   &Message->m_tranID,

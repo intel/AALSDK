@@ -169,8 +169,8 @@ struct cci_aal_device {
 };
 
 
-#define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
-#define aaldev_to_cci_aal_device(ptr)        kosal_container_of(ptr, struct aal_device, m_aaldev)
+#define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct cci_aal_device. m_pcidev )
+#define aaldev_to_cci_aal_device(ptr)        kosal_container_of(ptr, struct cci_aal_device, m_aaldev )
 
 #define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
 #define cci_dev_pport(pdev)                 ( pdev->m_pport )

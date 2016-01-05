@@ -95,6 +95,25 @@ protected:
 };
 
 
+class AFUActivated : public IDispatchable
+{
+public:
+   AFUActivated(  IALIReconfigure_Client   *pSvcClient,
+                    TransactionID const      &rTranID)
+   : m_pSvcClient(pSvcClient),
+     m_TranID(rTranID){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->activateSucceeded(m_TranID);
+   }
+
+
+protected:
+   IALIReconfigure_Client      *m_pSvcClient;
+   const TransactionID          m_TranID;
+};
+
 
 // ===========================================================================
 //
@@ -738,6 +757,12 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
             getRuntime()->schedDispatchable(new AFUDeactivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
             return;
          }
+      case uid_afurespActivateComplete:
+         {
+            getRuntime()->schedDispatchable(new AFUActivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+            return;
+         }
+
       default:
          break;
       }
