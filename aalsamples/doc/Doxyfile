@@ -681,7 +681,6 @@ INPUT                  = doc/mainpage.dox \
                          Hello_AAL_Service/SW \
                          Hello_CCI_NLB/SW \
                          Hello_SPL_LB/SW \
-                         SampleBrokerService/SW \
                          Sudoku_SPL/SW \
                          LinkedList_SPL/SW \
                          ../aaluser/aas \

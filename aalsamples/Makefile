@@ -48,7 +48,6 @@ Hello_ALI_NLB/SW
 #Hello_CCI_NLB/SW \
 #Hello_SPL_LB/SW \
 #Sudoku_SPL/SW \
-#SampleBrokerService/SW \
 #LinkedList_SPL/SW \
 #SignalTapService \
 #SigTapSample/SW
