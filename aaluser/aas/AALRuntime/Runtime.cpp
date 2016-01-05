@@ -198,7 +198,6 @@ btBool Runtime::releaseRuntimeProxy()
 //=============================================================================
 IRuntimeClient *Runtime::getRuntimeClient()
 {
-   AutoLock(this);
    return m_pClient;
 }
 

@@ -96,12 +96,17 @@ typedef enum
 
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
 #define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+
 #define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 #define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+
 #define iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
 #define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+#define ALI_AFUID_UAFU_CONFIG       "A3AAB285-79A0-4572-83B5-4FD5E5216870"
+
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
 
 /// Key for selecting an AFU delegate.

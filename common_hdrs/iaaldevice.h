@@ -367,7 +367,7 @@ struct aaldevice_interface {
 #define dev_OwnerSession(p,o)     (p)->i.getOwnerSession(p,o)
 #define dev_doForeachOwner(p,f)   (p)->i.doForeachOwner(p,f)
 #define dev_quiesce(p,o)          (p)->i.quiesce(p,o)
-#define dev_remove(p)             (p)->i.remove(p)
+#define dev_removedevice(p)       (p)->i.remove(p)
 #define dev_hasRelease(p)         (NULL != (p)->i.releasedevice)
 #define dev_setrelease(p,f)       (p)->i.releasedevice=f
 #define dev_release(p,d)          (p)->i.releasedevice(d)

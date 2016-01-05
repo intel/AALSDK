@@ -105,7 +105,6 @@ btBool AALServiceModule::Construct(IRuntime            *pAALRuntime,
    // If InitializeService fails then this is a severe failure.
    // An event was not sent. Let upper layers handle the failure.
    m_SvcsFact->DestroyServiceObject(pNewService);
-
    return false;
 }
 

@@ -47,11 +47,9 @@
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/service/ALIAFUService.h>
 #include <aalsdk/service/HWALIAFUService.h>
-//#include <aalsdk/aas/AALDeviceService.h>
 #include <aalsdk/service/IALIAFU.h>
 
-#include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
-//#include <aalsdk/uaia/AALuAIA_UIDriverClient.h> // IUIDriverClientEvent
+//#include <aalsdk/utils/AALEventUtilities.h>     // UnWrapTransactionIDFromEvent
 #include <aalsdk/uaia/IAFUProxy.h>
 
 BEGIN_NAMESPACE(AAL)
@@ -76,7 +74,8 @@ class HWALIAFU_API HWALIAFU : public ServiceBase,
                               public IALIBuffer,
                               public IALIUMsg,
                               public IALIReset,
-                              public IALIPerf
+                              public IALIPerf,
+                              public IALIReconfigure
 {
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)
@@ -92,7 +91,8 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
       m_MMIORmap(NULL),
       m_MMIORsize(0),
       m_uMSGmap(NULL),
-      m_uMSGsize(0)
+      m_uMSGsize(0),
+      m_pReconClient(NULL)
    {
       // TODO: at some point, these probably go into init() and be exposed based
       //       on the actual capabilities
@@ -182,22 +182,33 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
                                           NamedValueSet const  *pOptArgs ) ;
    //</IALIPerf>
 
+   // <ALIReconfigure>
+   void reconfDeactivate( TransactionID const &rTranID,
+                          NamedValueSet const *pOptArgs = NULL);
 
+   void reconfConfigure( TransactionID const &rTranID,
+                         NamedValueSet const *pOptArgs = NULL);
+   void reconfActivate( TransactionID const &rTranID,
+                        NamedValueSet const *pOptArgs = NULL);
+   // </ALIReconfigure>
    enum InitTransaction {
       GetMMIO = 1,
       GetUMSG
    };
 
 protected:
-   IAALService         *m_pAALService;
-   IAFUProxy           *m_pAFUProxy;
-   TransactionID        m_tidSaved;
-   IBase               *m_pSvcClient;
-   btVirtAddr           m_MMIORmap;
-   btUnsigned32bitInt   m_MMIORsize;
-   btVirtAddr           m_uMSGmap;
-   btUnsigned32bitInt   m_uMSGsize;
+   btBool configureForAFU();
 
+
+   IAALService            *m_pAALService;
+   IAFUProxy              *m_pAFUProxy;
+   TransactionID           m_tidSaved;
+   IBase                  *m_pSvcClient;
+   btVirtAddr              m_MMIORmap;
+   btUnsigned32bitInt      m_MMIORsize;
+   btVirtAddr              m_uMSGmap;
+   btUnsigned32bitInt      m_uMSGsize;
+   IALIReconfigure_Client *m_pReconClient;
    struct ReleaseContext {
       const TransactionID   TranID;
       const btTime          timeout;

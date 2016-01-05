@@ -56,7 +56,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 //=============================================================================
-// Name:          BufferAllocate
+// Name:          BufferAllocateTransaction
 // Description:   Send a Workspace Allocate operation to the Driver stack
 // Input: devHandl - Device Handle received from Resource Manager
 //        tranID   - Transaction ID
@@ -127,7 +127,7 @@ private:
 
 
 //=============================================================================
-// Name:          GetMMIOBuffer
+// Name:          GetMMIOBufferTransaction
 // Description:   Send a Get MMIO Buffer operation to the Driver stack
 // Input:         tranID   - Transaction ID
 // Comments:
@@ -160,39 +160,6 @@ private:
 
 }; // class GetMMIOBufferTransaction
 
-
-//=============================================================================
-// Name:          GetUMSGBuffer
-// Description:   Send a Get UMSG Buffer operation to the Driver stack
-// Input:         tranID   - Transaction ID
-// Comments:
-//=============================================================================
-class UAIA_API GetUMSGBufferTransaction : public IAIATransaction
-{
-public:
-   GetUMSGBufferTransaction( AAL::TransactionID const &tranID );
-   AAL::btBool                IsOK() const;
-
-   AAL::btVirtAddr                getPayloadPtr() const;
-   AAL::btWSSize                  getPayloadSize() const;
-   AAL::stTransactionID_t const   getTranID() const;
-   AAL::uid_msgIDs_e              getMsgID() const;
-   AAL::uid_errnum_e              getErrno()const;
-   void                           setErrno(AAL::uid_errnum_e);
-
-
-   ~GetUMSGBufferTransaction();
-
-private:
-   AAL::uid_msgIDs_e             m_msgID;
-   AAL::stTransactionID_t        m_tid_t;
-   AAL::btBool                   m_bIsOK;
-   AAL::btVirtAddr               m_payload;
-   AAL::btWSSize                 m_size;
-   AAL::btWSSize                 m_bufLength;
-   AAL::uid_errnum_e             m_errno;
-
-}; // class GetUMSGBufferTransaction
 
 //=============================================================================
 // Name:          AFUQuiesceAndHalt
@@ -362,6 +329,12 @@ private:
 
 }; // class umsgSetAttributes
 
+//=============================================================================
+// Name:          PerfCounterGet
+// Description:   Get the Performance Countersk
+// Input:         size   - TBD
+// Comments:
+//=============================================================================
 class UAIA_API PerfCounterGet : public IAIATransaction
 {
 public:
@@ -389,5 +362,79 @@ private:
    AAL::uid_errnum_e             m_errno;
 
 }; // class PerfCounterGet
+
+//=============================================================================
+// Name:          AFUActivateTransaction
+// Description:   PR object Transaction for activating the User AFU associated
+//                with this PR.
+// Comments: Causes the AAL Object associated with the uAFU to be exposed
+//           and available for allocation. Note that the uAFU must be
+//           already programmed.
+//=============================================================================
+class UAIA_API AFUActivateTransaction : public IAIATransaction
+{
+public:
+   AFUActivateTransaction(AAL::TransactionID const &rTranID);
+   AAL::btBool                      IsOK() const;
+
+   AAL::btVirtAddr                  getPayloadPtr() const;
+   AAL::btWSSize                    getPayloadSize() const;
+   AAL::stTransactionID_t const     getTranID() const;
+   AAL::uid_msgIDs_e                getMsgID() const;
+   AAL::uid_errnum_e                getErrno()const;
+   void                             setErrno(AAL::uid_errnum_e);
+
+
+   ~AFUActivateTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+};
+
+//=============================================================================
+// Name:          AFUDeactivateTransaction
+// Description:   PR object Transaction for deactivating the User AFU associated
+//                with this PR.
+// Comments: Causes the AAL Object associated with the uAFU to be removed from
+//           the objects  available for allocation.
+// TODO: Initially a synchronous function. This function does NOT affect already
+//       allocated Objects. I.e., If the AFU is in use it will remain in use
+//       until released. It simply is not available for reallocation. If we
+//       want to change the behavior so that it notifies owners and/or yanks
+//       AFU away then it must become asynchronous.
+//=============================================================================
+class UAIA_API AFUDeactivateTransaction : public IAIATransaction
+{
+public:
+   AFUDeactivateTransaction(AAL::TransactionID const &rTranID);
+   AAL::btBool                      IsOK() const;
+
+   AAL::btVirtAddr                  getPayloadPtr() const;
+   AAL::btWSSize                    getPayloadSize() const;
+   AAL::stTransactionID_t const     getTranID() const;
+   AAL::uid_msgIDs_e                getMsgID() const;
+   AAL::uid_errnum_e                getErrno()const;
+   void                             setErrno(AAL::uid_errnum_e);
+
+
+   ~AFUDeactivateTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+};
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

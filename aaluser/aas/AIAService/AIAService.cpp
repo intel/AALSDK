@@ -258,7 +258,7 @@ void AIAService::AFUProxyGet( IBase *pServiceClient,
    Manifest.Add(AIA_SERVICE_BASE_INTERFACE, static_cast<btAny>(dynamic_cast<IBase*>(this)));
 
    // Construct the new AFUProxy
-   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime());
+   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime() );
 
    // Initialize the Service.  The Service will register with the AIA.
    pnewProxy->_init(pServiceClient, rtid, Manifest, NULL);

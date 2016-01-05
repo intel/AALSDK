@@ -347,21 +347,21 @@ void ServiceBase::MessageDeliveryThread()
    }
 }
 
-IAALMarshaller &              ServiceBase::marshall()       { AutoLock(this); return *m_pmarshaller;          }
-IAALUnMarshaller &          ServiceBase::unmarshall()       { AutoLock(this); return *m_punmarshaller;        }
-IAALTransport &                  ServiceBase::recvr()       { AutoLock(this); return *m_ptransport;           }
-IAALTransport &                 ServiceBase::sender()       { AutoLock(this); return *m_ptransport;           }
+IAALMarshaller &              ServiceBase::marshall()       { return *m_pmarshaller;          }
+IAALUnMarshaller &          ServiceBase::unmarshall()       { return *m_punmarshaller;        }
+IAALTransport &                  ServiceBase::recvr()       { return *m_ptransport;           }
+IAALTransport &                 ServiceBase::sender()       { return *m_ptransport;           }
 
 btBool                   ServiceBase::HasMarshaller() const { AutoLock(this); return NULL != m_pmarshaller;   }
 btBool                 ServiceBase::HasUnMarshaller() const { AutoLock(this); return NULL != m_punmarshaller; }
 btBool                    ServiceBase::HasTransport() const { AutoLock(this); return NULL != m_ptransport;    }
 
-NamedValueSet const &          ServiceBase::OptArgs() const { AutoLock(this); return m_optArgs;               }
-IServiceClient *      ServiceBase::getServiceClient() const { AutoLock(this); return m_pclient;               }
-IBase *           ServiceBase::getServiceClientBase() const { AutoLock(this); return m_pclientbase;           }
-IRuntime *                  ServiceBase::getRuntime() const { AutoLock(this); return m_Runtime;               }
-IRuntimeClient *      ServiceBase::getRuntimeClient() const { AutoLock(this); return m_RuntimeClient;         }
-AALServiceModule * ServiceBase::getAALServiceModule() const { AutoLock(this); return m_pcontainer;            }
+NamedValueSet const &          ServiceBase::OptArgs() const { return m_optArgs;               }
+IServiceClient *      ServiceBase::getServiceClient() const { return m_pclient;               }
+IBase *           ServiceBase::getServiceClientBase() const { return m_pclientbase;           }
+IRuntime *                  ServiceBase::getRuntime() const { return m_Runtime;               }
+IRuntimeClient *      ServiceBase::getRuntimeClient() const { return m_RuntimeClient;         }
+AALServiceModule * ServiceBase::getAALServiceModule() const { return m_pcontainer;            }
 
 void ServiceBase::allocService(IBase               *pClient,
                                NamedValueSet const &rManifest,

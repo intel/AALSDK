@@ -330,7 +330,7 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
 
   	   if(-1 != DevTarget()){
 
-  		   ConfigRecord.Add(keyRegChannelNumber, DevTarget());
+  		   ConfigRecord.Add(keyRegSubDeviceNumber, DevTarget());
   	   }
   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
 

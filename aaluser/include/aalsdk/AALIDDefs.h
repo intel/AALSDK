@@ -717,6 +717,7 @@
 
 #define keyRegBusType                     "AAL_keyRegBusType"
 //#define keyRegBusType                     AAL_RegKey(0x0010)   /* DataType: bt32bitInt, defined by aal_bus_types_e */
+
 #define keyRegBusNumber                   "AAL_keyRegBusNumber"
 //#define keyRegBusNumber                   AAL_RegKey(0x0011)   /* DataType: btUnsigned32bitInt
 //                                                                  Bus type is defined by enumeration. This is which bus of
@@ -724,15 +725,17 @@
 #define keyRegDeviceNumber                "AAL_keyRegDeviceNumber"
 //#define keyRegDeviceNumber                AAL_RegKey(0x0012)   /* DataType: btUnsigned32bitInt
 //                                                                  Which slot (PCI) or socket (FSB, QPI) on this bus */
-#define keyRegChannelNumber               "AAL_keyRegChannelNumber"
-//#define keyRegChannelNumber               AAL_RegKey(0x0013)   /* DataType: bt32bitInt
 
 #define keyRegfuntionNumber               "AAL_keyRegfuntionNumber"
 //                                                                  Channel on the device, e.g. SPL interface (0) or
 //                                                                  sub-device number. -1 if not defined */
 
+#define keyRegSubDeviceNumber               "AAL_keyRegSubDeviceNumber"
+//                                                                  Subdevice within a B:D:F
+
 #define keyRegInstanceNumber              "AAL_keyRegInstanceNumber"
-//                                                                  Instance identifier
+//                                                                  Instance identifier within a B:D:F:S
+
 #define keyRegDeviceAddress               "AAL_keyRegDeviceAddress"
 //#define keyRegDeviceAddress               AAL_RegKey(0x0014)   /* DataType: btUnsigned64bitInt (also, btID, and the native key type of an NVS
 //                                                                  Encoded version of BusType, BusNumber, DeviceNumber, ChannelNumber */

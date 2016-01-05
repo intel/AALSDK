@@ -802,8 +802,8 @@ aalbus_unregister_device(struct aal_device *dev)
    }
 
    // Remove the device. This causes the device to signal its
-   //  removal from the system  TODO Move to Device Destroy
-   dev_remove(dev);
+   //  removal from the system
+   dev_removedevice(dev);
 
    // Begin the process of unplugging the device from the framework
    //  the device_unregister() causes the Linux DD framework to generate

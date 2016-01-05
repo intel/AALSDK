@@ -116,7 +116,9 @@ BEGIN_NAMESPACE(AAL)
  *    BusType
  *    BusNumber
  *    DeviceNumber
- *    Channel Number
+ *    FunctionNumber
+ *    SubdeviceNumber
+ *    InstanceNumber
  * Also, Instead of checking for NumOwners=0, check that NumAllocations is
  *    less than MaxAllocations
  *
@@ -258,17 +260,44 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
       AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired DeviceNumber is: " << DeviceNumber << std::endl);
    }
 
-   /*
-    * Get Channel Number
-    */
-   bt32bitInt         ChannelNumber;
-   btBool             testChannelNumber(false);
 
-   if (nvsBackDoorRecord.Has( keyRegChannelNumber)) {
-      nvsBackDoorRecord.Get( keyRegChannelNumber, &ChannelNumber);
-      testChannelNumber = true;
-      AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired Channel Number is: " << ChannelNumber << std::endl);
+   /*
+    * Get Function Number
+    */
+   bt32bitInt         FunctionNumber;
+   btBool             testFunctionNumber(false);
+
+   if (nvsBackDoorRecord.Has( keyRegfuntionNumber)) {
+      nvsBackDoorRecord.Get( keyRegfuntionNumber, &FunctionNumber);
+      testFunctionNumber = true;
+      AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired Function Number is: " << FunctionNumber << std::endl);
    }
+
+
+   /*
+    * Get SubDevice Number
+    */
+   bt32bitInt         SubDeviceNumber;
+   btBool             testSubDeviceNumber(false);
+
+   if (nvsBackDoorRecord.Has( keyRegSubDeviceNumber)) {
+      nvsBackDoorRecord.Get( keyRegSubDeviceNumber, &SubDeviceNumber);
+      testSubDeviceNumber = true;
+      AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired SubDevice Number is: " << SubDeviceNumber << std::endl);
+   }
+
+   /*
+     * Get Instance Number
+     */
+    bt32bitInt         InstanceNumber;
+    btBool             testInstanceNumber(false);
+
+    if (nvsBackDoorRecord.Has( keyRegInstanceNumber)) {
+       nvsBackDoorRecord.Get( keyRegInstanceNumber, &InstanceNumber);
+       testInstanceNumber = true;
+       AAL_DEBUG( LM_ResMgr,  "CResMgr::ComputeBackdoorGoalRecords: Desired Instance Number is: " << InstanceNumber << std::endl);
+    }
+
 
    /*
     * Summary: All fields current selected for by client are:
@@ -277,13 +306,14 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
     *    BusType
     *    BusNumber
     *    DeviceNumber
+    *    Function Number
     *    Channel Number
     */
 
    /*
     * Only search if there are fields to search
     */
-   if ( testAFU_ID || testAHM_ID || testBusType || testBusNumber || testDeviceNumber || testChannelNumber ) {
+   if ( testAFU_ID || testAHM_ID || testBusType || testBusNumber || testDeviceNumber || testFunctionNumber || testSubDeviceNumber || testInstanceNumber ) {
       ////////////////////////////////////////////////////////////////////////////
       // Loop over the instance records
       ////////////////////////////////////////////////////////////////////////////
@@ -361,13 +391,31 @@ btBool CResMgr::ComputeBackdoorGoalRecords (const NamedValueSet& nvsManifest, nv
             continue;
          }
 
-         // Channel Number
-         if ( ( testChannelNumber ) &&
-              ( ChannelNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum)) {
-            AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered ChannelNumber is " <<
-                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired ChannelNumber is " << ChannelNumber << std::endl);
+         // Function Number
+         if ( ( testFunctionNumber ) &&
+              ( FunctionNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_functnum)) {
+            AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered  Function Number is " <<
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired Function Number is " << FunctionNumber << std::endl);
             continue;
          }
+
+         // SubDevice  Number
+         if ( ( testSubDeviceNumber ) &&
+              ( SubDeviceNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum)) {
+            AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered SubDevice Number is " <<
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired SubDevice Number is " << SubDeviceNumber << std::endl);
+            continue;
+         }
+
+         // Instance Number
+         if ( ( testInstanceNumber ) &&
+              ( InstanceNumber != rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_instanceNum)) {
+            AAL_VERBOSE(LM_ResMgr, "CResMgr::ComputeBackdoorGoalRecords: Instance Record being considered Instance Number is " <<
+                  rInstRec.ConfigStruct().devattrs.devid.m_devaddr.m_subdevnum << " but desired ChannelNumber is " << InstanceNumber << std::endl);
+            continue;
+         }
+
+
 
          /////////////////////////////////////////////////////////////////////////
          // If here, then this is a valid record. Put it on the goal list.

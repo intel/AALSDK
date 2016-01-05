@@ -224,8 +224,8 @@ cci_enumerate_device( struct pci_dev             *pcidev,
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)0},
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
@@ -298,7 +298,7 @@ struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
          PVERBOSE("Unknown device ID ignored\n");
          break;
    }
-   return NULL;
+   return (struct ccip_device *) (-1);
 }
 
 //=============================================================================
@@ -345,10 +345,9 @@ cci_pci_probe( struct pci_dev             *pcidev,
 
    // Get the device specific probe function
    probe_fn = (cci_probe_fn)pcidevid->driver_data;
-   ASSERT(NULL != probe_fn);
    if ( NULL == probe_fn ) {
-       PERR("NULL cci_enumerate function from probe\n");
-       return res;
+       PVERBOSE("Ignoring hidden PCIe devcies\n");
+       return 0;
    }
 
    // Call the probe function.  This is where the real work occurs
