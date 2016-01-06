@@ -53,7 +53,8 @@ CAALWorkSpaceUtilities.cpp \
 CCountedObject.cpp \
 CNamedValueSet.cpp \
 KernelStructs.cpp \
-ResMgrUtilities.cpp
+ResMgrUtilities.cpp \
+Dispatchables.cpp
 
 libAAS_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
