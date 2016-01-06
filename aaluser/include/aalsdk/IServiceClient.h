@@ -55,7 +55,7 @@ BEGIN_NAMESPACE(AAL)
 ///   it back. This mechanism establishes a binding between the two objects so that
 ///   each object can communicate with the other.
 //=============================================================================
-class AALRUNTIME_API IServiceClient
+class AASLIB_API IServiceClient
 {
 public:
    /// @brief     Called by a Runtime object to indicate that it
@@ -121,7 +121,7 @@ public:
    virtual void serviceEvent(const IEvent &rEvent)                               = 0;
 
    /// @brief Destructor
-   virtual ~IServiceClient() {}
+   virtual  ~IServiceClient() {}
 };
 
 

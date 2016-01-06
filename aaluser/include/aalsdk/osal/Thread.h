@@ -157,7 +157,7 @@ public:
    /// @note There is currently no Windows implementation.
    void              Cancel();
    /// Compare this thread's identifier with id.
-   btBool      IsThisThread(btID id) const;
+   btBool      IsThisThread( btTID id ) const;
    /// Retrieve this thread's identifier. Don't compare ID's outright. Use IsThisThread().
    btTID                tid();
 

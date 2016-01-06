@@ -118,8 +118,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;_NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);NOMINMAX</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
@@ -128,7 +128,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(SolutionDir)..\substitute\substitute.bat $(TargetDir)substitute $(SolutionDir)..\include\aalsdk</Command>
+      <Command>$(SolutionDir)substitute\substitute.bat $(SolutionDir)$(Configuration)\$(Platform)\bin\substitute $(SolutionDir)aaluser\include\aalsdk</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>.h.in template substitution</Message>
@@ -187,26 +187,30 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\CriticalSection.cpp" />
-    <ClCompile Include="..\DynLinkLibrary.cpp" />
-    <ClCompile Include="..\OSLib.cpp" />
-    <ClCompile Include="..\OSSemaphore.cpp" />
-    <ClCompile Include="..\OSServiceModule.c" />
-    <ClCompile Include="..\Sleep.cpp" />
-    <ClCompile Include="..\Thread.cpp" />
-    <ClCompile Include="..\ThreadGroup.cpp" />
-    <ClCompile Include="..\Timer.cpp" />
+    <ClCompile Include="Barrier.cpp" />
+    <ClCompile Include="CriticalSection.cpp" />
+    <ClCompile Include="DynLinkLibrary.cpp" />
+    <ClCompile Include="Env.cpp" />
+    <ClCompile Include="OSLib.cpp" />
+    <ClCompile Include="OSSemaphore.cpp" />
+    <ClCompile Include="OSServiceModule.c" />
+    <ClCompile Include="Sleep.cpp" />
+    <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="ThreadGroup.cpp" />
+    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\CriticalSection.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\DynLinkLibrary.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\IDispatchable.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\OSSemaphore.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\OSServiceModule.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Sleep.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Thread.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\ThreadGroup.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Timer.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\Barrier.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\CriticalSection.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\DynLinkLibrary.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\Env.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\IDispatchable.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\OSSemaphore.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\OSServiceModule.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\Sleep.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\Thread.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\ThreadGroup.h" />
+    <ClInclude Include="..\..\include\aalsdk\osal\Timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

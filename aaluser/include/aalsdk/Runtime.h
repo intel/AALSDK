@@ -89,7 +89,7 @@ class IRuntime;
 ///   That establishes a binding between the two objects so that the Runtime
 ///   object can call this object when the Runtime needs to notify its client.
 //=============================================================================
-class AALRUNTIME_API IRuntimeClient
+class /*AALRUNTIME_API*/ IRuntimeClient
 {
 public:
    /// @brief     Called by a Runtime object to indicate that it failed to

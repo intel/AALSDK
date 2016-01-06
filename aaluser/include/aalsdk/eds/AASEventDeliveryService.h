@@ -67,7 +67,7 @@ typedef enum EDSDispatchClass
 
 
 /// Interface for the Event Dispatcher.
-class AASEDS_API IEventDispatcher
+class AALRUNTIME_API IEventDispatcher
 {
 public:
    /// IEventDispatcher Destructor.
@@ -90,7 +90,7 @@ public:
 
 
 /// Interface for the Event Delivery System Service.
-class AASEDS_API IEventDeliveryService
+class AALRUNTIME_API IEventDeliveryService
 {
 public:
    /// IEventDeliveryService Destructor.
@@ -104,7 +104,7 @@ public:
 /// @}
 
 /// Interface for the Event Delivery System Service.
-class AASEDS_API IMessageDeliveryService
+class AALRUNTIME_API IMessageDeliveryService
 {
 public:
    /// IMessageDeliveryService Destructor.

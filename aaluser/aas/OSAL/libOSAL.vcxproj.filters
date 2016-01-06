@@ -17,60 +17,72 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\CriticalSection.cpp">
+    <ClCompile Include="Barrier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\DynLinkLibrary.cpp">
+    <ClCompile Include="CriticalSection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\OSLib.cpp">
+    <ClCompile Include="Env.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\OSSemaphore.cpp">
+    <ClCompile Include="OSLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\OSServiceModule.c">
+    <ClCompile Include="OSSemaphore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Sleep.cpp">
+    <ClCompile Include="OSServiceModule.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Thread.cpp">
+    <ClCompile Include="Sleep.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ThreadGroup.cpp">
+    <ClCompile Include="Thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Timer.cpp">
+    <ClCompile Include="ThreadGroup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DynLinkLibrary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\CriticalSection.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\Barrier.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\DynLinkLibrary.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\CriticalSection.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\IDispatchable.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\DynLinkLibrary.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\OSSemaphore.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\Env.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\OSServiceModule.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\IDispatchable.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Sleep.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\OSSemaphore.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Thread.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\OSServiceModule.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\ThreadGroup.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\Sleep.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\osal\Timer.h">
+    <ClInclude Include="..\..\include\aalsdk\osal\Thread.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\aalsdk\osal\ThreadGroup.h">
+      <Filter>Header Files\aalsdk\osal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\aalsdk\osal\Timer.h">
       <Filter>Header Files\aalsdk\osal</Filter>
     </ClInclude>
   </ItemGroup>

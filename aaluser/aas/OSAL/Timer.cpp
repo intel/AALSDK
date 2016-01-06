@@ -503,4 +503,3 @@ std::string Timer::Normalized(btUnsigned64bitInt *i, double *d) const
 }
 
 END_NAMESPACE(AAL)
-
