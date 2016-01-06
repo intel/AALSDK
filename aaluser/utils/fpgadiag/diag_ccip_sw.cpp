@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -73,11 +73,27 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
     volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
-    /*
+    if(NULL != pUMsgUsrVirt &&
+      ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) ||
+        flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))){
+
+	  NamedValueSet nvs;
+	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA)){
+
+		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)LOW);
+
+	  }else if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)){
+
+		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)HIGH);
+	  }
+	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+    }
+
+    /* COOL FPGA CACHE temporarily disabled
 	if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
 		return 1;
 	}
-*/
+    */
 
     // Initiate AFU Reset
     m_pALIResetService->afuReset();

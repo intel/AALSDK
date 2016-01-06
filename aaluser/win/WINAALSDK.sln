@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -129,13 +128,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsampleafu2", "..\samples\AFU2\win\libsampleafu2.vcxproj", "{1B86C2F9-3553-4F05-8695-EA1B4594DE12}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4C7A6B0B-E7CD-4866-B642-1909495B8682} = {4C7A6B0B-E7CD-4866-B642-1909495B8682}
-		{22D82DC4-66CE-4D75-960F-CD0A5A40C519} = {22D82DC4-66CE-4D75-960F-CD0A5A40C519}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsamplebroker", "..\samples\SampleBrokerService\win\libsamplebroker.vcxproj", "{CE5A6E8A-B5A3-4F3A-BE3C-38E83E65BEE9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{4C7A6B0B-E7CD-4866-B642-1909495B8682} = {4C7A6B0B-E7CD-4866-B642-1909495B8682}
-		{314AD84F-1736-415A-98BD-33129F049FE3} = {314AD84F-1736-415A-98BD-33129F049FE3}
 		{22D82DC4-66CE-4D75-960F-CD0A5A40C519} = {22D82DC4-66CE-4D75-960F-CD0A5A40C519}
 	EndProjectSection
 EndProject

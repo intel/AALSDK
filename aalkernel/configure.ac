@@ -59,7 +59,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.63])
 
 AC_INIT([aalkernel], [5.0.0], [joe.grecco@intel.com])
-AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
+AC_COPYRIGHT([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([kOSAL/kOSAL.c])
@@ -74,7 +74,7 @@ AM_INIT_AUTOMAKE([-Wall -Wno-portability -Werror silent-rules])
 AM_SILENT_RULES([yes])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
-AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
+AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2016, Intel Corporation])
 dnl ############################################################################
 dnl ## Module Versioning #######################################################
 dnl ############################################################################

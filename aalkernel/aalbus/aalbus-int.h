@@ -82,7 +82,7 @@
 #define DRV_DESCRIPTION   "AAL Logical Bus Module"
 #define DRV_AUTHOR        "Joseph Grecco <joe.grecco@intel.com>"
 #define DRV_LICENSE       "GPL"
-#define DRV_COPYRIGHT     "Copyright (c) 2008-2014 Intel Corporation"
+#define DRV_COPYRIGHT     "Copyright(c) 2008-2016, Intel Corporation"
 
 
 //

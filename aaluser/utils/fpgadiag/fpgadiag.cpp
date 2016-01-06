@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -61,7 +61,7 @@
 #include "diag-common.h"
 #include "diag_defaults.h"
 
-#define AALSDK_COPYRIGHT_STMNT "Copyright (c) 2003-2015, Intel Corporation" //TODO add in appropriate header file
+#define AALSDK_COPYRIGHT_STMNT "Copyright(c) 2003-2016, Intel Corporation" //TODO add in appropriate header file
 
 USING_NAMESPACE(AAL)
 
@@ -524,14 +524,10 @@ void CMyApp::serviceAllocated(IBase               *pServiceBase,
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
-   if(NULL != m_UMsgVirt){
 
-	  NamedValueSet nvs;
-	  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)0xdeadbeaf);
+   if(NULL == m_UMsgVirt){
 
-	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
-   }else{
-	  ERR("No uMSG support");
+   	  ERR("No uMSG support");
    }
 
    Post();
