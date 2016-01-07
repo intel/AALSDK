@@ -1,11 +1,2 @@
 %1 %2\osal\OSALService.h.in %2\osal\OSALService.h @OSAL_SVC_MOD@ libOSAL
-%1 %2\aas\AASService.h.in %2\aas\AASService.h @AAS_SVC_MOD@ libAAS
-%1 %2\eds\AASEDSService.h.in %2\eds\AASEDSService.h @AASEDS_SVC_MOD@ libAASEDS
-%1 %2\registrar\AASRegistrarService.h.in %2\registrar\AASRegistrarService.h @AASREGISTRAR_SVC_MOD@ libAASRegistrar
-%1 %2\uaia\uAIAService.h.in %2\uaia\uAIAService.h @AASUAIA_SVC_MOD@ libAASUAIA
-%1 %2\aas\AALRuntimeModule.h.in %2\aas\AALRuntimeModule.h @AALRUNTIME_SVC_MOD@ libaalrt
-%1 %2\service\ALIAFUService.h.in %2\service\ALIAFUService.h @ALIAFU_SVC_MOD@ libALIAFU
-%1 %2\service\HWALIAFUService.h.in %2\service\HWALIAFUService.h @HWALIAFU_SVC_MOD@ libHWALIAFU
-%1 %2\service\ASEALIAFUService.h.in %2\service\ASEALIAFUService.h @ASEALIAFU_SVC_MOD@ libASEALIAFU
-%1 %2\service\SWSimALIAFUService.h.in %2\service\SWSimALIAFUService.h @SWSIMALIAFU_SVC_MOD@ libSWSimALIAFU
-%1 %2\service\UtilsAFUService.h.in %2\service\UtilsAFUService.h @UTILSAFU_SVC_MOD@ libUtilsAFU
+%1 %2\aas\AALRuntimeModule.h.in %2\aas\AALRuntimeModule.h @AALRUNTIME_SVC_MOD@ libAAS

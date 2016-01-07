@@ -128,7 +128,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(SolutionDir)substitute\substitute.bat $(SolutionDir)$(Configuration)\$(Platform)\bin\substitute $(SolutionDir)aaluser\include\aalsdk</Command>
+      <Command>$(SolutionDir)\aaluser\utils\substitute\substitute.bat $(SolutionDir)$(Configuration)\$(Platform)\bin\substitute $(SolutionDir)aaluser\include\aalsdk</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>.h.in template substitution</Message>
