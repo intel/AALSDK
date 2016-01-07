@@ -92,8 +92,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;__NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_ASSERT=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;OSAL_EXPORTS;__NO_BUILD_MESSAGES_;_CRT_RAND_S=1;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -106,7 +106,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(SolutionDir)..\substitute\substitute.bat $(TargetDir)substitute $(SolutionDir)..\include\aalsdk</Command>
+      <Command>$(SolutionDir)\substitute\substitute.bat $(TargetDir)substitute $(SolutionDir)aaluser\include\aalsdk</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>.h.in template substitution</Message>
