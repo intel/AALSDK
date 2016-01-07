@@ -82,6 +82,8 @@ BEGIN_NAMESPACE(AAL)
 #   define QLP_PERF_CACHE_WR_MISS 3
 #   define QLP_PERF_EVICTIONS     10
 
+#define NUM_PERF_MONITORS         13
+
 #define CSR_AFU_DSM_BASEL         	0x0110
 #define CSR_AFU_DSM_BASEH         	0x0114
 #define CSR_SRC_ADDR              	0x0120

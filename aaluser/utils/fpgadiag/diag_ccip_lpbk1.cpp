@@ -139,10 +139,13 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 
    m_pALIMMIOService->mmioWrite32(CSR_CFG, cfg);
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		     //0123456789 0123456789 01234567890 0123456789012
-	  cout << "Cachelines Read_Count Write_Count 'Clocks(@"
+		     //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+	  cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
 		 << Normalized(cmd) << ")'";
 
 	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
@@ -209,7 +212,12 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 	    }
 
+	    ReadPerfMonitors();
+
 	    PrintOutput(cmd, NumCacheLines);
+
+	    SavePerfMonitors();
+
 	    // Verify the buffers
 	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
 	    {
@@ -255,7 +263,12 @@ void  CNLBCcipLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 
 	  cout << setw(10) << std::dec << cls					<< ' '
 		   << setw(10) << std::dec << pAFUDSM->num_reads    << ' '
-		   << setw(11) << std::dec << pAFUDSM->num_writes   << ' ';
+		   << setw(11) << std::dec << pAFUDSM->num_writes   << ' '
+		   << setw(12) << GetPerfMonitor(READ_HIT)      	<< ' '
+	       << setw(12) << GetPerfMonitor(WRITE_HIT)      	<< ' '
+	       << setw(13) << GetPerfMonitor(READ_MISS)      	<< ' '
+	       << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
+	       << setw(10) << GetPerfMonitor(EVICTIONS)     	<< ' ';
 
 	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		  ticks = rawticks - startpenalty;

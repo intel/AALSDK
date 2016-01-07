@@ -293,6 +293,7 @@ btInt CNLBRead::RunTest(const NLBCmdLine &cmd)
 
 void  CNLBRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
+#if 0
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
     bt64bitCSR rawticks     = pAFUDSM->num_clocks;
@@ -327,4 +328,5 @@ void  CNLBRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	    }
 
 	    cout << endl;
+#endif
 }
