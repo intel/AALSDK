@@ -213,6 +213,14 @@ int SigTapApp::run()
       m_ptheService->stpGetAddress();
    }
 
+   // Clean-up and return
+    // Release() the Service through the Services IAALService::Release() method
+   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+   m_Sem.Wait();
+
+   m_Runtime.stop();
+   m_Sem.Wait();
+
    return m_Result;
 }
 
