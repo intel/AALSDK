@@ -378,6 +378,7 @@ module ccip_logger
 	 end
 	 //////////////////////////////////////////////////////////////////////////////
 	 // Wait till next clock
+	 $fflush(log_fd);	 
 	 @(posedge clk);
       end
    end

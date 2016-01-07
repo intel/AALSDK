@@ -35,14 +35,11 @@
 #include "ase_common.h"
 
 // Lock
-pthread_mutex_t lock;
+pthread_mutex_t app_lock;
 
 // CSR Map
 uint32_t mmio_write_cnt = 0;
 uint32_t mmio_read_cnt = 0;
-
-uint64_t *mmio_afu_vbase;
-uint64_t *umsg_umas_vbase;
 
 // MQ established
 uint32_t mq_exist_status = MQ_NOT_ESTABLISHED;
@@ -95,7 +92,7 @@ void session_init()
   ipc_init();
 
   // Initialize lock
-  if ( pthread_mutex_init(&lock, NULL) != 0)
+  if ( pthread_mutex_init(&app_lock, NULL) != 0)
     {
       printf("  [APP]  Lock initialization failed, EXIT\n");
       exit (1);
@@ -114,6 +111,9 @@ void session_init()
   signal(SIGQUIT, send_simkill);
   signal(SIGKILL, send_simkill); // *FIXME*: This possibly doesnt work // 
   signal(SIGHUP,  send_simkill);
+
+  // Ignore SIGPIPE *FIXME*: Look for more elegant solution
+  signal(SIGPIPE, SIG_IGN);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  Initializing simulation session ... ");
@@ -225,7 +225,7 @@ void session_deinit()
   END_YELLOW_FONTCOLOR;
 
   // Lock deinit
-  pthread_mutex_destroy(&lock);
+  pthread_mutex_destroy(&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -237,6 +237,8 @@ void session_deinit()
 void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&app_lock);
 
   if (offset < 0)
     {
@@ -292,15 +294,20 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
 
-      // Wait until MMIO response comes back and discard
-      while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+      // MMIO Write is pipeline-able, not waiting for response
 
-#ifdef ASE_DEBUG  
-      printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt);
-#endif
+      // Wait until MMIO response comes back and discard
+      // while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+
+/* #ifdef ASE_DEBUG   */
+/*       printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt); */
+/* #endif */
 
       END_YELLOW_FONTCOLOR;
     }
+
+  pthread_mutex_unlock (&app_lock);
+
   FUNC_CALL_EXIT;
 }
 
@@ -311,6 +318,8 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 void mmio_write64 (uint32_t offset, uint64_t data)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&app_lock);
 
   if (offset < 0)
     {
@@ -371,15 +380,20 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
 
+      // MMIO Write is pipeline-able, not waiting for response
+
       // Wait until MMIO response comes back and discard
-      while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-      memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
-#ifdef ASE_DEBUG  
-      printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt);
-#endif
+      /* while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /\* wait *\/ } */
+      /* memcpy(mmio_pkt, mmio_str, sizeof(mmio_t)); */
+/* #ifdef ASE_DEBUG   */
+/*       printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt); */
+/* #endif */
 
       END_YELLOW_FONTCOLOR;
     }
+
+  pthread_mutex_unlock (&app_lock);
+
   FUNC_CALL_EXIT;
 }
 
@@ -406,6 +420,8 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 void mmio_read32(uint32_t offset, uint32_t *data)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&app_lock);
 
   char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
@@ -439,7 +455,7 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
-  printf("  [APP]  MMIO Read #%d completed\n", mmio_read_cnt);
+  printf("  [APP]  MMIO Read completed\n");
 #endif
   
   // Write data
@@ -447,6 +463,8 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   *data = (uint32_t)mmio_pkt->qword[0];
   
   END_YELLOW_FONTCOLOR;
+
+  pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -458,6 +476,8 @@ void mmio_read32(uint32_t offset, uint32_t *data)
 void mmio_read64(uint32_t offset, uint64_t *data)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&app_lock);
 
   char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
@@ -476,9 +496,10 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
-  mqueue_send(app2sim_mmioreq_tx, mmio_str);
+  /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
+  /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
+  // mqueue_send(app2sim_mmioreq_tx, mmio_str);
+  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
 
   // Display
   mmio_read_cnt++;
@@ -492,7 +513,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
-  printf("  [APP]  MMIO Read #%d completed\n", mmio_write_cnt);
+  printf("  [APP]  MMIO Read completed\n");
 #endif
   
   // Typecast back to mmio_pkt, and update data
@@ -500,6 +521,8 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   *data = (uint64_t)mmio_pkt->qword[0];
 
   END_YELLOW_FONTCOLOR;
+
+  pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -514,7 +537,7 @@ void allocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&lock);
+  pthread_mutex_lock (&app_lock);
 
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
 
@@ -620,7 +643,7 @@ void allocate_buffer(struct buffer_t *mem)
   ws->buf_structaddr = (uint64_t*)mem;  
   append_wsmeta(ws);
 
-  pthread_mutex_unlock(&lock);
+  pthread_mutex_unlock(&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -634,6 +657,8 @@ void allocate_buffer(struct buffer_t *mem)
 void deallocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
+
+  pthread_mutex_lock (&app_lock);
 
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
@@ -672,6 +697,8 @@ void deallocate_buffer(struct buffer_t *mem)
   BEGIN_YELLOW_FONTCOLOR;
   printf("SUCCESS\n");
   END_YELLOW_FONTCOLOR;
+
+  pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -721,6 +748,8 @@ void deallocate_buffer_by_index(int search_index)
 {
   FUNC_CALL_ENTRY;
 
+  pthread_mutex_lock (&app_lock);
+
   int wsid;
   uint64_t *bufptr = (uint64_t*) NULL;
   struct wsmeta_t *wsptr;
@@ -754,6 +783,8 @@ void deallocate_buffer_by_index(int search_index)
       printf("  [APP]  Buffer pointer was returned as NULL\n");
       END_RED_FONTCOLOR;
     }
+
+  pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }

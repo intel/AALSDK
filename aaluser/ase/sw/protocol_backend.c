@@ -177,29 +177,33 @@ void mmio_response (struct mmio_t *mmio_pkt)
 	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
 	  *mmio_addr32 = (uint32_t) mmio_pkt->qword[0];
-        /* #ifdef ASE_DEBUG */
-	/*   BEGIN_YELLOW_FONTCOLOR; */
-	/*   printf("  [DEBUG] mmio_rddata = %x\n", *mmio_addr32); */
-	/*   END_YELLOW_FONTCOLOR; */
-        /* #endif */
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG] mmio_rdrspaddr32 = %p\n", mmio_addr32);
+	  printf("  [DEBUG] mmio_rddata32    = %x\n", *mmio_addr32);
+	  END_YELLOW_FONTCOLOR;
+        #endif
 	}
       else if (mmio_pkt->width == MMIO_WIDTH_64)
 	{
 	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));
 	  *mmio_addr64 = (uint64_t) mmio_pkt->qword[0];
-        /* #ifdef ASE_DEBUG */
-	/*   BEGIN_YELLOW_FONTCOLOR; */
-	/*   printf("  [DEBUG] mmio_rddata = %llx\n", (unsigned long long)*mmio_addr64); */
-	/*   END_YELLOW_FONTCOLOR; */
-        /* #endif */
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG] mmio_rdrspaddr64 = %p\n", mmio_addr64);
+	  printf("  [DEBUG] mmio_rddata64    = %llx\n", (unsigned long long)*mmio_addr64);
+	  END_YELLOW_FONTCOLOR;
+        #endif
 	}
     }
 
-  mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE);
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-  memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt));
-  mqueue_send(sim2app_mmiorsp_tx, mmio_str);
+  /* mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE); */
+  /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
+  /* memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt)); */
+  /* mqueue_send(sim2app_mmiorsp_tx, mmio_str); */
+
+  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt);
 
   FUNC_CALL_EXIT;
 }

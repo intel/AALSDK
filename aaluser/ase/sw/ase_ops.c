@@ -91,6 +91,8 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
+  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap) ? "YES" : "NO");
+  printf("\tisUMAS      = %s\n",     (mem->is_umas) ? "YES" : "NO");
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;

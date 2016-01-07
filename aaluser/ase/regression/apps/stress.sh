@@ -6,7 +6,7 @@ do
 #    if ps -p 134761
     then
 	echo "Running test"
-	./nlb_test `shuf -i 4-8000 -n 1`
+	./nlb_test `shuf -i 4-128 -n 1`
 #	./nlb_test 4
 	sleep 1
     else

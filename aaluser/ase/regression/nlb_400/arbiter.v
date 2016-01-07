@@ -25,7 +25,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
 
        ab2re_WrAddr,                   // [ADDR_LMT-1:0]        app_cnt:           write address
-       ab2re_WrTID,                    // [13:0]                app_cnt:           meta data
+       ab2re_WrTID,                    // [15:0]                app_cnt:           meta data
        ab2re_WrDin,                    // [511:0]               app_cnt:           Cache line data
        ab2re_WrFence,                  //                       app_cnt:           write fence
        ab2re_WrEn,                     //                       app_cnt:           write enable
@@ -33,14 +33,14 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        re2ab_WrAlmFull,                //                       app_cnt:           write fifo almost full
        
        ab2re_RdAddr,                   // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-       ab2re_RdTID,                    // [13:0]                app_cnt:           meta data
+       ab2re_RdTID,                    // [15:0]                app_cnt:           meta data
        ab2re_RdEn,                     //                       app_cnt:           read enable
        re2ab_RdSent,                   //                       app_cnt:           read issued
 
        re2ab_RdRspValid,               //                       app_cnt:           read response valid
        re2ab_UMsgValid,                //                       arbiter:           UMsg valid
        re2ab_CfgValid,                 //                       arbiter:           Cfg valid
-       re2ab_RdRsp,                    // [13:0]                app_cnt:           read response header
+       re2ab_RdRsp,                    // [15:0]                app_cnt:           read response header
        re2ab_RdData,                   // [511:0]               app_cnt:           read data
        re2ab_stallRd,                  //                       app_cnt:           stall read requests FOR LPBK1
 
@@ -56,6 +56,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        ab2re_TestCmp,                  //                       arbiter:           Test completion flag
        ab2re_ErrorInfo,                // [255:0]               arbiter:           error information
        ab2re_ErrorValid,               //                       arbiter:           test has detected an error
+       cr2s1_csr_write,
        test_Resetb                     //                       requestor:         rest the app
 );
    
@@ -63,7 +64,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    input                   Resetb;                 //                      csi_top:            system Resetb
    
    output [ADDR_LMT-1:0]   ab2re_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           Writes are guaranteed to be accepted
-   output [13:0]           ab2re_WrTID;            // [13:0]                app_cnt:           meta data
+   output [15:0]           ab2re_WrTID;            // [15:0]                app_cnt:           meta data
    output [511:0]          ab2re_WrDin;            // [511:0]               app_cnt:           Cache line data
    output                  ab2re_WrFence;          //                       app_cnt:           write fence.
    output                  ab2re_WrEn;             //                       app_cnt:           write enable
@@ -71,19 +72,19 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    input                   re2ab_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    output [ADDR_LMT-1:0]   ab2re_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   output [13:0]           ab2re_RdTID;            // [13:0]                app_cnt:           meta data
+   output [15:0]           ab2re_RdTID;            // [15:0]                app_cnt:           meta data
    output                  ab2re_RdEn;             //                       app_cnt:           read enable
    input                   re2ab_RdSent;           //                       app_cnt:           read issued
    
    input                   re2ab_RdRspValid;       //                       app_cnt:           read response valid
    input                   re2ab_UMsgValid;        //                       arbiter:           UMsg valid
    input                   re2ab_CfgValid;         //                       arbiter:           Cfg valid
-   input [13:0]            re2ab_RdRsp;            // [13:0]                app_cnt:           read response header
+   input [15:0]            re2ab_RdRsp;            // [15:0]                app_cnt:           read response header
    input [511:0]           re2ab_RdData;           // [511:0]               app_cnt:           read data
    input                   re2ab_stallRd;          //                       app_cnt:           stall read requests FOR LPBK1
    
    input                   re2ab_WrRspValid;       //                       app_cnt:           write response valid
-   input [13:0]            re2ab_WrRsp;            // [13:0]                app_cnt:           write response header
+   input [15:0]            re2ab_WrRsp;            // [15:0]                app_cnt:           write response header
    
    input                   re2xy_go;               //                       requestor:         start of frame recvd
    input [31:0]            re2xy_src_addr;         // [31:0]                requestor:         src address
@@ -97,6 +98,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    output [255:0]          ab2re_ErrorInfo;        // [255:0]               arbiter:           error information
    output                  ab2re_ErrorValid;       //                       arbiter:           test has detected an error
    
+   input                   cr2s1_csr_write;
    input                   test_Resetb;
    //------------------------------------------------------------------------------------------------------------------------
    
@@ -115,7 +117,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    wire                    Resetb;                 //                      csi_top:            system Resetb
    
    reg [ADDR_LMT-1:0]      ab2re_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           Writes are guaranteed to be accepted
-   reg [13:0]              ab2re_WrTID;            // [13:0]                app_cnt:           meta data
+   reg [15:0]              ab2re_WrTID;            // [15:0]                app_cnt:           meta data
    reg [511:0]             ab2re_WrDin;            // [511:0]               app_cnt:           Cache line data
    reg                     ab2re_WrEn;             //                       app_cnt:           write enable
    reg                     ab2re_WrFence;          //
@@ -123,19 +125,19 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    wire                    re2ab_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    reg [ADDR_LMT-1:0]      ab2re_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   reg [13:0]              ab2re_RdTID;            // [13:0]                app_cnt:           meta data
+   reg [15:0]              ab2re_RdTID;            // [15:0]                app_cnt:           meta data
    reg                     ab2re_RdEn;             //                       app_cnt:           read enable
    wire                    re2ab_RdSent;           //                       app_cnt:           read issued
    
    wire                    re2ab_RdRspValid;       //                       app_cnt:           read response valid
    wire                    re2ab_UMsgValid;        //                       app_cnt:           UMsg valid
    wire                    re2ab_CfgValid;         //                       app_cnt:           Cfg valid
-   wire [13:0]             re2ab_RdRsp;            // [13:0]                app_cnt:           read response header
+   wire [15:0]             re2ab_RdRsp;            // [15:0]                app_cnt:           read response header
    wire [511:0]            re2ab_RdData;           // [511:0]               app_cnt:           read data
    wire                    re2ab_stallRd;          //                       app_cnt:           stall read requests FOR LPBK1
    
    wire                    re2ab_WrRspValid;       //                       app_cnt:           write response valid
-   wire [13:0]             re2ab_WrRsp;            // [13:0]                app_cnt:           write response header
+   wire [15:0]             re2ab_WrRsp;            // [15:0]                app_cnt:           write response header
    
    wire                    re2xy_go;               //                       requestor:         start of frame recvd
    wire [31:0]             re2xy_NumLines;         // [31:0]                requestor:         number of cache lines
@@ -153,27 +155,27 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    //------------------------------------------------------------------------------------------------------------------------
    
    wire [ADDR_LMT-1:0]     l12ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             l12ab_WrTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l12ab_WrTID;            // [15:0]                app_cnt:           meta data
    wire [511:0]            l12ab_WrDin;            // [511:0]               app_cnt:           Cache line data
    wire                    l12ab_WrEn;             //                       app_cnt:           write enable
    reg                     ab2l1_WrSent;           //                       app_cnt:           write issued
    reg                     ab2l1_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    wire [ADDR_LMT-1:0]     l12ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             l12ab_RdTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l12ab_RdTID;            // [15:0]                app_cnt:           meta data
    wire                    l12ab_RdEn;             //                       app_cnt:           read enable
    reg                     ab2l1_RdSent;           //                       app_cnt:           read issued
    
    reg                     ab2l1_RdRspValid;       //                       app_cnt:           read response valid
    reg                     ab2l1_UMsgValid;        //                       app_cnt:           UMsg valid
    reg                     ab2l1_CfgValid;         //                       app_cnt:           Cfg valid
-   reg [13:0]              ab2l1_RdRsp;            // [13:0]                app_cnt:           read response header
+   reg [15:0]              ab2l1_RdRsp;            // [15:0]                app_cnt:           read response header
    reg [ADDR_LMT-1:0]      ab2l1_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
    reg [511:0]             ab2l1_RdData;           // [511:0]               app_cnt:           read data
    reg                     ab2l1_stallRd;          //                       app_cnt:           read stall
    
    reg                     ab2l1_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2l1_WrRsp;            // [13:0]                app_cnt:           write response header
+   reg [15:0]              ab2l1_WrRsp;            // [15:0]                app_cnt:           write response header
    reg [ADDR_LMT-1:0]      ab2l1_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
    
    wire                    l12ab_TestCmp;          //                       arbiter:           Test completion flag
@@ -181,92 +183,61 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    wire                    l12ab_ErrorValid;       //                       arbiter:           test has detected an error
    
    //------------------------------------------------------------------------------------------------------------------------
-   //      test_rdwr signal declarations
+   //      test_trput signal declarations
    //------------------------------------------------------------------------------------------------------------------------
-   `ifdef SIM_MODE   
-   reg                     ab2rw_RdMode;           //                       arb:               1- reads only test, 0- writes only test
-   wire [ADDR_LMT-1:0]     rw2ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             rw2ab_WrTID;            // [13:0]                app_cnt:           meta data
-   wire [511:0]            rw2ab_WrDin;            // [511:0]               app_cnt:           Cache line data
-   wire                    rw2ab_WrEn;             //                       app_cnt:           write enable
-   reg                     ab2rw_WrSent;           //                       app_cnt:           write issued
-   reg                     ab2rw_WrAlmFull;        //                       app_cnt:           write fifo almost full
-   
-   wire [ADDR_LMT-1:0]     rw2ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             rw2ab_RdTID;            // [13:0]                app_cnt:           meta data
-   wire                    rw2ab_RdEn;             //                       app_cnt:           read enable
-   reg                     ab2rw_RdSent;           //                       app_cnt:           read issued
-   
-   reg                     ab2rw_RdRspValid;       //                       app_cnt:           read response valid
-   reg [13:0]              ab2rw_RdRsp;            // [13:0]                app_cnt:           read response header
-   reg [ADDR_LMT-1:0]      ab2rw_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
-   reg [511:0]             ab2rw_RdData;           // [511:0]               app_cnt:           read data
-   
-   reg                     ab2rw_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2rw_WrRsp;            // [13:0]                app_cnt:           write response header
-   reg [ADDR_LMT-1:0]      ab2rw_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
-   
-   wire                    rw2ab_TestCmp;          //                       arbiter:           Test completion flag
-   wire [255:0]            rw2ab_ErrorInfo;        // [255:0]               arbiter:           error information
-   wire                    rw2ab_ErrorValid;       //                       arbiter:           test has detected an error
-  `endif 
-   //------------------------------------------------------------------------------------------------------------------------
-   //      test_thruput signal declarations
-   //------------------------------------------------------------------------------------------------------------------------
-   
    reg  [1:0]              ab2rw_Mode;           //                       arb:               1- reads only test, 0- writes only test
    wire [ADDR_LMT-1:0]     rw2ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             rw2ab_WrTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             rw2ab_WrTID;            // [15:0]                app_cnt:           meta data
    wire [511:0]            rw2ab_WrDin;            // [511:0]               app_cnt:           Cache line data
    wire                    rw2ab_WrEn;             //                       app_cnt:           write enable
    reg                     ab2rw_WrSent;           //                       app_cnt:           write issued
    reg                     ab2rw_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    wire [ADDR_LMT-1:0]     rw2ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             rw2ab_RdTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             rw2ab_RdTID;            // [15:0]                app_cnt:           meta data
    wire                    rw2ab_RdEn;             //                       app_cnt:           read enable
    reg                     ab2rw_RdSent;           //                       app_cnt:           read issued
    
    reg                     ab2rw_RdRspValid;       //                       app_cnt:           read response valid
    reg                     ab2rw_UMsgValid;        //                       app_cnt:           UMsg valid
    reg                     ab2rw_CfgValid;         //                       app_cnt:           Cfg valid
-   reg [13:0]              ab2rw_RdRsp;            // [13:0]                app_cnt:           read response header
+   reg [15:0]              ab2rw_RdRsp;            // [15:0]                app_cnt:           read response header
    reg [ADDR_LMT-1:0]      ab2rw_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
    reg [511:0]             ab2rw_RdData;           // [511:0]               app_cnt:           read data
    
    reg                     ab2rw_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2rw_WrRsp;            // [13:0]                app_cnt:           write response header
+   reg [15:0]              ab2rw_WrRsp;            // [15:0]                app_cnt:           write response header
    reg [ADDR_LMT-1:0]      ab2rw_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
    
    wire                    rw2ab_TestCmp;          //                       arbiter:           Test completion flag
    wire [255:0]            rw2ab_ErrorInfo;        // [255:0]               arbiter:           error information
    wire                    rw2ab_ErrorValid;       //                       arbiter:           test has detected an error
-   
+ 
    //------------------------------------------------------------------------------------------------------------------------
    //      test_lpbk2 signal declarations
    //------------------------------------------------------------------------------------------------------------------------
    
    wire [ADDR_LMT-1:0]     l22ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             l22ab_WrTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l22ab_WrTID;            // [15:0]                app_cnt:           meta data
    wire [511:0]            l22ab_WrDin;            // [511:0]               app_cnt:           Cache line data
    wire                    l22ab_WrEn;             //                       app_cnt:           write enable
    reg                     ab2l2_WrSent;           //                       app_cnt:           write issued
    reg                     ab2l2_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    wire [ADDR_LMT-1:0]     l22ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             l22ab_RdTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l22ab_RdTID;            // [15:0]                app_cnt:           meta data
    wire                    l22ab_RdEn;             //                       app_cnt:           read enable
    reg                     ab2l2_RdSent;           //                       app_cnt:           read issued
    
    reg                     ab2l2_RdRspValid;       //                       app_cnt:           read response valid
    reg                     ab2l2_UMsgValid;        //                       app_cnt:           read response valid
    reg                     ab2l2_CfgValid;         //                       app_cnt:           read Cfponse valid
-   reg [13:0]              ab2l2_RdRsp;            // [13:0]                app_cnt:           read response header
+   reg [15:0]              ab2l2_RdRsp;            // [15:0]                app_cnt:           read response header
    reg [ADDR_LMT-1:0]      ab2l2_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
    reg [511:0]             ab2l2_RdData;           // [511:0]               app_cnt:           read data
    
    reg                     ab2l2_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2l2_WrRsp;            // [13:0]                app_cnt:           write response header
+   reg [15:0]              ab2l2_WrRsp;            // [15:0]                app_cnt:           write response header
    reg [ADDR_LMT-1:0]      ab2l2_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
    
    wire                    l22ab_TestCmp;          //                       arbiter:           Test completion flag
@@ -278,26 +249,26 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    //------------------------------------------------------------------------------------------------------------------------
    
    wire [ADDR_LMT-1:0]     l32ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             l32ab_WrTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l32ab_WrTID;            // [15:0]                app_cnt:           meta data
    wire [511:0]            l32ab_WrDin;            // [511:0]               app_cnt:           Cache line data
    wire                    l32ab_WrEn;             //                       app_cnt:           write enable
    reg                     ab2l3_WrSent;           //                       app_cnt:           write issued
    reg                     ab2l3_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    wire [ADDR_LMT-1:0]     l32ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             l32ab_RdTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             l32ab_RdTID;            // [15:0]                app_cnt:           meta data
    wire                    l32ab_RdEn;             //                       app_cnt:           read enable
    reg                     ab2l3_RdSent;           //                       app_cnt:           read issued
    
    reg                     ab2l3_RdRspValid;       //                       app_cnt:           read response valid
    reg                     ab2l3_UMsgValid;        //                       app_cnt:           UMsg valid
    reg                     ab2l3_CfgValid;         //                       app_cnt:           read Cfponse valid
-   reg [13:0]              ab2l3_RdRsp;            // [13:0]                app_cnt:           read response header
+   reg [15:0]              ab2l3_RdRsp;            // [15:0]                app_cnt:           read response header
    reg [ADDR_LMT-1:0]      ab2l3_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
    reg [511:0]             ab2l3_RdData;           // [511:0]               app_cnt:           read data
    
    reg                     ab2l3_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2l3_WrRsp;            // [13:0]                app_cnt:           write response header
+   reg [15:0]              ab2l3_WrRsp;            // [15:0]                app_cnt:           write response header
    reg [ADDR_LMT-1:0]      ab2l3_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
    
    wire                    l32ab_TestCmp;          //                       arbiter:           Test completion flag
@@ -309,7 +280,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    //------------------------------------------------------------------------------------------------------------------------
    
    wire [ADDR_LMT-1:0]     s12ab_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           write address
-   wire [13:0]             s12ab_WrTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             s12ab_WrTID;            // [15:0]                app_cnt:           meta data
    wire [511:0]            s12ab_WrDin;            // [511:0]               app_cnt:           Cache line data
    wire                    s12ab_WrEn;             //                       app_cnt:           write enable
    wire                    s12ab_WrFence;          //                       app_cnt:           write fence 
@@ -317,19 +288,19 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    reg                     ab2s1_WrAlmFull;        //                       app_cnt:           write fifo almost full
    
    wire [ADDR_LMT-1:0]     s12ab_RdAddr;           // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-   wire [13:0]             s12ab_RdTID;            // [13:0]                app_cnt:           meta data
+   wire [15:0]             s12ab_RdTID;            // [15:0]                app_cnt:           meta data
    wire                    s12ab_RdEn;             //                       app_cnt:           read enable
    reg                     ab2s1_RdSent;           //                       app_cnt:           read issued
    
    reg                     ab2s1_RdRspValid;       //                       app_cnt:           read response valid
    reg                     ab2s1_UMsgValid;        //                       app_cnt:           UMsg valid
    reg                     ab2s1_CfgValid;         //                       app_cnt:           Cfg valid
-   reg [13:0]              ab2s1_RdRsp;            // [13:0]                app_cnt:           read response header
+   reg [15:0]              ab2s1_RdRsp;            // [15:0]                app_cnt:           read response header
    reg [ADDR_LMT-1:0]      ab2s1_RdRspAddr;        // [ADDR_LMT-1:0]        app_cnt:           read response address
    reg [511:0]             ab2s1_RdData;           // [511:0]               app_cnt:           read data
    
    reg                     ab2s1_WrRspValid;       //                       app_cnt:           write response valid
-   reg [13:0]              ab2s1_WrRsp;            // [13:0]                app_cnt:           write response header
+   reg [15:0]              ab2s1_WrRsp;            // [15:0]                app_cnt:           write response header
    reg [ADDR_LMT-1:0]      ab2s1_WrRspAddr;        // [Addr_LMT-1:0]        app_cnt:           write response address
    
    wire                    s12ab_TestCmp;          //                       arbiter:           Test completion flag
@@ -343,8 +314,8 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    reg                     re2ab_WrRspValid_q, re2ab_WrRspValid_qq;
    reg                     re2ab_UMsgValid_q, re2ab_UMsgValid_qq;
    reg                     re2ab_CfgValid_q, re2ab_CfgValid_qq; 
-   reg [13:0]              re2ab_RdRsp_q, re2ab_RdRsp_qq;
-   reg [13:0]              re2ab_WrRsp_q, re2ab_WrRsp_qq;
+   reg [15:0]              re2ab_RdRsp_q, re2ab_RdRsp_qq;
+   reg [15:0]              re2ab_WrRsp_q, re2ab_WrRsp_qq;
    reg [511:0]             re2ab_RdData_q, re2ab_RdData_qq;
    
    //------------------------------------------------------------------------------------------------------------------------
@@ -496,8 +467,8 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
         // ---------------------------------------------------------------------------------------------------------------------
     `ifdef SIM_MODE
         if(re2ab_Mode==M_LPBK1)
-    `endif
           begin
+              // Input
              ab2l1_WrSent       = re2ab_WrSent;
              ab2l1_WrAlmFull    = re2ab_WrAlmFull;
              ab2l1_RdSent       = re2ab_RdSent;
@@ -511,81 +482,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
              ab2l1_WrRspValid   = re2ab_WrRspValid_qq;
              ab2l1_WrRsp        = re2ab_WrRsp_qq;
              ab2l1_WrRspAddr    = arbmem_wr_dout;
-          end
-       `ifdef SIM_MODE
-         if(re2ab_Mode==M_TRPUT || re2ab_Mode==M_READ || re2ab_Mode==M_WRITE)
-          begin
-             ab2rw_Mode         = re2ab_Mode[1:0];
-             ab2rw_WrSent       = re2ab_WrSent;
-             ab2rw_WrAlmFull    = re2ab_WrAlmFull;
-             ab2rw_RdSent       = re2ab_RdSent;
-             ab2rw_RdRspValid   = re2ab_RdRspValid_q;
-             ab2rw_UMsgValid    = re2ab_UMsgValid_q;
-             ab2rw_CfgValid     = re2ab_CfgValid_q;
-             ab2rw_RdRsp        = re2ab_RdRsp_q;
-             ab2rw_RdRspAddr    = arbmem_rd_dout;
-             ab2rw_RdData       = re2ab_RdData_q;
-             ab2rw_WrRspValid   = re2ab_WrRspValid_q;
-             ab2rw_WrRsp        = re2ab_WrRsp_q;
-             ab2rw_WrRspAddr    = arbmem_wr_dout;        
-          end
-      `endif
-/*      
-        if(re2ab_Mode==M_LPBK2)
-          begin
-             ab2l2_WrSent       = re2ab_WrSent;
-             ab2l2_WrAlmFull    = re2ab_WrAlmFull;
-             ab2l2_RdSent       = re2ab_RdSent;
-             ab2l2_RdRspValid   = re2ab_RdRspValid_q;
-             ab2l2_UMsgValid    = re2ab_UMsgValid_q;
-             ab2l2_CfgValid     = re2ab_CfgValid_q;
-             ab2l2_RdRsp        = re2ab_RdRsp_q;
-             ab2l2_RdRspAddr    = arbmem_rd_dout;
-             ab2l2_RdData       = re2ab_RdData_q;
-             ab2l2_WrRspValid   = re2ab_WrRspValid_q;
-             ab2l2_WrRsp        = re2ab_WrRsp_q;
-             ab2l2_WrRspAddr    = arbmem_wr_dout;
-          end
-          
-        if(re2ab_Mode==M_LPBK3)
-          begin
-             ab2l3_WrSent       = re2ab_WrSent;
-             ab2l3_WrAlmFull    = re2ab_WrAlmFull;
-             ab2l3_RdSent       = re2ab_RdSent;
-             ab2l3_RdRspValid   = re2ab_RdRspValid_q;
-             ab2l3_UMsgValid    = re2ab_UMsgValid_q;
-             ab2l3_CfgValid     = re2ab_CfgValid_q;
-             ab2l3_RdRsp        = re2ab_RdRsp_q;
-             ab2l3_RdRspAddr    = arbmem_rd_dout;
-             ab2l3_RdData       = re2ab_RdData_q;
-             ab2l3_WrRspValid   = re2ab_WrRspValid_q;
-             ab2l3_WrRsp        = re2ab_WrRsp_q;
-             ab2l3_WrRspAddr    = arbmem_wr_dout;
-          end
-
-        if(re2ab_Mode==M_SW1)
-          begin
-             ab2s1_WrSent       = re2ab_WrSent;
-             ab2s1_WrAlmFull    = re2ab_WrAlmFull;
-             ab2s1_RdSent       = re2ab_RdSent;
-             ab2s1_RdRspValid   = re2ab_RdRspValid_q;
-             ab2s1_UMsgValid    = re2ab_UMsgValid_q;
-             ab2s1_CfgValid     = re2ab_CfgValid_q;
-             ab2s1_RdRsp        = re2ab_RdRsp_q;
-             ab2s1_RdRspAddr    = arbmem_rd_dout;
-             ab2s1_RdData       = re2ab_RdData_q;
-             ab2s1_WrRspValid   = re2ab_WrRspValid_q;
-             ab2s1_WrRsp        = re2ab_WrRsp_q;
-             ab2s1_WrRspAddr    = arbmem_wr_dout;
-          end
-*/        
-        // ----------------------------------------------------------------------------------------------------------------------
-        // Output from tests
-        // ----------------------------------------------------------------------------------------------------------------------
-    `ifdef SIM_MODE
-        if(re2ab_Mode==M_LPBK1)
-    `endif
-          begin
+            // Output
              ab2re_WrAddr       = l12ab_WrAddr;
              ab2re_WrTID        = l12ab_WrTID;
              ab2re_WrDin        = l12ab_WrDin;
@@ -597,10 +494,25 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
              ab2re_TestCmp      = l12ab_TestCmp;
              ab2re_ErrorInfo    = l12ab_ErrorInfo;
              ab2re_ErrorValid   = l12ab_ErrorValid;
+ 
           end
-       `ifdef SIM_MODE
-        if(re2ab_Mode==M_TRPUT || re2ab_Mode==M_READ || re2ab_Mode==M_WRITE)
+         if(re2ab_Mode==M_TRPUT || re2ab_Mode==M_READ || re2ab_Mode==M_WRITE)
           begin
+              // Input
+             ab2rw_Mode         = re2ab_Mode[1:0];
+             ab2rw_WrSent       = re2ab_WrSent;
+             ab2rw_WrAlmFull    = re2ab_WrAlmFull;
+             ab2rw_RdSent       = re2ab_RdSent;
+             ab2rw_RdRspValid   = re2ab_RdRspValid_qq;
+             ab2rw_UMsgValid    = re2ab_UMsgValid_qq;
+             ab2rw_CfgValid     = re2ab_CfgValid_qq;
+             ab2rw_RdRsp        = re2ab_RdRsp_qq;
+             ab2rw_RdRspAddr    = arbmem_rd_dout;
+             ab2rw_RdData       = re2ab_RdData_qq;
+             ab2rw_WrRspValid   = re2ab_WrRspValid_qq;
+             ab2rw_WrRsp        = re2ab_WrRsp_q;
+             ab2rw_WrRspAddr    = arbmem_wr_dout;        
+             // Output
              ab2re_WrAddr       = rw2ab_WrAddr;
              ab2re_WrTID        = rw2ab_WrTID;
              ab2re_WrDin        = rw2ab_WrDin;
@@ -612,41 +524,24 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
              ab2re_TestCmp      = rw2ab_TestCmp;
              ab2re_ErrorInfo    = rw2ab_ErrorInfo;
              ab2re_ErrorValid   = rw2ab_ErrorValid;
+
           end
-      `endif
-/*
-        if(re2ab_Mode==M_LPBK2)
-          begin
-             ab2re_WrAddr       = l22ab_WrAddr;
-             ab2re_WrTID        = l22ab_WrTID;
-             ab2re_WrDin        = l22ab_WrDin;
-             ab2re_WrFence      = 1'b0;
-             ab2re_WrEn         = l22ab_WrEn;
-             ab2re_RdAddr       = l22ab_RdAddr;
-             ab2re_RdTID        = l22ab_RdTID;
-             ab2re_RdEn         = l22ab_RdEn;
-             ab2re_TestCmp      = l22ab_TestCmp;
-             ab2re_ErrorInfo    = l22ab_ErrorInfo;
-             ab2re_ErrorValid   = l22ab_ErrorValid;
-          end
-          
-        if(re2ab_Mode==M_LPBK3)
-          begin
-             ab2re_WrAddr       = l32ab_WrAddr;
-             ab2re_WrTID        = l32ab_WrTID;
-             ab2re_WrDin        = l32ab_WrDin;
-             ab2re_WrFence      = 1'b0;
-             ab2re_WrEn         = l32ab_WrEn;
-             ab2re_RdAddr       = l32ab_RdAddr;
-             ab2re_RdTID        = l32ab_RdTID;
-             ab2re_RdEn         = l32ab_RdEn;
-             ab2re_TestCmp      = l32ab_TestCmp;
-             ab2re_ErrorInfo    = l32ab_ErrorInfo;
-             ab2re_ErrorValid   = l32ab_ErrorValid;
-          end
-  
         if(re2ab_Mode==M_SW1)
           begin
+              // Input
+             ab2s1_WrSent       = re2ab_WrSent;
+             ab2s1_WrAlmFull    = re2ab_WrAlmFull;
+             ab2s1_RdSent       = re2ab_RdSent;
+             ab2s1_RdRspValid   = re2ab_RdRspValid_qq;
+             ab2s1_UMsgValid    = re2ab_UMsgValid_qq;
+             ab2s1_CfgValid     = re2ab_CfgValid_qq;
+             ab2s1_RdRsp        = re2ab_RdRsp_qq;
+             ab2s1_RdRspAddr    = arbmem_rd_dout;
+             ab2s1_RdData       = re2ab_RdData_qq;
+             ab2s1_WrRspValid   = re2ab_WrRspValid_qq;
+             ab2s1_WrRsp        = re2ab_WrRsp_qq;
+             ab2s1_WrRspAddr    = arbmem_wr_dout;
+             // Output
              ab2re_WrAddr       = s12ab_WrAddr;
              ab2re_WrTID        = s12ab_WrTID;
              ab2re_WrDin        = s12ab_WrDin;
@@ -658,8 +553,98 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
              ab2re_TestCmp      = s12ab_TestCmp;
              ab2re_ErrorInfo    = s12ab_ErrorInfo;
              ab2re_ErrorValid   = s12ab_ErrorValid;
-          end
-*/
+
+         end
+
+     `else  // NOT SIM_MODE
+       // PAR MODE
+      `ifdef NLB400_MODE_0
+              // Input
+             ab2l1_WrSent       = re2ab_WrSent;
+             ab2l1_WrAlmFull    = re2ab_WrAlmFull;
+             ab2l1_RdSent       = re2ab_RdSent;
+             ab2l1_RdRspValid   = re2ab_RdRspValid_qq;
+             ab2l1_UMsgValid    = re2ab_UMsgValid_qq;
+             ab2l1_CfgValid     = re2ab_CfgValid_qq;
+             ab2l1_RdRsp        = re2ab_RdRsp_qq;
+             ab2l1_RdRspAddr    = arbmem_rd_dout;
+             ab2l1_RdData       = re2ab_RdData_qq;
+             ab2l1_stallRd      = re2ab_stallRd;
+             ab2l1_WrRspValid   = re2ab_WrRspValid_qq;
+             ab2l1_WrRsp        = re2ab_WrRsp_qq;
+             ab2l1_WrRspAddr    = arbmem_wr_dout;
+            // Output
+             ab2re_WrAddr       = l12ab_WrAddr;
+             ab2re_WrTID        = l12ab_WrTID;
+             ab2re_WrDin        = l12ab_WrDin;
+             ab2re_WrFence      = 1'b0;
+             ab2re_WrEn         = l12ab_WrEn;
+             ab2re_RdAddr       = l12ab_RdAddr;
+             ab2re_RdTID        = l12ab_RdTID;
+             ab2re_RdEn         = l12ab_RdEn;
+             ab2re_TestCmp      = l12ab_TestCmp;
+             ab2re_ErrorInfo    = l12ab_ErrorInfo;
+             ab2re_ErrorValid   = l12ab_ErrorValid;
+
+      `elsif NLB400_MODE_3
+              // Input
+             ab2rw_Mode         = re2ab_Mode[1:0];
+             ab2rw_WrSent       = re2ab_WrSent;
+             ab2rw_WrAlmFull    = re2ab_WrAlmFull;
+             ab2rw_RdSent       = re2ab_RdSent;
+             ab2rw_RdRspValid   = re2ab_RdRspValid_qq;
+             ab2rw_UMsgValid    = re2ab_UMsgValid_qq;
+             ab2rw_CfgValid     = re2ab_CfgValid_qq;
+             ab2rw_RdRsp        = re2ab_RdRsp_qq;
+             ab2rw_RdRspAddr    = arbmem_rd_dout;
+             ab2rw_RdData       = re2ab_RdData_qq;
+             ab2rw_WrRspValid   = re2ab_WrRspValid_qq;
+             ab2rw_WrRsp        = re2ab_WrRsp_qq;
+             ab2rw_WrRspAddr    = arbmem_wr_dout;        
+             // Output
+             ab2re_WrAddr       = rw2ab_WrAddr;
+             ab2re_WrTID        = rw2ab_WrTID;
+             ab2re_WrDin        = rw2ab_WrDin;
+             ab2re_WrFence      = 1'b0;
+             ab2re_WrEn         = rw2ab_WrEn;
+             ab2re_RdAddr       = rw2ab_RdAddr;
+             ab2re_RdTID        = rw2ab_RdTID;
+             ab2re_RdEn         = rw2ab_RdEn;
+             ab2re_TestCmp      = rw2ab_TestCmp;
+             ab2re_ErrorInfo    = rw2ab_ErrorInfo;
+             ab2re_ErrorValid   = rw2ab_ErrorValid;
+
+      `elsif NLB400_MODE_7
+              // Input
+             ab2s1_WrSent       = re2ab_WrSent;
+             ab2s1_WrAlmFull    = re2ab_WrAlmFull;
+             ab2s1_RdSent       = re2ab_RdSent;
+             ab2s1_RdRspValid   = re2ab_RdRspValid_qq;
+             ab2s1_UMsgValid    = re2ab_UMsgValid_qq;
+             ab2s1_CfgValid     = re2ab_CfgValid_qq;
+             ab2s1_RdRsp        = re2ab_RdRsp_qq;
+             ab2s1_RdRspAddr    = arbmem_rd_dout;
+             ab2s1_RdData       = re2ab_RdData_qq;
+             ab2s1_WrRspValid   = re2ab_WrRspValid_qq;
+             ab2s1_WrRsp        = re2ab_WrRsp_qq;
+             ab2s1_WrRspAddr    = arbmem_wr_dout;
+             // Output
+             ab2re_WrAddr       = s12ab_WrAddr;
+             ab2re_WrTID        = s12ab_WrTID;
+             ab2re_WrDin        = s12ab_WrDin;
+             ab2re_WrFence      = s12ab_WrFence;
+             ab2re_WrEn         = s12ab_WrEn;
+             ab2re_RdAddr       = s12ab_RdAddr;
+             ab2re_RdTID        = s12ab_RdTID;
+             ab2re_RdEn         = s12ab_RdEn;
+             ab2re_TestCmp      = s12ab_TestCmp;
+             ab2re_ErrorInfo    = s12ab_ErrorInfo;
+             ab2re_ErrorValid   = s12ab_ErrorValid;
+
+      `else
+          *** In PAR Mode, Select a valid NBL400_MODE: 0, 3, 7
+      `endif
+`endif
      end
 
     test_lpbk1 #(.PEND_THRESH(PEND_THRESH),
@@ -678,18 +663,18 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            ab2l1_WrAlmFull,                //                       app_cnt:           write fifo almost full
            
            l12ab_RdAddr,                   // [ADDR_LMT-1:0]        app_cnt:           Reads may yield to writes
-           l12ab_RdTID,                    // [13:0]                app_cnt:           meta data
+           l12ab_RdTID,                    // [15:0]                app_cnt:           meta data
            l12ab_RdEn,                     //                       app_cnt:           read enable
            ab2l1_RdSent,                   //                       app_cnt:           read issued
     
            ab2l1_RdRspValid,               //                       app_cnt:           read response valid
-           ab2l1_RdRsp,                    // [13:0]                app_cnt:           read response header
+           ab2l1_RdRsp,                    // [15:0]                app_cnt:           read response header
            ab2l1_RdRspAddr,                // [ADDR_LMT-1:0]        app_cnt:           read response address
            ab2l1_RdData,                   // [511:0]               app_cnt:           read data
            ab2l1_stallRd,                  //                       app_cnt:           stall read requests FOR LPBK1
     
            ab2l1_WrRspValid,               //                       app_cnt:           write response valid
-           ab2l1_WrRsp,                    // [13:0]                app_cnt:           write response header
+           ab2l1_WrRsp,                    // [15:0]                app_cnt:           write response header
            ab2l1_WrRspAddr,                // [ADDR_LMT-1:0]        app_cnt:           write response address
            re2xy_go,                       //                       requestor:         start the test
            re2xy_NumLines,                 // [31:0]                requestor:         number of cache lines
@@ -700,7 +685,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            l12ab_ErrorValid,               //                       arbiter:           test has detected an error
            test_Resetb                     //                       requestor:         rest the app
     );
-    `ifdef SIM_MODE 
+
     test_rdwr #(.PEND_THRESH(PEND_THRESH),
                 .ADDR_LMT   (ADDR_LMT),
                 .MDATA      (MDATA)
@@ -721,17 +706,17 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            ab2rw_WrAlmFull,                //                       arb:               write fifo almost full
            
            rw2ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-           rw2ab_RdTID,                    // [13:0]                arb:               meta data
+           rw2ab_RdTID,                    // [15:0]                arb:               meta data
            rw2ab_RdEn,                     //                       arb:               read enable
            ab2rw_RdSent,                   //                       arb:               read issued
     
            ab2rw_RdRspValid,               //                       arb:               read response valid
-           ab2rw_RdRsp,                    // [13:0]                arb:               read response header
+           ab2rw_RdRsp,                    // [15:0]                arb:               read response header
            ab2rw_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
            ab2rw_RdData,                   // [511:0]               arb:               read data
     
            ab2rw_WrRspValid,               //                       arb:               write response valid
-           ab2rw_WrRsp,                    // [13:0]                arb:               write response header
+           ab2rw_WrRsp,                    // [15:0]                arb:               write response header
            ab2rw_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
            re2xy_go,                       //                       requestor:         start the test
            re2xy_NumLines,                 // [31:0]                requestor:         number of cache lines
@@ -742,7 +727,6 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            rw2ab_ErrorValid,               //                       arb:               test has detected an error
            test_Resetb                     //                       requestor:         rest the app
     );
-`endif
 /*      
     test_lpbk2 #(.PEND_THRESH(PEND_THRESH),
                  .ADDR_LMT   (ADDR_LMT   ),
@@ -762,17 +746,17 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            ab2l2_WrAlmFull,                //                       arb:               write fifo almost full
            
            l22ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-           l22ab_RdTID,                    // [13:0]                arb:               meta data
+           l22ab_RdTID,                    // [15:0]                arb:               meta data
            l22ab_RdEn,                     //                       arb:               read enable
            ab2l2_RdSent,                   //                       arb:               read issued
     
            ab2l2_RdRspValid,               //                       arb:               read response valid
-           ab2l2_RdRsp,                    // [13:0]                arb:               read response header
+           ab2l2_RdRsp,                    // [15:0]                arb:               read response header
            ab2l2_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
            ab2l2_RdData,                   // [511:0]               arb:               read data
     
            ab2l2_WrRspValid,               //                       arb:               write response valid
-           ab2l2_WrRsp,                    // [13:0]                arb:               write response header
+           ab2l2_WrRsp,                    // [15:0]                arb:               write response header
            ab2l2_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
            re2xy_go,                       //                       requestor:         start the test
            re2xy_src_addr,                 // [31:0]                requestor:         src address
@@ -804,17 +788,17 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            ab2l3_WrAlmFull,                //                       arb:               write fifo almost full
            
            l32ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-           l32ab_RdTID,                    // [13:0]                arb:               meta data
+           l32ab_RdTID,                    // [15:0]                arb:               meta data
            l32ab_RdEn,                     //                       arb:               read enable
            ab2l3_RdSent,                   //                       arb:               read issued
     
            ab2l3_RdRspValid,               //                       arb:               read response valid
-           ab2l3_RdRsp,                    // [13:0]                arb:               read response header
+           ab2l3_RdRsp,                    // [15:0]                arb:               read response header
            ab2l3_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
            ab2l3_RdData,                   // [511:0]               arb:               read data
     
            ab2l3_WrRspValid,               //                       arb:               write response valid
-           ab2l3_WrRsp,                    // [13:0]                arb:               write response header
+           ab2l3_WrRsp,                    // [15:0]                arb:               write response header
            ab2l3_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
            re2xy_go,                       //                       requestor:         start the test
            re2xy_src_addr,                 // [31:0]                requestor:         src address
@@ -827,7 +811,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            l32ab_ErrorValid,               //                       arb:               test has detected an error
            test_Resetb                     //                       requestor:         rest the app
     );
-    
+*/
     test_sw1  #(.PEND_THRESH(PEND_THRESH),
                 .ADDR_LMT   (ADDR_LMT),
                 .MDATA      (MDATA)
@@ -848,19 +832,19 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            ab2s1_WrAlmFull,                //                       arb:               write fifo almost full
            
            s12ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-           s12ab_RdTID,                    // [13:0]                arb:               meta data
+           s12ab_RdTID,                    // [15:0]                arb:               meta data
            s12ab_RdEn,                     //                       arb:               read enable
            ab2s1_RdSent,                   //                       arb:               read issued
     
            ab2s1_RdRspValid,               //                       arb:               read response valid
            ab2s1_UMsgValid,                //                       arb:               UMsg valid
            ab2s1_CfgValid,                 //                       arb:               Cfg valid
-           ab2s1_RdRsp,                    // [13:0]                arb:               read response header
+           ab2s1_RdRsp,                    // [15:0]                arb:               read response header
            ab2s1_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
            ab2s1_RdData,                   // [511:0]               arb:               read data
     
            ab2s1_WrRspValid,               //                       arb:               write response valid
-           ab2s1_WrRsp,                    // [13:0]                arb:               write response header
+           ab2s1_WrRsp,                    // [15:0]                arb:               write response header
            ab2s1_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
            re2xy_go,                       //                       requestor:         start the test
            re2xy_NumLines,                 // [31:0]                requestor:         number of cache lines
@@ -870,7 +854,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            s12ab_TestCmp,                  //                       arb:               Test completion flag
            s12ab_ErrorInfo,                // [255:0]               arb:               error information
            s12ab_ErrorValid,               //                       arb:               test has detected an error
+           cr2s1_csr_write,
            test_Resetb                     //                       requestor:         rest the app
     );
-*/
 endmodule

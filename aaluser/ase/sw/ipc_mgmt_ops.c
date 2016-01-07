@@ -133,6 +133,7 @@ void final_ipc_cleanup()
       	  printf("        Removing SHM %s ... ", ipc_name);
       	  if ( shm_unlink(ipc_name) == -1 )
       	    {
+	      printf("\n");
       	    }
       	  else
       	    {

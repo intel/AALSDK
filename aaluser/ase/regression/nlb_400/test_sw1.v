@@ -58,19 +58,19 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    ab2s1_WrAlmFull,         // input                          
   
    s12ab_RdAddr,            // output   [ADDR_LMT-1:0]
-   s12ab_RdTID,             // output   [13:0]
+   s12ab_RdTID,             // output   [15:0]
    s12ab_RdEn,              // output 
    ab2s1_RdSent,            // input
    
    ab2s1_RdRspValid,        // input                    
    ab2s1_UMsgValid,         // input                    
    ab2s1_CfgValid,          // input    arb:               Cfg valid
-   ab2s1_RdRsp,             // input    [13:0]          
+   ab2s1_RdRsp,             // input    [15:0]          
    ab2s1_RdRspAddr,         // input    [ADDR_LMT-1:0]  
    ab2s1_RdData,            // input    [511:0]         
     
    ab2s1_WrRspValid,        // input                  
-   ab2s1_WrRsp,             // input    [13:0]            
+   ab2s1_WrRsp,             // input    [15:0]            
    ab2s1_WrRspAddr,         // input    [ADDR_LMT-1:0]    
 
    re2xy_go,                // input                 
@@ -81,6 +81,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    s12ab_TestCmp,           // output           
    s12ab_ErrorInfo,         // output   [255:0] 
    s12ab_ErrorValid,        // output
+   cr2s1_csr_write,
    test_Resetb              // input            
 );
 
@@ -88,7 +89,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    input                      Resetb;                 // csi_top:    system Resetb
    
    output   [ADDR_LMT-1:0]    s12ab_WrAddr;           // arb:        write address
-   output   [13:0]            s12ab_WrTID;            // arb:        meta data
+   output   [15:0]            s12ab_WrTID;            // arb:        meta data
    output   [511:0]           s12ab_WrDin;            // arb:        Cache line data
    output                     s12ab_WrFence;          // arb:        write fence
    output                     s12ab_WrEn;             // arb:        write enable.
@@ -96,19 +97,19 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    input                      ab2s1_WrAlmFull;        // arb:        write fifo almost full
    
    output   [ADDR_LMT-1:0]    s12ab_RdAddr;           // arb:        Reads may yield to writes
-   output   [13:0]            s12ab_RdTID;            // arb:        meta data
+   output   [15:0]            s12ab_RdTID;            // arb:        meta data
    output                     s12ab_RdEn;             // arb:        read enable
    input                      ab2s1_RdSent;           // arb:        read issued
    
    input                      ab2s1_RdRspValid;       // arb:        read response valid
    input                      ab2s1_UMsgValid;        // arb:        UMsg valid
    input                      ab2s1_CfgValid;         // arb:        Cfg valid
-   input    [13:0]            ab2s1_RdRsp;            // arb:        read response header
+   input    [15:0]            ab2s1_RdRsp;            // arb:        read response header
    input    [ADDR_LMT-1:0]    ab2s1_RdRspAddr;        // arb:        read response address
    input    [511:0]           ab2s1_RdData;           // arb:        read data
    
    input                      ab2s1_WrRspValid;       // arb:        write response valid
-   input    [13:0]            ab2s1_WrRsp;            // arb:        write response header
+   input    [15:0]            ab2s1_WrRsp;            // arb:        write response header
    input    [ADDR_LMT-1:0]    ab2s1_WrRspAddr;        // arb:        write response address
 
    input                      re2xy_go;               // requestor:  start of frame recvd
@@ -119,10 +120,10 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    output                     s12ab_TestCmp;          // arb:        Test completion flag
    output   [255:0]           s12ab_ErrorInfo;        // arb:        error information
    output                     s12ab_ErrorValid;       // arb:        test has detected an error
+   input                      cr2s1_csr_write;
    input                      test_Resetb;
    
    //------------------------------------------------------------------------------------------------------------------------
-   localparam   CSR_ADDR_POLL = 14'h1B00;
    // Rd FSM states
    localparam Vrdfsm_WAIT = 2'h0;
    localparam Vrdfsm_RESP = 2'h1;
@@ -143,13 +144,13 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 
 
    reg      [ADDR_LMT-1:0]    s12ab_WrAddr;           // arb:        Writes are guaranteed to be accepted
-   wire     [13:0]            s12ab_WrTID;            // arb:        meta data
+   wire     [15:0]            s12ab_WrTID;            // arb:        meta data
    reg      [511:0]           wrDin;            	  // arb:        Cache line data
    wire     [511:0]           s12ab_WrDin;            // arb:        Cache line data
    reg                        s12ab_WrEn;             // arb:        write enable
    reg                        s12ab_WrFence;          // arb:        write fence
    reg      [ADDR_LMT-1:0]    s12ab_RdAddr;           // arb:        Reads may yield to writes
-   wire     [13:0]            s12ab_RdTID;            // arb:        meta data
+   wire     [15:0]            s12ab_RdTID;            // arb:        meta data
    reg                        s12ab_RdEn;             // arb:        read enable
    reg                        s12ab_TestCmp_c;        // arb:        Test completion flag
    reg                        s12ab_TestCmp;          // arb:        Test completion flag
@@ -179,7 +180,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    begin
 	      s12ab_ErrorValid = 1'b0;
 		   if (ErrorValid ==1) s12ab_ErrorValid = 1'b1;
-         s12ab_ErrorInfo  = {192'h0, Num_RdCycle, Num_WrCycle};   
+//         s12ab_ErrorInfo  = {192'h0, Num_RdCycle, Num_WrCycle};   
          s12ab_TestCmp_c  =   WrFSM==Vwrfsm_DONE
                            && RdFSM==Vrdfsm_DONE;
          s12ab_RdEn       = ( RdFSM == Vrdfsm_READ 
@@ -302,11 +303,11 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                endcase
            end
            2'h1:            // CSR Write
-                rd_go   <= ab2s1_CfgValid && ab2s1_RdRsp==(CSR_ADDR_POLL>>2);
+               rd_go   <= cr2s1_csr_write;
            2'h2:            // UMsg Mode 0 (without data)
-               rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[12]==1'b0 && ab2s1_RdRsp[5:0]==1'b0;
+               rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[15]==1'b0 && ab2s1_RdRsp[5:0]==1'b0;
            2'h3:            // UMsg Mode 1 (with data)
-               rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[12]==1'b1 && ab2s1_RdRsp[5:0]==1'b0;
+               rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[15]==1'b1 && ab2s1_RdRsp[5:0]==1'b0;
        endcase
 
        case(RdFSM)       /* synthesis parallel_case */
@@ -352,10 +353,18 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 		   
 			 if(ab2s1_RdRspValid && (RdFSM == Vrdfsm_READ || RdFSM == Vrdfsm_RESP))
 			 begin		 
-			  if (ab2s1_RdData[16:0] != ab2s1_RdRspAddr[16:0]) 
-			  ErrorValid <= 1;
-			  else 
-			  ErrorValid <= 0;
+			    if (ab2s1_RdData[16:0] != ab2s1_RdRspAddr[16:0]) 
+                begin
+			        ErrorValid <= 1'b1;
+                    s12ab_ErrorInfo[31:0] <= ab2s1_RdData[16:0];
+                    s12ab_ErrorInfo[63:32] <= ab2s1_RdRspAddr[16:0];
+                    s12ab_ErrorInfo[95:64] <= ab2s1_RdRsp;
+                    s12ab_ErrorInfo[127:96] <= Num_RdRsp;
+                end
+			    else 
+                begin
+			        ErrorValid <= 0;
+                end
 			 end
 			
          if(RdFSM == Vrdfsm_READ || RdFSM == Vrdfsm_RESP)

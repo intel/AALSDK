@@ -62,7 +62,7 @@
 //     'h0008          RO                AFU_ID_L            64b     AFU ID low 64b
 //     'h0010          RO                AFU_ID_H            64b     AFU ID high 64b
 //     'h0018          RsvdZ             CSR_DFH_RSVD0       64b     Mandatory Reserved 0
-//     'h0020          RsvdZ             CSR_DFH_RSVD1       64b     Mandatory Reserved 1
+//     'h0020          RO                CSR_DFH_RSVD1       64b     Mandatory Reserved 1
 //     'h0100          RW                CSR_SCRATCHPAD0     64b     Scratchpad register 0
 //     'h0108          RW                CSR_SCRATCHPAD0     64b     Scratchpad register 2
 //     'h0110          RW                CSR_AFU_DSM_BASEL   32b     Lower 32-bits of AFU DSM base address. The lower 6-bbits are 4x00 since the address is cache aligned.
@@ -77,6 +77,7 @@
 //     
 //
 // DSM Offeset Map
+// ***CCIP v0.6*** Note DSM is NOT mandatory. User can still define a workspace and use it for DSM.
 //------------------------------------------------------------------------------------------
 //      Byte Offset   Attribute         Name                  Comments
 //      0x40          RO                DSM_STATUS            test status and error register
@@ -110,8 +111,8 @@
 // [13:0]   RW   'h0
 //
 // CSR_NUM_LINES:
-// [31:14]  RW    'h0
-// [13:0]   RW    # cache lines to be read/written to. This threshold may be different for each test AFU. IMPORTANT- Ensure that source and destination buffers 
+// [31:16]  RW    'h0
+// [15:0]   RW    # cache lines to be read/written to. This threshold may be different for each test AFU. IMPORTANT- Ensure that source and destination buffers 
 //              are large enough to accomodate the # cache lines.
 //
 // CSR_CTL:
@@ -256,7 +257,7 @@
 // 6. Stop timer Send test completion.
 //
 
-
+import ccip_if_pkg::*;
 module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
 (
                 
@@ -298,24 +299,24 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
 
   
    wire [ADDR_LMT-1:0]          ab2re_WrAddr;
-   wire [13:0]                  ab2re_WrTID;
+   wire [15:0]                  ab2re_WrTID;
    wire [DATA_WIDTH -1:0]       ab2re_WrDin;
    wire                         ab2re_WrFence;
    wire                         ab2re_WrEn;
    wire                         re2ab_WrSent;
    wire                         re2ab_WrAlmFull;
    wire [ADDR_LMT-1:0]          ab2re_RdAddr;
-   wire [13:0]                  ab2re_RdTID;
+   wire [15:0]                  ab2re_RdTID;
    wire                         ab2re_RdEn;
    wire                         re2ab_RdSent;
    wire                         re2ab_RdRspValid;
    wire                         re2ab_UMsgValid;
    wire                         re2ab_CfgValid;
-   wire [13:0]                  re2ab_RdRsp;
+   wire [15:0]                  re2ab_RdRsp;
    wire [DATA_WIDTH -1:0]       re2ab_RdData;
    wire                         re2ab_stallRd;
    wire                         re2ab_WrRspValid;
-   wire [13:0]                  re2ab_WrRsp;
+   wire [15:0]                  re2ab_WrRsp;
    wire                         re2xy_go;
    wire [31:0]                  re2xy_src_addr;
    wire [31:0]                  re2xy_dst_addr;
@@ -338,6 +339,7 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
    wire  [63:0]                 cr2re_dsm_base;
    wire                         cr2re_dsm_base_valid;
    wire                         re2cr_wrlock_n;
+   wire                         cr2s1_csr_write;
 
    reg                          SoftReset_qn=0;
    always @(posedge Clk_16UI)
@@ -372,7 +374,7 @@ inst_requestor(
        cr2re_dsm_base_valid,
 
        ab2re_WrAddr,                   // [ADDR_LMT-1:0]        arbiter:        Writes are guaranteed to be accepted
-       ab2re_WrTID,                    // [13:0]                arbiter:        meta data
+       ab2re_WrTID,                    // [15:0]                arbiter:        meta data
        ab2re_WrDin,                    // [DATA_WIDTH -1:0]     arbiter:        Cache line data
        ab2re_WrFence,                  //                       arbiter:        write fence
        ab2re_WrEn,                     //                       arbiter:        write enable
@@ -380,7 +382,7 @@ inst_requestor(
        re2ab_WrAlmFull,                //                       arbiter:        write fifo almost full
        
        ab2re_RdAddr,                   // [ADDR_LMT-1:0]        arbiter:        Reads may yield to writes
-       ab2re_RdTID,                    // [13:0]                arbiter:        meta data
+       ab2re_RdTID,                    // [15:0]                arbiter:        meta data
        ab2re_RdEn,                     //                       arbiter:        read enable
        re2ab_RdSent,                   //                       arbiter:        read issued
 
@@ -419,7 +421,7 @@ inst_arbiter (
        SoftReset_qn                 ,        //                       in    std_logic;  -- Use SPARINGLY only for control
 
        ab2re_WrAddr,                   // [ADDR_LMT-1:0]        arbiter:           write address
-       ab2re_WrTID,                    // [13:0]                arbiter:           meta data
+       ab2re_WrTID,                    // [15:0]                arbiter:           meta data
        ab2re_WrDin,                    // [DATA_WIDTH -1:0]     arbiter:           Cache line data
        ab2re_WrFence,                  //                       arbiter:           write fence 
        ab2re_WrEn,                     //                       arbiter:           write enable
@@ -427,7 +429,7 @@ inst_arbiter (
        re2ab_WrAlmFull,                //                       arbiter:           write fifo almost full
        
        ab2re_RdAddr,                   // [ADDR_LMT-1:0]        arbiter:           Reads may yield to writes
-       ab2re_RdTID,                    // [13:0]                arbiter:           meta data
+       ab2re_RdTID,                    // [15:0]                arbiter:           meta data
        ab2re_RdEn,                     //                       arbiter:           read enable
        re2ab_RdSent,                   //                       arbiter:           read issued
 
@@ -450,6 +452,7 @@ inst_arbiter (
        ab2re_TestCmp,                  //                       arbiter:           Test completion flag
        ab2re_ErrorInfo,                // [255:0]               arbiter:           error information
        ab2re_ErrorValid,               //                       arbiter:           test has detected an error
+       cr2s1_csr_write,
        test_SoftReset_n                //                       requestor:         rest the app
 );
 
@@ -475,7 +478,7 @@ begin
     cf2ci_sTxPort.C2MmioRdValid    = cf2cr_CfgDout_v;
 end
 
-nlb_csr 
+nlb_csr # (.CCIP_VERSION_NUMBER(CCIP_VERSION_NUMBER))
 inst_nlb_csr (
     Clk_16UI,                       //                              clk_pll:    16UI clock
     SystemReset_n,                  //                              rst:        active low system reset
@@ -499,7 +502,8 @@ inst_nlb_csr (
     cr2re_cfg,
     cr2re_ctl,
     cr2re_dsm_base,
-    cr2re_dsm_base_valid
+    cr2re_dsm_base_valid,
+    cr2s1_csr_write
 );
 
 endmodule

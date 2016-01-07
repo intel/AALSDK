@@ -460,7 +460,7 @@ module ccip_emulator
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
 	       run_clocks(`MMIO_WRITE_LATRANGE);
-	       mmio_response(mmio_pkt);
+	       // mmio_response(mmio_pkt);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
@@ -525,7 +525,7 @@ module ccip_emulator
    parameter int MMIORESP_FIFO_WIDTH = CCIP_MMIO_TID_WIDTH + CCIP_MMIO_RDDATA_WIDTH;
 
    logic [MMIORESP_FIFO_WIDTH-1:0] mmioresp_dout;
-   logic 			   mmioresp_write;
+   // logic 			   mmioresp_write;
    logic 			   mmioresp_read;
    logic 			   mmioresp_valid;
    logic 			   mmioresp_full;

@@ -31,18 +31,18 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        ab2l1_WrAlmFull,                //                       arb:               write fifo almost full
        
        l12ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-       l12ab_RdTID,                    // [13:0]                arb:               meta data
+       l12ab_RdTID,                    // [15:0]                arb:               meta data
        l12ab_RdEn,                     //                       arb:               read enable
        ab2l1_RdSent,                   //                       arb:               read issued
 
        ab2l1_RdRspValid,               //                       arb:               read response valid
-       ab2l1_RdRsp,                    // [13:0]                arb:               read response header
+       ab2l1_RdRsp,                    // [15:0]                arb:               read response header
        ab2l1_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
        ab2l1_RdData,                   // [511:0]               arb:               read data
        ab2l1_stallRd,                  //                       arb:               stall read requests FOR LPBK1
 
        ab2l1_WrRspValid,               //                       arb:               write response valid
-       ab2l1_WrRsp,                    // [13:0]                arb:               write response header
+       ab2l1_WrRsp,                    // [15:0]                arb:               write response header
        ab2l1_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
        re2xy_go,                       //                       requestor:         start the test
        re2xy_NumLines,                 // [31:0]                requestor:         number of cache lines
@@ -57,25 +57,25 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     input                   Resetb;                 //                      csi_top:            system Resetb
     
     output  [ADDR_LMT-1:0]  l12ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               write address
-    output  [13:0]          l12ab_WrTID;            // [13:0]                arb:               meta data
+    output  [15:0]          l12ab_WrTID;            // [15:0]                arb:               meta data
     output  [511:0]         l12ab_WrDin;            // [511:0]               arb:               Cache line data
     output                  l12ab_WrEn;             //                       arb:               write enable
     input                   ab2l1_WrSent;           //                       arb:               write issued
     input                   ab2l1_WrAlmFull;        //                       arb:               write fifo almost full
            
     output  [ADDR_LMT-1:0]  l12ab_RdAddr;           // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-    output  [13:0]          l12ab_RdTID;            // [13:0]                arb:               meta data
+    output  [15:0]          l12ab_RdTID;            // [15:0]                arb:               meta data
     output                  l12ab_RdEn;             //                       arb:               read enable
     input                   ab2l1_RdSent;           //                       arb:               read issued
     
     input                   ab2l1_RdRspValid;       //                       arb:               read response valid
-    input  [13:0]           ab2l1_RdRsp;            // [13:0]                arb:               read response header
+    input  [15:0]           ab2l1_RdRsp;            // [15:0]                arb:               read response header
     input  [ADDR_LMT-1:0]   ab2l1_RdRspAddr;        // [ADDR_LMT-1:0]        arb:               read response address
     input  [511:0]          ab2l1_RdData;           // [511:0]               arb:               read data
     input                   ab2l1_stallRd;          //                       arb:               stall read requests FOR LPBK1
     
     input                   ab2l1_WrRspValid;       //                       arb:               write response valid
-    input  [13:0]           ab2l1_WrRsp;            // [13:0]                arb:               write response header
+    input  [15:0]           ab2l1_WrRsp;            // [15:0]                arb:               write response header
     input  [ADDR_LMT-1:0]   ab2l1_WrRspAddr;        // [Addr_LMT-1:0]        arb:               write response address
     
     input                   re2xy_go;               //                       requestor:         start of frame recvd
@@ -89,11 +89,11 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     //------------------------------------------------------------------------------------------------------------------------
     
     reg     [ADDR_LMT-1:0]  l12ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               Writes are guaranteed to be accepted
-    reg     [13:0]          l12ab_WrTID;            // [13:0]                arb:               meta data
+    reg     [15:0]          l12ab_WrTID;            // [15:0]                arb:               meta data
     reg     [511:0]         l12ab_WrDin;            // [511:0]               arb:               Cache line data
     reg                     l12ab_WrEn;             //                       arb:               write enable
     reg     [ADDR_LMT-1:0]  l12ab_RdAddr;           // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-    reg     [13:0]          l12ab_RdTID;            // [13:0]                arb:               meta data
+    reg     [15:0]          l12ab_RdTID;            // [15:0]                arb:               meta data
     reg                     l12ab_RdEn;             //                       arb:               read enable
     reg                     l12ab_TestCmp;          //                       arb:               Test completion flag
     reg    [255:0]          l12ab_ErrorInfo;        // [255:0]               arb:               error information
@@ -108,6 +108,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     reg     [15:0]          Num_Read_req;
     reg     [15:0]          Num_Write_req;
     reg     [15:0]          Num_Write_rsp;
+    reg                     ab2l1_WrSent_x;
     
     
     
@@ -138,17 +139,21 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
             endcase
             
             //Write FSM
+            // requestor manages the num rd credits to match the depth of the tx wr fifo.
+            // Therefore for LPBK1 test, the reqeustor tx fifo guarantees to accept the write requests generated.
+            // Implies assume, ab2l1_WrSent = 1
+            ab2l1_WrSent_x <= 1'b1;
             case(write_fsm) /* synthesis parallel_case */
             2'h0:   begin
+                           l12ab_WrAddr    <= ab2l1_RdRspAddr;
+                           l12ab_WrDin     <= ab2l1_RdData;
                             if(ab2l1_RdRspValid)
                             begin
-                                    l12ab_WrAddr    <= ab2l1_RdRspAddr;
-                                    l12ab_WrDin     <= ab2l1_RdData;
                                     write_fsm       <= 2'h1;
                             end
                     end
             2'h1:   begin
-                            if(ab2l1_WrSent)                                        // assuming that this will always be set
+                            if(ab2l1_WrSent_x)                                        // assuming that this will always be set
                             begin
                                     Num_Write_req      <= Num_Write_req   + 1'b1;            // final count will be same as re2xy_NumLines
     
@@ -161,11 +166,11 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                                             else             Num_Write_req  <= 16'h1;
                                     end
     
-                                    if(ab2l1_RdRspValid)
-                                    begin
+//                                    if(ab2l1_RdRspValid)
+//                                    begin
                                             l12ab_WrAddr    <= ab2l1_RdRspAddr;
                                             l12ab_WrDin     <= ab2l1_RdData;
-                                    end
+//                                    end
                             end
                     end
             default:                write_fsm       <= write_fsm;
@@ -190,7 +195,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                     rd_mdata_pend[ab2l1_RdRsp] <= 1'b0;
             end
     
-            if(l12ab_WrEn && ab2l1_WrSent)
+            if(l12ab_WrEn && ab2l1_WrSent_x)
                     wr_mdata   <= wr_mdata + 1'b1;
                     
             // Write response count
@@ -200,6 +205,14 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
               && Num_Write_rsp==re2xy_NumLines)
                     l12ab_TestCmp <= 1'b1;
     
+           // Error logic
+           if(l12ab_WrEn && ab2l1_WrSent==0)
+           begin
+               // WrFSM assumption is broken
+               $display ("%m LPBK1 test WrEn asserted, but request Not accepted by requestor");
+               l12ab_ErrorValid <= 1'b1;
+               l12ab_ErrorInfo  <= 1'b1;
+           end
            
             if(!test_Resetb)
             begin

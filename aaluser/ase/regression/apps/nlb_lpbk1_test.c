@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     }
   else
     {
-      num_cl = 4;
+      num_cl = 16;
     }
   printf("Num CL = %d\n", num_cl);
 

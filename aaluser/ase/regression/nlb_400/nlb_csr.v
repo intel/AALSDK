@@ -14,7 +14,8 @@
 //
 // ***************************************************************************
 `include "vendor_defines.vh"
-module nlb_csr (
+module nlb_csr #(parameter CCIP_VERSION_NUMBER=0)
+(
     Clk_16UI,                       //                              clk_pll:    16UI clock
     SystemReset_n,                  //                              rst:        active low system reset
     SoftReset_n,                    //                              rst:        active low soft reset
@@ -35,7 +36,8 @@ module nlb_csr (
     cr2re_cfg,
     cr2re_ctl,
     cr2re_dsm_base,
-    cr2re_dsm_base_valid
+    cr2re_dsm_base_valid,
+    cr2s1_csr_write
 );
 input  wire          Clk_16UI;               //                              clk_pll:    16UI clock
 input  wire          SystemReset_n;
@@ -58,20 +60,14 @@ output reg           cf2cr_CfgDout_v;        //                              CSR
 (* `KEEP_WIRE *) output wire  [31:0]  cr2re_ctl;
 (* `KEEP_WIRE *) output wire  [63:0]  cr2re_dsm_base;
 (* `KEEP_WIRE *) output reg           cr2re_dsm_base_valid;
+(* `KEEP_WIRE *) output reg           cr2s1_csr_write;
 //----------------------------------------------------------------------------
 // CSR Attributes
 //----------------------------------------------------------------------------
 localparam       RO      = 3'h0;
 localparam       RW      = 3'h1;
-localparam       RW1C    = 3'h2;
-localparam       RW1S    = 3'h3;
-localparam       RWS     = 3'h4;
-localparam       RWD     = 3'h4;
-localparam       RWDS    = 3'h4;
-localparam       RWDL    = 3'h5;
 localparam       RsvdP   = 3'h6;
 localparam       RsvdZ   = 3'h6;
-localparam       RW1CS   = 3'h7;
 
 //---------------------------------------------------------
 // CSR Address Map ***** DO NOT MODIFY *****
@@ -97,6 +93,7 @@ localparam      CSR_CFG              = 16'h140;    // 32b             // RW   Co
 localparam      CSR_INACT_THRESH     = 16'h148;    // 32b             // RW   set the threshold limit for inactivity trigger
 localparam      CSR_INTERRUPT0       = 16'h150;    // 32b             // RW   SW allocates Interrupt APIC ID & Vector
 
+localparam      CSR_SWTEST_MSG       = 16'h158;    // 32b             // RW   Write to this serves as a notification to SW test   
  
 //---------------------------------------------------------
 localparam      NO_STAGED_CSR  = 16'hXXX;       // used for NON late action CSRs
@@ -111,9 +108,32 @@ localparam      FEATURE_0_BEG  = 18'h0000;
 //WARNING: The next localparam must match what is currently in the
 //          requestor.v file.  This should be moved to a global package/file
 //          that can be used, rather than in two files.  Future Work.  PKB
-localparam       NLB_V1_1            = 128'hC000_C966_0D82_4272_9AEF_FE5F_8457_0612;
-localparam       NLB_AFU_ID_L        = 64'h9AEF_FE5F_8457_0612;
-localparam       NLB_AFU_ID_H        = 64'hC000_C966_0D82_4272;
+// PAR Mode
+// Each Test implements a different functionality
+// Therefore it should really be treated like a different AFU
+// For ease of maintainability they are implemented in a single source tree
+// At compile time, user can decide which test mode is synthesized.
+`ifndef SIM_MODE // PAR_MODE
+    `ifdef NLB400_MODE_0
+        localparam       NLB_AFU_ID_H    = 64'hC000_C966_0D82_4272;
+        localparam       NLB_AFU_ID_L    = 64'h9AEF_FE5F_8457_0612;
+    `elsif NLB400_MODE_3
+    localparam       NLB_AFU_ID_H        = 64'h751E_795F_7DA4_4CC6;
+    localparam       NLB_AFU_ID_L        = 64'h8309_9351_32BC_A9B6;
+    `elsif NLB400_MODE_7
+    localparam       NLB_AFU_ID_H        = 64'hA944_F6E7_15D3_4D95;
+    localparam       NLB_AFU_ID_L        = 64'h9452_15DB_D47C_76BD;
+    `else
+        ** Select a valid NLB Test Mode
+    `endif
+`else   // SIM_MODE
+    // Temporary Workaround
+    // Simulation tests are always expecting same AFU ID
+    // ** To be Fixed **
+        localparam       NLB_AFU_ID_H        = 64'hC000_C966_0D82_4272;
+        localparam       NLB_AFU_ID_L        = 64'h9AEF_FE5F_8457_0612;
+`endif
+
 //----------------------------------------------------------------------------------------------------------------------------------------------
 reg             rw1c_pulse, rw1s_pulse;
 reg  [63:0]     csr_reg [2**L_CFG_SEG_SIZE-1:0];
@@ -237,15 +257,23 @@ begin
         // AFH DFH Declarations:
         // The AFU-DFH must have the following mapping
         //      [63:60] 4'b0001
-        //      [59:40] 20'h0 Rsvd
+        //      [59:52] Rsvd
+        //      [51:48] 4b User defined AFU mimor version #
+        //      [47:40] Rsvd
         //      [39:16] 24'h0 because no other DFHs
-        //      [15:12] 4'b0000 because CCI-P version is 0
-        //      [11:0]  12'h0001 because an AFU
+        //      [15:12] 4b User defined AFU major version #
+        //      [11:0]  12'h001 CCI-P version #
         set_attr(CSR_AFH_DFH_BASE,
                  NO_STAGED_CSR,
                  1'b1,
                  {64{RW}},
-                 {4'b0001, 20'h0, 24'h0, 4'b0000, 12'h0001});
+                 {4'b0001,      // Type=AFU
+                  8'h0, 
+                  4'h0,         // AFU minor version #
+                  8'h0, 
+                  24'h0, 
+                  4'h1,         // AFU major version #
+                  CCIP_VERSION_NUMBER});    // CCI-P version #
 
         // The AFU ID
         set_attr(CSR_AFH_ID_L,
@@ -260,7 +288,7 @@ begin
                  {64{RO}},
                  NLB_AFU_ID_H);
                                 
-        // Set the next AFU to be NULL (Oh the power to be the ruler!)
+       
         set_attr(CSR_DFH_RSVD0,
                  NO_STAGED_CSR,
                  1'b1,
@@ -273,7 +301,6 @@ begin
                  1'b1,
                  {64{RsvdP}},
                  64'h0);
-
 
         // CSR Declarations
         // These are the parts of the CSR Register that are unique
@@ -364,6 +391,24 @@ begin
                   64'h0
                  );
 
+         set_attr(CSR_SWTEST_MSG,
+                  NO_STAGED_CSR,
+                  1'b1,
+                  {64{RW}},
+                  64'h0
+                 );
+
+         if(SystemReset_n==0)
+            cr2s1_csr_write <= 0;
+        else
+        begin
+            if(  afu_csr_wren_T1 
+              && afu_csr_offset_8B_T1==CSR_SWTEST_MSG[3+:L_CFG_SEG_SIZE]
+              )
+                cr2s1_csr_write <= 1'b1;
+            else 
+                cr2s1_csr_write <= 1'b0;
+        end
 end
 
 
@@ -404,64 +449,6 @@ task automatic set_attr;
 
             RO: begin                                                   // - Read Only
                 csr_reg[csr_offset_8B][i]      <= default_val[i];        // update status
-            end
-            // RW1C only used by QPILS register. Clearing the entire field implemented above
-            RW1C: begin                                                 // - Read only. Clear on write 1
-                if(!SoftReset_n)
-                begin
-                    csr_reg[csr_offset_8B][i]     <= 0;                  // clear
-                end
-                else if(this_write[j]                                   // clear on write 1
-                        && afu_csr_wrdin_T1[i]==1
-                )
-                begin
-                    csr_reg[csr_offset_8B][i] <= 0;
-                end
-                else
-                begin
-                    csr_reg[csr_offset_8B][i] <= default_val[i];         // update status
-                end
-            end
-
-            RW1CS:begin                                                 // - Read only Sitcky. Clear on write 1
-                if(!SystemReset_n)                                      // Used for Error registers
-                begin
-                    csr_reg[csr_offset_8B][i]      <= 0;    // clear
-                end
-                else if(this_write[j]                                   // clear on write 1
-                    && afu_csr_wrdin_T1[i]==1'b1                           // Once a bit is set it is sticky- error detected
-                )                                                       // The bit can only be cleared by writing 1 to it
-                begin
-                    csr_reg[csr_offset_8B][i]      <= 0;
-                end
-                else if(default_val[i])                                 // sticky
-                begin
-                        csr_reg[csr_offset_8B][i]  <= 1'b1;
-                end
-            end
-
-            RW1S: begin                                                 // - Read only. Set on write 1
-                if(!SoftReset_n)
-                    csr_reg[csr_offset_8B][i]      <= 1'b1; 
-                else if(this_write[j]                                   // set on write 1
-                    && afu_csr_wrdin_T1[i]==1'b1
-                )
-                begin
-                    csr_reg[csr_offset_8B][i]      <= 1'b1;
-                end
-                else if(default_val[i])                                 // sticky
-                begin
-                    csr_reg[csr_offset_8B][i]      <= 1'b1;
-                end
-            end
-
-            RWDL:begin                                                 // - Read Write Sticky Late Action CSR
-                if(!SystemReset_n)                                      // set to default
-                    csr_reg[csr_offset_8B][i]      <= default_val[i];
-                else if(!SoftReset_n)                                   // copy staged value
-                    csr_reg[csr_offset_8B][i]      <= csr_reg[staged_csr_offset_8B][i];
-                else if(this_write[j])
-                    csr_reg[staged_csr_offset_8B][i]   <= afu_csr_wrdin_T1[i];
             end
 
              /*RsvdZ*/ RsvdP: begin                                     // - Software must preserve these bits

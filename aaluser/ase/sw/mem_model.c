@@ -199,6 +199,11 @@ void ase_alloc_action(struct buffer_t *mem)
 
   // Append to linked list
   ll_append_buffer(new_buf);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  ll_traverse_print();
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
   // Set metadata to reply mode
@@ -212,8 +217,7 @@ void ase_alloc_action(struct buffer_t *mem)
   ase_dbg_memtest(mem);
 #endif
 
-  // if (mem->index == 0)
-  if (mem->is_mmiomap == 0)
+  if (mem->is_mmiomap == 1)
     {
       // Pin CSR address
       mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
@@ -260,7 +264,13 @@ void ase_dealloc_action(struct buffer_t *buf)
       
       // Respond back
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
+      ll_remove_buffer(dealloc_ptr);
       mqueue_send(sim2app_tx, (char*)dealloc_ptr);
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      ll_traverse_print();
+      END_YELLOW_FONTCOLOR;
+    #endif
 
       // Remove fd
       close(dealloc_ptr->fd_ase);
@@ -448,14 +458,19 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   struct buffer_t *trav_ptr;
 
   // For debug only
-/* #ifdef ASE_DEBUG */
-/*   BEGIN_YELLOW_FONTCOLOR; */
-/*   printf("req_paddr = %p | ", (void *)req_paddr); */
-/*   END_YELLOW_FONTCOLOR; */
-/* #endif */
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("req_paddr = %p | ", (void *)req_paddr);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Search which buffer offset_from_pin lies in
   trav_ptr = head;
+/* #ifdef ASE_DEBUG */
+/*   BEGIN_YELLOW_FONTCOLOR; */
+/*   ll_traverse_print(); */
+/*   END_YELLOW_FONTCOLOR; */
+/* #endif */
   while(trav_ptr != NULL)
     {
       if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
@@ -464,11 +479,11 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
 	  // Debug only
-/* #ifdef ASE_DEBUG */
-/* 	  BEGIN_YELLOW_FONTCOLOR; */
-/* 	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase); */
-/* 	  END_YELLOW_FONTCOLOR; */
-/* #endif */
+#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
+	  END_YELLOW_FONTCOLOR;
+#endif
 	  return ase_pbase;
 	}
       else

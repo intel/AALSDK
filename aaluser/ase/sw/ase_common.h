@@ -87,7 +87,6 @@
 #define CCI_CHUNK_SIZE 2*1024*1024   // CCI 2 MB physical chunks 
 
 // CSR memory map size
-// #define CSR_MAP_SIZE            64*1024
 #define MMIO_LENGTH                512*1024   // 512 KB MMIO size
 #define MMIO_AFU_OFFSET            256*1024
 
@@ -236,7 +235,10 @@ extern struct buffer_t *end;       // Tail pointer
 
 // DPI side CSR base, offsets updated on CSR writes
 uint64_t *mmio_afu_vbase;  
-    
+// UMAS Base Address
+uint64_t *umsg_umas_vbase;
+
+
 // Timestamp reference time
 // extern struct timeval start;
 

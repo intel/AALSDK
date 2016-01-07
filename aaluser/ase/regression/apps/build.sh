@@ -19,8 +19,8 @@ gcc -g -o nlb_test \
     ../../sw/app_backend.c \
     ../../sw/mqueue_ops.c \
     ../../sw/error_report.c \
-    -lrt -lm -I ../../sw/ 
-#    -D ASE_DEBUG
+    -lrt -lm -I ../../sw/ \
+    -D ASE_DEBUG
 
 gcc -g -o mmio_test \
     mmio_test.c \

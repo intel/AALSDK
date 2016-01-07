@@ -43,17 +43,17 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        ab2l2_WrAlmFull,                //                       arb:               write fifo almost full
        
        l22ab_RdAddr,                   // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-       l22ab_RdTID,                    // [13:0]                arb:               meta data
+       l22ab_RdTID,                    // [15:0]                arb:               meta data
        l22ab_RdEn,                     //                       arb:               read enable
        ab2l2_RdSent,                   //                       arb:               read issued
 
        ab2l2_RdRspValid,               //                       arb:               read response valid
-       ab2l2_RdRsp,                    // [13:0]                arb:               read response header
+       ab2l2_RdRsp,                    // [15:0]                arb:               read response header
        ab2l2_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
        ab2l2_RdData,                   // [511:0]               arb:               read data
 
        ab2l2_WrRspValid,               //                       arb:               write response valid
-       ab2l2_WrRsp,                    // [13:0]                arb:               write response header
+       ab2l2_WrRsp,                    // [15:0]                arb:               write response header
        ab2l2_WrRspAddr,                // [ADDR_LMT-1:0]        arb:               write response address
        re2xy_go,                       //                       requestor:         start the test
        re2xy_src_addr,                 // [31:0]                requestor:         src address
@@ -70,24 +70,24 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     input                   Resetb;                 //                      csi_top:            system Resetb
     
     output  [ADDR_LMT-1:0]  l22ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               write address
-    output  [13:0]          l22ab_WrTID;            // [13:0]                arb:               meta data
+    output  [15:0]          l22ab_WrTID;            // [15:0]                arb:               meta data
     output  [511:0]         l22ab_WrDin;            // [511:0]               arb:               Cache line data
     output                  l22ab_WrEn;             //                       arb:               write enable
     input                   ab2l2_WrSent;           //                       arb:               write issued
     input                   ab2l2_WrAlmFull;        //                       arb:               write fifo almost full
            
     output  [ADDR_LMT-1:0]  l22ab_RdAddr;           // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-    output  [13:0]          l22ab_RdTID;            // [13:0]                arb:               meta data
+    output  [15:0]          l22ab_RdTID;            // [15:0]                arb:               meta data
     output                  l22ab_RdEn;             //                       arb:               read enable
     input                   ab2l2_RdSent;           //                       arb:               read issued
     
     input                   ab2l2_RdRspValid;       //                       arb:               read response valid
-    input  [13:0]           ab2l2_RdRsp;            // [13:0]                arb:               read response header
+    input  [15:0]           ab2l2_RdRsp;            // [15:0]                arb:               read response header
     input  [ADDR_LMT-1:0]   ab2l2_RdRspAddr;        // [ADDR_LMT-1:0]        arb:               read response address
     input  [511:0]          ab2l2_RdData;           // [511:0]               arb:               read data
     
     input                   ab2l2_WrRspValid;       //                       arb:               write response valid
-    input  [13:0]           ab2l2_WrRsp;            // [13:0]                arb:               write response header
+    input  [15:0]           ab2l2_WrRsp;            // [15:0]                arb:               write response header
     input  [ADDR_LMT-1:0]   ab2l2_WrRspAddr;        // [Addr_LMT-1:0]        arb:               write response address
     
     input                   re2xy_go;               //                       requestor:         start of frame recvd
@@ -106,11 +106,11 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     localparam              BITPOS = 'd0;
     
     reg     [ADDR_LMT-1:0]  l22ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               Writes are guaranteed to be accepted
-    reg     [13:0]          l22ab_WrTID;            // [13:0]                arb:               meta data
+    reg     [15:0]          l22ab_WrTID;            // [15:0]                arb:               meta data
     reg     [511:0]         l22ab_WrDin;            // [511:0]               arb:               Cache line data
     reg                     l22ab_WrEn;             //                       arb:               write enable
     reg     [ADDR_LMT-1:0]  l22ab_RdAddr;           // [ADDR_LMT-1:0]        arb:               Reads may yield to writes
-    reg     [13:0]          l22ab_RdTID;            // [13:0]                arb:               meta data
+    reg     [15:0]          l22ab_RdTID;            // [15:0]                arb:               meta data
     reg                     l22ab_RdEn;             //                       arb:               read enable
     reg                     l22ab_TestCmp;          //                       arb:               Test completion flag
     reg     [255:0]         l22ab_ErrorInfo;        // [255:0]               arb:               error information
@@ -131,10 +131,10 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     
     reg  [ADDR_LMT-1:0]     rdAddr;
     reg  [ADDR_LMT-1:0]     wrAddr;
-    wire [ADDR_LMT-1:0]     sdmem_waddr = ~(14'h3fff<<MDATA) & (l22ab_WrAddr>>BITPOS);
+    wire [ADDR_LMT-1:0]     sdmem_waddr = ~(16'hffff<<MDATA) & (l22ab_WrAddr>>BITPOS);
     wire                    sdmem_we    = l22ab_WrEn;
     wire [7:0]              sdmem_wdin  = l22ab_WrDin[32+7:32];
-    wire [ADDR_LMT-1:0]     sdmem_raddr = ~(14'h3fff<<MDATA) & (ab2l2_RdRspAddr>>BITPOS);
+    wire [ADDR_LMT-1:0]     sdmem_raddr = ~(16'hffff<<MDATA) & (ab2l2_RdRspAddr>>BITPOS);
     wire [7:0]              sdmem_dout;
     integer i;
     
@@ -214,8 +214,8 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     
                     l22ab_WrAddr    <= wrAddr;
                     l22ab_RdAddr    <= rdAddr;
-                    l22ab_WrTID     <= ~(14'h3fff<<MDATA) & wrcnt;
-                    l22ab_RdTID     <= ~(14'h3fff<<MDATA) & rdcnt;
+                    l22ab_WrTID     <= ~(16'hffff<<MDATA) & wrcnt;
+                    l22ab_RdTID     <= ~(16'hffff<<MDATA) & rdcnt;
     
                     rdcnt_q         <= rdcnt;
                     wrcnt_q         <= wrcnt;

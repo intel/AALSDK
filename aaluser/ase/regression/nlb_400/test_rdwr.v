@@ -30,17 +30,17 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    ab2rw_WrAlmFull,         // input                          
   
    rw2ab_RdAddr,            // output   [ADDR_LMT-1:0]
-   rw2ab_RdTID,             // output   [13:0]
+   rw2ab_RdTID,             // output   [15:0]
    rw2ab_RdEn,              // output 
    ab2rw_RdSent,            // input
    
    ab2rw_RdRspValid,        // input                    
-   ab2rw_RdRsp,             // input    [13:0]          
+   ab2rw_RdRsp,             // input    [15:0]          
    ab2rw_RdRspAddr,         // input    [ADDR_LMT-1:0]  
    ab2rw_RdData,            // input    [511:0]         
     
    ab2rw_WrRspValid,        // input                  
-   ab2rw_WrRsp,             // input    [13:0]            
+   ab2rw_WrRsp,             // input    [15:0]            
    ab2rw_WrRspAddr,         // input    [ADDR_LMT-1:0]    
 
    re2xy_go,                // input                 
@@ -59,24 +59,24 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    input    [1:0]             ab2rw_Mode;             // arb:        01 - reads only test, 10 - writes only test, 11 - read/write
    
    output   [ADDR_LMT-1:0]    rw2ab_WrAddr;           // arb:        write address
-   output   [13:0]            rw2ab_WrTID;            // arb:        meta data
+   output   [15:0]            rw2ab_WrTID;            // arb:        meta data
    output   [511:0]           rw2ab_WrDin;            // arb:        Cache line data
    output                     rw2ab_WrEn;             // arb:        write enable
    input                      ab2rw_WrSent;           // arb:        write issued
    input                      ab2rw_WrAlmFull;        // arb:        write fifo almost full
    
    output   [ADDR_LMT-1:0]    rw2ab_RdAddr;           // arb:        Reads may yield to writes
-   output   [13:0]            rw2ab_RdTID;            // arb:        meta data
+   output   [15:0]            rw2ab_RdTID;            // arb:        meta data
    output                     rw2ab_RdEn;             // arb:        read enable
    input                      ab2rw_RdSent;           // arb:        read issued
    
    input                      ab2rw_RdRspValid;       // arb:        read response valid
-   input    [13:0]            ab2rw_RdRsp;            // arb:        read response header
+   input    [15:0]            ab2rw_RdRsp;            // arb:        read response header
    input    [ADDR_LMT-1:0]    ab2rw_RdRspAddr;        // arb:        read response address
    input    [511:0]           ab2rw_RdData;           // arb:        read data
    
    input                      ab2rw_WrRspValid;       // arb:        write response valid
-   input    [13:0]            ab2rw_WrRsp;            // arb:        write response header
+   input    [15:0]            ab2rw_WrRsp;            // arb:        write response header
    input    [ADDR_LMT-1:0]    ab2rw_WrRspAddr;        // arb:        write response address
 
    input                      re2xy_go;               // requestor:  start of frame recvd
@@ -91,11 +91,11 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    //------------------------------------------------------------------------------------------------------------------------
 
    reg      [ADDR_LMT-1:0]    rw2ab_WrAddr;           // arb:        Writes are guaranteed to be accepted
-   wire     [13:0]            rw2ab_WrTID;            // arb:        meta data
+   wire     [15:0]            rw2ab_WrTID;            // arb:        meta data
    reg      [511:0]           rw2ab_WrDin;            // arb:        Cache line data
    wire                       rw2ab_WrEn;             // arb:        write enable
    reg      [ADDR_LMT-1:0]    rw2ab_RdAddr;           // arb:        Reads may yield to writes
-   wire     [13:0]            rw2ab_RdTID;            // arb:        meta data
+   wire     [15:0]            rw2ab_RdTID;            // arb:        meta data
    wire                       rw2ab_RdEn;             // arb:        read enable
    reg                        rw2ab_TestCmp;          // arb:        Test completion flag
    reg      [255:0]           rw2ab_ErrorInfo;        // arb:        error information
