@@ -48,9 +48,10 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/kernel/ccipdriver.h>
+#include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/aas/AALInProcServiceFactory.h"
+#include "aalsdk/kernel/ccipdriver.h"
+#include <aalsdk/service/IALIAFU.h>
 
 #include "SigTapService.h"
 
