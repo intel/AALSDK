@@ -40,17 +40,17 @@ int main(int argc, char *argv[])
   // Port control
   ase_portctrl("AFU_RESET 0");
   ase_portctrl("UMSG_MODE 63");
-  usleep(100);
+  usleep(10000);
   ase_portctrl("AFU_RESET 1");
   // usleep(100);
   // sleep(2);
 
   // Send umsg
-  uint64_t umsgdata; 
-  umsgdata = 0xCAFEBABEDECAFBAD;
-  umsg_send (1, &umsgdata);
-  umsgdata = 0xBABABABADEDEDADE;
-  umsg_send (7, &umsgdata);
+  /* uint64_t umsgdata;  */
+  /* umsgdata = 0xCAFEBABEDECAFBAD; */
+  /* umsg_send (1, &umsgdata); */
+  /* umsgdata = 0xBABABABADEDEDADE; */
+  /* umsg_send (7, &umsgdata); */
 
   struct buffer_t *dsm, *src, *dst;
   
@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
   allocate_buffer(dst);
   
   // Print buffer information
-  ase_buffer_info(dsm);
-  ase_buffer_info(src);
-  ase_buffer_info(dst);
+  /* ase_buffer_info(dsm); */
+  /* ase_buffer_info(src); */
+  /* ase_buffer_info(dst); */
 
   // Write something in src
   // uint64_t *test_data;
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
   int ret;
   // test_data = (uint64_t*)src->vbase;
   /* *test_data = 0xCAFEBABE; */
+  
   fp_rand = fopen("/dev/urandom", "r");
   ret = fread((void *)src->vbase, 1, (size_t)src->memsize, fp_rand);
   if (ret != src->memsize)     
@@ -93,10 +94,8 @@ int main(int argc, char *argv[])
 
 
   /* uint64_t *data_l, *data_h; */
-
   /* mmio_read64(0x008, data_l); */
   /* mmio_read64(0x010, data_h); */
-
   /* printf("AFUID = %llx %llx\n",  */
   /* 	 (unsigned long long)*data_h,  */
   /* 	 (unsigned long long)*data_l); */
@@ -123,6 +122,11 @@ int main(int argc, char *argv[])
     }
   
   printf("Test complete\n");
+
+  if (memcmp((char*)src->vbase, (char*)dst->vbase, num_cl*64) == 0)
+    printf("Buffers matched\n");
+  else
+    printf("*** Buffer mismatch ***\n");
 
   /* deallocate_buffer(dsm); */
   /* deallocate_buffer(src); */
