@@ -68,13 +68,22 @@ endif
 
 all: ccisigtap
 
-ccisigtap: SigTap.o
-	$(CXX) $(CPPFLAGS) -o ccisigtap SigTap.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+ccisigtap: SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o
+	$(CXX) $(CPPFLAGS) -o ccisigtap SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-SigTap.o: SigTap.cpp  Makefile
+SigTap.o: SigTap.cpp  mmlink_server.h mm_debug_link_interface.h Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 $(CFLAGS) -c -o SigTap.o SigTap.cpp
 
+mmlink_connection.o: mmlink_connection.cpp mmlink_connection.h 
+	$(CXX) $(CPPFLAGS) -c mmlink_connection.cpp
+
+mm_debug_link.o: mm_debug_link_linux.cpp mm_debug_link_linux.h  
+	$(CXX) -I $(KERNEL_SRC_DIR)/include $(CPPFLAGS) -c mm_debug_link_linux.cpp -o mm_debug_link.o
+	
+mmlink_server.o: mmlink_server.cpp mmlink_server.h mmlink_connection.h mm_debug_link_interface.h 
+	$(CXX) $(CPPFLAGS) -c mmlink_server.cpp
+
 clean:
-	$(RM) ccisigtap SigTap.o
+	$(RM) ccisigtap SigTap.o mmlink_server.o mmlink_connection.o mm_debug_link.o 
 
 .PHONY:all clean
