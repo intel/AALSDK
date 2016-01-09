@@ -283,8 +283,15 @@ btInt ALIConfAFUApp::run()
    MSG("Running Test");
    if(true == m_bIsOK){
       m_pALIReconfService->reconfDeactivate(TransactionID());
-
       m_Sem.Wait();
+
+      NamedValueSet nvs;
+
+      //nvs.Add(AALCONF_FILENAMEKEY,"ENTER FILE PATH HERE");
+
+      m_pALIReconfService->reconfConfigure(TransactionID(), &nvs);
+      m_Sem.Wait();
+
 
       m_pALIReconfService->reconfActivate(TransactionID());
       m_Sem.Wait();
@@ -384,7 +391,7 @@ void ALIConfAFUApp::deactivateFailed( IEvent const &rEvent )
 
 void ALIConfAFUApp::configureSucceeded( TransactionID const &rTranID )
 {
-
+   m_Sem.Post(1);
 }
 void ALIConfAFUApp::configureFailed( IEvent const &rEvent )
 {

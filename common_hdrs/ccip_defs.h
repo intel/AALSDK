@@ -838,8 +838,26 @@ struct CCIP_FME_DFL_PR {
 
    }ccip_fme_pr_data; // end struct CCIP_FME_PR_DATA
 
+   //Partial Reconfiguration data  CSR
+   struct CSR_FME_PR_ERROR {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt PR_Timeout_err :1;
+            btUnsigned64bitInt PR_FIFO_err :1;
+            btUnsigned64bitInt PR_IP_err :1;
+            btUnsigned64bitInt PR_bitstream_err :1;
+            btUnsigned64bitInt PR_CRC_err :1;
+            btUnsigned64bitInt PR_clear_status_err :1;
+            btUnsigned64bitInt rsvd : 58;
+         }; // end struct
+      }; // end union
+
+
+   }ccip_fme_pr_err; // end struct CCIP_FME_PR_ERR
+
 }; //end struct  CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(4* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(5* 8));
 
 /******************************************************************************
  *  FPGA port header

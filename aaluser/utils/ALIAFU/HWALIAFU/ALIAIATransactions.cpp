@@ -700,3 +700,65 @@ AFUDeactivateTransaction::~AFUDeactivateTransaction() {
    struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
    delete afumsg;
 }
+
+
+//=============================================================================
+// Name:          AFUConfigureTransaction
+// Description:   PR object Transaction for programming the User AFU associated
+//                with this PR.
+// Comments: Causes the AFU to be reprogrammed, deactivating if necessary.
+//           A number of options are available to tell the system how to deal
+//           with AFU's currently in use.
+//=============================================================================
+AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
+                                                 AAL::btWSSize len,
+                                                 AAL::TransactionID const &rTranID,
+                                                 AAL::NamedValueSet const &rNVS) :
+   m_msgID(reqid_UID_SendAFU),
+   m_tid_t(rTranID),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
+   // must allocate enough memory , so playload returns performance counters
+   //
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_configureAFU;
+   afumsg->size    = sizeof(struct ahm_req) ;
+
+   req->u.mem_uv2id.vaddr  = pBuf;
+   req->u.mem_uv2id.size   = len;
+
+// package in AIA transaction
+   m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    AFUConfigureTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUConfigureTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUConfigureTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUConfigureTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUConfigureTransaction::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUConfigureTransaction::getErrno()const {return m_errno;};
+void                           AFUConfigureTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUConfigureTransaction::~AFUConfigureTransaction() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}

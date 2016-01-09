@@ -474,11 +474,11 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 // Comments:
 //=============================================================================
 void
-cci_release_device(struct device *pdev)
+cci_release_device(pkosal_os_dev pdev)
 {
 
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
-   struct cci_aal_device *pcci_aaldev = aaldev_to_cci_aal_device(paaldev);
+//   struct cci_aal_device *pcci_aaldev = aaldev_to_cci_aal_device(paaldev);
 
    PTRACEIN;
 
@@ -528,7 +528,7 @@ cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev)
 {
    PVERBOSE("Removing CCI device from configuration\n");
 
-   if ( cci_aaldev_to_aaldev(pcci_aaldev) ) {
+   if ( NULL!= cci_aaldev_to_aaldev(pcci_aaldev) ) {
       PINFO("Removing AAL device\n");
       aalbus_get_bus()->unregister_device(cci_aaldev_to_aaldev(pcci_aaldev));
       cci_aaldev_to_aaldev(pcci_aaldev) = NULL;

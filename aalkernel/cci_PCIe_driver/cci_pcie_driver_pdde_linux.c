@@ -74,9 +74,6 @@
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/aalinterface.h"
 #include "aalsdk/kernel/ccip_defs.h"
-//#include "aalsdk/kernel/aalids.h"
-//#include "aalsdk/kernel/aalrm.h"
-//#include "aalsdk/kernel/aalqueue.h"
 
 #include "cci_pcie_driver_internal.h"
 
@@ -127,7 +124,7 @@ module_param    (sim, ulong, S_IRUGO);
 //=============================================================================
 
 btUnsignedInt debug = 0
-#if 1
+#if 0
 /* Type and Level selection flags */
    | PTRACE_FLAG
    | PVERBOSE_FLAG
@@ -159,7 +156,7 @@ module_param    (debug, int, 0644);
 //=============================================================================
 static ssize_t ahmpip_attrib_show_debug(struct device_driver *drv, char *buf)
 {
-   return (snprintf(buf,PAGE_SIZE,"%d\n",debug));
+   return (snprintf(buf,PAGE_SIZE,"%x\n",debug));
 }
 
 //=============================================================================
@@ -172,7 +169,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
                                          size_t size)
 {
    int temp = 0;
-   sscanf(buf,"%d", &temp);
+   sscanf(buf,"%x", &temp);
 
    debug = temp;
 

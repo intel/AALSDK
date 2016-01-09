@@ -487,8 +487,10 @@ class IALIReconfigure
 public:
    virtual ~IALIReconfigure() {}
 
-   #define AALCONF_FILENAMEKEY          "BitStreamFile"
-   #define AALCONF_FILENAMETYPE         btString
+   #define AALCONF_FILENAMEKEY            "BitStreamFile"
+   #define AALCONF_FILENAMETYPE           btString
+   #define AALCONF_BUFPTRKEY              "BufPointer"
+   #define AALCONF_BUFSIZE                "BufSize"
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///

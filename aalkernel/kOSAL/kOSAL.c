@@ -132,7 +132,7 @@ btInt _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO
 }
 
 //=============================================================================
-/// kosal_virt_toi_phys
+/// kosal_virt_to_phys
 /// @brief     Convert a kernel virtual address to physical
 /// @param[in] vaddr - kernel virtual
 /// @return    physica address or NULLif  failed
@@ -495,4 +495,33 @@ void kosal_wake_up_interruptible(kosal_poll_object *pwaitq)
 }
 
 #endif // __AAL_WINDOWS__
+
+btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWSSize size_in_bytes)
+{
+#if   defined( __AAL_LINUX__ )
+   unsigned long ret;
+   btVirtAddr pkbuffer = vmalloc(size_in_bytes);
+   if(NULL== pkbuffer){
+      return NULL;
+   }
+
+   memset(pkbuffer,0,size_in_bytes);
+   ret = copy_from_user(pkbuffer, user_prt, size_in_bytes);
+   if(ret != 0){
+      vfree(pkbuffer);
+      return NULL;
+   }
+   return pkbuffer;
+#endif
+}
+
+void _kosal_free_user_buffer(__ASSERT_HERE_PROTO btVirtAddr user_prt,  btWSSize size_in_bytes)
+{
+#if   defined( __AAL_LINUX__ )
+   vfree(user_prt);
+#endif
+}
+
+
+
 
