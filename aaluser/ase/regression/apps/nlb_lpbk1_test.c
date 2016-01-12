@@ -47,10 +47,10 @@ int main(int argc, char *argv[])
 
   // Send umsg
   uint64_t umsgdata;
-  umsgdata = 0xCAFEBABEDECAFBAD;
-  umsg_send (1, &umsgdata);
-  umsgdata = 0xBABABABADEDEDADE;
-  umsg_send (7, &umsgdata);
+  /* umsgdata = 0xCAFEBABEDECAFBAD; */
+  /* umsg_send (1, &umsgdata); */
+  /* umsgdata = 0xBABABABADEDEDADE; */
+  /* umsg_send (7, &umsgdata); */
 
   struct buffer_t *dsm, *src, *dst;
   
@@ -58,11 +58,22 @@ int main(int argc, char *argv[])
   src = (struct buffer_t *)malloc(sizeof(struct buffer_t));
   dst = (struct buffer_t *)malloc(sizeof(struct buffer_t));
   
+  memset(dsm, '0', sizeof(struct buffer_t));  
+  memset(src, '0', sizeof(struct buffer_t));  
+  memset(dst, '0', sizeof(struct buffer_t));  
   
   //Assign buffer size
   dsm->memsize  = 2*1024*1024;
   src->memsize = num_cl*64;
   dst->memsize = num_cl*64;
+
+  dsm->is_mmiomap = 0;
+  src->is_mmiomap = 0;
+  dst->is_mmiomap = 0;
+
+  dsm->is_umas = 0;
+  src->is_umas = 0;
+  dst->is_umas = 0;
   
   // Allocate buffer
   allocate_buffer(dsm);
@@ -88,6 +99,7 @@ int main(int argc, char *argv[])
       perror("fread");
       return 1;
     }
+  fclose(fp_rand);
 
   mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
   mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));

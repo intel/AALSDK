@@ -69,12 +69,25 @@ int userbuf_index_count = 0;   // User count/index
 void send_simkill()
 {
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
+  memset(ase_simkill_msg, '\0', ASE_MQ_MSGSIZE);
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
   END_YELLOW_FONTCOLOR;
+
+  // Deallocate all
+  /* struct wsmeta_t *wsptr; */
+  /* uint64_t *bufptr = (uint64_t*) NULL; */
+  /* wsptr = wsmeta_head; */
+  /* while (wsptr != NULL) */
+  /*   { */
+  /*     bufptr = wsptr->buf_structaddr; */
+  /*     deallocate_buffer((struct buffer_t *)bufptr); */
+  /*     wsptr = wsptr->next; */
+  /*   } */
+
   exit(1);
 }
 
@@ -148,6 +161,7 @@ void session_init()
   // Creating CSR map 
   printf("  [APP]  Creating MMIO ...\n");
   mmio_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  memset(mmio_region, '0', sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
   mmio_region->is_mmiomap = 1;  
   allocate_buffer(mmio_region);
@@ -158,6 +172,7 @@ void session_init()
   // Create UMSG region
   printf("  [APP]  Creating UMAS ... \n");
   umas_region = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
+  memset(umas_region, '0', sizeof(struct buffer_t));
   umas_region->memsize = UMAS_LENGTH;
   umas_region->is_umas = 1;
   allocate_buffer(umas_region);
@@ -237,9 +252,9 @@ void session_deinit()
 void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
-
+  
   pthread_mutex_lock (&app_lock);
-
+  
   if (offset < 0)
     {
       BEGIN_RED_FONTCOLOR;
@@ -251,18 +266,19 @@ void mmio_write32 (uint32_t offset, uint32_t data)
     {
       if (mq_exist_status == MQ_NOT_ESTABLISHED)
 	session_init();
-
+      
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-
-      char mmio_str[ASE_MQ_MSGSIZE];  
-      memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-
-      char csr_data_str[CL_BYTE_WIDTH];
-      memset(csr_data_str, '\0', CL_BYTE_WIDTH);
-      // mmio_pkt->qword[0] = (long long)data;
-      memcpy(csr_data_str, &data, sizeof(uint32_t));
-
+      memset(mmio_pkt, '0', sizeof(mmio_t));
+      
+      /* char mmio_str[ASE_MQ_MSGSIZE];   */
+      /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
+      
+      /* char csr_data_str[CL_BYTE_WIDTH]; */
+      /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
+      /* // mmio_pkt->qword[0] = (long long)data; */
+      /* memcpy(csr_data_str, &data, sizeof(uint32_t)); */
+      
       uint32_t *mmio_vaddr;
       mmio_vaddr = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
 
@@ -270,9 +286,9 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       mmio_pkt->type = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
-      memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint32_t));
+      memcpy(mmio_pkt->qword, &data, sizeof(uint32_t));
       mmio_pkt->resp_en = 0;
-  
+      
 #ifdef ASE_DEBUG
       printf("mmio_pkt => %x %d %d %llx %d\n", 
 	     mmio_pkt->type,
@@ -283,14 +299,15 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 #endif
 
       // Update CSR Region
-      memcpy(mmio_vaddr, (char*)csr_data_str, sizeof(uint32_t));
+      // memcpy(mmio_vaddr, (char*)csr_data_str, sizeof(uint32_t));
+      memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));
   
       // Send message
-      memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
+      //memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
 #if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t));
 #endif
 
       // Display
@@ -341,10 +358,10 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
       char mmio_str[ASE_MQ_MSGSIZE];
-      memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+      memset(mmio_str, '0', ASE_MQ_MSGSIZE);
 
       char csr_data_str[CL_BYTE_WIDTH];
-      memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+      memset(csr_data_str, '0', CL_BYTE_WIDTH);
       memcpy(csr_data_str, &data, sizeof(uint64_t));
 
       uint64_t *mmio_vaddr;
@@ -371,7 +388,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 #if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
 #endif
 
 #ifdef ASE_DEBUG
@@ -431,11 +448,13 @@ void mmio_read32(uint32_t offset, uint32_t *data)
 
   pthread_mutex_lock (&app_lock);
 
-  char mmio_str[ASE_MQ_MSGSIZE];
+  // char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
-
-  char csr_data_str[CL_BYTE_WIDTH];
-  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+  mmio_pkt = (struct mmio_t *) ase_malloc (sizeof(mmio_t));
+  memset(mmio_pkt, '0', sizeof(mmio_t));
+  
+  /* char csr_data_str[CL_BYTE_WIDTH]; */
+  /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
@@ -444,12 +463,12 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   mmio_pkt->type = MMIO_READ_REQ;
   mmio_pkt->width = MMIO_WIDTH_32;
   mmio_pkt->addr = offset;
-  memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
+  /* memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH); */
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
+  /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
+  /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
 #if 0  
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
@@ -462,9 +481,10 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
 
   // Receive MMIO Read Response
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-  memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+  // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
+  // while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
+  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt)==0) { /* wait */ }
+  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
   printf("  [APP]  MMIO Read completed\n");
@@ -489,14 +509,17 @@ void mmio_read64(uint32_t offset, uint64_t *data)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   char mmio_str[ASE_MQ_MSGSIZE];
+  memset(mmio_str, '0', ASE_MQ_MSGSIZE);
+
   mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *) ase_malloc (sizeof(mmio_t));
+  memset(mmio_pkt, '0', sizeof(mmio_t));
 
-  char csr_data_str[CL_BYTE_WIDTH];
-  memset(csr_data_str, '\0', CL_BYTE_WIDTH);
+  /* char csr_data_str[CL_BYTE_WIDTH]; */
+  /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
 
   if (mq_exist_status == MQ_NOT_ESTABLISHED)
     session_init();
@@ -505,7 +528,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   mmio_pkt->type = MMIO_READ_REQ;
   mmio_pkt->width = MMIO_WIDTH_64;
   mmio_pkt->addr = offset;
-  memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH);
+  /* memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH); */
   mmio_pkt->resp_en = 0;
   
   // Send MMIO Request
@@ -523,9 +546,12 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
 
   // Receive MMIO Read Response
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
   while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
   memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+
+  // while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt)==0) { /* wait */ }
+
 
 #ifdef ASE_DEBUG  
   printf("  [APP]  MMIO Read completed\n");
@@ -537,7 +563,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
 
   END_YELLOW_FONTCOLOR;
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -575,7 +601,7 @@ void allocate_buffer(struct buffer_t *mem)
   // Autogenerate a memname, by defualt the first region id=0 will be
   // called "/mmio", subsequent regions will be called strcat("/buf", id)
   // Initially set all characters to NULL
-  memset(mem->memname, '\0', sizeof(mem->memname));
+  memset(mem->memname, '\0', sizeof(mem->memname));  
   if(mem->is_mmiomap == 1)
     {
       sprintf(mem->memname, "/mmio.%s", get_timestamp(0));
@@ -837,7 +863,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   umsgcmd_t *umsg_pkt;
     
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-  memset((char*)umsg_pkt, '\0', sizeof(struct umsgcmd_t) );
+  memset((char*)umsg_pkt, '0', sizeof(struct umsgcmd_t) );
 
   umsg_pkt->id = umsg_id;
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));

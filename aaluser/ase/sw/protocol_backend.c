@@ -203,7 +203,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   /* memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt)); */
   /* mqueue_send(sim2app_mmiorsp_tx, mmio_str); */
 
-  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
+  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
 }
@@ -357,12 +357,14 @@ int ase_listener()
   char mmio_str[ASE_MQ_MSGSIZE];
   struct mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
+  memset (mmio_pkt, '0', sizeof(mmio_t));
 
   // Cleanse receptacle string
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
-
+  
   // Receive csr_write packet
   if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
+  // if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt)==ASE_MSG_PRESENT)
     {
       memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t));
       mmio_dispatch (0, mmio_pkt);

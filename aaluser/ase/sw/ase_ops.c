@@ -240,7 +240,7 @@ char* ase_eval_session_directory()
   /* int err; */
     
   workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  if (!workdir_path) return NULL;
+  // if (!workdir_path) return NULL;
 
   // Evaluate basename location
 #ifdef SIM_SIDE
@@ -252,7 +252,8 @@ char* ase_eval_session_directory()
   // Locate work directory
   if( env_path) 
     {
-     strcat( workdir_path, env_path );
+      // strcat( workdir_path, env_path );
+      memcpy(workdir_path, env_path, ASE_FILEPATH_LEN);
     } 
   else 
     {
@@ -266,6 +267,7 @@ char* ase_eval_session_directory()
   
   return workdir_path;
 }
+
 //char* ase_eval_session_directory()
 //{
 //  FUNC_CALL_ENTRY;
@@ -303,11 +305,11 @@ char* ase_malloc (size_t size)
 
   char *buffer;
 
-  // buffer = malloc (size);
-  posix_memalign((void**)&buffer, (size_t)getpagesize(), size);
+  buffer = malloc (size);
+  // posix_memalign((void**)&buffer, (size_t)getpagesize(), size);
   if (buffer == NULL)
     {
-      ase_error_report ("posix_memalign", errno, ASE_OS_MALLOC_ERR);
+      ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
     #ifdef SIM_SIDE
       printf("SIM-C : Malloc failed\n");
       start_simkill_countdown();
@@ -316,10 +318,10 @@ char* ase_malloc (size_t size)
       exit(1);
     #endif
     }   
-  else
-    {
-      memset (buffer, '\0', size);
-    }
+  /* else */
+  /*   { */
+  /*     memset (buffer, '0', size); */
+  /*   } */
 
   FUNC_CALL_EXIT;
   return buffer;
