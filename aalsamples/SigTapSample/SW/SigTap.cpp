@@ -54,8 +54,11 @@
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h> // Logger
-
+#include <signal.h>
 #include <aalsdk/service/IALIAFU.h>
+
+#include "mmlink_server.h"
+#include "mm_debug_link_interface.h"
 
 using namespace std;
 using namespace AAL;
@@ -76,11 +79,13 @@ using namespace AAL;
 #else
 # define EVENT_CASE(x) case x :
 #endif
+
+#define MAX_FILENAME_SIZE (256)
+
 // doxygen hACK to generate correct class diagrams
 #define RuntimeClient SigTapRuntimeClient
 /// @addtogroup HelloAAL
 /// @{
-
 
 /// @brief   Define our Service client class so that we can receive Service-related notifications from the AAL Runtime.
 ///          The Service Client contains the application logic.
@@ -95,7 +100,7 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done. 
-   int run();
+   int run(mmlink_server *server, char* filename);
 
    btBool IsOK()  {return m_isOK;}
 
@@ -178,13 +183,14 @@ SigTapApp::~SigTapApp()
    m_Sem.Destroy();
 }
 
-int SigTapApp::run()
+int SigTapApp::run(mmlink_server *server, char* filename)
 {
 
    cout <<"====================="<<endl;
    cout <<"= Signal Tap Sample ="<<endl;
    cout <<"====================="<<endl;
 
+   btVirtAddr stpAddr = NULL;
    // Request our AFU.
 
    // NOTE: This example is bypassing the Resource Manager's configuration record lookup
@@ -210,10 +216,17 @@ int SigTapApp::run()
 
    // So signal tap
    if(m_isOK){
-      m_ptheService->stpGetAddress();
+      stpAddr = m_ptheService->stpGetAddress();
    }
 
-   // Clean-up and return
+   if (NULL != stpAddr){
+      m_Result = server->run(stpAddr);
+   }else{
+      ERR("Failed to map STP region");
+      m_Result = 1;
+   }
+
+    // Clean-up and return
     // Release() the Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
    m_Sem.Wait();
@@ -325,10 +338,12 @@ void SigTapApp::runtimeEvent(const IEvent &rEvent)
 }
 
 
+void int_handler(int sig)
+{
+   cerr<< "SIGINT: stopping the server\n";
+}
+
 /// @}
-
-
-
 //=============================================================================
 // Name: main
 // Description: Entry point to the application
@@ -342,9 +357,33 @@ int main(int argc, char *argv[])
 
    SigTapApp         theApp;
    int result = 0;
+   mmlink_server *server;
+
+   int 	 ip 	  = INADDR_ANY;
+   int    port	  = 3333;
+   char *sys_file = (char *)malloc (MAX_FILENAME_SIZE);
+
+	signal(SIGINT, int_handler);
+
+	for (int i = 1; i < argc; ++i)
+	{
+		sscanf(argv[i], "--ip=%d", &ip);
+		sscanf(argv[i], "--port=%d", &port);
+		sscanf(argv[i], "--sysfs=%s", sys_file);
+	}
+
+	struct sockaddr_in sock;
+	sock.sin_family = AF_INET;
+	sock.sin_port = htons(port);
+	sock.sin_addr.s_addr = htonl(ip);
+
+   mm_debug_link_interface *driver = get_mm_debug_link();
+   server = new mmlink_server(&sock, driver);
+
+   //int err = server->run(sys_file);
 
    if(theApp.IsOK()){
-      result = theApp.run();
+      result = theApp.run(server, sys_file);
    }else{
       MSG("App failed to initialize");
    }
