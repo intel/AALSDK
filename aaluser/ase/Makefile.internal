@@ -111,10 +111,11 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
-SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
+SNPS_VLOGAN_OPT+= +lint=all,noVCDE
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 endif
 
@@ -149,6 +150,15 @@ MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
+
+
+#########################################################################
+#                         Valgring options                              #
+#########################################################################
+VALGRIND_OPTS = -v --log-file=valgrind.log
+VALGRIND_OPTS+= --track-fds=yes
+VALGRIND_OPTS+= --leak-check=full --track-origins=yes
+VALGRIND_OPTS+= --show-reachable=yes
 
 
 #########################################################################
@@ -318,13 +328,18 @@ distclean: header clean
 #                            Leak Check                                 #
 #########################################################################
 src_check: 
-	scan-build-3.5 make sw_build
+	scan-build-3.5 -o work/scan-build/ -v \
+	-enable-checker alpha \
+	-enable-checker core \
+	-enable-checker security \
+	-enable-checker unix \
+	make sw_build &> scan-build.log
 
 coverage:
 	urg -dir ./work/coverage.vdb
 #	firefox urgReport/dashboard.html &
 
-fd-check:
-	cd ./$(WORK)/; valgrind --log-file=fd-check.log --track-fds=yes ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+valgrind_run:
+	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
 test: all sim
