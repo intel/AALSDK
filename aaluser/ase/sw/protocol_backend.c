@@ -241,7 +241,7 @@ int ase_listener()
   int portctrl_value;
   memset(portctrl_msgstr, '\0', ASE_MQ_MSGSIZE);
   memset(portctrl_cmd, '\0', ASE_MQ_MSGSIZE);
-  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr) == ASE_MSG_PRESENT)
+  if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr, ASE_MQ_MSGSIZE) == ASE_MSG_PRESENT)
     {
       sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
       // while(1);
@@ -292,7 +292,7 @@ int ase_listener()
 
   // Receive a DPI message and get information from replicated buffer
   // if (ase_recv_msg(&ase_buffer)==ASE_MSG_PRESENT)
-  if (mqueue_recv(app2sim_rx, (char*)&ase_buffer)==ASE_MSG_PRESENT)
+  if (mqueue_recv(app2sim_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
       // ALLOC request received
       if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
@@ -363,10 +363,10 @@ int ase_listener()
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   
   // Receive csr_write packet
-  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
-  // if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt)==ASE_MSG_PRESENT)
+  //  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_pkt, sizeof(mmio_t) )==ASE_MSG_PRESENT)
     {
-      memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t));
+      /* memcpy(mmio_pkt, (mmio_t *)mmio_str, sizeof(struct mmio_t)); */
       mmio_dispatch (0, mmio_pkt);
 
       // *FIXME*: Synchronizer must go here... TEST CODE
@@ -385,7 +385,7 @@ int ase_listener()
 
   // cleanse string before reading
   memset(umsg_mapstr, '\0', ASE_MQ_MSGSIZE);
-  if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr) == ASE_MSG_PRESENT)
+  if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr, sizeof(struct umsgcmd_t) ) == ASE_MSG_PRESENT)
     {
       memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
 
@@ -407,7 +407,7 @@ int ase_listener()
    */
   char ase_simkill_str[ASE_MQ_MSGSIZE];
   memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
-  if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter

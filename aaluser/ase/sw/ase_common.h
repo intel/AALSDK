@@ -318,7 +318,7 @@ int mqueue_open(char*, int);
 void mqueue_close(int);
 void mqueue_destroy(char*);
 void mqueue_send(int, char*, int);
-int mqueue_recv(int, char*);
+int mqueue_recv(int, char*, int);
 
 // Debug interface
 // void shm_dbg_memtest(struct buffer_t *);

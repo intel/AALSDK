@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
   printf("Num CL = %d\n", num_cl);
 
   session_init();
+  int i;
 
   // Port control
   ase_portctrl("AFU_RESET 0");
@@ -47,10 +48,13 @@ int main(int argc, char *argv[])
 
   // Send umsg
   uint64_t umsgdata;
-  /* umsgdata = 0xCAFEBABEDECAFBAD; */
-  /* umsg_send (1, &umsgdata); */
-  /* umsgdata = 0xBABABABADEDEDADE; */
-  /* umsg_send (7, &umsgdata); */
+  for(i= 0; i < 10000; i++)
+    {
+      umsgdata = 0xCAFEBABEDECAFBAD;
+      umsg_send (1, &umsgdata);
+      umsgdata = 0xBABABABADEDEDADE;
+      umsg_send (7, &umsgdata);
+    }
 
   struct buffer_t *dsm, *src, *dst;
   
@@ -79,7 +83,8 @@ int main(int argc, char *argv[])
   allocate_buffer(dsm);
   allocate_buffer(src);
   allocate_buffer(dst);
-  
+
+ 
   // Print buffer information
   /* ase_buffer_info(dsm); */
   /* ase_buffer_info(src); */
@@ -101,12 +106,14 @@ int main(int argc, char *argv[])
     }
   fclose(fp_rand);
 
-  mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
-  mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
-
+  for(i= 0; i < 10000; i++)
+    {
+      mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
+      mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
+    }
 
   uint64_t *data_l, *data_h;
-  while(1)
+  for(i= 0; i < 10000; i++)
     {
       mmio_read64(0x008, data_l);
       mmio_read64(0x010, data_h);
@@ -118,11 +125,21 @@ int main(int argc, char *argv[])
   mmio_write32(CSR_CTL, 0);
   
   mmio_write32(CSR_CTL, 1);
-  
-  mmio_write64(CSR_SRC_ADDR, (src->fake_paddr >> 6));
 
-  mmio_write64(CSR_DST_ADDR, (dst->fake_paddr >> 6));
+  for(i= 0; i < 10000; i++)
+    {
+      mmio_write64(CSR_SRC_ADDR, (src->fake_paddr >> 6));      
+      mmio_write64(CSR_DST_ADDR, (dst->fake_paddr >> 6));
+    }
   
+  uint64_t *data64;
+  uint32_t *data32;
+  for(i= 0; i < 10000; i++)
+    {
+      mmio_read64(CSR_SRC_ADDR, data64 );      
+      mmio_read32(CSR_DST_ADDR, data32 );
+    }
+
   mmio_write32(CSR_NUM_LINES, num_cl);
 
   mmio_write32(CSR_CFG, 0);  

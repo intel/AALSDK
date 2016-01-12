@@ -77,17 +77,6 @@ void send_simkill()
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
   END_YELLOW_FONTCOLOR;
 
-  // Deallocate all
-  /* struct wsmeta_t *wsptr; */
-  /* uint64_t *bufptr = (uint64_t*) NULL; */
-  /* wsptr = wsmeta_head; */
-  /* while (wsptr != NULL) */
-  /*   { */
-  /*     bufptr = wsptr->buf_structaddr; */
-  /*     deallocate_buffer((struct buffer_t *)bufptr); */
-  /*     wsptr = wsptr->next; */
-  /*   } */
-
   exit(1);
 }
 
@@ -253,7 +242,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 {
   FUNC_CALL_ENTRY;
   
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
   
   if (offset < 0)
     {
@@ -327,7 +316,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
       END_YELLOW_FONTCOLOR;
     }
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -340,7 +329,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   if (offset < 0)
     {
@@ -417,7 +406,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       END_YELLOW_FONTCOLOR;
     }
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -446,7 +435,7 @@ void mmio_read32(uint32_t offset, uint32_t *data)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   // char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
@@ -483,7 +472,7 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   // Receive MMIO Read Response
   // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
   // while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt)==0) { /* wait */ }
+  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt, sizeof(mmio_t) )==0) { /* wait */ }
   // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
 #ifdef ASE_DEBUG  
@@ -496,7 +485,7 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   
   END_YELLOW_FONTCOLOR;
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -533,12 +522,13 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   
   // Send MMIO Request
   /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
-  /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
+  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
   // mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
   mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t)); // *FIX*
   // write(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t) );
 
+  //mqueue_send(app2sim_mmioreq_tx, (char*)mmio_str, ASE_MQ_MSGSIZE ); 
   // Display
   mmio_read_cnt++;
 
@@ -547,8 +537,8 @@ void mmio_read64(uint32_t offset, uint64_t *data)
 
   // Receive MMIO Read Response
   // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
-  while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-  memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
+  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt, sizeof(mmio_t) )==0) { /* wait */ }
+  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
 
   // while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt)==0) { /* wait */ }
 
@@ -669,7 +659,7 @@ void allocate_buffer(struct buffer_t *mem)
   mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Receive message from DPI with pbase populated
-  while(mqueue_recv(sim2app_rx, tmp_msg)==0) { /* wait */ }
+  while(mqueue_recv(sim2app_rx, tmp_msg, ASE_MQ_MSGSIZE)==0) { /* wait */ }
   ase_str_to_buffer_t(tmp_msg, mem);
 
   // Print out the buffer
@@ -723,7 +713,7 @@ void deallocate_buffer(struct buffer_t *mem)
   mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Wait for response to deallocate
-  mqueue_recv(sim2app_rx, tmp_msg);
+  mqueue_recv(sim2app_rx, tmp_msg, ASE_MQ_MSGSIZE);
   ase_str_to_buffer_t(tmp_msg, mem);
   
   // Unmap the memory accordingly
@@ -863,13 +853,13 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   umsgcmd_t *umsg_pkt;
     
   umsg_pkt = (struct umsgcmd_t *)ase_malloc( sizeof(struct umsgcmd_t) );
-  memset((char*)umsg_pkt, '0', sizeof(struct umsgcmd_t) );
+  memset((char*)umsg_pkt, '\0', sizeof(struct umsgcmd_t) );
 
   umsg_pkt->id = umsg_id;
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
 
   // Send Umsg packet to simulator
-  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, ASE_MQ_MSGSIZE);
+  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, sizeof(struct umsgcmd_t));
 
   FUNC_CALL_EXIT;
 }

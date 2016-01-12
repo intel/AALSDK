@@ -248,11 +248,12 @@ void mqueue_send(int mq, char* str, int size)
 {
   FUNC_CALL_ENTRY;
 
-  char msg[ASE_MQ_MSGSIZE];
-  memset(msg, '0', ASE_MQ_MSGSIZE);
-  memcpy(msg, str, size);
+  /* char msg[ASE_MQ_MSGSIZE]; */
+  /* memset(msg, '0', ASE_MQ_MSGSIZE); */
+  /* memcpy(msg, str, size); */
+  /* write(mq, msg, ASE_MQ_MSGSIZE); */
 
-  write(mq, msg, ASE_MQ_MSGSIZE);
+  write(mq, str, size);
 
   FUNC_CALL_EXIT;
 }
@@ -262,13 +263,13 @@ void mqueue_send(int mq, char* str, int size)
 // mqueue_recv(): Easy receive function
 // - Typecast message back to a required type
 // ------------------------------------------------------------------
-int mqueue_recv(int mq, char* str)
+int mqueue_recv(int mq, char* str, int size)
 {
   FUNC_CALL_ENTRY;
 
   int ret;
 
-  ret = read(mq, str, ASE_MQ_MSGSIZE);
+  ret = read(mq, str, size);
   FUNC_CALL_EXIT;
   if (ret > 0)
     {
