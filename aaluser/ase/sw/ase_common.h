@@ -317,7 +317,7 @@ void mqueue_create(char*);
 int mqueue_open(char*, int);
 void mqueue_close(int);
 void mqueue_destroy(char*);
-void mqueue_send(int, char*);
+void mqueue_send(int, char*, int);
 int mqueue_recv(int, char*);
 
 // Debug interface

@@ -203,7 +203,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   /* memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt)); */
   /* mqueue_send(sim2app_mmiorsp_tx, mmio_str); */
 
-  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt);
+  mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
 }

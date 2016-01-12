@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
   // sleep(2);
 
   // Send umsg
-  /* uint64_t umsgdata;  */
-  /* umsgdata = 0xCAFEBABEDECAFBAD; */
-  /* umsg_send (1, &umsgdata); */
-  /* umsgdata = 0xBABABABADEDEDADE; */
-  /* umsg_send (7, &umsgdata); */
+  uint64_t umsgdata;
+  umsgdata = 0xCAFEBABEDECAFBAD;
+  umsg_send (1, &umsgdata);
+  umsgdata = 0xBABABABADEDEDADE;
+  umsg_send (7, &umsgdata);
 
   struct buffer_t *dsm, *src, *dst;
   
@@ -93,9 +93,12 @@ int main(int argc, char *argv[])
   mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
 
 
-  /* uint64_t *data_l, *data_h; */
-  /* mmio_read64(0x008, data_l); */
-  /* mmio_read64(0x010, data_h); */
+  uint64_t *data_l, *data_h;
+  while(1)
+    {
+      mmio_read64(0x008, data_l);
+      mmio_read64(0x010, data_h);
+    }
   /* printf("AFUID = %llx %llx\n",  */
   /* 	 (unsigned long long)*data_h,  */
   /* 	 (unsigned long long)*data_l); */

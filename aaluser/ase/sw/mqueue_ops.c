@@ -244,11 +244,11 @@ void mqueue_destroy(char* mq_name_suffix)
 // mqueue_send(): Easy send function
 // - Typecast any message as a character array and ram it in.
 // ------------------------------------------------------------
-void mqueue_send(int mq, char* str)
+void mqueue_send(int mq, char* str, int size)
 {
   FUNC_CALL_ENTRY;
   
-  write(mq, str, ASE_MQ_MSGSIZE);  
+  write(mq, str, size); // ASE_MQ_MSGSIZE);  
   
   FUNC_CALL_EXIT;
 }

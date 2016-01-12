@@ -210,7 +210,7 @@ void ase_alloc_action(struct buffer_t *mem)
   mem->metadata = HDR_MEM_ALLOC_REPLY;
   
   // Convert buffer_t to string
-  mqueue_send(sim2app_tx, (char*)mem);
+  mqueue_send(sim2app_tx, (char*)mem, ASE_MQ_MSGSIZE);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
@@ -265,7 +265,7 @@ void ase_dealloc_action(struct buffer_t *buf)
       // Respond back
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
-      mqueue_send(sim2app_tx, (char*)dealloc_ptr);
+      mqueue_send(sim2app_tx, (char*)dealloc_ptr, ASE_MQ_MSGSIZE);
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();

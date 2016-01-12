@@ -70,7 +70,7 @@ void send_simkill()
 {
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
-  mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
+  mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
 
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
@@ -209,7 +209,7 @@ void session_deinit()
   // Send SIMKILL
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
-  mqueue_send(app2sim_simkill_tx, ase_simkill_msg);
+  mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
   
   mqueue_close(app2sim_mmioreq_tx);
   mqueue_close(sim2app_mmiorsp_rx);
@@ -290,7 +290,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
 #if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
 #endif
 
       // Display
@@ -371,7 +371,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 #if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, ASE_MQ_MSGSIZE);
 #endif
 
 #ifdef ASE_DEBUG
@@ -453,7 +453,7 @@ void mmio_read32(uint32_t offset, uint32_t *data)
 #if 0  
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
 #else
-  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t));
 #endif
 
   // Display
@@ -513,7 +513,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
   // mqueue_send(app2sim_mmioreq_tx, mmio_str);
 
-  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t)); // *FIX*
   // write(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t) );
 
   // Display
@@ -640,7 +640,7 @@ void allocate_buffer(struct buffer_t *mem)
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2sim_tx, tmp_msg);
+  mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Receive message from DPI with pbase populated
   while(mqueue_recv(sim2app_rx, tmp_msg)==0) { /* wait */ }
@@ -694,7 +694,7 @@ void deallocate_buffer(struct buffer_t *mem)
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2sim_tx, tmp_msg);
+  mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Wait for response to deallocate
   mqueue_recv(sim2app_rx, tmp_msg);
@@ -843,7 +843,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
   memcpy((char*)umsg_pkt->qword, (char*)umsg_data, sizeof(uint64_t));
 
   // Send Umsg packet to simulator
-  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt );
+  mqueue_send(app2sim_umsg_tx, (char*)umsg_pkt, ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
 }
@@ -863,7 +863,7 @@ void umsg_send (int umsg_id, uint64_t *umsg_data)
  */
 void __attribute__((optimize("O0"))) ase_portctrl(char *ctrl_msg)
 {
-  mqueue_send(app2sim_portctrl_tx, ctrl_msg);
+  mqueue_send(app2sim_portctrl_tx, ctrl_msg, ASE_MQ_MSGSIZE);
 
   // Allow simulator to parse message and sort itself out
   usleep(1000);
