@@ -287,7 +287,11 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   
       // Send message
       memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
+#if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
+#else
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+#endif
 
       // Display
       mmio_write_cnt++;
@@ -364,7 +368,11 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 
       // Send message
       memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
+#if 0
       mqueue_send(app2sim_mmioreq_tx, mmio_str);
+#else
+      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+#endif
 
 #ifdef ASE_DEBUG
       printf("mmio_pkt => %x %d %d %llx %d\n", 
@@ -442,7 +450,11 @@ void mmio_read32(uint32_t offset, uint32_t *data)
   // Send MMIO Request
   memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
   memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
+#if 0  
   mqueue_send(app2sim_mmioreq_tx, mmio_str);
+#else
+  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+#endif
 
   // Display
   mmio_read_cnt++;
@@ -481,6 +493,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
 
   char mmio_str[ASE_MQ_MSGSIZE];
   mmio_t *mmio_pkt;
+  mmio_pkt = (struct mmio_t *) ase_malloc (sizeof(mmio_t));
 
   char csr_data_str[CL_BYTE_WIDTH];
   memset(csr_data_str, '\0', CL_BYTE_WIDTH);
@@ -499,7 +512,9 @@ void mmio_read64(uint32_t offset, uint64_t *data)
   /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
   /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
   // mqueue_send(app2sim_mmioreq_tx, mmio_str);
+
   mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt);
+  // write(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t) );
 
   // Display
   mmio_read_cnt++;
