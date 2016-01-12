@@ -81,7 +81,7 @@ public:
 #endif // OS
    }
 
-private:
+
    /// Obtain the critical section. (blocking)
    void Lock()
    {
@@ -121,7 +121,7 @@ private:
   //    ASSERT(0 == res);
 #endif // OS
    }
-
+private:
 #if   defined( __AAL_WINDOWS__ )
                 CRITICAL_SECTION m_Lock;
 #elif defined( __AAL_LINUX__ )

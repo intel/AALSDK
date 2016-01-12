@@ -104,5 +104,28 @@
 #define SWSIMALIAFU_VERSION           "0.0.0"
 
 
+
+#define AIASERVICE_VERSION_CURRENT   0
+#define AIASERVICE_VERSION_REVISION  0
+#define AIASERVICE_VERSION_AGE       0
+#define AIASERVICE_VERSION           "0.0.0"
+
+
+#define RRMBROKER_VERSION_CURRENT   0
+#define RRMBROKER_VERSION_REVISION  0
+#define RRMBROKER_VERSION_AGE       0
+#define RRMBROKER_VERSION           "0.0.0"
+
+#define RRM_VERSION_CURRENT        0
+#define RRM_VERSION_REVISION       0
+#define RRM_VERSION_AGE            0
+#define RRM_VERSION                "0.0.0"
+
+#define RESMGR_VERSION_CURRENT     0
+#define RESMGR_VERSION_REVISION    0
+#define RESMGR_VERSION_AGE         0
+#define RESMGR_VERSION             "0.0.0"
+
+
 #define STDC_HEADERS  1
 #define HAVE_STDINT_H 1
