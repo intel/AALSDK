@@ -748,7 +748,7 @@ void deallocate_buffer_by_index(int search_index)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   int wsid;
   uint64_t *bufptr = (uint64_t*) NULL;
@@ -784,7 +784,7 @@ void deallocate_buffer_by_index(int search_index)
       END_RED_FONTCOLOR;
     }
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
