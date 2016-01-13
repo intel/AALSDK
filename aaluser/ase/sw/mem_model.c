@@ -243,9 +243,13 @@ void ase_dealloc_action(struct buffer_t *buf)
 {
   FUNC_CALL_ENTRY;
 
+  char buf_str[ASE_MQ_MSGSIZE];
+  memset (buf_str, 0, ASE_MQ_MSGSIZE);
+
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
   dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
+  memset(dealloc_ptr, 0, sizeof(struct buffer_t));
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
@@ -265,7 +269,8 @@ void ase_dealloc_action(struct buffer_t *buf)
       // Respond back
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
-      mqueue_send(sim2app_tx, (char*)dealloc_ptr, ASE_MQ_MSGSIZE);
+      memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
+      mqueue_send(sim2app_tx, buf_str, ASE_MQ_MSGSIZE);
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();

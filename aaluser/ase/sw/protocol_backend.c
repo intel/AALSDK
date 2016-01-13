@@ -77,7 +77,7 @@ void sv2c_config_dex(const char *str)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : ** WARNING ** +CONFIG file was not found, will revert to DEFAULTS\n");
-      memset(sv2c_config_filepath, '\0', ASE_FILEPATH_LEN);
+      memset(sv2c_config_filepath, 0, ASE_FILEPATH_LEN);
       END_YELLOW_FONTCOLOR;
     }
 }
@@ -105,7 +105,7 @@ void sv2c_script_dex(const char *str)
     {
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : ** WARNING ** +SCRIPT file was not found, will revert to DEFAULTS\n");
-      memset(sv2c_script_filepath, '\0', ASE_FILEPATH_LEN);
+      memset(sv2c_script_filepath, 0, ASE_FILEPATH_LEN);
       END_YELLOW_FONTCOLOR;
     }
 }
@@ -239,8 +239,8 @@ int ase_listener()
   char portctrl_msgstr[ASE_MQ_MSGSIZE];
   char portctrl_cmd[ASE_MQ_MSGSIZE];
   int portctrl_value;
-  memset(portctrl_msgstr, '\0', ASE_MQ_MSGSIZE);
-  memset(portctrl_cmd, '\0', ASE_MQ_MSGSIZE);
+  memset(portctrl_msgstr, 0, ASE_MQ_MSGSIZE);
+  memset(portctrl_cmd, 0, ASE_MQ_MSGSIZE);
   if (mqueue_recv(app2sim_portctrl_rx, (char*)portctrl_msgstr, ASE_MQ_MSGSIZE) == ASE_MSG_PRESENT)
     {
       sscanf(portctrl_msgstr, "%s %d", portctrl_cmd, &portctrl_value);
@@ -306,7 +306,7 @@ int ase_listener()
 	    ase_buffer.is_mmiomap = 0;
 
 	  // Format workspace info string
-	  memset (logger_str, '\0', ASE_LOGGER_LEN);
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
@@ -321,7 +321,7 @@ int ase_listener()
       else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
 	{
 	  // Format workspace info string
-	  memset (logger_str, '\0', ASE_LOGGER_LEN);
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
 	  sprintf(logger_str + strlen(logger_str), "\n");
 
@@ -357,10 +357,10 @@ int ase_listener()
   char mmio_str[ASE_MQ_MSGSIZE];
   struct mmio_t *mmio_pkt;
   mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-  memset (mmio_pkt, '0', sizeof(mmio_t));
+  memset (mmio_pkt, 0, sizeof(mmio_t));
 
   // Cleanse receptacle string
-  memset(mmio_str, '\0', ASE_MQ_MSGSIZE);
+  memset(mmio_str, 0, ASE_MQ_MSGSIZE);
   
   // Receive csr_write packet
   //  if(mqueue_recv(app2sim_mmioreq_rx, (char*)mmio_str)==ASE_MSG_PRESENT)
@@ -384,7 +384,7 @@ int ase_listener()
   umsg_pkt = (struct umsgcmd_t *)ase_malloc(sizeof(struct umsgcmd_t) );
 
   // cleanse string before reading
-  memset(umsg_mapstr, '\0', ASE_MQ_MSGSIZE);
+  memset(umsg_mapstr, 0, ASE_MQ_MSGSIZE);
   if ( mqueue_recv(app2sim_umsg_rx, (char*)umsg_mapstr, sizeof(struct umsgcmd_t) ) == ASE_MSG_PRESENT)
     {
       memcpy(umsg_pkt, (umsgcmd_t *)umsg_mapstr, sizeof(struct umsgcmd_t));
@@ -406,7 +406,7 @@ int ase_listener()
    * SIMKILL message handler
    */
   char ase_simkill_str[ASE_MQ_MSGSIZE];
-  memset (ase_simkill_str, '\0', ASE_MQ_MSGSIZE);
+  memset (ase_simkill_str, 0, ASE_MQ_MSGSIZE);
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
       // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
@@ -587,7 +587,7 @@ int ase_ready()
 
   // App run command
   app_run_cmd = ase_malloc (ASE_FILEPATH_LEN);
-  memset (app_run_cmd, '\0', ASE_FILEPATH_LEN);
+  memset (app_run_cmd, 0, ASE_FILEPATH_LEN);
 
   // Set test_cnt to 0
   glbl_test_cmplt_cnt = 0;
@@ -775,7 +775,7 @@ void ase_config_parse(char *filename)
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
-  memset (ase_cfg_filepath, '\0', 256);
+  memset (ase_cfg_filepath, 0, 256);
   if ( strlen(sv2c_config_filepath) != 0 )
     {
       // strcpy(ase_cfg_filepath, sv2c_config_filepath);

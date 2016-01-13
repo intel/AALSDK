@@ -68,10 +68,10 @@ void put_timestamp()
   char tstamp_str[20];
   char tstamp_path[ASE_FILEPATH_LEN];
 
-  memset(tstamp_str, '\0', sizeof(tstamp_str));
+  memset(tstamp_str, 0, sizeof(tstamp_str));
   tstamp_long = rdtsc();
 
-  memset(tstamp_path, '\0', ASE_FILEPATH_LEN);
+  memset(tstamp_path, 0, ASE_FILEPATH_LEN);
   strcpy(tstamp_path, ase_workdir_path);
   strcat(tstamp_path, TSTAMP_FILENAME);
 
@@ -122,7 +122,7 @@ char* get_timestamp(int dont_kill)
 
   // Generate tstamp_filepath
   // tstamp_filepath = generate_tstamp_path( TSTAMP_FILENAME );
-  memset(tstamp_filepath, '\0', ASE_FILEPATH_LEN);
+  memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
   /* strcpy(tstamp_filepath, ase_workdir_path); */
   /* strcat(tstamp_filepath, "/"); */
   /* strcat(tstamp_filepath, TSTAMP_FILENAME);   */

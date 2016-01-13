@@ -47,14 +47,14 @@ int main(int argc, char *argv[])
   // sleep(2);
 
   // Send umsg
-  uint64_t umsgdata;
-  for(i= 0; i < 10000; i++)
-    {
-      umsgdata = 0xCAFEBABEDECAFBAD;
-      umsg_send (1, &umsgdata);
-      umsgdata = 0xBABABABADEDEDADE;
-      umsg_send (7, &umsgdata);
-    }
+  /* uint64_t umsgdata; */
+  /* for(i= 0; i < 10000; i++) */
+  /*   { */
+  /*     umsgdata = 0xCAFEBABEDECAFBAD; */
+  /*     umsg_send (1, &umsgdata); */
+  /*     umsgdata = 0xBABABABADEDEDADE; */
+  /*     umsg_send (7, &umsgdata); */
+  /*   } */
 
   struct buffer_t *dsm, *src, *dst;
   
@@ -106,18 +106,18 @@ int main(int argc, char *argv[])
     }
   fclose(fp_rand);
 
-  for(i= 0; i < 10000; i++)
-    {
+  /* for(i= 0; i < 10000; i++) */
+  /*   { */
       mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
       mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
-    }
+    /* } */
 
-  uint64_t *data_l, *data_h;
-  for(i= 0; i < 10000; i++)
-    {
-      mmio_read64(0x008, data_l);
-      mmio_read64(0x010, data_h);
-    }
+  /* uint64_t *data_l, *data_h; */
+  /* for(i= 0; i < 10000; i++) */
+  /*   { */
+  /*     mmio_read64(0x008, data_l); */
+  /*     mmio_read64(0x010, data_h); */
+  /*   } */
   /* printf("AFUID = %llx %llx\n",  */
   /* 	 (unsigned long long)*data_h,  */
   /* 	 (unsigned long long)*data_l); */
@@ -126,11 +126,11 @@ int main(int argc, char *argv[])
   
   mmio_write32(CSR_CTL, 1);
 
-  for(i= 0; i < 10000; i++)
-    {
+  /* for(i= 0; i < 10000; i++) */
+  /*   { */
       mmio_write64(CSR_SRC_ADDR, (src->fake_paddr >> 6));      
       mmio_write64(CSR_DST_ADDR, (dst->fake_paddr >> 6));
-    }
+    /* } */
   
   uint64_t *data64;
   uint32_t *data32;

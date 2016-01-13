@@ -156,7 +156,7 @@ MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 #                         Valgring options                              #
 #########################################################################
 VALGRIND_OPTS = -v --log-file=valgrind.log
-VALGRIND_OPTS+= --track-fds=yes
+VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
 VALGRIND_OPTS+= --leak-check=full --track-origins=yes
 VALGRIND_OPTS+= --show-reachable=yes
 

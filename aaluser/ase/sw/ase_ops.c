@@ -255,10 +255,11 @@ char* ase_eval_session_directory()
       // strcat( workdir_path, env_path );
       memcpy(workdir_path, env_path, ASE_FILEPATH_LEN);
     } 
-  else 
-    {
-      *workdir_path = '\0';
-    }
+  /* else  */
+  /*   { */
+  /*     *workdir_path = '\0'; */
+  /*   } */
+
   // strcat( workdir_path, "/work/" );  || RRS:
 
   // *FIXME*: Idiot-proof the work directory
@@ -318,10 +319,10 @@ char* ase_malloc (size_t size)
       exit(1);
     #endif
     }   
-  /* else */
-  /*   { */
-  /*     memset (buffer, '0', size); */
-  /*   } */
+  else
+    {
+      memset (buffer, 0, size);
+    }
 
   FUNC_CALL_EXIT;
   return buffer;
