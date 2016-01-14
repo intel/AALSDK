@@ -345,6 +345,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
      // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
 
      PVERBOSE("Waiting for HW to release PR resource");
+     kosal_mdelay(10);
      bPR_Ready = 0;
      do {
      csr=0;
