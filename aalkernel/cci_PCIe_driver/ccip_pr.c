@@ -153,6 +153,7 @@ inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval)
 //void program_afu( pwork_object pwork)
 int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
 {
+
 #if 0
    struct cci_aal_device *pdev = kosal_get_object_containing( pwork,
                                                               struct cci_aal_device,
@@ -162,6 +163,9 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
    struct CCIP_FME_DFL_PR     *pr_dev = ccip_fme_pr(pfme_dev);
    bt32bitCSR csr = 0;
    btBool bPR_Ready = 0;
+
+   PVERBOSE("kptr =%lx", kptr);
+   PVERBOSE("len =%d", len);
 
    // Program the AFU
    // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
@@ -265,11 +269,11 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
      // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
      // ---------------------------------------------------
      // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
-
+	 PVERBOSE("Initiate PR");
      csr=0;
      GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
      csr |=0x00001000;
-     PVERBOSE("Initiate PR");
+    
      SetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
 
 
@@ -299,10 +303,10 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
         GetCSR(&pr_dev->ccip_fme_pr_status.csr, &csr);
         PR_FIFO_credits = csr & 0x000001FF;
 
-        PVERBOSE("Pushing Data from rbf to HW \n");
+     //   PVERBOSE("Pushing Data from rbf to HW \n");
 
 
-        while(len--) {
+        while(len >0) {
              if (PR_FIFO_credits <= 1)
              {
                do {
@@ -317,6 +321,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
              SetCSR(&pr_dev->ccip_fme_pr_data.csr, byteRead);
              PR_FIFO_credits --;
              byteRead++;
+			 len = len - 4;
         }
      }
      // Step 7 - Notify the HW that bitstream push is complete
@@ -715,7 +720,7 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 */
 
             // Program the afu  TODO   kosal_queue_delayed_work(cci_dev_workq(pdev), cci_dev_task_handler(pdev), 0);
-               if(0 != program_afu(pdev,  kptr, buflen/2 )){
+               if(0 != program_afu(pdev,  kptr, buflen )){
                   PERR("AFU reprogramming failed\n");
                   pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
                                                                    pownerSess->m_device,
