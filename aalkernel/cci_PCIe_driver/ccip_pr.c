@@ -164,8 +164,8 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
    bt32bitCSR csr = 0;
    btBool bPR_Ready = 0;
 
-   PVERBOSE("kptr =%lx", kptr);
-   PVERBOSE("len =%d", len);
+   PDEBUG("kptr =%lx", kptr);
+   PDEBUG("len =%d", len);
 
    // Program the AFU
    // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
@@ -269,7 +269,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
      // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
      // ---------------------------------------------------
      // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
-	 PVERBOSE("Initiate PR");
+     PDEBUG("Initiate PR");
      csr=0;
      GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
      csr |=0x00001000;
@@ -303,7 +303,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
         GetCSR(&pr_dev->ccip_fme_pr_status.csr, &csr);
         PR_FIFO_credits = csr & 0x000001FF;
 
-     //   PVERBOSE("Pushing Data from rbf to HW \n");
+        PDEBUG("Pushing Data from rbf to HW \n");
 
 
         while(len >0) {
@@ -321,7 +321,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
              SetCSR(&pr_dev->ccip_fme_pr_data.csr, byteRead);
              PR_FIFO_credits --;
              byteRead++;
-			 len = len - 4;
+             len -= 4;
         }
      }
      // Step 7 - Notify the HW that bitstream push is complete
@@ -345,7 +345,7 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
      // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
 
      PVERBOSE("Waiting for HW to release PR resource");
-     kosal_mdelay(10);
+     kosal_mdelay(10);        // Workaround for potential HW timing issue
      bPR_Ready = 0;
      do {
      csr=0;

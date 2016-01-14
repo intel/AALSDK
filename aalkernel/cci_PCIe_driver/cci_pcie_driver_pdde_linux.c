@@ -575,8 +575,9 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          // Added it to the port list
          kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
 
+         // Save the FME parent for this port
+         ccip_port_dev_fme(pportdev) = pfme_dev;
 
-		 ccip_port_dev_fme(pportdev) = pfme_dev;
          PDEBUG("Creating Allocatable objects\n");
 
          // Instantiate allocatable objects including AFUs if present.
