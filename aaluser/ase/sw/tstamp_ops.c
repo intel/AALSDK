@@ -63,17 +63,19 @@ static __inline__ unsigned long long rdtsc(void)
 void put_timestamp()
 {
   FUNC_CALL_ENTRY;
+
   FILE *fp;
-  unsigned long long tstamp_long;
-  char tstamp_str[20];
+  // unsigned long long tstamp_long;
+  // char tstamp_str[20];
   char tstamp_path[ASE_FILEPATH_LEN];
 
-  memset(tstamp_str, 0, sizeof(tstamp_str));
-  tstamp_long = rdtsc();
+  // memset(tstamp_str, 0, sizeof(tstamp_str));
+  // tstamp_long = rdtsc();
 
   memset(tstamp_path, 0, ASE_FILEPATH_LEN);
-  strcpy(tstamp_path, ase_workdir_path);
-  strcat(tstamp_path, TSTAMP_FILENAME);
+  /* strcpy(tstamp_path, ase_workdir_path); */
+  /* strcat(tstamp_path, TSTAMP_FILENAME); */
+  sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   // fp = fopen(TSTAMP_FILENAME, "wb");
   fp = fopen(tstamp_path, "wb");
@@ -86,9 +88,11 @@ void put_timestamp()
 #endif
       exit(1);
     }
-  fprintf(fp, "%lld", tstamp_long);
+  fprintf(fp, "%lld", (unsigned long long)rdtsc() );
 
   fclose(fp);
+  // free(tstamp_path);
+  // free(tstamp_str);
 
   FUNC_CALL_EXIT;
 }

@@ -1,7 +1,7 @@
 module tb_ase_fifo();
 
    parameter DATA_WIDTH = 64;
-   parameter MAX_COUNT = 10;
+   parameter MAX_COUNT = 1000;
 
    logic clk, rst, full, empty, valid_in, valid_out, read_en;
    logic [DATA_WIDTH-1:0] data_in, data_out;
@@ -11,7 +11,7 @@ module tb_ase_fifo();
    int 			  wr_iter;
    int 			  rd_iter;
 
-    ase_fifo inst_fifo (clk, rst, valid_in, data_in, read_en, data_out, valid_out, full, , empty, count, , );
+   ase_svfifo inst_fifo (clk, rst, valid_in, data_in, read_en, data_out, valid_out, full, , empty, count, , );
 
    //clk
    initial begin
@@ -45,7 +45,7 @@ module tb_ase_fifo();
 
    int ii;
    int jj;
-   
+
    always @(posedge clk) begin
       if (rst) begin
 	 valid_in <= 0;
@@ -71,29 +71,53 @@ module tb_ase_fifo();
 
    // Read process
    logic read_trig;
-   
+
    always @(posedge clk) begin
       if (rst) begin
-   	 read_trig <= 0;
+   	 // read_trig <= 0;
+   	 read_en <= 0;
    	 rd_iter <= 0;
       end
       else begin
    	 if (~empty && start_reading) begin
-   	    read_trig <= 1;
+   	    read_en <= 1;
    	    rd_iter <= rd_iter + 1;
    	 end
    	 else begin
-   	    read_trig <= 0;
+   	    read_en <= 0;
    	 end
       end
    end
+
    
-   assign read_en = ~empty && read_trig;
+   //   read_en = ~empty && read_trig;
 
 
    initial begin
-      #4000;
+      #400000;
+      $display(check_array);
       $finish;
+   end
+
+   // checker array
+   int unsigned check_array[*];
+   always @(posedge clk) begin : check_proc
+      if (valid_in) begin
+	 if (check_array.exists(wr_iter)) begin
+	    $display("ERROR: wr_iter = %d found in check_array\n", wr_iter);
+	 end
+	 else begin
+	    check_array[wr_iter] = data_in;
+	 end
+      end
+      if (valid_out) begin
+	 if (check_array.exists(rd_iter)) begin
+	    check_array.delete(rd_iter);
+	 end
+	 else begin
+	    $display("ERROR: rd_iter = %d not found\n", rd_iter);
+	 end
+      end
    end
 
 endmodule

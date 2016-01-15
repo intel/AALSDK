@@ -168,7 +168,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
 
   uint64_t *mmio_addr64;
   uint32_t *mmio_addr32;
-  char *mmio_str;
+  // char *mmio_str;
 
   if (mmio_pkt->type == MMIO_READ_REQ)
     {
@@ -177,24 +177,24 @@ void mmio_response (struct mmio_t *mmio_pkt)
 	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
 	  *mmio_addr32 = (uint32_t) mmio_pkt->qword[0];
-        #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG] mmio_rdrspaddr32 = %p\n", mmio_addr32);
-	  printf("  [DEBUG] mmio_rddata32    = %x\n", *mmio_addr32);
-	  END_YELLOW_FONTCOLOR;
-        #endif
+        /* #ifdef ASE_DEBUG */
+	/*   BEGIN_YELLOW_FONTCOLOR; */
+	/*   printf("  [DEBUG] mmio_rdrspaddr32 = %p\n", mmio_addr32); */
+	/*   printf("  [DEBUG] mmio_rddata32    = %x\n", *mmio_addr32); */
+	/*   END_YELLOW_FONTCOLOR; */
+        /* #endif */
 	}
       else if (mmio_pkt->width == MMIO_WIDTH_64)
 	{
 	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
 	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));
 	  *mmio_addr64 = (uint64_t) mmio_pkt->qword[0];
-        #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG] mmio_rdrspaddr64 = %p\n", mmio_addr64);
-	  printf("  [DEBUG] mmio_rddata64    = %llx\n", (unsigned long long)*mmio_addr64);
-	  END_YELLOW_FONTCOLOR;
-        #endif
+        /* #ifdef ASE_DEBUG */
+	/*   BEGIN_YELLOW_FONTCOLOR; */
+	/*   printf("  [DEBUG] mmio_rdrspaddr64 = %p\n", mmio_addr64); */
+	/*   printf("  [DEBUG] mmio_rddata64    = %llx\n", (unsigned long long)*mmio_addr64); */
+	/*   END_YELLOW_FONTCOLOR; */
+        /* #endif */
 	}
     }
 
@@ -419,7 +419,9 @@ int ase_listener()
 	  printf("SIM-C : ASE running in daemon mode (see ase.cfg)\n");
 	  printf("        Reseting buffers ... Simulator RUNNING\n");
 	  ase_destroy();
-	  printf("SIM-C : Ready to run next manual test\n");	  
+	  BEGIN_GREEN_FONTCOLOR;
+	  printf("SIM-C : Ready to run next test\n");	  
+	  END_GREEN_FONTCOLOR;
 	}
       else if (cfg->ase_mode == ASE_MODE_DAEMON_SIMKILL)
 	{
@@ -617,8 +619,9 @@ int ase_ready()
       printf("Starting ase_regress.sh script...\n");
       if ( strlen(sv2c_script_filepath) != 0 )
 	{
-	  strcpy(app_run_cmd, sv2c_script_filepath);
-	  strcat(app_run_cmd, " &");
+	  sprintf(app_run_cmd, "%s &", sv2c_script_filepath);
+	  /* strcpy(app_run_cmd, sv2c_script_filepath); */
+	  /* strcat(app_run_cmd, " &"); */
 	}
       else
 	{
@@ -657,7 +660,7 @@ void start_simkill_countdown()
 
   // Close and unlink message queue
   printf("SIM-C : Closing message queue and unlinking...\n");
-  // ase_mqueue_teardown();
+  ase_mqueue_teardown();
 
   // Destroy all open shared memory regions
   printf("SIM-C : Unlinking Shared memory regions.... \n");

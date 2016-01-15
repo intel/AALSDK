@@ -62,6 +62,8 @@ struct wsmeta_t *wsmeta_end = (struct wsmeta_t *) NULL;
 int asebuf_index_count = 0;    // global count/index
 int userbuf_index_count = 0;   // User count/index
 
+// Timestamp char array
+char *tstamp_string;
 
 /*
  * Send SIMKILL
@@ -146,6 +148,8 @@ void session_init()
 
   // Wait till session file is created
   poll_for_session_id();
+  tstamp_string = (char*) ase_malloc(20);
+  tstamp_string = get_timestamp(0);
 
   // Creating CSR map 
   printf("  [APP]  Creating MMIO ...\n");
@@ -212,6 +216,7 @@ void session_deinit()
 
   // Send SIMKILL
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
+  memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
   mqueue_send(app2sim_simkill_tx, ase_simkill_msg, ASE_MQ_MSGSIZE);
   
@@ -228,6 +233,10 @@ void session_deinit()
   printf("  [APP]  Session ended\n");
   END_YELLOW_FONTCOLOR;
 
+  free(umas_region);
+  free(mmio_region);
+  free(ase_workdir_path);
+  
   // Lock deinit
   pthread_mutex_destroy(&app_lock);
 
@@ -351,9 +360,9 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       /* char mmio_str[ASE_MQ_MSGSIZE]; */
       /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
 
-      char csr_data_str[CL_BYTE_WIDTH];
-      memset(csr_data_str, 0, CL_BYTE_WIDTH);
-      memcpy(csr_data_str, &data, sizeof(uint64_t));
+      /* char csr_data_str[CL_BYTE_WIDTH]; */
+      /* memset(csr_data_str, 0, CL_BYTE_WIDTH); */
+      /* memcpy(csr_data_str, &data, sizeof(uint64_t)); */
 
       uint64_t *mmio_vaddr;
       mmio_vaddr = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
@@ -365,13 +374,14 @@ void mmio_write64 (uint32_t offset, uint64_t data)
       //                     -------------------------
       // ---------------------------------------------------
       // Update CSR Region
-      memcpy(mmio_vaddr, csr_data_str, sizeof(uint64_t));
-      // *mmio_vaddr = data;
+      // memcpy(mmio_vaddr, csr_data_str, sizeof(uint64_t));
+      *mmio_vaddr = data;
   
       mmio_pkt->type = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_64;
       mmio_pkt->addr = offset;
-      memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint64_t));
+      // memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint64_t));
+      memcpy(mmio_pkt->qword, &data, sizeof(uint64_t));
       mmio_pkt->resp_en = 0;
 
       // Send message
@@ -404,6 +414,7 @@ void mmio_write64 (uint32_t offset, uint64_t data)
 /* #ifdef ASE_DEBUG   */
 /*       printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt); */
 /* #endif */
+      free(mmio_pkt);
 
       END_YELLOW_FONTCOLOR;
     }
@@ -599,15 +610,15 @@ void allocate_buffer(struct buffer_t *mem)
   memset(mem->memname, 0, sizeof(mem->memname));  
   if(mem->is_mmiomap == 1)
     {
-      sprintf(mem->memname, "/mmio.%s", get_timestamp(0));
+      sprintf(mem->memname, "/mmio.%s", tstamp_string);
     }
   else if (mem->is_umas == 1) 
     {
-      sprintf(mem->memname, "/umas.%s", get_timestamp(0));
+      sprintf(mem->memname, "/umas.%s", tstamp_string);
     }
   else
     {
-      sprintf(mem->memname, "/buf%d.%s", userbuf_index_count, get_timestamp(0));
+      sprintf(mem->memname, "/buf%d.%s", userbuf_index_count, tstamp_string);
       userbuf_index_count++;
     }
 
@@ -698,9 +709,9 @@ void deallocate_buffer(struct buffer_t *mem)
 
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
-  char *mq_name;
-  mq_name = ase_malloc (ASE_MQ_NAME_LEN);
-  memset(mq_name, 0, ASE_MQ_NAME_LEN);
+  /* char *mq_name; */
+  /* mq_name = ase_malloc (ASE_MQ_NAME_LEN); */
+  /* memset(mq_name, 0, ASE_MQ_NAME_LEN); */
 
 #if 0
   ase_buffer_info(mem);
@@ -728,6 +739,9 @@ void deallocate_buffer(struct buffer_t *mem)
       perror("munmap");
       exit(1);
     }
+
+  close(mem->fd_app);
+  free(mem);
 
   // Print if successful
   BEGIN_YELLOW_FONTCOLOR;

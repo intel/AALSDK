@@ -132,9 +132,9 @@ SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
-# ifeq ($(ASE_DEBUG), 1)
-# VCS_SIM_OPT+= -cm line+cond+fsm+tgl+path
-# endif
+ifeq ($(ASE_DEBUG), 1)
+VCS_SIM_OPT+= -cm line+cond+fsm+tgl+path
+endif
 
 #########################################################################
 #                         Questa Build Switches                         #
@@ -155,10 +155,11 @@ MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 #########################################################################
 #                         Valgring options                              #
 #########################################################################
-VALGRIND_OPTS = -v --log-file=valgrind.log
+VALGRIND_OPTS = -v --log-file=valgrind.log --error-limit=no
 VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
 VALGRIND_OPTS+= --leak-check=full --track-origins=yes
 VALGRIND_OPTS+= --show-reachable=yes
+# VALGRIND_OPTS+= --gen-suppressions=all
 
 
 #########################################################################

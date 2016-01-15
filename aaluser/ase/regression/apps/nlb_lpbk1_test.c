@@ -112,12 +112,12 @@ int main(int argc, char *argv[])
       mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
     /* } */
 
-  /* uint64_t *data_l, *data_h; */
-  /* for(i= 0; i < 10000; i++) */
-  /*   { */
-  /*     mmio_read64(0x008, data_l); */
-  /*     mmio_read64(0x010, data_h); */
-  /*   } */
+  uint64_t *data_l, *data_h;
+  for(i= 0; i < 10000; i++)
+    {
+      mmio_read64(0x008, data_l);
+      mmio_read64(0x010, data_h);
+    }
   /* printf("AFUID = %llx %llx\n",  */
   /* 	 (unsigned long long)*data_h,  */
   /* 	 (unsigned long long)*data_l); */
@@ -134,11 +134,11 @@ int main(int argc, char *argv[])
   
   uint64_t *data64;
   uint32_t *data32;
-  for(i= 0; i < 10000; i++)
-    {
+  /* for(i= 0; i < 10000; i++) */
+  /*   { */
       mmio_read64(CSR_SRC_ADDR, data64 );      
       mmio_read32(CSR_DST_ADDR, data32 );
-    }
+    /* } */
 
   mmio_write32(CSR_NUM_LINES, num_cl);
 
