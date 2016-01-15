@@ -33,7 +33,9 @@
 ##  History:
 ##     07/20/2015    TSW   Initial version
 ##******************************************************************************
-lib_LTLIBRARIES=libHWALIAFU.la
+AUTOMAKE_OPTIONS=subdir-objects
+
+lib_LTLIBRARIES=libHWALIAFU.la libVTPService.la
 
 libHWALIAFU_la_SOURCES=\
 ALIAIATransactions.cpp \
@@ -54,3 +56,27 @@ $(top_builddir)/aas/OSAL/libOSAL.la \
 $(top_builddir)/aas/AASLib/libAAS.la \
 $(top_builddir)/aas/AALRuntime/libaalrt.la \
 $(top_builddir)/aas/AIAService/libaia.la
+
+
+libVTPService_la_SOURCES=\
+VTP/AFU.h \
+VTP/cci_mpf_shim_vtp.h \
+VTP/cci_mpf_shim_vtp.cpp \
+VTP/VTPService.h \
+VTP/VTPService-internal.h \
+VTP/VTPService.cpp
+
+libVTPService_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libVTPService_la_LDFLAGS=\
+-module \
+-version-info $(HWALIAFU_VERSION_CURRENT):$(HWALIAFU_VERSION_REVISION):$(HWALIAFU_VERSION_AGE)
+
+libVTPService_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la
+
