@@ -70,6 +70,7 @@ char *tstamp_string;
  */
 void send_simkill()
 {
+  // Simkill
   char ase_simkill_msg[ASE_MQ_MSGSIZE];
   memset(ase_simkill_msg, 0, ASE_MQ_MSGSIZE);
   sprintf(ase_simkill_msg, "%u", ASE_SIMKILL_MSG);
@@ -78,6 +79,15 @@ void send_simkill()
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  CTRL-C was seen... SW application will exit\n");
   END_YELLOW_FONTCOLOR;
+
+  // MQ close
+  mqueue_close(app2sim_mmioreq_tx);
+  mqueue_close(sim2app_mmiorsp_rx);
+  mqueue_close(app2sim_tx);
+  mqueue_close(sim2app_rx);
+  mqueue_close(app2sim_umsg_tx);
+  mqueue_close(app2sim_simkill_tx);
+  mqueue_close(app2sim_portctrl_tx); 
 
   exit(1);
 }
@@ -245,6 +255,31 @@ void session_deinit()
 
 
 /*
+ * MMIO Request call
+ */
+void mmio_request_put(struct mmio_t *pkt)
+{
+  FUNC_CALL_ENTRY;
+
+  mqueue_send( app2sim_mmioreq_tx, (char*)pkt, sizeof(mmio_t) );
+
+  FUNC_CALL_EXIT;
+}
+
+
+/*
+ * MMIO Response get
+ */
+void mmio_response_get(struct mmio_t *pkt)
+{
+  FUNC_CALL_ENTRY;
+
+  mqueue_recv( sim2app_mmiorsp_rx, (char*)pkt, sizeof(mmio_t) );
+
+  FUNC_CALL_EXIT;
+}
+
+/*
  * MMIO Write 32-bit
  */
 void mmio_write32 (uint32_t offset, uint32_t data)
@@ -252,7 +287,7 @@ void mmio_write32 (uint32_t offset, uint32_t data)
   FUNC_CALL_ENTRY;
   
   // pthread_mutex_lock (&app_lock);
-  
+
   if (offset < 0)
     {
       BEGIN_RED_FONTCOLOR;
@@ -262,71 +297,30 @@ void mmio_write32 (uint32_t offset, uint32_t data)
     }
   else
     {
-      if (mq_exist_status == MQ_NOT_ESTABLISHED)
-	session_init();
-      
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-      memset(mmio_pkt, 0, sizeof(mmio_t));
-      
-      /* char mmio_str[ASE_MQ_MSGSIZE];   */
-      /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
-      
-      /* char csr_data_str[CL_BYTE_WIDTH]; */
-      /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
-      /* // mmio_pkt->qword[0] = (long long)data; */
-      /* memcpy(csr_data_str, &data, sizeof(uint32_t)); */
-      
-      uint32_t *mmio_vaddr;
-      mmio_vaddr = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
 
-      // Prepare MMIO pkt
       mmio_pkt->type = MMIO_WRITE_REQ;
       mmio_pkt->width = MMIO_WIDTH_32;
       mmio_pkt->addr = offset;
       memcpy(mmio_pkt->qword, &data, sizeof(uint32_t));
       mmio_pkt->resp_en = 0;
-      
-#ifdef ASE_DEBUG
-      printf("mmio_pkt => %x %d %d %llx %d\n", 
-	     mmio_pkt->type,
-	     mmio_pkt->width,
-	     mmio_pkt->addr,
-	     mmio_pkt->qword[0],
-	     mmio_pkt->resp_en);
-#endif
 
-      // Update CSR Region
-      // memcpy(mmio_vaddr, (char*)csr_data_str, sizeof(uint32_t));
+      uint32_t *mmio_vaddr;
+      mmio_vaddr = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
+
+      // Message
+      mmio_request_put(mmio_pkt);
       memcpy(mmio_vaddr, (char*)&data, sizeof(uint32_t));
-  
-      // Send message
-      //memcpy(mmio_str, mmio_pkt, sizeof(mmio_t));
-#if 0
-      mqueue_send(app2sim_mmioreq_tx, mmio_str);
-#else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t));
-#endif
 
       // Display
       mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%08x\n", mmio_write_cnt, offset, data);
-
-      // MMIO Write is pipeline-able, not waiting for response
-
-      // Wait until MMIO response comes back and discard
-      // while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-
-/* #ifdef ASE_DEBUG   */
-/*       printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt); */
-/* #endif */
-
       END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
-    }
+    }  
 
-  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -350,76 +344,29 @@ void mmio_write64 (uint32_t offset, uint64_t data)
     }
   else
     {
-      if (mq_exist_status == MQ_NOT_ESTABLISHED)
-	session_init();
-
       mmio_t *mmio_pkt;
       mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-      memset (mmio_pkt, 0, sizeof(mmio_t));
 
-      /* char mmio_str[ASE_MQ_MSGSIZE]; */
-      /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
-
-      /* char csr_data_str[CL_BYTE_WIDTH]; */
-      /* memset(csr_data_str, 0, CL_BYTE_WIDTH); */
-      /* memcpy(csr_data_str, &data, sizeof(uint64_t)); */
+      mmio_pkt->type = MMIO_WRITE_REQ;
+      mmio_pkt->width = MMIO_WIDTH_64;
+      mmio_pkt->addr = offset;
+      memcpy(mmio_pkt->qword, &data, sizeof(uint64_t));
+      mmio_pkt->resp_en = 0;
 
       uint64_t *mmio_vaddr;
       mmio_vaddr = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
 
-      // ---------------------------------------------------
-      // Form a csr_write message
-      //                     -------------------------
-      // CSR_write message:  | width | offset | data |
-      //                     -------------------------
-      // ---------------------------------------------------
-      // Update CSR Region
-      // memcpy(mmio_vaddr, csr_data_str, sizeof(uint64_t));
+      // Message
+      mmio_request_put(mmio_pkt);
       *mmio_vaddr = data;
-  
-      mmio_pkt->type = MMIO_WRITE_REQ;
-      mmio_pkt->width = MMIO_WIDTH_64;
-      mmio_pkt->addr = offset;
-      // memcpy(mmio_pkt->qword, csr_data_str, sizeof(uint64_t));
-      memcpy(mmio_pkt->qword, &data, sizeof(uint64_t));
-      mmio_pkt->resp_en = 0;
 
-      // Send message
-      // memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
-#if 0
-      mqueue_send(app2sim_mmioreq_tx, mmio_str);
-#else
-      mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
-#endif
-
-#ifdef ASE_DEBUG
-      printf("mmio_pkt => %x %d %d %llx %d\n", 
-	     mmio_pkt->type,
-	     mmio_pkt->width,
-	     mmio_pkt->addr,
-	     mmio_pkt->qword[0],
-	     mmio_pkt->resp_en);
-#endif
-
-      // Display
       mmio_write_cnt++;
       BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  MMIO Write #%d : offset = 0x%x, data = 0x%llx\n", mmio_write_cnt, offset, (unsigned long long)data);
-
-      // MMIO Write is pipeline-able, not waiting for response
-
-      // Wait until MMIO response comes back and discard
-      /* while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /\* wait *\/ } */
-      /* memcpy(mmio_pkt, mmio_str, sizeof(mmio_t)); */
-/* #ifdef ASE_DEBUG   */
-/*       printf("  [APP]  MMIO Write #%d completed\n", mmio_write_cnt); */
-/* #endif */
-      free(mmio_pkt);
-
       END_YELLOW_FONTCOLOR;
-    }
 
-  // pthread_mutex_unlock (&app_lock);
+      free(mmio_pkt);
+    }
 
   FUNC_CALL_EXIT;
 }
@@ -448,59 +395,38 @@ void mmio_read32(uint32_t offset, uint32_t *data)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
+  if (offset < 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  Requested offset is not in AFU MMIO region\n");
+      printf("         Ignoring MMIO Read\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      mmio_t *mmio_pkt;
+      mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-  // char mmio_str[ASE_MQ_MSGSIZE];
-  mmio_t *mmio_pkt;
-  mmio_pkt = (struct mmio_t *) ase_malloc (sizeof(mmio_t));
-  memset(mmio_pkt, 0, sizeof(mmio_t));
-  
-  /* char csr_data_str[CL_BYTE_WIDTH]; */
-  /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
+      mmio_pkt->type = MMIO_READ_REQ;
+      mmio_pkt->width = MMIO_WIDTH_32;
+      mmio_pkt->addr = offset;
+      mmio_pkt->resp_en = 0;
 
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
-    session_init();
+      // Messaging
+      mmio_request_put(mmio_pkt);
+      mmio_response_get(mmio_pkt);
 
-  // Send MMIO Read Request
-  mmio_pkt->type = MMIO_READ_REQ;
-  mmio_pkt->width = MMIO_WIDTH_32;
-  mmio_pkt->addr = offset;
-  /* memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH); */
-  mmio_pkt->resp_en = 0;
-  
-  // Send MMIO Request
-  /* memset(mmio_str, '0', ASE_MQ_MSGSIZE); */
-  /* memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t)); */
-#if 0  
-  mqueue_send(app2sim_mmioreq_tx, mmio_str);
-#else
-  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t));
-#endif
+      // Display
+      mmio_read_cnt++;
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
 
-  // Display
-  mmio_read_cnt++;
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
+      // Write data
+      data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
+      *data = (uint32_t)mmio_pkt->qword[0];
 
-  // Receive MMIO Read Response
-  // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
-  // while(mqueue_recv(sim2app_mmiorsp_rx, mmio_str)==0) { /* wait */ }
-  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt, sizeof(mmio_t) )==0) { /* wait */ }
-  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
-
-#ifdef ASE_DEBUG  
-  printf("  [APP]  MMIO Read completed\n");
-#endif
-  
-  // Write data
-  data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
-  *data = (uint32_t)mmio_pkt->qword[0];
-  
-  END_YELLOW_FONTCOLOR;
-
-  // pthread_mutex_unlock (&app_lock);
-
-  free(mmio_pkt);
+      free(mmio_pkt);
+    }
 
   FUNC_CALL_EXIT;
 }
@@ -513,64 +439,39 @@ void mmio_read64(uint32_t offset, uint64_t *data)
 {
   FUNC_CALL_ENTRY;
 
-  // pthread_mutex_lock (&app_lock);
+  if (offset < 0)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("  [APP]  Requested offset is not in AFU MMIO region\n");
+      printf("         Ignoring MMIO Read\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      mmio_t *mmio_pkt;
+      mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
 
-  char mmio_str[ASE_MQ_MSGSIZE];
-  memset(mmio_str, 0, ASE_MQ_MSGSIZE);
+      mmio_pkt->type = MMIO_READ_REQ;
+      mmio_pkt->width = MMIO_WIDTH_64;
+      mmio_pkt->addr = offset;
+      mmio_pkt->resp_en = 0;
 
-  mmio_t *mmio_pkt;
-  mmio_pkt = (struct mmio_t *) ase_malloc (sizeof(mmio_t));
-  memset(mmio_pkt, 0, sizeof(mmio_t));
+      // Messaging
+      mmio_request_put(mmio_pkt);
+      mmio_response_get(mmio_pkt);
 
-  /* char csr_data_str[CL_BYTE_WIDTH]; */
-  /* memset(csr_data_str, '0', CL_BYTE_WIDTH); */
+      // Display
+      mmio_read_cnt++;
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
 
-  if (mq_exist_status == MQ_NOT_ESTABLISHED)
-    session_init();
+      // Write data
+      data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
+      *data = mmio_pkt->qword[0];
 
-  // Send MMIO Read Request
-  mmio_pkt->type = MMIO_READ_REQ;
-  mmio_pkt->width = MMIO_WIDTH_64;
-  mmio_pkt->addr = offset;
-  /* memcpy(mmio_pkt->qword, csr_data_str, CL_BYTE_WIDTH); */
-  mmio_pkt->resp_en = 0;
-  
-  // Send MMIO Request
-  /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
-  memcpy(mmio_str, (char*)mmio_pkt, sizeof(mmio_t));
-  // mqueue_send(app2sim_mmioreq_tx, mmio_str);
+      free(mmio_pkt);
+    }
 
-  mqueue_send(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t)); // *FIX*
-  // write(app2sim_mmioreq_tx, (char*)mmio_pkt, sizeof(mmio_t) );
-
-  //mqueue_send(app2sim_mmioreq_tx, (char*)mmio_str, ASE_MQ_MSGSIZE ); 
-  // Display
-  mmio_read_cnt++;
-
-  BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  MMIO Read #%d  : offset = 0x%x\n", mmio_read_cnt, offset);
-
-  // Receive MMIO Read Response
-  // memset(mmio_str, '0', ASE_MQ_MSGSIZE);
-  while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt, sizeof(mmio_t) )==0) { /* wait */ }
-  // memcpy(mmio_pkt, mmio_str, sizeof(mmio_t));
-
-  // while(mqueue_recv(sim2app_mmiorsp_rx, (char*)mmio_pkt)==0) { /* wait */ }
-
-
-#ifdef ASE_DEBUG  
-  printf("  [APP]  MMIO Read completed\n");
-#endif
-  
-  // Typecast back to mmio_pkt, and update data
-  data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
-  *data = (uint64_t)mmio_pkt->qword[0];
-
-  END_YELLOW_FONTCOLOR;
-
-  // pthread_mutex_unlock (&app_lock);
-  
-  free(mmio_pkt);
   FUNC_CALL_EXIT;
 }
 
@@ -584,7 +485,7 @@ void allocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   char tmp_msg[ASE_MQ_MSGSIZE]  = { 0, };
 
@@ -690,7 +591,7 @@ void allocate_buffer(struct buffer_t *mem)
   ws->buf_structaddr = (uint64_t*)mem;  
   append_wsmeta(ws);
 
-  pthread_mutex_unlock(&app_lock);
+  // pthread_mutex_unlock(&app_lock);
 
   FUNC_CALL_EXIT;
 }
@@ -705,7 +606,7 @@ void deallocate_buffer(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
 
-  pthread_mutex_lock (&app_lock);
+  // pthread_mutex_lock (&app_lock);
 
   int ret;
   char tmp_msg[ASE_MQ_MSGSIZE] = { 0, };
@@ -748,7 +649,7 @@ void deallocate_buffer(struct buffer_t *mem)
   printf("SUCCESS\n");
   END_YELLOW_FONTCOLOR;
 
-  pthread_mutex_unlock (&app_lock);
+  // pthread_mutex_unlock (&app_lock);
 
   FUNC_CALL_EXIT;
 }

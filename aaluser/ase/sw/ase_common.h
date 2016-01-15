@@ -214,6 +214,7 @@ struct buffer_t                   //  Descriptiion                    Computed b
   struct buffer_t *next;
 };
 
+
 /*
  * Workspace meta list
  */
@@ -223,6 +224,28 @@ struct wsmeta_t
   uint64_t *buf_structaddr;
   struct wsmeta_t *next;
 };
+
+
+/*
+ * MMIO transaction packet
+ */
+typedef struct mmio_t {
+  int type;
+  int width;
+  int addr;
+  long long qword[8];
+  int resp_en;
+} mmio_t;
+
+
+/*
+ * Umsg transaction packet
+ */
+typedef struct umsgcmd_t {
+  int       id;
+  int       hint;
+  long long qword[8];
+} umsgcmd_t;
 
 
 // Compute buffer_t size 
@@ -351,6 +374,8 @@ extern "C" {
   void deallocate_buffer_by_index(int);
   void append_wsmeta(struct wsmeta_t *);
   // MMIO activity
+  void mmio_request_put(struct mmio_t *);
+  void mmio_response_get(struct mmio_t *);
   void mmio_write32(uint32_t index, uint32_t data);
   void mmio_write64(uint32_t index, uint64_t data);
   void mmio_read32(uint32_t index, uint32_t *data);
@@ -444,27 +469,6 @@ struct ipc_t mq_array[ASE_MQ_INSTANCES];
 // Print buffers as they are being alloc/dealloc
 // *FIXME*: Connect to ase.cfg
 #define ASE_BUFFER_VIEW
-
-/*
- * MMIO transaction packet
- */
-typedef struct mmio_t {
-  int type;
-  int width;
-  int addr;
-  long long qword[8];
-  int resp_en;
-} mmio_t;
-
-
-/*
- * Umsg transaction packet
- */
-typedef struct umsgcmd_t {
-  int       id;
-  int       hint;
-  long long qword[8];
-} umsgcmd_t;
 
 
 /* *********************************************************************

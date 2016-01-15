@@ -169,7 +169,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   uint64_t *mmio_addr64;
   uint32_t *mmio_addr32;
   // char *mmio_str;
-
+#if 0
   if (mmio_pkt->type == MMIO_READ_REQ)
     {
       if (mmio_pkt->width == MMIO_WIDTH_32)
@@ -202,7 +202,7 @@ void mmio_response (struct mmio_t *mmio_pkt)
   /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
   /* memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt)); */
   /* mqueue_send(sim2app_mmiorsp_tx, mmio_str); */
-
+#endif
   mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
@@ -356,8 +356,8 @@ int ase_listener()
   // Message string
   char mmio_str[ASE_MQ_MSGSIZE];
   struct mmio_t *mmio_pkt;
-  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(struct mmio_t) );
-  memset (mmio_pkt, 0, sizeof(mmio_t));
+  mmio_pkt = (struct mmio_t *)ase_malloc( sizeof(mmio_t) );
+  // memset (mmio_pkt, 0, sizeof(mmio_t));
 
   // Cleanse receptacle string
   memset(mmio_str, 0, ASE_MQ_MSGSIZE);

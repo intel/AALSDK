@@ -160,7 +160,8 @@ VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
 VALGRIND_OPTS+= --leak-check=full --track-origins=yes
 VALGRIND_OPTS+= --show-reachable=yes
 # VALGRIND_OPTS+= --gen-suppressions=all
-
+VALGRIND_OPTS+= --show-leak-kinds=definite,possible
+VALGRIND_OPTS+= --undef-value-errors=yes 
 
 #########################################################################
 #                            Build Targets                              #
