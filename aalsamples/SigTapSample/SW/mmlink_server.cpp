@@ -234,14 +234,16 @@ int mmlink_server::run(btVirtAddr stpAddr)
     if (data_conn)
     {
       bool can_write_host = FD_ISSET(data_conn->socket(), &writefds);
-      bool can_read_driver = FD_ISSET(m_driver->get_fd(), &readfds);
+      //bool can_read_driver = FD_ISSET(m_driver->get_fd(), &readfds);
+      bool can_read_driver = true;
       err = handle_t2h(data_conn, can_read_driver, can_write_host); //TODO add logic to check if driver has data to be read
 
       if (err)
         break;
 
       // Transfer command data from the data socket to the driver.
-      bool can_write_driver = FD_ISSET(m_driver->get_fd(), &writefds);
+      //bool can_write_driver = FD_ISSET(m_driver->get_fd(), &writefds);
+      bool can_write_driver = true;
       bool can_read_host = FD_ISSET(data_conn->socket(), &readfds);
       err = handle_h2t(data_conn, can_read_host, can_write_driver); //TODO add logic to check if host has data to be written to driver
 

@@ -22,17 +22,17 @@
 #define MAP_SIZE 4096UL
 #define MAP_MASK (MAP_SIZE - 1)
 
-#define MM_DEBUG_LINK_DATA_WRITE        0x00
-#define MM_DEBUG_LINK_WRITE_CAPACITY    0x04
-#define MM_DEBUG_LINK_DATA_READ         0x08
-#define MM_DEBUG_LINK_READ_CAPACITY     0x0C
-#define MM_DEBUG_LINK_FIFO_WRITE_COUNT  0x20
-#define MM_DEBUG_LINK_FIFO_READ_COUNT   0x40
-#define MM_DEBUG_LINK_ID_ROM            0x60
-#define MM_DEBUG_LINK_SIGNATURE         0x70
-#define MM_DEBUG_LINK_VERSION           0x74
-#define MM_DEBUG_LINK_DEBUG_RESET       0x78
-#define MM_DEBUG_LINK_MGMT_INTF         0x7C
+#define MM_DEBUG_LINK_DATA_WRITE        0x6100
+#define MM_DEBUG_LINK_WRITE_CAPACITY    0x6104
+#define MM_DEBUG_LINK_DATA_READ         0x6108
+#define MM_DEBUG_LINK_READ_CAPACITY     0x610C
+#define MM_DEBUG_LINK_FIFO_WRITE_COUNT  0x6120
+#define MM_DEBUG_LINK_FIFO_READ_COUNT   0x6140
+#define MM_DEBUG_LINK_ID_ROM            0x6160
+#define MM_DEBUG_LINK_SIGNATURE         0x6170
+#define MM_DEBUG_LINK_VERSION           0x6174
+#define MM_DEBUG_LINK_DEBUG_RESET       0x6178
+#define MM_DEBUG_LINK_MGMT_INTF         0x617C
 
 using namespace std;
 
@@ -60,7 +60,7 @@ int mm_debug_link_linux::open(btVirtAddr stpAddr)
 	  map_base = stpAddr;
 
 	  sign = *(static_cast<unsigned int*>(read_mmr(MM_DEBUG_LINK_SIGNATURE, 'w')));
-	  cout << "Read signature value " << sign << " to hw\n";
+	  cout << "Read signature value " << std::hex << sign << " to hw\n" << flush;
 	  if ( sign != EXPECT_SIGNATURE)
 	  {
       cerr << "Unverified Signature\n";
@@ -76,7 +76,7 @@ int mm_debug_link_linux::open(btVirtAddr stpAddr)
 	  }
 
 	  this->m_write_fifo_capacity = *(static_cast<int*>(read_mmr(MM_DEBUG_LINK_WRITE_CAPACITY, 'w')));
-	  cout << "Read write fifo capacity value " << this->m_write_fifo_capacity << " to hw\n";
+	  cout << "Read write fifo capacity value " << std::dec << this->m_write_fifo_capacity << " to hw\n";
 
 	  return 0;
 }
@@ -87,6 +87,7 @@ void* mm_debug_link_linux::read_mmr(btCSROffset target, int access_type)
 	  void *read_result;
 
 	  virt_addr = map_base + target;
+
 	  switch(access_type) {
 	 		case 'b':
 	 			read_result = (void *)((unsigned char *) virt_addr);
@@ -111,8 +112,8 @@ void mm_debug_link_linux::write_mmr(off_t target, int access_type, unsigned int 
 	  void *read_result;
 	  /* Map one page */
 
-	  virt_addr = map_base;
-	  //virt_addr = map_base + ((BASE_ADDR + target) & MAP_MASK);
+	  virt_addr = map_base + target;
+
 	  switch(access_type) {
 	 		case 'b':
 	 			*((unsigned char *) virt_addr) = write_val;
@@ -131,9 +132,9 @@ void mm_debug_link_linux::write_mmr(off_t target, int access_type, unsigned int 
 
 ssize_t mm_debug_link_linux::read()
 {
-	unsigned char  num_bytes;
+     unsigned int  num_bytes;
+	  num_bytes = *(static_cast<unsigned int *>(read_mmr(MM_DEBUG_LINK_FIFO_READ_COUNT, 'b' )));
 
-	  num_bytes = *(static_cast<unsigned char *>(read_mmr(MM_DEBUG_LINK_FIFO_READ_COUNT, 'b' )));
 	  if (num_bytes > 0 )
 	  {
 	    if ( num_bytes > (mm_debug_link_linux::BUFSIZE - m_buf_end) )
@@ -150,9 +151,9 @@ ssize_t mm_debug_link_linux::read()
 	      for ( unsigned char i = 0; i < num_bytes; ++i )
 	      {
 	        x = this->m_buf[this->m_buf_end + i];
-	        cout << setw(2) << x << " ";
+	        cout << setfill('0') << setw(2) << std::hex << x << " ";
 	      }
-	      cout << "\n";
+	      cout << std::dec << "\n";
 
 	      this->m_buf_end += num_bytes;
 	  }
@@ -167,9 +168,10 @@ ssize_t mm_debug_link_linux::read()
 
 ssize_t mm_debug_link_linux::write(const void *buf, size_t count)
 {
-	unsigned char  num_bytes;
-    unsigned int x;
-	  num_bytes = *(static_cast<unsigned char*>(read_mmr(MM_DEBUG_LINK_FIFO_WRITE_COUNT, 'b' )));
+     unsigned int  num_bytes;
+     unsigned int x;
+	  num_bytes = *(static_cast<unsigned int*>(read_mmr(MM_DEBUG_LINK_FIFO_WRITE_COUNT, 'b' )));
+
 	  if ( num_bytes < this->m_write_fifo_capacity )
 	  {
 	    num_bytes = this->m_write_fifo_capacity - num_bytes;
@@ -187,9 +189,9 @@ ssize_t mm_debug_link_linux::write(const void *buf, size_t count)
 	      for ( int i = 0; i < num_bytes; ++i )
 	      {
 	        x = *((unsigned char *)buf + i);
-	        cout << setw(2) << x << " ";
+	        cout << setfill('0')               << setw(2) << std::hex << x << " ";
 	      }
-	      cout << "\n" ;
+	      cout << std::dec << "\n" ;
 	  }
 	  else
 	  {
