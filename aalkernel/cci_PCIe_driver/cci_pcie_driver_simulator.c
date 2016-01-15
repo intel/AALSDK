@@ -93,49 +93,11 @@ extern int print_sim_port_device(struct port_device *);
 
 int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
 
-#define CCIV4_MMIO_UMSG_TEST 0
 
-#if CCIV4_MMIO_UMSG_TEST
-// Turn on in AFUdev.cpp, as well
-static char mmioafustring[]    = "CCIv4 MMIO test  \n";
-static char umesgafustring[]   = "CCIv4 UMSG test  \n";
-#endif
-#if 0
-static int
-CommandHandler(struct aaldev_ownerSession *,
-               struct aal_pipmessage);
-int
-cci_sim_mmap(struct aaldev_ownerSession *pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
-#endif
 static
 struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
                                                      btVirtAddr bar2,
                                                      struct aal_device_id *pdevid);
-#if 0
-//=============================================================================
-// cci_simAFUpip
-// Description: Physical Interface Protocol Interface for the SPL2 AFU
-//              kernel based AFU engine.
-//=============================================================================
-struct aal_ipip cci_simAFUpip = {
-   .m_messageHandler = {
-      .sendMessage   = CommandHandler,       // Command Handler
-      .bindSession   = BindSession,          // Session binder
-      .unBindSession = UnbindSession,        // Session unbinder
-   },
-
-   .m_fops = {
-     .mmap = cci_sim_mmap,
-   },
-
-   // Methods for binding and unbinding PIP to generic aal_device
-   //  Unused in this PIP
-   .binddevice    = NULL,      // Binds the PIP to the device
-   .unbinddevice  = NULL,      // Binds the PIP to the device
-};
-#endif
 //=============================================================================
 // nextAFU_addr - Keeps the next available address for new AFUs
 //=============================================================================
@@ -399,6 +361,9 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
 
          // Added it to the port list
          kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
+
+         // Save the FME parent for this port
+         ccip_port_dev_fme(pportdev) = pfme_dev;
 
          PDEBUG("Creating Allocatable objects\n");
 

@@ -287,7 +287,8 @@ btInt ALIConfAFUApp::run()
 
       NamedValueSet nvs;
 
-      //nvs.Add(AALCONF_FILENAMEKEY,"ENTER FILE PATH HERE");
+      nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
+
 
       m_pALIReconfService->reconfConfigure(TransactionID(), &nvs);
       m_Sem.Wait();

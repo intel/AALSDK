@@ -84,6 +84,8 @@
 
 #include "cci_pcie_driver_PIPsession.h"
 
+extern ulong sim;
+
 extern struct cci_aal_device   *
                        cci_create_AAL_UAFU_Device( struct port_device  *,
                                                    btPhysAddr,
@@ -164,8 +166,14 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
    bt32bitCSR csr = 0;
    btBool bPR_Ready = 0;
 
-   PDEBUG("kptr =%lx", kptr);
-   PDEBUG("len =%d", len);
+   PDEBUG("kptr =%p", kptr);
+   PDEBUG("len =%d\n", (unsigned)len);
+
+   // Don't do anything under simulation
+   if(0 != sim){
+      PDEBUG("Simulated reprogram\n");
+      return 0;
+   }
 
    // Program the AFU
    // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
