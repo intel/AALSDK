@@ -18,7 +18,7 @@ module stream_checker
    int 			  check_array[*];
    
    always @(posedge clk) begin
-      if (valid_in && (meta_in[`TX_META_TYPERANGE] != CCIP_TX1_WRFENCE)) begin
+      if (valid_in && (meta_in[`TX_META_TYPERANGE] != CCIP_WRFENCE)) begin
 	 check_array[tid_in] = meta_in;	 
       end
       if (valid_out) begin

@@ -126,14 +126,13 @@ module ccip_logger
    function string print_reqtype (logic [3:0] req);
       begin
 	 case (req)
-	   CCIP_TX0_RDLINE_S : return "RdLine_S   ";
-	   CCIP_TX0_RDLINE_I : return "RdLine_I   ";
-	   CCIP_TX0_RDLINE_E : return "RdLine_E   ";
-	   CCIP_TX1_WRLINE_I : return "WrLine_I   ";
-	   CCIP_TX1_WRLINE_M : return "WrLine_M   ";
-	   CCIP_TX1_WRFENCE  : return "WrFence    ";
-	   CCIP_TX1_INTRVALID: return "IntrReq    ";
-	   default           : return "** ERROR **";
+	   CCIP_RDLINE_S : return "RdLine_S   ";
+	   CCIP_RDLINE_I : return "RdLine_I   ";
+	   CCIP_WRLINE_I : return "WrLine_I   ";
+	   CCIP_WRLINE_M : return "WrLine_M   ";
+	   CCIP_WRFENCE  : return "WrFence    ";
+	   CCIP_INTR_REQ : return "IntrReq    ";
+	   default       : return "** ERROR %m : " + req + " **" ;
 	 endcase
       end
    endfunction
@@ -142,12 +141,10 @@ module ccip_logger
    function string print_resptype (logic [3:0] resp);
       begin
 	 case (resp)
-	   CCIP_RX0_RD_RESP   : return "RdResp     ";
-	   CCIP_RX0_WR_RESP   : return "WrResp     ";
-	   CCIP_RX1_WR_RESP   : return "WrResp     ";
-	   CCIP_RX0_INTR_CMPLT: return "IntrResp   ";
-	   CCIP_RX1_INTR_CMPLT: return "IntrResp   ";
-	   default            : return "** ERROR **";
+	   CCIP_RD_RESP  : return "RdResp     ";
+	   CCIP_WR_RESP  : return "WrResp     ";
+	   CCIP_INTR_RSP : return "IntrResp   ";
+	   default       : return "** ERROR **";
 	 endcase
       end
    endfunction

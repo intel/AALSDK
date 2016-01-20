@@ -61,66 +61,96 @@ package ase_pkg;
     * CCI Transactions
     */
    // Read Request/Response
-   parameter CCIP_TX0_RDLINE_S   =  4'h4;
-   parameter CCIP_TX0_RDLINE_I   =  4'h6;
-   parameter CCIP_TX0_RDLINE_E   =  4'h7;
-   parameter CCIP_RX0_RD_RESP    =  4'h4;
+   // parameter CCIP_TX0_RDLINE_S   =  4'h4;
+   // parameter CCIP_TX0_RDLINE_I   =  4'h6;
+   // parameter CCIP_TX0_RDLINE_E   =  4'h7;
+   // parameter CCIP_RX0_RD_RESP    =  4'h4;
 
    // Write request/response
-   parameter CCIP_TX1_WRLINE_I   =  4'h1;
-   parameter CCIP_TX1_WRLINE_M   =  4'h2;
-   parameter CCIP_TX1_WRFENCE    =  4'h5;
-   parameter CCIP_RX0_WR_RESP    =  4'h1;
-   parameter CCIP_RX1_WR_RESP    =  4'h1;
+   // parameter CCIP_TX1_WRLINE_I   =  4'h1;
+   // parameter CCIP_TX1_WRLINE_M   =  4'h2;
+   // parameter CCIP_TX1_WRFENCE    =  4'h5;
+   // parameter CCIP_RX0_WR_RESP    =  4'h1;
+   // parameter CCIP_RX1_WR_RESP    =  4'h1;
 
    // MSI-X request/response
-   parameter CCIP_TX1_INTRVALID  =  4'h8;
-   parameter CCIP_RX0_INTR_CMPLT =  4'h8;
-   parameter CCIP_RX1_INTR_CMPLT =  4'h8;
+   // parameter CCIP_TX1_INTRVALID  =  4'h8;
+   // parameter CCIP_RX0_INTR_CMPLT =  4'h8;
+   // parameter CCIP_RX1_INTR_CMPLT =  4'h8;
 
    // CSR Write/Rread
-   parameter CCIP_MMIO_RD        =  4'h0;
-   parameter CCIP_MMIO_WR        =  4'hC;
+   // parameter CCIP_MMIO_RD        =  4'h0;
+   // parameter CCIP_MMIO_WR        =  4'hC;
 
    // UMsg // TBD
-   parameter CCIP_RX0_UMSG       =  4'hF;
+   // parameter CCIP_RX0_UMSG       =  4'hF;
 
 
    /*
     * CCI specifications
     */
    parameter CCIP_DATA_WIDTH       = 512;
-   parameter CCIP_UMSG_BITINDEX    = 12;
+   // parameter CCIP_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
 
+   /*
+    * Sub-structures
+    * Request type, response types, VC types
+    */ 
+   // Request types
+   typedef enum logic [3:0] {
+			     CCIP_RDLINE_S = 4'h4,
+			     CCIP_RDLINE_I = 4'h6,			     
+			     CCIP_WRLINE_I = 4'h1,
+			     CCIP_WRLINE_M = 4'h2,
+			     CCIP_WRFENCE  = 4'h5,
+			     CCIP_INTR_REQ = 4'h8
+			     } ccip_reqtype_t;  		
 
+   // Response types
+   typedef enum logic [3:0] {
+			     CCIP_RD_RESP  = 4'h4,			     
+			     CCIP_WR_RESP  = 4'h1,
+			     CCIP_INTR_RSP = 4'h8,
+			     CCIP_UMSG     = 4'hF
+			     } ccip_resptype_t;
+   
+   // Virtual channel type
+   typedef enum logic [1:0] {
+			     VC_VA  = 2'b00,
+			     VC_VL0 = 2'b01,
+			     VC_VH0 = 2'b10,
+			     VC_VH1 = 2'b11
+			     } ccip_vc_t;
+   
+   
    /* ***********************************************************
     * CCI-P headers
     * RxHdr, TxHdr, CCIP Packets
     * ***********************************************************/
    // RxHdr
    typedef struct packed {
-      logic [1:0] vc;       // 27:26  // Virtual channel select
-      logic       poison;   // 25     // Poison bit
-      logic       hitmiss;  // 24     // Hit/miss indicator
-      logic       format;   // 23     // Multi-CL enable
-      logic       rsvd22;   // 22     // X
-      logic [1:0] clnum;    // 21:20  // Cache line number
-      logic [3:0] resptype; // 19:16  // Response type
-      logic [15:0] mdata;   // 15:0   // Metadata
+      ccip_vc_t       vc;       // 27:26  // Virtual channel select
+      logic           poison;   // 25     // Poison bit
+      logic           hitmiss;  // 24     // Hit/miss indicator
+      logic           format;   // 23     // Multi-CL enable (write packing only)
+      logic           rsvd22;   // 22     // X
+      logic [1:0]     clnum;    // 21:20  // Cache line number
+      ccip_resptype_t resptype; // 19:16  // Response type
+      logic [15:0]    mdata;    // 15:0   // Metadata
    } RxHdr_t;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
 
    // TxHdr
    typedef struct packed {
-      logic [1:0]  vc;       // 73:72  // Virtual channel select
-      logic 	   sop;      // 71     // Start of packet
-      logic 	   rsvd70;   // 70     // X
-      logic [1:0]  len;      // 69:68  // Length
-      logic [3:0]  reqtype;  // 67:64  // Request Type
-      logic [5:0]  rsvd63_58;// 63:58  // X
-      logic [41:0] addr;     // 57:16  // Address
-      logic [15:0] mdata;    // 15:0   // Metadata
+      ccip_vc_t       vc;       // 73:72  // Virtual channel select
+      logic 	      sop;      // 71     // Start of packet
+      logic 	      rsvd70;   // 70     // X
+      logic [1:0]     len;      // 69:68  // Length
+      ccip_reqtype_t  reqtype;  // 67:64  // Request Type
+      logic [5:0]     rsvd63_58;// 63:58  // X
+      logic [41:0]    addr;     // 57:16  // Address
+      logic [15:0]    mdata;    // 15:0   // Metadata
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 

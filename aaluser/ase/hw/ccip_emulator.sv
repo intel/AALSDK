@@ -850,7 +850,7 @@ module ccip_emulator
 	   UPopHint:
 	     begin
    		umsgfifo_hdr_in.poison              <= 1'b0;
-   		umsgfifo_hdr_in.resp_type           <= CCIP_RX0_UMSG;
+   		umsgfifo_hdr_in.resp_type           <= CCIP_UMSG;
    		umsgfifo_hdr_in.umsg_type           <= 1'b1;
    		umsgfifo_hdr_in.umsg_id             <= umsg_hint_slot;
    		umsgfifo_data_in                    <= {CCIP_DATA_WIDTH{1'b0}};
@@ -862,7 +862,7 @@ module ccip_emulator
 	   UPopData:
 	     begin
    		umsgfifo_hdr_in.poison              <= 1'b0;
-   		umsgfifo_hdr_in.resp_type           <= CCIP_RX0_UMSG;
+   		umsgfifo_hdr_in.resp_type           <= CCIP_UMSG;
    		umsgfifo_hdr_in.umsg_type           <= 1'b0;
    		umsgfifo_hdr_in.umsg_id             <= umsg_data_slot;
    		umsgfifo_data_in                    <= umsg_latest_data_array[umsg_data_slot];
@@ -992,14 +992,14 @@ module ccip_emulator
 	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + 1;
 	 if (C0RxRdValid)
 	   ase_rx0_rdvalid_cnt = ase_rx0_rdvalid_cnt + 1;
-	 if (C1TxWrValid && (C1TxHdr.reqtype != CCIP_TX1_WRFENCE))
+	 if (C1TxWrValid && (C1TxHdr.reqtype != CCIP_WRFENCE))
 	   ase_tx1_wrvalid_cnt = ase_tx1_wrvalid_cnt + 1;
 	 // Write counts
 	 if (C0RxWrValid)
 	   ase_rx0_wrvalid_cnt = ase_rx0_wrvalid_cnt + 1;
 	 if (C1RxWrValid)
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
-	 if (C1TxWrValid && (C1TxHdr.reqtype == CCIP_TX1_WRFENCE))
+	 if (C1TxWrValid && (C1TxHdr.reqtype == CCIP_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
@@ -1061,16 +1061,16 @@ module ccip_emulator
    cci_pkt Tx0toRx0_pkt;
    cci_pkt Tx1toRx0_pkt;
    cci_pkt Tx1toRx1_pkt;
-   cci_pkt Tx0toRx0_pkt_q;
-   cci_pkt Tx1toRx0_pkt_q;
-   cci_pkt Tx1toRx1_pkt_q;
+   // cci_pkt Tx0toRx0_pkt_q;
+   // cci_pkt Tx1toRx0_pkt_q;
+   // cci_pkt Tx1toRx1_pkt_q;
 
    logic Tx0toRx0_pkt_vld;
    logic Tx1toRx0_pkt_vld;
    logic Tx1toRx1_pkt_vld;
-   logic Tx0toRx0_pkt_vld_q;
-   logic Tx1toRx0_pkt_vld_q;
-   logic Tx1toRx1_pkt_vld_q;
+   // logic Tx0toRx0_pkt_vld_q;
+   // logic Tx1toRx0_pkt_vld_q;
+   // logic Tx1toRx1_pkt_vld_q;
 
 
    /*
@@ -1122,15 +1122,14 @@ module ccip_emulator
       else begin
 	 // RdReq type
 	 case (cf2as_latbuf_tx0hdr.reqtype)
-	   CCIP_TX0_RDLINE_S : rdreq_flag = 1;
-	   CCIP_TX0_RDLINE_I : rdreq_flag = 1;
-	   CCIP_TX0_RDLINE_E : rdreq_flag = 1;
+	   CCIP_RDLINE_S : rdreq_flag = 1;
+	   CCIP_RDLINE_I : rdreq_flag = 1;
 	   default           : rdreq_flag = 0;
 	 endcase
 	 // WrReq type
 	 case (cf2as_latbuf_tx1hdr.reqtype)
-	   CCIP_TX1_WRLINE_I : wrreq_flag = 1;
-	   CCIP_TX1_WRLINE_M : wrreq_flag = 1;
+	   CCIP_WRLINE_I : wrreq_flag = 1;
+	   CCIP_WRLINE_M : wrreq_flag = 1;
 	   default           : wrreq_flag = 0;
 	 endcase
       end
@@ -1139,6 +1138,7 @@ module ccip_emulator
    // cf2as_latbuf_ch0 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
    TxHdr_t                       cf2as_latbuf_tx0hdr;
+   RxHdr_t                       cf2as_latbuf_rx0hdr;
    logic                         cf2as_latbuf_ch0_empty;
    logic                         cf2as_latbuf_ch0_read;
    int 				 cf2as_latbuf_ch0_count;
@@ -1148,13 +1148,16 @@ module ccip_emulator
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
    logic [CCIP_DATA_WIDTH-1:0]   cf2as_latbuf_tx1data;
    TxHdr_t                       cf2as_latbuf_tx1hdr;
+   RxHdr_t                       cf2as_latbuf_rx1hdr;
    logic 		         cf2as_latbuf_ch1_empty;
    logic 		         cf2as_latbuf_ch1_read;
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
    logic 			 cf2as_latbuf_ch1_pop;
 
-
+   RxHdr_t                       cf2as_latbuf_rx0hdr_q;
+   RxHdr_t                       cf2as_latbuf_rx1hdr_q;
+   
    /*
     * CAFU->ASE CH0 (TX0)
     * Formed as {TxHdr_t}
@@ -1163,20 +1166,21 @@ module ccip_emulator
    outoforder_wrf_channel
      #(
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
-       .HDR_WIDTH           (CCIP_TX_HDR_WIDTH),
-       .DATA_WIDTH          (CCIP_DATA_WIDTH),
-       .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
-       .FIFO_FULL_THRESH    (LATBUF_FULL_THRESHOLD),
-       .FIFO_DEPTH_BASE2    (LATBUF_DEPTH_BASE2)
+       // .HDR_WIDTH           (CCIP_TX_HDR_WIDTH),
+       // .DATA_WIDTH          (CCIP_DATA_WIDTH),
+       .COUNT_WIDTH         (LATBUF_COUNT_WIDTH)
+       // .FIFO_FULL_THRESH    (LATBUF_FULL_THRESHOLD),
+       // .FIFO_DEPTH_BASE2    (LATBUF_DEPTH_BASE2)
        )
    cf2as_latbuf_ch0
      (
       .clk		( clk ),
       .rst		( ~sys_reset_n ),
-      .meta_in		( CCIP_TX_HDR_WIDTH'(C0TxHdr)),
+      .hdr_in		( C0TxHdr ),
       .data_in		( {CCIP_DATA_WIDTH{1'b0}} ),
       .write_en		( C0TxRdValid ),
-      .meta_out		( cf2as_latbuf_tx0hdr_vec ),
+      .txhdr_out	( cf2as_latbuf_tx0hdr ),
+      .rxhdr_out        ( cf2as_latbuf_rx0hdr ),
       .data_out		(  ),
       .valid_out	( cf2as_latbuf_ch0_valid ),
       .read_en		( cf2as_latbuf_ch0_pop ),
@@ -1187,47 +1191,39 @@ module ccip_emulator
       .count            ( cf2as_latbuf_ch0_count )
       );
 
-   assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
+   // assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
    assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
 
-   // Reg proc
+   // Read TX0
    always @(posedge clk) begin
-      Tx0toRx0_pkt_q     <= Tx0toRx0_pkt;
-      Tx0toRx0_pkt_vld_q <= Tx0toRx0_pkt_vld;
-   end
-
-   // stage 1 - Pop read request
-   always @(posedge clk) begin
-      if (~sys_reset_n) begin
-   	 cf2as_latbuf_ch0_read <= 0;
-   	 Tx0toRx0_pkt_vld      <= 0;
+      if (~cf2as_latbuf_ch0_empty && ~rdrsp_full) begin
+	 cf2as_latbuf_ch0_read <= 1;
       end
       else begin
-   	 // TX0 - Read Request
-   	 if ( ~cf2as_latbuf_ch0_empty && rdreq_flag && ~rdrsp_full ) begin
-   	    cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
-   				  0,
-   				  cf2as_latbuf_tx0hdr,
-   				  {CCIP_DATA_WIDTH{1'b0}} );
-   	    if (cf2as_latbuf_ch0_valid) begin
-   	       rd_memline_dex(Tx0toRx0_pkt);
-   	       Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
-   	    end
-   	    else begin
-   	       Tx0toRx0_pkt_vld <= 0;
-   	    end
-   	    cf2as_latbuf_ch0_read <= ~cf2as_latbuf_ch0_empty;
-   	 end
-   	 // Default case
-   	 else begin
-   	    cf2as_latbuf_ch0_read <= 0;
-   	    Tx0toRx0_pkt_vld <= 0;
-   	 end
+	 cf2as_latbuf_ch0_read <= 0;
       end
    end
 
+   // Tx0 process
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+   	 Tx0toRx0_pkt_vld <= 0;
+      end
+      else if (cf2as_latbuf_ch0_valid) begin
+   	 cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
+   			       0,
+   			       cf2as_latbuf_tx0hdr,
+   			       {CCIP_DATA_WIDTH{1'b0}} );
+	 rd_memline_dex(Tx0toRx0_pkt);
+	 Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
+	 cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
+      end
+      else begin
+   	 Tx0toRx0_pkt_vld <= 0;
+      end
+   end
 
-   // Stage 2 - Stage read response
+   // RdRsp in
    always @(posedge clk) begin
       if (~sys_reset_n) begin
    	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
@@ -1235,18 +1231,72 @@ module ccip_emulator
    	 rdrsp_write <= 0;
       end
       else begin
-	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt_q);
-	 rdrsp_hdr_in.vc       <= Tx0toRx0_pkt_q.vc;
-	 rdrsp_hdr_in.poison   <= 1'b0;
-	 rdrsp_hdr_in.hitmiss  <= 1'b0;
-	 rdrsp_hdr_in.format   <= 1'b0;
-	 rdrsp_hdr_in.rsvd22   <= 1'b0;
-	 rdrsp_hdr_in.clnum    <= 2'b0;
-	 rdrsp_hdr_in.resptype <= CCIP_RX0_RD_RESP;
-	 rdrsp_hdr_in.mdata    <= Tx0toRx0_pkt_q.mdata;
-	 rdrsp_write           <= Tx0toRx0_pkt_vld_q;
+   	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt);
+   	 rdrsp_hdr_in       <= cf2as_latbuf_rx0hdr_q;
+   	 rdrsp_write           <= Tx0toRx0_pkt_vld;
       end
    end
+
+   // Reg proc
+   // always @(posedge clk) begin
+   //    Tx0toRx0_pkt_q     <= Tx0toRx0_pkt;
+   //    Tx0toRx0_pkt_vld_q <= Tx0toRx0_pkt_vld;
+   //    cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
+   // end
+
+   // stage 1 - Pop read request
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 // cf2as_latbuf_ch0_read <= 0;
+   // 	 Tx0toRx0_pkt_vld      <= 0;
+   //    end
+   //    else begin
+   // 	 // TX0 - Read Request
+   // 	 // if ( ~cf2as_latbuf_ch0_empty && rdreq_flag && ~rdrsp_full ) begin
+   // 	 if ( cf2as_latbuf_ch0_valid ) begin
+   // 	    cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
+   // 				  0,
+   // 				  cf2as_latbuf_tx0hdr,
+   // 				  {CCIP_DATA_WIDTH{1'b0}} );
+   // 	    if (cf2as_latbuf_ch0_valid) begin
+   // 	       rd_memline_dex(Tx0toRx0_pkt);
+   // 	       Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
+   // 	    end
+   // 	    else begin
+   // 	       Tx0toRx0_pkt_vld <= 0;
+   // 	    end
+   // 	    // cf2as_latbuf_ch0_read <= ~cf2as_latbuf_ch0_empty;
+   // 	 end
+   // 	 // Default case
+   // 	 else begin
+   // 	    // cf2as_latbuf_ch0_read <= 0;
+   // 	    Tx0toRx0_pkt_vld <= 0;
+   // 	 end
+   //    end
+   // end
+
+
+   // Stage 2 - Stage read response
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
+   // 	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 rdrsp_write <= 0;
+   //    end
+   //    else begin
+   // 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt_q);
+   // 	 // rdrsp_hdr_in.vc       <= ccip_vc_t'(Tx0toRx0_pkt_q.vc);
+   // 	 // rdrsp_hdr_in.poison   <= 1'b0;
+   // 	 // rdrsp_hdr_in.hitmiss  <= 1'b0;
+   // 	 // rdrsp_hdr_in.format   <= 1'b0;
+   // 	 // rdrsp_hdr_in.rsvd22   <= 1'b0;
+   // 	 // rdrsp_hdr_in.clnum    <= 2'b0;
+   // 	 // rdrsp_hdr_in.resptype <= CCIP_RD_RESP;
+   // 	 // rdrsp_hdr_in.mdata    <= Tx0toRx0_pkt_q.mdata;
+   // 	 rdrsp_hdr_in     <= cf2as_latbuf_rx0hdr_q;
+   // 	 rdrsp_write           <= Tx0toRx0_pkt_vld_q;
+   //    end
+   // end
 
 
    /*
@@ -1257,20 +1307,20 @@ module ccip_emulator
    outoforder_wrf_channel
      #(
        .NUM_WAIT_STATIONS(LATBUF_NUM_TRANSACTIONS),
-       .HDR_WIDTH        (CCIP_TX_HDR_WIDTH),
-       .DATA_WIDTH       (CCIP_DATA_WIDTH),
-       .COUNT_WIDTH      (LATBUF_COUNT_WIDTH),
-       .FIFO_FULL_THRESH (LATBUF_FULL_THRESHOLD),
-       .FIFO_DEPTH_BASE2 (LATBUF_DEPTH_BASE2)
+       // .DATA_WIDTH       (CCIP_DATA_WIDTH),
+       .COUNT_WIDTH      (LATBUF_COUNT_WIDTH)
+       // .FIFO_FULL_THRESH (LATBUF_FULL_THRESHOLD),
+       // .FIFO_DEPTH_BASE2 (LATBUF_DEPTH_BASE2)
        )
    cf2as_latbuf_ch1
      (
       .clk		( clk ),
       .rst		( ~sys_reset_n ),
-      .meta_in		( CCIP_TX_HDR_WIDTH'(C1TxHdr) ),
+      .hdr_in		( C1TxHdr ),
       .data_in		( C1TxData ),
       .write_en		( C1TxWrValid ),
-      .meta_out		( cf2as_latbuf_tx1hdr_vec ),
+      .txhdr_out	( cf2as_latbuf_tx1hdr ),
+      .rxhdr_out        ( cf2as_latbuf_rx1hdr ),
       .data_out		( cf2as_latbuf_tx1data ),
       .valid_out	( cf2as_latbuf_ch1_valid),
       .read_en		( cf2as_latbuf_ch1_pop  ),
@@ -1282,7 +1332,7 @@ module ccip_emulator
       );
 
 
-   assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
+   //assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
    assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
@@ -1290,90 +1340,151 @@ module ccip_emulator
    function automatic int wrresp_tx2rx_chsel();
       begin
 	 // return 0;
-	 // return 1;
-	 return (abs_val($random) % 2);
+	 return 1;
+	 // return (abs_val($random) % 2);
       end
    endfunction
 
    // Reg proc
-   always @(posedge clk) begin
-      Tx1toRx0_pkt_q     <= Tx1toRx0_pkt;
-      Tx1toRx0_pkt_vld_q <= Tx1toRx0_pkt_vld;
-      Tx1toRx1_pkt_q     <= Tx1toRx1_pkt;
-      Tx1toRx1_pkt_vld_q <= Tx1toRx1_pkt_vld;
-   end
+   // always @(posedge clk) begin
+   //    Tx1toRx0_pkt_q     <= Tx1toRx0_pkt;
+   //    Tx1toRx0_pkt_vld_q <= Tx1toRx0_pkt_vld;
+   //    Tx1toRx1_pkt_q     <= Tx1toRx1_pkt;
+   //    Tx1toRx1_pkt_vld_q <= Tx1toRx1_pkt_vld;
+   // end
 
 
    // TX1 fulfillment flow
-   always @(posedge clk) begin
-      if (~sys_reset_n) begin
-	 cf2as_latbuf_ch1_read <= 0;
-	 Tx1toRx0_pkt_vld <= 0;
-	 Tx1toRx1_pkt_vld <= 0;
-      end
-      else if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full && wrreq_flag) begin
-	 cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty;
-	 cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
-	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
-	 if ((Tx1toRx1_pkt.resp_channel == 0) && cf2as_latbuf_ch1_valid ) begin
-	    wr_memline_dex(Tx1toRx0_pkt);
-	    Tx1toRx0_pkt_vld <= 1;
-	    Tx1toRx1_pkt_vld <= 0;
-	 end
-	 else if ((Tx1toRx1_pkt.resp_channel == 1) && cf2as_latbuf_ch1_valid ) begin
-	    wr_memline_dex(Tx1toRx1_pkt);
-	    Tx1toRx0_pkt_vld <= 0;
-	    Tx1toRx1_pkt_vld <= 1;
-	 end
-      end
-      else begin
-	 cf2as_latbuf_ch1_read <= 0;
-	 Tx1toRx0_pkt_vld <= 0;
-	 Tx1toRx1_pkt_vld <= 0;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 cf2as_latbuf_ch1_read <= 0;
+   // 	 Tx1toRx0_pkt_vld <= 0;
+   // 	 Tx1toRx1_pkt_vld <= 0;
+   //    end
+   //    else if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full && wrreq_flag) begin
+   // 	 cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty;
+   // 	 cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+   // 	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+   // 	 if ((Tx1toRx1_pkt.resp_channel == 0) && cf2as_latbuf_ch1_valid ) begin
+   // 	    wr_memline_dex(Tx1toRx0_pkt);
+   // 	    Tx1toRx0_pkt_vld <= 1;
+   // 	    Tx1toRx1_pkt_vld <= 0;
+   // 	 end
+   // 	 else if ((Tx1toRx1_pkt.resp_channel == 1) && cf2as_latbuf_ch1_valid ) begin
+   // 	    wr_memline_dex(Tx1toRx1_pkt);
+   // 	    Tx1toRx0_pkt_vld <= 0;
+   // 	    Tx1toRx1_pkt_vld <= 1;
+   // 	 end
+   //    end
+   //    else begin
+   // 	 cf2as_latbuf_ch1_read <= 0;
+   // 	 Tx1toRx0_pkt_vld <= 0;
+   // 	 Tx1toRx1_pkt_vld <= 0;
+   //    end
+   // end
 
 
    // Stage 2 - Tx1toRx0 write process
-   always @(posedge clk) begin
-      if (~sys_reset_n) begin
-   	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   	 wr0rsp_write   <= 0;
-      end
-      else begin
-   	 wr0rsp_hdr_in.vc       <= Tx1toRx0_pkt_q.vc;
-   	 wr0rsp_hdr_in.poison   <= 1'b0;
-   	 wr0rsp_hdr_in.hitmiss  <= 1'b0;
-   	 wr0rsp_hdr_in.format   <= 1'b0;
-   	 wr0rsp_hdr_in.rsvd22   <= 1'b0;
-   	 wr0rsp_hdr_in.clnum    <= 2'b0;
-   	 wr0rsp_hdr_in.resptype <= CCIP_RX0_WR_RESP;
-   	 wr0rsp_hdr_in.mdata    <= Tx1toRx0_pkt_q.mdata;
-   	 wr0rsp_write           <= Tx1toRx0_pkt_vld_q;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 wr0rsp_write   <= 0;
+   //    end
+   //    else begin
+   // 	 wr0rsp_hdr_in.vc       <= ccip_vc_t'(Tx1toRx0_pkt_q.vc);
+   // 	 wr0rsp_hdr_in.poison   <= 1'b0;
+   // 	 wr0rsp_hdr_in.hitmiss  <= 1'b0;
+   // 	 wr0rsp_hdr_in.format   <= 1'b0;
+   // 	 wr0rsp_hdr_in.rsvd22   <= 1'b0;
+   // 	 wr0rsp_hdr_in.clnum    <= 2'b0;
+   // 	 wr0rsp_hdr_in.resptype <= CCIP_WR_RESP;
+   // 	 wr0rsp_hdr_in.mdata    <= Tx1toRx0_pkt_q.mdata;
+   // 	 wr0rsp_write           <= Tx1toRx0_pkt_vld_q;
+   //    end
+   // end
 
 
    // Stage 2 - Tx1toRx1 write process
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 wr1rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 wr1rsp_write   <= 0;
+   //    end
+   //    else begin
+   // 	 wr1rsp_hdr_in.vc       <= ccip_vc_t'(Tx1toRx1_pkt_q.vc);
+   // 	 wr1rsp_hdr_in.poison   <= 1'b0;
+   // 	 wr1rsp_hdr_in.hitmiss  <= 1'b0;
+   // 	 wr1rsp_hdr_in.format   <= 1'b0;
+   // 	 wr1rsp_hdr_in.rsvd22   <= 1'b0;
+   // 	 wr1rsp_hdr_in.clnum    <= 2'b0;
+   // 	 wr1rsp_hdr_in.resptype <= CCIP_WR_RESP;
+   // 	 wr1rsp_hdr_in.mdata    <= Tx1toRx1_pkt_q.mdata;
+   // 	 wr1rsp_write           <= Tx1toRx1_pkt_vld_q;
+   //    end
+   // end
+
+   // Read TX1
    always @(posedge clk) begin
-      if (~sys_reset_n) begin
-   	 wr1rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   	 wr1rsp_write   <= 0;
+      if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full) begin
+	 cf2as_latbuf_ch1_read <= 1;
       end
       else begin
-   	 wr1rsp_hdr_in.vc       <= Tx1toRx1_pkt_q.vc;
-   	 wr1rsp_hdr_in.poison   <= 1'b0;
-   	 wr1rsp_hdr_in.hitmiss  <= 1'b0;
-   	 wr1rsp_hdr_in.format   <= 1'b0;
-   	 wr1rsp_hdr_in.rsvd22   <= 1'b0;
-   	 wr1rsp_hdr_in.clnum    <= 2'b0;
-   	 wr1rsp_hdr_in.resptype <= CCIP_RX1_WR_RESP;
-   	 wr1rsp_hdr_in.mdata    <= Tx1toRx1_pkt_q.mdata;
-   	 wr1rsp_write           <= Tx1toRx1_pkt_vld_q;
+	 cf2as_latbuf_ch1_read <= 0;
       end
    end
 
+   // TX1 process
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 Tx1toRx0_pkt_vld <= 0;
+	 Tx1toRx1_pkt_vld <= 0;	 
+      end
+      else if (cf2as_latbuf_ch1_valid) begin
+   	 cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+   	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;	 
+   	 if (Tx1toRx1_pkt.resp_channel == 0) begin
+   	    wr_memline_dex(Tx1toRx0_pkt);
+   	    Tx1toRx0_pkt_vld <= cf2as_latbuf_ch1_valid;
+   	    Tx1toRx1_pkt_vld <= 0;
+   	 end
+   	 else if (Tx1toRx1_pkt.resp_channel == 1) begin
+   	    wr_memline_dex(Tx1toRx1_pkt);
+   	    Tx1toRx0_pkt_vld <= 0;
+   	    Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
+   	 end
+      end // if (cf2as_latbuf_ch1_valid)
+      else begin
+	 Tx1toRx0_pkt_vld <= 0;
+	 Tx1toRx1_pkt_vld <= 0;	 
+      end
+   end
 
+   // Wr0Rsp_in
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+   	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   	 wr0rsp_write   <= 0;	 
+      end
+      else begin
+	 wr0rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
+	 wr0rsp_write   <= Tx1toRx0_pkt_vld;	 
+      end
+   end
+   
+   // Wr1Rsp_in
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+   	 wr1rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   	 wr1rsp_write   <= 0;	 
+      end
+      else begin
+	 wr1rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
+	 wr1rsp_write   <= Tx1toRx1_pkt_vld;	 
+      end
+   end
+
+   
    /* *******************************************************************
     * RESPONSE PATHS
     * -------------------------------------------------------------------
@@ -1902,7 +2013,7 @@ module ccip_emulator
    // Write response checking
    int unsigned write_check_array[*];
    always @(posedge clk) begin : write_array_checkproc
-      if (C1TxWrValid && (C1TxHdr.mdata != CCIP_TX1_WRFENCE)) begin
+      if (C1TxWrValid && (C1TxHdr.mdata != CCIP_WRFENCE)) begin
 	 write_check_array[C1TxHdr.mdata] = C1TxHdr.addr;
       end
       if (C0RxWrValid) begin
@@ -2023,6 +2134,8 @@ module ccip_emulator
 	   $display("\tREADs  : Response counts dont match request count !!");
 	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
 	   $display("\tWRITEs : Response counts dont match request count !!");
+	 if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
+	   $display("\tMMIORd : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
