@@ -32,9 +32,13 @@ export LD_LIBRARY_PATH=${ASE_WORKDIR}/../../../myinst/usr/local/lib/
 
 # ../../aalsamples/Hello_ALI_NLB/SW/
 # ./helloALInlb
-cd $ASE_WORKDIR/../regression/apps/
-./nlb_test 16
-./nlb_test 64
-./nlb_test 1024
-./nlb_test 16384
 
+# cd $ASE_WORKDIR/../regression/apps/
+# ./nlb_test 16
+# ./nlb_test 64
+# ./nlb_test 1024
+# ./nlb_test 16384
+
+
+cd $ASE_WORKDIR/../regression/apps/
+timeout 5 ./nlb_test 

@@ -2,7 +2,11 @@
  * Test: SV FIFO using queue
  */
 
-module ase_svfifo
+
+/*
+ * Systemverilog registered FIFO
+ */ 
+module svfifo
   #(
     parameter int DATA_WIDTH = 64,
     parameter int DEPTH_BASE2 = 3,
@@ -80,4 +84,63 @@ module ase_svfifo
    	alm_full <= 0;
    end
 
+endmodule
+
+/*
+ * SvFIFO + show-ahead
+ */ 
+module ase_svfifo
+  #(
+    parameter int DATA_WIDTH = 64,
+    parameter int DEPTH_BASE2 = 3,
+    parameter int ALMFULL_THRESH = 5
+    )
+  (
+    input logic 		  clk,
+    input logic 		  rst,
+    input logic 		  wr_en,
+    input logic [DATA_WIDTH-1:0]  data_in,
+    input logic 		  rd_en,
+    output logic [DATA_WIDTH-1:0] data_out,
+    output logic 		  data_out_v,
+    output logic 		  alm_full,
+    output logic 		  full,
+    output logic 		  empty,
+    output logic [DEPTH_BASE2:0]  count,
+    output logic 		  overflow,
+    output logic 		  underflow    
+   );
+
+   logic [DATA_WIDTH-1:0] 	  data_out_tmp;
+   logic 			  data_out_v_tmp;
+   logic 			  empty_tmp;
+   logic 			  rd_en_tmp;
+     
+   svfifo #(DATA_WIDTH, DEPTH_BASE2, ALMFULL_THRESH)
+   svfifo (clk, rst, wr_en, data_in, rd_en_tmp, data_out_tmp, data_out_v_tmp, alm_full, full, empty_tmp, count, overflow, underflow);
+
+   always @(posedge clk) begin
+      data_out <= data_out_tmp;
+      data_out_v <= data_out_v_tmp;
+   end
+
+   assign rd_en_tmp = rd_en | rd_en_trig;
+      
+   always @(posedge clk) begin
+      if (rst) begin
+	 // data_out <= 0;
+	 // data_out_v <= 0;
+	 rd_en_tmp <= 0;	 
+      end
+      else if (~empty_tmp & ~data_out_v) begin
+	 // data_out <= data_out_tmp;
+	 // data_out_v <= data_out_v_tmp;
+	 rd_en_tmp <= 1;	 
+      end
+      else if (rd_en) begin
+	 rd_en_tmp <= rd_en
+      end
+   end
+   
+   
 endmodule

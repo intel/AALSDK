@@ -134,11 +134,12 @@ int main(int argc, char *argv[])
   
   uint64_t *data64;
   uint32_t *data32;
-  for(i= 0; i < 10000; i++)
-    {
+  /* for(i= 0; i < 10000; i++) */
+  /* while(1) */
+  /*   { */
       // mmio_read64(CSR_SRC_ADDR, data64 );      
       mmio_read32(CSR_DST_ADDR, data32 );
-    }
+    /* } */
 
   mmio_write32(CSR_NUM_LINES, num_cl);
 
