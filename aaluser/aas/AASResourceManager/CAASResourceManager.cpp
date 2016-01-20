@@ -860,7 +860,7 @@ btBool CResMgr::init( IBase *pclientBase,
       NamedValueSet const &optArgs,
       TransactionID const &rtid)
 {
-   pAALLogger()->AddToMask(LM_ResMgr, LOG_DEBUG);
+   //pAALLogger()->AddToMask(LM_ResMgr, LOG_DEBUG);
    m_pAALServiceClient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
    ASSERT( NULL != m_pAALServiceClient ); //QUEUE object failed
    if(NULL == m_pAALServiceClient)
