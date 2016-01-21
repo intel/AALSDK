@@ -156,6 +156,12 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
   return true;
 }
 
+btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature)
+{
+   // TODO: not implemented yet
+   return false;
+}
+
 // -----------------------------------------------------
 // Buffer allocation API
 // -----------------------------------------------------

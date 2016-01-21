@@ -80,7 +80,7 @@ public:
    /// VTP service constructor
    DECLARE_AAL_SERVICE_CONSTRUCTOR(VTPService, ServiceBase),
       m_pSvcClient(NULL),
-      m_pAFUProxy(NULL),
+      m_pHWALIAFU(NULL),
       m_pDFHBaseAddr(NULL)
    {
       SetInterface(iidVTPService, dynamic_cast<IVTPService *>(this));
@@ -89,7 +89,7 @@ public:
    ///
    /// Expects the following in the optArgs passed to it:
    ///
-   ///   ALIAFU_AFUPROXY_PTR  pointer to AFUProxy used by ALIAFU.
+   ///   HWALIAFU_IBASE       pointer to HWALIAFU
    ///   VTP_DFH_BASE         pointer to MMIO space where VTP DFH resides
    btBool init( IBase *pclientBase,
                 NamedValueSet const &optArgs,
@@ -110,7 +110,7 @@ public:
 
 protected:
    IServiceClient        *m_pSvcClient;
-   IAFUProxy             *m_pAFUProxy;
+   IBase                 *m_pHWALIAFU;
    btVirtAddr             m_pDFHBaseAddr;
 };
 

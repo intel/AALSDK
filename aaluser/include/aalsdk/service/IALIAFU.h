@@ -212,6 +212,15 @@ public:
    /// @return     True if the write was successful.
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
 
+   /// @brief      Request pointer to a device feature header (DFH).
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[in]  GUID      GUID identifying feature.
+   /// @param[in]  FeatureID Feature ID identifying feature instance (if multiple).
+   /// @param[out] ppFeature  Where to place the pointer to the feature header.
+   /// @return     True if requested feature was found in DFH space.
+   /// TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
+   virtual btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) = 0;
+
 }; // class IALIMMIO
 
 

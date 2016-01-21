@@ -120,6 +120,7 @@ public:
    virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
    virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   virtual btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature);
    // </IALIMMIO>
 
    // <IALIBuffer>

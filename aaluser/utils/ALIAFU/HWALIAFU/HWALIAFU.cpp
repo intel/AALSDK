@@ -450,6 +450,24 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
    return true;
 }
 
+
+//
+// mmioGetFeature. Get pointer to feature's DFH, if found.
+//
+btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) {
+   // TODO: do we want to distinguish between AFUs, BBBs, and private features here? Could use an optional parameter.
+   // TODO: add actual code, see driver DFH walk
+
+   // walk DFH
+   // return first match
+   // if not found, do not modify ppFeature, return false.
+
+   return false;
+}
+
+
+
+
 // ---------------------------------------------------------------------------
 // IALIBuffer interface implementation
 // ---------------------------------------------------------------------------

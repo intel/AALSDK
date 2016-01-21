@@ -138,16 +138,16 @@ btBool VTPService::init( IBase *pclientBase,
 {
    btObjectType tmp;
 
-   // check for AFUProxy in optargs
-   if ( ENamedValuesOK != optArgs.Get(ALIAFU_AFUPROXY_PTR, &tmp) ) {
+   // check for HWALIAFU's IBase in optargs
+   if ( ENamedValuesOK != optArgs.Get(HWALIAFU_IBASE, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
                                                  reasMissingParameter,
-                                                 "No AFU Proxy in optArgs."));
+                                                 "No HWALIAFU IBase in optArgs."));
       return true;
    }
-   m_pAFUProxy = reinterpret_cast<IAFUProxy *>(tmp);
+   m_pHWALIAFU = reinterpret_cast<IBase *>(tmp);
 
    // check for VTP MMIO base in optargs
    if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE, &tmp) ) {
