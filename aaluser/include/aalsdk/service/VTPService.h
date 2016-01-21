@@ -67,6 +67,9 @@ using namespace AAL;
 #define HWALIAFU_IBASE "HWALIAFUIBase"
 #define VTP_DFH_BASE "VTPDFHBase"
 
+// TODO: replace with actual spec'd VTP GUID
+#define GUID_BBB_VTP "5BC516B4-CC6B-4ECF-9115-70E1815F0370"
+
 //AAL_DECLARE_SVC_MOD(libVTPSERVICE, VTP_SERVICE_API)
 
 
@@ -76,11 +79,10 @@ using namespace AAL;
 /// IVTPSERVICE interface ID.
 #define iidVTPService __INTC_IID(INTC_sysSampleAFU,0x0042) // FIXME: get real IID
 
-/// Example of a custom interface for a Service
-class IVTPService
+class IVTPService : public IALIBuffer
 {
 public:
-   /// @brief Allocate shared buffer.
+/*   /// @brief Allocate shared buffer.
    ///
    /// Allocates a shared buffer of specified length. Updates the VTP page
    /// hash to add the respective virtual-to-physical mapping.
@@ -92,9 +94,9 @@ public:
    /// @param[in]  pOptArgs   Pointer to NVS containing optional arguments.
    ///                        Ignored for now.
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   ali_errnum_e bufferAllocate( btWSSize Length,
+   virtual ali_errnum_e bufferAllocate( btWSSize Length,
                                 btVirtAddr    *pBufferptr,
-                                NamedValueSet *pOptArgs);
+                                NamedValueSet *pOptArgs) = 0;
 
 
    /// @brief Free shared buffer.
@@ -107,8 +109,8 @@ public:
    ///
    /// @param[in]  Address    Address of buffer to deallocate/free.
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   ali_errnum_e bufferFree( btVirtAddr Address) {};
-
+   virtual ali_errnum_e bufferFree( btVirtAddr Address) = 0;
+*/
 
    /// @brief Free all shared buffers.
    ///
@@ -120,9 +122,9 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   ali_errnum_e bufferFreeAll() {};
+   virtual ali_errnum_e bufferFreeAll() = 0;
 
-
+/*
    /// @brief Get virtual-to-physical mapping
    ///
    /// Returns physical address mapped to a given virtual address inside
@@ -131,8 +133,8 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   btPhysAddr bufferGetIOVA( btVirtAddr Address);
-
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address) = 0;
+*/
 
    /// IVTPService Destructor
    virtual ~IVTPService() {}

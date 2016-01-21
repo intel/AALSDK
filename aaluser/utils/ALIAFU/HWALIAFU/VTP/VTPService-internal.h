@@ -53,7 +53,7 @@
 //****************************************************************************
 #ifndef __VTPSERVICE_INT_H__
 #define __VTPSERVICE_INT_H__
-#include "VTPService.h" // Public AFU device interface
+#include <aalsdk/service/VTPService.h> // Public VTP service interface
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/IDispatchable.h>
@@ -102,8 +102,8 @@ public:
    ali_errnum_e bufferAllocate( btWSSize       Length,
                                 btVirtAddr    *pBufferptr,
                                 NamedValueSet *pOptArgs);
-   ali_errnum_e bufferFree(     btVirtAddr     Address)   {};
-   ali_errnum_e bufferFreeAll()                           {};
+   ali_errnum_e bufferFree(     btVirtAddr     Address);
+   ali_errnum_e bufferFreeAll();
    btPhysAddr   bufferGetIOVA(  btVirtAddr     Address);
 // </IVTPService>
 
