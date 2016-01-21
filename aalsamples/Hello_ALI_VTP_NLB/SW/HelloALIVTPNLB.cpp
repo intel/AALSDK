@@ -50,6 +50,7 @@
 #include <aalsdk/AALLoggerExtern.h>
 
 #include <aalsdk/service/IALIAFU.h>
+#include <aalsdk/service/VTPService.h>
 
 #include <string.h>
 
@@ -154,24 +155,28 @@ public:
 
    // <end IRuntimeClient interface>
 protected:
-   Runtime        m_Runtime;           ///< AAL Runtime
-   IBase         *m_pAALService;       ///< The generic AAL Service interface for the AFU.
-   IALIBuffer    *m_pALIBufferService; ///< Pointer to Buffer Service
-   IALIMMIO      *m_pALIMMIOService;   ///< Pointer to MMIO Service
-   IALIReset     *m_pALIResetService;  ///< Pointer to AFU Reset Service
-   CSemaphore     m_Sem;               ///< For synchronizing with the AAL runtime.
-   btInt          m_Result;            ///< Returned result value; 0 if success
+   Runtime        m_Runtime;                ///< AAL Runtime
+   IBase         *m_pHWALIAFU_AALService;   ///< The generic AAL Service interface for the AFU.
+   IALIBuffer    *m_pALIBufferService;      ///< Pointer to Buffer Service
+   IALIMMIO      *m_pALIMMIOService;        ///< Pointer to MMIO Service
+   IALIReset     *m_pALIResetService;       ///< Pointer to AFU Reset Service
+   CSemaphore     m_Sem;                    ///< For synchronizing with the AAL runtime.
+   btInt          m_Result;                 ///< Returned result value; 0 if success
+   TransactionID  m_HWALIAFUTranID;         ///< TransactionID used for service allocation
+
+   // VTP service-related information
+   IBase         *m_pVTP_AALService;        ///< The generic AAL Service interface for the VTP.
+   IVTPService   *m_pVTPService;            ///< Pointer to VTP buffer service
+   void          *m_pVTPDFH;                ///< VTP DFH address
+   TransactionID  m_VTPTranID;              ///< TransactionID used for service allocation
 
    // Workspace info
-   btVirtAddr     m_DSMVirt;        ///< DSM workspace virtual address.
-   btPhysAddr     m_DSMPhys;        ///< DSM workspace physical address.
-   btWSSize       m_DSMSize;        ///< DSM workspace size in bytes.
-   btVirtAddr     m_InputVirt;      ///< Input workspace virtual address.
-   btPhysAddr     m_InputPhys;      ///< Input workspace physical address.
-   btWSSize       m_InputSize;      ///< Input workspace size in bytes.
-   btVirtAddr     m_OutputVirt;     ///< Output workspace virtual address.
-   btPhysAddr     m_OutputPhys;     ///< Output workspace physical address.
-   btWSSize       m_OutputSize;     ///< Output workspace size in bytes.
+   btVirtAddr     m_pDSM;                   ///< DSM workspace virtual address.
+   btWSSize       m_DSMSize;                ///< DSM workspace size in bytes.
+   btVirtAddr     m_pInput;                 ///< Input workspace virtual address.
+   btWSSize       m_InputSize;              ///< Input workspace size in bytes.
+   btVirtAddr     m_pOutput;                ///< Output workspace virtual address.
+   btWSSize       m_OutputSize;             ///< Output workspace size in bytes.
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,20 +190,22 @@ protected:
 ///
 HelloALIVTPNLBApp::HelloALIVTPNLBApp() :
    m_Runtime(this),
-   m_pAALService(NULL),
+   m_pHWALIAFU_AALService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIResetService(NULL),
+   m_pVTP_AALService(NULL),
+   m_pVTPService(NULL),
+   m_pVTPDFH(NULL),
    m_Result(0),
-   m_DSMVirt(NULL),
-   m_DSMPhys(0),
+   m_pDSM(NULL),
    m_DSMSize(0),
-   m_InputVirt(NULL),
-   m_InputPhys(0),
+   m_pInput(NULL),
    m_InputSize(0),
-   m_OutputVirt(NULL),
-   m_OutputPhys(0),
-   m_OutputSize(0)
+   m_pOutput(NULL),
+   m_OutputSize(0),
+   m_HWALIAFUTranID(),
+   m_VTPTranID()
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -292,75 +299,106 @@ btInt HelloALIVTPNLBApp::run()
    // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
 
-   MSG("Allocating Service");
+   MSG("Allocating HWALIAFU Service");
 
    // Allocate the Service and wait for it to complete by sitting on the
    //   semaphore. The serviceAllocated() callback will be called if successful.
    //   If allocation fails the serviceAllocateFailed() should set m_bIsOK appropriately.
    //   (Refer to the serviceAllocated() callback to see how the Service's interfaces
    //    are collected.)
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
+   //  Note that we are passing a custom transaction ID (created during app
+   //   construction) to be able in serviceAllocated() to identify which
+   //   service was allocated. This is only necessary if you are allocating more
+   //   than one service from a single AAL service client.
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_HWALIAFUTranID);
    m_Sem.Wait();
    if(!m_bIsOK){
-      ERR("Allocation failed\n");
+      ERR("HWALIAFU allocation failed\n");
       goto done_0;
    }
 
-   // Now that we have the Service and have saved the IALIBuffer interface pointer
-   //  we can now Allocate the 3 Workspaces used by the NLB algorithm. The buffer allocate
-   //  function is synchronous so no need to wait on the semaphore
-
-   // Device Status Memory (DSM) is a structure defined by the NLB implementation.
-
-   // User Virtual address of the pointer is returned directly in the function
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_DSM_SIZE, &m_DSMVirt)){
+   // Ask the ALI service for the VTP device feature header (DFH)
+   if (ali_errnumOK != m_pALIMMIOService->mmioGetFeature(GUID_BBB_VTP, 25, &m_pVTPDFH)) {
+      ERR("No VTP feature\n");
       m_bIsOK = false;
       m_Result = -1;
       goto done_1;
    }
 
-   // Save the size and get the IOVA from teh User Virtual address. The HW only uses IOVA.
-   m_DSMSize = LPBK1_DSM_SIZE;
-   m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
+   // Reuse Manifest and Configrecord for VTP service
+   Manifest.Empty();
+   ConfigRecord.Empty();
 
-   if(0 == m_DSMPhys){
+   // Allocate VTP service
+   // Service Library to use
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libVTPService");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+
+   // Add the Config Record to the Manifest describing what we want to allocate
+   Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+   // the VTPService will reuse the already established interfaces presented by
+   // HWALIAFU
+   Manifest.Add(HWALIAFU_IBASE, m_pHWALIAFU_AALService);
+
+   // the location of the VTP device feature header
+   Manifest.Add(VTP_DFH_BASE, m_pVTPDFH);
+
+   // in future, everything could be figured out by just giving the service name
+   Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "VTP");
+
+   MSG("Allocating VTP Service");
+
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_VTPTranID);
+   m_Sem.Wait();
+   if(!m_bIsOK){
+      ERR("VTP Service allocation failed\n");
+      goto done_0;
+   }
+
+   // Now that we have the Service and have saved the IVTPService interface pointer
+   //  we can now Allocate the 3 Workspaces used by the NLB algorithm. The buffer allocate
+   //  function is synchronous so no need to wait on the semaphore
+
+   // Note that we now hold two buffer interfaces, m_pALIBufferService and
+   //  m_pVTPService. The latter will allocate shared memory buffers and update
+   //  the VTP block's memory mapping table, and thus allow AFUs to access the
+   //  shared buffer using virtual addresses. The former will only allocate the
+   //  shred memory buffers, requiring the AFU to use physical addresses to
+   //  access them.
+
+   // Device Status Memory (DSM) is a structure defined by the NLB implementation.
+   // FIXME: shouldn't these appear as a private feature header for the NLB AFU?
+
+   // User Virtual address of the pointer is returned directly in the function
+   // Remember, we're using VTP, so no need to convert to physical addresses
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_DSM_SIZE, &m_pDSM)){
       m_bIsOK = false;
       m_Result = -1;
       goto done_2;
    }
 
+   // Save the size
+   m_DSMSize = LPBK1_DSM_SIZE;
+
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_InputVirt)){
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pInput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
-      goto done_2;
+      goto done_3;
    }
 
    m_InputSize = LPBK1_BUFFER_SIZE;
-   m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
-   if(0 == m_InputPhys){
-      m_bIsOK = false;
-      m_Result = -1;
-      goto done_3;
-   }
 
-   if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_OutputVirt)){
+   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pOutput)){
       m_bIsOK = false;
       m_Sem.Post(1);
-      m_Result = -1;
-      goto done_3;
-   }
-
-   m_OutputSize = LPBK1_BUFFER_SIZE;
-   m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
-   if(0 == m_OutputPhys){
-      m_bIsOK = false;
       m_Result = -1;
       goto done_4;
    }
 
-
+   m_OutputSize = LPBK1_BUFFER_SIZE;
 
    //=============================
    // Now we have the NLB Service
@@ -370,16 +408,16 @@ btInt HelloALIVTPNLBApp::run()
    if(true == m_bIsOK){
 
       // Clear the DSM
-      ::memset( m_DSMVirt, 0, m_DSMSize);
+      ::memset( m_pDSM, 0, m_DSMSize);
 
       // Initialize the source and destination buffers
-      ::memset( m_InputVirt,  0, m_InputSize);     // Input initialized to 0
-      ::memset( m_OutputVirt, 0, m_OutputSize);    // Output initialized to 0
+      ::memset( m_pInput,  0, m_InputSize);     // Input initialized to 0
+      ::memset( m_pOutput, 0, m_OutputSize);    // Output initialized to 0
 
       struct CacheLine {                           // Operate on cache lines
          btUnsigned32bitInt uint[16];
       };
-      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_InputVirt);
+      struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
       for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
@@ -393,8 +431,8 @@ btInt HelloALIVTPNLBApp::run()
 
 
       // Initiate DSM Reset
-      // Set DSM base, high then low
-      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_DSMPhys);
+      // Set DSM base (virtual, since we have allocated using VTP), high then low
+      m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
       // Assert AFU reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
@@ -410,10 +448,10 @@ btInt HelloALIVTPNLBApp::run()
 
 
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, CACHELINE_ALIGNED_ADDR(m_InputPhys));
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput);
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, CACHELINE_ALIGNED_ADDR(m_OutputPhys));
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput);
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
@@ -422,7 +460,7 @@ btInt HelloALIVTPNLBApp::run()
       m_pALIMMIOService->mmioWrite32(CSR_CFG,0);
 
       volatile bt32bitCSR *StatusAddr = (volatile bt32bitCSR *)
-                                         (m_DSMVirt  + DSM_STATUS_TEST_COMPLETE);
+                                         (m_pDSM  + DSM_STATUS_TEST_COMPLETE);
       // Start the test
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
@@ -437,7 +475,7 @@ btInt HelloALIVTPNLBApp::run()
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      if (int err = memcmp( m_OutputVirt, m_InputVirt, m_OutputSize)) {
+      if (int err = memcmp( m_pOutput, m_pInput, m_OutputSize)) {
          ERR("Output does NOT Match input, at offset " << err << "!");
          ++m_Result;
       } else {
@@ -447,16 +485,21 @@ btInt HelloALIVTPNLBApp::run()
    MSG("Done Running Test");
 
    // Clean-up and return
+done_5:
+   m_pALIBufferService->bufferFree(m_pOutput);
 done_4:
-   m_pALIBufferService->bufferFree(m_OutputVirt);
+   m_pALIBufferService->bufferFree(m_pInput);
 done_3:
-   m_pALIBufferService->bufferFree(m_InputVirt);
+   m_pALIBufferService->bufferFree(m_pDSM);
+
 done_2:
-   m_pALIBufferService->bufferFree(m_DSMVirt);
+   // Freed all three so now Release() the VTP Service through the Services IAALService::Release() method
+   (dynamic_ptr<IAALService>(iidService, m_pVTP_AALService))->Release(TransactionID());
+   m_Sem.Wait();
 
 done_1:
-   // Freed all three so now Release() the Service through the Services IAALService::Release() method
-   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+   // Freed all three so now Release() the HWALIAFU Service through the Services IAALService::Release() method
+   (dynamic_ptr<IAALService>(iidService, m_pHWALIAFU_AALService))->Release(TransactionID());
    m_Sem.Wait();
 
 done_0:
@@ -474,38 +517,69 @@ done_0:
 void HelloALIVTPNLBApp::serviceAllocated(IBase *pServiceBase,
                                       TransactionID const &rTranID)
 {
-   // Save the IBase for the Service. Through it we can get any other
-   //  interface implemented by the Service
-   m_pAALService = pServiceBase;
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
-   }
+   // This application will allocate two different services (HWALIAFU and
+   //  VTPService). We can tell them apart here by looking at the TransactionID.
+   if (rTranID ==  m_HWALIAFUTranID) {
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
-   }
+      // Save the IBase for the Service. Through it we can get any other
+      //  interface implemented by the Service
+      m_pHWALIAFU_AALService = pServiceBase;
+      ASSERT(NULL != m_pHWALIAFU_AALService);
+      if ( NULL == m_pHWALIAFU_AALService ) {
+         m_bIsOK = false;
+         return;
+      }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIMMIO as subclass interface. Used to set/get MMIO Region
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
+      // Documentation says HWALIAFU Service publishes
+      //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+      m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+      ASSERT(NULL != m_pALIBufferService);
+      if ( NULL == m_pALIBufferService ) {
+         m_bIsOK = false;
+         return;
+      }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface. Used for resetting the AFU
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
+      // Documentation says HWALIAFU Service publishes
+      //    IALIMMIO as subclass interface. Used to set/get MMIO Region
+      m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+      ASSERT(NULL != m_pALIMMIOService);
+      if ( NULL == m_pALIMMIOService ) {
+         m_bIsOK = false;
+         return;
+      }
+
+      // Documentation says HWALIAFU Service publishes
+      //    IALIReset as subclass interface. Used for resetting the AFU
+      m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+      ASSERT(NULL != m_pALIResetService);
+      if ( NULL == m_pALIResetService ) {
+         m_bIsOK = false;
+         return;
+      }
+   }
+   else if (rTranID == m_VTPTranID) {
+
+      // Save the IBase for the VTP Service.
+       m_pVTP_AALService = pServiceBase;
+       ASSERT(NULL != m_pVTP_AALService);
+       if ( NULL == m_pVTP_AALService ) {
+          m_bIsOK = false;
+          return;
+       }
+
+       // Documentation says VTP Service publishes
+       //    IVTPService as subclass interface. Used for allocating shared
+       //    buffers that support virtual addresses from AFU
+       m_pVTPService = dynamic_ptr<IVTPService>(iidVTPService, pServiceBase);
+       ASSERT(NULL != m_pVTPService);
+       if ( NULL == m_pVTPService ) {
+          m_bIsOK = false;
+          return;
+       }
+   }
+   else
+   {
+      ERR("Unknown transaction ID encountered on serviceAllocated().");
       m_bIsOK = false;
       return;
    }
