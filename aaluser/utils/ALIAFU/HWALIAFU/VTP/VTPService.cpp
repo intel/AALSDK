@@ -174,9 +174,23 @@ btBool VTPService::Release(TransactionID const &rTranID, btTime timeout)
 ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
                                          btVirtAddr    *pBufferptr,
                                          NamedValueSet *pOptArgs) {
+   ERR("NOT IMPLEMENTED");
+   return ali_errnumNoMem;
+}
+
+ali_errnum_e VTPService::bufferFreeAll() {
+   ERR("NOT IMPLEMENTED");
+   return ali_errnumNoMem;
+}
+
+ali_errnum_e VTPService::bufferFree( btVirtAddr Address) {
+   ERR("NOT IMPLEMENTED");
+   return ali_errnumNoMem;
 }
 
 btPhysAddr   VTPService::bufferGetIOVA(  btVirtAddr     Address) {
+   ERR("NOT IMPLEMENTED");
+   return ali_errnumNoMap;
 }
 
 /// @}

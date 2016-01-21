@@ -318,7 +318,7 @@ btInt HelloALIVTPNLBApp::run()
    }
 
    // Ask the ALI service for the VTP device feature header (DFH)
-   if (ali_errnumOK != m_pALIMMIOService->mmioGetFeature(GUID_BBB_VTP, 25, &m_pVTPDFH)) {
+   if (true != m_pALIMMIOService->mmioGetFeature(GUID_BBB_VTP, 25, &m_pVTPDFH)) {
       ERR("No VTP feature\n");
       m_bIsOK = false;
       m_Result = -1;
