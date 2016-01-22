@@ -46,6 +46,7 @@
 /// service methods are synchronous.
 ///
 /// AUTHORS: Enno Luebbers, Intel Corporation
+///          Michael Adler, Intel Corporation
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
@@ -60,6 +61,8 @@
 
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/uaia/IAFUProxy.h>
+
+#include "cci_mpf_shim_vtp_params.h"
 
 using namespace AAL;
 
@@ -111,8 +114,161 @@ public:
 protected:
    IServiceClient        *m_pSvcClient;
    IBase                 *m_pHWALIAFU;
+   IALIBuffer            *m_pALIBuffer;
    btVirtAddr             m_pDFHBaseAddr;
+
+   uint8_t               *m_pPageTable;
+   btPhysAddr             m_PageTablePA;
+   uint8_t               *m_pPageTableEnd;
+   uint8_t               *m_pPageTableFree;
+
+private:
+  //
+  // Add a new page to the table.
+  //
+  void InsertPageMapping(const void* va, btPhysAddr pa);
+
+  //
+  // Convert addresses to their component bit ranges
+  //
+  inline void AddrComponentsFromVA(uint64_t va,
+                                   uint64_t& tag,
+                                   uint64_t& idx,
+                                   uint64_t& byteOffset);
+
+  inline void AddrComponentsFromVA(const void* va,
+                                   uint64_t& tag,
+                                   uint64_t& idx,
+                                   uint64_t& byteOffset);
+
+  inline void AddrComponentsFromPA(uint64_t pa,
+                                   uint64_t& idx,
+                                   uint64_t& byteOffset);
+
+  //
+  // Construct a PTE from a virtual/physical address pair.
+  //
+  inline uint64_t AddrToPTE(uint64_t va, uint64_t pa);
+  inline uint64_t AddrToPTE(const void* va, uint64_t pa);
+
+  //
+  // Read a PTE or table index currently in the table.
+  //
+  void ReadPTE(const uint8_t* pte, uint64_t& vaTag, uint64_t& paIdx);
+  uint64_t ReadTableIdx(const uint8_t* p);
+
+  //
+  // Read a PTE or table index to the table.
+  //
+  void WritePTE(uint8_t* pte, uint64_t vaTag, uint64_t paIdx);
+  void WriteTableIdx(uint8_t* p, uint64_t idx);
+
+  // Dump the page table (debugging)
+  void DumpPageTable();
+
+   const size_t pageSize = MB(2);
+   const size_t pageMask = ~(pageSize - 1);
+
+   // Number of tag bits for a VA.  Tags are the VA bits not covered by
+   // the page offset and the hash table index.
+   const uint32_t vaTagBits = CCI_PT_VA_BITS -
+                              CCI_PT_VA_IDX_BITS -
+                              CCI_PT_PAGE_OFFSET_BITS;
+
+   // Size of a single PTE.  PTE is a tuple: VA tag and PA page index.
+   // The size is rounded up to a multiple of bytes.
+   const uint32_t pteBytes = (vaTagBits + CCI_PT_PA_IDX_BITS + 7) / 8;
+
+   // Size of a page table pointer rounded up to a multiple of bytes
+   const uint32_t ptIdxBytes = (CCI_PT_PA_IDX_BITS + 7) / 8;
+
+   // Number of PTEs that fit in a line.  A line is the basic entry in
+   // the hash table.  It holds as many PTEs as fit and ends with a pointer
+   // to the next line, where the list of PTEs continues.
+   const uint32_t ptesPerLine = (CL(1) - ptIdxBytes) / pteBytes;
+
 };
+
+
+
+inline void
+VTPService::AddrComponentsFromVA(
+    uint64_t va,
+    uint64_t& tag,
+    uint64_t& idx,
+    uint64_t& byteOffset)
+{
+    uint64_t v = va;
+
+    byteOffset = v & ((1LL << CCI_PT_PAGE_OFFSET_BITS) - 1);
+    v >>= CCI_PT_PAGE_OFFSET_BITS;
+
+    idx = v & ((1LL << CCI_PT_VA_IDX_BITS) - 1);
+    v >>= CCI_PT_VA_IDX_BITS;
+
+    tag = v & ((1LL << vaTagBits) - 1);
+
+    // Make sure no address bits were lost in the conversion.  The high bits
+    // beyond CCI_PT_VA_BITS are sign extended.
+    if (CCI_PT_VA_BITS != 64)
+    {
+        int64_t va_check = va;
+        // Shift all but the high bit of the VA range to the right.  All the
+        // resulting bits must match.
+        va_check >>= (CCI_PT_VA_BITS - 1);
+        ASSERT((va_check == 0) || (va_check == -1));
+    }
+}
+
+
+inline void
+VTPService::AddrComponentsFromVA(
+    const void *va,
+    uint64_t& tag,
+    uint64_t& idx,
+    uint64_t& byteOffset)
+{
+    AddrComponentsFromVA(uint64_t(va), tag, idx, byteOffset);
+}
+
+inline void
+VTPService::AddrComponentsFromPA(
+    uint64_t pa,
+    uint64_t& idx,
+    uint64_t& byteOffset)
+{
+    uint64_t p = pa;
+
+    byteOffset = p & ((1LL << CCI_PT_PAGE_OFFSET_BITS) - 1);
+    p >>= CCI_PT_PAGE_OFFSET_BITS;
+
+    idx = p & ((1LL << CCI_PT_PA_IDX_BITS) - 1);
+    p >>= CCI_PT_PA_IDX_BITS;
+
+    // PA_IDX_BITS must be large enough to represent all physical pages
+    ASSERT(p == 0);
+}
+
+inline uint64_t
+VTPService::AddrToPTE(
+    uint64_t va,
+    uint64_t pa)
+{
+    ASSERT((pa & ~((1LL << CCI_PT_PA_IDX_BITS) - 1)) == 0);
+
+    return ((va << CCI_PT_PA_IDX_BITS) | pa);
+}
+
+inline uint64_t
+VTPService::AddrToPTE(
+    const void* va,
+    uint64_t pa)
+{
+    return AddrToPTE(uint64_t(va), pa);
+}
+
+
+
 
 /// @}
 

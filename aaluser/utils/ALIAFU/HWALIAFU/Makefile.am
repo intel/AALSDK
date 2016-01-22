@@ -60,8 +60,7 @@ $(top_builddir)/aas/AIAService/libaia.la
 
 libVTPService_la_SOURCES=\
 VTP/AFU.h \
-VTP/cci_mpf_shim_vtp.h \
-VTP/cci_mpf_shim_vtp.cpp \
+VTP/cci_mpf_shim_vtp_params.h \
 VTP/VTPService.h \
 VTP/VTPService-internal.h \
 VTP/VTPService.cpp
