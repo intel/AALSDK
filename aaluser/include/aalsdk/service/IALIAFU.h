@@ -54,6 +54,11 @@
 
 BEGIN_NAMESPACE(AAL)
 
+// FIXME: declare this where it should be declared...
+#ifndef ALI_MMAP_TARGET_VADDR
+#define ALI_MMAP_TARGET_VADDR "ALIMmapTargetVAddr"
+#endif
+
 /// @addtogroup IALIAFU
 /// @{
 
@@ -318,7 +323,7 @@ public:
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet       *pOptArgs = NULL ) = 0;
+                                             NamedValueSet const &optArgs = NamedValueSet() ) = 0;
 
    /// @brief Free a previously-allocated Workspace.
    ///

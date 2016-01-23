@@ -60,6 +60,7 @@
 #include <aalsdk/utils/AALEventUtilities.h>      // Used for UnWrapAndReThrow()
 
 #include <aalsdk/aas/AALInProcServiceFactory.h>  // Defines InProc Service Factory
+#include <aalsdk/service/IALIAFU.h>
 
 #include "VTPService-internal.h"
 
@@ -174,16 +175,12 @@ btBool VTPService::init( IBase *pclientBase,
    }
    m_pDFHBaseAddr = reinterpret_cast<btVirtAddr>(tmp);
 
-   // FIXME: we need a way to allocate buffers without mmapping them
-   //        either new method of IALIBuffer, or give VTPService
-   //        access to AFUProxy (how?)
-
    ali_errnum_e err;
 
    // Allocate the page table.  The size of the page table is a function
    // of the PTE index space.
    size_t pt_size = (1LL << CCI_PT_LINE_IDX_BITS) * CL(1);
-   err = m_pALIBuffer->bufferAllocate(pt_size, &m_pPageTable, NULL);
+   err = m_pALIBuffer->bufferAllocate(pt_size, &m_pPageTable);
    ASSERT(err == ali_errnumOK && m_pPageTable);
 
    // clear table
@@ -222,8 +219,10 @@ btBool VTPService::Release(TransactionID const &rTranID, btTime timeout)
 
 ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
                                          btVirtAddr    *pBufferptr,
-                                         NamedValueSet *pOptArgs) {
+                                         NamedValueSet const &optArgs) {
    AutoLock(this);
+
+   // FIXME: optArgs are ignored here...
 
    // Align request to page size
    Length = (Length + pageSize - 1) & pageMask;
@@ -267,11 +266,18 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
    // Buffer mapping will begin at the end of the va_aligned region
    void* va_alloc = (void*)(size_t(va_aligned) + pageSize * (n_buffers - 1));
 
+   // Prepare bufferAllocate's optional argument to mmap() to a specific address
+   NamedValueSet *bufAllocArgs = new NamedValueSet();
+
    // Allocate the buffers
    for (size_t i = 0; i < n_buffers; i++)
    {
       // FIXME: this is still working around bufferAllocate() allocating
       //        AND mmapping a buffer.
+
+      // set target virtual address for new buffer
+      bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR, va_alloc);
+
       // Get a page size buffer
       void *buffer;
       ali_errnum_e err = m_pALIBuffer->bufferAllocate(pageSize, (btVirtAddr*)&buffer);
@@ -290,7 +296,8 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
          va_base_len -= pageSize;
        }
 
-       // Move the shared buffer's VA to the proper slot
+       // If we didn't get the mapping on our bufferAllocate(), move the shared
+       // buffer's VA to the proper slot
        if (buffer != va_alloc)
        {
           printf("remap %p to %p\n", (void*)buffer, va_alloc);
@@ -311,6 +318,9 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
 
        ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
+
+       // prepare optArgs for next allocation
+       bufAllocArgs->Delete(ALI_MMAP_TARGET_VADDR);
 
    }
 

@@ -480,7 +480,7 @@ btBool  HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt 
 //
 AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
                                             btVirtAddr    *pBufferptr,
-                                            NamedValueSet *pOptArgs)
+                                            NamedValueSet const &pOptArgs)
 {
    AutoLock(this);
    *pBufferptr = NULL;
@@ -504,7 +504,7 @@ AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
    struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
 
    // mmap
-   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr, pOptArgs)) {
       AAL_ERR( LM_All, "FATAL: MapWSID failed");
       return ali_errnumSystem;
    }

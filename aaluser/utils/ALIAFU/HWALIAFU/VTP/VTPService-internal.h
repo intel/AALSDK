@@ -104,7 +104,7 @@ public:
 // <IVTPService>
    ali_errnum_e bufferAllocate( btWSSize       Length,
                                 btVirtAddr    *pBufferptr,
-                                NamedValueSet *pOptArgs);
+                                NamedValueSet const &optArgs = NamedValueSet());
    ali_errnum_e bufferFree(     btVirtAddr     Address);
    ali_errnum_e bufferFreeAll();
    btPhysAddr   bufferGetIOVA(  btVirtAddr     Address);

@@ -126,7 +126,7 @@ public:
    // <IALIBuffer>
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet       *pOptArgs = NULL );
+                                             NamedValueSet const &pOptArgs = NamedValueSet() );
    virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address);
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
    // </IALIBuffer>
