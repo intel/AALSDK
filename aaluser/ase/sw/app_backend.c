@@ -434,7 +434,8 @@ void mmio_read32(uint32_t offset, uint32_t *data)
       // Write data
       data = (uint32_t*)((uint64_t)mmio_afu_vbase + offset);
       *data = (uint32_t)mmio_pkt->qword[0];
-
+      printf("  [APP]  MMIO Read Resp : %x\n", *data);
+      END_YELLOW_FONTCOLOR;
       free(mmio_pkt);
     }
 
@@ -478,7 +479,7 @@ void mmio_read64(uint32_t offset, uint64_t *data)
       // Write data
       data = (uint64_t*)((uint64_t)mmio_afu_vbase + offset);
       *data = mmio_pkt->qword[0];
-
+      printf("  [APP]  MMIO Read Resp : %llx\n", (unsigned long long)*data);
       free(mmio_pkt);
     }
 

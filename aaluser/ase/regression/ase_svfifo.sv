@@ -117,30 +117,23 @@ module ase_svfifo
    logic 			  rd_en_tmp;
      
    svfifo #(DATA_WIDTH, DEPTH_BASE2, ALMFULL_THRESH)
-   svfifo (clk, rst, wr_en, data_in, rd_en_tmp, data_out_tmp, data_out_v_tmp, alm_full, full, empty_tmp, count, overflow, underflow);
+   svfifo (clk, rst, wr_en, data_in, 
+	   rd_en_tmp, data_out_tmp, data_out_v_tmp, 
+	   alm_full, full, empty_tmp, count, overflow, underflow);
+  
+  
+   assign rd_en_tmp = ~empty_tmp && (~data_out_v_tmp || rd_en);
+   assign empty = ~data_out_v;
 
    always @(posedge clk) begin
-      data_out <= data_out_tmp;
-      data_out_v <= data_out_v_tmp;
-   end
-
-   assign rd_en_tmp = rd_en | rd_en_trig;
-      
-   always @(posedge clk) begin
-      if (rst) begin
-	 // data_out <= 0;
-	 // data_out_v <= 0;
-	 rd_en_tmp <= 0;	 
-      end
-      else if (~empty_tmp & ~data_out_v) begin
-	 // data_out <= data_out_tmp;
-	 // data_out_v <= data_out_v_tmp;
-	 rd_en_tmp <= 1;	 
-      end
-      else if (rd_en) begin
-	 rd_en_tmp <= rd_en
+      if (rst)
+	data_out_v <= 0;
+      else begin
+	 if (rd_en_tmp)
+	   data_out_v <= 1;
+	 else if (rd_en)
+	   data_out_v <= 0;	 
       end
    end
-   
    
 endmodule

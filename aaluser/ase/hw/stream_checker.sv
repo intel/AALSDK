@@ -8,17 +8,17 @@ module stream_checker
    (
     input logic 		clk,
     input logic 		valid_in,
-    input logic [HDR_WIDTH-1:0] meta_in,
+    input 			TxHdr_t meta_in,
     input logic [TID_WIDTH-1:0] tid_in,
     input logic 		valid_out,
-    input logic [HDR_WIDTH-1:0] meta_out,
+    input 			TxHdr_t meta_out,
     input logic [TID_WIDTH-1:0] tid_out    
     );
 
    int 			  check_array[*];
    
    always @(posedge clk) begin
-      if (valid_in && (meta_in[`TX_META_TYPERANGE] != CCIP_WRFENCE)) begin
+      if (valid_in && (meta_in.reqtype != CCIP_WRFENCE)) begin
 	 check_array[tid_in] = meta_in;	 
       end
       if (valid_out) begin

@@ -1,7 +1,7 @@
 module tb_ase_fifo();
 
-   parameter DATA_WIDTH = 64;
-   parameter MAX_COUNT = 1000;
+   parameter DATA_WIDTH = 65536;
+   parameter MAX_COUNT = 256;
 
    logic clk, rst, full, empty, valid_in, valid_out, read_en;
    logic [DATA_WIDTH-1:0] data_in, data_out;
@@ -30,11 +30,11 @@ module tb_ase_fifo();
    end
 
    // simkill
-   initial begin
-      wait (wr_iter >= MAX_COUNT);
-      #400;
-      $finish;
-   end
+   // initial begin
+   //    wait (wr_iter >= MAX_COUNT);
+   //    #400;
+   //    $finish;
+   // end
 
    // Enable reads
    initial begin
@@ -52,10 +52,11 @@ module tb_ase_fifo();
 	 wr_iter <= 0;
       end
       else begin
-	 if ((~full) && (wr_iter <= MAX_COUNT))  begin
-	    wr_iter <= wr_iter + 1;
+	 if ((~full) && (wr_iter < MAX_COUNT) )  begin
+	    // wr_iter <= wr_iter + 1;
 	    valid_in <= 1;
 	    data_in <= 64'hCAFEBABE_00000000 + wr_iter;
+	    wr_iter <= wr_iter + 1;      
 	 end
 	 else begin
 	    valid_in <= 0;
@@ -63,7 +64,14 @@ module tb_ase_fifo();
       end
    end
 
-   // Print process
+   // always @(posedge clk) begin
+   //    if (rst)
+   // 	wr_iter <= 0;
+   //    else if (valid_in)
+   // 	wr_iter <= wr_iter + 1;      
+   // end
+   
+   // print process
    always @(posedge clk) begin
       if (valid_in)  $display ("WRITE => %d | %x", wr_iter, data_in);
       if (valid_out) $display ("READ  => %d | %x", rd_iter, data_out );
@@ -72,30 +80,40 @@ module tb_ase_fifo();
    // Read process
    logic read_trig;
 
-   always @(posedge clk) begin
-      if (rst) begin
-   	 // read_trig <= 0;
-   	 read_en <= 0;
-   	 rd_iter <= 0;
-      end
-      else begin
-   	 if (~empty && start_reading) begin
-   	    read_en <= 1;
-   	    rd_iter <= rd_iter + 1;
-   	 end
-   	 else begin
-   	    read_en <= 0;
-   	 end
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (rst) begin
+   // 	 // read_trig <= 0;
+   // 	 read_en <= 0;
+   // 	 // rd_iter <= 0;
+   //    end
+   //    else begin
+   // 	 if (~empty && start_reading) begin
+   // 	    read_en <= 1;
+   // 	 end
+   // 	 else begin
+   // 	    read_en <= 0;
+   // 	 end
+   //    end      
+   // end
 
+   always @(posedge clk) begin
+     if (rst)
+       rd_iter <= 0;
+     else if (valid_out)
+       rd_iter <= rd_iter + 1;
+   end
    
-   //   read_en = ~empty && read_trig;
+   always @(posedge clk)
+     read_en <= ~empty;
+// && read_trig;
 
 
    initial begin
-      #400000;
+      // #1000_00;
+      wait until (rd_iter == MAX_COUNT);
+      #200;		  
       $display(check_array);
+      $display(rd_iter);      
       $finish;
    end
 

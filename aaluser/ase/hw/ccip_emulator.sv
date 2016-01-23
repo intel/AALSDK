@@ -1165,6 +1165,7 @@ module ccip_emulator
     */
    outoforder_wrf_channel
      #(
+       .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
        // .HDR_WIDTH           (CCIP_TX_HDR_WIDTH),
        // .DATA_WIDTH          (CCIP_DATA_WIDTH),
@@ -1185,10 +1186,10 @@ module ccip_emulator
       .valid_out	( cf2as_latbuf_ch0_valid ),
       .read_en		( cf2as_latbuf_ch0_pop ),
       .empty		( cf2as_latbuf_ch0_empty ),
-      .full             ( C0TxAlmFull ),
-      .overflow         ( tx0_overflow ),
-      .underflow        ( tx0_underflow ),
-      .count            ( cf2as_latbuf_ch0_count )
+      .full             ( C0TxAlmFull )
+      // .overflow         ( tx0_overflow ),
+      // .underflow        ( tx0_underflow ),
+      // .count            ( cf2as_latbuf_ch0_count )
       );
 
    // assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
@@ -1306,6 +1307,7 @@ module ccip_emulator
     */
    outoforder_wrf_channel
      #(
+       .DEBUG_LOGNAME       ("latbuf_ch1.log"),
        .NUM_WAIT_STATIONS(LATBUF_NUM_TRANSACTIONS),
        // .DATA_WIDTH       (CCIP_DATA_WIDTH),
        .COUNT_WIDTH      (LATBUF_COUNT_WIDTH)
@@ -1325,10 +1327,10 @@ module ccip_emulator
       .valid_out	( cf2as_latbuf_ch1_valid),
       .read_en		( cf2as_latbuf_ch1_pop  ),
       .empty		( cf2as_latbuf_ch1_empty ),
-      .full             ( C1TxAlmFull ),
-      .overflow         ( tx1_overflow ),
-      .underflow        ( tx1_underflow ),
-      .count            ( cf2as_latbuf_ch1_count )
+      .full             ( C1TxAlmFull )
+      // .overflow         ( tx1_overflow ),
+      // .underflow        ( tx1_underflow ),
+      // .count            ( cf2as_latbuf_ch1_count )
       );
 
 
@@ -1943,20 +1945,20 @@ module ccip_emulator
    endtask
 
    // Flow error messages
-   always @(posedge clk) begin : overflow_error
-      if (tx0_overflow) begin
-	 flowerror_simkill($time, 0);
-      end
-      if (tx0_underflow) begin
-	 flowerror_simkill($time, 0);
-      end
-      if (tx1_overflow) begin
-	 flowerror_simkill($time, 1);
-      end
-      if (tx1_underflow) begin
-	 flowerror_simkill($time, 1);
-      end
-   end
+   // always @(posedge clk) begin : overflow_error
+   //    if (tx0_overflow) begin
+   // 	 flowerror_simkill($time, 0);
+   //    end
+   //    if (tx0_underflow) begin
+   // 	 flowerror_simkill($time, 0);
+   //    end
+   //    if (tx1_overflow) begin
+   // 	 flowerror_simkill($time, 1);
+   //    end
+   //    if (tx1_underflow) begin
+   // 	 flowerror_simkill($time, 1);
+   //    end
+   // end
 
 
    /*
@@ -2139,10 +2141,10 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("cf2as_latbuf_ch0 dropped =>");
-	 // $display(cci_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 // $display("cf2as_latbuf_ch1 dropped =>");
-	 // $display(cci_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 $display("cf2as_latbuf_ch0 dropped =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 $display("cf2as_latbuf_ch1 dropped =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");
