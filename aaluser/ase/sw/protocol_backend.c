@@ -166,43 +166,14 @@ void mmio_response (struct mmio_t *mmio_pkt)
 {
   FUNC_CALL_ENTRY;
 
-  uint64_t *mmio_addr64;
-  uint32_t *mmio_addr32;
-  // char *mmio_str;
-#if 0
-  if (mmio_pkt->type == MMIO_READ_REQ)
-    {
-      if (mmio_pkt->width == MMIO_WIDTH_32)
-	{
-	  mmio_addr32 = (uint32_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
-	  memcpy(mmio_addr32, mmio_pkt->qword, sizeof(uint32_t));
-	  *mmio_addr32 = (uint32_t) mmio_pkt->qword[0];
-        /* #ifdef ASE_DEBUG */
-	/*   BEGIN_YELLOW_FONTCOLOR; */
-	/*   printf("  [DEBUG] mmio_rdrspaddr32 = %p\n", mmio_addr32); */
-	/*   printf("  [DEBUG] mmio_rddata32    = %x\n", *mmio_addr32); */
-	/*   END_YELLOW_FONTCOLOR; */
-        /* #endif */
-	}
-      else if (mmio_pkt->width == MMIO_WIDTH_64)
-	{
-	  mmio_addr64 = (uint64_t*)((uint64_t)mmio_afu_vbase + (uint64_t)mmio_pkt->addr);
-	  memcpy(mmio_addr64, mmio_pkt->qword, sizeof(uint64_t));
-	  *mmio_addr64 = (uint64_t) mmio_pkt->qword[0];
-        /* #ifdef ASE_DEBUG */
-	/*   BEGIN_YELLOW_FONTCOLOR; */
-	/*   printf("  [DEBUG] mmio_rdrspaddr64 = %p\n", mmio_addr64); */
-	/*   printf("  [DEBUG] mmio_rddata64    = %llx\n", (unsigned long long)*mmio_addr64); */
-	/*   END_YELLOW_FONTCOLOR; */
-        /* #endif */
-	}
-    }
-
-  /* mmio_str = (char *) ase_malloc(ASE_MQ_MSGSIZE); */
-  /* memset(mmio_str, '\0', ASE_MQ_MSGSIZE); */
-  /* memcpy(mmio_str, (char*) mmio_pkt, sizeof(mmio_pkt)); */
-  /* mqueue_send(sim2app_mmiorsp_tx, mmio_str); */
-#endif
+/* #ifdef ASE_DEBUG */
+/*   BEGIN_YELLOW_FONTCOLOR; */
+/*   printf("  [DEBUG]  mmio_response =>\n"); */
+/*   printf("  [DEBUG]  width=%d, addr=%x, resp_en=%d\n", mmio_pkt->width, mmio_pkt->addr, mmio_pkt->resp_en); */
+/*   printf("  [DEBUG]  data=%llx\n", mmio_pkt->qword[0]); */
+/*   END_YELLOW_FONTCOLOR; */
+/* #endif */
+  
   mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;
@@ -307,7 +278,18 @@ int ase_listener()
 
 	  // Format workspace info string
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
-	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
+	  if (ase_buffer.is_mmiomap) 
+	    {
+	      sprintf(logger_str + strlen(logger_str), "\nMMIO map Allocated =>\n");
+	    }
+	  else if (ase_buffer.is_umas)
+	    {
+	      sprintf(logger_str + strlen(logger_str), "\nUMAS Allocated =>\n");
+	    }
+	  else
+	    {
+	      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
+	    }
 	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));

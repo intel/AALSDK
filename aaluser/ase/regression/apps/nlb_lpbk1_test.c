@@ -21,7 +21,6 @@
 #define CSR_INTERRUPT0           0x150
 #define DSM_STATUS_TEST_COMPLETE 0x40
 
-
 int main(int argc, char *argv[])
 {
   int num_cl;
@@ -128,22 +127,31 @@ int main(int argc, char *argv[])
 
   /* for(i= 0; i < 10000; i++) */
   /*   { */
-      mmio_write64(CSR_SRC_ADDR, (src->fake_paddr >> 6));      
-      mmio_write64(CSR_DST_ADDR, (dst->fake_paddr >> 6));
-    /* } */
+  mmio_write64(CSR_SRC_ADDR, (src->fake_paddr >> 6));      
+  mmio_write64(CSR_DST_ADDR, (dst->fake_paddr >> 6));
+  /* } */
   
-  uint64_t *data64;
-  uint32_t *data32;
+  uint64_t data64;
+  uint32_t data32;
   /* for(i= 0; i < 10000; i++) */
-  /* while(1) */
-  /*   { */
-  mmio_read64(CSR_SRC_ADDR, data64 );      
-  mmio_read64(CSR_DST_ADDR, data64 );      
-  
-  mmio_read32(CSR_SRC_ADDR, data32 );
-  mmio_read32(CSR_SRC_ADDR + 4, data32 );
-  mmio_read32(CSR_DST_ADDR, data32 );
-  mmio_read32(CSR_DST_ADDR + 4, data32 );
+
+  while(1)
+    {
+      mmio_read64(AFU_ID_L, &data64 );
+      printf("data64 = %llx\n", (unsigned long long)data64);
+      mmio_read64(AFU_ID_H, &data64 );
+      printf("data64 = %llx\n", (unsigned long long)data64);
+      
+      mmio_read32(AFU_ID_L, &data32 );
+      printf("data32 = %08x\n", (uint32_t)data32);
+      mmio_read32(AFU_ID_L + 4, &data32 );
+      printf("data32 = %08x\n", (uint32_t)data32);
+      mmio_read32(AFU_ID_H, &data32 );
+      printf("data32 = %08x\n", (uint32_t)data32);
+      mmio_read32(AFU_ID_H + 4, &data32 );
+      printf("data32 = %08x\n", (uint32_t)data32);
+    }
+
 
   mmio_write32(CSR_NUM_LINES, num_cl);
 

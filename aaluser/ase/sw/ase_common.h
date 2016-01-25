@@ -230,7 +230,7 @@ struct wsmeta_t
  * MMIO transaction packet
  */
 typedef struct mmio_t {
-  int type;
+  int write_en;
   int width;
   int addr;
   long long qword[8];

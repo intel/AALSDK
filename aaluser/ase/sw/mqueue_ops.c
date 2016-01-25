@@ -247,14 +247,15 @@ void mqueue_destroy(char* mq_name_suffix)
 void mqueue_send(int mq, char* str, int size)
 {
   FUNC_CALL_ENTRY;
-  int ret_tx;
+  // int ret_tx;
 
   /* char msg[ASE_MQ_MSGSIZE]; */
   /* memset(msg, '0', ASE_MQ_MSGSIZE); */
   /* memcpy(msg, str, size); */
   /* write(mq, msg, ASE_MQ_MSGSIZE); */
 
-  ret_tx = write(mq, (void*)str, size);
+  //ret_tx = 
+  write(mq, (void*)str, size);
   //  printf("status %s\n", strerror(errno)); 
 
   FUNC_CALL_EXIT;

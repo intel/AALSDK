@@ -555,28 +555,58 @@ module ccip_emulator
       .underflow  (  )
       );
 
+   // MMIO Response mask (act by reference)
+   function void mmio_rsp_mask( ref mmio_t mmio_in );
+      begin
+	 // Data
+	 mmio_in.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
+	 if (mmio_in.width == 32) begin
+	    mmio_in.qword[0][63:32] = 32'b0;	    
+	 end
+	 mmio_in.qword[1] = 0;
+	 mmio_in.qword[2] = 0;
+	 mmio_in.qword[3] = 0;
+	 mmio_in.qword[4] = 0;
+	 mmio_in.qword[5] = 0;
+	 mmio_in.qword[6] = 0;
+	 mmio_in.qword[7] = 0;
+	 // Response flag
+	 mmio_in.resp_en  = 1;
+	 // Return
+      end
+   endfunction
+
+   // MMIO Response trigger
+   always @(posedge clk) begin
+      mmioresp_read <= ~mmioresp_empty;      
+   end     
+   
    // FIFO writes to memory
    always @(posedge clk) begin
-      if (~sys_reset_n) begin
-	 mmioresp_read <= 0;
-      end
-      else begin
-   	 if (~mmioresp_empty) begin
-   	    mmioresp_read <= ~mmioresp_empty;
-	    mmio_resp_pkt.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
-	    mmio_resp_pkt.qword[1] = 0;
-	    mmio_resp_pkt.qword[2] = 0;
-	    mmio_resp_pkt.qword[3] = 0;
-	    mmio_resp_pkt.qword[4] = 0;
-	    mmio_resp_pkt.qword[5] = 0;
-	    mmio_resp_pkt.qword[6] = 0;
-	    mmio_resp_pkt.qword[7] = 0;
+      // if (~sys_reset_n) begin
+      // 	 // mmioresp_read <= 0;
+	 
+      // end
+      // else begin
+   	 // if (~mmioresp_empty) begin
+   	 if (mmioresp_valid) begin
+   	    // mmioresp_read <= ~mmioresp_empty;
+	    // mmio_resp_pkt.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
+	    // mmio_resp_pkt.qword[1] = 0;
+	    // mmio_resp_pkt.qword[2] = 0;
+	    // mmio_resp_pkt.qword[3] = 0;
+	    // mmio_resp_pkt.qword[4] = 0;
+	    // mmio_resp_pkt.qword[5] = 0;
+	    // mmio_resp_pkt.qword[6] = 0;
+	    // mmio_resp_pkt.qword[7] = 0;
+	    // mmio_resp_pkt.resp_en  = 1;
+	    mmio_rsp_mask(mmio_resp_pkt);	    
    	    mmio_response ( mmio_resp_pkt );
    	 end
-   	 else begin
-   	    mmioresp_read <= 0;
-   	 end
-      end
+   	 // else begin
+   	 //    // mmioresp_read <= 0;
+      // end
+      // end
    end
 
 

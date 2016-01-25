@@ -132,7 +132,7 @@ module ccip_logger
 	   CCIP_WRLINE_M : return "WrLine_M   ";
 	   CCIP_WRFENCE  : return "WrFence    ";
 	   CCIP_INTR_REQ : return "IntrReq    ";
-	   default       : return "** ERROR %m : " + req + " **" ;
+	   default       : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
    endfunction
