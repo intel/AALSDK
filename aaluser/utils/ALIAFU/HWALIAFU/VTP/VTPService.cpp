@@ -223,6 +223,9 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
    AutoLock(this);
 
    // FIXME: optArgs are ignored here...
+   // FIXME: we can support optArg ALI_MMAP_TARGET_VADDR also for
+   //        large VTP mappings (need to add MAP_FIXED to the first mmap
+   //        below).
 
    // Align request to page size
    Length = (Length + pageSize - 1) & pageMask;
@@ -272,15 +275,12 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
    // Allocate the buffers
    for (size_t i = 0; i < n_buffers; i++)
    {
-      // FIXME: this is still working around bufferAllocate() allocating
-      //        AND mmapping a buffer.
-
       // set target virtual address for new buffer
       bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR, va_alloc);
 
       // Get a page size buffer
       void *buffer;
-      ali_errnum_e err = m_pALIBuffer->bufferAllocate(pageSize, (btVirtAddr*)&buffer);
+      ali_errnum_e err = m_pALIBuffer->bufferAllocate(pageSize, (btVirtAddr*)&buffer, *bufAllocArgs);
       ASSERT(err == ali_errnumOK && buffer != NULL);
 
       // Shrink the reserved area in order to make a hole in the virtual
@@ -294,35 +294,40 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
       {
          ASSERT(mremap(va_base, va_base_len, va_base_len - pageSize, 0) == va_base);
          va_base_len -= pageSize;
-       }
+      }
 
-       // If we didn't get the mapping on our bufferAllocate(), move the shared
-       // buffer's VA to the proper slot
-       if (buffer != va_alloc)
-       {
-          printf("remap %p to %p\n", (void*)buffer, va_alloc);
-          ASSERT(mremap((void*)buffer, pageSize, pageSize,
+      // If we didn't get the mapping on our bufferAllocate(), move the shared
+      // buffer's VA to the proper slot
+      // This should not happen, as we requested the proper VA above.
+      // TODO: remove
+      ASSERT(buffer == va_alloc);
+      if (buffer != va_alloc)
+      {
+         printf("remap %p to %p\n", (void*)buffer, va_alloc);
+         ASSERT(mremap((void*)buffer, pageSize, pageSize,
                         MREMAP_MAYMOVE | MREMAP_FIXED,
                         va_alloc) == va_alloc);
-       }
+      }
 
-       // Add the mapping to the page table
-       InsertPageMapping(va_alloc, m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer));
+      // Add the mapping to the page table
+      InsertPageMapping(va_alloc, m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer));
 
-       // Next VA
-       va_alloc = (void*)(size_t(va_alloc) - pageSize);
+      // Next VA
+      va_alloc = (void*)(size_t(va_alloc) - pageSize);
 
-       // AAL gets confused if the same VA reappears.  Lock the VA returned
-       // by AAL even though it isn't needed any more.
-       mmap((void*)buffer, getpagesize(), PROT_READ,
-            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
+      // AAL gets confused if the same VA reappears.  Lock the VA returned
+      // by AAL even though it isn't needed any more.
+      mmap((void*)buffer, getpagesize(), PROT_READ,
+           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
 
-       ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
+      ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
 
-       // prepare optArgs for next allocation
-       bufAllocArgs->Delete(ALI_MMAP_TARGET_VADDR);
+      // prepare optArgs for next allocation
+      bufAllocArgs->Delete(ALI_MMAP_TARGET_VADDR);
 
    }
+
+   delete bufAllocArgs;
 
    if (va_base_len != 0)
    {
