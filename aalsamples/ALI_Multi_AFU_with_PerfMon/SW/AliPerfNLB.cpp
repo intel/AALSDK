@@ -676,7 +676,7 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
 
     NamedValueSet PerfMon;
 
-    m_pALIPerf->performanceCountersGet(&PerfMon,NULL);
+    m_pALIPerf->performanceCountersGet(&PerfMon);
 
     btUnsigned64bitInt     value;
     MSG("\n ************* PERFOAMCNE COUNTERS START  ******************\n \n");
