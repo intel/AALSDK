@@ -113,6 +113,7 @@ typedef enum
 #define ALI_AFUID_UAFU_CONFIG       "A3AAB285-79A0-4572-83B5-4FD5E5216870"
 
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
 
 /// Key for selecting an AFU delegate.
 #define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
@@ -500,8 +501,10 @@ class IALIReconfigure
 public:
    virtual ~IALIReconfigure() {}
 
-   #define AALCONF_FILENAMEKEY          "BitStreamFile"
-   #define AALCONF_FILENAMETYPE         btString
+   #define AALCONF_FILENAMEKEY            "BitStreamFile"
+   #define AALCONF_FILENAMETYPE           btString
+   #define AALCONF_BUFPTRKEY              "BufPointer"
+   #define AALCONF_BUFSIZE                "BufSize"
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///

@@ -74,9 +74,6 @@
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/aalinterface.h"
 #include "aalsdk/kernel/ccip_defs.h"
-//#include "aalsdk/kernel/aalids.h"
-//#include "aalsdk/kernel/aalrm.h"
-//#include "aalsdk/kernel/aalqueue.h"
 
 #include "cci_pcie_driver_internal.h"
 
@@ -127,7 +124,7 @@ module_param    (sim, ulong, S_IRUGO);
 //=============================================================================
 
 btUnsignedInt debug = 0
-#if 1
+#if 0
 /* Type and Level selection flags */
    | PTRACE_FLAG
    | PVERBOSE_FLAG
@@ -159,7 +156,7 @@ module_param    (debug, int, 0644);
 //=============================================================================
 static ssize_t ahmpip_attrib_show_debug(struct device_driver *drv, char *buf)
 {
-   return (snprintf(buf,PAGE_SIZE,"%d\n",debug));
+   return (snprintf(buf,PAGE_SIZE,"%x\n",debug));
 }
 
 //=============================================================================
@@ -172,7 +169,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
                                          size_t size)
 {
    int temp = 0;
-   sscanf(buf,"%d", &temp);
+   sscanf(buf,"%x", &temp);
 
    debug = temp;
 
@@ -578,12 +575,15 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          // Added it to the port list
          kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
 
+         // Save the FME parent for this port
+         ccip_port_dev_fme(pportdev) = pfme_dev;
+
          PDEBUG("Creating Allocatable objects\n");
 
          // Instantiate allocatable objects including AFUs if present.
          //   Subdevice addresses start at 10x the 1 based port number to leave room for
          //   10 devices beneath the port. E.e., STAP, PR, User AFU
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, (i+1)) * 10){
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i) ){
             goto ERR;
          }
       }// End for loop

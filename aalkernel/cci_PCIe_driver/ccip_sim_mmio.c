@@ -362,7 +362,9 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_data.csr);
 
-
+   fme_pr.ccip_fme_pr_err.csr = 0;
+   offset = offset + OFFSET;
+   write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_err.csr);
    return 0;
    PINFO(" ccip_sim_wrt_fme_mmio end\n");
 
@@ -842,6 +844,9 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "pr_credit = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_credit);
 
       PDEBUG( "pr_data_raw = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_data.pr_data_raw);
+
+      PDEBUG( "ccip_fme_pr_err = %llx \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.csr);
+
 
       PDEBUG( "FME PR Feature  END \n \n");
    }

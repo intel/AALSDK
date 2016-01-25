@@ -27,54 +27,34 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/SigTap/Makefile
+##     libuAIA: Intel(R) Accelerator Abstraction Layer Library
+##        Accelerator Abstraction Services
+##     aas/SigTapService/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
-##     Joseph Grecco, Intel Corporation
+##     Sadruta Chandrashekar, Intel Corporation
 ##  History:
-##     11/19/2015    JG   Initial version based off of canonical sample makefile
+##     12/7/2015    TSW   Initial version
+##     01/19/2016    SC   SignalTap  version
 ##******************************************************************************
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
 
-ifeq (,$(CFLAGS))
-CFLAGS = -g -O2
-endif
+# We _are_ dlopen'ing libaia.
 
-ifneq (,$(ndebug))
-else
-CPPFLAGS += -DENABLE_DEBUG=1
-endif
-ifneq (,$(nassert))
-else
-CPPFLAGS += -DENABLE_ASSERT=1
-endif
+lib_LTLIBRARIES=libsigtapservice.la
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
-            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
-endif
-else
-ifeq (,$(prefix))
-prefix = /usr/local
-endif
-CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
-            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
-endif
+libsigtapservice_la_SOURCES=\
+SigTapService.cpp \
+SigTapService.h
 
-all: ccisigtap
+libsigtapservice_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-ccisigtap: SigTap.o
-	$(CXX) $(CPPFLAGS) -o ccisigtap SigTap.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+libsigtapservice_la_LDFLAGS=\
+-module \
+-version-info $(SIGTAPSERVICE_VERSION_CURRENT):$(SIGTAPSERVICE_VERSION_REVISION):$(SIGTAPSERVICE_VERSION_AGE)
 
-SigTap.o: SigTap.cpp  Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 $(CFLAGS) -c -o SigTap.o SigTap.cpp
-
-clean:
-	$(RM) ccisigtap SigTap.o
-
-.PHONY:all clean
+libsigtapservice_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la

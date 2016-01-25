@@ -106,7 +106,9 @@
 
 #define MAX_VALID_NVS_ARRAY_ENTRIES (1024 * 1024)
 
-
+#if defined( __AAL_WINDOWS__ )
+# define  strdup _strdup
+#endif
 
 #ifdef __ICC                           /* Deal with Intel compiler-specific overly sensitive remarks (MASTER)*/
 //   #pragma warning( push)

@@ -404,11 +404,6 @@ private:
 //                with this PR.
 // Comments: Causes the AAL Object associated with the uAFU to be removed from
 //           the objects  available for allocation.
-// TODO: Initially a synchronous function. This function does NOT affect already
-//       allocated Objects. I.e., If the AFU is in use it will remain in use
-//       until released. It simply is not available for reallocation. If we
-//       want to change the behavior so that it notifies owners and/or yanks
-//       AFU away then it must become asynchronous.
 //=============================================================================
 class UAIA_API AFUDeactivateTransaction : public IAIATransaction
 {
@@ -436,5 +431,44 @@ private:
    AAL::uid_errnum_e             m_errno;
 
 };
+
+//=============================================================================
+// Name:          AFUConfigureTransaction
+// Description:   PR object Transaction for programming the User AFU associated
+//                with this PR.
+// Comments: Causes the AFU to be reprogrammed, deactivating if necessary.
+//           A number of options are available to tell the system how to deal
+//           with AFU's currently in use.
+//=============================================================================
+class UAIA_API AFUConfigureTransaction : public IAIATransaction
+{
+public:
+   AFUConfigureTransaction(AAL::btVirtAddr pBuf,
+                           AAL::btWSSize len,
+                           AAL::TransactionID const &rTranID,
+                           AAL::NamedValueSet const &rNVS = AAL::NamedValueSet());
+   AAL::btBool                      IsOK() const;
+
+   AAL::btVirtAddr                  getPayloadPtr() const;
+   AAL::btWSSize                    getPayloadSize() const;
+   AAL::stTransactionID_t const     getTranID() const;
+   AAL::uid_msgIDs_e                getMsgID() const;
+   AAL::uid_errnum_e                getErrno()const;
+   void                             setErrno(AAL::uid_errnum_e);
+
+
+   ~AFUConfigureTransaction();
+
+private:
+   AAL::uid_msgIDs_e             m_msgID;
+   AAL::stTransactionID_t        m_tid_t;
+   AAL::btBool                   m_bIsOK;
+   AAL::btVirtAddr               m_payload;
+   AAL::btWSSize                 m_size;
+   AAL::btWSSize                 m_bufLength;
+   AAL::uid_errnum_e             m_errno;
+
+};
+
 #endif // __AALSDK_AIATRANSACTIONS_H__
 

@@ -22,6 +22,7 @@
     <ProjectGuid>{314AD84F-1736-415A-98BD-33129F049FE3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>libaalrt</RootNamespace>
+    <ProjectName>libAALRuntime</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -109,8 +110,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;aalrt_EXPORTS;AASEDS_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AALRUNTIME_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SDLCheck>true</SDLCheck>
@@ -165,18 +166,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ServiceHost.cpp" />
-    <ClCompile Include="..\aalrtlib.cpp" />
-    <ClCompile Include="..\AALRUNTIME.cpp" />
-    <ClCompile Include="..\_xlMessageDelivery.cpp" />
-    <ClCompile Include="..\_AALRUNTIMEImpl.cpp" />
-    <ClCompile Include="..\_xlServiceBroker.cpp" />
+    <ClCompile Include="rtlib.cpp" />
+    <ClCompile Include="Runtime.cpp" />
+    <ClCompile Include="ServiceHost.cpp" />
+    <ClCompile Include="_MessageDelivery.cpp" />
+    <ClCompile Include="_RuntimeImpl.cpp" />
+    <ClCompile Include="_ServiceBroker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\AALRUNTIME.h" />
-    <ClInclude Include="..\_xlMessageDelivery.h" />
-    <ClInclude Include="..\_AALRUNTIMEImpl.h" />
-    <ClInclude Include="..\_xlServiceBroker.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\IServiceBroker.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\ServiceHost.h" />
+    <ClInclude Include="_MessageDelivery.h" />
+    <ClInclude Include="_RuntimeImpl.h" />
+    <ClInclude Include="_ServiceBroker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

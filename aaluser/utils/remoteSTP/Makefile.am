@@ -27,58 +27,34 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     SignalTapService/Makefile
+##     aalutils/remoteSTP/Makefile
 ##  Author:
-##     Joseph Grecco, Intel Corporation
+##     Tim Whisonant, Intel Corporation
+##     Sadruta Chandrashekar, Intel Corporation
 ##  History:
-##     11/19/2015    JG   Initial version based on canonical Service makefile
+##     07/21/2015    TSW   Initial version
+##     01/19/2016    SC    remoteSTP version
 ##******************************************************************************
-CPPFLAGS ?=
-CXX      ?= g++
-LDFLAGS  ?=
+bin_PROGRAMS=remoteSTP
 
-ifeq (,$(CFLAGS))
-CFLAGS = -g -O2
-endif
+remoteSTP_SOURCES=\
+SigTap.cpp \
+mm_debug_link_linux.cpp \
+mmlink_connection.cpp \
+mmlink_server.cpp \
+mm_debug_link_interface.h \
+mm_debug_link_linux.h \
+mmlink_connection.h \
+mmlink_server.h
 
+remoteSTP_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
-ifneq (,$(ndebug))
-else
-CPPFLAGS += -DENABLE_DEBUG=1
-endif
-ifneq (,$(nassert))
-else
-CPPFLAGS += -DENABLE_ASSERT=1
-endif
+remoteSTP_LDADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la \
+$(top_builddir)/clp/libaalclp.la
 
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-CPPFLAGS += -I$(prefix)/include
-LDFLAGS  += -L$(prefix)/lib -L$(prefix)/lib64
-endif
-else
-ifeq (,$(prefix))
-prefix = /usr/local
-endif
-CPPFLAGS += -I$(DESTDIR)$(prefix)/include
-LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -L$(DESTDIR)$(prefix)/lib64
-endif
-
-all: libsigtapservice.so libsigtapservice.so.0
-
-libsigtapservice.so: libsigtapservice.so.0.0.0
-	ln -sf libsigtapservice.so.0.0.0 libsigtapservice.so
-
-libsigtapservice.so.0: libsigtapservice.so.0.0.0
-	ln -sf libsigtapservice.so.0.0.0 libsigtapservice.so.0
-
-libsigtapservice.so.0.0.0: libsigtapservice.o
-	$(CXX) -fPIC -shared -Wl,-soname -Wl,libsigtapservice.so.0 libsigtapservice.o $(LDFLAGS) -lOSAL -lAAS -laalrt -o libsigtapservice.so.0.0.0
-
-libsigtapservice.o: SigTapService.cpp SigTapService.h Makefile
-	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1 -fPIC -DPIC $(CFLAGS) -c -o libsigtapservice.o SigTapService.cpp
-
-clean:
-	$(RM) libsigtapservice.so libsigtapservice.so.0 libsigtapservice.so.0.0.0 libsigtapservice.o
-
-.PHONY: all clean

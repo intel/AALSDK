@@ -246,7 +246,7 @@ enum e_CCIP_PR_Megafun_status {
 #define CCIP_STAP_GUIDL             (0xB6B03A385883AB8DULL)
 #define CCIP_STAP_GUIDH             (0x022F85B12CC24C9DULL)
 #define CCIP_STAP_PIPIID            (0xA710C842F06E45E0ULL)
-#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
+
 
 /// Partial Reconfiguration GUID
 #define CCIP_PR_GUIDL               (0x83B54FD5E5216870ULL)
@@ -838,8 +838,26 @@ struct CCIP_FME_DFL_PR {
 
    }ccip_fme_pr_data; // end struct CCIP_FME_PR_DATA
 
+   //Partial Reconfiguration data  CSR
+   struct CSR_FME_PR_ERROR {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt PR_Timeout_err :1;
+            btUnsigned64bitInt PR_FIFO_err :1;
+            btUnsigned64bitInt PR_IP_err :1;
+            btUnsigned64bitInt PR_bitstream_err :1;
+            btUnsigned64bitInt PR_CRC_err :1;
+            btUnsigned64bitInt PR_clear_status_err :1;
+            btUnsigned64bitInt rsvd : 58;
+         }; // end struct
+      }; // end union
+
+
+   }ccip_fme_pr_err; // end struct CCIP_FME_PR_ERR
+
 }; //end struct  CCIP_FME_GERROR_feature
-CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(4* 8));
+CASSERT(sizeof(struct CCIP_FME_DFL_PR) ==(5* 8));
 
 /******************************************************************************
  *  FPGA port header

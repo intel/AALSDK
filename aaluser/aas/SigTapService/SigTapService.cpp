@@ -48,9 +48,10 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include <aalsdk/AALLoggerExtern.h>
-#include <aalsdk/aas/AALInProcServiceFactory.h>
-#include <aalsdk/kernel/ccipdriver.h>
+#include "aalsdk/AALLoggerExtern.h"
+#include "aalsdk/aas/AALInProcServiceFactory.h"
+#include "aalsdk/kernel/ccipdriver.h"
+#include <aalsdk/service/IALIAFU.h>
 
 #include "SigTapService.h"
 
@@ -132,7 +133,7 @@ btBool SigTapService::init( IBase               *pclientBase,
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
 
    // the AFUID of Signal Tap device
-   ConfigRecord.Add(keyRegAFU_ID, CCIP_STAP_AFUID);
+   ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
 
    // indicate that this service needs to allocate an AIAService, too (to talk to the AFU)
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");

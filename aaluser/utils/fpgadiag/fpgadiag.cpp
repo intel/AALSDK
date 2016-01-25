@@ -235,11 +235,13 @@ CMyApp::CMyApp() :
    m_AFUTarget(DEFAULT_TARGET_AFU),
    m_DevTarget(DEFAULT_TARGET_DEV),
    m_pRuntime(NULL),
-   m_pAALService(NULL),
+   m_pNLBService(NULL),
+   m_pFMEService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIResetService(NULL),
    m_pALIuMSGService(NULL),
+   m_pALIPerf(NULL),
    m_isOK(false),
    m_DSMVirt(NULL),
    m_DSMPhys(0),
@@ -268,10 +270,17 @@ CMyApp::~CMyApp()
 
 void CMyApp::Stop()
 {
-   if ( NULL != m_pAALService ) {
-      m_pAALService->Release(TransactionID(), 0);
-      Wait(); // For service freed notification.
-      m_pAALService = NULL;
+	   // Freed all three so now Release() the Service through the Services IAALService::Release() method
+   if ( NULL != m_pFMEService ) {
+		 (dynamic_ptr<IAALService>(iidService, m_pFMEService))->Release(TransactionID());
+		 Wait(); // For service freed notification.
+		 m_pFMEService = NULL;
+   }
+
+   if ( NULL != m_pNLBService ) {
+		 (dynamic_ptr<IAALService>(iidService, m_pNLBService))->Release(TransactionID());
+		 Wait(); // For service freed notification.
+		 m_pNLBService = NULL;
    }
 
    if ( NULL != m_pRuntime ) {
@@ -300,7 +309,7 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-  if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
+   if ( 0 == strcmp(AFUTarget().c_str(), "ALIAFUTarget_FPGA") ) {      // Use FPGA hardware
 
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libAASUAIA");
@@ -335,15 +344,16 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_ASE") ) {         // Use ASE based RTL simulation
 
 	   Manifest.Add(keyRegHandle, 20);
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
+
+	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libASEALIAFU");
   	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-  	}else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {       // default is Software Simulator
+   }else if ( 0 == strcasecmp(AFUTarget().c_str(), "ALIAFUTarget_SWSIM") ) {       // default is Software Simulator
 
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
-  	   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+      ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libSWSimALIAFU");
+  	  ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
-  	}
+   }
 
   	Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
   	Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, AFUName);
@@ -353,7 +363,23 @@ void CMyApp::runtimeStarted(IRuntime            *pRT,
   	INFO(Manifest);
    #endif // DBG_HOOK
 
-  	pRT->allocService(dynamic_cast<IBase *>(this), Manifest);
+  	TransactionID afu_tid(CMyApp::AFU);
+  	pRT->allocService(dynamic_cast<IBase *>(this), Manifest, afu_tid);
+
+  	// Modify the manifest for the NLB AFU
+    Manifest.Delete(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED);
+    ConfigRecord.Delete(keyRegAFU_ID);
+
+    ConfigRecord.Add(keyRegAFU_ID, "BFAF2AE9-4A52-46E3-82FE-38F0F9E17764");
+    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
+
+	#if DBG_HOOK
+	INFO(Manifest);
+	#endif // DBG_HOOK
+
+	// Allocate the AFU
+	TransactionID fme_tid(CMyApp::FME);
+	pRT->allocService(dynamic_cast<IBase *>(this), Manifest, fme_tid);
 }
 
 void CMyApp::runtimeStopped(IRuntime *pRT)
@@ -382,14 +408,16 @@ void CMyApp::runtimeAllocateServiceFailed(IEvent const &e)
 }
 
 void CMyApp::runtimeAllocateServiceSucceeded(IBase               *pServiceBase,
-											            TransactionID const &tid)
+											 TransactionID const &tid)
 {
+#if 0
    m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
    ASSERT(NULL != m_pAALService);
    if ( NULL == m_pAALService ) {
       m_bIsOK = false;
       return;
    }
+#endif
 
    m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
    ASSERT(NULL != m_pALIBufferService);
@@ -451,86 +479,112 @@ void CMyApp::runtimeCreateOrGetProxyFailed(const IEvent &e)
 void CMyApp::serviceAllocated(IBase               *pServiceBase,
 							  TransactionID const &tid)
 {
-   m_pAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
-   ASSERT(NULL != m_pAALService);
-   if ( NULL == m_pAALService ) {
-      m_bIsOK = false;
-      return;
+
+	if(tid.ID() == CMyApp::AFU){
+
+	      // Save the IBase for the Service. Through it we can get any other
+	      //  interface implemented by the Service
+	      m_pNLBService = pServiceBase;
+	      ASSERT(NULL != m_pNLBService);
+	      if ( NULL == m_pNLBService ) {
+	         m_bIsOK = false;
+	         return;
+	      }
+
+	      // Documentation says HWALIAFU Service publishes
+	      //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	      m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
+	      ASSERT(NULL != m_pALIBufferService);
+	      if ( NULL == m_pALIBufferService ) {
+	         m_bIsOK = false;
+	         return;
+	      }
+
+	      // Documentation says HWALIAFU Service publishes
+	      //    IALIMMIO as subclass interface. Used to set/get MMIO Region
+	      m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
+	      ASSERT(NULL != m_pALIMMIOService);
+	      if ( NULL == m_pALIMMIOService ) {
+	         m_bIsOK = false;
+	         return;
+	      }
+
+	      // Documentation says HWALIAFU Service publishes
+	      //    IALIReset as subclass interface. Used for resetting the AFU
+	      m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
+	      ASSERT(NULL != m_pALIResetService);
+	      if ( NULL == m_pALIResetService ) {
+	         m_bIsOK = false;
+	         return;
+	      }
+
+	      // Documentation says HWALIAFU Service publishes
+	      //    IALIReset as subclass interface
+	      m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
+	      ASSERT(NULL != m_pALIuMSGService);
+	      if ( NULL == m_pALIuMSGService ) {
+	         m_bIsOK = false;
+	         return;
+	      }
+   }else{
+
+	  m_pFMEService = pServiceBase;
+	   ASSERT(NULL != m_pFMEService);
+	   if ( NULL == m_pFMEService ) {
+		  m_bIsOK = false;
+		  return;
+	   }
+
+	   // Documentation says HWALIAFU Service publishes
+	   //    IALIBuffer as subclass interface. Used in Buffer Allocation and Free
+	   m_pALIPerf = dynamic_ptr<IALIPerf>(iidALI_PERF_Service, pServiceBase);
+	   ASSERT(NULL != m_pALIPerf);
+	   if ( NULL == m_pALIPerf ) {
+		  m_bIsOK = false;
+		  return;
+	   }
    }
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIBuffer as subclass interface
-   m_pALIBufferService = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, pServiceBase);
-   ASSERT(NULL != m_pALIBufferService);
-   if ( NULL == m_pALIBufferService ) {
-      m_bIsOK = false;
-      return;
+   if( m_pFMEService && m_pNLBService){
+	  INFO("Service Allocated");
+	  allocateWorkspaces();
+	  Post();
    }
+}
 
-   // Documentation says HWALIAFU Service publishes
-   //    IALIMMIO as subclass interface
-   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
-   ASSERT(NULL != m_pALIMMIOService);
-   if ( NULL == m_pALIMMIOService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
-   m_pALIResetService = dynamic_ptr<IALIReset>(iidALI_RSET_Service, pServiceBase);
-   ASSERT(NULL != m_pALIResetService);
-   if ( NULL == m_pALIResetService ) {
-      m_bIsOK = false;
-      return;
-   }
-
-   // Documentation says HWALIAFU Service publishes
-   //    IALIReset as subclass interface
-   m_pALIuMSGService = dynamic_ptr<IALIUMsg>(iidALI_UMSG_Service, pServiceBase);
-   ASSERT(NULL != m_pALIuMSGService);
-   if ( NULL == m_pALIuMSGService ) {
-      m_bIsOK = false;
-      return;
-   }
-   INFO("Service Allocated");
-
-   // Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
+void CMyApp::allocateWorkspaces()
+{
+	// Allocate first of 3 Workspaces needed.  Use the TransactionID to tell which was allocated.
    //   In workspaceAllocated() callback we allocate the rest
+
    if( ali_errnumOK != m_pALIBufferService->bufferAllocate(NLB_DSM_SIZE, &m_DSMVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
+	  m_bIsOK = false;
+	  return;
    }
    m_DSMSize = NLB_DSM_SIZE;
    m_DSMPhys = m_pALIBufferService->bufferGetIOVA(m_DSMVirt);
 
    if( ali_errnumOK != m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_InputVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
+	  m_bIsOK = false;
+	  return;
    }
    m_InputSize = MAX_NLB_WKSPC_SIZE;
    m_InputPhys = m_pALIBufferService->bufferGetIOVA(m_InputVirt);
 
    if( ali_errnumOK !=  m_pALIBufferService->bufferAllocate(MAX_NLB_WKSPC_SIZE, &m_OutputVirt)){
-      m_bIsOK = false;
-      Post();
-      return;
+	  m_bIsOK = false;
+	  return;
    }
    m_OutputSize = MAX_NLB_WKSPC_SIZE;
    m_OutputPhys = m_pALIBufferService->bufferGetIOVA(m_OutputVirt);
-
 
    btUnsignedInt numUmsg = m_pALIuMSGService->umsgGetNumber();
    m_UMsgVirt = m_pALIuMSGService->umsgGetAddress(0);
 
    if(NULL == m_UMsgVirt){
 
-   	  ERR("No uMSG support");
+	  ERR("No uMSG support");
    }
-
-   Post();
 }
 
 void CMyApp::serviceAllocateFailed(const IEvent &e)
@@ -981,53 +1035,86 @@ btInt INLB::CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize Coo
    return res;
 }
 
-void INLB::ReadQLPCounters()
+void INLB::ReadPerfMonitors()
 {
-   bt32bitCSR perf[2];
-   bt32bitCSR i;
+	NamedValueSet PerfMon;
+	btUnsigned64bitInt     value;
 
-   for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
-      switch ( i ) {
-         case QLP_PERF_CACHE_RD_HITS : // FALL THROUGH
-         case QLP_PERF_CACHE_WR_HITS : // FALL THROUGH
-         case QLP_PERF_CACHE_RD_MISS : // FALL THROUGH
-         case QLP_PERF_CACHE_WR_MISS : // FALL THROUGH
-         case QLP_PERF_EVICTIONS     : {
+	m_pALIPerf->performanceCountersGet(&PerfMon,NULL);
 
-            perf[0] = 0;
-            perf[1] = 0;
-
-            m_pALIMMIOService->mmioWrite32(QLP_CSR_ADDR_PERF1C, i);
-            m_pALIMMIOService->mmioRead32(QLP_CSR_ADDR_PERF1, &perf[0]);
-
-            m_pALIMMIOService->mmioWrite32(QLP_CSR_ADDR_PERF1C, (btCSRValue)(1 << 31) | i);
-            m_pALIMMIOService->mmioRead32(QLP_CSR_ADDR_PERF1, &perf[1]);
-
-            m_QLPCounters[i] = perf[0] + perf[1];
-
-         } break;
-
-         default: break;
-      }
-   }
+    if (PerfMon.Has(AALPERF_VERSION)) {
+       PerfMon.Get( AALPERF_VERSION, &value);
+       m_PerfMonitors[VERSION] = value;
+    }
+    if (PerfMon.Has(AALPERF_READ_HIT)) {
+       PerfMon.Get( AALPERF_READ_HIT, &value);
+       m_PerfMonitors[READ_HIT] = value;
+    }
+    if (PerfMon.Has(AALPERF_WRITE_HIT)) {
+       PerfMon.Get( AALPERF_WRITE_HIT, &value);
+       m_PerfMonitors[WRITE_HIT] = value;
+    }
+    if (PerfMon.Has(AALPERF_READ_MISS)) {
+       PerfMon.Get( AALPERF_READ_MISS, &value);
+       m_PerfMonitors[READ_MISS] = value;
+    }
+    if (PerfMon.Has(AALPERF_WRITE_MISS)) {
+       PerfMon.Get( AALPERF_WRITE_MISS, &value);
+       m_PerfMonitors[WRITE_MISS] = value;
+    }
+    if (PerfMon.Has(AALPERF_EVICTIONS)) {
+        PerfMon.Get( AALPERF_EVICTIONS, &value);
+        m_PerfMonitors[EVICTIONS] = value;
+    }
+    if (PerfMon.Has(AALPERF_PCIE0_READ)) {
+        PerfMon.Get( AALPERF_PCIE0_READ, &value);
+        m_PerfMonitors[PCIE0_READ] = value;
+    }
+    if (PerfMon.Has(AALPERF_PCIE0_WRITE)) {
+        PerfMon.Get( AALPERF_PCIE0_WRITE, &value);
+        m_PerfMonitors[PCIE0_WRITE] = value;
+    }
+    if (PerfMon.Has(AALPERF_PCIE1_READ)) {
+        PerfMon.Get( AALPERF_PCIE1_READ, &value);
+        m_PerfMonitors[PCIE1_READ] = value;
+    }
+    if (PerfMon.Has(AALPERF_PCIE1_WRITE)) {
+        PerfMon.Get( AALPERF_PCIE1_WRITE, &value);
+        m_PerfMonitors[PCIE1_WRITE] = value;
+    }
+    if (PerfMon.Has(AALPERF_UPI_READ)) {
+        PerfMon.Get( AALPERF_UPI_READ, &value);
+        m_PerfMonitors[UPI_READ] = value;
+    }
+    if (PerfMon.Has(AALPERF_UPI_WRITE)) {
+	    PerfMon.Get( AALPERF_UPI_WRITE, &value);
+	    m_PerfMonitors[UPI_WRITE] = value;
+    }
 }
 
-void INLB::SaveQLPCounters()
+void INLB::SavePerfMonitors()
 {
    btCSRValue i;
-   for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
-      m_SavedQLPCounters[i] = m_QLPCounters[i];
+   for ( i = 0 ; i < sizeof(m_PerfMonitors) / sizeof(m_PerfMonitors[0]) ; ++i ) {
+      m_SavedPerfMonitors[i] = m_PerfMonitors[i];
    }
 }
 
-bt32bitCSR INLB::GetQLPCounter(btUnsignedInt i) const
+btUnsigned64bitInt INLB::GetPerfMonitor(btUnsignedInt i) const
 {
    switch ( i ) {
-      case QLP_PERF_CACHE_RD_HITS : // FALL THROUGH
-      case QLP_PERF_CACHE_WR_HITS : // FALL THROUGH
-      case QLP_PERF_CACHE_RD_MISS : // FALL THROUGH
-      case QLP_PERF_CACHE_WR_MISS : // FALL THROUGH
-      case QLP_PERF_EVICTIONS     : return m_QLPCounters[i] - m_SavedQLPCounters[i];
+      case VERSION 		: // FALL THROUGH
+      case READ_HIT 	: // FALL THROUGH
+      case WRITE_HIT 	: // FALL THROUGH
+      case READ_MISS 	: // FALL THROUGH
+      case WRITE_MISS 	: // FALL THROUGH
+      case EVICTIONS 	: // FALL THROUGH
+      case PCIE0_READ 	: // FALL THROUGH
+      case PCIE0_WRITE  : // FALL THROUGH
+      case PCIE1_READ 	: // FALL THROUGH
+      case PCIE1_WRITE 	: // FALL THROUGH
+      case UPI_READ 	: // FALL THROUGH
+      case UPI_WRITE 	: return m_PerfMonitors[i] - m_SavedPerfMonitors[i];
 
       default : return 0;
    }

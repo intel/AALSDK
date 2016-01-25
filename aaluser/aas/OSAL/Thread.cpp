@@ -538,7 +538,7 @@ void OSLThread::Cancel()
 #endif // OS
 }
 
-btBool OSLThread::IsThisThread(btID id) const
+btBool OSLThread::IsThisThread(btTID id) const
 {
 #if   defined( __AAL_WINDOWS__ )
    return id == m_tid;

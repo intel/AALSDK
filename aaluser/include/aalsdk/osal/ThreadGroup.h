@@ -323,22 +323,22 @@ private:
 /// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
 ///
 /// Waits for the thread group to dispatch pDisp and then destroys the thread group before returning.
-btBool   FireAndWait(IDispatchable            *pDisp,
-                     btUnsignedInt             MinThrs=0,
-                     btUnsignedInt             MaxThrs=0,
-                     OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
-                     btTime                    JoinTimeout=AAL_INFINITE_WAIT);
+OSAL_API btBool   FireAndWait( IDispatchable            *pDisp,
+                               btUnsignedInt             MinThrs=0,
+                               btUnsignedInt             MaxThrs=0,
+                               OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                               btTime                    JoinTimeout=AAL_INFINITE_WAIT);
 
 /// Create an OSLThreadGroup whose sole purpose is to dispatch pDisp.
 ///
 /// pDisp is not guaranteed to have dispatched prior to returning from this function.
 /// An OSLThread is created to ensure that the thread group is destroyed and its memory reclaimed
 ///  upon dispatching pDisp. The thread self-destructs after reclaiming the thread group resources.
-btBool FireAndForget(IDispatchable            *pDisp,
-                     btUnsignedInt             MinThrs=0,
-                     btUnsignedInt             MaxThrs=0,
-                     OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
-                     btTime                    JoinTimeout=AAL_INFINITE_WAIT);
+OSAL_API btBool FireAndForget( IDispatchable            *pDisp,
+                               btUnsignedInt             MinThrs=0,
+                               btUnsignedInt             MaxThrs=0,
+                               OSLThread::ThreadPriority ThrPriority=OSLThread::THREADPRIORITY_NORMAL,
+                               btTime                    JoinTimeout=AAL_INFINITE_WAIT);
 
 END_NAMESPACE(AAL)
 

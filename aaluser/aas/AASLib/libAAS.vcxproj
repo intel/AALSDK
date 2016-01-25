@@ -109,12 +109,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;aalrt_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\include;$(SolutionDir)..\aalkernel\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)aaluser\include;$(SolutionDir)aaluser\win</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -166,44 +165,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\AALlib.cpp" />
-    <ClCompile Include="..\AALService.cpp" />
-    <ClCompile Include="..\AALServiceModule.cpp" />
-    <ClCompile Include="..\AALTransactionID.cpp" />
-    <ClCompile Include="..\Assassin.cpp" />
-    <ClCompile Include="..\CAALBase.cpp" />
-    <ClCompile Include="..\CAALEvent.cpp" />
-    <ClCompile Include="..\CAALEventUtilities.cpp" />
-    <ClCompile Include="..\CAALLogger.cpp" />
-    <ClCompile Include="..\CAALObjectFactory.cpp" />
-    <ClCompile Include="..\CAALWorkSpaceUtilities.cpp" />
-    <ClCompile Include="..\CAASResourceManagerClient.cpp" />
-    <ClCompile Include="..\CAASServiceContainer.cpp" />
-    <ClCompile Include="..\CCountedObject.cpp" />
-    <ClCompile Include="..\CNamedValueSet.cpp" />
-    <ClCompile Include="..\KernelStructs.cpp" />
-    <ClCompile Include="..\RegDBProxy.cpp" />
-    <ClCompile Include="..\ResMgrUtilities.cpp" />
+    <ClInclude Include="..\..\include\aalsdk\aas\AALInProcServiceFactory.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\AALIPCServiceFactory.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\AALService.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\AALServiceModule.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\AASService.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\Dispatchables.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\IServiceBroker.h" />
+    <ClInclude Include="..\..\include\aalsdk\aas\ServiceHost.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALDeviceService.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALInProcServiceFactory.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALIPCServiceFactory.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALObjectFactory.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALService.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALServiceModule.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AASServiceContainer.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\Assassin.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\CAALObjectFactory.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\CAASServiceContainer.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\IServiceBroker.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\ServiceHost.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\AALRUNTIMEMessages.h" />
-    <ClInclude Include="..\..\..\include\aalsdk\aas\_AALRUNTIMEServices.h" />
+    <None Include="..\..\include\aalsdk\aas\AALRuntimeModule.h.in" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\include\aalsdk\aas\AASService.h.in" />
-    <None Include="..\..\..\include\aalsdk\aas\AALRUNTIMEModule.h.in" />
+    <ClCompile Include="AALlib.cpp" />
+    <ClCompile Include="AALService.cpp" />
+    <ClCompile Include="AALServiceModule.cpp" />
+    <ClCompile Include="AALTransactionID.cpp" />
+    <ClCompile Include="CAALBase.cpp" />
+    <ClCompile Include="CAALEvent.cpp" />
+    <ClCompile Include="CAALEventUtilities.cpp" />
+    <ClCompile Include="CAALLogger.cpp" />
+    <ClCompile Include="CAALWorkSpaceUtilities.cpp" />
+    <ClCompile Include="CCountedObject.cpp" />
+    <ClCompile Include="CNamedValueSet.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">HAVE_CONFIG_H;__AAL_USER__=1;ENABLE_DEBUG=1;DEBUG_BEYOND_LOGGER=1;ENABLE_ASSERT=1;AASLIB_EXPORTS;AASREGISTRAR_EXPORTS;aalrt_EXPORTS;_NO_BUILD_MESSAGES_;WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="Dispatchables.cpp" />
+    <ClCompile Include="KernelStructs.cpp" />
+    <ClCompile Include="ResMgrUtilities.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

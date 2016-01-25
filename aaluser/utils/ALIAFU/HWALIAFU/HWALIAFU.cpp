@@ -94,6 +94,24 @@ protected:
    const TransactionID          m_TranID;
 };
 
+class AFUDeactivateFailed : public IDispatchable
+{
+public:
+   AFUDeactivateFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->deactivateFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
+};
 
 class AFUActivated : public IDispatchable
 {
@@ -112,6 +130,64 @@ public:
 protected:
    IALIReconfigure_Client      *m_pSvcClient;
    const TransactionID          m_TranID;
+};
+
+class AFUActivateFailed : public IDispatchable
+{
+public:
+   AFUActivateFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->activateFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
+};
+
+class AFUReconfigured : public IDispatchable
+{
+public:
+   AFUReconfigured(  IALIReconfigure_Client   *pSvcClient,
+                     TransactionID const      &rTranID)
+   : m_pSvcClient(pSvcClient),
+     m_TranID(rTranID){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->configureSucceeded(m_TranID);
+   }
+
+
+protected:
+   IALIReconfigure_Client      *m_pSvcClient;
+   const TransactionID          m_TranID;
+};
+
+
+class AFUReconfigureFailed : public IDispatchable
+{
+public:
+   AFUReconfigureFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->configureFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
 };
 
 
@@ -735,66 +811,6 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
    return ret;
 }
 
-// ---------------------------------------------------------------------------
-// IAFUProxyClient interface implementation
-// ---------------------------------------------------------------------------
-
-// Callback for ALIAFUProxy
-void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
-{
-   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
-                                                           theEvent);
-   ASSERT(NULL != puidEvent);
-
-//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
-
-   switch(puidEvent->MessageID())
-   {
-   //===========================
-   // WSM response
-   // ==========================
-   case rspid_WSM_Response:
-      {
-         // TODO check result code
-
-         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-         switch(pResult->evtID)
-         {
-
-         default:
-            ASSERT(false); // unexpected WSM_Response evtID
-         } // switch evtID
-
-      } break;
-   case rspid_AFU_Response:
-   {
-      struct aalui_AFUResponse* presp = reinterpret_cast<struct aalui_AFUResponse *>(puidEvent->Payload());
-      switch(presp->respID)
-      {
-      case uid_afurespDeactivateComplete:
-         {
-            getRuntime()->schedDispatchable(new AFUDeactivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
-            return;
-         }
-      case uid_afurespActivateComplete:
-         {
-            getRuntime()->schedDispatchable(new AFUActivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
-            return;
-         }
-
-      default:
-         break;
-      }
-   }
-   default:
-      ASSERT(false); // unexpected event
-   }
-
-}
-
-
 btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
                                         NamedValueSet const  *pOptArgs )
 {
@@ -892,9 +908,54 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
 /// @return     void. Callback in IALIReconfigureClient.
 ///
 void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
-                              NamedValueSet const *pOptArgs)
+                                NamedValueSet const *pOptArgs)
 {
+   btByte        *bufptr      = NULL;
+   std::streampos    filesize    = 0;
 
+   if(pOptArgs->Has(AALCONF_FILENAMEKEY)){
+      btcString filename;
+      pOptArgs->Get(AALCONF_FILENAMEKEY, &filename);
+      std::ifstream bitfile(filename, std::ios::binary );
+
+      bitfile.seekg( 0, std::ios::end );
+      filesize = bitfile.tellg();
+      bitfile.seekg( 0, std::ios::beg );
+      bufptr = reinterpret_cast<btByte*>(malloc(filesize));
+      bitfile.read(reinterpret_cast<char *>(bufptr), filesize);
+   }else{
+
+      getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                               rTranID,
+                                                                                                               errBadParameter,
+                                                                                                               reasMissingParameter,
+                                                                                                               "Error: No bitfile source.")));
+      return;
+
+#if 0 // Test code
+      bufptr = reinterpret_cast<btByte*>(malloc(100));
+      *bufptr = '<';
+      memset(bufptr+1,'*',97);
+      *(bufptr+98) = '>';
+      *(bufptr+99) = 0;
+      filesize = 100;
+#endif
+   }
+
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID);
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&configuretrans);
+   if(configuretrans.getErrno() != uid_errnumOK){
+      AAL_ERR( LM_All,"Reconfigure failed");
+      getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                               rTranID,
+                                                                                                               errCauseUnknown,
+                                                                                                               reasUnknown,
+                                                                                                               "Error: Failed transaction")));
+
+      return;
+   }
+   free(bufptr);
 }
 
 /// @brief Activate an AFU after it has been reconfigured.
@@ -921,6 +982,95 @@ void HWALIAFU::reconfActivate( TransactionID const &rTranID,
 
 
 }
+
+// ---------------------------------------------------------------------------
+// IAFUProxyClient interface implementation
+// ---------------------------------------------------------------------------
+
+// Callback for ALIAFUProxy
+void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
+{
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+
+   ASSERT(NULL != puidEvent);
+
+//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+
+   switch(puidEvent->MessageID())
+   {
+   //===========================
+   // WSM response
+   // ==========================
+   case rspid_WSM_Response:
+      {
+         // TODO check result code
+
+         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+         switch(pResult->evtID)
+         {
+
+         default:
+            ASSERT(false); // unexpected WSM_Response evtID
+         } // switch evtID
+      } break;
+   case rspid_AFU_Response:
+   {
+      struct aalui_AFUResponse* presp = reinterpret_cast<struct aalui_AFUResponse *>(puidEvent->Payload());
+      switch(presp->respID)
+      {
+      case uid_afurespDeactivateComplete:
+         {
+            if( uid_errnumOK != puidEvent->ResultCode()){
+               getRuntime()->schedDispatchable(new AFUDeactivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                     puidEvent->msgTranID(),
+                                                                                                                     puidEvent->ResultCode(),
+                                                                                                                     reasUnknown,
+                                                                                                                     "Error: Deactivate failed. Check Exception number against uid_errnum_e codes")));
+            }else{
+               getRuntime()->schedDispatchable(new AFUDeactivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+            }
+            return;
+         }
+      case uid_afurespActivateComplete:
+         {
+            if( uid_errnumOK != puidEvent->ResultCode()){
+                getRuntime()->schedDispatchable(new AFUActivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                      puidEvent->msgTranID(),
+                                                                                                                      puidEvent->ResultCode(),
+                                                                                                                      reasUnknown,
+                                                                                                                      "Error: Activate failed. Check Exception number against uid_errnum_e codes")));
+             }else{
+                getRuntime()->schedDispatchable(new AFUActivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+             }
+            return;
+         }
+      case uid_afurespConfigureComplete:
+         {
+            if( uid_errnumOK !=puidEvent->ResultCode()){
+                getRuntime()->schedDispatchable(new AFUReconfigureFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                      puidEvent->msgTranID(),
+                                                                                                                      puidEvent->ResultCode(),
+                                                                                                                      reasUnknown,
+                                                                                                                      "Error: Configure failed. Check Exception number against uid_errnum_e codes")));
+             }else{
+                getRuntime()->schedDispatchable(new AFUReconfigured(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+             }
+            return;
+         }
+
+      default:
+         break;
+      }
+   }
+   default:
+      ASSERT(false); // unexpected event
+   }
+
+}
+
 
 /// @} group HWALIAFU
 

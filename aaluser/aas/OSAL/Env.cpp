@@ -133,14 +133,14 @@ btBool Environment::Set(std::string var, std::string val, btBool overwrite)
 
 #elif defined( __AAL_WINDOWS__ )
 
-   if ( !overwite ) {
+   if( !overwrite ) {
       if ( Environment::Get(var, val) ) {
          // Already exists
          return false;
       }
    }
 
-   btBool ret = SetEnvironmentVariable(var,val);
+   btBool ret = SetEnvironmentVariable(var.c_str() ,val.c_str());
 
    return ret;
 #endif // OS

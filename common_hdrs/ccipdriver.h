@@ -108,7 +108,8 @@ typedef enum
    uid_errnumCouldNotDestroy,                    // 25
    uid_errnumDeviceBusy,                         // 26
    uid_errnumTimeout,                            // 27
-   uid_errnumNoAFU                               // 28
+   uid_errnumNoAFU,                              // 28
+   uid_errnumAFUActivated                        //29
 } uid_errnum_e;
 
 typedef enum
@@ -314,6 +315,7 @@ typedef enum
    uid_afurespAFUDestroyComplete,
    uid_afurespActivateComplete,
    uid_afurespDeactivateComplete,
+   uid_afurespConfigureComplete,
    uid_afurespInitializeComplete,
    uid_afurespFreeComplete,
    uid_afurespUndefinedRequest,

@@ -138,17 +138,11 @@ struct cci_aal_device {
    int                        m_simulated;
 
    int                        m_protocolID;
-#if 0
-   // PCI configuration space parameters
-   btVirtAddr                 m_kvp_config;     // kv address after iomap
-   btPhysAddr                 m_phys_config;    // Physical mmio address
-   size_t                     m_len_config;     // Bytes
 
-   // CCI MMIO Config Space
-   btVirtAddr                 m_kvp_cci_csr;    // kv address of CSR space
-   btPhysAddr                 m_phys_cci_csr;   // Physical address of CSR space
-   size_t                     m_len_cci_csr;    // Bytes
-#endif
+   // For background tasks handling
+   kosal_work_queue           m_workq;
+   work_object                task_handler;
+
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
    btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
@@ -170,7 +164,7 @@ struct cci_aal_device {
 
 
 #define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct cci_aal_device. m_pcidev )
-#define aaldev_to_cci_aal_device(ptr)        kosal_container_of(ptr, struct cci_aal_device, m_aaldev )
+#define aaldev_to_cci_aal_device(ptr)        aaldev_to_any(struct cci_aal_device, ptr)
 
 #define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
 #define cci_dev_pport(pdev)                 ( pdev->m_pport )
@@ -227,7 +221,7 @@ struct cci_aal_device {
 
 
 #define cci_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define cci_aaldev_to_aaldev(pdev)          ((pdev)->m_aaldev)
+#define cci_aaldev_to_aaldev(pdev)          ( (pdev)->m_aaldev )
 
 
 #define cci_dev_list_head(pdev)             ((pdev)->m_list)
@@ -236,7 +230,8 @@ struct cci_aal_device {
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
-
+#define cci_dev_workq(pdev)                 ( (pdev)->m_workq )
+#define cci_dev_task_handler(pdev)          ((pdev)->task_handler)
 
 ///============================================================================
 /// Name: ccip_device
@@ -324,11 +319,10 @@ struct ccip_device
 #define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
 #define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
 
-#define ccip_dev_pcie_bustype(pdev)             ((pdev)->m_bustype)
-#define ccip_dev_pcie_busnum(pdev)              ((pdev)->m_busNum)
-#define ccip_dev_pcie_devnum(pdev)              ((pdev)->m_devicenum)
-#define ccip_dev_pcie_fcnnum(pdev)              ((pdev)->m_functnum)
-
+#define ccip_dev_pcie_bustype(pdev)          ((pdev)->m_bustype)
+#define ccip_dev_pcie_busnum(pdev)           ((pdev)->m_busNum)
+#define ccip_dev_pcie_devnum(pdev)           ((pdev)->m_devicenum)
+#define ccip_dev_pcie_fcnnum(pdev)           ((pdev)->m_functnum)
 
 /// @brief   Writes 64 bit control and status registers.
 ///
@@ -411,7 +405,7 @@ extern int cci_destroy_aal_device( struct cci_aal_device*);
 extern int cci_publish_aaldevice(struct cci_aal_device *);
 extern void cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev);
 extern void cci_remove_device(struct ccip_device *);
-extern void cci_release_device(struct device *pdev);
+extern void cci_release_device(pkosal_os_dev pdev);
 extern void ccidrv_exitDriver(void);
 
 extern int ccidrv_initUMAPI(void);

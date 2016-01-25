@@ -88,7 +88,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+		  AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
       } else { // DeviceIoControl() failed.
          CloseHandle(hEvent);
@@ -385,7 +385,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -410,7 +410,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (1 of 2)" << endl);
+		 AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (1 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -437,7 +437,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+		 AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -454,7 +454,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
       return true;
 FAILED: // If got here then DeviceIoControl failed.
    Unlock();
-   AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << ": DeviceIoControl() failed." << endl);
+   AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << ": DeviceIoControl() failed." << std::endl);
    return false;
 
 #elif defined( __AAL_LINUX__ )
@@ -575,7 +575,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING != GetLastError() ) {
-         AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << "failed." << endl);
+		  AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << "failed." << std::endl);
          m_bIsOK = false;
       }
 

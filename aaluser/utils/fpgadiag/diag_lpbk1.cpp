@@ -216,6 +216,7 @@ cout<<"Wkspcs created\n";
 
 void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
+#if 0
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
     bt64bitCSR rawticks     = pAFUDSM->num_clocks;
@@ -241,4 +242,5 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	  cout  << setw(16) << ticks;
 
 	    cout << endl;
+#endif
 }

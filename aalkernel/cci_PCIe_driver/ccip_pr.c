@@ -80,7 +80,11 @@
 #include "ccipdrv-events.h"
 
 #include "ccip_port.h"
+#include "ccip_fme.h"
+
 #include "cci_pcie_driver_PIPsession.h"
+
+extern ulong sim;
 
 extern struct cci_aal_device   *
                        cci_create_AAL_UAFU_Device( struct port_device  *,
@@ -123,6 +127,281 @@ struct aal_ipip cci_PRpip = {
    .binddevice    = NULL,      // Binds the PIP to the device
    .unbinddevice  = NULL,      // Binds the PIP to the device
 };
+
+
+//=============================================================================
+// Name: program_afu
+// Description:
+// Interface: private
+// Returns: N/A
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
+
+inline void GetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *pcsrval){
+   bt32bitCSR *p32 = (bt32bitCSR *)ptr;
+
+   *pcsrval = *p32;
+}
+
+inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval)
+{
+   bt32bitCSR *p32 = (bt32bitCSR *)ptr;
+
+   *p32 = *csrval;
+}
+
+//void program_afu( pwork_object pwork)
+int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
+{
+
+#if 0
+   struct cci_aal_device *pdev = kosal_get_object_containing( pwork,
+                                                              struct cci_aal_device,
+                                                              task_handler );
+#endif
+   struct fme_device *pfme_dev = cci_dev_pfme(pdev);
+   struct CCIP_FME_DFL_PR     *pr_dev = ccip_fme_pr(pfme_dev);
+   bt32bitCSR csr = 0;
+   btBool bPR_Ready = 0;
+
+   PDEBUG("kptr =%p", kptr);
+   PDEBUG("len =%d\n", (unsigned)len);
+
+   // Don't do anything under simulation
+   if(0 != sim){
+      PDEBUG("Simulated reprogram\n");
+      return 0;
+   }
+
+   // Program the AFU
+   // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
+   // ---------------------------------------------------------------------------
+
+
+  csr=0;
+  // WILL THIS WORK??
+  // pr_dev->ccip_fme_pr_control.pr_port_access = 1;
+
+  GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+
+  csr &=0xFFFFFFFE;
+  PVERBOSE("Setting up PR access mode to FME initiated PR");
+  SetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+
+
+  // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
+  // -------------------------------------------
+  // Both Initially as well as after PR, HW updates PR status to this state
+  {
+
+
+     PVERBOSE("Waiting for PR Resource in HW to be initialized and ready");
+     do {
+        csr=0;
+        GetCSR(&pr_dev->ccip_fme_pr_status.csr,&csr);
+        bPR_Ready = ( (csr>>24 & 0xF) == 0x0 );
+     }
+     while(!bPR_Ready);
+     PVERBOSE("HW is ready for PR");
+  }
+
+
+  // Step 2 - Check FME_PR_STATUS[16] for any previous PR errors
+  // --------------------------------------------------------------
+  // FME_PR_STATUS[16] is PR PASS or FAIL bit. Different from SAS.
+  // FME_PR_STATUS[16] is RO from SW point of view.
+  // TODO : Update SAS
+  {
+     bt32bitCSR PR_Timeout_err = 0;
+     bt32bitCSR PR_FIFO_err = 0;
+     bt32bitCSR PR_IP_err = 0;
+     bt32bitCSR PR_bitstream_err = 0;
+     bt32bitCSR PR_CRC_err = 0;
+     bt32bitCSR PR_clear_status_err = 0;
+
+     csr=0;
+     PVERBOSE("Checking for errors in previous PR operation");
+     GetCSR(&pr_dev->ccip_fme_pr_status.csr,&csr);
+
+     // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
+     // -----------------------------------------------------------------
+     // Upon failure, FME_PR_ERROR[5:0] gives additional error info.
+     // FME_PR_ERROR[5:0] - All 6 bits are RW1CS - HW writes 1 upon error to set the bit. SW writes 1 to clear the bit
+     // Once All error bits set in FME_PR_ERROR[5:0] are cleared by SW, HW will clear FME_PR_STATUS[16]
+     // TODO: This step is different from SAS flow. Update SAS
+     // NOTE: Error Logging and propagation might change based on SKX RAS
+
+     if ((csr>>16 & 0x1) == 0x1){
+        csr=0;
+        PVERBOSE("Errors found: Collecting error info ...");
+        GetCSR(&pr_dev->ccip_fme_pr_err.csr,&csr);
+        PR_Timeout_err = csr;
+        PR_FIFO_err = csr >> 1;
+        PR_IP_err =  csr >> 2;
+        PR_bitstream_err = csr >> 3;
+        PR_CRC_err = csr >> 4;
+        PR_clear_status_err = csr >> 5;
+
+        if((PR_Timeout_err & 0x1) == 0x1) PVERBOSE("\tPR Timeout Error Detected");
+        if((PR_FIFO_err & 0x1) == 0x1)    PVERBOSE("\tPR FIFO Error Detected");
+        if((PR_IP_err & 0x1) == 0x1)   PVERBOSE("\tPR IP Error Detected");
+        if((PR_bitstream_err & 0x1) == 0x1) PVERBOSE("\tPR incompatible bitstream Error Detected");
+        if((PR_CRC_err & 0x1) == 0x1) PVERBOSE("\tPR CRC Error Detected");
+        if((PR_clear_status_err & 0x1) == 0x1)  PVERBOSE("\tPrevious PR clean-up Error Detected");
+
+        // Clearing all Errors
+        csr |= 0x0000003F;
+        SetCSR(&pr_dev->ccip_fme_pr_err.csr,&csr);
+        PVERBOSE("Previous PR errors cleared");
+     }else{
+        PVERBOSE("No previous PR errors Detected");
+     }
+
+     // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
+     // --------------------------------------------------
+     // NOTE: For BDX-P only 1 AFU is supported in HW. So, CSR_FME_PR_CONTROL[9:8] should always be 0
+     // This will change for SKX
+
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+     csr &=0xFFFFFCFF;
+     PVERBOSE("Writing PR region ID = 0");
+     SetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+
+     // TODO: SW Driver is expected to hold the Port undergoing PR in Reset before initiating PR.
+     // SW has to bring back the port out of reset after successful PR and discover the AFU behind that PORT
+     // Ignored here
+
+     // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
+     // ---------------------------------------------------
+     // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
+     PDEBUG("Initiate PR");
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+     csr |=0x00001000;
+    
+     SetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+
+
+     // Sanity check - Make sure that PR request from SW has reached HW
+     // ---------------------------------------------------------------
+     // Strictly speaking, the following step is neither required nor has any impact from HW point of view.
+     // But if no SW requests are reaching the HW, there is no way for the HW to notify the SW and might result in false PR PASS info in SW.
+     // So, Read the PR Start bit (FME_PR_CONTROL[12]) after writing to it and make sure that it is set.
+     // Once this bit is set, HW will make sure that it returns PR PASS / PR FAIL / PR timeout and notify the SW
+
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+     if ((csr >> 12 & 0x1) != 0x1)
+     {
+        PVERBOSE("PR requests from SW did not reach HW. Try again..");
+        return 1;
+     }
+
+     // Step 6 - Check available credits: FME_PR_STATUS[8:0] for PR data push and push Data to FME_PR_DATA[31:0]
+     // -------------------------------------------------------------------------------------------------------
+     // For instance,
+     // if FME_PR_STATUS[8:0] read yields 511, SW can perform 511 32-bit writes from rbf file to FME_PR_DATA[31:0] and check credits again
+     {
+        bt32bitCSR PR_FIFO_credits = 0;
+        uint32_t  *byteRead = (uint32_t  *)kptr;
+        csr=0;
+        GetCSR(&pr_dev->ccip_fme_pr_status.csr, &csr);
+        PR_FIFO_credits = csr & 0x000001FF;
+
+        PDEBUG("Pushing Data from rbf to HW \n");
+
+
+        while(len >0) {
+             if (PR_FIFO_credits <= 1)
+             {
+               do {
+               csr = 0;
+               PR_FIFO_credits = 0;
+               GetCSR(&pr_dev->ccip_fme_pr_status.csr, &csr);
+               PR_FIFO_credits = csr & 0x000001FF;
+               }
+               while (PR_FIFO_credits <=1);
+             }
+
+             SetCSR(&pr_dev->ccip_fme_pr_data.csr, byteRead);
+             PR_FIFO_credits --;
+             byteRead++;
+             len -= 4;
+        }
+     }
+     // Step 7 - Notify the HW that bitstream push is complete
+     // ------------------------------------------------------
+     // Write 1 to CSR_FME_PR_CONTROL[13]. This bit is RW1S. SW writes 1 to set this bit.
+     // Hardware will auto clear this bit upon PR completion
+     // TODO: This step is currently not defined in SAS. Update SAS
+
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+     csr |=0x00002000;
+     SetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+
+     PVERBOSE("Green bitstream push complete \n");
+
+     // Step 8 - Once all data is pushed from rbf file, wait for PR completion
+     // ----------------------------------------------------------------------
+     // Check FME_PR_CONTROL[12] == 0.
+     // Note: PR status bits are valid only when FME_PR_CONTROL[12] == 0.
+     // FME_PR_CONTROL[12] is an atomic status check bit for initiating PR and also checking for PR completion
+     // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
+
+     PVERBOSE("Waiting for HW to release PR resource");
+     kosal_mdelay(10);        // Workaround for potential HW timing issue
+     bPR_Ready = 0;
+     do {
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_control.csr, &csr);
+     bPR_Ready = ( (csr>>12 & 0x1) == 0x0);
+     }
+     while(!bPR_Ready);
+     PVERBOSE("PR operation complete, checking Status ...");
+
+     // Step 9 - Check PR PASS / FAIL
+     // -----------------------------
+     // Read the FME_PR_STATUS[16] to check PR success / fail
+     // FME_PR_STATUS[16] = 0 implies PR Passed
+     // FME_PR_STATUS[16] = 1 implies PR Failed. Read FME_PR_ERROR for more info upon failure
+     // TODO: This step is different from SAS. Update SAS
+     // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
+
+     csr=0;
+     GetCSR(&pr_dev->ccip_fme_pr_status.csr, &csr);
+
+     if (csr >> 16)
+     {
+        PVERBOSE("PR FAILED with following Errors:");
+        csr=0;
+        GetCSR(&pr_dev->ccip_fme_pr_err.csr,&csr);
+        PR_Timeout_err = csr;
+        PR_FIFO_err = csr >> 1;
+        PR_IP_err =  csr >> 2;
+        PR_bitstream_err = csr >> 3;
+        PR_CRC_err = csr >> 4;
+        PR_clear_status_err = csr >> 5;
+
+        if((PR_Timeout_err & 0x1) == 0x1) PVERBOSE("\tPR Timeout Error Detected");
+        if((PR_FIFO_err & 0x1) == 0x1) PVERBOSE("\tPR FIFO Error Detected");
+        if((PR_IP_err & 0x1) == 0x1) PVERBOSE("\tPR Engine Error Detected");
+        if((PR_bitstream_err & 0x1) == 0x1) PVERBOSE("\tPR incompatible bitstream Error Detected");
+        if((PR_CRC_err & 0x1) == 0x1) PVERBOSE("\tPR CRC Error Detected");
+        if((PR_clear_status_err & 0x1) == 0x1) PVERBOSE("\tPR Engine clean-up Error Detected");
+     }
+
+     else
+     {
+        PVERBOSE("PR PASSED\n");
+     }
+
+  }
+  return 0;
+}
 
 ///============================================================================
 /// Name: cci_create_AAL_PR_Device
@@ -175,10 +454,19 @@ struct cci_aal_device   *
                                                        paalid,             // AAL ID
                                                        &cci_PRpip);
 
+   // Set up reverse look up. Use aaldev_to_cci_aal_device() to access
+   aaldev_context(cci_aaldev_to_aaldev(pcci_aaldev)) = pcci_aaldev;
+
    //===========================================================
    // Set up the optional aal_device attributes
    //
+#if 0
+   // Initialize the worker thread
+   cci_dev_workq(pcci_aaldev) = kosal_create_workqueue( cci_aaldev_to_aaldev(pcci_aaldev) );
 
+
+   KOSAL_INIT_WORK(cci_dev_task_handler(pcci_aaldev),task_poller);
+#endif
    // Set how many owners are allowed access to this device simultaneously
    cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
@@ -293,10 +581,25 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          }
 
          // Make sure device is not in use. If it is notify user and start time out timer.
+         if(NULL == ccip_port_uafu_dev(pportdev)){
+            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
+                                                                     pownerSess->m_device,
+                                                                     &Message->m_tranID,
+                                                                     Message->m_context,
+                                                                     uid_errnumNoAFU);
 
+            ccidrv_sendevent(pownerSess->m_UIHandle,
+                             pownerSess->m_device,
+                             AALQIP(pafuws_evt),
+                             Message->m_context);
+
+            goto ERROR;
+
+         }
          // TODO FOR NOW JUST DO IT
          cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
          cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
+         ccip_port_uafu_dev(pportdev) = NULL;
          pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
                                                                   pownerSess->m_device,
                                                                   &Message->m_tranID,
@@ -318,12 +621,12 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          struct port_device  *pportdev = cci_dev_pport(pdev);
 
          // Find the AFU device associated with this port
-         if(NULL == ccip_port_uafu_dev(pportdev)){
+         if(NULL != ccip_port_uafu_dev(pportdev)){
             pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
                                                                      pownerSess->m_device,
                                                                      &Message->m_tranID,
                                                                      Message->m_context,
-                                                                     uid_errnumNoAFU);
+                                                                     uid_errnumAFUActivated);
 
             ccidrv_sendevent(pownerSess->m_UIHandle,
                              pownerSess->m_device,
@@ -387,7 +690,67 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       } break;
 
+      AFU_COMMAND_CASE(ccipdrv_configureAFU) {
+         struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+         btWSSize buflen = preq->ahmreq.u.mem_uv2id.size;
+         btVirtAddr uptr = preq->ahmreq.u.mem_uv2id.vaddr;
+         btVirtAddr kptr = NULL;
 
+         // Get a copy of the bitfile image from user space.
+         //  This function returns a safe pointer to the user data.
+         //  This may involve copying into kernel space.
+
+         if((NULL == uptr) || (0 == buflen)){
+            PERR("AFU reprogramming failed\n");
+            pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                             pownerSess->m_device,
+                                                             &Message->m_tranID,
+                                                             Message->m_context,
+                                                             uid_errnumBadParameter);
+         }else{
+            kptr = kosal_get_user_buffer(uptr, buflen);
+            if(NULL == kptr ){
+               PERR("kosal_get_user_buffer returned NULL");
+               pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                                pownerSess->m_device,
+                                                                &Message->m_tranID,
+                                                                Message->m_context,
+                                                                uid_errnumBadParameter);
+            }else{
+/* Test Code
+               printk (KERN_INFO DRV_NAME "[%d]%s\n",buflen,kptr);
+            }
+
+            pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                             pownerSess->m_device,
+                                                             &Message->m_tranID,
+                                                             Message->m_context,
+                                                             uid_errnumOK);
+*/
+
+            // Program the afu  TODO   kosal_queue_delayed_work(cci_dev_workq(pdev), cci_dev_task_handler(pdev), 0);
+               if(0 != program_afu(pdev,  kptr, buflen )){
+                  PERR("AFU reprogramming failed\n");
+                  pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                                   pownerSess->m_device,
+                                                                   &Message->m_tranID,
+                                                                   Message->m_context,
+                                                                   uid_errnumNoAFU);
+               }else {
+                  pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                                   pownerSess->m_device,
+                                                                   &Message->m_tranID,
+                                                                   Message->m_context,
+                                                                   uid_errnumOK);
+               }
+               kosal_free_user_buffer(kptr, buflen);
+            }
+         }
+         ccidrv_sendevent(pownerSess->m_UIHandle,
+                          pownerSess->m_device,
+                          AALQIP(pafuws_evt),
+                          Message->m_context);
+      }break;
 
       // Returns a workspace ID for the Config Space
 

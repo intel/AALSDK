@@ -174,6 +174,8 @@ struct aal_device {
    /* allocation list.  head is in aal_bus_type.alloc_list_head */
    kosal_list_head       m_alloc_list;
 
+   btAny                 m_context;        //
+
 };
 
 //-----------------
@@ -181,6 +183,9 @@ struct aal_device {
 //-----------------
 #define basedev_to_aaldev(dev)           ( kosal_container_of(dev, struct aal_device, m_dev) )
 #define aaldev_to_basedev(dev)           ((dev)->m_dev)
+
+#define aaldev_to_any(s,pdev)            ((s)(pdev->m_context))
+#define aaldev_context(pdev)             (pdev->m_context)
 
 #define aaldev_is_registered(p)          flag_is_set((p)->m_flags, AAL_DEVICE_FLAG_IS_REGISTERED)
 #define aaldev_set_registered(p)         flag_setf((p)->m_flags,   AAL_DEVICE_FLAG_IS_REGISTERED)

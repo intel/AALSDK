@@ -53,7 +53,7 @@ BEGIN_NAMESPACE(AAL)
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
 //=============================================================================
-class Environment : public CUnCopyable
+class OSAL_API Environment : public CUnCopyable
 {
 public:
    virtual ~Environment() {}
