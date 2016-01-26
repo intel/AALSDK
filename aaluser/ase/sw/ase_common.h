@@ -369,7 +369,7 @@ extern "C" {
   void session_init();
   void session_deinit();
   // Shared memory alloc/dealloc operations
-  void allocate_buffer(struct buffer_t *);
+  void allocate_buffer(struct buffer_t *, uint64_t *);
   void deallocate_buffer(struct buffer_t *);
   void deallocate_buffer_by_index(int);
   void append_wsmeta(struct wsmeta_t *);

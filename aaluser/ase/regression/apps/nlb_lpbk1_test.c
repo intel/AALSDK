@@ -21,6 +21,8 @@
 #define CSR_INTERRUPT0           0x150
 #define DSM_STATUS_TEST_COMPLETE 0x40
 
+// #define  ORIG_ALLOC_BUFFER
+
 int main(int argc, char *argv[])
 {
   int num_cl;
@@ -78,11 +80,24 @@ int main(int argc, char *argv[])
   src->is_umas = 0;
   dst->is_umas = 0;
   
+  uint64_t *dsm_sugg_addr;
+  
   // Allocate buffer
-  allocate_buffer(dsm);
-  allocate_buffer(src);
-  allocate_buffer(dst);
-
+#ifdef ORIG_ALLOC_BUFFER
+  allocate_buffer(dsm, NULL);
+  allocate_buffer(src, NULL);
+  allocate_buffer(dst, NULL);
+#else
+  // DSM suggested address
+  dsm_sugg_addr = mmap(NULL, 
+		       dsm->memsize, 
+		       PROT_READ | PROT_WRITE,
+		       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  allocate_buffer(dsm, dsm_sugg_addr);  
+  
+  allocate_buffer(src, NULL);
+  allocate_buffer(dst, NULL);
+#endif
  
   // Print buffer information
   /* ase_buffer_info(dsm); */
@@ -107,8 +122,8 @@ int main(int argc, char *argv[])
 
   /* for(i= 0; i < 10000; i++) */
   /*   { */
-      mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
-      mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
+  mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
+  mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
     /* } */
 
   /* uint64_t *data_l, *data_h; */
@@ -135,8 +150,8 @@ int main(int argc, char *argv[])
   uint32_t data32;
   /* for(i= 0; i < 10000; i++) */
 
-  while(1)
-    {
+  /* while(1) */
+  /*   { */
       mmio_read64(AFU_ID_L, &data64 );
       printf("data64 = %llx\n", (unsigned long long)data64);
       mmio_read64(AFU_ID_H, &data64 );
@@ -150,7 +165,7 @@ int main(int argc, char *argv[])
       printf("data32 = %08x\n", (uint32_t)data32);
       mmio_read32(AFU_ID_H + 4, &data32 );
       printf("data32 = %08x\n", (uint32_t)data32);
-    }
+    /* } */
 
 
   mmio_write32(CSR_NUM_LINES, num_cl);

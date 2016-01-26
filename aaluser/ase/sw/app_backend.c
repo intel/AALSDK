@@ -177,7 +177,7 @@ void session_init()
   memset(mmio_region, 0, sizeof(struct buffer_t));
   mmio_region->memsize = MMIO_LENGTH;
   mmio_region->is_mmiomap = 1;  
-  allocate_buffer(mmio_region);
+  allocate_buffer(mmio_region, NULL);
   mmio_afu_vbase = (uint64_t*)((uint64_t)mmio_region->vbase + MMIO_AFU_OFFSET);
   mmio_exist_status = ESTABLISHED;
   printf("  [APP]  AFU MMIO Virtual Base Address = %p\n", (void*) mmio_afu_vbase); 
@@ -188,7 +188,7 @@ void session_init()
   memset(umas_region, 0, sizeof(struct buffer_t));
   umas_region->memsize = UMAS_LENGTH;
   umas_region->is_umas = 1;
-  allocate_buffer(umas_region);
+  allocate_buffer(umas_region, NULL);
   umsg_umas_vbase = (uint64_t*)((uint64_t)umas_region->vbase);
   umas_exist_status = ESTABLISHED;
   printf("  [APP]  UMAS Virtual Base address = %p\n", (void*)umsg_umas_vbase);
@@ -511,7 +511,7 @@ void mmio_read64(uint32_t offset, uint64_t *data64)
  * Instantiate a buffer_t structure with given parameters
  * Must be called by ASE_APP
  */
-void allocate_buffer(struct buffer_t *mem)
+void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
 {
   FUNC_CALL_ENTRY;
 
@@ -566,14 +566,25 @@ void allocate_buffer(struct buffer_t *mem)
       perror("shm_open");
       exit(1);
     }
+      
 
   // Mmap shared memory region
-  mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_app, 0);
+  if (suggested_vaddr == (uint64_t*) NULL)
+    {
+      mem->vbase = (uint64_t) mmap(NULL, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED, mem->fd_app, 0);
+    }
+  else
+    {
+      mem->vbase = (uint64_t) mmap(suggested_vaddr, mem->memsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem->fd_app, 0);
+    }
+
+  // Check
   if(mem->vbase == (uint64_t) MAP_FAILED)
     {
       perror("mmap");
       exit(1);
     }
+  
   
   // Extend memory to required size
   ftruncate(mem->fd_app, (off_t)mem->memsize);
