@@ -104,7 +104,8 @@ package ase_pkg;
 			     CCIP_WRLINE_I = 4'h1,
 			     CCIP_WRLINE_M = 4'h2,
 			     CCIP_WRFENCE  = 4'h5,
-			     CCIP_INTR_REQ = 4'h8
+			     CCIP_INTR_REQ = 4'h8,
+			     CCIP_CMPXCHG_REQ = 4'hC
 			     } ccip_reqtype_t;  		
 
    // Response types
@@ -112,6 +113,7 @@ package ase_pkg;
 			     CCIP_RD_RESP  = 4'h4,			     
 			     CCIP_WR_RESP  = 4'h1,
 			     CCIP_INTR_RSP = 4'h8,
+			     CCIP_CMPXCHG_RSP  = 4'hC,
 			     CCIP_UMSG     = 4'hF
 			     } ccip_resptype_t;
    
@@ -169,7 +171,7 @@ package ase_pkg;
       } MMIOHdr_t;
    parameter CCIP_MMIO_TID_WIDTH    = $bits(MMIOHdr_t);
 
-   // Umsg header
+   // Umsg header (received when UMsg is received)
    typedef struct packed {
       logic [1:0] rsvd_27_26;  // 27:26 // Reserved
       logic 	  poison;      // 25    // Poison bit
@@ -181,7 +183,18 @@ package ase_pkg;
    } UMsgHdr_t;
    parameter CCIP_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
 
-
+   // CmpXchg header (received from a Compare-Exchange operation)
+   typedef struct packed {
+      ccip_vc_t       vc;
+      logic           poison;
+      logic 	      hitmiss;
+      logic 	      rsvd_23_21;
+      logic 	      matched;
+      ccip_resptype_t resp_type;
+      logic [15:0]    mdata;    
+   } CmpXchg_t;
+   parameter CCIP_CMPXCHG_HDR_WIDTH = $bits(CmpXchg_t);
+      
    // Config channel
    parameter CCIP_MMIO_ADDR_WIDTH   = 16;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
