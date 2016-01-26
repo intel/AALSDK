@@ -190,7 +190,7 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   void *pTargetVirtAddr;       // requested virtual address for the mapping
 
   // extract target VA from optArgs
-  if ( ENamedValuesOK != pOptArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+  if ( ENamedValuesOK != rInputArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
      pTargetVirtAddr = NULL;    // no mapping requested
   }
 
