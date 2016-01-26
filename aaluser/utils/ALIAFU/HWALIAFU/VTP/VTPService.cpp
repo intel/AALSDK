@@ -275,14 +275,6 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
    // Allocate the buffers
    for (size_t i = 0; i < n_buffers; i++)
    {
-      // set target virtual address for new buffer
-      bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR, va_alloc);
-
-      // Get a page size buffer
-      void *buffer;
-      ali_errnum_e err = m_pALIBuffer->bufferAllocate(pageSize, (btVirtAddr*)&buffer, *bufAllocArgs);
-      ASSERT(err == ali_errnumOK && buffer != NULL);
-
       // Shrink the reserved area in order to make a hole in the virtual
       // address space.
       if (va_base_len == pageSize)
@@ -295,6 +287,14 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
          ASSERT(mremap(va_base, va_base_len, va_base_len - pageSize, 0) == va_base);
          va_base_len -= pageSize;
       }
+
+      // set target virtual address for new buffer
+      bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR, va_alloc);
+
+      // Get a page size buffer
+      void *buffer;
+      ali_errnum_e err = m_pALIBuffer->bufferAllocate(pageSize, (btVirtAddr*)&buffer, *bufAllocArgs);
+      ASSERT(err == ali_errnumOK && buffer != NULL);
 
       // If we didn't get the mapping on our bufferAllocate(), move the shared
       // buffer's VA to the proper slot
@@ -317,8 +317,8 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
 
       // AAL gets confused if the same VA reappears.  Lock the VA returned
       // by AAL even though it isn't needed any more.
-      mmap((void*)buffer, getpagesize(), PROT_READ,
-           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
+//      mmap((void*)buffer, getpagesize(), PROT_READ,
+//           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
 
       ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
 
