@@ -64,7 +64,7 @@ using namespace AAL;
 //#define VTPSERVICE_SVC_MOD         "libVTPSERVICE" AAL_SVC_MOD_EXT
 //#define VTPSERVICE_SVC_ENTRY_POINT "libVTPSERVICE" AAL_SVC_MOD_ENTRY_SUFFIX
 
-#define HWALIAFU_IBASE "HWALIAFUIBase"
+#define ALIAFU_IBASE "ALIAFUIBase"
 #define VTP_DFH_BASE "VTPDFHBase"
 
 // TODO: replace with actual spec'd VTP GUID

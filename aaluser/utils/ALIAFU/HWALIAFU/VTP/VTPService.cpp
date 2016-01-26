@@ -141,7 +141,7 @@ btBool VTPService::init( IBase *pclientBase,
    btObjectType tmp;
 
    // check for HWALIAFU's IBase in optargs
-   if ( ENamedValuesOK != optArgs.Get(HWALIAFU_IBASE, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
@@ -315,11 +315,6 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
 
       // Next VA
       va_alloc = (void*)(size_t(va_alloc) - pageSize);
-
-      // AAL gets confused if the same VA reappears.  Lock the VA returned
-      // by AAL even though it isn't needed any more.
-//      mmap((void*)buffer, getpagesize(), PROT_READ,
-//           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, 0, 0);
 
       ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
 

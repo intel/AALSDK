@@ -156,11 +156,25 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
   return true;
 }
 
-btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature)
-{
-   // TODO: not implemented yet
+//
+// mmioGetFeature. Get pointer to feature's DFH, if found.
+//
+btBool ASEALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) {
+   // TODO: do we want to distinguish between AFUs, BBBs, and private features here? Could use an optional parameter.
+   // TODO: add actual code, see driver DFH walk
+
+   // walk DFH
+   // return first match
+   // FIXME: fake, this is a bogus location
+   *ppFeature = (void *)0xdeadbeefdeadbeef;
+   return true;
+   // if not found, do not modify ppFeature, return false.
+
    return false;
 }
+
+
+
 
 // -----------------------------------------------------
 // Buffer allocation API
@@ -173,12 +187,19 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   struct buffer_t *buf;
   int ret;
 
+  void *pTargetVirtAddr;       // requested virtual address for the mapping
+
+  // extract target VA from optArgs
+  if ( ENamedValuesOK != pOptArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+     pTargetVirtAddr = NULL;    // no mapping requested
+  }
+
   buf = (struct buffer_t *) malloc (sizeof(struct buffer_t));
   memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(buf);
+  allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
