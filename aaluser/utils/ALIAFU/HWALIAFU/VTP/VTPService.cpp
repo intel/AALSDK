@@ -141,7 +141,7 @@ btBool VTPService::init( IBase *pclientBase,
    btObjectType tmp;
 
    // check for HWALIAFU's IBase in optargs
-   if ( ENamedValuesOK != optArgs.Get(HWALIAFU_IBASE, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,

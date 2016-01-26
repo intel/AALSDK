@@ -156,13 +156,13 @@ public:
    // <end IRuntimeClient interface>
 protected:
    Runtime        m_Runtime;                ///< AAL Runtime
-   IBase         *m_pHWALIAFU_AALService;   ///< The generic AAL Service interface for the AFU.
+   IBase         *m_pALIAFU_AALService;   ///< The generic AAL Service interface for the AFU.
    IALIBuffer    *m_pALIBufferService;      ///< Pointer to Buffer Service
    IALIMMIO      *m_pALIMMIOService;        ///< Pointer to MMIO Service
    IALIReset     *m_pALIResetService;       ///< Pointer to AFU Reset Service
    CSemaphore     m_Sem;                    ///< For synchronizing with the AAL runtime.
    btInt          m_Result;                 ///< Returned result value; 0 if success
-   TransactionID  m_HWALIAFUTranID;         ///< TransactionID used for service allocation
+   TransactionID  m_ALIAFUTranID;           ///< TransactionID used for service allocation
 
    // VTP service-related information
    IBase         *m_pVTP_AALService;        ///< The generic AAL Service interface for the VTP.
@@ -190,7 +190,7 @@ protected:
 ///
 HelloALIVTPNLBApp::HelloALIVTPNLBApp() :
    m_Runtime(this),
-   m_pHWALIAFU_AALService(NULL),
+   m_pALIAFU_AALService(NULL),
    m_pALIBufferService(NULL),
    m_pALIMMIOService(NULL),
    m_pALIResetService(NULL),
@@ -204,7 +204,7 @@ HelloALIVTPNLBApp::HelloALIVTPNLBApp() :
    m_InputSize(0),
    m_pOutput(NULL),
    m_OutputSize(0),
-   m_HWALIAFUTranID(),
+   m_ALIAFUTranID(),
    m_VTPTranID()
 {
    // Register our Client side interfaces so that the Service can acquire them.
@@ -299,7 +299,7 @@ btInt HelloALIVTPNLBApp::run()
    // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Hello ALI NLB");
 
-   MSG("Allocating HWALIAFU Service");
+   MSG("Allocating ALIAFU Service");
 
    // Allocate the Service and wait for it to complete by sitting on the
    //   semaphore. The serviceAllocated() callback will be called if successful.
@@ -310,10 +310,10 @@ btInt HelloALIVTPNLBApp::run()
    //   construction) to be able in serviceAllocated() to identify which
    //   service was allocated. This is only necessary if you are allocating more
    //   than one service from a single AAL service client.
-   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_HWALIAFUTranID);
+   m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest, m_ALIAFUTranID);
    m_Sem.Wait();
    if(!m_bIsOK){
-      ERR("HWALIAFU allocation failed\n");
+      ERR("ALIAFU allocation failed\n");
       goto done_0;
    }
 
@@ -338,8 +338,8 @@ btInt HelloALIVTPNLBApp::run()
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
 
    // the VTPService will reuse the already established interfaces presented by
-   // HWALIAFU
-   Manifest.Add(HWALIAFU_IBASE, m_pHWALIAFU_AALService);
+   // the ALIAFU service
+   Manifest.Add(ALIAFU_IBASE, m_pALIAFU_AALService);
 
    // the location of the VTP device feature header
    Manifest.Add(VTP_DFH_BASE, m_pVTPDFH);
@@ -499,7 +499,7 @@ done_2:
 
 done_1:
    // Freed all three so now Release() the HWALIAFU Service through the Services IAALService::Release() method
-   (dynamic_ptr<IAALService>(iidService, m_pHWALIAFU_AALService))->Release(TransactionID());
+   (dynamic_ptr<IAALService>(iidService, m_pALIAFU_AALService))->Release(TransactionID());
    m_Sem.Wait();
 
 done_0:
@@ -519,13 +519,13 @@ void HelloALIVTPNLBApp::serviceAllocated(IBase *pServiceBase,
 {
    // This application will allocate two different services (HWALIAFU and
    //  VTPService). We can tell them apart here by looking at the TransactionID.
-   if (rTranID ==  m_HWALIAFUTranID) {
+   if (rTranID ==  m_ALIAFUTranID) {
 
       // Save the IBase for the Service. Through it we can get any other
       //  interface implemented by the Service
-      m_pHWALIAFU_AALService = pServiceBase;
-      ASSERT(NULL != m_pHWALIAFU_AALService);
-      if ( NULL == m_pHWALIAFU_AALService ) {
+      m_pALIAFU_AALService = pServiceBase;
+      ASSERT(NULL != m_pALIAFU_AALService);
+      if ( NULL == m_pALIAFU_AALService ) {
          m_bIsOK = false;
          return;
       }

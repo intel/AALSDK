@@ -92,7 +92,7 @@ public:
    ///
    /// Expects the following in the optArgs passed to it:
    ///
-   ///   HWALIAFU_IBASE       pointer to HWALIAFU
+   ///   ALIAFU_IBASE       pointer to HWALIAFU
    ///   VTP_DFH_BASE         pointer to MMIO space where VTP DFH resides
    btBool init( IBase *pclientBase,
                 NamedValueSet const &optArgs,
