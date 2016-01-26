@@ -156,11 +156,25 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
   return true;
 }
 
-btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature)
-{
-   // TODO: not implemented yet
+//
+// mmioGetFeature. Get pointer to feature's DFH, if found.
+//
+btBool ASEALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) {
+   // TODO: do we want to distinguish between AFUs, BBBs, and private features here? Could use an optional parameter.
+   // TODO: add actual code, see driver DFH walk
+
+   // walk DFH
+   // return first match
+   // FIXME: fake, this is a bogus location
+   *ppFeature = (void *)0xdeadbeefdeadbeef;
+   return true;
+   // if not found, do not modify ppFeature, return false.
+
    return false;
 }
+
+
+
 
 // -----------------------------------------------------
 // Buffer allocation API
