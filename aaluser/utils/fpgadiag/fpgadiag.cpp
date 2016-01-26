@@ -1040,7 +1040,7 @@ void INLB::ReadPerfMonitors()
 	NamedValueSet PerfMon;
 	btUnsigned64bitInt     value;
 
-	m_pALIPerf->performanceCountersGet(&PerfMon,NULL);
+	m_pALIPerf->performanceCountersGet(&PerfMon);
 
     if (PerfMon.Has(AALPERF_VERSION)) {
        PerfMon.Get( AALPERF_VERSION, &value);

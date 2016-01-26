@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file HelloAAL.cpp
+/// @file SigTap.cpp
 /// @brief Basic AFU interaction.
-/// @ingroup HelloAAL
+/// @ingroup SigTap
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
 ///
@@ -35,6 +35,7 @@
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
 /// AUTHORS: Joseph Grecco, Intel Corporation.
+///          Sadruta Chandrashekar, Intel Corporation.
 ///
 /// This Sample demonstrates the following:
 ///    - The basic structure of an AAL program using the AAL APIs.
@@ -49,7 +50,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 04/10/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 04/10/2015     JG       Initial version started based on older sample code.
+/// 01/19/2016     SC       SigTap version.@endverbatim
 //****************************************************************************
 #include <aalsdk/AAL.h>
 #include <aalsdk/Runtime.h>
