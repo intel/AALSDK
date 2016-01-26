@@ -101,7 +101,11 @@ module ccip_logger
    // Config header
    CfgHdr_t C0RxMMIOHdr;
    assign C0RxMMIOHdr = CfgHdr_t'(C0RxHdr);
-
+   
+   // Umsg header
+   UMsgHdr_t C0RxUMsgHdr;
+   assign C0RxUMsgHdr = UMsgHdr_t'(C0RxHdr);
+   
    
    /*
     * Buffer channels, request and response types
@@ -122,14 +126,13 @@ module ccip_logger
    function string print_reqtype (logic [3:0] req);
       begin
 	 case (req)
-	   CCIP_TX0_RDLINE_S : return "RdLine_S   ";
-	   CCIP_TX0_RDLINE_I : return "RdLine_I   ";
-	   CCIP_TX0_RDLINE_E : return "RdLine_E   ";
-	   CCIP_TX1_WRLINE_I : return "WrLine_I   ";
-	   CCIP_TX1_WRLINE_M : return "WrLine_M   ";
-	   CCIP_TX1_WRFENCE  : return "WrFence    ";
-	   CCIP_TX1_INTRVALID: return "IntrReq    ";
-	   default           : return "** ERROR **";
+	   CCIP_RDLINE_S : return "RdLine_S   ";
+	   CCIP_RDLINE_I : return "RdLine_I   ";
+	   CCIP_WRLINE_I : return "WrLine_I   ";
+	   CCIP_WRLINE_M : return "WrLine_M   ";
+	   CCIP_WRFENCE  : return "WrFence    ";
+	   CCIP_INTR_REQ : return "IntrReq    ";
+	   default       : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
    endfunction
@@ -138,12 +141,10 @@ module ccip_logger
    function string print_resptype (logic [3:0] resp);
       begin
 	 case (resp)
-	   CCIP_RX0_RD_RESP   : return "RdResp     ";
-	   CCIP_RX0_WR_RESP   : return "WrResp     ";
-	   CCIP_RX1_WR_RESP   : return "WrResp     ";
-	   CCIP_RX0_INTR_CMPLT: return "IntrResp   ";
-	   CCIP_RX1_INTR_CMPLT: return "IntrResp   ";
-	   default            : return "** ERROR **";
+	   CCIP_RD_RESP  : return "RdResp     ";
+	   CCIP_WR_RESP  : return "WrResp     ";
+	   CCIP_INTR_RSP : return "IntrResp   ";
+	   default       : return "** ERROR **";
 	 endcase
       end
    endfunction
@@ -324,8 +325,30 @@ module ccip_logger
 	 	    C0RxHdr.mdata);
 	 end
 	 // /************* SW -> MEM -> AFU Unordered Message  ************/
-	 // if (C0RxUmsgValid) begin
-	 // end
+	 if (C0RxUMsgValid) begin
+	    if (C0RxUMsgHdr.umsg_type) begin
+	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgHint   \t%d\n",
+						$time,
+						C0RxUMsgHdr.umsg_id
+						);
+	       $fwrite(log_fd, "%d\t   \tUMsgHint   \t%d\n",
+		       $time,
+		       C0RxUMsgHdr.umsg_id
+		       );
+	    end
+	    else if (~C0RxUMsgHdr.umsg_type) begin
+	       if (cfg.enable_cl_view) $display("%d\t   \tUMsgData   \t%d\t%x\n",
+						$time,
+						C0RxUMsgHdr.umsg_id,
+						C0RxData
+						);
+	       $fwrite(log_fd, "%d\t   \tUMsgData   \t%d\t%x\n",
+		       $time,
+		       C0RxUMsgHdr.umsg_id,
+		       C0RxData
+		       );
+	    end
+	 end
 	 // /**************** MEM -> AFU Interrupt Response  **************/
 	 // if (C0RxIntrValid) begin
 	 // end
@@ -352,6 +375,7 @@ module ccip_logger
 	 end
 	 //////////////////////////////////////////////////////////////////////////////
 	 // Wait till next clock
+	 $fflush(log_fd);	 
 	 @(posedge clk);
       end
    end

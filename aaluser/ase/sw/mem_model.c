@@ -38,53 +38,8 @@
 
 #include "ase_common.h"
 
-#if 0
-// Message queues opened by DPI
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
-int app2sim_mmioreq_rx;    // CSR Write listener MQ in RX mode
-int app2sim_umsg_rx;      // UMsg listener MQ in RX mode
-int app2sim_simkill_rx;   // Simkill listener in RX mode
-int sim2app_intr_tx;      // INTR message queue in TX mode
-#endif
-
 // '1' indicates that teardown is in progress
 int self_destruct_in_progress = 0;
-
-// FPGA offset aggregator
-// uint64_t fpga_membase_so_far = 0;
-
-
-// ---------------------------------------------------------------------
-// ase_mqueue_setup() : Set up DPI message queues
-// Set up app2sim_rx, sim2app_tx and app2sim_mmio_rx message queues
-// ---------------------------------------------------------------------
-#if 0
-void ase_mqueue_setup()
-{
-  FUNC_CALL_ENTRY;
-
-#if 0
-  mq_unlink(APP2SIM_SMQ_PREFIX);
-  mq_unlink(SIM2APP_SMQ_PREFIX);
-  mq_unlink(APP2SIM_CSR_WR_SMQ_PREFIX);
-  mq_unlink(APP2SIM_UMSG_SMQ_PREFIX);
-
-  // Depending on the calling function, activate the required queues
-  app2sim_rx         = mqueue_create(APP2SIM_SMQ_PREFIX,         O_CREAT|O_RDONLY );
-  sim2app_tx         = mqueue_create(SIM2APP_SMQ_PREFIX,         O_CREAT|O_WRONLY );
-  app2sim_mmio_rx  = mqueue_create(APP2SIM_CSR_WR_SMQ_PREFIX,  O_CREAT|O_RDONLY );
-  app2sim_umsg_rx    = mqueue_create(APP2SIM_UMSG_SMQ_PREFIX,    O_CREAT|O_RDONLY );
-#if 0
-  sim2app_intr_tx    = mqueue_create(SIM2APP_INTR_SMQ_PREFIX,    O_CREAT|O_WRONLY );
-#endif
-  app2sim_simkill_rx = mqueue_create(APP2SIM_SIMKILL_SMQ_PREFIX, O_CREAT|O_RDONLY );
-
-#endif
-
-  FUNC_CALL_EXIT;
-}
-#endif
 
 // ---------------------------------------------------------------------
 // ase_mqueue_teardown(): Teardown DPI message queues
@@ -101,9 +56,10 @@ void ase_mqueue_teardown()
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
 #if 0
-  mqueue_close(sim2app_intr_tx);       
+  // mqueue_close(sim2app_intr_tx);       
 #endif
   mqueue_close(app2sim_simkill_rx);
+  mqueue_close(app2sim_portctrl_rx);
 
   int ipc_iter;
   for(ipc_iter = 0; ipc_iter < ASE_MQ_INSTANCES; ipc_iter++)
@@ -114,20 +70,13 @@ void ase_mqueue_teardown()
 
 
 // ---------------------------------------------------------------
-// DPI Self destruct - Called if: error() occurs 
+// ASE graceful shutdown - Called if: error() occurs 
 // Deallocate & Unlink all shared memories and message queues
 // ---------------------------------------------------------------
 void ase_perror_teardown()
 {
   FUNC_CALL_ENTRY;
 
-  // close the log file first, if exists
-/* #ifdef ASE_CCI_TRANSACTION_LOGGER  */
-/*   printf("SIM-C : Terminating log file !!\n"); */
-/*   fclose(ase_cci_log_fd); */
-/* #endif */
-
-  //printf("PERROR: Goodbye, Cruel World\n");
   self_destruct_in_progress++;
 
   if (!self_destruct_in_progress)
@@ -149,6 +98,7 @@ void ase_perror_teardown()
 // memname and index populated. 
 // NOTE: This function must be called by DPI
 // ------------------------------------------------------------------
+#if 0
 int ase_recv_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
@@ -169,12 +119,13 @@ int ase_recv_msg(struct buffer_t *mem)
       return ASE_MSG_ABSENT;
     }
 }
-
+#endif
 
 // -------------------------------------------------------------------
 // ase_send_msg : Send a ase reply 
 // Convert a buffer_t to string and transmit string as a message
 // -------------------------------------------------------------------
+#if 0
 void ase_send_msg(struct buffer_t *mem)
 {
   FUNC_CALL_ENTRY;
@@ -190,7 +141,7 @@ void ase_send_msg(struct buffer_t *mem)
 
   FUNC_CALL_EXIT;
 }
-
+#endif
 
 // --------------------------------------------------------------------
 // DPI ALLOC buffer action - Allocate buffer action inside DPI
@@ -248,20 +199,25 @@ void ase_alloc_action(struct buffer_t *mem)
 
   // Append to linked list
   ll_append_buffer(new_buf);
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  ll_traverse_print();
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Reply to MEM_ALLOC_REQ message with MEM_ALLOC_REPLY
   // Set metadata to reply mode
   mem->metadata = HDR_MEM_ALLOC_REPLY;
   
   // Convert buffer_t to string
-  ase_send_msg(mem);
+  mqueue_send(sim2app_tx, (char*)mem, ASE_MQ_MSGSIZE);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
   ase_dbg_memtest(mem);
 #endif
 
-  if (mem->index == 0)
+  if (mem->is_mmiomap == 1)
     {
       // Pin CSR address
       mmio_afu_vbase = (uint64_t*)((uint64_t)mem->pbase + MMIO_AFU_OFFSET);
@@ -272,9 +228,7 @@ void ase_alloc_action(struct buffer_t *mem)
 #endif
 
       // If UMSG is enabled, write information to CSR region
-#if 0
-      ase_umsg_init(mem->pbase);
-#endif
+      // *FIXME*: Maybe BB DFH has to be updated here
     }
 
   FUNC_CALL_EXIT;
@@ -289,8 +243,13 @@ void ase_dealloc_action(struct buffer_t *buf)
 {
   FUNC_CALL_ENTRY;
 
+  char buf_str[ASE_MQ_MSGSIZE];
+  memset (buf_str, 0, ASE_MQ_MSGSIZE);
+
   // Traversal pointer
   struct buffer_t *dealloc_ptr;
+  dealloc_ptr = (struct buffer_t *) ase_malloc(sizeof(struct buffer_t));
+  memset(dealloc_ptr, 0, sizeof(struct buffer_t));
 
   // Search buffer and Invalidate
   dealloc_ptr = ll_search_buffer(buf->index);
@@ -301,7 +260,25 @@ void ase_dealloc_action(struct buffer_t *buf)
       BEGIN_YELLOW_FONTCOLOR;
       printf("SIM-C : Command to invalidate \"%s\" ...\n", dealloc_ptr->memname);
       END_YELLOW_FONTCOLOR;
-      dealloc_ptr->valid = ASE_BUFFER_INVALID;
+
+      // Mark buffer as invalid & deallocate
+      dealloc_ptr->valid = ASE_BUFFER_INVALID; 
+      munmap((void*)dealloc_ptr->vbase, (size_t)dealloc_ptr->memsize );
+      shm_unlink(dealloc_ptr->memname);
+      
+      // Respond back
+      dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
+      ll_remove_buffer(dealloc_ptr);
+      memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
+      mqueue_send(sim2app_tx, buf_str, ASE_MQ_MSGSIZE);
+    #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
+      ll_traverse_print();
+      END_YELLOW_FONTCOLOR;
+    #endif
+
+      // Remove fd
+      close(dealloc_ptr->fd_ase);
     }
   else
     {
@@ -324,7 +301,8 @@ void ase_empty_buffer(struct buffer_t *buf)
   buf->index = 0;
   buf->valid = ASE_BUFFER_INVALID;
   buf->metadata = 0;
-  strcpy(buf->memname, "");
+  //  strcpy(buf->memname, "");
+  memset(buf->memname, 0, ASE_SHM_NAME_LEN);
   buf->memsize = 0;
   buf->vbase = (uint64_t)NULL;
   buf->pbase = (uint64_t)NULL;
@@ -334,7 +312,9 @@ void ase_empty_buffer(struct buffer_t *buf)
 
 
 // --------------------------------------------------------------------
-// ase_destroy : Destroy everything, called before exiting
+// ase_destroy : Destroy everything, called before exiting OR to
+// reset simulation environment
+//
 // OPERATION:
 // Traverse trough linked list
 // - Remove each shared memory region
@@ -345,39 +325,29 @@ void ase_destroy()
   FUNC_CALL_ENTRY;
 
   struct buffer_t *ptr;
-  int ret;
+  ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 
-  char rm_shm_path[50];
+/* #ifdef ASE_DEBUG */
+/*   ll_traverse_print(); */
+/* #endif */
 
-  // Traverse through linked list
-  ptr = head;
-  while(ptr != NULL)
+  ptr = end;  
+  while((head != NULL)||(end != NULL))
     {
-      // Set rm_shm_path to NULLs
-      memset(rm_shm_path, '\0', sizeof(rm_shm_path));
+      ptr = end;
+      if(ptr->valid == ASE_BUFFER_VALID)
+	{
+	  ase_dealloc_action(ptr);
+	}
+      else
+	{
+	  ll_remove_buffer(ptr);
+	}
+    } 
 
-      // Unmap Shared memory
-      ret = munmap((void*)ptr->pbase, (size_t)ptr->memsize);
-      if (ret == -1)
-	ase_error_report("munmap", errno, ASE_OS_MEMMAP_ERR);
-      /* perror("munmap"); */
-
-      // Unlink related shared memory region
-      if(shm_unlink(ptr->memname) != 0)
-	  ase_error_report("shm_unlink", errno, ASE_OS_SHM_ERR);
-	  /* perror("shm_unlink"); */
-      
-      // Delete the SHM region
-      strcat(rm_shm_path, "rm -f /dev/shm");
-      strcat(rm_shm_path, ptr->memname);
-      system( rm_shm_path );
-      
-      // Find and destroy node
-      ll_remove_buffer(ptr);
-      
-      // Traverse to next node
-      ptr = ptr->next;
-    }
+/* #ifdef ASE_DEBUG */
+/*   ll_traverse_print(); */
+/* #endif */
   
   FUNC_CALL_EXIT;
 }
@@ -494,14 +464,19 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
   struct buffer_t *trav_ptr;
 
   // For debug only
-/* #ifdef ASE_DEBUG */
-/*   BEGIN_YELLOW_FONTCOLOR; */
-/*   printf("req_paddr = %p | ", (void *)req_paddr); */
-/*   END_YELLOW_FONTCOLOR; */
-/* #endif */
+#ifdef ASE_DEBUG
+  BEGIN_YELLOW_FONTCOLOR;
+  printf("req_paddr = %p | ", (void *)req_paddr);
+  END_YELLOW_FONTCOLOR;
+#endif
 
   // Search which buffer offset_from_pin lies in
   trav_ptr = head;
+/* #ifdef ASE_DEBUG */
+/*   BEGIN_YELLOW_FONTCOLOR; */
+/*   ll_traverse_print(); */
+/*   END_YELLOW_FONTCOLOR; */
+/* #endif */
   while(trav_ptr != NULL)
     {
       if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
@@ -510,11 +485,11 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
 	  // Debug only
-/* #ifdef ASE_DEBUG */
-/* 	  BEGIN_YELLOW_FONTCOLOR; */
-/* 	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase); */
-/* 	  END_YELLOW_FONTCOLOR; */
-/* #endif */
+#ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
+	  END_YELLOW_FONTCOLOR;
+#endif
 	  return ase_pbase;
 	}
       else
