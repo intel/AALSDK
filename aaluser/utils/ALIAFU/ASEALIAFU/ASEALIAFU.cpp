@@ -165,9 +165,10 @@ btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID,
 // -----------------------------------------------------
 // Buffer allocation API
 // -----------------------------------------------------
-AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
-					     btVirtAddr    *pBufferptr,
-					     NamedValueSet const &pOptArgs)
+AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs )
 {
   struct buffer_t *buf;
   int ret;

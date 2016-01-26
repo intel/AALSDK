@@ -217,12 +217,13 @@ btBool VTPService::Release(TransactionID const &rTranID, btTime timeout)
    return ServiceBase::Release(rTranID, timeout);
 }
 
-ali_errnum_e VTPService::bufferAllocate( btWSSize       Length,
-                                         btVirtAddr    *pBufferptr,
-                                         NamedValueSet const &optArgs) {
+ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
+                                         btVirtAddr          *pBufferptr,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs ) {
    AutoLock(this);
 
-   // FIXME: optArgs are ignored here...
+   // FIXME: Input/OUtputArgs are ignored here...
    // FIXME: we can support optArg ALI_MMAP_TARGET_VADDR also for
    //        large VTP mappings (need to add MAP_FIXED to the first mmap
    //        below).

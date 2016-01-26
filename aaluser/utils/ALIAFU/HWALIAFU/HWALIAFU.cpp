@@ -554,9 +554,10 @@ btBool  HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt 
 //
 // bufferAllocate. Allocate a shared buffer (formerly known as workspace).
 //
-AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
-                                            btVirtAddr    *pBufferptr,
-                                            NamedValueSet const &pOptArgs)
+AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize             Length,
+                                                    btVirtAddr          *pBufferptr,
+                                                    NamedValueSet const &rInputArgs,
+                                                    NamedValueSet       &rOutputArgs )
 {
    AutoLock(this);
    *pBufferptr = NULL;
@@ -580,7 +581,7 @@ AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
    struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
 
    // mmap
-   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr, pOptArgs)) {
+   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr, rInputArgs)) {
       AAL_ERR( LM_All, "FATAL: MapWSID failed");
       return ali_errnumSystem;
    }
@@ -755,7 +756,7 @@ bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 // IALIReset interface implementation
 // ---------------------------------------------------------------------------
 
-IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
 {
    // Create the Transaction
    AFUQuiesceAndHalt transaction;
@@ -776,7 +777,7 @@ IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
    return e_OK;
 }
 
-IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 {
    // Create the Transaction
    AFUEnable transaction;
@@ -798,7 +799,7 @@ IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
 
 }
 
-IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
    IALIReset::e_Reset ret = afuQuiesceAndHalt();
 
@@ -811,8 +812,8 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
    return ret;
 }
 
-btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
-                                        NamedValueSet const  *pOptArgs )
+btBool HWALIAFU::performanceCountersGet ( INamedValueSet * const  pResult,
+                                          NamedValueSet    const &pOptArgs )
 {
 
    btWSSize size;
@@ -883,7 +884,7 @@ btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
 /// @return     void. Callback in IALIReconfigureClient.
 ///
 void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
-                                 NamedValueSet const *pOptArgs)
+                                 NamedValueSet const &rInputArgs)
 {
    AFUDeactivateTransaction deactivatetrans(rTranID);
    // Send transaction
@@ -908,14 +909,14 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
 /// @return     void. Callback in IALIReconfigureClient.
 ///
 void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
-                                NamedValueSet const *pOptArgs)
+                                NamedValueSet const &rInputArgs)
 {
    btByte        *bufptr      = NULL;
    std::streampos    filesize    = 0;
 
-   if(pOptArgs->Has(AALCONF_FILENAMEKEY)){
+   if(rInputArgs.Has(AALCONF_FILENAMEKEY)){
       btcString filename;
-      pOptArgs->Get(AALCONF_FILENAMEKEY, &filename);
+      rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
       std::ifstream bitfile(filename, std::ios::binary );
 
       bitfile.seekg( 0, std::ios::end );
@@ -970,7 +971,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 /// @return     void. Callback in IALIReconfigureClient.
 ///
 void HWALIAFU::reconfActivate( TransactionID const &rTranID,
-                               NamedValueSet const *pOptArgs)
+                               NamedValueSet const &rInputArgs)
 {
    AFUActivateTransaction activatetrans(rTranID);
    // Send transaction

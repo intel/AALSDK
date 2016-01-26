@@ -316,15 +316,23 @@ public:
 
    /// @brief Allocate a Workspace.
    ///
-   /// @param[in]  Length   Requested length, in bytes.
-   /// @param[out] Bufferptr   Buffer Pointer.
-   /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  Length       Requested length, in bytes.
+   /// @param[out] Bufferptr    Buffer Pointer.
+   /// @param[in]  rInputArgs   Reference to optional input arguments if needed.
+   /// @param[out] rOutputArgs  Reference to optional return arguments if needed.
+
    ///
    /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr ) = 0;
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet const &optArgs = NamedValueSet() ) = 0;
+                                             NamedValueSet const &rInputArgs ) = 0;
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs ) = 0;
 
    /// @brief Free a previously-allocated Workspace.
    ///
@@ -406,8 +414,9 @@ public:
    /// }
    /// @endcode
 
-   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
-                                         NamedValueSet const  *pOptArgs = NULL) = 0;
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult ) = 0;
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult,
+                                           NamedValueSet    const &pOptArgs ) = 0;
 }; // class IALIPerf
 
 
@@ -443,12 +452,13 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS    Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded, other values if a problem.
-   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
-   ///                the provided timeout. (Currently no way to set timeout).
+   /// @param[in]  rInputArgs      Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset         e_OK if succeeded, other values if a problem.
+   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                             the provided timeout. (Currently no way to set timeout).
    ///
-   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuQuiesceAndHalt( void ) = 0;
+   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
@@ -459,10 +469,11 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded. No errors expected.
+   /// @param[in]  rInputArgs  Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset     e_OK if succeeded. No errors expected.
    ///
-   virtual e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuEnable( void ) = 0;
+   virtual e_Reset afuEnable( NamedValueSet const &rInputArgs) = 0;
 
    /// @brief Request a complete Reset. Convenience function combining other two.
    ///
@@ -475,12 +486,13 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded, other values if a problem.
-   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
-   ///                the provided timeout. (Currently no way to set timeout).
+   /// @param[in]  rInputArgs              Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset                 e_OK if succeeded, other values if a problem.
+   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                                     the provided timeout. (Currently no way to set timeout).
    ///
-   virtual e_Reset afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuReset( void ) = 0;
+   virtual e_Reset afuReset( NamedValueSet const &rInputArgs ) = 0;
 }; // class IALIReset
 
 
@@ -517,11 +529,11 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfDeactivate( TransactionID const &rTranID,
-                                  NamedValueSet const *pOptArgs = NULL) = 0;
+                                  NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Configure an AFU.
    ///
@@ -532,11 +544,11 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments. Initially need a bitstream.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfConfigure( TransactionID const &rTranID,
-                                 NamedValueSet const *pOptArgs = NULL) = 0;
+                                 NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Activate an AFU after it has been reconfigured.
    ///
@@ -546,11 +558,12 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfActivate( TransactionID const &rTranID,
-                                NamedValueSet const *pOptArgs = NULL) = 0;
+                                NamedValueSet const &rInputArgs ) = 0;
+
 }; // class IALIReconfigure
 
 

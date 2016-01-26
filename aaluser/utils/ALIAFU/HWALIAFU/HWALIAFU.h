@@ -145,8 +145,19 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
 
    // <IALIBuffer>
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr ) { return bufferAllocate(Length, pBufferptr, AAL::NamedValueSet()); }
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet const      &pOptArgs = NamedValueSet() );
+                                             NamedValueSet const &rInputArgs )
+   {
+      NamedValueSet temp = NamedValueSet();
+      return bufferAllocate(Length, pBufferptr, rInputArgs, temp);
+   }
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs );
+
    virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address);
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
    // </IALIBuffer>
@@ -160,9 +171,12 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    // </IALIUMsg>
 
    // <IALIReset>
-   virtual IALIReset::e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL);
-   virtual IALIReset::e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL);
-   virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL);
+   virtual e_Reset afuQuiesceAndHalt( void ) { return afuQuiesceAndHalt(NamedValueSet()); }
+   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const &rInputArgs );
+   virtual e_Reset afuEnable( void ) { return afuEnable(NamedValueSet()); }
+   virtual e_Reset afuEnable( NamedValueSet const &rInputArgs);
+   virtual e_Reset afuReset( void ) { return afuReset(NamedValueSet()); }
+   virtual e_Reset afuReset( NamedValueSet const &rInputArgs );
    // </IALIReset>
 
    // <IServiceClient>
@@ -179,18 +193,18 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    // </IAFUProxyClient>
 
    //<IALIPerf>
-   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
-                                          NamedValueSet const  *pOptArgs ) ;
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult ) { return performanceCountersGet(pResult, NamedValueSet()); }
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult,
+                                           NamedValueSet    const &pOptArgs );
    //</IALIPerf>
 
    // <ALIReconfigure>
-   void reconfDeactivate( TransactionID const &rTranID,
-                          NamedValueSet const *pOptArgs = NULL);
-
-   void reconfConfigure( TransactionID const &rTranID,
-                         NamedValueSet const *pOptArgs = NULL);
-   void reconfActivate( TransactionID const &rTranID,
-                        NamedValueSet const *pOptArgs = NULL);
+   virtual void reconfDeactivate( TransactionID const &rTranID,
+                                  NamedValueSet const &rInputArgs );
+   virtual void reconfConfigure( TransactionID const &rTranID,
+                                 NamedValueSet const &rInputArgs );
+   virtual void reconfActivate( TransactionID const &rTranID,
+                                NamedValueSet const &rInputArgs );
    // </ALIReconfigure>
    enum InitTransaction {
       GetMMIO = 1,

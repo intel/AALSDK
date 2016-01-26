@@ -102,9 +102,19 @@ public:
    btBool Release(TransactionID const &rTranID, btTime timeout=AAL_INFINITE_WAIT);
 
 // <IVTPService>
-   ali_errnum_e bufferAllocate( btWSSize       Length,
-                                btVirtAddr    *pBufferptr,
-                                NamedValueSet const &optArgs = NamedValueSet());
+   ali_errnum_e bufferAllocate( btWSSize             Length,
+                                btVirtAddr          *pBufferptr ) { return bufferAllocate(Length, pBufferptr, AAL::NamedValueSet()); }
+   ali_errnum_e bufferAllocate( btWSSize             Length,
+                                btVirtAddr          *pBufferptr,
+                                NamedValueSet const &rInputArgs )
+   {
+      NamedValueSet temp = NamedValueSet();
+      return bufferAllocate(Length, pBufferptr, rInputArgs, temp);
+   }
+   ali_errnum_e bufferAllocate( btWSSize             Length,
+                                btVirtAddr          *pBufferptr,
+                                NamedValueSet const &rInputArgs,
+                                NamedValueSet       &rOutputArgs );
    ali_errnum_e bufferFree(     btVirtAddr     Address);
    ali_errnum_e bufferFreeAll();
    btPhysAddr   bufferGetIOVA(  btVirtAddr     Address);

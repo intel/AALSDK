@@ -282,7 +282,8 @@ btInt ALIConfAFUApp::run()
    //=============================
    MSG("Running Test");
    if(true == m_bIsOK){
-      m_pALIReconfService->reconfDeactivate(TransactionID());
+      // FIXME: could reuse existing empty NVS for less overhead
+      m_pALIReconfService->reconfDeactivate(TransactionID(), NamedValueSet());
       m_Sem.Wait();
 
       NamedValueSet nvs;
@@ -290,11 +291,11 @@ btInt ALIConfAFUApp::run()
       nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
 
 
-      m_pALIReconfService->reconfConfigure(TransactionID(), &nvs);
+      m_pALIReconfService->reconfConfigure(TransactionID(), nvs);
       m_Sem.Wait();
 
-
-      m_pALIReconfService->reconfActivate(TransactionID());
+      // FIXME: could reuse existing empty NVS for less overhead
+      m_pALIReconfService->reconfActivate(TransactionID(), NamedValueSet());
       m_Sem.Wait();
    }
    MSG("Done Running Test");
