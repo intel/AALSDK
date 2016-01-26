@@ -340,7 +340,18 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
    wire                         cr2re_dsm_base_valid;
    wire                         re2cr_wrlock_n;
    wire                         cr2s1_csr_write;
-
+   
+   logic                        ab2re_RdSop;
+   logic [1:0]                  ab2re_WrLen;
+   logic [1:0]                  ab2re_RdLen;
+   logic                        ab2re_WrSop;
+                                
+   logic                        re2ab_RdRspFormat;
+   logic [1:0]                  re2ab_RdRspCLnum;
+   logic                        re2ab_WrRspFormat;
+   logic [1:0]                  re2ab_WrRspCLnum;
+   logic [1:0]                  re2xy_multiCL_len;
+	
    reg                          SoftReset_qn=0;
    always @(posedge Clk_16UI)
    begin
@@ -407,7 +418,18 @@ inst_requestor(
        ab2re_ErrorInfo,                // [255:0]               arbiter:        error information
        ab2re_ErrorValid,               //                       arbiter:        test has detected an error
        test_SoftReset_n,               //                       requestor:      rest the app
-       re2cr_wrlock_n                  //                       requestor:      when low, block csr writes
+       re2cr_wrlock_n,                 //                       requestor:      when low, block csr writes
+       
+       ab2re_RdLen,
+       ab2re_RdSop,
+       ab2re_WrLen,
+       ab2re_WrSop,
+       	   
+       re2ab_RdRspFormat,
+       re2ab_RdRspCLnum,
+       re2ab_WrRspFormat,
+       re2ab_WrRspCLnum,
+       re2xy_multiCL_len
 );
 
 arbiter #(.PEND_THRESH(PEND_THRESH),
@@ -453,7 +475,18 @@ inst_arbiter (
        ab2re_ErrorInfo,                // [255:0]               arbiter:           error information
        ab2re_ErrorValid,               //                       arbiter:           test has detected an error
        cr2s1_csr_write,
-       test_SoftReset_n                //                       requestor:         rest the app
+       test_SoftReset_n,               //                       requestor:         rest the app
+	   
+       ab2re_RdLen,
+       ab2re_RdSop,
+       ab2re_WrLen,
+       ab2re_WrSop,
+	   	   
+       re2ab_RdRspFormat,
+       re2ab_RdRspCLnum,
+       re2ab_WrRspFormat,
+       re2ab_WrRspCLnum,
+       re2xy_multiCL_len
 );
 
 logic [31:0]                cr2cf_CfgHeader;

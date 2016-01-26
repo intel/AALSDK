@@ -304,9 +304,9 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
            end
            2'h1:            // CSR Write
                rd_go   <= cr2s1_csr_write;
-           2'h2:            // UMsg Mode 0 (without data)
+           2'h2:            // UMsg Mode 0 (with Data)
                rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[15]==1'b0 && ab2s1_RdRsp[5:0]==1'b0;
-           2'h3:            // UMsg Mode 1 (with data)
+           2'h3:            // UMsg Mode 1 (with Hint+Data)
                rd_go    <= ab2s1_UMsgValid && ab2s1_RdRsp[15]==1'b1 && ab2s1_RdRsp[5:0]==1'b0;
        endcase
 

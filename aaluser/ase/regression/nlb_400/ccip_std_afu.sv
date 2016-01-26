@@ -14,15 +14,15 @@ import ccip_if_pkg::*;
 module ccip_std_afu(
   // CCI-P Clocks and Resets
   input           logic             vl_clk_LPdomain_16ui,                      // CCI interface clock
-  input           logic             vl_clk_LPdomain_64ui,                      // 1/4x Frequency of interface clock. Synchronous.
   input           logic             vl_clk_LPdomain_32ui,                      // 1/2x Frequency of interface clock. Synchronous.
+  input           logic             vl_clk_LPdomain_64ui,                      // 1/4x Frequency of interface clock. Synchronous.
   input           logic             ffs_LP16ui_afu_SoftReset_n,                // CCI-P Soft Reset
   input           logic [1:0]       ffs_LP16ui_afu_PwrState,                   // CCI-P AFU Power State
   input           logic             ffs_LP16ui_afu_Error,                      // CCI-P Protocol Error Detected
 
   // Data ports
-  output          t_if_ccip_Tx      ffs_LP16ui_sTxData_afu,                    // CCI-P Tx Port
-  input           t_if_ccip_Rx      ffs_LP16ui_sRxData_afu                     // CCI-P Rx Port
+  input           t_if_ccip_Rx      ffs_LP16ui_sRxData_afu,                    // CCI-P Rx Port
+  output          t_if_ccip_Tx      ffs_LP16ui_sTxData_afu                     // CCI-P Tx Port
 );
 
 

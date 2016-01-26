@@ -41,12 +41,15 @@ string:
 
 
 ################################################
-all: ase_svfifo
+all: channel
 
 sim:
 	./simv -l run.log -ucli -do run.tcl  -cm line+fsm+cond+tgl+branch
 #	urg -dir work/coverage.vdb -format both
 #	dve -vpd inter.vpd -session session.tcl
+
+wave: 
+	dve -vpd inter.vpd -full64 &
 
 ################################################
 clean:

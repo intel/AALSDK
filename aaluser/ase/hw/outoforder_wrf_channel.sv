@@ -450,7 +450,8 @@ module outoforder_wrf_channel
 	    // ret_free_slot = slot_lookup[find_iter % NUM_WAIT_STATIONS];
 	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
    	    if (~latbuf_used[ret_free_slot] && 
-		~records[ret_free_slot].record_valid ) begin
+		~records[ret_free_slot].record_valid && 
+		~records[ret_free_slot].record_pop ) begin
    	       return ret_free_slot;
    	    end
    	 end
@@ -687,7 +688,6 @@ module outoforder_wrf_channel
 
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
-   // logic [OUTFIFO_WIDTH-1:0] 	 outfifo_data_in;
 
    // Read from latency scoreboard and push to outfifo
    // function void latbuf_pop_unroll_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$] );

@@ -91,7 +91,6 @@ localparam      CSR_NUM_LINES        = 16'h130;    // 32b             // RW   Nu
 localparam      CSR_CTL              = 16'h138;    // 32b             // RW   Control CSR to start n stop the test
 localparam      CSR_CFG              = 16'h140;    // 32b             // RW   Configures test mode, wrthru, cont and delay mode
 localparam      CSR_INACT_THRESH     = 16'h148;    // 32b             // RW   set the threshold limit for inactivity trigger
-localparam      CSR_INTERRUPT0       = 16'h150;    // 32b             // RW   SW allocates Interrupt APIC ID & Vector
 
 localparam      CSR_SWTEST_MSG       = 16'h158;    // 32b             // RW   Write to this serves as a notification to SW test   
  
@@ -152,6 +151,7 @@ reg [8:0]       afu_csr_tid_T1, afu_csr_tid_T2, afu_csr_tid_T3;
 reg [14:0]      afu_csr_offset_8B_T1;
 reg             range_valid;
 integer i;
+assign cr2re_interrupt0 = 0;
 
 initial begin
     for (i=0;i<2**L_CFG_SEG_SIZE;i=i+1)
@@ -166,7 +166,6 @@ assign     cr2re_dst_address     = func_csr_connect_4B(CSR_DST_ADDR,csr_reg[CSR_
 assign     cr2re_num_lines[31:16]= 16'h0;
 assign     cr2re_num_lines[15:0] = func_csr_connect_4B(CSR_NUM_LINES,csr_reg[CSR_NUM_LINES>>3]);
 assign     cr2re_inact_thresh    = func_csr_connect_4B(CSR_INACT_THRESH,csr_reg[CSR_INACT_THRESH>>3]);
-assign     cr2re_interrupt0      = func_csr_connect_4B(CSR_INTERRUPT0,csr_reg[CSR_INTERRUPT0>>3]);
 assign     cr2re_cfg             = func_csr_connect_4B(CSR_CFG,csr_reg[CSR_CFG>>3]);
 
 function automatic [31:0] func_csr_connect_4B;
@@ -384,12 +383,6 @@ begin
                   64'h0
                  );
 
-         set_attr(CSR_INTERRUPT0  ,
-                  NO_STAGED_CSR,
-                  re2cr_wrlock_n,
-                  {64{RW}},
-                  64'h0
-                 );
 
          set_attr(CSR_SWTEST_MSG,
                   NO_STAGED_CSR,

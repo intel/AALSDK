@@ -1,5 +1,8 @@
 #include "ase_common.h"
 
+#define MCL_SET                  0x0
+
+/////////////////////////////////////////
 #define DFH                      0x0000
 #define AFU_ID_L                 0x0008
 #define AFU_ID_H                 0x0010
@@ -20,8 +23,8 @@
 #define CSR_INACT_THRESH         0x148
 #define CSR_INTERRUPT0           0x150
 #define DSM_STATUS_TEST_COMPLETE 0x40
-
-// #define  ORIG_ALLOC_BUFFER
+/////////////////////////////////////////
+#define  ORIG_ALLOC_BUFFER
 
 int main(int argc, char *argv[])
 {
@@ -68,9 +71,9 @@ int main(int argc, char *argv[])
   memset(dst, '0', sizeof(struct buffer_t));  
   
   //Assign buffer size
-  dsm->memsize  = 2*1024*1024;
-  src->memsize = num_cl*64;
-  dst->memsize = num_cl*64;
+  dsm->memsize = 2*1024*1024;
+  src->memsize = 2*1024*1024; // num_cl*64;
+  dst->memsize = 2*1024*1024; // num_cl*64;
 
   dsm->is_mmiomap = 0;
   src->is_mmiomap = 0;
@@ -170,7 +173,7 @@ int main(int argc, char *argv[])
 
   mmio_write32(CSR_NUM_LINES, num_cl);
 
-  mmio_write32(CSR_CFG, 0);  
+  mmio_write32(CSR_CFG, (0 | (MCL_SET << 5)) );  
 
   uint32_t *status_addr = (uint32_t *)((uint64_t)dsm->vbase + DSM_STATUS_TEST_COMPLETE);
 

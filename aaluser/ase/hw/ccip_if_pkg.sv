@@ -16,15 +16,17 @@ typedef enum logic [3:0] {
     eREQ_WRFENCE   = 4'h5,      // Memory Write Fence ** NOT SUPPORTED FOR VC_VA channel **
     eREQ_RDLINE_S  = 4'h4,      // Memory Read with FPGA Cache Hint=Shared
     eREQ_RDLINE_I  = 4'h6,      // Memory Read with FPGA Cache Hint=Invalid
-    eREQ_INTR      = 4'h8       // Interrupt the CPU ** NOT SUPPORTED CURRENTLY **
+    eREQ_INTR      = 4'h8,      // Interrupt the CPU
+    eREQ_CMPXCHG   = 4'hc       // Compare-Exchange for Memory Addr
 } t_ccip_req;
 // Response Type  Encodings
 //----------------------------------------------------------------------
 typedef enum logic [3:0] {
-    eRSP_WRLINE = 4'h1,         // Memory Write
-    eRSP_RDLINE = 4'h4,         // Memory Read
-    eRSP_INTR   = 4'h8,         // Interrupt delivered to the CPU ** NOT SUPPORTED CURRENTLY **
-    eRSP_UMSG   = 4'hF          // UMsg received ** NOT SUPPORTED CURRENTLY **
+    eRSP_WRLINE     = 4'h1,     // Memory Write
+    eRSP_RDLINE     = 4'h4,     // Memory Read
+    eRSP_INTR       = 4'h8,     // Interrupt delivered to the CPU ** NOT SUPPORTED CURRENTLY **
+    eRSP_CMPXCHG    = 4'hc,     // Compare-Exchange for Memory Addr
+    eRSP_UMSG       = 4'hF      // UMsg received ** NOT SUPPORTED CURRENTLY **
 } t_ccip_rsp;
 //
 // Virtual Channel Select
@@ -42,7 +44,7 @@ typedef struct packed {
     t_ccip_vc       vc_sel;
     logic           sop;
     logic           rsvd1;
-    logic [1:0]     length;
+    logic [1:0]     cl_len;
     t_ccip_req      req_type;
     logic [5:0]     rsvd0;
     logic [41:0]    address;
