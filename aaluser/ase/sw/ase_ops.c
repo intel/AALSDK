@@ -38,8 +38,8 @@
 struct buffer_t *head;
 struct buffer_t *end;
 
-uint64_t csr_fake_pin;
-struct timeval start;
+// uint64_t csr_fake_pin;
+// struct timeval start;
 
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
@@ -80,18 +80,20 @@ void ase_buffer_info(struct buffer_t *mem)
   FUNC_CALL_ENTRY;  
   
   BEGIN_YELLOW_FONTCOLOR;
-  printf("Shared BUFFER parameters...\n");
+  printf("BUFFER parameters...\n");
   printf("\tfd_app      = %d \n",    mem->fd_app);
   printf("\tfd_ase      = %d \n",    mem->fd_ase);
   printf("\tindex       = %d \n",    mem->index);
-  printf("\tvalid       = %x \n",    mem->valid);
+  printf("\tvalid       = %s \n",    (mem->valid == 0xffff) ? "VALID" : "INVALID" );
   printf("\tAPPVirtBase = %p \n",    (void *)mem->vbase); 
   printf("\tSIMVirtBase = %p \n",    (void *)mem->pbase); 
   printf("\tBufferSize  = %x \n",    mem->memsize);  
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
-  BEGIN_YELLOW_FONTCOLOR;
+  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap) ? "YES" : "NO");
+  printf("\tisUMAS      = %s\n",     (mem->is_umas) ? "YES" : "NO");
+  END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
 }
@@ -124,25 +126,28 @@ void ase_buffer_t_to_str(struct buffer_t *buf, char *str)
 {
   FUNC_CALL_ENTRY;
 
-  // Initialise string to nulls
-  memset(str, '\0', ASE_MQ_MSGSIZE);// strlen(str));
+  memcpy(str, (char*)buf, sizeof(struct buffer_t));
 
-  if(buf->metadata == HDR_MEM_ALLOC_REQ)
-    {
-      // Form an allocate message request
-      sprintf(str, "%d %d %s %d %ld %d %ld", buf->metadata, buf->fd_app, buf->memname, buf->valid, (long int)buf->memsize, buf->index, (long int)buf->vbase);
-    }
-  else if (buf->metadata == HDR_MEM_ALLOC_REPLY)
-    {
-      // Form an allocate message reply
-      sprintf(str, "%d %d %ld %ld %ld", buf->metadata, buf->fd_ase, buf->pbase, buf->fake_paddr, buf->fake_paddr_hi);
-    }
-  else if (buf->metadata == HDR_MEM_DEALLOC_REQ)
-    {
-      // Form a deallocate request
-      sprintf(str, "%d %d %s", buf->metadata, buf->index, buf->memname);
-    }
+#if 0
+  /* // Initialise string to nulls */
+  /* memset(str, '\0', ASE_MQ_MSGSIZE);// strlen(str)); */
 
+  /* if(buf->metadata == HDR_MEM_ALLOC_REQ) */
+  /*   { */
+  /*     // Form an allocate message request */
+  /*     sprintf(str, "%d %d %s %d %ld %d %ld", buf->metadata, buf->fd_app, buf->memname, buf->valid, (long int)buf->memsize, buf->index, (long int)buf->vbase); */
+  /*   } */
+  /* else if (buf->metadata == HDR_MEM_ALLOC_REPLY) */
+  /*   { */
+  /*     // Form an allocate message reply */
+  /*     sprintf(str, "%d %d %ld %ld %ld", buf->metadata, buf->fd_ase, buf->pbase, buf->fake_paddr, buf->fake_paddr_hi); */
+  /*   } */
+  /* else if (buf->metadata == HDR_MEM_DEALLOC_REQ) */
+  /*   { */
+  /*     // Form a deallocate request */
+  /*     sprintf(str, "%d %d %s", buf->metadata, buf->index, buf->memname); */
+  /*   } */
+#endif
   FUNC_CALL_EXIT;
 }
 
@@ -154,46 +159,50 @@ void ase_buffer_t_to_str(struct buffer_t *buf, char *str)
 void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
 {
   FUNC_CALL_ENTRY;
-
-  char *pch;
   
-  pch = strtok(str, " ");
-  buf->metadata = atoi(pch);
-  if(buf->metadata == HDR_MEM_ALLOC_REQ)
-    {
-      // Tokenize remaining fields of ALLOC_MSG
-      pch = strtok(NULL, " ");
-      buf->fd_app = atoi(pch);     // APP-side file descriptor
-      pch = strtok(NULL, " ");
-      strcpy(buf->memname, pch);   // Memory name
-      pch = strtok(NULL, " ");
-      buf->valid = atoi(pch);      // Indicates buffer is valid
-      pch = strtok(NULL, " ");
-      buf->memsize = atoi(pch);    // Memory size
-      pch = strtok(NULL, " ");
-      buf->index = atoi(pch);      // Buffer ID
-      pch = strtok(NULL, " ");
-      buf->vbase = atol(pch);      // APP-side virtual base
-    }
-  else if(buf->metadata == HDR_MEM_ALLOC_REPLY)
-    {
-      // Tokenize remaining 2 field of ALLOC_REPLY
-      pch = strtok(NULL, " "); 
-      buf->fd_ase = atoi(pch);     // DPI-side file descriptor
-      pch = strtok(NULL, " "); 
-      buf->pbase = atol(pch);      // DPI sude virtual address
-      pch = strtok(NULL, " ");  
-      buf->fake_paddr = atol(pch); // Fake physical address
-      pch = strtok(NULL, " ");  
-      buf->fake_paddr_hi = atol(pch); // Fake high point in offsets
-    }
-  else if(buf->metadata == HDR_MEM_DEALLOC_REQ)
-    {
-      pch = strtok(NULL, " ");
-      buf->index = atoi(pch);      // Index
-      pch = strtok(NULL, " ");
-      strcpy(buf->memname, pch);   // Memory name
-    }
+  memcpy((char*)buf, str, sizeof(struct buffer_t));
+  
+#if 0  
+  /* char *pch; */
+
+  /* pch = strtok(str, " "); */
+  /* buf->metadata = atoi(pch); */
+  /* if(buf->metadata == HDR_MEM_ALLOC_REQ) */
+  /*   { */
+  /*     // Tokenize remaining fields of ALLOC_MSG */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->fd_app = atoi(pch);     // APP-side file descriptor */
+  /*     pch = strtok(NULL, " "); */
+  /*     strcpy(buf->memname, pch);   // Memory name */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->valid = atoi(pch);      // Indicates buffer is valid */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->memsize = atoi(pch);    // Memory size */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->index = atoi(pch);      // Buffer ID */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->vbase = atol(pch);      // APP-side virtual base */
+  /*   } */
+  /* else if(buf->metadata == HDR_MEM_ALLOC_REPLY) */
+  /*   { */
+  /*     // Tokenize remaining 2 field of ALLOC_REPLY */
+  /*     pch = strtok(NULL, " ");  */
+  /*     buf->fd_ase = atoi(pch);     // DPI-side file descriptor */
+  /*     pch = strtok(NULL, " ");  */
+  /*     buf->pbase = atol(pch);      // DPI sude virtual address */
+  /*     pch = strtok(NULL, " ");   */
+  /*     buf->fake_paddr = atol(pch); // Fake physical address */
+  /*     pch = strtok(NULL, " ");   */
+  /*     buf->fake_paddr_hi = atol(pch); // Fake high point in offsets */
+  /*   } */
+  /* else if(buf->metadata == HDR_MEM_DEALLOC_REQ) */
+  /*   { */
+  /*     pch = strtok(NULL, " "); */
+  /*     buf->index = atoi(pch);      // Index */
+  /*     pch = strtok(NULL, " "); */
+  /*     strcpy(buf->memname, pch);   // Memory name */
+  /*   } */
+#endif
 
   FUNC_CALL_EXIT;
 }
@@ -231,7 +240,7 @@ char* ase_eval_session_directory()
   /* int err; */
     
   workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  if (!workdir_path) return NULL;
+  // if (!workdir_path) return NULL;
 
   // Evaluate basename location
 #ifdef SIM_SIDE
@@ -241,11 +250,16 @@ char* ase_eval_session_directory()
 #endif
       
   // Locate work directory
-  if( env_path) {
-     strcat( workdir_path, env_path );
-  } else {
-     *workdir_path = '\0';
-  }
+  if( env_path) 
+    {
+      // strcat( workdir_path, env_path );
+      memcpy(workdir_path, env_path, ASE_FILEPATH_LEN);
+    } 
+  /* else  */
+  /*   { */
+  /*     *workdir_path = '\0'; */
+  /*   } */
+
   // strcat( workdir_path, "/work/" );  || RRS:
 
   // *FIXME*: Idiot-proof the work directory
@@ -254,6 +268,7 @@ char* ase_eval_session_directory()
   
   return workdir_path;
 }
+
 //char* ase_eval_session_directory()
 //{
 //  FUNC_CALL_ENTRY;
@@ -290,7 +305,9 @@ char* ase_malloc (size_t size)
   FUNC_CALL_ENTRY;
 
   char *buffer;
+
   buffer = malloc (size);
+  // posix_memalign((void**)&buffer, (size_t)getpagesize(), size);
   if (buffer == NULL)
     {
       ase_error_report ("malloc", errno, ASE_OS_MALLOC_ERR);
@@ -304,7 +321,7 @@ char* ase_malloc (size_t size)
     }   
   else
     {
-      memset (buffer, '\0', size);
+      memset (buffer, 0, size);
     }
 
   FUNC_CALL_EXIT;

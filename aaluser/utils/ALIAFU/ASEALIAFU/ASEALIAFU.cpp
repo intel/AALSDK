@@ -172,12 +172,19 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
   struct buffer_t *buf;
   int ret;
 
+  void *pTargetVirtAddr;       // requested virtual address for the mapping
+
+  // extract target VA from optArgs
+  if ( ENamedValuesOK != pOptArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+     pTargetVirtAddr = NULL;    // no mapping requested
+  }
+
   buf = (struct buffer_t *) malloc (sizeof(struct buffer_t));
   memset(buf, 0, sizeof(buffer_t));
 
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(buf);
+  allocate_buffer(buf, (uint64_t*)pTargetVirtAddr);
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||
