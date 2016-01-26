@@ -11,10 +11,6 @@ channel:
 	../../hw/outoforder_wrf_channel.sv \
 	tb_channel.sv \
 
-	# ../../hw/ase_fifo.sv \
-	# ../../hw/sdp_ram.sv \
-
-
 latency_pipe:
 	vcs -lca -full64 -nc ../../hw/latency_pipe.sv tb_latency_pipe.sv -sverilog +v2k -override_timescale=10ps/10ps -l comp.log
 

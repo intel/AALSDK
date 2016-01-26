@@ -8,26 +8,30 @@ module stream_checker
    (
     input logic 		clk,
     input logic 		valid_in,
-    input 			TxHdr_t meta_in,
+    input TxHdr_t               hdr_in,
     input logic [TID_WIDTH-1:0] tid_in,
     input logic 		valid_out,
-    input 			TxHdr_t meta_out,
+    input TxHdr_t               txhdr_out,
+    input RxHdr_t               rxhdr_out,
     input logic [TID_WIDTH-1:0] tid_out    
     );
 
    int 			  check_array[*];
    
    always @(posedge clk) begin
-      if (valid_in && (meta_in.reqtype != CCIP_WRFENCE)) begin
-	 check_array[tid_in] = meta_in;	 
+      if (valid_in && (hdr_in.reqtype != CCIP_WRFENCE)) begin
+	 // check_array[tid_in] = hdr_in;
+	 for(int ii = 0; ii <= hdr_in.len; ii = ii + 1) begin
+	    check_array[ {tid_in, ii[1:0]} ] = hdr_in;	    
+	 end
       end
       if (valid_out) begin
-	 if (check_array.exists(tid_out)) begin
-	    check_array.delete(tid_out);
+	 if (check_array.exists({tid_out, rxhdr_out.clnum}) ) begin
+	    check_array.delete({tid_out, rxhdr_out.clnum});
 	 end
 	 else begin
 	    `BEGIN_RED_FONTCOLOR;
-	    $display("%m (%d) => tid = %x, meta = %x was not found in checker memory !!", $time, tid_out, meta_out);
+	    $display("%m (%d) => tid = %x, meta = %x was not found in checker memory !!", $time, tid_out, txhdr_out);
 	    `END_RED_FONTCOLOR;
 	 end
       end      

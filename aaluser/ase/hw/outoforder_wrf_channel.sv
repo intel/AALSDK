@@ -967,7 +967,7 @@ module outoforder_wrf_channel
     */
 `ifdef ASE_DEBUG
    stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH)
-   checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, tid_out);
+   checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, rxhdr_out,tid_out);
 `endif
 
 endmodule // outoforder_wrf_channel
