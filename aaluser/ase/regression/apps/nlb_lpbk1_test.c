@@ -1,6 +1,7 @@
 #include "ase_common.h"
 
 #define MCL_SET                  0x1
+#define VC_SET                   0x2
 
 /////////////////////////////////////////
 #define DFH                      0x0000
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
 
   mmio_write32(CSR_NUM_LINES, num_cl);
 
-  mmio_write32(CSR_CFG, (0 | (MCL_SET << 5)) );  
+  mmio_write32(CSR_CFG, (0 | (MCL_SET << 5) | (VC_SET << 12)) );  
 
   uint32_t *status_addr = (uint32_t *)((uint64_t)dsm->vbase + DSM_STATUS_TEST_COMPLETE);
 

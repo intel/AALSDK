@@ -1018,13 +1018,13 @@ module ccip_emulator
 	 if (C2TxMMIORdValid)
 	   ase_tx2_mmiordrsp_cnt = ase_tx2_mmiordrsp_cnt + 1;
 	 // Read counts
-	 if (C0TxRdValid)
-	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + 1;
+	 if (C0TxRdValid  && C0TxHdr.sop)
+	   ase_tx0_rdvalid_cnt = ase_tx0_rdvalid_cnt + (C0TxHdr.len + 1);
 	 if (C0RxRdValid)
 	   ase_rx0_rdvalid_cnt = ase_rx0_rdvalid_cnt + 1;
+	 // Write counts
 	 if (C1TxWrValid && (C1TxHdr.reqtype != CCIP_WRFENCE))
 	   ase_tx1_wrvalid_cnt = ase_tx1_wrvalid_cnt + 1;
-	 // Write counts
 	 if (C0RxWrValid)
 	   ase_rx0_wrvalid_cnt = ase_rx0_wrvalid_cnt + 1;
 	 if (C1RxWrValid)
