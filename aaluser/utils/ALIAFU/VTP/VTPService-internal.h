@@ -54,7 +54,8 @@
 //****************************************************************************
 #ifndef __VTPSERVICE_INT_H__
 #define __VTPSERVICE_INT_H__
-#include <aalsdk/service/VTPService.h> // Public VTP service interface
+#include <aalsdk/service/IVTPService.h> // Public VTP service interface
+#include <aalsdk/service/VTPService.h>  // Public VTP service interface
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/IDispatchable.h>
@@ -64,9 +65,9 @@
 
 #include "cci_mpf_shim_vtp_params.h"
 
-using namespace AAL;
+BEGIN_NAMESPACE(AAL)
 
-/// @addtogroup vtp_service
+/// @addtogroup VTPService
 /// @{
 
 //=============================================================================
@@ -281,6 +282,8 @@ VTPService::AddrToPTE(
 
 
 /// @}
+
+END_NAMESPACE(AAL)
 
 #endif //__SAMPLEAFU1SERVICE_INT_H__
 

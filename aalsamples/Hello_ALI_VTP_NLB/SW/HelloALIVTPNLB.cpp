@@ -50,7 +50,8 @@
 #include <aalsdk/AALLoggerExtern.h>
 
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/VTPService.h>
+#include <aalsdk/service/IVTPService.h>
+#include <aalsdk/service/VTPService.h>   // has the iid
 
 #include <string.h>
 

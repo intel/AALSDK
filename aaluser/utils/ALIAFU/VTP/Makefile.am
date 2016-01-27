@@ -27,34 +27,32 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     utils/ALIAFU/Makefile.am
+##     utils/ALIAFU/VTP/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Enno Luebbers, Intel Corporation
 ##  History:
 ##     07/20/2015    TSW   Initial version
+##     01/27/2016    EL    Adapt for VTP
 ##******************************************************************************
-SUBDIRS=\
-VTP \
-ASEALIAFU \
-HWALIAFU \
-SWSimALIAFU
+lib_LTLIBRARIES=libVTPService.la
 
-# No top ALIAFU defined
-#lib_LTLIBRARIES=libALIAFU.la
-#
-#libALIAFU_la_SOURCES=\
-#ALIAFU.cpp \
-#ALIAFU.h
-#
-#libALIAFU_la_CPPFLAGS=\
-#-I$(top_srcdir)/include \
-#-I$(top_builddir)/include
-#
-#libALIAFU_la_LDFLAGS=\
-#-module \
-#-version-info $(ALIAFU_VERSION_CURRENT):$(ALIAFU_VERSION_REVISION):$(ALIAFU_VERSION_AGE)
-#
-#libALIAFU_la_LIBADD=\
-#$(top_builddir)/aas/OSAL/libOSAL.la \
-#$(top_builddir)/aas/AASLib/libAAS.la \
-#$(top_builddir)/aas/AALRuntime/libaalrt.la
+libVTPService_la_SOURCES=\
+cci_mpf_shim_vtp_params.h \
+VTPService-internal.h \
+VTPService.cpp
+
+libVTPService_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
+
+libVTPService_la_LDFLAGS=\
+-module \
+-version-info $(VTPSERVICE_VERSION_CURRENT):$(VTPSERVICE_VERSION_REVISION):$(VTPSERVICE_VERSION_AGE)
+
+libVTPService_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la \
+$(top_builddir)/aas/AALRuntime/libaalrt.la \
+$(top_builddir)/aas/AIAService/libaia.la
+

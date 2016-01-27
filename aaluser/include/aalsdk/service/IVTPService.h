@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 //****************************************************************************
-/// @file VTPSERVICE.h
+/// @file IVTPSERVICE.h
 /// @brief IVTPService.
 /// @ingroup vtp_service
 /// @verbatim
@@ -59,10 +59,7 @@
 
 #include <aalsdk/service/IALIAFU.h>
 
-using namespace AAL;
-
-//#define VTPSERVICE_SVC_MOD         "libVTPSERVICE" AAL_SVC_MOD_EXT
-//#define VTPSERVICE_SVC_ENTRY_POINT "libVTPSERVICE" AAL_SVC_MOD_ENTRY_SUFFIX
+BEGIN_NAMESPACE(AAL)
 
 #define ALIAFU_IBASE "ALIAFUIBase"
 #define VTP_DFH_BASE "VTPDFHBase"
@@ -70,14 +67,8 @@ using namespace AAL;
 // TODO: replace with actual spec'd VTP GUID
 #define GUID_BBB_VTP "5BC516B4-CC6B-4ECF-9115-70E1815F0370"
 
-//AAL_DECLARE_SVC_MOD(libVTPSERVICE, VTP_SERVICE_API)
-
-
-/// @addtogroup vtp_service
+/// @addtogroup VTPService
 /// @{
-
-/// IVTPSERVICE interface ID.
-#define iidVTPService __INTC_IID(INTC_sysSampleAFU,0x0042) // FIXME: get real IID
 
 class IVTPService : public IALIBuffer
 {
@@ -149,6 +140,8 @@ public:
 #ifndef ERR
 # define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 #endif // ERR
+
+END_NAMESPACE(AAL)
 
 #endif // __VTPSERVICE_H__
 

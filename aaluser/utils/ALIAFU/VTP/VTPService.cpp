@@ -52,6 +52,10 @@
 /// WHEN:          WHO:     WHAT:
 /// 01/15/2016     EL       Initial version@endverbatim
 //****************************************************************************
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif // HAVE_CONFIG_H
+
 #include <aalsdk/AAL.h>
 #include <aalsdk/aas/AALServiceModule.h>
 #include <aalsdk/osal/Sleep.h>
@@ -65,51 +69,12 @@
 #include "VTPService-internal.h"
 
 
+BEGIN_NAMESPACE(AAL)
+
+
 //=============================================================================
 // Typedefs and Constants
 //=============================================================================
-
-#ifndef VTPSERVICE_VERSION_CURRENT
-# define VTPSERVICE_VERSION_CURRENT  5
-#endif // VTPSERVICE_VERSION_CURRENT
-#ifndef VTPSERVICE_VERSION_REVISION
-# define VTPSERVICE_VERSION_REVISION 0
-#endif // VTPSERVICE_VERSION_REVISION
-#ifndef VTPSERVICE_VERSION_AGE
-# define VTPSERVICE_VERSION_AGE      0
-#endif // VTPSERVICE_VERSION_AGE
-#ifndef VTPSERVICE_VERSION
-# define VTPSERVICE_VERSION          "5.0.0"
-#endif // VTPSERVICE_VERSION
-
-#if defined ( __AAL_WINDOWS__ )
-# ifdef VTP_SERVICE_EXPORTS
-#    define VTP_SERVICE_API __declspec(dllexport)
-# else
-#    define VTP_SERVICE_API __declspec(dllimport)
-# endif // VTP_SERVICE_EXPORTS
-#else
-# ifndef __declspec
-#    define __declspec(x)
-# endif // __declspec
-# define VTP_SERVICE_API    __declspec(0)
-#endif // __AAL_WINDOWS__
-
-#define SERVICE_FACTORY AAL::InProcSvcsFact< VTPService >
-
-#if defined ( __AAL_WINDOWS__ )
-# pragma warning(push)
-# pragma warning(disable : 4996) // destination of copy is unsafe
-#endif // __AAL_WINDOWS__
-
-AAL_BEGIN_SVC_MOD(SERVICE_FACTORY, libVTPService, VTP_SERVICE_API, VTPSERVICE_VERSION, VTPSERVICE_VERSION_CURRENT, VTPSERVICE_VERSION_REVISION, VTPSERVICE_VERSION_AGE)
-   /* No commands other than default, at the moment. */
-AAL_END_SVC_MOD()
-
-#if defined ( __AAL_WINDOWS__ )
-# pragma warning(pop)
-#endif // __AAL_WINDOWS__
-
 
 // FIXME: reference / replace with real value
 #define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 64
@@ -124,7 +89,7 @@ AAL_END_SVC_MOD()
 /////////////////////////////////////////////////////////////////////////////
 
 
-/// @addtogroup vtp_service
+/// @addtogroup VTPService
 /// @{
 
 //=============================================================================
@@ -606,6 +571,45 @@ VTPService::DumpPageTable()
 }
 
 
-/// @}
+/// @} group VTPService
 
+END_NAMESPACE(AAL)
+
+
+#if defined( __AAL_WINDOWS__ )
+
+BOOL APIENTRY DllMain(HANDLE hModule,
+                      DWORD  ul_reason_for_call,
+                      LPVOID lpReserved)
+{
+   switch ( ul_reason_for_call ) {
+      case DLL_PROCESS_ATTACH :
+         break;
+      case DLL_THREAD_ATTACH  :
+         break;
+      case DLL_THREAD_DETACH  :
+         break;
+      case DLL_PROCESS_DETACH :
+         break;
+   }
+   return TRUE;
+}
+
+#endif // __AAL_WINDOWS__
+
+
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::VTPService >
+
+#if defined ( __AAL_WINDOWS__ )
+# pragma warning(push)
+# pragma warning(disable : 4996) // destination of copy is unsafe
+#endif // __AAL_WINDOWS__
+
+VTPSERVICE_BEGIN_SVC_MOD(SERVICE_FACTORY)
+   /* No commands other than default, at the moment. */
+VTPSERVICE_END_SVC_MOD()
+
+#if defined ( __AAL_WINDOWS__ )
+# pragma warning(pop)
+#endif // __AAL_WINDOWS__
 
