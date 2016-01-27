@@ -1,7 +1,7 @@
 #include "ase_common.h"
 
 #define MCL_SET                  0x1
-#define VC_SET                   0x2
+#define VC_SET                   0x0
 
 /////////////////////////////////////////
 #define DFH                      0x0000

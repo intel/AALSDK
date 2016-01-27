@@ -171,7 +171,7 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
 
   buf->memsize = (uint32_t)Length;
   // ASECCIAFU::sm_ASEMtx.Lock();
-  allocate_buffer(buf);
+  allocate_buffer(buf, NULL);
   //ASECCIAFU::sm_ASEMtx.Unlock();
   if ( ( ASE_BUFFER_VALID != buf->valid )   ||
        ( MAP_FAILED == (void *)buf->vbase ) ||

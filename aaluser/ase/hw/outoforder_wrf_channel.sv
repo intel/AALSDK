@@ -288,11 +288,6 @@ module outoforder_wrf_channel
    TxHdr_t                infifo_hdr_out;
    logic 			  infifo_vld;
 
-   // logic [CCIP_DATA_WIDTH-1:0] infifo_data_out_q;
-   // logic [TID_WIDTH-1:0]  infifo_tid_out_q;
-   // logic [CCIP_TX_HDR_WIDTH-1:0]  infifo_hdr_out_vec_q;
-   // logic 		  infifo_vld_q;
-
    ccip_vc_t 		  vc_arb;
 
    // Select VC
@@ -493,7 +488,6 @@ module outoforder_wrf_channel
 	 `ifdef ASE_DEBUG
 	    $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
 	    $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
-  
 	 `endif
 	 end
       end
