@@ -49,10 +49,36 @@
 #endif // HAVE_CONFIG_H
 
 #include "ALIAIATransactions.h"
-
 #include "HWALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
+
+
+// FIXME: move or reference this properly
+#ifndef CCIP_DFH
+/// Device Feature Header CSR
+struct CCIP_DFH {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt Feature_ID :12;     // Feature ID
+
+         //enum e_CCIP_DFL_ID Feature_ID :12;     // Feature ID
+
+         btUnsigned64bitInt Feature_rev :4;     // Feature revision
+         btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
+         btUnsigned64bitInt rsvd :20;           // Reserved
+         btUnsigned64bitInt Type :4;            // Type of Device
+
+         //enum e_CCIP_DEVTPPE_ID Type :4;
+
+      }; //end struct
+   }; // end union
+
+}; //end struct CCIP_DFH
+#endif
+
 
 /// @addtogroup HWALIAFU
 /// @{
@@ -530,21 +556,42 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) {
-   // TODO: do we want to distinguish between AFUs, BBBs, and private features here? Could use an optional parameter.
-   // TODO: add actual code, see driver DFH walk
+btBool HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature)
+{
+   struct CCIP_DFH dfh;
+   btUnsigned32bitInt offset = 0;
 
    // walk DFH
-   // return first match
-   // FIXME: fake, this is a bogus location
-   *ppFeature = (void *)0xdeadbeefdeadbeef;
-   return true;
-   // if not found, do not modify ppFeature, return false.
+   // look at AFU CSR (mandatory) to get first feature header offset
+   ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
+   printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
+          dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+//   printDFH(dfh);
+   offset = dfh.next_DFH_offset;
 
+   while (dfh.next_DFH_offset != 0) {
+
+      // read feature header
+      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
+      printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
+             dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+      if (dfh.Feature_ID == FeatureID) { // found
+         // return first match
+         // TODO: check for feature GUID
+         printf("found.\n");
+         *ppFeature = (void *)(m_MMIORmap + offset + 8);   // return pointer to
+                                                         // first CSR
+         return true;
+      }
+
+      // not found, check for next header
+      offset += dfh.next_DFH_offset;
+   }
+
+   // if not found, do not modify ppFeature, return false.
+   printf("not found.\n");
    return false;
 }
-
-
 
 
 // ---------------------------------------------------------------------------

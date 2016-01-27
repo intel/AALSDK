@@ -111,6 +111,10 @@ AAL_END_SVC_MOD()
 #endif // __AAL_WINDOWS__
 
 
+// FIXME: reference / replace with real value
+#define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 64
+
+
 /////////////////////////////////////////////////////////////////////////////
 //////                                                                ///////
 //////                                                                ///////
@@ -200,11 +204,7 @@ btBool VTPService::init( IBase *pclientBase,
    ASSERT(m_pPageTableFree <= m_pPageTableEnd);
 
    // Tell the hardware the address of the table
-   // FIXME: do we want to use HWALIAFU's MMIO interface? In hat case we need
-   //        the DFH's offset into the MMIO space...
-#if 0
-   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_pageTablePA / CL(1);
-#endif
+   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
 
    initComplete(rtid);
    return true;
