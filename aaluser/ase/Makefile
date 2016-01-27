@@ -49,6 +49,7 @@ ASE_VERSION = 5.0.0
 
 # ASE Debug
 ASE_DEBUG = 1
+PROFILE_ENABLE = 0
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -124,7 +125,10 @@ SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/ -simprofile +prof
+SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+ifeq ($(PROFILE_ENABLE), 1)
+SNPS_VCS_OPT+= -simprofile +prof
+endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
 
