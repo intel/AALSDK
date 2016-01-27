@@ -1197,11 +1197,8 @@ module ccip_emulator
      #(
        .DEBUG_LOGNAME       ("latbuf_ch0.log"),
        .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
-       // .HDR_WIDTH           (CCIP_TX_HDR_WIDTH),
-       // .DATA_WIDTH          (CCIP_DATA_WIDTH),
-       .COUNT_WIDTH         (LATBUF_COUNT_WIDTH)
-       // .FIFO_FULL_THRESH    (LATBUF_FULL_THRESHOLD),
-       // .FIFO_DEPTH_BASE2    (LATBUF_DEPTH_BASE2)
+       .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .UNROLL_ENABLE       (1)
        )
    cf2as_latbuf_ch0
      (
@@ -1338,11 +1335,9 @@ module ccip_emulator
    outoforder_wrf_channel
      #(
        .DEBUG_LOGNAME       ("latbuf_ch1.log"),
-       .NUM_WAIT_STATIONS(LATBUF_NUM_TRANSACTIONS),
-       // .DATA_WIDTH       (CCIP_DATA_WIDTH),
-       .COUNT_WIDTH      (LATBUF_COUNT_WIDTH)
-       // .FIFO_FULL_THRESH (LATBUF_FULL_THRESHOLD),
-       // .FIFO_DEPTH_BASE2 (LATBUF_DEPTH_BASE2)
+       .NUM_WAIT_STATIONS   (LATBUF_NUM_TRANSACTIONS),
+       .COUNT_WIDTH         (LATBUF_COUNT_WIDTH),
+       .UNROLL_ENABLE       (0)
        )
    cf2as_latbuf_ch1
      (
@@ -2031,7 +2026,7 @@ module ccip_emulator
    // Stream-checker for ASE
 `ifdef ASE_DEBUG
    // Read response checking
-   int unsigned read_check_array[*];
+   longint unsigned read_check_array[*];
    always @(posedge clk) begin : read_array_checkproc
       if (C0TxRdValid) begin
 	 read_check_array[C0TxHdr.mdata] = C0TxHdr.addr;
@@ -2043,7 +2038,7 @@ module ccip_emulator
    end
 
    // Write response checking
-   int unsigned write_check_array[*];
+   longint unsigned write_check_array[*];
    always @(posedge clk) begin : write_array_checkproc
       if (C1TxWrValid && (C1TxHdr.mdata != CCIP_WRFENCE)) begin
 	 write_check_array[C1TxHdr.mdata] = C1TxHdr.addr;
@@ -2171,10 +2166,10 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 $display("cf2as_latbuf_ch0 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 $display("cf2as_latbuf_ch1 dropped =>");
-	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch0 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 // $display("cf2as_latbuf_ch1 dropped =>");
+	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");

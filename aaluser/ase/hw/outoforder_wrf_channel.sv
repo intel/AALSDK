@@ -92,11 +92,12 @@ import ase_pkg::*;
 
 module outoforder_wrf_channel
   #(
-    parameter string DEBUG_LOGNAME  = "channel.log",
-    parameter int NUM_WAIT_STATIONS = 16,
-    parameter int COUNT_WIDTH = 8,
-    parameter int VISIBLE_DEPTH_BASE2 = 7,
-    parameter int VISIBLE_FULL_THRESH = 110
+    parameter string DEBUG_LOGNAME       = "channel.log",
+    parameter int    NUM_WAIT_STATIONS   = 16,
+    parameter int    COUNT_WIDTH         = 8,
+    parameter int    VISIBLE_DEPTH_BASE2 = 7, 
+    parameter int    VISIBLE_FULL_THRESH = 110,
+    parameter int    UNROLL_ENABLE       = 1
     )
    (
     input logic 		       clk,
@@ -585,7 +586,7 @@ module outoforder_wrf_channel
    function int get_delay(input TxHdr_t hdr);
       begin
 	 return $urandom_range(15, 60);
-//	 return 10;
+	 // return 10;
       end
    endfunction
 
@@ -689,10 +690,9 @@ module outoforder_wrf_channel
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
 
-   // Read from latency scoreboard and push to outfifo
-   // function void latbuf_pop_unroll_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$] );
    logic 			 unroll_active;
    
+   // Read from latency scoreboard and push to outfifo
    task latbuf_pop_unroll_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$] );
       logic [CCIP_DATA_WIDTH-1:0] data;
       int 			  ptr;
@@ -724,13 +724,13 @@ module outoforder_wrf_channel
 	    else if ( (txhdr.reqtype == CCIP_WRLINE_I) || (txhdr.reqtype == CCIP_WRLINE_M) ) begin
 	       rxhdr.resptype        = CCIP_WR_RESP;
 	    end
-`ifdef ASE_DEBUG
+            `ifdef ASE_DEBUG
 	    else begin
 	       `BEGIN_RED_FONTCOLOR;
 	       $display("** ERROR : Unrecognized header %x **", txhdr.reqtype);
 	       `END_RED_FONTCOLOR;
 	    end
-`endif
+            `endif
 	    rxhdr.mdata             = txhdr.mdata;
 	    // Tid
 	    tid                     = records[ptr].tid;
@@ -739,120 +739,137 @@ module outoforder_wrf_channel
 	    // Dumbing down Unroll multi-line
 	    line_i = 0;   
 
-	    case (txhdr.len)
-	      2'b00 :
-		begin
-		   outfifo_write_en        = 1;
-		   rxhdr.clnum             = 2'b00;
-		   txhdr.addr              = base_addr + 0;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-	       	   records[ptr].record_pop = 1;
-	       	   latbuf_ready[ptr]       = 0;
-		   unroll_active = 0;	    
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);		   
-		   outfifo_write_en        = 0;
-		end
-	      
-	      2'b01 :
-		begin
-		   outfifo_write_en        = 1;
-		   rxhdr.clnum             = 2'b00;
-		   txhdr.addr              = base_addr + 0;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-		   outfifo_write_en        = 1;
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b01;
-		   txhdr.addr              = base_addr + 1;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-	       	   records[ptr].record_pop = 1;
-	       	   latbuf_ready[ptr]       = 0;
-		   unroll_active           = 0;	    
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);		   
-		   outfifo_write_en        = 0;
-		end
-	      
-	      2'b10 :
-		begin
-		   outfifo_write_en        = 1;
-		   rxhdr.clnum             = 2'b00;
-		   txhdr.addr              = base_addr + 0;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b01;
-		   txhdr.addr              = base_addr + 1;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b10;
-		   txhdr.addr              = base_addr + 2;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-	       	   records[ptr].record_pop = 1;
-	       	   latbuf_ready[ptr]       = 0;
-		   unroll_active           = 0;	    
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   outfifo_write_en        = 0;
-		end
+	    if (UNROLL_ENABLE == 1) begin
+	       case (txhdr.len)
+		 2'b00 :
+		   begin
+		      outfifo_write_en        = 1;
+		      rxhdr.clnum             = 2'b00;
+		      txhdr.addr              = base_addr + 0;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+	       	      records[ptr].record_pop = 1;
+	       	      latbuf_ready[ptr]       = 0;
+		      unroll_active = 0;	    
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);		   
+		      outfifo_write_en        = 0;
+		   end
+		 
+		 2'b01 :
+		   begin
+		      outfifo_write_en        = 1;
+		      rxhdr.clnum             = 2'b00;
+		      txhdr.addr              = base_addr + 0;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      outfifo_write_en        = 1;
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);
+		      rxhdr.clnum             = 2'b01;
+		      txhdr.addr              = base_addr + 1;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+	       	      records[ptr].record_pop = 1;
+	       	      latbuf_ready[ptr]       = 0;
+		      unroll_active           = 0;	    
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);		   
+		      outfifo_write_en        = 0;
+		   end
+		 
+		 2'b10 :
+		   begin
+		      // 		   outfifo_write_en        = 1;
+		      // 		   rxhdr.clnum             = 2'b00;
+		      // 		   txhdr.addr              = base_addr + 0;
+		      // 		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      // `ifdef ASE_DEBUG
+		      // 	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+		      // `endif
+		      // 		   @(posedge clk);
+		      // 		   rxhdr.clnum             = 2'b01;
+		      // 		   txhdr.addr              = base_addr + 1;
+		      // 		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      // `ifdef ASE_DEBUG
+		      // 	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+		      // `endif
+		      // 		   @(posedge clk);
+		      // 		   rxhdr.clnum             = 2'b10;
+		      // 		   txhdr.addr              = base_addr + 2;
+		      // 		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+		      // 	       	   records[ptr].record_pop = 1;
+		      // 	       	   latbuf_ready[ptr]       = 0;
+		      // 		   unroll_active           = 0;	    
+		      // `ifdef ASE_DEBUG
+		      // 	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+		      // `endif
+		      // 		   @(posedge clk);
+		      // 		   outfifo_write_en        = 0;
+		      $display("** ERROR (%m): txhdr.len = %b is not valid **", txhdr.len);
+		      $fwrite(log_fd, "** ERROR (%m): txhdr.len = %b is not valid **", txhdr.len);
+		   end
 
-	      2'b11 :
-		begin
-		   outfifo_write_en        = 1;
-		   rxhdr.clnum             = 2'b00;
-		   txhdr.addr              = base_addr + 0;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b01;
-		   txhdr.addr              = base_addr + 1;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b10;
-		   txhdr.addr              = base_addr + 2;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   rxhdr.clnum             = 2'b11;
-		   txhdr.addr              = base_addr + 3;
-		   array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
-	       	   records[ptr].record_pop = 1;
-	       	   latbuf_ready[ptr]       = 0;
-		   unroll_active           = 0;	    
-`ifdef ASE_DEBUG
-	    	   $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-`endif
-		   @(posedge clk);
-		   outfifo_write_en        = 0;
-		end
-	      
-	    endcase
+		 2'b11 :
+		   begin
+		      outfifo_write_en        = 1;
+		      rxhdr.clnum             = 2'b00;
+		      txhdr.addr              = base_addr + 0;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);
+		      rxhdr.clnum             = 2'b01;
+		      txhdr.addr              = base_addr + 1;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);
+		      rxhdr.clnum             = 2'b10;
+		      txhdr.addr              = base_addr + 2;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);
+		      rxhdr.clnum             = 2'b11;
+		      txhdr.addr              = base_addr + 3;
+		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+	       	      records[ptr].record_pop = 1;
+	       	      latbuf_ready[ptr]       = 0;
+		      unroll_active           = 0;	    
+                      `ifdef ASE_DEBUG
+	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+                      `endif
+		      @(posedge clk);
+		      outfifo_write_en        = 0;
+		   end	      
+	       endcase // case (txhdr.len)
+	    end // if (UNROLL_ENABLE == 1)
+	    else begin
+	       outfifo_write_en        = 1;
+	       rxhdr.clnum             = txhdr.len;
+	       txhdr.addr              = base_addr + 0;
+	       array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
+	       records[ptr].record_pop = 1;
+	       latbuf_ready[ptr]       = 0;
+	       unroll_active = 0;	    
+               `ifdef ASE_DEBUG
+	       $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
+               `endif
+	       @(posedge clk);		   
+	       outfifo_write_en        = 0;
+	       
+	    end
 	 end // if (ptr != LATBUF_SLOT_INVALID)
 	 outfifo_write_en        = 0;
       end
    endtask
-      //endfunction
 
    // Latbuf pop_ptr
    always @(posedge clk) begin : latbuf_pop_proc
