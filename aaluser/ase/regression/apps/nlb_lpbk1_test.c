@@ -1,6 +1,6 @@
 #include "ase_common.h"
 
-#define MCL_SET                  0x1
+#define MCL_SET                  0x3
 #define VC_SET                   0x0
 
 /////////////////////////////////////////

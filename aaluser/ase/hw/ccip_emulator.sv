@@ -1091,7 +1091,7 @@ module ccip_emulator
    cci_pkt Tx0toRx0_pkt;
    cci_pkt Tx1toRx0_pkt;
    cci_pkt Tx1toRx1_pkt;
-   // cci_pkt Tx0toRx0_pkt_q;
+   cci_pkt Tx0toRx0_pkt_q;
    // cci_pkt Tx1toRx0_pkt_q;
    // cci_pkt Tx1toRx1_pkt_q;
 
@@ -1211,17 +1211,19 @@ module ccip_emulator
       .rxhdr_out        ( cf2as_latbuf_rx0hdr ),
       .data_out		(  ),
       .valid_out	( cf2as_latbuf_ch0_valid ),
-      .read_en		( cf2as_latbuf_ch0_pop ),
+      .read_en		( cf2as_latbuf_ch0_read ),
       .empty		( cf2as_latbuf_ch0_empty ),
       .full             ( C0TxAlmFull )
-      // .overflow         ( tx0_overflow ),
-      // .underflow        ( tx0_underflow ),
-      // .count            ( cf2as_latbuf_ch0_count )
       );
 
-   // assign cf2as_latbuf_tx0hdr = TxHdr_t'(cf2as_latbuf_tx0hdr_vec);
-   assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
+   // assign cf2as_latbuf_ch0_pop = ~cf2as_latbuf_ch0_empty && cf2as_latbuf_ch0_read;
 
+   // always @(posedge clk) begin
+   //    if (~sys_reset_n) begin
+   // 	 cf2as_latbuf_ch0_read <= 0;	 
+   //    end
+   // end
+   
    // Read TX0
    always @(posedge clk) begin
       if (~cf2as_latbuf_ch0_empty && ~rdrsp_full) begin
@@ -1251,6 +1253,10 @@ module ccip_emulator
       end
    end
 
+   always @(posedge clk) begin
+      Tx0toRx0_pkt_q <= Tx0toRx0_pkt;      
+   end
+   
    // RdRsp in
    always @(posedge clk) begin
       if (~sys_reset_n) begin
@@ -1259,72 +1265,12 @@ module ccip_emulator
    	 rdrsp_write <= 0;
       end
       else begin
-   	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt);
-   	 rdrsp_hdr_in       <= cf2as_latbuf_rx0hdr_q;
+   	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt_q);
+   	 rdrsp_hdr_in          <= cf2as_latbuf_rx0hdr_q;
    	 rdrsp_write           <= Tx0toRx0_pkt_vld;
       end
    end
 
-   // Reg proc
-   // always @(posedge clk) begin
-   //    Tx0toRx0_pkt_q     <= Tx0toRx0_pkt;
-   //    Tx0toRx0_pkt_vld_q <= Tx0toRx0_pkt_vld;
-   //    cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
-   // end
-
-   // stage 1 - Pop read request
-   // always @(posedge clk) begin
-   //    if (~sys_reset_n) begin
-   // 	 // cf2as_latbuf_ch0_read <= 0;
-   // 	 Tx0toRx0_pkt_vld      <= 0;
-   //    end
-   //    else begin
-   // 	 // TX0 - Read Request
-   // 	 // if ( ~cf2as_latbuf_ch0_empty && rdreq_flag && ~rdrsp_full ) begin
-   // 	 if ( cf2as_latbuf_ch0_valid ) begin
-   // 	    cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
-   // 				  0,
-   // 				  cf2as_latbuf_tx0hdr,
-   // 				  {CCIP_DATA_WIDTH{1'b0}} );
-   // 	    if (cf2as_latbuf_ch0_valid) begin
-   // 	       rd_memline_dex(Tx0toRx0_pkt);
-   // 	       Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
-   // 	    end
-   // 	    else begin
-   // 	       Tx0toRx0_pkt_vld <= 0;
-   // 	    end
-   // 	    // cf2as_latbuf_ch0_read <= ~cf2as_latbuf_ch0_empty;
-   // 	 end
-   // 	 // Default case
-   // 	 else begin
-   // 	    // cf2as_latbuf_ch0_read <= 0;
-   // 	    Tx0toRx0_pkt_vld <= 0;
-   // 	 end
-   //    end
-   // end
-
-
-   // Stage 2 - Stage read response
-   // always @(posedge clk) begin
-   //    if (~sys_reset_n) begin
-   // 	 rdrsp_data_in <= {CCIP_DATA_WIDTH{1'b0}};
-   // 	 rdrsp_hdr_in <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 rdrsp_write <= 0;
-   //    end
-   //    else begin
-   // 	 rdrsp_data_in         <= unpack_ccipkt_to_vector(Tx0toRx0_pkt_q);
-   // 	 // rdrsp_hdr_in.vc       <= ccip_vc_t'(Tx0toRx0_pkt_q.vc);
-   // 	 // rdrsp_hdr_in.poison   <= 1'b0;
-   // 	 // rdrsp_hdr_in.hitmiss  <= 1'b0;
-   // 	 // rdrsp_hdr_in.format   <= 1'b0;
-   // 	 // rdrsp_hdr_in.rsvd22   <= 1'b0;
-   // 	 // rdrsp_hdr_in.clnum    <= 2'b0;
-   // 	 // rdrsp_hdr_in.resptype <= CCIP_RD_RESP;
-   // 	 // rdrsp_hdr_in.mdata    <= Tx0toRx0_pkt_q.mdata;
-   // 	 rdrsp_hdr_in     <= cf2as_latbuf_rx0hdr_q;
-   // 	 rdrsp_write           <= Tx0toRx0_pkt_vld_q;
-   //    end
-   // end
 
 
    /*
@@ -1353,9 +1299,6 @@ module ccip_emulator
       .read_en		( cf2as_latbuf_ch1_pop  ),
       .empty		( cf2as_latbuf_ch1_empty ),
       .full             ( C1TxAlmFull )
-      // .overflow         ( tx1_overflow ),
-      // .underflow        ( tx1_underflow ),
-      // .count            ( cf2as_latbuf_ch1_count )
       );
 
 
@@ -1371,84 +1314,6 @@ module ccip_emulator
 	 // return (abs_val($random) % 2);
       end
    endfunction
-
-   // Reg proc
-   // always @(posedge clk) begin
-   //    Tx1toRx0_pkt_q     <= Tx1toRx0_pkt;
-   //    Tx1toRx0_pkt_vld_q <= Tx1toRx0_pkt_vld;
-   //    Tx1toRx1_pkt_q     <= Tx1toRx1_pkt;
-   //    Tx1toRx1_pkt_vld_q <= Tx1toRx1_pkt_vld;
-   // end
-
-
-   // TX1 fulfillment flow
-   // always @(posedge clk) begin
-   //    if (~sys_reset_n) begin
-   // 	 cf2as_latbuf_ch1_read <= 0;
-   // 	 Tx1toRx0_pkt_vld <= 0;
-   // 	 Tx1toRx1_pkt_vld <= 0;
-   //    end
-   //    else if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full && wrreq_flag) begin
-   // 	 cf2as_latbuf_ch1_read <= ~cf2as_latbuf_ch1_empty;
-   // 	 cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
-   // 	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
-   // 	 if ((Tx1toRx1_pkt.resp_channel == 0) && cf2as_latbuf_ch1_valid ) begin
-   // 	    wr_memline_dex(Tx1toRx0_pkt);
-   // 	    Tx1toRx0_pkt_vld <= 1;
-   // 	    Tx1toRx1_pkt_vld <= 0;
-   // 	 end
-   // 	 else if ((Tx1toRx1_pkt.resp_channel == 1) && cf2as_latbuf_ch1_valid ) begin
-   // 	    wr_memline_dex(Tx1toRx1_pkt);
-   // 	    Tx1toRx0_pkt_vld <= 0;
-   // 	    Tx1toRx1_pkt_vld <= 1;
-   // 	 end
-   //    end
-   //    else begin
-   // 	 cf2as_latbuf_ch1_read <= 0;
-   // 	 Tx1toRx0_pkt_vld <= 0;
-   // 	 Tx1toRx1_pkt_vld <= 0;
-   //    end
-   // end
-
-
-   // Stage 2 - Tx1toRx0 write process
-   // always @(posedge clk) begin
-   //    if (~sys_reset_n) begin
-   // 	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 wr0rsp_write   <= 0;
-   //    end
-   //    else begin
-   // 	 wr0rsp_hdr_in.vc       <= ccip_vc_t'(Tx1toRx0_pkt_q.vc);
-   // 	 wr0rsp_hdr_in.poison   <= 1'b0;
-   // 	 wr0rsp_hdr_in.hitmiss  <= 1'b0;
-   // 	 wr0rsp_hdr_in.format   <= 1'b0;
-   // 	 wr0rsp_hdr_in.rsvd22   <= 1'b0;
-   // 	 wr0rsp_hdr_in.clnum    <= 2'b0;
-   // 	 wr0rsp_hdr_in.resptype <= CCIP_WR_RESP;
-   // 	 wr0rsp_hdr_in.mdata    <= Tx1toRx0_pkt_q.mdata;
-   // 	 wr0rsp_write           <= Tx1toRx0_pkt_vld_q;
-   //    end
-   // end
-
-
-   // Stage 2 - Tx1toRx1 write process
-   // always @(posedge clk) begin
-   //    if (~sys_reset_n) begin
-   // 	 wr1rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 wr1rsp_write   <= 0;
-   //    end
-   //    else begin
-   // 	 wr1rsp_hdr_in.vc       <= ccip_vc_t'(Tx1toRx1_pkt_q.vc);
-   // 	 wr1rsp_hdr_in.poison   <= 1'b0;
-   // 	 wr1rsp_hdr_in.hitmiss  <= 1'b0;
-   // 	 wr1rsp_hdr_in.format   <= 1'b0;
-   // 	 wr1rsp_hdr_in.rsvd22   <= 1'b0;
-   // 	 wr1rsp_hdr_in.clnum    <= 2'b0;
-   // 	 wr1rsp_hdr_in.resptype <= CCIP_WR_RESP;
-   // 	 wr1rsp_hdr_in.mdata    <= Tx1toRx1_pkt_q.mdata;
-   // 	 wr1rsp_write           <= Tx1toRx1_pkt_vld_q;
-   //    end
-   // end
 
    // Read TX1
    always @(posedge clk) begin

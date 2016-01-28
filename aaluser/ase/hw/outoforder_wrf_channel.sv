@@ -237,9 +237,9 @@ module outoforder_wrf_channel
    // Transaction storage
    typedef struct packed
 		  {
-		     logic [CCIP_TX_HDR_WIDTH-1:0]   hdr;           // in
-		     logic [CCIP_DATA_WIDTH-1:0]  data;          // in
-		     logic [TID_WIDTH-1:0]   tid;           // in
+		     TxHdr_t hdr;           // in
+		     logic [CCIP_DATA_WIDTH-1:0]   data;          // in
+		     logic [TID_WIDTH-1:0] 	   tid;           // in
 		     logic [COUNT_WIDTH-1:0] ctr_out;       // out
 		     logic 		     record_valid;  // out
 		     logic 		     record_ready;  // out
@@ -332,8 +332,7 @@ module outoforder_wrf_channel
 	 if (~all_lanes_full & ~infifo_empty) begin
 	    {infifo_tid_out, infifo_data_out, infifo_hdr_out_vec} = infifo.pop_front();
 	    infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);	    
-	    // infifo_hdr_out_vec = select_vc (0, infifo_hdr_out_vec);
-	    select_vc (0, infifo_hdr_out);	    
+	    select_vc (0, infifo_hdr_out);
 	 `ifdef ASE_DEBUG
 	    if (infifo_hdr_out.vc == VC_VA) begin
 	       $fwrite(log_fd, "%d | select_vc : tid=%x picked VC_VA, this must not happen !!\n", $time, infifo_tid_out);
@@ -341,9 +340,9 @@ module outoforder_wrf_channel
 	 `endif
 	    if (infifo_hdr_out.reqtype == CCIP_WRFENCE) begin
 	       // Fence activatd
-	       vl0_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
-	       vh0_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
-	       vh1_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
+	       vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+	       vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+	       vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 	    end
 	    else begin
 	       // No fence
@@ -351,7 +350,7 @@ module outoforder_wrf_channel
 		 VC_VL0:
 		   begin
 		      vc_push = 3'b100;
-		      vl0_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
+		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VL0\n", $time, infifo_tid_out);
 	 `endif
@@ -360,7 +359,7 @@ module outoforder_wrf_channel
 		 VC_VH0:
 		   begin
 		      vc_push = 3'b010;
-		      vh0_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
+		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VH0\n", $time, infifo_tid_out);
 	 `endif
@@ -369,7 +368,7 @@ module outoforder_wrf_channel
 		 VC_VH1:
 		   begin
 		      vc_push = 3'b001;
-		      vh1_array.push_back({infifo_tid_out, infifo_data_out, infifo_hdr_out_vec});
+		      vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 	 `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "%d | infifo_to_vc : tid=%x sent to VH1\n", $time, infifo_tid_out);
 	 `endif
@@ -464,9 +463,10 @@ module outoforder_wrf_channel
 				      ref logic wrfence_flag
 				      );
       logic [CCIP_TX_HDR_WIDTH-1:0] 		     array_hdr;
+      TxHdr_t                                        array_hdr_t;      
       logic [CCIP_DATA_WIDTH-1:0] 		     array_data;
       logic [TID_WIDTH-1:0] 			     array_tid;
-      TxHdr_t                                hdr;
+      TxHdr_t                                        hdr;
       int 					     ptr;
       begin
 	 ptr = find_next_push_slot();
@@ -478,7 +478,7 @@ module outoforder_wrf_channel
 	       wrfence_flag = 1;
 	    end
 	    else begin
-	       records[ptr].hdr          = array_hdr;
+	       records[ptr].hdr          = hdr;	       
 	       records[ptr].data         = array_data;
 	       records[ptr].tid          = array_tid;
 	       records[ptr].record_push  = 1;
@@ -703,7 +703,7 @@ module outoforder_wrf_channel
 	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    unroll_active        = 1;
 	    // TxHdr
-	    txhdr                   = TxHdr_t'(records[ptr].hdr);
+	    txhdr                   = records[ptr].hdr;
 	    base_addr               = txhdr.addr; 
 	    // RxHdr
 	    rxhdr.vc                = txhdr.vc;
