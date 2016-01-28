@@ -420,10 +420,8 @@ extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
 extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
                                         unsigned long long id);
 extern btInt
-ccidrv_sendevent( btObjectType,
-                  struct aal_device *,
-                  struct aal_q_item *,
-                  btObjectType);
+ccidrv_sendevent( struct aaldev_ownerSession *,
+                  struct aal_q_item *);
 
 
 #if 0

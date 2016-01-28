@@ -215,9 +215,10 @@ struct aal_uiapi {
 //=============================================================================
 static inline
 void
-ownerSess_Init(struct aaldev_ownerSession *pSess)
+ownerSess_Init(struct aaldev_ownerSession *pSess, btAny ownerContext)
 {
    memset(pSess, 0, sizeof(struct aaldev_ownerSession));
+   pSess->m_ownerContext = ownerContext;  // Typically used by AIA to carry teh owner interface
    kosal_list_init(&pSess->m_wshead);
 }
 
@@ -268,6 +269,7 @@ static inline
 void
 aaldev_owner_init(struct aaldev_owner *pdevown,
                   btPID                pid,
+                  btAny                ownerContext,
                   btObjectType         manifest)
 {
    kosal_list_init(&pdevown->m_devicelist);
@@ -277,7 +279,7 @@ aaldev_owner_init(struct aaldev_owner *pdevown,
    pdevown->m_pid      = pid;
    pdevown->m_device   = NULL;
    pdevown->m_manifest = manifest;
-   ownerSess_Init(&pdevown->m_sess);
+   ownerSess_Init(&pdevown->m_sess, ownerContext);
 }
 
 //-----------------------------------------------------------------------------
@@ -378,6 +380,7 @@ aaldev_AddOwner_e
 aaldev_addOwner(struct aal_device * ,
                 btPID ,
                 btObjectType ,
+                btAny,
                 pkosal_list_head );
 
 extern
