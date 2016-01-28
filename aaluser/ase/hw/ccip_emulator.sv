@@ -176,7 +176,11 @@ module ccip_emulator
    import "DPI-C" context task start_simkill_countdown();
    // Signal to kill simulation
    export "DPI-C" task simkill;
-
+   
+   // Transaction count update ping/pong
+   export "DPI-C" task count_error_flag_ping;
+   import "DPI-C" function void count_error_flag_pong(int flag);   
+   
    // CONFIG, SCRIPT DEX operations
    import "DPI-C" function void sv2c_config_dex(string str);
    import "DPI-C" function void sv2c_script_dex(string str);
@@ -992,10 +996,10 @@ module ccip_emulator
 
    // Remap UmsgHdr for count purposes
    UMsgHdr_t ase_umsghdr_map;
-   assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);
-
+   assign ase_umsghdr_map = UMsgHdr_t'(C0RxHdr);  
+  
    // process
-   always @(posedge clk) begin
+   always @(posedge clk) begin : transact_cnt_proc
       if (~sys_reset_n) begin
 	 ase_rx0_mmiowrreq_cnt <= 0 ;
 	 ase_rx0_mmiordreq_cnt <= 0 ;
@@ -1040,6 +1044,34 @@ module ccip_emulator
    end
 
 
+   /*
+    * Count error flag
+    */ 
+   int count_error_flag;   
+   always @(posedge clk) begin
+      if (~sys_reset_n) begin
+	 count_error_flag <= 0;	 
+      end
+      else begin
+	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
+	   count_error_flag <= 1;	 
+	 else if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
+	   count_error_flag <= 1;	 
+	 else if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
+	   count_error_flag <= 1;
+	 else
+	   count_error_flag <= 0;	 
+      end
+   end // always @ (posedge clk)
+
+   // Ping to get error flag
+   task count_error_flag_ping();
+      begin
+	 count_error_flag_pong(count_error_flag);	 
+      end
+   endtask
+   
+   
    /* *******************************************************************
     *
     * Unified message watcher daemon
@@ -2031,10 +2063,10 @@ module ccip_emulator
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
-	 // $display("cf2as_latbuf_ch0 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
-	 // $display("cf2as_latbuf_ch1 dropped =>");
-	 // $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
+	 $display("cf2as_latbuf_ch0 dropped =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch0.checkunit.check_array);
+	 $display("cf2as_latbuf_ch1 dropped =>");
+	 $display(ase_top.ccip_emulator.cf2as_latbuf_ch1.checkunit.check_array);
 	 $display("Read Response checker =>");
 	 $display(read_check_array);
 	 $display("Write Response checker =>");

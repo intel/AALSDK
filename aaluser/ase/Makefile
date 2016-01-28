@@ -78,7 +78,7 @@ CC_OPT+= -Wall
 # -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1 -pedantic
+# CC_OPT+= -D ASE_DEBUG=1 -pedantic
 endif
 
 ## Print information ##

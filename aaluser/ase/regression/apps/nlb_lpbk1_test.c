@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     {
       num_cl = 16;
     }
+  num_cl = num_cl * 4;
   printf("Num CL = %d\n", num_cl);
 
   session_init();
