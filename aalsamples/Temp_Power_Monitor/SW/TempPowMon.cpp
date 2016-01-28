@@ -82,10 +82,12 @@ using namespace AAL;
 #define TMP_RDSENSOR 0x1010
 #define PM_RDVR      0x2010
 
-#define tempBitMask 0xFF
-#define seqBitMask  0xFFFF00
+#define tempBitMask   0x00000000000000FFULL
+#define seqBitMask    0x0000000000FFFF00ULL
 
-#define powerBitMask  0xFFFF0000
+#define powerBitMask  0x00000000FFFF0000ULL
+#define powerUnits    0.09765625
+#define voltage       1 //placeholder for voltage value to convert amps to wattage
 
 // doxygen hACK to generate correct class diagrams
 #define RuntimeClient TempPowMonRuntimeClient
@@ -199,7 +201,7 @@ void TempPowMonApp::getTemp()
    btUnsigned32bitInt tempValue = tempRdSensor & tempBitMask;
    cout << "Temperature = " << tempValue << " Deg Celcius.\n";
 
-   btUnsigned32bitInt seqNum = tempRdSensor & seqBitMask;
+   btUnsigned32bitInt seqNum = (tempRdSensor & seqBitMask) >> 8;
    cout << "Temp Sequence Number = " << seqNum << " \n";
 
 }
@@ -209,7 +211,9 @@ void TempPowMonApp::getPower()
    btUnsigned64bitInt powerRdVr;
    m_pALIMMIOService->mmioRead64(PM_RDVR, &powerRdVr);
 
-   btInt powerValue = powerRdVr & powerBitMask;
+   btInt AmpsValue = (powerRdVr & powerBitMask) >> 16;
+   btFloat powerValue = AmpsValue * powerUnits * voltage;
+
    cout << "Power = " << powerValue << " Amps.\n";
 
 }
