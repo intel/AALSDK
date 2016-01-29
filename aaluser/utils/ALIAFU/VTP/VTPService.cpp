@@ -77,7 +77,7 @@ BEGIN_NAMESPACE(AAL)
 //=============================================================================
 
 // FIXME: reference / replace with real value
-#define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 64
+#define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 32
 
 
 /////////////////////////////////////////////////////////////////////////////
