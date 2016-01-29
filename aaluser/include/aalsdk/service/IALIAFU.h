@@ -58,6 +58,20 @@ BEGIN_NAMESPACE(AAL)
 #ifndef ALI_MMAP_TARGET_VADDR
 #define ALI_MMAP_TARGET_VADDR "ALIMmapTargetVAddr"
 #endif
+#ifndef ALI_GETFEATURE_ID
+#define ALI_GETFEATURE_ID "ALIGetFeatureID"
+#endif
+#ifndef ALI_GETFEATURE_TYPE
+#define ALI_GETFEATURE_TYPE "ALIGetFeatureTYPE"
+#endif
+#ifndef ALI_GETFEATURE_GUID
+#define ALI_GETFEATURE_GUID "ALIGetFeatureGUID"
+#endif
+#ifndef ALI_DFH_TYPE_PRIVATE
+#define ALI_DFH_TYPE_PRIVATE 3
+#endif
+
+
 
 /// @addtogroup IALIAFU
 /// @{
@@ -219,13 +233,36 @@ public:
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
 
    /// @brief      Request pointer to a device feature header (DFH).
+   ///
+   /// Will deposit in *pFeatureAddr the base address of the device feature
+   /// MMIO space (aka the address of the respective feature header) for a
+   /// particular device feature that was requested. Users can request specific
+   /// features by ID, type, and/or GUID, by supplying a NamedValueSet in
+   /// rInputArgs. Possible keys are:
+   ///
+   /// ALI_GETFEATURE_ID      to request a feature with a specific feature ID
+   /// ALI_GETFEATURE_GUID    to request a feature with a specific GUID ID
+   /// ALI_GETFEATURE_TYPE    to request a feature with a specific feature type
+   ///                        (BBB, private feature, …?)
+   ///
+   /// The function will return the ID, GUID, and TYPE of the first matching
+   /// feature in rOutputArgs, if supplied (optional argument via overloading).
+   ///
    /// @note       Synchronous function; no TransactionID. Generally very fast.
-   /// @param[in]  GUID      GUID identifying feature.
-   /// @param[in]  FeatureID Feature ID identifying feature instance (if multiple).
-   /// @param[out] ppFeature  Where to place the pointer to the feature header.
+   /// @param[out] pFeature    Where to place the address of the feature header.
+   /// @param[in]  rInputArgs  Arguments specifying which feature to search for.
+   /// @param[out] rOutputArgs Additional properties of the returned feature.
    /// @return     True if requested feature was found in DFH space.
-   /// TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
-   virtual btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature) = 0;
+   // TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
+   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
+                                   NamedValueSet const &rInputArgs,
+                                   NamedValueSet       &rOutputArgs ) = 0;
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
+                                   NamedValueSet const &rInputArgs ) = 0;
+
+
+
 
 }; // class IALIMMIO
 
@@ -658,7 +695,6 @@ public:
    virtual btVirtAddr stpGetAddress( void ) = 0;
 
 }; // class IALISignalTap
-
 
 
 

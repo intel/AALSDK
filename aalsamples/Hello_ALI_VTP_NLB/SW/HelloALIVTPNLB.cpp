@@ -268,6 +268,7 @@ btInt HelloALIVTPNLBApp::run()
    //  readily available and bound at run-time.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
+   NamedValueSet featureFilter;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -319,7 +320,8 @@ btInt HelloALIVTPNLBApp::run()
    }
 
    // Ask the ALI service for the VTP device feature header (DFH)
-   if (true != m_pALIMMIOService->mmioGetFeature(GUID_BBB_VTP, 25, &m_pVTPDFH)) {
+   featureFilter.Add(ALI_GETFEATURE_ID, 25);
+   if (true != m_pALIMMIOService->mmioGetFeature((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
       ERR("No VTP feature\n");
       m_bIsOK = false;
       m_Result = -1;

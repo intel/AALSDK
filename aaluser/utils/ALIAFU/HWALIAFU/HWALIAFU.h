@@ -140,7 +140,16 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
    virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
    virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
-   virtual btBool  mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature);
+   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
+                                   NamedValueSet const &rInputArgs,
+                                   NamedValueSet       &rOutputArgs );
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
+                                   NamedValueSet const &rInputArgs )
+   {
+      NamedValueSet temp;
+      return mmioGetFeature(pFeature, rInputArgs, temp);
+   }
    // </IALIMMIO>
 
    // <IALIBuffer>

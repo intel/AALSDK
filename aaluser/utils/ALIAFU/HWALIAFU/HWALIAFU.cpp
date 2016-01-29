@@ -48,6 +48,8 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
+#include <aalsdk/utils/ResMgrUtilities.h>
+
 #include "ALIAIATransactions.h"
 #include "HWALIAFU.h"
 
@@ -556,10 +558,53 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt FeatureID, void ** const ppFeature)
+btBool  HWALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
+                                   NamedValueSet const &rInputArgs,
+                                   NamedValueSet       &rOutputArgs )
 {
-   struct CCIP_DFH dfh;
+   struct CCIP_DFH    dfh;
+   typedef union {
+      AAL_GUID_t         guid;
+      btUnsigned64bitInt reg[2];
+   } guid_u;
+   guid_u             guid;
    btUnsigned32bitInt offset = 0;
+
+   btBool             filterByID;
+   btUnsigned64bitInt filterID;
+   btBool             filterByType;
+   btUnsigned64bitInt filterType;
+   btBool             filterByGUID;
+   btString           sGUID;
+   guid_u             filterGUID;
+
+   // extract filters
+   if (rInputArgs.Has(ALI_GETFEATURE_ID)) {
+      rInputArgs.Get(ALI_GETFEATURE_ID, &filterID);
+      filterByID = true;
+   } else {
+      filterByID = false;
+   }
+   if (rInputArgs.Has(ALI_GETFEATURE_TYPE)) {
+      rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType);
+      filterByType = true;
+   } else {
+      filterByType = false;
+   }
+   if (rInputArgs.Has(ALI_GETFEATURE_GUID)) {
+      rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID);
+      ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
+      filterByGUID = true;
+   } else {
+      filterByGUID = false;
+   }
+
+   // Sanity check - can't search for GUID in private features
+   ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
+   if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
+      printf("Can't search for GUIDs in private features");
+      return false;
+   }
 
    // walk DFH
    // look at AFU CSR (mandatory) to get first feature header offset
@@ -575,12 +620,29 @@ btBool HWALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt F
       ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
       printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
              dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
-      if (dfh.Feature_ID == FeatureID) { // found
-         // return first match
-         // TODO: check for feature GUID
-         printf("found.\n");
-         *ppFeature = (void *)(m_MMIORmap + offset + 8);   // return pointer to
-                                                         // first CSR
+      // read guid, if present
+      if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
+         ASSERT( mmioRead64(offset +  8, (btUnsigned64bitInt *)&guid.reg[0]) );
+         ASSERT( mmioRead64(offset + 16, (btUnsigned64bitInt *)&guid.reg[1]) );
+      }
+
+      if (
+            ( !filterByID   || (dfh.Feature_ID == filterID  )               ) &&
+            ( !filterByType || (dfh.Type       == filterType)               ) &&
+            ( !filterByGUID || ( (dfh.Type != ALI_DFH_TYPE_PRIVATE) && (
+                                  (guid.reg[0] == filterGUID.reg[0]) &&
+                                  (guid.reg[1] == filterGUID.reg[1])
+                               ) ) )
+         ) {
+
+         printf("Found matching feature.\n");
+         *pFeature = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
+         // populate output args
+         rOutputArgs.Add(ALI_GETFEATURE_ID, dfh.Feature_ID);
+         rOutputArgs.Add(ALI_GETFEATURE_TYPE, dfh.Type);
+         if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
+            rOutputArgs.Add(ALI_GETFEATURE_GUID, GUIDStringFromStruct(guid.guid).c_str());
+         }
          return true;
       }
 
