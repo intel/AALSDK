@@ -621,7 +621,7 @@ process_bind_request(struct ccidrv_session  *psess,
          //  and the UIdrv session (upstream).
          ownerSessp->m_device   = pdev;                  // Device
          ownerSessp->m_UIHandle = psess;                 // This session
-         ownerSessp->m_ownerContext = preq->context;     // Used by AIA for routing
+         ownerSessp->m_ownerContext = preq->payload;     // Used by AIA for routing
 
          //---------------------------------------------------
          // Bind the PIP to the session
