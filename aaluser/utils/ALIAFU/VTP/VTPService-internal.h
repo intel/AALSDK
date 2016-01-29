@@ -126,6 +126,7 @@ protected:
    IServiceClient        *m_pSvcClient;
    IBase                 *m_pHWALIAFU;
    IALIBuffer            *m_pALIBuffer;
+   IALIMMIO              *m_pALIMMIO;
    btVirtAddr             m_pDFHBaseAddr;
 
    uint8_t               *m_pPageTable;

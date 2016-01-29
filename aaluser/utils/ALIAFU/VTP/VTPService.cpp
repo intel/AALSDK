@@ -133,6 +133,20 @@ btBool VTPService::init( IBase *pclientBase,
       return true;
    }
 
+   // Get IALIMMIO interface to AFU
+   m_pALIMMIO = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, m_pHWALIAFU);
+   ASSERT(NULL != m_pALIMMIO);
+   if ( NULL == m_pALIMMIO ) {
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasMissingInterface,
+                                                 "No IALIMMIO interface in HWALIAFU."));
+      m_bIsOK = false;
+      return true;
+   }
+
+
    // check for VTP MMIO base in optargs
    if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
@@ -169,7 +183,9 @@ btBool VTPService::init( IBase *pclientBase,
    ASSERT(m_pPageTableFree <= m_pPageTableEnd);
 
    // Tell the hardware the address of the table
-   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
+   // Use MMIO instead of memory to accommodate ASE
+//   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
+   m_pALIMMIO->mmioWrite64(CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 
    initComplete(rtid);
    return true;
