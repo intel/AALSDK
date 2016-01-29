@@ -46,6 +46,7 @@
 
 #define DEFAULT_BEGINCL     	NLB_MIN_CL
 #define DEFAULT_ENDCL       	NLB_MIN_CL
+#define DEFAULT_MULTICL       1
 #define DEFAULT_DSMPHYS     	0
 #define DEFAULT_SRCPHYS     	0
 #define DEFAULT_DSTPHYS     	0
