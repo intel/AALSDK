@@ -202,17 +202,19 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 		// Register Read Responses
 		ab2l1_RdRspValid_q                       <= ab2l1_RdRspValid;
 		ab2l1_RdRsp_q                            <= ab2l1_RdRsp;
-				
-		// Response Received, Read current count from RdRsp vector
-		if (ab2l1_RdRspValid && !ab2l1_RdRspValid_q)  
-		begin
-          count_RdRsp                            <= numRdRsp_vector_bank[ab2l1_RdRsp[6:3]][ab2l1_RdRsp[2:0]][2:0];		  
-		end
-		
+							
+		// It takes 2 cycles to update RdRsp vector
+		// So, if there are 2 successive RspValids to the same entry in RdRsp vector,
 		// Forwarding value to count while updating RdRsp vector 
-		else if (ab2l1_RdRspValid && ab2l1_RdRspValid_q && (ab2l1_RdRsp[6:0] == ab2l1_RdRsp_q[6:0]) )
+		if (ab2l1_RdRspValid && ab2l1_RdRspValid_q && (ab2l1_RdRsp[6:0] == ab2l1_RdRsp_q[6:0]) )
 		begin
 		  count_RdRsp                            <= numRdRsp_vector_bank[ab2l1_RdRsp[6:3]][ab2l1_RdRsp[2:0]][2:0] + 1'b1;
+		end
+		
+		// Response Received, Read current count from RdRsp vector
+		else if (ab2l1_RdRspValid)  
+		begin
+          count_RdRsp                            <= numRdRsp_vector_bank[ab2l1_RdRsp[6:3]][ab2l1_RdRsp[2:0]][2:0];		  
 		end
 				
 		// Update RdRsp vector
