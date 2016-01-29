@@ -351,6 +351,63 @@ bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 }
 
 
+IALIReset::e_Reset ASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
+{
+   // // Create the Transaction
+   // AFUQuiesceAndHalt transaction;
+
+   // // Should never fail
+   // if ( !transaction.IsOK() ) {
+   //    return e_Internal;
+   // }
+
+   // // Send transaction
+   // // Will eventually trigger AFUEvent(), below.
+   // m_pAFUProxy->SendTransaction(&transaction);
+
+   // if(transaction.getErrno() != uid_errnumOK){
+   //    return e_Error_Quiesce_Timeout;
+   // }
+
+   return e_OK;
+}
+
+IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
+{
+   // // Create the Transaction
+   // AFUEnable transaction;
+
+   // // Should never fail
+   // if ( !transaction.IsOK() ) {
+   //    return e_Internal;
+   // }
+
+   // // Send transaction
+   // // Will eventually trigger AFUEvent(), below.
+   // m_pAFUProxy->SendTransaction(&transaction);
+
+   // if(transaction.getErrno() != uid_errnumOK){
+   //    return e_Error_Quiesce_Timeout;
+   // }
+
+   return e_OK;
+
+}
+
+IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
+{
+   IALIReset::e_Reset ret = afuQuiesceAndHalt();
+
+   // if(ret != e_OK){
+   //    afuEnable();
+   // }else{
+   //    ret = afuEnable();
+   // }
+
+   return ret;
+}
+
+
 /// @}
 
 END_NAMESPACE(AAL)
