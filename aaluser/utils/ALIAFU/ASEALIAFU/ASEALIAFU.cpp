@@ -196,16 +196,16 @@ btBool ASEALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt 
    // look at AFU CSR (mandatory) to get first feature header offset
    ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
    printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
-          dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+          dfh.Type, dfh.next_DFH_offset & 0xffffff, dfh.Feature_rev, dfh.Feature_ID);
 //   printDFH(dfh);
-   offset = dfh.next_DFH_offset;
+   offset = dfh.next_DFH_offset & 0xffffff;
 
-   while (dfh.next_DFH_offset != 0) {
+   while ((dfh.next_DFH_offset & 0xffffff) != 0) {
 
       // read feature header
       ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
       printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
-             dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+             dfh.Type, dfh.next_DFH_offset & 0xffffff, dfh.Feature_rev, dfh.Feature_ID);
       if (dfh.Feature_ID == FeatureID) { // found
          // return first match
          // TODO: check for feature GUID
@@ -216,7 +216,7 @@ btBool ASEALIAFU::mmioGetFeature( const btString GUID, const btUnsigned16bitInt 
       }
 
       // not found, check for next header
-      offset += dfh.next_DFH_offset;
+      offset += dfh.next_DFH_offset & 0xffffff;
    }
 
    // if not found, do not modify ppFeature, return false.
