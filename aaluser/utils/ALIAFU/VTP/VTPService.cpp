@@ -148,6 +148,7 @@ btBool VTPService::init( IBase *pclientBase,
 
 
    // check for VTP MMIO base in optargs
+   // TODO: could find it ourselves if not provided
    if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
@@ -185,7 +186,8 @@ btBool VTPService::init( IBase *pclientBase,
    // Tell the hardware the address of the table
    // Use MMIO instead of memory to accommodate ASE
 //   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
-   m_pALIMMIO->mmioWrite64(CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+   btUnsigned64bitInt dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
+   m_pALIMMIO->mmioWrite64(dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 
    initComplete(rtid);
    return true;
