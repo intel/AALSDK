@@ -83,8 +83,8 @@ BindAFUDevice::BindAFUDevice(IAFUProxyClient *pProxyClient, TransactionID const 
 
 }
 
-AAL::btVirtAddr                BindAFUDevice::getPayloadPtr()const {return NULL;}
-AAL::btWSSize                  BindAFUDevice::getPayloadSize()const {return 0;}
+AAL::btVirtAddr                BindAFUDevice::getPayloadPtr()const {return reinterpret_cast<btVirtAddr>(m_payload);}
+AAL::btWSSize                  BindAFUDevice::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   BindAFUDevice::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BindAFUDevice::getMsgID()const {return m_msgID;}
 AAL::uid_errnum_e              BindAFUDevice::getErrno()const {return m_errno;}
