@@ -117,6 +117,8 @@ BEGIN_NAMESPACE(AAL)
 #	define NLB_TEST_MODE_QPI		0x1000
 #	define NLB_TEST_MODE_PCIE0		0x2000
 #	define NLB_TEST_MODE_PCIE1		0x3000
+#  define NLB_TEST_MODE_MCL2     0x0020
+#  define NLB_TEST_MODE_MCL4     0x0060
 
 
 typedef struct _nlb_vafu_dsm

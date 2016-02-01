@@ -222,8 +222,6 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
-
-
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_getMMIORmap;
    afumsg->size    = sizeof(union msgpayload);

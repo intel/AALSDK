@@ -572,10 +572,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      Message->m_context,
                                                                      uid_errnumNoAFU);
 
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                             pownerSess->m_device,
-                             AALQIP(pafuws_evt),
-                             Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             goto ERROR;
          }
@@ -588,10 +586,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      Message->m_context,
                                                                      uid_errnumNoAFU);
 
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                             pownerSess->m_device,
-                             AALQIP(pafuws_evt),
-                             Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             goto ERROR;
 
@@ -606,10 +602,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                   Message->m_context,
                                                                   uid_errnumOK);
 
-         ccidrv_sendevent(pownerSess->m_UIHandle,
-                          pownerSess->m_device,
-                          AALQIP(pafuws_evt),
-                          Message->m_context);
+         ccidrv_sendevent(pownerSess,
+                          AALQIP(pafuws_evt));
 
 
 
@@ -628,10 +622,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      Message->m_context,
                                                                      uid_errnumAFUActivated);
 
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                             pownerSess->m_device,
-                             AALQIP(pafuws_evt),
-                             Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             goto ERROR;
          }
@@ -681,10 +673,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                   Message->m_context,
                                                                   uid_errnumOK);
 
-         ccidrv_sendevent(pownerSess->m_UIHandle,
-                          pownerSess->m_device,
-                          AALQIP(pafuws_evt),
-                          Message->m_context);
+         ccidrv_sendevent(pownerSess,
+                          AALQIP(pafuws_evt));
 
 
 
@@ -746,10 +736,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                kosal_free_user_buffer(kptr, buflen);
             }
          }
-         ccidrv_sendevent(pownerSess->m_UIHandle,
-                          pownerSess->m_device,
-                          AALQIP(pafuws_evt),
-                          Message->m_context);
+         ccidrv_sendevent(pownerSess,
+                          AALQIP(pafuws_evt));
       }break;
 
       // Returns a workspace ID for the Config Space
@@ -830,10 +818,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            Message->m_context,
                                                            uid_errnumNoMem);
 
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                                           pownerSess->m_device,
-                                           AALQIP(pafuws_evt),
-                                           Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             goto ERROR;
          }
@@ -876,10 +862,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          PVERBOSE("Sending the WKSP Alloc event.\n");
          // Send the event
-         ccidrv_sendevent(aalsess_uiHandle(pownerSess),
-                                        aalsess_aaldevicep(pownerSess),
-                                        AALQIP(pafuws_evt),
-                                        Message->m_context);
+         ccidrv_sendevent(pownerSess,
+                          AALQIP(pafuws_evt));
 
       } break; // case fappip_afucmdWKSP_VALLOC
 
@@ -902,10 +886,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            uid_errnumBadParameter);
 
             // Send the event
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                                           pownerSess->m_device,
-                                           AALQIP(pafuws_evt),
-                                           Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
             retval = -EFAULT;
             goto ERROR;
          }
@@ -923,10 +905,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
             PDEBUG("Sending WKSP_FREE Exception\n");
             // Send the event
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                                           pownerSess->m_device,
-                                           AALQIP(pafuws_evt),
-                                           Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             retval = -EFAULT;
             goto ERROR;
@@ -941,10 +921,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                            Message->m_tranID,
                                                            Message->m_context,
                                                            uid_errnumBadParameter);
-            ccidrv_sendevent(pownerSess->m_UIHandle,
-                                           pownerSess->m_device,
-                                           AALQIP(pafuws_evt),
-                                           Message->m_context);
+            ccidrv_sendevent(pownerSess,
+                             AALQIP(pafuws_evt));
 
             retval = -EFAULT;
             goto ERROR;
@@ -966,10 +944,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
          PVERBOSE("Sending the WKSP Free event.\n");
          // Send the event
-         ccidrv_sendevent(pownerSess->m_UIHandle,
-                                        pownerSess->m_device,
-                                        AALQIP(pafuws_evt),
-                                        Message->m_context);
+         ccidrv_sendevent(pownerSess,
+                          AALQIP(pafuws_evt));
       } break; // case fappip_afucmdWKSP_FREE
 
       default: {
@@ -982,10 +958,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                      Message->m_context,
                                                                      request_error);
 
-        ccidrv_sendevent( pownerSess->m_UIHandle,
-                          pownerSess->m_device,
-                          AALQIP(pafuresponse_evt),
-                          Message->m_context);
+        ccidrv_sendevent( pownerSess,
+                          AALQIP(pafuresponse_evt));
 
          retval = -EINVAL;
       } break;
