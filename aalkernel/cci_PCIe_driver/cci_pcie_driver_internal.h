@@ -128,10 +128,10 @@ struct cci_aal_device {
    btUnsignedInt              m_flags;
 
    // Used for being added to the global list of devices.
-   struct list_head           m_list;           // List itself
+   kosal_list_head            m_list;           // List itself
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    enum aal_bus_types_e       m_boardtype;
 
@@ -256,7 +256,7 @@ struct ccip_device
    btUnsignedInt              m_flags;
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    int                        m_simulated;
 
@@ -339,52 +339,6 @@ int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value
 /// @return    64 bit  CSR value
 bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
 
-//=============================================================================
-//=============================================================================
-//                                INLINE PRIMITIVES
-//=============================================================================
-//=============================================================================
-
-//=============================================================================
-// Name: cci_getBARAddress
-// Description: Called during the device probe by cci_pci_probe
-//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
-// Interface: public
-// Inputs:  ppcidev - Pointer to PICe device
-//          pphysaddr - Pointer to where to return the physical address
-//          pvirtaddr - Pointer to where to return the mapped virtual address
-//          psize - BAR region size
-// Outputs: 1 = success.
-// Comments:
-//=============================================================================
-static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
-                                     int               barnum,
-                                     btPhysAddr       *pphysaddr,
-                                     btVirtAddr       *pvirtaddr,
-                                     size_t           *psize)
-{
-   if ( 0 == pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
-      // get the low base address register.
-      *pphysaddr = pci_resource_start(ppcidev, barnum);
-      *psize  = (size_t)pci_resource_len(ppcidev, barnum);
-
-      PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
-      PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
-
-   }else{
-      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
-      return 0;
-   }
-
-   // Only non-zero regions make sense
-   if((0 == *pphysaddr) || (0 == *psize)){
-      pci_release_region(ppcidev, barnum);
-      return 0;
-   }
-   // Get the KVP for the region
-   *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
-   return 1;
-}
 
 //=============================================================================
 //=============================================================================

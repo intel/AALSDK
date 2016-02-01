@@ -98,7 +98,7 @@ BEGIN_NAMESPACE(AAL)
 
 BEGIN_C_DECLS
 
-
+#if 0
 //=============================================================================
 // Name: aaldevCallbacks
 // Description: Interface for driver notifications
@@ -108,7 +108,7 @@ struct aaldevCallbacks
    void (*devReleased)(struct device*);                  // Called when device released
    btInt(*devAdd)( struct aal_device *dev);              // Function called when device is created
 };
-
+#endif
 
 #if 1
 // KObject length restrictions disapppear in 2.6.31 and later
@@ -170,7 +170,7 @@ struct aal_device {
 
    kosal_os_dev          m_dev;            // Device base class
    char                  m_basename[BUS_ID_SIZE];
-   btUnsigned64bitInt    m_validator;      // Used for validation
+   btPhysAddr            m_validator;      // Used for validation
    /* allocation list.  head is in aal_bus_type.alloc_list_head */
    kosal_list_head       m_alloc_list;
 
@@ -296,6 +296,7 @@ static inline struct aal_device *
    } else {
       strncpy(aaldev_basename(paaldevice), szDevName,      BUS_ID_SIZE-1);
    }
+#if   defined( __AAL_LINUX__ )
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)
    dev_set_name(&aaldev_to_basedev(paaldevice),
                 "%s[%d:%d:%d:%x:%d]",
@@ -316,7 +317,7 @@ static inline struct aal_device *
             aaldev_devaddr_subdevnum(paaldevice),
 			aaldev_devaddr_instanceNum(paaldevice));
 #endif
-
+#endif
 
    kosal_list_init(&paaldevice->m_ownerlist);
    kosal_list_init(&paaldevice->m_alloc_list);
@@ -327,7 +328,7 @@ static inline struct aal_device *
    paaldevice->m_version      = AAL_DEVICE_VERSION;
 
    // Used as part of the handle validation
-   paaldevice->m_validator    = (__u64)virt_to_phys(paaldevice);
+   paaldevice->m_validator = kosal_virt_to_phys( paaldevice );
 
    // Initialize the device ID info
    DPRINTF(AALBUS_DBG_MOD," Initializing AAL device %p\n", paaldevice);
