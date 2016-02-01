@@ -112,6 +112,11 @@ btBool ASEALIAFU::init(IBase               *pclientBase,
 //   }
 
   session_init();
+
+  // update member variables that cache parameters
+  m_MMIORmap = mmioGetAddress();
+  m_MMIORsize = (MMIO_LENGTH - MMIO_AFU_OFFSET);
+
   initComplete(TranID);
   return true;
 }
