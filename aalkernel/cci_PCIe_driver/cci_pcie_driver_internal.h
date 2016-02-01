@@ -128,10 +128,10 @@ struct cci_aal_device {
    btUnsignedInt              m_flags;
 
    // Used for being added to the global list of devices.
-   struct list_head           m_list;           // List itself
+   kosal_list_head            m_list;           // List itself
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    enum aal_bus_types_e       m_boardtype;
 
@@ -256,7 +256,7 @@ struct ccip_device
    btUnsignedInt              m_flags;
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    int                        m_simulated;
 
