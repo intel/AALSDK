@@ -1,0 +1,130 @@
+;****************************************************************************
+;                               INTEL CONFIDENTIAL
+;
+;        Copyright (c) 2012-2016 Intel Corporation All Rights Reserved.
+;
+; The source code contained or described herein and all  documents related to
+; the  source  code  ("Material")  are  owned  by  Intel  Corporation  or its
+; suppliers  or  licensors.    Title  to  the  Material  remains  with  Intel
+; Corporation or  its suppliers  and licensors.  The Material  contains trade
+; secrets  and  proprietary  and  confidential  information  of  Intel or its
+; suppliers and licensors.  The Material is protected  by worldwide copyright
+; and trade secret laws and treaty provisions. No part of the Material may be
+; used,   copied,   reproduced,   modified,   published,   uploaded,  posted,
+; transmitted,  distributed,  or  disclosed  in any way without Intel's prior
+; express written permission.
+;
+; No license under any patent,  copyright, trade secret or other intellectual
+; property  right  is  granted  to  or  conferred  upon  you by disclosure or
+; delivery  of  the  Materials, either expressly, by implication, inducement,
+; estoppel or otherwise.  Any license under such intellectual property rights
+; must be express and approved by Intel in writing.
+;****************************************************************************
+;****************************************************************************
+; @file aal_ccip_driver.inf
+; @brief Windows INF file for PCIe Kernel Mode Driver for AAL
+; @ingroup DeviceDrivers
+; @verbatim
+; Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+;
+; AUTHOR: Joseph Grecco, Intel Corporation
+;
+; HISTORY: Initial version based on Microsoft Sample Code
+; WHEN:          WHO:     WHAT:
+; 04/28/2014     JG       Initial Version Created
+;****************************************************************************
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=AAL Devices
+ClassGuid={2769781E-E6D2-416E-9852-A6EB5734320E}
+
+DriverVer=01/27/2016, 5.00.0001                    ; Version 5.00
+Provider=%INTC%
+DriverVer=01/27/2016, 5.00.0001                    ; Version 5.00
+CatalogFile=AALDrivers.cat
+
+[DestinationDirs]
+CCIPDrv_Device_CoInstaller_CopyFiles = 11
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg=AALClassReg
+
+[AALClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+ccippciedrv.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************de
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%INTC%=Intel,NT$ARCH$
+
+[Intel.NT$ARCH$]
+
+%CCIPDrv.DeviceDesc%=CCIPDrv_Device, Root\AAL; Software 
+%CCIPDrv.DeviceDesc%=CCIPDrv_Device, PCI\VEN_8086&DEV_BCBD ; Primary controlpoint
+%CCIPDrv.DeviceDesc%=CCIPDrv_Device, PCI\VEN_8086&DEV_BCBE ; Hidden from user
+%CCIPDrv.DeviceDesc%=CCIPDrv_Device, PCI\VEN_8086&DEV_BCBC ; Hidden from user
+%CCIPDrv.DeviceDesc%=CCIPDrv_Device, PCI\VEN_8086&DEV_BCBF ; Port VF
+
+[UIDRV_Device.NT]
+CopyFiles=Drivers_Dir
+
+[CCIPDrv_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+ccippciedrv.sys
+
+;-------------- Service installation
+[CCIPDrv_Device.NT.Services]
+AddService = CCIPDrv,%SPSVCINST_ASSOCSERVICE%, CCIPDrv_Service_Inst
+
+; -------------- CCIPDrv driver install sections
+[CCIPDrv_Service_Inst]
+DisplayName    = %CCIPDrv.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ccippciedrv.sys
+LoadOrderGroup = Extended Base
+
+;
+;--- CCIPDrv_Device Coinstaller installation ------
+;
+
+[CCIPDrv_Device.NT.CoInstallers]
+AddReg=CCIPDrv_Device_CoInstaller_AddReg
+CopyFiles=CCIPDrv_Device_CoInstaller_CopyFiles
+
+[CCIPDrv_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[CCIPDrv_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[CCIPDrv_Device.NT.Wdf]
+KmdfService =  CCIPDrv, CCIPDrv_wdfsect
+[CCIPDrv_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+INTC = "Intel Corp." 
+ClassName="AAL Devices"						; Appears in Device Manager
+DiskName = "AAL Bus Installation Disk #1"
+CCIPDrv.DeviceDesc = "AAL CCI-P Device"
+CCIPDrv.SVCDESC = "AAL CCI-P Accelerator Hardware Device"
+
