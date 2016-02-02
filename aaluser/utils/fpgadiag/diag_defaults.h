@@ -46,6 +46,7 @@
 
 #define DEFAULT_BEGINCL     	NLB_MIN_CL
 #define DEFAULT_ENDCL       	NLB_MIN_CL
+#define DEFAULT_MULTICL       1
 #define DEFAULT_DSMPHYS     	0
 #define DEFAULT_SRCPHYS     	0
 #define DEFAULT_DSTPHYS     	0
@@ -73,8 +74,8 @@
 #define DEFAULT_UMSG_HINT  	"off"
 #define DEFAULT_VA   			"on"
 #define DEFAULT_VL0				"off"
-#define DEFAULT_VH0	   		"off"
-#define DEFAULT_VH1  			"off"
+#define DEFAULT_VH0		   	"off"
+#define DEFAULT_VH1		   	"off"
 //#define DEFAULT_FPGA_CLK_FREQ 	200000000ULL
 
 #endif

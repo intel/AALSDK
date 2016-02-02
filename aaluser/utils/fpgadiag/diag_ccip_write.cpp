@@ -52,6 +52,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
 {
    btInt res = 0;
    btWSSize  sz = CL(cmd.begincls);
+   uint_type  mcl = cmd.multicls;
 
    volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
@@ -97,7 +98,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    {
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
-   // Select the channel.
+   // Select the virtual channel.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
    {
 	cfg |= (csr_type)NLB_TEST_MODE_VL0;
@@ -110,7 +111,16 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    {
 	cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
-
+   // Set Multi CL CSR.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))
+   {
+      if(2 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL2;
+      }
+      else if(4 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL4;
+      }
+   }
    //if --warm-fpga-cache is mentioned
    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
    {
@@ -232,7 +242,7 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
 		   SavePerfMonitors();
 
 		   //Increment the cachelines.
-		   sz += CL(1);
+		   sz += CL(mcl);
 
 		   // Check the device status
 		   if ( MaxPoll < 0 ) {

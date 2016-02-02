@@ -192,6 +192,17 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
       }
 
+   } else if ( (0 == strcmp("--multi-cl", option)) || (0 == strcmp("--mcl", option)) ) {
+
+         nlbcl->multicls = strtoul(value, &endptr, 0);
+         if ( value + strlen(value) != endptr ) {
+            nlbcl->multicls = nlbcl->defaults.multicls;
+            flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
+            printf("Invalid value for --multi-cl : %s. Defaulting to %llu.\n", value, nlbcl->multicls);
+         } else {
+            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
+         }
+
    } else if ( 0 == strcmp("--dsm-phys", option) ) {
 
       nlbcl->dsmphys = strtoul(value, &endptr, 0);
@@ -532,15 +543,15 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
-	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ) {
-	 fprintf(fp, "   --mode=ccip-read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-WRITE") ) {
-	 fprintf(fp, "   --mode=ccip-write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ) {
-	 fprintf(fp, "   --mode=ccip-trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-SW") ) {
-         fprintf(fp, "   --mode=ccip-sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>] [<NOTICE>]");
+         fprintf(fp, "   --mode=ccip-sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [VC-SELECT] [<OUTPUT>] [<NOTICE>]");
    }
 
    fprintf(fp, "\n\n");
@@ -576,6 +587,20 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "%llu\n", nlbcl->endcls);
    } else {
       fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
+   }
+
+   if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
+        0 == strcasecmp(test.c_str(), "CCIP-READ")  ||
+        0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
+        0 == strcasecmp(test.c_str(), "CCIP-TRPUT")) {
+
+      fprintf(fp, "      <MULTI-CL>  = --multi-cl=M      OR --mcl=M, where M =one of { 1 2 4 },                      ");
+
+      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL) ) {
+            fprintf(fp, "%llu\n", nlbcl->multicls);
+         } else {
+            fprintf(fp, "Default=%llu\n", nlbcl->defaults.multicls);
+         }
    }
 
    if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ||
@@ -770,28 +795,28 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	    0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
 	    0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ||
         0 == strcasecmp(test.c_str(), "CCIP-SW")) {
-	  fprintf(fp, "      <CH-SELECT> = --va,                         Arbitrary Channel,                              ");
+	  fprintf(fp, "      <VC-SELECT> = --va,                         Auto Mode,                                      ");
 	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VA) ) {
 		fprintf(fp, "yes\n");
 	 }  else {
 		fprintf(fp, "Default=%s\n", nlbcl->defaults.va);
 	 }
 
-      fprintf(fp, "                  = --vl0,                        QPI Channel,                                    ");
+         fprintf(fp, "                  = --vl0,                        Low Latency Channel 0,                          ");
    	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VL0) ) {
    	     fprintf(fp, "yes\n");
    	  } else {
    	     fprintf(fp, "Default=%s\n", nlbcl->defaults.vl0);
    	  }
 
-   	  fprintf(fp, "                  = --vh0,                        PCIe0 Channel,                                  ");
+   	  fprintf(fp, "                  = --vh0,                        High Latency Channel 0,                         ");
    	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH0) ) {
    		 fprintf(fp, "yes\n");
    	  } else {
    		 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh0);
    	  }
 
-   	  fprintf(fp, "                  = --vh1,                        PCIe1 Channel,                                  ");
+   	  fprintf(fp, "                  = --vh1,                        High Latency Channel 1,                         ");
    	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH1) ) {
    		 fprintf(fp, "yes\n");
    	  } else {
@@ -882,6 +907,26 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
          std::swap(cmd.begincls, cmd.endcls);
          os << "--begin value was less than --end value, so I swapped them." << endl;
       }
+   }
+
+   // --multi-cl=X
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL) ) {
+      if ( 0 != (cmd.begincls % cmd.multicls) ) {
+         os << cmd.TestMode << " requires --begin to be a multiple of --multi-cl. " <<endl;
+         return false;
+      }
+
+      if ( 0 != (cmd.endcls % cmd.multicls) ) {
+         os << cmd.TestMode << " requires --end to be a multiple of --multi-cl. " <<endl;
+         return false;
+      }
+
+      if ( (1 != (cmd.multicls)) &&
+           (2 != (cmd.multicls)) &&
+           (4 != (cmd.multicls))) {
+        os << cmd.TestMode << " requires --multi-cl to be one of 1, 2 or 4. " <<endl;
+        return false;
+     }
    }
 
    // --src-phys and --src-capcm
