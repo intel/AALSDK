@@ -12,9 +12,13 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 16;
+   localparam MAX_ITEMS = 1000_0000;
       
-   outoforder_wrf_channel outoforder_wrf_channel
+   outoforder_wrf_channel
+     #(
+       .UNROLL_ENABLE (0)
+       )
+   outoforder_wrf_channel
      (clk, rst, hdr_in, 512'b0, wr_en, txhdr_out, rxhdr_out, data_out, valid_out, rd_en, empty, full );
 
    initial begin
@@ -26,7 +30,8 @@ module tb_channel();
    end
 
    int wr_i;
-
+   int x;
+      
    initial begin
       rst = 1;
       #200;
@@ -35,7 +40,14 @@ module tb_channel();
       #50000;
       `ifdef ASE_DEBUG
       $display("------- Dropped Transactions -------");
-      $display(tb_channel.outoforder_wrf_channel.checkunit.check_array);
+      //      $display(tb_channel.outoforder_wrf_channel.checkunit.check_array);
+      if (tb_channel.outoforder_wrf_channel.checkunit.check_array.first(x)) begin
+	 do begin	    
+	    $display("%x : %x", (x >> 2), tb_channel.outoforder_wrf_channel.checkunit.check_array[x]); 
+	 end while (tb_channel.outoforder_wrf_channel.checkunit.check_array.next(x));
+      end
+      $display("Mismatch Count =%d", tb_channel.outoforder_wrf_channel.checkunit.check_array.num() );      
+      
       `endif
       $finish;
    end
@@ -58,30 +70,29 @@ module tb_channel();
 	 wr_i  <= 0;
       end
       else if (~full && ($time % 7 == 0) && (wr_i < MAX_ITEMS)) begin
-	 hdr_in.vc <= ccip_vc_t'($random) % 4;
-	 hdr_in.sop <= 1;
-	 hdr_in.len <= 2'b11;
-	 hdr_in.reqtype <= CCIP_WRFENCE;
-	 hdr_in.addr <= 0;	 
-	 hdr_in.mdata <= 0; // wr_i;
-	 // wr_i      <= wr_i + 1;
-	 wr_en <= 1;
-	 hdr_in.rsvd70 <= 0;
-	 hdr_in.rsvd63_58 <= 0;
-	 $display("Wrfence asserted");	 
+      	 hdr_in.vc <= ccip_vc_t'($random) % 4;
+      	 hdr_in.sop <= 1;
+      	 hdr_in.len <= 2'b11;
+      	 hdr_in.reqtype <= CCIP_WRFENCE;
+      	 hdr_in.addr <= 0;	 
+      	 hdr_in.mdata <= 0; // wr_i;
+      	 wr_en <= 1;
+      	 hdr_in.rsvd70 <= 0;
+      	 hdr_in.rsvd63_58 <= 0;
+      	 $display("Wrfence asserted");	 
       end 
       else if (~full && (wr_i < MAX_ITEMS)) begin
 	 hdr_in.vc <= ccip_vc_t'($random) % 4;
 	 hdr_in.sop <= 1;
 	 hdr_in.len <= sel_rand_len();	 
-	 hdr_in.reqtype <= CCIP_RDLINE_S;
+	 hdr_in.reqtype <= CCIP_WRLINE_I;
 	 hdr_in.addr <= 32'h8400_0000 + wr_i;
 	 hdr_in.mdata <= wr_i;
 	 wr_i      <= wr_i + 1;
 	 wr_en <= 1;
 	 hdr_in.rsvd70 <= 0;
 	 hdr_in.rsvd63_58 <= 0;
-	 $display("Wrpush %d", wr_i);	 
+	 $display("Hdr Push %d", wr_i);	 
       end
       else begin
 	 wr_en <= 0;

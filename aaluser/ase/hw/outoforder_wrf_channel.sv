@@ -93,10 +93,10 @@ import ase_pkg::*;
 module outoforder_wrf_channel
   #(
     parameter string DEBUG_LOGNAME       = "channel.log",
-    parameter int    NUM_WAIT_STATIONS   = 16,
+    parameter int    NUM_WAIT_STATIONS   = 4,
     parameter int    COUNT_WIDTH         = 8,
-    parameter int    VISIBLE_DEPTH_BASE2 = 7,
-    parameter int    VISIBLE_FULL_THRESH = 110,
+    parameter int    VISIBLE_DEPTH_BASE2 = 4,
+    parameter int    VISIBLE_FULL_THRESH = 10,
     parameter int    UNROLL_ENABLE       = 1
     )
    (
@@ -182,8 +182,8 @@ module outoforder_wrf_channel
    logic [2:0] 			  vc_push;
 
 
-   logic 			  all_lanes_full;
-   assign all_lanes_full = vl0_array_full & vh0_array_full & vh1_array_full;
+   logic 			  some_lane_full;
+   assign some_lane_full = vl0_array_full | vh0_array_full | vh1_array_full;
 
    // Tracking ID generator
    always @(posedge clk) begin : tid_proc
@@ -275,6 +275,9 @@ module outoforder_wrf_channel
       if (write_en) begin
 	 `ifdef ASE_DEBUG
 	 $fwrite(log_fd, "%d | WRITE : hdr=%x assigned tid=%x\n", $time, hdr_in, tid_in);
+	 if (hdr_in.reqtype == CCIP_WRFENCE) begin
+	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);	    
+	 end
 	 `endif
 	 infifo.push_back({ tid_in, data_in, CCIP_TX_HDR_WIDTH'(hdr_in) });
       end
@@ -331,7 +334,7 @@ module outoforder_wrf_channel
    // INFIFO->VC_sel
    function void infifo_to_vc_push ();
       begin
-	 if (~all_lanes_full & ~infifo_empty) begin
+	 if (~some_lane_full & ~infifo_empty) begin
 	    {infifo_tid_out, infifo_data_out, infifo_hdr_out_vec} = infifo.pop_front();
 	    infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);
 	    select_vc (0, infifo_hdr_out);
@@ -342,7 +345,7 @@ module outoforder_wrf_channel
 	 `endif
 	    if (infifo_hdr_out.reqtype == CCIP_WRFENCE) begin
          `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | WriteFence pushed to all VCs by tid=%d", $time, infifo_tid_out);	       
+	       $fwrite(log_fd, "%d | infifo_to_vc : WrFence pushed to all VCs by tid=%x\n", $time, infifo_tid_out);	       
          `endif
 	       // Fence activatd
 	       vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
@@ -380,7 +383,7 @@ module outoforder_wrf_channel
 		   end
 	       endcase
 	    end // else: !if(infifo_hdr_out.reqtype == CCIP_WRFENCE)
-	 end // if (~all_lanes_full & ~infifo_empty)
+	 end // if (~some_lane_full & ~infifo_empty)
       end
    endfunction
 
@@ -390,7 +393,7 @@ module outoforder_wrf_channel
 	 vc_push <= 3'b000;
 	 select_vc (1, infifo_hdr_out);
       end
-      else if (~all_lanes_full & ~infifo_empty) begin
+      else if (~some_lane_full & ~infifo_empty) begin
 	 infifo_to_vc_push();
       end
       else begin
@@ -514,11 +517,11 @@ module outoforder_wrf_channel
 	       records[ptr].record_push  = 1;
 	       records[ptr].record_valid = 1;
 	       latbuf_used[ptr]          = 1;
-	    end
 	 `ifdef ASE_DEBUG
-	    $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
-	    $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
+	       $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+	       $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
 	 `endif
+	    end
 	 end
       end
    endfunction
@@ -609,6 +612,11 @@ module outoforder_wrf_channel
    // Get delay function
    function int get_delay(input TxHdr_t hdr);
       begin
+	 `ifdef ASE_DEBUG
+	 if (hdr.reqtype == CCIP_WRFENCE) begin
+	    $fwrite(log_fd, "ERROR : WrFence must not enter latency scoreboard");	    
+	 end
+	 `endif
 	 return $urandom_range(15, 60);
 	 // return 10;
       end
@@ -1007,7 +1015,7 @@ module outoforder_wrf_channel
     * Sniffs dropped transactions
     */
 `ifdef ASE_DEBUG
-   stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH)
+   stream_checker #(CCIP_TX_HDR_WIDTH, TID_WIDTH, UNROLL_ENABLE)
    checkunit (clk, write_en, hdr_in, tid_in, valid_out, txhdr_out, rxhdr_out,tid_out);
 `endif
 

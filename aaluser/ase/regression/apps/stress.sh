@@ -2,7 +2,7 @@
 
 while true
 do
-    if pgrep "ase_simv" 
+    if pgrep "ase_simv" -u $USER
     then
 	echo "Running test"
 	# ./nlb_test `shuf -i 4-4000 -n 1` > output.log

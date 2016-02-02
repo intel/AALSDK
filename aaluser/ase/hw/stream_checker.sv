@@ -2,8 +2,9 @@ import ase_pkg::*;
 
 module stream_checker
   #(
-    parameter int HDR_WIDTH = CCIP_TX_HDR_WIDTH,
-    parameter int TID_WIDTH = 32
+    parameter int HDR_WIDTH     = CCIP_TX_HDR_WIDTH,
+    parameter int TID_WIDTH     = 32,
+    parameter int UNROLL_ENABLE = 1
     )
    (
     input logic 		clk,
@@ -16,18 +17,19 @@ module stream_checker
     input logic [TID_WIDTH-1:0] tid_out    
     );
 
-   int 			  check_array[*];
+   longint 			check_array[*];
    
    always @(posedge clk) begin
-      if (valid_in && (hdr_in.reqtype != CCIP_WRFENCE))
-	if ( (hdr_in.reqtype == CCIP_RDLINE_I)||(hdr_in.reqtype == CCIP_RDLINE_S) ) begin
-	   for(int ii = 0; ii <= hdr_in.len; ii = ii + 1) begin
-	      check_array[ {tid_in, ii[1:0]} ] = hdr_in;	    
-	   end
-	end
-	else begin
-	   check_array[{tid_in, hdr_in.len}] = hdr_in;	   
-	end
+      if (valid_in) begin
+	 if ( (hdr_in.reqtype == CCIP_RDLINE_I)||(hdr_in.reqtype == CCIP_RDLINE_S) ) begin
+	    for(int ii = 0; ii <= hdr_in.len; ii = ii + 1) begin
+	       check_array[ {tid_in, ii[1:0]} ] = hdr_in;	    
+	    end
+	 end
+	 else if (hdr_in.reqtype != CCIP_WRFENCE) begin
+	    check_array[{tid_in, hdr_in.len}] = hdr_in;
+	 end
+      end
       if (valid_out) begin
 	 if (check_array.exists({tid_out, rxhdr_out.clnum}) ) begin
 	    check_array.delete({tid_out, rxhdr_out.clnum});
@@ -41,3 +43,4 @@ module stream_checker
    end
    
 endmodule
+
