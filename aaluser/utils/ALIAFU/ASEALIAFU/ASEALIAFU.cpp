@@ -245,16 +245,19 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    // Sanity check - can't search for GUID in private features
    ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
    if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
-      AAL_ERR(LM_All, "Can't search for GUIDs in private features");
+      AAL_ERR(LM_AFU, "Can't search for GUIDs in private features");
       return false;
    }
 
    // walk DFH
+   AAL_DEBUG(LM_AFU, "Walking DFH list..." << std::endl);
    // look at AFU CSR (mandatory) to get first feature header offset
    ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
-   printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx, eol: %u\n",
-          dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID, dfh.eol);
-//   printDFH(dfh);
+   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type << 
+                     ", Next DFH offset: " << dfh.next_DFH_offset << 
+                     ", Feature Rev: " << dfh.Feature_rev << 
+                     ", Feature ID: " << dfh.Feature_ID <<
+                     ", eol: " << std::dec << dfh.eol << std::endl);
    offset = dfh.next_DFH_offset;
 
    // look at chained DFHs until end of list bit is set or next offset is 0
@@ -263,8 +266,11 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
 
       // read feature header
       ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
-      printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx, eol: %u\n",
-             dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID, dfh.eol);
+      AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type << 
+                        ", Next DFH offset: " << dfh.next_DFH_offset << 
+                        ", Feature Rev: " << dfh.Feature_rev << 
+                        ", Feature ID: " << dfh.Feature_ID <<
+                        ", eol: " << std::dec << dfh.eol << std::endl);
       // read guid, if present
       if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
          ASSERT( mmioRead64(offset +  8, (btUnsigned64bitInt *)&guid.reg[0]) );
@@ -280,7 +286,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
                                ) ) )
          ) {
 
-         printf("Found matching feature.\n");
+         AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
          *pFeature = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
          // populate output args
          rOutputArgs.Add(ALI_GETFEATURE_ID, dfh.Feature_ID);
@@ -296,7 +302,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    }
 
    // if not found, do not modify ppFeature, return false.
-   printf("not found.\n");
+   AAL_INFO(LM_AFU, "No matching feature found." << std::endl);
    return false;
 }
 

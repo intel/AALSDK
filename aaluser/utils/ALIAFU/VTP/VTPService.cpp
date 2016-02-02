@@ -179,6 +179,8 @@ btBool VTPService::init( IBase *pclientBase,
                                                  "Feature GUID does not match VTP GUID."));
       return true;
    }
+   
+   AAL_INFO(LM_AFU, "Found and successfully identified VTP feature." << std::endl);
 
    // Allocate the page table.  The size of the page table is a function
    // of the PTE index space.
@@ -254,14 +256,14 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
                   PROT_READ | PROT_WRITE,
                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
    ASSERT(va_base != MAP_FAILED);
-   printf("va_base %p\n", va_base);
+   AAL_DEBUG(LM_AFU, "va_base " << std::hex << std::setw(2) << std::setfill('0') << va_base << std::endl);
 
    void* va_aligned = (void*)((size_t(va_base) + pageSize - 1) & pageMask);
-   printf("va_aligned %p\n", va_aligned);
+   AAL_DEBUG(LM_AFU, "va_aligned " << std::hex << std::setw(2) << std::setfill('0') << va_aligned << std::endl);
 
    // Trim off the unnecessary extra space after alignment
    size_t trim = pageSize - (size_t(va_aligned) - size_t(va_base));
-   printf("va_base_len trimmed by 0x%llx to 0x%llx\n", trim, va_base_len - trim);
+   AAL_DEBUG(LM_AFU, "va_base_len trimmed by " << std::hex << std::setw(2) << std::setfill('0') << trim << " to " << va_base_len - trim << std::endl);
    ASSERT(mremap(va_base, va_base_len, va_base_len - trim, 0) == va_base);
    va_base_len -= trim;
 
@@ -305,7 +307,7 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
       ASSERT(buffer == va_alloc);
       if (buffer != va_alloc)
       {
-         printf("remap %p to %p\n", (void*)buffer, va_alloc);
+         AAL_DEBUG(LM_AFU, "remap " << std::hex << std::setw(2) << std::setfill('0') << (void*)buffer << " to " << va_alloc << std::endl);
          ASSERT(mremap((void*)buffer, pageSize, pageSize,
                         MREMAP_MAYMOVE | MREMAP_FIXED,
                         va_alloc) == va_alloc);
@@ -405,7 +407,8 @@ btPhysAddr VTPService::bufferGetIOVA(  btVirtAddr     Address) {
 void
 VTPService::InsertPageMapping(const void* va, btPhysAddr pa)
 {
-    printf("Map %p at 0x%08lx\n", va, pa);
+    AAL_DEBUG(LM_AFU, "Map " << std::hex << std::setw(2) << std::setfill('0') << 
+                      va << " at " << pa << std::endl);
 
     //
     // VA components are the offset within the 2MB-aligned page, the index
@@ -549,11 +552,12 @@ VTPService::WriteTableIdx(
 void
 VTPService::DumpPageTable()
 {
-    printf("Page table dump:\n");
-    printf("  %lld lines, %ld PTEs per line, max. memory represented in PTE %lld GB\n",
-           1LL << CCI_PT_LINE_IDX_BITS,
-           ptesPerLine,
-           ((1LL << CCI_PT_LINE_IDX_BITS) * ptesPerLine * 2) / 1024);
+     AAL_DEBUG(LM_AFU, "Page table dump: " << std::endl);
+     AAL_DEBUG(LM_AFU, (1LL << CCI_PT_LINE_IDX_BITS) << " lines " << 
+                       ptesPerLine << " PTEs per line, max memory represented in PTE " <<
+                       ((1LL << CCI_PT_LINE_IDX_BITS) * ptesPerLine * 2) / 1024 << 
+                       " GB" << std::endl);
+//std::hex << std::setw(2) << std::setfill('0') << (void*)buffer << " to " << va_alloc << std::endl);
 
     // Loop through all lines in the hash table
     for (int hash_idx = 0; hash_idx < (1LL << CCI_PT_VA_IDX_BITS); hash_idx += 1)
@@ -583,12 +587,12 @@ VTPService::DumpPageTable()
                 //
                 // The PA in a PTE is stored as the index of the 2MB-aligned
                 // physical address.
-                printf("    %d/%d:\t\tVA 0x%016llx -> PA 0x%016llx\n",
-                       hash_idx, cur_idx,
-                       (va_tag << (CCI_PT_VA_IDX_BITS + CCI_PT_PAGE_OFFSET_BITS)) |
-                       (uint64_t(hash_idx) << CCI_PT_PAGE_OFFSET_BITS),
-                       pa_idx << CCI_PT_PAGE_OFFSET_BITS);
-
+                AAL_DEBUG(LM_AFU, "    " << std::dec << hash_idx << "/" << cur_idx <<
+                          ":\t\tVA " << std::hex << std::setw(2) << std::setfill('0') << 
+                          ((va_tag << (CCI_PT_VA_IDX_BITS + CCI_PT_PAGE_OFFSET_BITS)) |
+                          (uint64_t(hash_idx) << CCI_PT_PAGE_OFFSET_BITS)) << " -> PA " <<
+                          std::hex << std::setw(2) << std::setfill('0') << 
+                          pa_idx << CCI_PT_PAGE_OFFSET_BITS << std::endl);
                 pte += pteBytes;
             }
 
