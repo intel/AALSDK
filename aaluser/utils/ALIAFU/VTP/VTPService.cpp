@@ -110,7 +110,7 @@ btBool VTPService::init( IBase *pclientBase,
    ALIAFU_IBASE_DATATYPE tmp;
    ali_errnum_e          err;
 
-   btUnsigned64bitInt    dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
+   btUnsigned64bitInt    dfhOffset;
 
    // check for HWALIAFU's IBase in optargs
    if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE_KEY, &tmp) ) {
@@ -149,7 +149,6 @@ btBool VTPService::init( IBase *pclientBase,
       return true;
    }
 
-
    // check for VTP MMIO base in optargs
    // TODO: could find it ourselves if not provided
    if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE_KEY, &tmp) ) {
@@ -162,17 +161,17 @@ btBool VTPService::init( IBase *pclientBase,
    }
    m_pDFHBaseAddr = reinterpret_cast<btVirtAddr>(tmp);
 
+   // Calculate DFH offset into MMIO region
+   dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
+
    // Check BBB GUID (are we really a VTP?)
    btString sGUID = VTP_BBB_GUID;
    AAL_GUID_t structGUID;
-   btUnsigned64bitInt *pGUID = (btUnsigned64bitInt *)&structGUID;
    btUnsigned64bitInt readBuf[2];
 
-   ASSERT( GUIDStructFromString(sGUID, &structGUID) );
    ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 8, &readBuf[0]) );
    ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 16, &readBuf[1]) );
-
-   if ( ! (pGUID[0] == readBuf[0] && pGUID[1] == readBuf[1]) ) {
+   if ( 0 != strncmp( sGUID, GUIDStringFromStruct(GUIDStructFrom2xU64(readBuf[1], readBuf[0])).c_str(), 36 ) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
