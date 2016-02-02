@@ -12,7 +12,7 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 100000;
+   localparam MAX_ITEMS = 16;
       
    outoforder_wrf_channel outoforder_wrf_channel
      (clk, rst, hdr_in, 512'b0, wr_en, txhdr_out, rxhdr_out, data_out, valid_out, rd_en, empty, full );
@@ -40,16 +40,40 @@ module tb_channel();
       $finish;
    end
 
+   // channel select
+   function logic [1:0] sel_rand_len ();
+      logic [1:0] rand_ch;      
+      begin
+	 do begin	    
+	    rand_ch = $random % 4;
+	 end while (rand_ch == 2'b10); // UNMATCHED !!
+	 return rand_ch;	 
+      end
+   endfunction
 
+   // Push process
    always @(posedge clk) begin
       if (rst) begin
 	 wr_en <= 0;
 	 wr_i  <= 0;
       end
-      else if (~full && (wr_i < MAX_ITEMS)) begin
-	 hdr_in.vc <= VC_VA;
+      else if (~full && ($time % 7 == 0) && (wr_i < MAX_ITEMS)) begin
+	 hdr_in.vc <= ccip_vc_t'($random) % 4;
 	 hdr_in.sop <= 1;
 	 hdr_in.len <= 2'b11;
+	 hdr_in.reqtype <= CCIP_WRFENCE;
+	 hdr_in.addr <= 0;	 
+	 hdr_in.mdata <= 0; // wr_i;
+	 // wr_i      <= wr_i + 1;
+	 wr_en <= 1;
+	 hdr_in.rsvd70 <= 0;
+	 hdr_in.rsvd63_58 <= 0;
+	 $display("Wrfence asserted");	 
+      end 
+      else if (~full && (wr_i < MAX_ITEMS)) begin
+	 hdr_in.vc <= ccip_vc_t'($random) % 4;
+	 hdr_in.sop <= 1;
+	 hdr_in.len <= sel_rand_len();	 
 	 hdr_in.reqtype <= CCIP_RDLINE_S;
 	 hdr_in.addr <= 32'h8400_0000 + wr_i;
 	 hdr_in.mdata <= wr_i;
@@ -57,6 +81,7 @@ module tb_channel();
 	 wr_en <= 1;
 	 hdr_in.rsvd70 <= 0;
 	 hdr_in.rsvd63_58 <= 0;
+	 $display("Wrpush %d", wr_i);	 
       end
       else begin
 	 wr_en <= 0;

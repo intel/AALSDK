@@ -123,7 +123,7 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
-SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
+# SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 # SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
 # SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
 # ifeq ($(PROFILE_ENABLE), 1)
@@ -184,7 +184,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)    #"
+	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)  #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -276,7 +276,6 @@ endif
 ## Run ASE Simulator ##
 sim: check
 ifeq ($(SIMULATOR), VCS)
-#	./$(WORK)/ase_simv $(VCS_SIM_OPT)
 	cd ./$(WORK)/; ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 else
   ifeq ($(SIMULATOR), QUESTA)

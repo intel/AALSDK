@@ -204,7 +204,6 @@ module ccip_emulator
 
 
    // Scope generator
-   // initial ccip_emulator_scope_function();
    initial scope_function();
 
 

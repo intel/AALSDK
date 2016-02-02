@@ -54,4 +54,4 @@ wave:
 ################################################
 clean:
 	rm -rf *.vpd ucli.key DVEFiles/ DVEfiles/ *.log
-	rm -rf simv* csrc/
+	rm -rf simv* csrc/ coverage.vdb/
