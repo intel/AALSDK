@@ -556,7 +556,7 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
+btBool  HWALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
                                    NamedValueSet const &rInputArgs,
                                    NamedValueSet       &rOutputArgs )
 {

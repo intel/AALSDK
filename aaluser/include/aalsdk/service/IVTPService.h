@@ -61,11 +61,13 @@
 
 BEGIN_NAMESPACE(AAL)
 
-#define ALIAFU_IBASE "ALIAFUIBase"
-#define VTP_DFH_BASE "VTPDFHBase"
+#define ALIAFU_IBASE_KEY "ALIAFUIBase"
+#define ALIAFU_IBASE_DATATYPE btObjectType
+#define VTP_DFH_BASE_KEY "VTPDFHBase"
+#define VTP_DFH_BASE_DATATYPE btObjectType
 
 // TODO: replace with actual spec'd VTP GUID
-#define GUID_BBB_VTP "5BC516B4-CC6B-4ECF-9115-70E1815F0370"
+#define VTP_BBB_GUID "C8A2982F-FF96-42BF-A705-45727F501901"
 
 /// @addtogroup VTPService
 /// @{

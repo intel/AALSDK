@@ -342,10 +342,10 @@ btInt HelloALIVTPNLBApp::run()
 
    // the VTPService will reuse the already established interfaces presented by
    // the ALIAFU service
-   Manifest.Add(ALIAFU_IBASE, m_pALIAFU_AALService);
+   Manifest.Add(ALIAFU_IBASE_KEY, static_cast<ALIAFU_IBASE_DATATYPE>(m_pALIAFU_AALService));
 
    // the location of the VTP device feature header
-   Manifest.Add(VTP_DFH_BASE, m_pVTPDFH);
+   Manifest.Add(VTP_DFH_BASE_KEY, static_cast<VTP_DFH_BASE_DATATYPE>(m_pVTPDFH));
 
    // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "VTP");

@@ -107,10 +107,13 @@ btBool VTPService::init( IBase *pclientBase,
                               NamedValueSet const &optArgs,
                               TransactionID const &rtid)
 {
-   btObjectType tmp;
+   ALIAFU_IBASE_DATATYPE tmp;
+   ali_errnum_e          err;
+
+   btUnsigned64bitInt    dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
 
    // check for HWALIAFU's IBase in optargs
-   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE_KEY, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
@@ -149,7 +152,7 @@ btBool VTPService::init( IBase *pclientBase,
 
    // check for VTP MMIO base in optargs
    // TODO: could find it ourselves if not provided
-   if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE_KEY, &tmp) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
@@ -159,7 +162,24 @@ btBool VTPService::init( IBase *pclientBase,
    }
    m_pDFHBaseAddr = reinterpret_cast<btVirtAddr>(tmp);
 
-   ali_errnum_e err;
+   // Check BBB GUID (are we really a VTP?)
+   btString sGUID = VTP_BBB_GUID;
+   AAL_GUID_t structGUID;
+   btUnsigned64bitInt *pGUID = (btUnsigned64bitInt *)&structGUID;
+   btUnsigned64bitInt readBuf[2];
+
+   ASSERT( GUIDStructFromString(sGUID, &structGUID) );
+   ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 8, &readBuf[0]) );
+   ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 16, &readBuf[1]) );
+
+   if ( ! (pGUID[0] == readBuf[0] && pGUID[1] == readBuf[1]) ) {
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 rtid,
+                                                 errBadParameter,
+                                                 reasFeatureNotSupported,
+                                                 "Feature GUID does not match VTP GUID."));
+      return true;
+   }
 
    // Allocate the page table.  The size of the page table is a function
    // of the PTE index space.
@@ -186,7 +206,6 @@ btBool VTPService::init( IBase *pclientBase,
    // Tell the hardware the address of the table
    // Use MMIO instead of memory to accommodate ASE
 //   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
-   btUnsigned64bitInt dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
    m_pALIMMIO->mmioWrite64(dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 
    initComplete(rtid);
