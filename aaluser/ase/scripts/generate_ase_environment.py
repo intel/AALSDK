@@ -263,7 +263,7 @@ if tool_type == "VCS":
     print ("Generating VCS specific Runtime TCL scripts")
     ### Write Synopsys Setup file& TCL script ###
     open("synopsys_sim.setup", "w").write("WORK > DEFAULT\nDEFAULT : ./work\n")
-    open("vcs_run.tcl", "w").write("dump -depth 0 \nrun \nquit\n")
+    open("vcs_run.tcl", "w").write("dump -depth 0 \ndump -aggregates -add / \nrun \nquit\n")
 elif tool_type == "QUESTA":
     ### Generate .DO file ###
     print ("Generating Modelsim specific scripts")
