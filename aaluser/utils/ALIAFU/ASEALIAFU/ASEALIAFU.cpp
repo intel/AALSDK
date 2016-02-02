@@ -211,30 +211,41 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    guid_u             filterGUID;
 
    // extract filters
+   filterByID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_ID)) {
-      rInputArgs.Get(ALI_GETFEATURE_ID, &filterID);
-      filterByID = true;
-   } else {
-      filterByID = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID, &filterID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByID = true;
+      }
    }
+
+   filterByType = false;
    if (rInputArgs.Has(ALI_GETFEATURE_TYPE)) {
-      rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType);
-      filterByType = true;
-   } else {
-      filterByType = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByType = true;
+      }
    }
+
+   filterByGUID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_GUID)) {
-      rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID);
-      ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
-      filterByGUID = true;
-   } else {
-      filterByGUID = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- wrong datatype?");
+         return false;
+      } else {
+         ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
+         filterByGUID = true;
+      }
    }
 
    // Sanity check - can't search for GUID in private features
    ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
    if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
-      printf("Can't search for GUIDs in private features");
+      AAL_ERR(LM_All, "Can't search for GUIDs in private features");
       return false;
    }
 
