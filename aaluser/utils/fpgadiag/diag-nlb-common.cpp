@@ -90,14 +90,14 @@ nlb_on_nix_long_option_only(AALCLP_USER_DEFINED user, const char *option) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_DATA);
    } else if ((0 == strcmp("--umsg-hint", option)) || (0 == strcmp("--uh", option))) {
 	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_UMSG_HINT);
-   } else if ( 0 == strcmp("--auto-ch", option) ) {
-   	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_AUTO_CH);
-   } else if ( 0 == strcmp("--qpi", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_QPI);
-   } else if ( 0 == strcmp("--pcie0", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE0);
-   } else if ( 0 == strcmp("--pcie1", option) ) {
-      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE1);
+   } else if ( 0 == strcmp("--va", option) ) {
+   	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VA);
+   } else if ( 0 == strcmp("--vl0", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VL0);
+   } else if ( 0 == strcmp("--vh0", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH0);
+   } else if ( 0 == strcmp("--vh1", option) ) {
+      	  flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_VH1);
    } else if ( 0 == strcmp("--0", option) ) {
       flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_FEATURE0);
    } else if ( 0 == strcmp("--1", option) ) {
@@ -191,17 +191,6 @@ nlb_on_nix_long_option(AALCLP_USER_DEFINED user, const char *option, const char 
       } else {
          flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_ENDCL);
       }
-
-   } else if ( (0 == strcmp("--multi-cl", option)) || (0 == strcmp("--mcl", option)) ) {
-
-         nlbcl->multicls = strtoul(value, &endptr, 0);
-         if ( value + strlen(value) != endptr ) {
-            nlbcl->multicls = nlbcl->defaults.multicls;
-            flag_clrf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
-            printf("Invalid value for --multi-cl : %s. Defaulting to %llu.\n", value, nlbcl->multicls);
-         } else {
-            flag_setf(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL);
-         }
 
    } else if ( 0 == strcmp("--dsm-phys", option) ) {
 
@@ -543,13 +532,13 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
    } else if ( 0 == strcasecmp(test.c_str(), "SW") ) {
       fprintf(fp, "   --mode=sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [<OUTPUT>] [<NOTICE>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ) {
-	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	  fprintf(fp, "   --mode=ccip-lpbk1 <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ) {
-	 fprintf(fp, "   --mode=ccip-read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-read <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-WRITE") ) {
-	 fprintf(fp, "   --mode=ccip-write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-write <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<FPGA-CACHE>] [<CPU-CACHE>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [CH-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ) {
-	 fprintf(fp, "   --mode=ccip-trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<MULTI-CL>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
+	 fprintf(fp, "   --mode=ccip-trput <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<BANDWIDTH>] [<WRITES>] [<CONT> <TIMEOUT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>]");
    } else if ( 0 == strcasecmp(test.c_str(), "CCIP-SW") ) {
          fprintf(fp, "   --mode=ccip-sw <TARGET> [<DEVICE>] [<BEGIN>] [<END>] [<WRITES>] [<CONT>] [<FREQ>] [<RDSEL>] [CH-SELECT] [<OUTPUT>] [<NOTICE>]");
    }
@@ -587,20 +576,6 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
       fprintf(fp, "%llu\n", nlbcl->endcls);
    } else {
       fprintf(fp, "Default=B\n"/*, nlbcl->defaults.endcls*/);
-   }
-
-   if ( 0 == strcasecmp(test.c_str(), "CCIP-LPBK1") ||
-        0 == strcasecmp(test.c_str(), "CCIP-READ")  ||
-        0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
-        0 == strcasecmp(test.c_str(), "CCIP-TRPUT")) {
-
-      fprintf(fp, "      <MULTI-CL>  = --multi-cl=M      OR --mcl=M, where M =one of { 1 2 4 },                      ");
-
-      if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_MULTICL) ) {
-            fprintf(fp, "%llu\n", nlbcl->multicls);
-         } else {
-            fprintf(fp, "Default=%llu\n", nlbcl->defaults.multicls);
-         }
    }
 
    if ( 0 == strcasecmp(test.c_str(), "CCIP-READ") ||
@@ -795,32 +770,32 @@ void nlb_help_message_callback(FILE *fp, struct _aalclp_gcs_compliance_data *gcs
 	    0 == strcasecmp(test.c_str(), "CCIP-WRITE") ||
 	    0 == strcasecmp(test.c_str(), "CCIP-TRPUT") ||
         0 == strcasecmp(test.c_str(), "CCIP-SW")) {
-	  fprintf(fp, "      <CH-SELECT> = --auto-ch,                    Arbitrary Channel,                              ");
-	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_AUTO_CH) ) {
+	  fprintf(fp, "      <CH-SELECT> = --va,                         Arbitrary Channel,                              ");
+	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VA) ) {
 		fprintf(fp, "yes\n");
 	 }  else {
-		fprintf(fp, "Default=%s\n", nlbcl->defaults.auto_ch);
+		fprintf(fp, "Default=%s\n", nlbcl->defaults.va);
 	 }
 
-      fprintf(fp, "                  = --qpi,                        QPI Channel,                                    ");
-   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_QPI) ) {
+      fprintf(fp, "                  = --vl0,                        QPI Channel,                                    ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VL0) ) {
    	     fprintf(fp, "yes\n");
    	  } else {
-   	     fprintf(fp, "Default=%s\n", nlbcl->defaults.qpi);
+   	     fprintf(fp, "Default=%s\n", nlbcl->defaults.vl0);
    	  }
 
-   	  fprintf(fp, "                  = --pcie0,                      PCIe0 Channel,                                  ");
-   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE0) ) {
+   	  fprintf(fp, "                  = --vh0,                        PCIe0 Channel,                                  ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH0) ) {
    		 fprintf(fp, "yes\n");
    	  } else {
-   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.pcie0);
+   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh0);
    	  }
 
-   	  fprintf(fp, "                  = --pcie1,                      PCIe1 Channel,                                  ");
-   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_PCIE1) ) {
+   	  fprintf(fp, "                  = --vh1,                        PCIe1 Channel,                                  ");
+   	  if ( flag_is_set(nlbcl->cmdflags, NLB_CMD_FLAG_VH1) ) {
    		 fprintf(fp, "yes\n");
    	  } else {
-   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.pcie1);
+   		 fprintf(fp, "Default=%s\n", nlbcl->defaults.vh1);
    	  }
       }
    fprintf(fp, "\n");
@@ -909,26 +884,6 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
       }
    }
 
-   // --multi-cl=X
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL) ) {
-      if ( 0 != (cmd.begincls % cmd.multicls) ) {
-         os << cmd.TestMode << " requires --begin to be a multiple of --multi-cl. " <<endl;
-         return false;
-      }
-
-      if ( 0 != (cmd.endcls % cmd.multicls) ) {
-         os << cmd.TestMode << " requires --end to be a multiple of --multi-cl. " <<endl;
-         return false;
-      }
-
-      if ( (1 != (cmd.multicls)) &&
-           (2 != (cmd.multicls)) &&
-           (4 != (cmd.multicls))) {
-        os << cmd.TestMode << " requires --multi-cl to be one of 1, 2 or 4. " <<endl;
-        return false;
-     }
-   }
-
    // --src-phys and --src-capcm
    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_SRC_PHYS|NLB_CMD_FLAG_SRC_CAPCM) ) {
       os << "--src-phys and --src-capcm are mutually exclusive." << endl;
@@ -963,16 +918,16 @@ bool NLBVerifyCmdLine(NLBCmdLine &cmd, std::ostream &os) throw()
    return false;
    }
 
-   // --auto-ch, --qpi, --pcie0, --pcie1
+   // --va, --vl0, --vh0, --vh1
 
-    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_QPI) ||
-    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_PCIE0) ||
-    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_AUTO_CH|NLB_CMD_FLAG_PCIE1) ||
-    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_QPI|NLB_CMD_FLAG_PCIE0) ||
-    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_QPI|NLB_CMD_FLAG_PCIE1) ||
-    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0|NLB_CMD_FLAG_PCIE1)
+    if ( flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VL0) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH0) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VA|NLB_CMD_FLAG_VH1) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH0) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VL0|NLB_CMD_FLAG_VH1) ||
+    flags_are_set(cmd.cmdflags, NLB_CMD_FLAG_VH0|NLB_CMD_FLAG_VH1)
     ) {
-    os << "--auto-ch, --qpi, --pcie0 and --pcie1 are mutually exclusive." << endl;
+    os << "--va, --vl0, --vh0 and --vh1 are mutually exclusive." << endl;
     return false;
     }
 
