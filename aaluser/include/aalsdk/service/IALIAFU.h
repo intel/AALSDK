@@ -385,10 +385,10 @@ public:
    #define AALPERF_WRITE_MISS       "Write_Miss"
    #define AALPERF_EVICTIONS        "Evictions"
 
-   #define AALPERF_PCIE0_READ       "PCIe 0 Read"
-   #define AALPERF_PCIE0_WRITE      "PCIe 0 Write"
-   #define AALPERF_PCIE1_READ       "RPCIe 1 Read"
-   #define AALPERF_PCIE1_WRITE      "PCIe 1 Write"
+   #define AALPERF_PCIE0_READ       "PCIe0 Read"
+   #define AALPERF_PCIE0_WRITE      "PCIe0 Write"
+   #define AALPERF_PCIE1_READ       "PCIe1 Read"
+   #define AALPERF_PCIE1_WRITE      "PCIe1 Write"
    #define AALPERF_UPI_READ         "UPI Read"
    #define AALPERF_UPI_WRITE        "UPI Write"
    ///

@@ -104,6 +104,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_hdr.dfh.next_DFH_offset =0x1000;
    fme_hdr.dfh.Feature_rev =0;
    fme_hdr.dfh.Feature_ID =1;
+   fme_hdr.dfh.endof_list =0x0;
    write_ccip_csr64(ptr,offset, fme_hdr.dfh.csr);
 
    // FME AFU id low
@@ -180,6 +181,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_tmp.ccip_fme_tmp_dflhdr.next_DFH_offset =0x1000;
    fme_tmp.ccip_fme_tmp_dflhdr.Feature_rev =0;
    fme_tmp.ccip_fme_tmp_dflhdr.Feature_ID =CCIP_FME_DFLID_THERM;
+   fme_tmp.ccip_fme_tmp_dflhdr.endof_list =0x0;
    offset = 0;
    write_ccip_csr64(ptr,offset,fme_tmp.ccip_fme_tmp_dflhdr.csr);
 
@@ -222,6 +224,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_pm.ccip_fme_pm_dflhdr.next_DFH_offset =0x1000;
    fme_pm.ccip_fme_pm_dflhdr.Feature_rev =0;
    fme_pm.ccip_fme_pm_dflhdr.Feature_ID= CCIP_FME_DFLID_POWER;
+   fme_pm.ccip_fme_pm_dflhdr.endof_list =0x0;
    offset = 0 ;
    write_ccip_csr64(ptr,offset,fme_pm.ccip_fme_pm_dflhdr.csr);
 
@@ -266,6 +269,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_fpmon.ccip_fme_fpmon_dflhdr.next_DFH_offset =0x1000;
    fme_fpmon.ccip_fme_fpmon_dflhdr.Feature_rev =0;
    fme_fpmon.ccip_fme_fpmon_dflhdr.Feature_ID= CCIP_FME_DFLID_GPERF;
+   fme_fpmon.ccip_fme_fpmon_dflhdr.endof_list =0x0;
    offset = 0;
    write_ccip_csr64(ptr,offset,fme_fpmon.ccip_fme_fpmon_dflhdr.csr);
 
@@ -312,6 +316,7 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_gerror.ccip_gerror_dflhdr.next_DFH_offset =0x1000;
    fme_gerror.ccip_gerror_dflhdr.Feature_rev =0;
    fme_gerror.ccip_gerror_dflhdr.Feature_ID= CCIP_FME_DFLID_GERR;
+   fme_gerror.ccip_gerror_dflhdr.endof_list =0x0;
    offset = 0;
    write_ccip_csr64(ptr,offset,fme_gerror.ccip_gerror_dflhdr.csr);
 
@@ -337,23 +342,24 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_pr.ccip_pr_dflhdr.next_DFH_offset =0x0;
    fme_pr.ccip_pr_dflhdr.Feature_rev =0;
    fme_pr.ccip_pr_dflhdr.Feature_ID= CCIP_FME_DFLID_PR;
+   fme_pr.ccip_pr_dflhdr.endof_list =0x1;
    offset = 0;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_pr_dflhdr.csr);
 
    // PR control
+   fme_pr.ccip_fme_pr_control.pr_push_complete =0x1;
    fme_pr.ccip_fme_pr_control.pr_start_req =0x1;
    fme_pr.ccip_fme_pr_control.pr_regionid =0x1;
-   fme_pr.ccip_fme_pr_control.pr_port_access =0x1;
+   fme_pr.ccip_fme_pr_control.enable_pr_port_access =0x1;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_control.csr);
 
    // PR status
-   fme_pr.ccip_fme_pr_status.pr_status =0x5;
-   fme_pr.ccip_fme_pr_status.pr_mega_fun_status =0x7;
-   fme_pr.ccip_fme_pr_status.pr_engine_error =0x1;
-   fme_pr.ccip_fme_pr_status.pr_data_overfw_error =0x1;
-   fme_pr.ccip_fme_pr_status.pr_timeout_err =0x1;
+   fme_pr.ccip_fme_pr_status.pr_host_status =0x5;
+   fme_pr.ccip_fme_pr_status.pr_contoller_status =0x1;
+   fme_pr.ccip_fme_pr_status.pr_status =0x1;
    fme_pr.ccip_fme_pr_status.pr_credit =0x55;
+
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_status.csr);
 
@@ -362,7 +368,13 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_data.csr);
 
-   fme_pr.ccip_fme_pr_err.csr = 0;
+    fme_pr.ccip_fme_pr_err.PR_operation_err =0x1;
+   fme_pr.ccip_fme_pr_err.PR_CRC_err =0x1;
+   fme_pr.ccip_fme_pr_err.PR_bitstream_err =0x1;
+   fme_pr.ccip_fme_pr_err.PR_IP_err =0x1;
+   fme_pr.ccip_fme_pr_err.PR_FIFIO_err =0x1;
+   fme_pr.ccip_fme_pr_err.PR_timeout_err =0x1;
+
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_err.csr);
    return 0;
@@ -395,6 +407,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_hdr.ccip_port_dfh.next_DFH_offset =0x1000;
    port_hdr.ccip_port_dfh.Feature_rev =0;
    port_hdr.ccip_port_dfh.Feature_ID =1;
+   port_hdr.ccip_port_dfh.endof_list =0x0;
    write_ccip_csr64(ptr,offset,port_hdr.ccip_port_dfh.csr);
 
    //port afu id low
@@ -454,6 +467,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_err.ccip_port_err_dflhdr.next_DFH_offset =0x1000;
    port_err.ccip_port_err_dflhdr.Feature_rev =0;
    port_err.ccip_port_err_dflhdr.Feature_ID= CCIP_PORT_DFLID_ERROR;
+   port_err.ccip_port_err_dflhdr.endof_list =0x0;
    write_ccip_csr64(ptr,offset, port_err.ccip_port_err_dflhdr.csr);
 
 
@@ -511,6 +525,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_umsg.ccip_port_umsg_dflhdr.next_DFH_offset =0x1000;
    port_umsg.ccip_port_umsg_dflhdr.Feature_rev =0;
    port_umsg.ccip_port_umsg_dflhdr.Feature_ID= CCIP_PORT_DFLID_USMG;
+   port_umsg.ccip_port_umsg_dflhdr.endof_list =0x0;
    write_ccip_csr64(ptr,offset,port_umsg.ccip_port_umsg_dflhdr.csr);
 
 
@@ -540,6 +555,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_pr.ccip_port_pr_dflhdr.next_DFH_offset =0x1000;
    port_pr.ccip_port_pr_dflhdr.Feature_rev =0;
    port_pr.ccip_port_pr_dflhdr.Feature_ID= CCIP_PORT_DFLID_PR;
+   port_pr.ccip_port_pr_dflhdr.endof_list =0x0;
    write_ccip_csr64(ptr,offset,port_pr.ccip_port_pr_dflhdr.csr);
 
    // PR Control CSR
@@ -583,6 +599,7 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    port_stap.ccip_port_stap_dflhdr.next_DFH_offset =0x0;
    port_stap.ccip_port_stap_dflhdr.Feature_rev =0;
    port_stap.ccip_port_stap_dflhdr.Feature_ID= CCIP_PORT_DFLID_STP;
+   port_stap.ccip_port_stap_dflhdr.endof_list =0x1;
    write_ccip_csr64(ptr,offset,port_stap.ccip_port_stap_dflhdr.csr);
 
 
@@ -707,6 +724,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Feature_rev = %x \n",pfme_dev->m_pThermmgmt->ccip_fme_tmp_dflhdr.Feature_rev);
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pThermmgmt->ccip_fme_tmp_dflhdr.next_DFH_offset);
       PDEBUG( "Type = %x \n",pfme_dev->m_pThermmgmt->ccip_fme_tmp_dflhdr.Type);
+      PDEBUG( "End of List = %x \n",pfme_dev->m_pThermmgmt->ccip_fme_tmp_dflhdr.endof_list);
 
 
       PDEBUG( "force_proc_hot = %x \n",pfme_dev->m_pThermmgmt->ccip_tmp_threshold.force_proc_hot);
@@ -743,6 +761,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Feature_rev = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pfme_dev->m_pPowermgmt->ccip_fme_pm_dflhdr.endof_list);
 
       PDEBUG( "fpga_latency_report = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_threshold.fpga_latency_report);
       PDEBUG( "threshold1 = %x \n",pfme_dev->m_pPowermgmt->ccip_pm_threshold.threshold1);
@@ -783,6 +802,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Feature_rev = %x \n",pfme_dev->m_pPerf->ccip_fme_fpmon_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pfme_dev->m_pPerf->ccip_fme_fpmon_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pPerf->ccip_fme_fpmon_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pfme_dev->m_pPerf->ccip_fme_fpmon_dflhdr.endof_list);
 
       PDEBUG( "cache_event = %x \n",pfme_dev->m_pPerf->ccip_fpmon_ch_ctl.cache_event);
       PDEBUG( "freeze = %x \n",pfme_dev->m_pPerf->ccip_fpmon_ch_ctl.freeze);
@@ -815,6 +835,8 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Feature_rev = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pfme_dev->m_pGerror->ccip_gerror_dflhdr.endof_list);
+
       PDEBUG( "ccip_fme_error_mask rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error_mask.rsvd);
       PDEBUG( "ccip_fme_first_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_first_error.rsvd);
       PDEBUG( "ccip_fme_error rsvd = %x \n",( unsigned int)pfme_dev->m_pGerror->ccip_fme_error.rsvd);
@@ -830,22 +852,28 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
       PDEBUG( "Feature_rev = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pfme_dev->m_pPRmgmt->ccip_pr_dflhdr.endof_list);
 
-      PDEBUG( "pr_start_req = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_start_req);
+      PDEBUG( "enable_pr_port_access = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.enable_pr_port_access);
       PDEBUG( "pr_regionid = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_regionid);
-      PDEBUG( "pr_port_access = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_port_access);
+      PDEBUG( "pr_start_req = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_start_req);
+      PDEBUG( "pr_push_complete = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_control.pr_push_complete);
 
-      PDEBUG( "pr_status = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_status);
 
-      PDEBUG( "pr_mega_fun_status = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_mega_fun_status);
-      PDEBUG( "pr_engine_error = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_engine_error);
-      PDEBUG( "pr_data_overfw_error = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_data_overfw_error);
-      PDEBUG( "pr_timeout = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_timeout_err);
       PDEBUG( "pr_credit = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_credit);
+      PDEBUG( "pr_status = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_status);
+      PDEBUG( "pr_contoller_status = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_contoller_status);
+      PDEBUG( "pr_host_status = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_status.pr_host_status);
+
 
       PDEBUG( "pr_data_raw = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_data.pr_data_raw);
 
-      PDEBUG( "ccip_fme_pr_err = %llx \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.csr);
+      PDEBUG( "PR_operation_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_operation_err);
+      PDEBUG( "PR_CRC_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_CRC_err);
+      PDEBUG( "PR_bitstream_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_bitstream_err);
+      PDEBUG( "PR_IP_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_IP_err);
+      PDEBUG( "PR_FIFIO_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_FIFIO_err);
+      PDEBUG( "PR_timeout_err = %x \n",pfme_dev->m_pPRmgmt->ccip_fme_pr_err.PR_timeout_err);
 
 
       PDEBUG( "FME PR Feature  END \n \n");
@@ -883,6 +911,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "dfh.Feature_ID= %x \n",pport_dev->m_pport_hdr->ccip_port_dfh.Feature_ID);
       PDEBUG( "dfh.Feature_rev= %x \n",pport_dev->m_pport_hdr->ccip_port_dfh.Feature_rev);
       PDEBUG( "dfh.next_DFH_offset= %x \n",pport_dev->m_pport_hdr->ccip_port_dfh.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pport_dev->m_pport_hdr->ccip_port_dfh.endof_list);
 
 
       PDEBUG( "afu_id_l.afu_id_l= %lx \n",( long unsigned int)pport_dev->m_pport_hdr->ccip_port_afuidl.afu_id_l);
@@ -918,6 +947,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Type = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.Type);
 
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pport_dev->m_pport_err->ccip_port_err_dflhdr.endof_list);
 
       PDEBUG( "rsvd = %x \n",(  unsigned int)pport_dev->m_pport_err->ccip_port_error_mask.rsvd);
 
@@ -964,6 +994,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Feature_rev = %x \n",pport_dev->m_pport_umsg->ccip_port_umsg_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pport_dev->m_pport_umsg->ccip_port_umsg_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_umsg->ccip_port_umsg_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pport_dev->m_pport_umsg->ccip_port_umsg_dflhdr.endof_list);
 
 
       PDEBUG( "no_umsg_alloc_port = %x \n",pport_dev->m_pport_umsg->ccip_umsg_capability.no_umsg_alloc_port);
@@ -986,6 +1017,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Feature_rev = %x \n",pport_dev->m_pport_pr->ccip_port_pr_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pport_dev->m_pport_pr->ccip_port_pr_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_pr->ccip_port_pr_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pport_dev->m_pport_pr->ccip_port_pr_dflhdr.endof_list);
 
       PDEBUG( "pr_start_req = %x \n",pport_dev->m_pport_pr->ccip_port_pr_control.pr_start_req);
 
@@ -1013,6 +1045,7 @@ int print_sim_port_device(struct port_device *pport_dev)
       PDEBUG( "Feature_rev = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.Feature_rev);
       PDEBUG( "Type = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.Type);
       PDEBUG( "next_DFH_offset = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.next_DFH_offset);
+      PDEBUG( "End of List = %x \n",pport_dev->m_pport_stap->ccip_port_stap_dflhdr.endof_list);
 
       PDEBUG( "Signal tap rsvd = %x \n",(  unsigned int)pport_dev->m_pport_stap->ccip_port_stap.rsvd);
 
