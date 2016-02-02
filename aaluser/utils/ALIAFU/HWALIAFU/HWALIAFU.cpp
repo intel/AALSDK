@@ -65,12 +65,10 @@ struct CCIP_DFH {
       btUnsigned64bitInt csr;
       struct {
          btUnsigned64bitInt Feature_ID :12;     // Feature ID
-
-         //enum e_CCIP_DFL_ID Feature_ID :12;     // Feature ID
-
          btUnsigned64bitInt Feature_rev :4;     // Feature revision
          btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
-         btUnsigned64bitInt rsvd :20;           // Reserved
+         btUnsigned16bitInt eol :1;             // end of header bit
+         btUnsigned64bitInt rsvd :19;           // Reserved
          btUnsigned64bitInt Type :4;            // Type of Device
 
          //enum e_CCIP_DEVTPPE_ID Type :4;
@@ -558,7 +556,7 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  HWALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
+btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
                                    NamedValueSet const &rInputArgs,
                                    NamedValueSet       &rOutputArgs )
 {
@@ -579,47 +577,60 @@ btBool  HWALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    guid_u             filterGUID;
 
    // extract filters
+   filterByID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_ID)) {
-      rInputArgs.Get(ALI_GETFEATURE_ID, &filterID);
-      filterByID = true;
-   } else {
-      filterByID = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID, &filterID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByID = true;
+      }
    }
+
+   filterByType = false;
    if (rInputArgs.Has(ALI_GETFEATURE_TYPE)) {
-      rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType);
-      filterByType = true;
-   } else {
-      filterByType = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByType = true;
+      }
    }
+
+   filterByGUID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_GUID)) {
-      rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID);
-      ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
-      filterByGUID = true;
-   } else {
-      filterByGUID = false;
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- wrong datatype?");
+         return false;
+      } else {
+         ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
+         filterByGUID = true;
+      }
    }
 
    // Sanity check - can't search for GUID in private features
    ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
    if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
-      printf("Can't search for GUIDs in private features");
+      AAL_ERR(LM_All, "Can't search for GUIDs in private features");
       return false;
    }
 
    // walk DFH
    // look at AFU CSR (mandatory) to get first feature header offset
    ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
-   printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
-          dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+   printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx, eol: %u\n",
+          dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID, dfh.eol);
 //   printDFH(dfh);
    offset = dfh.next_DFH_offset;
 
-   while (dfh.next_DFH_offset != 0) {
+   // look at chained DFHs until end of list bit is set or next offset is 0
+   // FIXME: why do we need both?
+   while (dfh.eol == 0 && dfh.next_DFH_offset != 0) {
 
       // read feature header
       ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
-      printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx\n",
-             dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID);
+      printf("Type: 0x%llx, Next DFH offset: 0x%llx, Feature Rev: 0x%llx, Feature ID: 0x%llx, eol: %u\n",
+             dfh.Type, dfh.next_DFH_offset, dfh.Feature_rev, dfh.Feature_ID, dfh.eol);
       // read guid, if present
       if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
          ASSERT( mmioRead64(offset +  8, (btUnsigned64bitInt *)&guid.reg[0]) );
