@@ -62,7 +62,7 @@ BEGIN_NAMESPACE(AAL)
 #define ALI_GETFEATURE_TYPE_KEY          "ALIGetFeatureTYPE"
 #define ALI_GETFEATURE_TYPE_DATATYPE     btUnsigned64bitInt
 #define ALI_GETFEATURE_GUID_KEY          "ALIGetFeatureGUID"
-#define ALI_GETFEATURE_GUID_DATATYPE     btString  // FIXME: btcString?
+#define ALI_GETFEATURE_GUID_DATATYPE     btcString
 
 // CCIP DFH header types
 #define ALI_DFH_TYPE_RSVD    0
