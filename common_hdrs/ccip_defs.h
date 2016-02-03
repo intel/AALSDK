@@ -286,10 +286,10 @@ struct CCIP_DFH {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt Feature_ID :12;       // Feature ID
+         btUnsigned64bitInt Feature_ID :12;      // Feature ID
          btUnsigned64bitInt Feature_rev :4;      // Feature revision
          btUnsigned64bitInt next_DFH_offset :24; // Next Device Feature header offset
-         btUnsigned64bitInt endof_list :1;       // End of Device feature list
+         btUnsigned64bitInt end_of_list :1;      // End of Device feature list
          btUnsigned64bitInt rsvd :19;            // Reserved
          btUnsigned64bitInt Type :4;             // Type of Device
 
