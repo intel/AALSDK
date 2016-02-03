@@ -320,7 +320,7 @@ btInt HelloALIVTPNLBApp::run()
    }
 
    // Ask the ALI service for the VTP device feature header (DFH)
-   featureFilter.Add(ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(25));
+//   featureFilter.Add(ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(25));
    featureFilter.Add(ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(2));
    featureFilter.Add(ALI_GETFEATURE_GUID_KEY, static_cast<ALI_GETFEATURE_GUID_DATATYPE>(sGUID));
    if (true != m_pALIMMIOService->mmioGetFeature((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
