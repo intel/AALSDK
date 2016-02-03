@@ -159,9 +159,10 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
 // -----------------------------------------------------
 // Buffer allocation API
 // -----------------------------------------------------
-AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize      Length,
-					     btVirtAddr    *pBufferptr,
-					     NamedValueSet *pOptArgs)
+AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs )
 {
   struct buffer_t *buf;
   int ret;

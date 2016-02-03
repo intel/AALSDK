@@ -386,6 +386,7 @@ aaldev_AddOwner_e
 aaldev_addOwner(struct aal_device *pdev,
                 btPID              pid,
                 void              *manifest,
+                btAny              ownerContext,
                 kosal_list_head   *psessionlist)
 {
    aaldev_AddOwner_e    ret  = aaldev_addowner_OK;
@@ -431,7 +432,7 @@ aaldev_addOwner(struct aal_device *pdev,
    }
 
    // Create the owner
-   aaldev_owner_init(pown, pid, manifest);
+   aaldev_owner_init(pown, pid, manifest,ownerContext);
 
    // Record the device
    pown->m_device = pdev;

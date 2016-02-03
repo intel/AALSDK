@@ -85,6 +85,7 @@ declare -ra DRIVER_SETS=(\
 'base' \
 'cci' \
 'cci-sim' \
+'cci-dbg' \
 'cciv4' \
 'cciv4-sim'\
 )
@@ -181,7 +182,6 @@ declare mod_path
          fi
          printf "[ OK ]\n"
 
- 
          mod="@CCIPCIEDRV_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
          printf "insmod %-15s " "${mod}"
@@ -191,7 +191,7 @@ declare mod_path
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
-      ;; # cciv4 
+      ;; # cci 
       
       cci-sim|cci_sim)
          mod="@AALBUS_DRV_NAME@.ko"
@@ -235,6 +235,48 @@ declare mod_path
          printf "[ OK ]\n"
       ;; # cciv4-sim (sim=4)
 
+      cci-dbg|cci_dbg|cci-debug|cci_debug)
+         mod="@AALBUS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalbus/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALRMS_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_server/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@AALRMC_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/aalresourcemgr_client/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+
+         mod="@CCIPCIEDRV_DRV_NAME@.ko"
+         mod_path="${BUILD_DIR}/cci_PCIe_driver/kbuild"
+         printf "insmod %-15s " "${mod}"
+         if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
+            printf "[ALREADY]\n"
+         elif ! ${INSMOD} "${mod_path}/${mod}" debug=-134217601; then
+            die "[FAIL]"
+         fi
+         printf "[ OK ]\n"
+      ;; # cci-dbg
+ 
       cciv4)
          mod="@AALBUS_DRV_NAME@.ko"
          mod_path="${BUILD_DIR}/aalbus/kbuild"

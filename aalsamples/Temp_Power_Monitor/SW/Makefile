@@ -27,65 +27,54 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     samples/Hello_ALI_NLB/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     06/09/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-## NOTE: Removing SPL support but will add back in something similar, so 
-##       leaving in the code but not attempting to build (SPL will not build)
-## NOTE: Removed CCI-S support, but difference between Hello_CCI_NLB and
-##       Hello_ALI_NLB is useful, so leaving Hello_CCI_NLB in place for now.
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_ALI_NLB/SW \
-ALI_Multi_AFU_with_PerfMon/SW \
-Temp_Power_Monitor/SW
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
 
-#Removed SUBDIRS
-#SUBDIRS=\
-#Hello_CCI_NLB/SW \
-#Hello_SPL_LB/SW \
-#Sudoku_SPL/SW \
-#LinkedList_SPL/SW \
-#ALI_Configure_AFU/SW
-#SignalTapService \
-#SigTapSample/SW
-
-
-MFLAGS  =
 ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
+else
+CPPFLAGS += -DENABLE_DEBUG=1
 endif
 ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
+else
+CPPFLAGS += -DENABLE_ASSERT=1
 endif
 
 ifeq (,$(DESTDIR))
 ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
 endif
 else
 ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
+prefix = /usr/local
 endif
-MFLAGS += DESTDIR=$(DESTDIR)
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
 endif
 
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
+all: tempPowMon
 
-.PHONY: all clean
+tempPowMon: TempPowMon.o
+	$(CXX) $(CFLAGS) -o tempPowMon TempPowMon.o $(LDFLAGS) -lOSAL -lAAS -laalrt
 
-doc docs: docclean
-	doc/output/./test.sh
-	doxygen doc/Doxyfile
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
+TempPowMon.o: TempPowMon.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o TempPowMon.o TempPowMon.cpp
 
-.PHONY:doc docs docclean docsclean
+clean:
+	$(RM) tempPowMon TempPowMon.o
+
+.PHONY:all clean
