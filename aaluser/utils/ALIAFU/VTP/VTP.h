@@ -88,7 +88,7 @@ public:
    DECLARE_AAL_SERVICE_CONSTRUCTOR(VTP, ServiceBase),
       m_pSvcClient(NULL),
       m_pHWALIAFU(NULL),
-      m_pDFHBaseAddr(NULL)
+      m_dfhOffset(-1)
    {
       SetInterface(iidVTPService, dynamic_cast<IVTP *>(this));
    }
@@ -130,7 +130,7 @@ protected:
    IBase                 *m_pHWALIAFU;
    IALIBuffer            *m_pALIBuffer;
    IALIMMIO              *m_pALIMMIO;
-   btVirtAddr             m_pDFHBaseAddr;
+   btCSROffset            m_dfhOffset;
 
    uint8_t               *m_pPageTable;
    btPhysAddr             m_PageTablePA;

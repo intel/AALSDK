@@ -105,13 +105,11 @@ btBool VTP::init( IBase               *pclientBase,
                   NamedValueSet const &optArgs,
                   TransactionID const &rtid)
 {
-   ALIAFU_IBASE_DATATYPE tmp;
-   ali_errnum_e          err;
-
-   btUnsigned64bitInt    dfhOffset;
+   ALIAFU_IBASE_DATATYPE   aliIBase;
+   ali_errnum_e            err;
 
    // check for HWALIAFU's IBase in optargs
-   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE_KEY, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(ALIAFU_IBASE_KEY, &aliIBase) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
@@ -119,7 +117,7 @@ btBool VTP::init( IBase               *pclientBase,
                                                  "No HWALIAFU IBase in optArgs."));
       return true;
    }
-   m_pHWALIAFU = reinterpret_cast<IBase *>(tmp);
+   m_pHWALIAFU = reinterpret_cast<IBase *>(aliIBase);
 
    // Get IALIBuffer interface to AFU
    m_pALIBuffer = dynamic_ptr<IALIBuffer>(iidALI_BUFF_Service, m_pHWALIAFU);
@@ -147,28 +145,24 @@ btBool VTP::init( IBase               *pclientBase,
       return true;
    }
 
-   // check for VTP MMIO base in optargs
+   // check for VTP DFH MMIO offset in optargs
    // TODO: could find it ourselves if not provided
-   if ( ENamedValuesOK != optArgs.Get(VTP_DFH_BASE_KEY, &tmp) ) {
+   if ( ENamedValuesOK != optArgs.Get(VTP_DFH_OFFSET_KEY, &m_dfhOffset) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
                                                  errBadParameter,
                                                  reasMissingParameter,
-                                                 "No VTP DFH base address in optArgs."));
+                                                 "No VTP DFH base offset in optArgs."));
       return true;
    }
-   m_pDFHBaseAddr = reinterpret_cast<btVirtAddr>(tmp);
-
-   // Calculate DFH offset into MMIO region
-   dfhOffset = m_pDFHBaseAddr - m_pALIMMIO->mmioGetAddress();
 
    // Check BBB GUID (are we really a VTP?)
    btString sGUID = VTP_BBB_GUID;
    AAL_GUID_t structGUID;
    btUnsigned64bitInt readBuf[2];
 
-   ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 8, &readBuf[0]) );
-   ASSERT( m_pALIMMIO->mmioRead64(dfhOffset + 16, &readBuf[1]) );
+   ASSERT( m_pALIMMIO->mmioRead64(m_dfhOffset + 8, &readBuf[0]) );
+   ASSERT( m_pALIMMIO->mmioRead64(m_dfhOffset + 16, &readBuf[1]) );
    if ( 0 != strncmp( sGUID, GUIDStringFromStruct(GUIDStructFrom2xU64(readBuf[1], readBuf[0])).c_str(), 36 ) ) {
       initFailed(new CExceptionTransactionEvent( NULL,
                                                  rtid,
@@ -204,8 +198,7 @@ btBool VTP::init( IBase               *pclientBase,
 
    // Tell the hardware the address of the table
    // Use MMIO instead of memory to accommodate ASE
-//   *(m_pDFHBaseAddr+CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR) = m_PageTablePA / CL(1);
-   m_pALIMMIO->mmioWrite64(dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+   m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 
    initComplete(rtid);
    return true;

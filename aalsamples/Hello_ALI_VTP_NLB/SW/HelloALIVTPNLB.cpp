@@ -167,7 +167,7 @@ protected:
    // VTP service-related information
    IBase         *m_pVTP_AALService;        ///< The generic AAL Service interface for the VTP.
    IVTP          *m_pVTPService;            ///< Pointer to VTP buffer service
-   void          *m_pVTPDFH;                ///< VTP DFH address
+   btCSROffset    m_VTPDFHOffset;           ///< VTP DFH offset
    TransactionID  m_VTPTranID;              ///< TransactionID used for service allocation
 
    // Workspace info
@@ -196,7 +196,7 @@ HelloALIVTPNLBApp::HelloALIVTPNLBApp() :
    m_pALIResetService(NULL),
    m_pVTP_AALService(NULL),
    m_pVTPService(NULL),
-   m_pVTPDFH(NULL),
+   m_VTPDFHOffset(-1),
    m_Result(0),
    m_pDSM(NULL),
    m_DSMSize(0),
@@ -323,7 +323,7 @@ btInt HelloALIVTPNLBApp::run()
 //   featureFilter.Add(ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(25));
    featureFilter.Add(ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(2));
    featureFilter.Add(ALI_GETFEATURE_GUID_KEY, static_cast<ALI_GETFEATURE_GUID_DATATYPE>(sGUID));
-   if (true != m_pALIMMIOService->mmioGetFeatureAddress((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
+   if (true != m_pALIMMIOService->mmioGetFeatureOffset(&m_VTPDFHOffset, featureFilter)) {
       ERR("No VTP feature\n");
       m_bIsOK = false;
       m_Result = -1;
@@ -347,7 +347,7 @@ btInt HelloALIVTPNLBApp::run()
    Manifest.Add(ALIAFU_IBASE_KEY, static_cast<ALIAFU_IBASE_DATATYPE>(m_pALIAFU_AALService));
 
    // the location of the VTP device feature header
-   Manifest.Add(VTP_DFH_BASE_KEY, static_cast<VTP_DFH_BASE_DATATYPE>(m_pVTPDFH));
+   Manifest.Add(VTP_DFH_OFFSET_KEY, static_cast<VTP_DFH_OFFSET_DATATYPE>(m_VTPDFHOffset));
 
    // in future, everything could be figured out by just giving the service name
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "VTP");
