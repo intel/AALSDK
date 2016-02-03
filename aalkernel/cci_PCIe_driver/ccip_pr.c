@@ -474,6 +474,18 @@ void program_afu_callback(void* pr_context,void* ptr)
    // Don't do anything under simulation
    if(0 != sim){
       PDEBUG("Simulated reprogram \n");
+
+      kosal_free_user_buffer(ppr_program_ctx->kbufferptr, ppr_program_ctx->bufferlen);
+      reconfigure_activateAFU(ppr_program_ctx->pportdev,ppr_program_ctx->pPR_dev);
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
+                                                             rspid_AFU_Response,
+                                                             0,
+                                                             ppr_program_ctx->pownerSess->m_device,
+                                                             ppr_program_ctx->pownerSess->m_ownerContext,
+                                                             uid_errnumOK);
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                        AALQIP(pafuws_evt));
       return ;
    }
 
