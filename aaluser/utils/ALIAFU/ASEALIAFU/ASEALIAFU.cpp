@@ -495,42 +495,14 @@ bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 
 IALIReset::e_Reset ASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
 {
-   // // Create the Transaction
-   // AFUQuiesceAndHalt transaction;
-
-   // // Should never fail
-   // if ( !transaction.IsOK() ) {
-   //    return e_Internal;
-   // }
-
-   // // Send transaction
-   // // Will eventually trigger AFUEvent(), below.
-   // m_pAFUProxy->SendTransaction(&transaction);
-
-   // if(transaction.getErrno() != uid_errnumOK){
-   //    return e_Error_Quiesce_Timeout;
-   // }
+   // NOT IMPLEMENTED
 
    return e_OK;
 }
 
 IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 {
-   // // Create the Transaction
-   // AFUEnable transaction;
-
-   // // Should never fail
-   // if ( !transaction.IsOK() ) {
-   //    return e_Internal;
-   // }
-
-   // // Send transaction
-   // // Will eventually trigger AFUEvent(), below.
-   // m_pAFUProxy->SendTransaction(&transaction);
-
-   // if(transaction.getErrno() != uid_errnumOK){
-   //    return e_Error_Quiesce_Timeout;
-   // }
+   // DOES NOTHING
 
    return e_OK;
 
@@ -538,15 +510,12 @@ IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 
 IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
-   IALIReset::e_Reset ret = afuQuiesceAndHalt();
+   // Port control
+   ase_portctrl("AFU_RESET 1");
+   usleep(10000);
+   ase_portctrl("AFU_RESET 0");
 
-   // if(ret != e_OK){
-   //    afuEnable();
-   // }else{
-   //    ret = afuEnable();
-   // }
-
-   return ret;
+   return e_OK;
 }
 
 
