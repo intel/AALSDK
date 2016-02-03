@@ -66,7 +66,7 @@
 #include <aalsdk/aas/AALInProcServiceFactory.h>  // Defines InProc Service Factory
 #include <aalsdk/service/IALIAFU.h>
 
-#include "VTPService-internal.h"
+#include "VTP.h"
 
 
 BEGIN_NAMESPACE(AAL)
@@ -76,8 +76,6 @@ BEGIN_NAMESPACE(AAL)
 // Typedefs and Constants
 //=============================================================================
 
-// FIXME: reference / replace with real value
-#define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 32
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -103,9 +101,9 @@ BEGIN_NAMESPACE(AAL)
 // Comments: Should only return False in case of severe failure that prevents
 //           sending a response or calling initFailed.
 //=============================================================================
-btBool VTPService::init( IBase *pclientBase,
-                              NamedValueSet const &optArgs,
-                              TransactionID const &rtid)
+btBool VTP::init( IBase               *pclientBase,
+                  NamedValueSet const &optArgs,
+                  TransactionID const &rtid)
 {
    ALIAFU_IBASE_DATATYPE tmp;
    ali_errnum_e          err;
@@ -213,14 +211,14 @@ btBool VTPService::init( IBase *pclientBase,
    return true;
 }
 
-btBool VTPService::Release(TransactionID const &rTranID, btTime timeout)
+btBool VTP::Release(TransactionID const &rTranID, btTime timeout)
 {
    // freedom to all buffers!
    // bufferFreeAll();
    return ServiceBase::Release(rTranID, timeout);
 }
 
-ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
+ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
                                          btVirtAddr          *pBufferptr,
                                          NamedValueSet const &rInputArgs,
                                          NamedValueSet       &rOutputArgs ) {
@@ -339,17 +337,17 @@ ali_errnum_e VTPService::bufferAllocate( btWSSize             Length,
    return ali_errnumOK;
 }
 
-ali_errnum_e VTPService::bufferFreeAll() {
-   ERR("NOT IMPLEMENTED");
+ali_errnum_e VTP::bufferFreeAll() {
+   AAL_ERR(LM_All, "NOT IMPLEMENTED" << std::endl);
    return ali_errnumNoMem;
 }
 
-ali_errnum_e VTPService::bufferFree( btVirtAddr Address) {
-   ERR("NOT IMPLEMENTED");
+ali_errnum_e VTP::bufferFree( btVirtAddr Address) {
+   AAL_ERR(LM_All, "NOT IMPLEMENTED" << std::endl);
    return ali_errnumNoMem;
 }
 
-btPhysAddr VTPService::bufferGetIOVA(  btVirtAddr     Address) {
+btPhysAddr VTP::bufferGetIOVA(  btVirtAddr     Address) {
    {
        // Get the hash index and VA tag
        uint64_t tag;
@@ -405,7 +403,7 @@ btPhysAddr VTPService::bufferGetIOVA(  btVirtAddr     Address) {
 //// All taken from cci_mpf_shim_vtp.cpp
 
 void
-VTPService::InsertPageMapping(const void* va, btPhysAddr pa)
+VTP::InsertPageMapping(const void* va, btPhysAddr pa)
 {
     AAL_DEBUG(LM_AFU, "Map " << std::hex << std::setw(2) << std::setfill('0') << 
                       va << " at " << pa << std::endl);
@@ -491,7 +489,7 @@ VTPService::InsertPageMapping(const void* va, btPhysAddr pa)
 
 
 void
-VTPService::ReadPTE(
+VTP::ReadPTE(
     const uint8_t* pte,
     uint64_t& vaTag,
     uint64_t& paIdx)
@@ -515,7 +513,7 @@ VTPService::ReadPTE(
 
 
 uint64_t
-VTPService::ReadTableIdx(
+VTP::ReadTableIdx(
     const uint8_t* p)
 {
     // Might not be a natural size
@@ -527,7 +525,7 @@ VTPService::ReadTableIdx(
 
 
 void
-VTPService::WritePTE(
+VTP::WritePTE(
     uint8_t* pte,
     uint64_t vaTag,
     uint64_t paIdx)
@@ -540,7 +538,7 @@ VTPService::WritePTE(
 
 
 void
-VTPService::WriteTableIdx(
+VTP::WriteTableIdx(
     uint8_t* p,
     uint64_t idx)
 {
@@ -550,7 +548,7 @@ VTPService::WriteTableIdx(
 
 
 void
-VTPService::DumpPageTable()
+VTP::DumpPageTable()
 {
      AAL_DEBUG(LM_AFU, "Page table dump: " << std::endl);
      AAL_DEBUG(LM_AFU, (1LL << CCI_PT_LINE_IDX_BITS) << " lines " << 
@@ -638,16 +636,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #endif // __AAL_WINDOWS__
 
 
-#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::VTPService >
+#define SERVICE_FACTORY AAL::InProcSvcsFact< AAL::VTP >
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(push)
 # pragma warning(disable : 4996) // destination of copy is unsafe
 #endif // __AAL_WINDOWS__
 
-VTPSERVICE_BEGIN_SVC_MOD(SERVICE_FACTORY)
+VTP_BEGIN_SVC_MOD(SERVICE_FACTORY)
    /* No commands other than default, at the moment. */
-VTPSERVICE_END_SVC_MOD()
+VTP_END_SVC_MOD()
 
 #if defined ( __AAL_WINDOWS__ )
 # pragma warning(pop)

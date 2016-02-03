@@ -50,8 +50,7 @@
 #include <aalsdk/AALLoggerExtern.h>
 
 #include <aalsdk/service/IALIAFU.h>
-#include <aalsdk/service/IVTPService.h>
-#include <aalsdk/service/VTPService.h>   // has the iid
+#include <aalsdk/service/IVTP.h>
 
 #include <string.h>
 
@@ -167,7 +166,7 @@ protected:
 
    // VTP service-related information
    IBase         *m_pVTP_AALService;        ///< The generic AAL Service interface for the VTP.
-   IVTPService   *m_pVTPService;            ///< Pointer to VTP buffer service
+   IVTP          *m_pVTPService;            ///< Pointer to VTP buffer service
    void          *m_pVTPDFH;                ///< VTP DFH address
    TransactionID  m_VTPTranID;              ///< TransactionID used for service allocation
 
@@ -334,7 +333,7 @@ btInt HelloALIVTPNLBApp::run()
 
    // Allocate VTP service
    // Service Library to use
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libVTPService");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libVTP");
    ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
 
    // Add the Config Record to the Manifest describing what we want to allocate
@@ -359,7 +358,7 @@ btInt HelloALIVTPNLBApp::run()
       goto done_0;
    }
 
-   // Now that we have the Service and have saved the IVTPService interface pointer
+   // Now that we have the Service and have saved the IVTP interface pointer
    //  we can now Allocate the 3 Workspaces used by the NLB algorithm. The buffer allocate
    //  function is synchronous so no need to wait on the semaphore
 
@@ -571,9 +570,9 @@ void HelloALIVTPNLBApp::serviceAllocated(IBase *pServiceBase,
        }
 
        // Documentation says VTP Service publishes
-       //    IVTPService as subclass interface. Used for allocating shared
+       //    IVTP as subclass interface. Used for allocating shared
        //    buffers that support virtual addresses from AFU
-       m_pVTPService = dynamic_ptr<IVTPService>(iidVTPService, pServiceBase);
+       m_pVTPService = dynamic_ptr<IVTP>(iidVTPService, pServiceBase);
        ASSERT(NULL != m_pVTPService);
        if ( NULL == m_pVTPService ) {
           m_bIsOK = false;

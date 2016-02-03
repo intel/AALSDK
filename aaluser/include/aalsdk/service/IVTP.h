@@ -52,8 +52,8 @@
 /// WHEN:          WHO:     WHAT:
 /// 01/15/2016     EL       Initial version@endverbatim
 //****************************************************************************
-#ifndef __VTPSERVICE_H__
-#define __VTPSERVICE_H__
+#ifndef __IVTP_H__
+#define __IVTP_H__
 #include <aalsdk/AAL.h>
 #include <aalsdk/osal/OSServiceModule.h>
 
@@ -61,21 +61,29 @@
 
 BEGIN_NAMESPACE(AAL)
 
+/// @addtogroup VTPService
+/// @{
+
+// Service creation parameter keys and datatypes
 #define ALIAFU_IBASE_KEY "ALIAFUIBase"
 #define ALIAFU_IBASE_DATATYPE btObjectType
 #define VTP_DFH_BASE_KEY "VTPDFHBase"
 #define VTP_DFH_BASE_DATATYPE btObjectType
 
-// TODO: replace with actual spec'd VTP GUID
+/// VTP BBB GUID, used to identify HW VTP component
 #define VTP_BBB_GUID "C8A2982F-FF96-42BF-A705-45727F501901"
 
-/// @addtogroup VTPService
-/// @{
+/// VTP Service IID
+#ifndef iidVTPService
+#define iidVTPService __INTC_IID(INTC_sysSampleAFU, 0x0010)
+#endif
 
-class IVTPService : public IALIBuffer
+class IVTP : public IALIBuffer
 {
 public:
-/*   /// @brief Allocate shared buffer.
+   // These are just changes in documentation, the signature is the same!
+
+   /// @brief Allocate shared buffer.
    ///
    /// Allocates a shared buffer of specified length. Updates the VTP page
    /// hash to add the respective virtual-to-physical mapping.
@@ -87,10 +95,6 @@ public:
    /// @param[in]  pOptArgs   Pointer to NVS containing optional arguments.
    ///                        Ignored for now.
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual ali_errnum_e bufferAllocate( btWSSize Length,
-                                btVirtAddr    *pBufferptr,
-                                NamedValueSet *pOptArgs) = 0;
-
 
    /// @brief Free shared buffer.
    ///
@@ -102,8 +106,6 @@ public:
    ///
    /// @param[in]  Address    Address of buffer to deallocate/free.
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual ali_errnum_e bufferFree( btVirtAddr Address) = 0;
-*/
 
    /// @brief Free all shared buffers.
    ///
@@ -115,9 +117,8 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual ali_errnum_e bufferFreeAll() = 0;
+   virtual ali_errnum_e bufferFreeAll();
 
-/*
    /// @brief Get virtual-to-physical mapping
    ///
    /// Returns physical address mapped to a given virtual address inside
@@ -126,24 +127,15 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address) = 0;
-*/
+   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
 
    /// IVTPService Destructor
-   virtual ~IVTPService() {}
+   virtual ~IVTP() {}
 };
 
 /// @}
 
-// Convenience macros for printing messages and errors.
-#ifndef MSG
-# define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
-#endif // MSG
-#ifndef ERR
-# define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
-#endif // ERR
-
 END_NAMESPACE(AAL)
 
-#endif // __VTPSERVICE_H__
+#endif // __IVTP_H__
 

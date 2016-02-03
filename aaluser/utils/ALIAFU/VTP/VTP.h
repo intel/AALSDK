@@ -52,14 +52,14 @@
 /// WHEN:          WHO:     WHAT:
 /// 01/15/2016     EL       Initial version@endverbatim
 //****************************************************************************
-#ifndef __VTPSERVICE_INT_H__
-#define __VTPSERVICE_INT_H__
-#include <aalsdk/service/IVTPService.h> // Public VTP service interface
-#include <aalsdk/service/VTPService.h>  // Public VTP service interface
+#ifndef __VTP_H__
+#define __VTP_H__
 #include <aalsdk/aas/AALService.h>
 #include <aalsdk/IServiceClient.h>
 #include <aalsdk/osal/IDispatchable.h>
 
+#include <aalsdk/service/IVTP.h>  // Public VTP service interface
+#include <aalsdk/service/VTPService.h>
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/uaia/IAFUProxy.h>
 
@@ -70,6 +70,9 @@ BEGIN_NAMESPACE(AAL)
 /// @addtogroup VTPService
 /// @{
 
+/// VTP page table physical address CSR offset
+#define CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR 32
+
 //=============================================================================
 // Name: VTPService
 // Description: Virtual-To-Physical address translation service
@@ -77,17 +80,17 @@ BEGIN_NAMESPACE(AAL)
 // Comments:
 //=============================================================================
 /// @brief Virtual-To-Physical address translation service.
-class VTPService : public ServiceBase, public IVTPService
+class VTP : public ServiceBase, public IVTP
 {
 public:
 
    /// VTP service constructor
-   DECLARE_AAL_SERVICE_CONSTRUCTOR(VTPService, ServiceBase),
+   DECLARE_AAL_SERVICE_CONSTRUCTOR(VTP, ServiceBase),
       m_pSvcClient(NULL),
       m_pHWALIAFU(NULL),
       m_pDFHBaseAddr(NULL)
    {
-      SetInterface(iidVTPService, dynamic_cast<IVTPService *>(this));
+      SetInterface(iidVTPService, dynamic_cast<IVTP *>(this));
    }
    /// @brief Service initialization hook.
    ///
@@ -204,7 +207,7 @@ private:
 
 
 inline void
-VTPService::AddrComponentsFromVA(
+VTP::AddrComponentsFromVA(
     uint64_t va,
     uint64_t& tag,
     uint64_t& idx,
@@ -234,7 +237,7 @@ VTPService::AddrComponentsFromVA(
 
 
 inline void
-VTPService::AddrComponentsFromVA(
+VTP::AddrComponentsFromVA(
     const void *va,
     uint64_t& tag,
     uint64_t& idx,
@@ -244,7 +247,7 @@ VTPService::AddrComponentsFromVA(
 }
 
 inline void
-VTPService::AddrComponentsFromPA(
+VTP::AddrComponentsFromPA(
     uint64_t pa,
     uint64_t& idx,
     uint64_t& byteOffset)
@@ -262,7 +265,7 @@ VTPService::AddrComponentsFromPA(
 }
 
 inline uint64_t
-VTPService::AddrToPTE(
+VTP::AddrToPTE(
     uint64_t va,
     uint64_t pa)
 {
@@ -272,7 +275,7 @@ VTPService::AddrToPTE(
 }
 
 inline uint64_t
-VTPService::AddrToPTE(
+VTP::AddrToPTE(
     const void* va,
     uint64_t pa)
 {
@@ -280,11 +283,9 @@ VTPService::AddrToPTE(
 }
 
 
-
-
 /// @}
 
 END_NAMESPACE(AAL)
 
-#endif //__SAMPLEAFU1SERVICE_INT_H__
+#endif //__VTP_H__
 

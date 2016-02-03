@@ -35,24 +35,22 @@
 ##     07/20/2015    TSW   Initial version
 ##     01/27/2016    EL    Adapt for VTP
 ##******************************************************************************
-lib_LTLIBRARIES=libVTPService.la
+lib_LTLIBRARIES=libVTP.la
 
-libVTPService_la_SOURCES=\
+libVTP_la_SOURCES=\
 cci_mpf_shim_vtp_params.h \
-VTPService-internal.h \
-VTPService.cpp
+VTP.h \
+VTP.cpp
 
-libVTPService_la_CPPFLAGS=\
+libVTP_la_CPPFLAGS=\
 -I$(top_srcdir)/include \
 -I$(top_builddir)/include
 
-libVTPService_la_LDFLAGS=\
+libVTP_la_LDFLAGS=\
 -module \
--version-info $(VTPSERVICE_VERSION_CURRENT):$(VTPSERVICE_VERSION_REVISION):$(VTPSERVICE_VERSION_AGE)
+-version-info $(VTP_VERSION_CURRENT):$(VTP_VERSION_REVISION):$(VTP_VERSION_AGE)
 
-libVTPService_la_LIBADD=\
+libVTP_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la \
-$(top_builddir)/aas/AIAService/libaia.la
+$(top_builddir)/aas/AASLib/libAAS.la 
 
