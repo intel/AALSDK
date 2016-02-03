@@ -207,8 +207,8 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
 
    // extract filters
    filterByID = false;
-   if (rInputArgs.Has(ALI_GETFEATURE_ID)) {
-      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID, &filterID)) {
+   if (rInputArgs.Has(ALI_GETFEATURE_ID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID_KEY, &filterID)) {
          AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- wrong datatype?");
          return false;
       } else {
@@ -217,8 +217,8 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    }
 
    filterByType = false;
-   if (rInputArgs.Has(ALI_GETFEATURE_TYPE)) {
-      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE, &filterType)) {
+   if (rInputArgs.Has(ALI_GETFEATURE_TYPE_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE_KEY, &filterType)) {
          AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- wrong datatype?");
          return false;
       } else {
@@ -227,8 +227,8 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    }
 
    filterByGUID = false;
-   if (rInputArgs.Has(ALI_GETFEATURE_GUID)) {
-      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID, &filterGUID)) {
+   if (rInputArgs.Has(ALI_GETFEATURE_GUID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID_KEY, &filterGUID)) {
          AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- wrong datatype?");
          return false;
       } else {
@@ -299,15 +299,15 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
          AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
          *pFeature = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
          // populate output args
-         rOutputArgs.Add(ALI_GETFEATURE_ID, dfh.Feature_ID);
-         rOutputArgs.Add(ALI_GETFEATURE_TYPE, dfh.Type);
-         if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
-            rOutputArgs.Add(ALI_GETFEATURE_GUID, GUIDStringFromStruct(
-                                                   GUIDStructFrom2xU64(
-                                                     guid[1], 
-                                                     guid[0]
-                                                   )
-                                                 ).c_str()
+         rOutputArgs.Add(ALI_GETFEATURE_ID_KEY, dfh.Feature_ID);
+         rOutputArgs.Add(ALI_GETFEATURE_TYPE_KEY, dfh.Type);
+         if (dfh.Type != ALI_DFH_TYPE_PRIVATE) {
+            rOutputArgs.Add(ALI_GETFEATURE_GUID_KEY, GUIDStringFromStruct(
+                                                       GUIDStructFrom2xU64(
+                                                         guid[1],
+                                                         guid[0]
+                                                       )
+                                                     ).c_str()
                            );
          }
          return true;
@@ -334,10 +334,10 @@ AAL::ali_errnum_e ASEALIAFU::bufferAllocate( btWSSize             Length,
   struct buffer_t *buf;
   int ret;
 
-  void *pTargetVirtAddr;       // requested virtual address for the mapping
+  ALI_MMAP_TARGET_VADDR_DATATYPE pTargetVirtAddr;       // requested virtual address for the mapping
 
   // extract target VA from optArgs
-  if ( ENamedValuesOK != rInputArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+  if ( ENamedValuesOK != rInputArgs.Get(ALI_MMAP_TARGET_VADDR_KEY, &pTargetVirtAddr) ) {
      pTargetVirtAddr = NULL;    // no mapping requested
   }
 

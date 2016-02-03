@@ -225,7 +225,7 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
    AutoLock(this);
 
    // FIXME: Input/OUtputArgs are ignored here...
-   // FIXME: we can support optArg ALI_MMAP_TARGET_VADDR also for
+   // FIXME: we can support optArg ALI_MMAP_TARGET_VADDR_KEY also for
    //        large VTP mappings (need to add MAP_FIXED to the first mmap
    //        below).
 
@@ -291,7 +291,7 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
       }
 
       // set target virtual address for new buffer
-      bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR, va_alloc);
+      bufAllocArgs->Add(ALI_MMAP_TARGET_VADDR_KEY, static_cast<ALI_MMAP_TARGET_VADDR_DATATYPE>(va_alloc));
 
       // Get a page size buffer
       void *buffer;
@@ -320,7 +320,7 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
       ASSERT((m_pALIBuffer->bufferGetIOVA((unsigned char *)buffer) & ~pageMask) == 0);
 
       // prepare optArgs for next allocation
-      bufAllocArgs->Delete(ALI_MMAP_TARGET_VADDR);
+      bufAllocArgs->Delete(ALI_MMAP_TARGET_VADDR_KEY);
 
    }
 

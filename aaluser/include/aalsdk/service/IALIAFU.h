@@ -55,21 +55,20 @@
 BEGIN_NAMESPACE(AAL)
 
 // FIXME: declare this where it should be declared...
-#ifndef ALI_MMAP_TARGET_VADDR
-#define ALI_MMAP_TARGET_VADDR "ALIMmapTargetVAddr"
-#endif
-#ifndef ALI_GETFEATURE_ID
-#define ALI_GETFEATURE_ID "ALIGetFeatureID"
-#endif
-#ifndef ALI_GETFEATURE_TYPE
-#define ALI_GETFEATURE_TYPE "ALIGetFeatureTYPE"
-#endif
-#ifndef ALI_GETFEATURE_GUID
-#define ALI_GETFEATURE_GUID "ALIGetFeatureGUID"
-#endif
-#ifndef ALI_DFH_TYPE_PRIVATE
+#define ALI_MMAP_TARGET_VADDR_KEY        "ALIMmapTargetVAddr"
+#define ALI_MMAP_TARGET_VADDR_DATATYPE   void *
+#define ALI_GETFEATURE_ID_KEY            "ALIGetFeatureID"
+#define ALI_GETFEATURE_ID_DATATYPE       btUnsigned64bitInt
+#define ALI_GETFEATURE_TYPE_KEY          "ALIGetFeatureTYPE"
+#define ALI_GETFEATURE_TYPE_DATATYPE     btUnsigned64bitInt
+#define ALI_GETFEATURE_GUID_KEY          "ALIGetFeatureGUID"
+#define ALI_GETFEATURE_GUID_DATATYPE     btString  // FIXME: btcString?
+
+// CCIP DFH header types
+#define ALI_DFH_TYPE_RSVD    0
+#define ALI_DFH_TYPE_AFU     1
+#define ALI_DFH_TYPE_BBB     2
 #define ALI_DFH_TYPE_PRIVATE 3
-#endif
 
 
 
