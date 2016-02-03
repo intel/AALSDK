@@ -159,10 +159,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_CSR_WRITE,
       DEFAULT_UMSG_DATA,
       DEFAULT_UMSG_HINT,
-      DEFAULT_AUTO_CH,
-      DEFAULT_QPI,
-      DEFAULT_PCIE0,
-      DEFAULT_PCIE1
+      DEFAULT_VA,
+      DEFAULT_VL0,
+      DEFAULT_VH0,
+      DEFAULT_VH1
    },
    0,
    {
