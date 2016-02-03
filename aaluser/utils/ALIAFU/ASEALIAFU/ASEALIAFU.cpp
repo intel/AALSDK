@@ -336,6 +336,7 @@ btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
    btVirtAddr pFeatAddr;
    if (true == mmioGetFeatureAddress(&pFeatAddr, rInputArgs, rOutputArgs)) {
       *pFeatureOffset = pFeatAddr - mmioGetAddress();
+      return true;
    }
    return false;
 }
