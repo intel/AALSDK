@@ -253,12 +253,19 @@ public:
    /// @param[out] rOutputArgs Additional properties of the returned feature.
    /// @return     True if requested feature was found in DFH space.
    // TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
-   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
-                                   NamedValueSet const &rInputArgs,
-                                   NamedValueSet       &rOutputArgs ) = 0;
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs ) = 0;
    // overloaded version without rOutputArgs
-   virtual btBool  mmioGetFeature( btVirtAddr          *pFeature,
-                                   NamedValueSet const &rInputArgs ) = 0;
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
+                                          NamedValueSet const &rInputArgs ) = 0;
+   // version that returns an MMIO offset instead of an address
+   virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs ) = 0;
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs ) = 0;
 
 
 

@@ -190,9 +190,9 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
-                                   NamedValueSet const &rInputArgs,
-                                   NamedValueSet       &rOutputArgs )
+btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs )
 {
    struct CCIP_DFH    dfh;
    btUnsigned64bitInt guid[2];
@@ -297,7 +297,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
          ) {
 
          AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
-         *pFeature = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
+         *pFeatureAddress = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
          // populate output args
          rOutputArgs.Add(ALI_GETFEATURE_ID_KEY, dfh.Feature_ID);
          rOutputArgs.Add(ALI_GETFEATURE_TYPE_KEY, dfh.Type);
@@ -321,6 +321,33 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    AAL_INFO(LM_AFU, "No matching feature found." << std::endl);
    return false;
 }
+
+btBool ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureAddress(pFeatureAddress, rInputArgs, temp);
+}
+
+btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                        NamedValueSet const &rInputArgs,
+                                        NamedValueSet       &rOutputArgs )
+{
+   btVirtAddr pFeatAddr;
+   if (true == mmioGetFeatureAddress(&pFeatAddr, rInputArgs, rOutputArgs)) {
+      *pFeatureOffset = pFeatAddr - mmioGetAddress();
+   }
+   return false;
+}
+
+// overloaded version without rOutputArgs
+btBool  ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureOffset(pFeatureOffset, rInputArgs, temp);
+}
+
 
 
 // -----------------------------------------------------

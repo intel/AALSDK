@@ -323,7 +323,7 @@ btInt HelloALIVTPNLBApp::run()
 //   featureFilter.Add(ALI_GETFEATURE_ID_KEY, static_cast<ALI_GETFEATURE_ID_DATATYPE>(25));
    featureFilter.Add(ALI_GETFEATURE_TYPE_KEY, static_cast<ALI_GETFEATURE_TYPE_DATATYPE>(2));
    featureFilter.Add(ALI_GETFEATURE_GUID_KEY, static_cast<ALI_GETFEATURE_GUID_DATATYPE>(sGUID));
-   if (true != m_pALIMMIOService->mmioGetFeature((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
+   if (true != m_pALIMMIOService->mmioGetFeatureAddress((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
       ERR("No VTP feature\n");
       m_bIsOK = false;
       m_Result = -1;
