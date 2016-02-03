@@ -565,6 +565,10 @@ std::ostream & operator << (std::ostream &s, const uid_msgIDs_e &enumeration)
       uid_msgIDs_e_CASE(rspid_UID_Deactivate,       "Deactivate the device "                    );
       uid_msgIDs_e_CASE(rspid_AFU_Response,         "Response from AFU request "                );
       uid_msgIDs_e_CASE(rspid_AFU_Event,            "Event from AFU "                           );
+      uid_msgIDs_e_CASE(rspid_AFU_PR_Honar_Owner_Event,   "Event form PR to Release AFU "       );
+      uid_msgIDs_e_CASE(rspid_AFU_PR_Honor_Request_Event, "Event form PR to Yank Release AFU"   );
+      uid_msgIDs_e_CASE(rspid_AFU_PR_Revoked_Event,       "Event form PR to Revoke AFU"         );
+
       uid_msgIDs_e_CASE(rspid_PIP_Event,            "Event from PIP "                           );
       uid_msgIDs_e_CASE(rspid_WSM_Response,         "Event from Workspace manager "             );
       uid_msgIDs_e_CASE(rspid_UID_Response,         "Generic Response "                         );

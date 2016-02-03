@@ -977,11 +977,12 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    void task_poller(struct work_struct *work);
 
 
-#define KOSAL_INIT_WORK(w,f)      do {(w->fnct) = f; \
+#define KOSAL_INIT_WORK(w,f,callbackfun)      do {(w->fnct) = f; \
                                       (w->context)=(&w); \
-                                      (w->callback)=WorkItemCallback; \
-                                      INIT_DELAYED_WORK(w->workobj,f); \
+                                      (w->callback)=&callbackfun; \
+                                      INIT_DELAYED_WORK(&(w->workobj),f); \
                                      }while(0);
+
 
 #define kosal_init_waitqueue_head(q) init_waitqueue_head(q)
 

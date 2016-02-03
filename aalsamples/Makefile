@@ -43,7 +43,8 @@ Hello_AAL_Service/SW \
 Hello_AAL/SW \
 Hello_ALI_NLB/SW \
 ALI_Multi_AFU_with_PerfMon/SW \
-Temp_Power_Monitor/SW
+Temp_Power_Monitor/SW \
+ALI_Configure_AFU/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\

@@ -109,7 +109,20 @@ typedef enum
    uid_errnumDeviceBusy,                         // 26
    uid_errnumTimeout,                            // 27
    uid_errnumNoAFU,                              // 28
-   uid_errnumAFUActivated                        //29
+   uid_errnumAFUActivated,                       // 29
+   uid_errnumDeActiveTimeout,                    // 30
+   uid_errnumPRTimeout,                          // 31
+   uid_errnumPROperationErr,                     // 32
+   uid_errnumPRCRCErr,                           // 33
+   uid_errnumPRIncomparableBitstreamErr,         // 34
+   uid_errnumPRIPProtocalErr,                    // 35
+   uid_errnumPRFIFOErr,                          // 36
+   uid_errnumAFUActivationFail,                  // 37
+   uid_errnumRequestAFURelease                   // 38
+
+
+
+
 } uid_errnum_e;
 
 typedef enum
@@ -138,6 +151,10 @@ typedef enum
 
    rspid_AFU_Response,              // Response from AFU request
    rspid_AFU_Event,                 // Event from AFU
+
+   rspid_AFU_PR_Honar_Owner_Event,    // Event form PR to Release AFU
+   rspid_AFU_PR_Honor_Request_Event,  // Event form PR to Yank Release AFU
+   rspid_AFU_PR_Revoked_Event,        // Event form PR to Revoke AFU
 
    rspid_PIP_Event,                 // Event from PIP
 
@@ -268,6 +285,16 @@ struct ahm_req
          btWSSize           size;   /* IN   */
          btUnsigned64bitInt mem_id; /* OUT  */
       } mem_uv2id;
+
+      // PR reconfiguraton
+      struct {
+        btVirtAddr               vaddr;           /* IN   */
+        btWSSize                 size;            /* IN   */
+        btUnsigned64bitInt       reconfTimeout;   /* IN   */
+        btUnsigned64bitInt       programTimeout;  /* IN   */
+        btUnsigned64bitInt       reconfAction;    /* IN   */
+        btUnsigned64bitInt       pr_status ;      /* OUT  */
+      } pr_config;
    } u;
 };
 
@@ -279,6 +306,12 @@ struct ccidrvreq
    btTime            pollrate;
 };
 
+enum AALCONF_RECONF_ACTION
+{
+   ReConf_Action_Honor_request  =0x0,
+   ReConf_Action_Honor_Owner    =0x1,
+   ReConf_Action_InActive       =0x2
+};
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////
