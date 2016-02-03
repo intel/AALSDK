@@ -117,7 +117,7 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual ali_errnum_e bufferFreeAll();
+   //virtual ali_errnum_e bufferFreeAll();
 
    /// @brief Get virtual-to-physical mapping
    ///
@@ -127,10 +127,10 @@ public:
    /// Synchronous, no callback.
    ///
    /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
+   //virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
 
    /// IVTPService Destructor
-   virtual ~IVTP() {}
+//   virtual ~IVTP() {}
 };
 
 /// @}
