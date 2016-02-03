@@ -156,6 +156,10 @@ btCSROffset ASEALIAFU::mmioGetLength( void )
 //
 btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read32(Offset, pValue);
   return true;
 }
@@ -165,6 +169,10 @@ btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write32(Offset, Value);
   return true;
 }
@@ -174,6 +182,10 @@ btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt
 //
 btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read64(Offset, (uint64_t*)pValue);
   return true;
 }
@@ -183,6 +195,10 @@ btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write64(Offset, Value);
   return true;
 }
