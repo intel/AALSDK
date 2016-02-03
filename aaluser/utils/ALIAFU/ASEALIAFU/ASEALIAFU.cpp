@@ -195,11 +195,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
                                    NamedValueSet       &rOutputArgs )
 {
    struct CCIP_DFH    dfh;
-   typedef union {
-      AAL_GUID_t         guid;
-      btUnsigned64bitInt reg[2];
-   } guid_u;
-   guid_u             guid;
+   btUnsigned64bitInt guid[2];
    btUnsigned32bitInt offset = 0;
 
    btBool             filterByID;
@@ -207,8 +203,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    btBool             filterByType;
    btUnsigned64bitInt filterType;
    btBool             filterByGUID;
-   btString           sGUID;
-   guid_u             filterGUID;
+   btcString          filterGUID;
 
    // extract filters
    filterByID = false;
@@ -233,11 +228,10 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
 
    filterByGUID = false;
    if (rInputArgs.Has(ALI_GETFEATURE_GUID)) {
-      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID, &sGUID)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID, &filterGUID)) {
          AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- wrong datatype?");
          return false;
       } else {
-         ASSERT( GUIDStructFromString(sGUID, &filterGUID.guid) );
          filterByGUID = true;
       }
    }
@@ -272,18 +266,34 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
                         ", Feature ID: " << dfh.Feature_ID <<
                         ", eol: " << std::dec << dfh.eol << std::endl);
       // read guid, if present
-      if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
-         ASSERT( mmioRead64(offset +  8, (btUnsigned64bitInt *)&guid.reg[0]) );
-         ASSERT( mmioRead64(offset + 16, (btUnsigned64bitInt *)&guid.reg[1]) );
+      if (dfh.Type != ALI_DFH_TYPE_PRIVATE) {
+         ASSERT( mmioRead64(offset +  8, &guid[0]) );
+         ASSERT( mmioRead64(offset + 16, &guid[1]) );
       }
 
+      AAL_DEBUG(LM_AFU, "Read GUID " << GUIDStringFromStruct(
+                                            GUIDStructFrom2xU64(
+                                              guid[1], 
+                                              guid[0]
+                                            )
+                                          ).c_str() << std::endl); 
+
       if (
-            ( !filterByID   || (dfh.Feature_ID == filterID  )               ) &&
-            ( !filterByType || (dfh.Type       == filterType)               ) &&
-            ( !filterByGUID || ( (dfh.Type != ALI_DFH_TYPE_PRIVATE) && (
-                                  (guid.reg[0] == filterGUID.reg[0]) &&
-                                  (guid.reg[1] == filterGUID.reg[1])
-                               ) ) )
+            ( !filterByID   || (dfh.Feature_ID == filterID  )                     ) &&
+            ( !filterByType || (dfh.Type       == filterType)                     ) &&
+            ( !filterByGUID || ( (dfh.Type != ALI_DFH_TYPE_PRIVATE) && 
+                                 ( 0 == strncmp(filterGUID, 
+                                          GUIDStringFromStruct(
+                                            GUIDStructFrom2xU64(
+                                              guid[1], 
+                                              guid[0]
+                                            )
+                                          ).c_str(), 
+                                          16
+                                        ) 
+                                 ) 
+                               ) 
+            ) 
          ) {
 
          AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
@@ -292,7 +302,13 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
          rOutputArgs.Add(ALI_GETFEATURE_ID, dfh.Feature_ID);
          rOutputArgs.Add(ALI_GETFEATURE_TYPE, dfh.Type);
          if (dfh.Type == ALI_DFH_TYPE_PRIVATE) {
-            rOutputArgs.Add(ALI_GETFEATURE_GUID, GUIDStringFromStruct(guid.guid).c_str());
+            rOutputArgs.Add(ALI_GETFEATURE_GUID, GUIDStringFromStruct(
+                                                   GUIDStructFrom2xU64(
+                                                     guid[1], 
+                                                     guid[0]
+                                                   )
+                                                 ).c_str()
+                           );
          }
          return true;
       }

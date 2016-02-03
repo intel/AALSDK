@@ -268,6 +268,7 @@ btInt HelloALIVTPNLBApp::run()
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
    NamedValueSet featureFilter;
+   btcString sGUID = VTP_BBB_GUID;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -320,6 +321,8 @@ btInt HelloALIVTPNLBApp::run()
 
    // Ask the ALI service for the VTP device feature header (DFH)
    featureFilter.Add(ALI_GETFEATURE_ID, (btUnsigned64bitInt)25);
+   featureFilter.Add(ALI_GETFEATURE_TYPE, (btUnsigned64bitInt)2);
+   featureFilter.Add(ALI_GETFEATURE_GUID, sGUID);
    if (true != m_pALIMMIOService->mmioGetFeature((btVirtAddr *)&m_pVTPDFH, featureFilter)) {
       ERR("No VTP feature\n");
       m_bIsOK = false;
@@ -694,6 +697,7 @@ void HelloALIVTPNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
+   pAALLogger()->AddToMask(LM_All, LOG_INFO);
    HelloALIVTPNLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
