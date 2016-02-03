@@ -595,6 +595,22 @@ public:
    #define AALCONF_BUFPTRKEY              "BufPointer"
    #define AALCONF_BUFSIZE                "BufSize"
 
+
+   #define AALCONF_MILLI_TIMEOUT          "DeActivedTimeout"
+   #define AALCONF_MILLI_PROG_TIMEOUT     "PRProgramTimeout"
+
+   #define AALCONF_RECONF_ACTION                 "ReconfAction"
+   #define AALCONF_RECONF_ACTION_HONOR_OWNER     "ReconfActionHonorOwner"
+   #define AALCONF_RECONF_ACTION_HONOR_REQUEST   "ReconfActionHonorRequest"
+   #define AALCONF_RECONF_ACTION_INACTIVE        "ReconfActionInActive"
+
+
+
+   #define AALCONF_RECONF_ACTION_HONOR_REQUEST_ID   0x0
+   #define AALCONF_RECONF_ACTION_HONOR_OWNER_ID     0x1
+
+   #define AALCONF_RECONF_ACTION_INACTIVE_ID        0x2
+
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///
    /// Basically, if there is an AFU currently instantiated and connected to an

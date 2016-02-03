@@ -136,6 +136,10 @@ typedef enum
    rspid_AFU_Response,              // Response from AFU request
    rspid_AFU_Event,                 // Event from AFU
 
+   rspid_AFU_PR_Honar_Owner_Event,    // Event form PR to Release AFU
+   rspid_AFU_PR_Honor_Request_Event,  // Event form PR to Yank Release AFU
+   rspid_AFU_PR_Revoked_Event,        // Event form PR to Revoke AFU
+
    rspid_PIP_Event,                 // Event from PIP
 
    rspid_WSM_Response,              // Event from Workspace manager

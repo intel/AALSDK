@@ -462,7 +462,8 @@ void task_poller(struct work_struct *work)
    struct delayed_work *delayedWork = container_of(work, struct delayed_work, work);
    pwork_object         pwork       = container_of(delayedWork, work_object, workobj);
 
-   pwork->fnct(pwork->context);
+   pwork->callback(pwork->context,NULL);
+
 }
 
 #elif defined( __AAL_WINDOWS__ )

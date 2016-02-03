@@ -140,8 +140,17 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq;
-   work_object                task_handler;
+   kosal_work_queue           m_workq_deactivete;
+   work_object                task_deactivete_handler;
+
+
+   kosal_work_queue           m_workq_deactimeout;
+   work_object                task_deactimeout_handler;
+
+
+   kosal_work_queue           m_workq_prconifg;
+   work_object                task_prconfig_handler;
+
 
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
@@ -230,8 +239,16 @@ struct cci_aal_device {
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
-#define cci_dev_workq(pdev)                 ( (pdev)->m_workq )
-#define cci_dev_task_handler(pdev)          ((pdev)->task_handler)
+
+#define cci_dev_workq_deactivete(pdev)                 ( (pdev)->m_workq_deactivete )
+#define cci_dev_task_deactivete_handler(pdev)          ((pdev)->task_deactivete_handler)
+
+#define cci_dev_workq_deactimeout(pdev)                 ( (pdev)->m_workq_deactimeout )
+#define cci_dev_task_deactimeout_handler(pdev)          ((pdev)->task_deactimeout_handler)
+
+#define cci_dev_workq_prcconfigure(pdev)                 ( (pdev)->m_workq_prconifg )
+#define cci_dev_task_prcconfigure_handler(pdev)          ((pdev)->task_prconfig_handler)
+
 
 ///============================================================================
 /// Name: ccip_device

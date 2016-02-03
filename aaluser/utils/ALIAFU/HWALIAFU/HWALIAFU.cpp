@@ -52,6 +52,7 @@
 
 #include "ALIAIATransactions.h"
 #include "HWALIAFU.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -1074,7 +1075,7 @@ btBool HWALIAFU::performanceCountersGet ( INamedValueSet * const  pResult,
 void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
                                  NamedValueSet const &rInputArgs)
 {
-   AFUDeactivateTransaction deactivatetrans(rTranID);
+   AFUDeactivateTransaction deactivatetrans(rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
@@ -1131,7 +1132,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 #endif
    }
 
-   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID);
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&configuretrans);
    if(configuretrans.getErrno() != uid_errnumOK){
@@ -1184,13 +1185,56 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
    //===========================
    // WSM response
    // ==========================
+   case rspid_AFU_PR_Honar_Owner_Event:
+
+   {
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Honar_Owner_Event \n" << std::endl;
+      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+
+
+      getRuntime()->schedDispatchable(new ServiceEvent(getServiceClient(),new CExceptionTransactionEvent(NULL,
+                puidEvent->msgTranID(),
+                puidEvent->ResultCode(),
+                reasUnknown,
+                "Release AFU rspid_AFU_PR_Honar_Owner_Event ")));
+   }
+
+   break;
+   case rspid_AFU_PR_Revoked_Event:
+
+   {
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+
+
+      getRuntime()->schedDispatchable( new ServiceReleased(getServiceClient(),
+                                                                     m_pSvcClient,
+                                                                     TransactionID()) );
+
+   }
+   break;
+   case rspid_AFU_PR_Honor_Request_Event:
+
+   {
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Honor_Request_Event \n" << std::endl;
+      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+
+
+      getRuntime()->schedDispatchable(new ServiceEvent(getServiceClient(),new CExceptionTransactionEvent(NULL,
+                    puidEvent->msgTranID(),
+                    puidEvent->ResultCode(),
+                    reasUnknown,
+                    "Release AFU rspid_AFU_PR_Honor_Request_Event ")));
+
+   }
+   break ;
    case rspid_WSM_Response:
       {
          // TODO check result code
