@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -802,8 +802,8 @@ aalbus_unregister_device(struct aal_device *dev)
    }
 
    // Remove the device. This causes the device to signal its
-   //  removal from the system  TODO Move to Device Destroy
-   dev_remove(dev);
+   //  removal from the system
+   dev_removedevice(dev);
 
    // Begin the process of unplugging the device from the framework
    //  the device_unregister() causes the Linux DD framework to generate

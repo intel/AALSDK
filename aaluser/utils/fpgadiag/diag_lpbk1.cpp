@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -216,6 +216,7 @@ cout<<"Wkspcs created\n";
 
 void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
+#if 0
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
     bt64bitCSR rawticks     = pAFUDSM->num_clocks;
@@ -241,4 +242,5 @@ void  CNLBLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	  cout  << setw(16) << ticks;
 
 	    cout << endl;
+#endif
 }

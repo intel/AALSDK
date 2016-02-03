@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -70,7 +70,13 @@ USING_NAMESPACE(AAL)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-
+//=============================================================================
+// Name:          BufferAllocateTransaction
+// Description:   Send a Workspace Allocate operation to the Driver stack
+// Input: devHandl - Device Handle received from Resource Manager
+//        tranID   - Transaction ID
+// Comments:
+//=============================================================================
 BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -78,9 +84,14 @@ BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
    m_size(0),
    m_bufLength(0)
 {
+   union msgpayload{
+      struct ahm_req                req;    // [IN]
+      struct AAL::aalui_WSMEvent    resp;   // [OUT]
+   };
+
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // BufferAllocate-AIATransaction.
-   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(union msgpayload );
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
@@ -90,7 +101,7 @@ BufferAllocateTransaction::BufferAllocateTransaction( btWSSize len ) :
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_afucmdWKSP_ALLOC;
-   afumsg->size    = sizeof(struct ahm_req);
+   afumsg->size    =  sizeof(union msgpayload );
 
    // fill out ahm_req
    req->u.wksp.m_wsid   = 0;        // not used?
@@ -123,7 +134,13 @@ BufferAllocateTransaction::~BufferAllocateTransaction() {
    delete afumsg;
 }
 
-
+//=============================================================================
+// Name:          BufferFreeTransaction
+// Description:   Send a Workspace Free operation to the driver stack
+// Input:         tranID   - Transaction ID
+//                addr     - address of buffer to free
+// Comments:
+//=============================================================================
 BufferFreeTransaction::BufferFreeTransaction( btWSID wsid ) :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -177,7 +194,12 @@ BufferFreeTransaction::~BufferFreeTransaction() {
    delete afumsg;
 }
 
-
+//=============================================================================
+// Name:          GetMMIOBufferTransaction
+// Description:   Send a Get MMIO Buffer operation to the Driver stack
+// Input:         tranID   - Transaction ID
+// Comments:
+//=============================================================================
 GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -185,9 +207,14 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    m_size(0),
    m_bufLength(0)
 {
+   union msgpayload{
+      struct ahm_req                req;    // [IN]
+      struct AAL::aalui_WSMEvent    resp;   // [OUT]
+   };
+
    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
    // GetMMIOBufferTransaction-AIATransaction.
-   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(union msgpayload );
 
    // Allocate structs
    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
@@ -199,7 +226,7 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_getMMIORmap;
-   afumsg->size    = sizeof(struct ahm_req);
+   afumsg->size    = sizeof(union msgpayload);
 
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;
 
@@ -228,6 +255,14 @@ GetMMIOBufferTransaction::~GetMMIOBufferTransaction() {
    delete afumsg;
 }
 
+
+
+//=============================================================================
+// Name:          AFUQuiesceAndHalt
+// Description:   Quisce the AFU and put it into a halted state
+// Input:         None
+// Comments: This is an atomic transaction. Check error for result
+//=============================================================================
 AFUQuiesceAndHalt::AFUQuiesceAndHalt() :
    m_msgID(reqid_UID_SendAFU),
    m_tid_t(),
@@ -271,6 +306,12 @@ AFUQuiesceAndHalt::~AFUQuiesceAndHalt() {
    delete afumsg;
 }
 
+//=============================================================================
+// Name:          AFUEnable
+// Description:   Takes the AFU put of halted state
+// Input:         None
+// Comments: This is an atomic transaction. Check error for result
+//=============================================================================
 AFUEnable::AFUEnable() :
    m_msgID(reqid_UID_SendAFU),
    m_tid_t(),
@@ -314,7 +355,12 @@ AFUEnable::~AFUEnable() {
    delete afumsg;
 }
 
-
+//=============================================================================
+// Name:          UmsgGetNumber
+// Description:   Get the number of uMSGs are available
+// Input: devHandl - Device Handle received from Resource Manager
+// Comments: Atomic
+//=============================================================================
 UmsgGetNumber::UmsgGetNumber() :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -364,6 +410,12 @@ UmsgGetNumber::~UmsgGetNumber() {
    delete afumsg;
 }
 
+//=============================================================================
+// Name:          UmsgGetBaseAddress
+// Description:   Send a Get UMSG Buffer operation to the Driver stack
+// Input:         tranID   - Transaction ID
+// Comments:
+//=============================================================================
 UmsgGetBaseAddress::UmsgGetBaseAddress() :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -414,6 +466,13 @@ UmsgGetBaseAddress::~UmsgGetBaseAddress() {
    delete afumsg;
 }
 
+
+//=============================================================================
+// Name:          UmsgSetAttributes
+// Description:   Set the attibutes of the uMSG.
+// Input: devHandl - Device Handle received from Resource Manager
+// Comments: Atomic
+//=============================================================================
 UmsgSetAttributes::UmsgSetAttributes(AAL::NamedValueSet const &nvsArgs) :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -484,6 +543,12 @@ UmsgSetAttributes::~UmsgSetAttributes() {
    delete afumsg;
 }
 
+//=============================================================================
+// Name:          PerfCounterGet
+// Description:   Get the Performance Countersk
+// Input:         size   - TBD
+// Comments:
+//=============================================================================
 PerfCounterGet::PerfCounterGet(btWSSize size) :
    m_msgID(reqid_UID_SendAFU),
    m_bIsOK(false),
@@ -531,3 +596,169 @@ PerfCounterGet::~PerfCounterGet() {
    delete afumsg;
 }
 
+
+//=============================================================================
+// Name:          AFUActivateTransaction
+// Description:   PR object Transaction for activating the User AFU associated
+//                with this PR.
+// Comments: Causes the AAL Object associated with the uAFU to be exposed
+//           and available for allocation. Note that the uAFU must be
+//           already programmed.
+//=============================================================================
+AFUActivateTransaction::AFUActivateTransaction(AAL::TransactionID const &rTranID) :
+   m_msgID(reqid_UID_SendAFU),
+   m_tid_t(rTranID),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // BufferFree-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage);
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_activateAFU;
+   afumsg->size    = 0;       // No Payload
+
+   m_payload = (btVirtAddr)afumsg;
+
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    AFUActivateTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUActivateTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUActivateTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUActivateTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUActivateTransaction::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUActivateTransaction::getErrno()const {return m_errno;};
+void                           AFUActivateTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUActivateTransaction::~AFUActivateTransaction() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
+
+
+//=============================================================================
+// Name:          AFUDeactivateTransaction
+// Description:   PR object Transaction for deactivating the User AFU associated
+//                with this PR.
+// Comments: Causes the AAL Object associated with the uAFU to be removed from
+//           the objects  available for allocation.
+// TODO: Initially a synchronous function. This function does NOT affect already
+//       allocated Objects. I.e., If the AFU is in use it will remain in use
+//       until released. It simply is not available for reallocation. If we
+//       want to change the behavior so that it notifies owners and/or yanks
+//       AFU away then it must become asynchronous.
+//=============================================================================
+AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTranID) :
+   m_msgID(reqid_UID_SendAFU),
+   m_tid_t(rTranID),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+   // BufferFree-AIATransaction.
+   m_size = sizeof(struct aalui_CCIdrvMessage);
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_deactivateAFU;
+   afumsg->size    = 0;
+
+   // package in AIA transaction
+   m_payload = (btVirtAddr) afumsg;
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){
+      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    AFUDeactivateTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUDeactivateTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUDeactivateTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUDeactivateTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUDeactivateTransaction::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUDeactivateTransaction::getErrno()const {return m_errno;};
+void                           AFUDeactivateTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUDeactivateTransaction::~AFUDeactivateTransaction() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}
+
+
+//=============================================================================
+// Name:          AFUConfigureTransaction
+// Description:   PR object Transaction for programming the User AFU associated
+//                with this PR.
+// Comments: Causes the AFU to be reprogrammed, deactivating if necessary.
+//           A number of options are available to tell the system how to deal
+//           with AFU's currently in use.
+//=============================================================================
+AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
+                                                 AAL::btWSSize len,
+                                                 AAL::TransactionID const &rTranID,
+                                                 AAL::NamedValueSet const &rNVS) :
+   m_msgID(reqid_UID_SendAFU),
+   m_tid_t(rTranID),
+   m_bIsOK(false),
+   m_payload(NULL),
+   m_size(0),
+   m_bufLength(0)
+{
+
+   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in
+   // must allocate enough memory , so playload returns performance counters
+   //
+   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
+
+   // Allocate structs
+   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+   // Point at payload
+   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+   // fill out aalui_CCIdrvMessage
+   afumsg->cmd     = ccipdrv_configureAFU;
+   afumsg->size    = sizeof(struct ahm_req) ;
+
+   req->u.mem_uv2id.vaddr  = pBuf;
+   req->u.mem_uv2id.size   = len;
+
+// package in AIA transaction
+   m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);
+
+   ASSERT(NULL != m_payload);
+   if(NULL == m_payload){      return;
+   }
+
+   m_bIsOK = true;
+}
+
+AAL::btBool                    AFUConfigureTransaction::IsOK() const {return m_bIsOK;}
+AAL::btVirtAddr                AFUConfigureTransaction::getPayloadPtr()const {return m_payload;}
+AAL::btWSSize                  AFUConfigureTransaction::getPayloadSize()const {return m_size;}
+AAL::stTransactionID_t const   AFUConfigureTransaction::getTranID()const {return m_tid_t;}
+AAL::uid_msgIDs_e              AFUConfigureTransaction::getMsgID()const {return m_msgID;}
+AAL::uid_errnum_e              AFUConfigureTransaction::getErrno()const {return m_errno;};
+void                           AFUConfigureTransaction::setErrno(AAL::uid_errnum_e errnum){m_errno = errnum;}
+AFUConfigureTransaction::~AFUConfigureTransaction() {
+   // unpack payload and free memory
+   struct aalui_CCIdrvMessage *afumsg = (aalui_CCIdrvMessage *)m_payload;
+   delete afumsg;
+}

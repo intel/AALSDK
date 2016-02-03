@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2015, Intel Corporation
+// Copyright(c) 2003-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -538,7 +538,7 @@ void OSLThread::Cancel()
 #endif // OS
 }
 
-btBool OSLThread::IsThisThread(btID id) const
+btBool OSLThread::IsThisThread(btTID id) const
 {
 #if   defined( __AAL_WINDOWS__ )
    return id == m_tid;

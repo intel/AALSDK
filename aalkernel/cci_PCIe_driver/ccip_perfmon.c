@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -72,8 +72,9 @@
 
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS CCIPCIE_DBG_MOD
+#include "aalsdk/kernel/ccip_defs.h"
+
 #include "ccip_perfmon.h"
-#include "ccip_defs.h"
 #include "ccip_fme.h"
 
 

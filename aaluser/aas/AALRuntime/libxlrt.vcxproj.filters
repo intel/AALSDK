@@ -12,39 +12,45 @@
     <Filter Include="Header Files\aalsdk">
       <UniqueIdentifier>{1df54978-58a5-42f3-b899-77c27afa985c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\aalsdk\aas">
+      <UniqueIdentifier>{81163342-993c-4806-8142-256f8d8ad0df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\_xlMessageDelivery.cpp">
+    <ClCompile Include="_MessageDelivery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\_AALRUNTIMEImpl.cpp">
+    <ClCompile Include="_RuntimeImpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\_xlServiceBroker.cpp">
+    <ClCompile Include="_ServiceBroker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ServiceHost.cpp">
+    <ClCompile Include="rtlib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\aalrtlib.cpp">
+    <ClCompile Include="Runtime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AALRUNTIME.cpp">
+    <ClCompile Include="ServiceHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\_xlMessageDelivery.h">
+    <ClInclude Include="_MessageDelivery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\_AALRUNTIMEImpl.h">
+    <ClInclude Include="_RuntimeImpl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\_xlServiceBroker.h">
+    <ClInclude Include="_ServiceBroker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\aalsdk\AALRUNTIME.h">
-      <Filter>Header Files\aalsdk</Filter>
+    <ClInclude Include="..\..\include\aalsdk\aas\ServiceHost.h">
+      <Filter>Header Files\aalsdk\aas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\aalsdk\aas\IServiceBroker.h">
+      <Filter>Header Files\aalsdk\aas</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

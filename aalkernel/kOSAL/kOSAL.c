@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -68,6 +68,7 @@
 /// WHEN:          WHO:     WHAT:
 /// 12/27/2012     JG       Initial version
 //****************************************************************************
+#include <linux/vmalloc.h>
 #include "aalsdk/kernel/kosal.h"
 #define MODULE_FLAGS KOSAL_DBG_MOD
 
@@ -132,7 +133,7 @@ btInt _kosal_pci_read_config_dword(__ASSERT_HERE_PROTO
 }
 
 //=============================================================================
-/// kosal_virt_toi_phys
+/// kosal_virt_to_phys
 /// @brief     Convert a kernel virtual address to physical
 /// @param[in] vaddr - kernel virtual
 /// @return    physica address or NULLif  failed
@@ -495,4 +496,33 @@ void kosal_wake_up_interruptible(kosal_poll_object *pwaitq)
 }
 
 #endif // __AAL_WINDOWS__
+
+btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWSSize size_in_bytes)
+{
+#if   defined( __AAL_LINUX__ )
+   unsigned long ret;
+   btVirtAddr pkbuffer = vmalloc(size_in_bytes);
+   if(NULL== pkbuffer){
+      return NULL;
+   }
+
+   memset(pkbuffer,0,size_in_bytes);
+   ret = copy_from_user(pkbuffer, user_prt, size_in_bytes);
+   if(ret != 0){
+      vfree(pkbuffer);
+      return NULL;
+   }
+   return pkbuffer;
+#endif
+}
+
+void _kosal_free_user_buffer(__ASSERT_HERE_PROTO btVirtAddr user_prt,  btWSSize size_in_bytes)
+{
+#if   defined( __AAL_LINUX__ )
+   vfree(user_prt);
+#endif
+}
+
+
+
 

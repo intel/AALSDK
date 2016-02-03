@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -79,125 +79,11 @@ using namespace AAL;
 #endif
 
 
-/// @brief cciapp-specific instantiation of ICCIClient that receives the event notifications
-///        sent by the ICCIAFU.
-////////////////////////////////////////////////////////////////////////////////
-// CMyCCIClient
-
-// Ugly hack so that Doxygen produces the correct class diagrams.
-/*#define CMyALIClient CMyfpgasaneALIClient
-
-class CMyALIClient : public IALIClient,
-                     public CAASBase
-{
-public:
-   /// Native Loopback (NLB) requires three workspaces:
-   /// <ul>
-   ///   <li>a Device Status Memory workspace.</li>
-   ///   <li>an Input or source data buffer for the memory copy.</li>
-   ///   <li>an Output or destination data buffer for the memory copy.</li>
-   /// </ul>
-   enum WorkspaceType
-   {
-      WKSPC_DSM, ///< Device Status Memory
-      WKSPC_IN,  ///< Input workspace
-      WKSPC_OUT,  ///< Output workspace
-      WKSPC_UMSG  ///< UMsg workspace
-   };
-
-   CMyALIClient();
-
-   // <IALIClient>
-   virtual void      OnWorkspaceAllocated(TransactionID const &TranID,
-                                          btVirtAddr           WkspcVirt,
-                                          btPhysAddr           WkspcPhys,
-                                          btWSSize             WkspcSize);
-
-   virtual void OnWorkspaceAllocateFailed(const IEvent &Event);
-
-   virtual void          OnWorkspaceFreed(TransactionID const &TranID);
-
-   virtual void     OnWorkspaceFreeFailed(const IEvent &Event);
-   // </IALIClient>
-
-   btVirtAddr DSMVirt()    const { return m_DSMVirt;    } ///< Accessor for the DSM workspace.
-   btVirtAddr InputVirt()  const { return m_InputVirt;  } ///< Accessor for the Input workspace.
-   btVirtAddr OutputVirt() const { return m_OutputVirt; } ///< Accessor for the Output workspace.
-   btVirtAddr UMsgVirt()   const { return m_UMsgVirt;   } ///< Accessor for the UMsg workspace.
-
-   btPhysAddr DSMPhys()    const { return m_DSMPhys;    } ///< Accessor for the DSM workspace.
-   btPhysAddr InputPhys()  const { return m_InputPhys;  } ///< Accessor for the Input workspace.
-   btPhysAddr OutputPhys() const { return m_OutputPhys; } ///< Accessor for the Output workspace.
-   btPhysAddr UMsgPhys()   const { return m_UMsgPhys;   } ///< Accessor for the UMsg workspace.
-
-   btWSSize   DSMSize()    const { return m_DSMSize;    } ///< Accessor for the DSM workspace.
-   btWSSize   InputSize()  const { return m_InputSize;  } ///< Accessor for the Input workspace.
-   btWSSize   OutputSize() const { return m_OutputSize; } ///< Accessor for the Output workspace.
-   btWSSize   UMsgSize()   const { return m_UMsgSize;   } ///< Accessor for the UMsg workspace.
-
-
-   /// @brief Wait on the client's internal semaphore.
-   void ClientWait();
-
-protected:
-   /// @brief Signal (one count) to the client's internal semaphore.
-   void ClientPost();
-
-   /// @brief Mutator for the DSM workspace.
-   void DSM(btVirtAddr v, btPhysAddr p, btWSSize s)
-   {
-      m_DSMVirt = v;
-      m_DSMPhys = p;
-      m_DSMSize = s;
-   }
-
-   /// @brief Mutator for the Input workspace.
-   void Input(btVirtAddr v, btPhysAddr p, btWSSize s)
-   {
-      m_InputVirt = v;
-      m_InputPhys = p;
-      m_InputSize = s;
-   }
-
-   /// @brief Mutator for the Output workspace.
-   void Output(btVirtAddr v, btPhysAddr p, btWSSize s)
-   {
-      m_OutputVirt = v;
-      m_OutputPhys = p;
-      m_OutputSize = s;
-   }
-
-   /// @brief Mutator for the Output workspace.
-   void UMsg(btVirtAddr v, btPhysAddr p, btWSSize s)
-   {
-	  m_UMsgVirt = v;
-	  m_UMsgPhys = p;
-	  m_UMsgSize = s;
-   }
-
-   btVirtAddr m_DSMVirt;    ///< DSM workspace virtual address.
-   btPhysAddr m_DSMPhys;    ///< DSM workspace physical address.
-   btWSSize   m_DSMSize;    ///< DSM workspace size in bytes.
-   btVirtAddr m_InputVirt;  ///< Input workspace virtual address.
-   btPhysAddr m_InputPhys;  ///< Input workspace physical address.
-   btWSSize   m_InputSize;  ///< Input workspace size in bytes.
-   btVirtAddr m_OutputVirt; ///< Output workspace virtual address.
-   btPhysAddr m_OutputPhys; ///< Output workspace physical address.
-   btWSSize   m_OutputSize; ///< Output workspace size in bytes.
-   btVirtAddr m_UMsgVirt;   ///< UMsg workspace virtual address.
-   btPhysAddr m_UMsgPhys;   ///< UMsg workspace physical address.
-   btWSSize   m_UMsgSize;   ///< UMsg workspace size in bytes.
-   btInt      m_Wkspcs;     ///< current number of workspaces allocated.
-   CSemaphore m_Sem;        ///< client's internal semaphore.
-};
-*/
 /// The default ALIAFU Delegate.
 #define DEFAULT_TARGET_AFU ALIAFU_NVS_VAL_TARGET_FPGA
 
-
 /// The default Test Mode.
 #define DEFAULT_TEST_MODE NLB_TESTMODE_LPBK1
-
 
 /// The default Sub-Device ID.
 #define DEFAULT_TARGET_DEV -1
@@ -270,6 +156,9 @@ public:
    void Post() { m_Sem.Post(1); }
    void Stop();
 
+   /// @brief Routine to allocate input, output, DSM and Umsg workspaces.
+   void allocateWorkspaces();
+
    /// @brief Mutator for setting the NVS value that selects the AFU Delegate.
    void AFUTarget(const std::string &target) { m_AFUTarget = target; }
    /// @brief Accessor for the NVS value that selects the AFU Delegate.
@@ -285,26 +174,31 @@ public:
    /// @brief Accessor for the test mode.
    std::string TestMode() const             { return m_TestMode;   }
 
-   operator IAALService * () { return m_pAALService;  }
-
+   //operator IAALService * () { return m_pAALService;  }
    operator IALIMMIO * ()   { return m_pALIMMIOService; }
    operator IALIBuffer * () { return m_pALIBufferService; }
    operator IALIReset * ()  { return m_pALIResetService; }
    operator IALIUMsg * ()   { return m_pALIuMSGService; }
+   operator IALIPerf * ()   { return m_pALIPerf; }
 
 protected:
-   std::string  m_AFUTarget; ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
-   btInt        m_DevTarget; ///< The NVS value used to select the Sub Device.
-   std::string  m_TestMode; ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
-   //CMyALIClient m_ALIClient; ///< The ICCIClient used to communicate with the allocated Service.
-   //Runtime      m_Runtime;           ///< AAL Runtime
+   enum {
+      AFU,
+      FME
+   };
+
+   std::string  m_AFUTarget; 		 ///< The NVS value used to select the AFU Delegate (FPGA, ASE, or SWSim).
+   btInt        m_DevTarget; 		 ///< The NVS value used to select the Sub Device.
+   std::string  m_TestMode; 		 ///< The NVS value used to select the Test mode (LPBK1, READ, WRITE, TRPUT, SW or CCIP_LPBK1).
    IRuntime    *m_pRuntime;
-   IAALService *m_pAALService;
+   IBase       *m_pNLBService;       ///< The generic AAL Service interface for the AFU.
+   IBase       *m_pFMEService;       ///< The generic AAL Service interface for the AFU.
    CSemaphore   m_Sem;
    IALIBuffer  *m_pALIBufferService; ///< Pointer to Buffer Service
    IALIMMIO    *m_pALIMMIOService;   ///< Pointer to MMIO Service
    IALIReset   *m_pALIResetService;  ///< Pointer to AFU Reset Service
    IALIUMsg    *m_pALIuMSGService;   ///< Pointer to uMSg Service
+   IALIPerf    *m_pALIPerf;          ///< ALI Performance Monitor
    btBool       m_isOK;
 
    // Workspace info
@@ -329,6 +223,21 @@ protected:
 class INLB
 {
 public:
+   enum { //Performance Monitor keys
+	  VERSION,
+	  READ_HIT,
+	  WRITE_HIT,
+	  READ_MISS,
+	  WRITE_MISS,
+	  EVICTIONS,
+	  PCIE0_READ,
+	  PCIE0_WRITE,
+	  PCIE1_READ,
+	  PCIE1_WRITE,
+	  UPI_READ,
+	  UPI_WRITE
+   };
+
    virtual ~INLB() {}
    virtual btInt RunTest(const NLBCmdLine &cmd) = 0;
 
@@ -341,26 +250,28 @@ protected:
       m_pALIMMIOService((IALIMMIO *) *pMyApp), // uses type cast operator from ISingleAFUApp.
       m_pALIBufferService((IALIBuffer *) *pMyApp),
       m_pALIResetService((IALIReset *) *pMyApp),
-      m_pALIuMSGService((IALIUMsg *) *pMyApp)
+      m_pALIuMSGService((IALIUMsg *) *pMyApp),
+      m_pALIPerf((IALIPerf *) *pMyApp)
    {
       ASSERT(NULL != m_pMyApp);
       ASSERT(NULL != m_pALIMMIOService);
       ASSERT(NULL != m_pALIBufferService);
       ASSERT(NULL != m_pALIResetService);
+      ASSERT(NULL != m_pALIPerf);
 
       btInt i;
-      for ( i = 0 ; i < sizeof(m_QLPCounters) / sizeof(m_QLPCounters[0]) ; ++i ) {
-         m_QLPCounters[i] = 0;
-         m_SavedQLPCounters[i] = 0;
+      for ( i = 0 ; i < sizeof(m_PerfMonitors) / sizeof(m_PerfMonitors[0]) ; ++i ) {
+    	  m_PerfMonitors[i] = 0;
+    	  m_SavedPerfMonitors[i] = 0;
       }
    }
 
    btInt ResetHandshake();
    btInt CacheCooldown(btVirtAddr CoolVirt, btPhysAddr CoolPhys, btWSSize CoolSize);
 
-   void       ReadQLPCounters();
-   void       SaveQLPCounters();
-   bt32bitCSR   GetQLPCounter(btUnsignedInt ) const;
+   void      			ReadPerfMonitors();
+   void       			SavePerfMonitors();
+   btUnsigned64bitInt   GetPerfMonitor(btUnsignedInt ) const;
 
    std::string  CalcReadBandwidth(const NLBCmdLine &cmd);
    std::string CalcWriteBandwidth(const NLBCmdLine &cmd);
@@ -368,15 +279,16 @@ protected:
 
    void EnableCSRPrint(bool bEnable, bool bReplay=true);
 
-   CMyApp     *m_pMyApp;
-   IALIBuffer *m_pALIBufferService; ///< Pointer to Buffer Service
-   IALIMMIO   *m_pALIMMIOService;   ///< Pointer to MMIO Service
-   IALIReset  *m_pALIResetService;  ///< Pointer to AFU Reset Service
-   IALIUMsg   *m_pALIuMSGService;   ///< Pointer to uMSg Service
-   bt32bitCSR  m_QLPCounters[QLP_NUM_COUNTERS];
-   bt32bitCSR  m_SavedQLPCounters[QLP_NUM_COUNTERS];
-   std::string m_RdBw;
-   std::string m_WrBw;
+   CMyApp     		  *m_pMyApp;
+   IALIBuffer 		  *m_pALIBufferService; ///< Pointer to Buffer Service
+   IALIMMIO   		  *m_pALIMMIOService;   ///< Pointer to MMIO Service
+   IALIReset  		  *m_pALIResetService;  ///< Pointer to AFU Reset Service
+   IALIUMsg   		  *m_pALIuMSGService;   ///< Pointer to uMSg Service
+   IALIPerf   		  *m_pALIPerf;          ///< ALI Performance Monitor
+   btUnsigned64bitInt  m_PerfMonitors[NUM_PERF_MONITORS];
+   btUnsigned64bitInt  m_SavedPerfMonitors[NUM_PERF_MONITORS];
+   std::string 		   m_RdBw;
+   std::string 		   m_WrBw;
 };
 
 class CNLBLpbk1 : public INLB

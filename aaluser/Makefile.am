@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -100,6 +100,7 @@ aas/OSAL \
 aas/AASLib \
 aas/AALRuntime \
 aas/AIAService \
+aas/SigTapService \
 aas/RRMBrokerService \
 aas/AASResourceManager \
 ase/sw \
@@ -316,6 +317,10 @@ include/aalsdk/service/SWSimALIAFUService.h.in
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
 
+UTILS_EXTRA=\
+utils/fpgadiag/fpgasane_nlb400_0.sh \
+utils/fpgadiag/fpgasane_nlb400_3.sh
+
 EXTRA_DIST=\
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
@@ -325,5 +330,6 @@ $(DOC_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \
-$(UAIA_EXTRA)
+$(UAIA_EXTRA) \
+$(UTILS_EXTRA)
 

@@ -1211,6 +1211,13 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'spl2defs.h' \
 'fappip.h' \
 'vafu2defs.h' \
+'mm_debug_link_interface.h' \
+'mm_debug_link_linux.cpp' \
+'mm_debug_link_linux.h' \
+'mmlink_connection.cpp' \
+'mmlink_connection.h' \
+'mmlink_server.cpp' \
+'mmlink_server.h'\
 )
 
 declare -ra COPYRIGHT_KERNEL_CHECKED_PREFIXES=(\
@@ -1249,7 +1256,7 @@ copyright_user_adjust_date() {
 
    local    com=''
    local    line_one=''
-   local -r line_one_regex='(##|//|dnl) Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
+   local -r line_one_regex='(##|//|dnl) Copyright[(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
 
    local -r tmpfile="`${MKTEMP} --tmpdir "${f##*/}.cp.XXXXXXXXXX"`"
    local -i tmpfd
@@ -1299,7 +1306,7 @@ copyright_user_adjust_date() {
       str="${str%-*}"
    fi
 
-   str="${com} Copyright (c) ${str}-${THIS_YEAR}, Intel Corporation"
+   str="${com} Copyright(c) ${str}-${THIS_YEAR}, Intel Corporation"
 
    echo -E "${str}" >&${fd}
 
@@ -1327,7 +1334,7 @@ _verify_user_copyright() {
    local    line_three
    local    line_four
 
-   local -r   line_one_regex='(##|//|dnl) Copyright [(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
+   local -r   line_one_regex='(##|//|dnl) Copyright[(]c[)] 20[[:digit:]]{2}(-20[[:digit:]]{2})?, Intel Corporation'
    local -r   line_two_regex='(##|//|dnl)'
    local -r line_three_regex='(##|//|dnl) Redistribution  and  use  in source  and  binary  forms,  with  or  without'
    local -r  line_four_regex='(##|//|dnl) modification, are permitted provided that the following conditions are met:'
@@ -1385,7 +1392,7 @@ _verify_user_copyright() {
 
    # Extract the current year.
    str="${line_one%, Intel Corporation}"
-   str="${str##*Copyright (c) }"
+   str="${str##*Copyright(c) }"
    str="${str##*-}"
 
    if [ "${str}" != "${THIS_YEAR}" ]; then
@@ -1621,7 +1628,7 @@ _verify_kernel_copyright() {
 #  6 //
 #  7 //                            GPL LICENSE SUMMARY
 #  8 //
-#  9 //  Copyright(c) 2008-2014 Intel Corporation.
+#  9 //  Copyright(c) 2008-2016, Intel Corporation.
 # 10 //
 # 11 //  This program  is  free software;  you  can redistribute it  and/or  modify
 # 12 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -1641,7 +1648,7 @@ _verify_kernel_copyright() {
 # 26 //
 # 27 //                                BSD LICENSE
 # 28 //
-# 29 //  Copyright(c) 2008-2014 Intel Corporation.
+# 29 //  Copyright(c) 2008-2016, Intel Corporation.
 
    local -r line_blank_regex='(##|//|dnl)'
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-## Copyright (c) 2014-2015, Intel Corporation
+## Copyright(c) 2014-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
 ##     Intel(R) QuickAssist Technology Accelerator Abstraction Layer (AAL)
 ##        Software Developer Kit (SDK)
 ##****************************************************************************
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/SampleBrokerService/SW:$PWD/Hello_AAL_Service/SW"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/Hello_AAL_Service/SW:$PWD/SignalTapService"
 if [ $# -gt 0 ]; then
    for d in $@ ; do
       export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$d"

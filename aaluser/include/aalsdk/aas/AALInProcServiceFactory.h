@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015, Intel Corporation
+// Copyright(c) 2011-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -162,9 +162,9 @@ public:
          if ( NULL == m_pService ) {
             return NULL;
          }
-         // Service MUST be derived from IBase
-         return dynamic_cast<IBase*>(m_pService);
        }
+       // Service MUST be derived from IBase
+       return dynamic_cast<IBase*>(m_pService);
     }
    /// @Initilizes the service and returns what the service gives
    btBool InitializeService(IBase               *newService,

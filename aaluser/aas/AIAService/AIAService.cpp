@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -194,7 +194,9 @@ btBool AIAService::init( IBase *pclientBase,
    // Allocate an AFU Proxy. The AFU Proxy appears as a Service so will be returned
    //  via  serviceAllocated() to the caller of init(). The ServiceClient (owner) will be the caller of init()
    //  NOT the AIA. The AIA does have to keep a reference count of AFUProxies to properly shutdown.
-   AFUProxyGet(pclientBase,optArgs, rtid);
+   //  Note that it is important that the optargs passed in through this function signature is used NOT the OptArgs()
+   //  method. The latter would pass the AIA's OptArgs NOT necessarily the ones passed in the allocate call.
+   AFUProxyGet(pclientBase, optArgs, rtid);
 
    return true;
 }
@@ -256,7 +258,7 @@ void AIAService::AFUProxyGet( IBase *pServiceClient,
    Manifest.Add(AIA_SERVICE_BASE_INTERFACE, static_cast<btAny>(dynamic_cast<IBase*>(this)));
 
    // Construct the new AFUProxy
-   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime());
+   ALIAFUProxy *pnewProxy = new ALIAFUProxy(getAALServiceModule(), getRuntime() );
 
    // Initialize the Service.  The Service will register with the AIA.
    pnewProxy->_init(pServiceClient, rtid, Manifest, NULL);

@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2015, Intel Corporation
+// Copyright(c) 2003-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -81,7 +81,7 @@ public:
 #endif // OS
    }
 
-private:
+
    /// Obtain the critical section. (blocking)
    void Lock()
    {
@@ -121,7 +121,7 @@ private:
   //    ASSERT(0 == res);
 #endif // OS
    }
-
+private:
 #if   defined( __AAL_WINDOWS__ )
                 CRITICAL_SECTION m_Lock;
 #elif defined( __AAL_LINUX__ )

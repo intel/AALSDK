@@ -7,7 +7,7 @@
 ##
 ##                            GPL LICENSE SUMMARY
 ##
-##  Copyright(c) 2007-2015, Intel Corporation.
+##  Copyright(c) 2007-2016, Intel Corporation.
 ##
 ##  This program  is  free software;  you  can redistribute it  and/or  modify
 ##  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -27,7 +27,7 @@
 ##
 ##                                BSD LICENSE
 ##
-##  Copyright(c) 2007-2015, Intel Corporation.
+##  Copyright(c) 2007-2016, Intel Corporation.
 ##
 ##  Redistribution and  use  in source  and  binary  forms,  with  or  without
 ##  modification,  are   permitted  provided  that  the  following  conditions
@@ -199,7 +199,7 @@ declare mod_path
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         elif ! ${INSMOD} "${mod_path}/${mod}" debug=15; then
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
@@ -209,7 +209,7 @@ declare mod_path
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" ; then
+         elif ! ${INSMOD} "${mod_path}/${mod}" debug=15 ; then
             die "[FAIL]"
          fi
          printf "[ OK ]\n"
@@ -229,7 +229,7 @@ declare mod_path
          printf "insmod %-15s " "${mod}"
          if ${LSMOD} | ${GREP} -q "^${mod%.*}" ; then
             printf "[ALREADY]\n"
-         elif ! ${INSMOD} "${mod_path}/${mod}" sim=1 ; then
+         elif ! ${INSMOD} "${mod_path}/${mod}" sim=1 debug=-134217601; then
             die "[FAIL]"
          fi
          printf "[ OK ]\n"

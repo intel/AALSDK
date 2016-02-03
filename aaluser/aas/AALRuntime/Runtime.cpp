@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+// Copyright(c) 2014-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -198,7 +198,6 @@ btBool Runtime::releaseRuntimeProxy()
 //=============================================================================
 IRuntimeClient *Runtime::getRuntimeClient()
 {
-   AutoLock(this);
    return m_pClient;
 }
 

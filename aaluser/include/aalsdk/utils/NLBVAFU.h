@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -81,6 +81,8 @@ BEGIN_NAMESPACE(AAL)
 #   define QLP_PERF_CACHE_RD_MISS 2
 #   define QLP_PERF_CACHE_WR_MISS 3
 #   define QLP_PERF_EVICTIONS     10
+
+#define NUM_PERF_MONITORS         13
 
 #define CSR_AFU_DSM_BASEL         	0x0110
 #define CSR_AFU_DSM_BASEH         	0x0114

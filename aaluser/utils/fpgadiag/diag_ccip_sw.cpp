@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -73,11 +73,27 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
     volatile btVirtAddr pUMsgUsrVirt = m_pMyApp->UMsgVirt();
     volatile nlb_vafu_dsm *pAFUDSM = (volatile nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 
-    /*
+    if(NULL != pUMsgUsrVirt &&
+      ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA) ||
+        flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT))){
+
+	  NamedValueSet nvs;
+	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_DATA)){
+
+		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)LOW);
+
+	  }else if (flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_UMSG_HINT)){
+
+		  nvs.Add(UMSG_HINT_MASK_KEY, (btUnsigned64bitInt)HIGH);
+	  }
+	  btBool ret = m_pALIuMSGService->umsgSetAttributes(nvs);
+    }
+
+    /* COOL FPGA CACHE temporarily disabled
 	if ( 0 != CacheCooldown(pOutputUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
 		return 1;
 	}
-*/
+    */
 
     // Initiate AFU Reset
     m_pALIResetService->afuReset();
@@ -152,19 +168,21 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
    const btInt StopTimeoutMillis = 250;
    btInt MaxPoll = StopTimeoutMillis;
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		  //0123456789 0123456789 01234567890 0123456789012
-   cout << "Cachelines Read_Count Write_Count 'Clocks(@"
-	    << Normalized(cmd)  << ")'";
+		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+		 << Normalized(cmd) << ")'";
 
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-			  // 01234567890123 01234567890123
-	 cout << "   Rd_Bandwidth   Wr_Bandwidth";
-  }
-
-  cout << endl;
-  }
+		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+			     // 01234567890123 01234567890123
+		cout << "   Rd_Bandwidth   Wr_Bandwidth";
+		}
+		cout << endl;
+   }
 
    while ( sz <= CL(cmd.endcls))
    {
@@ -245,7 +263,11 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 		 SleepMilli(1);
 	   }
 
+	   ReadPerfMonitors();
+
 	   PrintOutput(cmd, (sz / CL(1)));
+
+	   SavePerfMonitors();
 
 	   //Increment number of cachelines
 	   sz += CL(1);
@@ -277,31 +299,36 @@ void  CNLBCcipSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
 	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
 	bt64bitCSR ticks;
-    bt64bitCSR rawticks     = pAFUDSM->num_clocks;
-    bt32bitCSR startpenalty = pAFUDSM->start_overhead;
-    bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+	bt64bitCSR rawticks     = pAFUDSM->num_clocks;
+	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
+	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	  cout << setw(10) << cls 					<< ' '
-	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   ;
+	cout << setw(10) << cls 								<< ' '
+		 << setw(10) << pAFUDSM->num_reads    				<< ' '
+		 << setw(11) << pAFUDSM->num_writes   				<< ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
 
-	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-		  ticks = rawticks - startpenalty;
-	  }
-	  else
-	  {
-		  ticks = rawticks - (startpenalty + endpenalty);
-	  }
-	  cout  << setw(16) << ticks;
+	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+		ticks = rawticks - startpenalty;
+	}
+	else
+	{
+	ticks = rawticks - (startpenalty + endpenalty);
+	}
+	cout  << setw(16) << ticks;
 
-	    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-	       double rdbw = 0.0;
-	       double wrbw = 0.0;
+	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+	double rdbw = 0.0;
+	double wrbw = 0.0;
 
-	       cout << "  "
-	            << setw(14) << CalcReadBandwidth(cmd) << ' '
-	            << setw(14) << CalcWriteBandwidth(cmd);
-	    }
+	cout << "  "
+		<< setw(14) << CalcReadBandwidth(cmd) << ' '
+		<< setw(14) << CalcWriteBandwidth(cmd);
+	}
 
-	    cout << endl;
+	cout << endl;
 }

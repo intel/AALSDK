@@ -1,4 +1,4 @@
-## Copyright (c) 2013-2015, Intel Corporation
+## Copyright(c) 2013-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -40,7 +40,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.63])
 
 AC_INIT([aalsdk], [5.0.0], [joe.grecco@intel.com])
-AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
+AC_COPYRIGHT([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([aas/AASLib/AALlib.cpp])
@@ -59,7 +59,7 @@ LT_PREREQ([2.2])
 LT_INIT([dlopen])
 LT_LANG([C++])
 
-AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
+AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
@@ -71,6 +71,7 @@ AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRM],          [librrm],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
+AALSDK_LTLIB_VERSION([SIGTAPSERVICE],[libsigtapservice],[0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
@@ -181,6 +182,7 @@ AC_CONFIG_FILES([Makefile
                  aas/AASLib/Makefile
                  aas/AALRuntime/Makefile
                  aas/AIAService/Makefile
+                 aas/SigTapService/Makefile
                  aas/RRMBrokerService/Makefile
                  aas/AASResourceManager/Makefile])
 
@@ -189,6 +191,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/Makefile
                  utils/aalscan/Makefile
                  utils/fpgadiag/Makefile
+                 utils/remoteSTP/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile

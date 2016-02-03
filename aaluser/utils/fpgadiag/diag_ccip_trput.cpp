@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -121,18 +121,20 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 
    m_pALIMMIOService->mmioWrite32(CSR_CFG, cfg);
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-			 //0123456789 0123456789 01234567890 0123456789012
-	  cout << "Cachelines Read_Count Write_Count 'Clocks(@"
-		   << Normalized(cmd)  << ")'";
+		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
+		 << Normalized(cmd) << ")'";
 
-	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
 				  // 01234567890123 01234567890123
-		 cout << "   Rd_Bandwidth   Wr_Bandwidth";
-	  }
-
-	  cout << endl;
+			cout << "   Rd_Bandwidth   Wr_Bandwidth";
+		}
+		cout << endl;
    }
 
 #if   defined( __AAL_WINDOWS__ )
@@ -197,7 +199,11 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
 			   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 		   }
 
+		   ReadPerfMonitors();
+
 		   PrintOutput(cmd, (sz / CL(1)));
+
+		   SavePerfMonitors();
 
 		   // Increment number of cachelines.
 		   sz += CL(1);
@@ -230,28 +236,33 @@ void  CNLBCcipTrput::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
     bt32bitCSR startpenalty = pAFUDSM->start_overhead;
     bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	  cout << setw(10) << cls 					<< ' '
-	       << setw(10) << pAFUDSM->num_reads    << ' '
-	       << setw(11) << pAFUDSM->num_writes   << ' ';
+    cout << setw(10) << cls 								<< ' '
+	     << setw(10) << pAFUDSM->num_reads    				<< ' '
+	     << setw(11) << pAFUDSM->num_writes   				<< ' '
+	     << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
+	     << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
+	     << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
+	     << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
+	     << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
 
-	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-		  ticks = rawticks - startpenalty;
-	  }
-	  else
-	  {
-		  ticks = rawticks - (startpenalty + endpenalty);
-	  }
-	  cout  << setw(16) << ticks;
+    if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+    	ticks = rawticks - startpenalty;
+    }
+	else
+	{
+	ticks = rawticks - (startpenalty + endpenalty);
+	}
+	cout  << setw(16) << ticks;
 
-	    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-	       double rdbw = 0.0;
-	       double wrbw = 0.0;
+	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+	double rdbw = 0.0;
+	double wrbw = 0.0;
 
-	       cout << "  "
-	            << setw(14) << CalcReadBandwidth(cmd) << ' '
-	            << setw(14) << CalcWriteBandwidth(cmd);
-	    }
+	cout << "  "
+		<< setw(14) << CalcReadBandwidth(cmd) << ' '
+		<< setw(14) << CalcWriteBandwidth(cmd);
+	}
 
-	    cout << endl;
+	cout << endl;
 }
 

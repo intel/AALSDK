@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -71,10 +71,11 @@
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/ccipdriver.h"
 #include "aalsdk/kernel/iaaldevice.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "cci_pcie_driver_internal.h"
 
-#include "ccip_defs.h"
+
 #include "ccip_port.h"
 #include "ccip_fme.h"
 
@@ -227,10 +228,30 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 
    // The AAL address maps to the PCIe address. The Subdevice number is
    //  vendor defined and in this case the FME object has the value CCIP_DEV_FME_SUBDEV
+   //
+   // Device addressing follows the convention of B:D:F is the PCIe address.
+   //  The B:D:F uniquely identifies a physical board which is the root of the
+   //  device hierarchy. All AAL devices under this board will have the same B:D:F
+   //  The subdevice number is used to identify the Port number in the hierarchy. For
+   //  the FME object it is 0xFFFF.
+   //  Because every AAL device exposed through the AAL kernel framework must have a unique
+   //  address, the instance number is used to uniquely identify Objects under the subdevice.
+   //  The instance number simply increments within an adress space and should not be assumed
+   //  to relate to a particular object type.
+   //  Example:  For B:D:F  		00010001:0:0
+   //       FME address: 			00010001:0:0:FFFF:0
+   //       Port 0 address:			00010001:0:0:0:0
+   //       PR Port 0 address:  	00010001:0:0:0:1   (the instance number is not have a define value other than to create a unique address)
+   //       UAFU Port 0 address:	00010001:0:0:0:2
+   //       Port 1 address:			00010001:0:0:1:0
+   //       PR Port 1 address:  	00010001:0:0:1:1   (the instance number is not have a define value other than to create a unique address)
+   //       UAFU Port 1 address:	00010001:0:0:1:2
+
    aaldevid_devaddr_busnum(aalid)      = ccip_dev_pcie_busnum(pccipdev);
    aaldevid_devaddr_devnum(aalid)      = ccip_dev_pcie_devnum(pccipdev);
    aaldevid_devaddr_fcnnum(aalid)      = ccip_dev_pcie_fcnnum(pccipdev);
-   aaldevid_devaddr_subdevnum(aalid)   = CCIP_DEV_FME_SUBDEV;
+   aaldevid_devaddr_subdevnum(aalid)   = CCIP_DEV_FME_SUBDEV;	// FME subdevice number is constant
+   aaldevid_devaddr_instanceNum(aalid) = 0;						// FME is always instance 0
 
    // The following attributes describe the interfaces supported by the device
    aaldevid_afuguidl(aalid)            = CCIP_FME_GUIDL;
@@ -250,9 +271,9 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    cci_dev_phys_afu_mmio(pcci_aaldev)  = ccip_fmedev_phys_afu_mmio(pccipdev);
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPFME",           // AAL device base name
-                                           &aalid,             // AAL ID
-                                           &cci_FMEpip);
+   cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPFME",           // AAL device base name
+                                                       &aalid,             // AAL ID
+                                                       &cci_FMEpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
@@ -291,10 +312,11 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
    ret = cci_publish_aaldevice(pcci_aaldev);
    ASSERT(ret == 0);
    if(0> ret){
-      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(aalid),
-                                                                  aaldevid_devaddr_devnum(aalid),
-                                                                  aaldevid_devaddr_fcnnum(aalid),
-                                                                  aaldevid_devaddr_subdevnum(aalid));
+      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%x:%d]",aaldevid_devaddr_busnum(aalid),
+                                                                     aaldevid_devaddr_devnum(aalid),
+                                                                     aaldevid_devaddr_fcnnum(aalid),
+                                                                     aaldevid_devaddr_subdevnum(aalid),
+																	 aaldevid_devaddr_instanceNum(aalid));
       kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
       kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
       cci_destroy_aal_device(pcci_aaldev);
@@ -312,7 +334,8 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
 /// @brief Creates and registers Port objects (resources) we want to expose
 ///        through AAL.
 ///
-/// @param[in] pportdev - CCI Port object .
+/// @param[in] pportdev - CCI Port object
+/// @param[in] devnum - Port number
 /// @return    error code
 ///============================================================================
 btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev,
@@ -340,7 +363,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
 
    //=======================================
    // Instantiate a Signal Tap device
-   aaldevid_devaddr_subdevnum(aalid)++;
+   aaldevid_devaddr_instanceNum(aalid)++;
    pcci_aaldev = cci_create_AAL_SignalTap_Device(pportdev, &aalid);
    ASSERT(NULL != pcci_aaldev);
 
@@ -354,7 +377,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
 
    //========================
    // Instantiate a PR Device
-   aaldevid_devaddr_subdevnum(aalid)++;
+   aaldevid_devaddr_instanceNum(aalid)++;
    pcci_aaldev = cci_create_AAL_PR_Device(pportdev, &aalid);
    ASSERT(NULL != pcci_aaldev);
 
@@ -377,7 +400,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
       if(~0ULL != pafu_hdr->ccip_dfh.csr){
 
          // Instantiate it
-         aaldevid_devaddr_subdevnum(aalid)++;
+         aaldevid_devaddr_instanceNum(aalid)++;
          pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
                                                     pafu_phys,
                                                     pafu_hdr,
@@ -385,7 +408,7 @@ btBool cci_port_dev_create_AAL_allocatable_objects(struct port_device  *pportdev
          ASSERT(NULL != pcci_aaldev);
 
          if(NULL == pcci_aaldev){
-            PDEBUG("ERROR: Creating Signal Tap device\n");
+            PDEBUG("ERROR: Creating User AFU device\n");
             return false;     // TODO This is a BUG if we get here but should cleanup correctly.
          }
 
@@ -432,9 +455,11 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 {
    ASSERT(NULL != pcci_aaldev);
    if(NULL == pcci_aaldev){
-      PERR("Attemptiong to destroy NULL pointer to cci_aal_device object\n");
+      PERR("Attempting to destroy NULL pointer to cci_aal_device object\n");
       return -EINVAL;
    }
+
+   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    kosal_kfree(pcci_aaldev, sizeof(struct cci_aal_device));
    return 0;
@@ -449,17 +474,16 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
 // Comments:
 //=============================================================================
 void
-cci_release_device(struct device *pdev)
+cci_release_device(pkosal_os_dev pdev)
 {
-#if ENABLE_DEBUG
+
    struct aal_device *paaldev = basedev_to_aaldev(pdev);
-#endif // ENABLE_DEBUG
-
-
+//   struct cci_aal_device *pcci_aaldev = aaldev_to_cci_aal_device(paaldev);
 
    PTRACEIN;
 
    PDEBUG("Called with struct aal_device * 0x%p\n", paaldev);
+//   kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    // DO NOT call factory release here. It will be done by the framework.
    PTRACEOUT;
@@ -504,7 +528,7 @@ cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev)
 {
    PVERBOSE("Removing CCI device from configuration\n");
 
-   if ( cci_aaldev_to_aaldev(pcci_aaldev) ) {
+   if ( NULL!= cci_aaldev_to_aaldev(pcci_aaldev) ) {
       PINFO("Removing AAL device\n");
       aalbus_get_bus()->unregister_device(cci_aaldev_to_aaldev(pcci_aaldev));
       cci_aaldev_to_aaldev(pcci_aaldev) = NULL;

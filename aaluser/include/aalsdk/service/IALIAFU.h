@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -96,13 +96,19 @@ typedef enum
 
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
 #define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+
 #define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 #define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+
 #define iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
 #define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+#define ALI_AFUID_UAFU_CONFIG       "A3AAB285-79A0-4572-83B5-4FD5E5216870"
+
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
 
 /// Key for selecting an AFU delegate.
 #define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
@@ -481,8 +487,10 @@ class IALIReconfigure
 public:
    virtual ~IALIReconfigure() {}
 
-   #define AALCONF_FILENAMEKEY          "BitStreamFile"
-   #define AALCONF_FILENAMETYPE         btString
+   #define AALCONF_FILENAMEKEY            "BitStreamFile"
+   #define AALCONF_FILENAMETYPE           btString
+   #define AALCONF_BUFPTRKEY              "BufPointer"
+   #define AALCONF_BUFSIZE                "BufSize"
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///

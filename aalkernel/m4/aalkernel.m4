@@ -6,7 +6,7 @@ dnl          redistributing this file, you may do so under either license.
 dnl 
 dnl                             GPL LICENSE SUMMARY
 dnl 
-dnl  Copyright(c) 2014-2015, Intel Corporation.
+dnl  Copyright(c) 2014-2016, Intel Corporation.
 dnl 
 dnl   This program  is  free software;  you  can redistribute it  and/or  modify
 dnl   it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@ dnl   77 Reed Rd., Hudson, MA  01749
 dnl 
 dnl                                 BSD LICENSE
 dnl 
-dnl  Copyright(c) 2014-2015, Intel Corporation.
+dnl  Copyright(c) 2014-2016, Intel Corporation.
 dnl 
 dnl   Redistribution and  use  in source  and  binary  forms,  with  or  without
 dnl   modification,  are   permitted  provided  that  the  following  conditions

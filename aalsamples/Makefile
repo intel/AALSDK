@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -41,15 +41,16 @@
 SUBDIRS=\
 Hello_AAL_Service/SW \
 Hello_AAL/SW \
-Hello_ALI_NLB/SW
+Hello_ALI_NLB/SW \
+ALI_Multi_AFU_with_PerfMon/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\
 #Hello_CCI_NLB/SW \
 #Hello_SPL_LB/SW \
 #Sudoku_SPL/SW \
-#SampleBrokerService/SW \
 #LinkedList_SPL/SW \
+#ALI_Configure_AFU/SW
 #SignalTapService \
 #SigTapSample/SW
 

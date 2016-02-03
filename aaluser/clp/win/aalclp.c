@@ -473,7 +473,7 @@ static yyconst flex_int16_t yy_chk[86] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "../../clp/aalclp.l"
 #line 2 "../../clp/aalclp.l"
-// Copyright (c) 2013-2015, Intel Corporation
+// Copyright(c) 2013-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
