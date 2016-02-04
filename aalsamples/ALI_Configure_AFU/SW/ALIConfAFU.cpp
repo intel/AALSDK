@@ -49,6 +49,7 @@
 #include <aalsdk/Runtime.h>
 #include <aalsdk/AALLoggerExtern.h>
 
+
 #include <aalsdk/service/IALIAFU.h>
 
 #include <string.h>
@@ -148,6 +149,7 @@ protected:
    IALIReconfigure      *m_pALIReconfService; ///< Pointer to Buffer Service
    CSemaphore            m_Sem;               ///< For synchronizing with the AAL runtime.
    btInt                 m_Result;            ///< Returned result v; 0 if success
+   btBool                m_ReleaseStatus;
 
 };
 
@@ -161,10 +163,11 @@ protected:
 ///          the AAL Runtime. The member m_bisOK is used to indicate an error.
 ///
 ALIConfAFUApp::ALIConfAFUApp() :
-   m_Runtime(this),
+   m_Runtime(this),\
    m_pAALService(NULL),
    m_pALIReconfService(NULL),
-   m_Result(0)
+   m_Result(0),
+   m_ReleaseStatus(false)
 {
    // Register our Client side interfaces so that the Service can acquire them.
    //   SetInterface() is inherited from CAASBase
@@ -276,34 +279,62 @@ btInt ALIConfAFUApp::run()
 
 
 
+
    //=============================
    // Now we have the NLB Service
    //   now we can use it
    //=============================
    MSG("Running Test");
    if(true == m_bIsOK){
+
+
+      NamedValueSet nvsDeactv;
+
+            btUnsigned64bitInt value = 1;
+
+            nvsDeactv.Add(AALCONF_MILLI_TIMEOUT,value);
+
+
+                  value =0x1;
+            nvsDeactv.Add(AALCONF_RECONF_ACTION_HONOR_OWNER,value);
+            value =0x2;
+
+          nvsDeactv.Add(AALCONF_RECONF_ACTION_HONOR_REQUEST,value);
+
+
       // FIXME: could reuse existing empty NVS for less overhead
-      m_pALIReconfService->reconfDeactivate(TransactionID(), NamedValueSet());
+    //  m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
+    //  m_Sem.Wait();
+
+   //   NamedValueSet nvs;
+
+    //  nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
+
+      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/aravuri/kernelperf/10.txt");
+
+      m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
       m_Sem.Wait();
 
-      NamedValueSet nvs;
-
-      nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
-
-
-      m_pALIReconfService->reconfConfigure(TransactionID(), nvs);
-      m_Sem.Wait();
-
+      /*
       // FIXME: could reuse existing empty NVS for less overhead
       m_pALIReconfService->reconfActivate(TransactionID(), NamedValueSet());
-      m_Sem.Wait();
+      m_Sem.Wait();*/
    }
    MSG("Done Running Test");
 
    // Clean-up and return
    // Release() the Service through the Services IAALService::Release() method
+   if(!m_ReleaseStatus)
+   {
+      MSG("Release Service");
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
    m_Sem.Wait();
+   }
+   else
+   {
+      MSG("Release Service in Service Event");
+      m_Sem.Wait();
+   }
 
 done_0:
    m_Runtime.stop();
@@ -370,11 +401,23 @@ void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
 
  void ALIConfAFUApp::serviceEvent(const IEvent &rEvent)
 {
-   ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+   //ERR("unexpected event 0x" << hex << rEvent.SubClassID());
+   std::cerr << "ALIConfAFUApp::serviceEvent \n" << std::endl;
    // The state machine may or may not stop here. It depends upon what happened.
    // A fatal error implies no more messages and so none of the other Post()
    //    will wake up.
    // OTOH, a notification message will simply print and continue.
+   if ( rEvent.Has(iidExEvent) ) {
+        //ExceptionEvent
+
+      std::cerr << "\n Description  " << dynamic_ref<IExceptionEvent>(iidExEvent, rEvent).Description() << std::endl;
+      std::cerr << "\n ExceptionNumber:  " << dynamic_ref<IExceptionEvent>(iidExEvent, rEvent).ExceptionNumber() << std::endl;
+      std::cerr << "\n Reason:  " << dynamic_ref<IExceptionEvent>(iidExEvent, rEvent).Reason() << std::endl;
+
+     }
+   (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
+   m_ReleaseStatus = true;
+
 }
 // <end IServiceClient interface>
 

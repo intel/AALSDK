@@ -123,10 +123,7 @@ module_param    (sim, ulong, S_IRUGO);
 // DRV_NAME is defined in mem-int.h
 //=============================================================================
 
-btUnsignedInt debug = 0
-#if 0
-/* Type and Level selection flags */
-   | PTRACE_FLAG
+btUnsignedInt debug = PTRACE_FLAG
    | PVERBOSE_FLAG
    | PDEBUG_FLAG
    | PINFO_FLAG
@@ -139,7 +136,7 @@ btUnsignedInt debug = 0
    | CCIV4_DBG_MMAP
    | CCIV4_DBG_CMD
    | CCIV4_DBG_CFG
-#endif
+
 ;
 
 /******************************************************************************
