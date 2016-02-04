@@ -1,0 +1,29 @@
+# nlb core files 
+set_global_assignment -name SEARCH_PATH $RTL_SRC/afu/nlb_mpf_400/include_files/common/
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/test_sw1.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/test_rdwr.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/test_lpbk3.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/test_lpbk2.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/test_lpbk1.v
+set_global_assignment -name SYSTEMVERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/requestor.sv
+set_global_assignment -name SYSTEMVERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/nlb_lpbk.sv
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/nlb_csr.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/arbiter.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/nlb_sbv_gfifo.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/nlb_gram_sdp.v
+set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/nlb_gfifo.v
+set_global_assignment -name SYSTEMVERILOG_FILE $RTL_SRC/afu/nlb_mpf_400/ccip_std_afu.sv
+
+# NLB SDC
+set_global_assignment -name SDC_FILE $RTL_SRC/afu/nlb_mpf_400/par/sdc_nlb.sdc
+
+# Configure nlb test mode
+# Valid options are:
+# NLB400_MODE_0 - implements loopback test
+# NLB400_MODE_3 - implements read, write, throughput (simultaneous read+write) tests
+# NLB400_MODE_7 - implements HW/Sw ping pong test
+
+# Uncomment only of the following lines
+set_global_assignment -name VERILOG_MACRO "NLB400_MODE_0"
+#set_global_assignment -name VERILOG_MACRO "NLB400_MODE_3" 
+#set_global_assignment -name VERILOG_MACRO "NLB400_MODE_7"

@@ -1,0 +1,238 @@
+//
+// Copyright (c) 2016, Intel Corporation
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// Redistributions of source code must retain the above copyright notice, this
+// list of conditions and the following disclaimer.
+//
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// Neither the name of the Intel Corporation nor the names of its contributors
+// may be used to endorse or promote products derived from this software
+// without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+//
+// MPF -- Memory Properties Factory
+//
+//   The factory is a composable collection of shims for constructing
+//   Xeon+FPGA memory interfaces with a variety of characteristics.
+//
+//   Shims offer features such as:
+//     - Sort read responses to match request order
+//     - Virtual to physical translation (VTP)
+//     - Preserve read/write and write/write ordering within lines.
+//
+
+`include "cci_mpf_if.vh"
+`include "cci_mpf_csrs.vh"
+
+
+//
+// This wrapper is a reference implementation of the composition of shims.
+//
+
+module cci_mpf
+  #(
+    // MMIO base address (byte level) allocated to MPF for feature lists
+    // and CSRs.  The AFU allocating this module must build at least
+    // a device feature header (DFH) for the AFU.  The chain of device
+    // features in the AFU must then point to the base address here
+    // as another feature in the chain.  MPF will continue the list.
+    // The base address here must point to a region that is at least
+    // CCI_MPF_MMIO_SIZE bytes.
+    parameter DFH_MMIO_BASE_ADDR = 0,
+
+    // Address of the next device feature header outside MPF.  MPF will
+    // terminate the feature list if the next address is 0.
+    parameter DFH_MMIO_NEXT_ADDR = 0,
+
+    // Enforce write/write and write/read ordering with cache lines?
+    parameter ENFORCE_WR_ORDER = 1,
+
+    // Return read responses in the order they were requested?
+    parameter SORT_READ_RESPONSES = 1,
+
+    // Preserve Mdata field in write requests?  Turn this off if the AFU
+    // merely counts write responses instead of checking Mdata.
+    parameter PRESERVE_WRITE_MDATA = 0
+    )
+   (
+    input  logic      clk,
+
+    //
+    // Signals connecting to QA Platform
+    //
+    cci_mpf_if.to_fiu fiu,
+
+    //
+    // Signals connecting to AFU, the client code
+    //
+    cci_mpf_if.to_afu afu
+    );
+
+    logic  reset_n;
+    assign reset_n = fiu.reset_n;
+
+
+    // ====================================================================
+    //
+    //  Canonicalize requests on exit toward the FIU.
+    //
+    // ====================================================================
+
+    cci_mpf_if fiu_canonical (.clk);
+
+    cci_mpf_shim_canonicalize_to_fiu
+      canonicalize
+       (
+        .clk,
+        .fiu,
+        .afu(fiu_canonical)
+        );
+
+
+    // ====================================================================
+    //
+    //  Manage CSRs used by MPF
+    //
+    // ====================================================================
+
+    cci_mpf_if fiu_csrs (.clk);
+    cci_mpf_csrs mpf_csrs ();
+
+    cci_mpf_shim_csr
+      #(
+        .DFH_MMIO_BASE_ADDR(DFH_MMIO_BASE_ADDR),
+        .DFH_MMIO_NEXT_ADDR(DFH_MMIO_NEXT_ADDR),
+        .MPF_ENABLE_VTP(1),
+        .MPF_ENABLE_WRO(1)
+        )
+      csr
+       (
+        .clk,
+        .fiu(fiu_canonical),
+        .afu(fiu_csrs),
+        .csrs(mpf_csrs)
+        );
+
+
+    // ====================================================================
+    //
+    //  Virtual to physical translation. This is the lowest level of
+    //  the hierarchy, nearest the FIU connection. The translation layer
+    //  can thus depend on a few properties, such as that only one
+    //  request is outstanding to a given line. The virtual to physical
+    //  translator is thus free to reorder any requests.
+    //
+    // ====================================================================
+
+    cci_mpf_if fiu_virtual (.clk);
+
+    cci_mpf_shim_vtp
+      #(
+        // VTP needs to generate loads internally in order to walk the
+        // page table.  The reserved bit in Mdata is a location offered
+        // to the page table walker to tag internal loads.  The Mdata location
+        // is guaranteed to be zero on all requests flowing in to VTP
+        // from the AFU.  In the composition here, qa_shim_sort_responses
+        // provides this guarantee by rewriting Mdata as requests and
+        // responses as they flow in and out of the stack.
+        .RESERVED_MDATA_IDX(CCI_MDATA_WIDTH-2)
+        )
+      v_to_p
+       (
+        .clk,
+        .fiu(fiu_csrs),
+        .afu(fiu_virtual),
+        .csrs(mpf_csrs)
+        );
+
+
+    // ====================================================================
+    //
+    //  Maintain read/write and write/write order to matching addresses.
+    //  This level of the hierarchy operates on virtual addresses.
+    //
+    // ====================================================================
+
+    cci_mpf_if fiu_wro (.clk);
+
+    generate
+        if (ENFORCE_WR_ORDER)
+        begin : wro
+            cci_mpf_shim_wro
+              order
+               (
+                .clk,
+                .fiu(fiu_virtual),
+                .afu(fiu_wro)
+                );
+        end
+        else
+        begin : no_wro
+            cci_mpf_shim_null
+              filter
+               (
+                .clk,
+                .fiu(fiu_virtual),
+                .afu(fiu_wro)
+                );
+        end
+    endgenerate
+
+    // ====================================================================
+    //
+    //  Sort read responses so they arrive in the order they were
+    //  requested.
+    //
+    //  Operates on virtual addresses.
+    //
+    // ====================================================================
+
+    cci_mpf_if fiu_rsp_order (.clk);
+
+    cci_mpf_shim_rsp_order
+      #(
+        .SORT_READ_RESPONSES(SORT_READ_RESPONSES),
+        .PRESERVE_WRITE_MDATA(PRESERVE_WRITE_MDATA)
+        )
+      rspOrder
+       (
+        .clk,
+        .fiu(fiu_wro),
+        .afu(fiu_rsp_order)
+        );
+
+
+    // ====================================================================
+    //
+    //  Register responses to AFU.
+    //
+    // ====================================================================
+
+    cci_mpf_shim_buffer_fiu
+      regRsp
+       (
+        .clk,
+        .fiu_raw(fiu_rsp_order),
+        .fiu_buf(afu)
+        );
+
+endmodule // cci_mpf
