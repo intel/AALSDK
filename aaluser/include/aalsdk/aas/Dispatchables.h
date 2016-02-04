@@ -39,6 +39,7 @@
 #include <aalsdk/AALDefs.h>
 #include <aalsdk/osal/IDispatchable.h>
 #include <aalsdk/IServiceClient.h>
+#include <aalsdk/aas/IServiceRevoke.h>
 #include <aalsdk/Runtime.h>
 #include <aalsdk/aas/AALService.h>
 
@@ -242,6 +243,16 @@ public:
 protected:
    IRuntimeClient *m_pRTClient;
    const IEvent   *m_pEvent;
+};
+
+/// @brief Delivers IRuntimeClient::runtimeEvent(const IEvent & );
+class AASLIB_API ServiceRevoke : public IDispatchable
+{
+public:
+   ServiceRevoke(IServiceRevoke *pRevoke);
+   virtual void operator() ();
+protected:
+   IServiceRevoke *m_pRevoke;
 };
 
 END_NAMESPACE(AAL)

@@ -400,6 +400,18 @@ void RuntimeEvent::operator() ()
    delete this;
 }
 
+ServiceRevoke::ServiceRevoke(IServiceRevoke *pRevoke)
+: m_pRevoke(pRevoke)
+{
+   ASSERT(NULL != m_pRevoke);
+}
+
+void ServiceRevoke::operator ()()
+{
+   m_pRevoke->serviceRevoke();
+   delete this;
+}
+
 END_NAMESPACE(AAL)
 
 /// @}

@@ -1207,19 +1207,18 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
    }
 
    break;
+
    case rspid_AFU_PR_Revoked_Event:
 
    {
       std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
       std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
 
-
-      getRuntime()->schedDispatchable( new ServiceReleased(getServiceClient(),
-                                                                     m_pSvcClient,
-                                                                     TransactionID()) );
+      getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,this)) );
 
    }
    break;
+
    case rspid_AFU_PR_Honor_Request_Event:
 
    {

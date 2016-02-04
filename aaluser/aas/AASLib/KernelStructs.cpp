@@ -808,7 +808,7 @@ std::ostream & operator << (std::ostream &s, const uid_wseventID_e &enumeration)
       uid_wseventID_e_CASE(uid_wseventAllocate);
       uid_wseventID_e_CASE(uid_wseventFree);
       uid_wseventID_e_CASE(uid_wseventGetPhys);
-      uid_wseventID_e_CASE(uid_wseventCSRMap);
+//      uid_wseventID_e_CASE(uid_wseventCSRMap);
 
       default:
          s << "uid_wseventID_e is " << static_cast<unsigned>(enumeration) <<

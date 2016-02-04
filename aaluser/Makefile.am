@@ -162,6 +162,7 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
+include/aalsdk/aas/IServiceRevoke.h \
 include/aalsdk/aas/ServiceHost.h \
 include/aalsdk/aas/Dispatchables.h 
 
@@ -203,7 +204,6 @@ include/aalsdk/kernel/ahmpipdefs.h \
 include/aalsdk/kernel/ccidefs.h \
 include/aalsdk/kernel/fappip.h \
 include/aalsdk/kernel/spl2defs.h \
-include/aalsdk/kernel/aalui.h \
 include/aalsdk/kernel/ccipdriver.h \
 include/aalsdk/kernel/KernelStructs.h \
 include/aalsdk/kernel/kosal.h \

@@ -42,7 +42,7 @@
 //WRITE: This is a write only test with no data checking. AFU writes CSR_NUM_LINES
 //starting from CSR_DST_ADDR location. This test is used to stress the write
 //path and measure 100% write bandwidth and latency.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"

@@ -862,11 +862,11 @@ void task_afu_deactivete_callback(void* pr_context,void* ptr)
       PVERBOSE(  "AFU Owner pid= %d \n" , pOwner->m_pid);
 
       pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( 0,
-                                                            ppr_program_ctx->msgID,
-                                                            0,
-                                                            pOwner->m_sess.m_device,
-                                                            pOwner->m_sess.m_ownerContext,
-                                                            uid_errnumRequestAFURelease);
+                                                             ppr_program_ctx->msgID,
+                                                             0,
+                                                             pOwner->m_sess.m_device,
+                                                             pOwner->m_sess.m_ownerContext,
+                                                             uid_errnumRequestAFURelease);
       ccidrv_sendevent(&(pOwner->m_sess),
                        AALQIP(pafuws_evt));
       } // end list
