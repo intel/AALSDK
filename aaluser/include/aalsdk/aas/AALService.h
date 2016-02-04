@@ -66,6 +66,7 @@
 #include <aalsdk/osal/Thread.h>
 #include <aalsdk/utils/AALEventUtilities.h>
 #include <aalsdk/IServiceClient.h>
+#include <aalsdk/aas/IServiceRevoke.h>
 #include <aalsdk/Runtime.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,7 +192,8 @@ public:
 class AASLIB_API ServiceBase : public CAASBase,
                                public IServiceBase,
                                public IRuntimeClient,
-                               public IAALService
+                               public IAALService,
+                               public IServiceRevoke
 {
 public:
 /// @brief  Used to create the appropriate Constructor signature for Services derived from ServiceBase.
@@ -378,6 +380,10 @@ public:
 
    // </IRuntimeClient>
 
+   // <IServiceRevoke>
+   virtual void serviceRevoke();
+
+   // </IServiceRevoke>
    //=============================================================================
    // Name: sendmsg
    /// @brief Convenience function for sending the message currently carried

@@ -438,6 +438,21 @@ struct aalui_WSMEvent
    struct aalui_WSMParms wsParms;
 };
 
+//=============================================================================
+// Name: aalui_taskComplete
+// Type[Dir]: Request[IN] Event/Response [OUT]
+// Object: AFU engine
+// Description: Single or mult0 descriptor AFU task completed
+// Comments:
+//=============================================================================
+typedef struct aalui_taskComplete
+{
+   btObjectType       context;
+   stTransactionID_t  afutskTranID;
+   btByte             data[32];
+   TTASK_MODE         mode;
+   btUnsigned16bitInt delim;
+} aalui_taskComplete;
 
 //=============================================================================
 // Name: ccipdrv_DeviceAttributes

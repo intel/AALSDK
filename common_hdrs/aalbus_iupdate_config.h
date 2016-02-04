@@ -70,7 +70,7 @@
 
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/aaldevice.h>
-#include <aalsdk/kernel/aalui.h>
+
 
 //
 // Define an Interface Guid to access the proprietary toaster interface.

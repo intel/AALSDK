@@ -418,6 +418,8 @@
 
 #define iidRuntime                   __AAL_IID(AAL_sysAAL, 0x0008)   // Class implements IRuntime
 
+#define iidServiceRevoke             __AAL_IID(AAL_sysAAL, 0x0009)   // IServiceRevoke
+
 /// @}
 
 /// @addtogroup Events

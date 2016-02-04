@@ -83,7 +83,6 @@
 //****************************************************************************
 #ifndef __AALSDK_KERNEL_FAPPIP_H__
 #define __AALSDK_KERNEL_FAPPIP_H__
-#include <aalsdk/kernel/aalui.h>
 #include <aalsdk/kernel/AALWorkspace.h>
 
 BEGIN_NAMESPACE(AAL)

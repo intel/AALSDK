@@ -41,7 +41,7 @@
 
 //LPBK1: This is a memory copy test. AFU copies CSR_NUM_LINES from source buffer to destination buffer.
 //On test completion, the software compares the source and destination buffers.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"

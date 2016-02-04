@@ -47,7 +47,7 @@
 //****************************************************************************
 #include <aalsdk/AALLoggerExtern.h>
 #include <aalsdk/aalclp/aalclp.h>
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 
 #include <aalsdk/service/IALIAFU.h>
 #include <aalsdk/service/ALIAFUService.h>

@@ -45,7 +45,7 @@
 // 2. UMsg without data
 // 3. UMsg with data
 // 4. CSR write
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"

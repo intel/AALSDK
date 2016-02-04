@@ -99,6 +99,7 @@ ServiceBase::ServiceBase(AALServiceModule *container,
       return;
    }
 
+
    // Get the client of the Runtime we are running under.
    m_RuntimeClient = pAALRuntime->getRuntimeClient();
 
@@ -193,6 +194,7 @@ btBool ServiceBase::_init(IBase               *pclientBase,
    // Save and set the base member variables
    ASSERT(NULL != pclientBase);
    if ( NULL == pclientBase ) {
+      m_bIsOK = false;
       return false;
    }
 
@@ -205,11 +207,37 @@ btBool ServiceBase::_init(IBase               *pclientBase,
    if ( NULL == m_pclientbase ) {
       m_pclient = dynamic_ptr<IServiceClient>(iidServiceClient, pclientBase);
       if ( NULL == m_pclient ) {
+         m_bIsOK = false;
          return false;
       }
       m_pclientbase = pclientBase;
       m_optArgs = optArgs;
    }
+
+   // Publish the IServiceRevoke of the root of the Service stack.
+   //  If the client of this Service implements the IServiceRevoke
+   //  then this Service is subordinate. If not, then this is the root.
+   IServiceRevoke * pInterface = NULL;
+
+   // Does the parent of this Service implement IServiceRevoke?
+   if(!pclientBase->Has(iidServiceRevoke)){
+      // Register parent as implementation of IServiceRevoke
+      pInterface = dynamic_ptr<IServiceRevoke>(iidServiceRevoke, pclientBase);
+   }else{
+      // Parent is probably application so we are root Service
+      pInterface = dynamic_cast<IServiceRevoke*>(this);
+   }
+
+   if ( NULL == pInterface ) {
+      m_bIsOK = false;
+      return false;
+   }
+   // Register Service Revoke interface.
+   if ( EObjOK != SetInterface(iidServiceRevoke, dynamic_cast<IServiceRevoke *>(this)) ) {
+       m_bIsOK = false;
+       return false;
+    }
+
 
    // Check that mandatory initialization has occurred
 
@@ -257,6 +285,11 @@ btBool ServiceBase::initFailed(IEvent const *ptheEvent)
                                                                      getRuntimeClient(),
                                                                      ptheEvent) );
                                                                      */
+}
+
+void ServiceBase::serviceRevoke()
+{
+   Release(TransactionID());
 }
 
 btBool ServiceBase::sendmsg()
