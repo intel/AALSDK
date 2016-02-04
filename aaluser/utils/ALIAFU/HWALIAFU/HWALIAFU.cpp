@@ -476,7 +476,8 @@ btBool HWALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *pValue = *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) );
+   // FIXME: volatile might not be necessary, need to investigate further
+   *pValue = *( reinterpret_cast<volatile btUnsigned32bitInt *>(m_MMIORmap + Offset) );
 
    return true;
 }
@@ -491,7 +492,8 @@ btBool HWALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt 
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) ) = Value;
+   // FIXME: volatile might not be necessary, need to investigate further
+   *( reinterpret_cast<volatile btUnsigned32bitInt *>(m_MMIORmap + Offset) ) = Value;
 
    return true;
 }
@@ -506,7 +508,8 @@ btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *pValue = *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) );
+   // FIXME: volatile might not be necessary, need to investigate further
+   *pValue = *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) );
 
    return true;
 }
@@ -521,7 +524,8 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) ) = Value;
+   // FIXME: volatile might not be necessary, need to investigate further
+   *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) ) = Value;
 
    return true;
 }
