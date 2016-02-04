@@ -115,7 +115,11 @@ ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG 
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
-SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS 
+SNPS_VLOGAN_OPT+= +define+NUM_AFUS=1 +define+NLB400_MODE_0
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP 
+SNPS_VLOGAN_OPT+= +define+CCI_SIMULATION=1 +define+SIM_MODE=1 
+
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
