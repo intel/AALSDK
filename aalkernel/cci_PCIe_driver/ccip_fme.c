@@ -80,7 +80,7 @@
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
 #include "ccip_perfmon.h"
-#include "../include/aalsdk/kernel/ccip_defs.h"
+#include "aalsdk/kernel/ccip_defs.h"
 #include "ccip_fme.h"
 #include "cci_pcie_driver_PIPsession.h"
 
