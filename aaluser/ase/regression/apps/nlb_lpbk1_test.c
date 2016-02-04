@@ -1,7 +1,7 @@
 #include "ase_common.h"
 
-#define MCL_SET                  0x1
-#define VC_SET                   0x0
+/* #define MCL_SET                  0x1 */
+/* #define VC_SET                   0x0 */
 
 /////////////////////////////////////////
 #define DFH                      0x0000
@@ -27,6 +27,7 @@
 /////////////////////////////////////////
 #define  ORIG_ALLOC_BUFFER
 
+
 int main(int argc, char *argv[])
 {
   int num_cl;
@@ -38,20 +39,37 @@ int main(int argc, char *argv[])
     {
       num_cl = 16;
     }
-  num_cl = num_cl * 4;
-  printf("Num CL = %d\n", num_cl);
-
   session_init();
   int i;
+  
+  int vc_set;
+  int mcl_set;
+  
+  int vc_arr[4] = {0, 1, 2, 3};
+  int mcl_arr[3] = {0, 1, 3};
+
+#if 0
+  srand(time(NULL));
+  vc_set = vc_arr[rand()%4];
+  mcl_set = mcl_arr[rand()%3];
+  num_cl = num_cl * mcl_set;
+#else
+  vc_set = 0;
+  mcl_set = 0;
+  num_cl = 16;
+#endif
+
+  printf("num_cl = %d, vc_set = %d, mcl_set = %d\n", num_cl, vc_set, mcl_set);
+
 
   // Port control
-  ase_portctrl("AFU_RESET 0");
+  ase_portctrl("AFU_RESET 1");
   ase_portctrl("UMSG_MODE 63");
   usleep(10000);
-  ase_portctrl("AFU_RESET 1");
+  ase_portctrl("AFU_RESET 0");
+
   // usleep(100);
   // sleep(2);
-
   // Send umsg
   /* uint64_t umsgdata; */
   /* for(i= 0; i < 10000; i++) */
@@ -154,29 +172,25 @@ int main(int argc, char *argv[])
   uint64_t data64;
   uint32_t data32;
   /* for(i= 0; i < 10000; i++) */
-
-  /* while(1) */
-  /*   { */
-      mmio_read64(AFU_ID_L, &data64 );
-      printf("data64 = %llx\n", (unsigned long long)data64);
-      mmio_read64(AFU_ID_H, &data64 );
-      printf("data64 = %llx\n", (unsigned long long)data64);
-      
-      mmio_read32(AFU_ID_L, &data32 );
-      printf("data32 = %08x\n", (uint32_t)data32);
-      mmio_read32(AFU_ID_L + 4, &data32 );
-      printf("data32 = %08x\n", (uint32_t)data32);
-      mmio_read32(AFU_ID_H, &data32 );
-      printf("data32 = %08x\n", (uint32_t)data32);
-      mmio_read32(AFU_ID_H + 4, &data32 );
-      printf("data32 = %08x\n", (uint32_t)data32);
-    /* } */
-
-
+  
+  /* mmio_read64(AFU_ID_L, &data64 ); */
+  /* printf("data64 = %llx\n", (unsigned long long)data64); */
+  /* mmio_read64(AFU_ID_H, &data64 ); */
+  /* printf("data64 = %llx\n", (unsigned long long)data64); */
+  
+  /* mmio_read32(AFU_ID_L, &data32 ); */
+  /* printf("data32 = %08x\n", (uint32_t)data32); */
+  /* mmio_read32(AFU_ID_L + 4, &data32 ); */
+  /* printf("data32 = %08x\n", (uint32_t)data32); */
+  /* mmio_read32(AFU_ID_H, &data32 ); */
+  /* printf("data32 = %08x\n", (uint32_t)data32); */
+  /* mmio_read32(AFU_ID_H + 4, &data32 ); */
+  /* printf("data32 = %08x\n", (uint32_t)data32); */
+  
   mmio_write32(CSR_NUM_LINES, num_cl);
-
-  mmio_write32(CSR_CFG, (0 | (MCL_SET << 5) | (VC_SET << 12)) );  
-
+  
+  mmio_write32(CSR_CFG, (0 | (mcl_set << 5) | (vc_set << 12)) );  
+  
   uint32_t *status_addr = (uint32_t *)((uint64_t)dsm->vbase + DSM_STATUS_TEST_COMPLETE);
 
   mmio_write32(CSR_CTL, 3);

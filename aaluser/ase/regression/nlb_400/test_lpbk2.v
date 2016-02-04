@@ -32,8 +32,7 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 (
 
 //      ---------------------------global signals-------------------------------------------------
-       Clk_16UI               ,        // in    std_logic;  -- Core clock
-       Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+       Clk_400               ,        // in    std_logic;  -- Core clock
 
        l22ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
        l22ab_WrTID,                    // [ADDR_LMT-1:0]        arb:               meta data
@@ -66,8 +65,7 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        l22ab_ErrorValid,               //                       arb:               test has detected an error
        test_Resetb                     //                       requestor:         rest the app
 );
-    input                   Clk_16UI;               //                      csi_top:            Clk_16UI
-    input                   Resetb;                 //                      csi_top:            system Resetb
+    input                   Clk_400;               //                      csi_top:            Clk_400
     
     output  [ADDR_LMT-1:0]  l22ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               write address
     output  [15:0]          l22ab_WrTID;            // [15:0]                arb:               meta data
@@ -144,7 +142,7 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
         begin : gen_submodule_lpbk3
             submodule_lpbk2 #(.MODULE_ID(n)) submodule_lpbk3
             (
-                    .Clk_16UI    (Clk_16UI),
+                    .Clk_400    (Clk_400),
                     .test_Resetb (test_Resetb),
                     .rdReq_valid (rdReq_valid[n]),
                     .wrReq_valid (wrReq_valid[n]),
@@ -177,7 +175,7 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                     req_cmp_d[ab2l2_WrRspAddr>>BITPOS] = 1;
     end
     
-    always @(posedge Clk_16UI)
+    always @(posedge Clk_400)
     begin
             if(!test_Resetb)
             begin
@@ -333,7 +331,7 @@ module test_lpbk2 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
               .GRAM_MODE(2'd1)
               )
     seed_mem (
-                    .clk  (Clk_16UI),
+                    .clk  (Clk_400),
                     .we   (sdmem_we),        
                     .waddr(sdmem_waddr[MDATA-1:0]),     
                     .din  (sdmem_wdin),       
@@ -345,14 +343,14 @@ endmodule
 
 module submodule_lpbk2 #(parameter MODULE_ID=0)
 (
-        Clk_16UI,
+        Clk_400,
         test_Resetb,
         rdReq_valid,
         wrReq_valid,
         req_sent,
         req_cmp
 );
-    input           Clk_16UI;
+    input           Clk_400;
     input           test_Resetb;
     output          rdReq_valid;
     output          wrReq_valid;
@@ -370,7 +368,7 @@ module submodule_lpbk2 #(parameter MODULE_ID=0)
     wire            rdReq_valid = fsm1==SEND_RD;
     wire            wrReq_valid = fsm1==SEND_WR;
     
-    always @(posedge Clk_16UI)
+    always @(posedge Clk_400)
     begin
             if(!test_Resetb)        
             begin

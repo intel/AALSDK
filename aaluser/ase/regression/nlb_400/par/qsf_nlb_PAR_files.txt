@@ -10,6 +10,7 @@ set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_400/arbiter.sv
 set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_400/nlb_sbv_gfifo.v
 set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_400/nlb_gram_sdp.v
 set_global_assignment -name VERILOG_FILE $RTL_SRC/afu/nlb_400/nlb_gfifo.v
+set_global_assignment -name SYSTEMVERILOG_FILE $RTL_SRC/afu/nlb_400/ccip_interface_reg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE $RTL_SRC/afu/nlb_400/ccip_std_afu.sv
 
 # NLB SDC

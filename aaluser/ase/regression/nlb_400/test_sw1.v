@@ -46,8 +46,7 @@
 module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 (
    //---------------------------global signals-------------------------------------------------
-   Clk_16UI,                // input -- Core clock
-   Resetb,                  // input -- Use SPARINGLY only for control
+   Clk_400,                // input -- Core clock
         
    s12ab_WrAddr,            // output   [ADDR_LMT-1:0]    
    s12ab_WrTID,             // output   [ADDR_LMT-1:0]      
@@ -85,8 +84,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    test_Resetb              // input            
 );
 
-   input                      Clk_16UI;               // csi_top:    Clk_16UI
-   input                      Resetb;                 // csi_top:    system Resetb
+   input                      Clk_400;               // csi_top:    Clk_400
    
    output   [ADDR_LMT-1:0]    s12ab_WrAddr;           // arb:        write address
    output   [15:0]            s12ab_WrTID;            // arb:        meta data
@@ -191,7 +189,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    end
 
 // Write FSM   
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
    begin
          s12ab_TestCmp  <= s12ab_TestCmp_c;
 
@@ -265,7 +263,7 @@ module test_sw1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    end
 
 // Read FSM   
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
    begin
        
        case(re2xy_test_cfg[7:6])

@@ -17,8 +17,7 @@
 module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 (
    //---------------------------global signals-------------------------------------------------
-   Clk_16UI,                // input -- Core clock
-   Resetb,                  // input -- Use SPARINGLY only for control
+   Clk_400,                // input -- Core clock
         
    ab2rw_Mode,              // input [1:0]
   
@@ -64,8 +63,7 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    re2xy_multiCL_len
 );
 
-   input                      Clk_16UI;               // csi_top:    Clk_16UI
-   input                      Resetb;                 // csi_top:    system Resetb
+   input                      Clk_400;               // csi_top:    Clk_400
    
    input    [1:0]             ab2rw_Mode;             // arb:        01 - reads only test, 10 - writes only test, 11 - read/write
    
@@ -144,7 +142,7 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    assign rw2ab_RdEn  = (RdFSM == 2'h1);
    assign rw2ab_WrEn  = (WrFSM == 2'h1);
 
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
    begin
      rw2ab_ErrorInfo  <= 0;   
      if (!test_Resetb)
@@ -159,7 +157,7 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        end
    end
    
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
    begin
          case(RdFSM)       /* synthesis parallel_case */
          2'h0:
@@ -226,7 +224,7 @@ module test_rdwr #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        
    end
    
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
    begin
          case(WrFSM)       /* synthesis parallel_case */
          2'h0:

@@ -13,30 +13,32 @@
 import ccip_if_pkg::*;
 module ccip_std_afu(
   // CCI-P Clocks and Resets
-  input           logic             vl_clk_LPdomain_16ui,                      // CCI interface clock
-  input           logic             vl_clk_LPdomain_32ui,                      // 1/2x Frequency of interface clock. Synchronous.
-  input           logic             vl_clk_LPdomain_64ui,                      // 1/4x Frequency of interface clock. Synchronous.
-  input           logic             ffs_LP16ui_afu_SoftReset_n,                // CCI-P Soft Reset
-  input           logic [1:0]       ffs_LP16ui_afu_PwrState,                   // CCI-P AFU Power State
-  input           logic             ffs_LP16ui_afu_Error,                      // CCI-P Protocol Error Detected
+  input           logic             pClk,              // 400MHz - CCI-P clock domain. Primary interface clock
+  input           logic             pClkDiv2,          // 200MHz - CCI-P clock domain.
+  input           logic             pClkDiv4,          // 100MHz - CCI-P clock domain.
+//  input           logic             uClk_usr,          // User clock domain. Refer to clock programming guide  ** NOT implemented **:w
 
-  // Data ports
-  input           t_if_ccip_Rx      ffs_LP16ui_sRxData_afu,                    // CCI-P Rx Port
-  output          t_if_ccip_Tx      ffs_LP16ui_sTxData_afu                     // CCI-P Tx Port
+//  input           logic             uClk_usrDiv2,      // User clock domain. Half the programmed frequency  ** NOT implemented **
+  input           logic             pck_cp2af_softReset,      // CCI-P ACTIVE HIGH Soft Reset
+  input           logic [1:0]       pck_cp2af_pwrState,       // CCI-P AFU Power State
+  input           logic             pck_cp2af_error,          // CCI-P Protocol Error Detected
+
+  // Interface structures
+  input           t_if_ccip_Rx      pck_cp2af_sRx,        // CCI-P Rx Port
+  output          t_if_ccip_Tx      pck_af2cp_sTx         // CCI-P Tx Port
 );
 
 
-/* User AFU goes here
-*/
-
+//===============================================================================================
+// User AFU goes here
+//===============================================================================================
 // NLB AFU- provides validation, performance characterization modes. It also serves as a reference design
 nlb_lpbk nlb_lpbk(
-  .Clk_16UI            ( vl_clk_LPdomain_16ui   ) ,
-  .SoftReset_n         ( ffs_LP16ui_afu_SoftReset_n) ,
-  .SystemReset_n       ( 1'b1 ) ,
+  .Clk_400             ( pClk ) ,
+  .SoftReset           ( pck_cp2af_softReset ) ,
 
-  .ci2cf_sRxPort       ( ffs_LP16ui_sRxData_afu ) ,
-  .cf2ci_sTxPort       ( ffs_LP16ui_sTxData_afu ) 
+  .cp2af_sRxPort       ( pck_cp2af_sRx ) ,
+  .af2cp_sTxPort       ( pck_af2cp_sTx ) 
 );
 
 endmodule

@@ -26,11 +26,11 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 (
 
 //      ---------------------------global signals-------------------------------------------------
-    Clk_16UI               , // in    std_logic;  -- Core clock
-    Resetb                 , // in    std_logic;  -- Use SPARINGLY only for control
+    Clk_400               , // in    std_logic;  -- Core clock
+    SoftReset                 , // in    std_logic;  -- Use SPARINGLY only for control. ACTIVE HIGH
        // ---------------------------CCI IF signals between CCI and requestor  ---------------------
-    cf2ci_sTxPort,
-    ci2cf_sRxPort,
+    af2cp_sTxPort,
+    cp2af_sRxPort,
 
     cr2re_src_address,
     cr2re_dst_address,
@@ -75,7 +75,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     ab2re_TestCmp,           //                     arbiter:        Test completion flag
     ab2re_ErrorInfo,         // [255:0]             arbiter:        error information
     ab2re_ErrorValid,        //                     arbiter:        test has detected an error
-    test_Resetb,             //                     requestor:      rest the app
+    test_Reset_n,             //                     requestor:      rest the app
     re2cr_wrlock_n,          //                     requestor:      when low, block csr writes
 	
     ab2re_RdLen,
@@ -91,11 +91,11 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     re2xy_multiCL_len
 );
     //--------------------------------------------------------------------------------------------------------------
-    input                   Clk_16UI;               //                      csi_top:        Clk_16UI
-    input                   Resetb;                 //                      csi_top:        system Resetb
+    input                   Clk_400;               //                      ccip_intf:        Clk_400
+    input                   SoftReset;              //                      ccip_intf:        system SoftReset
     
-    output t_if_ccip_Tx      cf2ci_sTxPort;
-    input  t_if_ccip_Rx      ci2cf_sRxPort;
+    output t_if_ccip_Tx      af2cp_sTxPort;
+    input  t_if_ccip_Rx      cp2af_sRxPort;
 
     input  [63:0]           cr2re_src_address;
     input  [63:0]           cr2re_dst_address;
@@ -141,7 +141,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     input  [255:0]          ab2re_ErrorInfo;        // [255:0]               arbiter:       error information
     input                   ab2re_ErrorValid;       //                       arbiter:       test has detected an error
     
-    output                  test_Resetb;
+    output                  test_Reset_n;
     output                  re2cr_wrlock_n;
 	
     input [1:0]              ab2re_RdLen;
@@ -211,7 +211,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     reg                     tx_c0_req_valid, tx_c1_req_valid;
     reg                     rx_c0_resp_valid, rx_c1_resp_valid;
     
-    t_if_ccip_Rx            ci2cf_sRxPort_T1;
+    t_if_ccip_Rx            cp2af_sRxPort_T1;
 
     reg                     re2ab_CfgValid_d;
     reg                     re2ab_RdSent;
@@ -227,8 +227,8 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     reg   [7:0]             penalty_start;
     reg   [7:0]             penalty_end;
 (* maxfan=256 *) reg        dsm_status_wren;
-    t_ccip_req              rdreq_type;
-    t_ccip_req              rnd_rdreq_type;
+    t_ccip_c0_req           rdreq_type;
+    t_ccip_c0_req           rnd_rdreq_type;
     reg                     rnd_rdreq_sel;
     
     integer                 i;
@@ -256,13 +256,13 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 	
     wire                    txFifo_Full;
     wire                    txFifo_AlmFull;
-    wire [18:0]             rxfifo_Din      = {ci2cf_sRxPort.C1Hdr.cl_num[1:0],ci2cf_sRxPort.C1Hdr.fmt,ci2cf_sRxPort.C1Hdr.mdata[15:0]};
-    wire                    rxfifo_WrEn     = ci2cf_sRxPort.C1WrValid;
+    wire [18:0]             rxfifo_Din      = {cp2af_sRxPort.c1.hdr.cl_num[1:0],cp2af_sRxPort.c1.hdr.format,cp2af_sRxPort.c1.hdr.mdata[15:0]};
+    wire                    rxfifo_WrEn     = cp2af_sRxPort.c1.rspValid;
     wire                    rxfifo_Full;
     
     wire [18:0]             rxfifo_Dout;
     wire                    rxfifo_Dout_v;
-    wire                    test_Resetb     = cr_ctl[0];                // Clears all the states. Either is one then test is out of Reset.
+    wire                    test_Reset_n    = cr_ctl[0];                // Clears all the states. Either is one then test is out of Reset.
     wire                    test_go         = cr_ctl[1];                // When 0, it allows reconfiguration of test parameters.
     wire [2:0]              re2ab_Mode      = cr_mode;
     wire                    re2ab_WrSent    = !txFifo_Full;             // stop accepting new requests, after status write=1
@@ -275,7 +275,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     
     wire [41:0]             RdAddr      = cr_src_address[41:0] ^ ab2re_RdAddr;
     wire [41:0]             WrAddr      = cr_dst_address[41:0] ^ txFifo_WrAddr;
-    t_ccip_req              wrreq_type;  
+    t_ccip_c1_req           wrreq_type;  
     wire [DATA_WIDTH-1:0]   txFifo_WrDin;
     reg  [DATA_WIDTH-1:0]   WrData_dsm;
 
@@ -287,7 +287,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     wire                    rnd_delay        = ~cr_delay_en || (delay_lfsr[0] || delay_lfsr[2] || delay_lfsr[3]);
     wire   [7:0]            re2xy_test_cfg   = cr_test_cfg;
     wire                    tx_errorValid    = ErrorVector!=0;
-    wire                    re2cr_wrlock_n   = test_Resetb & ~test_go;
+    wire                    re2cr_wrlock_n   = test_Reset_n & ~test_go;
     reg    [15:0]           dsm_number=0;
 
     logic                   re2ab_RdRspValid;
@@ -303,7 +303,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     logic [1:0]              ab2re_RdLen;
     logic                    ab2re_WrSop;
                         
-    logic                    re2ab_RdRspFormat;
+    logic                    re2ab_RdRspFormat=0;
     logic [1:0]              re2ab_RdRspCLnum;
     logic                    re2ab_WrRspFormat;
     logic [1:0]              re2ab_WrRspCLnum;
@@ -313,16 +313,15 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 	
 	always_comb 
 	begin
-        re2ab_RdRspValid = ci2cf_sRxPort_T1.C0RdValid;
-        re2ab_UMsgValid  = ci2cf_sRxPort_T1.C0UMsgValid;
-        re2ab_RdRsp      = ci2cf_sRxPort_T1.C0Hdr.mdata[15:0];
-        re2ab_RdRspFormat= ci2cf_sRxPort_T1.C0Hdr.fmt; 
-        re2ab_RdRspCLnum = ci2cf_sRxPort_T1.C0Hdr.cl_num[1:0]; 
-        re2ab_RdData     = ci2cf_sRxPort_T1.C0Data;
-        re2ab_WrRspValid = rxfifo_Dout_v | ci2cf_sRxPort_T1.C0WrValid;
-        re2ab_WrRsp      = ci2cf_sRxPort_T1.C0WrValid ? ci2cf_sRxPort_T1.C0Hdr.mdata[15:0] : rxfifo_Dout[15:0];
-		re2ab_WrRspFormat= ci2cf_sRxPort_T1.C0WrValid ? ci2cf_sRxPort_T1.C0Hdr.fmt         : rxfifo_Dout[16];
-		re2ab_WrRspCLnum = ci2cf_sRxPort_T1.C0WrValid ? ci2cf_sRxPort_T1.C0Hdr.cl_num[1:0] : rxfifo_Dout[18:17];
+        re2ab_RdRspValid = cp2af_sRxPort_T1.c0.rspValid && cp2af_sRxPort_T1.c0.hdr.resp_type==eRSP_RDLINE;
+        re2ab_UMsgValid  = cp2af_sRxPort_T1.c0.rspValid && cp2af_sRxPort_T1.c0.hdr.resp_type==eRSP_UMSG;
+        re2ab_RdRsp      = cp2af_sRxPort_T1.c0.hdr.mdata[15:0];
+        re2ab_RdRspCLnum = cp2af_sRxPort_T1.c0.hdr.cl_num[1:0]; 
+        re2ab_RdData     = cp2af_sRxPort_T1.c0.data;
+        re2ab_WrRspValid = rxfifo_Dout_v;
+        re2ab_WrRsp      = rxfifo_Dout[15:0];
+		re2ab_WrRspFormat= rxfifo_Dout[16];
+		re2ab_WrRspCLnum = rxfifo_Dout[18:17];
         re2ab_CfgValid   = re2ab_CfgValid_d;
 	end
 
@@ -348,7 +347,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         cr_chsel              = cr2re_cfg[13:12]; 
     end
 
-    always @(posedge Clk_16UI)
+    always @(posedge Clk_400)
     begin		
         ds_stat_address  <= dsm_offset2addr(DSM_STATUS,cr_dsm_base);
         cr_rdsel_q       <= cr_rdsel;
@@ -376,11 +375,10 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 
         //Tx Path
         //--------------------------------------------------------------------------
-        cf2ci_sTxPort.C1Hdr           <= 0;
-        cf2ci_sTxPort.C1WrValid       <= 0;
-        cf2ci_sTxPort.C1IntrValid     <= 0;
-        cf2ci_sTxPort.C0Hdr           <= 0;
-        cf2ci_sTxPort.C0RdValid       <= 0;
+        af2cp_sTxPort.c1.hdr           <= 0;
+        af2cp_sTxPort.c1.valid        <= 0;
+        af2cp_sTxPort.c0.hdr           <= 0;
+        af2cp_sTxPort.c0.valid       <= 0;
 		
 		// Wait for multi CL request to complete 
 		// If Error detected or SW forced test termination
@@ -404,98 +402,98 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                                    1'h1                           // [0]    test completion flag
                              };
 
-            cf2ci_sTxPort.C1Data    <= txFifo_WrDin;
+            af2cp_sTxPort.c1.data    <= txFifo_WrDin;
 
             if ( send_interrupt
                  & !interrupt_sent
-                 & !ci2cf_sRxPort_T1.C1TxAlmFull
+                 & !cp2af_sRxPort_T1.c1TxAlmFull
                )
             begin
                 interrupt_sent          <= 1'b1;
 
-                cf2ci_sTxPort.C1Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-                cf2ci_sTxPort.C1Hdr.req_type      <= eREQ_INTR;
-                cf2ci_sTxPort.C1Hdr.address[31:0] <= cr_interrupt0;
-                cf2ci_sTxPort.C1Hdr.mdata[15:0]   <= 16'hfffc;
+                af2cp_sTxPort.c1.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+                af2cp_sTxPort.c1.hdr.req_type      <= eREQ_INTR;
+                af2cp_sTxPort.c1.hdr.address[31:0] <= cr_interrupt0;
+                af2cp_sTxPort.c1.hdr.mdata[15:0]   <= 16'hfffc;
  
-                cf2ci_sTxPort.C1IntrValid     <= 1'b1;
+                af2cp_sTxPort.c1.valid        <= 1'b1;
             end
             else if (re2xy_go & rnd_delay )
             begin
 			    /*
                 if( dsm_status_wren                                             // Write Fence
-                  & !ci2cf_sRxPort_T1.C1TxAlmFull
+                  & !cp2af_sRxPort_T1.c1TxAlmFull
                   )
                 begin                                                           //-----------------------------------
                     if(WrFence_sent==0)
                     begin
-                        cf2ci_sTxPort.C1WrValid       <= 1'b1;
+                        af2cp_sTxPort.c1.valid        <= 1'b1;
                     end
 					WrFence_sent                      <= 1'b1;
-                    cf2ci_sTxPort.C1Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-                    cf2ci_sTxPort.C1Hdr.req_type      <= eREQ_WRFENCE;        
-                    cf2ci_sTxPort.C1Hdr.address[41:0] <= '0;
-                    cf2ci_sTxPort.C1Hdr.mdata[15:0]   <= '0;
-					cf2ci_sTxPort.C1Hdr.sop           <= 1'b1;                 
-                    cf2ci_sTxPort.C1Hdr.cl_len        <= 2'b00;
-                    cf2ci_sTxPort.C1Data              <= '0;
+                    af2cp_sTxPort.c1.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+                    af2cp_sTxPort.c1.hdr.req_type      <= eREQ_WRFENCE;        
+                    af2cp_sTxPort.c1.hdr.address[41:0] <= '0;
+                    af2cp_sTxPort.c1.hdr.mdata[15:0]   <= '0;
+					af2cp_sTxPort.c1.hdr.sop           <= 1'b1;                 
+                    af2cp_sTxPort.c1.hdr.cl_len        <= 2'b00;
+                    af2cp_sTxPort.c1.data              <= '0;
 
                 end
 				
 				if(                                                             // Write DSM Status
-                  !ci2cf_sRxPort_T1.C1TxAlmFull
+                  !cp2af_sRxPort_T1.c1TxAlmFull
 				  & WrFence_sent
                   )
                 begin                                                           //-----------------------------------
                     if(status_write==0)
                     begin
                         dsm_number                    <= dsm_number + 1'b1;
-                        cf2ci_sTxPort.C1WrValid       <= 1'b1;
+                        af2cp_sTxPort.c1.valid        <= 1'b1;
                     end
 					status_write                      <= 1'b1;
 
-                    cf2ci_sTxPort.C1Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-                    cf2ci_sTxPort.C1Hdr.req_type      <= eREQ_WRLINE_M;
-                    cf2ci_sTxPort.C1Hdr.address[41:0] <= ds_stat_address;
-                    cf2ci_sTxPort.C1Hdr.mdata[15:0]   <= 16'hffff;
-					cf2ci_sTxPort.C1Hdr.sop           <= 1'b1;                 // DSM Write is single CL write
-                    cf2ci_sTxPort.C1Hdr.cl_len        <= 2'b00;
-                    cf2ci_sTxPort.C1Data              <= WrData_dsm;
+                    af2cp_sTxPort.c1.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+                    af2cp_sTxPort.c1.hdr.req_type      <= eREQ_WRLINE_M;
+                    af2cp_sTxPort.c1.hdr.address[41:0] <= ds_stat_address;
+                    af2cp_sTxPort.c1.hdr.mdata[15:0]   <= 16'hffff;
+					af2cp_sTxPort.c1.hdr.sop           <= 1'b1;                 // DSM Write is single CL write
+                    af2cp_sTxPort.c1.hdr.cl_len        <= 2'b00;
+                    af2cp_sTxPort.c1.data              <= WrData_dsm;
 
                 end
 				*/
 				
 				if( dsm_status_wren                                             // Write DSM Status
-                  & !ci2cf_sRxPort_T1.C1TxAlmFull
+                  & !cp2af_sRxPort_T1.c1TxAlmFull
                   )
                 begin                                                           //-----------------------------------
                     status_write       <= 1'b1;
                     if(status_write==0)
                     begin
                         dsm_number         <= dsm_number + 1'b1;
-                        cf2ci_sTxPort.C1WrValid  <= 1'b1;
+                        af2cp_sTxPort.c1.valid   <= 1'b1;
                     end
 
-                    cf2ci_sTxPort.C1Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-                    cf2ci_sTxPort.C1Hdr.req_type      <= eREQ_WRLINE_M;
-                    cf2ci_sTxPort.C1Hdr.address[41:0] <= ds_stat_address;
-                    cf2ci_sTxPort.C1Hdr.mdata[15:0]   <= 16'hffff;
-					cf2ci_sTxPort.C1Hdr.sop           <= 1'b1;                 // DSM Write is single CL write
-                    cf2ci_sTxPort.C1Hdr.cl_len        <= 2'b00;
-                    cf2ci_sTxPort.C1Data              <= WrData_dsm;
+                    af2cp_sTxPort.c1.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+                    af2cp_sTxPort.c1.hdr.req_type      <= eREQ_WRLINE_M;
+                    af2cp_sTxPort.c1.hdr.address[41:0] <= ds_stat_address;
+                    af2cp_sTxPort.c1.hdr.mdata[15:0]   <= 16'hffff;
+					af2cp_sTxPort.c1.hdr.sop           <= 1'b1;                 // DSM Write is single CL write
+                    af2cp_sTxPort.c1.hdr.cl_len        <= 2'b00;
+                    af2cp_sTxPort.c1.data              <= WrData_dsm;
 
                 end
 				
                 else if( WrHdr_valid_T2 & !test_stop )                         // Write to Destination Workspace
                 begin                                                          //-------------------------------------
-                    cf2ci_sTxPort.C1Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-                    cf2ci_sTxPort.C1Hdr.req_type      <= wrreq_type;
-                    cf2ci_sTxPort.C1Hdr.address[41:0] <= WrAddr;
-                    cf2ci_sTxPort.C1Hdr.mdata[15:0]   <= txFifo_WrTID;
-					cf2ci_sTxPort.C1Hdr.sop           <= txFifo_WrSop;
-                    cf2ci_sTxPort.C1Hdr.cl_len        <= txFifo_WrLen;
+                    af2cp_sTxPort.c1.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+                    af2cp_sTxPort.c1.hdr.req_type      <= wrreq_type;
+                    af2cp_sTxPort.c1.hdr.address[41:0] <= WrAddr;
+                    af2cp_sTxPort.c1.hdr.mdata[15:0]   <= txFifo_WrTID;
+					af2cp_sTxPort.c1.hdr.sop           <= txFifo_WrSop;
+                    af2cp_sTxPort.c1.hdr.cl_len        <= txFifo_WrLen;
 
-                    cf2ci_sTxPort.C1WrValid <= 1'b1;
+                    af2cp_sTxPort.c1.valid  <= 1'b1;
                     Num_Writes        <= Num_Writes + 1'b1;
                 end
             end // re2xy_go
@@ -504,20 +502,19 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         if(  re2xy_go && rnd_delay 
           && RdHdr_valid)                                                       // Read from Source Workspace
         begin                                                                   //----------------------------------
-            cf2ci_sTxPort.C0Hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
-            cf2ci_sTxPort.C0Hdr.req_type      <= rdreq_type;
-            cf2ci_sTxPort.C0Hdr.address[41:0] <= RdAddr;
-            cf2ci_sTxPort.C0Hdr.mdata[15:0]   <= ab2re_RdTID;
-            cf2ci_sTxPort.C0RdValid           <= 1'b1;
-			cf2ci_sTxPort.C0Hdr.sop           <= ab2re_RdSop;            // Multi CL support 
-            cf2ci_sTxPort.C0Hdr.cl_len        <= ab2re_RdLen;
+            af2cp_sTxPort.c0.hdr.vc_sel        <= t_ccip_vc'(cr_chsel);
+            af2cp_sTxPort.c0.hdr.req_type      <= rdreq_type;
+            af2cp_sTxPort.c0.hdr.address[41:0] <= RdAddr;
+            af2cp_sTxPort.c0.hdr.mdata[15:0]   <= ab2re_RdTID;
+            af2cp_sTxPort.c0.valid           <= 1'b1;
+            af2cp_sTxPort.c0.hdr.cl_len        <= ab2re_RdLen;
             Num_Reads                         <= Num_Reads + re2xy_multiCL_len + 1'b1;   
         end
 
         //--------------------------------------------------------------------------
         //Rx Response Path
         //--------------------------------------------------------------------------
-        ci2cf_sRxPort_T1       <= ci2cf_sRxPort;
+        cp2af_sRxPort_T1       <= cp2af_sRxPort;
 
         // Counters
         //--------------------------------------------------------------------------
@@ -529,16 +526,16 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                 Num_ticks_high  <= Num_ticks_high + 1'b1;
         end
 
-        if(re2xy_go & ci2cf_sRxPort.C0TxAlmFull )                   // TODO: Check Timing
+        if(re2xy_go & cp2af_sRxPort.c0TxAlmFull )                   // TODO: Check Timing
             Num_C0stall     <= Num_C0stall + 1'b1;
 
-        if(re2xy_go & ci2cf_sRxPort.C1TxAlmFull)
+        if(re2xy_go & cp2af_sRxPort.c1TxAlmFull)
             Num_C1stall     <= Num_C1stall + 1'b1;
 
-        tx_c0_req_valid  <= cf2ci_sTxPort.C0RdValid;
-        tx_c1_req_valid  <= cf2ci_sTxPort.C1WrValid;
-        rx_c0_resp_valid <= ci2cf_sRxPort.C0RdValid | ci2cf_sRxPort.C0WrValid;
-        rx_c1_resp_valid <= ci2cf_sRxPort.C1WrValid;
+        tx_c0_req_valid  <= af2cp_sTxPort.c0.valid;
+        tx_c1_req_valid  <= af2cp_sTxPort.c1.valid ;
+        rx_c0_resp_valid <= cp2af_sRxPort.c0.rspValid ;
+        rx_c1_resp_valid <= cp2af_sRxPort.c1.rspValid ;
 
         case({tx_c0_req_valid , tx_c1_req_valid , rx_c0_resp_valid , rx_c1_resp_valid })
             4'b0001:    Num_Pend    <= Num_Pend - 2'h1;
@@ -562,16 +559,16 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         // Wr fifo depth in requestor is 128. Therefore max num write pending should be less than 128.
         
 		/*
-		if(cf2ci_sTxPort.C0RdValid && !cf2ci_sTxPort.C1WrValid)
+		if(af2cp_sTxPort.c0.valid && !af2cp_sTxPort.c1.valid )
             Num_RdCredits <= Num_RdCredits - 1'b1;
-        if(!cf2ci_sTxPort.C0RdValid && (cf2ci_sTxPort.C1WrValid ) )
+        if(!af2cp_sTxPort.c0.valid && (af2cp_sTxPort.c1.valid  ) )
             Num_RdCredits <= Num_RdCredits + 1'b1;
 		*/
 		
-	    case ({cf2ci_sTxPort.C0RdValid,cf2ci_sTxPort.C1WrValid})               
+	    case ({af2cp_sTxPort.c0.valid,af2cp_sTxPort.c1.valid })               
 		  2'b01: 
 		  begin
-		    if (cf2ci_sTxPort.C1Hdr.sop) 
+		    if (af2cp_sTxPort.c1.hdr.sop) 
 			Num_RdCredits <= Num_RdCredits + 1'b1;                                // 1Wr sent
 		  end
 		  
@@ -582,7 +579,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 		  
 		  2'b11: 
 		  begin
-    		if (!cf2ci_sTxPort.C1Hdr.sop) 
+    		if (!af2cp_sTxPort.c1.hdr.sop) 
 			Num_RdCredits <= Num_RdCredits - 1'b1;                                // 1Rd + 1Wr sent
 		  end
 		  
@@ -629,18 +626,18 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             ErrorVector[3]  <= ab2re_ErrorValid;
 
         /* synthesis translate_off */
-        if(cf2ci_sTxPort.C1WrValid)
-            $display("*Req Type: %x \t Addr: %x \n Data: %x", cf2ci_sTxPort.C1Hdr.req_type, cf2ci_sTxPort.C1Hdr.address, cf2ci_sTxPort.C1Data);
+        if(af2cp_sTxPort.c1.valid )
+            $display("*Req Type: %x \t Addr: %x \n Data: %x", af2cp_sTxPort.c1.hdr.req_type, af2cp_sTxPort.c1.hdr.address, af2cp_sTxPort.c1.data);
 
-        if(cf2ci_sTxPort.C0RdValid)
-            $display("*Req Type: %x \t Addr: %x", cf2ci_sTxPort.C0Hdr.req_type, cf2ci_sTxPort.C0Hdr.address);
+        if(af2cp_sTxPort.c0.valid)
+            $display("*Req Type: %x \t Addr: %x", af2cp_sTxPort.c0.hdr.req_type, af2cp_sTxPort.c0.hdr.address);
 
         /* synthesis translate_on */
 
 
         // Use for Debug- if no transactions going across the CCI interface # clks > inactivity threshold 
         // than set the flag. You may use this as a trigger signal in logic analyzer
-        if(cf2ci_sTxPort.C1WrValid || cf2ci_sTxPort.C0RdValid)
+        if(af2cp_sTxPort.c1.valid  || af2cp_sTxPort.c0.valid)
             inact_cnt  <= cr_inact_thresh;
         else if(re2xy_go)
             inact_cnt  <= inact_cnt - 1'b1;
@@ -650,12 +647,12 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             if(inact_cnt==0)
                 inact_timeout   <= 1'b1;
         end
-        else if(cf2ci_sTxPort.C1WrValid || cf2ci_sTxPort.C0RdValid)
+        else if(af2cp_sTxPort.c1.valid  || af2cp_sTxPort.c0.valid)
         begin
             inact_timeout   <= 0;
         end
 
-        if(!test_Resetb)
+        if(!test_Reset_n)
         begin
             Num_Reads               <= 0;
             Num_Writes              <= 0;
@@ -663,7 +660,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             Num_ticks_low           <= 0;
             Num_ticks_high          <= 0;
             re2xy_go                <= 0;
-//            ci2cf_sRxPort_T1        <= 0;
+//            cp2af_sRxPort_T1        <= 0;
             re2ab_CfgValid_d        <= 0;
             ErrorVector             <= 0;
             status_write            <= 0;
@@ -682,7 +679,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         end
     end
 
-    always @(posedge Clk_16UI)                                                      // Computes NLB start and end overheads
+    always @(posedge Clk_400)                                                      // Computes NLB start and end overheads
     begin                                                                           //-------------------------------------
         if(!test_go)
         begin
@@ -692,7 +689,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         end
         else
         begin
-            if(!penalty_start_f & (cf2ci_sTxPort.C0RdValid | cf2ci_sTxPort.C1WrValid ))
+            if(!penalty_start_f & (af2cp_sTxPort.c0.valid | af2cp_sTxPort.c1.valid ))
             begin
                 penalty_start_f   <= 1'b1;
                 penalty_start     <= Num_ticks_low[7:0];                    /* synthesis translate_off */
@@ -700,17 +697,15 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             end
 
             penalty_end <= penalty_end + 1'b1;
-            if( ci2cf_sRxPort.C0WrValid
-              | ci2cf_sRxPort.C0RdValid 
-              | ci2cf_sRxPort.C0UMsgValid
-              | ci2cf_sRxPort.C1WrValid
+            if( cp2af_sRxPort.c0.rspValid 
+              | cp2af_sRxPort.c1.rspValid
               )
             begin
                 penalty_end     <= 8'h2;
             end
 
             if(ab2re_TestCmp
-              && !ci2cf_sRxPort.C1TxAlmFull
+              && !cp2af_sRxPort.c1TxAlmFull
               && !status_write)
             begin                                                       /* synthesis translate_off */
                 $display ("NLB_INFO : end penalty = %d ", penalty_end); /* synthesis translate_on */
@@ -724,22 +719,22 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         RdHdr_valid = re2xy_go
         && !status_write
         && rnd_delay
-        && !ci2cf_sRxPort.C0TxAlmFull		// TODO: Check Timing 
+        && !cp2af_sRxPort.c0TxAlmFull		// TODO: Check Timing 
         && ab2re_RdEn;
 
         re2ab_RdSent= RdHdr_valid;
 
-        txFifo_RdAck = re2xy_go && rnd_delay  && !ci2cf_sRxPort.C1TxAlmFull && txFifo_Dout_v;
+        txFifo_RdAck = re2xy_go && rnd_delay  && !cp2af_sRxPort.c1TxAlmFull && txFifo_Dout_v;
         wrreq_type   = txFifo_WrFence ? eREQ_WRFENCE
                       :cr_wrthru_en   ? eREQ_WRLINE_I
                                       : eREQ_WRLINE_M;
 
     end
-    always @(posedge Clk_16UI)
+    always @(posedge Clk_400)
     begin
         WrHdr_valid_T1 <= txFifo_RdAck;
         WrHdr_valid_T2 <= WrHdr_valid_T1 & re2xy_go;
-		if(!test_Resetb)
+		if(!test_Reset_n)
         begin
             WrHdr_valid_T1 <= 0;
             WrHdr_valid_T2 <= 0;
@@ -775,8 +770,8 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                      .FULL_THRESH (2**9-3)     // TODO: was PEND_THRESH (7)  
     )nlb_writeTx_fifo
     (                                       //--------------------- Input  ------------------
-        .Resetb         (test_Resetb),
-        .Clk            (Clk_16UI),    
+        .Resetb         (test_Reset_n),
+        .Clk            (Clk_400),    
         .fifo_din       (txFifo_Din),          
         .fifo_ctlin     (),
         .fifo_wen       (txFifo_WrEn),      
@@ -793,7 +788,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         .T0_fifo_overflow  ()
     ); 
 
-    wire    rxfifo_RdAck    = rxfifo_Dout_v & ~ci2cf_sRxPort_T1.C0WrValid;
+    wire    rxfifo_RdAck    = rxfifo_Dout_v;
     
     // CCI-S could return two write responses per clock, but arbiter can accept only 1 write response per clock. 
     // This fifo will store the second write response
@@ -801,8 +796,8 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                     .DEPTH_BASE2 (PEND_THRESH)   // TODO: This can still be 128 deep 
     )nlb_writeRx_fifo  
     (                                      //--------------------- Input  ------------------
-        .Resetb         (test_Resetb),
-        .Clk            (Clk_16UI),
+        .Resetb         (test_Reset_n),
+        .Clk            (Clk_400),
         .fifo_din       (rxfifo_Din),          
         .fifo_wen       (rxfifo_WrEn),      
         .fifo_rdack     (rxfifo_RdAck),        
@@ -838,15 +833,14 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         (* noprune *) reg [31:0]                DEBUG_C0TxHdrAddr;
         (* noprune *) reg [9:0]                 DEBUG_C1TxHdrID;
         (* noprune *) reg [31:0]                DEBUG_C1TxHdrAddr;
-        (* noprune *) reg [16:0]                 DEBUG_C1TxData;
+        (* noprune *) reg [16:0]                DEBUG_C1TxData;
         (* noprune *) reg [9:0]                 DEBUG_C0RxHdrID;
         (* noprune *) reg [8:0]                 DEBUG_C0RxData;
         (* noprune *) reg [9:0]                 DEBUG_C1RxHdrID;
-        (* noprune *) reg                       DEBUG_C0TxRdValid;
-        (* noprune *) reg                       DEBUG_C0RxRdValid;
-        (* noprune *) reg                       DEBUG_C1TxWrValid;
-        (* noprune *) reg                       DEBUG_C0RxWrValid;
-        (* noprune *) reg                       DEBUG_C1RxWrValid;
+        (* noprune *) reg                       DEBUG_C0TxValid;
+        (* noprune *) reg                       DEBUG_C0RxValid;
+        (* noprune *) reg                       DEBUG_C1TxValid;
+        (* noprune *) reg                       DEBUG_C1RxValid;
         (* noprune *) reg                       DEBUG_txFifo_Dout_v;
         (* noprune *) reg                       DEBUG_txFifo_RdAck;
         (* noprune *) reg                       DEBUG_txFifo_WrEn;
@@ -856,25 +850,24 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         (* noprune *) reg [9-1:0]               DEBUG_txFifo_count;                            // TODO: was PEND_THRESH (7)
 
 
-        always @(posedge Clk_16UI)
+        always @(posedge Clk_400)
         begin
             DEBUG_nlb_error[3:0]    <= ErrorVector[3:0];
             DEBUG_Num_Reads         <= Num_Reads;
             DEBUG_Num_Writes        <= Num_Writes;
             DEBUG_inact_timeout     <= inact_timeout;
-            DEBUG_C0TxHdrID         <= cf2ci_sTxPort.C0Hdr.mdata[9:0];
-            DEBUG_C0TxHdrAddr       <= cf2ci_sTxPort.C0Hdr.address[31:0];
-            DEBUG_C1TxHdrID         <= cf2ci_sTxPort.C1Hdr.mdata[9:0];
-            DEBUG_C1TxHdrAddr       <= cf2ci_sTxPort.C1Hdr.address[31:0];
-            DEBUG_C1TxData          <= cf2ci_sTxPort.C1Data[16:0];
-            DEBUG_C0RxHdrID         <= ci2cf_sRxPort.C0Hdr.mdata[9:0];
-            DEBUG_C0RxData          <= ci2cf_sRxPort.C0Data[8:0];
-            DEBUG_C1RxHdrID         <= ci2cf_sRxPort.C1Hdr.mdata[9:0];
-            DEBUG_C0TxRdValid       <= cf2ci_sTxPort.C0RdValid;
-            DEBUG_C0RxRdValid       <= ci2cf_sRxPort.C0RdValid;
-            DEBUG_C1TxWrValid       <= cf2ci_sTxPort.C1WrValid;
-            DEBUG_C0RxWrValid       <= ci2cf_sRxPort.C0WrValid;
-            DEBUG_C1RxWrValid       <= ci2cf_sRxPort.C1WrValid;
+            DEBUG_C0TxHdrID         <= af2cp_sTxPort.c0.hdr.mdata[9:0];
+            DEBUG_C0TxHdrAddr       <= af2cp_sTxPort.c0.hdr.address[31:0];
+            DEBUG_C1TxHdrID         <= af2cp_sTxPort.c1.hdr.mdata[9:0];
+            DEBUG_C1TxHdrAddr       <= af2cp_sTxPort.c1.hdr.address[31:0];
+            DEBUG_C1TxData          <= af2cp_sTxPort.c1.data[16:0];
+            DEBUG_C0RxHdrID         <= cp2af_sRxPort.c0.hdr.mdata[9:0];
+            DEBUG_C0RxData          <= cp2af_sRxPort.c0.data[8:0];
+            DEBUG_C1RxHdrID         <= cp2af_sRxPort.c1.hdr.mdata[9:0];
+            DEBUG_C0TxValid         <= af2cp_sTxPort.c0.valid;
+            DEBUG_C1TxValid         <= af2cp_sTxPort.c1.valid;
+            DEBUG_C0RxValid         <= cp2af_sRxPort.c0.rspValid;
+            DEBUG_C1RxValid         <= cp2af_sRxPort.c1.rspValid;
 
             DEBUG_txFifo_Dout_v     <= txFifo_Dout_v;
             DEBUG_txFifo_RdAck      <= txFifo_RdAck;
@@ -888,7 +881,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             if(txFifo_RdAck)
                 DEBUG_txFifo_RdCount <= DEBUG_txFifo_RdCount+1'b1;
 
-            if(!test_Resetb)
+            if(!test_Reset_n)
             begin
                 DEBUG_txFifo_WrCount<= 0;
                 DEBUG_txFifo_RdCount<= 0;

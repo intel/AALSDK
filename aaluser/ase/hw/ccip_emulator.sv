@@ -1145,9 +1145,9 @@ module ccip_emulator
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
 	 // UMsg counts
-	 if (C0RxRspValid && ase_umsghdr_map.umsg_type )
+	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
-	 if (C0RxRspValid && ~ase_umsghdr_map.umsg_type )
+	 if (C0RxUMsgValid && ~ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsgdata_cnt = ase_rx0_umsgdata_cnt + 1;
       end
    end
@@ -1173,6 +1173,7 @@ module ccip_emulator
       end
    end // always @ (posedge clk)
 
+   
    // Ping to get error flag
    task count_error_flag_ping();
       begin

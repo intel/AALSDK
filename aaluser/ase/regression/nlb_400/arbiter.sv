@@ -21,8 +21,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 (
 
        // ---------------------------global signals-------------------------------------------------
-       Clk_16UI               ,        // in    std_logic;  -- Core clock
-       Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+       Clk_400               ,        // in    std_logic;  -- Core clock
 
        ab2re_WrAddr,                   // [ADDR_LMT-1:0]        app_cnt:           write address
        ab2re_WrTID,                    // [15:0]                app_cnt:           meta data
@@ -71,8 +70,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        re2xy_multiCL_len               // Default is 0 which implies single CL  
 );
    
-   input                   Clk_16UI;               //                      csi_top:            Clk_16UI
-   input                   Resetb;                 //                      csi_top:            system Resetb
+   input                   Clk_400;               //                      ccip_intf:            Clk_400
    
    output [ADDR_LMT-1:0]   ab2re_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           Writes are guaranteed to be accepted
    output [15:0]           ab2re_WrTID;            // [15:0]                app_cnt:           meta data
@@ -136,8 +134,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
    localparam              M_SW1           = 3'b111;
    //--------------------------------------------------------
 
-   wire                    Clk_16UI;               //                      csi_top:            Clk_16UI
-   wire                    Resetb;                 //                      csi_top:            system Resetb
+   wire                    Clk_400;               //                      ccip_intf:            Clk_400
    
    reg [ADDR_LMT-1:0]      ab2re_WrAddr;           // [ADDR_LMT-1:0]        app_cnt:           Writes are guaranteed to be accepted
    reg [15:0]              ab2re_WrTID;            // [15:0]                app_cnt:           meta data
@@ -391,7 +388,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
               .GRAM_MODE(2'd3)
               )arb_rd_mem 
             (
-                .clk  (Clk_16UI),
+                .clk  (Clk_400),
                 .we   (ab2re_RdEn),        
                 .waddr(ab2re_RdTID[MDATA-1:0]),     
                 .din  (ab2re_RdAddr),       
@@ -404,7 +401,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
               .GRAM_MODE(2'd3)
              )arb_wr_mem 
             (
-                .clk  (Clk_16UI),
+                .clk  (Clk_400),
                 .we   (ab2re_WrEn),        
                 .waddr(ab2re_WrTID[MDATA-1:0]),     
                 .din  (ab2re_WrAddr),       
@@ -413,7 +410,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
             );     
    
    //------------------------------------------------------------------------------------------------------------------------
-   always @(posedge Clk_16UI)
+   always @(posedge Clk_400)
      begin
         re2ab_RdData_q          <= re2ab_RdData;
         re2ab_RdRsp_q           <= re2ab_RdRsp;
@@ -798,8 +795,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                  .MDATA      (MDATA)
                  )
     test_lpbk1(
-           Clk_16UI               ,        // in    std_logic;  -- Core clock
-           Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+           Clk_400               ,        // in    std_logic;  -- Core clock
     
            l12ab_WrAddr,                   // [ADDR_LMT-1:0]        app_cnt:           write address
            l12ab_WrTID,                    // [ADDR_LMT-1:0]        app_cnt:           meta data
@@ -851,8 +847,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     test_rdwr(
     
     //      ---------------------------global signals-------------------------------------------------
-           Clk_16UI               ,        // in    std_logic;  -- Core clock
-           Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+           Clk_400               ,        // in    std_logic;  -- Core clock
            ab2rw_Mode           ,        //                       arb:               1- reads only test, 0- writes only test
     
            rw2ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
@@ -903,8 +898,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     test_lpbk2(
     
     //      ---------------------------global signals-------------------------------------------------
-           Clk_16UI               ,        // in    std_logic;  -- Core clock
-           Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+           Clk_400               ,        // in    std_logic;  -- Core clock
     
            l22ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
            l22ab_WrTID,                    // [ADDR_LMT-1:0]        arb:               meta data
@@ -945,8 +939,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     test_lpbk3(
     
     //      ---------------------------global signals-------------------------------------------------
-           Clk_16UI               ,        // in    std_logic;  -- Core clock
-           Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+           Clk_400               ,        // in    std_logic;  -- Core clock
     
            l32ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
            l32ab_WrTID,                    // [ADDR_LMT-1:0]        arb:               meta data
@@ -988,8 +981,7 @@ module arbiter #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     test_sw1 (
     
     //      ---------------------------global signals-------------------------------------------------
-           Clk_16UI               ,        // in    std_logic;  -- Core clock
-           Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+           Clk_400               ,        // in    std_logic;  -- Core clock
     
            s12ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
            s12ab_WrTID,                    // [ADDR_LMT-1:0]        arb:               meta data

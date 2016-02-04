@@ -262,21 +262,19 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
 (
                 
        // ---------------------------global signals-------------------------------------------------
-       Clk_16UI,                         //              in    std_logic;           Core clock. CCI interface is synchronous to this clock.
-       SoftReset_n,                      //              in    std_logic;           CCI interface reset. The Accelerator IP must use this Reset.
-       SystemReset_n,                    //                    std_logic:           System Reset signal. To be used for sticy CSRs & HSSI interface only
+       Clk_400,                         //              in    std_logic;           Core clock. CCI interface is synchronous to this clock.
+       SoftReset,                        //              in    std_logic;           CCI interface reset. The Accelerator IP must use this Reset. ACTIVE HIGH
        // ---------------------------IF signals between CCI and AFU  --------------------------------
-       ci2cf_sRxPort,
-       cf2ci_sTxPort
+       cp2af_sRxPort,
+       af2cp_sTxPort
 );
 
 
-   input                        Clk_16UI;             //              in    std_logic;           Core clock. CCI interface is synchronous to this clock.
-   input                        SoftReset_n;          //              in    std_logic;           CCI interface reset. The Accelerator IP must use this Reset.
-   input                        SystemReset_n;        //                    std_logic:           System Reset signal. To be used for sticy CSRs & HSSI interface only
+   input                        Clk_400;             //              in    std_logic;           Core clock. CCI interface is synchronous to this clock.
+   input                        SoftReset;            //              in    std_logic;           CCI interface reset. The Accelerator IP must use this Reset. ACTIVE HIGH
 
-   input  t_if_ccip_Rx          ci2cf_sRxPort;
-   output t_if_ccip_Tx          cf2ci_sTxPort;
+   input  t_if_ccip_Rx          cp2af_sRxPort;
+   output t_if_ccip_Tx          af2cp_sTxPort;
 
    localparam      PEND_THRESH = 7;
    localparam      ADDR_LMT    = 20;
@@ -292,10 +290,10 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
    localparam              M_LPBK3         = 3'b110;
    //--------------------------------------------------------
    
-   wire                         Clk_16UI;
-   wire                         SoftReset_n;
+   wire                         Clk_400;
+   wire                         SoftReset;
 
-   t_if_ccip_Tx                 cf2ci_sTxPort_c;
+   t_if_ccip_Tx                 af2cp_sTxPort_c;
 
   
    wire [ADDR_LMT-1:0]          ab2re_WrAddr;
@@ -328,7 +326,7 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
    wire [255:0]                 ab2re_ErrorInfo;
    wire                         ab2re_ErrorValid;
    
-   wire                         test_SoftReset_n;
+   wire                         test_SoftReset;
    wire  [63:0]                 cr2re_src_address;
    wire  [63:0]                 cr2re_dst_address;
    wire  [31:0]                 cr2re_num_lines;
@@ -352,10 +350,10 @@ module nlb_lpbk #(parameter TXHDR_WIDTH=61, RXHDR_WIDTH=18, DATA_WIDTH =512)
    logic [1:0]                  re2ab_WrRspCLnum;
    logic [1:0]                  re2xy_multiCL_len;
 	
-   reg                          SoftReset_qn=0;
-   always @(posedge Clk_16UI)
+   reg                          SoftReset_q=1'b1;
+   always @(posedge Clk_400)
    begin
-       SoftReset_qn <= SoftReset_n;
+       SoftReset_q <= SoftReset;
    end
 requestor #(.PEND_THRESH(PEND_THRESH),
             .ADDR_LMT   (ADDR_LMT),
@@ -367,12 +365,12 @@ inst_requestor(
 
 
 //      ---------------------------global signals-------------------------------------------------
-       Clk_16UI               ,        //                       in    std_logic;  -- Core clock
-       SoftReset_qn                 ,        //                       in    std_logic;  -- Use SPARINGLY only for control
+       Clk_400               ,        //                       in    std_logic;  -- Core clock
+       SoftReset_q            ,        //                       in    std_logic;  -- Use SPARINGLY only for control
 //      ---------------------------CCI IF signals between CCI and requestor  ---------------------
 
-       cf2ci_sTxPort_c,
-       ci2cf_sRxPort,
+       af2cp_sTxPort_c,
+       cp2af_sRxPort,
 
        cr2re_src_address,
        cr2re_dst_address,
@@ -417,7 +415,7 @@ inst_requestor(
        ab2re_TestCmp,                  //                       arbiter:        Test completion flag
        ab2re_ErrorInfo,                // [255:0]               arbiter:        error information
        ab2re_ErrorValid,               //                       arbiter:        test has detected an error
-       test_SoftReset_n,               //                       requestor:      rest the app
+       test_SoftReset,                 //                       requestor:      rest the app
        re2cr_wrlock_n,                 //                       requestor:      when low, block csr writes
        
        ab2re_RdLen,
@@ -439,8 +437,7 @@ arbiter #(.PEND_THRESH(PEND_THRESH),
 inst_arbiter (
 
 //      ---------------------------global signals-------------------------------------------------
-       Clk_16UI               ,        //                       in    std_logic;  -- Core clock
-       SoftReset_qn                 ,        //                       in    std_logic;  -- Use SPARINGLY only for control
+       Clk_400               ,        //                       in    std_logic;  -- Core clock
 
        ab2re_WrAddr,                   // [ADDR_LMT-1:0]        arbiter:           write address
        ab2re_WrTID,                    // [15:0]                arbiter:           meta data
@@ -475,7 +472,7 @@ inst_arbiter (
        ab2re_ErrorInfo,                // [255:0]               arbiter:           error information
        ab2re_ErrorValid,               //                       arbiter:           test has detected an error
        cr2s1_csr_write,
-       test_SoftReset_n,               //                       requestor:         rest the app
+       test_SoftReset,                 //                       requestor:         rest the app
 	   
        ab2re_RdLen,
        ab2re_RdSop,
@@ -489,43 +486,44 @@ inst_arbiter (
        re2xy_multiCL_len
 );
 
-logic [31:0]                cr2cf_CfgHeader;
-logic                       cr2cf_CfgWrEn;
-logic                       cr2cf_CfgRdEn;
-logic [63:0]                cr2cf_CfgDin; 
-logic [63:0]                cf2cr_CfgDout;
-logic                       cf2cr_CfgDout_v;
-logic [8:0]                 cf2cr_CfgHeader;
+t_ccip_c0_ReqMmioHdr       cp2cr_MmioHdr;
+logic                       cp2cr_MmioWrEn;
+logic                       cp2cr_MmioRdEn;
+t_ccip_mmioData             cp2cr_MmioDin; 
+t_ccip_mmioData             cr2af_MmioDout;
+logic                       cr2af_MmioDout_v;
+t_ccip_c2_RspMmioHdr        cr2af_MmioHdr;
  
 always_comb
 begin
-    cr2cf_CfgHeader     = ci2cf_sRxPort.C0Hdr;
-    cr2cf_CfgWrEn       = ci2cf_sRxPort.C0MmioWrValid;
-    cr2cf_CfgRdEn       = ci2cf_sRxPort.C0MmioRdValid;
-    cr2cf_CfgDin        = ci2cf_sRxPort.C0Data[CCIP_MMIODATA_WIDTH-1:0];
+    cp2cr_MmioHdr        = t_ccip_c0_ReqMmioHdr'(cp2af_sRxPort.c0.hdr);
+    cp2cr_MmioWrEn       = cp2af_sRxPort.c0.mmioWrValid;
+    cp2cr_MmioRdEn       = cp2af_sRxPort.c0.mmioRdValid;
+    cp2cr_MmioDin        = cp2af_sRxPort.c0.data[CCIP_MMIODATA_WIDTH-1:0];
 
-    cf2ci_sTxPort                  = cf2ci_sTxPort_c;
+    af2cp_sTxPort                  = af2cp_sTxPort_c;
     // Override the C2 channel
-    cf2ci_sTxPort.C2Hdr            = cf2cr_CfgHeader;
-    cf2ci_sTxPort.C2Data           = cf2cr_CfgDout;
-    cf2ci_sTxPort.C2MmioRdValid    = cf2cr_CfgDout_v;
+    af2cp_sTxPort.c2.hdr           = cr2af_MmioHdr;
+    af2cp_sTxPort.c2.data          = cr2af_MmioDout;
+    af2cp_sTxPort.c2.mmioRdValid   = cr2af_MmioDout_v;
 end
 
 nlb_csr # (.CCIP_VERSION_NUMBER(CCIP_VERSION_NUMBER))
 inst_nlb_csr (
-    Clk_16UI,                       //                              clk_pll:    16UI clock
-    SystemReset_n,                  //                              rst:        active low system reset
-    SoftReset_qn,                   //                              rst:        active low soft reset
+    Clk_400,                       
+    SoftReset_q,                   //  ACTIVE HIGH soft reset
     re2cr_wrlock_n,
-    // * CFG interface
-    cr2cf_CfgHeader,
-    cr2cf_CfgDin,  
-    cr2cf_CfgWrEn,
-    cr2cf_CfgRdEn,
 
-    cf2cr_CfgHeader,  
-    cf2cr_CfgDout,   
-    cf2cr_CfgDout_v,
+    // MMIO Requests
+    cp2cr_MmioHdr,
+    cp2cr_MmioDin,  
+    cp2cr_MmioWrEn,
+    cp2cr_MmioRdEn,
+
+    // MMIO Response
+    cr2af_MmioHdr,  
+    cr2af_MmioDout,   
+    cr2af_MmioDout_v,
 
     cr2re_src_address,
     cr2re_dst_address,

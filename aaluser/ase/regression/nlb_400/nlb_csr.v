@@ -16,18 +16,19 @@
 `include "vendor_defines.vh"
 module nlb_csr #(parameter CCIP_VERSION_NUMBER=0)
 (
-    Clk_16UI,                       //                              clk_pll:    16UI clock
-    SystemReset_n,                  //                              rst:        active low system reset
-    SoftReset_n,                    //                              rst:        active low soft reset
+    Clk_400,                       //                              clk_pll:    16UI clock
+    SoftReset,                      //                              rst:        ACTIVE HIGH soft reset
     re2cr_wrlock_n,
-                                                // * CFG interface
-    cr2cf_CfgHeader,                // [31:0]                       CSR Request Header 
-    cr2cf_CfgDin,                   // [63:0]                       CSR read data
-    cr2cf_CfgWrEn,                  //                              CSR write strobe
-    cr2cf_CfgRdEn,                  //                              CSR read strobe
-    cf2cr_CfgHeader,                // [11:0]                       CSR Response Header
-    cf2cr_CfgDout,                  // [63:0]                       CSR read data
-    cf2cr_CfgDout_v,                //                              CSR read data valid
+    // MMIO Requests from CCI-P
+    cp2cr_MmioHdr,                // [31:0]                       CSR Request Hdr 
+    cp2cr_MmioDin,                   // [63:0]                       CSR read data
+    cp2cr_MmioWrEn,                  //                              CSR write strobe
+    cp2cr_MmioRdEn,                  //                              CSR read strobe
+    // MMIO Responses to CCI-P
+    cr2cp_MmioHdr,                // [11:0]                       CSR Response Hdr
+    cr2cp_MmioDout,                  // [63:0]                       CSR read data
+    cr2cp_MmioDout_v,                //                              CSR read data valid
+    // connections to requestor
     cr2re_src_address,
     cr2re_dst_address,
     cr2re_num_lines,
@@ -39,18 +40,19 @@ module nlb_csr #(parameter CCIP_VERSION_NUMBER=0)
     cr2re_dsm_base_valid,
     cr2s1_csr_write
 );
-input  wire          Clk_16UI;               //                              clk_pll:    16UI clock
-input  wire          SystemReset_n;
-input  wire          SoftReset_n;
+input  wire          Clk_400;               // 400MHz clock
+input  wire          SoftReset;
 input  wire          re2cr_wrlock_n;
-                                             // * CFG interface
-input  wire [31:0]   cr2cf_CfgHeader;        // [31:0]                       CSR Request Header 
-input  wire [63:0]   cr2cf_CfgDin;           // [63:0]                       CSR read data
-input  wire          cr2cf_CfgWrEn;          //                              CSR write strobe
-input  wire          cr2cf_CfgRdEn;          //                              CSR read strobe
-output reg  [8:0]    cf2cr_CfgHeader;        // [11:0]                       CSR Response Header
-output reg  [63:0]   cf2cr_CfgDout;          // [63:0]                       CSR read data
-output reg           cf2cr_CfgDout_v;        //                              CSR read data valid
+// MMIO Requests                           
+input  t_ccip_c0_ReqMmioHdr  cp2cr_MmioHdr;        //   CSR Request Hdr
+input  t_ccip_mmioData       cp2cr_MmioDin;           //   CSR read data
+input  logic                 cp2cr_MmioWrEn;          //   CSR write enable
+input  logic                 cp2cr_MmioRdEn;          //   CSR read enable
+// MMIO Response                         
+output t_ccip_c2_RspMmioHdr  cr2cp_MmioHdr;        //   CSR Response Hdr
+output t_ccip_mmioData       cr2cp_MmioDout;          //   CSR read data
+output logic                 cr2cp_MmioDout_v;        //   CSR read data valid
+// Connections to requestor
 (* `KEEP_WIRE *) output wire  [63:0]  cr2re_src_address;
 (* `KEEP_WIRE *) output wire  [63:0]  cr2re_dst_address;
 (* `KEEP_WIRE *) output wire  [31:0]  cr2re_num_lines;
@@ -135,19 +137,19 @@ localparam      FEATURE_0_BEG  = 18'h0000;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------
 reg             rw1c_pulse, rw1s_pulse;
-reg  [63:0]     csr_reg [2**L_CFG_SEG_SIZE-1:0];
-wire [15:0]     afu_csr_addr_4B   = cr2cf_CfgHeader[27:12];
+reg  [63:0]     csr_reg [2**L_CFG_SEG_SIZE-1:0];            // register file
+wire [15:0]     afu_csr_addr_4B   = cp2cr_MmioHdr.address;
 wire [14:0]     afu_csr_addr_8B   = afu_csr_addr_4B[15:1];
-wire [1:0]      afu_csr_length    = cr2cf_CfgHeader[11:10];
+wire [1:0]      afu_csr_length    = cp2cr_MmioHdr.length;
 wire            ip_select         = afu_csr_addr_8B[14:L_CFG_SEG_SIZE]==CFG_SEG_BEG[15:L_CFG_SEG_SIZE+3];
 reg             afu_csr_length_4B_T1, afu_csr_length_8B_T1;
 reg             afu_csr_length_4B_T2, afu_csr_length_8B_T2;
 reg             afu_csr_length_8B_T3;
-reg [63:0]      afu_csr_wrdin_T1, afu_csr_dout_T3;
-reg [63:0]      afu_csr_dout_T2 [1:0];
+t_ccip_mmioData afu_csr_wrdin_T1, afu_csr_dout_T3;
+t_ccip_mmioData afu_csr_dout_T2 [1:0];
 reg [1:0]       afu_csr_dw_enable_T1, afu_csr_dw_enable_T2, afu_csr_dw_enable_T3;
 reg             afu_csr_wren_T1, afu_csr_rden_T1, afu_csr_dout_v_T2, afu_csr_dout_v_T3;
-reg [8:0]       afu_csr_tid_T1, afu_csr_tid_T2, afu_csr_tid_T3;
+t_ccip_tid      afu_csr_tid_T1, afu_csr_tid_T2, afu_csr_tid_T3;
 reg [14:0]      afu_csr_offset_8B_T1;
 reg             range_valid;
 integer i;
@@ -182,13 +184,13 @@ endfunction
 wire [14:0] feature_0_addr_offset_8B_T1 = {FEATURE_0_BEG[17:12], 3'h0, afu_csr_offset_8B_T1[5:0]};
 //wire [14:0] feature_1_addr_offset_8B_T1 = {FEATURE_1_BEG[17:12], afu_csr_offset_8B_T1[8:0]};
 reg  [1:0]  feature_id_T2;
-always @(posedge Clk_16UI)
+always @(posedge Clk_400)
 begin
         // -Stage T1-
-        afu_csr_tid_T1 <= cr2cf_CfgHeader[8:0];
+        afu_csr_tid_T1 <= cp2cr_MmioHdr.tid;
         afu_csr_offset_8B_T1 <= afu_csr_addr_4B[15:1];
 
-        if(cr2cf_CfgWrEn | cr2cf_CfgRdEn)
+        if(cp2cr_MmioWrEn | cp2cr_MmioRdEn)
         begin
             afu_csr_length_4B_T1 <= afu_csr_length==2'b00;
             afu_csr_length_8B_T1 <= afu_csr_length==2'b01;
@@ -196,13 +198,13 @@ begin
         // DW enable is used when doing a 4B write
         case({afu_csr_length, afu_csr_addr_4B[0]})
             3'b000: begin afu_csr_dw_enable_T1 <= 2'b01;
-                          afu_csr_wrdin_T1     <= cr2cf_CfgDin;
+                          afu_csr_wrdin_T1     <= cp2cr_MmioDin;
                     end
             3'b001: begin afu_csr_dw_enable_T1 <= 2'b10;
-                          afu_csr_wrdin_T1     <= {cr2cf_CfgDin[31:0], cr2cf_CfgDin[31:0]};
+                          afu_csr_wrdin_T1     <= {cp2cr_MmioDin[31:0], cp2cr_MmioDin[31:0]};
                     end
             default:begin afu_csr_dw_enable_T1 <= 2'b11;
-                          afu_csr_wrdin_T1     <= cr2cf_CfgDin;
+                          afu_csr_wrdin_T1     <= cp2cr_MmioDin;
                     end
         endcase
 
@@ -210,8 +212,8 @@ begin
         afu_csr_rden_T1      <= 1'b0;
         if(ip_select)
         begin
-            afu_csr_wren_T1 <= cr2cf_CfgWrEn;
-            afu_csr_rden_T1 <= cr2cf_CfgRdEn;
+            afu_csr_wren_T1 <= cp2cr_MmioWrEn;
+            afu_csr_rden_T1 <= cp2cr_MmioRdEn;
         end
 
         // -Stage T2-
@@ -242,15 +244,15 @@ begin
 
         // -Stage T4-
         case(afu_csr_dw_enable_T3)
-            2'b10:  cf2cr_CfgDout <= afu_csr_dout_T3[63:32];
-            default:cf2cr_CfgDout <= afu_csr_dout_T3;
+            2'b10:  cr2cp_MmioDout <= afu_csr_dout_T3[63:32];
+            default:cr2cp_MmioDout <= afu_csr_dout_T3;
         endcase
-        cf2cr_CfgDout_v <= afu_csr_dout_v_T3;
-        cf2cr_CfgHeader <= afu_csr_tid_T3;
+        cr2cp_MmioDout_v <= afu_csr_dout_v_T3;
+        cr2cp_MmioHdr <= afu_csr_tid_T3;
 
-        if(!SystemReset_n)
+        if(SoftReset)
         begin
-            cf2cr_CfgDout_v <= 1'b0;
+            cr2cp_MmioDout_v <= 1'b0;
         end
 
         // AFH DFH Declarations:
@@ -327,7 +329,7 @@ begin
                   64'h0
                  );
 
-         if(!SoftReset_n)
+         if(SoftReset)
              cr2re_dsm_base_valid <= 1'b0;
          else if(afu_csr_wren_T1 
                 && afu_csr_offset_8B_T1==CSR_AFU_DSM_BASEL[3+:L_CFG_SEG_SIZE] 
@@ -391,7 +393,7 @@ begin
                   64'h0
                  );
 
-         if(SystemReset_n==0)
+         if(SoftReset)
             cr2s1_csr_write <= 0;
         else
         begin
@@ -432,7 +434,7 @@ task automatic set_attr;
 
             casex ({attr[i*3+:3]})
             RW: begin                                                   // - Read Write
-                if(!SoftReset_n)
+                if(SoftReset)
                     csr_reg[csr_offset_8B][i]   <= default_val[i];
                 else if(this_write[j])
                 begin

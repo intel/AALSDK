@@ -20,8 +20,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 (
 
 //      ---------------------------global signals-------------------------------------------------
-       Clk_16UI               ,        // in    std_logic;  -- Core clock
-       Resetb                 ,        // in    std_logic;  -- Use SPARINGLY only for control
+       Clk_400               ,        // in    std_logic;  -- Core clock
 
        l12ab_WrAddr,                   // [ADDR_LMT-1:0]        arb:               write address
        l12ab_WrTID,                    // [ADDR_LMT-1:0]        arb:               meta data
@@ -35,10 +34,10 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        l12ab_RdEn,                     //                       arb:               read enable
        ab2l1_RdSent,                   //                       arb:               read issued
 
-       ab2l1_RdRspValid,               //                       arb:               read response valid
-       ab2l1_RdRsp,                    // [15:0]                arb:               read response header
-       ab2l1_RdRspAddr,                // [ADDR_LMT-1:0]        arb:               read response address
-       ab2l1_RdData,                   // [511:0]               arb:               read data
+       ab2l1_RdRspValid_T0,            //                       arb:               read response valid
+       ab2l1_RdRsp_T0,                 // [15:0]                arb:               read response header
+       ab2l1_RdRspAddr_T0,             // [ADDR_LMT-1:0]        arb:               read response address
+       ab2l1_RdData_T0,                // [511:0]               arb:               read data
        ab2l1_stallRd,                  //                       arb:               stall read requests FOR LPBK1
 
        ab2l1_WrRspValid,               //                       arb:               write response valid
@@ -59,13 +58,12 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
        l12ab_WrSop,
    	   
        ab2l1_RdRspFormat,
-       ab2l1_RdRspCLnum,
+       ab2l1_RdRspCLnum_T0,
        ab2l1_WrRspFormat,
        ab2l1_WrRspCLnum,
        re2xy_multiCL_len
 );
-    input                   Clk_16UI;               //                      csi_top:            Clk_16UI
-    input                   Resetb;                 //                      csi_top:            system Resetb
+    input                   Clk_400;               //                      csi_top:            Clk_400
     
     output  [ADDR_LMT-1:0]  l12ab_WrAddr;           // [ADDR_LMT-1:0]        arb:               write address
     output  [15:0]          l12ab_WrTID;            // [15:0]                arb:               meta data
@@ -79,10 +77,10 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     output                  l12ab_RdEn;             //                       arb:               read enable
     input                   ab2l1_RdSent;           //                       arb:               read issued
     
-    input                   ab2l1_RdRspValid;       //                       arb:               read response valid
-    input  [15:0]           ab2l1_RdRsp;            // [15:0]                arb:               read response header
-    input  [ADDR_LMT-1:0]   ab2l1_RdRspAddr;        // [ADDR_LMT-1:0]        arb:               read response address
-    input  [511:0]          ab2l1_RdData;           // [511:0]               arb:               read data
+    input                   ab2l1_RdRspValid_T0;    //                       arb:               read response valid
+    input  [15:0]           ab2l1_RdRsp_T0;         // [15:0]                arb:               read response header
+    input  [ADDR_LMT-1:0]   ab2l1_RdRspAddr_T0;     // [ADDR_LMT-1:0]        arb:               read response address
+    input  [511:0]          ab2l1_RdData_T0;        // [511:0]               arb:               read data
     input                   ab2l1_stallRd;          //                       arb:               stall read requests FOR LPBK1
     
     input                   ab2l1_WrRspValid;       //                       arb:               write response valid
@@ -104,7 +102,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
     output                  l12ab_WrSop;
 	
     input                   ab2l1_RdRspFormat;
-    input  [1:0]            ab2l1_RdRspCLnum;
+    input  [1:0]            ab2l1_RdRspCLnum_T0;
     input                   ab2l1_WrRspFormat;
     input  [1:0]            ab2l1_WrRspCLnum;
 
@@ -155,7 +153,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
                   )
     rdrsp_mem 
     (
-      .clk  (Clk_16UI),
+      .clk  (Clk_400),
       .we   (memwr_en),        
       .waddr(memwr_addr),     
       .din  (rdrsp_mem_in),       
@@ -184,7 +182,23 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 	logic [2:0]   numRdRsp_vector_bank[0:15] [0:7];
 	logic         numRdRsp_vector_bank_q[0:15] [0:7];
 	
-    always @(posedge Clk_16UI)
+	
+	logic [15:0]         ab2l1_RdRsp;
+	logic [1:0]          ab2l1_RdRspCLnum;
+	logic [ADDR_LMT-1:0] ab2l1_RdRspAddr;  
+	logic [511:0]        ab2l1_RdData;       
+	logic                ab2l1_RdRspValid;
+	
+	always@(posedge Clk_400)
+	begin
+	ab2l1_RdRsp        <= ab2l1_RdRsp_T0;
+	ab2l1_RdRspCLnum   <= ab2l1_RdRspCLnum_T0;
+	ab2l1_RdRspAddr    <= ab2l1_RdRspAddr_T0;
+	ab2l1_RdData       <= ab2l1_RdData_T0;
+	ab2l1_RdRspValid   <= ab2l1_RdRspValid_T0;
+	end
+	
+    always @(posedge Clk_400)
     begin
 	  memwr_en                                   <= 0; 
 	  // Store RdResponses in RAM and update count vector
@@ -359,7 +373,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 	    end
 	end
 	
-    always @(posedge Clk_16UI)
+    always @(posedge Clk_400)
     begin
             //Read FSM
             case(read_fsm)  /* synthesis parallel_case */
@@ -447,7 +461,7 @@ module test_lpbk1 #(parameter PEND_THRESH=1, ADDR_LMT=20, MDATA=14)
 	
 	// synthesis translate_off
 	logic numCL_error = 0;
-	always @(posedge Clk_16UI)
+	always @(posedge Clk_400)
     begin
 	if( re2xy_go && ((re2xy_NumLines)%(re2xy_multiCL_len + 1) != 0)  )
     begin
