@@ -419,10 +419,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                   Message->m_context,
                                                                   request_error);
 
-     ccidrv_sendevent( pownerSess->m_UIHandle,
-                       pownerSess->m_device,
-                       AALQIP(pafuresponse_evt),
-                       Message->m_context);
+     ccidrv_sendevent( pownerSess,
+                       AALQIP(pafuresponse_evt));
 
       retval = -EINVAL;
    } break;

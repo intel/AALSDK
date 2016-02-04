@@ -314,8 +314,10 @@ typedef btInt (*aaldev_OwnerProcessor_t)(struct aal_device *,
 //=============================================================================
 struct aaldev_ownerSession {
    // UI Message Adaptor
-   struct aal_uiapi  *m_uiapi;     // Message handler interface
-   btObjectType       m_UIHandle;  // UI Handle
+   struct aal_uiapi  *m_uiapi;            // Message handler interface
+   btObjectType       m_UIHandle;         // UI Handle
+   btAny              m_ownerContext;     // Specific to binding owner
+
 
    // PIP
    btObjectType       m_PIPHandle; // PIP Handle
@@ -337,6 +339,7 @@ struct aaldevice_interface {
    aaldev_AddOwner_e    (*addOwner)(struct aal_device * ,
                                     btPID ,
                                     btObjectType ,
+                                    btAny,
                                     pkosal_list_head );
    aaldev_AddOwner_e     (*isOwner)(struct aal_device * ,
                                     btPID );
@@ -360,7 +363,7 @@ struct aaldevice_interface {
 };
 
 // Convenience macros
-#define dev_addOwner(p,id,m,s)    (p)->i.addOwner(p,id,m,s)
+#define dev_addOwner(p,id,m,o,s)    (p)->i.addOwner(p,id,m,o,s)
 #define dev_isOwner(p,id,m,s)     (p)->i.addOwner(p,id)
 #define dev_removeOwner(p,id)     (p)->i.removeOwner(p,id)
 #define dev_updateOwner(p,o,s,l)  (p)->i.updateOwner(p,o,s,l)

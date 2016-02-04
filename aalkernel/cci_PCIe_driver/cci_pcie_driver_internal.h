@@ -339,52 +339,6 @@ int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value
 /// @return    64 bit  CSR value
 bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
 
-//=============================================================================
-//=============================================================================
-//                                INLINE PRIMITIVES
-//=============================================================================
-//=============================================================================
-
-//=============================================================================
-// Name: cci_getBARAddress
-// Description: Called during the device probe by cci_pci_probe
-//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
-// Interface: public
-// Inputs:  ppcidev - Pointer to PICe device
-//          pphysaddr - Pointer to where to return the physical address
-//          pvirtaddr - Pointer to where to return the mapped virtual address
-//          psize - BAR region size
-// Outputs: 1 = success.
-// Comments:
-//=============================================================================
-static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
-                                     int               barnum,
-                                     btPhysAddr       *pphysaddr,
-                                     btVirtAddr       *pvirtaddr,
-                                     size_t           *psize)
-{
-   if ( 0 == pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
-      // get the low base address register.
-      *pphysaddr = pci_resource_start(ppcidev, barnum);
-      *psize  = (size_t)pci_resource_len(ppcidev, barnum);
-
-      PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
-      PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
-
-   }else{
-      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
-      return 0;
-   }
-
-   // Only non-zero regions make sense
-   if((0 == *pphysaddr) || (0 == *psize)){
-      pci_release_region(ppcidev, barnum);
-      return 0;
-   }
-   // Get the KVP for the region
-   *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
-   return 1;
-}
 
 //=============================================================================
 //=============================================================================
@@ -394,7 +348,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
 struct ccip_device;   // forward reference
 struct port_device;
 
-extern int ccidrv_initDriver(void/*callback*/);
+
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
 extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
@@ -408,8 +362,6 @@ extern void cci_remove_device(struct ccip_device *);
 extern void cci_release_device(pkosal_os_dev pdev);
 extern void ccidrv_exitDriver(void);
 
-extern int ccidrv_initUMAPI(void);
-void ccidrv_exitUMAPI(void);
 
 extern struct ccidrv_session * ccidrv_session_create(btPID );
 extern btInt ccidrv_session_destroy(struct ccidrv_session * );
@@ -420,10 +372,8 @@ extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
 extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
                                         unsigned long long id);
 extern btInt
-ccidrv_sendevent( btObjectType,
-                  struct aal_device *,
-                  struct aal_q_item *,
-                  btObjectType);
+ccidrv_sendevent( struct aaldev_ownerSession *,
+                  struct aal_q_item *);
 
 
 #if 0
