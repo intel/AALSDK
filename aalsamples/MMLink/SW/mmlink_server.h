@@ -160,7 +160,7 @@ private:
     private:
       const char *m_name;
       unsigned int m_num_bytes;
-      static const size_t BUFSIZE = 3000;
+      static const size_t BUFSIZE = 1073741824;
       unsigned char m_last_buf[BUFSIZE];
       unsigned int m_histogram[BUFSIZE];
       unsigned char m_last_count;

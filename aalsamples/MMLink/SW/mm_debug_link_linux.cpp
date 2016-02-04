@@ -223,24 +223,29 @@ ssize_t mm_debug_link_linux::write(const void *buf, size_t count)
 	    {
 	      num_bytes = count;
 	    }
+
+	    count = 0;
+
 	    for ( size_t i = 0; i < num_bytes; ++i )
 	    {
 	      write_mmr( MM_DEBUG_LINK_DATA_WRITE, 'b', *((unsigned char *)buf + i));
+	      ++count;
 	    }
 
-	      cout << "Wrote " << num_bytes << " bytes\n";
+	    num_bytes = count;
+       cout << "Wrote " << num_bytes << " bytes\n";
 
-	      for ( int i = 0; i < num_bytes; ++i )
-	      {
-	        x = *((unsigned char *)buf + i);
-	        cout << setfill('0')               << setw(2) << std::hex << x << " ";
-	      }
-	      cout << std::dec << "\n" ;
+       for ( int i = 0; i < num_bytes; ++i )
+       {
+         x = *((unsigned char *)buf + i);
+         cout << setfill('0') << setw(2) << std::hex << x << " ";
+       }
+       cout << std::dec << "\n" ;
 	  }
 	  else
 	  {
-      cerr << "Error write hw write buffer level\n";
-      num_bytes = 0;
+	     //cerr << "Error write hw write buffer level\n";
+	     num_bytes = 0;
 	  }
 
 	  return num_bytes;
