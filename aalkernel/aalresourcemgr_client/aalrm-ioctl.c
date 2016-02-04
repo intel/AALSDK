@@ -156,6 +156,7 @@ void aalrm_reqdev_cmplt( btInt errno,
          if( unlikely( (ret=dev_addOwner( devp,
                                           psess->m_tgpid,
                                           NULL, // TODO MANIFEST ON OWNER NOT SUPPORTED YET
+                                          NULL, // No owner context yet
                                           &psess->m_devlist)) != aaldev_addowner_OK)  ) {
 
             DPRINTF (AALRMC_DBG_IOCTL, ": failed to claim the device\n");

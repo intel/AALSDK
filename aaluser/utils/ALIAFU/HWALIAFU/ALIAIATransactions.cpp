@@ -222,8 +222,6 @@ GetMMIOBufferTransaction::GetMMIOBufferTransaction() :
    // Point at payload
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
-
-
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_getMMIORmap;
    afumsg->size    = sizeof(union msgpayload);
@@ -423,20 +421,27 @@ UmsgGetBaseAddress::UmsgGetBaseAddress() :
    m_size(0),
    m_bufLength(0)
 {
-   // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
-   // GetMMIOBufferTransaction-AIATransaction.
-   m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(struct ahm_req );
 
-   // Allocate structs
-   struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+   union msgpayload{
+       struct ahm_req                req;    // [IN]
+       struct AAL::aalui_WSMEvent    resp;   // [OUT]
+    };
 
-   // Point at payload
-   struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+    // We need to send an ahm_req within an aalui_CCIdrvMessage packaged in an
+    // GetMMIOBufferTransaction-AIATransaction.
+    m_size = sizeof(struct aalui_CCIdrvMessage) +  sizeof(union msgpayload );
+
+    // Allocate structs
+    struct aalui_CCIdrvMessage *afumsg  = reinterpret_cast<struct aalui_CCIdrvMessage *>(new (std::nothrow) btByte[m_size]);
+
+    // Point at payload
+    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
+
+    // fill out aalui_CCIdrvMessage
+    afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
+    afumsg->size    = sizeof(union msgpayload);
 
 
-
-   // fill out aalui_CCIdrvMessage
-   afumsg->cmd     = ccipdrv_afucmdGet_UmsgBase;
    afumsg->size    = sizeof(struct ahm_req);
 
    req->u.wksp.m_wsid = WSID_MAP_MMIOR;

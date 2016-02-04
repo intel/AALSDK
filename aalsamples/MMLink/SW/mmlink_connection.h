@@ -1,4 +1,7 @@
+// Copyright(c) 2014, Altera Corporation
+// All rights reserved.
 // Copyright(c) 2007-2016, Intel Corporation
+// All rights reserved.
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -24,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-/// @file mm_debug_link_linux.h
+/// @file mmlink_connection.h
 /// @brief Basic AFU interaction.
 /// @ingroup SigTap
 /// @verbatim
@@ -40,46 +43,61 @@
 /// WHEN:          WHO:     WHAT:
 /// 01/19/2016     SC       Initial version started based on Altera's sample code.@endverbatim
 //****************************************************************************
-#ifndef MM_DEBUG_LINK_LINUX_H
-#define MM_DEBUG_LINK_LINUX_H
+#ifndef MMLINK_CONNECTION_H
+#define MMLINK_CONNECTION_H
 
-#include <aalsdk/AAL.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "mm_debug_link_interface.h"
+#include "mmlink_server.h"
 
-using namespace AAL;
-
-class mm_debug_link_linux: public mm_debug_link_interface
+class mmlink_connection
 {
-private:
-  int m_fd;
-  static const size_t BUFSIZE = 3000; // size of buffer for t2h data
-  char m_buf[BUFSIZE];
-  size_t m_buf_end;
-  int m_write_fifo_capacity;
-  btVirtAddr map_base;
-
 public:
-  mm_debug_link_linux() { m_fd = -1; m_buf_end = 0; m_write_fifo_capacity = 0;}
-  int open(btVirtAddr stpAddr);
-  void* read_mmr(btCSROffset target, int access_type);
-  void write_mmr(off_t target, int access_type, unsigned int write_val);
-  ssize_t read();
-  ssize_t write( const void *buf, size_t count);
-  void close(void);
-  void ident(int id[4]);
-  void write_ident(int val);
-  void reset(bool val);
-  void enable(int channel, bool state);
-  int get_fd(void) { return m_fd; }
+  // m_bufsize is the size of the buffer for h2t data
+  mmlink_connection(mmlink_server *server) : m_bufsize(3000) { m_buf = new char[m_bufsize]; init(server); }
+  ~mmlink_connection() { close_connection(); delete[] m_buf; }
+  bool is_open() { return m_fd >= 0; }
+  bool is_data() { return m_is_data; }
+  bool is_bound() { return m_is_bound; }
+  void set_is_data(void) { m_is_data = true; }
+
+  size_t send(const char *msg, const size_t len);
+  void close_connection() { if (is_open()) ::close(m_fd); init(); }
+  void bind() { m_is_bound = true; }
+  void socket(int socket) { m_fd = socket; }
+  int socket() { return m_fd; }
+  int handle_receive();
+  int handle_management(void);
 
   char *buf(void) { return m_buf; }
-  bool is_empty(void) { return m_buf_end == 0; }
-  bool flush_request(void);
+  void buf_end(size_t index) { m_buf_end = index; }
   size_t buf_end(void) { return m_buf_end; }
-  void buf_end(int index) { m_buf_end = index; }
+
+  static const char *UNKNOWN;
+  static const char *OK;
+
+protected:
+  int m_fd;
+  bool m_is_bound;
+  bool m_is_data;
+  const int m_bufsize;
+  mmlink_server *m_server;
+
+  char *m_buf;
+  size_t m_buf_end;
+
+  void init(mmlink_server *server) { m_server = server; init(); }
+
+private:
+  int handle_data(void);
+  int handle_management_command(char *cmd);
+  int handle_unbound_command(char *cmd);
+  int handle_bound_command(char *cmd);
+  int get_server_id(void) { return m_server->get_server_id(); }
+  mm_debug_link_interface *driver(void) { return m_server->get_driver_fd(); }
+  void init(void) { m_fd = -1; m_is_bound = false; m_is_data = false; m_buf_end = 0; }
 };
 
 #endif
-

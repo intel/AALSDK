@@ -158,31 +158,5 @@ struct ccidrv_session {
 };
 
 
-//----------
-// Externals
-//----------
-#if 0
-extern btInt
-ccidrv_messageHandler(struct ccidrv_session  *,
-                     btUnsigned32bitInt     ,
-                     struct aalui_ioctlreq *,
-                     btWSSize               ,
-                     struct aalui_ioctlreq *,
-                     btWSSize              *);
-
-extern btInt ccidrv_mmap(struct file *, struct vm_area_struct *);
-extern btUnsignedInt ccidrv_poll(struct file *, poll_table *);
-extern btInt ccidrv_sendevent( void *,
-                              struct aal_device *,
-                              struct aal_q_item *,
-                              void *);
-extern  struct aal_wsid* ccidrv_getwsid(struct aal_device *,
-                                btUnsigned64bitInt );
-extern btInt ccidrv_freewsid(struct aal_wsid *);
-extern btInt ccidrv_valwsid(struct aal_wsid *);
-
-// UDDI singleton driver module
-extern struct um_APIdriver thisDriver;
-#endif
 #endif // __AALKERNEL_AAL_PCIE_DRIVER_UMAPI_LINUX_H__
 

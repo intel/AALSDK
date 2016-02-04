@@ -364,6 +364,7 @@
 #define reasMissingInterface           AAL_ReasCode   (0x001A)
 #define reasParentReleased             AAL_ReasCode   (0x001B)
 #define reasSingletoneExists           AAL_ReasCode   (0x001C)
+#define reasTimeout                    AAL_ReasCode   (0x001D)
 
 #define strNoError                     "No error."
 #define strInternalSystemFailure       "Internal system failure!"

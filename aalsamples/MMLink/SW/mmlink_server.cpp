@@ -1,4 +1,7 @@
+// Copyright(c) 2014, Altera Corporation
+// All rights reserved.
 // Copyright(c) 2007-2016, Intel Corporation
+// All rights reserved.
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -428,7 +431,7 @@ void mmlink_server::close_other_data_connection(mmlink_connection *pc)
 // Could cache this.
 mmlink_connection *mmlink_server::get_data_connection(void)
 {
-  for (int i = 0; i < m_num_connections; ++i)
+  for (int i = 0; i < MAX_CONNECTIONS; ++i)
   {
     mmlink_connection *pc = *(m_conn + i);
     if (pc->is_data())

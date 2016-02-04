@@ -106,6 +106,7 @@ struct NLBCmdLine gCmdLine =
    0,
    DEFAULT_BEGINCL,
    DEFAULT_ENDCL,
+   DEFAULT_MULTICL,
    DEFAULT_DSMPHYS,
    DEFAULT_SRCPHYS,
    DEFAULT_DSTPHYS,
@@ -127,6 +128,7 @@ struct NLBCmdLine gCmdLine =
       NLB_MAX_CL,
       DEFAULT_BEGINCL,
       DEFAULT_ENDCL,
+      DEFAULT_MULTICL,
       DEFAULT_DSMPHYS,
       DEFAULT_SRCPHYS,
       DEFAULT_DSTPHYS,
@@ -157,10 +159,10 @@ struct NLBCmdLine gCmdLine =
       DEFAULT_CSR_WRITE,
       DEFAULT_UMSG_DATA,
       DEFAULT_UMSG_HINT,
-      DEFAULT_AUTO_CH,
-      DEFAULT_QPI,
-      DEFAULT_PCIE0,
-      DEFAULT_PCIE1
+      DEFAULT_VA,
+      DEFAULT_VL0,
+      DEFAULT_VH0,
+      DEFAULT_VH1
    },
    0,
    {
