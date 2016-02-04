@@ -820,7 +820,7 @@ ccidrv_initDriver(void/*callback*/)
    PTRACEIN;
 
    // Initialize the list of devices controlled by this driver
-   INIT_LIST_HEAD(&g_device_list);
+   kosal_list_init(&g_device_list);
 
    // Display whether we are running with real or simulated hardware
    PINFO("Using %s configuration.\n", (0 == sim) ? "FPGA hardware" : "simulated hardware");
