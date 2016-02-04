@@ -156,6 +156,10 @@ btCSROffset ASEALIAFU::mmioGetLength( void )
 //
 btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read32(Offset, pValue);
   return true;
 }
@@ -165,6 +169,10 @@ btBool ASEALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write32(Offset, Value);
   return true;
 }
@@ -174,6 +182,10 @@ btBool ASEALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt
 //
 btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const pValue)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_read64(Offset, (uint64_t*)pValue);
   return true;
 }
@@ -183,6 +195,10 @@ btBool ASEALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * cons
 //
 btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt Value)
 {
+   if ( (NULL == m_MMIORmap) || (Offset > m_MMIORsize) ) {
+      return false;
+   }
+
   mmio_write64(Offset, Value);
   return true;
 }
@@ -190,9 +206,9 @@ btBool ASEALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt
 //
 // mmioGetFeature. Get pointer to feature's DFH, if found.
 //
-btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
-                                   NamedValueSet const &rInputArgs,
-                                   NamedValueSet       &rOutputArgs )
+btBool  ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs )
 {
    struct CCIP_DFH    dfh;
    btUnsigned64bitInt guid[2];
@@ -297,7 +313,7 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
          ) {
 
          AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
-         *pFeature = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
+         *pFeatureAddress = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
          // populate output args
          rOutputArgs.Add(ALI_GETFEATURE_ID_KEY, dfh.Feature_ID);
          rOutputArgs.Add(ALI_GETFEATURE_TYPE_KEY, dfh.Type);
@@ -321,6 +337,34 @@ btBool  ASEALIAFU::mmioGetFeature( btVirtAddr          *pFeature,
    AAL_INFO(LM_AFU, "No matching feature found." << std::endl);
    return false;
 }
+
+btBool ASEALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureAddress(pFeatureAddress, rInputArgs, temp);
+}
+
+btBool ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                        NamedValueSet const &rInputArgs,
+                                        NamedValueSet       &rOutputArgs )
+{
+   btVirtAddr pFeatAddr;
+   if (true == mmioGetFeatureAddress(&pFeatAddr, rInputArgs, rOutputArgs)) {
+      *pFeatureOffset = pFeatAddr - mmioGetAddress();
+      return true;
+   }
+   return false;
+}
+
+// overloaded version without rOutputArgs
+btBool  ASEALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureOffset(pFeatureOffset, rInputArgs, temp);
+}
+
 
 
 // -----------------------------------------------------
@@ -451,42 +495,14 @@ bool ASEALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 
 IALIReset::e_Reset ASEALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
 {
-   // // Create the Transaction
-   // AFUQuiesceAndHalt transaction;
-
-   // // Should never fail
-   // if ( !transaction.IsOK() ) {
-   //    return e_Internal;
-   // }
-
-   // // Send transaction
-   // // Will eventually trigger AFUEvent(), below.
-   // m_pAFUProxy->SendTransaction(&transaction);
-
-   // if(transaction.getErrno() != uid_errnumOK){
-   //    return e_Error_Quiesce_Timeout;
-   // }
+   // NOT IMPLEMENTED
 
    return e_OK;
 }
 
 IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 {
-   // // Create the Transaction
-   // AFUEnable transaction;
-
-   // // Should never fail
-   // if ( !transaction.IsOK() ) {
-   //    return e_Internal;
-   // }
-
-   // // Send transaction
-   // // Will eventually trigger AFUEvent(), below.
-   // m_pAFUProxy->SendTransaction(&transaction);
-
-   // if(transaction.getErrno() != uid_errnumOK){
-   //    return e_Error_Quiesce_Timeout;
-   // }
+   // DOES NOTHING
 
    return e_OK;
 
@@ -494,15 +510,12 @@ IALIReset::e_Reset ASEALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 
 IALIReset::e_Reset ASEALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
-   IALIReset::e_Reset ret = afuQuiesceAndHalt();
+   // Port control
+   ase_portctrl("AFU_RESET 1");
+   usleep(10000);
+   ase_portctrl("AFU_RESET 0");
 
-   // if(ret != e_OK){
-   //    afuEnable();
-   // }else{
-   //    ret = afuEnable();
-   // }
-
-   return ret;
+   return e_OK;
 }
 
 

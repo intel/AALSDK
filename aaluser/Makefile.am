@@ -100,7 +100,6 @@ aas/OSAL \
 aas/AASLib \
 aas/AALRuntime \
 aas/AIAService \
-aas/SigTapService \
 aas/RRMBrokerService \
 aas/AASResourceManager \
 ase/sw \

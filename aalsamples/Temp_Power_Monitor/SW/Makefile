@@ -1,4 +1,4 @@
-## Copyright(c) 2015-2016, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,34 +27,54 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     aalutils/remoteSTP/Makefile
+##     samples/Hello_ALI_NLB/Makefile
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
-##     Sadruta Chandrashekar, Intel Corporation
+##     Joseph Grecco, Intel Corporation
 ##  History:
-##     07/21/2015    TSW   Initial version
-##     01/19/2016    SC    remoteSTP version
+##     06/09/2015    JG   Initial version based off of canonical sample makefile
 ##******************************************************************************
-bin_PROGRAMS=remoteSTP
+CPPFLAGS ?=
+CXX      ?= g++
+LDFLAGS  ?=
 
-remoteSTP_SOURCES=\
-SigTap.cpp \
-mm_debug_link_linux.cpp \
-mmlink_connection.cpp \
-mmlink_server.cpp \
-mm_debug_link_interface.h \
-mm_debug_link_linux.h \
-mmlink_connection.h \
-mmlink_server.h
+ifeq (,$(CFLAGS))
+CFLAGS = -g -O2
+endif
 
-remoteSTP_CPPFLAGS=\
--I$(top_srcdir)/include \
--I$(top_builddir)/include
+ifneq (,$(ndebug))
+else
+CPPFLAGS += -DENABLE_DEBUG=1
+endif
+ifneq (,$(nassert))
+else
+CPPFLAGS += -DENABLE_ASSERT=1
+endif
 
-remoteSTP_LDADD=\
-$(top_builddir)/aas/OSAL/libOSAL.la \
-$(top_builddir)/aas/AASLib/libAAS.la \
-$(top_builddir)/aas/AALRuntime/libaalrt.la \
-$(top_builddir)/aas/AIAService/libaia.la \
-$(top_builddir)/clp/libaalclp.la
+ifeq (,$(DESTDIR))
+ifneq (,$(prefix))
+CPPFLAGS += -I$(prefix)/include
+LDFLAGS  += -L$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(prefix)/lib \
+            -L$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(prefix)/lib64
+endif
+else
+ifeq (,$(prefix))
+prefix = /usr/local
+endif
+CPPFLAGS += -I$(DESTDIR)$(prefix)/include
+LDFLAGS  += -L$(DESTDIR)$(prefix)/lib -Wl,-rpath-link -Wl,$(prefix)/lib -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib \
+            -L$(DESTDIR)$(prefix)/lib64 -Wl,-rpath-link -Wl,$(prefix)/lib64 -Wl,-rpath -Wl,$(DESTDIR)$(prefix)/lib64
+endif
 
+all: tempPowMon
+
+tempPowMon: TempPowMon.o
+	$(CXX) $(CFLAGS) -o tempPowMon TempPowMon.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+
+TempPowMon.o: TempPowMon.cpp  Makefile
+	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o TempPowMon.o TempPowMon.cpp
+
+clean:
+	$(RM) tempPowMon TempPowMon.o
+
+.PHONY:all clean
