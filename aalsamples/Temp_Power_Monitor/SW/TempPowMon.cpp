@@ -64,7 +64,11 @@ using namespace AAL;
 #ifdef MSG
 # undef MSG
 #endif // MSG
-#define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#if 0
+  #define MSG(x) std::cout << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl
+#else
+  #define MSG(x)
+#endif
 #ifdef ERR
 # undef ERR
 #endif // ERR
@@ -81,13 +85,8 @@ using namespace AAL;
 
 #define TMP_RDSENSOR 0x1010
 #define PM_RDVR      0x2010
+#define PM_MAXVR     0x2018
 
-#define tempBitMask   0x00000000000000FFULL
-#define seqBitMask    0x0000000000FFFF00ULL
-
-#define powerBitMask  0x00000000FFFF0000ULL
-#define powerUnits    0.09765625
-#define voltage       1 //placeholder for voltage value to convert amps to wattage
 
 // doxygen hACK to generate correct class diagrams
 #define RuntimeClient TempPowMonRuntimeClient
@@ -195,28 +194,151 @@ TempPowMonApp::~TempPowMonApp()
 
 void TempPowMonApp::getTemp()
 {
-   btUnsigned32bitInt tempRdSensor;
-   m_pALIMMIOService->mmioRead32(TMP_RDSENSOR, &tempRdSensor);
+   // Temperature Sensor Read values
+   struct CCIP_TEMP_RDSSENSOR_FMT1 {
 
-   btUnsigned32bitInt tempValue = tempRdSensor & tempBitMask;
-   cout << "Temperature = " << tempValue << " Deg Celcius.\n";
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned32bitInt low;
+            btUnsigned32bitInt high;
+         };
+         struct {
+            btUnsigned64bitInt tmp_reading :7; // Reads out FPGA temperature in celsius.
+            btUnsigned64bitInt rsvd2 :1;
+            btUnsigned64bitInt tmp_reading_seq_num :16; // Temperature reading sequence number
+            btUnsigned64bitInt tmp_reading_valid :1; // Temperature reading is valid
+            btUnsigned64bitInt rsvd1 :7;
+            btUnsigned64bitInt dbg_mode :8; //Debug mode
+            btUnsigned64bitInt rsvd :24;
+         }; // end struct
+      } ; // end union
+   }ccip_tmp_rdssensor_fm1; // end struct CCIP_TMP_RDSSENSOR_FMT1
 
-   btUnsigned32bitInt seqNum = (tempRdSensor & seqBitMask) >> 8;
-   cout << "Temp Sequence Number = " << seqNum << " \n";
+   ccip_tmp_rdssensor_fm1.csr = 0;
+   m_pALIMMIOService->mmioRead32(TMP_RDSENSOR, &ccip_tmp_rdssensor_fm1.low);
+
+   cout << "--Temperature Sequence Number = " <<
+      ccip_tmp_rdssensor_fm1.tmp_reading_seq_num << " \n";
+
+   cout << "Temperature = " <<
+      ccip_tmp_rdssensor_fm1.tmp_reading << " Degrees Celcius.\n";
 
 }
 
 void TempPowMonApp::getPower()
 {
-   btUnsigned64bitInt powerRdVr;
-   m_pALIMMIOService->mmioRead64(PM_RDVR, &powerRdVr);
+   const btFloat CORE_AMP_UNITS=0.09765625;
+   const btFloat CORE_VOLTAGE=0.95;
+   btInt         AmpsValue;
+   btFloat       AmpsAdjusted;
+   btFloat       Power;
 
-   btInt AmpsValue = (powerRdVr & powerBitMask) >> 16;
-   btFloat powerValue = AmpsValue * powerUnits * voltage;
+   struct CCIP_PM_RDVR {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt clock_buffer_supply_i_valid :1; // clock buffer supply current valid
+            btUnsigned64bitInt core_supply_i_valid :1;         // core supply current valid
+            btUnsigned64bitInt trans_supply_i_valid :1;        // transceiver supply current valid
+            btUnsigned64bitInt fpga_supply_i_valid :1;         // fpga 1.8v supply current valid
+            btUnsigned64bitInt volt_regulator_readmods :1;     // Voltage regulator read modes
+            btUnsigned64bitInt rsvd :3;
+            btUnsigned64bitInt clock_buffer_supply_i_value :8; // clock buffer supply current value
+            btUnsigned64bitInt core_supply_i_value :16;        // core supply current value
+            btUnsigned64bitInt trans_supply_i_value :8;        // transceiver supply current value
+            btUnsigned64bitInt fpga_supply_i_value :8;         // fpga supply current value
+            btUnsigned64bitInt sequence_number :16;            // read sample sequence number
+         }; // end struct
+      }; // end union
+   } ccip_pm_rdvr; // end struct CCIP_PM_RDVR
 
-   cout << "Power = " << powerValue << " Amps.\n";
+   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
+   ccip_pm_rdvr.volt_regulator_readmods = 0; // turn on all 4 read channels
+   m_pALIMMIOService->mmioWrite64(PM_RDVR, ccip_pm_rdvr.csr);
+   SleepMilli(1);   // Wait a bit
 
-}
+   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
+
+   // Print Sequence #
+   cout << "--Power Sequence Number = " <<
+      ccip_pm_rdvr.sequence_number << endl;
+
+   // Print Core Amps and power
+   if (ccip_pm_rdvr.core_supply_i_valid) {
+      AmpsValue = static_cast< btInt >(ccip_pm_rdvr.core_supply_i_value);
+      AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
+      Power = AmpsAdjusted * CORE_VOLTAGE;
+      cout << "Core Reading Is Valid: " << AmpsAdjusted << " Amps. " <<
+         Power << " Estimated Watts at nominal " <<
+         CORE_VOLTAGE << " Volts." <<
+         endl;
+
+   } else {
+      cout << "Core Reading Not Valid" << endl;
+   }
+
+   // Print transceiver amps
+   if (ccip_pm_rdvr.trans_supply_i_valid) {
+      cout << "Xcvr Reading Is Valid: " <<
+         ccip_pm_rdvr.trans_supply_i_value << " Unknown Units." <<
+         endl;
+
+   } else {
+      cout << "Xcvr Reading Not Valid" << endl;
+   }
+
+   // Print 1.8V amps
+   if (ccip_pm_rdvr.fpga_supply_i_valid) {
+      cout << "1.8V Reading Is Valid: " <<
+         ccip_pm_rdvr.fpga_supply_i_value << " Unknown Units." <<
+         endl;
+
+   } else {
+      cout << "1.8V Reading Not Valid" << endl;
+   }
+
+   ///////////////////////////////////////////////////////////////
+   // Now deal with Max current values
+   struct CCIP_PM_MAXVR {
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt hw_set_field :1; //Hardware set field
+            btUnsigned64bitInt rsvd :7;
+            btUnsigned64bitInt max_clock_supply_i_rec :8;  // Maximum clock buffer supply current recorded
+            btUnsigned64bitInt max_core_supply_i_rec  :16; // Maximum core  supply current recorded
+            btUnsigned64bitInt max_trans_supply_i_rec :8;  // Maximum Transceiver  supply current recorded
+            btUnsigned64bitInt max_fpga_supply_i_rec  :8;  // Maximum FPGA  supply current recorded
+            btUnsigned64bitInt rsvd1 :16;
+         }; // end struct
+      }; // end union
+   }ccip_pm_mrdvr; // end struct CCIP_PM_MAXVR
+
+   m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
+
+   // Print Max Core Amps and power if values are valie
+   if (ccip_pm_mrdvr.hw_set_field) {
+      AmpsValue = static_cast< btInt >(ccip_pm_mrdvr.max_core_supply_i_rec);
+      AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
+      Power = AmpsAdjusted * CORE_VOLTAGE;
+      cout << "Core Maximum Is Valid: " << AmpsAdjusted << " Amps. " <<
+         Power << " Estimated Watts at nominal " <<
+         CORE_VOLTAGE << " Volts." <<
+         endl;
+      cout << "Xcvr Maximum Is Valid: " <<
+         ccip_pm_mrdvr.max_trans_supply_i_rec << " Unknown Units." <<
+         endl;
+      cout << "1.8V Maximum Is Valid: " <<
+         ccip_pm_mrdvr.max_fpga_supply_i_rec << " Unknown Units." <<
+         endl;
+
+   } else {
+      cout << "Maximum Current Registers Are Not Valid" << endl;
+   }
+
+} // TempPowMonApp::getPower
+
 
 btInt TempPowMonApp::run()
 {
