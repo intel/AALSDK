@@ -437,6 +437,7 @@ btInt HelloALIVTPNLBApp::run()
 
       // Initiate DSM Reset
       // Set DSM base (virtual, since we have allocated using VTP), high then low
+      // FIXME: this is actually a 64 bit write!
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
       // Assert AFU reset
@@ -453,10 +454,10 @@ btInt HelloALIVTPNLBApp::run()
 
 
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput);
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput / CL(1));
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput);
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput / CL(1));
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
