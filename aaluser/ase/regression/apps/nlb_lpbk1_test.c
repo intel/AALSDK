@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     {
       num_cl = 16;
     }
+
   session_init();
   int i;
   
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
 #else
   vc_set = 0;
   mcl_set = 0;
-  num_cl = 16;
+  //  num_cl = 16;
 #endif
 
   printf("num_cl = %d, vc_set = %d, mcl_set = %d\n", num_cl, vc_set, mcl_set);

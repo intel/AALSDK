@@ -724,8 +724,54 @@ module ccip_emulator
       // end
    end
 
+   /*
+    * MMIO timeout/exit process
+    */ 
+   int mmioread_timeout_cnt;
+   logic mmioread_cycle;
+   logic mmioread_cycle_q;
+      
+   // MMIO Read activity in progress
+   always @(posedge clk) begin : mmiocycle_proc
+      mmioread_cycle_q <= mmioread_cycle;      
+      if (sys_reset) begin
+	 mmioread_cycle <= 0;	 
+      end
+      else begin
+	 if (C0RxMmioRdValid) begin
+	    mmioread_cycle <= 1;	    
+	 end
+	 else if (C2TxMmioRdValid) begin
+	    mmioread_cycle <= 0;	    
+	 end
+	 else begin
+	    mmioread_cycle <= mmioread_cycle_q;
+	 end	 
+      end
+   end
+   
+   // MMIO counter
+   always @(posedge clk) begin : mmioread_timeout_ctr
+      if (sys_reset) begin
+	 mmioread_timeout_cnt <= 0;	 
+      end
+      else if (mmioread_cycle) begin
+	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;	 
+      end
+   end
 
-
+   // MMIO Timeout simkill
+   always @(posedge clk) begin
+      if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
+	 `BEGIN_RED_FONTCOLOR;	 
+	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!\n");
+	 $display("        Check to see that MMIO Read responses are returned within %d cycles\n", `MMIO_RESPONSE_TIMEOUT);
+	 `END_RED_FONTCOLOR;  
+	 start_simkill_countdown();
+      end
+   end
+   
+   
    /* ******************************************************************
     *
     * Unordered Messages Engine
@@ -1214,12 +1260,12 @@ module ccip_emulator
    logic 		       rdrsp_valid;
 
    // Write response 0 staging signals
-   RxHdr_t                     wr0rsp_hdr_in, wr0rsp_hdr_out;
-   logic 		       wr0rsp_write;
-   logic 		       wr0rsp_read;
-   logic 		       wr0rsp_full;
-   logic 		       wr0rsp_empty;
-   logic 		       wr0rsp_valid;
+   // RxHdr_t                     wr0rsp_hdr_in, wr0rsp_hdr_out;
+   // logic 		       wr0rsp_write;
+   // logic 		       wr0rsp_read;
+   // logic 		       wr0rsp_full;
+   // logic 		       wr0rsp_empty;
+   // logic 		       wr0rsp_valid;
 
    // Write response 1 staging signals
    RxHdr_t                     wr1rsp_hdr_in, wr1rsp_hdr_out;
@@ -1273,7 +1319,8 @@ module ccip_emulator
 	 pkt.resp_en  = 0;
 	 // Response channel
 	 if (write_en) begin
-	    pkt.resp_channel = wrresp_tx2rx_chsel();
+	    pkt.resp_channel = 1;	    
+// wrresp_tx2rx_chsel();
 	 end
 	 else begin
 	    pkt.resp_channel = 0;
@@ -1449,17 +1496,18 @@ module ccip_emulator
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
-   function automatic int wrresp_tx2rx_chsel();
-      begin
-	 // return 0;
-	 return 1;
-	 // return (abs_val($random) % 2);
-      end
-   endfunction
+   // function automatic int wrresp_tx2rx_chsel();
+   //    begin
+   // 	 // return 0;
+   // 	 return 1;
+   // 	 // return (abs_val($random) % 2);
+   //    end
+   // endfunction
 
    // Read TX1
    always @(posedge clk) begin
-      if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full) begin
+      // if (~cf2as_latbuf_ch1_empty && ~wr0rsp_full && ~wr1rsp_full) begin
+      if (~cf2as_latbuf_ch1_empty && ~wr1rsp_full) begin
 	 cf2as_latbuf_ch1_read <= 1;
       end
       else begin
@@ -1470,41 +1518,44 @@ module ccip_emulator
    // TX1 process
    always @(posedge clk) begin
       if (sys_reset) begin
-	 Tx1toRx0_pkt_vld <= 0;
+	 // Tx1toRx0_pkt_vld <= 0;
 	 Tx1toRx1_pkt_vld <= 0;
       end
       else if (cf2as_latbuf_ch1_valid) begin
-   	 cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
-   	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+   	 // cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
+   	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 
+			      1, 
+			      cf2as_latbuf_tx1hdr, 
+			      cf2as_latbuf_tx1data);
 	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
-   	 if (Tx1toRx1_pkt.resp_channel == 0) begin
-   	    wr_memline_dex(Tx1toRx0_pkt);
-   	    Tx1toRx0_pkt_vld <= cf2as_latbuf_ch1_valid;
-   	    Tx1toRx1_pkt_vld <= 0;
-   	 end
-   	 else if (Tx1toRx1_pkt.resp_channel == 1) begin
+   	 // if (Tx1toRx1_pkt.resp_channel == 0) begin
+   	    // wr_memline_dex(Tx1toRx0_pkt);
+   	    // Tx1toRx0_pkt_vld <= cf2as_latbuf_ch1_valid;
+   	    // Tx1toRx1_pkt_vld <= 0;
+   	 // end
+   	 // else if (Tx1toRx1_pkt.resp_channel == 1) begin
    	    wr_memline_dex(Tx1toRx1_pkt);
-   	    Tx1toRx0_pkt_vld <= 0;
+   	    // Tx1toRx0_pkt_vld <= 0;
    	    Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
-   	 end
+   	 // end
       end // if (cf2as_latbuf_ch1_valid)
       else begin
-	 Tx1toRx0_pkt_vld <= 0;
+	 // Tx1toRx0_pkt_vld <= 0;
 	 Tx1toRx1_pkt_vld <= 0;
       end
    end
 
    // Wr0Rsp_in
-   always @(posedge clk) begin
-      if (sys_reset) begin
-   	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   	 wr0rsp_write   <= 0;
-      end
-      else begin
-	 wr0rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
-	 wr0rsp_write   <= Tx1toRx0_pkt_vld;
-      end
-   end
+   // always @(posedge clk) begin
+   //    if (sys_reset) begin
+   // 	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 wr0rsp_write   <= 0;
+   //    end
+   //    else begin
+   // 	 wr0rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
+   // 	 wr0rsp_write   <= Tx1toRx0_pkt_vld;
+   //    end
+   // end
 
    // Wr1Rsp_in
    always @(posedge clk) begin
@@ -1563,30 +1614,30 @@ module ccip_emulator
    /*
     * RX0 Write Response staging
     */
-   ase_fifo
-     #(
-       .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
-       .DEPTH_BASE2    ( 7 ),
-       .ALMFULL_THRESH ( 120 )
-       )
-   wr0rsp_fifo
-     (
-      .clk             ( clk ),
-      .rst             ( sys_reset ),
-      .wr_en           ( wr0rsp_write ),
-      .data_in         ( CCIP_RX_HDR_WIDTH'(wr0rsp_hdr_in) ),
-      .rd_en           ( ~wr0rsp_empty && wr0rsp_read ),
-      .data_out        ( wr0rsp_hdr_out_vec ),
-      .data_out_v      ( wr0rsp_valid ),
-      .alm_full        ( wr0rsp_full ),
-      .full            (),
-      .empty           ( wr0rsp_empty ),
-      .count           (),
-      .overflow        (),
-      .underflow       ()
-      );
+   // ase_fifo
+   //   #(
+   //     .DATA_WIDTH     ( CCIP_RX_HDR_WIDTH ),
+   //     .DEPTH_BASE2    ( 7 ),
+   //     .ALMFULL_THRESH ( 120 )
+   //     )
+   // wr0rsp_fifo
+   //   (
+   //    .clk             ( clk ),
+   //    .rst             ( sys_reset ),
+   //    .wr_en           ( wr0rsp_write ),
+   //    .data_in         ( CCIP_RX_HDR_WIDTH'(wr0rsp_hdr_in) ),
+   //    .rd_en           ( ~wr0rsp_empty && wr0rsp_read ),
+   //    .data_out        ( wr0rsp_hdr_out_vec ),
+   //    .data_out_v      ( wr0rsp_valid ),
+   //    .alm_full        ( wr0rsp_full ),
+   //    .full            (),
+   //    .empty           ( wr0rsp_empty ),
+   //    .count           (),
+   //    .overflow        (),
+   //    .underflow       ()
+   //    );
 
-   assign wr0rsp_hdr_out = RxHdr_t'(wr0rsp_hdr_out_vec);
+   // assign wr0rsp_hdr_out = RxHdr_t'(wr0rsp_hdr_out_vec);
 
    /*
     * RX1 Write Response staging
@@ -1644,7 +1695,7 @@ module ccip_emulator
 	 umsgfifo_read   <= 1'b0;
    	 mmioreq_read    <= 1'b0;
    	 rdrsp_read      <= 1'b0;
-   	 wr0rsp_read     <= 1'b0;
+   	 // wr0rsp_read     <= 1'b0;
 	 rx0_state       <= RxIdle;
       end
       else begin
@@ -1659,7 +1710,7 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		wr0rsp_read     <= 1'b0;
+		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
 		   // mmioreq_read    <= ~mmioreq_empty;
 		   rx0_state <= RxMMIOForward;
@@ -1670,9 +1721,9 @@ module ccip_emulator
 		else if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
-		else if (~wr0rsp_empty) begin
-		   rx0_state <= RxWriteResp;
-		end
+		// else if (~wr0rsp_empty) begin
+		//    rx0_state <= RxWriteResp;
+		// end
 		else begin
 		   rx0_state <= RxIdle;
 		end
@@ -1690,7 +1741,7 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= ~mmioreq_empty;
 		rdrsp_read      <= 1'b0;
-		wr0rsp_read     <= 1'b0;
+		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
 		   rx0_state <= RxMMIOForward;
 		end
@@ -1711,7 +1762,7 @@ module ccip_emulator
 		umsgfifo_read   <= ~umsgfifo_empty;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		wr0rsp_read     <= 1'b0;
+		// wr0rsp_read     <= 1'b0;
 		if (~umsgfifo_empty) begin
 		   rx0_state <= RxUMsgForward;
 		end
@@ -1732,7 +1783,7 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= ~rdrsp_empty;
-		wr0rsp_read     <= 1'b0;
+		// wr0rsp_read     <= 1'b0;
 		if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
@@ -1741,26 +1792,26 @@ module ccip_emulator
 		end
 	     end
 
-	   RxWriteResp:
-	     begin
-		C0RxMmioWrValid <= 1'b0;
-		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= wr0rsp_valid;
-		C0RxRdValid     <= 1'b0;
-		C0RxUMsgValid   <= 1'b0;
-		C0RxHdr         <= wr0rsp_hdr_out;
-		C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
-		umsgfifo_read   <= 1'b0;
-		mmioreq_read    <= 1'b0;
-		rdrsp_read      <= 1'b0;
-		wr0rsp_read     <= ~wr0rsp_empty;
-		if (~wr0rsp_empty) begin
-		   rx0_state <= RxWriteResp;
-		end
-		else begin
-		   rx0_state <= RxIdle;
-		end
-	     end
+	   // RxWriteResp:
+	   //   begin
+	   // 	C0RxMmioWrValid <= 1'b0;
+	   // 	C0RxMmioRdValid <= 1'b0;
+	   // 	// C0RxWrValid     <= wr0rsp_valid;
+	   // 	C0RxRdValid     <= 1'b0;
+	   // 	C0RxUMsgValid   <= 1'b0;
+	   // 	C0RxHdr         <= wr0rsp_hdr_out;
+	   // 	C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
+	   // 	umsgfifo_read   <= 1'b0;
+	   // 	mmioreq_read    <= 1'b0;
+	   // 	rdrsp_read      <= 1'b0;
+	   // 	wr0rsp_read     <= ~wr0rsp_empty;
+	   // 	if (~wr0rsp_empty) begin
+	   // 	   rx0_state <= RxWriteResp;
+	   // 	end
+	   // 	else begin
+	   // 	   rx0_state <= RxIdle;
+	   // 	end
+	   //   end
 
 	   default:
 	     begin
@@ -1772,7 +1823,7 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		wr0rsp_read     <= 1'b0;
+		// wr0rsp_read     <= 1'b0;
 		rx0_state       <= RxIdle;
 	     end
 

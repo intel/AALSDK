@@ -442,7 +442,7 @@ module outoforder_wrf_channel
 		      `BEGIN_RED_FONTCOLOR;
 		      $display("ERROR : records[%02d] has a VC_VA, this is not expected ", jj);
 	 `ifdef ASE_DEBUG
-		      $finish
+		      $finish;		      
 	 `endif;
 		      `END_RED_FONTCOLOR;
 		   end
