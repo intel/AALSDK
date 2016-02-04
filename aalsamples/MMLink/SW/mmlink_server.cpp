@@ -431,7 +431,7 @@ void mmlink_server::close_other_data_connection(mmlink_connection *pc)
 // Could cache this.
 mmlink_connection *mmlink_server::get_data_connection(void)
 {
-  for (int i = 0; i < m_num_connections; ++i)
+  for (int i = 0; i < MAX_CONNECTIONS; ++i)
   {
     mmlink_connection *pc = *(m_conn + i);
     if (pc->is_data())
