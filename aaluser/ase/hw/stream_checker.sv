@@ -21,12 +21,12 @@ module stream_checker
    
    always @(posedge clk) begin
       if (valid_in) begin
-	 if ( (hdr_in.reqtype == CCIP_RDLINE_I)||(hdr_in.reqtype == CCIP_RDLINE_S) ) begin
+	 if ( (hdr_in.reqtype == ASE_RDLINE_I)||(hdr_in.reqtype == ASE_RDLINE_S) ) begin
 	    for(int ii = 0; ii <= hdr_in.len; ii = ii + 1) begin
 	       check_array[ {tid_in, ii[1:0]} ] = hdr_in;	    
 	    end
 	 end
-	 else if (hdr_in.reqtype != CCIP_WRFENCE) begin
+	 else if (hdr_in.reqtype != ASE_WRFENCE) begin
 	    check_array[{tid_in, hdr_in.len}] = hdr_in;
 	 end
       end

@@ -81,11 +81,13 @@ parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
 
  `endif
 
-parameter NUM_TOTAL_LINKS = `NUM_VL_LINKS + `NUM_VH_LINKS;
-parameter VL_LO_INDEX     = 0;
-parameter VL_HI_INDEX     = `NUM_VL_LINKS-1;
-parameter VH_LO_INDEX     = `NUM_VL_LINKS;
-parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
+// parameter NUM_TOTAL_LINKS = `NUM_VL_LINKS + `NUM_VH_LINKS;
+// parameter VL_LO_INDEX     = 0;
+// parameter VL_HI_INDEX     = `NUM_VL_LINKS-1;
+// parameter VH_LO_INDEX     = `NUM_VL_LINKS;
+// parameter VH_HI_INDEX     = NUM_TOTAL_LINKS - 1;
+
+`define MMIO_RESPONSE_TIMEOUT      128
 
 
 /*

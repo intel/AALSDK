@@ -52,7 +52,7 @@ module ccip_logger
     //////////////////////////////////////////////////////////
     // CCI interface
     input logic 			     clk,
-    input logic 			     SoftReset_n, 
+    input logic 			     SoftReset, 
     // Tx0 channel
     input 				     TxHdr_t C0TxHdr,
     input logic 			     C0TxRdValid,
@@ -63,11 +63,11 @@ module ccip_logger
     input logic 			     C1TxIntrValid,
     // Tx2 channel
     input 				     MMIOHdr_t C2TxHdr,
-    input logic 			     C2TxMMIORdValid,
+    input logic 			     C2TxMmioRdValid,
     input logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData,
     // Rx0 channel
-    input logic 			     C0RxMMIOWrValid,
-    input logic 			     C0RxMMIORdValid,
+    input logic 			     C0RxMmioWrValid,
+    input logic 			     C0RxMmioRdValid,
     input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
     input 				     RxHdr_t C0RxHdr,
     input logic 			     C0RxRdValid,
@@ -91,16 +91,16 @@ module ccip_logger
    int 					    log_fd;
 
    // Reset management
-   logic 				    SoftReset_n_q;
+   logic 				    SoftReset_q;
 
    // Registers for comparing previous states
    always @(posedge clk) begin
-      SoftReset_n_q	<= SoftReset_n;
+      SoftReset_q	<= SoftReset;
    end
    
    // Config header
-   CfgHdr_t C0RxMMIOHdr;
-   assign C0RxMMIOHdr = CfgHdr_t'(C0RxHdr);
+   CfgHdr_t C0RxMmioHdr;
+   assign C0RxMmioHdr = CfgHdr_t'(C0RxHdr);
    
    // Umsg header
    UMsgHdr_t C0RxUMsgHdr;
@@ -126,12 +126,12 @@ module ccip_logger
    function string print_reqtype (logic [3:0] req);
       begin
 	 case (req)
-	   CCIP_RDLINE_S : return "RdLine_S   ";
-	   CCIP_RDLINE_I : return "RdLine_I   ";
-	   CCIP_WRLINE_I : return "WrLine_I   ";
-	   CCIP_WRLINE_M : return "WrLine_M   ";
-	   CCIP_WRFENCE  : return "WrFence    ";
-	   CCIP_INTR_REQ : return "IntrReq    ";
+	   ASE_RDLINE_S  : return "RdLine_S   ";
+	   ASE_RDLINE_I  : return "RdLine_I   ";
+	   ASE_WRLINE_I  : return "WrLine_I   ";
+	   ASE_WRLINE_M  : return "WrLine_M   ";
+	   ASE_WRFENCE   : return "WrFence    ";
+	   ASE_INTR_REQ  : return "IntrReq    ";
 	   default       : return "** ERROR %m : Request type unindentified **" ;
 	 endcase
       end
@@ -141,10 +141,10 @@ module ccip_logger
    function string print_resptype (logic [3:0] resp);
       begin
 	 case (resp)
-	   CCIP_RD_RESP  : return "RdResp     ";
-	   CCIP_WR_RESP  : return "WrResp     ";
-	   CCIP_INTR_RSP : return "IntrResp   ";
-	   default       : return "** ERROR **";
+	   ASE_RD_RSP   : return "RdResp     ";
+	   ASE_WR_RSP   : return "WrResp     ";
+	   ASE_INTR_RSP : return "IntrResp   ";
+	   default      : return "** ERROR **";
 	 endcase
       end
    endfunction
@@ -213,8 +213,8 @@ module ccip_logger
       // Watch CCI port
       forever begin
 	 // Indicate Software controlled reset
-	 if (SoftReset_n_q != SoftReset_n) begin
-	    $fwrite(log_fd, "%d\tSoftReset_n toggled from %b to %b\n", $time, SoftReset_n_q, SoftReset_n);
+	 if (SoftReset_q != SoftReset) begin
+	    $fwrite(log_fd, "%d\tSoftReset toggled from %b to %b\n", $time, SoftReset_q, SoftReset);
 	 end
 	 // Buffer messages
 	 if (log_string_en) begin
@@ -222,30 +222,30 @@ module ccip_logger
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU MMIO Write *******************/
-	 if (C0RxMMIOWrValid) begin
+	 if (C0RxMmioWrValid) begin
 	    if (cfg.enable_cl_view)  $display("%d\t   \tMMIOWrReq   \t%x\t%d bytes\t%s\n",
 					      $time,
-					      C0RxMMIOHdr.index,
-					      mmioreq_length(C0RxMMIOHdr.len),
-					      csr_data(mmioreq_length(C0RxMMIOHdr.len), C0RxData)  );
+					      C0RxMmioHdr.index,
+					      mmioreq_length(C0RxMmioHdr.len),
+					      csr_data(mmioreq_length(C0RxMmioHdr.len), C0RxData)  );
 	    $fwrite(log_fd, "%d\t   \tMMIOWrReq   \t  \t%x\t%d bytes\t%s\n",
 		    $time,
-		    C0RxMMIOHdr.index,
-		    mmioreq_length(C0RxMMIOHdr.len),
-		    csr_data(mmioreq_length(C0RxMMIOHdr.len), C0RxData)  );
+		    C0RxMmioHdr.index,
+		    mmioreq_length(C0RxMmioHdr.len),
+		    csr_data(mmioreq_length(C0RxMmioHdr.len), C0RxData)  );
 	 end
 	 /******************* SW -> AFU MMIO Read *******************/
-	 if (C0RxMMIORdValid) begin
+	 if (C0RxMmioRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
 	    				     $time,
-	    				     C0RxMMIOHdr.tid,
-	    				     C0RxMMIOHdr.index,
-	    				     mmioreq_length(C0RxMMIOHdr.len));
+	    				     C0RxMmioHdr.tid,
+	    				     C0RxMmioHdr.index,
+	    				     mmioreq_length(C0RxMmioHdr.len));
 	    $fwrite(log_fd, "%d\t   \tMMIORdReq   \t%x\t%x\t%d bytes\n",
 	    	    $time,
-	    	    C0RxMMIOHdr.tid,
-	    	    C0RxMMIOHdr.index,
-	    	    mmioreq_length(C0RxMMIOHdr.len));
+	    	    C0RxMmioHdr.tid,
+	    	    C0RxMmioHdr.index,
+	    	    mmioreq_length(C0RxMmioHdr.len));
 	 end	 
 	 //////////////////////// C0 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> MEM Read Request *****************/
@@ -283,7 +283,7 @@ module ccip_logger
 	 end
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> SW MMIO Read Response *****************/
-	 if (C2TxMMIORdValid) begin
+	 if (C2TxMmioRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t   \tMMIORdRsp   \t%x\t%x\n",
 					     $time,
 					     C2TxHdr.tid,
@@ -298,14 +298,14 @@ module ccip_logger
 	 if (C0RxRdValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s\t%x",
 	 				     $time,
-	 				     print_channel(C0RxHdr.vc),
+	 				     print_channel(C0RxHdr.vc_used),
 	 				     print_resptype(C0RxHdr.resptype),
 	 				     C0RxHdr.mdata,
 					     ret_spaces(12),
 	 				     C0RxData);
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\t%s\t%x\n",
 	 	    $time,
-	 	    print_channel(C0RxHdr.vc),
+	 	    print_channel(C0RxHdr.vc_used),
 	 	    print_resptype(C0RxHdr.resptype),
 	 	    C0RxHdr.mdata,
 		    ret_spaces(12),
@@ -315,12 +315,12 @@ module ccip_logger
 	 if (C0RxWrValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x",
 	 				     $time,
-	 				     print_channel(C0RxHdr.vc),
+	 				     print_channel(C0RxHdr.vc_used),
 	 				     print_resptype(C0RxHdr.resptype),
 	 				     C0RxHdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\n",
 	 	    $time,
-	 	    print_channel(C0RxHdr.vc),
+	 	    print_channel(C0RxHdr.vc_used),
 	 	    print_resptype(C0RxHdr.resptype),
 	 	    C0RxHdr.mdata);
 	 end
@@ -357,12 +357,12 @@ module ccip_logger
 	 if (C1RxWrValid) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x",
 	 				     $time,
-	 				     print_channel(C1RxHdr.vc),
+	 				     print_channel(C1RxHdr.vc_used),
 	 				     print_resptype(C1RxHdr.resptype),
 	 				     C1RxHdr.mdata);
 	    $fwrite(log_fd, "%d\t%s\t%s\t%x\n",
 	 	    $time,
-	 	    print_channel(C1RxHdr.vc),
+	 	    print_channel(C1RxHdr.vc_used),
 	 	    print_resptype(C1RxHdr.resptype),
 	 	    C1RxHdr.mdata);
 	 end

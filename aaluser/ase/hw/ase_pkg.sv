@@ -50,71 +50,40 @@ package ase_pkg;
   `include "platform.vh"
  `endif
 
-   // `define GRAM_AUTO "no_rw_check"                         // defaults to auto
-   // `define GRAM_STYLE RAM_STYLE
-   // `define SYNC_RESET_POLARITY 0
-
    // Address widths
    parameter PHYSCLADDR_WIDTH   =  42;
-
-   /*
-    * CCI Transactions
-    */
-   // Read Request/Response
-   // parameter CCIP_TX0_RDLINE_S   =  4'h4;
-   // parameter CCIP_TX0_RDLINE_I   =  4'h6;
-   // parameter CCIP_TX0_RDLINE_E   =  4'h7;
-   // parameter CCIP_RX0_RD_RESP    =  4'h4;
-
-   // Write request/response
-   // parameter CCIP_TX1_WRLINE_I   =  4'h1;
-   // parameter CCIP_TX1_WRLINE_M   =  4'h2;
-   // parameter CCIP_TX1_WRFENCE    =  4'h5;
-   // parameter CCIP_RX0_WR_RESP    =  4'h1;
-   // parameter CCIP_RX1_WR_RESP    =  4'h1;
-
-   // MSI-X request/response
-   // parameter CCIP_TX1_INTRVALID  =  4'h8;
-   // parameter CCIP_RX0_INTR_CMPLT =  4'h8;
-   // parameter CCIP_RX1_INTR_CMPLT =  4'h8;
-
-   // CSR Write/Rread
-   // parameter CCIP_MMIO_RD        =  4'h0;
-   // parameter CCIP_MMIO_WR        =  4'hC;
-
-   // UMsg // TBD
-   // parameter CCIP_RX0_UMSG       =  4'hF;
 
 
    /*
     * CCI specifications
     */
    parameter CCIP_DATA_WIDTH       = 512;
-   // parameter CCIP_UMSG_BITINDEX    = 12;
+   // parameter ASE_UMSG_BITINDEX    = 12;
    parameter CCIP_CFG_RDDATA_WIDTH = 64;
 
    /*
     * Sub-structures
     * Request type, response types, VC types
     */ 
-   // Request types
+   // Request types {channel_id, ccip_if_pkg::req_type}
    typedef enum logic [3:0] {
-			     CCIP_RDLINE_S = 4'h4,
-			     CCIP_RDLINE_I = 4'h6,			     
-			     CCIP_WRLINE_I = 4'h1,
-			     CCIP_WRLINE_M = 4'h2,
-			     CCIP_WRFENCE  = 4'h5,
-			     CCIP_INTR_REQ = 4'h8,
-			     CCIP_CMPXCHG_REQ = 4'hC
+			     ASE_RDLINE_S   = 4'h1,
+			     ASE_RDLINE_I   = 4'h2,			     
+			     ASE_WRLINE_I   = 4'h3,
+			     ASE_WRLINE_M   = 4'h4,
+			     ASE_WRFENCE    = 4'h5,
+			     ASE_INTR_REQ   = 4'h6  // Not supported this version
+			     // ASE_ATOMIC_REQ = 4'h7  // Not supported this version
 			     } ccip_reqtype_t;  		
 
    // Response types
    typedef enum logic [3:0] {
-			     CCIP_RD_RESP  = 4'h4,			     
-			     CCIP_WR_RESP  = 4'h1,
-			     CCIP_INTR_RSP = 4'h8,
-			     CCIP_CMPXCHG_RSP  = 4'hC,
-			     CCIP_UMSG     = 4'hF
+			     ASE_RD_RSP      = 4'h1,			     
+			     ASE_WR_RSP      = 4'h2,
+			     ASE_INTR_RSP    = 4'h3,
+			     ASE_WRFENCE_RSP = 4'h4,
+			     // ASE_ATOMIC_RSP  = 4'h5, // Not supported this version
+			     ASE_UMSG        = 4'h6
 			     } ccip_resptype_t;
    
    // Virtual channel type
@@ -125,6 +94,13 @@ package ase_pkg;
 			     VC_VH1 = 2'b11
 			     } ccip_vc_t;
    
+   // Length type
+   typedef enum logic [1:0] {
+			     ASE_1CL = 2'b00,
+			     ASE_2CL = 2'b01,
+			     ASE_4CL = 2'b11
+			     } ccip_len_t;  
+
    
    /* ***********************************************************
     * CCI-P headers
@@ -132,23 +108,25 @@ package ase_pkg;
     * ***********************************************************/
    // RxHdr
    typedef struct packed {
-      ccip_vc_t       vc;       // 27:26  // Virtual channel select
-      logic           poison;   // 25     // Poison bit
+      //--------- CCIP standard header --------- //
+      ccip_vc_t       vc_used;  // 27:26  // Virtual channel select
+      logic           poison;   // 25     // Poison bit // Reserved in BDX-P
       logic           hitmiss;  // 24     // Hit/miss indicator
       logic           format;   // 23     // Multi-CL enable (write packing only)
-      logic           rsvd22;   // 22     // X
-      logic [1:0]     clnum;    // 21:20  // Cache line number
+      logic           rsvd22;   // 22     // X in CCI-P 
+      ccip_len_t      clnum;    // 21:20  // Cache line number
       ccip_resptype_t resptype; // 19:16  // Response type
       logic [15:0]    mdata;    // 15:0   // Metadata
    } RxHdr_t;
    parameter CCIP_RX_HDR_WIDTH     = $bits(RxHdr_t);
-
+   
    // TxHdr
    typedef struct packed {
+      //--------- CCIP standard header --------- //
       ccip_vc_t       vc;       // 73:72  // Virtual channel select
       logic 	      sop;      // 71     // Start of packet
-      logic 	      rsvd70;   // 70     // X
-      logic [1:0]     len;      // 69:68  // Length
+      logic 	      rsvd70;   // 70     // X in CCI-P 
+      ccip_len_t      len;      // 69:68  // Length
       ccip_reqtype_t  reqtype;  // 67:64  // Request Type
       logic [5:0]     rsvd63_58;// 63:58  // X
       logic [41:0]    addr;     // 57:16  // Address
@@ -156,7 +134,7 @@ package ase_pkg;
    } TxHdr_t;
    parameter CCIP_TX_HDR_WIDTH     = $bits(TxHdr_t);
 
-   // CfgHdr
+   // CfgHdr   
    typedef struct packed {
       logic [15:0] index;
       logic [1:0]  len;
@@ -181,7 +159,7 @@ package ase_pkg;
       logic [8:0] rsvd_14_6;   // 14:6  // Reserved
       logic [5:0] umsg_id;     // 5:0   // Umsg Id
    } UMsgHdr_t;
-   parameter CCIP_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
+   parameter ASE_UMSG_HDR_WIDTH    = $bits(UMsgHdr_t);
 
    // CmpXchg header (received from a Compare-Exchange operation)
    typedef struct packed {
@@ -200,7 +178,25 @@ package ase_pkg;
    parameter CCIP_MMIO_INDEX_WIDTH  = 14;
    parameter CCIP_MMIO_RDDATA_WIDTH = 64;
 
-
+   
+   /* **********************************************************
+    * Wrapped headers with channel Id
+    * ASE's internal datatype used for bookkeeping
+    * *********************************************************/  
+   // Wrap TxHdr_t with channel_id
+   typedef struct packed {
+      logic 	  channel_id;
+      TxHdr_t     txhdr;
+   } ASETxHdr_t;
+   parameter ASE_TX_HDR_WIDTH     = $bits(ASETxHdr_t);
+      
+   // Wrap RxHdr_t with channel_id
+   typedef struct packed {
+      logic 	  channel_id;
+      RxHdr_t     rxhdr;
+   } ASERxHdr_t;
+   parameter ASE_RX_HDR_WIDTH     = $bits(ASERxHdr_t);
+   
 
    /*
     * TX header deconstruction
@@ -210,18 +206,18 @@ package ase_pkg;
    //parameter TX_HDR_CLADDR_BITRANGE     92:67
    //parameter TX_HDR_PV_BIT              66
    // CCI only
- `define TX_META_TYPERANGE          67:64
- `define TX_CLADDR_BITRANGE         57:16
- `define TX_MDATA_BITRANGE          15:0
+ // `define TX_META_TYPERANGE          67:64
+ // `define TX_CLADDR_BITRANGE         57:16
+ // `define TX_MDATA_BITRANGE          15:0
 
    /*
     * RX header deconstruction
     */
    // RX header (SPL/CCI common response)
- `define RX_META_TYPERANGE          19:16
- `define RX_MDATA_BITRANGE          15:0
- `define RX_CSR_BITRANGE            13:0
- `define RX_CSR_DATARANGE           64:0
+ // `define RX_META_TYPERANGE          19:16
+ // `define RX_MDATA_BITRANGE          15:0
+ // `define RX_CSR_BITRANGE            13:0
+ // `define RX_CSR_DATARANGE           64:0
 
 
    /*

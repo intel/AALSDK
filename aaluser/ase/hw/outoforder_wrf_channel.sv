@@ -150,9 +150,6 @@ module outoforder_wrf_channel
    logic [FIFO_WIDTH-1:0] 	  vl0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
-   logic [FIFO_WIDTH-1:0] 	  vl0_nowrf_array[$:INTERNAL_FIFO_DEPTH-1];
-   logic [FIFO_WIDTH-1:0] 	  vh0_nowrf_array[$:INTERNAL_FIFO_DEPTH-1];
-   logic [FIFO_WIDTH-1:0] 	  vh1_nowrf_array[$:INTERNAL_FIFO_DEPTH-1];
 
    // Outfifo
    logic [OUTFIFO_WIDTH-1:0] 	  outfifo[$:VISIBLE_DEPTH-1];
@@ -275,8 +272,8 @@ module outoforder_wrf_channel
       if (write_en) begin
 	 `ifdef ASE_DEBUG
 	 $fwrite(log_fd, "%d | WRITE : hdr=%x assigned tid=%x\n", $time, hdr_in, tid_in);
-	 if (hdr_in.reqtype == CCIP_WRFENCE) begin
-	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);	    
+	 if (hdr_in.reqtype == ASE_WRFENCE) begin
+	    $fwrite (log_fd, "%d | WrFence inserted in channel\n", $time);
 	 end
 	 `endif
 	 infifo.push_back({ tid_in, data_in, CCIP_TX_HDR_WIDTH'(hdr_in) });
@@ -330,7 +327,7 @@ module outoforder_wrf_channel
    assign infifo_empty = (infifo_cnt == 0) ? 1 : 0;
 
 
-   
+
    // INFIFO->VC_sel
    function void infifo_to_vc_push ();
       begin
@@ -343,9 +340,9 @@ module outoforder_wrf_channel
 	       $fwrite(log_fd, "%d | select_vc : tid=%x picked VC_VA, this must not happen !!\n", $time, infifo_tid_out);
 	    end
 	 `endif
-	    if (infifo_hdr_out.reqtype == CCIP_WRFENCE) begin
+	    if (infifo_hdr_out.reqtype == ASE_WRFENCE) begin
          `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | infifo_to_vc : WrFence pushed to all VCs by tid=%x\n", $time, infifo_tid_out);	       
+	       $fwrite(log_fd, "%d | infifo_to_vc : WrFence pushed to all VCs by tid=%x\n", $time, infifo_tid_out);
          `endif
 	       // Fence activatd
 	       vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
@@ -382,7 +379,7 @@ module outoforder_wrf_channel
 	 `endif
 		   end
 	       endcase
-	    end // else: !if(infifo_hdr_out.reqtype == CCIP_WRFENCE)
+	    end // else: !if(infifo_hdr_out.reqtype == ASE_WRFENCE)
 	 end // if (~some_lane_full & ~infifo_empty)
       end
    endfunction
@@ -436,15 +433,18 @@ module outoforder_wrf_channel
 	 for (jj =0 ; jj < NUM_WAIT_STATIONS; jj = jj + 1) begin
 	    // sum = sum + latbuf_used[jj];
 	    if (latbuf_used[jj]) begin
-	       case (records[jj].hdr.vc) 
+	       case (records[jj].hdr.vc)
 		 VC_VL0 : vl0_records_cnt = vl0_records_cnt + 1;
 		 VC_VH0 : vh0_records_cnt = vh0_records_cnt + 1;
 		 VC_VH1 : vh1_records_cnt = vh1_records_cnt + 1;
 		 default:
 		   begin
 		      `BEGIN_RED_FONTCOLOR;
-		      $display("ERROR : records[%02d] has a VC_VA, this is not expected ", jj);		      
-		      `END_RED_FONTCOLOR;		      
+		      $display("ERROR : records[%02d] has a VC_VA, this is not expected ", jj);
+	 `ifdef ASE_DEBUG
+		      $finish
+	 `endif;
+		      `END_RED_FONTCOLOR;
 		   end
 	       endcase
 	    end
@@ -507,7 +507,7 @@ module outoforder_wrf_channel
 	 if (ptr != LATBUF_SLOT_INVALID) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
-	    if (hdr.reqtype == CCIP_WRFENCE) begin
+	    if (hdr.reqtype == ASE_WRFENCE) begin
 	       wrfence_flag = 1;
 	    end
 	    else begin
@@ -613,8 +613,9 @@ module outoforder_wrf_channel
    function int get_delay(input TxHdr_t hdr);
       begin
 	 `ifdef ASE_DEBUG
-	 if (hdr.reqtype == CCIP_WRFENCE) begin
-	    $fwrite(log_fd, "ERROR : WrFence must not enter latency scoreboard");	    
+	 if (hdr.reqtype == ASE_WRFENCE) begin
+	    $fwrite(log_fd, "ERROR : WrFence must not enter latency scoreboard");
+	    $finish;	    
 	 end
 	 `endif
 	 return $urandom_range(15, 60);
@@ -744,22 +745,23 @@ module outoforder_wrf_channel
 	    txhdr                   = records[ptr].hdr;
 	    base_addr               = txhdr.addr;
 	    // RxHdr
-	    rxhdr.vc                = txhdr.vc;
+	    rxhdr.vc_used           = txhdr.vc;
 	    rxhdr.poison            = 0;
 	    rxhdr.hitmiss           = 0; // *FIXME*
 	    rxhdr.format            = 0;
 	    rxhdr.rsvd22            = 0 ;
 	    // rxhdr.clnum will be updated by unroll
-	    if ( (txhdr.reqtype == CCIP_RDLINE_S) || (txhdr.reqtype == CCIP_RDLINE_I) ) begin
-	       rxhdr.resptype        = CCIP_RD_RESP;
+	    if ( (txhdr.reqtype == ASE_RDLINE_S) || (txhdr.reqtype == ASE_RDLINE_I) ) begin
+	       rxhdr.resptype        = ASE_RD_RSP;
 	    end
-	    else if ( (txhdr.reqtype == CCIP_WRLINE_I) || (txhdr.reqtype == CCIP_WRLINE_M) ) begin
-	       rxhdr.resptype        = CCIP_WR_RESP;
+	    else if ( (txhdr.reqtype == ASE_WRLINE_I) || (txhdr.reqtype == ASE_WRLINE_M) ) begin
+	       rxhdr.resptype        = ASE_WR_RSP;
 	    end
             `ifdef ASE_DEBUG
 	    else begin
 	       `BEGIN_RED_FONTCOLOR;
 	       $display("** ERROR : Unrecognized header %x **", txhdr.reqtype);
+	       $finish;	       
 	       `END_RED_FONTCOLOR;
 	    end
             `endif
@@ -776,7 +778,7 @@ module outoforder_wrf_channel
 		 2'b00 :
 		   begin
 		      outfifo_write_en        = 1;
-		      rxhdr.clnum             = 2'b00;
+		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
 	       	      records[ptr].record_pop = 1;
@@ -792,7 +794,7 @@ module outoforder_wrf_channel
 		 2'b01 :
 		   begin
 		      outfifo_write_en        = 1;
-		      rxhdr.clnum             = 2'b00;
+		      rxhdr.clnum             = ASE_2CL;
 		      txhdr.addr              = base_addr + 0;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
 		      outfifo_write_en        = 1;
@@ -800,7 +802,7 @@ module outoforder_wrf_channel
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = 2'b01;
+		      rxhdr.clnum             = ASE_2CL;
 		      txhdr.addr              = base_addr + 1;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
 	       	      records[ptr].record_pop = 1;
@@ -848,28 +850,28 @@ module outoforder_wrf_channel
 		 2'b11 :
 		   begin
 		      outfifo_write_en        = 1;
-		      rxhdr.clnum             = 2'b00;
+		      rxhdr.clnum             = ASE_4CL;
 		      txhdr.addr              = base_addr + 0;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = 2'b01;
+		      rxhdr.clnum             = ASE_4CL;
 		      txhdr.addr              = base_addr + 1;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = 2'b10;
+		      rxhdr.clnum             = ASE_4CL;
 		      txhdr.addr              = base_addr + 2;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = 2'b11;
+		      rxhdr.clnum             = ASE_4CL;
 		      txhdr.addr              = base_addr + 3;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
 	       	      records[ptr].record_pop = 1;
