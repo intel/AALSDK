@@ -142,15 +142,6 @@ void session_init()
   sim2app_mmiorsp_rx  = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
   app2sim_portctrl_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
 
-  /* fcntl( app2sim_tx          , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( app2sim_mmioreq_tx  , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( app2sim_umsg_tx     , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( app2sim_simkill_tx  , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( sim2app_rx          , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( sim2app_mmiorsp_rx  , F_SETPIPE_SZ, 1048576); */
-  /* fcntl( app2sim_portctrl_tx , F_SETPIPE_SZ, 1048576); */
-
-
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
 
