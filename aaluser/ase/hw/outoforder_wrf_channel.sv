@@ -896,7 +896,9 @@ module outoforder_wrf_channel
 		      // 		   @(posedge clk);
 		      // 		   outfifo_write_en        = 0;
 		      $display("** ERROR (%m): txhdr.len = %b is not valid **", txhdr.len);
+		      `ifdef ASE_DEBUG
 		      $fwrite(log_fd, "** ERROR (%m): txhdr.len = %b is not valid **", txhdr.len);
+		      `endif
 		   end
 
 		 ASE_4CL:
