@@ -168,7 +168,6 @@ module ccip_emulator
 	 case (inhdr.req_type)
 	   eREQ_RDLINE_I : txasehdr.txhdr.reqtype = ASE_RDLINE_I;
 	   eREQ_RDLINE_S : txasehdr.txhdr.reqtype = ASE_RDLINE_S;
-	   // default       : $display("ERROR (%m) type not found");
 	 endcase // case (inhdr.req_type)
 	 return txasehdr;
       end
@@ -185,7 +184,6 @@ module ccip_emulator
 	   eREQ_WRLINE_M : txasehdr.txhdr.reqtype = ASE_WRLINE_M;
 	   eREQ_WRFENCE  : txasehdr.txhdr.reqtype = ASE_WRFENCE;
 	   eREQ_INTR     : txasehdr.txhdr.reqtype = ASE_INTR_REQ;
-	   //default       : $display("ERROR (%m) type not found");
 	 endcase // case (inhdr.req_type)
 	 return txasehdr;
       end
@@ -199,7 +197,6 @@ module ccip_emulator
 	 case (inhdr.rxhdr.resptype)
 	   ASE_RD_RSP : rxasehdr.resp_type = eRSP_RDLINE;
 	   ASE_UMSG   : rxasehdr.resp_type = eRSP_UMSG;
-	   // default    : $display("ERROR (%m) type not found");
 	 endcase
 	 return rxasehdr;
       end
@@ -214,7 +211,6 @@ module ccip_emulator
 	   ASE_WR_RSP      : rxasehdr.resp_type = eRSP_WRLINE;
 	   ASE_WRFENCE_RSP : rxasehdr.resp_type = eRSP_WRFENCE;
 	   ASE_INTR_RSP    : rxasehdr.resp_type = eRSP_INTR;
-	   // default         : $display("ERROR (%m) type not found");
 	 endcase
 	 return rxasehdr;
       end
@@ -572,7 +568,6 @@ module ccip_emulator
 	       cwlp_wrvalid = 0;
 	       cwlp_rdvalid = 0;
 	       run_clocks(`MMIO_WRITE_LATRANGE);
-	       // mmio_response(mmio_pkt);
 	    end
 	    else if (mmio_pkt.write_en == MMIO_READ_REQ) begin
 	       cwlp_data    = 0;
@@ -627,9 +622,9 @@ module ccip_emulator
       .underflow  (  )
       );
 
+   // Debug config header
    CfgHdr_t DBG_cfgheader;
    logic DBG_cfgvld;
-   // assign DBG_cfgheader = CfgHdr_t'(cwlp_header);
    assign DBG_cfgheader = CfgHdr_t'(C0RxHdr);
    assign DBG_cfgvld = C0RxMmioWrValid | C0RxMmioRdValid;
 
@@ -697,31 +692,11 @@ module ccip_emulator
    end
 
    // FIFO writes to memory
-   always @(posedge clk) begin
-      // if (sys_reset) begin
-      // 	 // mmioresp_read <= 0;
-
-      // end
-      // else begin
-   	 // if (~mmioresp_empty) begin
-   	 if (mmioresp_valid) begin
-   	    // mmioresp_read <= ~mmioresp_empty;
-	    // mmio_resp_pkt.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];
-	    // mmio_resp_pkt.qword[1] = 0;
-	    // mmio_resp_pkt.qword[2] = 0;
-	    // mmio_resp_pkt.qword[3] = 0;
-	    // mmio_resp_pkt.qword[4] = 0;
-	    // mmio_resp_pkt.qword[5] = 0;
-	    // mmio_resp_pkt.qword[6] = 0;
-	    // mmio_resp_pkt.qword[7] = 0;
-	    // mmio_resp_pkt.resp_en  = 1;
-	    mmio_rsp_mask(mmio_resp_pkt);
-   	    mmio_response ( mmio_resp_pkt );
-   	 end
-   	 // else begin
-   	 //    // mmioresp_read <= 0;
-      // end
-      // end
+   always @(posedge clk) begin : dpi_mmio_response
+      if (mmioresp_valid) begin
+	 mmio_rsp_mask(mmio_resp_pkt);
+   	 mmio_response ( mmio_resp_pkt );
+      end
    end
 
    /*
@@ -761,7 +736,7 @@ module ccip_emulator
    end
 
    // MMIO Timeout simkill
-   always @(posedge clk) begin
+   always @(posedge clk) begin : mmio_timeout_simkill
       if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
 	 `BEGIN_RED_FONTCOLOR;	 
 	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!");
@@ -1008,7 +983,7 @@ module ccip_emulator
    typedef enum {UPopIdle, UPopHint, UPopData, UPopWait} UmsgPopStateMachine;
    UmsgPopStateMachine upop_state;
 
-   always @(posedge clk) begin
+   always @(posedge clk) begin : umsgfifo_pop_write
       if (sys_reset) begin
    	 umsgfifo_hdr_in    <= {ASE_UMSG_HDR_WIDTH{1'b0}};
    	 umsgfifo_data_in   <= {UMSG_FIFO_WIDTH{1'b0}};
@@ -1260,14 +1235,6 @@ module ccip_emulator
    logic 		       rdrsp_empty;
    logic 		       rdrsp_valid;
 
-   // Write response 0 staging signals
-   // RxHdr_t                     wr0rsp_hdr_in, wr0rsp_hdr_out;
-   // logic 		       wr0rsp_write;
-   // logic 		       wr0rsp_read;
-   // logic 		       wr0rsp_full;
-   // logic 		       wr0rsp_empty;
-   // logic 		       wr0rsp_valid;
-
    // Write response 1 staging signals
    RxHdr_t                     wr1rsp_hdr_in, wr1rsp_hdr_out;
    logic 		       wr1rsp_write;
@@ -1278,14 +1245,14 @@ module ccip_emulator
 
    // Declare packets for each channel
    cci_pkt Tx0toRx0_pkt;
-   cci_pkt Tx1toRx0_pkt;
+   //   cci_pkt Tx1toRx0_pkt;
    cci_pkt Tx1toRx1_pkt;
    cci_pkt Tx0toRx0_pkt_q;
    // cci_pkt Tx1toRx0_pkt_q;
    // cci_pkt Tx1toRx1_pkt_q;
 
    logic Tx0toRx0_pkt_vld;
-   logic Tx1toRx0_pkt_vld;
+   // logic Tx1toRx0_pkt_vld;
    logic Tx1toRx1_pkt_vld;
    // logic Tx0toRx0_pkt_vld_q;
    // logic Tx1toRx0_pkt_vld_q;
@@ -1331,29 +1298,29 @@ module ccip_emulator
 
 
    // rdreq/wrreq checker
-   logic rdreq_flag;
-   logic wrreq_flag;
+   // logic rdreq_flag;
+   // logic wrreq_flag;
 
-   always @(*) begin
-      if (sys_reset) begin
-	 rdreq_flag <= 0;
-	 wrreq_flag <= 0;
-      end
-      else begin
-	 // RdReq type
-	 case (cf2as_latbuf_tx0hdr.reqtype)
-	   ASE_RDLINE_S : rdreq_flag = 1;
-	   ASE_RDLINE_I : rdreq_flag = 1;
-	   default           : rdreq_flag = 0;
-	 endcase
-	 // WrReq type
-	 case (cf2as_latbuf_tx1hdr.reqtype)
-	   ASE_WRLINE_I : wrreq_flag = 1;
-	   ASE_WRLINE_M : wrreq_flag = 1;
-	   default           : wrreq_flag = 0;
-	 endcase
-      end
-   end
+   // always @(*) begin 
+   //    if (sys_reset) begin
+   // 	 rdreq_flag <= 0;
+   // 	 wrreq_flag <= 0;
+   //    end
+   //    else begin
+   // 	 // RdReq type
+   // 	 case (cf2as_latbuf_tx0hdr.reqtype)
+   // 	   ASE_RDLINE_S : rdreq_flag = 1;
+   // 	   ASE_RDLINE_I : rdreq_flag = 1;
+   // 	   default           : rdreq_flag = 0;
+   // 	 endcase
+   // 	 // WrReq type
+   // 	 case (cf2as_latbuf_tx1hdr.reqtype)
+   // 	   ASE_WRLINE_I : wrreq_flag = 1;
+   // 	   ASE_WRLINE_M : wrreq_flag = 1;
+   // 	   default           : wrreq_flag = 0;
+   // 	 endcase
+   //    end
+   // end
 
    // cf2as_latbuf_ch0 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
@@ -1519,44 +1486,21 @@ module ccip_emulator
    // TX1 process
    always @(posedge clk) begin
       if (sys_reset) begin
-	 // Tx1toRx0_pkt_vld <= 0;
 	 Tx1toRx1_pkt_vld <= 0;
       end
       else if (cf2as_latbuf_ch1_valid) begin
-   	 // cast_txhdr_to_ccipkt(Tx1toRx0_pkt, 1, cf2as_latbuf_tx1hdr, cf2as_latbuf_tx1data);
    	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 
 			      1, 
 			      cf2as_latbuf_tx1hdr, 
 			      cf2as_latbuf_tx1data);
 	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
-   	 // if (Tx1toRx1_pkt.resp_channel == 0) begin
-   	    // wr_memline_dex(Tx1toRx0_pkt);
-   	    // Tx1toRx0_pkt_vld <= cf2as_latbuf_ch1_valid;
-   	    // Tx1toRx1_pkt_vld <= 0;
-   	 // end
-   	 // else if (Tx1toRx1_pkt.resp_channel == 1) begin
-   	    wr_memline_dex(Tx1toRx1_pkt);
-   	    // Tx1toRx0_pkt_vld <= 0;
-   	    Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
-   	 // end
+   	 wr_memline_dex(Tx1toRx1_pkt);
+   	 Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
       end // if (cf2as_latbuf_ch1_valid)
       else begin
-	 // Tx1toRx0_pkt_vld <= 0;
 	 Tx1toRx1_pkt_vld <= 0;
       end
    end
-
-   // Wr0Rsp_in
-   // always @(posedge clk) begin
-   //    if (sys_reset) begin
-   // 	 wr0rsp_hdr_in  <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 wr0rsp_write   <= 0;
-   //    end
-   //    else begin
-   // 	 wr0rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
-   // 	 wr0rsp_write   <= Tx1toRx0_pkt_vld;
-   //    end
-   // end
 
    // Wr1Rsp_in
    always @(posedge clk) begin

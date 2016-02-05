@@ -98,6 +98,7 @@ package ase_pkg;
    typedef enum logic [1:0] {
 			     ASE_1CL = 2'b00,
 			     ASE_2CL = 2'b01,
+			     ASE_3CL = 2'b10,
 			     ASE_4CL = 2'b11
 			     } ccip_len_t;  
 

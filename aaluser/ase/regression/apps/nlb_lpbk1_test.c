@@ -31,20 +31,25 @@
 int main(int argc, char *argv[])
 {
   int num_cl;
+  int vc_set;
+  int mcl_set;
+
   if (argc > 1) 
     {
-      num_cl = atoi( argv[1] );
+      num_cl  = atoi( argv[1] );
+      vc_set  = atoi( argv[2] );
+      mcl_set = atoi( argv[3] );      
     }
   else
     {
       num_cl = 16;
+      vc_set = 0;
+      mcl_set = 0;
     }
 
   session_init();
   int i;
   
-  int vc_set;
-  int mcl_set;
   
   int vc_arr[4] = {0, 1, 2, 3};
   int mcl_arr[3] = {0, 1, 3};
@@ -54,10 +59,6 @@ int main(int argc, char *argv[])
   vc_set = vc_arr[rand()%4];
   mcl_set = mcl_arr[rand()%3];
   num_cl = num_cl * mcl_set;
-#else
-  vc_set = 0;
-  mcl_set = 0;
-  //  num_cl = 16;
 #endif
 
   printf("num_cl = %d, vc_set = %d, mcl_set = %d\n", num_cl, vc_set, mcl_set);

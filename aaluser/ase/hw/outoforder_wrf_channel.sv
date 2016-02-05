@@ -775,7 +775,7 @@ module outoforder_wrf_channel
 
 	    if (UNROLL_ENABLE == 1) begin
 	       case (txhdr.len)
-		 2'b00 :
+		 ASE_1CL:
 		   begin
 		      outfifo_write_en        = 1;
 		      rxhdr.clnum             = ASE_1CL;
@@ -791,10 +791,10 @@ module outoforder_wrf_channel
 		      outfifo_write_en        = 0;
 		   end
 
-		 2'b01 :
+		 ASE_2CL:
 		   begin
 		      outfifo_write_en        = 1;
-		      rxhdr.clnum             = ASE_2CL;
+		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
 		      outfifo_write_en        = 1;
@@ -847,24 +847,24 @@ module outoforder_wrf_channel
 		      $fwrite(log_fd, "** ERROR (%m): txhdr.len = %b is not valid **", txhdr.len);
 		   end
 
-		 2'b11 :
+		 ASE_4CL:
 		   begin
 		      outfifo_write_en        = 1;
-		      rxhdr.clnum             = ASE_4CL;
+		      rxhdr.clnum             = ASE_1CL;
 		      txhdr.addr              = base_addr + 0;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = ASE_4CL;
+		      rxhdr.clnum             = ASE_2CL;
 		      txhdr.addr              = base_addr + 1;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
 	    	      $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
                       `endif
 		      @(posedge clk);
-		      rxhdr.clnum             = ASE_4CL;
+		      rxhdr.clnum             = ASE_3CL;
 		      txhdr.addr              = base_addr + 2;
 		      array.push_back({ records[ptr].tid, records[ptr].data, CCIP_RX_HDR_WIDTH'(rxhdr), CCIP_TX_HDR_WIDTH'(txhdr) });
                       `ifdef ASE_DEBUG
@@ -898,7 +898,6 @@ module outoforder_wrf_channel
                `endif
 	       @(posedge clk);
 	       outfifo_write_en        = 0;
-
 	    end
 	 end // if (ptr != LATBUF_SLOT_INVALID)
 	 outfifo_write_en        = 0;

@@ -12,7 +12,7 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 1000_0000;
+   localparam MAX_ITEMS = 10;
       
    outoforder_wrf_channel
      #(
