@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -68,14 +68,23 @@ BEGIN_NAMESPACE(AAL)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-BindAFUDevice::BindAFUDevice( TransactionID const &tranID ) :
+BindAFUDevice::BindAFUDevice(IAFUProxyClient *pProxyClient, TransactionID const &tranID ) :
    m_msgID(reqid_UID_Bind),
    m_tid_t(tranID),
-   m_bIsOK(true)
-{}
+   m_bIsOK(true),
+   m_payload(NULL),
+   m_size(0)
+{
+   // Allocate payload
+   m_payload = reinterpret_cast<btVirtAddr*>(new (std::nothrow)  IAFUProxyClient **);
+   *m_payload = reinterpret_cast<btVirtAddr>(pProxyClient);
+   m_size = sizeof(IAFUProxyClient *);
 
-AAL::btVirtAddr                BindAFUDevice::getPayloadPtr()const {return NULL;}
-AAL::btWSSize                  BindAFUDevice::getPayloadSize()const {return 0;}
+
+}
+
+AAL::btVirtAddr                BindAFUDevice::getPayloadPtr()const {return reinterpret_cast<btVirtAddr>(m_payload);}
+AAL::btWSSize                  BindAFUDevice::getPayloadSize()const {return m_size;}
 AAL::stTransactionID_t const   BindAFUDevice::getTranID()const {return m_tid_t;}
 AAL::uid_msgIDs_e              BindAFUDevice::getMsgID()const {return m_msgID;}
 AAL::uid_errnum_e              BindAFUDevice::getErrno()const {return m_errno;}
@@ -93,6 +102,8 @@ AAL::stTransactionID_t const   UnBindAFUDevice::getTranID()const {return m_tid_t
 AAL::uid_msgIDs_e              UnBindAFUDevice::getMsgID()const {return m_msgID;}
 AAL::uid_errnum_e              UnBindAFUDevice::getErrno()const {return m_errno;};
 void                           UnBindAFUDevice::setErrno(AAL::uid_errnum_e errnum) {m_errno = errnum;}
+
+
 ShutdownMDT::ShutdownMDT(AAL::TransactionID const &tranID, AAL::btTime timeout) :
    m_msgID(reqid_UID_Shutdown),
    m_tid_t(tranID),

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -50,7 +50,7 @@ BEGIN_NAMESPACE(AAL)
 
 /// @brief Delivers IServiceClient::serviceAllocated(IBase               * ,
 ///                                                  TransactionID const & );
-class ServiceAllocated : public IDispatchable
+class AASLIB_API ServiceAllocated : public IDispatchable
 {
 public:
    ServiceAllocated(IServiceClient      *pSvcClient,
@@ -66,7 +66,7 @@ protected:
 };
 
 /// @brief Delivers IServiceClient::serviceAllocateFailed(const IEvent & );
-class ServiceAllocateFailed : public IDispatchable
+class AASLIB_API ServiceAllocateFailed : public IDispatchable
 {
 public:
    ServiceAllocateFailed(IServiceClient *pSvcClient,
@@ -81,7 +81,7 @@ protected:
 };
 
 // @brief Causes a Service Object to be detrsoyed
-class DestroyServiceObject : public IDispatchable
+class AASLIB_API DestroyServiceObject : public IDispatchable
 {
 public:
    DestroyServiceObject(ISvcsFact *pSvcsFact,
@@ -94,7 +94,7 @@ protected:
 };
 
 /// @brief Delivers IServiceClient::serviceReleased(TransactionID const & );
-class ServiceReleased : public IDispatchable
+class AASLIB_API ServiceReleased : public IDispatchable
 {
 public:
    ServiceReleased(IServiceClient      *pSvcClient,
@@ -108,7 +108,7 @@ protected:
 };
 
 /// @brief Delivers IServiceClient::serviceReleaseFailed(const IEvent & );
-class ServiceReleaseFailed : public IDispatchable
+class AASLIB_API ServiceReleaseFailed : public IDispatchable
 {
 public:
    ServiceReleaseFailed(IServiceClient *pSvcClient,
@@ -121,7 +121,7 @@ protected:
 };
 
 /// @brief Delivers IServiceClient::serviceEvent(const IEvent & );
-class ServiceEvent : public IDispatchable
+class AASLIB_API ServiceEvent : public IDispatchable
 {
 public:
    ServiceEvent(IServiceClient *pSvcClient,
@@ -138,7 +138,7 @@ protected:
 //============================================================================
 
 /// @brief Delivers IRuntimeClient::runtimeCreateOrGetProxyFailed(IEvent const & );
-class RuntimeCreateOrGetProxyFailed : public IDispatchable
+class AASLIB_API RuntimeCreateOrGetProxyFailed : public IDispatchable
 {
 public:
    RuntimeCreateOrGetProxyFailed(IRuntimeClient *pRTClient,
@@ -152,7 +152,7 @@ protected:
 
 /// @brief Delivers IRuntimeClient::runtimeStarted(IRuntime            * ,
 ///                                                const NamedValueSet & );
-class RuntimeStarted : public IDispatchable
+class AASLIB_API RuntimeStarted : public IDispatchable
 {
 public:
    RuntimeStarted(IRuntimeClient      *pRTClient,
@@ -166,7 +166,7 @@ protected:
 };
 
 /// @brief Delivers IRuntimeClient::runtimeStartFailed(const IEvent & );
-class RuntimeStartFailed : public IDispatchable
+class AASLIB_API RuntimeStartFailed : public IDispatchable
 {
 public:
    RuntimeStartFailed(IRuntimeClient *pRTClient,
@@ -179,7 +179,7 @@ protected:
 };
 
 /// @brief Delivers IRuntimeClient::runtimeStopped(IRuntime * );
-class RuntimeStopped : public IDispatchable
+class AASLIB_API RuntimeStopped : public IDispatchable
 {
 public:
    RuntimeStopped(IRuntimeClient *pRTClient,
@@ -191,7 +191,7 @@ protected:
 };
 
 /// @brief Delivers IRuntimeClient::runtimeStopFailed(const IEvent & );
-class RuntimeStopFailed : public IDispatchable
+class AASLIB_API RuntimeStopFailed : public IDispatchable
 {
 public:
    RuntimeStopFailed(IRuntimeClient *pRTClient,
@@ -205,7 +205,7 @@ protected:
 
 /// @brief Delivers IRuntimeClient::runtimeAllocateServiceSucceeded(IBase * ,
 ///                                                                 TransactionID const & );
-class RuntimeAllocateServiceSucceeded : public IDispatchable
+class AASLIB_API RuntimeAllocateServiceSucceeded : public IDispatchable
 {
 public:
    RuntimeAllocateServiceSucceeded(IRuntimeClient      *pRTClient,
@@ -219,7 +219,7 @@ protected:
 };
 
 /// @brief Delivers IRuntimeClient::runtimeAllocateServiceFailed(const IEvent & );
-class RuntimeAllocateServiceFailed : public IDispatchable
+class AASLIB_API RuntimeAllocateServiceFailed : public IDispatchable
 {
 public:
    RuntimeAllocateServiceFailed(IRuntimeClient *pRTClient,
@@ -232,7 +232,7 @@ protected:
 };
 
 /// @brief Delivers IRuntimeClient::runtimeEvent(const IEvent & );
-class RuntimeEvent : public IDispatchable
+class AASLIB_API RuntimeEvent : public IDispatchable
 {
 public:
    RuntimeEvent(IRuntimeClient *pRTClient,

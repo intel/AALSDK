@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright(c) 2007-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -67,7 +67,7 @@ typedef enum EDSDispatchClass
 
 
 /// Interface for the Event Dispatcher.
-class AASEDS_API IEventDispatcher
+class AALRUNTIME_API IEventDispatcher
 {
 public:
    /// IEventDispatcher Destructor.
@@ -90,7 +90,7 @@ public:
 
 
 /// Interface for the Event Delivery System Service.
-class AASEDS_API IEventDeliveryService
+class AALRUNTIME_API IEventDeliveryService
 {
 public:
    /// IEventDeliveryService Destructor.
@@ -104,7 +104,7 @@ public:
 /// @}
 
 /// Interface for the Event Delivery System Service.
-class AASEDS_API IMessageDeliveryService
+class AALRUNTIME_API IMessageDeliveryService
 {
 public:
    /// IMessageDeliveryService Destructor.

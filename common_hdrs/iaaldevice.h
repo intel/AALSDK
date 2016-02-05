@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -151,17 +151,26 @@ enum aal_device_request_e {
 //=============================================================================
 struct aal_device_addr {
    enum aal_bus_types_e m_bustype;     // Type of bus E.g., FSB, QPI, PCIe
-   btUnsigned32bitInt   m_busnum;      // Bus number
-   btUnsigned32bitInt   m_devicenum;   // device number
-   btUnsigned32bitInt   m_functnum;    // function number
-   bt32bitInt           m_subdevnum;   // Sub-device/channel number
+   union {
+	   btUnsigned32bitInt   m_busnum;      // Domain:Bus number
+	   struct {
+		   btUnsigned16bitInt	m_domain;
+		   btUnsigned16bitInt	m_bus;
+	   };
+   };
+   btUnsigned16bitInt   m_devicenum;   // device number
+   btUnsigned16bitInt   m_functnum;    // function number
+   btUnsigned16bitInt   m_subdevnum;   // Sub-device/channel number
+   btUnsigned16bitInt   m_instanceNum; // instance number
 };
 #define aaldevaddr_bustype(devaddr)         ((devaddr).m_bustype)
 #define aaldevaddr_busnum(devaddr)          ((devaddr).m_busnum)
+#define aaldevaddr_busdom(devaddr)          ((devaddr).m_domain)
+#define aaldevaddr_bus(devaddr)             ((devaddr).m_bus)
 #define aaldevaddr_devnum(devaddr)          ((devaddr).m_devicenum)
 #define aaldevaddr_fcnnum(devaddr)          ((devaddr).m_functnum)
 #define aaldevaddr_subdevnum(devaddr)       ((devaddr).m_subdevnum)
-
+#define aaldevaddr_instanceNum(devaddr)     ((devaddr).m_instanceNum)
 
 //=============================================================================
 // Name: AAL Device_ID
@@ -190,12 +199,15 @@ struct aal_device_id {
    .m_afuGUIDl = 0,                                                                     \
    .m_afuGUIDh = 0, }
 
-#define aaldevid_addr(devid)              ((devid).m_devaddr)
-#define aaldevid_devaddr_bustype(devid)   ((aaldevid_addr(devid)).m_bustype)
-#define aaldevid_devaddr_busnum(devid)    ((aaldevid_addr(devid)).m_busnum)
-#define aaldevid_devaddr_devnum(devid)    ((aaldevid_addr(devid)).m_devicenum)
-#define aaldevid_devaddr_fcnnum(devid)    ((aaldevid_addr(devid)).m_functnum)
-#define aaldevid_devaddr_subdevnum(devid) ((aaldevid_addr(devid)).m_subdevnum)
+#define aaldevid_addr(devid)              	((devid).m_devaddr)
+#define aaldevid_devaddr_bustype(devid)   	((aaldevid_addr(devid)).m_bustype)
+#define aaldevid_devaddr_busnum(devid)    	((aaldevid_addr(devid)).m_busnum)
+#define aaldevid_devaddr_busdom(devid)    	((aaldevid_addr(devid)).m_busnum)
+#define aaldevid_devaddr_bus(devid)    	    ((aaldevid_addr(devid)).m_bus)
+#define aaldevid_devaddr_devnum(devid)    	((aaldevid_addr(devid)).m_devicenum)
+#define aaldevid_devaddr_fcnnum(devid)    	((aaldevid_addr(devid)).m_functnum)
+#define aaldevid_devaddr_subdevnum(devid) 	((aaldevid_addr(devid)).m_subdevnum)
+#define aaldevid_devaddr_instanceNum(devid)	((aaldevid_addr(devid)).m_instanceNum)
 
 #define aaldevid_afuguidl(devid) ((devid).m_afuGUIDl)
 #define aaldevid_afuguidh(devid) ((devid).m_afuGUIDh)
@@ -302,8 +314,10 @@ typedef btInt (*aaldev_OwnerProcessor_t)(struct aal_device *,
 //=============================================================================
 struct aaldev_ownerSession {
    // UI Message Adaptor
-   struct aal_uiapi  *m_uiapi;     // Message handler interface
-   btObjectType       m_UIHandle;  // UI Handle
+   struct aal_uiapi  *m_uiapi;            // Message handler interface
+   btObjectType       m_UIHandle;         // UI Handle
+   btAny              m_ownerContext;     // Specific to binding owner
+
 
    // PIP
    btObjectType       m_PIPHandle; // PIP Handle
@@ -325,6 +339,7 @@ struct aaldevice_interface {
    aaldev_AddOwner_e    (*addOwner)(struct aal_device * ,
                                     btPID ,
                                     btObjectType ,
+                                    btAny,
                                     pkosal_list_head );
    aaldev_AddOwner_e     (*isOwner)(struct aal_device * ,
                                     btPID );
@@ -348,14 +363,14 @@ struct aaldevice_interface {
 };
 
 // Convenience macros
-#define dev_addOwner(p,id,m,s)    (p)->i.addOwner(p,id,m,s)
+#define dev_addOwner(p,id,m,o,s)    (p)->i.addOwner(p,id,m,o,s)
 #define dev_isOwner(p,id,m,s)     (p)->i.addOwner(p,id)
 #define dev_removeOwner(p,id)     (p)->i.removeOwner(p,id)
 #define dev_updateOwner(p,o,s,l)  (p)->i.updateOwner(p,o,s,l)
 #define dev_OwnerSession(p,o)     (p)->i.getOwnerSession(p,o)
 #define dev_doForeachOwner(p,f)   (p)->i.doForeachOwner(p,f)
 #define dev_quiesce(p,o)          (p)->i.quiesce(p,o)
-#define dev_remove(p)             (p)->i.remove(p)
+#define dev_removedevice(p)       (p)->i.remove(p)
 #define dev_hasRelease(p)         (NULL != (p)->i.releasedevice)
 #define dev_setrelease(p,f)       (p)->i.releasedevice=f
 #define dev_release(p,d)          (p)->i.releasedevice(d)

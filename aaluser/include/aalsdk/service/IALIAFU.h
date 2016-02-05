@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -25,14 +25,71 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
 /// @file IALIAFU.h
-/// @brief IALIAFU Service definition.
+/// @brief AFU Link Interface (ALI)
 /// @ingroup IALIAFU
 /// @verbatim
-/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer Sample Application
+/// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
+/// AFU Link Interface (ALI) definition
 ///
-///    This application is for example purposes only.
-///    It is not intended to represent a model for developing commercially-deployable applications.
-///    It is designed to show working examples of the AAL programming model and APIs.
+/// This header defines the various interfaces exposed by the AFU Link
+/// Interface. There is no specific separate IALIAFU class. The individual
+/// interfaces are:
+///
+///    IALIMMIO   Functions for accessing AFU MMIO space and discovering
+///               features used by the AFU, such as MPF
+///    IALIUMsg   Functions for sending UMessages
+///    IALIBuffer Functions for allocating shared buffers between software
+///               and the AFU
+///    IALIPerf   Functions for accessing performance counters
+///    IALIReset  Functions for enabling, disabling, quiescing, and resetting
+///               the AFU
+///    IALIReconfigure
+///               Functions for partial reconfiguration
+///    IALISignalTap
+///               Functions for remote debugging
+///
+/// Applications or services that need to interact with FPGA-implemented
+/// functions (i.e AFUs) will typically allocate an ALI service and obtain
+/// one or more of the above interfaces.
+//////
+/// All ALI IID's will derive from Intel-specific sub-system INTC_sysAFULinkInterface.
+///
+/// An ALI Service will support zero to all of the following Services Interfaces:
+///   iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
+///   iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+///   iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
+///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+///   iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
+///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+///   iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
+///   iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+///   iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+/// <TODO: LIST INTERFACES HERE>
+///
+/// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
+///    that the returned Service pointer supports the needed Interface and take appropriate action,
+///    e.g. possibly failing to start and issuing an appropriate error message, or taking other
+///    corrective action if possible.
+/// For example:
+/// @code
+/// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
+///    ASSERT( pServiceBase );         // if false, then Service threw a bad pointer
+///
+///    IAALService *m_pAALService;     // used to call Release on the Service
+///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
+///    ASSERT( m_pAALService );
+///
+///    IALIMMIO *m_pMMIOService;       // used to call MMIO methods on the Service
+///    m_pMMIOService = dynamic_ptr<IALIMMIO>( iidALI_MMIO_Service, pServiceBase);
+///    ASSERT( m_pMMIOService );
+///
+///    IALIBUFFER *m_pBufferService;   // used to call BUFF methods on the Service
+///    m_pBUFFERService = dynamic_ptr<IALIBuffer>( iidALI_BUFFER_Service, pServiceBase);
+///    ASSERT( m_pBUFFERService );
+///
+///    <TODO: ADD EXAMPLES HERE>
+/// }
+/// @endcode
 ///
 /// AUTHORS: Henry Mitchel, Intel Corporation
 ///          Joseph Grecco, Intel Corporation
@@ -53,6 +110,24 @@
 #include <aalsdk/AASLib.h>
 
 BEGIN_NAMESPACE(AAL)
+
+// FIXME: declare this where it should be declared...
+#define ALI_MMAP_TARGET_VADDR_KEY        "ALIMmapTargetVAddr"
+#define ALI_MMAP_TARGET_VADDR_DATATYPE   void *
+#define ALI_GETFEATURE_ID_KEY            "ALIGetFeatureID"
+#define ALI_GETFEATURE_ID_DATATYPE       btUnsigned64bitInt
+#define ALI_GETFEATURE_TYPE_KEY          "ALIGetFeatureTYPE"
+#define ALI_GETFEATURE_TYPE_DATATYPE     btUnsigned64bitInt
+#define ALI_GETFEATURE_GUID_KEY          "ALIGetFeatureGUID"
+#define ALI_GETFEATURE_GUID_DATATYPE     btcString
+
+// CCIP DFH header types
+#define ALI_DFH_TYPE_RSVD    0
+#define ALI_DFH_TYPE_AFU     1
+#define ALI_DFH_TYPE_BBB     2
+#define ALI_DFH_TYPE_PRIVATE 3
+
+
 
 /// @addtogroup IALIAFU
 /// @{
@@ -94,17 +169,27 @@ typedef enum
 } ali_errnum_e;
 
 
+//-----------------------------------------------------------------------------
+// ALI Interface IIDs.
+//-----------------------------------------------------------------------------
 #define iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
 #define iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
+
 #define iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
 #define iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
+
 #define iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
 #define iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
+
 #define iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
 #define iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
+#define ALI_AFUID_UAFU_CONFIG       "A3AAB285-79A0-4572-83B5-4FD5E5216870"
+
 #define iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
+#define CCIP_STAP_AFUID             "022F85B1-2CC2-4C9D-B6B0-3A385883AB8D"
 
 /// Key for selecting an AFU delegate.
+// TODO: consolidate naming scheme for NVS keys and datatypes
 #define ALIAFU_NVS_KEY_TARGET "ALIAFUTarget"
 /// Value - selects ASECCIAFU
 # define ALIAFU_NVS_VAL_TARGET_ASE   "ALIAFUTarget_ASE"
@@ -113,51 +198,10 @@ typedef enum
 /// Value - selects SWSimCCIAFU
 # define ALIAFU_NVS_VAL_TARGET_SWSIM "ALIAFUTarget_SWSim"
 
-/// @file
-/// @brief AFU Link Interface (ALI).
-///
-/// Defines the functionality available to ALI AFU's.
-/// ALI Service defines a suite of interfaces. There is no specific separate IALIAFU class.
-///
-/// All ALI IID's will derive from Intel-specific sub-system INTC_sysAFULinkInterface.
-///
-/// An ALI Service will support zero to all of the following Services Interfaces:
-///   iidALI_MMIO_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0001)
-///   iidALI_UMSG_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0002)
-///   iidALI_BUFF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0003)
-///   iidALI_BUFF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0004)
-///   iidALI_PERF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0005)
-///   iidALI_RSET_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0006)
-///   iidALI_CONF_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0007)
-///   iidALI_CONF_Service_Client  __INTC_IID(INTC_sysAFULinkInterface,0x0008)
-///   iidALI_STAP_Service         __INTC_IID(INTC_sysAFULinkInterface,0x0009)
-/// <TODO: LIST INTERFACES HERE>
-///
-/// If an ALI Service Client needs any particular Service Interface, then it must check at runtime
-///    that the returned Service pointer supports the needed Interface and take appropriate action,
-///    e.g. possibly failing to start and issuing an appropriate error message, or taking other
-///    corrective action if possible.
-/// For example:
-/// @code
-/// void serviceAllocated( IBase *pServiceBase, TransactionID const &rTranID) {
-///    ASSERT( pServiceBase );         // if false, then Service threw a bad pointer
-///
-///    IAALService *m_pAALService;     // used to call Release on the Service
-///    m_pAALService = dynamic_ptr<IAALService>( iidService, pServiceBase);
-///    ASSERT( m_pAALService );
-///
-///    IALIMMIO *m_pMMIOService;       // used to call MMIO methods on the Service
-///    m_pMMIOService = dynamic_ptr<IALIMMIO>( iidALI_MMIO_Service, pServiceBase);
-///    ASSERT( m_pMMIOService );
-///
-///    IALIBUFFER *m_pBufferService;   // used to call BUFF methods on the Service
-///    m_pBUFFERService = dynamic_ptr<IALIBuffer>( iidALI_BUFFER_Service, pServiceBase);
-///    ASSERT( m_pBUFFERService );
-///
-///    <TODO: ADD EXAMPLES HERE>
-/// }
-/// @endcode
 
+//-----------------------------------------------------------------------------
+// IALIMMIO interface.
+//-----------------------------------------------------------------------------
 /// @brief  Provide access to the MMIO region exposed by the AFU to the Application.
 /// @note   There is no client for this Service Interface because all of its methods
 ///            are synchronous (and fast)
@@ -207,9 +251,51 @@ public:
    /// @return     True if the write was successful.
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value) = 0;
 
+   /// @brief      Request pointer to a device feature header (DFH).
+   ///
+   /// Will deposit in *pFeatureAddr the base address of the device feature
+   /// MMIO space (aka the address of the respective feature header) for a
+   /// particular device feature that was requested. Users can request specific
+   /// features by ID, type, and/or GUID, by supplying a NamedValueSet in
+   /// rInputArgs. Possible keys are:
+   ///
+   /// ALI_GETFEATURE_ID      to request a feature with a specific feature ID
+   /// ALI_GETFEATURE_GUID    to request a feature with a specific GUID ID
+   /// ALI_GETFEATURE_TYPE    to request a feature with a specific feature type
+   ///                        (BBB, private feature, …?)
+   ///
+   /// The function will return the ID, GUID, and TYPE of the first matching
+   /// feature in rOutputArgs, if supplied (optional argument via overloading).
+   ///
+   /// @note       Synchronous function; no TransactionID. Generally very fast.
+   /// @param[out] pFeature    Where to place the address of the feature header.
+   /// @param[in]  rInputArgs  Arguments specifying which feature to search for.
+   /// @param[out] rOutputArgs Additional properties of the returned feature.
+   /// @return     True if requested feature was found in DFH space.
+   // TODO: do we want this to return a valid pointer, or an offset to be used with the above functions?
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs ) = 0;
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeature,
+                                          NamedValueSet const &rInputArgs ) = 0;
+   // version that returns an MMIO offset instead of an address
+   virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs ) = 0;
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureOffset( btCSROffset        *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs ) = 0;
+
+
+
+
 }; // class IALIMMIO
 
 
+//-----------------------------------------------------------------------------
+// IALIUMsg interface.
+//-----------------------------------------------------------------------------
 /// @brief  Provide access to the UMsg region(s) exposed by the AFU to the Application.
 /// @note   This service interface is obtained from an IBase via iidALI_UMSG_Service
 /// @note   Once you have a pointer from umsgGetAddress(), you can write anything
@@ -282,6 +368,9 @@ public:
 }; // class IALIUMsg
 
 
+//-----------------------------------------------------------------------------
+// IALIBuffer interface.
+//-----------------------------------------------------------------------------
 /// @brief  Buffer Allocation Service Interface of IALI
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_BUFF_Service
@@ -296,15 +385,23 @@ public:
 
    /// @brief Allocate a Workspace.
    ///
-   /// @param[in]  Length   Requested length, in bytes.
-   /// @param[out] Bufferptr   Buffer Pointer.
-   /// @param[in]  pNVS     Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  Length       Requested length, in bytes.
+   /// @param[out] Bufferptr    Buffer Pointer.
+   /// @param[in]  rInputArgs   Reference to optional input arguments if needed.
+   /// @param[out] rOutputArgs  Reference to optional return arguments if needed.
+
    ///
    /// On success, the workspace parameters are notified via IALIBUFFER::bufferAllocated.
    /// On failure, an error notification is sent via IALIBUFFER::bufferAllocateFailed.
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr ) = 0;
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet       *pOptArgs = NULL ) = 0;
+                                             NamedValueSet const &rInputArgs ) = 0;
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs ) = 0;
 
    /// @brief Free a previously-allocated Workspace.
    ///
@@ -336,6 +433,9 @@ public:
 }; // class IALIBuffer
 
 
+//-----------------------------------------------------------------------------
+// IALIPerf interface.
+//-----------------------------------------------------------------------------
 /// @brief  Obtain Global Performance Data (not AFU-specific) (synchronous)
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_PERF_Service
@@ -371,10 +471,10 @@ public:
    #define AALPERF_WRITE_MISS       "Write_Miss"
    #define AALPERF_EVICTIONS        "Evictions"
 
-   #define AALPERF_PCIE0_READ       "PCIe 0 Read"
-   #define AALPERF_PCIE0_WRITE      "PCIe 0 Write"
-   #define AALPERF_PCIE1_READ       "RPCIe 1 Read"
-   #define AALPERF_PCIE1_WRITE      "PCIe 1 Write"
+   #define AALPERF_PCIE0_READ       "PCIe0 Read"
+   #define AALPERF_PCIE0_WRITE      "PCIe0 Write"
+   #define AALPERF_PCIE1_READ       "PCIe1 Read"
+   #define AALPERF_PCIE1_WRITE      "PCIe1 Write"
    #define AALPERF_UPI_READ         "UPI Read"
    #define AALPERF_UPI_WRITE        "UPI Write"
    ///
@@ -386,11 +486,14 @@ public:
    /// }
    /// @endcode
 
-   virtual btBool performanceCountersGet ( INamedValueSet * const pResult,
-                                         NamedValueSet const  *pOptArgs = NULL) = 0;
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult ) = 0;
+   virtual btBool performanceCountersGet ( INamedValueSet * const  pResult,
+                                           NamedValueSet    const &pOptArgs ) = 0;
 }; // class IALIPerf
 
-
+//-----------------------------------------------------------------------------
+// IALIReset interface.
+//-----------------------------------------------------------------------------
 /// @brief  Reset the AFU Link Interface to this AFU (synchronous)
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_RSET_Service
@@ -423,12 +526,13 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS    Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded, other values if a problem.
-   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
-   ///                the provided timeout. (Currently no way to set timeout).
+   /// @param[in]  rInputArgs      Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset         e_OK if succeeded, other values if a problem.
+   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                             the provided timeout. (Currently no way to set timeout).
    ///
-   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuQuiesceAndHalt( void ) = 0;
+   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Re-enable the AFU after a Reset.
    ///
@@ -439,10 +543,11 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded. No errors expected.
+   /// @param[in]  rInputArgs  Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset     e_OK if succeeded. No errors expected.
    ///
-   virtual e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuEnable( void ) = 0;
+   virtual e_Reset afuEnable( NamedValueSet const &rInputArgs) = 0;
 
    /// @brief Request a complete Reset. Convenience function combining other two.
    ///
@@ -455,12 +560,13 @@ public:
    /// TODO: Implementation needs to be via driver transaction so that driver is in
    ///          control, in case it needs to perform its own reset operations.
    ///
-   /// @param[in]  pNVS     Pointer to Optional Arguments if ever needed. Defaults to NULL.
-   /// @return     e_Reset e_OK if succeeded, other values if a problem.
-   ///                e_Error_Quiesce_Timeout indicates that the link did not quiesce within
-   ///                the provided timeout. (Currently no way to set timeout).
+   /// @param[in]  rInputArgs              Pointer to Optional Arguments if ever needed. Defaults to NULL.
+   /// @return     e_Reset                 e_OK if succeeded, other values if a problem.
+   ///             e_Error_Quiesce_Timeout indicates that the link did not quiesce within
+   ///                                     the provided timeout. (Currently no way to set timeout).
    ///
-   virtual e_Reset afuReset( NamedValueSet const *pOptArgs = NULL) = 0;
+   virtual e_Reset afuReset( void ) = 0;
+   virtual e_Reset afuReset( NamedValueSet const &rInputArgs ) = 0;
 }; // class IALIReset
 
 
@@ -469,6 +575,9 @@ public:
 ///       along with if necessary additional meta information such as bus:function:number of
 ///       the PCIe device.
 
+//-----------------------------------------------------------------------------
+// IALIReconfigure interface.
+//-----------------------------------------------------------------------------
 /// @brief  Provide Reconfiguration Services (asynchronous and controlled by driver)
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_CONF_Service
@@ -481,8 +590,10 @@ class IALIReconfigure
 public:
    virtual ~IALIReconfigure() {}
 
-   #define AALCONF_FILENAMEKEY          "BitStreamFile"
-   #define AALCONF_FILENAMETYPE         btString
+   #define AALCONF_FILENAMEKEY            "BitStreamFile"
+   #define AALCONF_FILENAMETYPE           btString
+   #define AALCONF_BUFPTRKEY              "BufPointer"
+   #define AALCONF_BUFSIZE                "BufSize"
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///
@@ -495,11 +606,11 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfDeactivate( TransactionID const &rTranID,
-                                  NamedValueSet const *pOptArgs = NULL) = 0;
+                                  NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Configure an AFU.
    ///
@@ -510,11 +621,11 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments. Initially need a bitstream.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfConfigure( TransactionID const &rTranID,
-                                 NamedValueSet const *pOptArgs = NULL) = 0;
+                                 NamedValueSet const &rInputArgs ) = 0;
 
    /// @brief Activate an AFU after it has been reconfigured.
    ///
@@ -524,14 +635,18 @@ public:
    ///
    /// TODO: Implementation needs to be via driver transaction
    ///
-   /// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+   /// @param[in]  rInputArgs Pointer to input Arguments.
    /// @return     void. Callback in IALIReconfigureClient.
    ///
    virtual void reconfActivate( TransactionID const &rTranID,
-                                NamedValueSet const *pOptArgs = NULL) = 0;
+                                NamedValueSet const &rInputArgs ) = 0;
+
 }; // class IALIReconfigure
 
 
+//-----------------------------------------------------------------------------
+// IALIReconfigure_Client service client interface.
+//-----------------------------------------------------------------------------
 /// @brief  Reconfiguration Callback
 ///
 /// @note   This interface is implemented by the client and set in the IBase
@@ -599,12 +714,15 @@ public:
 }; // class IALIReconfigure_Client
 
 
-/// NOTE: this will be a service that is not typically exported by the ALI Service. Rather,
+//-----------------------------------------------------------------------------
+// IALISignalTap interface.
+//-----------------------------------------------------------------------------
+/// @brief  Access Signal Tap PCIe mmio space
+///
+/// @note This will be a service that is not typically exported by the ALI Service. Rather,
 ///       it will be allocated by requesting the STAP_ID (an AFU_ID associated with a Signal Tap)
 ///       along with if necessary additional meta information such as bus:function:number of
 ///       the PCIe device.
-
-/// @brief  Access Signal Tap PCIe mmio space
 ///
 /// @note   This service interface is obtained from an IBase via iidALI_STAP_Service
 /// @code
@@ -623,7 +741,6 @@ public:
    virtual btVirtAddr stpGetAddress( void ) = 0;
 
 }; // class IALISignalTap
-
 
 
 

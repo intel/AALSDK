@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+// Copyright(c) 2014-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -53,7 +53,7 @@ BEGIN_NAMESPACE(AAL)
 ///Environment
 /// @brief  Used for Accessing and mutating environment variables.
 //=============================================================================
-class Environment : public CUnCopyable
+class OSAL_API Environment : public CUnCopyable
 {
 public:
    virtual ~Environment() {}

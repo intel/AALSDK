@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2015, Intel Corporation
+// Copyright(c) 2012-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -105,7 +105,6 @@ btBool AALServiceModule::Construct(IRuntime            *pAALRuntime,
    // If InitializeService fails then this is a severe failure.
    // An event was not sent. Let upper layers handle the failure.
    m_SvcsFact->DestroyServiceObject(pNewService);
-
    return false;
 }
 

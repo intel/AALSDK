@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Intel Corporation
+// Copyright(c) 2014-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -89,7 +89,7 @@ class IRuntime;
 ///   That establishes a binding between the two objects so that the Runtime
 ///   object can call this object when the Runtime needs to notify its client.
 //=============================================================================
-class AALRUNTIME_API IRuntimeClient
+class /*AALRUNTIME_API*/ IRuntimeClient
 {
 public:
    /// @brief     Called by a Runtime object to indicate that it failed to

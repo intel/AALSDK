@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -86,7 +86,10 @@ public:
    AAL::btBool SendTransaction( IAIATransaction *pAFUmessage);
 
    // Map/Unmap Workspace IDs to virtual memory addresses
-   AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+   AAL::btBool MapWSID(AAL::btWSSize             Size,
+                       AAL::btWSID               wsid,
+                       AAL::btVirtAddr          *pRet,
+                       AAL::NamedValueSet const &optArgs = AAL::NamedValueSet());
    void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
 
 

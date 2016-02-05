@@ -1,4 +1,4 @@
-// Copyright (c) 2007-2015, Intel Corporation
+// Copyright(c) 2007-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -142,7 +142,7 @@ class AIASERVICE_API AIAService : public AAL::ServiceBase, public AAL::IServiceC
 
       void SendMessage(AAL::btHANDLE devhandle, IAIATransaction *pMessage, IAFUProxyClient *pClient);
 
-      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet, AAL::NamedValueSet const &optArgs = AAL::NamedValueSet());
       void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
 
 

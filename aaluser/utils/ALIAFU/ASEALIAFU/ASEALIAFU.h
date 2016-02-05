@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -120,12 +120,34 @@ public:
    virtual btBool  mmioWrite32( const btCSROffset Offset, const btUnsigned32bitInt Value);
    virtual btBool   mmioRead64( const btCSROffset Offset,       btUnsigned64bitInt * const pValue);
    virtual btBool  mmioWrite64( const btCSROffset Offset, const btUnsigned64bitInt Value);
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs,
+                                          NamedValueSet       &rOutputArgs );
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                          NamedValueSet const &rInputArgs );
+   virtual btBool  mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs );
+   // overloaded version without rOutputArgs
+   virtual btBool  mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                         NamedValueSet const &rInputArgs );
    // </IALIMMIO>
 
    // <IALIBuffer>
    virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr ) { return bufferAllocate(Length, pBufferptr, AAL::NamedValueSet()); }
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
                                              btVirtAddr          *pBufferptr,
-                                             NamedValueSet       *pOptArgs = NULL );
+                                             NamedValueSet const &rInputArgs )
+   {
+      NamedValueSet temp = NamedValueSet();
+      return bufferAllocate(Length, pBufferptr, rInputArgs, temp);
+   }
+   virtual AAL::ali_errnum_e bufferAllocate( btWSSize             Length,
+                                             btVirtAddr          *pBufferptr,
+                                             NamedValueSet const &rInputArgs,
+                                             NamedValueSet       &rOutputArgs );
    virtual AAL::ali_errnum_e bufferFree( btVirtAddr           Address);
    virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
    // </IALIBuffer>
@@ -139,9 +161,12 @@ public:
    // </IALIUMsg>
 
    // <IALIReset>
-   virtual IALIReset::e_Reset afuQuiesceAndHalt( NamedValueSet const *pOptArgs = NULL){};
-   virtual IALIReset::e_Reset afuEnable( NamedValueSet const *pOptArgs = NULL){};
-   virtual IALIReset::e_Reset afuReset( NamedValueSet const *pOptArgs = NULL){};
+   virtual e_Reset afuQuiesceAndHalt( void ) { return afuQuiesceAndHalt(NamedValueSet()); }
+   virtual e_Reset afuQuiesceAndHalt( NamedValueSet const &rInputArgs );
+   virtual e_Reset afuEnable( void ) { return afuEnable(NamedValueSet()); }
+   virtual e_Reset afuEnable( NamedValueSet const &rInputArgs);
+   virtual e_Reset afuReset( void ) { return afuReset(NamedValueSet()); }
+   virtual e_Reset afuReset( NamedValueSet const &rInputArgs );
    // </IALIReset>
 
    // <IServiceClient>

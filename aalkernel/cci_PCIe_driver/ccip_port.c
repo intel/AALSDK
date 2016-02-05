@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -75,11 +75,11 @@
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
 
-#include "ccip_defs.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
@@ -129,6 +129,7 @@ struct aal_ipip cci_Portpip = {
 ///        expose through AAL.
 ///
 /// @param[in] pportdev - Port device
+/// @param[in] devnum - Port number
 /// @param[in] paalid - Base AAL ID for this device.
 /// @return    AAL Device pointer
 ///============================================================================
@@ -172,6 +173,7 @@ struct cci_aal_device   *
    aaldevid_devaddr_devnum(*paalid)      = ccip_port_devnum(pportdev);
    aaldevid_devaddr_fcnnum(*paalid)      = ccip_port_fcnnum(pportdev);
    aaldevid_devaddr_subdevnum(*paalid)   = devnum;
+   aaldevid_devaddr_instanceNum(*paalid) = 0;
 
    // The following attributes describe the interfaces supported by the device
    aaldevid_afuguidl(*paalid)            = CCIP_PORT_GUIDL;
@@ -191,16 +193,16 @@ struct cci_aal_device   *
 
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPPORT",           // AAL device base name
-                                           &*paalid,             // AAL ID
-                                           &cci_Portpip);
+   cci_aaldev_to_aaldev(pcci_aaldev)  =  aaldev_create( "CCIPPORT",           // AAL device base name
+                                                        &*paalid,             // AAL ID
+                                                        &cci_Portpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
    //
 
    // Set how many owners are allowed access to this device simultaneously
-   pcci_aaldev->m_aaldev->m_maxowners = 1;
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;
@@ -232,10 +234,11 @@ struct cci_aal_device   *
    ret = cci_publish_aaldevice(pcci_aaldev);
    ASSERT(ret == 0);
    if(0> ret){
-      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%d]",aaldevid_devaddr_busnum(*paalid),
-                                                                  aaldevid_devaddr_devnum(*paalid),
-                                                                  aaldevid_devaddr_fcnnum(*paalid),
-                                                                  aaldevid_devaddr_subdevnum(*paalid));
+      PERR("Failed to initialize AAL Device for FME[%d:%d:%d:%x:%d]",aaldevid_devaddr_busnum(*paalid),
+                                                                     aaldevid_devaddr_devnum(*paalid),
+                                                                     aaldevid_devaddr_fcnnum(*paalid),
+                                                                     aaldevid_devaddr_subdevnum(*paalid),
+																     aaldevid_devaddr_instanceNum(*paalid));
       cci_destroy_aal_device(pcci_aaldev);
       return NULL;
    }
@@ -416,10 +419,8 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                   Message->m_context,
                                                                   request_error);
 
-     ccidrv_sendevent( pownerSess->m_UIHandle,
-                       pownerSess->m_device,
-                       AALQIP(pafuresponse_evt),
-                       Message->m_context);
+     ccidrv_sendevent( pownerSess,
+                       AALQIP(pafuresponse_evt));
 
       retval = -EINVAL;
    } break;
@@ -697,7 +698,7 @@ cci_mmap(struct aaldev_ownerSession *pownerSess,
 struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
                                       btVirtAddr pkvp_port_mmio)
 {
-   struct port_device      *pport_dev   = NULL;
+   struct port_device      *pportdev   = NULL;
    bt32bitInt               res         = 0;
 
    PTRACEIN;
@@ -709,35 +710,38 @@ struct port_device  *get_port_device( btPhysAddr pphys_port_mmio,
    }
 
    // Construct the new object
-   pport_dev =(struct port_device*) kosal_kmalloc(sizeof(struct port_device));
-   ASSERT(pport_dev);
-   if(NULL == pport_dev){
+   pportdev =(struct port_device*) kosal_kzmalloc(sizeof(struct port_device));
+   ASSERT(pportdev);
+   if(NULL == pportdev){
       PERR("Error allocating Port device\n");
       return NULL;
    }
 
    // Initialize the list head
-   kosal_list_init(&ccip_port_list_head(pport_dev));
+   kosal_list_init(&ccip_port_list_head(pportdev));
 
-   ccip_port_kvp_mmio(pport_dev)    = pkvp_port_mmio;
-   ccip_port_phys_mmio(pport_dev)   = pphys_port_mmio;
+   // Initialize uAFU pointer
+   ccip_port_uafu_dev(pportdev) = NULL;
+
+   ccip_port_kvp_mmio(pportdev)    = pkvp_port_mmio;
+   ccip_port_phys_mmio(pportdev)   = pphys_port_mmio;
 
    // Get Port header
-   ccip_port_hdr(pport_dev) = get_port_header(pkvp_port_mmio );
-   if(NULL == ccip_port_hdr(pport_dev)) {
+   ccip_port_hdr(pportdev) = get_port_header(pkvp_port_mmio );
+   if(NULL == ccip_port_hdr(pportdev)) {
       PERR("Error reading Port Header\n");
       goto ERR;
    }
 
    // get port feature list
-   res =  get_port_featurelist(pport_dev,pkvp_port_mmio );
+   res =  get_port_featurelist(pportdev,pkvp_port_mmio );
    if(res !=0) {
       PERR("Port device feature list Error %d \n",res);
       goto ERR;
    }
 
    PINFO(" get_port_mmio EXIT \n");
-   return pport_dev;
+   return pportdev;
 
 ERR:
    PERR("Error getting Port device\n");

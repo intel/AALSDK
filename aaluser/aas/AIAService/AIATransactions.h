@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -67,7 +67,7 @@ class AIASERVICE_API BindAFUDevice : public IAIATransaction
 {
 public:
    // Used by the AFU Proxy to bind to AFU device
-   BindAFUDevice( AAL::TransactionID const &tranID = AAL::TransactionID() );
+   BindAFUDevice(IAFUProxyClient *pProxyClient, AAL::TransactionID const &tranID = AAL::TransactionID() );
 
    AAL::btBool                    IsOK() const;
 
@@ -83,6 +83,8 @@ private:
    AAL::stTransactionID_t        m_tid_t;
    AAL::btBool                   m_bIsOK;
    AAL::uid_errnum_e             m_errno;
+   AAL::btVirtAddr              *m_payload;
+   AAL::btWSSize                 m_size;
 }; // class BindAFUDevice
 
 //=============================================================================

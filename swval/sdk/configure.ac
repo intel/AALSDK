@@ -28,22 +28,23 @@ AALSDK_COPYRIGHT_NOTICE([INTEL CONFIDENTIAL - For Intel Internal Use Only])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
 dnl ############################################################################
-AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         [1],[1],[1])
-AALSDK_LTLIB_VERSION([AAS],          [libAAS],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        [1],[1],[1])
-AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    [1],[1],[1])
-AALSDK_LTLIB_VERSION([RRM],          [librrm],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    [1],[1],[1])
-AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [1],[1],[1])
-AALSDK_LTLIB_VERSION([ASE],          [libASE],          [1],[1],[1])
-AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [1],[1],[1])
-AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [1],[1],[1])
-AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [1],[1],[1])
-AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [1],[1],[1])
+AALSDK_LTLIB_VERSION([OSAL],         [libOSAL],         	[1],[1],[1])
+AALSDK_LTLIB_VERSION([AAS],          [libAAS],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([AALRUNTIME],   [libaalrt],        	[1],[1],[1])
+AALSDK_LTLIB_VERSION([RESMGR],       [libAASResMgr],    	[1],[1],[1])
+AALSDK_LTLIB_VERSION([RRM],          [librrm],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([RRMBROKER],    [librrmbroker],    	[1],[1],[1])
+AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       	[1],[1],[1])
+AALSDK_LTLIB_VERSION([ASE],          [libASE],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       	[1],[1],[1])
+AALSDK_LTLIB_VERSION([VTP],          [libVTP],          	[1],[1],[1])
+AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     	[1],[1],[1])
+AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    	[1],[1],[1])
+AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  	[1],[1],[1])
 
-AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],     [3],[2],[1])
-AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  [6],[5],[4])
+AALSDK_LTLIB_VERSION([SWVALMOD],     [libswvalmod],    		[3],[2],[1])
+AALSDK_LTLIB_VERSION([SWVALSVCMOD],  [libswvalsvcmod],  	[6],[5],[4])
 
 dnl ############################################################################
 dnl ## Optional Packages #######################################################
@@ -149,6 +150,7 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/uaia/AIAService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/ALIAFUService.h
+                 include/aalsdk/service/VTPService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
                  include/aalsdk/service/SWSimALIAFUService.h])
@@ -170,6 +172,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/fpgadiag/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
+                 utils/ALIAFU/VTP/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])

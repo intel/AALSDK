@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -53,7 +53,8 @@ CAALWorkSpaceUtilities.cpp \
 CCountedObject.cpp \
 CNamedValueSet.cpp \
 KernelStructs.cpp \
-ResMgrUtilities.cpp
+ResMgrUtilities.cpp \
+Dispatchables.cpp
 
 libAAS_la_CPPFLAGS=\
 -I$(top_srcdir)/include \

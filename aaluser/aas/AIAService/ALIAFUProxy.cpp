@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -118,8 +118,10 @@ btBool ALIAFUProxy::init( IBase *pclientBase,
                                                 "No device handle in Configuration Record!"));
       return true;
     }
-   // Bind to device and report when we get Bind complete AFU Event
-   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(rtid), dynamic_cast<IAFUProxyClient*>(this) );
+   // Bind to device and report when we get Bind complete AFU Event,
+   //  The first argument to the bind transaction is the Owner (i.e., ProxyClient). This is where
+   //  all HW messages will be sent by default.
+   m_pAIA->SendMessage(m_devHandle, new BindAFUDevice(m_pClient, rtid), dynamic_cast<IAFUProxyClient*>(this) );
 
 }
 
@@ -139,9 +141,9 @@ btBool ALIAFUProxy::SendTransaction(IAIATransaction *pAFUmessage)
 
 
 
-AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet)
+AAL::btBool ALIAFUProxy::MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet, AAL::NamedValueSet const &optArgs)
 {
-   return m_pAIA->MapWSID(Size, wsid, pRet);
+   return m_pAIA->MapWSID(Size, wsid, pRet, optArgs);
 }
 
 void ALIAFUProxy::UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)

@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -74,8 +74,10 @@
 #define __AALKERNEL_CCIP_PORT_DEF_H_
 
 #include <aalsdk/kernel/aaltypes.h>
+#include <aalsdk/kernel/ccip_defs.h>
+
 #include "cci_pcie_driver_internal.h"
-#include "ccip_defs.h"
+
 
 BEGIN_NAMESPACE(AAL)
 
@@ -109,8 +111,8 @@ struct port_device
    btUnsigned32bitInt            m_devicenum;   // device number
    btUnsigned32bitInt            m_functnum;    // function number
 
-   // The AFU in this port
-   struct afu_device             m_afu;
+   // The User AFU in this port
+   struct cci_aal_device        *m_uafu;
 
 
 }; // end struct port_device
@@ -119,7 +121,7 @@ struct port_device
 
 #define afu_dev_to_cci_dev(ptr)              cci_container_of(ptr, struct afu_device, m_afu, struct port_device)
 
-#define ccip_port_afu_dev(pdev)               ((pdev)->m_afu)
+#define ccip_port_uafu_dev(pdev)              ((pdev)->m_uafu)
 #define ccip_port_hdr(pdev)                   ((pdev)->m_pport_hdr)
 #define ccip_port_err(pdev)                   ((pdev)->m_pport_err)
 #define ccip_port_umsg(pdev)                  ((pdev)->m_pport_umsg)

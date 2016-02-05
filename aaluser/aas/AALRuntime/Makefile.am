@@ -1,4 +1,4 @@
-## Copyright (c) 2014-2015, Intel Corporation
+## Copyright(c) 2014-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -49,8 +49,7 @@ _MessageDelivery.h \
 _MessageDelivery.cpp \
 _ServiceBroker.h \
 _ServiceBroker.cpp \
-ServiceHost.cpp \
-Dispatchables.cpp
+ServiceHost.cpp 
 
 libaalrt_la_CPPFLAGS=\
 -I$(top_srcdir)/include \

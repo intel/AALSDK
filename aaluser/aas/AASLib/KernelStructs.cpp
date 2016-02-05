@@ -1,4 +1,4 @@
-// Copyright (c) 2008-2015, Intel Corporation
+// Copyright(c) 2008-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -257,12 +257,13 @@ std::ostream & operator << (std::ostream &s, const aal_device_addr &devaddr)
    // char defaultFillChar = s.fill();
 
    s << std::hex << std::uppercase << std::showbase <<
-         "aal_device_addr at ->" << reinterpret_cast<const void*>(&devaddr) << "\n\t"
-                 "bustype:     " << devaddr.m_bustype << "\n\t"
-                 "busnum:      " << devaddr.m_busnum << "\n\t"
-                 "devicenum:   " << devaddr.m_devicenum << "\n\t"
-                 "functnum:    " << devaddr.m_functnum<< "\n\t"
-                 "subdevnum:   " << devaddr.m_subdevnum << "\n";
+         "aal_device_addr at ->  " << reinterpret_cast<const void*>(&devaddr) << "\n\t"
+                 "bustype:       " << devaddr.m_bustype << "\n\t"
+                 "busnum:        " << devaddr.m_busnum << "\n\t"
+                 "devicenum:     " << devaddr.m_devicenum << "\n\t"
+                 "functnum:      " << devaddr.m_functnum<< "\n\t"
+                 "subdevnum:     " << devaddr.m_subdevnum << "\n\t"
+                 "instance:      " << devaddr.m_instanceNum << "\n";
 
    // reset flag and fill state
    // s.fill(defaultFillChar);

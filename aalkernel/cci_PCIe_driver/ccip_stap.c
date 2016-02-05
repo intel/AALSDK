@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -74,11 +74,11 @@
 
 #include "aalsdk/kernel/AALTransactionID_s.h"
 #include "aalsdk/kernel/aalbus-ipip.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "aalsdk/kernel/ccipdriver.h"
 #include "ccipdrv-events.h"
 
-#include "ccip_defs.h"
 #include "ccip_port.h"
 #include "cci_pcie_driver_PIPsession.h"
 
@@ -167,16 +167,16 @@ struct cci_aal_device   *
    cci_dev_phys_afu_mmio(pcci_aaldev)  = kosal_virt_to_phys((btVirtAddr)ccip_port_stap(pportdev));
 
    // Create the AAL device and attach it to the CCI device object
-   pcci_aaldev->m_aaldev =  aaldev_create( "CCIPSTAP",         // AAL device base name
-                                           paalid,             // AAL ID
-                                           &cci_STAPpip);
+   cci_aaldev_to_aaldev(pcci_aaldev) =  aaldev_create( "CCIPSTAP",         // AAL device base name
+                                                       paalid,             // AAL ID
+                                                       &cci_STAPpip);
 
    //===========================================================
    // Set up the optional aal_device attributes
    //
 
    // Set how many owners are allowed access to this device simultaneously
-   pcci_aaldev->m_aaldev->m_maxowners = 1;
+   cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
    // Set the config space mapping permissions
    cci_aaldev_to_aaldev(pcci_aaldev)->m_mappableAPI = AAL_DEV_APIMAP_NONE;

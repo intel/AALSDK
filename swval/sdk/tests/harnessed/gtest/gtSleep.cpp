@@ -289,9 +289,9 @@ TEST_F(SleepBasic, aal0137)
 #endif
 
 #if defined( __AAL_LINUX__ )
-    //Verify that the difference in timestamps is within the tolerance level of 0.5 millisecond.
+    //Verify that the difference in timestamps is within the tolerance level of 1.0 millisecond.
     EXPECT_TRUE(2 <= (EndTime - StartTime));
-    EXPECT_TRUE(500000 >= (EndTime - StartTime));
+    EXPECT_TRUE(1000000 >= (EndTime - StartTime));
 
     #elif   defined( __AAL_WINDOWS__ )
     //Verify that the difference in timestamps is within the tolerance level of 10 milliseconds.

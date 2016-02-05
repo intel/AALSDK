@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -86,10 +86,8 @@ btInt ccidrv_messageHandler( struct ccidrv_session  *,
                              struct ccipui_ioctlreq *,
                              btWSSize              *);
 
-btInt ccidrv_sendevent( void *,
-                               struct aal_device *,
-                               struct aal_q_item *,
-                               void *);
+btInt ccidrv_sendevent( struct aaldev_ownerSession *,
+                        struct aal_q_item *);
 
 btInt ccidrv_flush_eventqueue(  struct ccidrv_session *psess);
 
@@ -621,8 +619,11 @@ process_bind_request(struct ccidrv_session  *psess,
          // Set the owner session - Through the owner session
          //  the system can always get to the device (downstream)
          //  and the UIdrv session (upstream).
-         ownerSessp->m_device   = pdev;                 // Device
-         ownerSessp->m_UIHandle = psess;                // This session
+         ownerSessp->m_device   = pdev;                  // Device
+         ownerSessp->m_UIHandle = psess;                 // This session
+         ownerSessp->m_ownerContext =  *((btVirtAddr*)preq->payload);     // Used by AIA for routing
+
+         PDEBUG("Owner Context %p\n",  *((btVirtAddr*)preq->payload));
 
          //---------------------------------------------------
          // Bind the PIP to the session
@@ -842,17 +843,11 @@ ccidrv_marshal_upstream_message( struct ccipui_ioctlreq *preq,
 // Comments:
 //=============================================================================
 btInt
-ccidrv_sendevent(btObjectType       sesHandle, // Session handle  TODO this and context may be redundant
-                struct aal_device *devp,      // Send a message to the device
-                struct aal_q_item *eventp,    // Event  (Will be a qitem)
-                btObjectType       context)
+ccidrv_sendevent(struct aaldev_ownerSession * pOwnerSession,
+                 struct aal_q_item *eventp)
 {
    btInt                 ret   = 0;
-   struct ccidrv_session *psess = (struct ccidrv_session *)sesHandle;
-
-   UNREFERENCED_PARAMETER(context);
-   UNREFERENCED_PARAMETER(devp);
-
+   struct ccidrv_session *psess = (struct ccidrv_session *)pOwnerSession->m_UIHandle;
 
    PTRACEIN;
    ASSERT(NULL != psess);

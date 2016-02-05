@@ -1,4 +1,4 @@
-## Copyright (c) 2005-2015, Intel Corporation
+## Copyright(c) 2005-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -233,7 +233,9 @@ include/aalsdk/rm/InstanceRecord.h
 
 servicehdrs_HEADERS=\
 include/aalsdk/service/IALIAFU.h \
+include/aalsdk/service/IVTP.h \
 include/aalsdk/service/ALIAFUService.h \
+include/aalsdk/service/VTPService.h \
 include/aalsdk/service/HWALIAFUService.h \
 include/aalsdk/service/ASEALIAFUService.h \
 include/aalsdk/service/SWSimALIAFUService.h
@@ -309,12 +311,17 @@ include/aalsdk/rm/RRMService.h.in
 
 SERVICE_EXTRA=\
 include/aalsdk/service/ALIAFUService.h.in \
+include/aalsdk/service/VTPService.h.in \
 include/aalsdk/service/HWALIAFUService.h.in \
 include/aalsdk/service/ASEALIAFUService.h.in \
 include/aalsdk/service/SWSimALIAFUService.h.in
 
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
+
+UTILS_EXTRA=\
+utils/fpgadiag/fpgasane_nlb400_0.sh \
+utils/fpgadiag/fpgasane_nlb400_3.sh
 
 EXTRA_DIST=\
 $(AAS_EXTRA) \
@@ -325,5 +332,6 @@ $(DOC_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \
-$(UAIA_EXTRA)
+$(UAIA_EXTRA) \
+$(UTILS_EXTRA)
 

@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2011-2015, Intel Corporation.
+//  Copyright(c) 2011-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -75,8 +75,10 @@
 
 #include <aalsdk/kernel/aaltypes.h>
 #include <aalsdk/kernel/ccipdriver.h>
+#include <aalsdk/kernel/ccip_defs.h>
 #include "cci_pcie_driver_internal.h"
-#include "ccip_defs.h"
+
+
 
 BEGIN_NAMESPACE(AAL)
 
@@ -91,10 +93,10 @@ BEGIN_NAMESPACE(AAL)
 #define CACHE_READ_MISS         "Read_Miss"
 #define CACHE_WRITE_MISS        "Write_Miss"
 #define CACHE_EVICTIONS         "Evictions"
-#define FABRIC_PCIE0_READ       "PCIe 0 Read"
-#define FABRIC_PCIE0_WRITE      "PCIe 0 Write"
-#define FABRIC_PCIE1_READ       "PCIe 1 Read"
-#define FABRIC_PCIE1_WRITE      "PCIe 1 Write"
+#define FABRIC_PCIE0_READ       "PCIe0 Read"
+#define FABRIC_PCIE0_WRITE      "PCIe0 Write"
+#define FABRIC_PCIE1_READ       "PCIe1 Read"
+#define FABRIC_PCIE1_WRITE      "PCIe1 Write"
 #define FABRIC_UPI_READ         "UPI Read"
 #define FABRIC_UPI_WRITE        "UPI Write"
 #define VTD_COUNTER              "VT-d"

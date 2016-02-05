@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -66,6 +66,7 @@ struct NLBDefaults
    wkspc_size_type maxcls;
    wkspc_size_type begincls;
    wkspc_size_type endcls;
+   wkspc_size_type multicls;
    phys_type       dsmphys;
    phys_type       srcphys;
    phys_type       dstphys;
@@ -97,10 +98,10 @@ struct NLBDefaults
    const char     *umsg_data;
    const char     *umsg_hint;
 
-   const char     *auto_ch;
-   const char     *qpi;
-   const char     *pcie0;
-   const char     *pcie1;
+   const char     *va;
+   const char     *vl0;
+   const char     *vh0;
+   const char     *vh1;
 };
 
 struct NLBBandwidth
@@ -180,10 +181,12 @@ struct NLBCmdLine
 
 #define NLB_CMD_FLAG_COOL_CPU_CACHE 	(u64_type)0x1000000000 /* --cool-cpu-cache  Cool CPU Cache							            */
 
-#define NLB_CMD_FLAG_AUTO_CH			(u64_type)0x2000000000 /* --auto-ch			 Distribute data among QPI, PCIe0 and PCIe1 channels    */
-#define NLB_CMD_FLAG_QPI				(u64_type)0x4000000000 /* --qpi			    Data transferred on QPI channel						        */
-#define NLB_CMD_FLAG_PCIE0				(u64_type)0x8000000000 /* --pcie0		    Data transferred on PCIe0  channel					        */
-#define NLB_CMD_FLAG_PCIE1				(u64_type)0x10000000000/* --pcie1		    Data transferred on PCIe1  channel			   	        */
+#define NLB_CMD_FLAG_VA       			(u64_type)0x2000000000 /* --va			 Distribute data among QPI, PCIe0 and PCIe1 channels    */
+#define NLB_CMD_FLAG_VL0		   		(u64_type)0x4000000000 /* --vl0			 Data transferred on QPI channel						        */
+#define NLB_CMD_FLAG_VH0	   			(u64_type)0x8000000000 /* --vh0		    Data transferred on PCIe0  channel					        */
+#define NLB_CMD_FLAG_VH1   				(u64_type)0x10000000000/* --vh1		    Data transferred on PCIe1  channel			   	        */
+
+#define NLB_CMD_FLAG_MULTICL           (u64_type)0x20000000000/* --multi-cl X  (number of cache lines)                                */
 
 #define NLB_CMD_FLAG_FEATURE0     		(u64_type)0x80000000   /* --0 */
 #define NLB_CMD_FLAG_FEATURE1     		(u64_type)0x100000000  /* --1 */
@@ -192,6 +195,7 @@ struct NLBCmdLine
    uint_type                iter;
    wkspc_size_type          begincls;
    wkspc_size_type          endcls;
+   wkspc_size_type          multicls;
    phys_type                dsmphys;
    phys_type                srcphys;
    phys_type                dstphys;

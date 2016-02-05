@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -49,9 +49,21 @@
 
 BEGIN_NAMESPACE(AAL)
 
-btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet)
+btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr *pRet, AAL::NamedValueSet const &optArgs)
 {
+   void *pTargetVirtAddr;       // requested virtual address for the mapping
+   int mmapFlags;               // mmap flags
+
    ASSERT(NULL != pRet);
+
+   // extract target VA from optArgs
+   if ( ENamedValuesOK == optArgs.Get(ALI_MMAP_TARGET_VADDR, &pTargetVirtAddr) ) {
+      mmapFlags = MAP_SHARED | MAP_FIXED;
+   } else {
+      pTargetVirtAddr = NULL;    // no mapping requested
+      mmapFlags = MAP_SHARED;
+   }
+
 
 #if   defined( __AAL_WINDOWS__ )
    DWORD                 bytes = 0;
@@ -76,7 +88,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING == GetLastError() ) {
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+		  AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
       } else { // DeviceIoControl() failed.
          CloseHandle(hEvent);
@@ -88,7 +100,7 @@ btBool UIDriverInterfaceAdapter::MapWSID(btWSSize Size, btWSID wsid, btVirtAddr 
    CloseHandle(hEvent);    
    return true;
 #elif defined( __AAL_LINUX__ )
-   *pRet = (btVirtAddr)mmap(NULL, Size, PROT_READ| PROT_WRITE, MAP_SHARED, m_fdClient, wsid);
+   *pRet = (btVirtAddr)mmap(pTargetVirtAddr, Size, PROT_READ | PROT_WRITE, mmapFlags, m_fdClient, wsid);
    if ( (btVirtAddr)MAP_FAILED == *pRet ) {
       *pRet = NULL;
       return false;
@@ -373,7 +385,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -398,7 +410,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (1 of 2)" << endl);
+		 AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (1 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -425,7 +437,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
 
          Unlock();
 
-         AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << endl);
+		 AAL_VERBOSE(LM_UAIA, __AAL_FUNCSIG__ << ": About to wait (2 of 2)" << std::endl);
          GetOverlappedResult(m_hClient, &overlappedIO, &bytes, TRUE);
 
          Lock();
@@ -442,7 +454,7 @@ btBool UIDriverInterfaceAdapter::GetMessage(uidrvMessage *uidrvMessagep)
       return true;
 FAILED: // If got here then DeviceIoControl failed.
    Unlock();
-   AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << ": DeviceIoControl() failed." << endl);
+   AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << ": DeviceIoControl() failed." << std::endl);
    return false;
 
 #elif defined( __AAL_LINUX__ )
@@ -563,7 +575,7 @@ btBool UIDriverInterfaceAdapter::SendMessage(AAL::btHANDLE devHandle,
                          &bytes, &overlappedIO) ) {
 
       if ( ERROR_IO_PENDING != GetLastError() ) {
-         AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << "failed." << endl);
+		  AAL_ERR(LM_UAIA, __AAL_FUNCSIG__ << "failed." << std::endl);
          m_bIsOK = false;
       }
 

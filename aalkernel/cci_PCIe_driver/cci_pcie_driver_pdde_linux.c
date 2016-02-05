@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -73,17 +73,15 @@
 
 #include "aalsdk/kernel/aalbus.h"
 #include "aalsdk/kernel/aalinterface.h"
-//#include "aalsdk/kernel/aalids.h"
-//#include "aalsdk/kernel/aalrm.h"
-//#include "aalsdk/kernel/aalqueue.h"
+#include "aalsdk/kernel/ccip_defs.h"
 
 #include "cci_pcie_driver_internal.h"
 
 #include "cci_pcie_driver_simulator.h"
 
-#include "ccip_defs.h"
 #include "ccip_fme.h"
 #include "ccip_port.h"
+#include "ccip_perfmon.h"
 
 //#include "aalsdk/kernel/spl2defs.h"
 
@@ -158,7 +156,7 @@ module_param    (debug, int, 0644);
 //=============================================================================
 static ssize_t ahmpip_attrib_show_debug(struct device_driver *drv, char *buf)
 {
-   return (snprintf(buf,PAGE_SIZE,"%d\n",debug));
+   return (snprintf(buf,PAGE_SIZE,"%x\n",debug));
 }
 
 //=============================================================================
@@ -171,7 +169,7 @@ static ssize_t ahmpip_attrib_store_debug(struct device_driver *drv,
                                          size_t size)
 {
    int temp = 0;
-   sscanf(buf,"%d", &temp);
+   sscanf(buf,"%x", &temp);
 
    debug = temp;
 
@@ -223,8 +221,8 @@ cci_enumerate_device( struct pci_dev             *pcidev,
 ///=================================================================
 static struct pci_device_id cci_pcie_id_tbl[] = {
    { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP0   ), .driver_data = (kernel_ulong_t)cci_enumerate_device },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
-   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)cci_pcie_stub_probe },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP1),    .driver_data = (kernel_ulong_t)0 },
+   { PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCIe_DEVICE_ID_RCiEP2),    .driver_data = (kernel_ulong_t)0},
    { 0, }
 };
 CASSERT(sizeof(void *) == sizeof(kernel_ulong_t));
@@ -258,6 +256,52 @@ static struct cci_pcie_driver_info driver_info = {
 typedef struct ccip_device * (*cci_probe_fn)( struct pci_dev                * ,
                                               const struct pci_device_id    * );
 
+//=============================================================================
+//=============================================================================
+//                                INLINE PRIMITIVES
+//=============================================================================
+//=============================================================================
+
+//=============================================================================
+// Name: cci_getBARAddress
+// Description: Called during the device probe by cci_pci_probe
+//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
+// Interface: public
+// Inputs:  ppcidev - Pointer to PICe device
+//          pphysaddr - Pointer to where to return the physical address
+//          pvirtaddr - Pointer to where to return the mapped virtual address
+//          psize - BAR region size
+// Outputs: 1 = success.
+// Comments:
+//=============================================================================
+static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
+                                     int               barnum,
+                                     btPhysAddr       *pphysaddr,
+                                     btVirtAddr       *pvirtaddr,
+                                     size_t           *psize)
+{
+   if ( 0 == pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
+      // get the low base address register.
+      *pphysaddr = pci_resource_start(ppcidev, barnum);
+      *psize  = (size_t)pci_resource_len(ppcidev, barnum);
+
+      PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
+      PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
+
+   }else{
+      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
+      return 0;
+   }
+
+   // Only non-zero regions make sense
+   if((0 == *pphysaddr) || (0 == *psize)){
+      pci_release_region(ppcidev, barnum);
+      return 0;
+   }
+   // Get the KVP for the region
+   *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
+   return 1;
+}
 
 //=============================================================================
 // Name: cci_pcie_stub_probe
@@ -297,7 +341,7 @@ struct ccip_device * cci_pcie_stub_probe( struct pci_dev             *pcidev,
          PVERBOSE("Unknown device ID ignored\n");
          break;
    }
-   return NULL;
+   return (struct ccip_device *) (-1);
 }
 
 //=============================================================================
@@ -344,10 +388,9 @@ cci_pci_probe( struct pci_dev             *pcidev,
 
    // Get the device specific probe function
    probe_fn = (cci_probe_fn)pcidevid->driver_data;
-   ASSERT(NULL != probe_fn);
    if ( NULL == probe_fn ) {
-       PERR("NULL cci_enumerate function from probe\n");
-       return res;
+       PVERBOSE("Ignoring hidden PCIe devcies\n");
+       return 0;
    }
 
    // Call the probe function.  This is where the real work occurs
@@ -499,6 +542,7 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
       print_sim_fme_device(pccipdev->m_pfme_dev);
 #endif
 
+      create_perfmonitor(pcidev,ccip_dev_to_fme_dev(pccipdev));
    }
 
 
@@ -577,12 +621,15 @@ struct ccip_device * cci_enumerate_device( struct pci_dev             *pcidev,
          // Added it to the port list
          kosal_list_add(&ccip_port_dev_list(pccipdev), &ccip_port_list_head(pportdev));
 
+         // Save the FME parent for this port
+         ccip_port_dev_fme(pportdev) = pfme_dev;
+
          PDEBUG("Creating Allocatable objects\n");
 
          // Instantiate allocatable objects including AFUs if present.
          //   Subdevice addresses start at 10x the 1 based port number to leave room for
          //   10 devices beneath the port. E.e., STAP, PR, User AFU
-         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, (i+1)) * 10){
+         if(!cci_port_dev_create_AAL_allocatable_objects(pportdev, i) ){
             goto ERR;
          }
       }// End for loop
@@ -606,6 +653,7 @@ ERR:
 
   if( NULL != ccip_fmedev_kvp_afu_mmio(pccipdev)) {
      PVERBOSE("Freeing Port BAR 0\n");
+     remove_perfmonitor(pccipdev->m_pcidev);
      iounmap(ccip_fmedev_kvp_afu_mmio(pccipdev));
      pci_release_region(pcidev, 0);
 

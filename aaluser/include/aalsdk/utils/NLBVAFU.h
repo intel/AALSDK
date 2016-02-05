@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -82,6 +82,8 @@ BEGIN_NAMESPACE(AAL)
 #   define QLP_PERF_CACHE_WR_MISS 3
 #   define QLP_PERF_EVICTIONS     10
 
+#define NUM_PERF_MONITORS         13
+
 #define CSR_AFU_DSM_BASEL         	0x0110
 #define CSR_AFU_DSM_BASEH         	0x0114
 #define CSR_SRC_ADDR              	0x0120
@@ -89,10 +91,10 @@ BEGIN_NAMESPACE(AAL)
 #define CSR_NUM_LINES             	0x0130
 #define CSR_CTL                   	0x0138
 #define CSR_CFG                   	0x0140
-#define CSR_UMSG_BASE				0x03F4
-#define CSR_UMSG_MODE				0x03F8
-#define CSR_CIRBSTAT				0x0278
-#define CSR_SW_NOTICE				0x158
+#define CSR_UMSG_BASE				   0x03F4
+#define CSR_UMSG_MODE				   0x03F8
+#define CSR_CIRBSTAT				      0x0278
+#define CSR_SW_NOTICE				   0x158
 #   define NLB_TEST_MODE_LPBK1    	0x000
 #   define NLB_TEST_MODE_WB       	0x000
 #   define NLB_TEST_MODE_WT       	0x001
@@ -102,19 +104,21 @@ BEGIN_NAMESPACE(AAL)
 #   define NLB_TEST_MODE_TRPUT    	0x00c
 #   define NLB_TEST_MODE_LPBK2    	0x014
 #   define NLB_TEST_MODE_LPBK3    	0x018
-#   define NLB_TEST_MODE_SW     	0x01c
+#   define NLB_TEST_MODE_SW     	   0x01c
 #   define NLB_TEST_MODE_MASK     	0x01c
 #   define NLB_TEST_MODE_RDS      	0x000
 #   define NLB_TEST_MODE_RDI      	0x200
 #   define NLB_TEST_MODE_RDO      	0x400
 #	define NLB_TEST_MODE_UMSG_POLL	0x0000000
-#	define NLB_TEST_MODE_CSR_WRITE  0x4000000
-#	define NLB_TEST_MODE_UMSG_DATA  0x8000000
-#	define NLB_TEST_MODE_UMSG_HINT  0xc000000
-#	define NLB_TEST_MODE_AUTO_CH	0x0000
-#	define NLB_TEST_MODE_QPI		0x1000
-#	define NLB_TEST_MODE_PCIE0		0x2000
-#	define NLB_TEST_MODE_PCIE1		0x3000
+#	define NLB_TEST_MODE_CSR_WRITE   0x4000000
+#	define NLB_TEST_MODE_UMSG_DATA   0x8000000
+#	define NLB_TEST_MODE_UMSG_HINT   0xc000000
+#	define NLB_TEST_MODE_VA          0x0000
+#	define NLB_TEST_MODE_VL0		   0x1000
+#	define NLB_TEST_MODE_VH0		   0x2000
+#	define NLB_TEST_MODE_VH1		   0x3000
+#  define NLB_TEST_MODE_MCL2        0x0020
+#  define NLB_TEST_MODE_MCL4        0x0060
 
 
 typedef struct _nlb_vafu_dsm

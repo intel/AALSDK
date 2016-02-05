@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -174,6 +174,8 @@ struct aal_device {
    /* allocation list.  head is in aal_bus_type.alloc_list_head */
    kosal_list_head       m_alloc_list;
 
+   btAny                 m_context;        //
+
 };
 
 //-----------------
@@ -181,6 +183,9 @@ struct aal_device {
 //-----------------
 #define basedev_to_aaldev(dev)           ( kosal_container_of(dev, struct aal_device, m_dev) )
 #define aaldev_to_basedev(dev)           ((dev)->m_dev)
+
+#define aaldev_to_any(s,pdev)            ((s)(pdev->m_context))
+#define aaldev_context(pdev)             (pdev->m_context)
 
 #define aaldev_is_registered(p)          flag_is_set((p)->m_flags, AAL_DEVICE_FLAG_IS_REGISTERED)
 #define aaldev_set_registered(p)         flag_setf((p)->m_flags,   AAL_DEVICE_FLAG_IS_REGISTERED)
@@ -226,8 +231,9 @@ struct aal_device {
 #define aaldev_devaddr_bustype(dev)      (aaldev_devaddr(dev).m_bustype)
 #define aaldev_devaddr_busnum(dev)       (aaldev_devaddr(dev).m_busnum)
 #define aaldev_devaddr_devnum(dev)       (aaldev_devaddr(dev).m_devicenum)
-#define aaldev_devaddr_fcnnum(devid)     ((aaldev_devaddr(devid)).m_functnum)
+#define aaldev_devaddr_fcnnum(dev)     	 (aaldev_devaddr(dev).m_functnum)
 #define aaldev_devaddr_subdevnum(dev)    (aaldev_devaddr(dev).m_subdevnum)
+#define aaldev_devaddr_instanceNum(dev)  (aaldev_devaddr(dev).m_instanceNum)
 
 // Utility macros
 #define aaldev_haspip(devp)              (NULL != (devp)->m_pip)
@@ -267,14 +273,16 @@ static inline struct aal_device *
    // Allocate the new aal_device
    paaldevice = (struct aal_device    *)kosal_kmalloc(sizeof(struct aal_device));
    if ( NULL == paaldevice ) {
-      PERR( ": Error allocating device memory for bus type %d busID[%d:%d]\n",
+      PERR( ": Error allocating device memory for bus type %d busID[%d:%d:%x:%d]\n",
                                  (unsigned) devID->m_devaddr.m_bustype,
+                                 devID->m_devaddr.m_busnum,
                                  devID->m_devaddr.m_devicenum,
-                                 devID->m_devaddr.m_subdevnum);
+                                 devID->m_devaddr.m_subdevnum,
+								 devID->m_devaddr.m_instanceNum);
       return NULL;
    }
 
-   DPRINTF(AALBUS_DBG_MOD," Preping AAL device %s\n", szDevName);
+   DPRINTF(AALBUS_DBG_MOD," Preparing AAL device %s\n", szDevName);
 
     // Prepare the new device
    memset(paaldevice, 0, sizeof(struct aal_device));
@@ -290,21 +298,23 @@ static inline struct aal_device *
    }
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)
    dev_set_name(&aaldev_to_basedev(paaldevice),
-                "%s[%d:%d:%d:%d]",
+                "%s[%d:%d:%d:%x:%d]",
                 (char*)aaldev_basename(paaldevice),
                 aaldev_devaddr_busnum(paaldevice),
                 aaldev_devaddr_devnum(paaldevice),
                 aaldev_devaddr_fcnnum(paaldevice),
-                aaldev_devaddr_subdevnum(paaldevice));
+                aaldev_devaddr_subdevnum(paaldevice),
+				aaldev_devaddr_instanceNum(paaldevice));
 #else
    // Construct the device name from the base name and the device ID
    snprintf((char*)aaldev_devname(paaldevice), BUS_ID_SIZE,
-            "%s[%d:%d:%d:%d]",
+            "%s[%d:%d:%d:%x:%d]",
             (char*)aaldev_basename(paaldevice),
             aaldev_devaddr_busnum(paaldevice),
             aaldev_devaddr_devnum(paaldevice),
             aaldev_devaddr_fcnnum(paaldevice),
-            aaldev_devaddr_subdevnum(paaldevice));
+            aaldev_devaddr_subdevnum(paaldevice),
+			aaldev_devaddr_instanceNum(paaldevice));
 #endif
 
 

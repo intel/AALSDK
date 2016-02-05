@@ -1,4 +1,4 @@
-## Copyright (c) 2013-2015, Intel Corporation
+## Copyright(c) 2013-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -39,8 +39,8 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([aalsdk], [5.0.0], [joe.grecco@intel.com])
-AC_COPYRIGHT([Copyright (c) 2003-2015 Intel Corporation])
+AC_INIT([aalsdk], [5.0.1], [joe.grecco@intel.com])
+AC_COPYRIGHT([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([aas/AASLib/AALlib.cpp])
@@ -59,7 +59,7 @@ LT_PREREQ([2.2])
 LT_INIT([dlopen])
 LT_LANG([C++])
 
-AALSDK_COPYRIGHT_NOTICE([Copyright (c) 2003-2015 Intel Corporation])
+AALSDK_COPYRIGHT_NOTICE([Copyright(c) 2003-2016, Intel Corporation])
 AC_CONFIG_COMMANDS_PRE([CPPFLAGS+=" -D__AAL_USER__=1"])
 dnl ############################################################################
 dnl ## Library Versioning ######################################################
@@ -74,6 +74,7 @@ AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
+AALSDK_LTLIB_VERSION([VTP],          [libVTP],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [0],[0],[0])
@@ -170,6 +171,7 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/uaia/AIAService.h
                  include/aalsdk/aalclp/aalclp.h
                  include/aalsdk/service/ALIAFUService.h
+                 include/aalsdk/service/VTPService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
                  include/aalsdk/service/SWSimALIAFUService.h])
@@ -191,6 +193,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/fpgadiag/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
+                 utils/ALIAFU/VTP/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])

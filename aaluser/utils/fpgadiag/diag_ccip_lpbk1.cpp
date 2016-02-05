@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -52,6 +52,7 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 {
    btInt 	 res = 0;
    btWSSize  sz = CL(cmd.begincls);
+   uint_type  mcl = cmd.multicls;
    uint_type NumCacheLines = cmd.begincls;
 
    const btInt StopTimeoutMillis = 250;
@@ -124,33 +125,47 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 	   cfg |= (csr_type)NLB_TEST_MODE_RDO;
    }
    // Select the channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_QPI))
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
    {
-    cfg |= (csr_type)NLB_TEST_MODE_QPI;
+    cfg |= (csr_type)NLB_TEST_MODE_VL0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
    {
-    cfg |= (csr_type)NLB_TEST_MODE_PCIE0;
+    cfg |= (csr_type)NLB_TEST_MODE_VH0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE1))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
    {
-    cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
+    cfg |= (csr_type)NLB_TEST_MODE_VH1;
+   }
+   // Set Multi CL CSR.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))
+   {
+      if(2 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL2;
+      }
+      else if(4 == cmd.multicls){
+         cfg |= (csr_type)NLB_TEST_MODE_MCL4;
+      }
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CFG, cfg);
 
+   ReadPerfMonitors();
+   SavePerfMonitors();
+
    cout << endl;
    if ( flag_is_clr(cmd.cmdflags, NLB_CMD_FLAG_SUPPRESSHDR) ) {
-		     //0123456789 0123456789 01234567890 0123456789012
-	  cout << "Cachelines Read_Count Write_Count 'Clocks(@"
+		 	   //0123456789 0123456789 01234567890 012345678901 012345678901 0123456789012 0123456789012 0123456789 0123456789012
+		cout << "Cachelines Read_Count Write_Count Cache_Rd_Hit Cache_Wr_Hit Cache_Rd_Miss Cache_Wr_Miss   Eviction 'Clocks(@"
 		 << Normalized(cmd) << ")'";
 
-	  if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-	  				  // 01234567890123 01234567890123
-	  		 cout << "   Rd_Bandwidth   Wr_Bandwidth";
-	  }
-	  cout << endl;
+		if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+				  // 01234567890123 01234567890123
+			cout << "   Rd_Bandwidth   Wr_Bandwidth";
+		}
+		cout << endl;
    }
+
 #if   defined( __AAL_WINDOWS__ )
 #error TODO
 #elif defined( __AAL_LINUX__ )
@@ -209,7 +224,12 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 		   m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 	    }
 
+	    ReadPerfMonitors();
+
 	    PrintOutput(cmd, NumCacheLines);
+
+	    SavePerfMonitors();
+
 	    // Verify the buffers
 	    if ( ::memcmp((void *)pInputUsrVirt, (void *)pOutputUsrVirt, NumCacheLines) != 0 )
 	    {
@@ -226,8 +246,8 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 	    }
 
 	   //Increment number of cachelines
-	   sz += CL(1);
-	   NumCacheLines++;
+	   sz += CL(mcl);
+	   NumCacheLines += mcl;
 
 	   // Check the device status
 	   if ( MaxPoll < 0 ) {
@@ -246,35 +266,40 @@ btInt CNLBCcipLpbk1::RunTest(const NLBCmdLine &cmd)
 
 void  CNLBCcipLpbk1::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 {
+	nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
+	bt64bitCSR ticks;
+	bt64bitCSR rawticks     = pAFUDSM->num_clocks;
+	bt32bitCSR startpenalty = pAFUDSM->start_overhead;
+	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
-	  nlb_vafu_dsm *pAFUDSM = (nlb_vafu_dsm *)m_pMyApp->DSMVirt();
-	  bt64bitCSR ticks;
-      bt64bitCSR rawticks     = pAFUDSM->num_clocks;
-      bt32bitCSR startpenalty = pAFUDSM->start_overhead;
-      bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
+	cout << setw(10) << cls 								<< ' '
+		 << setw(10) << pAFUDSM->num_reads    				<< ' '
+		 << setw(11) << pAFUDSM->num_writes   				<< ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
 
-	  cout << setw(10) << std::dec << cls					<< ' '
-		   << setw(10) << std::dec << pAFUDSM->num_reads    << ' '
-		   << setw(11) << std::dec << pAFUDSM->num_writes   << ' ';
+	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
+		ticks = rawticks - startpenalty;
+	}
+	else
+	{
+	ticks = rawticks - (startpenalty + endpenalty);
+	}
+	cout  << setw(16) << ticks;
 
-	  if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
-		  ticks = rawticks - startpenalty;
-	  }
-	  else
-	  {
-		  ticks = rawticks - (startpenalty + endpenalty);
-	  }
-	  cout  << setw(16) << std::dec << ticks << flush;
+	if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
+	double rdbw = 0.0;
+	double wrbw = 0.0;
 
-	 if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_BANDWIDTH) ) {
-		double rdbw = 0.0;
-		double wrbw = 0.0;
+	cout << "  "
+		<< setw(14) << CalcReadBandwidth(cmd) << ' '
+		<< setw(14) << CalcWriteBandwidth(cmd);
+	}
 
-		cout << "  "
-			 << setw(14) << CalcReadBandwidth(cmd) 			<<' '
-			 << setw(14) << CalcWriteBandwidth(cmd);
-	 }
-	 cout << endl;
+	cout << endl;
 }
 
 

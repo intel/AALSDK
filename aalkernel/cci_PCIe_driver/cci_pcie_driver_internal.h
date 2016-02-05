@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2015, Intel Corporation.
+//  Copyright(c) 2015-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -80,7 +80,7 @@
 #define DRV_DESCRIPTION       "Intel(R) AAL FPGA PCIe Device driver and CCI Physical Interface Protocol (PIP)"
 #define DRV_AUTHOR            "Joseph Grecco <joe.grecco@intel.com>"
 #define DRV_LICENSE           "Dual BSD/GPL"
-#define DRV_COPYRIGHT         "Copyright (c) 2015 Intel Corporation"
+#define DRV_COPYRIGHT         "Copyright(c) 2015-2016, Intel Corporation"
 
 #define DEVICE_BASENAME       "cci"
 
@@ -138,17 +138,11 @@ struct cci_aal_device {
    int                        m_simulated;
 
    int                        m_protocolID;
-#if 0
-   // PCI configuration space parameters
-   btVirtAddr                 m_kvp_config;     // kv address after iomap
-   btPhysAddr                 m_phys_config;    // Physical mmio address
-   size_t                     m_len_config;     // Bytes
 
-   // CCI MMIO Config Space
-   btVirtAddr                 m_kvp_cci_csr;    // kv address of CSR space
-   btPhysAddr                 m_phys_cci_csr;   // Physical address of CSR space
-   size_t                     m_len_cci_csr;    // Bytes
-#endif
+   // For background tasks handling
+   kosal_work_queue           m_workq;
+   work_object                task_handler;
+
    // AFU MMIO Space
    btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
    btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
@@ -169,8 +163,8 @@ struct cci_aal_device {
 };
 
 
-#define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct pci_dev, m_pcidev, struct cci_aal_device)
-#define aaldev_to_cci_aal_device(ptr)        kosal_container_of(ptr, struct aal_device, m_aaldev)
+#define pci_dev_to_cci_dev(ptr)              kosal_container_of(ptr, struct cci_aal_device. m_pcidev )
+#define aaldev_to_cci_aal_device(ptr)        aaldev_to_any(struct cci_aal_device, ptr)
 
 #define cci_dev_pfme(pdev)                  ( pdev->m_pfme )
 #define cci_dev_pport(pdev)                 ( pdev->m_pport )
@@ -227,7 +221,7 @@ struct cci_aal_device {
 
 
 #define cci_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
-#define cci_aaldev_to_aaldev(pdev)          ((pdev)->m_aaldev)
+#define cci_aaldev_to_aaldev(pdev)          ( (pdev)->m_aaldev )
 
 
 #define cci_dev_list_head(pdev)             ((pdev)->m_list)
@@ -236,54 +230,115 @@ struct cci_aal_device {
 #define cci_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
+#define cci_dev_workq(pdev)                 ( (pdev)->m_workq )
+#define cci_dev_task_handler(pdev)          ((pdev)->task_handler)
 
-
-//=============================================================================
-//=============================================================================
-//                                INLINE PRIMITIVES
-//=============================================================================
-//=============================================================================
-
-//=============================================================================
-// Name: cci_getBARAddress
-// Description: Called during the device probe by cci_pci_probe
-//                  when the device id matches PCI_DEVICE_ID_PCIFPGA.
-// Interface: public
-// Inputs:  ppcidev - Pointer to PICe device
-//          pphysaddr - Pointer to where to return the physical address
-//          pvirtaddr - Pointer to where to return the mapped virtual address
-//          psize - BAR region size
-// Outputs: 1 = success.
-// Comments:
-//=============================================================================
-static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
-                                     int               barnum,
-                                     btPhysAddr       *pphysaddr,
-                                     btVirtAddr       *pvirtaddr,
-                                     size_t           *psize)
+///============================================================================
+/// Name: ccip_device
+/// @brief  CCIP board device
+///============================================================================
+struct ccip_device
 {
-   if ( 0 == pci_request_region(ppcidev, barnum, CCI_PCI_DRIVER_NAME) ) {
-      // get the low base address register.
-      *pphysaddr = pci_resource_start(ppcidev, barnum);
-      *psize  = (size_t)pci_resource_len(ppcidev, barnum);
+   // Used for being added to the global list of devices.
+   kosal_list_head            m_list;
 
-      PVERBOSE("BAR=%d phy Address : %" PRIxPHYS_ADDR "\n",barnum, *pphysaddr);
-      PVERBOSE("BAR=%d size : %zd\n",barnum, *psize);
+   // Head of the list of AAL devices created
+   kosal_list_head            m_devlisthead;
 
-   }else{
-      PERR("Failed to obtian PCI BAR=%d \"%s\". Using Bar 0.\n", barnum, CCI_PCI_DRIVER_NAME);
-      return 0;
-   }
+   // Head of the list of ports devices
+   kosal_list_head            m_portlisthead;
 
-   // Only non-zero regions make sense
-   if((0 == *pphysaddr) || (0 == *psize)){
-      pci_release_region(ppcidev, barnum);
-      return 0;
-   }
-   // Get the KVP for the region
-   *pvirtaddr = ioremap_nocache(*pphysaddr, *psize);
-   return 1;
-}
+
+   struct fme_device         *m_pfme_dev;    // FME Device
+
+   struct pci_dev            *m_pcidev;         // Linux pci_dev pointer
+
+   btUnsignedInt              m_flags;
+
+   // Private semaphore
+   struct semaphore           m_sem;
+
+   int                        m_simulated;
+
+   enum aal_bus_types_e       m_bustype;
+   btUnsigned32bitInt         m_busNum;
+   btUnsigned32bitInt         m_devicenum;      // device number
+   btUnsigned32bitInt         m_functnum;       // function number
+
+   btInt                      m_resources;      // Bit mask indicating bars that have been reserved
+
+   // FME MMIO Space
+   btVirtAddr                 m_kvp_fme_mmio;   // kv address of MMIO space
+   btPhysAddr                 m_phys_fme_mmio;  // Physical address of MMIO space
+   size_t                     m_len_fme_mmio;   // Bytes
+
+   btVirtAddr                 m_kvp_port_mmio[5];   // kv address of MMIO space
+   btPhysAddr                 m_phys_port_mmio[5];  // Physical address of MMIO space
+   size_t                     m_len_port_mmio[5];
+
+   // AFU MMIO Space
+   btVirtAddr                 m_kvp_afu_mmio;   // kv address of MMIO space
+   btPhysAddr                 m_phys_afu_mmio;  // Physical address of MMIO space
+   size_t                     m_len_afu_mmio;   // Bytes
+
+
+}; // end struct ccip_afu_device
+
+#define pci_dev_to_ccip_dev(ptr)             ccip_container_of(ptr, struct pci_dev, m_pcidev, struct ccip_device)
+#define ccip_dev_to_pci_dev(pdev)            ((pdev)->m_pcidev)
+#define ccip_dev_to_aaldev(pdev)             ((pdev)->m_aaldev)
+#define ccip_dev_to_fme_dev(pdev)            ((pdev)->m_pfme_dev)
+#define ccip_dev_to_port_dev(pdev)           ((pdev)->m_pfme_dev)
+
+#define ccip_dev_pci_dev(pdev)               ((pdev)->m_pcidev)
+
+#define cci_dev_board_type(pdev)             ((pdev)->m_boardtype)
+
+#define ccip_set_simulated(pdev)             ((pdev)->m_simulated = 1)
+#define ccip_clr_simulated(pdev)             ((pdev)->m_simulated = 0)
+#define ccip_is_simulated(pdev)              ((pdev)->m_simulated == 1)
+
+#define ccip_set_resource(pdev,r)            ((pdev)->m_resources |= (1<<r))
+#define ccip_has_resource(pdev,r)            ((pdev)->m_resources & (1<<r))
+#define ccip_clr_resource(pdev,r)            ((pdev)->m_resources &= ~(1<<r))
+
+#define ccip_list_to_ccip_device(plist)      kosal_list_entry(plist, struct ccip_device, m_list)
+#define aaldev_to_ccip_device(plist)         kosal_list_entry(plist, struct ccip_device, m_list)
+#define ccip_dev_to_PIPsessionp(pdev)        ((pdev)->m_pPIPSession)
+#define ccip_dev_psem(pdev)                  (&(pdev)->m_sem)
+
+#define ccip_dev_list_head(pdev)             ((pdev)->m_list)
+#define ccip_aal_dev_list(pdev)              ((pdev)->m_devlisthead)
+#define ccip_port_dev_list(pdev)             ((pdev)->m_portlisthead)
+
+#define ccip_fmedev_phys_afu_mmio(pdev)      ((pdev)->m_phys_fme_mmio)
+#define ccip_fmedev_kvp_afu_mmio(pdev)       ((pdev)->m_kvp_fme_mmio)
+#define ccip_fmedev_len_afu_mmio(pdev)       ((pdev)->m_len_fme_mmio)
+
+#define ccip_portdev_phys_afu_mmio(pdev,n)   ((pdev)->m_phys_port_mmio[n])
+#define ccip_portdev_kvp_afu_mmio(pdev,n)    ((pdev)->m_kvp_port_mmio[n])
+#define ccip_portdev_len_afu_mmio(pdev,n)    ((pdev)->m_len_port_mmio[n])
+
+#define ccip_dev_pcie_bustype(pdev)          ((pdev)->m_bustype)
+#define ccip_dev_pcie_busnum(pdev)           ((pdev)->m_busNum)
+#define ccip_dev_pcie_devnum(pdev)           ((pdev)->m_devicenum)
+#define ccip_dev_pcie_fcnnum(pdev)           ((pdev)->m_functnum)
+
+/// @brief   Writes 64 bit control and status registers.
+///
+/// @param[in]  baseAddress   base CSR address.
+/// @param[in]  offset        offset of CSR  .
+/// @param[in]  value    value  going to be write in CSR.
+/// @return   void
+int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value);
+
+/// @brief   read 64 bit control and status registers.
+///
+/// @param[in]  baseAddress   base CSR address.
+/// @param[in]  offset        offset of CSR  .
+/// @return    64 bit  CSR value
+bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
+
 
 //=============================================================================
 //=============================================================================
@@ -293,7 +348,7 @@ static inline int cci_getBARAddress( struct pci_dev   *ppcidev,
 struct ccip_device;   // forward reference
 struct port_device;
 
-extern int ccidrv_initDriver(void/*callback*/);
+
 struct ccip_device * create_ccidevice(void);
 void  destroy_ccidevice(struct ccip_device *pccidev);
 extern btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device *);
@@ -304,11 +359,9 @@ extern int cci_destroy_aal_device( struct cci_aal_device*);
 extern int cci_publish_aaldevice(struct cci_aal_device *);
 extern void cci_unpublish_aaldevice(struct cci_aal_device *pcci_aaldev);
 extern void cci_remove_device(struct ccip_device *);
-extern void cci_release_device(struct device *pdev);
+extern void cci_release_device(pkosal_os_dev pdev);
 extern void ccidrv_exitDriver(void);
 
-extern int ccidrv_initUMAPI(void);
-void ccidrv_exitUMAPI(void);
 
 extern struct ccidrv_session * ccidrv_session_create(btPID );
 extern btInt ccidrv_session_destroy(struct ccidrv_session * );
@@ -319,10 +372,8 @@ extern btInt ccidrv_freewsid(struct aal_wsid *pwsid);
 extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
                                         unsigned long long id);
 extern btInt
-ccidrv_sendevent( btObjectType,
-                  struct aal_device *,
-                  struct aal_q_item *,
-                  btObjectType);
+ccidrv_sendevent( struct aaldev_ownerSession *,
+                  struct aal_q_item *);
 
 
 #if 0

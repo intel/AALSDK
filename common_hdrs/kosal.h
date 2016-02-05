@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2012-2015, Intel Corporation.
+//  Copyright(c) 2012-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -948,7 +948,7 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
 #if   defined( __AAL_LINUX__ )
 # include <linux/workqueue.h>
    //struct workqueue_struct   * kosal_work_queue
-   #define kosal_create_workqueue(pd)  create_workqueue((aaldev_to_basedev(pd))
+   #define kosal_create_workqueue(pd)  create_workqueue( aaldev_to_basedev(pd) )
     // Worker thread items
 
    #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19)
@@ -1063,6 +1063,22 @@ void kosal_wake_up_interruptible(kosal_poll_object * );
 
 # define kosal_poll_wait(q)             //IoMarkIrpPending(WdfRequestWdmGetIrp(q))
 #endif // Polling
+
+//
+// Accessing User mode buffers
+//
+KOSAL_VIRT _kosal_get_user_buffer(__ASSERT_HERE_PROTO KOSAL_VIRT user_prt, KOSAL_WSSIZE size_in_bytes);
+#ifdef kosal_get_user_buffer
+# undef kosal_get_user_buffer
+#endif // kosal_get_user_buffer
+#define kosal_get_user_buffer(__user_prt, __size_in_bytes) _kosal_get_user_buffer(__ASSERT_HERE_ARGS __user_prt, __size_in_bytes)
+
+
+void _kosal_free_user_buffer(__ASSERT_HERE_PROTO KOSAL_VIRT user_prt,  KOSAL_WSSIZE size_in_bytes);
+#ifdef kosal_free_user_buffer
+# undef kosal_free_user_buffer
+#endif // kosal_get_user_buffer
+#define kosal_free_user_buffer(__user_prt, __size_in_bytes) _kosal_free_user_buffer(__ASSERT_HERE_ARGS __user_prt, __size_in_bytes)
 
 #endif // __AALSDK_KERNEL_KOSAL_H__
 #endif // __AAL_KERNEL__

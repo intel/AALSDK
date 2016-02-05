@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Intel Corporation
+// Copyright(c) 2015-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -48,11 +48,37 @@
 # include <config.h>
 #endif // HAVE_CONFIG_H
 
-#include "ALIAIATransactions.h"
+#include <aalsdk/utils/ResMgrUtilities.h>
 
+#include "ALIAIATransactions.h"
 #include "HWALIAFU.h"
 
 BEGIN_NAMESPACE(AAL)
+
+
+// FIXME: move or reference this properly
+#ifndef CCIP_DFH
+/// Device Feature Header CSR
+struct CCIP_DFH {
+
+   union {
+      btUnsigned64bitInt csr;
+      struct {
+         btUnsigned64bitInt Feature_ID :12;     // Feature ID
+         btUnsigned64bitInt Feature_rev :4;     // Feature revision
+         btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
+         btUnsigned16bitInt eol :1;             // end of header bit
+         btUnsigned64bitInt rsvd :19;           // Reserved
+         btUnsigned64bitInt Type :4;            // Type of Device
+
+         //enum e_CCIP_DEVTPPE_ID Type :4;
+
+      }; //end struct
+   }; // end union
+
+}; //end struct CCIP_DFH
+#endif
+
 
 /// @addtogroup HWALIAFU
 /// @{
@@ -75,6 +101,120 @@ BEGIN_NAMESPACE(AAL)
 // Dispatchables for client callbacks
 //
 // ===========================================================================
+class AFUDeactivated : public IDispatchable
+{
+public:
+   AFUDeactivated(  IALIReconfigure_Client   *pSvcClient,
+                    TransactionID const      &rTranID)
+   : m_pSvcClient(pSvcClient),
+     m_TranID(rTranID){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->deactivateSucceeded(m_TranID);
+   }
+
+
+protected:
+   IALIReconfigure_Client      *m_pSvcClient;
+   const TransactionID          m_TranID;
+};
+
+class AFUDeactivateFailed : public IDispatchable
+{
+public:
+   AFUDeactivateFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->deactivateFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
+};
+
+class AFUActivated : public IDispatchable
+{
+public:
+   AFUActivated(  IALIReconfigure_Client   *pSvcClient,
+                    TransactionID const      &rTranID)
+   : m_pSvcClient(pSvcClient),
+     m_TranID(rTranID){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->activateSucceeded(m_TranID);
+   }
+
+
+protected:
+   IALIReconfigure_Client      *m_pSvcClient;
+   const TransactionID          m_TranID;
+};
+
+class AFUActivateFailed : public IDispatchable
+{
+public:
+   AFUActivateFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->activateFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
+};
+
+class AFUReconfigured : public IDispatchable
+{
+public:
+   AFUReconfigured(  IALIReconfigure_Client   *pSvcClient,
+                     TransactionID const      &rTranID)
+   : m_pSvcClient(pSvcClient),
+     m_TranID(rTranID){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->configureSucceeded(m_TranID);
+   }
+
+
+protected:
+   IALIReconfigure_Client      *m_pSvcClient;
+   const TransactionID          m_TranID;
+};
+
+
+class AFUReconfigureFailed : public IDispatchable
+{
+public:
+   AFUReconfigureFailed( IALIReconfigure_Client   *pSvcClient,
+                         const IEvent   *pEvent)
+   : m_pSvcClient(pSvcClient),
+     m_pEvent(pEvent){}
+
+   virtual void operator() ()
+   {
+      m_pSvcClient->configureFailed(*m_pEvent);
+   }
+
+
+protected:
+   IALIReconfigure_Client        *m_pSvcClient;
+   const IEvent                  *m_pEvent;
+};
 
 
 // ===========================================================================
@@ -145,6 +285,120 @@ btBool HWALIAFU::Release(TransactionID const &TranID, btTime timeout)
 }
 
 
+//
+//  Configure the Service for the specific AFU we received
+btBool HWALIAFU::configureForAFU()
+{
+   // Get the AFU ID from the optargs
+   INamedValueSet const *pConfigRecord;
+   if(!OptArgs().Has(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED)){
+      AAL_ERR( LM_All, "No Config Record");
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                   m_tidSaved,
+                                                   errAllocationFailure,
+                                                   reasInvalidParameter,
+                                                   "Error: AFU Configuration information invalid. No Config Record."));
+      return false;
+   }
+
+   OptArgs().Get(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &pConfigRecord );
+
+   // Service Library to use
+   btcString pAFUID;
+   if(!pConfigRecord->Has(keyRegAFU_ID)){
+      AAL_ERR( LM_All, "No AFU ID in Config Record");
+      initFailed(new CExceptionTransactionEvent( NULL,
+                                                 m_tidSaved,
+                                                 errAllocationFailure,
+                                                 reasInvalidParameter,
+                                                 "Error: AFU Configuration information invalid. No AFU ID in Config Record."));
+      return false;
+
+   }
+   pConfigRecord->Get(keyRegAFU_ID, &pAFUID);
+
+
+   // TODO USE BIND PARMS WHEN AVAILABLE AS WELL AS AFU ID
+   if( 0 == strcmp(pAFUID, ALI_AFUID_UAFU_CONFIG)){
+      // Configure as PR
+
+      m_pReconClient = dynamic_ptr<IALIReconfigure_Client>(iidALI_CONF_Service_Client, m_pSvcClient);
+      ASSERT( NULL != m_pReconClient ); //QUEUE object failed
+      if(NULL == m_pReconClient){
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    m_tidSaved,
+                                                    errBadParameter,
+                                                    reasMissingInterface,
+                                                    "Client did not publish IALIReconfigure_Client Interface"));
+         return true;
+      }
+
+
+
+      if ( EObjOK != SetInterface(iidALI_CONF_Service, dynamic_cast<IALIReconfigure *>(this)) ){
+         initFailed(new CExceptionTransactionEvent( NULL,
+                                                    m_tidSaved,
+                                                    errCreationFailure,
+                                                    reasUnknown,
+                                                    "Error: Could not register interface."));
+         return false;
+      }
+      return true;
+   }else{
+      // TODO KEEP GOING
+
+      // Create the Transactions
+      GetMMIOBufferTransaction mmioTransaction;
+   /*
+      // Set transaction IDs so that AFUEvent() can distinguish between MMIO and
+      // UMSG events (both are ali_wseventCSRMap events)
+      TransactionID umsgTid(GetUMSG);
+      GetUMSGBufferTransaction umsgTransaction(umsgTid);
+   */
+      // Check the parameters
+      if ( mmioTransaction.IsOK()/* && umsgTransaction.IsOK()*/) {
+         // Will return to AFUEvent(), below.
+         m_pAFUProxy->SendTransaction(&mmioTransaction);
+         if(uid_errnumOK == mmioTransaction.getErrno() ){
+            struct AAL::aalui_WSMEvent wsevt = mmioTransaction.getWSIDEvent();
+
+            // mmap
+            if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+               AAL_ERR( LM_All, "FATAL: MapWSID failed");
+            }
+
+            // Remember workspace parameters associated with virtual ptr (if we ever need it)
+            if (m_mapWkSpc.find(wsevt.wsParms.ptr) != m_mapWkSpc.end()) {
+               AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
+            } else {
+               // store entire aalui_WSParms struct in map
+               m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
+            }
+
+            m_MMIORmap = wsevt.wsParms.ptr;
+            m_MMIORsize = wsevt.wsParms.size;
+            return true;
+         }else {
+            initFailed(new CExceptionTransactionEvent(NULL,
+                                                      m_tidSaved,
+                                                      errAFUWorkSpace,
+                                                      mmioTransaction.getErrno(),
+                                                      "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
+            return false;
+         }
+         //      m_pAFUProxy->SendTransaction(&umsgTransaction);
+      } else {
+         initFailed(new CExceptionTransactionEvent(NULL,
+                                                   m_tidSaved,
+                                                   errAFUWorkSpace,
+                                                   reasAFUNoMemory,
+                                                   "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
+         return false;
+      }
+   }
+
+}
+
 
 /*
  * IServiceClient methods (callbacks from AIA service)
@@ -178,57 +432,14 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
       return;
    }
 
-   // Get MMIO buffer (UMSG buffer is handled in mmioAllocEventHandler callback)
-
-   // Set transaction IDs so that AFUEvent() can distinguish between MMIO and
-   // UMSG events (both are ali_wseventCSRMap events)
-   TransactionID umsgTid(GetUMSG);
-
-   // Create the Transactions
-   GetMMIOBufferTransaction mmioTransaction;
-/*
-   GetUMSGBufferTransaction umsgTransaction(umsgTid);
-*/
-   // Check the parameters
-   if ( mmioTransaction.IsOK()/* && umsgTransaction.IsOK()*/) {
-      // Will return to AFUEvent(), below.
-      m_pAFUProxy->SendTransaction(&mmioTransaction);
-      if(uid_errnumOK == mmioTransaction.getErrno() ){
-         struct AAL::aalui_WSMEvent wsevt = mmioTransaction.getWSIDEvent();
-
-         // mmap
-         if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
-            AAL_ERR( LM_All, "FATAL: MapWSID failed");
-         }
-
-         // Remember workspace parameters associated with virtual ptr (if we ever need it)
-         if (m_mapWkSpc.find(wsevt.wsParms.ptr) != m_mapWkSpc.end()) {
-            AAL_ERR( LM_All, "FATAL: WSID already exists in m_mapWSID");
-         } else {
-            // store entire aalui_WSParms struct in map
-            m_mapWkSpc[wsevt.wsParms.ptr] = wsevt.wsParms;
-         }
-
-         m_MMIORmap = wsevt.wsParms.ptr;
-         m_MMIORsize = wsevt.wsParms.size;
-         initComplete(m_tidSaved);
-      }else {
-         initFailed(new CExceptionTransactionEvent(NULL,
-                                                   m_tidSaved,
-                                                   errAFUWorkSpace,
-                                                   mmioTransaction.getErrno(),
-                                                   "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
-         return;
-      }
-      //      m_pAFUProxy->SendTransaction(&umsgTransaction);
-   } else {
-      initFailed(new CExceptionTransactionEvent(NULL,
-                                                m_tidSaved,
-                                                errAFUWorkSpace,
-                                                reasAFUNoMemory,
-                                                "GetMMIOBuffer/GetUMSGBuffer transaction validity check failed"));
+   // Configure the Service for the specific AFU capabilities we have
+   //   Proper event will be generated if failure.
+   if(false == configureForAFU()){
       return;
    }
+
+   initComplete(m_tidSaved);
+
 }
 
 // Service allocated failed callback
@@ -291,7 +502,8 @@ btBool HWALIAFU::mmioRead32(const btCSROffset Offset, btUnsigned32bitInt * const
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *pValue = *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) );
+   // FIXME: volatile might not be necessary, need to investigate further
+   *pValue = *( reinterpret_cast<volatile btUnsigned32bitInt *>(m_MMIORmap + Offset) );
 
    return true;
 }
@@ -306,7 +518,8 @@ btBool HWALIAFU::mmioWrite32(const btCSROffset Offset, const btUnsigned32bitInt 
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *( reinterpret_cast<btUnsigned32bitInt *>(m_MMIORmap + Offset) ) = Value;
+   // FIXME: volatile might not be necessary, need to investigate further
+   *( reinterpret_cast<volatile btUnsigned32bitInt *>(m_MMIORmap + Offset) ) = Value;
 
    return true;
 }
@@ -321,7 +534,8 @@ btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *pValue = *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) );
+   // FIXME: volatile might not be necessary, need to investigate further
+   *pValue = *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) );
 
    return true;
 }
@@ -336,10 +550,176 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
    }
 
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
-   *( reinterpret_cast<btUnsigned64bitInt *>(m_MMIORmap + Offset) ) = Value;
+   // FIXME: volatile might not be necessary, need to investigate further
+   *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) ) = Value;
 
    return true;
 }
+
+
+//
+// mmioGetFeature. Get pointer to feature's DFH, if found.
+//
+btBool  HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                         NamedValueSet const &rInputArgs,
+                                         NamedValueSet       &rOutputArgs )
+{
+   struct CCIP_DFH    dfh;
+   btUnsigned64bitInt guid[2];
+   btUnsigned32bitInt offset = 0;
+
+   btBool             filterByID;
+   btUnsigned64bitInt filterID;
+   btBool             filterByType;
+   btUnsigned64bitInt filterType;
+   btBool             filterByGUID;
+   btcString          filterGUID;
+
+   // extract filters
+   filterByID = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_ID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_ID_KEY, &filterID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_ID) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByID = true;
+      }
+   }
+
+   filterByType = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_TYPE_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_TYPE_KEY, &filterType)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_TYPE) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByType = true;
+      }
+   }
+
+   filterByGUID = false;
+   if (rInputArgs.Has(ALI_GETFEATURE_GUID_KEY)) {
+      if (ENamedValuesOK != rInputArgs.Get(ALI_GETFEATURE_GUID_KEY, &filterGUID)) {
+         AAL_ERR(LM_All, "rInputArgs.Get(ALI_GETFEATURE_GUID) failed -- wrong datatype?");
+         return false;
+      } else {
+         filterByGUID = true;
+      }
+   }
+
+   // Sanity check - can't search for GUID in private features
+   ASSERT ( ! (filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE)) );
+   if ((filterByType && filterByGUID && (filterType == ALI_DFH_TYPE_PRIVATE))) {
+      AAL_ERR(LM_AFU, "Can't search for GUIDs in private features");
+      return false;
+   }
+
+   // walk DFH
+   AAL_DEBUG(LM_AFU, "Walking DFH list..." << std::endl);
+   // look at AFU CSR (mandatory) to get first feature header offset
+   ASSERT(mmioRead64(0, (btUnsigned64bitInt *)&dfh));
+   AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type <<
+                     ", Next DFH offset: " << dfh.next_DFH_offset <<
+                     ", Feature Rev: " << dfh.Feature_rev <<
+                     ", Feature ID: " << dfh.Feature_ID <<
+                     ", eol: " << std::dec << dfh.eol << std::endl);
+   offset = dfh.next_DFH_offset;
+
+   // look at chained DFHs until end of list bit is set or next offset is 0
+   // FIXME: why do we need both?
+   while (dfh.eol == 0 && dfh.next_DFH_offset != 0) {
+
+      // read feature header
+      ASSERT(mmioRead64(offset, (btUnsigned64bitInt *)&dfh));
+      AAL_DEBUG(LM_AFU, "Type: " << std::hex << std::setw(2) << std::setfill('0') << dfh.Type <<
+                        ", Next DFH offset: " << dfh.next_DFH_offset <<
+                        ", Feature Rev: " << dfh.Feature_rev <<
+                        ", Feature ID: " << dfh.Feature_ID <<
+                        ", eol: " << std::dec << dfh.eol << std::endl);
+      // read guid, if present
+      if (dfh.Type != ALI_DFH_TYPE_PRIVATE) {
+         ASSERT( mmioRead64(offset +  8, &guid[0]) );
+         ASSERT( mmioRead64(offset + 16, &guid[1]) );
+      }
+
+      AAL_DEBUG(LM_AFU, "Read GUID " << GUIDStringFromStruct(
+                                            GUIDStructFrom2xU64(
+                                              guid[1],
+                                              guid[0]
+                                            )
+                                          ).c_str() << std::endl);
+
+      if (
+            ( !filterByID   || (dfh.Feature_ID == filterID  )                     ) &&
+            ( !filterByType || (dfh.Type       == filterType)                     ) &&
+            ( !filterByGUID || ( (dfh.Type != ALI_DFH_TYPE_PRIVATE) &&
+                                 ( 0 == strncmp(filterGUID,
+                                          GUIDStringFromStruct(
+                                            GUIDStructFrom2xU64(
+                                              guid[1],
+                                              guid[0]
+                                            )
+                                          ).c_str(),
+                                          16
+                                        )
+                                 )
+                               )
+            )
+         ) {
+
+         AAL_INFO(LM_AFU, "Found matching feature." << std::endl);
+         *pFeatureAddress = (btVirtAddr)(m_MMIORmap + offset);   // return pointer to DFH
+         // populate output args
+         rOutputArgs.Add(ALI_GETFEATURE_ID_KEY, dfh.Feature_ID);
+         rOutputArgs.Add(ALI_GETFEATURE_TYPE_KEY, dfh.Type);
+         if (dfh.Type != ALI_DFH_TYPE_PRIVATE) {
+            rOutputArgs.Add(ALI_GETFEATURE_GUID_KEY, GUIDStringFromStruct(
+                                                       GUIDStructFrom2xU64(
+                                                         guid[1],
+                                                         guid[0]
+                                                       )
+                                                     ).c_str()
+                           );
+         }
+         return true;
+      }
+
+      // not found, check for next header
+      offset += dfh.next_DFH_offset;
+   }
+
+   // if not found, do not modify ppFeature, return false.
+   AAL_INFO(LM_AFU, "No matching feature found." << std::endl);
+   return false;
+}
+
+btBool HWALIAFU::mmioGetFeatureAddress( btVirtAddr          *pFeatureAddress,
+                                        NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureAddress(pFeatureAddress, rInputArgs, temp);
+}
+
+btBool HWALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                       NamedValueSet const &rInputArgs,
+                                       NamedValueSet       &rOutputArgs )
+{
+   btVirtAddr pFeatAddr;
+   if (true == mmioGetFeatureAddress(&pFeatAddr, rInputArgs, rOutputArgs)) {
+      *pFeatureOffset = pFeatAddr - mmioGetAddress();
+      return true;
+   }
+   return false;
+}
+
+// overloaded version without rOutputArgs
+btBool HWALIAFU::mmioGetFeatureOffset( btCSROffset         *pFeatureOffset,
+                                       NamedValueSet const &rInputArgs )
+{
+   NamedValueSet temp;
+   return mmioGetFeatureOffset(pFeatureOffset, rInputArgs, temp);
+}
+
+
 
 // ---------------------------------------------------------------------------
 // IALIBuffer interface implementation
@@ -348,9 +728,10 @@ btBool HWALIAFU::mmioWrite64(const btCSROffset Offset, const btUnsigned64bitInt 
 //
 // bufferAllocate. Allocate a shared buffer (formerly known as workspace).
 //
-AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
-                                            btVirtAddr    *pBufferptr,
-                                            NamedValueSet *pOptArgs)
+AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize             Length,
+                                                    btVirtAddr          *pBufferptr,
+                                                    NamedValueSet const &rInputArgs,
+                                                    NamedValueSet       &rOutputArgs )
 {
    AutoLock(this);
    *pBufferptr = NULL;
@@ -374,7 +755,7 @@ AAL::ali_errnum_e HWALIAFU::bufferAllocate( btWSSize Length,
    struct AAL::aalui_WSMEvent wsevt = transaction.getWSIDEvent();
 
    // mmap
-   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr)) {
+   if (!m_pAFUProxy->MapWSID(wsevt.wsParms.size, wsevt.wsParms.wsid, &wsevt.wsParms.ptr, rInputArgs)) {
       AAL_ERR( LM_All, "FATAL: MapWSID failed");
       return ali_errnumSystem;
    }
@@ -549,7 +930,7 @@ bool HWALIAFU::umsgSetAttributes( NamedValueSet const &nvsArgs)
 // IALIReset interface implementation
 // ---------------------------------------------------------------------------
 
-IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const &rInputArgs )
 {
    // Create the Transaction
    AFUQuiesceAndHalt transaction;
@@ -570,7 +951,7 @@ IALIReset::e_Reset HWALIAFU::afuQuiesceAndHalt( NamedValueSet const *pOptArgs)
    return e_OK;
 }
 
-IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const &rInputArgs)
 {
    // Create the Transaction
    AFUEnable transaction;
@@ -592,7 +973,7 @@ IALIReset::e_Reset HWALIAFU::afuEnable( NamedValueSet const *pOptArgs)
 
 }
 
-IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
+IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const &rInputArgs )
 {
    IALIReset::e_Reset ret = afuQuiesceAndHalt();
 
@@ -605,47 +986,8 @@ IALIReset::e_Reset HWALIAFU::afuReset( NamedValueSet const *pOptArgs)
    return ret;
 }
 
-// ---------------------------------------------------------------------------
-// IAFUProxyClient interface implementation
-// ---------------------------------------------------------------------------
-
-// Callback for ALIAFUProxy
-void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
-{
-   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
-                                                           theEvent);
-   ASSERT(NULL != puidEvent);
-
-//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
-
-   switch(puidEvent->MessageID())
-   {
-   //===========================
-   // WSM response
-   // ==========================
-   case rspid_WSM_Response:
-      {
-         // TODO check result code
-
-         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
-         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
-
-         switch(pResult->evtID)
-         {
-
-         default:
-            ASSERT(false); // unexpected WSM_Response evtID
-         } // switch evtID
-
-      } break;
-   default:
-      ASSERT(false); // unexpected event
-   }
-}
-
-
-btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
-                                        NamedValueSet const  *pOptArgs )
+btBool HWALIAFU::performanceCountersGet ( INamedValueSet * const  pResult,
+                                          NamedValueSet    const &pOptArgs )
 {
 
    btWSSize size;
@@ -696,6 +1038,213 @@ btBool HWALIAFU::performanceCountersGet ( INamedValueSet* const pResult,
    return true;
 }
 
+
+// ---------------------------------------------------------------------------
+// IALIReconfigure interface implementation
+// ---------------------------------------------------------------------------
+
+/// @brief Deactivate an AFU in preparation for it being reconfigured.
+///
+/// Basically, if there is an AFU currently instantiated and connected to an
+///    application, then this will send an exception to the application indicating
+///    that it should release the AFU. There can be a timeout option that specifies
+///    that if the application does not Release within a particular time, then
+///    the AFU will be yanked. Then, a CleanIt!(tm) AFU will be loaded to clear
+///    out all the gates and clear the FPGA memory banks.
+///
+/// TODO: Implementation needs to be via driver transaction
+///
+/// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+/// @return     void. Callback in IALIReconfigureClient.
+///
+void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
+                                 NamedValueSet const &rInputArgs)
+{
+   AFUDeactivateTransaction deactivatetrans(rTranID);
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&deactivatetrans);
+   if(deactivatetrans.getErrno() != uid_errnumOK){
+      AAL_ERR( LM_All,"Deactivate failed");
+      return;
+   }
+
+}
+
+/// @brief Configure an AFU.
+///
+/// Download the defined bitstream to the PR region. Initially, the bitstream
+///    is a file name. Later, it might be a goal record, and that is why the
+///    parameter is an NVS. It is also possible in the NVS to specify a PR number
+///    if that is relevant, e.g. for the PF driver.
+///
+/// TODO: Implementation needs to be via driver transaction
+///
+/// @param[in]  pNVS Pointer to Optional Arguments. Initially need a bitstream.
+/// @return     void. Callback in IALIReconfigureClient.
+///
+void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
+                                NamedValueSet const &rInputArgs)
+{
+   btByte        *bufptr      = NULL;
+   std::streampos    filesize    = 0;
+
+   if(rInputArgs.Has(AALCONF_FILENAMEKEY)){
+      btcString filename;
+      rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
+      std::ifstream bitfile(filename, std::ios::binary );
+
+      bitfile.seekg( 0, std::ios::end );
+      filesize = bitfile.tellg();
+      bitfile.seekg( 0, std::ios::beg );
+      bufptr = reinterpret_cast<btByte*>(malloc(filesize));
+      bitfile.read(reinterpret_cast<char *>(bufptr), filesize);
+   }else{
+
+      getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                               rTranID,
+                                                                                                               errBadParameter,
+                                                                                                               reasMissingParameter,
+                                                                                                               "Error: No bitfile source.")));
+      return;
+
+#if 0 // Test code
+      bufptr = reinterpret_cast<btByte*>(malloc(100));
+      *bufptr = '<';
+      memset(bufptr+1,'*',97);
+      *(bufptr+98) = '>';
+      *(bufptr+99) = 0;
+      filesize = 100;
+#endif
+   }
+
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID);
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&configuretrans);
+   if(configuretrans.getErrno() != uid_errnumOK){
+      AAL_ERR( LM_All,"Reconfigure failed");
+      getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                               rTranID,
+                                                                                                               errCauseUnknown,
+                                                                                                               reasUnknown,
+                                                                                                               "Error: Failed transaction")));
+
+      return;
+   }
+   free(bufptr);
+}
+
+/// @brief Activate an AFU after it has been reconfigured.
+///
+/// Once the AFU has been reconfigured there needs to be a "probe" to load
+///    the AFU configuration information, e.g. AFU_ID, so that the associated
+///    service can be loaded and the whole shebang returned to the application.
+///
+/// TODO: Implementation needs to be via driver transaction
+///
+/// @param[in]  pNVS Pointer to Optional Arguments if needed. Defaults to NULL.
+/// @return     void. Callback in IALIReconfigureClient.
+///
+void HWALIAFU::reconfActivate( TransactionID const &rTranID,
+                               NamedValueSet const &rInputArgs)
+{
+   AFUActivateTransaction activatetrans(rTranID);
+   // Send transaction
+   m_pAFUProxy->SendTransaction(&activatetrans);
+   if(activatetrans.getErrno() != uid_errnumOK){
+      AAL_ERR( LM_All,"Activate failed");
+      return;
+   }
+
+
+}
+
+// ---------------------------------------------------------------------------
+// IAFUProxyClient interface implementation
+// ---------------------------------------------------------------------------
+
+// Callback for ALIAFUProxy
+void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
+{
+   IUIDriverEvent *puidEvent = dynamic_ptr<IUIDriverEvent>(evtUIDriverClientEvent,
+                                                           theEvent);
+
+   ASSERT(NULL != puidEvent);
+
+//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+
+   switch(puidEvent->MessageID())
+   {
+   //===========================
+   // WSM response
+   // ==========================
+   case rspid_WSM_Response:
+      {
+         // TODO check result code
+
+         // Since MessageID is rspid_WSM_Response, Payload is a aalui_WSMEvent.
+         struct aalui_WSMEvent *pResult = reinterpret_cast<struct aalui_WSMEvent *>(puidEvent->Payload());
+
+         switch(pResult->evtID)
+         {
+
+         default:
+            ASSERT(false); // unexpected WSM_Response evtID
+         } // switch evtID
+      } break;
+   case rspid_AFU_Response:
+   {
+      struct aalui_AFUResponse* presp = reinterpret_cast<struct aalui_AFUResponse *>(puidEvent->Payload());
+      switch(presp->respID)
+      {
+      case uid_afurespDeactivateComplete:
+         {
+            if( uid_errnumOK != puidEvent->ResultCode()){
+               getRuntime()->schedDispatchable(new AFUDeactivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                     puidEvent->msgTranID(),
+                                                                                                                     puidEvent->ResultCode(),
+                                                                                                                     reasUnknown,
+                                                                                                                     "Error: Deactivate failed. Check Exception number against uid_errnum_e codes")));
+            }else{
+               getRuntime()->schedDispatchable(new AFUDeactivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+            }
+            return;
+         }
+      case uid_afurespActivateComplete:
+         {
+            if( uid_errnumOK != puidEvent->ResultCode()){
+                getRuntime()->schedDispatchable(new AFUActivateFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                      puidEvent->msgTranID(),
+                                                                                                                      puidEvent->ResultCode(),
+                                                                                                                      reasUnknown,
+                                                                                                                      "Error: Activate failed. Check Exception number against uid_errnum_e codes")));
+             }else{
+                getRuntime()->schedDispatchable(new AFUActivated(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+             }
+            return;
+         }
+      case uid_afurespConfigureComplete:
+         {
+            if( uid_errnumOK !=puidEvent->ResultCode()){
+                getRuntime()->schedDispatchable(new AFUReconfigureFailed(m_pReconClient,new CExceptionTransactionEvent(NULL,
+                                                                                                                      puidEvent->msgTranID(),
+                                                                                                                      puidEvent->ResultCode(),
+                                                                                                                      reasUnknown,
+                                                                                                                      "Error: Configure failed. Check Exception number against uid_errnum_e codes")));
+             }else{
+                getRuntime()->schedDispatchable(new AFUReconfigured(m_pReconClient, TransactionID(puidEvent->msgTranID())));
+             }
+            return;
+         }
+
+      default:
+         break;
+      }
+   }
+   default:
+      ASSERT(false); // unexpected event
+   }
+
+}
 
 
 /// @} group HWALIAFU

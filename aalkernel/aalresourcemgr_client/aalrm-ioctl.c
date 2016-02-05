@@ -6,7 +6,7 @@
 //
 //                            GPL LICENSE SUMMARY
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  This program  is  free software;  you  can redistribute it  and/or  modify
 //  it  under  the  terms of  version 2 of  the GNU General Public License  as
@@ -26,7 +26,7 @@
 //
 //                                BSD LICENSE
 //
-//  Copyright(c) 2008-2015, Intel Corporation.
+//  Copyright(c) 2008-2016, Intel Corporation.
 //
 //  Redistribution and  use  in source  and  binary  forms,  with  or  without
 //  modification,  are   permitted  provided  that  the  following  conditions
@@ -156,6 +156,7 @@ void aalrm_reqdev_cmplt( btInt errno,
          if( unlikely( (ret=dev_addOwner( devp,
                                           psess->m_tgpid,
                                           NULL, // TODO MANIFEST ON OWNER NOT SUPPORTED YET
+                                          NULL, // No owner context yet
                                           &psess->m_devlist)) != aaldev_addowner_OK)  ) {
 
             DPRINTF (AALRMC_DBG_IOCTL, ": failed to claim the device\n");

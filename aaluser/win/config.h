@@ -1,4 +1,4 @@
-n// Copyright (c) 2014, Intel Corporation
+// Copyright(c) 2014-2016, Intel Corporation
 //
 // Redistribution  and  use  in source  and  binary  forms,  with  or  without
 // modification, are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@ n// Copyright (c) 2014, Intel Corporation
 //****************************************************************************
 #define AALSDK_PACKAGE                "aalsdk_splrm"
 #define AALSDK_PACKAGE_VERSION        "4.1.0"
-#define AALSDK_COPYRIGHT_STMNT        "Copyright (c) 2003-2014 Intel Corporation"
+#define AALSDK_COPYRIGHT_STMNT        "Copyright(c) 2003-2016, Intel Corporation"
 #define PACKAGE_BUGREPORT             "joe.grecco@intel.com"
 #define PACKAGE_URL                   ""
 #define GIT_COMMIT_ID                 "unknown"
@@ -102,6 +102,29 @@ n// Copyright (c) 2014, Intel Corporation
 #define SWSIMALIAFU_VERSION_REVISION  0
 #define SWSIMALIAFU_VERSION_AGE       0
 #define SWSIMALIAFU_VERSION           "0.0.0"
+
+
+
+#define AIASERVICE_VERSION_CURRENT   0
+#define AIASERVICE_VERSION_REVISION  0
+#define AIASERVICE_VERSION_AGE       0
+#define AIASERVICE_VERSION           "0.0.0"
+
+
+#define RRMBROKER_VERSION_CURRENT   0
+#define RRMBROKER_VERSION_REVISION  0
+#define RRMBROKER_VERSION_AGE       0
+#define RRMBROKER_VERSION           "0.0.0"
+
+#define RRM_VERSION_CURRENT        0
+#define RRM_VERSION_REVISION       0
+#define RRM_VERSION_AGE            0
+#define RRM_VERSION                "0.0.0"
+
+#define RESMGR_VERSION_CURRENT     0
+#define RESMGR_VERSION_REVISION    0
+#define RESMGR_VERSION_AGE         0
+#define RESMGR_VERSION             "0.0.0"
 
 
 #define STDC_HEADERS  1
