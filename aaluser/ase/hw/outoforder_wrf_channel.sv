@@ -150,7 +150,10 @@ module outoforder_wrf_channel
    logic [FIFO_WIDTH-1:0] 	  vl0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh0_array[$:INTERNAL_FIFO_DEPTH-1];
    logic [FIFO_WIDTH-1:0] 	  vh1_array[$:INTERNAL_FIFO_DEPTH-1];
-
+   
+   // Wrfence response staging
+   logic [(TID_WIDTH + CCIP_RX_HDR_WIDTH)-1:0]  wrfence_rsp_array[$];
+      
    // Outfifo
    logic [OUTFIFO_WIDTH-1:0] 	  outfifo[$:VISIBLE_DEPTH-1];
 
@@ -327,29 +330,77 @@ module outoforder_wrf_channel
    assign infifo_empty = (infifo_cnt == 0) ? 1 : 0;
 
 
+   // Write fence response generator
+   function logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
+      RxHdr_t wrfence_rsp;
+      logic [CCIP_RX_HDR_WIDTH-1:0] wrfence_rsp_vec;      
+      begin
+	 // Precast
+	 wrfence_rsp = RxHdr_t'(0);
+	 // response
+	 wrfence_rsp.vc_used  = wrfence.vc;
+	 wrfence_rsp.resptype = ASE_WRFENCE_RSP;
+	 wrfence_rsp.mdata    = wrfence.mdata;
+	 // Cast back and return
+	 wrfence_rsp_vec = CCIP_RX_HDR_WIDTH'(wrfence_rsp);
+	 return wrfence_rsp_vec;	 
+      end
+   endfunction
 
-   // INFIFO->VC_sel
+   /*
+    * INFIFO->VC_sel
+    * -----------------------------------------
+    * - Read infifo contents
+    * - If WrFence (either channel)
+    *   = Block required channel(s)
+    *   = Stage WrFence response in wrfence_rsp_array
+    * - Else !wrfence
+    *   = Select VC
+    *   = Stage into response h
+    */ 
    function void infifo_to_vc_push ();
       begin
 	 if (~some_lane_full & ~infifo_empty) begin
 	    {infifo_tid_out, infifo_data_out, infifo_hdr_out_vec} = infifo.pop_front();
-	    infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);
-	    select_vc (0, infifo_hdr_out);
-	 `ifdef ASE_DEBUG
-	    if (infifo_hdr_out.vc == VC_VA) begin
-	       $fwrite(log_fd, "%d | select_vc : tid=%x picked VC_VA, this must not happen !!\n", $time, infifo_tid_out);
-	    end
-	 `endif
+	    infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);	    
+	    // If Write fence is observed
 	    if (infifo_hdr_out.reqtype == ASE_WRFENCE) begin
-         `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | infifo_to_vc : WrFence pushed to all VCs by tid=%x\n", $time, infifo_tid_out);
-         `endif
-	       // Fence activatd
-	       vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-	       vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
-	       vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+	       case (infifo_hdr_out.vc)
+		 // If VA, fence all channels, and stage one coalesced response
+		 VC_VA:
+		   begin
+		      // Fence activatd
+		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      // Wrfence response
+		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out)} );
+		   end
+
+		 // If single channel fence, stage requisite response
+	         VC_VL0:
+		   begin
+		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out)} );
+		   end
+
+		 VC_VH0:
+		   begin
+		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out)} );
+		   end
+
+		 VC_VH1:
+		   begin
+		      vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
+		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out)} );
+		   end
+		 
+	       endcase
 	    end
+	    // Any other transaction
 	    else begin
+	       select_vc (0, infifo_hdr_out);	       
 	       // No fence
 	       case (infifo_hdr_out.vc)
 		 VC_VL0:
@@ -384,6 +435,7 @@ module outoforder_wrf_channel
       end
    endfunction
 
+   
    // Virtual channel select and push
    always @(posedge clk) begin : vc_selector_proc
       if (rst) begin
