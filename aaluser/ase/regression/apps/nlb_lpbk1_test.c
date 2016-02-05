@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
   mcl_set = mcl_arr[rand()%3];
   num_cl = num_cl * mcl_set;
 #endif
+  num_cl = num_cl * (mcl_set + 1);
 
   printf("num_cl = %d, vc_set = %d, mcl_set = %d\n", num_cl, vc_set, mcl_set);
 
