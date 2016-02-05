@@ -69,7 +69,7 @@ endif
 all: aliconfafu
 
 aliconfafu: ALIConfAFU.o
-	$(CXX) $(CFLAGS) -o aliconfafu ALIConfAFU.o $(LDFLAGS) -lOSAL -lAAS -laalrt
+	$(CXX) $(CFLAGS) -o aliconfafu ALIConfAFU.o $(LDFLAGS) -lOSAL -lAAS -laalrt -laalclp
 
 ALIConfAFU.o: ALIConfAFU.cpp  Makefile
 	$(CXX) $(CPPFLAGS) -D__AAL_USER__=1  $(CFLAGS) -c -o ALIConfAFU.o ALIConfAFU.cpp
