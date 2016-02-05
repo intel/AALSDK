@@ -45,7 +45,7 @@
 include ase_sources.mk
 
 ## ASE Version
-ASE_VERSION = 5.0.0
+ASE_VERSION = 5.0.1
 
 # ASE Debug
 ASE_DEBUG = 1
