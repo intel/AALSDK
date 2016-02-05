@@ -103,6 +103,10 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 
+SNPS_VLOGAN_OPT+= +define+USE_PLATFORM_CCIP 
+SNPS_VLOGAN_OPT+= +define+CCI_SIMULATION=1 
+SNPS_VLOGAN_OPT+= +define+SIM_MODE=1 
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
