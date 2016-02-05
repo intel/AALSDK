@@ -172,7 +172,7 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/fpgadiag/Makefile
                  utils/data_model/Makefile
                  utils/ALIAFU/Makefile
-                 utils/VTP/Makefile
+                 utils/ALIAFU/VTP/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])
