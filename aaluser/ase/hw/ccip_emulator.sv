@@ -764,8 +764,9 @@ module ccip_emulator
    always @(posedge clk) begin
       if (mmioread_timeout_cnt >= `MMIO_RESPONSE_TIMEOUT) begin
 	 `BEGIN_RED_FONTCOLOR;	 
-	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!\n");
-	 $display("        Check to see that MMIO Read responses are returned within %d cycles\n", `MMIO_RESPONSE_TIMEOUT);
+	 $display("SIM-SV: ASE timed out waiting for MMIO Read response to arrive !!");
+	 $display("        Please check CCI-spec, MMIO Read responses must return in %d cycles\n", 
+		  `MMIO_RESPONSE_TIMEOUT);
 	 `END_RED_FONTCOLOR;  
 	 start_simkill_countdown();
       end
@@ -1684,7 +1685,7 @@ module ccip_emulator
     * *******************************************************************/
    // Output channel
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (sys_reset|SoftReset) begin
    	 C0RxMmioWrValid <= 1'b0;
    	 C0RxMmioRdValid <= 1'b0;
 //   	 C0RxWrValid     <= 1'b0;
@@ -1844,7 +1845,7 @@ module ccip_emulator
     *
     * *******************************************************************/
    always @(posedge clk) begin
-      if (sys_reset) begin
+      if (sys_reset | SoftReset) begin
 	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
 	 C1RxWrValid <= 1'b0;
 	 C1RxIntrValid <= 1'b0;

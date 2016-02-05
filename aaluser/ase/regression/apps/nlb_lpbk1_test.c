@@ -151,14 +151,14 @@ int main(int argc, char *argv[])
     /* } */
 
   /* uint64_t *data_l, *data_h; */
-  /* for(i= 0; i < 10000; i++) */
-  /*   { */
+  /* /\* for(i= 0; i < 10000; i++) *\/ */
+  /* /\*   { *\/ */
   /*     mmio_read64(0x008, data_l); */
   /*     mmio_read64(0x010, data_h); */
-  /*   } */
-  /* printf("AFUID = %llx %llx\n",  */
-  /* 	 (unsigned long long)*data_h,  */
-  /* 	 (unsigned long long)*data_l); */
+  /* /\*   } *\/ */
+  /* /\* printf("AFUID = %llx %llx\n",  *\/ */
+  /* /\* 	 (unsigned long long)*data_h,  *\/ */
+  /* /\* 	 (unsigned long long)*data_l); *\/ */
  
   mmio_write32(CSR_CTL, 0);
   
@@ -174,19 +174,23 @@ int main(int argc, char *argv[])
   uint32_t data32;
   /* for(i= 0; i < 10000; i++) */
   
-  /* mmio_read64(AFU_ID_L, &data64 ); */
-  /* printf("data64 = %llx\n", (unsigned long long)data64); */
-  /* mmio_read64(AFU_ID_H, &data64 ); */
-  /* printf("data64 = %llx\n", (unsigned long long)data64); */
+  mmio_read64(AFU_ID_L, &data64 );
+  printf("data64 = %llx\n", (unsigned long long)data64);
+  mmio_read64(AFU_ID_H, &data64 );
+  printf("data64 = %llx\n", (unsigned long long)data64);
   
-  /* mmio_read32(AFU_ID_L, &data32 ); */
-  /* printf("data32 = %08x\n", (uint32_t)data32); */
-  /* mmio_read32(AFU_ID_L + 4, &data32 ); */
-  /* printf("data32 = %08x\n", (uint32_t)data32); */
-  /* mmio_read32(AFU_ID_H, &data32 ); */
-  /* printf("data32 = %08x\n", (uint32_t)data32); */
-  /* mmio_read32(AFU_ID_H + 4, &data32 ); */
-  /* printf("data32 = %08x\n", (uint32_t)data32); */
+  mmio_read32(AFU_ID_L, &data32 );
+  printf("data32 = %08x\n", (uint32_t)data32);
+  mmio_read32(AFU_ID_L + 4, &data32 );
+  printf("data32 = %08x\n", (uint32_t)data32);
+  mmio_read32(AFU_ID_H, &data32 );
+  printf("data32 = %08x\n", (uint32_t)data32);
+  mmio_read32(AFU_ID_H + 4, &data32 );
+  printf("data32 = %08x\n", (uint32_t)data32);
+
+#if 0
+  mmio_read32(0x1020, &data32 );
+#endif
   
   mmio_write32(CSR_NUM_LINES, num_cl);
   
