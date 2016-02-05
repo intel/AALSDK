@@ -122,8 +122,10 @@ public:
    ali_errnum_e bufferFree(     btVirtAddr     Address);
    ali_errnum_e bufferFreeAll();
    btPhysAddr   bufferGetIOVA(  btVirtAddr     Address);
-   // </IVTP>
 
+   // reinitialize VTP registers after AFU reset
+   btBool vtpReset( void );
+   // </IVTP>
 
 protected:
    IServiceClient        *m_pSvcClient;

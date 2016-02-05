@@ -197,8 +197,7 @@ btBool VTP::init( IBase               *pclientBase,
    ASSERT(m_pPageTableFree <= m_pPageTableEnd);
 
    // Tell the hardware the address of the table
-   // Use MMIO instead of memory to accommodate ASE
-   m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+   ASSERT(vtpReset());
 
    initComplete(rtid);
    return true;
@@ -599,6 +598,14 @@ VTP::DumpPageTable()
             if (pte == m_pPageTable) break;
         }
     }
+}
+
+
+btBool
+VTP::vtpReset( void ) {
+
+   // Write page table physical address CSR
+   return m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 }
 
 

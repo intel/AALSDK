@@ -432,18 +432,20 @@ btInt HelloALIVTPNLBApp::run()
       //    reverses that. We are following ccipTest here.
 
       // Initiate AFU Reset
-      // m_pALIResetService->afuReset();
+      m_pALIResetService->afuReset();
 
+      // AFU Reset clear VTP, too, so reinitialize that
+      m_pVTPService->vtpReset();
 
       // Initiate DSM Reset
       // Set DSM base (virtual, since we have allocated using VTP), high then low
       // FIXME: this is actually a 64 bit write!
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
-      // Assert AFU reset
+      // Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-      //De-Assert AFU reset
+      //De-Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       // If ASE, give it some time to catch up
