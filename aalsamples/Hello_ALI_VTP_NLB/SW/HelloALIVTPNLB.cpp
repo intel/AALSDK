@@ -58,8 +58,8 @@
 // UN-COMMENT appropriate #define in order to enable either Hardware or ASE.
 //    DEFAULT is to use Software Simulation.
 //****************************************************************************
-#define  HWAFU
-//#define  ASEAFU
+// #define  HWAFU
+#define  ASEAFU
 
 using namespace std;
 using namespace AAL;
@@ -432,7 +432,7 @@ btInt HelloALIVTPNLBApp::run()
       //    reverses that. We are following ccipTest here.
 
       // Initiate AFU Reset
-      m_pALIResetService->afuReset();
+      // m_pALIResetService->afuReset();
 
 
       // Initiate DSM Reset
@@ -698,7 +698,7 @@ void HelloALIVTPNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
-   pAALLogger()->AddToMask(LM_All, LOG_INFO);
+   pAALLogger()->AddToMask(LM_All, LOG_DEBUG);
    HelloALIVTPNLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
