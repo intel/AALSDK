@@ -1,4 +1,4 @@
-## Copyright(c) 2005-2016, Intel Corporation
+## Copyright(c) 2015-2016, Intel Corporation
 ##
 ## Redistribution  and  use  in source  and  binary  forms,  with  or  without
 ## modification, are permitted provided that the following conditions are met:
@@ -27,66 +27,30 @@
 ##     Intel(R) Accelerator Abstraction Layer Library Software Developer
 ##        Kit (SDK)
 ##  Content:
-##     samples/Makefile
+##     utils/ALIAFU/VTP/Makefile.am
 ##  Author:
 ##     Tim Whisonant, Intel Corporation
+##     Enno Luebbers, Intel Corporation
 ##  History:
-##     11/18/2014    TSW   Initial version
+##     07/20/2015    TSW   Initial version
+##     01/27/2016    EL    Adapt for VTP
 ##******************************************************************************
+lib_LTLIBRARIES=libVTP.la
 
-## NOTE: Removing SPL support but will add back in something similar, so 
-##       leaving in the code but not attempting to build (SPL will not build)
-## NOTE: Removed CCI-S support, but difference between Hello_CCI_NLB and
-##       Hello_ALI_NLB is useful, so leaving Hello_CCI_NLB in place for now.
-SUBDIRS=\
-Hello_AAL_Service/SW \
-Hello_AAL/SW \
-Hello_ALI_NLB/SW \
-Hello_ALI_VTP_NLB/SW \
-ALI_Multi_AFU_with_PerfMon/SW \
-Temp_Power_Monitor/SW \
-MMLink/SW \
-ALI_Configure_AFU/SW
+libVTP_la_SOURCES=\
+cci_mpf_shim_vtp_params.h \
+VTP.h \
+VTP.cpp
 
-#Removed SUBDIRS
-#SUBDIRS=\
-#Hello_CCI_NLB/SW \
-#Hello_SPL_LB/SW \
-#Sudoku_SPL/SW \
-#LinkedList_SPL/SW
+libVTP_la_CPPFLAGS=\
+-I$(top_srcdir)/include \
+-I$(top_builddir)/include
 
+libVTP_la_LDFLAGS=\
+-module \
+-version-info $(VTP_VERSION_CURRENT):$(VTP_VERSION_REVISION):$(VTP_VERSION_AGE)
 
+libVTP_la_LIBADD=\
+$(top_builddir)/aas/OSAL/libOSAL.la \
+$(top_builddir)/aas/AASLib/libAAS.la 
 
-MFLAGS  =
-ifneq (,$(ndebug))
-MFLAGS += ndebug=$(ndebug)
-endif
-ifneq (,$(nassert))
-MFLAGS += nassert=$(nassert)
-endif
-
-ifeq (,$(DESTDIR))
-ifneq (,$(prefix))
-MFLAGS += prefix=$(prefix)
-endif
-else
-ifeq (,$(prefix))
-prefix  = /usr/local
-else
-MFLAGS += prefix=$(prefix)
-endif
-MFLAGS += DESTDIR=$(DESTDIR)
-endif
-
-all clean:
-	@for d in ${SUBDIRS} ; do (cd "$$d" && $(MAKE) $(MFLAGS) $@) || exit 1 ; done
-
-.PHONY: all clean
-
-doc docs: docclean
-	doc/output/./test.sh
-	doxygen doc/Doxyfile
-docclean docsclean:
-	@$(RM) -rf doc/doxygen
-
-.PHONY:doc docs docclean docsclean

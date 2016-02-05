@@ -42,6 +42,7 @@
 #include <aalsdk/kernel/ccipdriver.h>
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/CUnCopyable.h>
+#include <aalsdk/AALNamedValueSet.h>
 
 //#include <aalsdk/CAALBase.h>                    // CAALBase
 //#include <aalsdk/AALEvent.h>                    // IEvent
@@ -124,7 +125,10 @@ public:
    virtual AAL::btBool SendTransaction( IAIATransaction *pAFUmessage )       = 0;
 
    // Map/Unmap Workspace IDs to virtual memory addresses
-   virtual AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet) = 0;
+   virtual AAL::btBool MapWSID(AAL::btWSSize             Size,
+                               AAL::btWSID               wsid,
+                               AAL::btVirtAddr          *pRet,
+                               AAL::NamedValueSet const &optArgs = AAL::NamedValueSet()) = 0;
    virtual void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size)           = 0;
 
 #if 0

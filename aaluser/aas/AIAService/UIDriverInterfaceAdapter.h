@@ -55,6 +55,12 @@
 # error Define UIDriverInterfaceAdapter IPC for unknown OS.
 #endif // __AAL_UNKNOWN_OS__
 
+// NVS key for target address used in MapWSID()
+// FIXME: declare this where it should be declared...
+#ifndef ALI_MMAP_TARGET_VADDR
+#define ALI_MMAP_TARGET_VADDR "ALIMmapTargetVAddr"
+#endif
+
 BEGIN_NAMESPACE(AAL)
 
 //==========================================================================
@@ -77,7 +83,7 @@ class AIASERVICE_API UIDriverInterfaceAdapter : private CriticalSection,
       void Open(const char *devName = NULL);
       void Close();
 
-      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet);
+      AAL::btBool MapWSID(AAL::btWSSize Size, AAL::btWSID wsid, AAL::btVirtAddr *pRet, AAL::NamedValueSet const &optArgs = AAL::NamedValueSet());
       void UnMapWSID(AAL::btVirtAddr ptr, AAL::btWSSize Size);
 
       // Polls for messages and returns when one is available
