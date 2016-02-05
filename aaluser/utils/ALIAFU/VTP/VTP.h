@@ -181,26 +181,26 @@ private:
   // Dump the page table (debugging)
   void DumpPageTable();
 
-   const size_t pageSize = MB(2);
-   const size_t pageMask = ~(pageSize - 1);
+   static const size_t pageSize = MB(2);
+   static const size_t pageMask = ~(pageSize - 1);
 
    // Number of tag bits for a VA.  Tags are the VA bits not covered by
    // the page offset and the hash table index.
-   const uint32_t vaTagBits = CCI_PT_VA_BITS -
+   static const uint32_t vaTagBits = CCI_PT_VA_BITS -
                               CCI_PT_VA_IDX_BITS -
                               CCI_PT_PAGE_OFFSET_BITS;
 
    // Size of a single PTE.  PTE is a tuple: VA tag and PA page index.
    // The size is rounded up to a multiple of bytes.
-   const uint32_t pteBytes = (vaTagBits + CCI_PT_PA_IDX_BITS + 7) / 8;
+   static const uint32_t pteBytes = (vaTagBits + CCI_PT_PA_IDX_BITS + 7) / 8;
 
    // Size of a page table pointer rounded up to a multiple of bytes
-   const uint32_t ptIdxBytes = (CCI_PT_PA_IDX_BITS + 7) / 8;
+   static const uint32_t ptIdxBytes = (CCI_PT_PA_IDX_BITS + 7) / 8;
 
    // Number of PTEs that fit in a line.  A line is the basic entry in
    // the hash table.  It holds as many PTEs as fit and ends with a pointer
    // to the next line, where the list of PTEs continues.
-   const uint32_t ptesPerLine = (CL(1) - ptIdxBytes) / pteBytes;
+   static const uint32_t ptesPerLine = (CL(1) - ptIdxBytes) / pteBytes;
 
 };
 
