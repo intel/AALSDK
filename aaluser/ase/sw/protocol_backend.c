@@ -68,8 +68,7 @@ void sv2c_config_dex(const char *str)
   END_YELLOW_FONTCOLOR;
 #endif
 
-  // Check for existance of file
-  if ( access(sv2c_config_filepath, F_OK) == 0 )
+  if ( (sv2c_config_filepath != NULL) && (access(sv2c_config_filepath, F_OK)==0) )
     {
       printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
     }
@@ -97,7 +96,7 @@ void sv2c_script_dex(const char *str)
 #endif
 
   // Check for existance of file
-  if ( access(sv2c_script_filepath, F_OK) == 0 )
+  if ((sv2c_config_filepath != NULL) && (access(sv2c_script_filepath, F_OK)==0))
     {
       printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
     }
@@ -179,6 +178,15 @@ void mmio_response (struct mmio_t *mmio_pkt)
   FUNC_CALL_EXIT;
 }
 
+/*
+ * Count error flag ping/pong
+ */
+int count_error_flag = 0;
+void count_error_flag_pong(int flag)
+{
+  count_error_flag = flag;
+}
+
 
 /* ********************************************************************
  * ASE Listener thread
@@ -246,7 +254,7 @@ int ase_listener()
 	  END_RED_FONTCOLOR;
 	}
     }
-
+ 
 
    /*
     * Buffer Replicator
@@ -423,6 +431,20 @@ int ase_listener()
 	  ase_perror_teardown();
 	  start_simkill_countdown();
 	}
+
+      // Check for simulator sanity -- if transaction counts dont match
+      // Kill the simulation ASAP -- DEBUG feature only
+#ifdef ASE_DEBUG
+      if (count_error_flag_dex() == 1)
+	{
+	  BEGIN_RED_FONTCOLOR;
+	  printf("SIM-C : ** ERROR ** Transaction counts do not match, something got lost\n");
+	  END_RED_FONTCOLOR;
+	  run_clocks (500);
+	  ase_perror_teardown();
+	  start_simkill_countdown();	  
+	}				
+#endif
     }
 
   //  FUNC_CALL_EXIT;
@@ -450,7 +472,8 @@ void calc_phys_memory_ranges()
   BEGIN_YELLOW_FONTCOLOR;
   printf("        System memory range  => 0x%016lx-0x%016lx | %ld~%ld GB \n",
 	 sysmem_phys_lo, sysmem_phys_hi, 
-	 sysmem_phys_lo/(uint64_t)pow(1024, 3), (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
+	 sysmem_phys_lo/(uint64_t)pow(1024, 3), 
+	 (uint64_t)(sysmem_phys_hi+1)/(uint64_t)pow(1024, 3) );
   END_YELLOW_FONTCOLOR;
 }
 

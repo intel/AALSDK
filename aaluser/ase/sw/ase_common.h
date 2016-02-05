@@ -524,11 +524,7 @@ typedef struct {
 // DPI-C export(C to SV) calls
 extern void simkill();
 extern void sw_simkill_request();
-/* extern void csr_write_init(); */
-// extern void csr_write_dispatch(int, int, int);
 extern void buffer_messages(char *);
-/* extern void umsg_init(); */
-// extern void umsg_dispatch(int, int, int, int, char*);
 extern void ase_config_dex(struct ase_cfg_t *);
 
 // DPI-C import(SV to C) calls
@@ -564,6 +560,9 @@ void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 // Buffer message injection
 void buffer_msg_inject (char *);
 
+// Count error flag dex
+extern int count_error_flag_ping();
+void count_error_flag_pong(int);
 
 /*
  * Request/Response options
