@@ -1,0 +1,322 @@
+QuestaSim-64 vlog 10.3 Compiler 2014.01 Jan  6 2014
+Usage: vlog [options] files
+Options:
+  -help              Print this message
+  -time              Print the compilation wall clock time
+  -version           Print the version of the compiler
+  -32                Run in 32-bit mode
+  -64                Run in 64-bit mode
+  -work <path>       Specify library WORK
+  -error <msgNumber>[,<msgNumber>...]
+                     Report the listed messages as errors
+  -warning <msgNumber>[,<msgNumber>...]
+                     Report the listed messages as warnings
+  -warning error     Report all warnings as errors
+  -note <msgNumber>[,<msgNumber>...]
+                     Report the listed message as notes
+  -suppress <msgNumber>[,<msgNumber>...]
+                     Suppress the listed messages
+  -msglimit [all,|none,][-|+]<msgNumber>[,[-|+]<msgNumber>...]
+                     Limit the reporting of listed messages to default count
+  -msglimitcount <limit_value> -msglimit [all,|none,][-|+]<msgNumber>[,[-|+]<msgNumber>...]
+                     Limit the reporting of listed messages to user defined count
+  -svfilesuffix=<extension>[,<extension>...]
+                     filename extensions for SystemVerilog code
+  -93                Preserve the case of Verilog module (and parameter
+                     and port) names in the equivalent VHDL entity by using
+                     VHDL-1993 extended identifiers; this may be useful
+                     in mixed-language designs
+  -ams               Enable AMS wreal extensions
+  -wireasinterconnect               Convert qualifying nets from wire to interconnect.
+  -wireasinterconnectverbose       Identify which nets have been converted from wire to interconnect.
+  +acc[=<spec>]
+                     Enable PLI and debug command access to specified objects
+                     when optimizing a design.
+                     These modifiers help maximize simulation performance while
+                     retaining access to objects of interest.
+                     The effect of this option is limited only to those design units
+                     being compiled in the current vlog session.
+
+                     By default, +acc has effect on all kinds of design objects.
+                     <spec> is used to target more precisely certain kinds of objects.
+                     <spec> consists of one or more of the following letter codes:
+                        a (SVA/PSL objects, requirement for vsim -assertdebug)
+                        b (net bits)
+                        c (cell internal objects)
+                        f (finite state machine recognition and debugging)
+                        l (line debugging)
+                        m (module, program, and interface instances)
+                        n (nets)
+                        p (ports)
+                        r (variables and parameters)
+                        s (enable override of built-in system tasks)
+                        t (task and function scopes)
+                        u (primitive instances)
+
+                     When no valid <spec> characters are specified, the entire set
+                     is enabled.
+  +floatparameters
+                     Don't lock down parameter values during compilation.
+                     This enables use of the vsim -g/G options on the affected
+                     parameters.
+                     The effect of the option is limited to parameters in
+                     design units being compiled in the current vlog session.
+  -compat            Disable optimizations that result in different event ordering
+                     than Verilog-XL (at expense of performance).
+  -ccflags "opts"
+                     Specify in quotes all the C/C++ compiler options for vlog/qverilog
+  -dpicpppath <path_to_gcc>
+                     Specify desired GCC path for DPI compilation
+  -dpicppinstall <[gcc|g++] version>
+                     Specify the version of the desired GNU compiler supported 
+                     and distributed by Mentor for the DPI compilation
+  -compile_uselibs[=<directory_name>]
+                     Use the `uselib directive to find verilog source files
+                     and compile them into automatically created libraries
+  -cuname <compilation_unit_name>
+                     Explicitly name the compilation unit package. The option
+                     can only be used with -mfcu. The <compilation_unit_name>
+                     can be top design unit name at vsim and vopt commandline
+  +cover[=<spec>]
+                     <spec> is used to enable code coverage metrics for certain
+                     kinds of constructs.
+                     <spec> consists of one or more of the following letter codes:
+                        s (statement)
+                        b (branch)
+                        c (condition)
+                        e (expression)
+                        f (finite state machine)
+                        t (toggle)
+                        x (extended toggle)
+                     If no <spec> characters are given, sbceft is the default.
+  -coverenhanced     Enables functionality which may change the appearance or content of coverage
+                     metrics. A detailed list of these changes can be found by searching in the
+                     release notes for 'coverenhanced'. This option only takes meaningful effect in
+                     letter releases (e.g. 10.2b). It has no effect in initial major releases (e.g. 10.2).
+  -coveropt <i>      Specify a digit for code coverage optimization level: 1 through 4.
+  -coverexcludedefault Automatically exclude case default clauses.
+  -coverfec          Enable Focused Expression Coverage analysis for conditions and expressions.
+  -nocoverfec        Disable Focused Expression Coverage analysis for conditions and expressions.
+  -coverrec          Enable Rapid Expression Coverage mode of FEC for conditions and expressions.
+  -nocoverrec        Disable Rapid Expression Coverage mode of FEC for conditions and expressions.
+  -coverudp          Enable UDP Coverage analysis for conditions and expressions.
+  -nocoverudp        Disable UDP Coverage analysis for conditions and expressions.
+  -nocovershort      Disable short circuiting of expressions/condition when coverage is enabled.
+  -coverexpandrdpfx  Bit-blast multi-bit operands of reduction prefix expressions for expression/condition coverage.
+  -nocoverexpandrdpfx Don't bit-blast multi-bit operands of reduction prefix expressions for expression/condition coverage.
+  -nocoverexcludedefault Don't automatically exclude case default clauses.
+  -covercells        Enable code coverage options in cells
+  -nocovercells      Disable code coverage options in cells
+  -constimmedassert  Show constant immediate assertions in GUI/UCDB/reports etc.
+  -togglecountlimit n Quit collecting toggle info after count n is reached.
+  -togglewidthlimit n Don't collect toggle data on reg's or arrays wider than n.
+  -extendedtogglemode [1|2|3]
+                     Change the level of support for extended toggles.
+                     The levels of support are:
+                     1 - 0L->1H & 1H->0L & any one 'Z' transition (to/from 'Z')
+                     2 - 0L->1H & 1H->0L & one transition to 'Z' & one transition from 'Z'
+                     3 - 0L->1H & 1H->0L & all 'Z' transitions
+  -toggleportsonly   Enable toggle statistics collection only for ports.
+  -maxudprows n      Max number of rows allowed in UDP tables for code coverage.
+  -maxfecrows n      Max number of input patterns allowed in FEC table for code coverage.
+  -fecudpeffort n    Limit the size of expressions and conditions considered for expr/cond coverage.
+                     Levels supported are:
+                     1 - (low) Only small expressions and conditions considered for coverage.
+                     2 - (medium) Bigger expressions and conditions considered for coverage.
+                     3 - (high) Very large expressions and conditions considered for coverage.
+  -coverreportcancelled Report coverage items that have been optimized away.
+  -coverdeglitch <period> Report only the last execution of a non-clocked process
+                     within time greater than <period>, where <period> is 0 or
+                     a time string with units
+  +define+<macro_name>[=<macro_text>]
+                     Same as compiler directive: `define macro_name macro_text
+  -deglitchalways    Make always blocks insensitive to variable
+                     glitches, potentially breaking zero delay oscillations
+                     among combinatorial always blocks. (default)
+  -nodeglitchalways  Disable -deglitchalways behavior.
+  +delay_mode_distributed
+                     Use structural delays and ignore path delays
+  +delay_mode_path   Set structural delays to zero and use path delays
+  +delay_mode_unit   Set non-zero structural delays to one
+  +delay_mode_zero   Set structural delays to zero
+  -dpiforceheader    Force generation of dpi header file even when
+                     empty of function prototypes
+  -dpiheader <filename>
+                     Save the generated declarations of SystemVerilog DPI
+                     tasks and functions into <filename>
+  -E <filename>      Write preprocessed Verilog and SystemVerilog into <filename>
+  -Epretty <filename>
+                     Write pretty preprocessed Verilog and SystemVerilog into <filename>
+  -Edebug <filename>
+                     Write debugable preprocessed Verilog and SystemVerilog into <filename>
+  -enumfirstinit     Initialize an enum using its first elem.
+  -f <path>          Specify a file containing more command line arguments
+  -F <path>          Specify a file containing more command line arguments. Prefixes relative
+                     file names within the arguments file with the absolute path of arguments file,
+                     if lookup with relative path fails.
+  -outf <filename>   Specify a file to save the final list of options after recursively expanding
+                     all -f, -file and -F files.
+  -nofsmresettrans   Disable recognition of implicit asynchronous reset transitions for FSMs
+  -fsmresettrans     Enable recognition of implicit asynchronous reset transitions for FSMs
+  -nofsmsingle       Disable recognition FSMs having single bit current state variable
+  -fsmsingle         Enable recognition FSMs having single bit current state variable
+  -fsmimplicittrans  Enable recognition of implicit transitions in FSMs
+  -nofsmimplicittrans Disable recognition of implicit transitions in FSMs
+  -fsmmultitrans     Enable recognition of Multi-state transitions in FSMs
+  -fsmverbose [b|t|w]
+                     Provides information about FSMs recognized, including state reachability analysis.
+                     There are three detail levels that can be set with this option.
+                        b (displays only basic information)
+                        t (displays a transition table in addition to the basic information)
+                        w (displays any warning messages in addition to the basic information)
+                     If no character is specified, btw is the default.
+  -nofsmxassign      Disable recognition of FSMs containing x assignment
+  -fsmxassign        Enable recognition of FSMs containing x assignment
+  -gen_xml <entity> <output>
+                     Output (into a file) the interface definition of the
+                     specified design unit in XML format
+  -hazards           Enable run-time hazard checking code
+  +incdir+<dir>      Search directory for files included with
+                     `include "filename"
+  -incr              Enable incremental compilation
+  +initmem[=<spec>][+0|1|X|Z]
+                     Initialize fixed-size arrays of type indicated by <spec>.
+  +initreg[=<spec>][+0|1|X|Z]
+                     Initialize variables of type indicated by <spec>.
+                     Valid values of <spec> are:
+                        r (4-state integral types)
+                        b (2-state integral types)
+                        e (enum types)
+                        u (udp types)
+                     If no <spec> is given, all these types are enabled.
+                     If 0|1|X|Z is specified, all the bits in the variable
+                     are intialized to that value.  Otherwise, these variables
+                     are prepared for randomization during vsim.
+  -L <libname>       Search library for design units needed when optimizing
+  -Lf <libname>      Same as -L, but libraries are searched before `uselib
+  -l <filename>      Write compilation log to <filename>
+  +libext+<suffix>   Specify suffix of files in library directory
+  -libmap <path>     Specify Verilog 2001 library map file
+  -libmap_verbose    Display library map pattern matching information during compilation
+  +librescan         Scan libraries in command line order for all
+                     unresolved module references
+  -line <lineNum>    Specify a starting line number
+  -lint              Perform lint-style checks
+  -lowercasepragma   Allow only lower case pragmas
+  -lowercasepslpragma   Allow only lower case PSL pragmas
+  -lrmclassinit      Use LRM-compliant class property initialization ordering
+  -modelsimini <modelsim.ini>
+                     Specify path to the modelsim.ini file.
+  +maxdelays         Use maximum timing from min:typ:max expressions
+  -mfcu              Multi-file compilation unit, all files in command line make up a compilation unit.
+                     The default is to have each file be a separate compilation unit
+  +mindelays         Use minimum timing from min:typ:max expressions
+  -mixedansiports    Enables mixing of ANSI-style and non-ANSI-style declarations
+  -nocheck           Disable run-time range and index checks
+  -nodebug[=ports][=pli][=ports+pli]
+                     Do not put symbolic debugging information into the library
+  -nodbgsym
+                     Do not generate symbols debugging database
+  -smartdbgsym
+                     Generate symbols debugging database for only some special cases
+  -noincr            Disable incremental compile previously turned on with -incr
+  +nolibcell         Do not automatically define library modules as cells(default)
+  +libcell           Define library modules (found with -v|-y search) as cells
+  -nologo            Disable startup banner
+  -nostats           Disable 'Loading' stats
+  -nopsl             Disable embedded PSL language parsing
+  -novopt            Do not run the "vopt" compiler before simulation
+  +nospecify         Disable specify path delays and timing checks
+  +notimingchecks    Disable timing checks
+  -nowarn <number>   Disable specified category of warning messages; verror 1907 to see them
+  +nowarn<CODE>      Disable specified warning message
+  -noconstimmedassert  Do not show constant immediate assertions in GUI/UCDB/reports etc.
+  -O0                Disable optimizations
+  -O1                Enable some optimizations
+  -O4                Enable most optimizations (default)
+  -O5                Enable additional compiler optimizations
+  -pedanticerrors    Enforce strict language checks
+  -permissive        Relax some language error checks to warnings.
+  -printinfilenames  Print path names for all source files opened during compilation.
+  +protect[=<file>]  Enable use of `protect...`endprotect compiler directives
+  -pslext            Enable PSL LTL/Universal operators
+  -pslfile <file>    Compile and bind PSL vunits specified by <file>
+  -quiet             Disable 'Loading' messages
+  -R [<simargs>]     Cause vsim to be invoked with <simargs> and top-level
+                     modules; simargs consists of the rest of the arguments
+                     or until a single-character dash is encountered
+  -                  Indicate end of optional -R <simargs>
+  -refresh           Refresh the library image from .dat file(s)
+  -scdpiheader <filename>
+                     Save the generated declarations of SystemVerilog SystemC DPI
+                     tasks and functions into <filename>
+  -sfcu              Single-file compilation unit (default),
+                     each file in command line is a separate compilation unit
+  -skipprotected     Ignore protected regions
+  -skipprotectedmodule Ignore modules containing protected regions
+  -skipsynthoffregion Ignore all constructs within synthesis_off or translate_off pragma regions.
+  -source            Print the source line with error messages
+  -sv                Enable SystemVerilog features and keywords
+  -sv05compat        Ensure compatibility with IEEE standard 1800-2005
+  -sv09compat        Ensure compatibility with IEEE standard 1800-2009
+  -sv12compat        Ensure compatibility with IEEE standard 1800-2012
+  -oldsv             Enable selected constructs no longer supported by the SystemVerilog standard
+  -stats             Enable 'Loading' stats
+  -svinputport=net|var|relaxed
+                     Select the default kind for an input port that is
+                     declared with a type, but without the var keyword.
+                     Select 'net' for strict LRM compliance, where the
+                     kind always defaults to wire. Select 'var' for
+                     non-compliant behavior, where the kind always defaults
+                     to var. The default is 'relaxed', where only a
+                     type that is a 4-state scalar or 4-state single
+                     dimension vector type defaults to wire.
+  -svext[=[+|-]<extension>[,[+|-]<extension>]*]
+                     Enable SystemVerilog language extensions.
+                     Valid extensions are:
+                     feci  - Treat constant expressions in foreach loop variable indices as constant.
+                     pae   - Automatically export all symbols imported and referenced in a package.
+                     uslt  - Promote unused design units to top-level design units.
+                     spsl  - Search for packages in source libraries specified with -y and +libext.
+                     sccts - String concatenation convert to string.
+                     iddp  - Ignore DPI disable protocol check.
+                     idcl  - Pass import DPI call location as implicit scope.
+                     daoa  - Allow passing dynamic array as open array output port argument.
+                     atpi  - Allow types in Port Identifiers.
+                     acum  - Assignment Compatible Untyped Mailbox.
+                     fin0  - $finish() system call works as $finish(0), prints no diagnostic information.
+                     stop0 - $stop() system call works as $stop(0), prints no diagnostic information.
+                     bpan  - Allow bitsel and partsel ports as named ports.
+  -tbxhvllint[=<fileName>]
+                     The -tbxhvllint switch causes the compiler to warn about delays found in
+                     the source code that may cause syncronization issues in Veloce TBX.
+                     These warnings may be captured in the optional file <fileName>.
+                     If you plan to use vsim's -tbxhvllint switch to extract run time delay
+                     information then you must use this switch with the compiler.
+  -timescale <timescale>
+                     Specify the default timescale for modules not having an
+                     explicit timescale. The format of <timescale> is the same
+                     as that of the `timescale directive.
+                     For example, -timescale "1 ns / 1 ps".
+  -override_timescale <timescale>
+                     Override the timescale specified in the source code.
+  +typdelays         Use typical timing from min:typ:max expressions
+  -u                 Convert regular Verilog identifiers to uppercase
+  -v <path>          Specify Verilog source library file
+  -vlog95compat      Ensure compatibility with Std 1364-1995
+  -vlog01compat      Ensure compatibility with Std 1364-2001
+  -convertallparams  Enables converting parameters not defined in ANSI style
+                     to VHDL generics of type std_logic_vector, bit_vector,
+                     std_logic and bit.
+  -mixedsvvh [b | s | v] [packedstruct]
+                     Facilitates using SV packages at the SV-VHDL mixed-language boundary.
+                        b - treat scalars/vectors in package as bit/bit_vector
+                        s - treat scalars/vectors in package as std_logic/std_logic_vector
+                        v - treat scalars/vectors in package as vl_logic/vl_logic_vector
+                        packedstruct - treat packed structures as VHDL arrays of equivalent size
+  -vopt              Run the "vopt" compiler before simulation
+  -y <path>          Specify Verilog source library directory
+  -vmake             Collects complete list of command line args and files processed for use by vmake.
+  -writetoplevels <fileName>
+                     Writes complete list of toplevels into <fileName> (also includes the name specified
+                     with -cuname). The file <fileName> can be used with vopt command's -f switch.
