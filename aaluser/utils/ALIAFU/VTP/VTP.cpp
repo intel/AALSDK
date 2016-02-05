@@ -26,7 +26,7 @@
 //****************************************************************************
 /// @file VTPService.cpp
 /// @brief Implementation of IVTPService.
-/// @ingroup vtp_service
+/// @ingroup VTPService
 /// @verbatim
 /// Intel(R) QuickAssist Technology Accelerator Abstraction Layer
 /// Virtual-to-Physical address translation service
