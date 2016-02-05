@@ -157,7 +157,7 @@ btBool VTP::init( IBase               *pclientBase,
    }
 
    // Check BBB GUID (are we really a VTP?)
-   btString sGUID = VTP_BBB_GUID;
+   btcString sGUID = VTP_BBB_GUID;
    AAL_GUID_t structGUID;
    btUnsigned64bitInt readBuf[2];
 
