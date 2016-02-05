@@ -57,7 +57,7 @@ class mm_debug_link_linux: public mm_debug_link_interface
 {
 private:
   int m_fd;
-  static const size_t BUFSIZE = 3000; // size of buffer for t2h data
+  static const size_t BUFSIZE = 1073741824; // size of buffer for t2h data
   char m_buf[BUFSIZE];
   size_t m_buf_end;
   int m_write_fifo_capacity;

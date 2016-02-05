@@ -142,7 +142,7 @@ public:
 protected:
    IBase            *m_pAALService;    // The generic AAL Service interface for the AFU.
    Runtime           m_Runtime;
-   IALISignalTap    *m_ptheService;
+   IALIMMIO         *m_pALIMMIOService;
    btBool            m_isOK;
    CSemaphore        m_Sem;            // For synchronizing with the AAL runtime.
    int               m_Result;         // Returned result value; 0 if success
@@ -157,7 +157,7 @@ protected:
 SigTapApp::SigTapApp() :
    m_pAALService(NULL),
    m_Runtime(this),
-   m_ptheService(NULL),
+   m_pALIMMIOService(NULL),
    m_isOK(false),
    m_Result(0),
    m_mmio(NULL)
@@ -195,30 +195,30 @@ int SigTapApp::run(mmlink_server *server, char* filename)
    btVirtAddr stpAddr = NULL;
    // Request our AFU.
 
-   // NOTE: This example is bypassing the Resource Manager's configuration record lookup
-   //  mechanism.  This code is work around code and subject to change.
    NamedValueSet Manifest;
    NamedValueSet ConfigRecord;
 
-   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libsigtapservice");
-   ConfigRecord.Add(AAL_FACTORY_CREATE_SOFTWARE_SERVICE,true);
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
+   ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_AIA_NAME, "libaia");
+   ConfigRecord.Add(keyRegAFU_ID,"BFAF2AE9-4A52-46E3-82FE-38F0F9E17764"); //FME AFU ID
 
    Manifest.Add(AAL_FACTORY_CREATE_CONFIGRECORD_INCLUDED, &ConfigRecord);
-
    Manifest.Add(AAL_FACTORY_CREATE_SERVICENAME, "Signal Tap");
 
    MSG("Allocating Service");
 
-   #if DBG_HOOK
-         cout << Manifest << endl;
-   #endif // DBG_HOOK
-
    m_Runtime.allocService(dynamic_cast<IBase *>(this), Manifest);
    m_Sem.Wait();
 
+   if(!m_bIsOK){
+      ERR("Allocation failed\n");
+      ++m_Result;
+      goto done_0;
+   }
+
    // So signal tap
    if(m_isOK){
-      stpAddr = m_ptheService->stpGetAddress();
+      stpAddr = m_pALIMMIOService->mmioGetAddress();
    }
 
    if (NULL != stpAddr){
@@ -233,6 +233,7 @@ int SigTapApp::run(mmlink_server *server, char* filename)
    (dynamic_ptr<IAALService>(iidService, m_pAALService))->Release(TransactionID());
    m_Sem.Wait();
 
+done_0:
    m_Runtime.stop();
    m_Sem.Wait();
 
@@ -243,15 +244,15 @@ int SigTapApp::run(mmlink_server *server, char* filename)
 
 // <begin IServiceClient interface>
 void SigTapApp::serviceAllocated(IBase *pServiceBase,
-                                   TransactionID const &rTranID)
+                                 TransactionID const &rTranID)
 {
    m_pAALService = pServiceBase;
    ASSERT(NULL != m_pAALService);
 
-   m_ptheService = dynamic_ptr<IALISignalTap>(iidALI_STAP_Service, pServiceBase);
+   m_pALIMMIOService = dynamic_ptr<IALIMMIO>(iidALI_MMIO_Service, pServiceBase);
 
-   ASSERT(NULL != m_ptheService);
-   if ( NULL == m_ptheService ) {
+   ASSERT(NULL != m_pALIMMIOService);
+   if ( NULL == m_pALIMMIOService ) {
       return;
    }
    m_Sem.Post(1);

@@ -43,17 +43,17 @@ Hello_AAL_Service/SW \
 Hello_AAL/SW \
 Hello_ALI_NLB/SW \
 ALI_Multi_AFU_with_PerfMon/SW \
-Temp_Power_Monitor/SW
+Temp_Power_Monitor/SW \
+MMLink/SW \
+ALI_Configure_AFU/SW
 
 #Removed SUBDIRS
 #SUBDIRS=\
 #Hello_CCI_NLB/SW \
 #Hello_SPL_LB/SW \
 #Sudoku_SPL/SW \
-#LinkedList_SPL/SW \
-#ALI_Configure_AFU/SW
-#SignalTapService \
-#SigTapSample/SW
+#LinkedList_SPL/SW
+
 
 
 MFLAGS  =

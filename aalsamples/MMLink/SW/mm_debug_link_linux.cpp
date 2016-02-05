@@ -78,6 +78,8 @@
 #define MM_DEBUG_LINK_DEBUG_RESET       0x6178
 #define MM_DEBUG_LINK_MGMT_INTF         0x617C
 
+//#define DEBUG_FLAG 1 //Uncomment to enable read/write information
+
 using namespace std;
 
 /*
@@ -185,7 +187,9 @@ ssize_t mm_debug_link_linux::read()
 	    {
 	      num_bytes = mm_debug_link_linux::BUFSIZE - m_buf_end;
 	    }
-	    cout << "Read " << num_bytes << " bytes\n";
+       #ifdef DEBUG_FLAG
+	       cout << "Read " << num_bytes << " bytes\n";
+       #endif
 	    for ( unsigned char i = 0; i < num_bytes; ++i )
 	    {
 	    	*(this->m_buf + this->m_buf_end + i)= *(static_cast<unsigned char*>(read_mmr( MM_DEBUG_LINK_DATA_READ, 'b')));
@@ -195,10 +199,14 @@ ssize_t mm_debug_link_linux::read()
 	      for ( unsigned char i = 0; i < num_bytes; ++i )
 	      {
 	        x = this->m_buf[this->m_buf_end + i];
-	        cout << setfill('0') << setw(2) << std::hex << x << " ";
-	      }
-	      cout << std::dec << "\n";
 
+          #ifdef DEBUG_FLAG
+	           cout << setfill('0') << setw(2) << std::hex << x << " ";
+          #endif
+	      }
+         #ifdef DEBUG_FLAG
+	         cout << std::dec << "\n";
+         #endif
 	      this->m_buf_end += num_bytes;
 	  }
 	  else
@@ -223,24 +231,34 @@ ssize_t mm_debug_link_linux::write(const void *buf, size_t count)
 	    {
 	      num_bytes = count;
 	    }
+
+	    count = 0;
+
 	    for ( size_t i = 0; i < num_bytes; ++i )
 	    {
 	      write_mmr( MM_DEBUG_LINK_DATA_WRITE, 'b', *((unsigned char *)buf + i));
+	      ++count;
 	    }
 
-	      cout << "Wrote " << num_bytes << " bytes\n";
-
-	      for ( int i = 0; i < num_bytes; ++i )
-	      {
-	        x = *((unsigned char *)buf + i);
-	        cout << setfill('0')               << setw(2) << std::hex << x << " ";
-	      }
-	      cout << std::dec << "\n" ;
+	    num_bytes = count;
+       #ifdef DEBUG_FLAG
+          cout << "Wrote " << num_bytes << " bytes\n";
+       #endif
+       for ( int i = 0; i < num_bytes; ++i )
+       {
+         x = *((unsigned char *)buf + i);
+         #ifdef DEBUG_FLAG
+            cout << setfill('0') << setw(2) << std::hex << x << " ";
+         #endif
+       }
+       #ifdef DEBUG_FLAG
+          cout << std::dec << "\n" ;
+       #endif
 	  }
 	  else
 	  {
-      cerr << "Error write hw write buffer level\n";
-      num_bytes = 0;
+	     //cerr << "Error write hw write buffer level\n";
+	     num_bytes = 0;
 	  }
 
 	  return num_bytes;

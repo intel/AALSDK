@@ -191,7 +191,6 @@ ase/ase_regress.sh \
 ase/hw/outoforder_wrf_channel.sv \
 ase/hw/counter.sv \
 ase/hw/ccip_if_pkg.sv \
-ase/hw/ase_global.vh \
 ase/hw/ase_fifo.sv \
 ase/hw/latency_pipe.sv \
 ase/hw/ccip_emulator.sv \
@@ -227,6 +226,10 @@ include/aalsdk/service/SWSimALIAFUService.h.in
 UAIA_EXTRA=\
 include/aalsdk/uaia/AIAService.h.in 
 
+UTILS_EXTRA=\
+utils/fpgadiag/fpgasane_nlb400_0.sh \
+utils/fpgadiag/fpgasane_nlb400_3.sh
+
 EXTRA_DIST=\
 $(AAS_EXTRA) \
 $(AASEDS_EXTRA) \
@@ -235,5 +238,6 @@ $(CLP_EXTRA) \
 $(OSAL_EXTRA) \
 $(RM_EXTRA) \
 $(SERVICE_EXTRA) \
-$(UAIA_EXTRA)
+$(UAIA_EXTRA) \
+$(UTILS_EXTRA)
 

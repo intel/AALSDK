@@ -5,7 +5,7 @@ shopt -o -s nounset
 
 declare -r SCRIPT_NAME='create-dist'
 
-declare -r SAMPLES_VERSION='5.0.0'
+declare -r SAMPLES_VERSION='5.0.1'
 
 die() {
    printf "%s\n" ${1+"$@"}
@@ -163,8 +163,6 @@ create_samples_dist() {
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/LinkedList_SPL"
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/doc"
    ${RM} -rf "${SAMPLES_TMPDIR}/Samples/Scripts"
-   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/SignalTapService"
-   ${RM} -rf "${SAMPLES_TMPDIR}/Samples/SigTapSample"
    
    pushd "${SAMPLES_TMPDIR}" >/dev/null 2>&1
    ${TAR} zcf "aalsamples-${SAMPLES_VERSION}.BSD-License${TAG}.tar.gz" "Samples"
