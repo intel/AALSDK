@@ -285,11 +285,11 @@ module outoforder_wrf_channel
 
 
    // Pop infifo, arbitrate between lanes
-   logic [CCIP_DATA_WIDTH-1:0] infifo_data_out;
-   logic [TID_WIDTH-1:0]       infifo_tid_out;
+   logic [CCIP_DATA_WIDTH-1:0]   infifo_data_out;
+   logic [TID_WIDTH-1:0]         infifo_tid_out;
    logic [CCIP_TX_HDR_WIDTH-1:0] infifo_hdr_out_vec;
-   TxHdr_t                infifo_hdr_out;
-   logic 			  infifo_vld;
+   TxHdr_t                       infifo_hdr_out;
+   logic 			 infifo_vld;
 
    ccip_vc_t 		  vc_arb;
 

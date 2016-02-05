@@ -151,6 +151,18 @@ MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
+#########################################################################
+#                         Valgring options                              #
+#########################################################################
+VALGRIND_OPTS = -v --log-file=valgrind.log --error-limit=no
+VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
+VALGRIND_OPTS+= --leak-check=full --track-origins=yes
+VALGRIND_OPTS+= --show-reachable=yes
+# VALGRIND_OPTS+= --gen-suppressions=all
+VALGRIND_OPTS+= --show-leak-kinds=definite,possible
+VALGRIND_OPTS+= --undef-value-errors=yes 
+
+
 
 #########################################################################
 #                            Build Targets                              #
@@ -318,5 +330,18 @@ distclean: header clean
 #                            Leak Check                                 #
 #########################################################################
 src_check: 
-	scan-build-3.5 make sw_build
+	scan-build-3.5 -o work/scan-build/ -v \
+	-enable-checker alpha \
+	-enable-checker core \
+	-enable-checker security \
+	-enable-checker unix \
+	make sw_build &> scan-build.log
 
+coverage:
+	urg -dir ./work/coverage.vdb
+#	firefox urgReport/dashboard.html &
+
+valgrind_run:
+	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
+test: all sim

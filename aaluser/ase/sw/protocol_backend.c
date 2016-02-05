@@ -68,8 +68,7 @@ void sv2c_config_dex(const char *str)
   END_YELLOW_FONTCOLOR;
 #endif
 
-  // Check for existance of file
-  if ( access(sv2c_config_filepath, F_OK) == 0 )
+  if ( (sv2c_config_filepath != NULL) && (access(sv2c_config_filepath, F_OK)==0) )
     {
       printf("SIM-C : +CONFIG %s file was found\n", sv2c_config_filepath);
     }
@@ -97,7 +96,7 @@ void sv2c_script_dex(const char *str)
 #endif
 
   // Check for existance of file
-  if ( access(sv2c_script_filepath, F_OK) == 0 )
+  if ((sv2c_config_filepath != NULL) && (access(sv2c_script_filepath, F_OK)==0))
     {
       printf("SIM-C : +SCRIPT %s file was found\n", sv2c_script_filepath);
     }

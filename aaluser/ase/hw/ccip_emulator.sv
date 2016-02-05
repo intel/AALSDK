@@ -733,6 +733,9 @@ module ccip_emulator
       else if (mmioread_cycle) begin
 	 mmioread_timeout_cnt <= mmioread_timeout_cnt + 1;	 
       end
+      else begin
+	 mmioread_timeout_cnt <= 0;	 
+      end	
    end
 
    // MMIO Timeout simkill

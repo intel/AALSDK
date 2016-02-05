@@ -93,10 +93,10 @@ typedef enum logic [1:0] {
 //----------------------------------------------------------------------
 typedef struct packed {
     t_ccip_vc       vc_sel;
-    logic [1:0]     rsvd0;     // reserved, dont care
+    logic [1:0]     rsvd1;     // reserved, dont care
     t_ccip_clLen    cl_len;
     t_ccip_c0_req   req_type;
-    logic [5:0]     rsvd_a;     // reserved, dont care
+    logic [5:0]     rsvd0;     // reserved, dont care
     t_ccip_clAddr   address;
     t_ccip_mdata    mdata;
 } t_ccip_c0_ReqMemHdr;
