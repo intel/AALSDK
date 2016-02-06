@@ -435,6 +435,7 @@ btInt HelloALIVTPNLBApp::run()
       m_pALIResetService->afuReset();
 
       // AFU Reset clear VTP, too, so reinitialize that
+      // NOTE: this interface is likely to change in future releases of AAL.
       m_pVTPService->vtpReset();
 
       // Initiate DSM Reset

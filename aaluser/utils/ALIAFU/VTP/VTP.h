@@ -124,6 +124,7 @@ public:
    btPhysAddr   bufferGetIOVA(  btVirtAddr     Address);
 
    // reinitialize VTP registers after AFU reset
+   // FIXME: likely to change or disappear in beta
    btBool vtpReset( void );
    // </IVTP>
 

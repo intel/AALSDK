@@ -98,6 +98,8 @@ public:
    virtual ~IVTP() {}
 
    /// Reinitialize VTP after AFU Reset
+   ///
+   /// @note This interface is likely to change or disappear in beta
    virtual btBool vtpReset( void ) = 0;
 
 };

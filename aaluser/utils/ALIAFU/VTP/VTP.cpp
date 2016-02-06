@@ -197,6 +197,7 @@ btBool VTP::init( IBase               *pclientBase,
    ASSERT(m_pPageTableFree <= m_pPageTableEnd);
 
    // Tell the hardware the address of the table
+   // FIXME: vtpReset is likely to change or disappear in beta
    ASSERT(vtpReset());
 
    initComplete(rtid);
@@ -600,9 +601,11 @@ VTP::DumpPageTable()
     }
 }
 
-
+// FIXME: this is likely to change or disappear in beta!
 btBool
 VTP::vtpReset( void ) {
+
+   AAL_WARNING(LM_AFU, "Using vtpReset(). This interface is likely to change in future AAL releases." << std::endl);
 
    // Write page table physical address CSR
    return m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
