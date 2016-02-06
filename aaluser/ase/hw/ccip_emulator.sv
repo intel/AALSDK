@@ -314,7 +314,10 @@ module ccip_emulator
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
 
-
+   // Page table called status
+   logic rd_memline_dex_called;   
+   logic wr_memline_dex_called;   
+   
    // Scope generator
    initial scope_function();
 
@@ -1276,6 +1279,11 @@ module ccip_emulator
 						 input TxHdr_t               txhdr,
 						 input [CCIP_DATA_WIDTH-1:0] txdata);
       begin
+	 // Write fence
+	 if (txhdr.reqtype == ASE_WRFENCE)
+	   pkt.wrfence  = 1;
+	 else
+	   pkt.wrfence  = 0;	 
 	 // Write enable
 	 pkt.write_en = int'(write_en);
 	 // Metadata
@@ -1338,7 +1346,7 @@ module ccip_emulator
    logic                         cf2as_latbuf_ch0_empty;
    logic                         cf2as_latbuf_ch0_read;
    int 				 cf2as_latbuf_ch0_count;
-   logic 			 cf2as_latbuf_ch0_pop;
+   // logic 			 cf2as_latbuf_ch0_pop;
 
    // cf2as_latbuf_ch1 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
@@ -1349,7 +1357,7 @@ module ccip_emulator
    logic 		         cf2as_latbuf_ch1_read;
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
-   logic 			 cf2as_latbuf_ch1_pop;
+   // logic 			 cf2as_latbuf_ch1_pop;
 
    RxHdr_t                       cf2as_latbuf_rx0hdr_q;
    RxHdr_t                       cf2as_latbuf_rx1hdr_q;
@@ -1404,6 +1412,7 @@ module ccip_emulator
    always @(posedge clk) begin
       if (sys_reset) begin
    	 Tx0toRx0_pkt_vld <= 0;
+	 rd_memline_dex_called <= 0;	 
       end
       else if (cf2as_latbuf_ch0_valid) begin
    	 cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
@@ -1413,9 +1422,11 @@ module ccip_emulator
 	 rd_memline_dex(Tx0toRx0_pkt);
 	 Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
 	 cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
+	 rd_memline_dex_called <= 1;	 
       end
       else begin
    	 Tx0toRx0_pkt_vld <= 0;
+	 rd_memline_dex_called <= 0;	 
       end
    end
 
@@ -1462,14 +1473,14 @@ module ccip_emulator
       .rxhdr_out        ( cf2as_latbuf_rx1hdr ),
       .data_out		( cf2as_latbuf_tx1data ),
       .valid_out	( cf2as_latbuf_ch1_valid),
-      .read_en		( cf2as_latbuf_ch1_pop  ),
+      .read_en		( cf2as_latbuf_ch1_read  ),
       .empty		( cf2as_latbuf_ch1_empty ),
       .full             ( C1TxAlmFull )
       );
 
 
    //assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
-   assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
+   // assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
@@ -1491,28 +1502,33 @@ module ccip_emulator
 	 cf2as_latbuf_ch1_read <= 0;
       end
    end
-
+   
    // TX1 process
    always @(posedge clk) begin
       if (sys_reset) begin
 	 Tx1toRx1_pkt_vld <= 0;
+	 wr_memline_dex_called <= 0;	 
       end
       else if (cf2as_latbuf_ch1_valid) begin
    	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 
 			      1, 
 			      cf2as_latbuf_tx1hdr, 
 			      cf2as_latbuf_tx1data);
-	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
-	 if (cf2as_latbuf_rx1hdr.resptype != ASE_WRFENCE_RSP) begin
-   	    wr_memline_dex(Tx1toRx1_pkt);
-	 end
+   	 wr_memline_dex(Tx1toRx1_pkt);
    	 Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
-      end // if (cf2as_latbuf_ch1_valid)
+	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
+	 wr_memline_dex_called <= 1;	 
+      end
       else begin
 	 Tx1toRx1_pkt_vld <= 0;
+	 wr_memline_dex_called <= 0;	 	 
       end
    end
 
+   // always @(posedge clk) begin
+   //    Tx1toRx1_pkt_q <= Tx1toRx1_pkt;      
+   // end
+   
    // Wr1Rsp_in
    always @(posedge clk) begin
       if (sys_reset) begin

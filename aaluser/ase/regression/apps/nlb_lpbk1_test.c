@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   mcl_set = mcl_arr[rand()%3];
   num_cl = num_cl * mcl_set;
 #endif
-  num_cl = num_cl * (mcl_set + 1);
+  // num_cl = num_cl * (mcl_set + 1);
 
   printf("num_cl = %d, vc_set = %d, mcl_set = %d\n", num_cl, vc_set, mcl_set);
 
@@ -146,21 +146,8 @@ int main(int argc, char *argv[])
     }
   fclose(fp_rand);
 
-  /* for(i= 0; i < 10000; i++) */
-  /*   { */
   mmio_write32(CSR_AFU_DSM_BASEL, (uint32_t)dsm->fake_paddr);
   mmio_write32(CSR_AFU_DSM_BASEH, (dsm->fake_paddr >> 32));
-    /* } */
-
-  /* uint64_t *data_l, *data_h; */
-  /* /\* for(i= 0; i < 10000; i++) *\/ */
-  /* /\*   { *\/ */
-  /*     mmio_read64(0x008, data_l); */
-  /*     mmio_read64(0x010, data_h); */
-  /* /\*   } *\/ */
-  /* /\* printf("AFUID = %llx %llx\n",  *\/ */
-  /* /\* 	 (unsigned long long)*data_h,  *\/ */
-  /* /\* 	 (unsigned long long)*data_l); *\/ */
  
   mmio_write32(CSR_CTL, 0);
   

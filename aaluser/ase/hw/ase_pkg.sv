@@ -269,6 +269,7 @@ package ase_pkg;
     * CCI Transaction packet
     */
    typedef struct {
+      int 	  wrfence;
       int         write_en;
       int 	  vc;
       int 	  mdata;

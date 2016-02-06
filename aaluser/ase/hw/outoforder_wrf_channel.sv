@@ -982,7 +982,9 @@ module outoforder_wrf_channel
 	       unroll_active = 0;
                `ifdef ASE_DEBUG
 	       $fwrite(log_fd, "%d | record[%02d] with tid=%x multiline unroll %x\n", $time, ptr, records[ptr].tid, txhdr.addr);
-               `endif
+	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x out of record[%02d]\n", $time, records[ptr].tid, ptr);
+	       $fwrite(log_fd, "%d | latbuf_pop : tid=%x cause latbuf_used=%x\n", $time, records[ptr].tid, latbuf_used);
+	       `endif
 	       @(posedge clk);
 	       outfifo_write_en        = 0;
 	    end

@@ -28,13 +28,17 @@ do
     then
 	echo "------------------------------------------------"
 	echo "Running test" $i
-	num_cl=`shuf -i 4000-16383 -n 1`
 
 	index=$[ $RANDOM % 4 ]
 	vc_set=${vc_arr[$index]}
 
 	index=$[ $RANDOM % 3 ]
 	mcl_set=${mcl_arr[$index]}
+	mcl_cnt=$(($mcl_set + 1))
+
+	num_cl=`shuf -i 32-16383 -n 1`
+#	echo $mcl_cnt $num_cl
+	num_cl=$(($num_cl * $mcl_cnt))
 
 	echo ./nlb_test $num_cl $vc_set $mcl_set
 	./nlb_test $num_cl $vc_set $mcl_set > output.log
