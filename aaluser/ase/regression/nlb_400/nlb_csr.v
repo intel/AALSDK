@@ -14,6 +14,7 @@
 //
 // ***************************************************************************
 `include "vendor_defines.vh"
+import ccip_if_pkg::*;
 module nlb_csr #(parameter CCIP_VERSION_NUMBER=0)
 (
     Clk_400,                       //                              clk_pll:    16UI clock
@@ -163,8 +164,8 @@ end
 assign     cr2re_ctl             = func_csr_connect_4B(CSR_CTL,csr_reg[CSR_CTL>>3]);
 assign     cr2re_dsm_base[31:0]  = func_csr_connect_4B(CSR_AFU_DSM_BASEL,csr_reg[CSR_AFU_DSM_BASEL>>3]);
 assign     cr2re_dsm_base[63:32] = func_csr_connect_4B(CSR_AFU_DSM_BASEH,csr_reg[CSR_AFU_DSM_BASEH>>3]);
-assign     cr2re_src_address     = func_csr_connect_4B(CSR_SRC_ADDR,csr_reg[CSR_SRC_ADDR>>3]);
-assign     cr2re_dst_address     = func_csr_connect_4B(CSR_DST_ADDR,csr_reg[CSR_DST_ADDR>>3]);
+assign     cr2re_src_address     = csr_reg[CSR_SRC_ADDR>>3];
+assign     cr2re_dst_address     = csr_reg[CSR_DST_ADDR>>3];
 assign     cr2re_num_lines[31:16]= 16'h0;
 assign     cr2re_num_lines[15:0] = func_csr_connect_4B(CSR_NUM_LINES,csr_reg[CSR_NUM_LINES>>3]);
 assign     cr2re_inact_thresh    = func_csr_connect_4B(CSR_INACT_THRESH,csr_reg[CSR_INACT_THRESH>>3]);

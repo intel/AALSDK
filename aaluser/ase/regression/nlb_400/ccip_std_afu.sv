@@ -16,9 +16,8 @@ module ccip_std_afu(
   input           logic             pClk,              // 400MHz - CCI-P clock domain. Primary interface clock
   input           logic             pClkDiv2,          // 200MHz - CCI-P clock domain.
   input           logic             pClkDiv4,          // 100MHz - CCI-P clock domain.
-//  input           logic             uClk_usr,          // User clock domain. Refer to clock programming guide  ** NOT implemented **:w
-
-//  input           logic             uClk_usrDiv2,      // User clock domain. Half the programmed frequency  ** NOT implemented **
+  input           logic             uClk_usr,          // User clock domain. Refer to clock programming guide  ** Currently provides fixed 300MHz clock **
+  input           logic             uClk_usrDiv2,      // User clock domain. Half the programmed frequency  ** Currently provides fixed 150MHz clock **
   input           logic             pck_cp2af_softReset,      // CCI-P ACTIVE HIGH Soft Reset
   input           logic [1:0]       pck_cp2af_pwrState,       // CCI-P AFU Power State
   input           logic             pck_cp2af_error,          // CCI-P Protocol Error Detected

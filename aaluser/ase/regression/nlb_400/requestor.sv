@@ -249,11 +249,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     reg                     cr_interrupt_on_error;
     reg   [1:0]             cr_chsel;
     reg   [41:0]            ds_stat_address;                        // 040h - test status is written to this address
-    wire  [31:0]            re2xy_src_addr  = cr_src_address;
-    wire  [31:0]            re2xy_dst_addr  = cr_dst_address;
-    
-    
-	
+        
     wire                    txFifo_Full;
     wire                    txFifo_AlmFull;
     wire [18:0]             rxfifo_Din      = {cp2af_sRxPort.c1.hdr.cl_num[1:0],cp2af_sRxPort.c1.hdr.format,cp2af_sRxPort.c1.hdr.mdata[15:0]};
@@ -262,9 +258,6 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     
     wire [18:0]             rxfifo_Dout;
     wire                    rxfifo_Dout_v;
-    wire                    test_Reset_n    = cr_ctl[0];                // Clears all the states. Either is one then test is out of Reset.
-    wire                    test_go         = cr_ctl[1];                // When 0, it allows reconfiguration of test parameters.
-    wire [2:0]              re2ab_Mode      = cr_mode;
     wire                    re2ab_WrSent    = !txFifo_Full;             // stop accepting new requests, after status write=1
     wire                    txFifo_WrEn     = (ab2re_WrEn| ab2re_WrFence) && ~txFifo_Full;
     wire [15:0]             txFifo_WrTID;
@@ -273,23 +266,42 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 	wire                    txFifo_WrSop;
 	wire [1:0]              txFifo_WrLen;
     
-    wire [41:0]             RdAddr      = cr_src_address[41:0] ^ ab2re_RdAddr;
-    wire [41:0]             WrAddr      = cr_dst_address[41:0] ^ txFifo_WrAddr;
+    wire [41:0]             RdAddr      = cr_src_address[41:0] | ab2re_RdAddr;
+    wire [41:0]             WrAddr      = cr_dst_address[41:0] | txFifo_WrAddr;
     t_ccip_c1_req           wrreq_type;  
     wire [DATA_WIDTH-1:0]   txFifo_WrDin;
     reg  [DATA_WIDTH-1:0]   WrData_dsm;
 
+	reg                     test_Reset_n;
+    reg                     test_go;        
+    reg  [2:0]              re2ab_Mode;     
+	reg  [7:0]              re2xy_test_cfg;
+	reg  [31:0]             re2xy_NumLines;  
+    reg  [1:0]              re2xy_multiCL_len;
+	reg                     re2xy_Cont;
+	reg  [31:0]             re2xy_src_addr;  
+    reg  [31:0]             re2xy_dst_addr;  	
+	
     reg                     re2xy_go;
-    wire   [31:0]           re2xy_NumLines   = cr_num_lines;
-    wire   [1:0]            re2xy_multiCL_len= cr_multiCL_len;
-    wire                    re2xy_Cont       = cr_cont;
     wire                    re2ab_WrAlmFull  = txFifo_AlmFull;
     wire                    rnd_delay        = ~cr_delay_en || (delay_lfsr[0] || delay_lfsr[2] || delay_lfsr[3]);
-    wire   [7:0]            re2xy_test_cfg   = cr_test_cfg;
     wire                    tx_errorValid    = ErrorVector!=0;
     wire                    re2cr_wrlock_n   = test_Reset_n & ~test_go;
     reg    [15:0]           dsm_number=0;
-
+	
+	always @(posedge Clk_400)
+    begin
+	  test_Reset_n         <= cr_ctl[0];                // Clears all the states. Either is one then test is out of Reset.
+	  test_go              <= cr_ctl[1];                // When 0, it allows reconfiguration of test parameters.
+	  re2ab_Mode           <= cr_mode;
+	  re2xy_test_cfg       <= cr_test_cfg;
+	  re2xy_NumLines       <= cr_num_lines;
+	  re2xy_multiCL_len    <= cr_multiCL_len;
+	  re2xy_Cont           <= cr_cont;
+	  re2xy_src_addr       <= cr_src_address;
+	  re2xy_dst_addr       <= cr_dst_address;
+	end
+	
     logic                   re2ab_RdRspValid;
     logic                   re2ab_UMsgValid;
     logic  [15:0]           re2ab_RdRsp;
@@ -298,18 +310,19 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
     logic  [15:0]           re2ab_WrRsp;
     logic                   re2ab_CfgValid;
 	
-    logic                    ab2re_RdSop;
-    logic [1:0]              ab2re_WrLen;
-    logic [1:0]              ab2re_RdLen;
-    logic                    ab2re_WrSop;
+    logic                   ab2re_RdSop;
+    logic [1:0]             ab2re_WrLen;
+    logic [1:0]             ab2re_RdLen;
+    logic                   ab2re_WrSop;
                         
-    logic                    re2ab_RdRspFormat=0;
-    logic [1:0]              re2ab_RdRspCLnum;
-    logic                    re2ab_WrRspFormat;
-    logic [1:0]              re2ab_WrRspCLnum;
+    logic                   re2ab_RdRspFormat=0;
+    logic [1:0]             re2ab_RdRspCLnum;
+    logic                   re2ab_WrRspFormat;
+    logic [1:0]             re2ab_WrRspCLnum;
 
-	(* noprune *) logic      test_stop;
-	(* noprune *) logic      test_stop_q;
+	(* noprune *) logic     test_stop;
+	(* noprune *) logic     test_stop_q;
+	(* noprune *) logic     WrFence_sent;
 	
 	always_comb 
 	begin
@@ -338,7 +351,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
         cr_wrthru_en        = cr2re_cfg[0];
         cr_cont             = cr2re_cfg[1];
         cr_mode             = cr2re_cfg[4:2];
-        cr_multiCL_len      = cr2re_cfg[6:5];          // TODO: For Multi CL support
+        cr_multiCL_len      = cr2re_cfg[6:5];          
         cr_delay_en         = 1'b0;// FIXME: cr2re_cfg[8];
         cr_rdsel            = cr2re_cfg[10:9];
         cr_test_cfg         = cr2re_cfg[27:20];
@@ -384,8 +397,17 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 		// If Error detected or SW forced test termination
 	    // Make sure that multiCL request is completed before sending out DSM Write
 		test_stop_q                   <= test_stop;
-		if ( ((cr_ctl[2] | tx_errorValid) & !(|txFifo_WrLen) & WrHdr_valid_T2) | test_stop_q )
-		test_stop                     <= 1;
+		if ( re2ab_Mode[2:0] == 3'b001)
+		begin
+		   if (( cr_ctl[2] | tx_errorValid | test_stop_q))
+		   test_stop                  <= 1;
+		end
+		
+		else
+		begin
+		   if ( ( (cr_ctl[2] | tx_errorValid) & !(|txFifo_WrLen) & WrHdr_valid_T2 ) | test_stop_q)
+		   test_stop                  <= 1;
+		end
 		
         // Only supports 1 CL requests
         // Implies SOP=1, cl_len=0
@@ -420,9 +442,9 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             end
             else if (re2xy_go & rnd_delay )
             begin
-			    /*
-                if( dsm_status_wren                                             // Write Fence
+				if( dsm_status_wren                                             // Write Fence
                   & !cp2af_sRxPort_T1.c1TxAlmFull
+				  & !WrFence_sent
                   )
                 begin                                                           //-----------------------------------
                     if(WrFence_sent==0)
@@ -435,7 +457,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                     af2cp_sTxPort.c1.hdr.address[41:0] <= '0;
                     af2cp_sTxPort.c1.hdr.mdata[15:0]   <= '0;
 					af2cp_sTxPort.c1.hdr.sop           <= 1'b1;                 
-                    af2cp_sTxPort.c1.hdr.cl_len        <= 2'b00;
+                    af2cp_sTxPort.c1.hdr.cl_len        <= eCL_LEN_1;
                     af2cp_sTxPort.c1.data              <= '0;
 
                 end
@@ -444,7 +466,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                   !cp2af_sRxPort_T1.c1TxAlmFull
 				  & WrFence_sent
                   )
-                begin                                                           //-----------------------------------
+                begin                                                          //-----------------------------------
                     if(status_write==0)
                     begin
                         dsm_number                    <= dsm_number + 1'b1;
@@ -457,12 +479,12 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                     af2cp_sTxPort.c1.hdr.address[41:0] <= ds_stat_address;
                     af2cp_sTxPort.c1.hdr.mdata[15:0]   <= 16'hffff;
 					af2cp_sTxPort.c1.hdr.sop           <= 1'b1;                 // DSM Write is single CL write
-                    af2cp_sTxPort.c1.hdr.cl_len        <= 2'b00;
+                    af2cp_sTxPort.c1.hdr.cl_len        <= eCL_LEN_1;
                     af2cp_sTxPort.c1.data              <= WrData_dsm;
 
                 end
-				*/
 				
+				/*
 				if( dsm_status_wren                                             // Write DSM Status
                   & !cp2af_sRxPort_T1.c1TxAlmFull
                   )
@@ -483,6 +505,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                     af2cp_sTxPort.c1.data              <= WrData_dsm;
 
                 end
+				*/
 				
                 else if( WrHdr_valid_T2 & !test_stop )                         // Write to Destination Workspace
                 begin                                                          //-------------------------------------
@@ -491,7 +514,7 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
                     af2cp_sTxPort.c1.hdr.address[41:0] <= WrAddr;
                     af2cp_sTxPort.c1.hdr.mdata[15:0]   <= txFifo_WrTID;
 					af2cp_sTxPort.c1.hdr.sop           <= txFifo_WrSop;
-                    af2cp_sTxPort.c1.hdr.cl_len        <= txFifo_WrLen;
+                    af2cp_sTxPort.c1.hdr.cl_len        <= t_ccip_clLen'(txFifo_WrLen);
 
                     af2cp_sTxPort.c1.valid  <= 1'b1;
                     Num_Writes        <= Num_Writes + 1'b1;
@@ -506,9 +529,9 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
             af2cp_sTxPort.c0.hdr.req_type      <= rdreq_type;
             af2cp_sTxPort.c0.hdr.address[41:0] <= RdAddr;
             af2cp_sTxPort.c0.hdr.mdata[15:0]   <= ab2re_RdTID;
-            af2cp_sTxPort.c0.valid           <= 1'b1;
-            af2cp_sTxPort.c0.hdr.cl_len        <= ab2re_RdLen;
-            Num_Reads                         <= Num_Reads + re2xy_multiCL_len + 1'b1;   
+            af2cp_sTxPort.c0.valid             <= 1'b1;
+            af2cp_sTxPort.c0.hdr.cl_len        <= t_ccip_clLen'(ab2re_RdLen);
+            Num_Reads                           <= Num_Reads + re2xy_multiCL_len + 1'b1;   
         end
 
         //--------------------------------------------------------------------------
@@ -675,7 +698,8 @@ module requestor #(parameter PEND_THRESH=1, ADDR_LMT=20, TXHDR_WIDTH=61, RXHDR_W
 			                                                   // So, TxWriteFIFO is made 512 deep and RdCredit return is adjusted accordingly
             dsm_status_wren         <= 0;     
             test_stop               <= 0;
-            test_stop_q             <= 0;			
+            test_stop_q             <= 0;
+            WrFence_sent            <= 0;			
         end
     end
 
