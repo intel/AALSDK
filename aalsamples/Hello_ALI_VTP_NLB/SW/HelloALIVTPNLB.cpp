@@ -90,7 +90,8 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
-#define LPBK1_BUFFER_SIZE        MB(64)
+//#define LPBK1_BUFFER_SIZE        (MB(8)-64)
+#define LPBK1_BUFFER_SIZE        (MB(4)-CL(1))
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -269,6 +270,11 @@ btInt HelloALIVTPNLBApp::run()
    NamedValueSet ConfigRecord;
    NamedValueSet featureFilter;
    btcString sGUID = VTP_BBB_GUID;
+
+   // test counters
+   bt64bitInt errpos = -1;
+   btVirtAddr p1;
+   btVirtAddr p2;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -483,9 +489,20 @@ btInt HelloALIVTPNLBApp::run()
       // Stop the device
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
+      errpos = -1;
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      if (int err = memcmp( m_pOutput, m_pInput, m_OutputSize)) {
-         ERR("Output does NOT Match input, at offset " << err << "!");
+      for (p1 = m_pInput, p2 = m_pOutput; p1 < m_pInput + m_InputSize; p1++, p2++) {
+         if (p1-m_pInput < 1000) {
+            printf("checking offset %li: 0x%x == 0x%x\n", p1-m_pInput, *((unsigned char *)p1), *((unsigned char *)p2));
+         }
+         if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
+           errpos = p1-m_pInput;
+           break;
+         }
+      }
+          
+      if ( errpos != -1 ) {
+         ERR("Output does NOT Match input, at offset " << errpos << "!");
          ++m_Result;
       } else {
          MSG("Output matches Input!");
