@@ -91,7 +91,8 @@ using namespace AAL;
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
 //#define LPBK1_BUFFER_SIZE        (MB(8)-64)
-#define LPBK1_BUFFER_SIZE        (MB(4)-CL(1))
+#define LPBK1_BUFFER_SIZE        CL(4)
+#define LPBK1_BUFFER_OFFSET      (MB(2)-CL(2))
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -393,7 +394,7 @@ btInt HelloALIVTPNLBApp::run()
    m_DSMSize = LPBK1_DSM_SIZE;
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pInput)){
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pInput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -402,7 +403,7 @@ btInt HelloALIVTPNLBApp::run()
 
    m_InputSize = LPBK1_BUFFER_SIZE;
 
-   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pOutput)){
+   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pOutput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -416,6 +417,8 @@ btInt HelloALIVTPNLBApp::run()
    //   now we can use it
    //=============================
    MSG("Running Test");
+   MSG("  Test size:   " << m_InputSize);
+   MSG("  Test offset: " << LPBK1_BUFFER_OFFSET);
    if(true == m_bIsOK){
 
       // Clear the DSM
@@ -429,7 +432,7 @@ btInt HelloALIVTPNLBApp::run()
          btUnsigned32bitInt uint[16];
       };
       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
-      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+      for ( btUnsigned32bitInt i = 0; i < (m_InputSize+LPBK1_BUFFER_OFFSET) / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
@@ -463,10 +466,10 @@ btInt HelloALIVTPNLBApp::run()
 
 
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(m_pInput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)(m_pOutput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
@@ -491,10 +494,7 @@ btInt HelloALIVTPNLBApp::run()
 
       errpos = -1;
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      for (p1 = m_pInput, p2 = m_pOutput; p1 < m_pInput + m_InputSize; p1++, p2++) {
-         if (p1-m_pInput < 1000) {
-            printf("checking offset %li: 0x%x == 0x%x\n", p1-m_pInput, *((unsigned char *)p1), *((unsigned char *)p2));
-         }
+      for (p1 = m_pInput+LPBK1_BUFFER_OFFSET, p2 = m_pOutput+LPBK1_BUFFER_OFFSET; p1 < m_pInput + m_InputSize + LPBK1_BUFFER_OFFSET; p1++, p2++) {
          if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
            errpos = p1-m_pInput;
            break;
@@ -718,7 +718,7 @@ void HelloALIVTPNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
-   pAALLogger()->AddToMask(LM_All, LOG_DEBUG);
+   pAALLogger()->AddToMask(LM_All, LOG_INFO);
    HelloALIVTPNLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
