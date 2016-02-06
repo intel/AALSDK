@@ -1,5 +1,5 @@
 # #############################################################################
-# Copyright(c) 2011-2016, Intel Corporation
+# Copyright (c) 2011-2014, Intel Corporation
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -47,10 +47,6 @@ include ase_sources.mk
 ## ASE Version
 ASE_VERSION = 5.0.1
 
-# ASE Debug
-ASE_DEBUG = 0
-# PROFILE_ENABLE = 0
-
 # Timescale
 TIMESCALE = 1ns/1ns
 
@@ -74,12 +70,6 @@ endif
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include 
-CC_OPT+= -Wall 
-# -std=c99 -D_POSIX_C_SOURCE=200809L
-# -D_XOPEN_SOURCE=700
-ifeq ($(ASE_DEBUG), 1)
-# CC_OPT+= -D ASE_DEBUG=1 -pedantic
-endif
 
 ## Print information ##
  $(info SIMULATOR=$(SIMULATOR))
@@ -112,29 +102,15 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
-ifeq ($(ASE_DEBUG), 1)
-SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
-endif
-SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 
 ## VCS elaboration
 SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
-ifeq ($(ASE_DEBUG), 1)
-# SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
-# SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-# SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-# ifeq ($(PROFILE_ENABLE), 1)
-# SNPS_VCS_OPT+= -simprofile +prof
-# endif
-# SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
-endif
 
 ## Simulation options
 VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
-
 
 #########################################################################
 #                         Questa Build Switches                         #
@@ -150,18 +126,6 @@ MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
 ## VSIM elaboration, and run options
 MENT_VSIM_OPT = -64 -c -novopt -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
-
-#########################################################################
-#                         Valgring options                              #
-#########################################################################
-VALGRIND_OPTS = -v --log-file=valgrind.log --error-limit=no
-VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
-VALGRIND_OPTS+= --leak-check=full --track-origins=yes
-VALGRIND_OPTS+= --show-reachable=yes
-# VALGRIND_OPTS+= --gen-suppressions=all
-VALGRIND_OPTS+= --show-leak-kinds=definite,possible
-VALGRIND_OPTS+= --undef-value-errors=yes 
-
 
 
 #########################################################################
@@ -298,7 +262,6 @@ else
 	@echo "############################################################"
   endif
 endif
-#	python scripts/ipc_clean.py
 
 # Open Wave file
 wave: check
@@ -318,30 +281,10 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd 
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf profile* simprofile*
+	rm -rf profile* simprofile* urgReport/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean
 	./distclean.sh
 
 
-
-#########################################################################
-#                            Leak Check                                 #
-#########################################################################
-src_check: 
-	scan-build-3.5 -o work/scan-build/ -v \
-	-enable-checker alpha \
-	-enable-checker core \
-	-enable-checker security \
-	-enable-checker unix \
-	make sw_build &> scan-build.log
-
-coverage:
-	urg -dir ./work/coverage.vdb
-#	firefox urgReport/dashboard.html &
-
-valgrind_run:
-	cd ./$(WORK)/; valgrind $(VALGRIND_OPTS) ./ase_simv $(VCS_SIM_OPT) +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
-
-test: all sim
