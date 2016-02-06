@@ -124,7 +124,7 @@ module outoforder_wrf_channel
       $fwrite(log_fd, "Logger for %m transactions\n");
    end
 `endif
-
+   
    localparam TID_WIDTH           = 32;
    localparam FIFO_WIDTH          = TID_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
    localparam OUTFIFO_WIDTH       = TID_WIDTH + CCIP_RX_HDR_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
@@ -586,45 +586,52 @@ module outoforder_wrf_channel
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
    function void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$],
-				      ref logic 		wrfence_flag,
-				      ref logic [TID_WIDTH-1:0] wrfence_tid
+				      ref logic 	   	 wrfence_flag,
+				      ref logic [TID_WIDTH-1:0]  wrfence_tid
 				      );
       logic [CCIP_TX_HDR_WIDTH-1:0] 		     array_hdr;
-      TxHdr_t                                        array_hdr_t;
       logic [CCIP_DATA_WIDTH-1:0] 		     array_data;
       logic [TID_WIDTH-1:0] 			     array_tid;
       TxHdr_t                                        hdr;
       int 					     ptr;
-      begin
+      begin	  
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 if (ptr != LATBUF_SLOT_INVALID) begin
+	 // if (ptr != LATBUF_SLOT_INVALID) begin // *FIXME*: Potential catastrophe here
+	 if (~latbuf_almfull) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
 	    if (hdr.reqtype == ASE_WRFENCE) begin
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
-	    end
-	    else begin
-	       records[ptr].hdr          = hdr;
-	       records[ptr].data         = array_data;
-	       records[ptr].tid          = array_tid;
-	       records[ptr].record_push  = 1;
-	       records[ptr].record_valid = 1;
-	       latbuf_used[ptr]          = 1;
 	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
-	       $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
+	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %d\n", $time, array_tid, hdr.vc);	       
 	 `endif
 	    end
+	    else begin
+	       if (ptr != LATBUF_SLOT_INVALID) begin
+		  records[ptr].hdr          = hdr;
+		  records[ptr].data         = array_data;
+		  records[ptr].tid          = array_tid;
+		  records[ptr].record_push  = 1;
+		  records[ptr].record_valid = 1;
+		  latbuf_used[ptr]          = 1;
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x sent to record[%02d]\n", $time, array_tid, ptr);
+		  $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
+	 `endif
+	       end // if (ptr != LATBUF_SLOT_INVALID)
+	       else begin		  
+		  array.push_front({array_tid, array_data, array_hdr});
+	 `ifdef ASE_DEBUG
+		  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);		    
+	 `endif
+	       end // else: !if(ptr != LATBUF_SLOT_INVALID)	       
+	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
 	 end
       end
    endfunction
-
-   /////////////////////////////////////////////////////////////////////////////
-   // Wrfence TID check/pop
-   // function wrfence_test
-
+   
    // //////////////////////////////////////////////////////////////////////////////
    // States
    typedef enum {Select_VL0, Select_VH0, Select_VH1} lssel_state;
@@ -1014,6 +1021,15 @@ module outoforder_wrf_channel
 	 latbuf_pop_proc_status	<= 3'b000;
 	 glbl_wrfence_pop_status <= 0;	 
       end
+      // empty outfifo on normal transactions
+      else if (~outfifo_almfull & ~latbuf_empty ) begin
+	 latbuf_pop_unroll_outfifo(outfifo);
+	 vl0_wrfence_deassert <= 0;	 
+	 vh0_wrfence_deassert <= 0;	 
+	 vh1_wrfence_deassert <= 0;	 
+	 latbuf_pop_proc_status	<= 3'b110; 
+	 glbl_wrfence_pop_status <= 0;	 
+      end
       // Pop write fence 
       else if (wrfence_rspvalid && (vl0_wrfence_flag|vh0_wrfence_flag|vh1_wrfence_flag) && ~glbl_wrfence_pop_status) begin
 	 case (wrfence_rsphdr.vc_used)
@@ -1070,15 +1086,6 @@ module outoforder_wrf_channel
 		end
 	     end
 	 endcase
-      end
-      // empty outfifo on normal transactions
-      else if (~outfifo_almfull ) begin
-	 latbuf_pop_unroll_outfifo(outfifo);
-	 vl0_wrfence_deassert <= 0;	 
-	 vh0_wrfence_deassert <= 0;	 
-	 vh1_wrfence_deassert <= 0;	 
-	 latbuf_pop_proc_status	<= 3'b110; 
-	 glbl_wrfence_pop_status <= 0;	 
       end
       else begin
 	 vl0_wrfence_deassert <= 0;	 
