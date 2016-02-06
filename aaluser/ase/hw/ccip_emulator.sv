@@ -129,10 +129,10 @@ module ccip_emulator
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
       // Read Response
-      if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP) )
-	C0RxRdValid <= 1;
-      else
-	C0RxRdValid <= 0;
+      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP) )
+      // 	C0RxRdValid <= 1;
+      // else
+      // 	C0RxRdValid <= 0;
       // --------------------------------------------------------- //
       // Write Request
       if (C1TxValid &&
@@ -142,16 +142,16 @@ module ccip_emulator
 	C1TxWrValid <= 0;
       // --------------------------------------------------------- //
       // Write response
-      if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP) )
-	C1RxWrValid <= 1;
-      else
-	C1RxWrValid <= 0;
+      // if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP) )
+      // 	C1RxWrValid <= 1;
+      // else
+      // 	C1RxWrValid <= 0;
       // --------------------------------------------------------- //
       // Umsg response
-      if (C0RxRspValid && (C0RxHdr.resptype == ASE_UMSG))
-	C0RxUMsgValid <= 1;
-      else
-	C0RxUMsgValid <= 0;
+      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_UMSG))
+      // 	C0RxUMsgValid <= 1;
+      // else
+      // 	C0RxUMsgValid <= 0;
       // --------------------------------------------------------- //
    end
 
@@ -1174,7 +1174,7 @@ module ccip_emulator
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
-	 if (C1TxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
+	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
 	   ase_rx1_wrfence_cnt = ase_rx1_wrfence_cnt + 1;	 
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
@@ -1536,8 +1536,8 @@ module ccip_emulator
    	 wr1rsp_write   <= 0;
       end
       else begin
-	 wr1rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
-	 wr1rsp_write   <= Tx1toRx1_pkt_vld;
+	 wr1rsp_hdr_in  <= cf2as_latbuf_rx1hdr; // cf2as_latbuf_rx1hdr_q;
+	 wr1rsp_write   <= cf2as_latbuf_ch1_valid; // Tx1toRx1_pkt_vld;
       end
    end
 
@@ -1817,53 +1817,79 @@ module ccip_emulator
     * *******************************************************************/
    always @(posedge clk) begin
       if (sys_reset | SoftReset) begin
-	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
-	 C1RxWrValid <= 1'b0;
-	 C1RxIntrValid <= 1'b0;
-	 wr1rsp_read <= 1'b0;
-	 rx1_state <= RxIdle;
+   	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   	 C1RxWrValid <= 1'b0;
+   	 C1RxIntrValid <= 1'b0;
+   	 wr1rsp_read <= 1'b0;
+   	 rx1_state <= RxIdle;
       end
       else begin
-	 case (rx1_state)
-	   RxIdle:
-	     begin
+   	 case (rx1_state)
+   	   RxIdle:
+   	     begin
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
-		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;
-		end
-		else begin
-		   rx1_state <= RxIdle;
-		end
-	     end
+   		if (~wr1rsp_empty) begin
+   		   rx1_state <= RxWriteResp;
+   		end
+   		else begin
+   		   rx1_state <= RxIdle;
+   		end
+   	     end
 
-	   RxWriteResp:
-	     begin
+   	   RxWriteResp:
+   	     begin
       		C1RxHdr       <= wr1rsp_hdr_out;
       		C1RxWrValid   <= wr1rsp_valid;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= ~wr1rsp_empty;
-		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;
-		end
-		else begin
-		   rx1_state <= RxIdle;
-		end
-	     end
+   		if (~wr1rsp_empty) begin
+   		   rx1_state <= RxWriteResp;
+   		end
+   		else begin
+   		   rx1_state <= RxIdle;
+   		end
+   	     end
 
-	   default:
-	     begin
+   	   default:
+   	     begin
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
-		rx1_state     <= RxIdle;
-	     end
+   		rx1_state     <= RxIdle;
+   	     end
 
-	 endcase
+   	 endcase
       end
    end
 
+   // always @(posedge clk) begin
+   //    if (sys_reset|SoftReset) begin
+   // 	 wr1rsp_read <= 0;	 
+   //    end
+   //    else if (~wr1rsp_empty) begin
+   // 	 wr1rsp_read <= ~wr1rsp_empty;	 
+   //    end
+   // end
+   
+   // always @(posedge clk) begin
+   //    if (sys_reset|SoftReset) begin
+   // 	 C1RxHdr       <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 C1RxWrValid   <= 0;
+   // 	 C1RxIntrValid <= 0;
+   //    end
+   //    else if (wr1rsp_valid) begin
+   // 	 C1RxHdr       <= wr1rsp_hdr_out;	 
+   // 	 C1RxWrValid   <= wr1rsp_valid;	 
+   // 	 C1RxWrValid   <= 0;	 
+   //    end
+   //    else begin
+   // 	 C1RxWrValid   <= 0;
+   // 	 C1RxIntrValid <= 0;
+   //    end
+   // end
+   
    // Rx1 aggregate valid
    assign C1RxRspValid = C1RxWrValid | C1RxIntrValid;
 

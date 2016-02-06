@@ -525,7 +525,7 @@ module outoforder_wrf_channel
 	 vh1_records_cnt = 0;
 	 for (jj =0 ; jj < NUM_WAIT_STATIONS; jj = jj + 1) begin
 	    // sum = sum + latbuf_used[jj];
-	    if (latbuf_used[jj]) begin
+	    if (records[jj].record_valid) begin
 	       case (records[jj].hdr.vc)
 		 VC_VL0 : vl0_records_cnt = vl0_records_cnt + 1;
 		 VC_VH0 : vh0_records_cnt = vh0_records_cnt + 1;
@@ -1024,7 +1024,7 @@ module outoforder_wrf_channel
 	 glbl_wrfence_pop_status <= 0;	 
       end
       // empty outfifo on normal transactions
-      else if (~outfifo_almfull & ~latbuf_empty ) begin
+      else if (~outfifo_almfull && ~latbuf_empty ) begin
 	 latbuf_pop_unroll_outfifo(outfifo);
 	 vl0_wrfence_deassert <= 0;	 
 	 vh0_wrfence_deassert <= 0;	 

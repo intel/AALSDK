@@ -41,4 +41,4 @@ export LD_LIBRARY_PATH=${ASE_WORKDIR}/../../../myinst/usr/local/lib/
 
 
 cd $ASE_WORKDIR/../regression/apps/
-timeout 5 ./nlb_test 
+timeout 5 ./nlb_test 16 0 3 
