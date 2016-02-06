@@ -39,17 +39,18 @@
 /home/rrsharma/xeon-fpga-src/bdx_fpga_piu/design//ccip_fabric/common/sync_C0Tx_fifo.v
 /home/rrsharma/xeon-fpga-src/bdx_fpga_piu/design//ccip_fabric/common/sync_C1Tx_fifo.v
 
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/requestor.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/nlb_lpbk.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/ccip_std_afu.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/nlb_csr.v
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/test_rdwr.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/test_lpbk1.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/test_lpbk2.v
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/test_lpbk3.v
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/arbiter.sv
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/nlb_gfifo.v
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/nlb_gram_sdp.v
-/home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400/test_sw1.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/requestor.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/nlb_lpbk.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/ccip_std_afu.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/nlb_csr.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/test_rdwr.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/test_lpbk1.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/test_lpbk2.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/test_lpbk3.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/arbiter.sv
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/nlb_gfifo.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/nlb_gram_sdp.v
+/home/eluebber/work/aalsdk/aalsamples/Hello_ALI_VTP_NLB/HW/nlb_mpf_400/test_sw1.v
 
 # /home/rrsharma/xeon-fpga-src/vtp3/HW/nlb_mpf_400
+
