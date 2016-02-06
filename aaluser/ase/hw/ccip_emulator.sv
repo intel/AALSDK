@@ -406,7 +406,7 @@ module ccip_emulator
    RxOutState rx1_state;
 
    /*
-    * Clock process: Operates the CAFU clock
+    * Fabric Clock, pClk{*}
     */
    logic [2:0] 			  ase_clk_rollover = 3'b111;
 
@@ -445,6 +445,43 @@ module ccip_emulator
    endtask
 
 
+   /*
+    * User clock, uclk{*}
+    * *FIXME*: Must track for Beta
+    * Currently generates a 300 Mhz clock
+    */ 
+`define UCLK_HZ         real'(300_000_000);
+`define UCLK_DURATION   3.333ns
+
+   logic 	  usrClk;
+   logic 	  usrClkDiv2 = 0;
+
+   // User clock generator
+   initial begin : uclk_proc
+      begin
+	 `ifdef ASE_DEBUG
+	 $display("  [DEBUG] User clock frequency = %f\n", `UCLK_DURATION);
+	 `endif
+	 usrClk = 0;
+	 forever begin
+	    #`UCLK_DURATION;	    
+	    usrClk = 0;
+	    #`UCLK_DURATION;
+	    usrClk = 1;	    
+	 end
+      end
+   end
+   
+   // Div2 output
+   always @(posedge usrClk) begin
+      usrClkDiv2 = ~usrClkDiv2;      
+   end
+
+   // UCLK interface
+   assign uClk_usr     = usrClk;
+   assign uClk_usrDiv2 = usrClkDiv2;
+   
+   
    /*
     * AFU reset - software & system resets
     */
