@@ -96,7 +96,11 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
     */
 
     // Initiate AFU Reset
-    m_pALIResetService->afuReset();
+    if (0 != m_pALIResetService->afuReset())
+    {
+       ERR("AFU reset failed. Exiting test.");
+       return 1;
+    }
 
     //Set DSM base, high then low
     m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
@@ -292,6 +296,13 @@ btInt CNLBCcipSW::RunTest(const NLBCmdLine &cmd)
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
+   // Initiate AFU Reset
+   if (0 != m_pALIResetService->afuReset())
+   {
+      ERR("AFU reset failed after test completion.");
+      ++res;
+   }
+
    return res;
 }
 
@@ -304,13 +315,13 @@ void  CNLBCcipSW::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
 	cout << setw(10) << cls 								<< ' '
-		 << setw(10) << pAFUDSM->num_reads    				<< ' '
-		 << setw(11) << pAFUDSM->num_writes   				<< ' '
-		 << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
-		 << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
-		 << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
-		 << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
-		 << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
+		 << setw(10) << pAFUDSM->num_reads    			<< ' '
+		 << setw(11) << pAFUDSM->num_writes   			<< ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
 
 	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		ticks = rawticks - startpenalty;

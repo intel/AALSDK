@@ -76,12 +76,17 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    // Clear the DSM status fields
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
-   if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
+  /* if ( 0 != CacheCooldown(pCoolOffUsrVirt, m_pMyApp->OutputPhys(), m_pMyApp->OutputSize()) ) {
       return 1;
    }
+   */
 
    // Initiate AFU Reset
-   m_pALIResetService->afuReset();
+   if (0 != m_pALIResetService->afuReset())
+   {
+      ERR("AFU reset failed. Exiting test.");
+      return 1;
+   }
 
    //Set DSM base, high then low
    m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
@@ -103,21 +108,21 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    csr_type cfg = (csr_type)NLB_TEST_MODE_READ;
 
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT))
-	  {
+	{
 		cfg |= (csr_type)NLB_TEST_MODE_CONT;
-	  }
+	}
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WT))
-	  {
+	{
 		cfg |= (csr_type)NLB_TEST_MODE_WT;
-	  }
+	}
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDI))
-   	  {
-   		cfg |= (csr_type)NLB_TEST_MODE_RDI;
-   	  }
+   {
+      cfg |= (csr_type)NLB_TEST_MODE_RDI;
+   }
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_RDO))
-	  {
+	{
 		cfg |= (csr_type)NLB_TEST_MODE_RDO;
-	  }
+	}
    // Select the channel.
     if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
     {
@@ -144,13 +149,27 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
    //if --warm-fpga-cache is mentioned
     if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_WARM_FPGA_CACHE))
       {
-    	m_pALIMMIOService->mmioWrite32(CSR_CFG, NLB_TEST_MODE_READ);
+       csr_type wfc_cfg = (csr_type)NLB_TEST_MODE_READ;
+       if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
+        {
+           wfc_cfg |= (csr_type)NLB_TEST_MODE_VL0;
+        }
+        else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
+        {
+           wfc_cfg |= (csr_type)NLB_TEST_MODE_VH0;
+        }
+        else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
+        {
+           wfc_cfg |= (csr_type)NLB_TEST_MODE_VH1;
+        }
+
+          m_pALIMMIOService->mmioWrite32(CSR_CFG, (csr_type)wfc_cfg);
 
    	   // Set the number of cache lines for the test
-    	m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(cmd.endcls)); //TODO min of endcls or 1024(cache size)
+          m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, (csr_type)(cmd.endcls)); //TODO min of endcls or 1024(cache size)
 
    	   // Start the test
-    	m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
+          m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
    	   // Wait for test completion
    	   while ( 0 == pAFUDSM->test_complete ) {
@@ -278,6 +297,13 @@ btInt CNLBCcipRead::RunTest(const NLBCmdLine &cmd)
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
+   // Initiate AFU Reset
+   if (0 != m_pALIResetService->afuReset())
+   {
+      ERR("AFU reset failed after test completion.");
+      ++res;
+   }
+
    return res;
 }
 
@@ -291,13 +317,13 @@ void  CNLBCcipRead::PrintOutput(const NLBCmdLine &cmd, wkspc_size_type cls)
 	bt32bitCSR endpenalty   = pAFUDSM->end_overhead;
 
 	cout << setw(10) << cls 								<< ' '
-		 << setw(10) << pAFUDSM->num_reads    				<< ' '
-		 << setw(11) << pAFUDSM->num_writes   				<< ' '
-		 << setw(12) << GetPerfMonitor(READ_HIT)      		<< ' '
-		 << setw(12) << GetPerfMonitor(WRITE_HIT)      		<< ' '
-		 << setw(13) << GetPerfMonitor(READ_MISS)      		<< ' '
-		 << setw(13) << GetPerfMonitor(WRITE_MISS)      	<< ' '
-		 << setw(10) << GetPerfMonitor(EVICTIONS)     		<< ' ';
+		 << setw(10) << pAFUDSM->num_reads    		   << ' '
+		 << setw(11) << pAFUDSM->num_writes   			<< ' '
+		 << setw(12) << GetPerfMonitor(READ_HIT)     << ' '
+		 << setw(12) << GetPerfMonitor(WRITE_HIT)    << ' '
+		 << setw(13) << GetPerfMonitor(READ_MISS)    << ' '
+		 << setw(13) << GetPerfMonitor(WRITE_MISS)   << ' '
+		 << setw(10) << GetPerfMonitor(EVICTIONS)    << ' ';
 
 	if(flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_CONT) ) {
 		ticks = rawticks - startpenalty;
