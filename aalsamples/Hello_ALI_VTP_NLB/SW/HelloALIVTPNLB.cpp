@@ -90,7 +90,6 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
-//#define LPBK1_BUFFER_SIZE        (MB(8)-64)
 #define LPBK1_BUFFER_SIZE        (MB(64)-CL(1))
 #define LPBK1_BUFFER_OFFSET      (0)
 
@@ -500,7 +499,7 @@ btInt HelloALIVTPNLBApp::run()
            break;
          }
       }
-          
+
       if ( errpos != -1 ) {
          ERR("Output does NOT Match input, at offset " << errpos << "!");
          ++m_Result;
