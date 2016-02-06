@@ -90,7 +90,9 @@ using namespace AAL;
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
 #endif // MB
-#define LPBK1_BUFFER_SIZE        CL(1)
+//#define LPBK1_BUFFER_SIZE        (MB(8)-64)
+#define LPBK1_BUFFER_SIZE        (MB(64)-CL(1))
+#define LPBK1_BUFFER_OFFSET      (0)
 
 #define LPBK1_DSM_SIZE           MB(4)
 #define CSR_SRC_ADDR             0x0120
@@ -270,6 +272,11 @@ btInt HelloALIVTPNLBApp::run()
    NamedValueSet featureFilter;
    btcString sGUID = VTP_BBB_GUID;
 
+   // test counters
+   bt64bitInt errpos = -1;
+   btVirtAddr p1;
+   btVirtAddr p2;
+
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
    ConfigRecord.Add(AAL_FACTORY_CREATE_CONFIGRECORD_FULL_SERVICE_NAME, "libHWALIAFU");
@@ -387,7 +394,7 @@ btInt HelloALIVTPNLBApp::run()
    m_DSMSize = LPBK1_DSM_SIZE;
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pInput)){
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pInput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -396,7 +403,7 @@ btInt HelloALIVTPNLBApp::run()
 
    m_InputSize = LPBK1_BUFFER_SIZE;
 
-   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pOutput)){
+   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pOutput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -410,6 +417,8 @@ btInt HelloALIVTPNLBApp::run()
    //   now we can use it
    //=============================
    MSG("Running Test");
+   MSG("  Test size:   " << m_InputSize);
+   MSG("  Test offset: " << LPBK1_BUFFER_OFFSET);
    if(true == m_bIsOK){
 
       // Clear the DSM
@@ -423,7 +432,7 @@ btInt HelloALIVTPNLBApp::run()
          btUnsigned32bitInt uint[16];
       };
       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
-      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+      for ( btUnsigned32bitInt i = 0; i < (m_InputSize+LPBK1_BUFFER_OFFSET) / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
@@ -432,18 +441,21 @@ btInt HelloALIVTPNLBApp::run()
       //    reverses that. We are following ccipTest here.
 
       // Initiate AFU Reset
-      // m_pALIResetService->afuReset();
+      m_pALIResetService->afuReset();
 
+      // AFU Reset clear VTP, too, so reinitialize that
+      // NOTE: this interface is likely to change in future releases of AAL.
+      m_pVTPService->vtpReset();
 
       // Initiate DSM Reset
       // Set DSM base (virtual, since we have allocated using VTP), high then low
       // FIXME: this is actually a 64 bit write!
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
-      // Assert AFU reset
+      // Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-      //De-Assert AFU reset
+      //De-Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
       // If ASE, give it some time to catch up
@@ -454,10 +466,10 @@ btInt HelloALIVTPNLBApp::run()
 
 
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(m_pInput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)(m_pOutput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
@@ -480,9 +492,17 @@ btInt HelloALIVTPNLBApp::run()
       // Stop the device
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
+      errpos = -1;
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      if (int err = memcmp( m_pOutput, m_pInput, m_OutputSize)) {
-         ERR("Output does NOT Match input, at offset " << err << "!");
+      for (p1 = m_pInput+LPBK1_BUFFER_OFFSET, p2 = m_pOutput+LPBK1_BUFFER_OFFSET; p1 < m_pInput + m_InputSize + LPBK1_BUFFER_OFFSET; p1++, p2++) {
+         if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
+           errpos = p1-m_pInput;
+           break;
+         }
+      }
+          
+      if ( errpos != -1 ) {
+         ERR("Output does NOT Match input, at offset " << errpos << "!");
          ++m_Result;
       } else {
          MSG("Output matches Input!");
@@ -698,7 +718,7 @@ void HelloALIVTPNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
-   pAALLogger()->AddToMask(LM_All, LOG_DEBUG);
+   pAALLogger()->AddToMask(LM_All, LOG_INFO);
    HelloALIVTPNLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");
