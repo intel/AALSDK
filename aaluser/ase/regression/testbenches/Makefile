@@ -2,14 +2,16 @@ channel:
 	vcs -j 4 -full64 -nc -l comp.log \
 	-sverilog -override_timescale=10ps/10ps \
 	+incdir+../../hw/ -debug_all \
-	+vcs+loopreport +vcs+loopdetect \
-	-cm line+cond+fsm+tgl+branch+assert \
-	-cm_tgl mda -cm_cond basic+allops -cm_dir coverage \
 	+define+ASE_DEBUG \
 	../../hw/ase_pkg.sv \
 	../../hw/stream_checker.sv \
 	../../hw/outoforder_wrf_channel.sv \
 	tb_channel.sv \
+
+#	+vcs+loopreport +vcs+loopdetect \
+# -cm line+cond+fsm+tgl+branch+assert \
+# -cm_tgl mda -cm_cond basic+allops -cm_dir coverage \
+
 
 latency_pipe:
 	vcs -lca -full64 -nc ../../hw/latency_pipe.sv tb_latency_pipe.sv -sverilog +v2k -override_timescale=10ps/10ps -l comp.log
@@ -44,7 +46,8 @@ string:
 all: channel
 
 sim:
-	./simv -l run.log -ucli -do run.tcl  -cm line+fsm+cond+tgl+branch
+	./simv -l run.log -ucli -do run.tcl  
+#-cm line+fsm+cond+tgl+branch
 #	urg -dir work/coverage.vdb -format both
 #	dve -vpd inter.vpd -session session.tcl
 
