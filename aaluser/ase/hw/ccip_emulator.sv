@@ -56,8 +56,8 @@ module ccip_emulator
    output logic       pClkDiv2, // 200MHz - CCI-P clock domain.
    output logic       pClkDiv4, // 100MHz - CCI-P clock domain.
    // User clocks
-   // output logic       uClk_usr, // User clock domain. Refer to clock programming guide
-   // output logic       uClk_usrDiv2, // User clock domain. Half the programmed frequency
+   output logic       uClk_usr, // User clock domain. Refer to clock programming guide
+   output logic       uClk_usrDiv2, // User clock domain. Half the programmed frequency
    // Power & error states
    output logic       pck_cp2af_softReset, // CCI-P ACTIVE HIGH Soft Reset
    output logic [1:0] pck_cp2af_pwrState, // CCI-P AFU Power State
@@ -1124,9 +1124,10 @@ module ccip_emulator
    int ase_tx0_rdvalid_cnt   ;
    int ase_rx0_rdvalid_cnt   ;
    int ase_tx1_wrvalid_cnt   ;
-   int ase_rx0_wrvalid_cnt   ;
+   // int ase_rx0_wrvalid_cnt   ;
    int ase_rx1_wrvalid_cnt   ;
    int ase_tx1_wrfence_cnt   ;
+   int ase_rx1_wrfence_cnt   ;
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
 
@@ -1143,9 +1144,10 @@ module ccip_emulator
 	 ase_tx0_rdvalid_cnt <= 0 ;
 	 ase_rx0_rdvalid_cnt <= 0 ;
 	 ase_tx1_wrvalid_cnt <= 0 ;
-	 ase_rx0_wrvalid_cnt <= 0 ;
+	 // ase_rx0_wrvalid_cnt <= 0 ;
 	 ase_rx1_wrvalid_cnt <= 0 ;
 	 ase_tx1_wrfence_cnt <= 0 ;
+	 ase_rx1_wrfence_cnt <= 0 ;
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
       end
@@ -1169,6 +1171,8 @@ module ccip_emulator
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
+	 if (C1TxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
+	   ase_rx1_wrfence_cnt = ase_rx1_wrfence_cnt + 1;	 
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
@@ -1189,9 +1193,11 @@ module ccip_emulator
       else begin
 	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
 	   count_error_flag <= 1;
-	 else if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
+	 else if (ase_tx1_wrvalid_cnt != ase_rx1_wrvalid_cnt)
 	   count_error_flag <= 1;
 	 else if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
+	   count_error_flag <= 1;
+	 else if (ase_tx1_wrfence_cnt != ase_rx1_wrvalid_cnt)
 	   count_error_flag <= 1;
 	 else
 	   count_error_flag <= 0;
@@ -1497,7 +1503,9 @@ module ccip_emulator
 			      cf2as_latbuf_tx1hdr, 
 			      cf2as_latbuf_tx1data);
 	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
-   	 wr_memline_dex(Tx1toRx1_pkt);
+	 if (cf2as_latbuf_rx1hdr.resptype != ASE_WRFENCE_RSP) begin
+   	    wr_memline_dex(Tx1toRx1_pkt);
+	 end
    	 Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
       end // if (cf2as_latbuf_ch1_valid)
       else begin
@@ -2159,9 +2167,10 @@ module ccip_emulator
 	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
 	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
-	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt   );
-	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt   );
+	 // $display("\tWrResp     = %d", ase_rx0_wrvalid_cnt   );
+	 $display("\tWrResp     = %d", ase_rx1_wrvalid_cnt   );
 	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
+	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
 	 `END_YELLOW_FONTCOLOR;
@@ -2171,11 +2180,13 @@ module ccip_emulator
 	 // Print errors
 	 `BEGIN_RED_FONTCOLOR;
 	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
-	   $display("\tREADs  : Response counts dont match request count !!");
-	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
-	   $display("\tWRITEs : Response counts dont match request count !!");
+	   $display("\tREADs   : Response counts dont match request count !!");
+	 if (ase_tx1_wrvalid_cnt != ase_rx1_wrvalid_cnt)
+	   $display("\tWRITEs  : Response counts dont match request count !!");
 	 if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
-	   $display("\tMMIORd : Response counts dont match request count !!");
+	   $display("\tMMIORd  : Response counts dont match request count !!");
+	 if (ase_tx1_wrfence_cnt != ase_rx1_wrfence_cnt)
+	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;

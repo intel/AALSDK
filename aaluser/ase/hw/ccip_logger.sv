@@ -282,7 +282,7 @@ module ccip_logger
 	 end
 	 //////////////////////// C1 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> MEM Write Request *****************/
-	 if (C1TxWrValid) begin
+	 if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%x\t%x\t%s",
 	 				     $time,
 	 				     print_channel(C1TxHdr.vc),
@@ -299,6 +299,16 @@ module ccip_logger
 	 	    C1TxHdr.addr,
 	 	    C1TxData,
 		    print_clnum(C1TxHdr.len));
+	 end // if (C1TxWrValid && (C1TxHdr.reqtype != ASE_WRFENCE))
+	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE)) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFence \t%x\n",
+					     $time,
+					     print_channel(C1TxHdr.vc),
+					     C1TxHdr.mdata);	    
+	    $fwrite(log_fd, "%d\t%s\tWrFence \t%x\n",
+		    $time,
+		    print_channel(C1TxHdr.vc),
+		    C1TxHdr.mdata);	    
 	 end
 	 //////////////////////// C2 TX CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* AFU -> SW MMIO Read Response *****************/
@@ -377,7 +387,7 @@ module ccip_logger
 	 // end
 	 //////////////////////// C1 RX CHANNEL TRANSACTIONS //////////////////////////
 	 /****************** MEM -> AFU Write Response  ****************/
-	 if (C1RxWrValid) begin
+	 if (C1RxWrValid && (C1RxHdr.resptype != ASE_WRFENCE_RSP)) begin
 	    if (cfg.enable_cl_view) $display("%d\t%s\t%s\t%x\t%s",
 	 				     $time,
 	 				     print_channel(C1RxHdr.vc_used),
@@ -390,6 +400,16 @@ module ccip_logger
 	 	    print_resptype(C1RxHdr.resptype),
 	 	    C1RxHdr.mdata,
 		    print_clnum(C1RxHdr.clnum));
+	 end // if (C1RxWrValid && (C1RxHdr.resptype != ASE_WRFENCE_RSP))
+	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP)) begin
+	    if (cfg.enable_cl_view) $display("%d\t%s\tWrFenceRsp\t%x\n",
+					     $time,
+					     print_channel(C1RxHdr.vc_used),
+					     C1RxHdr.mdata);	    
+	    $fwrite(log_fd, "%d\t%s\tWrFenceRsp\t%x\n",
+		    $time,
+		    print_channel(C1RxHdr.vc_used),
+		    C1RxHdr.mdata);	    
 	 end
 	 // /**************** MEM -> AFU Interrupt Response  **************/
 	 // if (C1RxIntrValid) begin

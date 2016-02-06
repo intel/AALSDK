@@ -47,6 +47,10 @@ module ase_top();
    logic pClkDiv2;
    logic pClk;
    logic pck_cp2af_softReset;
+
+   logic uClk_usr;
+   logic uClk_usrDiv2;
+      
    t_if_ccip_Tx pck_af2cp_sTx;
    t_if_ccip_Rx pck_cp2af_sRx;
    
@@ -56,28 +60,33 @@ module ase_top();
    // CCI-P emulator
    ccip_emulator ccip_emulator
      (
-      .pClkDiv4               (pClkDiv4         ),
-      .pClkDiv2               (pClkDiv2         ),
-      .pClk               (pClk         ),
-      .pck_cp2af_softReset         (pck_cp2af_softReset   ),
-      .pck_cp2af_pwrState            (pck_cp2af_pwrState      ),
-      .pck_cp2af_error               (pck_cp2af_error         ),
-      .pck_af2cp_sTx		  (pck_af2cp_sTx       ),
-      .pck_cp2af_sRx             (pck_cp2af_sRx       )
+      .pClkDiv4               (pClkDiv4            ),
+      .pClkDiv2               (pClkDiv2            ),
+      .pClk                   (pClk                ),
+      .uClk_usr               (uClk_usr            ),
+      .uClk_usrDiv2           (uClk_usrDiv2        ),
+      .pck_cp2af_softReset    (pck_cp2af_softReset ),
+      .pck_cp2af_pwrState     (pck_cp2af_pwrState  ),
+      .pck_cp2af_error        (pck_cp2af_error     ),
+      .pck_af2cp_sTx	      (pck_af2cp_sTx       ),
+      .pck_cp2af_sRx          (pck_cp2af_sRx       )
       );
 
 
    // CCIP AFU
    ccip_std_afu ccip_std_afu
      (
-      .pClkDiv4               (pClkDiv4         ),
-      .pClkDiv2               (pClkDiv2         ),
-      .pClk		  (pClk         ),
-      .pck_cp2af_softReset         (pck_cp2af_softReset   ),
-      .pck_cp2af_pwrState            (pck_cp2af_pwrState      ),
-      .pck_cp2af_error               (pck_cp2af_error         ),
-      .pck_af2cp_sTx		  (pck_af2cp_sTx       ),
-      .pck_cp2af_sRx		  (pck_cp2af_sRx       )
+      .pClkDiv4               (pClkDiv4            ),
+      .pClkDiv2               (pClkDiv2            ),
+      .pClk                   (pClk                ),
+      .uClk_usr               (uClk_usr            ),
+      .uClk_usrDiv2           (uClk_usrDiv2        ),
+      .pck_cp2af_softReset    (pck_cp2af_softReset ),
+      .pck_cp2af_pwrState     (pck_cp2af_pwrState  ),
+      .pck_cp2af_error        (pck_cp2af_error     ),
+      .pck_af2cp_sTx	      (pck_af2cp_sTx       ),
+      .pck_cp2af_sRx          (pck_cp2af_sRx       )
       );
 
-endmodule
+endmodule // ase_top
+
