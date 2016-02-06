@@ -388,19 +388,19 @@ module outoforder_wrf_channel
 	    infifo_hdr_out = TxHdr_t'(infifo_hdr_out_vec);
 	    // If Write fence is observed
 	    if (infifo_hdr_out.reqtype == ASE_WRFENCE) begin
-	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into channel=%d\n", $time, infifo_tid_out, infifo_hdr_out.vc);
-	 `endif
 	       case (infifo_hdr_out.vc)
 		 // If VA, fence all channels, and stage one coalesced response
 		 VC_VA:
-		   begin
+		   begin		      
 		      // Fence activatd
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      // Wrfence response
 		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+	 `ifdef ASE_DEBUG
+		      $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VA\n", $time, infifo_tid_out);
+	 `endif
 		   end
 
 		 // If single channel fence, stage requisite response
@@ -408,18 +408,27 @@ module outoforder_wrf_channel
 		   begin
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+	 `ifdef ASE_DEBUG
+		      $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VL0\n", $time, infifo_tid_out);
+	 `endif
 		   end
 
 		 VC_VH0:
 		   begin
 		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+	 `ifdef ASE_DEBUG
+		      $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH0\n", $time, infifo_tid_out);
+	 `endif
 		   end
 
 		 VC_VH1:
 		   begin
 		      vh1_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      wrfence_rsp_array.push_back( {infifo_tid_out, prepare_wrfence_response(infifo_hdr_out), CCIP_TX_HDR_WIDTH'(infifo_hdr_out) } );
+	 `ifdef ASE_DEBUG
+		      $fwrite(log_fd, "%d | infifo_to_vc: WrFence of tid=%x inserted into VH1\n", $time, infifo_tid_out);
+	 `endif
 		   end
 
 	       endcase
@@ -482,6 +491,8 @@ module outoforder_wrf_channel
    logic vh0_wrfence_flag;
    logic vh1_wrfence_flag;
 
+   logic glbl_wrfence_pop_status;
+      
    logic [TID_WIDTH-1:0] vl0_wrfence_tid;
    logic [TID_WIDTH-1:0] vh0_wrfence_tid;
    logic [TID_WIDTH-1:0] vh1_wrfence_tid;
@@ -812,7 +823,6 @@ module outoforder_wrf_channel
 
    logic [CCIP_RX_HDR_WIDTH-1:0] rxhdr_out_vec;
    logic [CCIP_TX_HDR_WIDTH-1:0] txhdr_out_vec;
-
    logic 			 unroll_active;
 
    // Read from latency scoreboard and push to outfifo
@@ -988,6 +998,9 @@ module outoforder_wrf_channel
       end
    end
 
+   
+   logic [2:0] latbuf_pop_proc_status;
+      
    // Latbuf pop_ptr
    always @(posedge clk) begin : latbuf_pop_proc
       if (rst) begin
@@ -995,13 +1008,86 @@ module outoforder_wrf_channel
 	    latbuf_ready[pop_i]       <= 0;
 	    records[pop_i].record_pop <= 0;
 	 end
+	 vl0_wrfence_deassert <= 0;	 
+	 vh0_wrfence_deassert <= 0;	 
+	 vh1_wrfence_deassert <= 0;
+	 latbuf_pop_proc_status	<= 3'b000;
+	 glbl_wrfence_pop_status <= 0;	 
       end
-      else if (~outfifo_almfull) begin
+      // Pop write fence 
+      else if (wrfence_rspvalid && (vl0_wrfence_flag|vh0_wrfence_flag|vh1_wrfence_flag) && ~glbl_wrfence_pop_status) begin
+	 case (wrfence_rsphdr.vc_used)
+	   VC_VA :
+	     begin
+		if ( (wrfence_rsptid == vl0_wrfence_tid) && 
+		     (wrfence_rsptid == vh0_wrfence_tid) && 
+		     (wrfence_rsptid == vh1_wrfence_tid) && 
+		     vl0_wrfence_flag &&
+		     vh0_wrfence_flag &&
+		     vh1_wrfence_flag ) begin
+		   vl0_wrfence_deassert <= 1;	 
+		   vh0_wrfence_deassert <= 1;	 
+		   vh1_wrfence_deassert <= 1;	 		   
+		   latbuf_pop_proc_status	<= 3'b100;
+		   glbl_wrfence_pop_status <= 1;	 
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		end
+	     end
+	   
+	   VC_VL0:
+	     begin
+		if ((wrfence_rsptid == vl0_wrfence_tid) && vl0_wrfence_flag) begin
+		   vl0_wrfence_deassert <= 1;	 
+		   vh0_wrfence_deassert <= 0;	 
+		   vh1_wrfence_deassert <= 0;	 		   
+		   latbuf_pop_proc_status	<= 3'b101; 
+		   glbl_wrfence_pop_status <= 1;	 
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		end
+	     end
+	   
+	   VC_VH0:
+	     begin
+		if ((wrfence_rsptid == vh0_wrfence_tid) && vh0_wrfence_flag ) begin
+		   vl0_wrfence_deassert <= 0;	 
+		   vh0_wrfence_deassert <= 1;	 
+		   vh1_wrfence_deassert <= 0;	 		   
+		   latbuf_pop_proc_status	<= 3'b110; 
+		   glbl_wrfence_pop_status <= 1;	 
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		end
+	     end
+		    
+	   VC_VH1:
+	     begin
+		if ((wrfence_rsptid == vh1_wrfence_tid) && vh1_wrfence_flag ) begin
+		   vl0_wrfence_deassert <= 0;	 
+		   vh0_wrfence_deassert <= 0;	 
+		   vh1_wrfence_deassert <= 1;	 		   
+		   latbuf_pop_proc_status	<= 3'b111; 
+		   glbl_wrfence_pop_status <= 1;	 
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		end
+	     end
+	 endcase
+      end
+      // empty outfifo on normal transactions
+      else if (~outfifo_almfull ) begin
 	 latbuf_pop_unroll_outfifo(outfifo);
+	 vl0_wrfence_deassert <= 0;	 
+	 vh0_wrfence_deassert <= 0;	 
+	 vh1_wrfence_deassert <= 0;	 
+	 latbuf_pop_proc_status	<= 3'b110; 
+	 glbl_wrfence_pop_status <= 0;	 
       end
-      else if (wrfence_rspvalid) begin
-	 
-      end
+      else begin
+	 vl0_wrfence_deassert <= 0;	 
+	 vh0_wrfence_deassert <= 0;	 
+	 vh1_wrfence_deassert <= 0;	 		   
+	 latbuf_pop_proc_status	<= 3'b000; 
+	 glbl_wrfence_pop_status <= 0;	 
+      end      
+      // Book keeping
       for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
 	 latbuf_ready[ready_i] <= records[ready_i].record_ready;
 	 if ( (records[ready_i].state == LatSc_RecordPopped) ||
@@ -1010,9 +1096,6 @@ module outoforder_wrf_channel
 	 end
       end
    end
-
-   // logic [OUTFIFO_WIDTH-1:0] outfifo_data_out;
-   // logic 		     outfifo_data_vld;
 
    // Outfifo Full/Empty
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
