@@ -200,28 +200,6 @@ package ase_pkg;
    
 
    /*
-    * TX header deconstruction
-    */
-   // SPL (CCI-extended additions)
-   //parameter TX_HDR_NUMCL_BITRANGE      98:93
-   //parameter TX_HDR_CLADDR_BITRANGE     92:67
-   //parameter TX_HDR_PV_BIT              66
-   // CCI only
- // `define TX_META_TYPERANGE          67:64
- // `define TX_CLADDR_BITRANGE         57:16
- // `define TX_MDATA_BITRANGE          15:0
-
-   /*
-    * RX header deconstruction
-    */
-   // RX header (SPL/CCI common response)
- // `define RX_META_TYPERANGE          19:16
- // `define RX_MDATA_BITRANGE          15:0
- // `define RX_CSR_BITRANGE            13:0
- // `define RX_CSR_DATARANGE           64:0
-
-
-   /*
     * FIFO depth bit-width
     * Enter 'n' here, where n = log_2(FIFO_DEPTH) & n is an integer
     */
@@ -269,6 +247,7 @@ package ase_pkg;
     * CCI Transaction packet
     */
    typedef struct {
+      int 	  wrfence;
       int         write_en;
       int 	  vc;
       int 	  mdata;
@@ -288,11 +267,8 @@ package ase_pkg;
       int 	  ase_timeout;
       int 	  ase_num_tests;
       int 	  enable_reuse_seed;
-      // int 	  num_umsg_log2;
       int 	  enable_cl_view;
       int 	  phys_memory_available_gb;
-      // int 	  enable_capcm;
-      // int 	  memmap_sad_setting;
    } ase_cfg_t;
    ase_cfg_t cfg;
 

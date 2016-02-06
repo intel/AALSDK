@@ -120,13 +120,15 @@ void wr_memline_dex(cci_pkt *pkt)
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
 
-  // Get cl_addr, deduce wr_target_vaddr
-  phys_addr = (uint64_t)pkt->cl_addr << 6;
-  wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
-
-  // Write to memory
-  memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
-
+  if (pkt->wrfence == 0) 
+    {
+      // Get cl_addr, deduce wr_target_vaddr
+      phys_addr = (uint64_t)pkt->cl_addr << 6;
+      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
+      // Write to memory
+      memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
+   }
+  
   // Enable response
   pkt->resp_en = 1;
 
@@ -165,14 +167,6 @@ void mmio_response (struct mmio_t *mmio_pkt)
 {
   FUNC_CALL_ENTRY;
 
-/* #ifdef ASE_DEBUG */
-/*   BEGIN_YELLOW_FONTCOLOR; */
-/*   printf("  [DEBUG]  mmio_response =>\n"); */
-/*   printf("  [DEBUG]  width=%d, addr=%x, resp_en=%d\n", mmio_pkt->width, mmio_pkt->addr, mmio_pkt->resp_en); */
-/*   printf("  [DEBUG]  data=%llx\n", mmio_pkt->qword[0]); */
-/*   END_YELLOW_FONTCOLOR; */
-/* #endif */
-  
   mqueue_send(sim2app_mmiorsp_tx, (char*)mmio_pkt, sizeof(mmio_t)); // ASE_MQ_MSGSIZE);
 
   FUNC_CALL_EXIT;

@@ -26,7 +26,8 @@ module stream_checker
 	       check_array[ {tid_in, ii[1:0]} ] = hdr_in;	    
 	    end
 	 end
-	 else if (hdr_in.reqtype != ASE_WRFENCE) begin
+	 // else if (hdr_in.reqtype != ASE_WRFENCE) begin
+	 else begin
 	    check_array[{tid_in, hdr_in.len}] = hdr_in;
 	 end
       end

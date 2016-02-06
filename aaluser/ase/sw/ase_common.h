@@ -509,6 +509,7 @@ struct ase_cfg_t *cfg;
  */
 // CCI transaction packet
 typedef struct {
+  int       wrfence;
   int       write_en;
   long      mdata;
   long long cl_addr;

@@ -56,8 +56,8 @@ module ccip_emulator
    output logic       pClkDiv2, // 200MHz - CCI-P clock domain.
    output logic       pClkDiv4, // 100MHz - CCI-P clock domain.
    // User clocks
-   // output logic       uClk_usr, // User clock domain. Refer to clock programming guide
-   // output logic       uClk_usrDiv2, // User clock domain. Half the programmed frequency
+   output logic       uClk_usr, // User clock domain. Refer to clock programming guide
+   output logic       uClk_usrDiv2, // User clock domain. Half the programmed frequency
    // Power & error states
    output logic       pck_cp2af_softReset, // CCI-P ACTIVE HIGH Soft Reset
    output logic [1:0] pck_cp2af_pwrState, // CCI-P AFU Power State
@@ -129,10 +129,10 @@ module ccip_emulator
 	C0TxRdValid <= 0;
       // --------------------------------------------------------- //
       // Read Response
-      if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP) )
-	C0RxRdValid <= 1;
-      else
-	C0RxRdValid <= 0;
+      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_RD_RSP) )
+      // 	C0RxRdValid <= 1;
+      // else
+      // 	C0RxRdValid <= 0;
       // --------------------------------------------------------- //
       // Write Request
       if (C1TxValid &&
@@ -142,16 +142,16 @@ module ccip_emulator
 	C1TxWrValid <= 0;
       // --------------------------------------------------------- //
       // Write response
-      if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP) )
-	C1RxWrValid <= 1;
-      else
-	C1RxWrValid <= 0;
+      // if (C1RxRspValid && (C1RxHdr.resptype == ASE_WR_RSP) )
+      // 	C1RxWrValid <= 1;
+      // else
+      // 	C1RxWrValid <= 0;
       // --------------------------------------------------------- //
       // Umsg response
-      if (C0RxRspValid && (C0RxHdr.resptype == ASE_UMSG))
-	C0RxUMsgValid <= 1;
-      else
-	C0RxUMsgValid <= 0;
+      // if (C0RxRspValid && (C0RxHdr.resptype == ASE_UMSG))
+      // 	C0RxUMsgValid <= 1;
+      // else
+      // 	C0RxUMsgValid <= 0;
       // --------------------------------------------------------- //
    end
 
@@ -314,7 +314,10 @@ module ccip_emulator
    // cci_logger buffer message
    export "DPI-C" task buffer_msg_inject;
 
-
+   // Page table called status
+   logic rd_memline_dex_called;   
+   logic wr_memline_dex_called;   
+   
    // Scope generator
    initial scope_function();
 
@@ -403,7 +406,7 @@ module ccip_emulator
    RxOutState rx1_state;
 
    /*
-    * Clock process: Operates the CAFU clock
+    * Fabric Clock, pClk{*}
     */
    logic [2:0] 			  ase_clk_rollover = 3'b111;
 
@@ -442,6 +445,43 @@ module ccip_emulator
    endtask
 
 
+   /*
+    * User clock, uclk{*}
+    * *FIXME*: Must track for Beta
+    * Currently generates a 300 Mhz clock
+    */ 
+`define UCLK_HZ         real'(300_000_000);
+`define UCLK_DURATION   3.333ns
+
+   logic 	  usrClk;
+   logic 	  usrClkDiv2 = 0;
+
+   // User clock generator
+   initial begin : uclk_proc
+      begin
+	 `ifdef ASE_DEBUG
+	 $display("  [DEBUG] User clock frequency = %f\n", `UCLK_DURATION);
+	 `endif
+	 usrClk = 0;
+	 forever begin
+	    #`UCLK_DURATION;	    
+	    usrClk = 0;
+	    #`UCLK_DURATION;
+	    usrClk = 1;	    
+	 end
+      end
+   end
+   
+   // Div2 output
+   always @(posedge usrClk) begin
+      usrClkDiv2 = ~usrClkDiv2;      
+   end
+
+   // UCLK interface
+   assign uClk_usr     = usrClk;
+   assign uClk_usrDiv2 = usrClkDiv2;
+   
+   
    /*
     * AFU reset - software & system resets
     */
@@ -1124,9 +1164,10 @@ module ccip_emulator
    int ase_tx0_rdvalid_cnt   ;
    int ase_rx0_rdvalid_cnt   ;
    int ase_tx1_wrvalid_cnt   ;
-   int ase_rx0_wrvalid_cnt   ;
+   // int ase_rx0_wrvalid_cnt   ;
    int ase_rx1_wrvalid_cnt   ;
    int ase_tx1_wrfence_cnt   ;
+   int ase_rx1_wrfence_cnt   ;
    int ase_rx0_umsghint_cnt  ;
    int ase_rx0_umsgdata_cnt  ;
 
@@ -1143,9 +1184,10 @@ module ccip_emulator
 	 ase_tx0_rdvalid_cnt <= 0 ;
 	 ase_rx0_rdvalid_cnt <= 0 ;
 	 ase_tx1_wrvalid_cnt <= 0 ;
-	 ase_rx0_wrvalid_cnt <= 0 ;
+	 // ase_rx0_wrvalid_cnt <= 0 ;
 	 ase_rx1_wrvalid_cnt <= 0 ;
 	 ase_tx1_wrfence_cnt <= 0 ;
+	 ase_rx1_wrfence_cnt <= 0 ;
 	 ase_rx0_umsghint_cnt <= 0 ;
 	 ase_rx0_umsgdata_cnt <= 0 ;
       end
@@ -1169,6 +1211,8 @@ module ccip_emulator
 	   ase_rx1_wrvalid_cnt = ase_rx1_wrvalid_cnt + 1;
 	 if (C1TxWrValid && (C1TxHdr.reqtype == ASE_WRFENCE))
 	   ase_tx1_wrfence_cnt = ase_tx1_wrfence_cnt + 1;
+	 if (C1RxWrValid && (C1RxHdr.resptype == ASE_WRFENCE_RSP))
+	   ase_rx1_wrfence_cnt = ase_rx1_wrfence_cnt + 1;	 
 	 // UMsg counts
 	 if (C0RxUMsgValid && ase_umsghdr_map.umsg_type )
 	   ase_rx0_umsghint_cnt = ase_rx0_umsghint_cnt + 1;
@@ -1189,9 +1233,11 @@ module ccip_emulator
       else begin
 	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
 	   count_error_flag <= 1;
-	 else if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
+	 else if (ase_tx1_wrvalid_cnt != ase_rx1_wrvalid_cnt)
 	   count_error_flag <= 1;
 	 else if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
+	   count_error_flag <= 1;
+	 else if (ase_tx1_wrfence_cnt != ase_rx1_wrvalid_cnt)
 	   count_error_flag <= 1;
 	 else
 	   count_error_flag <= 0;
@@ -1270,6 +1316,11 @@ module ccip_emulator
 						 input TxHdr_t               txhdr,
 						 input [CCIP_DATA_WIDTH-1:0] txdata);
       begin
+	 // Write fence
+	 if (txhdr.reqtype == ASE_WRFENCE)
+	   pkt.wrfence  = 1;
+	 else
+	   pkt.wrfence  = 0;	 
 	 // Write enable
 	 pkt.write_en = int'(write_en);
 	 // Metadata
@@ -1332,7 +1383,7 @@ module ccip_emulator
    logic                         cf2as_latbuf_ch0_empty;
    logic                         cf2as_latbuf_ch0_read;
    int 				 cf2as_latbuf_ch0_count;
-   logic 			 cf2as_latbuf_ch0_pop;
+   // logic 			 cf2as_latbuf_ch0_pop;
 
    // cf2as_latbuf_ch1 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx1hdr_vec;
@@ -1343,7 +1394,7 @@ module ccip_emulator
    logic 		         cf2as_latbuf_ch1_read;
    int 				 cf2as_latbuf_ch1_count;
    logic 			 cf2as_latbuf_ch1_valid;
-   logic 			 cf2as_latbuf_ch1_pop;
+   // logic 			 cf2as_latbuf_ch1_pop;
 
    RxHdr_t                       cf2as_latbuf_rx0hdr_q;
    RxHdr_t                       cf2as_latbuf_rx1hdr_q;
@@ -1398,6 +1449,7 @@ module ccip_emulator
    always @(posedge clk) begin
       if (sys_reset) begin
    	 Tx0toRx0_pkt_vld <= 0;
+	 rd_memline_dex_called <= 0;	 
       end
       else if (cf2as_latbuf_ch0_valid) begin
    	 cast_txhdr_to_ccipkt( Tx0toRx0_pkt,
@@ -1407,9 +1459,11 @@ module ccip_emulator
 	 rd_memline_dex(Tx0toRx0_pkt);
 	 Tx0toRx0_pkt_vld <= cf2as_latbuf_ch0_valid;
 	 cf2as_latbuf_rx0hdr_q <= cf2as_latbuf_rx0hdr;
+	 rd_memline_dex_called <= 1;	 
       end
       else begin
    	 Tx0toRx0_pkt_vld <= 0;
+	 rd_memline_dex_called <= 0;	 
       end
    end
 
@@ -1456,14 +1510,14 @@ module ccip_emulator
       .rxhdr_out        ( cf2as_latbuf_rx1hdr ),
       .data_out		( cf2as_latbuf_tx1data ),
       .valid_out	( cf2as_latbuf_ch1_valid),
-      .read_en		( cf2as_latbuf_ch1_pop  ),
+      .read_en		( cf2as_latbuf_ch1_read  ),
       .empty		( cf2as_latbuf_ch1_empty ),
       .full             ( C1TxAlmFull )
       );
 
 
    //assign cf2as_latbuf_tx1hdr = TxHdr_t'(cf2as_latbuf_tx1hdr_vec);
-   assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
+   // assign cf2as_latbuf_ch1_pop = ~cf2as_latbuf_ch1_empty && cf2as_latbuf_ch1_read;
 
    // TX-CH1 must select RX-CH0 or RX-CH1 channels for fulfillment
    // Since requests on TX1 can return either via RX0 or RX1, this is needed
@@ -1485,26 +1539,33 @@ module ccip_emulator
 	 cf2as_latbuf_ch1_read <= 0;
       end
    end
-
+   
    // TX1 process
    always @(posedge clk) begin
       if (sys_reset) begin
 	 Tx1toRx1_pkt_vld <= 0;
+	 wr_memline_dex_called <= 0;	 
       end
       else if (cf2as_latbuf_ch1_valid) begin
    	 cast_txhdr_to_ccipkt(Tx1toRx1_pkt, 
 			      1, 
 			      cf2as_latbuf_tx1hdr, 
 			      cf2as_latbuf_tx1data);
-	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
    	 wr_memline_dex(Tx1toRx1_pkt);
    	 Tx1toRx1_pkt_vld <= cf2as_latbuf_ch1_valid;
-      end // if (cf2as_latbuf_ch1_valid)
+	 cf2as_latbuf_rx1hdr_q <= cf2as_latbuf_rx1hdr;
+	 wr_memline_dex_called <= 1;	 
+      end
       else begin
 	 Tx1toRx1_pkt_vld <= 0;
+	 wr_memline_dex_called <= 0;	 	 
       end
    end
 
+   // always @(posedge clk) begin
+   //    Tx1toRx1_pkt_q <= Tx1toRx1_pkt;      
+   // end
+   
    // Wr1Rsp_in
    always @(posedge clk) begin
       if (sys_reset) begin
@@ -1512,8 +1573,8 @@ module ccip_emulator
    	 wr1rsp_write   <= 0;
       end
       else begin
-	 wr1rsp_hdr_in  <= cf2as_latbuf_rx1hdr_q;
-	 wr1rsp_write   <= Tx1toRx1_pkt_vld;
+	 wr1rsp_hdr_in  <= cf2as_latbuf_rx1hdr; // cf2as_latbuf_rx1hdr_q;
+	 wr1rsp_write   <= cf2as_latbuf_ch1_valid; // Tx1toRx1_pkt_vld;
       end
    end
 
@@ -1793,53 +1854,79 @@ module ccip_emulator
     * *******************************************************************/
    always @(posedge clk) begin
       if (sys_reset | SoftReset) begin
-	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
-	 C1RxWrValid <= 1'b0;
-	 C1RxIntrValid <= 1'b0;
-	 wr1rsp_read <= 1'b0;
-	 rx1_state <= RxIdle;
+   	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   	 C1RxWrValid <= 1'b0;
+   	 C1RxIntrValid <= 1'b0;
+   	 wr1rsp_read <= 1'b0;
+   	 rx1_state <= RxIdle;
       end
       else begin
-	 case (rx1_state)
-	   RxIdle:
-	     begin
+   	 case (rx1_state)
+   	   RxIdle:
+   	     begin
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
-		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;
-		end
-		else begin
-		   rx1_state <= RxIdle;
-		end
-	     end
+   		if (~wr1rsp_empty) begin
+   		   rx1_state <= RxWriteResp;
+   		end
+   		else begin
+   		   rx1_state <= RxIdle;
+   		end
+   	     end
 
-	   RxWriteResp:
-	     begin
+   	   RxWriteResp:
+   	     begin
       		C1RxHdr       <= wr1rsp_hdr_out;
       		C1RxWrValid   <= wr1rsp_valid;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= ~wr1rsp_empty;
-		if (~wr1rsp_empty) begin
-		   rx1_state <= RxWriteResp;
-		end
-		else begin
-		   rx1_state <= RxIdle;
-		end
-	     end
+   		if (~wr1rsp_empty) begin
+   		   rx1_state <= RxWriteResp;
+   		end
+   		else begin
+   		   rx1_state <= RxIdle;
+   		end
+   	     end
 
-	   default:
-	     begin
+   	   default:
+   	     begin
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
-		rx1_state     <= RxIdle;
-	     end
+   		rx1_state     <= RxIdle;
+   	     end
 
-	 endcase
+   	 endcase
       end
    end
 
+   // always @(posedge clk) begin
+   //    if (sys_reset|SoftReset) begin
+   // 	 wr1rsp_read <= 0;	 
+   //    end
+   //    else if (~wr1rsp_empty) begin
+   // 	 wr1rsp_read <= ~wr1rsp_empty;	 
+   //    end
+   // end
+   
+   // always @(posedge clk) begin
+   //    if (sys_reset|SoftReset) begin
+   // 	 C1RxHdr       <= {CCIP_RX_HDR_WIDTH{1'b0}};
+   // 	 C1RxWrValid   <= 0;
+   // 	 C1RxIntrValid <= 0;
+   //    end
+   //    else if (wr1rsp_valid) begin
+   // 	 C1RxHdr       <= wr1rsp_hdr_out;	 
+   // 	 C1RxWrValid   <= wr1rsp_valid;	 
+   // 	 C1RxWrValid   <= 0;	 
+   //    end
+   //    else begin
+   // 	 C1RxWrValid   <= 0;
+   // 	 C1RxIntrValid <= 0;
+   //    end
+   // end
+   
    // Rx1 aggregate valid
    assign C1RxRspValid = C1RxWrValid | C1RxIntrValid;
 
@@ -2159,9 +2246,10 @@ module ccip_emulator
 	 $display("\tRdReq      = %d", ase_tx0_rdvalid_cnt   );
 	 $display("\tRdResp     = %d", ase_rx0_rdvalid_cnt   );
 	 $display("\tWrReq      = %d", ase_tx1_wrvalid_cnt   );
-	 $display("\tWrResp-CH0 = %d", ase_rx0_wrvalid_cnt   );
-	 $display("\tWrResp-CH1 = %d", ase_rx1_wrvalid_cnt   );
+	 // $display("\tWrResp     = %d", ase_rx0_wrvalid_cnt   );
+	 $display("\tWrResp     = %d", ase_rx1_wrvalid_cnt   );
 	 $display("\tWrFence    = %d", ase_tx1_wrfence_cnt   );
+	 $display("\tWrFenceRsp = %d", ase_rx1_wrfence_cnt   );
 	 $display("\tUMsgHint   = %d", ase_rx0_umsghint_cnt  );
 	 $display("\tUMsgData   = %d", ase_rx0_umsgdata_cnt  );
 	 `END_YELLOW_FONTCOLOR;
@@ -2171,11 +2259,13 @@ module ccip_emulator
 	 // Print errors
 	 `BEGIN_RED_FONTCOLOR;
 	 if (ase_tx0_rdvalid_cnt != ase_rx0_rdvalid_cnt)
-	   $display("\tREADs  : Response counts dont match request count !!");
-	 if (ase_tx1_wrvalid_cnt != (ase_rx0_wrvalid_cnt + ase_rx1_wrvalid_cnt))
-	   $display("\tWRITEs : Response counts dont match request count !!");
+	   $display("\tREADs   : Response counts dont match request count !!");
+	 if (ase_tx1_wrvalid_cnt != ase_rx1_wrvalid_cnt)
+	   $display("\tWRITEs  : Response counts dont match request count !!");
 	 if (ase_tx2_mmiordrsp_cnt != ase_rx0_mmiordreq_cnt)
-	   $display("\tMMIORd : Response counts dont match request count !!");
+	   $display("\tMMIORd  : Response counts dont match request count !!");
+	 if (ase_tx1_wrfence_cnt != ase_rx1_wrfence_cnt)
+	   $display("\tWrFence : Response counts dont match request count !!");
 	 `END_RED_FONTCOLOR;
 	 // Dropped transactions
 	 `BEGIN_YELLOW_FONTCOLOR;
