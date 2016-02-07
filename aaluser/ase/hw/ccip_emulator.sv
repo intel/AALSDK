@@ -2158,6 +2158,7 @@ module ccip_emulator
    /*
     * CCI Logger module
     */
+`ifndef DISABLE_LOGGER   
    ccip_logger ccip_logger
      (
       // Logger control
@@ -2191,7 +2192,8 @@ module ccip_emulator
       .C0TxAlmFull      (C0TxAlmFull     ),
       .C1TxAlmFull      (C1TxAlmFull     )
       );
-
+`endif //  `ifndef DISABLE_LOGGER
+   
 
    /* ******************************************************************
     *
