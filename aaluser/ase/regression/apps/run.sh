@@ -12,5 +12,5 @@ valgrind -v --tool=memcheck \
     --show-reachable=yes \
     --show-leak-kinds=definite,possible \
     --undef-value-errors=yes \
-    ./nlb_test
+    ./nlb_test 32 0 3
 
