@@ -225,15 +225,6 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
    // Align request to page size
    Length = (Length + pageSize - 1) & pageMask;
 
-   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   //
-   //  This method of allocating a large virtual workspace is temporary.
-   //  When AAL is capable of doing it internally this hack will be
-   //  replaced with a simple allocation call.
-   //
-   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-
    // Map a region of the requested size.  This will reserve a virtual
    // memory address space.  As pages are allocated they will be
    // mapped into this space.
