@@ -140,8 +140,8 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq_deactivete;
-   work_object                task_deactivete_handler;
+   kosal_work_queue           m_workq_deactivate;
+   work_object                task_deactivate_handler;
 
 
    kosal_work_queue           m_workq_deactimeout;
@@ -240,8 +240,8 @@ struct cci_aal_device {
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
 
-#define cci_dev_workq_deactivete(pdev)                 ( (pdev)->m_workq_deactivete )
-#define cci_dev_task_deactivete_handler(pdev)          ((pdev)->task_deactivete_handler)
+#define cci_dev_workq_deactivate(pdev)                 ( (pdev)->m_workq_deactivate )
+#define cci_dev_task_deactivate_handler(pdev)          ((pdev)->task_deactivate_handler)
 
 #define cci_dev_workq_deactimeout(pdev)                 ( (pdev)->m_workq_deactimeout )
 #define cci_dev_task_deactimeout_handler(pdev)          ((pdev)->task_deactimeout_handler)

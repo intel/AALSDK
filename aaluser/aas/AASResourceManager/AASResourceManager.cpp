@@ -180,6 +180,7 @@ public:
     void serviceAllocateFailed(const IEvent &rEvent);
     void serviceReleaseFailed(const AAL::IEvent&);
     void serviceReleased(TransactionID const &rTranID);
+    virtual void serviceReleaseRequest(const IEvent &rEvent){};  // Ignored TODO better implementation
     void serviceEvent(const IEvent &rEvent);
 
     // Class-specific methods

@@ -756,6 +756,7 @@ public:
                                       TransactionID const & ) {}
    virtual void serviceAllocateFailed(const IEvent & )        {}
    virtual void       serviceReleased(TransactionID const & ) {}
+   virtual void serviceReleaseRequest(const IEvent & )        {} 
    virtual void  serviceReleaseFailed(const IEvent & )        {}
    virtual void          serviceEvent(const IEvent & )        {}
 };

@@ -443,6 +443,11 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
 }
 
+void HWALIAFU::serviceReleaseRequest(const IEvent &rEvent)
+{
+   ERR("Recieved unhandled serviceReleaseRequest() from AFU PRoxy\n");
+}
+
 // Service allocated failed callback
 void HWALIAFU::serviceAllocateFailed(const IEvent &rEvent) {
    m_bIsOK = false;
@@ -1189,27 +1194,8 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    switch(puidEvent->MessageID())
    {
-   //===========================
-   // WSM response
-   // ==========================
-   case rspid_AFU_PR_Honar_Owner_Event:
 
-   {
-      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Honar_Owner_Event \n" << std::endl;
-      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
-
-
-      getRuntime()->schedDispatchable(new ServiceEvent(getServiceClient(),new CExceptionTransactionEvent(NULL,
-                puidEvent->msgTranID(),
-                puidEvent->ResultCode(),
-                reasUnknown,
-                "Release AFU rspid_AFU_PR_Honar_Owner_Event ")));
-   }
-
-   break;
-
-   case rspid_AFU_PR_Revoked_Event:
-
+   case rspid_AFU_PR_Revoke_Event:
    {
       std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
       std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
@@ -1219,21 +1205,15 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
    }
    break;
 
-   case rspid_AFU_PR_Honor_Request_Event:
-
+   case rspid_AFU_PR_Release_Request_Event:
    {
-      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Honor_Request_Event \n" << std::endl;
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
       std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
-
-
-      getRuntime()->schedDispatchable(new ServiceEvent(getServiceClient(),new CExceptionTransactionEvent(NULL,
-                    puidEvent->msgTranID(),
-                    puidEvent->ResultCode(),
-                    reasUnknown,
-                    "Release AFU rspid_AFU_PR_Honor_Request_Event ")));
-
+      // TODO CREATE THE CROOERCT EVENT WHICH WILL INCLUDE TIMEOUT AND OPTION (HONOR_OWNER OR REQUEST)
+      getRuntime()->schedDispatchable( new ReleaseServiceRequest(dynamic_ptr<IServiceClient>(iidServiceClient, m_pSvcClient), NULL) );
    }
-   break ;
+   break;
+
    case rspid_WSM_Response:
       {
          // TODO check result code

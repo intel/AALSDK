@@ -128,37 +128,36 @@ typedef enum
 typedef enum
 {
    // Management
-   reqid_UID_Bind=1,                // Use default API Version
-   reqid_UID_ExtendedBindInfo,      // Pass additional Bind parms
-   reqid_UID_UnBind,                // Release a device
+   reqid_UID_Bind=1,                      // Use default API Version
+   reqid_UID_ExtendedBindInfo,            // Pass additional Bind parms
+   reqid_UID_UnBind,                      // Release a device
 
    // Provision
-   reqid_UID_Activate,              // Activate the device
-   reqid_UID_Deactivate,            // Deactivate the device
+   reqid_UID_Activate,                    // Activate the device
+   reqid_UID_Deactivate,                  // Deactivate the device
 
    // Administration
-   reqid_UID_Shutdown,              // Request that the Service session shutdown
+   reqid_UID_Shutdown,                    // Request that the Service session shutdown
 
-   reqid_UID_SendAFU,               // Send AFU a message
+   reqid_UID_SendAFU,                     // Send AFU a message
 
    // Response and Event IDs
-   rspid_UID_Shutdown=0xF000,       // Service is shutdown
-   rspid_UID_UnbindComplete,        // Release Device Response
-   rspid_UID_BindComplete,          // Bind has completed
+   rspid_UID_Shutdown=0xF000,             // Service is shutdown
+   rspid_UID_UnbindComplete,              // Release Device Response
+   rspid_UID_BindComplete,                // Bind has completed
 
-   rspid_UID_Activate,              // Activate the device
-   rspid_UID_Deactivate,            // Deactivate the device
+   rspid_UID_Activate,                    // Activate the device
+   rspid_UID_Deactivate,                  // Deactivate the device
 
-   rspid_AFU_Response,              // Response from AFU request
-   rspid_AFU_Event,                 // Event from AFU
+   rspid_AFU_Response,                    // Response from AFU request
+   rspid_AFU_Event,                       // Event from AFU
 
-   rspid_AFU_PR_Honar_Owner_Event,    // Event form PR to Release AFU
-   rspid_AFU_PR_Honor_Request_Event,  // Event form PR to Yank Release AFU
-   rspid_AFU_PR_Revoked_Event,        // Event form PR to Revoke AFU
+   rspid_AFU_PR_Release_Request_Event,    // Event from PR to request the Service release
+   rspid_AFU_PR_Revoke_Event,             // Event from PR to Revoke AFU
 
-   rspid_PIP_Event,                 // Event from PIP
+   rspid_PIP_Event,                       // Event from PIP
 
-   rspid_WSM_Response,              // Event from Workspace manager
+   rspid_WSM_Response,                    // Event from Workspace manager
 
    rspid_UID_Response,
    rspid_UID_Event,
@@ -306,12 +305,17 @@ struct ccidrvreq
    btTime            pollrate;
 };
 
-enum AALCONF_RECONF_ACTION
+enum aalconf_reconfig_action
 {
    ReConf_Action_Honor_request  =0x0,
    ReConf_Action_Honor_Owner    =0x1,
-   ReConf_Action_InActive       =0x2
+   ReConf_Action_InActive       =0x80
 };
+
+// Mask off Inactive Flag
+#define RECONF_ACTION_HONOR_PARAMETER(p)    (p & (btUnsigned64bitInt)~(ReConf_Action_InActive))
+#define RECONF_ACTION_ACTIVATE_PARAMETER(p) (p & ReConf_Action_InActive)
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////                                     //////////////////////

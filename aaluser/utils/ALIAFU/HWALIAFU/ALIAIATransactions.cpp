@@ -776,7 +776,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    struct ahm_req *req                 = reinterpret_cast<struct ahm_req *>(afumsg->payload);
 
    btUnsigned64bitInt reconfTimeout =0;
-   btUnsigned64bitInt reconfAction =0;
+
 
    // DeActive Timeout
    if(rNVS.Has(AALCONF_MILLI_TIMEOUT)){
@@ -786,22 +786,30 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    }
 
    // ReConfiguration Action Flags
+
+   // Assume default action
+   req->u.pr_config.reconfAction = ReConf_Action_Honor_request;
    if(rNVS.Has(AALCONF_RECONF_ACTION)){
 
+      btUnsigned64bitInt reconfAction =0;
       rNVS.Get(AALCONF_RECONF_ACTION, &reconfAction);
       printf("reconfAction= %lld \n",reconfAction);
 
-      if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) ||
-         (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction )   ||
-         (AALCONF_RECONF_ACTION_INACTIVE_ID  != reconfAction)      ||
-         ((AALCONF_RECONF_ACTION_HONOR_OWNER_ID + AALCONF_RECONF_ACTION_HONOR_OWNER_ID) != reconfAction ))  {
-
-           m_bIsOK = false;
-           return ;
-         }
-
+      if(reconfAction == AALCONF_RECONF_ACTION_HONOR_OWNER_ID){
+         req->u.pr_config.reconfAction = ReConf_Action_Honor_Owner;
+      }
    }
 
+   // What state should the AFU be left in?
+   if(rNVS.Has(AALCONF_RECONF_DISABLED)){
+      btBool bDisabled = true;   // Asssume if the key present it probably true
+      rNVS.Get(AALCONF_RECONF_ACTION, &bDisabled);
+
+      if(bDisabled == true){
+         req->u.pr_config.reconfAction |= ReConf_Action_InActive;
+         printf("Creating disabled\n");
+      }
+   }
 
    // fill out aalui_CCIdrvMessage
    afumsg->cmd     = ccipdrv_configureAFU;
@@ -810,7 +818,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    req->u.pr_config.vaddr  = pBuf;
    req->u.pr_config.size   = len;
    req->u.pr_config.reconfTimeout  = reconfTimeout;
-   req->u.pr_config.reconfAction   = reconfAction;
+
 
    printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
    printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
