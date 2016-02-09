@@ -48,9 +48,9 @@ include ase_sources.mk
 ASE_VERSION = 5.0.1
 
 # ASE switches
-ASE_DEBUG = 0
-PROFILE_ENABLE = 0
-DISABLE_LOGGER = 1
+ASE_DEBUG = 1
+ASE_PROFILE_ENABLE = 1
+DISABLE_LOGGER = 0
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -127,8 +127,7 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
-SNPS_VCS_OPT+= +define+ASE_DEBUG
-ifeq ($(PROFILE_ENABLE), 1)
+ifeq ($(ASE_PROFILE_ENABLE), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
 SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/

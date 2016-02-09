@@ -31,5 +31,5 @@ export REGRESSION_DIR=${PWD}/regression/nlb_400/
 cd ${REGRESSION_DIR}
 pwd
 cd ../apps/
-./stress.sh 1000
+./stress.sh 100 | tee stress_test.log
 

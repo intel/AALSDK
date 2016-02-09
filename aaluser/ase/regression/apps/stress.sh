@@ -53,5 +53,5 @@ do
     fi
 done
 echo "------------------------------------------------"
-pkill ase_simv
+# pkill ase_simv
 
