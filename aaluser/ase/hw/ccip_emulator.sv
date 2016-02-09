@@ -1350,32 +1350,6 @@ module ccip_emulator
       end
    endfunction
 
-
-   // rdreq/wrreq checker
-   // logic rdreq_flag;
-   // logic wrreq_flag;
-
-   // always @(*) begin 
-   //    if (sys_reset) begin
-   // 	 rdreq_flag <= 0;
-   // 	 wrreq_flag <= 0;
-   //    end
-   //    else begin
-   // 	 // RdReq type
-   // 	 case (cf2as_latbuf_tx0hdr.reqtype)
-   // 	   ASE_RDLINE_S : rdreq_flag = 1;
-   // 	   ASE_RDLINE_I : rdreq_flag = 1;
-   // 	   default           : rdreq_flag = 0;
-   // 	 endcase
-   // 	 // WrReq type
-   // 	 case (cf2as_latbuf_tx1hdr.reqtype)
-   // 	   ASE_WRLINE_I : wrreq_flag = 1;
-   // 	   ASE_WRLINE_M : wrreq_flag = 1;
-   // 	   default           : wrreq_flag = 0;
-   // 	 endcase
-   //    end
-   // end
-
    // cf2as_latbuf_ch0 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
    TxHdr_t                       cf2as_latbuf_tx0hdr;
@@ -2092,34 +2066,39 @@ module ccip_emulator
     * - XZ checker
     * - Data hazard warning
     */
-   // ccip_sniffer ccip_sniffer
-   //   (
-   //    .clk            (clk               ),
-   //    .sys_reset_n    (sys_reset_n       ),
-   //    .sw_reset_n     (SoftReset        ),
-   //    .C0TxHdr        (C0TxHdr           ),
-   //    .C0TxRdValid    (C0TxRdValid       ),
-   //    .C0TxAlmFull    (C0TxAlmFull       ),
-   //    .C1TxHdr        (C1TxHdr           ),
-   //    .C1TxData       (C1TxData          ),
-   //    .C1TxWrValid    (C1TxWrValid       ),
-   //    .C1TxAlmFull    (C1TxAlmFull       ),
-   //    .C1TxIntrValid  (C1TxIntrValid     ),
-   //    .CfgRdData      (CfgRdData         ),
-   //    .CfgRdDataValid (CfgRdDataValid    ),
-   //    .CfgHeader      (CfgHeader         ),
-   //    .CfgWrValid     (CfgWrValid        ),
-   //    .CfgRdValid     (CfgRdValid        ),
-   //    .C0RxHdr        (C0RxHdr           ),
-   //    .C0RxData       (C0RxData          ),
-   //    .C0RxRdValid    (C0RxRdValid       ),
-   //    .C0RxWrValid    (C0RxWrValid       ),
-   //    .C0RxUmsgValid  (C0RxUmsgValid     ),
-   //    .C0RxIntrValid  (C0RxIntrValid     ),
-   //    .C1RxHdr        (C1RxHdr           ),
-   //    .C1RxWrValid    (C1RxWrValid       ),
-   //    .C1RxIntrValid  (C1RxIntrValid     )
-   //    );
+   ccip_sniffer ccip_sniffer
+     (
+      // Logger control
+      // .enable_logger    (cfg.enable_cl_view),
+      .finish_logger    (finish_logger     ),
+      // Buffer message injection
+      // .log_string_en    (buffer_msg_en     ),
+      // .log_string       (buffer_msg        ),
+      // CCIP ports
+      .clk              (clk             ),
+      .SoftReset        (SoftReset       ),
+      .C0TxHdr          (C0TxHdr         ),
+      .C0TxRdValid      (C0TxRdValid     ),
+      .C1TxHdr          (C1TxHdr         ),
+      .C1TxData         (C1TxData        ),
+      .C1TxWrValid      (C1TxWrValid     ),
+      .C1TxIntrValid    (1'b0   ),
+      .C2TxHdr          (C2TxHdr         ),
+      .C2TxMmioRdValid  (C2TxMmioRdValid ),
+      .C2TxData         (C2TxData        ),
+      .C0RxMmioWrValid  (C0RxMmioWrValid ),
+      .C0RxMmioRdValid  (C0RxMmioRdValid ),
+      .C0RxData         (C0RxData        ),
+      .C0RxHdr          (C0RxHdr         ),
+      .C0RxRdValid      (C0RxRdValid     ),
+      //.C0RxWrValid      (1'b0     ),
+      .C0RxUMsgValid    (C0RxUMsgValid   ),
+      .C1RxHdr          (C1RxHdr         ),
+      .C1RxWrValid      (C1RxWrValid     ),
+      .C1RxIntrValid    (C1RxIntrValid   ),
+      .C0TxAlmFull      (C0TxAlmFull     ),
+      .C1TxAlmFull      (C1TxAlmFull     )
+      );
 
 
 
@@ -2158,7 +2137,7 @@ module ccip_emulator
    /*
     * CCI Logger module
     */
-`ifndef DISABLE_LOGGER   
+`ifndef ASE_DISABLE_LOGGER   
    ccip_logger ccip_logger
      (
       // Logger control
@@ -2184,7 +2163,7 @@ module ccip_emulator
       .C0RxData         (C0RxData        ),
       .C0RxHdr          (C0RxHdr         ),
       .C0RxRdValid      (C0RxRdValid     ),
-      .C0RxWrValid      (1'b0     ),
+      // .C0RxWrValid      (1'b0     ),
       .C0RxUMsgValid    (C0RxUMsgValid   ),
       .C1RxHdr          (C1RxHdr         ),
       .C1RxWrValid      (C1RxWrValid     ),
@@ -2192,7 +2171,7 @@ module ccip_emulator
       .C0TxAlmFull      (C0TxAlmFull     ),
       .C1TxAlmFull      (C1TxAlmFull     )
       );
-`endif //  `ifndef DISABLE_LOGGER
+`endif //  `ifndef ASE_DISABLE_LOGGER
    
 
    /* ******************************************************************

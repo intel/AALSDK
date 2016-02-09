@@ -47,10 +47,10 @@ include ase_sources.mk
 ## ASE Version
 ASE_VERSION = 5.0.1
 
-# ASE switches
-ASE_DEBUG = 1
-ASE_PROFILE_ENABLE = 1
-DISABLE_LOGGER = 0
+# ASE switches (these tend to increase log sizes)
+ASE_DEBUG ?= 1
+ASE_PROFILE_ENABLE ?= 0
+ASE_DISABLE_LOGGER = 0
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -118,8 +118,8 @@ SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-ifeq ($(DISABLE_LOGGER), 1)
-SNPS_VLOGAN_OPT+= +define+DISABLE_LOGGER
+ifeq ($(ASE_DISABLE_LOGGER), 1)
+SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
 endif
 
 ## VCS elaboration
@@ -357,3 +357,18 @@ test: all sim
 # On long regression runs, dont create a run.log
 long_sim: 
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
+# Clang check
+clang-check:
+	clang --analyze \
+	./sw/ase_ops.c \
+	./sw/error_report.c \
+	./sw/ipc_mgmt_ops.c \
+	./sw/linked_list_ops.c \
+	./sw/mem_model.c \
+	./sw/mqueue_ops.c \
+	./sw/protocol_backend.c \
+	./sw/randomness_control.c \
+	./sw/tstamp_ops.c \
+	-cxx-isystem /home/rrsharma/xeon-fpga-src/aalsdk/aaluser/ase/sw/ \
+	/usr/synopsys/vcs-mx/G-2012.09-SP1//include/ -D SIM_SIDE=1
