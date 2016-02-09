@@ -130,6 +130,7 @@ protected:
                          TransactionID const &rTranID);
    void serviceAllocateFailed( const IEvent &rEvent);
    void serviceReleased( TransactionID const &rTranID);
+   virtual void serviceReleaseRequest(const IEvent &rEvent){};  // Ignored TODO better implementation
    void serviceReleaseFailed( const IEvent &rEvent);
    void serviceEvent(const IEvent &rEvent);
 

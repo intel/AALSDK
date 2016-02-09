@@ -245,7 +245,7 @@ protected:
    const IEvent   *m_pEvent;
 };
 
-/// @brief Delivers IRuntimeClient::runtimeEvent(const IEvent & );
+/// @brief Delivers IServiceRevoke::serviceRevoked(const IEvent & );
 class AASLIB_API ServiceRevoke : public IDispatchable
 {
 public:
@@ -253,6 +253,17 @@ public:
    virtual void operator() ();
 protected:
    IServiceRevoke *m_pRevoke;
+};
+
+class AASLIB_API ReleaseServiceRequest : public IDispatchable
+{
+public:
+   ReleaseServiceRequest(IServiceClient *, const IEvent   *);
+   ~ReleaseServiceRequest();
+   virtual void operator() ();
+protected:
+   IServiceClient *m_pSvcClient;
+   const IEvent   *m_pEvent;
 };
 
 END_NAMESPACE(AAL)

@@ -412,6 +412,27 @@ void ServiceRevoke::operator ()()
    delete this;
 }
 
+ReleaseServiceRequest::ReleaseServiceRequest(IServiceClient *pServiceClient, const IEvent   *pEvent)
+: m_pSvcClient(pServiceClient),
+  m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcClient);
+}
+
+void ReleaseServiceRequest::operator ()()
+{
+   m_pSvcClient->serviceReleaseRequest(*m_pEvent);
+   delete this;
+
+}
+
+ReleaseServiceRequest::~ReleaseServiceRequest()
+{
+   if( NULL != m_pEvent){
+      delete m_pEvent;
+   }
+}
+
 END_NAMESPACE(AAL)
 
 /// @}

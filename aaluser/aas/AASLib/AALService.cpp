@@ -220,7 +220,7 @@ btBool ServiceBase::_init(IBase               *pclientBase,
    IServiceRevoke * pInterface = NULL;
 
    // Does the parent of this Service implement IServiceRevoke?
-   if(!pclientBase->Has(iidServiceRevoke)){
+   if(pclientBase->Has(iidServiceRevoke)){
       // Register parent as implementation of IServiceRevoke
       pInterface = dynamic_ptr<IServiceRevoke>(iidServiceRevoke, pclientBase);
    }else{

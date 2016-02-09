@@ -183,6 +183,7 @@ DECLARE_AAL_SERVICE_CONSTRUCTOR(HWALIAFU,ServiceBase),
                                  TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
    virtual void serviceAllocateFailed(const IEvent &rEvent);
    virtual void serviceReleased(TransactionID const &rTranID = TransactionID());  // FIXME: potential dangling reference
+   virtual void serviceReleaseRequest(const IEvent &rEvent);
    virtual void serviceReleaseFailed(const IEvent &rEvent);
    virtual void serviceEvent(const IEvent &rEvent);
    // </IServiceClient>

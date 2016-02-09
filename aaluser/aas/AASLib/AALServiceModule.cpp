@@ -390,6 +390,18 @@ void AALServiceModule::serviceReleased(TransactionID const & )
 }
 
 //=============================================================================
+// Name: serviceReleased()
+// Description:
+// Interface: public
+// Inputs: none
+// Outputs: none.
+// Comments:
+//=============================================================================
+void AALServiceModule::serviceReleaseRequest(const IEvent &rEvent)
+{   /* empty */ }
+
+
+//=============================================================================
 // Name: serviceReleaseFailed()
 // Description:
 // Interface: public

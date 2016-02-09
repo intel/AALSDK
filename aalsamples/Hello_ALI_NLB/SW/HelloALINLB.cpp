@@ -125,7 +125,7 @@ public:
    void serviceAllocateFailed(const IEvent &rEvent);
 
    void serviceReleased(const AAL::TransactionID&);
-
+   void serviceReleaseRequest(const IEvent &rEvent);
    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceEvent(const IEvent &rEvent);
@@ -530,6 +530,17 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
    // Unblock Main()
    m_Sem.Post(1);
 }
+
+ void HelloALINLBApp::serviceReleaseRequest(const IEvent &rEvent)
+ {
+    MSG("Service unexpected requested back");
+    if(NULL != m_pAALService){
+       IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+       ASSERT(pIAALService);
+       pIAALService->Release(TransactionID());
+    }
+ }
+
 
  void HelloALINLBApp::serviceReleaseFailed(const IEvent        &rEvent)
  {

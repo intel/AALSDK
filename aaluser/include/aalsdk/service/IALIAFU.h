@@ -500,25 +500,30 @@ public:
    virtual ~IALIReconfigure() {}
 
    #define AALCONF_FILENAMEKEY            "BitStreamFile"
-   #define AALCONF_FILENAMETYPE           btString
+   #define AALCONF_FILENAMETYPE            btString
    #define AALCONF_BUFPTRKEY              "BufPointer"
    #define AALCONF_BUFSIZE                "BufSize"
 
 
-   #define AALCONF_MILLI_TIMEOUT          "DeActivedTimeout"
+   #define AALCONF_MILLI_TIMEOUT          "DeActivatedTimeout"
    #define AALCONF_MILLI_PROG_TIMEOUT     "PRProgramTimeout"
 
-   #define AALCONF_RECONF_ACTION                 "ReconfAction"
-   #define AALCONF_RECONF_ACTION_HONOR_OWNER     "ReconfActionHonorOwner"
-   #define AALCONF_RECONF_ACTION_HONOR_REQUEST   "ReconfActionHonorRequest"
-   #define AALCONF_RECONF_ACTION_INACTIVE        "ReconfActionInActive"
+   #define AALCONF_RECONF_ACTION          "ReconfAction"
 
+   // Values for AALCONF_RECONF_ACTION
+   //======================================
 
+   // Force the reconfiguration request, revoking the
+   //  resource from current owner if necessary
+   #define AALCONF_RECONF_ACTION_HONOR_REQUEST_ID   (static_cast<btUnsigned64bitInt>(0x0))
+   #define AALCONF_RECONF_ACTION_HONOR_OWNER_ID     (static_cast<btUnsigned64bitInt>(0x1))
 
-   #define AALCONF_RECONF_ACTION_HONOR_REQUEST_ID   0x0
-   #define AALCONF_RECONF_ACTION_HONOR_OWNER_ID     0x1
+   // Bool key.  If false or not present AFU will be activated
+   //  after reconfiguration.  If present and set to true the AFU
+   //  will remain uinactive (invisible to the application) until
+   //  a recongActivate() is called.
+   #define AALCONF_RECONF_DISABLED         "ReconfigState"
 
-   #define AALCONF_RECONF_ACTION_INACTIVE_ID        0x2
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.
    ///

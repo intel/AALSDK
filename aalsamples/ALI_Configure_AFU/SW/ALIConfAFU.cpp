@@ -108,6 +108,8 @@ public:
 
    void serviceReleased(const AAL::TransactionID&);
 
+   void serviceReleaseRequest(const IEvent &);
+
    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceEvent(const IEvent &rEvent);
@@ -290,16 +292,13 @@ btInt ALIConfAFUApp::run()
 
       NamedValueSet nvsDeactv;
 
-            btUnsigned64bitInt value = 1;
-
-            nvsDeactv.Add(AALCONF_MILLI_TIMEOUT,value);
+      nvsDeactv.Add(AALCONF_MILLI_TIMEOUT,static_cast<btUnsigned64bitInt>(1));
 
 
-                  value =0x1;
-            nvsDeactv.Add(AALCONF_RECONF_ACTION_HONOR_OWNER,value);
-            value =0x2;
+      nvsDeactv.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID);
 
-          nvsDeactv.Add(AALCONF_RECONF_ACTION_HONOR_REQUEST,value);
+      nvsDeactv.Add(AALCONF_RECONF_DISABLED,false);
+
 
 
       // FIXME: could reuse existing empty NVS for less overhead
@@ -308,9 +307,9 @@ btInt ALIConfAFUApp::run()
 
    //   NamedValueSet nvs;
 
-    //  nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
+      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
 
-      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/aravuri/kernelperf/10.txt");
+//      nvsDeactv.Add(AALCONF_FILENAMEKEY,"/home/aravuri/kernelperf/10.txt");
 
       m_pALIReconfService->reconfConfigure(TransactionID(), nvsDeactv);
       m_Sem.Wait();
@@ -389,6 +388,16 @@ void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
    // Unblock Main()
    m_Sem.Post(1);
 }
+
+ void ALIConfAFUApp::serviceReleaseRequest(const IEvent &rEvent)
+  {
+     MSG("Service unexpected requested back");
+     if(NULL != m_pAALService){
+        IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+        ASSERT(pIAALService);
+        pIAALService->Release(TransactionID());
+     }
+  }
 
  void ALIConfAFUApp::serviceReleaseFailed(const IEvent        &rEvent)
  {
