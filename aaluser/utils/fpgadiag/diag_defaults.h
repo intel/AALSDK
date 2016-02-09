@@ -51,7 +51,7 @@
 #define DEFAULT_SRCPHYS     	0
 #define DEFAULT_DSTPHYS     	0
 #define DEFAULT_WARMFPGACACHE "off"
-#define DEFAULT_COOLFPGACACHE "on"
+#define DEFAULT_COOLFPGACACHE "off"
 #define DEFAULT_COOLCPUCACHE 	"off"
 #define DEFAULT_NOBW        	"off"
 #define DEFAULT_TABULAR     	"on"
