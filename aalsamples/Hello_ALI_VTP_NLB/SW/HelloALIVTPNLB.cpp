@@ -35,7 +35,8 @@
 ///       deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
+/// AUTHORS: Joseph Grecco, Intel Corporation
+///          Enno Luebbers, Intel Corporation
 ///
 /// This Sample demonstrates how to use the basic ALI APIs including VTP.
 ///
@@ -43,7 +44,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 12/15/2015     JG       Initial version started based on older sample code.
+/// 02/07/2016     EL       Modified for VTP and current NLB.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
@@ -64,7 +66,9 @@
 using namespace std;
 using namespace AAL;
 
+//
 // Convenience macros for printing messages and errors.
+//
 #ifdef MSG
 # undef MSG
 #endif // MSG
@@ -74,13 +78,9 @@ using namespace AAL;
 #endif // ERR
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
-// Print/don't print the event ID's entered in the event handlers.
-#if 1
-# define EVENT_CASE(x) case x : MSG(#x);
-#else
-# define EVENT_CASE(x) case x :
-#endif
-
+//
+// Definitions for test sizes (and associated convenience macros for actually
+// calculating those sizes)
 #ifndef CL
 # define CL(x)                     ((x) * 64)
 #endif // CL
@@ -89,11 +89,15 @@ using namespace AAL;
 #endif // LOG2_CL
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
-#endif // MB
+#endif // MBA
+
 #define LPBK1_BUFFER_SIZE        (MB(64)-CL(1))
 #define LPBK1_BUFFER_OFFSET      (0)
-
 #define LPBK1_DSM_SIZE           MB(4)
+
+//
+// Definitions of NLB CSRs
+//
 #define CSR_SRC_ADDR             0x0120
 #define CSR_DST_ADDR             0x0128
 #define CSR_CTL                  0x0138
@@ -106,7 +110,6 @@ using namespace AAL;
 
 /// @addtogroup HelloALIVTPNLB
 /// @{
-
 
 /// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
 ///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
@@ -155,6 +158,7 @@ public:
    btBool isOK()  {return m_bIsOK;}
 
    // <end IRuntimeClient interface>
+
 protected:
    Runtime        m_Runtime;                ///< AAL Runtime
    IBase         *m_pALIAFU_AALService;     ///< The generic AAL Service interface for the AFU.
@@ -435,10 +439,6 @@ btInt HelloALIVTPNLBApp::run()
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
-
-      // Original code puts DSM Reset prior to AFU Reset, but ccipTest
-      //    reverses that. We are following ccipTest here.
-
       // Initiate AFU Reset
       m_pALIResetService->afuReset();
 
@@ -448,7 +448,6 @@ btInt HelloALIVTPNLBApp::run()
 
       // Initiate DSM Reset
       // Set DSM base (virtual, since we have allocated using VTP), high then low
-      // FIXME: this is actually a 64 bit write!
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
       // Assert NLB reset
@@ -456,13 +455,6 @@ btInt HelloALIVTPNLBApp::run()
 
       //De-Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
-
-      // If ASE, give it some time to catch up
-      /*
-      #if defined ( ASEAFU )
-      SleepSec(5);
-      #endif*/ /* ASE AFU */
-
 
       // Set input workspace address
       m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(m_pInput+LPBK1_BUFFER_OFFSET) / CL(1));
@@ -480,7 +472,6 @@ btInt HelloALIVTPNLBApp::run()
                                          (m_pDSM  + DSM_STATUS_TEST_COMPLETE);
       // Start the test
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
-
 
       // Wait for test completion
       while( 0 == ((*StatusAddr)&0x1) ) {
@@ -523,7 +514,7 @@ done_2:
    m_Sem.Wait();
 
 done_1:
-   // Freed all three so now Release() the HWALIAFU Service through the Services IAALService::Release() method
+   // Release() the HWALIAFU Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pALIAFU_AALService))->Release(TransactionID());
    m_Sem.Wait();
 
