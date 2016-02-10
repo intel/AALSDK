@@ -108,7 +108,7 @@ public:
 
    void serviceReleased(const AAL::TransactionID&);
 
-   void serviceReleaseRequest(const IEvent &);
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &);
 
    void serviceReleaseFailed(const AAL::IEvent&);
 
@@ -389,11 +389,11 @@ void ALIConfAFUApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
- void ALIConfAFUApp::serviceReleaseRequest(const IEvent &rEvent)
+ void ALIConfAFUApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
   {
      MSG("Service unexpected requested back");
-     if(NULL != m_pAALService){
-        IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, m_pAALService);
+     if(NULL != pServiceBase){
+        IAALService *pIAALService = dynamic_ptr<IAALService>(iidService, pServiceBase);
         ASSERT(pIAALService);
         pIAALService->Release(TransactionID());
      }

@@ -412,16 +412,19 @@ void ServiceRevoke::operator ()()
    delete this;
 }
 
-ReleaseServiceRequest::ReleaseServiceRequest(IServiceClient *pServiceClient, const IEvent   *pEvent)
-: m_pSvcClient(pServiceClient),
+ReleaseServiceRequest::ReleaseServiceRequest(IBase *pServiceBase, const IEvent   *pEvent)
+: m_pSvcBase(pServiceBase),
   m_pEvent(pEvent)
 {
-   ASSERT(NULL != m_pSvcClient);
+   ASSERT(NULL != m_pSvcBase);
 }
 
 void ReleaseServiceRequest::operator ()()
 {
-   m_pSvcClient->serviceReleaseRequest(*m_pEvent);
+   IServiceClient * psvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_pSvcBase);
+
+   ASSERT(NULL != psvcClient);
+   psvcClient->serviceReleaseRequest(m_pSvcBase, *m_pEvent);
    delete this;
 
 }

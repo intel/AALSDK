@@ -132,7 +132,7 @@ public:
    virtual void          serviceFreed(TransactionID const & = TransactionID());
    virtual void          serviceEvent(const IEvent &);
    virtual void       serviceReleased(TransactionID const &rTranID = TransactionID());
-   virtual void serviceReleaseRequest(const IEvent &rEvent){};  // Ignored TODO better implementation
+   virtual void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent){};  // Ignored TODO better implementation
    virtual void  serviceReleaseFailed(const IEvent &rEvent);
    // </IServiceClient>
 

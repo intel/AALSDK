@@ -850,7 +850,7 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
 // Outputs: none.
 // Comments: Not much to do but report. TODO - Dosomething proper
 //=============================================================================
-void _runtime::serviceReleaseRequest(const IEvent &rEvent)
+void _runtime::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
 {
    AAL_DEBUG(LM_AAS, "_runtime::serviceReleaseRequest received but not currently supported" << std::endl);
 }

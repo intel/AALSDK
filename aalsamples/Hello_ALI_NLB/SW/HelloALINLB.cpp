@@ -125,7 +125,7 @@ public:
    void serviceAllocateFailed(const IEvent &rEvent);
 
    void serviceReleased(const AAL::TransactionID&);
-   void serviceReleaseRequest(const IEvent &rEvent);
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
    void serviceReleaseFailed(const AAL::IEvent&);
 
    void serviceEvent(const IEvent &rEvent);
@@ -531,7 +531,7 @@ void HelloALINLBApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
- void HelloALINLBApp::serviceReleaseRequest(const IEvent &rEvent)
+ void HelloALINLBApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
  {
     MSG("Service unexpected requested back");
     if(NULL != m_pAALService){

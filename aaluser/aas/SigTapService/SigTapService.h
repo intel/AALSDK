@@ -97,7 +97,7 @@ public:
 
    virtual void serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID());
 
-   virtual void serviceReleaseRequest(const AAL::IEvent &rEvent){};  // Ignored TODO better implementation
+   virtual void serviceReleaseRequest(IBase *pServiceBase, const AAL::IEvent &rEvent){};  // Ignored TODO better implementation
 
    virtual void serviceReleaseFailed(const AAL::IEvent &rEvent);
 

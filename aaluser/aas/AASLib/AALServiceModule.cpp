@@ -397,7 +397,8 @@ void AALServiceModule::serviceReleased(TransactionID const & )
 // Outputs: none.
 // Comments:
 //=============================================================================
-void AALServiceModule::serviceReleaseRequest(const IEvent &rEvent)
+void AALServiceModule::serviceReleaseRequest(IBase *pServiceBase,
+                                             const IEvent &rEvent)
 {   /* empty */ }
 
 

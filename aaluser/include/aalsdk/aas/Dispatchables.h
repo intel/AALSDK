@@ -258,11 +258,11 @@ protected:
 class AASLIB_API ReleaseServiceRequest : public IDispatchable
 {
 public:
-   ReleaseServiceRequest(IServiceClient *, const IEvent   *);
+   ReleaseServiceRequest(IBase *, const IEvent   *);
    ~ReleaseServiceRequest();
    virtual void operator() ();
 protected:
-   IServiceClient *m_pSvcClient;
+   IBase          *m_pSvcBase;
    const IEvent   *m_pEvent;
 };
 

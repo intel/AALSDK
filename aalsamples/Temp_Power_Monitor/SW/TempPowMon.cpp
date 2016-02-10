@@ -124,7 +124,7 @@ public:
 
    void serviceReleased(TransactionID const &rTranID);
 
-   void serviceReleaseRequest(const IEvent &rEvent);
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -305,7 +305,7 @@ void TempPowMonApp::serviceAllocateFailed(const IEvent &rEvent)
     m_Sem.Post(1);
 }
 
- void TempPowMonApp::serviceReleaseRequest(const IEvent &rEvent)
+ void TempPowMonApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
   {
      MSG("Service unexpected requested back");
      if(NULL != m_pAALService){
