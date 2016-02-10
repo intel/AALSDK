@@ -97,21 +97,23 @@ module ccip_sniffer
     );
 
    // File descriptors
-   int 					     fd_sniffer;
+   int 					     fd_warn;
+   //int 					     fd_err;
    
-      
+   // FD open
    initial begin
       $display ("SIM-SV : Protocol Checker initialized");
 
       // Open log files
-      fd_sniffer = $fopen(WARN_LOGNAME, "w");
+      fd_warn = $fopen(WARN_LOGNAME, "w");
+      // fd_err  = $fopen(ERROR_LOGNAME, "w");
       
       // Wait until finish logger
       wait (finish_logger == 1);
       
       // Close loggers
       $display ("SIM-SV : Closing Protocol checker");
-      $fclose(fd_sniffer);
+      $fclose(fd_warn);
    end
    
    // any valid signals
@@ -136,7 +138,7 @@ module ccip_sniffer
 	 if (tx_valid | rx_valid) begin
 	    `BEGIN_RED_FONTCOLOR;	    
 	    $display("SIM-SV: [WARN] Transaction was sent when SoftReset was HIGH, this will be ignored");
-	    $fwrite(fd_sniffer, "%d | Transaction was sent when SoftReset was HIGH, this will be ignored\n", $time);
+	    $fwrite(fd_warn, "%d | Transaction was sent when SoftReset was HIGH, this will be ignored\n", $time);
 	    `END_RED_FONTCOLOR;
 	 end
       end
@@ -175,11 +177,10 @@ module ccip_sniffer
       begin
    	 // Set message
    	 `BEGIN_RED_FONTCOLOR;
-   	 $display ("Clock ", $time, " => X or Z found on ", channel_name, " is not recommended.");
+   	 $display ("SIM-SV: %d | X or Z found on %s is not recommended.", $time, channel_name);
    	 `END_RED_FONTCOLOR;
-   	 $fwrite( fd_sniffer, "Clock ", $time, " => \n");
-   	 $fwrite( fd_sniffer, "      X or Z was found, this is not recommended\n");
-   	 $fwrite( fd_sniffer, "\n");
+   	 $fwrite( fd_warn, " %d | X or Z found on %s => \n", $time, channel_name);
+   	 $fwrite( fd_warn, "    | This is not recommended, and can have unintended activity\n");
       end
    endfunction
 
@@ -200,92 +201,39 @@ module ccip_sniffer
    	print_xz_message ( "C0RxMmio" );      
    end
 
-   // initial begin
-   //    // log_started = 0;
-   //    // fd_sniffer = $fopen("warnings.log", "w");
-   //    forever begin
-   // 	 // XZ messages
-   // 	 if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
-   // 	   print_xz_message ( "C0Tx" );
-   // 	 if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF))
-   // 	   print_xz_message ( "C1Tx" );
-   // 	 if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF))
-   // 	   print_xz_message ( "C0Rx" );
-   // 	 if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
-   // 	   print_xz_message ( "C1Rx" );
-   // 	 if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
-   // 	   print_xz_message ( "Cfg " );
-   // 	 // Wait till next clock
-   // 	 @(posedge clk);
-   //    end
-   // end
-
-
+   /*
+    * Illegal request type
+    */ 
+   always @(posedge clk) begin
+   end
    
-   // Hazard warning
-   // function void print_hazard_message ( logic [PHYSCLADDR_WIDTH-1:0] cl_addr );
-   //    begin
-   // 	 // Set message
-   // 	 `BEGIN_RED_FONTCOLOR;
-   // 	 $display ("Clock ", $time, " => Possible Data hazard at cache line address %x ", cl_addr);
-   // 	 `END_RED_FONTCOLOR;
-   // 	 $fwrite( fd_sniffer, "Clock ", $time, " => \n");
-   // 	 $fwrite( fd_sniffer, "      Possible Data hazard at cache line addrress => %x\n", cl_addr);
-   // 	 $fwrite( fd_sniffer, "\n");
-   //    end
-   // endfunction
+   /*
+    * Multi-cache line request checks
+    */
+   always @(posedge clk) begin
+      // ------------------------------------------------------------ //
+      // Tx0 - 3 CL request illegal
+      if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL)) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !");
+	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests");
+	 $display("        [ERROR] %d | Simulator will shut down now !\n");	 
+	 `END_RED_FONTCOLOR;
+	 $display(warn_fd, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !");
+	 $display(warn_fd, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
+	 $display(warn_fd, "    | Simulator will shut down now !\n");	 	 
+	 start_simkill_countdown();	 
+      end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
+      // ------------------------------------------------------------ //
+      // Checking a C1Tx Write Request beat
+      // SOP must be HIGH on first packet, and low everywhere else
+      // 
 
-
-   // /*
-   //  * TX checker files
-   //  */
-   // assign xz_tx0_flag = (^C0TxHdr)                 && C0TxRdValid ;
-   // assign xz_tx1_flag = (^C1TxHdr || ^C1TxData)    && C1TxWrValid ;
-   // assign xz_rx0_flag = (^C0RxHdr || ^C0RxData)    && (C0RxWrValid || C0RxRdValid) ;
-   // assign xz_rx1_flag = (^C1RxHdr)                 && C1RxWrValid ;
-   // assign xz_cfg_flag = (^CfgHeader || ^CfgRdData) && (CfgRdDataValid || CfgWrValid || CfgRdValid);
-
-
-   // /*
-   //  * Data hazard warning engine
-   //  * - Store address as a searchable primary key
-   //  */
-   // int unsigned active_addresses[*];
-
-   // always @(posedge clk) begin
-   //    // Push function
-   //    if (C0TxRdValid) begin
-   // 	 if (~active_addresses.exists(C0TxHdr.addr)) begin
-   // 	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
-   // 	 end
-   // 	 else begin
-   // 	    print_hazard_message(C0TxHdr.addr);
-   // 	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
-   // 	 end
-   //    end
-   //    if (C1TxWrValid) begin
-   // 	 if (~active_addresses.exists(C1TxHdr.addr)) begin
-   // 	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
-   // 	 end
-   // 	 else begin
-   // 	    print_hazard_message(C1TxHdr.addr);
-   // 	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
-   // 	 end
-   //    end
-   //    // Pop function
-   //    if (C0RxRdValid) begin
-   // 	 if (active_addresses.exists(C0RxHdr.mdata))
-   // 	   active_addresses.delete(C0RxHdr.mdata);
-   //    end
-   //    if (C0RxWrValid) begin
-   // 	 if (active_addresses.exists(C0RxHdr.mdata))
-   // 	   active_addresses.delete(C0RxHdr.mdata);
-   //    end
-   //    if (C1RxWrValid) begin
-   // 	 if (active_addresses.exists(C1RxHdr.mdata))
-   // 	   active_addresses.delete(C1RxHdr.mdata);
-   //    end
-   // end
+   end
+   
+   /*
+    * Check memory transactions in flight, maintain active list
+    */ 
 
 
 endmodule // cci_sniffer
