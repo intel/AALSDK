@@ -443,7 +443,7 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
 }
 
-void HWALIAFU::serviceReleaseRequest(const IEvent &rEvent)
+void HWALIAFU::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
 {
    ERR("Recieved unhandled serviceReleaseRequest() from AFU PRoxy\n");
 }
@@ -1210,7 +1210,7 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
       std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
       std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
       // TODO CREATE THE CROOERCT EVENT WHICH WILL INCLUDE TIMEOUT AND OPTION (HONOR_OWNER OR REQUEST)
-      getRuntime()->schedDispatchable( new ReleaseServiceRequest(dynamic_ptr<IServiceClient>(iidServiceClient, m_pSvcClient), NULL) );
+      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, NULL) );
    }
    break;
 

@@ -261,7 +261,7 @@ public:
 
    void serviceReleased(TransactionID const &rTranID);
 
-   void serviceReleaseRequest(const IEvent &rEvent);
+   void serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
 
    void serviceEvent(const IEvent &rEvent);
    // <end IServiceClient interface>
@@ -370,7 +370,7 @@ void HelloAALApp::serviceAllocateFailed(const IEvent &rEvent)
    m_Sem.Post(1);
 }
 
- void HelloAALApp::serviceReleaseRequest(const IEvent &rEvent)
+ void HelloAALApp::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
  {
     MSG("Service unexpected requested back");
     if(NULL != m_pAALService){
