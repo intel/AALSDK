@@ -365,10 +365,11 @@ int  ccip_sim_wrt_fme_mmio(btVirtAddr pkvp_fme_mmio)
    fme_pr.ccip_fme_pr_err.csr = 0;
    offset = offset + OFFSET;
    write_ccip_csr64(ptr,offset,fme_pr.ccip_fme_pr_err.csr);
-   return 0;
-   PINFO(" ccip_sim_wrt_fme_mmio end\n");
 
+   PINFO(" ccip_sim_wrt_fme_mmio end\n");
+   return 0;
 }
+
 int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
 {
    struct CCIP_PORT_HDR          port_hdr;
@@ -378,13 +379,13 @@ int  ccip_sim_wrt_port_mmio(btVirtAddr pkvp_fme_mmio)
    struct CCIP_PORT_DFL_STAP     port_stap;
    struct CCIP_AFU_Header        afu_hdr;
 
-   btVirtAddr afuptr;
-   int afu_id_offset;
+   btVirtAddr           afuptr;
+   btUnsigned64bitInt   afu_id_offset;
 
-   btVirtAddr ptr = pkvp_fme_mmio;
+   btVirtAddr           ptr = pkvp_fme_mmio;
 
 
-   int offset =0;
+   btUnsigned64bitInt offset =0;
 
    PINFO(" ccip_sim_wrt_port_mmio ENTER\n");
 
@@ -861,7 +862,7 @@ int print_sim_fme_device(struct fme_device *pfme_dev)
 
 int print_sim_port_device(struct port_device *pport_dev)
 {
-   int res;
+   int res = 0;
    if ( NULL == pport_dev ) {
       PERR("Unable to allocate system memory for pfme_dev object\n");
       res = -1;

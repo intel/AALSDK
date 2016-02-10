@@ -104,7 +104,7 @@ struct port_device
    kosal_list_head               m_list;
 
    // Private semaphore
-   struct semaphore              m_sem;
+   kosal_semaphore              m_sem;
 
    enum aal_bus_types_e          m_bustype;
    btUnsigned32bitInt            m_busNum;

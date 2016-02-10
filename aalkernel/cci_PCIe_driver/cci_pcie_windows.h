@@ -46,6 +46,8 @@
 typedef struct _CCI_DEVICE
 {
    struct ccip_device      m_cci_device;
+   kosal_list_head         g_device_list;
+
    WDFDEVICE               m_WdfDevice;
    WDFWMIINSTANCE          m_WmiDeviceArrivalEvent;
 
@@ -67,9 +69,7 @@ typedef struct _CCI_DEVICE
 
 }  CCI_DEVICE, *PCCI_DEVICE;
 
-
-WDF_DECLARE_CONTEXT_TYPE_WITH_NAME( CCI_DEVICE, CCIFdoGetCCIDev )
-
+extern PCCI_DEVICE CCIFdoGetCCIDev( WDFOBJECT );
 
 // Converts a Windows CCIPDrv Device to a common CCIPDrv Device
 #define WIN_CCIP_DEVICE_TO_CCIP_DEVICE(d)       ((d).m_cci_device)
@@ -104,6 +104,8 @@ EVT_WDF_DEVICE_PREPARE_HARDWARE CCIPDrvEvtDevicePrepareHardware;
 EVT_WDF_DEVICE_RELEASE_HARDWARE CCIPDrvEvtDeviceReleaseHardware;
 
 EVT_WDF_DEVICE_SELF_MANAGED_IO_INIT CCIPDrvEvtDeviceSelfManagedIoInit;
+
+NTSTATUS ccidrv_initUMAPI( WDFDEVICE );
 
 //
 // Io events callbacks.

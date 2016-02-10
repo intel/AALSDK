@@ -242,7 +242,7 @@
       <PreprocessorDefinitions>__KERNEL__=1;DRV_NAME="CCI_P_DRV";ENABLE_ASSERT=1;ENABLE_DEBUG=1;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BrowseInformation>true</BrowseInformation>
-      <DisableSpecificWarnings>4127;4201;4214;4748;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4201;4214;4748;4200;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -309,9 +309,17 @@
     </Inf>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\kOSAL\kOSAL.c" />
+    <ClCompile Include="ccip_fme.c" />
+    <ClCompile Include="ccip_sim_mmio.c" />
+    <ClCompile Include="cci_pcie_common.c" />
     <ClCompile Include="cci_pcie_driver_main_windows.c" />
+    <ClCompile Include="cci_pcie_driver_simulator.c" />
+    <ClCompile Include="cci_pcie_driver_umapi_windows.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ccip_fme.h" />
+    <ClInclude Include="cci_pcie_driver_simulator.h" />
     <ClInclude Include="cci_pcie_windows.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

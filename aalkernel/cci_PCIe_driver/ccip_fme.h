@@ -97,7 +97,7 @@ struct fme_device
    struct pci_dev            *m_pcidev;         // Linux pci_dev pointer (or NULL if manual)
 
    // Private semaphore
-   struct semaphore           m_sem;
+   kosal_semaphore            m_sem;
 
    // struct ccip_PIPsession   *m_pPIPSession;     // PIP session object
 

@@ -22,15 +22,39 @@
     <ClCompile Include="cci_pcie_driver_main_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cci_pcie_driver_umapi_windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cci_pcie_driver_simulator.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\kOSAL\kOSAL.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cci_pcie_common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_sim_mmio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ccip_fme.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cci_pcie_windows.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cci_pcie_driver_simulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ccip_fme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="aal_ccip_driver.inf">
+    <Inf Include="aal_ccip_driver.inf">
       <Filter>Driver Files</Filter>
-    </None>
+    </Inf>
   </ItemGroup>
 </Project>
