@@ -222,5 +222,4 @@ Linker       : ${LD} ${LDFLAGS} ${LIBS}
 To build     : make
 To install   : make install <install options>
    : Please refer to the Software Installation Guide for installation instructions.
-   : Do not install to /usr/local.
 "
