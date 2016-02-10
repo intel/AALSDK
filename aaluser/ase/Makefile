@@ -79,7 +79,7 @@ CC_OPT+= -Wall
 # -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-# CC_OPT+= -D ASE_DEBUG=1 -pedantic
+CC_OPT+= -D ASE_DEBUG=1 -pedantic
 endif
 
 ## Print information ##
@@ -335,12 +335,37 @@ distclean: header clean
 #########################################################################
 # Source scan-build
 src_check: 
-	scan-build-3.5 -o work/scan-build/ -v \
-	-enable-checker alpha \
-	-enable-checker core \
-	-enable-checker security \
-	-enable-checker unix \
-	make sw_build &> scan-build.log
+	scan-build-3.5 -o work/scan-build/ -v -k \
+	-enable-checker core.CallAndMessage \
+	-enable-checker core.DivideZero \
+	-enable-checker core.DynamicTypePropagation \
+	-enable-checker core.NonNullParamChecker \
+	-enable-checker core.NullDereference \
+	-enable-checker core.StackAddressEscape \
+	-enable-checker core.UndefinedBinaryOperatorResult \
+	-enable-checker core.VLASize \
+	-enable-checker core.builtin.BuiltinFunctions \
+	-enable-checker core.builtin.NoReturnFunctions \
+	-enable-checker core.uninitialized.ArraySubscript \
+	-enable-checker core.uninitialized.Assign \
+	-enable-checker core.uninitialized.Branch \
+	-enable-checker core.uninitialized.CapturedBlockVariable \
+	-enable-checker core.uninitialized.UndefReturn \
+	-enable-checker cplusplus.NewDelete \
+	-enable-checker deadcode.DeadStores \
+	-enable-checker security.insecureAPI.UncheckedReturn \
+	-enable-checker security.insecureAPI.getpw \
+	-enable-checker security.insecureAPI.gets \
+	-enable-checker security.insecureAPI.mkstemp \
+	-enable-checker security.insecureAPI.mktemp \
+	-enable-checker security.insecureAPI.vfork \
+	-enable-checker unix.API \
+	-enable-checker unix.Malloc \
+	-enable-checker unix.MallocSizeof \
+	-enable-checker unix.MismatchedDeallocator \
+	-enable-checker unix.cstring.BadSizeArg \
+	-enable-checker unix.cstring.NullArg \
+	make  | tee scan-build.log
 
 # Coverage
 coverage:
@@ -358,17 +383,4 @@ test: all sim
 long_sim: 
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
-# Clang check
-clang-check:
-	clang --analyze \
-	./sw/ase_ops.c \
-	./sw/error_report.c \
-	./sw/ipc_mgmt_ops.c \
-	./sw/linked_list_ops.c \
-	./sw/mem_model.c \
-	./sw/mqueue_ops.c \
-	./sw/protocol_backend.c \
-	./sw/randomness_control.c \
-	./sw/tstamp_ops.c \
-	-cxx-isystem /home/rrsharma/xeon-fpga-src/aalsdk/aaluser/ase/sw/ \
-	/usr/synopsys/vcs-mx/G-2012.09-SP1//include/ -D SIM_SIDE=1
+
