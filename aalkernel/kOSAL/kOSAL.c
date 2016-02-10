@@ -291,7 +291,7 @@ btVirtAddr _kosal_kzmalloc(__ASSERT_HERE_PROTO btWSSize size_in_bytes)
 
    krnl_virt = (btVirtAddr)MmAllocateNonCachedMemory((SIZE_T)size_in_bytes);
    if(krnl_virt){
-      RtlZeroMemory(krnl_virt, 0 , (SIZE_T)size_in_bytes);
+      RtlZeroMemory(krnl_virt, (SIZE_T)size_in_bytes);
    }
 #endif // OS
 
@@ -500,6 +500,8 @@ void kosal_wake_up_interruptible(kosal_poll_object *pwaitq)
 
 btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWSSize size_in_bytes)
 {
+
+
 #if   defined( __AAL_LINUX__ )
    unsigned long ret;
    btVirtAddr pkbuffer = vmalloc(size_in_bytes);
@@ -514,13 +516,28 @@ btVirtAddr _kosal_get_user_buffer( __ASSERT_HERE_PROTO btVirtAddr user_prt, btWS
       return NULL;
    }
    return pkbuffer;
+#elif defined( __AAL_WINDOWS__ )  //TODO
+   UNREFERENCED_PARAMETER(user_prt);
+   UNREFERENCED_PARAMETER(size_in_bytes);
+
+   __ASSERT_HERE_IN_FN( NULL != user_prt );
+   __ASSERT_HERE_IN_FN( 0 != size_in_bytes );
+   return NULL;
 #endif
 }
 
 void _kosal_free_user_buffer(__ASSERT_HERE_PROTO btVirtAddr user_prt,  btWSSize size_in_bytes)
 {
+
 #if   defined( __AAL_LINUX__ )
    vfree(user_prt);
+#elif defined( __AAL_WINDOWS__ )  // TODO
+   UNREFERENCED_PARAMETER( user_prt );
+   UNREFERENCED_PARAMETER( size_in_bytes );
+
+   __ASSERT_HERE_IN_FN( NULL != user_prt );
+   __ASSERT_HERE_IN_FN( 0 != size_in_bytes );
+
 #endif
 }
 

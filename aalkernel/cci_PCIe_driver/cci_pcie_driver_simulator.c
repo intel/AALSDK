@@ -91,7 +91,7 @@ extern int  ccip_sim_wrt_fme_mmio(btVirtAddr);
 extern int print_sim_fme_device(struct fme_device *);
 extern int print_sim_port_device(struct port_device *);
 
-int cci_create_sim_afu(btVirtAddr,uint ,struct aal_device_id*,struct list_head *);
+int cci_create_sim_afu(btVirtAddr,unsigned ,struct aal_device_id*,kosal_list_head *);
 
 
 static
@@ -141,8 +141,8 @@ cci_sim_alloc_next_afu_addr(void)
 // Outputs: 0 - success.
 // Comments: none.
 //=============================================================================
-int cci_sim_discover_devices(ulong numdevices,
-                             struct list_head *pg_device_list)
+int cci_sim_discover_devices(unsigned numdevices,
+                             kosal_list_head *pg_device_list)
 {
    struct aal_device_id aalid;
    btVirtAddr           bar0, bar2        = NULL;
@@ -334,7 +334,7 @@ struct ccip_device * cci_enumerate_simulated_device( btVirtAddr bar0,
          //   Enumerates the Port feature list, creates the Port object.
          //   Then add the new port object onto the list
          //-------------------------------------------------------------
-         pportdev = get_port_device( virt_to_phys(ccip_portdev_kvp_afu_mmio(pccipdev,0)) + pfme_hdr->port_offsets[i].port_offset,
+         pportdev = get_port_device( kosal_virt_to_phys(ccip_portdev_kvp_afu_mmio(pccipdev,0)) + pfme_hdr->port_offsets[i].port_offset,
                                      ccip_portdev_kvp_afu_mmio(pccipdev,0) + pfme_hdr->port_offsets[i].port_offset);
          if ( NULL == pportdev ) {
             PERR("Could not allocate memory for FME object\n");
@@ -393,7 +393,7 @@ ERR:
    }
 
    if ( NULL != pccipdev ) {
-         kfree(pccipdev);
+      kosal_kfree( pccipdev, sizeof(struct ccip_device) );
    }
 
 

@@ -129,8 +129,8 @@ struct ccip_device * create_ccidevice()
 ///============================================================================
 void  destroy_ccidevice(struct ccip_device *pccidev)
 {
-   struct list_head *paaldev_list = &ccip_aal_dev_list(pccidev);
-   struct list_head *port_list = &ccip_port_dev_list(pccidev);
+   kosal_list_head *paaldev_list = &ccip_aal_dev_list(pccidev);
+   kosal_list_head *port_list = &ccip_port_dev_list( pccidev );
 
    PVERBOSE("Destroying CCI devices\n");
 
@@ -142,7 +142,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, paaldev_list) {
+      kosal_list_for_each_safe(This, tmp, paaldev_list) {
 
          pcci_aaldev = cci_list_to_cci_aal_device(This);
 
@@ -163,7 +163,7 @@ void  destroy_ccidevice(struct ccip_device *pccidev)
 
       // Run through list of devices.  Use safe variant
       //  as we will be deleting entries
-      list_for_each_safe(This, tmp, port_list) {
+      kosal_list_for_each_safe(This, tmp, port_list) {
 
          pportdev = cci_list_to_cci_port_device(This);
          destroy_port_device(pportdev);
@@ -320,7 +320,7 @@ btBool cci_fme_dev_create_AAL_allocatable_objects(struct ccip_device * pccipdev)
       kosal_kfree(cci_dev_kvp_afu_mmio(pcci_aaldev), cci_dev_len_afu_mmio(pcci_aaldev));
       kosal_kfree(cci_dev_kvp_afu_umsg(pcci_aaldev),cci_dev_len_afu_umsg(pcci_aaldev));
       cci_destroy_aal_device(pcci_aaldev);
-      return -EINVAL;
+      return false;
    }
 
    // Add the device to the CCI Board device's device list

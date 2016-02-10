@@ -539,6 +539,8 @@ btBool HWALIAFU::mmioRead64(const btCSROffset Offset, btUnsigned64bitInt * const
       return false;
    }
 
+   volatile btUnsigned64bitInt * vPtr = reinterpret_cast<btUnsigned64bitInt *>( m_MMIORmap + Offset );
+
    // m_MMIORmap is btVirtAddr is char*, so offset is in bytes
    // FIXME: volatile might not be necessary, need to investigate further
    *pValue = *( reinterpret_cast<volatile btUnsigned64bitInt *>(m_MMIORmap + Offset) );

@@ -279,8 +279,8 @@ struct ccip_device
 
    enum aal_bus_types_e       m_bustype;
    btUnsigned32bitInt         m_busNum;
-   btUnsigned32bitInt         m_devicenum;      // device number
-   btUnsigned32bitInt         m_functnum;       // function number
+   btUnsigned16bitInt         m_devicenum;      // device number
+   btUnsigned16bitInt         m_functnum;       // function number
 
    btInt                      m_resources;      // Bit mask indicating bars that have been reserved
 
@@ -347,14 +347,14 @@ struct ccip_device
 /// @param[in]  offset        offset of CSR  .
 /// @param[in]  value    value  going to be write in CSR.
 /// @return   void
-int write_ccip_csr64(btVirtAddr baseAddress, btCSROffset offset,bt64bitCSR value);
+int write_ccip_csr64(btVirtAddr baseAddress, btUnsigned64bitInt offset,bt64bitCSR value);
 
 /// @brief   read 64 bit control and status registers.
 ///
 /// @param[in]  baseAddress   base CSR address.
 /// @param[in]  offset        offset of CSR  .
 /// @return    64 bit  CSR value
-bt64bitCSR read_ccip_csr64(btVirtAddr baseAddress ,  btCSROffset offset );
+bt64bitCSR read_ccip_csr64( btVirtAddr baseAddress, btUnsigned64bitInt offset );
 
 
 //=============================================================================
@@ -379,7 +379,6 @@ extern void cci_remove_device(struct ccip_device *);
 extern void cci_release_device(pkosal_os_dev pdev);
 extern void ccidrv_exitDriver(void);
 
-
 extern struct ccidrv_session * ccidrv_session_create(btPID );
 extern btInt ccidrv_session_destroy(struct ccidrv_session * );
 extern struct aal_wsid *find_wsid( const struct ccidrv_session *,
@@ -391,31 +390,6 @@ extern struct aal_wsid* ccidrv_getwsid( struct aal_device *pdev,
 extern btInt
 ccidrv_sendevent( struct aaldev_ownerSession *,
                   struct aal_q_item *);
-
-
-#if 0
-void cci_release_device( struct device *pdev );
-
-extern int
-cci_sim_mmap(struct aaldev_ownerSession* pownerSess,
-               struct aal_wsid *wsidp,
-               btAny os_specific);
-
-extern int
-cci_publish_aaldevice(struct cci_aal_device *);
-
-
-
-extern int
-cci_destroy_device(struct cci_aal_device* );
-
-extern void
-cci_remove_device(struct cci_aal_device *);
-
-
-extern void
-cci_flush_all_wsids(struct cci_PIPsession *psess);
-#endif
 
 #endif // __AALKERNEL_CCI_PCIE_DRIVER_INTERNAL_H__
 
