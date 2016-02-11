@@ -71,7 +71,7 @@ module ccip_logger
     input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
     input 				     RxHdr_t C0RxHdr,
     input logic 			     C0RxRdValid,
-    input logic 			     C0RxWrValid,
+    // input logic 			     C0RxWrValid,
     input logic 			     C0RxUMsgValid,
     // Rx1 channel
     input 				     RxHdr_t C1RxHdr,
@@ -232,7 +232,8 @@ module ccip_logger
 	 end
 	 // Buffer messages
 	 if (log_string_en) begin
-	    $fwrite(log_fd, log_string);
+	    $fwrite(log_fd, "-----------------------------------------------------\n");	    
+	    $fwrite(log_fd, "%d\t%s\n", $time, log_string);
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU MMIO Write *******************/

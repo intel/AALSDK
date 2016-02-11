@@ -220,5 +220,6 @@ C++ compiler : ${CXX} ${CXXFLAGS}
 Linker       : ${LD} ${LDFLAGS} ${LIBS}
 
 To build     : make
-To install   : sudo make install
+To install   : make install <install options>
+   : Please refer to the Software Installation Guide for installation instructions.
 "

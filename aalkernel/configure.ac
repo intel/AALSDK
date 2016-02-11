@@ -205,10 +205,11 @@ AM_COND_IF([COND_AAL_UDEV_RULES],
 
 echo \
 "
-Prefix          : ${prefix}
-C compiler      : ${CC}
+Prefix       : ${prefix}
+C compiler   : ${CC}
 
-To build        : make
-To install      : sudo make install
+To build     : make
+To install   : sudo ./insdrv <target>
+   : If <target> is not included, possible targets will be listed.
 "
 

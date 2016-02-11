@@ -197,8 +197,8 @@ btBool VTP::init( IBase               *pclientBase,
    ASSERT(m_pPageTableFree <= m_pPageTableEnd);
 
    // Tell the hardware the address of the table
-   // Use MMIO instead of memory to accommodate ASE
-   m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
+   // FIXME: vtpReset is likely to change or disappear in beta
+   ASSERT(vtpReset());
 
    initComplete(rtid);
    return true;
@@ -224,15 +224,6 @@ ali_errnum_e VTP::bufferAllocate( btWSSize             Length,
 
    // Align request to page size
    Length = (Length + pageSize - 1) & pageMask;
-
-   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   //
-   //  This method of allocating a large virtual workspace is temporary.
-   //  When AAL is capable of doing it internally this hack will be
-   //  replaced with a simple allocation call.
-   //
-   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
 
    // Map a region of the requested size.  This will reserve a virtual
    // memory address space.  As pages are allocated they will be
@@ -599,6 +590,16 @@ VTP::DumpPageTable()
             if (pte == m_pPageTable) break;
         }
     }
+}
+
+// FIXME: this is likely to change or disappear in beta!
+btBool
+VTP::vtpReset( void ) {
+
+   AAL_WARNING(LM_AFU, "Using vtpReset(). This interface is likely to change in future AAL releases." << std::endl);
+
+   // Write page table physical address CSR
+   return m_pALIMMIO->mmioWrite64(m_dfhOffset + CCI_MPF_VTP_CSR_PAGE_TABLE_PADDR, m_PageTablePA / CL(1));
 }
 
 

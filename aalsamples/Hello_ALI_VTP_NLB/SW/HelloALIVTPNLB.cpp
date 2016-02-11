@@ -35,7 +35,8 @@
 ///       deployable applications.
 ///    It is designed to show working examples of the AAL programming model and APIs.
 ///
-/// AUTHORS: Joseph Grecco, Intel Corporation.
+/// AUTHORS: Joseph Grecco, Intel Corporation
+///          Enno Luebbers, Intel Corporation
 ///
 /// This Sample demonstrates how to use the basic ALI APIs including VTP.
 ///
@@ -43,7 +44,8 @@
 ///
 /// HISTORY:
 /// WHEN:          WHO:     WHAT:
-/// 12/15/2015     JG       Initial version started based on older sample code.@endverbatim
+/// 12/15/2015     JG       Initial version started based on older sample code.
+/// 02/07/2016     EL       Modified for VTP and current NLB.@endverbatim
 //****************************************************************************
 #include <aalsdk/AALTypes.h>
 #include <aalsdk/Runtime.h>
@@ -64,7 +66,9 @@
 using namespace std;
 using namespace AAL;
 
+//
 // Convenience macros for printing messages and errors.
+//
 #ifdef MSG
 # undef MSG
 #endif // MSG
@@ -74,13 +78,9 @@ using namespace AAL;
 #endif // ERR
 #define ERR(x) std::cerr << __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() **Error : " << x << std::endl
 
-// Print/don't print the event ID's entered in the event handlers.
-#if 1
-# define EVENT_CASE(x) case x : MSG(#x);
-#else
-# define EVENT_CASE(x) case x :
-#endif
-
+//
+// Definitions for test sizes (and associated convenience macros for actually
+// calculating those sizes)
 #ifndef CL
 # define CL(x)                     ((x) * 64)
 #endif // CL
@@ -89,10 +89,15 @@ using namespace AAL;
 #endif // LOG2_CL
 #ifndef MB
 # define MB(x)                     ((x) * 1024 * 1024)
-#endif // MB
-#define LPBK1_BUFFER_SIZE        CL(1)
+#endif // MBA
 
+#define LPBK1_BUFFER_SIZE        (MB(64)-CL(1))
+#define LPBK1_BUFFER_OFFSET      (0)
 #define LPBK1_DSM_SIZE           MB(4)
+
+//
+// Definitions of NLB CSRs
+//
 #define CSR_SRC_ADDR             0x0120
 #define CSR_DST_ADDR             0x0128
 #define CSR_CTL                  0x0138
@@ -105,7 +110,6 @@ using namespace AAL;
 
 /// @addtogroup HelloALIVTPNLB
 /// @{
-
 
 /// @brief   Since this is a simple application, our App class implements both the IRuntimeClient and IServiceClient
 ///           interfaces.  Since some of the methods will be redundant for a single object, they will be ignored.
@@ -154,6 +158,7 @@ public:
    btBool isOK()  {return m_bIsOK;}
 
    // <end IRuntimeClient interface>
+
 protected:
    Runtime        m_Runtime;                ///< AAL Runtime
    IBase         *m_pALIAFU_AALService;     ///< The generic AAL Service interface for the AFU.
@@ -269,6 +274,11 @@ btInt HelloALIVTPNLBApp::run()
    NamedValueSet ConfigRecord;
    NamedValueSet featureFilter;
    btcString sGUID = VTP_BBB_GUID;
+
+   // test counters
+   bt64bitInt errpos = -1;
+   btVirtAddr p1;
+   btVirtAddr p2;
 
 #if defined( HWAFU )                /* Use FPGA hardware */
    // Service Library to use
@@ -387,7 +397,7 @@ btInt HelloALIVTPNLBApp::run()
    m_DSMSize = LPBK1_DSM_SIZE;
 
    // Repeat for the Input and Output Buffers
-   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pInput)){
+   if( ali_errnumOK != m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pInput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -396,7 +406,7 @@ btInt HelloALIVTPNLBApp::run()
 
    m_InputSize = LPBK1_BUFFER_SIZE;
 
-   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE, &m_pOutput)){
+   if( ali_errnumOK !=  m_pVTPService->bufferAllocate(LPBK1_BUFFER_SIZE+LPBK1_BUFFER_OFFSET, &m_pOutput)){
       m_bIsOK = false;
       m_Sem.Post(1);
       m_Result = -1;
@@ -410,6 +420,8 @@ btInt HelloALIVTPNLBApp::run()
    //   now we can use it
    //=============================
    MSG("Running Test");
+   MSG("  Test size:   " << m_InputSize);
+   MSG("  Test offset: " << LPBK1_BUFFER_OFFSET);
    if(true == m_bIsOK){
 
       // Clear the DSM
@@ -423,41 +435,32 @@ btInt HelloALIVTPNLBApp::run()
          btUnsigned32bitInt uint[16];
       };
       struct CacheLine *pCL = reinterpret_cast<struct CacheLine *>(m_pInput);
-      for ( btUnsigned32bitInt i = 0; i < m_InputSize / CL(1) ; ++i ) {
+      for ( btUnsigned32bitInt i = 0; i < (m_InputSize+LPBK1_BUFFER_OFFSET) / CL(1) ; ++i ) {
          pCL[i].uint[15] = i;
       };                         // Cache-Line[n] is zero except last uint = n
 
-
-      // Original code puts DSM Reset prior to AFU Reset, but ccipTest
-      //    reverses that. We are following ccipTest here.
-
       // Initiate AFU Reset
-      // m_pALIResetService->afuReset();
+      m_pALIResetService->afuReset();
 
+      // AFU Reset clear VTP, too, so reinitialize that
+      // NOTE: this interface is likely to change in future releases of AAL.
+      m_pVTPService->vtpReset();
 
       // Initiate DSM Reset
       // Set DSM base (virtual, since we have allocated using VTP), high then low
-      // FIXME: this is actually a 64 bit write!
       m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, (btUnsigned64bitInt)m_pDSM);
 
-      // Assert AFU reset
+      // Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
 
-      //De-Assert AFU reset
+      //De-Assert NLB reset
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 1);
 
-      // If ASE, give it some time to catch up
-      /*
-      #if defined ( ASEAFU )
-      SleepSec(5);
-      #endif*/ /* ASE AFU */
-
-
       // Set input workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)m_pInput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_SRC_ADDR, (btUnsigned64bitInt)(m_pInput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set output workspace address
-      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)m_pOutput / CL(1));
+      m_pALIMMIOService->mmioWrite64(CSR_DST_ADDR, (btUnsigned64bitInt)(m_pOutput+LPBK1_BUFFER_OFFSET) / CL(1));
 
       // Set the number of cache lines for the test
       m_pALIMMIOService->mmioWrite32(CSR_NUM_LINES, LPBK1_BUFFER_SIZE / CL(1));
@@ -470,7 +473,6 @@ btInt HelloALIVTPNLBApp::run()
       // Start the test
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 3);
 
-
       // Wait for test completion
       while( 0 == ((*StatusAddr)&0x1) ) {
          SleepMicro(100);
@@ -480,9 +482,17 @@ btInt HelloALIVTPNLBApp::run()
       // Stop the device
       m_pALIMMIOService->mmioWrite32(CSR_CTL, 7);
 
+      errpos = -1;
       // Check that output buffer now contains what was in input buffer, e.g. 0xAF
-      if (int err = memcmp( m_pOutput, m_pInput, m_OutputSize)) {
-         ERR("Output does NOT Match input, at offset " << err << "!");
+      for (p1 = m_pInput+LPBK1_BUFFER_OFFSET, p2 = m_pOutput+LPBK1_BUFFER_OFFSET; p1 < m_pInput + m_InputSize + LPBK1_BUFFER_OFFSET; p1++, p2++) {
+         if ( *((unsigned char *)p1) != *((unsigned char *)p2)) {
+           errpos = p1-m_pInput;
+           break;
+         }
+      }
+
+      if ( errpos != -1 ) {
+         ERR("Output does NOT Match input, at offset " << errpos << "!");
          ++m_Result;
       } else {
          MSG("Output matches Input!");
@@ -504,7 +514,7 @@ done_2:
    m_Sem.Wait();
 
 done_1:
-   // Freed all three so now Release() the HWALIAFU Service through the Services IAALService::Release() method
+   // Release() the HWALIAFU Service through the Services IAALService::Release() method
    (dynamic_ptr<IAALService>(iidService, m_pALIAFU_AALService))->Release(TransactionID());
    m_Sem.Wait();
 
@@ -698,7 +708,7 @@ void HelloALIVTPNLBApp::serviceAllocateFailed(const IEvent &rEvent)
 //=============================================================================
 int main(int argc, char *argv[])
 {
-   pAALLogger()->AddToMask(LM_All, LOG_DEBUG);
+   pAALLogger()->AddToMask(LM_All, LOG_INFO);
    HelloALIVTPNLBApp theApp;
    if(!theApp.isOK()){
       ERR("Runtime Failed to Start");

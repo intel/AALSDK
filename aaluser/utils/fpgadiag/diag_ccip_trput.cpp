@@ -64,7 +64,11 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
    ::memset((void *)pAFUDSM, 0, sizeof(nlb_vafu_dsm));
 
    // Initiate AFU Reset
-   m_pALIResetService->afuReset();
+   if (0 != m_pALIResetService->afuReset())
+   {
+      ERR("AFU reset failed. Exiting test.");
+      return 1;
+   }
 
    //Set DSM base, high then low
    m_pALIMMIOService->mmioWrite64(CSR_AFU_DSM_BASEL, m_pMyApp->DSMPhys());
@@ -235,6 +239,13 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
    }
 
    m_pALIMMIOService->mmioWrite32(CSR_CTL, 0);
+
+   // Initiate AFU Reset
+   if (0 != m_pALIResetService->afuReset())
+   {
+      ERR("AFU reset failed after test completion.");
+      ++res;
+   }
 
    return res;
 }

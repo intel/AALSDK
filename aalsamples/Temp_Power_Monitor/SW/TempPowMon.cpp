@@ -106,10 +106,10 @@ public:
    ///
    /// Application Requests Service using Runtime Client passing a pointer to self.
    /// Blocks calling thread from [Main} untill application is done.
-   btInt run(); //Return 0 if success
+   btInt run(btBool bClear); //Return 0 if success
 
-   void getTemp();
-   void getPower();
+   void   getTemp();
+   btBool getPower(btBool bClear);
 
    btBool isOK()  {return m_bIsOK;}
 
@@ -226,15 +226,18 @@ void TempPowMonApp::getTemp()
 
 }
 
-void TempPowMonApp::getPower()
+btBool TempPowMonApp::getPower(btBool bClear)
 {
-   const btFloat CORE_AMP_UNITS=0.09765625;
-   const btFloat CORE_VOLTAGE=0.95;
-   btInt         AmpsValue;
-   btFloat       AmpsAdjusted;
-   btFloat       Power;
+   const btFloat      CORE_AMP_UNITS=0.09765625;
+   const btFloat      CORE_VOLTAGE=0.95;
+   btInt              AmpsValue;
+   btFloat            AmpsAdjusted;
+   btFloat            Power;
+   btBool             bReturn = true;
+   btUnsigned64bitInt SequenceNumber = 0;
 
    struct CCIP_PM_RDVR {
+      // #define PM_RDVR      0x2010
       union {
          btUnsigned64bitInt csr;
          struct {
@@ -253,6 +256,64 @@ void TempPowMonApp::getPower()
       }; // end union
    } ccip_pm_rdvr; // end struct CCIP_PM_RDVR
 
+   // Now deal with Max current values
+   struct CCIP_PM_MAXVR {
+      // #define PM_MAXVR     0x2018
+      union {
+         btUnsigned64bitInt csr;
+         struct {
+            btUnsigned64bitInt hw_set_field :1; //Hardware set field
+            btUnsigned64bitInt rsvd :7;
+            btUnsigned64bitInt max_clock_supply_i_rec :8;  // Maximum clock buffer supply current recorded
+            btUnsigned64bitInt max_core_supply_i_rec  :16; // Maximum core  supply current recorded
+            btUnsigned64bitInt max_trans_supply_i_rec :8;  // Maximum Transceiver  supply current recorded
+            btUnsigned64bitInt max_fpga_supply_i_rec  :8;  // Maximum FPGA  supply current recorded
+            btUnsigned64bitInt rsvd1 :16;
+         }; // end struct
+      }; // end union
+   }ccip_pm_mrdvr; // end struct CCIP_PM_MAXVR
+
+   // get current sequence number
+   m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
+   SequenceNumber = ccip_pm_rdvr.sequence_number;
+
+   // Clear the max values?
+   if( bClear ) {
+      // set hw reset to 1 to put into reset
+      m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
+      ccip_pm_mrdvr.hw_set_field = 1;
+      m_pALIMMIOService->mmioWrite64(PM_MAXVR, ccip_pm_mrdvr.csr);
+
+      // wait a bit and re-read sequence number
+      SleepMilli(1); // insurance, should not be needed, remove for faster execution
+      m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
+      SequenceNumber = ccip_pm_rdvr.sequence_number;
+
+      // set hw reset to 0 to re-enable
+      m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
+      ccip_pm_mrdvr.hw_set_field = 0;
+      m_pALIMMIOService->mmioWrite64(PM_MAXVR, ccip_pm_mrdvr.csr);
+
+      // Wait for sequence number to change, or error out
+      btUnsigned64bitInt NewSequenceNumber = SequenceNumber;
+      btUnsigned64bitInt count = 0;
+      do {
+         SleepMilli(1); // insurance, remove to speed up processing
+         // read new Sequence number
+         m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
+         NewSequenceNumber = ccip_pm_rdvr.sequence_number;
+         ++count;
+      } while ( count < 10 && SequenceNumber == NewSequenceNumber);
+
+      // Did Sequence number increment? If so, that is good
+      bReturn = (SequenceNumber != NewSequenceNumber);
+      SequenceNumber = NewSequenceNumber;
+
+      cout << "Clear of Max values requested: result is " << bReturn << endl;
+   } // bClear
+
+   ///////////////////////////////////////////////////////////
+   // Read regular values
    m_pALIMMIOService->mmioRead64(PM_RDVR, &ccip_pm_rdvr.csr);
    ccip_pm_rdvr.volt_regulator_readmods = 0; // turn on all 4 read channels
    m_pALIMMIOService->mmioWrite64(PM_RDVR, ccip_pm_rdvr.csr);
@@ -299,49 +360,31 @@ void TempPowMonApp::getPower()
    }
 
    ///////////////////////////////////////////////////////////////
-   // Now deal with Max current values
-   struct CCIP_PM_MAXVR {
-      union {
-         btUnsigned64bitInt csr;
-         struct {
-            btUnsigned64bitInt hw_set_field :1; //Hardware set field
-            btUnsigned64bitInt rsvd :7;
-            btUnsigned64bitInt max_clock_supply_i_rec :8;  // Maximum clock buffer supply current recorded
-            btUnsigned64bitInt max_core_supply_i_rec  :16; // Maximum core  supply current recorded
-            btUnsigned64bitInt max_trans_supply_i_rec :8;  // Maximum Transceiver  supply current recorded
-            btUnsigned64bitInt max_fpga_supply_i_rec  :8;  // Maximum FPGA  supply current recorded
-            btUnsigned64bitInt rsvd1 :16;
-         }; // end struct
-      }; // end union
-   }ccip_pm_mrdvr; // end struct CCIP_PM_MAXVR
 
    m_pALIMMIOService->mmioRead64(PM_MAXVR, &ccip_pm_mrdvr.csr);
 
-   // Print Max Core Amps and power if values are valie
-   if (ccip_pm_mrdvr.hw_set_field) {
-      AmpsValue = static_cast< btInt >(ccip_pm_mrdvr.max_core_supply_i_rec);
-      AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
-      Power = AmpsAdjusted * CORE_VOLTAGE;
-      cout << "Core Maximum Is Valid: " << AmpsAdjusted << " Amps. " <<
-         Power << " Estimated Watts at nominal " <<
-         CORE_VOLTAGE << " Volts." <<
-         endl;
-      cout << "Xcvr Maximum Is Valid: " <<
-         ccip_pm_mrdvr.max_trans_supply_i_rec << " Unknown Units." <<
-         endl;
-      cout << "1.8V Maximum Is Valid: " <<
-         ccip_pm_mrdvr.max_fpga_supply_i_rec << " Unknown Units." <<
-         endl;
-
-   } else {
-      cout << "Maximum Current Registers Are Not Valid" << endl;
-   }
+   // Print Max Core Amps and power
+   AmpsValue = static_cast< btInt >(ccip_pm_mrdvr.max_core_supply_i_rec);
+   AmpsAdjusted = AmpsValue * CORE_AMP_UNITS ;
+   Power = AmpsAdjusted * CORE_VOLTAGE;
+   cout << "Core Maximum  Reading: " << AmpsAdjusted << " Amps. " <<
+      Power << " Estimated Watts at nominal " <<
+      CORE_VOLTAGE << " Volts." <<
+      endl;
+   cout << "Xcvr Maximum  Reading: " <<
+      ccip_pm_mrdvr.max_trans_supply_i_rec << " Unknown Units." <<
+      endl;
+   cout << "1.8V Maximum  Reading: " <<
+      ccip_pm_mrdvr.max_fpga_supply_i_rec << " Unknown Units." <<
+      endl;
 
 } // TempPowMonApp::getPower
 
 
-btInt TempPowMonApp::run()
+btInt TempPowMonApp::run(btBool bClear)
 {
+
+   btBool bPowerReturnValue;
 
    cout <<"===================================="<<endl;
    cout <<"= Temperature Power Monitor Sample ="<<endl;
@@ -371,7 +414,8 @@ btInt TempPowMonApp::run()
    }
 
     getTemp();
-    getPower();
+    bPowerReturnValue = getPower( bClear );
+    if (!bPowerReturnValue) ++m_Result;   // record error
 
     // Clean-up and return
     // Release() the Service through the Services IAALService::Release() method
@@ -505,9 +549,14 @@ int main(int argc, char *argv[])
 
    TempPowMonApp         theApp;
    int result = 0;
+   btBool bClear = false;
+
+   if( argc>1 ) { // process command line arg of "-c"
+      if (0 == strcmp (argv[1], "-c")) bClear = true;
+   }
 
    if(theApp.IsOK()){
-      result = theApp.run();
+      result = theApp.run( bClear );
    }else{
       MSG("App failed to initialize");
    }

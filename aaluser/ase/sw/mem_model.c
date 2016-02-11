@@ -324,6 +324,12 @@ void ase_destroy()
 {
   FUNC_CALL_ENTRY;
 
+#ifdef ASE_DEBUG
+  char str[256];
+  sprintf(str, "ASE destroy called");
+  buffer_msg_inject(str);
+#endif
+
   struct buffer_t *ptr;
   ptr = (struct buffer_t *)ase_malloc(sizeof(struct buffer_t));
 

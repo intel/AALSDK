@@ -108,6 +108,11 @@ module ccip_emulator
    logic 			      C1TxAlmFull;
 
 
+   // Internal 800 Mhz clock (for creating synchronized clocks)
+   logic 			      Clk8UI;   
+   logic 			      clk   ;
+
+
    /*
     * Local valid/debug breakout signals
     */
@@ -231,10 +236,17 @@ module ccip_emulator
    // Reset out
    assign pck_cp2af_softReset = SoftReset;
 
-   // Rx/Tx mapping
+   // Rx/Tx mapping from ccip_if_pkg to ASE's internal format
    always @(*) begin
       // Rx OUT (CH0)
-      pck_cp2af_sRx.c0.hdr         <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
+      // If MMIO RDWR request, cast directly to interface format
+      if (C0RxMmioRdValid|C0RxMmioWrValid) begin
+	 pck_cp2af_sRx.c0.hdr <= t_ccip_c0_RspMemHdr'(C0RxHdr);	 
+      end
+      // Else, cast via function, changing resptype(s)
+      else begin
+	 pck_cp2af_sRx.c0.hdr <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
+      end
       pck_cp2af_sRx.c0.data        <= t_ccip_clData'(C0RxData);
       pck_cp2af_sRx.c0.rspValid    <= C0RxRspValid;
       pck_cp2af_sRx.c0.mmioRdValid <= C0RxMmioRdValid;
@@ -378,11 +390,6 @@ module ccip_emulator
     *                          -------------------
     *
     * ***************************************************************************/
-
-   logic                          clk   ;
-
-   // Internal 800 Mhz clock (for creating synchronized clocks)
-   logic 			  Clk8UI;
 
    /*
     * Overflow/underflow signal checks
@@ -1249,6 +1256,22 @@ module ccip_emulator
    task count_error_flag_ping();
       begin
 	 count_error_flag_pong(count_error_flag);
+	 // `ifdef ASE_DEBUG
+	 // `BEGIN_RED_FONTCOLOR;	 
+	 // $display("Internal counts =>");
+	 // $display("         Wrfence status CH0 : %b %b %b", 
+	 // 	  cf2as_latbuf_ch0.vl0_wrfence_flag, 
+	 // 	  cf2as_latbuf_ch0.vh0_wrfence_flag,
+	 // 	  cf2as_latbuf_ch0.vh1_wrfence_flag);
+	 // $display("         Wrfence status CH1 : %b %b %b", 
+	 // 	  cf2as_latbuf_ch1.vl0_wrfence_flag, 
+	 // 	  cf2as_latbuf_ch1.vh0_wrfence_flag,
+	 // 	  cf2as_latbuf_ch1.vh1_wrfence_flag);
+	 // $display("         latbuf_ch{0,1}     : %d %d",
+	 // 	  cf2as_latbuf_ch0.latbuf_cnt,
+	 // 	  cf2as_latbuf_ch1.latbuf_cnt);	 
+	 // `END_RED_FONTCOLOR;
+	 // `endif 
       end
    endtask
 
@@ -1349,32 +1372,6 @@ module ccip_emulator
 	 end
       end
    endfunction
-
-
-   // rdreq/wrreq checker
-   // logic rdreq_flag;
-   // logic wrreq_flag;
-
-   // always @(*) begin 
-   //    if (sys_reset) begin
-   // 	 rdreq_flag <= 0;
-   // 	 wrreq_flag <= 0;
-   //    end
-   //    else begin
-   // 	 // RdReq type
-   // 	 case (cf2as_latbuf_tx0hdr.reqtype)
-   // 	   ASE_RDLINE_S : rdreq_flag = 1;
-   // 	   ASE_RDLINE_I : rdreq_flag = 1;
-   // 	   default           : rdreq_flag = 0;
-   // 	 endcase
-   // 	 // WrReq type
-   // 	 case (cf2as_latbuf_tx1hdr.reqtype)
-   // 	   ASE_WRLINE_I : wrreq_flag = 1;
-   // 	   ASE_WRLINE_M : wrreq_flag = 1;
-   // 	   default           : wrreq_flag = 0;
-   // 	 endcase
-   //    end
-   // end
 
    // cf2as_latbuf_ch0 signals
    logic [CCIP_TX_HDR_WIDTH-1:0] cf2as_latbuf_tx0hdr_vec;
@@ -1713,15 +1710,12 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
-		   // mmioreq_read    <= ~mmioreq_empty;
 		   rx0_state <= RxMMIOForward;
 		end
 		else if (~umsgfifo_empty) begin
@@ -1730,9 +1724,6 @@ module ccip_emulator
 		else if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
-		// else if (~wr0rsp_empty) begin
-		//    rx0_state <= RxWriteResp;
-		// end
 		else begin
 		   rx0_state <= RxIdle;
 		end
@@ -1742,7 +1733,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= mmio_wrvalid && mmioreq_valid;
 		C0RxMmioRdValid <= mmio_rdvalid && mmioreq_valid;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
@@ -1750,7 +1740,6 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= ~mmioreq_empty;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
 		   rx0_state <= RxMMIOForward;
 		end
@@ -1763,7 +1752,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= umsgfifo_valid;
 		C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);
@@ -1771,7 +1759,6 @@ module ccip_emulator
 		umsgfifo_read   <= ~umsgfifo_empty;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~umsgfifo_empty) begin
 		   rx0_state <= RxUMsgForward;
 		end
@@ -1784,7 +1771,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= rdrsp_valid;
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= rdrsp_hdr_out;
@@ -1792,7 +1778,6 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= ~rdrsp_empty;
-		// wr0rsp_read     <= 1'b0;
 		if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
@@ -1801,38 +1786,17 @@ module ccip_emulator
 		end
 	     end
 
-	   // RxWriteResp:
-	   //   begin
-	   // 	C0RxMmioWrValid <= 1'b0;
-	   // 	C0RxMmioRdValid <= 1'b0;
-	   // 	// C0RxWrValid     <= wr0rsp_valid;
-	   // 	C0RxRdValid     <= 1'b0;
-	   // 	C0RxUMsgValid   <= 1'b0;
-	   // 	C0RxHdr         <= wr0rsp_hdr_out;
-	   // 	C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
-	   // 	umsgfifo_read   <= 1'b0;
-	   // 	mmioreq_read    <= 1'b0;
-	   // 	rdrsp_read      <= 1'b0;
-	   // 	wr0rsp_read     <= ~wr0rsp_empty;
-	   // 	if (~wr0rsp_empty) begin
-	   // 	   rx0_state <= RxWriteResp;
-	   // 	end
-	   // 	else begin
-	   // 	   rx0_state <= RxIdle;
-	   // 	end
-	   //   end
-
 	   default:
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
+		C0RxHdr         <= RxHdr_t'(0);
+		C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};		
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		rx0_state       <= RxIdle;
 	     end
 
@@ -1891,6 +1855,7 @@ module ccip_emulator
 
    	   default:
    	     begin
+		C1RxHdr       <= RxHdr_t'(0);		
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
@@ -1901,31 +1866,6 @@ module ccip_emulator
       end
    end
 
-   // always @(posedge clk) begin
-   //    if (sys_reset|SoftReset) begin
-   // 	 wr1rsp_read <= 0;	 
-   //    end
-   //    else if (~wr1rsp_empty) begin
-   // 	 wr1rsp_read <= ~wr1rsp_empty;	 
-   //    end
-   // end
-   
-   // always @(posedge clk) begin
-   //    if (sys_reset|SoftReset) begin
-   // 	 C1RxHdr       <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 C1RxWrValid   <= 0;
-   // 	 C1RxIntrValid <= 0;
-   //    end
-   //    else if (wr1rsp_valid) begin
-   // 	 C1RxHdr       <= wr1rsp_hdr_out;	 
-   // 	 C1RxWrValid   <= wr1rsp_valid;	 
-   // 	 C1RxWrValid   <= 0;	 
-   //    end
-   //    else begin
-   // 	 C1RxWrValid   <= 0;
-   // 	 C1RxIntrValid <= 0;
-   //    end
-   // end
    
    // Rx1 aggregate valid
    assign C1RxRspValid = C1RxWrValid | C1RxIntrValid;
@@ -2092,34 +2032,39 @@ module ccip_emulator
     * - XZ checker
     * - Data hazard warning
     */
-   // ccip_sniffer ccip_sniffer
-   //   (
-   //    .clk            (clk               ),
-   //    .sys_reset_n    (sys_reset_n       ),
-   //    .sw_reset_n     (SoftReset        ),
-   //    .C0TxHdr        (C0TxHdr           ),
-   //    .C0TxRdValid    (C0TxRdValid       ),
-   //    .C0TxAlmFull    (C0TxAlmFull       ),
-   //    .C1TxHdr        (C1TxHdr           ),
-   //    .C1TxData       (C1TxData          ),
-   //    .C1TxWrValid    (C1TxWrValid       ),
-   //    .C1TxAlmFull    (C1TxAlmFull       ),
-   //    .C1TxIntrValid  (C1TxIntrValid     ),
-   //    .CfgRdData      (CfgRdData         ),
-   //    .CfgRdDataValid (CfgRdDataValid    ),
-   //    .CfgHeader      (CfgHeader         ),
-   //    .CfgWrValid     (CfgWrValid        ),
-   //    .CfgRdValid     (CfgRdValid        ),
-   //    .C0RxHdr        (C0RxHdr           ),
-   //    .C0RxData       (C0RxData          ),
-   //    .C0RxRdValid    (C0RxRdValid       ),
-   //    .C0RxWrValid    (C0RxWrValid       ),
-   //    .C0RxUmsgValid  (C0RxUmsgValid     ),
-   //    .C0RxIntrValid  (C0RxIntrValid     ),
-   //    .C1RxHdr        (C1RxHdr           ),
-   //    .C1RxWrValid    (C1RxWrValid       ),
-   //    .C1RxIntrValid  (C1RxIntrValid     )
-   //    );
+   ccip_sniffer ccip_sniffer
+     (
+      // Logger control
+      // .enable_logger    (cfg.enable_cl_view),
+      .finish_logger    (finish_logger     ),
+      // Buffer message injection
+      // .log_string_en    (buffer_msg_en     ),
+      // .log_string       (buffer_msg        ),
+      // CCIP ports
+      .clk              (clk             ),
+      .SoftReset        (SoftReset       ),
+      .C0TxHdr          (C0TxHdr         ),
+      .C0TxRdValid      (C0TxRdValid     ),
+      .C1TxHdr          (C1TxHdr         ),
+      .C1TxData         (C1TxData        ),
+      .C1TxWrValid      (C1TxWrValid     ),
+      .C1TxIntrValid    (1'b0   ),
+      .C2TxHdr          (C2TxHdr         ),
+      .C2TxMmioRdValid  (C2TxMmioRdValid ),
+      .C2TxData         (C2TxData        ),
+      .C0RxMmioWrValid  (C0RxMmioWrValid ),
+      .C0RxMmioRdValid  (C0RxMmioRdValid ),
+      .C0RxData         (C0RxData        ),
+      .C0RxHdr          (C0RxHdr         ),
+      .C0RxRdValid      (C0RxRdValid     ),
+      //.C0RxWrValid      (1'b0     ),
+      .C0RxUMsgValid    (C0RxUMsgValid   ),
+      .C1RxHdr          (C1RxHdr         ),
+      .C1RxWrValid      (C1RxWrValid     ),
+      .C1RxIntrValid    (C1RxIntrValid   ),
+      .C0TxAlmFull      (C0TxAlmFull     ),
+      .C1TxAlmFull      (C1TxAlmFull     )
+      );
 
 
 
@@ -2158,7 +2103,7 @@ module ccip_emulator
    /*
     * CCI Logger module
     */
-`ifndef DISABLE_LOGGER   
+`ifndef ASE_DISABLE_LOGGER   
    ccip_logger ccip_logger
      (
       // Logger control
@@ -2184,7 +2129,7 @@ module ccip_emulator
       .C0RxData         (C0RxData        ),
       .C0RxHdr          (C0RxHdr         ),
       .C0RxRdValid      (C0RxRdValid     ),
-      .C0RxWrValid      (1'b0     ),
+      // .C0RxWrValid      (1'b0     ),
       .C0RxUMsgValid    (C0RxUMsgValid   ),
       .C1RxHdr          (C1RxHdr         ),
       .C1RxWrValid      (C1RxWrValid     ),
@@ -2192,7 +2137,7 @@ module ccip_emulator
       .C0TxAlmFull      (C0TxAlmFull     ),
       .C1TxAlmFull      (C1TxAlmFull     )
       );
-`endif //  `ifndef DISABLE_LOGGER
+`endif //  `ifndef ASE_DISABLE_LOGGER
    
 
    /* ******************************************************************
