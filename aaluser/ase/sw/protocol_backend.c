@@ -284,16 +284,17 @@ int ase_listener()
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  if (ase_buffer.is_mmiomap) 
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nMMIO map Allocated =>\n");
+	      sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
 	    }
 	  else if (ase_buffer.is_umas)
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nUMAS Allocated =>\n");
+	      sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
 	    }
 	  else
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
+	      sprintf(logger_str + strlen(logger_str), "Buffer %d Allocated ", ase_buffer.index);
 	    }
+	  sprintf(logger_str + strlen(logger_str), " (located /dev/shm/%s) =>\n", ase_buffer.memname);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
@@ -625,7 +626,7 @@ int ase_ready()
 	}
       else
 	{
-	  strlcpy(app_run_cmd, "./ase_regress.sh &", ASE_FILEPATH_LEN);
+	  strncpy(app_run_cmd, "./ase_regress.sh &", ASE_FILEPATH_LEN);
 	}
       system(app_run_cmd);
     }

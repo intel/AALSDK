@@ -115,6 +115,8 @@ SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0

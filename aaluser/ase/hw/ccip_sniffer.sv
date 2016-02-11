@@ -213,15 +213,15 @@ module ccip_sniffer
    always @(posedge clk) begin
       // ------------------------------------------------------------ //
       // Tx0 - 3 CL request illegal
-      if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL)) begin
+      if (C0TxRdValid && (C0TxHdr.len == ASE_3CL)) begin
 	 `BEGIN_RED_FONTCOLOR;
-	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !");
-	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests");
-	 $display("        [ERROR] %d | Simulator will shut down now !\n");	 
+	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
+	 $display("        [ERROR] %d | Simulator will shut down now !\n", $time);	 
 	 `END_RED_FONTCOLOR;
-	 $display(warn_fd, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !");
-	 $display(warn_fd, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
-	 $display(warn_fd, "    | Simulator will shut down now !\n");	 	 
+	 $display(fd_warn, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	 $display(fd_warn, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
+	 $display(fd_warn, "    | Simulator will shut down now !\n");	 	 
 	 start_simkill_countdown();	 
       end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
       // ------------------------------------------------------------ //

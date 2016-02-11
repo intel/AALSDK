@@ -108,6 +108,11 @@ module ccip_emulator
    logic 			      C1TxAlmFull;
 
 
+   // Internal 800 Mhz clock (for creating synchronized clocks)
+   logic 			      Clk8UI;   
+   logic 			      clk   ;
+
+
    /*
     * Local valid/debug breakout signals
     */
@@ -378,11 +383,6 @@ module ccip_emulator
     *                          -------------------
     *
     * ***************************************************************************/
-
-   logic                          clk   ;
-
-   // Internal 800 Mhz clock (for creating synchronized clocks)
-   logic 			  Clk8UI;
 
    /*
     * Overflow/underflow signal checks
@@ -1249,6 +1249,22 @@ module ccip_emulator
    task count_error_flag_ping();
       begin
 	 count_error_flag_pong(count_error_flag);
+	 // `ifdef ASE_DEBUG
+	 // `BEGIN_RED_FONTCOLOR;	 
+	 // $display("Internal counts =>");
+	 // $display("         Wrfence status CH0 : %b %b %b", 
+	 // 	  cf2as_latbuf_ch0.vl0_wrfence_flag, 
+	 // 	  cf2as_latbuf_ch0.vh0_wrfence_flag,
+	 // 	  cf2as_latbuf_ch0.vh1_wrfence_flag);
+	 // $display("         Wrfence status CH1 : %b %b %b", 
+	 // 	  cf2as_latbuf_ch1.vl0_wrfence_flag, 
+	 // 	  cf2as_latbuf_ch1.vh0_wrfence_flag,
+	 // 	  cf2as_latbuf_ch1.vh1_wrfence_flag);
+	 // $display("         latbuf_ch{0,1}     : %d %d",
+	 // 	  cf2as_latbuf_ch0.latbuf_cnt,
+	 // 	  cf2as_latbuf_ch1.latbuf_cnt);	 
+	 // `END_RED_FONTCOLOR;
+	 // `endif 
       end
    endtask
 
@@ -1687,15 +1703,12 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
-		   // mmioreq_read    <= ~mmioreq_empty;
 		   rx0_state <= RxMMIOForward;
 		end
 		else if (~umsgfifo_empty) begin
@@ -1704,9 +1717,6 @@ module ccip_emulator
 		else if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
-		// else if (~wr0rsp_empty) begin
-		//    rx0_state <= RxWriteResp;
-		// end
 		else begin
 		   rx0_state <= RxIdle;
 		end
@@ -1716,7 +1726,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= mmio_wrvalid && mmioreq_valid;
 		C0RxMmioRdValid <= mmio_rdvalid && mmioreq_valid;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= RxHdr_t'(mmio_hdrvec);
@@ -1724,7 +1733,6 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= ~mmioreq_empty;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~mmioreq_empty) begin
 		   rx0_state <= RxMMIOForward;
 		end
@@ -1737,7 +1745,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= umsgfifo_valid;
 		C0RxHdr         <= RxHdr_t'(umsgfifo_hdrvec_out);
@@ -1745,7 +1752,6 @@ module ccip_emulator
 		umsgfifo_read   <= ~umsgfifo_empty;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		if (~umsgfifo_empty) begin
 		   rx0_state <= RxUMsgForward;
 		end
@@ -1758,7 +1764,6 @@ module ccip_emulator
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
 		C0RxRdValid     <= rdrsp_valid;
 		C0RxUMsgValid   <= 1'b0;
 		C0RxHdr         <= rdrsp_hdr_out;
@@ -1766,7 +1771,6 @@ module ccip_emulator
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= ~rdrsp_empty;
-		// wr0rsp_read     <= 1'b0;
 		if (~rdrsp_empty) begin
 		   rx0_state <= RxReadResp;
 		end
@@ -1775,38 +1779,17 @@ module ccip_emulator
 		end
 	     end
 
-	   // RxWriteResp:
-	   //   begin
-	   // 	C0RxMmioWrValid <= 1'b0;
-	   // 	C0RxMmioRdValid <= 1'b0;
-	   // 	// C0RxWrValid     <= wr0rsp_valid;
-	   // 	C0RxRdValid     <= 1'b0;
-	   // 	C0RxUMsgValid   <= 1'b0;
-	   // 	C0RxHdr         <= wr0rsp_hdr_out;
-	   // 	C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};
-	   // 	umsgfifo_read   <= 1'b0;
-	   // 	mmioreq_read    <= 1'b0;
-	   // 	rdrsp_read      <= 1'b0;
-	   // 	wr0rsp_read     <= ~wr0rsp_empty;
-	   // 	if (~wr0rsp_empty) begin
-	   // 	   rx0_state <= RxWriteResp;
-	   // 	end
-	   // 	else begin
-	   // 	   rx0_state <= RxIdle;
-	   // 	end
-	   //   end
-
 	   default:
 	     begin
 		C0RxMmioWrValid <= 1'b0;
 		C0RxMmioRdValid <= 1'b0;
-		// C0RxWrValid     <= 1'b0;
+		C0RxHdr         <= RxHdr_t'(0);
+		C0RxData        <= {CCIP_DATA_WIDTH{1'b0}};		
 		C0RxRdValid     <= 1'b0;
 		C0RxUMsgValid   <= 1'b0;
 		umsgfifo_read   <= 1'b0;
 		mmioreq_read    <= 1'b0;
 		rdrsp_read      <= 1'b0;
-		// wr0rsp_read     <= 1'b0;
 		rx0_state       <= RxIdle;
 	     end
 
@@ -1865,6 +1848,7 @@ module ccip_emulator
 
    	   default:
    	     begin
+		C1RxHdr       <= RxHdr_t'(0);		
       		C1RxWrValid   <= 1'b0;
       		C1RxIntrValid <= 1'b0;
       		wr1rsp_read   <= 1'b0;
@@ -1875,31 +1859,6 @@ module ccip_emulator
       end
    end
 
-   // always @(posedge clk) begin
-   //    if (sys_reset|SoftReset) begin
-   // 	 wr1rsp_read <= 0;	 
-   //    end
-   //    else if (~wr1rsp_empty) begin
-   // 	 wr1rsp_read <= ~wr1rsp_empty;	 
-   //    end
-   // end
-   
-   // always @(posedge clk) begin
-   //    if (sys_reset|SoftReset) begin
-   // 	 C1RxHdr       <= {CCIP_RX_HDR_WIDTH{1'b0}};
-   // 	 C1RxWrValid   <= 0;
-   // 	 C1RxIntrValid <= 0;
-   //    end
-   //    else if (wr1rsp_valid) begin
-   // 	 C1RxHdr       <= wr1rsp_hdr_out;	 
-   // 	 C1RxWrValid   <= wr1rsp_valid;	 
-   // 	 C1RxWrValid   <= 0;	 
-   //    end
-   //    else begin
-   // 	 C1RxWrValid   <= 0;
-   // 	 C1RxIntrValid <= 0;
-   //    end
-   // end
    
    // Rx1 aggregate valid
    assign C1RxRspValid = C1RxWrValid | C1RxIntrValid;

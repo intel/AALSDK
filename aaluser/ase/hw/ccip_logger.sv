@@ -232,7 +232,8 @@ module ccip_logger
 	 end
 	 // Buffer messages
 	 if (log_string_en) begin
-	    $fwrite(log_fd, log_string);
+	    $fwrite(log_fd, "-----------------------------------------------------\n");	    
+	    $fwrite(log_fd, "%d\t%s\n", $time, log_string);
 	 end
 	 /////////////////////// CONFIG CHANNEL TRANSACTIONS //////////////////////////
 	 /******************* SW -> AFU MMIO Write *******************/
