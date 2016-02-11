@@ -47,10 +47,10 @@ include ase_sources.mk
 ## ASE Version
 ASE_VERSION = 5.0.1
 
-# ASE switches
-ASE_DEBUG = 0
-PROFILE_ENABLE = 0
-DISABLE_LOGGER = 1
+# ASE switches (these tend to increase log sizes)
+ASE_DEBUG ?= 1
+ASE_PROFILE_ENABLE ?= 0
+ASE_DISABLE_LOGGER = 0
 
 # Timescale
 TIMESCALE = 1ns/1ns
@@ -79,7 +79,7 @@ CC_OPT+= -Wall
 # -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-# CC_OPT+= -D ASE_DEBUG=1 -pedantic
+CC_OPT+= -D ASE_DEBUG=1 -pedantic
 endif
 
 ## Print information ##
@@ -115,11 +115,14 @@ SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
 SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
-ifeq ($(DISABLE_LOGGER), 1)
-SNPS_VLOGAN_OPT+= +define+DISABLE_LOGGER
+SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1 
+ifeq ($(ASE_DISABLE_LOGGER), 1)
+SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
 endif
 
 ## VCS elaboration
@@ -127,8 +130,7 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
-SNPS_VCS_OPT+= +define+ASE_DEBUG
-ifeq ($(PROFILE_ENABLE), 1)
+ifeq ($(ASE_PROFILE_ENABLE), 1)
 SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
 SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
 SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
@@ -336,12 +338,37 @@ distclean: header clean
 #########################################################################
 # Source scan-build
 src_check: 
-	scan-build-3.5 -o work/scan-build/ -v \
-	-enable-checker alpha \
-	-enable-checker core \
-	-enable-checker security \
-	-enable-checker unix \
-	make sw_build &> scan-build.log
+	scan-build-3.5 -o work/scan-build/ -v -k \
+	-enable-checker core.CallAndMessage \
+	-enable-checker core.DivideZero \
+	-enable-checker core.DynamicTypePropagation \
+	-enable-checker core.NonNullParamChecker \
+	-enable-checker core.NullDereference \
+	-enable-checker core.StackAddressEscape \
+	-enable-checker core.UndefinedBinaryOperatorResult \
+	-enable-checker core.VLASize \
+	-enable-checker core.builtin.BuiltinFunctions \
+	-enable-checker core.builtin.NoReturnFunctions \
+	-enable-checker core.uninitialized.ArraySubscript \
+	-enable-checker core.uninitialized.Assign \
+	-enable-checker core.uninitialized.Branch \
+	-enable-checker core.uninitialized.CapturedBlockVariable \
+	-enable-checker core.uninitialized.UndefReturn \
+	-enable-checker cplusplus.NewDelete \
+	-enable-checker deadcode.DeadStores \
+	-enable-checker security.insecureAPI.UncheckedReturn \
+	-enable-checker security.insecureAPI.getpw \
+	-enable-checker security.insecureAPI.gets \
+	-enable-checker security.insecureAPI.mkstemp \
+	-enable-checker security.insecureAPI.mktemp \
+	-enable-checker security.insecureAPI.vfork \
+	-enable-checker unix.API \
+	-enable-checker unix.Malloc \
+	-enable-checker unix.MallocSizeof \
+	-enable-checker unix.MismatchedDeallocator \
+	-enable-checker unix.cstring.BadSizeArg \
+	-enable-checker unix.cstring.NullArg \
+	make  | tee scan-build.log
 
 # Coverage
 coverage:
@@ -358,3 +385,5 @@ test: all sim
 # On long regression runs, dont create a run.log
 long_sim: 
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
+

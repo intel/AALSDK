@@ -80,59 +80,28 @@ BEGIN_NAMESPACE(AAL)
 #define iidVTPService __INTC_IID(INTC_sysSampleAFU, 0x0010)
 #endif
 
+/// @brief VTP service interface
+///
+/// Provides all functions of IALIBuffer, with the difference of now allocating
+/// buffers that can be accessed from the AFU using virtual addresses (through
+/// VTP.
+///
+/// @note Since AFU reset will reset all user logic including BBBs like VTP,
+///       users need to make sure to reinitialize VTP after an AFU reset
+///       using vtpReset().
+///
+/// @see IALIBuffer
+
 class IVTP : public IALIBuffer
 {
 public:
-   // These are just changes in documentation, the signature is the same!
+   virtual ~IVTP() {}
 
-   /// @brief Allocate shared buffer.
+   /// Reinitialize VTP after AFU Reset
    ///
-   /// Allocates a shared buffer of specified length. Updates the VTP page
-   /// hash to add the respective virtual-to-physical mapping.
-   ///
-   /// Synchronous, no callback.
-   ///
-   /// @param[in]  Length     Length of shared buffer to allocate.
-   /// @param[in]  pBufferptr Address of buffer to store virtual address in.
-   /// @param[in]  pOptArgs   Pointer to NVS containing optional arguments.
-   ///                        Ignored for now.
-   /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
+   /// @note This interface is likely to change or disappear in beta
+   virtual btBool vtpReset( void ) = 0;
 
-   /// @brief Free shared buffer.
-   ///
-   /// Frees a previously allocated shared buffer.
-   ///
-   /// NOT IMPLEMENTED
-   ///
-   /// Synchronous, no callback.
-   ///
-   /// @param[in]  Address    Address of buffer to deallocate/free.
-   /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-
-   /// @brief Free all shared buffers.
-   ///
-   /// Frees all previously allocated shared buffer.
-   /// Also flushes VTP TLB.
-   ///
-   /// NOT IMPLEMENTED
-   ///
-   /// Synchronous, no callback.
-   ///
-   /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   //virtual ali_errnum_e bufferFreeAll();
-
-   /// @brief Get virtual-to-physical mapping
-   ///
-   /// Returns physical address mapped to a given virtual address inside
-   /// a previously allocated buffer.
-   ///
-   /// Synchronous, no callback.
-   ///
-   /// @return     ali_errnumOK on success, ali_errnumSystem on failure.
-   //virtual btPhysAddr bufferGetIOVA( btVirtAddr Address);
-
-   /// IVTPService Destructor
-//   virtual ~IVTP() {}
 };
 
 /// @}

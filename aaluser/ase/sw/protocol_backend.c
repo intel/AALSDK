@@ -61,7 +61,8 @@ void scope_function()
 void sv2c_config_dex(const char *str)
 {
   sv2c_config_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strcpy(sv2c_config_filepath, str);
+  // strcpy(sv2c_config_filepath, str);
+  strncpy(sv2c_config_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  sv2c_config_filepath = %s\n", sv2c_config_filepath);
@@ -88,7 +89,8 @@ void sv2c_config_dex(const char *str)
 void sv2c_script_dex(const char *str)
 {
   sv2c_script_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strcpy(sv2c_script_filepath, str);
+  // strcpy(sv2c_script_filepath, str);
+  strncpy(sv2c_script_filepath, str, ASE_FILEPATH_LEN);
 #ifdef ASE_DEBUG
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [DEBUG]  sv2c_script_filepath = %s\n", sv2c_script_filepath);
@@ -282,16 +284,17 @@ int ase_listener()
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
 	  if (ase_buffer.is_mmiomap) 
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nMMIO map Allocated =>\n");
+	      sprintf(logger_str + strlen(logger_str), "MMIO map Allocated ");
 	    }
 	  else if (ase_buffer.is_umas)
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nUMAS Allocated =>\n");
+	      sprintf(logger_str + strlen(logger_str), "UMAS Allocated ");
 	    }
 	  else
 	    {
-	      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Allocated =>\n", ase_buffer.index);
+	      sprintf(logger_str + strlen(logger_str), "Buffer %d Allocated ", ase_buffer.index);
 	    }
+	  sprintf(logger_str + strlen(logger_str), " (located /dev/shm/%s) =>\n", ase_buffer.memname);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHost App Virtual Addr  = %p\n", (void*)ase_buffer.vbase);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW Physical Addr       = %p\n", (void*)ase_buffer.fake_paddr);
 	  sprintf(logger_str + strlen(logger_str), "\t\tHW CacheAligned Addr   = %p\n", (void*)(ase_buffer.fake_paddr >> 6));
@@ -429,7 +432,7 @@ int ase_listener()
       // Check for simulator sanity -- if transaction counts dont match
       // Kill the simulation ASAP -- DEBUG feature only
 #ifdef ASE_DEBUG
-      if (count_error_flag_dex() == 1)
+      if (count_error_flag_ping() == 1)
 	{
 	  BEGIN_RED_FONTCOLOR;
 	  printf("SIM-C : ** ERROR ** Transaction counts do not match, something got lost\n");
@@ -526,6 +529,7 @@ int ase_init()
   // Print timestamp
   printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
 #endif
+
   // Create IPC cleanup setup
   create_ipc_listfile();
 
@@ -619,12 +623,10 @@ int ase_ready()
       if ( strlen(sv2c_script_filepath) != 0 )
 	{
 	  sprintf(app_run_cmd, "%s &", sv2c_script_filepath);
-	  /* strcpy(app_run_cmd, sv2c_script_filepath); */
-	  /* strcat(app_run_cmd, " &"); */
 	}
       else
 	{
-	  strcpy(app_run_cmd, "./ase_regress.sh &");
+	  strncpy(app_run_cmd, "./ase_regress.sh &", ASE_FILEPATH_LEN);
 	}
       system(app_run_cmd);
     }

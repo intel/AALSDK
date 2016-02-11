@@ -45,8 +45,6 @@ void create_ipc_listfile()
   FUNC_CALL_ENTRY;
 
   ipclist_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  /* strcpy(ipclist_filepath, ase_workdir_path); */
-  /* strcat(ipclist_filepath, IPC_LOCAL_FILENAME); */
   
   sprintf(ipclist_filepath, "%s/%s", ase_workdir_path, IPC_LOCAL_FILENAME);
 
