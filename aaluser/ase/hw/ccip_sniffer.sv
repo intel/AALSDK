@@ -52,153 +52,188 @@ import ase_pkg::*;
 `include "platform.vh"
 
 module ccip_sniffer
+  #(
+    parameter ERROR_LOGNAME = "ase_errors.log",
+    parameter WARN_LOGNAME  = "ase_warnings.log"
+    )
    (
+    // Configure enable
+    // input int 				     enable_logger,
+    input int 				     finish_logger,
+    // Buffer message injection
+    // input logic 			     log_string_en,
+    // ref string 			     log_string,
+    //////////////////////////////////////////////////////////
     // CCI interface
-    input logic 			    clk,
-    input logic 			    sys_reset_n,
-    input logic 			    sw_reset_n,
-    // C0Tx channel
-    input 				    TxHdr_t C0TxHdr,
-    input logic 			    C0TxRdValid,
-    input logic 			    C0TxAlmFull,
-    // C1Tx channel
-    input 				    TxHdr_t C1TxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] 	    C1TxData,
-    input logic 			    C1TxWrValid,
-    input logic 			    C1TxAlmFull,
-    input logic 			    C1TxIntrValid,
-    // Config channel
-    input logic [CCIP_CFG_RDDATA_WIDTH-1:0] CfgRdData,
-    input logic 			    CfgRdDataValid,
-    input 				    CfgHdr_t CfgHeader,
-    input logic 			    CfgWrValid,
-    input logic 			    CfgRdValid,
-    // C0Rx channel
-    input 				    RxHdr_t C0RxHdr,
-    input logic [CCIP_DATA_WIDTH-1:0] 	    C0RxData,
-    input logic 			    C0RxRdValid,
-    input logic 			    C0RxWrValid,
-    input logic 			    C0RxUmsgValid,
-    input logic 			    C0RxIntrValid,
-    // C1Rx channel
-    input 				    RxHdr_t C1RxHdr,
-    input logic 			    C1RxWrValid,
-    input logic 			    C1RxIntrValid      
+    input logic 			     clk,
+    input logic 			     SoftReset,
+    // Tx0 channel
+    input 				     TxHdr_t C0TxHdr,
+    input logic 			     C0TxRdValid,
+    // Tx1 channel
+    input 				     TxHdr_t C1TxHdr,
+    input logic [CCIP_DATA_WIDTH-1:0] 	     C1TxData,
+    input logic 			     C1TxWrValid,
+    input logic 			     C1TxIntrValid,
+    // Tx2 channel
+    input 				     MMIOHdr_t C2TxHdr,
+    input logic 			     C2TxMmioRdValid,
+    input logic [CCIP_MMIO_RDDATA_WIDTH-1:0] C2TxData,
+    // Rx0 channel
+    input logic 			     C0RxMmioWrValid,
+    input logic 			     C0RxMmioRdValid,
+    input logic [CCIP_DATA_WIDTH-1:0] 	     C0RxData,
+    input 				     RxHdr_t C0RxHdr,
+    input logic 			     C0RxRdValid,
+    // input logic 			     C0RxWrValid,
+    input logic 			     C0RxUMsgValid,
+    // Rx1 channel
+    input 				     RxHdr_t C1RxHdr,
+    input logic 			     C1RxWrValid,
+    input logic 			     C1RxIntrValid,
+    // Almost full signals
+    input logic 			     C0TxAlmFull,
+    input logic 			     C1TxAlmFull
     );
 
-   int 				   log_started;   
-   int 				   fd_sniffer;
+   // File descriptors
+   int 					     fd_warn;
+   //int 					     fd_err;
+   
+   // FD open
+   initial begin
+      $display ("SIM-SV : Protocol Checker initialized");
 
+      // Open log files
+      fd_warn = $fopen(WARN_LOGNAME, "w");
+      // fd_err  = $fopen(ERROR_LOGNAME, "w");
+      
+      // Wait until finish logger
+      wait (finish_logger == 1);
+      
+      // Close loggers
+      $display ("SIM-SV : Closing Protocol checker");
+      $fclose(fd_warn);
+   end
+   
+   // any valid signals
+   logic tx_valid;
+   logic rx_valid;
+
+   assign tx_valid = C0TxRdValid    | 
+		     C1TxWrValid    | 
+		     C1TxIntrValid  |
+		     C2TxMmioRdValid;
+   
+   assign rx_valid = C0RxRdValid     | 
+		     C0RxUMsgValid   |  
+		     C0RxMmioRdValid | 
+		     C0RxMmioWrValid | 
+		     C1RxWrValid     |
+		     C1RxIntrValid;
+   
+   // If reset is high, and transactions are asserted
+   always @(posedge clk) begin
+      if (SoftReset) begin
+	 if (tx_valid | rx_valid) begin
+	    `BEGIN_RED_FONTCOLOR;	    
+	    $display("SIM-SV: [WARN] Transaction was sent when SoftReset was HIGH, this will be ignored");
+	    $fwrite(fd_warn, "%d | Transaction was sent when SoftReset was HIGH, this will be ignored\n", $time);
+	    `END_RED_FONTCOLOR;
+	 end
+      end
+   end
+
+   
+   /*
+    * UNDEF & HIIMP checker
+    */ 
+   // Z and X flags
    logic 			   xz_tx0_flag;
    logic 			   xz_tx1_flag;
+   logic 			   xz_tx2_flag;
    logic 			   xz_rx0_flag;
    logic 			   xz_rx1_flag;
    logic 			   xz_cfg_flag;
 
-   
-   /*
-    * FUNCTIONS
-    */
-   // XZ message
-   function void print_xz_message ( string channel_name );
-      begin
-	 // Set message
-	 `BEGIN_RED_FONTCOLOR;
-	 $display ("Clock ", $time, " => X or Z found on ", channel_name, " is not recommended.");
-	 `END_RED_FONTCOLOR;
-	 $fwrite( fd_sniffer, "Clock ", $time, " => \n");
-	 $fwrite( fd_sniffer, "      X or Z was found, this is not recommended\n");
-	 $fwrite( fd_sniffer, "\n");
-      end
-   endfunction
-
-   // Hazard warning
-   function void print_hazard_message ( logic [PHYSCLADDR_WIDTH-1:0] cl_addr );
-      begin
-	 // Set message
-	 `BEGIN_RED_FONTCOLOR;
-	 $display ("Clock ", $time, " => Possible Data hazard at cache line address %x ", cl_addr);
-	 `END_RED_FONTCOLOR;
-	 $fwrite( fd_sniffer, "Clock ", $time, " => \n");
-	 $fwrite( fd_sniffer, "      Possible Data hazard at cache line addrress => %x\n", cl_addr);
-	 $fwrite( fd_sniffer, "\n");
-      end
-   endfunction
-
-
-   /*
-    * Warning engine
-    */
-   initial begin
-      // log_started = 0;      
-      fd_sniffer = $fopen("warnings.log", "w");
-      forever begin
-	 // XZ messages
-	 if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
-	   print_xz_message ( "C0Tx" );
-	 if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF))
-	   print_xz_message ( "C1Tx" );
-	 if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF))
-	   print_xz_message ( "C0Rx" );
-	 if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
-	   print_xz_message ( "C1Rx" );
-	 if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
-	   print_xz_message ( "Cfg " );
-	 // Wait till next clock
-	 @(posedge clk);
-      end
-   end
-
    /*
     * TX checker files
     */
-   assign xz_tx0_flag = (^C0TxHdr)                 && C0TxRdValid ;
-   assign xz_tx1_flag = (^C1TxHdr || ^C1TxData)    && C1TxWrValid ;
-   assign xz_rx0_flag = (^C0RxHdr || ^C0RxData)    && (C0RxWrValid || C0RxRdValid) ;
-   assign xz_rx1_flag = (^C1RxHdr)                 && C1RxWrValid ;
-   assign xz_cfg_flag = (^CfgHeader || ^CfgRdData) && (CfgRdDataValid || CfgWrValid || CfgRdValid);
+   CfgHdr_t C0RxCfg;   
+   assign C0RxCfg = CfgHdr_t'(C0RxHdr);
+      
+   assign xz_tx0_flag = ( ^{C0TxHdr.vc,              C0TxHdr.len, C0TxHdr.reqtype, C0TxHdr.mdata} )   && C0TxRdValid ;
+   assign xz_tx1_flag = ( ^{C1TxHdr.vc, C1TxHdr.sop, C1TxHdr.len, C1TxHdr.reqtype, C1TxHdr.mdata} )   && C1TxWrValid ;
+   assign xz_tx2_flag = ( ^{C2TxHdr.tid, C2TxData})                                                   && C2TxMmioRdValid ;
    
+   assign xz_rx0_flag = ( ^{C0RxHdr.vc_used, C0RxHdr.hitmiss,                 C0RxHdr.clnum, C0RxHdr.resptype, C0RxHdr.mdata, C0RxData} ) && (C0RxRdValid | C0RxUMsgValid);
+   assign xz_rx1_flag = ( ^{C1RxHdr.vc_used, C1RxHdr.hitmiss, C1RxHdr.format, C1RxHdr.clnum, C1RxHdr.resptype, C1RxHdr.mdata}           ) && (C1RxWrValid | C1RxIntrValid);
+
+   assign xz_cfg_flag = ( ^{C0RxCfg.index, C0RxCfg.len, C0RxCfg.tid, C0RxData} ) && (C0RxMmioWrValid | C0RxMmioRdValid);
+
+   
+   // FUNCTION: XZ message
+   function void print_xz_message ( string channel_name );
+      begin
+   	 // Set message
+   	 `BEGIN_RED_FONTCOLOR;
+   	 $display ("SIM-SV: %d | X or Z found on %s is not recommended.", $time, channel_name);
+   	 `END_RED_FONTCOLOR;
+   	 $fwrite( fd_warn, " %d | X or Z found on %s => \n", $time, channel_name);
+   	 $fwrite( fd_warn, "    | This is not recommended, and can have unintended activity\n");
+      end
+   endfunction
+
+
+   // Message call
+   always @(posedge clk) begin
+      if ((xz_tx0_flag == `VLOG_HIIMP) || (xz_tx0_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C0Tx" );
+      if ((xz_tx1_flag == `VLOG_HIIMP) || (xz_tx1_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C1Tx" );
+      if ((xz_tx2_flag == `VLOG_HIIMP) || (xz_tx2_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C2Tx" );
+      if ((xz_rx0_flag == `VLOG_HIIMP) || (xz_rx0_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C0Rx" );
+      if ((xz_rx1_flag == `VLOG_HIIMP) || (xz_rx1_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C1Rx" );
+      if ((xz_cfg_flag == `VLOG_HIIMP) || (xz_cfg_flag == `VLOG_UNDEF))
+   	print_xz_message ( "C0RxMmio" );      
+   end
+
+   /*
+    * Illegal request type
+    */ 
+   always @(posedge clk) begin
+   end
    
    /*
-    * Data hazard warning engine
-    * - Store address as a searchable primary key
+    * Multi-cache line request checks
     */
-   int unsigned active_addresses[*];
-   
    always @(posedge clk) begin
-      // Push function
-      if (C0TxRdValid) begin
-	 if (~active_addresses.exists(C0TxHdr.addr)) begin
-	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
-	 end
-	 else begin
-	    print_hazard_message(C0TxHdr.addr);
-	    active_addresses[C0TxHdr.addr] = C0TxHdr.mdata;
-	 end
-      end
-      if (C1TxWrValid) begin
-	 if (~active_addresses.exists(C1TxHdr.addr)) begin
-	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
-	 end
-	 else begin
-	    print_hazard_message(C1TxHdr.addr);
-	    active_addresses[C1TxHdr.addr] = C1TxHdr.mdata;
-	 end
-      end
-      // Pop function
-      if (C0RxRdValid) begin
-	 if (active_addresses.exists(C0RxHdr.mdata))
-	   active_addresses.delete(C0RxHdr.mdata);
-      end
-      if (C0RxWrValid) begin
-	 if (active_addresses.exists(C0RxHdr.mdata))
-	   active_addresses.delete(C0RxHdr.mdata);
-      end
-      if (C1RxWrValid) begin
-	 if (active_addresses.exists(C1RxHdr.mdata))
-	   active_addresses.delete(C1RxHdr.mdata);
-      end
+      // ------------------------------------------------------------ //
+      // Tx0 - 3 CL request illegal
+      if (C0TxRdValid && (C0TxHdr.len == ASE_3CL)) begin
+	 `BEGIN_RED_FONTCOLOR;
+	 $display("SIM-SV: [ERROR] %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	 $display("        [ERROR] %d | In CCI-P specificaton document, please see Multi-cacheline requests", $time);
+	 $display("        [ERROR] %d | Simulator will shut down now !\n", $time);	 
+	 `END_RED_FONTCOLOR;
+	 $display(fd_warn, " %d | Read Request on C0Tx for 3 cachelines is ILLEGAL !", $time);
+	 $display(fd_warn, "    | In CCI-P specificaton document, please see Multi-cacheline requests");
+	 $display(fd_warn, "    | Simulator will shut down now !\n");	 	 
+	 start_simkill_countdown();	 
+      end // if (C0TxWrValid && (C0TxHdr.clnum == ASE_3CL))
+      // ------------------------------------------------------------ //
+      // Checking a C1Tx Write Request beat
+      // SOP must be HIGH on first packet, and low everywhere else
+      // 
+
    end
+   
+   /*
+    * Check memory transactions in flight, maintain active list
+    */ 
 
 
 endmodule // cci_sniffer
