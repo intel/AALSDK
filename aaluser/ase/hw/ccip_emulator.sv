@@ -236,10 +236,17 @@ module ccip_emulator
    // Reset out
    assign pck_cp2af_softReset = SoftReset;
 
-   // Rx/Tx mapping
+   // Rx/Tx mapping from ccip_if_pkg to ASE's internal format
    always @(*) begin
       // Rx OUT (CH0)
-      pck_cp2af_sRx.c0.hdr         <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
+      // If MMIO RDWR request, cast directly to interface format
+      if (C0RxMmioRdValid|C0RxMmioWrValid) begin
+	 pck_cp2af_sRx.c0.hdr <= t_ccip_c0_RspMemHdr'(C0RxHdr);	 
+      end
+      // Else, cast via function, changing resptype(s)
+      else begin
+	 pck_cp2af_sRx.c0.hdr <= ase_rx0_to_ccip_rx0(t_ccip_c0_RspMemHdr'(C0RxHdr));
+      end
       pck_cp2af_sRx.c0.data        <= t_ccip_clData'(C0RxData);
       pck_cp2af_sRx.c0.rspValid    <= C0RxRspValid;
       pck_cp2af_sRx.c0.mmioRdValid <= C0RxMmioRdValid;
