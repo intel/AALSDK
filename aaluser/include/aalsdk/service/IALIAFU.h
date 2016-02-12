@@ -505,9 +505,12 @@ public:
    #define AALCONF_BUFSIZE                "BufSize"
 
 
-   #define AALCONF_MILLI_TIMEOUT          "DeActivatedTimeout"
-   #define AALCONF_MILLI_PROG_TIMEOUT     "PRProgramTimeout"
+   // Approximate duration to wait for device to be deactivated
+   // and reconfigure timeout
+   #define AALCONF_MILLI_TIMEOUT          "DeactivatedTimeout"
 
+   // Reconfiguration action value specifies what is expected
+   // action that should be taken if the AFU is in use
    #define AALCONF_RECONF_ACTION          "ReconfAction"
 
    // Values for AALCONF_RECONF_ACTION
@@ -522,7 +525,7 @@ public:
    //  after reconfiguration.  If present and set to true the AFU
    //  will remain uinactive (invisible to the application) until
    //  a recongActivate() is called.
-   #define AALCONF_RECONF_DISABLED         "ReconfigState"
+   #define AALCONF_REACTIVATE_DISABLED      "ReactivateState"
 
 
    /// @brief Deactivate an AFU in preparation for it being reconfigured.

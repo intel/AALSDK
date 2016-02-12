@@ -285,12 +285,11 @@ struct ahm_req
          btUnsigned64bitInt mem_id; /* OUT  */
       } mem_uv2id;
 
-      // PR reconfiguraton
+      // PR reconfiguration
       struct {
         btVirtAddr               vaddr;           /* IN   */
         btWSSize                 size;            /* IN   */
         btUnsigned64bitInt       reconfTimeout;   /* IN   */
-        btUnsigned64bitInt       programTimeout;  /* IN   */
         btUnsigned64bitInt       reconfAction;    /* IN   */
         btUnsigned64bitInt       pr_status ;      /* OUT  */
       } pr_config;

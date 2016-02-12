@@ -355,17 +355,115 @@ ccipdrv_event_afu_afufreecws_create( btObjectType      devhandle,
    return This;
 }
 
-//=============================================================================
-// Name: ccipdrv_event_afu_aysnc_pr_release_create
-// Description: Constructor
-//=============================================================================
+///============================================================================
+/// Name: ccipdrv_event_afu_aysnc_pr_revoke_create
+/// @brief Creates AFU revoke event
+///
+/// @param[in] respID - Response ID
+/// @param[in] devhandle -aal device handle.
+/// @param[in] context - applicator context.
+/// @param[in] eno - error id.
+/// @return    afu Response event
+///============================================================================
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_aysnc_pr_revoke_create(uid_afurespID_e    respID,
+                                         btObjectType       devhandle,
+                                         btObjectType       context,
+                                         uid_errnum_e       eno)
+{
+   struct aalui_AFUResponse *response = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_AFUResponse));
+
+   if ( NULL == This ) {
+      return NULL;
+   }
+
+   This->m_devhandle = devhandle;
+   This->m_errnum    = eno;
+   This->m_context =context;
+
+
+   // Point at the payload
+   response = (struct aalui_AFUResponse*)This->m_payload;
+
+   response->respID  = respID;
+   response->evtData = 0;
+   response->payloadsize = 0;
+
+
+   AALQ_QID(This) = rspid_AFU_PR_Revoke_Event;
+   AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
+
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+
+   return This;
+}
+
+///============================================================================
+/// Name: ccipdrv_event_afu_aysnc_pr_request_release_create
+/// @brief Creates AFU release event
+///
+/// @param[in] respID - Response ID
+/// @param[in] devhandle -aal device handle.
+/// @param[in] context - applicator context.
+/// @param[in] eno - error id.
+/// @return    afu Response event
+///============================================================================
+static inline
+struct ccipdrv_event_afu_response_event *
+ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
+                                                  btObjectType       devhandle,
+                                                  btObjectType       context,
+                                                  uid_errnum_e       eno)
+{
+   struct aalui_AFUResponse *response = NULL;
+   struct ccipdrv_event_afu_response_event *This =
+      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_AFUResponse));
+
+   if ( NULL == This ) {
+      return NULL;
+   }
+
+   This->m_devhandle = devhandle;
+   This->m_errnum    = eno;
+   This->m_context =context;
+
+
+   // Point at the payload
+   response = (struct aalui_AFUResponse*)This->m_payload;
+
+   response->respID  = respID;
+   response->evtData = 0;
+   response->payloadsize = 0;
+
+
+   AALQ_QID(This) = rspid_AFU_PR_Release_Request_Event;
+   AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
+
+   // Initialize the queue item
+   kosal_list_init(&AALQ_QUEUE(This));
+
+   return This;
+}
+
+///============================================================================
+/// Name: ccipdrv_event_afu_aysnc_pr_release_create
+/// @brief Creates PR release event
+///
+/// @param[in] respID - Response ID
+/// @param[in] devhandle -aal device handle.
+/// @param[in] context - applicator context.
+/// @param[in] eno - error id.
+/// @return    afu Response event
+///============================================================================
 static inline
 struct ccipdrv_event_afu_response_event *
 ccipdrv_event_afu_aysnc_pr_release_create(uid_afurespID_e    respID,
-                                          uid_msgIDs_e       msgID,
-                                          btUnsigned64bitInt evt_data,
                                           btObjectType       devhandle,
-                                          btObjectType      context,
+                                          btObjectType       context,
                                           uid_errnum_e       eno)
 {
    struct aalui_AFUResponse *response = NULL;
@@ -385,11 +483,11 @@ ccipdrv_event_afu_aysnc_pr_release_create(uid_afurespID_e    respID,
    response = (struct aalui_AFUResponse*)This->m_payload;
 
    response->respID  = respID;
-   response->evtData = evt_data;
+   response->evtData = 0;
    response->payloadsize = 0;
 
 
-   AALQ_QID(This) = msgID;
+   AALQ_QID(This) = rspid_AFU_Response;
    AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
 
    // Initialize the queue item
