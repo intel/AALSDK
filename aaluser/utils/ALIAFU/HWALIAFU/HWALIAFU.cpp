@@ -71,6 +71,8 @@ BEGIN_NAMESPACE(AAL)
 #endif // VERBOSE
 #define VERBOSE(x) AAL_VERBOSE(LM_AFU, __AAL_SHORT_FILE__ << ':' << __LINE__ << ':' << __AAL_FUNC__ << "() : " << x << std::endl)
 
+// Bitstream File extension
+#define BITSTREAM_FILE_EXTENSION ".rbf"
 // ===========================================================================
 //
 // Dispatchables for client callbacks
@@ -915,12 +917,65 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
    if(rInputArgs.Has(AALCONF_FILENAMEKEY)){
       btcString filename;
       rInputArgs.Get(AALCONF_FILENAMEKEY, &filename);
+
+      // File extension is not .rbf , Dispatch error Message "Wrong bitstream file extension"
+      std::string bitfilename(filename);
+      if(BITSTREAM_FILE_EXTENSION != (bitfilename.substr(bitfilename.find_last_of("."))))  {
+         // file extension invalid
+         AAL_ERR( LM_All, "Wrong bitstream file extension \n");
+         getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                                  rTranID,
+                                                                                                                  errBadParameter,
+                                                                                                                  reasParameterNameInvalid,
+                                                                                                                  "Error: Wrong bitstream file extension.")));
+
+         return ;
+      }
+
       std::ifstream bitfile(filename, std::ios::binary );
+
+      if(!bitfile.good()) {
+         // file is invalid, Dispatch error Message "Wrong bitstream file path"
+         AAL_ERR( LM_All, "Wrong bitstream file path \n ");
+         getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                                  rTranID,
+                                                                                                                  errFileError,
+                                                                                                                  reasParameterNameInvalid,
+                                                                                                                  "Error: Wrong bitstream file path.")));
+
+         return ;
+      }
 
       bitfile.seekg( 0, std::ios::end );
       filesize = bitfile.tellg();
+
+      if(0 == filesize) {
+         // file size is 0, Dispatch error Message "Zero bitstream file size"
+         AAL_ERR( LM_All, "Zero bitstream file size \n");
+         getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                                  rTranID,
+                                                                                                                  errFileError,
+                                                                                                                  reasParameterValueInvalid,
+                                                                                                                  "Error: Zero bitstream file size.")));
+
+         return ;
+      }
+
+
       bitfile.seekg( 0, std::ios::beg );
       bufptr = reinterpret_cast<btByte*>(malloc(filesize));
+
+      if(NULL == bufptr) {
+         // Memory  allocation failed  error Message "Failed to allocate file buffer"
+         AAL_ERR( LM_All, "Failed to allocate bitstream file buffer \n");
+         getRuntime()->schedDispatchable(new AFUReconfigureFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                                  rTranID,
+                                                                                                                  errAllocationFailure,
+                                                                                                                  reasUnknown,
+                                                                                                                  "Error: Failed to allocate file buffer.")));
+         return ;
+      }
+
       bitfile.read(reinterpret_cast<char *>(bufptr), filesize);
    }else{
 
