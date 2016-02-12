@@ -450,7 +450,7 @@ btInt ALIConfAFUApp::run()
 
       nvsDeactv.Add(AALCONF_RECONF_ACTION,AALCONF_RECONF_ACTION_HONOR_REQUEST_ID);
 
-      nvsDeactv.Add(AALCONF_RECONF_DISABLED,false);
+      nvsDeactv.Add(AALCONF_REACTIVATE_DISABLED,false);
 
 
 

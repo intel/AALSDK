@@ -460,21 +460,20 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
    }
 
    if(NULL != pcci_aaldev->m_workq_deactivate) {
-// TODO USE KOSAL
-      destroy_workqueue(pcci_aaldev->m_workq_deactivate);
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactivate);
    }
 
-
    if(NULL != pcci_aaldev->m_workq_deactimeout) {
-
-      destroy_workqueue(pcci_aaldev->m_workq_deactimeout);
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactimeout);
    }
 
    if(NULL != pcci_aaldev->m_workq_prconifg) {
-
-        destroy_workqueue(pcci_aaldev->m_workq_prconifg);
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_prconifg);
      }
 
+   if(NULL != pcci_aaldev->m_workq_revokeafu) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_revokeafu);
+    }
 
    kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 

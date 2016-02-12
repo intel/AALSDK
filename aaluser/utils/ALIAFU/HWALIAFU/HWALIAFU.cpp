@@ -1083,6 +1083,19 @@ void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
                                  NamedValueSet const &rInputArgs)
 {
    AFUDeactivateTransaction deactivatetrans(rTranID,rInputArgs);
+
+   if(!deactivatetrans.IsOK() ){
+
+      AAL_ERR( LM_All,"Deactivate failed");
+      getRuntime()->schedDispatchable(new AFUDeactivateFailed( m_pReconClient,new CExceptionTransactionEvent( NULL,
+                                                                                                              rTranID,
+                                                                                                              errCauseUnknown,
+                                                                                                              reasBadConfiguration,
+                                                                                                              "Error: Bad input Configuration")));
+
+         return;
+     }
+
    // Send transaction
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
@@ -1209,7 +1222,7 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    case rspid_AFU_PR_Release_Request_Event:
    {
-      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Release_Request_Event \n" << std::endl;
       std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
       // TODO CREATE THE CROOERCT EVENT WHICH WILL INCLUDE TIMEOUT AND OPTION (HONOR_OWNER OR REQUEST)
       getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, NULL) );

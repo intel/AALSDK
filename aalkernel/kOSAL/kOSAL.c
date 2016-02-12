@@ -465,6 +465,11 @@ void task_poller(struct work_struct *work)
    pwork->callback(pwork->context,NULL);
 
 }
+void kosal_queue_delayed_work(kosal_work_queue wq, pwork_object pwo, KOSAL_TIME msec) {
+
+   queue_delayed_work(wq,&(pwo->workobj),msecs_to_jiffies(msec));
+}
+
 
 #elif defined( __AAL_WINDOWS__ )
 
