@@ -369,6 +369,20 @@ module ccip_emulator
    int finish_logger = 0;
 
 
+   /*
+    * Credit control system
+    */
+   int glbl_dealloc_enable;
+
+   // Individual credit counts
+   int rd_credit;
+   int wr_credit;
+   int mmiowr_credit;
+   int mmiord_credit;
+   int umsg_credit;
+   
+
+   
    /* ***************************************************************************
     * CCI signals declarations
     * ***************************************************************************
@@ -2236,5 +2250,61 @@ module ccip_emulator
    endtask
 
 
+
+   /* ***************************************************************************
+    * Memory deallocation lock
+    * --------------------------------------------------------------------------
+    * Problem: Due to reordering nature of ASE (guaranteed unordered
+    * transactions, DSMs can get unordered, resulting in applications
+    * deallocating memory
+    * 
+    * Potential solution:    
+    * - Count credits running in ASE, { (Tx0, RX0), (Tx1, Rx1), Umsg
+    * outstanding, CsrWrite, (Rx0MMIORd, C2tx) }     
+    * - If total credit count is non-zero, a lock variable will be set, back 
+    * pressuring any deallocate_buffer requests
+    * - Dellocate requests will be queued but not executed
+    * **************************************************************************/
+   always @(posedge clk) begin
+      // ---------------------------------------------------- //
+      // Read credit counter
+      case ( {C0TxRdValid, C0RxRdValid} )
+	2'b10   : rd_credit <= rd_credit + C0TxHdr.len + 1;
+	2'b01   : rd_credit <= rd_credit - 1;
+	2'b11   : rd_credit <= rd_credit + C0TxHdr.len + 1 - 1;
+	default : rd_credit <= rd_credit;	
+      endcase // case ( {C0TxRdValid, C0RxRdValid} )      
+      // ---------------------------------------------------- //
+      // Write credit counter
+      case ( {C1TxWrValid, C1RxWrValid} )
+	2'b10   : wr_credit <= wr_credit + 1;	
+	2'b01   : wr_credit <= wr_credit - 1;	
+	default : wr_credit <= wr_credit;	
+      endcase // case ( {C1TxWrValid, C1RxWrValid} )
+      // ---------------------------------------------------- //
+      // MMIO Writevalid counter
+      case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+	2'b10   : mmiowr_credit <= mmiowr_credit + 1;
+	2'b01   : mmiowr_credit <= mmiowr_credit - 1;
+	default : mmiowr_credit <= mmiowr_credit;	
+      endcase // case ( {cwlp_wrvalid, C0RxMmioWrValid} )
+      // ---------------------------------------------------- //
+      // MMIO readvalid counter
+      case ( {cwlp_rdvalid, mmioresp_valid} )
+	2'b10   : mmiord_credit <= mmiord_credit + 1;
+	2'b01   : mmiord_credit <= mmiord_credit - 1;
+	default : mmiord_credit <= mmiord_credit;	
+      endcase // case ( {cwlp_rdvalid, mmioresp_valid} )      
+      // ---------------------------------------------------- //
+      // Umsg valid counter
+      // *FIXME* 
+      // ---------------------------------------------------- //
+   end
+
+   // Global dealloc flag enable
+   always @(posedge clk) begin
+      glbl_dealloc_enable <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;      
+   end
+   
 
 endmodule // cci_emulator
