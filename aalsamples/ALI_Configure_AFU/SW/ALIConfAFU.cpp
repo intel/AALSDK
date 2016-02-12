@@ -455,10 +455,10 @@ btInt ALIConfAFUApp::run()
 
 
       // FIXME: could reuse existing empty NVS for less overhead
-    //  m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
-    //  m_Sem.Wait();
+      //  m_pALIReconfService->reconfDeactivate(TransactionID(), nvsDeactv);
+      //  m_Sem.Wait();
 
-   //   NamedValueSet nvs;
+      // NamedValueSet nvs;
 
       //nvs.Add(AALCONF_FILENAMEKEY,"/home/joe/sources/ccipTest_PR.cpp");
 
