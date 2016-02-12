@@ -37,6 +37,10 @@
 #ifndef _ASE_COMMON_H_
 #define _ASE_COMMON_H_
 
+#ifdef QUESTA
+#include "dpiheader.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -564,6 +568,8 @@ void buffer_msg_inject (char *);
 // Count error flag dex
 extern int count_error_flag_ping();
 void count_error_flag_pong(int);
+void update_glbl_dealloc(int);
+
 
 /*
  * Request/Response options

@@ -184,6 +184,16 @@ void count_error_flag_pong(int flag)
 }
 
 
+/*
+ * Update global disable/enable 
+ */
+int glbl_dealloc_allowed;
+void update_glbl_dealloc(int flag)
+{
+  glbl_dealloc_allowed = flag;
+}
+
+
 /* ********************************************************************
  * ASE Listener thread
  * --------------------------------------------------------------------
@@ -305,7 +315,7 @@ int ase_listener()
 	  buffer_msg_inject ( logger_str );
 	}
       // if DEALLOC request is received
-      else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
+      else if (ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
 	{
 	  // Format workspace info string
 	  memset (logger_str, 0, ASE_LOGGER_LEN);
@@ -313,6 +323,11 @@ int ase_listener()
 	  sprintf(logger_str + strlen(logger_str), "\n");
 
 	  // Deallocate action
+	  //     #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf("  [DEBUG]  glbl_dealloc_allowed = %d\n", glbl_dealloc_allowed);
+	  END_YELLOW_FONTCOLOR;
+	  //     #endif
 	  ase_dealloc_action(&ase_buffer);
 
 	  // Inject buffer message
@@ -332,7 +347,9 @@ int ase_listener()
 
       // Debug only
     #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
       ase_buffer_info(&ase_buffer);
+      END_YELLOW_FONTCOLOR;
     #endif
     }
 

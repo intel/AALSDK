@@ -305,6 +305,9 @@ module ccip_emulator
    export "DPI-C" task count_error_flag_ping;
    import "DPI-C" function void count_error_flag_pong(int flag);
 
+   // Global dealloc allowed flag
+   import "DPI-C" function void update_glbl_dealloc(int flag);
+      
    // CONFIG, SCRIPT DEX operations
    import "DPI-C" function void sv2c_config_dex(string str);
    import "DPI-C" function void sv2c_script_dex(string str);
@@ -372,7 +375,8 @@ module ccip_emulator
    /*
     * Credit control system
     */
-   int glbl_dealloc_enable;
+   int glbl_dealloc_credit;
+   int glbl_dealloc_credit_q;   
 
    // Individual credit counts
    int rd_credit;
@@ -2303,7 +2307,25 @@ module ccip_emulator
 
    // Global dealloc flag enable
    always @(posedge clk) begin
-      glbl_dealloc_enable <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;      
+      glbl_dealloc_credit <= wr_credit + rd_credit + mmiord_credit + mmiowr_credit + umsg_credit;      
+   end
+
+   // Register for changes
+   always @(posedge clk)
+     glbl_dealloc_credit_q <= glbl_dealloc_credit;
+   
+
+   // Update process
+   always @(posedge clk) begin
+      if ((glbl_dealloc_credit_q == 0) && (glbl_dealloc_credit != 0)) begin
+	 update_glbl_dealloc(0);	 
+      end
+      else if ((glbl_dealloc_credit_q != 0) && (glbl_dealloc_credit == 0)) begin
+	 update_glbl_dealloc(1);	 
+      end
+      else if (glbl_dealloc_credit == 0) begin
+	 update_glbl_dealloc(1);	 
+      end
    end
    
 
