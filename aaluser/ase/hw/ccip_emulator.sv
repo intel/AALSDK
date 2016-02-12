@@ -713,7 +713,7 @@ module ccip_emulator
       );
 
    // MMIO Response mask (act by reference)
-   function void mmio_rsp_mask( ref mmio_t mmio_in );
+   function automatic void mmio_rsp_mask( ref mmio_t mmio_in );
       begin
 	 // Data
 	 mmio_in.qword[0] = mmioresp_dout[CCIP_MMIO_RDDATA_WIDTH-1:0];

@@ -79,7 +79,7 @@ CC_OPT+= -Wall
 # -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-CC_OPT+= -D ASE_DEBUG=1 -pedantic
+# CC_OPT+= -D ASE_DEBUG=1 -pedantic
 endif
 
 ## Print information ##
@@ -114,15 +114,15 @@ SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
 ifeq ($(ASE_DEBUG), 1)
-SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
-SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
-SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
+  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
-SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
+# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1 
 ifeq ($(ASE_DISABLE_LOGGER), 1)
-SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+ SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
 endif
 
 ## VCS elaboration
@@ -130,12 +130,12 @@ SNPS_VCS_OPT = -nc -V +vcs+lic+wait -full64 -debug_all -Mupdate -lca
 SNPS_VCS_OPT+= -l vcs_elab.log +vhdllib+$(WORK) -Mlib=$(WORK) 
 SNPS_VCS_OPT+= -override_timescale=$(TIMESCALE) -o $(WORK)/ase_simv
 ifeq ($(ASE_DEBUG), 1)
-ifeq ($(ASE_PROFILE_ENABLE), 1)
-SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
-SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
-SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-SNPS_VCS_OPT+= -simprofile +prof
-endif
+  ifeq ($(ASE_PROFILE_ENABLE), 1)
+    SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect 
+    SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
+    SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
+    SNPS_VCS_OPT+= -simprofile +prof
+  endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
 
@@ -150,12 +150,13 @@ VCS_SIM_OPT = -l run.log -ucli -do $(ASE_SRCDIR)/vcs_run.tcl
 MENT_VCOM_OPT = -nologo -work $(WORK)
 
 ## VLOG compile
-MENT_VLOG_OPT = -64 -novopt -nologo +librescan -work $(WORK) 
-MENT_VLOG_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR) 
+MENT_VLOG_OPT = -64 -nologo +librescan -work $(WORK) 
+MENT_VLOG_OPT+= +incdir+$(ASE_INCDIR)+$(DUT_INCDIR) 
 MENT_VLOG_OPT+= -sv  -timescale $(TIMESCALE) -l vlog.log
+MENT_VLOG_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 
 ## VSIM elaboration, and run options
-MENT_VSIM_OPT = -64 -c -novopt -l run.log
+MENT_VSIM_OPT = -64 -c -l run.log
 MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 
 #########################################################################
@@ -269,13 +270,13 @@ questa_build:
 	vlib $(WORK)
 	vmap work $(WORK)
 	make sw_build
+	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 ifdef DUT_VHD_SRC_LIST
 	vcom $(MENT_VCOM_OPT) -f $(DUT_VHD_SRC_LIST)
 endif
 ifdef DUT_VLOG_SRC_LIST
 	vlog $(MENT_VLOG_OPT) -f $(DUT_VLOG_SRC_LIST)
 endif
-	vlog $(MENT_VLOG_OPT) $(ASEHW_FILE_LIST)
 
 
 ## Build Simulator objects ## 

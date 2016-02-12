@@ -318,7 +318,7 @@ module outoforder_wrf_channel
 
    // Select VC
    // function logic [CCIP_TX_HDR_WIDTH-1:0] select_vc(int init, input [CCIP_TX_HDR_WIDTH-1:0] hdr);
-   function void select_vc(int init, ref TxHdr_t hdr);
+   function automatic void select_vc(int init, ref TxHdr_t hdr);
       begin
 	 if (init) begin
 	    vc_arb = ccip_vc_t'(VC_VL0);
@@ -354,7 +354,7 @@ module outoforder_wrf_channel
 
 
    // Write fence response generator
-   function logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
+   function automatic logic [CCIP_RX_HDR_WIDTH-1:0] prepare_wrfence_response(TxHdr_t wrfence);
       RxHdr_t wrfence_rsp;
       logic [CCIP_RX_HDR_WIDTH-1:0] wrfence_rsp_vec;
       begin
@@ -381,7 +381,7 @@ module outoforder_wrf_channel
     *   = Select VC
     *   = Stage into response array
     */
-   function void infifo_to_vc_push ();
+   function automatic void infifo_to_vc_push ();
       begin
 	 if (~some_lane_full & ~infifo_empty) begin
 	    {infifo_tid_out, infifo_data_out, infifo_hdr_out_vec} = infifo.pop_front();
@@ -561,7 +561,7 @@ module outoforder_wrf_channel
    assign latbuf_almfull = (latbuf_cnt >= (NUM_WAIT_STATIONS-3)) ? 1 : 0;
 
    // push_ptr selector
-   function integer find_next_push_slot();
+   function automatic integer find_next_push_slot();
       int 				     find_iter;
       int 				     ret_free_slot;
       begin
@@ -585,7 +585,7 @@ module outoforder_wrf_channel
    // Latbuf assignment process
    //////////////////////////////////////////////////////////////////////
    // Read and update record in latency scoreboard
-   function void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$],
+   function automatic void read_vc_latbuf_push (ref logic [FIFO_WIDTH-1:0] array[$:INTERNAL_FIFO_DEPTH-1],
 				      ref logic 	   	 wrfence_flag,
 				      ref logic [TID_WIDTH-1:0]  wrfence_tid
 				      );
@@ -833,7 +833,7 @@ module outoforder_wrf_channel
    logic 			 unroll_active;
 
    // Read from latency scoreboard and push to outfifo
-   task latbuf_pop_unroll_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$] );
+   task automatic latbuf_pop_unroll_outfifo(ref logic [OUTFIFO_WIDTH-1:0] array[$:VISIBLE_DEPTH-1] );
       logic [CCIP_DATA_WIDTH-1:0] data;
       int 			  ptr;
       TxHdr_t                     txhdr;
