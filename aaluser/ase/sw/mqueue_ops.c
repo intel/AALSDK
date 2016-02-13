@@ -44,11 +44,11 @@ void ipc_init()
 
   int ipc_iter;
 
-  strcpy(mq_array[0].name, "app2sim_bufping_smq");
+  strcpy(mq_array[0].name, "app2sim_alloc_ping_smq");
   strcpy(mq_array[1].name, "app2sim_mmioreq_smq");
   strcpy(mq_array[2].name, "app2sim_umsg_smq");
   strcpy(mq_array[3].name, "app2sim_simkill_smq");
-  strcpy(mq_array[4].name, "sim2app_bufpong_smq");
+  strcpy(mq_array[4].name, "sim2app_alloc_pong_smq");
   strcpy(mq_array[5].name, "sim2app_mmiorsp_smq");
   strcpy(mq_array[6].name, "app2sim_portctrl_smq");
 

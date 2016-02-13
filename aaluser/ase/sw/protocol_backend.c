@@ -277,7 +277,7 @@ int ase_listener()
 
   // Receive a DPI message and get information from replicated buffer
   // if (ase_recv_msg(&ase_buffer)==ASE_MSG_PRESENT)
-  if (mqueue_recv(app2sim_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+  if (mqueue_recv(app2sim_alloc_ping_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
       // ALLOC request received
       if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
@@ -557,11 +557,11 @@ int ase_init()
     mqueue_create( mq_array[ipc_iter].name );
 
   // Open message queues
-  app2sim_rx          = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
+  app2sim_alloc_ping_rx          = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
   app2sim_mmioreq_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
   app2sim_umsg_rx     = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
   app2sim_simkill_rx  = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
-  sim2app_tx          = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  sim2app_alloc_ping_tx          = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
   sim2app_mmiorsp_tx  = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
   app2sim_portctrl_rx = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
 

@@ -50,8 +50,8 @@ void ase_mqueue_teardown()
   FUNC_CALL_ENTRY;
 
   // Close message queues
-  mqueue_close(app2sim_rx);       
-  mqueue_close(sim2app_tx);       
+  mqueue_close(app2sim_alloc_ping_rx);       
+  mqueue_close(sim2app_alloc_ping_tx);       
   mqueue_close(app2sim_mmioreq_rx);
   mqueue_close(sim2app_mmiorsp_tx);
   mqueue_close(app2sim_umsg_rx);
@@ -106,7 +106,7 @@ int ase_recv_msg(struct buffer_t *mem)
   char tmp_msg[ASE_MQ_MSGSIZE];
 
   // Receive a message on mqueue
-  if(mqueue_recv(app2sim_rx, tmp_msg)==ASE_MSG_PRESENT)
+  if(mqueue_recv(app2sim_alloc_ping_rx, tmp_msg)==ASE_MSG_PRESENT)
     {
       // Convert the string to buffer_t
       ase_str_to_buffer_t(tmp_msg, mem);
@@ -137,7 +137,7 @@ void ase_send_msg(struct buffer_t *mem)
   ase_buffer_t_to_str(mem, tmp_msg);
 
   // Send message out
-  mqueue_send(sim2app_tx, tmp_msg);
+  mqueue_send(sim2app_alloc_ping_tx, tmp_msg);
 
   FUNC_CALL_EXIT;
 }
@@ -210,7 +210,7 @@ void ase_alloc_action(struct buffer_t *mem)
   mem->metadata = HDR_MEM_ALLOC_REPLY;
   
   // Convert buffer_t to string
-  mqueue_send(sim2app_tx, (char*)mem, ASE_MQ_MSGSIZE);
+  mqueue_send(sim2app_alloc_ping_tx, (char*)mem, ASE_MQ_MSGSIZE);
 
    // If memtest is enabled
 #ifdef ASE_MEMTEST_ENABLE
@@ -270,7 +270,7 @@ void ase_dealloc_action(struct buffer_t *buf)
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
-      mqueue_send(sim2app_tx, buf_str, ASE_MQ_MSGSIZE);
+      mqueue_send(sim2app_alloc_ping_tx, buf_str, ASE_MQ_MSGSIZE);
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();

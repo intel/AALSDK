@@ -628,16 +628,16 @@ uint64_t PHYS_ADDR_PREFIX_MASK;
  * IPC MQ fd names
  */
 #ifdef SIM_SIDE
-int app2sim_rx;           // app2sim mesaage queue in RX mode
-int sim2app_tx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_ping_rx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_ping_tx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
 int app2sim_portctrl_rx;  // Port Control messages in Rx mode
 #else
-int app2sim_tx;           // app2sim mesaage queue in RX mode
-int sim2app_rx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_ping_tx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_ping_rx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
