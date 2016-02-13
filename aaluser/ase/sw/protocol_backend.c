@@ -367,6 +367,7 @@ int ase_listener()
 	  buffer_msg_inject ( logger_str );
 	  
 	  // Standard oneline message ---> Hides internal info
+	  ase_buffer.valid = ASE_BUFFER_INVALID;
 	  ase_buffer_oneline(&ase_buffer);
 
       // Debug only

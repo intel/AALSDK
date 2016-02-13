@@ -35,7 +35,7 @@ do
 	mcl_set=${mcl_arr[$index]}
 	mcl_cnt=$(($mcl_set + 1))
 
-	num_cl=`shuf -i 32-16383 -n 1`
+	num_cl=`shuf -i 12000-16000 -n 1`
 #	echo $mcl_cnt $num_cl
 	num_cl=$(($num_cl * $mcl_cnt))
 	
