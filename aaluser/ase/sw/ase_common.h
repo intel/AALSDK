@@ -410,7 +410,7 @@ extern "C" {
 #define ASE_MQ_MAXMSG     8
 #define ASE_MQ_MSGSIZE    1024
 #define ASE_MQ_NAME_LEN   64
-#define ASE_MQ_INSTANCES  7
+#define ASE_MQ_INSTANCES  9
 
 // Message presence setting
 #define ASE_MSG_PRESENT 0xD33D
@@ -494,11 +494,8 @@ struct ase_cfg_t
   int ase_timeout;
   int ase_num_tests;
   int enable_reuse_seed;
-  /* int num_umsg_log2; */
   int enable_cl_view;
   int phys_memory_available_gb;
-  /* int enable_capcm; */
-  /* int memmap_sad_setting; */
 };
 struct ase_cfg_t *cfg;
 
@@ -558,9 +555,6 @@ void umsg_dispatch(int init, struct umsgcmd_t *umsg_pkt);
 
 // PORT control functions
 
-// void ase_umsg_init();
-/* int umsg_listener(); */
-// void ase_umsg_init();
 
 // Buffer message injection
 void buffer_msg_inject (char *);
@@ -628,21 +622,25 @@ uint64_t PHYS_ADDR_PREFIX_MASK;
  * IPC MQ fd names
  */
 #ifdef SIM_SIDE
-int app2sim_alloc_ping_rx;           // app2sim mesaage queue in RX mode
-int sim2app_alloc_ping_tx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_rx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_tx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_rx;   // MMIO Request path
 int sim2app_mmiorsp_tx;   // MMIO Response path
 int app2sim_umsg_rx;      // UMSG    message queue in RX mode
 int app2sim_simkill_rx;   // app2sim message queue in RX mode
 int app2sim_portctrl_rx;  // Port Control messages in Rx mode
+int app2sim_dealloc_rx;
+int sim2app_dealloc_tx;
 #else
-int app2sim_alloc_ping_tx;           // app2sim mesaage queue in RX mode
-int sim2app_alloc_ping_rx;           // sim2app mesaage queue in TX mode
+int app2sim_alloc_tx;           // app2sim mesaage queue in RX mode
+int sim2app_alloc_rx;           // sim2app mesaage queue in TX mode
 int app2sim_mmioreq_tx;   // MMIO Request path
 int sim2app_mmiorsp_rx;   // MMIO Response path
 int app2sim_umsg_tx;      // UMSG    message queue in RX mode
 int app2sim_simkill_tx;   // app2sim message queue in RX mode
 int app2sim_portctrl_tx;  // Port Control message in TX mode 
+int app2sim_dealloc_tx;
+int sim2app_dealloc_rx;
 #endif // End SIM_SIDE
 
 
