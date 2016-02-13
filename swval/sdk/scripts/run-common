@@ -203,7 +203,7 @@ run_standalone() {
 run_bat() {
    local cmd
 
-   cmd="${VPATH}/tests/bat ${1+"$@"}"
+   cmd="${VPATH}/tests/bat --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -222,7 +222,7 @@ run_bat() {
 run_nightly() {
    local cmd
 
-   cmd="${VPATH}/tests/nightly ${1+"$@"}"
+   cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -241,7 +241,7 @@ run_nightly() {
 run_weekly() {
    local cmd
 
-   cmd="${VPATH}/tests/weekly ${1+"$@"}"
+   cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -264,7 +264,7 @@ run_everything() {
 
    run_standalone
 
-   cmd="${VPATH}/tests/bat ${1+"$@"}"
+   cmd="${VPATH}/tests/bat --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -273,7 +273,7 @@ run_everything() {
    res=$?
    [ ${res} -ne 0 ] && ret=${res}
 
-   cmd="${VPATH}/tests/nightly ${1+"$@"}"
+   cmd="${VPATH}/tests/nightly --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
@@ -282,7 +282,7 @@ run_everything() {
    res=$?
    [ ${res} -ne 0 ] && ret=${res}
 
-   cmd="${VPATH}/tests/weekly ${1+"$@"}"
+   cmd="${VPATH}/tests/weekly --vpath=${VPATH} ${1+"$@"}"
 
    printf "\n%s\n" "${GIT_COMMIT_HASH}"
    printf "%s\n\n" "${cmd}"
