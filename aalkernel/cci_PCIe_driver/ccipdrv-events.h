@@ -382,18 +382,16 @@ ccipdrv_event_afu_aysnc_pr_revoke_create(uid_afurespID_e    respID,
 
    This->m_devhandle = devhandle;
    This->m_errnum    = eno;
-   This->m_context =context;
-
+   This->m_context   = context;
 
    // Point at the payload
    response = (struct aalui_AFUResponse*)This->m_payload;
 
-   response->respID  = respID;
-   response->evtData = 0;
+   response->respID      = respID;
+   response->evtData     = 0;
    response->payloadsize = 0;
 
-
-   AALQ_QID(This) = rspid_AFU_PR_Revoke_Event;
+   AALQ_QID(This)  = rspid_AFU_PR_Revoke_Event;
    AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
 
    // Initialize the queue item
@@ -417,6 +415,8 @@ struct ccipdrv_event_afu_response_event *
 ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
                                                   btObjectType       devhandle,
                                                   btObjectType       context,
+                                                  btUnsigned64bitInt action,
+                                                  btUnsigned64bitInt timeout,
                                                   uid_errnum_e       eno)
 {
    struct aalui_AFUResponse *response = NULL;
@@ -427,20 +427,18 @@ ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
       return NULL;
    }
 
-   This->m_devhandle = devhandle;
-   This->m_errnum    = eno;
-   This->m_context =context;
-
+   This->m_devhandle  = devhandle;
+   This->m_errnum     = eno;
+   This->m_context    = context;
 
    // Point at the payload
    response = (struct aalui_AFUResponse*)This->m_payload;
 
-   response->respID  = respID;
-   response->evtData = 0;
+   response->respID      = respID;
+   response->evtData     = 0;
    response->payloadsize = 0;
 
-
-   AALQ_QID(This) = rspid_AFU_PR_Release_Request_Event;
+   AALQ_QID(This)  = rspid_AFU_PR_Release_Request_Event;
    AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
 
    // Initialize the queue item
@@ -476,18 +474,16 @@ ccipdrv_event_afu_aysnc_pr_release_create(uid_afurespID_e    respID,
 
    This->m_devhandle = devhandle;
    This->m_errnum    = eno;
-   This->m_context =context;
-
+   This->m_context   = context;
 
    // Point at the payload
    response = (struct aalui_AFUResponse*)This->m_payload;
 
-   response->respID  = respID;
-   response->evtData = 0;
+   response->respID      = respID;
+   response->evtData     = 0;
    response->payloadsize = 0;
 
-
-   AALQ_QID(This) = rspid_AFU_Response;
+   AALQ_QID(This)  = rspid_AFU_Response;
    AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
 
    // Initialize the queue item

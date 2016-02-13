@@ -112,11 +112,11 @@ typedef enum
    uid_errnumAFUActivated,                       // 29
    uid_errnumDeActiveTimeout,                    // 30
    uid_errnumPRTimeout,                          // 31
-   uid_errnumPROperationErr,                     // 32
-   uid_errnumPRCRCErr,                           // 33
-   uid_errnumPRIncomparableBitstreamErr,         // 34
-   uid_errnumPRIPProtocalErr,                    // 35
-   uid_errnumPRFIFOErr,                          // 36
+   uid_errnumPROperation,                        // 32
+   uid_errnumPRCRC,                              // 33
+   uid_errnumPRIncomparableBitstream,            // 34
+   uid_errnumPRIPProtocal,                       // 35
+   uid_errnumPRFIFO,                             // 36
    uid_errnumAFUActivationFail,                  // 37
    uid_errnumRequestAFURelease                   // 38
 
@@ -482,8 +482,6 @@ struct  PERFCOUNTER_EVENT
 {
    char  name[50];
    btUnsigned64bitInt value;
-   //btUnsigned64bitInt offset;
-   //btUnsigned64bitInt rsvd[9];
 };
 
 struct  CCIP_PERF_COUNTERS
