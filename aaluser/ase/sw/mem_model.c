@@ -269,7 +269,7 @@ void ase_dealloc_action(struct buffer_t *buf)
       dealloc_ptr->metadata = HDR_MEM_DEALLOC_REPLY;
       ll_remove_buffer(dealloc_ptr);
       memcpy(buf_str, dealloc_ptr, sizeof(struct buffer_t));
-      mqueue_send(sim2app_alloc_tx, buf_str, ASE_MQ_MSGSIZE);
+      mqueue_send(sim2app_dealloc_tx, buf_str, ASE_MQ_MSGSIZE);
     #ifdef ASE_DEBUG
       BEGIN_YELLOW_FONTCOLOR;
       ll_traverse_print();

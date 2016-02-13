@@ -666,10 +666,10 @@ void deallocate_buffer(struct buffer_t *mem)
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2sim_alloc_tx, tmp_msg, ASE_MQ_MSGSIZE);
+  mqueue_send(app2sim_dealloc_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Wait for response to deallocate
-  mqueue_recv(sim2app_alloc_rx, tmp_msg, ASE_MQ_MSGSIZE);
+  mqueue_recv(sim2app_dealloc_rx, tmp_msg, ASE_MQ_MSGSIZE);
   ase_str_to_buffer_t(tmp_msg, mem);
   
   // Unmap the memory accordingly
