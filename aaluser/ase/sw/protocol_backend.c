@@ -351,30 +351,32 @@ int ase_listener()
   // ------------------------------------------------------------------------------- //
 
   ase_empty_buffer(&ase_buffer);
-  if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+  if (glbl_dealloc_allowed) 
     {
-      // Format workspace info string
-      memset (logger_str, 0, ASE_LOGGER_LEN);
-      sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
-      sprintf(logger_str + strlen(logger_str), "\n");
-
-      // Deallocate action
-      ase_dealloc_action(&ase_buffer);
-      
-      // Inject buffer message
-      buffer_msg_inject ( logger_str );
-
-      // Standard oneline message ---> Hides internal info
-      ase_buffer_oneline(&ase_buffer);
+      if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+	{
+	  // Format workspace info string
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
+	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Deallocate action
+	  ase_dealloc_action(&ase_buffer);
+	  
+	  // Inject buffer message
+	  buffer_msg_inject ( logger_str );
+	  
+	  // Standard oneline message ---> Hides internal info
+	  ase_buffer_oneline(&ase_buffer);
 
       // Debug only
-    #ifdef ASE_DEBUG
-      BEGIN_YELLOW_FONTCOLOR;
-      ase_buffer_info(&ase_buffer);
-      END_YELLOW_FONTCOLOR;
-    #endif
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  ase_buffer_info(&ase_buffer);
+	  END_YELLOW_FONTCOLOR;
+       #endif
+	}
     }
-
   
   // ------------------------------------------------------------------------------- //
   /*
