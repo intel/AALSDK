@@ -459,10 +459,6 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
       return -EINVAL;
    }
 
-   if(NULL != pcci_aaldev->m_workq_deactivate) {
-      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactivate);
-   }
-
    if(NULL != pcci_aaldev->m_workq_deactimeout) {
       kosal_destroy_workqueue(pcci_aaldev->m_workq_deactimeout);
    }
