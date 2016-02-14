@@ -61,6 +61,7 @@
 #include <math.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/file.h>
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"
@@ -319,7 +320,7 @@ int ase_recv_msg(struct buffer_t *);
 void ase_alloc_action(struct buffer_t *);
 void ase_dealloc_action(struct buffer_t *);
 void ase_destroy();
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t);
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t, int*);
 void ase_dbg_memtest(struct buffer_t *);
 void ase_perror_teardown();
 void ase_empty_buffer(struct buffer_t *);

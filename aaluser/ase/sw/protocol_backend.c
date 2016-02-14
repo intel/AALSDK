@@ -121,12 +121,14 @@ void wr_memline_dex(cci_pkt *pkt)
 
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
+  int ret_fd;
 
   if (pkt->wrfence == 0) 
     {
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
+      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
+
       // Write to memory
       memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
    }
@@ -147,10 +149,11 @@ void rd_memline_dex(cci_pkt *pkt )
 
   uint64_t phys_addr;
   uint64_t *rd_target_vaddr = (uint64_t*)NULL;
+  int ret_fd;
 
   // Get cl_addr, deduce rd_target_vaddr
   phys_addr = (uint64_t)pkt->cl_addr << 6;
-  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd);
 
   // Read from memory
   memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);

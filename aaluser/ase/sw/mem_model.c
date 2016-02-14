@@ -452,7 +452,7 @@ uint64_t get_range_checked_physaddr(uint32_t size)
  * Takes in a simulated physical address from AFU, converts it 
  *   to virtual address
  */
-uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
+uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 {
   FUNC_CALL_ENTRY; 
 
@@ -461,7 +461,8 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 
   // DPI pbase address
   uint64_t *ase_pbase;
-  
+  // *ret_fd = 0;
+ 
   // This is the real offset to perform read/write
   uint64_t real_offset, calc_pbase;
   
@@ -489,10 +490,11 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr)
 	  real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
 	  calc_pbase = trav_ptr->pbase;
 	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
+	  *ret_fd = trav_ptr->fd_ase;
 	  // Debug only
 #ifdef ASE_DEBUG
 	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p\n", real_offset, (void *)ase_pbase);
+	  printf("offset = 0x%016lx | pbase_off = %p | ret_fd = %d\n", real_offset, (void *)ase_pbase, *ret_fd);
 	  END_YELLOW_FONTCOLOR;
 #endif
 	  return ase_pbase;
