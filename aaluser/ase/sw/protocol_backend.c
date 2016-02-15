@@ -827,14 +827,12 @@ void ase_config_parse(char *filename)
   ssize_t read;
   char *parameter;
   int value;
-  // int tmp_umsg_log2;
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
   memset (ase_cfg_filepath, 0, 256);
   if ( strlen(sv2c_config_filepath) != 0 )
     {
-      // strcpy(ase_cfg_filepath, sv2c_config_filepath);
       sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
     }
   else

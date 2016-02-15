@@ -38,9 +38,6 @@
 struct buffer_t *head;
 struct buffer_t *end;
 
-// uint64_t csr_fake_pin;
-// struct timeval start;
-
 // -----------------------------------------------------------
 // ase_dump_to_file : Dumps a shared memory region into a file
 // Dump contents of shared memory to a file
@@ -91,8 +88,8 @@ void ase_buffer_info(struct buffer_t *mem)
   printf("\tBufferName  = \"%s\"\n", mem->memname);  
   printf("\tPhysAddr LO = %p\n",     (void *)mem->fake_paddr); 
   printf("\tPhysAddr HI = %p\n",     (void *)mem->fake_paddr_hi);
-  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap) ? "YES" : "NO");
-  printf("\tisUMAS      = %s\n",     (mem->is_umas) ? "YES" : "NO");
+  printf("\tisMMIOMap   = %s\n",     (mem->is_mmiomap == 1) ? "YES" : "NO");
+  printf("\tisUMAS      = %s\n",     (mem->is_umas == 1) ? "YES" : "NO");
   END_YELLOW_FONTCOLOR;
 
   FUNC_CALL_EXIT;
@@ -141,7 +138,6 @@ void ase_str_to_buffer_t(char *str, struct buffer_t *buf)
   FUNC_CALL_ENTRY;
   
   memcpy((char*)buf, str, sizeof(struct buffer_t));
-  
 
   FUNC_CALL_EXIT;
 }
@@ -175,11 +171,8 @@ char* ase_eval_session_directory()
   
   char *workdir_path;
   char *env_path;
-  /* struct stat s; */
-  /* int err; */
     
   workdir_path = ase_malloc (ASE_FILEPATH_LEN);
-  // if (!workdir_path) return NULL;
 
   // Evaluate basename location
 #ifdef SIM_SIDE
@@ -207,32 +200,6 @@ char* ase_eval_session_directory()
   
   return workdir_path;
 }
-
-//char* ase_eval_session_directory()
-//{
-//  FUNC_CALL_ENTRY;
-//
-//  char *workdir_path;
-//  /* struct stat s; */
-//  /* int err; */
-//
-//  workdir_path = malloc (ASE_FILEPATH_LEN);
-//  // Evaluate basename location
-//#ifdef SIM_SIDE
-//  workdir_path = getenv ("PWD");
-//#else
-//  workdir_path = getenv ("ASE_WORKDIR");
-//#endif
-//
-//  // Locate work directory
-//  strcat( workdir_path, "/work/" );
-//
-//  // *FIXME*: Idiot-proof the work directory
-//
-//  FUNC_CALL_EXIT;
-//
-//  return workdir_path;
-//}
 
 
 /*
