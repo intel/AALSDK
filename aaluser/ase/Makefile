@@ -76,9 +76,11 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 
+CC_OPT+= -I $(TOOL_DPI_INCDIR)/include
 CC_OPT+= -Wall 
-# -std=c99 -D_POSIX_C_SOURCE=200809L
+# -std=c99
+# -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
 CC_OPT+= -D ASE_DEBUG=1
@@ -116,27 +118,26 @@ SNPS_VHDLAN_OPT+= -work $(WORK)
 SNPS_VLOGAN_OPT = -nc -V -full64 +v2k -sverilog -l vlogan.log
 SNPS_VLOGAN_OPT+= +incdir+$(DUT_INCDIR) +incdir+$(ASE_INCDIR)
 SNPS_VLOGAN_OPT+= +librescan -work $(WORK) -override_timescale=$(TIMESCALE)
-ifeq ($(ASE_DEBUG), 1)
-  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
-endif
-# ifdef GLS_SIM
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/220model.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/sgate.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
-# SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
-# endif
-# SNPS_VLOGAN_OPT+= +define+MAX_TRANSFER_SIZE_1
 SNPS_VLOGAN_OPT+= +define+VENDOR_ALTERA +define+TOOL_QUARTUS +define+NUM_AFUS=1 +define+NLB400_MODE_0
 SNPS_VLOGAN_OPT+= +define+CCIP_IF_V0_1 +define+USE_PLATFORM_CCIP  +define+CCI_SIMULATION=1 +define+SIM_MODE=1
-ifeq ($(ASE_DISABLE_LOGGER), 1)
- SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+ifeq ($(ASE_DEBUG), 1)
+  ifeq ($(ASE_DISABLE_LOGGER), 1)
+   SNPS_VLOGAN_OPT+= +define+ASE_DISABLE_LOGGER
+  endif
+  SNPS_VLOGAN_OPT+= +define+ASE_DEBUG +lint=TFIPC-L
+endif
+ifdef GLS_SIM
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v
+#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
+  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 
 ## VCS elaboration
@@ -176,7 +177,8 @@ MENT_VSIM_OPT+= -sv_lib $(WORK)/$(ASE_SHOBJ_NAME) -do vsim_run.tcl
 #########################################################################
 #                         Valgring options                              #
 #########################################################################
-VALGRIND_OPTS = -v --log-file=valgrind.log --error-limit=no
+VALGRIND_OPTS = --tool=memcheck
+VALGRIND_OPTS+= -v --log-file=valgrind.log --error-limit=no
 VALGRIND_OPTS+= --track-fds=yes --trace-children=yes
 VALGRIND_OPTS+= --leak-check=full --track-origins=yes
 VALGRIND_OPTS+= --show-reachable=yes
@@ -218,7 +220,7 @@ endif
 header:
 	@echo "############################################################"
 	@echo "#                                                          #"
-	@echo "# Intel QuickAssist FPGA AFU Simulation Environment $(ASE_VERSION)  #"
+	@echo "# Intel Xeon+FPGA BDX-P AFU Simulation Environment $(ASE_VERSION)   #"
 	@echo "#                                                          #"
 	@echo "############################################################"
 
@@ -340,7 +342,7 @@ clean: header
 	rm -rf work/ *.log *.tsv AN.DB/ || echo "make: Didn't clean up work"
 	rm -rf csrc/ vc_hdrs.h .vlogansetup.* *.vpd
 	rm -rf transcript modelsim.ini vsim.wlf ucli.key vsim_stacktrace.vstf
-	rm -rf profile* simprofile*
+	rm -rf profile* simprofile* scanbuild/
 	rm -rf .ase_* *.o ase_seed.txt warnings.txt
 
 distclean: header clean
@@ -348,12 +350,10 @@ distclean: header clean
 
 
 CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats 
-CLANG_OPT+= -maxloop 100
+CLANG_OPT+= -maxloop 250
 CLANG_OPT+= -o $(PWD)/scanbuild/ 
 CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.5
 CLANG_OPT+= -enable-checker alpha \
-	-enable-checker alpha.core.CastSize \
-	-enable-checker alpha.core.CastToStruct \
 	-enable-checker alpha.core.IdenticalExpr \
 	-enable-checker alpha.core.SizeofPtr \
 	-enable-checker alpha.core.BoolAssignment \
@@ -399,14 +399,16 @@ CLANG_OPT+= -enable-checker alpha \
 	-enable-checker unix.MismatchedDeallocator \
 	-enable-checker unix.cstring.BadSizeArg \
 	-enable-checker unix.cstring.NullArg \
-
+	-enable-checker alpha.core.CastToStruct \
+	-enable-checker alpha.core.CastSize \
 
 #########################################################################
 #                            Internal only                              #
 #########################################################################
 # Source scan-build
 scan-build:
-	scan-build-3.5 $(CLANG_OPT) make | tee scan-build.log
+	mkdir -p scanbuild
+	scan-build-3.5 $(CLANG_OPT) make sw_build | tee scan-build.log
 
 # Coverage
 coverage:
