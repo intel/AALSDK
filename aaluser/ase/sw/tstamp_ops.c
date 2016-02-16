@@ -98,19 +98,20 @@ char* get_timestamp(int dont_kill)
 
   FILE *fp;
 
-  unsigned long long readback;
+  // unsigned long long readback;
 
   char *tstamp_str;
   tstamp_str = ase_malloc(20);
-  if (tstamp_str == NULL)
-    {
-      ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
-      start_simkill_countdown();
-    #else
-      exit(1);
-    #endif		       
-    }
+
+  /* if (tstamp_str == NULL) */
+  /*   { */
+  /*     ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR); */
+  /*   #ifdef SIM_SIDE */
+  /*     start_simkill_countdown(); */
+  /*   #else */
+  /*     exit(1); */
+  /*   #endif		        */
+  /*   } */
 
   char *tstamp_filepath;
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
@@ -143,10 +144,11 @@ char* get_timestamp(int dont_kill)
 	}
     }
   
-  fread(&readback, sizeof(unsigned long long), 1, fp);
+  // fread(&readback, sizeof(unsigned long long), 1, fp);
+  fread(tstamp_str, sizeof(char), 20, fp);
   fclose(fp);
   
-  sprintf(tstamp_str, "%lld", readback);
+  // sprintf(tstamp_str, "%lld", readback);
 
 #ifdef ASE_DEBUG
   printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);

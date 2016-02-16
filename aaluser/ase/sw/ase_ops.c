@@ -105,9 +105,9 @@ void ase_buffer_oneline(struct buffer_t *mem)
 
   printf("%d  ", mem->index);
   if (mem->valid == ASE_BUFFER_VALID) 
-    printf("ADDED   ");
+    printf("\tADDED   ");
   else
-    printf("REMOVED ");
+    printf("\tREMOVED ");
   printf("%5s \t", mem->memname);
   printf("\n");
 

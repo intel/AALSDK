@@ -352,7 +352,6 @@ CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/ 
 CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.5
 CLANG_OPT+= -enable-checker alpha \
-	-disable-checker deadcode.DeadStores \
 	-enable-checker alpha.core.CastSize \
 	-enable-checker alpha.core.CastToStruct \
 	-enable-checker alpha.core.IdenticalExpr \
@@ -407,7 +406,7 @@ CLANG_OPT+= -enable-checker alpha \
 #########################################################################
 # Source scan-build
 scan-build:
-	scan-build-3.5 $(CLANG_OPT) make sw_build | tee scan-build.log
+	scan-build-3.5 $(CLANG_OPT) make | tee scan-build.log
 
 # Coverage
 coverage:

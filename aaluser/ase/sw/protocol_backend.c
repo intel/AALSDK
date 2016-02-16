@@ -312,27 +312,7 @@ int ase_listener()
 	  // Inject buffer message
 	  buffer_msg_inject ( logger_str );
 	}
-#if 0      
-      // if DEALLOC request is received
-      else if (ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
-	{
-	  // Format workspace info string
-	  memset (logger_str, 0, ASE_LOGGER_LEN);
-	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
-	  sprintf(logger_str + strlen(logger_str), "\n");
 
-	  // Deallocate action
-	  //     #ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("  [DEBUG]  glbl_dealloc_allowed = %d\n", glbl_dealloc_allowed);
-	  END_YELLOW_FONTCOLOR;
-	  //     #endif
-	  ase_dealloc_action(&ase_buffer);
-
-	  // Inject buffer message
-	  buffer_msg_inject ( logger_str );
-	}
-#endif
       // Standard oneline message ---> Hides internal info
       ase_buffer_oneline(&ase_buffer);
 
