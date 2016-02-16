@@ -77,11 +77,12 @@ endif
 
 ## C Compiler options
 CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 -I $(TOOL_DPI_INCDIR)/include
-CC_OPT+= -Wall -std=c99 # -pedantic
+CC_OPT+= -Wall 
 # -std=c99 -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
 ifeq ($(ASE_DEBUG), 1)
-# CC_OPT+= -D ASE_DEBUG=1 -pedantic
+CC_OPT+= -D ASE_DEBUG=1
+# CC_OPT+= -pedantic
 endif
 
 ## Print information ##
@@ -346,8 +347,8 @@ distclean: header clean
 	./distclean.sh
 
 
-CLANG_OPT = -v -k -analyze-headers --use-cc=gcc -stats 
-CLANG_OPT+= -maxloop 100 
+CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats 
+CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/ 
 CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.5
 CLANG_OPT+= -enable-checker alpha \
@@ -356,6 +357,9 @@ CLANG_OPT+= -enable-checker alpha \
 	-enable-checker alpha.core.CastToStruct \
 	-enable-checker alpha.core.IdenticalExpr \
 	-enable-checker alpha.core.SizeofPtr \
+	-enable-checker alpha.core.BoolAssignment \
+	-enable-checker alpha.core.CallAndMessageUnInitRefArg \
+	-enable-checker alpha.cplusplus.NewDeleteLeaks \
 	-enable-checker alpha.security.ArrayBoundV2 \
 	-enable-checker alpha.security.MallocOverflow \
 	-enable-checker alpha.security.ReturnPtrRange \
@@ -363,6 +367,8 @@ CLANG_OPT+= -enable-checker alpha \
 	-enable-checker alpha.unix.cstring.BufferOverlap \
 	-enable-checker alpha.unix.cstring.NotNullTerminated \
 	-enable-checker alpha.unix.cstring.OutOfBounds \
+	-enable-checker alpha.unix.MallocWithAnnotations \
+	-enable-checker alpha.unix.PthreadLock \
 	-enable-checker alpha.core.FixedAddr \
 	-enable-checker security.insecureAPI.strcpy \
 	-enable-checker core.CallAndMessage \
@@ -403,8 +409,6 @@ CLANG_OPT+= -enable-checker alpha \
 scan-build:
 	scan-build-3.5 $(CLANG_OPT) make sw_build | tee scan-build.log
 
-
-
 # Coverage
 coverage:
 	urg -dir ./work/coverage.vdb
@@ -421,22 +425,3 @@ test: all sim
 long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
 
-# Splint 
-splint:
-	splint -DSIM_SIDE=1 $(ASESW_FILE_LIST) -I./sw -I$(VCS_HOME)/include -posix-lib -preproc -syntax +matchanyintegral -mayaliasunique -retvalint -showsummary -showscan  -stats -showfunc -std=c99
-
-# Cppcheck
-cppcheck:
-	cppcheck --enable=all \
-	-DSIM_SIDE=1 -v \
-	-I ./sw/ \
-	sw/app_backend.c \
-	sw/ase_ops.c \
-	sw/error_report.c \
-	sw/ipc_mgmt_ops.c \
-	sw/linked_list_ops.c \
-	sw/mem_model.c \
-	sw/mqueue_ops.c \
-	sw/protocol_backend.c \
-	sw/randomness_control.c \
-	sw/tstamp_ops.c \
