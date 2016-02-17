@@ -96,7 +96,7 @@ module outoforder_wrf_channel
     parameter int    NUM_WAIT_STATIONS   = 4,
     parameter int    COUNT_WIDTH         = 8,
     parameter int    VISIBLE_DEPTH_BASE2 = 4,
-    parameter int    VISIBLE_FULL_THRESH = 10,
+    parameter int    VISIBLE_FULL_THRESH = 8,
     parameter int    UNROLL_ENABLE       = 1
     )
    (
@@ -124,7 +124,7 @@ module outoforder_wrf_channel
       $fwrite(log_fd, "Logger for %m transactions\n");
    end
 `endif
-   
+
    localparam TID_WIDTH           = 32;
    localparam FIFO_WIDTH          = TID_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
    localparam OUTFIFO_WIDTH       = TID_WIDTH + CCIP_RX_HDR_WIDTH + CCIP_TX_HDR_WIDTH + CCIP_DATA_WIDTH;
@@ -171,11 +171,11 @@ module outoforder_wrf_channel
    logic 						       wrfence_rspvalid;
    logic [TID_WIDTH-1:0] 				       wrfence_rsptid;
    RxHdr_t                                                     wrfence_rsphdr;
-   TxHdr_t                                                     wrfence_reqhdr;   
+   TxHdr_t                                                     wrfence_reqhdr;
    logic 						       vl0_wrfence_deassert;
    logic 						       vh0_wrfence_deassert;
    logic 						       vh1_wrfence_deassert;
-   
+
    // Outfifo
    logic [OUTFIFO_WIDTH-1:0] 	  outfifo[$:VISIBLE_DEPTH-1];
 
@@ -239,13 +239,28 @@ module outoforder_wrf_channel
       if (rst) begin
 	 full <= 1;
       end
-      else if (infifo_cnt > VISIBLE_FULL_THRESH  ) begin
+      else if (infifo_cnt > VISIBLE_FULL_THRESH ) begin
 	 full <= 1;
       end
       else begin
 	 full <= 0;
       end
    end
+
+   // Full tracking
+   logic full_q;
+   always @(posedge clk) begin
+      full_q <= full;
+   end
+
+   // If Full toggles, log the event
+   `ifdef ASE_DEBUG
+   always @(posedge clk) begin
+      if (full_q != full_q) begin
+	 $fwrite(log_fd, "%d | Module full toggled from %b to %b\n", $time, full_q, full);
+      end
+   end
+   `endif
 
 
    //////////////////////////////////////////////////////////////
@@ -315,7 +330,9 @@ module outoforder_wrf_channel
    logic 			 infifo_vld;
 
    ccip_vc_t 		  vc_arb;
-
+   
+   logic 			 select_vc_flag;   
+   
    // Select VC
    // function logic [CCIP_TX_HDR_WIDTH-1:0] select_vc(int init, input [CCIP_TX_HDR_WIDTH-1:0] hdr);
    function automatic void select_vc(int init, ref TxHdr_t hdr);
@@ -391,7 +408,7 @@ module outoforder_wrf_channel
 	       case (infifo_hdr_out.vc)
 		 // If VA, fence all channels, and stage one coalesced response
 		 VC_VA:
-		   begin		      
+		   begin
 		      // Fence activatd
 		      vl0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
 		      vh0_array.push_back({infifo_tid_out, infifo_data_out, CCIP_TX_HDR_WIDTH'(infifo_hdr_out)});
@@ -492,7 +509,7 @@ module outoforder_wrf_channel
    logic vh1_wrfence_flag;
 
    logic glbl_wrfence_pop_status;
-      
+
    logic [TID_WIDTH-1:0] vl0_wrfence_tid;
    logic [TID_WIDTH-1:0] vh0_wrfence_tid;
    logic [TID_WIDTH-1:0] vh1_wrfence_tid;
@@ -594,7 +611,7 @@ module outoforder_wrf_channel
       logic [TID_WIDTH-1:0] 			     array_tid;
       TxHdr_t                                        hdr;
       int 					     ptr;
-      begin	  
+      begin
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
 	 // if (ptr != LATBUF_SLOT_INVALID) begin // *FIXME*: Potential catastrophe here
@@ -605,7 +622,7 @@ module outoforder_wrf_channel
 	       wrfence_flag = 1;
 	       wrfence_tid  = array_tid;
 	 `ifdef ASE_DEBUG
-	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %d\n", $time, array_tid, hdr.vc);	       
+	       $fwrite(log_fd, "%d | latbuf_push : saw Wrfence on tid=%x on channel %d\n", $time, array_tid, hdr.vc);
 	 `endif
 	    end
 	    else begin
@@ -621,17 +638,17 @@ module outoforder_wrf_channel
 		  $fwrite(log_fd, "%d | latbuf_push : tid=%x cause latbuf_used=%x\n", $time, array_tid, latbuf_used);
 	 `endif
 	       end // if (ptr != LATBUF_SLOT_INVALID)
-	       else begin		  
+	       else begin
 		  array.push_front({array_tid, array_data, array_hdr});
 	 `ifdef ASE_DEBUG
-		  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);		    
+		  $fwrite(log_fd, "%d | latbuf_used : backtrace tid=%x, latbuf slot unavailable\n", $time, array_tid);
 	 `endif
-	       end // else: !if(ptr != LATBUF_SLOT_INVALID)	       
+	       end // else: !if(ptr != LATBUF_SLOT_INVALID)
 	    end // else: !if(hdr.reqtype == ASE_WRFENCE)
 	 end
       end
    endfunction
-   
+
    // //////////////////////////////////////////////////////////////////////////////
    // States
    typedef enum {Select_VL0, Select_VH0, Select_VH1} lssel_state;
@@ -1007,9 +1024,9 @@ module outoforder_wrf_channel
       end
    end
 
-   
+
    logic [2:0] latbuf_pop_proc_status;
-      
+
    // Latbuf pop_ptr
    always @(posedge clk) begin : latbuf_pop_proc
       if (rst) begin
@@ -1017,85 +1034,85 @@ module outoforder_wrf_channel
 	    latbuf_ready[pop_i]       <= 0;
 	    records[pop_i].record_pop <= 0;
 	 end
-	 vl0_wrfence_deassert <= 0;	 
-	 vh0_wrfence_deassert <= 0;	 
+	 vl0_wrfence_deassert <= 0;
+	 vh0_wrfence_deassert <= 0;
 	 vh1_wrfence_deassert <= 0;
 	 latbuf_pop_proc_status	<= 3'b000;
-	 glbl_wrfence_pop_status <= 0;	 
+	 glbl_wrfence_pop_status <= 0;
       end
       // empty outfifo on normal transactions
       else if (~outfifo_almfull && ~latbuf_empty ) begin
 	 latbuf_pop_unroll_outfifo(outfifo);
-	 vl0_wrfence_deassert <= 0;	 
-	 vh0_wrfence_deassert <= 0;	 
-	 vh1_wrfence_deassert <= 0;	 
-	 latbuf_pop_proc_status	<= 3'b110; 
-	 glbl_wrfence_pop_status <= 0;	 
+	 vl0_wrfence_deassert <= 0;
+	 vh0_wrfence_deassert <= 0;
+	 vh1_wrfence_deassert <= 0;
+	 latbuf_pop_proc_status	<= 3'b110;
+	 glbl_wrfence_pop_status <= 0;
       end
-      // Pop write fence 
+      // Pop write fence
       else if (wrfence_rspvalid && (vl0_wrfence_flag|vh0_wrfence_flag|vh1_wrfence_flag) && ~glbl_wrfence_pop_status) begin
 	 case (wrfence_rsphdr.vc_used)
 	   VC_VA :
 	     begin
-		if ( (wrfence_rsptid == vl0_wrfence_tid) && 
-		     (wrfence_rsptid == vh0_wrfence_tid) && 
-		     (wrfence_rsptid == vh1_wrfence_tid) && 
+		if ( (wrfence_rsptid == vl0_wrfence_tid) &&
+		     (wrfence_rsptid == vh0_wrfence_tid) &&
+		     (wrfence_rsptid == vh1_wrfence_tid) &&
 		     vl0_wrfence_flag &&
 		     vh0_wrfence_flag &&
 		     vh1_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 1;	 
-		   vh0_wrfence_deassert <= 1;	 
-		   vh1_wrfence_deassert <= 1;	 		   
+		   vl0_wrfence_deassert <= 1;
+		   vh0_wrfence_deassert <= 1;
+		   vh1_wrfence_deassert <= 1;
 		   latbuf_pop_proc_status	<= 3'b100;
-		   glbl_wrfence_pop_status <= 1;	 
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		   glbl_wrfence_pop_status <= 1;
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
 		end
 	     end
-	   
+
 	   VC_VL0:
 	     begin
 		if ((wrfence_rsptid == vl0_wrfence_tid) && vl0_wrfence_flag) begin
-		   vl0_wrfence_deassert <= 1;	 
-		   vh0_wrfence_deassert <= 0;	 
-		   vh1_wrfence_deassert <= 0;	 		   
-		   latbuf_pop_proc_status	<= 3'b101; 
-		   glbl_wrfence_pop_status <= 1;	 
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		   vl0_wrfence_deassert <= 1;
+		   vh0_wrfence_deassert <= 0;
+		   vh1_wrfence_deassert <= 0;
+		   latbuf_pop_proc_status	<= 3'b101;
+		   glbl_wrfence_pop_status <= 1;
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
 		end
 	     end
-	   
+
 	   VC_VH0:
 	     begin
 		if ((wrfence_rsptid == vh0_wrfence_tid) && vh0_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 0;	 
-		   vh0_wrfence_deassert <= 1;	 
-		   vh1_wrfence_deassert <= 0;	 		   
-		   latbuf_pop_proc_status	<= 3'b110; 
-		   glbl_wrfence_pop_status <= 1;	 
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		   vl0_wrfence_deassert <= 0;
+		   vh0_wrfence_deassert <= 1;
+		   vh1_wrfence_deassert <= 0;
+		   latbuf_pop_proc_status	<= 3'b110;
+		   glbl_wrfence_pop_status <= 1;
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
 		end
 	     end
-		    
+
 	   VC_VH1:
 	     begin
 		if ((wrfence_rsptid == vh1_wrfence_tid) && vh1_wrfence_flag ) begin
-		   vl0_wrfence_deassert <= 0;	 
-		   vh0_wrfence_deassert <= 0;	 
-		   vh1_wrfence_deassert <= 1;	 		   
-		   latbuf_pop_proc_status	<= 3'b111; 
-		   glbl_wrfence_pop_status <= 1;	 
-		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });		   
+		   vl0_wrfence_deassert <= 0;
+		   vh0_wrfence_deassert <= 0;
+		   vh1_wrfence_deassert <= 1;
+		   latbuf_pop_proc_status	<= 3'b111;
+		   glbl_wrfence_pop_status <= 1;
+		   outfifo.push_back({wrfence_rsptid, {CCIP_DATA_WIDTH{1'b0}}, CCIP_RX_HDR_WIDTH'(wrfence_rsphdr), CCIP_TX_HDR_WIDTH'(wrfence_reqhdr) });
 		end
 	     end
 	 endcase
       end
       else begin
-	 vl0_wrfence_deassert <= 0;	 
-	 vh0_wrfence_deassert <= 0;	 
-	 vh1_wrfence_deassert <= 0;	 		   
-	 latbuf_pop_proc_status	<= 3'b000; 
-	 glbl_wrfence_pop_status <= 0;	 
-      end      
+	 vl0_wrfence_deassert <= 0;
+	 vh0_wrfence_deassert <= 0;
+	 vh1_wrfence_deassert <= 0;
+	 latbuf_pop_proc_status	<= 3'b000;
+	 glbl_wrfence_pop_status <= 0;
+      end
       // Book keeping
       for(int ready_i = 0; ready_i < NUM_WAIT_STATIONS ; ready_i = ready_i + 1) begin
 	 latbuf_ready[ready_i] <= records[ready_i].record_ready;
