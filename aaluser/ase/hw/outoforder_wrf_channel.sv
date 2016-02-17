@@ -256,7 +256,7 @@ module outoforder_wrf_channel
    // If Full toggles, log the event
    `ifdef ASE_DEBUG
    always @(posedge clk) begin
-      if (full_q != full_q) begin
+      if (full_q != full) begin
 	 $fwrite(log_fd, "%d | Module full toggled from %b to %b\n", $time, full_q, full);
       end
    end

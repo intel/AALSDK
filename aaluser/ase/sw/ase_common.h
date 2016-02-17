@@ -62,6 +62,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/file.h>
+#include <dirent.h>
+
 
 #ifdef SIM_SIDE 
 #include "svdpi.h"

@@ -116,6 +116,7 @@ void session_init()
     }
   
   // Initialize ase_workdir_path
+  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_workdir_path = ase_eval_session_directory();
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
@@ -253,7 +254,7 @@ void session_deinit()
 
   free(umas_region);
   free(mmio_region);
-  free(ase_workdir_path);
+  // free(ase_workdir_path);
   
   // Lock deinit
   pthread_mutex_destroy(&app_lock);

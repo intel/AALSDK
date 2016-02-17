@@ -51,11 +51,11 @@ int ase_dump_to_file(struct buffer_t *mem, char *dump_file)
   fileptr = fopen(dump_file,"wb");
   if(fileptr == NULL)
     {
-#ifdef SIM_SIDE
+    #ifdef SIM_SIDE
       ase_error_report ("fopen", errno, ASE_OS_FOPEN_ERR);
-#else
+    #else
       perror("fopen");
-#endif
+    #endif
       return NOT_OK;
     }
 
@@ -169,36 +169,31 @@ char* ase_eval_session_directory()
 {
   FUNC_CALL_ENTRY;
   
-  char *workdir_path;
+  // char *workdir_path;
   char *env_path;
     
-  workdir_path = ase_malloc (ASE_FILEPATH_LEN);
+  // workdir_path = ase_malloc (ASE_FILEPATH_LEN);
+  env_path = ase_malloc (ASE_FILEPATH_LEN);
 
-  // Evaluate basename location
+  // Evaluate location of simulator or own location
 #ifdef SIM_SIDE
   env_path = getenv ("PWD");
 #else
   env_path = getenv ("ASE_WORKDIR");
-#endif
-      
-  // Locate work directory
-  if( env_path) 
+
+  // Check if directory exists here
+  DIR* ase_dir;  
+  ase_dir = opendir(env_path);
+  if (!ase_dir)
     {
-      // strcat( workdir_path, env_path );
-      memcpy(workdir_path, env_path, ASE_FILEPATH_LEN);
-    } 
-  /* else  */
-  /*   { */
-  /*     *workdir_path = '\0'; */
-  /*   } */
-
-  // strcat( workdir_path, "/work/" );  || RRS:
-
-  // *FIXME*: Idiot-proof the work directory
-
-  FUNC_CALL_EXIT;
+      printf("  [APP]  ASE workdir path pointed by env(ASE_WORKDIR) does not exist !\n");
+      printf("         Cannot continue execution... exiting !");
+      perror("opendir");
+      exit(1);
+    }
+#endif
   
-  return workdir_path;
+  return env_path;
 }
 
 

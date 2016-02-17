@@ -478,31 +478,29 @@ uint64_t* ase_fakeaddr_to_vaddr(uint64_t req_paddr, int *ret_fd )
 
   // Search which buffer offset_from_pin lies in
   trav_ptr = head;
-/* #ifdef ASE_DEBUG */
-/*   BEGIN_YELLOW_FONTCOLOR; */
-/*   ll_traverse_print(); */
-/*   END_YELLOW_FONTCOLOR; */
-/* #endif */
   while(trav_ptr != NULL)
     {
-      if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
-	{
-	  real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
-	  calc_pbase = trav_ptr->pbase;
-	  ase_pbase = (uint64_t*)(calc_pbase + real_offset);
-	  *ret_fd = trav_ptr->fd_ase;
-	  // Debug only
-#ifdef ASE_DEBUG
-	  BEGIN_YELLOW_FONTCOLOR;
-	  printf("offset = 0x%016lx | pbase_off = %p | ret_fd = %d\n", real_offset, (void *)ase_pbase, *ret_fd);
-	  END_YELLOW_FONTCOLOR;
-#endif
-	  return ase_pbase;
-	}
-      else
-	{
-	  trav_ptr = trav_ptr->next;
-	}
+      /* if ( (trav_ptr->fake_paddr!= 0) && (trav_ptr->fake_paddr_hi != 0) ) */
+      /* 	{ */
+	  if((req_paddr >= trav_ptr->fake_paddr) && (req_paddr < trav_ptr->fake_paddr_hi))
+	    {
+	      real_offset = (uint64_t)req_paddr - (uint64_t)trav_ptr->fake_paddr;
+	      calc_pbase = trav_ptr->pbase;
+	      ase_pbase = (uint64_t*)(calc_pbase + real_offset);
+	      *ret_fd = trav_ptr->fd_ase;
+	      // Debug only
+            #ifdef ASE_DEBUG
+	      BEGIN_YELLOW_FONTCOLOR;
+	      printf("offset=0x%016lx | pbase=%p | ret_fd = %d\n", real_offset, (void *)ase_pbase, *ret_fd);
+	      END_YELLOW_FONTCOLOR;
+            #endif
+	      return ase_pbase;
+	    }
+	  else
+	    {
+	      trav_ptr = trav_ptr->next;
+	    }
+	/* } */
     }
 
   if(trav_ptr == NULL)

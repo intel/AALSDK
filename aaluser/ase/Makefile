@@ -76,9 +76,9 @@ TOOL_DPI_INCDIR=$(MTI_HOME)
 endif
 
 ## C Compiler options
-CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1 
+CC_OPT = -g -m64 -fPIC -D SIM_SIDE=1
 CC_OPT+= -I $(TOOL_DPI_INCDIR)/include
-CC_OPT+= -Wall 
+CC_OPT+= -Wall
 # -std=c99
 # -D_POSIX_C_SOURCE=200809L
 # -D_XOPEN_SOURCE=700
@@ -128,15 +128,15 @@ ifeq ($(ASE_DEBUG), 1)
 endif
 ifdef GLS_SIM
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_primitives.v
-  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
+#  SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/220model.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/sgate.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_mf.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v
-#  SNPS_VLOGAN_OPT+= -v $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_atoms_ncrypt.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_atoms.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_hssi_atoms_ncrypt.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_hssi_atoms.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/synopsys/stratixv_pcie_hip_atoms_ncrypt.v
+  # SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/stratixv_pcie_hip_atoms.v
   SNPS_VLOGAN_OPT+= $(QUARTUS_HOME)/eda/sim_lib/altera_lnsim.sv
 endif
 
@@ -186,6 +186,84 @@ VALGRIND_OPTS+= --show-reachable=yes
 VALGRIND_OPTS+= --show-leak-kinds=definite,possible
 VALGRIND_OPTS+= --undef-value-errors=yes
 
+
+#########################################################################
+#                          Clang settings                               #
+#########################################################################
+CLANG_VERSION=3.6
+
+CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
+CLANG_OPT+= -maxloop 250
+CLANG_OPT+= -o $(PWD)/scanbuild/
+CLANG_OPT+= --use-analyzer=/usr/bin/clang-$(CLANG_VERSION)
+CLANG_OPT+= \
+-enable-checker alpha.core.BoolAssignment \
+-enable-checker alpha.core.CallAndMessageUnInitRefArg \
+-enable-checker alpha.core.CastSize \
+-enable-checker alpha.core.CastToStruct \
+-enable-checker alpha.core.FixedAddr \
+-enable-checker alpha.core.IdenticalExpr \
+-enable-checker alpha.core.PointerArithm \
+-enable-checker alpha.core.PointerSub \
+-enable-checker alpha.core.SizeofPtr \
+-enable-checker alpha.core.TestAfterDivZero \
+-enable-checker alpha.cplusplus.VirtualCall \
+-enable-checker alpha.deadcode.UnreachableCode \
+-enable-checker alpha.osx.cocoa.Dealloc \
+-enable-checker alpha.osx.cocoa.DirectIvarAssignment \
+-enable-checker alpha.osx.cocoa.DirectIvarAssignmentForAnnotatedFunctions \
+-enable-checker alpha.osx.cocoa.InstanceVariableInvalidation \
+-enable-checker alpha.osx.cocoa.MissingInvalidationMethod \
+-enable-checker alpha.security.ArrayBound \
+-enable-checker alpha.security.ArrayBoundV2 \
+-enable-checker alpha.security.MallocOverflow \
+-enable-checker alpha.security.ReturnPtrRange \
+-enable-checker alpha.security.taint.TaintPropagation \
+-enable-checker alpha.unix.Chroot \
+-enable-checker alpha.unix.MallocWithAnnotations \
+-enable-checker alpha.unix.PthreadLock \
+-enable-checker alpha.unix.SimpleStream \
+-enable-checker alpha.unix.Stream \
+-enable-checker alpha.unix.cstring.BufferOverlap \
+-enable-checker alpha.unix.cstring.NotNullTerminated \
+-enable-checker alpha.unix.cstring.OutOfBounds \
+-enable-checker debug.ConfigDumper \
+-enable-checker debug.DumpCFG \
+-enable-checker debug.DumpCalls \
+-enable-checker debug.DumpDominators \
+-enable-checker debug.DumpLiveVars \
+-enable-checker debug.DumpTraversal \
+-enable-checker debug.ExprInspection \
+-enable-checker debug.Stats \
+-enable-checker debug.TaintTest \
+-enable-checker debug.ViewCFG \
+-enable-checker debug.ViewExplodedGraph \
+-enable-checker llvm.Conventions \
+-enable-checker osx.API \
+-enable-checker osx.SecKeychainAPI \
+-enable-checker osx.cocoa.AtSync \
+-enable-checker osx.cocoa.ClassRelease \
+-enable-checker osx.cocoa.IncompatibleMethodTypes \
+-enable-checker osx.cocoa.Loops \
+-enable-checker osx.cocoa.MissingSuperCall \
+-enable-checker osx.cocoa.NSAutoreleasePool \
+-enable-checker osx.cocoa.NSError \
+-enable-checker osx.cocoa.NilArg \
+-enable-checker osx.cocoa.NonNilReturnValue \
+-enable-checker osx.cocoa.RetainCount \
+-enable-checker osx.cocoa.SelfInit \
+-enable-checker osx.cocoa.UnusedIvars \
+-enable-checker osx.cocoa.VariadicMethodTypes \
+-enable-checker osx.coreFoundation.CFError \
+-enable-checker osx.coreFoundation.CFNumber \
+-enable-checker osx.coreFoundation.CFRetainRelease \
+-enable-checker osx.coreFoundation.containers.OutOfBounds \
+-enable-checker osx.coreFoundation.containers.PointerSizedValues \
+-enable-checker security.FloatLoopCounter \
+-enable-checker security.insecureAPI.rand \
+-enable-checker security.insecureAPI.strcpy \
+-enable-checker debug.DumpCallGraph \
+# -enable-checker debug.ViewCallGraph \
 
 
 #########################################################################
@@ -349,66 +427,13 @@ distclean: header clean
 	./distclean.sh
 
 
-CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats 
-CLANG_OPT+= -maxloop 250
-CLANG_OPT+= -o $(PWD)/scanbuild/ 
-CLANG_OPT+= --use-analyzer=/usr/bin/clang-3.5
-CLANG_OPT+= -enable-checker alpha \
-	-enable-checker alpha.core.IdenticalExpr \
-	-enable-checker alpha.core.SizeofPtr \
-	-enable-checker alpha.core.BoolAssignment \
-	-enable-checker alpha.core.CallAndMessageUnInitRefArg \
-	-enable-checker alpha.cplusplus.NewDeleteLeaks \
-	-enable-checker alpha.security.ArrayBoundV2 \
-	-enable-checker alpha.security.MallocOverflow \
-	-enable-checker alpha.security.ReturnPtrRange \
-	-enable-checker alpha.unix.SimpleStream \
-	-enable-checker alpha.unix.cstring.BufferOverlap \
-	-enable-checker alpha.unix.cstring.NotNullTerminated \
-	-enable-checker alpha.unix.cstring.OutOfBounds \
-	-enable-checker alpha.unix.MallocWithAnnotations \
-	-enable-checker alpha.unix.PthreadLock \
-	-enable-checker alpha.core.FixedAddr \
-	-enable-checker security.insecureAPI.strcpy \
-	-enable-checker core.CallAndMessage \
-	-enable-checker core.DivideZero \
-	-enable-checker core.DynamicTypePropagation \
-	-enable-checker core.NonNullParamChecker \
-	-enable-checker core.NullDereference \
-	-enable-checker core.StackAddressEscape \
-	-enable-checker core.UndefinedBinaryOperatorResult \
-	-enable-checker core.VLASize \
-	-enable-checker core.builtin.BuiltinFunctions \
-	-enable-checker core.builtin.NoReturnFunctions \
-	-enable-checker core.uninitialized.ArraySubscript \
-	-enable-checker core.uninitialized.Assign \
-	-enable-checker core.uninitialized.Branch \
-	-enable-checker core.uninitialized.CapturedBlockVariable\
-	-enable-checker core.uninitialized.UndefReturn \
-	-enable-checker cplusplus.NewDelete \
-	-enable-checker deadcode.DeadStores \
-	-enable-checker security.insecureAPI.UncheckedReturn \
-	-enable-checker security.insecureAPI.getpw \
-	-enable-checker security.insecureAPI.gets \
-	-enable-checker security.insecureAPI.mkstemp \
-	-enable-checker security.insecureAPI.mktemp \
-	-enable-checker security.insecureAPI.vfork \
-	-enable-checker unix.API \
-	-enable-checker unix.Malloc \
-	-enable-checker unix.MallocSizeof \
-	-enable-checker unix.MismatchedDeallocator \
-	-enable-checker unix.cstring.BadSizeArg \
-	-enable-checker unix.cstring.NullArg \
-	-enable-checker alpha.core.CastToStruct \
-	-enable-checker alpha.core.CastSize \
-
 #########################################################################
 #                            Internal only                              #
 #########################################################################
 # Source scan-build
 scan-build:
 	mkdir -p scanbuild
-	scan-build-3.5 $(CLANG_OPT) make sw_build | tee scan-build.log
+	scan-build-$(CLANG_VERSION) $(CLANG_OPT) make sw_build | tee scan-build.log
 
 # Coverage
 coverage:
@@ -425,4 +450,5 @@ test: all sim
 # On long regression runs, dont create a run.log
 long_sim:
 	cd ./$(WORK)/; ./ase_simv -ucli -do $(ASE_SRCDIR)/vcs_run.tcl +CONFIG=$(ASE_SRCDIR)/ase.cfg +SCRIPT=$(ASE_SRCDIR)/ase_regress.sh ; cd -
+
 

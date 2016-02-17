@@ -424,7 +424,6 @@ int ase_listener()
   memset (ase_simkill_str, 0, ASE_MQ_MSGSIZE);
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
-      // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
 
@@ -828,11 +827,7 @@ void ase_config_parse(char *filename)
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
       END_RED_FONTCOLOR;
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    /* #ifdef SIM_SIDE */
       start_simkill_countdown();
-    /* #else */
-    /*   exit(1); */
-    /* #endif */
     }
   line = ase_malloc(sizeof(char) * 80);
 
@@ -841,9 +836,6 @@ void ase_config_parse(char *filename)
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
-  /* cfg->enable_capcm = 0; */
-  /* cfg->memmap_sad_setting = 0; */
-  /* cfg->num_umsg_log2 = 5; */
   cfg->enable_cl_view = 1;
   cfg->phys_memory_available_gb = 256;
 
@@ -875,12 +867,6 @@ void ase_config_parse(char *filename)
 	      	cfg->ase_num_tests = value;
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
-	      /* else if (strcmp (parameter,"ENABLE_CAPCM") == 0) */
-	      /* 	cfg->enable_capcm = value; */
-	      /* else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0) */
-	      /* 	cfg->memmap_sad_setting = value; */
-	      /* else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0) */
-	      /* 	cfg->num_umsg_log2 = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
 	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
@@ -939,32 +925,6 @@ void ase_config_parse(char *filename)
 	  cfg->ase_num_tests = 0;
 	}
 
-
-      // CAPCM size implementation
-      /* if (cfg->enable_capcm != 0) */
-      /* 	{ */
-      /* 	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0)) */
-      /* 	    { */
-      /* 	      BEGIN_YELLOW_FONTCOLOR; */
-      /* 	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE); */
-      /* 	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting); */
-      /* 	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n"); */
-      /* 	      cfg->memmap_sad_setting = 2; */
-      /* 	      END_YELLOW_FONTCOLOR; */
-      /* 	    } */
-      /* 	} */
-
-      // UMSG implementation
-      /* if (cfg->num_umsg_log2 == 0) */
-      /* 	{ */
-      /* 	  BEGIN_YELLOW_FONTCOLOR; */
-      /* 	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE); */
-      /* 	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2); */
-      /* 	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n"); */
-      /* 	  cfg->num_umsg_log2 = 5; */
-      /* 	  END_YELLOW_FONTCOLOR; */
-      /* 	} */
-
       // Close file
       fclose(fp);
     }
@@ -998,17 +958,6 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... ENABLED \n");
   else
     printf("        Reuse simulation seed      ... DISABLED \n");
-
-  // UMSG
-  /* printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2); */
-
-  // CAPCM
-  /* if (cfg->enable_capcm != 0) */
-  /*   { */
-  /*     printf("        CA Private memory          ... ENABLED\n"); */
-  /*   } */
-  /* else */
-  /*   printf("        CA Private memory          ... DISABLED\n"); */
 
   // CL view
   if (cfg->enable_cl_view != 0)
