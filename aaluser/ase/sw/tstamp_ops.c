@@ -65,19 +65,12 @@ void put_timestamp()
   FUNC_CALL_ENTRY;
 
   FILE *fp;
-  // unsigned long long tstamp_long;
-  // char tstamp_str[20];
   char tstamp_path[ASE_FILEPATH_LEN];
 
-  // memset(tstamp_str, 0, sizeof(tstamp_str));
-  // tstamp_long = rdtsc();
 
   memset(tstamp_path, 0, ASE_FILEPATH_LEN);
-  /* strcpy(tstamp_path, ase_workdir_path); */
-  /* strcat(tstamp_path, TSTAMP_FILENAME); */
   sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
-  // fp = fopen(TSTAMP_FILENAME, "wb");
   fp = fopen(tstamp_path, "wb");
   if (fp == NULL) 
     {
@@ -91,8 +84,6 @@ void put_timestamp()
   fprintf(fp, "%lld", (unsigned long long)rdtsc() );
 
   fclose(fp);
-  // free(tstamp_path);
-  // free(tstamp_str);
 
   FUNC_CALL_EXIT;
 }
@@ -125,11 +116,7 @@ char* get_timestamp(int dont_kill)
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
 
   // Generate tstamp_filepath
-  // tstamp_filepath = generate_tstamp_path( TSTAMP_FILENAME );
   memset(tstamp_filepath, 0, ASE_FILEPATH_LEN);
-  /* strcpy(tstamp_filepath, ase_workdir_path); */
-  /* strcat(tstamp_filepath, "/"); */
-  /* strcat(tstamp_filepath, TSTAMP_FILENAME);   */
   sprintf(tstamp_filepath, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
 #ifdef ASE_DEBUG
@@ -161,9 +148,9 @@ char* get_timestamp(int dont_kill)
   
   sprintf(tstamp_str, "%lld", readback);
 
-/* #ifdef ASE_DEBUG */
-/*   printf("  [DEBUG] tstamp_str = %s\n", tstamp_str); */
-/* #endif */
+#ifdef ASE_DEBUG
+  printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
+#endif
 
   FUNC_CALL_EXIT;
 

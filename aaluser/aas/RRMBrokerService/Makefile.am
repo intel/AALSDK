@@ -49,7 +49,7 @@ librrmbroker_la_CPPFLAGS=\
 
 librrmbroker_la_LDFLAGS=\
 -module \
--version-info 0:0:0
+-version-info $(RRMBROKER_VERSION_CURRENT):$(RRMBROKER_VERSION_REVISION):$(RRMBROKER_VERSION_AGE)
 
 librrmbroker_la_LIBADD=\
 $(top_builddir)/aas/OSAL/libOSAL.la \
