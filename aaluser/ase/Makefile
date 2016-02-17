@@ -193,7 +193,7 @@ VALGRIND_OPTS+= --undef-value-errors=yes
 CLANG_VERSION=3.6
 
 CLANG_OPT = -v -v -v -k -analyze-headers --use-cc=gcc -stats
-CLANG_OPT+= -maxloop 250
+CLANG_OPT+= -maxloop 100
 CLANG_OPT+= -o $(PWD)/scanbuild/
 CLANG_OPT+= --use-analyzer=/usr/bin/clang-$(CLANG_VERSION)
 CLANG_OPT+= \
@@ -270,7 +270,7 @@ CLANG_OPT+= \
 #                            Build Targets                              #
 #########################################################################
 # Default
-all: clean check build
+all: check build
 
 # Check
 check: header

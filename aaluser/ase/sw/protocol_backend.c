@@ -548,19 +548,25 @@ int ase_init()
   // Evaluate IPCs
   ipc_init();
 
-  // Generate timstamp (used as session ID)
-#if 0
-  put_timestamp();
-  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strcpy(tstamp_filepath, ase_workdir_path);
-  strcat(tstamp_filepath, TSTAMP_FILENAME);
-
-  // Print timestamp
-  printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
-#endif
-
   // Create IPC cleanup setup
   create_ipc_listfile();
+
+  // Create a memory access log
+#ifdef ASE_DEBUG
+  fp_memaccess_log = fopen("aseafu_access.log", "w");
+  if (fp_memaccess_log == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : Memory access debug logger initialization failed !\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : Memory access debug logger initialized\n");
+      END_YELLOW_FONTCOLOR;
+    }
+#endif
 
   // Set up message queues
   printf("SIM-C : Creating Messaging IPCs...\n");
@@ -631,9 +637,19 @@ int ase_ready()
   // Indicate readiness with .ase_ready file
   ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
+
+  // Write .ase_ready file
   ase_ready_fd = fopen( ase_ready_filepath, "w");
-  fprintf(ase_ready_fd, "%d", ase_pid);
-  fclose(ase_ready_fd);
+  if (ase_ready_fd != NULL) 
+    {
+      fprintf(ase_ready_fd, "%d", ase_pid);
+      fclose(ase_ready_fd);
+    }
+  else
+    {
+      printf("SIM-C : Error creating ready file\n");
+      ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+    }
 
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;

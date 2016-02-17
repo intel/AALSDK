@@ -615,6 +615,11 @@ int ase_pid;
 // Workspace information log (information dump of 
 FILE *fp_workspace_log;
 
+// Memory access debug log
+#ifdef ASE_DEBUG
+FILE *fp_memaccess_log;
+#endif
+
 // Physical address mask - used to constrain generated addresses
 uint64_t PHYS_ADDR_PREFIX_MASK;
 
