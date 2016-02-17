@@ -163,6 +163,18 @@ inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval)
    *p32 = *csrval;
 }
 
+
+inline void Get64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *pcsrval){
+
+   volatile bt64bitCSR *p64 = (bt64bitCSR *)ptr;
+   *pcsrval = *p64;
+}
+
+inline void Set64CSR(btUnsigned64bitInt *ptr, bt64bitCSR *csrval)
+{
+   volatile bt64bitCSR *p64 = (bt64bitCSR *)ptr;
+   *p64 = *csrval;
+}
 //void program_afu( pwork_object pwork)
 int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
 {
@@ -516,6 +528,8 @@ void program_afu_callback(void* pr_context,void* ptr)
 
    do {
        counter++;
+
+       Get64CSR(&pr_dev->ccip_fme_pr_status.csr,&pr_dev->ccip_fme_pr_status.csr);
        if (counter > PR_STATUS_MAX_TRY) {
           PERR(" Maximum number of PR Status has been reached \n");
           errno=uid_errnumPRTimeout;
@@ -532,50 +546,53 @@ void program_afu_callback(void* pr_context,void* ptr)
    // FME_PR_STATUS[16] is RO from SW point of view.
    PVERBOSE("Checking for errors in previous PR operation");
 
+   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
-    PERR(" PR Previous PR Operation Error  Detected \n");
+      // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
+      // -----------------------------------------------------------------
+      // Upon failure, FME_PR_ERROR[5:0] gives additional error info.
+      // FME_PR_ERROR[5:0] - All 6 bits are RW1CS - HW writes 1 upon error to set the bit. SW writes 1 to clear the bit
+      // Once All error bits set in FME_PR_ERROR[5:0] are cleared by SW, HW will clear FME_PR_STATUS[16]
+      // TODO: This step is different from SAS flow. Update SAS
+      // NOTE: Error Logging and propagation might change based on SKX RAS
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+         pr_dev->ccip_fme_pr_err.PR_operation_err =0x1;
+         PERR(" PR Previous PR Operation Error  Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+         pr_dev->ccip_fme_pr_err.PR_CRC_err =0x1;
+         PERR(" PR CRC Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+         pr_dev->ccip_fme_pr_err.PR_bitstream_err =0x1;
+         PERR(" PR Incomparable bitstream Error  Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+         pr_dev->ccip_fme_pr_err.PR_IP_err =0x1;
+         PERR(" PR IP Protocol Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+         pr_dev->ccip_fme_pr_err.PR_FIFIO_err =0x1;
+         PERR(" PR  FIFO Overflow Error Detected \n");
+      }
+
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+         pr_dev->ccip_fme_pr_err.PR_timeout_err =0x1;
+         PERR(" PR Timeout  Error Detected \n");
+      }
+      PVERBOSE("Previous PR errors cleared \n ");
+
+   } else
+   {
+      PVERBOSE("NO Previous PR errors \n ");
    }
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
-    PERR(" PR CRC Error Detected \n");
-   }
-
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
-    PERR(" PR Incomparable bitstream Error  Detected \n");
-   }
-
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
-    PERR(" PR IP Protocol Error Detected \n");
-   }
-
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
-    PERR(" PR  FIFO Overflow Error Detected \n");
-   }
-
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
-    PERR(" PR Timeout  Error Detected \n");
-   }
-
-
-   // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
-   // -----------------------------------------------------------------
-   // Upon failure, FME_PR_ERROR[5:0] gives additional error info.
-   // FME_PR_ERROR[5:0] - All 6 bits are RW1CS - HW writes 1 upon error to set the bit. SW writes 1 to clear the bit
-   // Once All error bits set in FME_PR_ERROR[5:0] are cleared by SW, HW will clear FME_PR_STATUS[16]
-   // TODO: This step is different from SAS flow. Update SAS
-   // NOTE: Error Logging and propagation might change based on SKX RAS
-
-   pr_dev->ccip_fme_pr_err.PR_operation_err =0x0;
-   pr_dev->ccip_fme_pr_err.PR_CRC_err =0x0;
-   pr_dev->ccip_fme_pr_err.PR_bitstream_err =0x0;
-   pr_dev->ccip_fme_pr_err.PR_IP_err =0x0;
-   pr_dev->ccip_fme_pr_err.PR_FIFIO_err =0x0;
-   pr_dev->ccip_fme_pr_err.PR_timeout_err =0x0;
-
-
-   PVERBOSE("Previous PR errors cleared \n ");
-
+ 
    // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
    // --------------------------------------------------
    // NOTE: For BDX-P only 1 AFU is supported in HW. So, CSR_FME_PR_CONTROL[9:8] should always be 0
@@ -627,7 +644,8 @@ void program_afu_callback(void* pr_context,void* ptr)
         errno=uid_errnumPRTimeout;
         goto ERR;
       }
-      pr_dev->ccip_fme_pr_data.pr_data_raw =*byteRead;
+      //pr_dev->ccip_fme_pr_data.pr_data_raw =*byteRead;
+      SetCSR(&pr_dev->ccip_fme_pr_data.csr, byteRead);
       PR_FIFO_credits --;
       byteRead++;
       len -= 4;
@@ -650,20 +668,21 @@ void program_afu_callback(void* pr_context,void* ptr)
    // FME_PR_CONTROL[12] is an atomic status check bit for initiating PR and also checking for PR completion
    // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
 
-   PVERBOSE("Waiting for HW to release PR resource");
+   PVERBOSE("Waiting for HW to release PR resource \n");
    // kosal_mdelay(10);        // Workaround for potential HW timing issue
 
    counter =0;
    do {
 
       counter++;
+      Get64CSR(&pr_dev->ccip_fme_pr_control.csr,&pr_dev->ccip_fme_pr_control.csr);
       if (counter > PR_STATUS_MAX_TRY)    {
          PERR(" Maximum number of PR Start Request has been reached \n");
          goto ERR;
       }
    }
    while(0x0 != pr_dev->ccip_fme_pr_control.pr_start_req);
-   PVERBOSE("PR operation complete, checking Status ...");
+   PVERBOSE("PR operation complete, checking Status \n");
 
 
    // Step 9 - Check PR PASS / FAIL
@@ -674,43 +693,48 @@ void program_afu_callback(void* pr_context,void* ptr)
    // TODO: This step is different from SAS. Update SAS
    // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
-      PERR(" PR Previous PR Operation Error  Detected \n");
-      errno=uid_errnumPROperation;
-      goto ERR;
-   }
+   if(0x1 == pr_dev->ccip_fme_pr_status.pr_status)  {
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
-      PERR(" PR CRC Error Detected \n");
-      errno=uid_errnumPRCRC;
-      goto ERR;
-   }
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+         PERR(" PR Previous PR Operation Error  Detected \n");
+         errno=uid_errnumPROperation;
+         goto ERR;
+      }
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
-      PERR(" PR Incomparable bitstream Error  Detected \n");
-      errno=uid_errnumPRIncomparableBitstream;
-      goto ERR;
-   }
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+         PERR(" PR CRC Error Detected \n");
+         errno=uid_errnumPRCRC;
+         goto ERR;
+      }
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
-      PERR(" PR IP Protocol Error Detected \n");
-      errno=uid_errnumPRIPProtocal;
-      goto ERR;
-   }
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+         PERR(" PR Incomparable bitstream Error  Detected \n");
+         errno=uid_errnumPRIncomparableBitstream;
+         goto ERR;
+      }
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
-      PERR(" PR  FIFO Overflow Error Detected \n");
-      errno=uid_errnumPRFIFO;
-      goto ERR;
-   }
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+         PERR(" PR IP Protocol Error Detected \n");
+         errno=uid_errnumPRIPProtocal;
+         goto ERR;
+      }
 
-   if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
-      PERR(" PR Timeout  Error Detected \n");
-      errno=uid_errnumPRTimeout;
-      goto ERR;
-   }
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+         PERR(" PR  FIFO Overflow Error Detected \n");
+         errno=uid_errnumPRFIFO;
+         goto ERR;
+      }
 
-   PVERBOSE("PR Done Successfully\n");
+      if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+         PERR(" PR Timeout  Error Detected \n");
+         errno=uid_errnumPRTimeout;
+         goto ERR;
+      }
+
+   } else  {
+
+      PVERBOSE("PR Done Successfully\n");
+   }
 
    // No need to AFU Active
    if( ppr_program_ctx->leaveDeactivated )   {
@@ -1033,7 +1057,7 @@ ERR:
 
 
 ///============================================================================
-/// Name: afu_release_event_timeout_callback
+/// Name: afu_release_timeout_callback
 /// @brief AFU Deactivate /reconfigure timeout callback
 ///
 ///
@@ -1041,7 +1065,7 @@ ERR:
 /// @param[in] ptr - null pointer.
 /// @return    void
 ///============================================================================
-void afu_release_event_timeout_callback(void* pr_context,void* ptr)
+void afu_release_timeout_callback(void* pr_context,void* ptr)
 {
 
    struct aal_device          *pafu_aal_dev = NULL;
@@ -1057,9 +1081,7 @@ void afu_release_event_timeout_callback(void* pr_context,void* ptr)
    ppr_aal_dev =  ppr_program_ctx->pPR_dev->m_aaldev;
 
    PVERBOSE( "AFU count %d \n",pafu_aal_dev->m_numowners);
-   PVERBOSE( "ppr_program_ctx->respID %d \n",ppr_program_ctx->respID);
-   PVERBOSE( "ppr_program_ctx->leaveDeactivated %d \n",ppr_program_ctx->leaveDeactivated);
-   PVERBOSE( "ppr_program_ctx->eno %d \n",ppr_program_ctx->eno);
+
 
    // AFU has no owner , Deactivate and Reconfigure AFU
    if( 0 == pafu_aal_dev->m_numowners)  {
@@ -1184,7 +1206,7 @@ struct cci_aal_device   *
    cci_dev_workq_revokeafu(pcci_aaldev)        = kosal_create_workqueue("RevokeAFU");
 
    pworkobj = &cci_dev_task_deactimeout_handler(pcci_aaldev);
-   KOSAL_INIT_WORK(pworkobj,task_poller,afu_release_event_timeout_callback);
+   KOSAL_INIT_WORK(pworkobj,task_poller,afu_release_timeout_callback);
 
    pworkobj = &cci_dev_task_prcconfigure_handler(pcci_aaldev);
    KOSAL_INIT_WORK(pworkobj,task_poller,program_afu_callback);
