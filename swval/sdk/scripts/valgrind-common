@@ -443,49 +443,49 @@ run_valgrind_all() {
    tool='memcheck'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_memcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_memcheck "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='massif'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_massif "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='helgrind'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_helgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_helgrind "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='drd'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_drd "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_drd "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='dhat'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_dhat "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_dhat "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='cachegrind'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_cachegrind "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='callgrind'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_callgrind "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 
    tool='sgcheck'
    setup "${exe##*/}" "${tool}" ${wantdistcc}
    pushd "${VPATH}" >/dev/null 2>&1
-   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_sgcheck "${VPATH}/${tool}/${exe}" ${1+"$@"}
+   LD_LIBRARY_PATH="${VPATH}/${tool}/myinst/usr/local/lib" run_valgrind_sgcheck "${VPATH}/${tool}/${exe}" --vpath="${VPATH}" ${1+"$@"}
    popd >/dev/null 2>&1
 }
 
