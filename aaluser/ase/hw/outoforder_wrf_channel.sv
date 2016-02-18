@@ -34,7 +34,7 @@
  *              Intel Corporation
  *
  * *********************************************************************************
- * SR-5.0.0-alpha onwardsa implementation
+ * SR-5.0.0-alpha onwards implementation
  * ---------------------------------------------------------------------------------
  *
  *                     TBD cachesim link
@@ -535,49 +535,11 @@ module outoforder_wrf_channel
 
 
    // Count used latbuf
-   // function int update_latbuf_cnt();
-   // *FIXME*: Potential RACE | replace with live count + regs
-/*
-   function void update_latbuf_cnt();
-      int 			 jj;
-      begin
-   	 vl0_records_cnt = 0;
-   	 vh0_records_cnt = 0;
-   	 vh1_records_cnt = 0;
-   	 for (jj =0 ; jj < NUM_WAIT_STATIONS; jj = jj + 1) begin
-   	    if (records[jj].record_valid) begin
-   	       case (records[jj].hdr.vc)
-   		 VC_VL0 : vl0_records_cnt = vl0_records_cnt + 1;
-   		 VC_VH0 : vh0_records_cnt = vh0_records_cnt + 1;
-   		 VC_VH1 : vh1_records_cnt = vh1_records_cnt + 1;
-   	 // `ifdef ASE_DEBUG
-   	 // 	 default:
-   	 // 	   begin
-   	 // 	      `BEGIN_RED_FONTCOLOR;
-   	 // 	      $display("ERROR : records[%02d] has a VC_VA, this is not expected ", jj);
-   	 // 	      $finish;
-   	 // 	      `END_RED_FONTCOLOR;
-   	 // 	   end
-   	 // `endif;
-   	       endcase
-   	    end
-   	 end
-      end
-   endfunction
-
-   // Count
-   always @(posedge clk) begin : latbuf_cnt_proc
-      update_latbuf_cnt();
-   end
-*/
-
    assign vl0_records_cnt = $countones(record_vl0_flag_arr);
    assign vh0_records_cnt = $countones(record_vh0_flag_arr);
    assign vh1_records_cnt = $countones(record_vh1_flag_arr);
    
-
    // Total count
-   // always @(*) begin
    always @(posedge clk) begin
       latbuf_cnt <= vl0_records_cnt + vh0_records_cnt + vh1_records_cnt;
    end
@@ -595,9 +557,7 @@ module outoforder_wrf_channel
    	 for(find_iter = latbuf_push_ptr;
 	     find_iter < latbuf_push_ptr + NUM_WAIT_STATIONS;
 	     find_iter = find_iter + 1) begin
-	    // ret_free_slot = slot_lookup[find_iter % NUM_WAIT_STATIONS];
 	    ret_free_slot = find_iter % NUM_WAIT_STATIONS;
-   	    // if (~latbuf_used[ret_free_slot] &&
    	    if ( (records[ret_free_slot].state == LatSc_Disabled) &&
 		 ~records[ret_free_slot].record_valid &&
 		 ~records[ret_free_slot].record_pop ) begin 
@@ -625,7 +585,6 @@ module outoforder_wrf_channel
       begin
 	 ptr = find_next_push_slot();
 	 latbuf_push_ptr = ptr;
-	 // if (ptr != LATBUF_SLOT_INVALID) begin // *FIXME*: Potential catastrophe here
 	 if (~latbuf_almfull) begin
 	    {array_tid, array_data, array_hdr} = array.pop_front();
 	    hdr = TxHdr_t'(array_hdr);
@@ -706,22 +665,21 @@ module outoforder_wrf_channel
    	     end
 
    	 endcase
-	 // If a fence is set, wait till downstream gets cleared
-	 // if (vl0_wrfence_flag && (vl0_records_cnt == 0) && outfifo_empty) begin
+	 // If a VL0 fence is set, wait till downstream gets cleared
 	 if (vl0_wrfence_flag && (vl0_records_cnt == 0) && vl0_wrfence_deassert) begin
 	    vl0_wrfence_flag <= 0;
 	 `ifdef ASE_DEBUG
 	    $fwrite(log_fd, "%d | VL0 write fence popped\n", $time);
 	 `endif
-	 end
-	 // if (vh0_wrfence_flag && (vh0_records_cnt == 0) && outfifo_empty) begin
+	 end	 
+	 // If a VH0 fence is set, wait till downstream gets cleared
 	 if (vh0_wrfence_flag && (vh0_records_cnt == 0) && vh0_wrfence_deassert) begin
 	    vh0_wrfence_flag <= 0;
 	 `ifdef ASE_DEBUG
 	    $fwrite(log_fd, "%d | VH0 write fence popped\n", $time);
 	 `endif
 	 end
-	 // if (vh1_wrfence_flag && (vh1_records_cnt == 0) && outfifo_empty) begin
+	 // If a VH0 fence is set, wait till downstream gets cleared
 	 if (vh1_wrfence_flag && (vh1_records_cnt == 0) && vh1_wrfence_deassert) begin
 	    vh1_wrfence_flag <= 0;
 	 `ifdef ASE_DEBUG
@@ -1169,7 +1127,6 @@ module outoforder_wrf_channel
    assign outfifo_almfull  = (outfifo_cnt > VISIBLE_FULL_THRESH) ? 1 : 0;
    assign outfifo_empty    = (outfifo_cnt == 0) ? 1 : 0;
    assign outfifo_almempty = (outfifo_cnt <= 2) ? 1 : 0;
-
    assign outfifo_read_en = read_en;
 
    // Module empty (out)

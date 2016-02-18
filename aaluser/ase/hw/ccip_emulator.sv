@@ -515,8 +515,10 @@ module ccip_emulator
    //       1        |     0               1     |
    //       1        |     1               0     |
    //       1        |     1               1     | Initial reset
-   assign SoftReset = sys_reset | sw_reset_trig;
-
+   
+   always @(posedge clk) begin
+      SoftReset <= sys_reset | sw_reset_trig;
+   end
 
    /* ******************************************************************
     *
@@ -1707,7 +1709,7 @@ module ccip_emulator
     * *******************************************************************/
    // Output channel
    always @(posedge clk) begin
-      if (sys_reset|SoftReset) begin
+      if (SoftReset) begin
    	 C0RxMmioWrValid <= 1'b0;
    	 C0RxMmioRdValid <= 1'b0;
 //   	 C0RxWrValid     <= 1'b0;
@@ -1834,7 +1836,7 @@ module ccip_emulator
     *
     * *******************************************************************/
    always @(posedge clk) begin
-      if (sys_reset | SoftReset) begin
+      if (SoftReset) begin
    	 C1RxHdr <= {CCIP_RX_HDR_WIDTH{1'b0}};
    	 C1RxWrValid <= 1'b0;
    	 C1RxIntrValid <= 1'b0;
@@ -1969,8 +1971,8 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
-      sys_reset = 1;
-      sw_reset_trig = 1;
+      sys_reset <= 1;
+      sw_reset_trig <= 1;
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
@@ -1994,8 +1996,8 @@ module ccip_emulator
       // sw_reset_trig = 1;
       // #100ns;
       run_clocks(100);
-      sys_reset = 0;
-      sw_reset_trig = 0;
+      sys_reset <= 0;
+      sw_reset_trig <= 0;
       // #100ns;
       run_clocks(100);
       // Setting up CA-private memory
