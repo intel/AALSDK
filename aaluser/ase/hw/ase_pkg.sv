@@ -207,14 +207,6 @@ package ase_pkg;
 
 
    /*
-    * SIMKILL_ON_UNDEFINED: A switch to kill simulation if on a valid
-    * signal, 'X' or 'Z' is not allowed, gracious closedown on same
-    */
- `define VLOG_UNDEF                   1'bx
- `define VLOG_HIIMP                   1'bz
-
-
-   /*
     * Latency Scoreboard generics
     */
    // Number of transactions in latency scoreboard
@@ -227,28 +219,13 @@ package ase_pkg;
    parameter LATBUF_DEPTH_BASE2      = $clog2(LATBUF_NUM_TRANSACTIONS);
 
 
-   /*
-    * Print in Color
-    */
-   // Error in RED color
- `define BEGIN_RED_FONTCOLOR   $display("\033[1;31m");
- `define END_RED_FONTCOLOR     $display("\033[1;m");
-
-   // Info in GREEN color
- `define BEGIN_GREEN_FONTCOLOR $display("\033[32;1m");
- `define END_GREEN_FONTCOLOR   $display("\033[0m");
-
-   // Warnings/ASEDBGDUMP in YELLOW color
- `define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m");
- `define END_YELLOW_FONTCOLOR   $display("\033[0m");
-
 
    /*
     * CCI Transaction packet
     */
    typedef struct {
-      int 	  wrfence;
-      int         write_en;
+      int 	  mode;
+      // int         write_en;
       int 	  vc;
       int 	  mdata;
       longint 	  cl_addr;
@@ -257,6 +234,11 @@ package ase_pkg;
       int 	  resp_channel;
    } cci_pkt;
 
+   parameter CCIPKT_WRITE_MODE   = 32'h1000;   
+   parameter CCIPKT_READ_MODE    = 32'h2000;   
+   parameter CCIPKT_WRFENCE_MODE = 32'hFFFF;   
+   parameter CCIPKT_CMPXCHG_MODE = 32'h8000;
+      
 
    /*
     * ASE config structure

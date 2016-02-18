@@ -24,13 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 // **************************************************************************
-/* 
+/*
  * Module Info: Timestamp based session control functions
  * Language   : System{Verilog} | C/C++
  * Owner      : Rahul R Sharma
  *              rahul.r.sharma@intel.com
  *              Intel Corporation
- */ 
+ */
 
 #include "ase_common.h"
 
@@ -72,7 +72,7 @@ void put_timestamp()
   sprintf(tstamp_path, "%s/%s", ase_workdir_path, TSTAMP_FILENAME);
 
   fp = fopen(tstamp_path, "wb");
-  if (fp == NULL) 
+  if (fp == NULL)
     {
 #ifdef SIM_SIDE
       ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
@@ -90,7 +90,7 @@ void put_timestamp()
 
 
 // -----------------------------------------------------------------------
-// Read timestamp 
+// Read timestamp
 // -----------------------------------------------------------------------
 char* get_timestamp(int dont_kill)
 {
@@ -98,19 +98,22 @@ char* get_timestamp(int dont_kill)
 
   FILE *fp;
 
-  unsigned long long readback;
+  // unsigned long long readback;
 
   char *tstamp_str;
   tstamp_str = ase_malloc(20);
-  if (tstamp_str == NULL)
-    {
-      ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    #ifdef SIM_SIDE
-      start_simkill_countdown();
-    #else
-      exit(1);
-    #endif		       
-    }
+
+  int ret;
+
+  /* if (tstamp_str == NULL) */
+  /*   { */
+  /*     ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR); */
+  /*   #ifdef SIM_SIDE */
+  /*     start_simkill_countdown(); */
+  /*   #else */
+  /*     exit(1); */
+  /*   #endif		        */
+  /*   } */
 
   char *tstamp_filepath;
   tstamp_filepath = (char*)ase_malloc(ASE_FILEPATH_LEN);
@@ -123,34 +126,84 @@ char* get_timestamp(int dont_kill)
   printf("  [DEBUG] tstamp_filepath = %s\n", tstamp_filepath);
 #endif
 
-  fp = fopen(tstamp_filepath, "r");
-  if (dont_kill) 
+  // Check if file exists
+  if (access(tstamp_filepath, F_OK) != -1) // File exists
     {
-      BEGIN_YELLOW_FONTCOLOR;
-      printf(" Timestamp gone ! .. "); 
-      END_YELLOW_FONTCOLOR;
+      fp = fopen(tstamp_filepath, "r");
+      if (fp == NULL)
+	{
+  	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+        #ifdef SIM_SIDE
+	  start_simkill_countdown();
+        #else
+  	  exit(1);
+        #endif
+	}
+	
+      // Read timestamp file
+      ret = fread(tstamp_str, sizeof(char), 20, fp);
+      if (ret == 0)
+	{
+	  ase_error_report("fread", errno, ASE_OS_MALLOC_ERR);
+        #ifdef SIM_SIDE
+	  start_simkill_countdown();
+        #else
+	  exit(1);
+        #endif
+	}
+
+      #ifdef ASE_DEBUG
+	printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
+      #endif
+	
+      fclose(fp);
     }
-  else
+  else   // File doesnt exist
     {
-      if (fp == NULL) 
+      if (dont_kill != 0)  // Dont kill the process (dealloc side)
+	{
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  printf(" Timestamp gone ! .. ");
+	  END_YELLOW_FONTCOLOR;
+        #endif
+	}
+      else // Kill (alloc side problems
 	{
         #ifdef SIM_SIDE
-	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+  	  ase_error_report("access", errno, ASE_OS_FOPEN_ERR);
+	  start_simkill_countdown();
         #else
-	  perror("fopen");
+  	  perror("access");
+  	  exit(1);
         #endif
-	  exit(1);
 	}
     }
-  
-  fread(&readback, sizeof(unsigned long long), 1, fp);
-  fclose(fp);
-  
-  sprintf(tstamp_str, "%lld", readback);
 
-#ifdef ASE_DEBUG
-  printf("  [DEBUG] tstamp_str = %s\n", tstamp_str);
-#endif
+  /* fp = fopen(tstamp_filepath, "r"); */
+
+  /* if (dont_kill != 0)  */
+  /*   { */
+  /*     BEGIN_YELLOW_FONTCOLOR; */
+  /*     printf(" Timestamp gone ! .. ");  */
+  /*     END_YELLOW_FONTCOLOR; */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     if (fp == NULL)  */
+  /* 	{ */
+  /*       #ifdef SIM_SIDE */
+  /* 	  ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR); */
+  /*       #else */
+  /* 	  perror("fopen"); */
+  /*       #endif */
+  /* 	  exit(1); */
+  /* 	} */
+  /*   } */
+
+  // fread(&readback, sizeof(unsigned long long), 1, fp);
+
+  // sprintf(tstamp_str, "%lld", readback);
 
   FUNC_CALL_EXIT;
 
@@ -174,4 +227,3 @@ void poll_for_session_id()
     }
   printf("DONE\n");
 }
-
