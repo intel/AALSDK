@@ -1,7 +1,7 @@
 channel:
 	vcs -j 4 -full64 -nc -l comp.log \
 	-sverilog -override_timescale=10ps/10ps \
-	+incdir+../../hw/ -debug_all \
+	+incdir+../../hw/ -debug_all -race \
 	+define+ASE_DEBUG \
 	../../hw/ase_pkg.sv \
 	../../hw/stream_checker.sv \

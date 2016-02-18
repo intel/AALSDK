@@ -12,7 +12,7 @@ module tb_channel();
    logic valid_out;
    logic [CCIP_DATA_WIDTH-1:0] data_out;
 
-   localparam MAX_ITEMS = 4;
+   localparam MAX_ITEMS = 256;
       
    outoforder_wrf_channel
      #(
@@ -85,7 +85,7 @@ module tb_channel();
       else if (~full && (wr_i < MAX_ITEMS)) begin
 	 hdr_in.vc <= ccip_vc_t'($random) % 4;
 	 hdr_in.sop <= 1;
-	 hdr_in.len <= ASE_4CL; // sel_rand_len();	 
+	 hdr_in.len <= ASE_1CL; // sel_rand_len();	 
 	 hdr_in.reqtype <= ASE_RDLINE_I; // ASE_WRLINE_I;
 	 hdr_in.addr <= 32'h8400_0000 + wr_i;
 	 hdr_in.mdata <= wr_i;

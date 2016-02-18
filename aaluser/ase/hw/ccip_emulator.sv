@@ -1969,6 +1969,8 @@ module ccip_emulator
     *
     */
    initial begin : ase_entry_point
+      sys_reset = 1;
+      sw_reset_trig = 1;
 
       $display("SIM-SV: Simulator started...");
       // Initialize data-structures
@@ -1988,13 +1990,14 @@ module ccip_emulator
 
       // Initial signal values *FIXME*
       $display("SIM-SV: Sending initial reset...");
-      sys_reset = 1;
-      sw_reset_trig = 1;
-      #100ns;
+      // sys_reset = 1;
+      // sw_reset_trig = 1;
+      // #100ns;
+      run_clocks(100);
       sys_reset = 0;
       sw_reset_trig = 0;
-      #100ns;
-
+      // #100ns;
+      run_clocks(100);
       // Setting up CA-private memory
       // if (cfg.enable_capcm) begin
       // 	 $display("SIM-SV: Enabling structures for CA Private Memory... ");

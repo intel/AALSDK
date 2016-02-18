@@ -320,8 +320,11 @@ int ase_listener()
       if ( (ase_buffer.is_mmiomap == 0) || (ase_buffer.is_privmem == 0) )
 	{
 	  // Flush info to file
-	  fprintf(fp_workspace_log, "%s", logger_str);
-	  fflush(fp_workspace_log);
+	  if (fp_workspace_log != NULL)
+	    {
+	      fprintf(fp_workspace_log, "%s", logger_str);
+	      fflush(fp_workspace_log);
+	    }
 	}
 
       // Debug only
@@ -733,7 +736,10 @@ void start_simkill_countdown()
   final_ipc_cleanup();
 
   // Close workspace log
-  fclose(fp_workspace_log);
+  if (fp_workspace_log != NULL)
+    {
+      fclose(fp_workspace_log);
+    }
 
 #ifdef ASE_DEBUG
   if (fp_memaccess_log != NULL) 

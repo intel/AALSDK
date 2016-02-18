@@ -49,7 +49,7 @@ ASE_VERSION = 5.0.1
 
 # ASE switches (these tend to increase log sizes)
 ASE_DEBUG ?= 1
-ASE_PROFILE_ENABLE ?= 0
+ASE_PROFILE_ENABLE ?= 1
 ASE_DISABLE_LOGGER = 0
 
 GLS_SIM = 1
@@ -149,7 +149,7 @@ ifeq ($(ASE_DEBUG), 1)
     SNPS_VCS_OPT+= +vcs+loopreport +vcs+loopdetect
     SNPS_VCS_OPT+= -cm line+cond+fsm+tgl+branch+assert -cm_tgl mda
     SNPS_VCS_OPT+= -cm_cond basic+allops -cm_dir $(WORK)/coverage/
-    SNPS_VCS_OPT+= -simprofile +prof
+    SNPS_VCS_OPT+= -simprofile +prof -race
   endif
 # SNPS_VCS_OPT+= -LDFLAGS="-m64"             #  !!! DO NOT EDIT !!!
 endif
