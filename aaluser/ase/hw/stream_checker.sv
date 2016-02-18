@@ -1,5 +1,7 @@
 import ase_pkg::*;
 
+`include "platform.vh"
+
 module stream_checker
   #(
     parameter int HDR_WIDTH     = CCIP_TX_HDR_WIDTH,

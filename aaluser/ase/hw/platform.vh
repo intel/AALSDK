@@ -1,6 +1,28 @@
 `ifndef _PLATFORM_VH_
  `define _PLATFORM_VH_
 
+   /*
+    * SIMKILL_ON_UNDEFINED: A switch to kill simulation if on a valid
+    * signal, 'X' or 'Z' is not allowed, gracious closedown on same
+    */
+ `define VLOG_UNDEF                   1'bx
+ `define VLOG_HIIMP                   1'bz
+
+   /*
+    * Print in Color
+    */
+   // Error in RED color
+ `define BEGIN_RED_FONTCOLOR   $display("\033[1;31m");
+ `define END_RED_FONTCOLOR     $display("\033[1;m");
+
+   // Info in GREEN color
+ `define BEGIN_GREEN_FONTCOLOR $display("\033[32;1m");
+ `define END_GREEN_FONTCOLOR   $display("\033[0m");
+
+   // Warnings/ASEDBGDUMP in YELLOW color
+ `define BEGIN_YELLOW_FONTCOLOR $display("\033[0;33m");
+ `define END_YELLOW_FONTCOLOR   $display("\033[0m");
+
 
 /*
  * ASE Channel randomization features
@@ -8,8 +30,8 @@
 // `define ASE_RANDOMIZE_TRANSACTIONS 
 
 // parameter CCI_AFU_LOW_OFFSET  = 14'h1000 / 4;
-parameter AFU_CSR_LO_BOUND    = 16'h1000;
-parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
+// parameter AFU_CSR_LO_BOUND    = 16'h1000;
+// parameter AFU_CSR_HI_BOUND    = 16'hFFFF;
 
 
 /*

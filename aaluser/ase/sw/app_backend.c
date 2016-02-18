@@ -84,13 +84,15 @@ void send_simkill()
   // MQ close
   mqueue_close(app2sim_mmioreq_tx);
   mqueue_close(sim2app_mmiorsp_rx);
-  mqueue_close(app2sim_tx);
-  mqueue_close(sim2app_rx);
+  mqueue_close(app2sim_alloc_tx);
+  mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
   mqueue_close(app2sim_simkill_tx);
   mqueue_close(app2sim_portctrl_tx); 
+  mqueue_close(app2sim_dealloc_tx);
+  mqueue_close(sim2app_dealloc_rx);
 
-  exit(1);
+  exit(0);
 }
 
 
@@ -109,12 +111,16 @@ void session_init()
   // Initialize lock
   if ( pthread_mutex_init(&app_lock, NULL) != 0)
     {
+      BEGIN_YELLOW_FONTCOLOR;
       printf("  [APP]  Lock initialization failed, EXIT\n");
+      END_YELLOW_FONTCOLOR;
       exit (1);
     }
   
   // Initialize ase_workdir_path
-  ase_workdir_path = ase_eval_session_directory();
+  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+  // ase_workdir_path = ase_eval_session_directory();  
+  ase_eval_session_directory ();  
   BEGIN_YELLOW_FONTCOLOR;
   printf("  [APP]  ASE Session Directory located at =>\n");
   printf("         %s\n", ase_workdir_path);
@@ -131,16 +137,18 @@ void session_init()
   signal(SIGPIPE, SIG_IGN);
 
   BEGIN_YELLOW_FONTCOLOR;
-  printf("  [APP]  Initializing simulation session ... ");
+  printf("  [APP]  Initializing simulation session ... \n");
   END_YELLOW_FONTCOLOR;
 
-  app2sim_tx          = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
+  app2sim_alloc_tx    = mqueue_open( mq_array[0].name, mq_array[0].perm_flag );
   app2sim_mmioreq_tx  = mqueue_open( mq_array[1].name, mq_array[1].perm_flag );
   app2sim_umsg_tx     = mqueue_open( mq_array[2].name, mq_array[2].perm_flag );
   app2sim_simkill_tx  = mqueue_open( mq_array[3].name, mq_array[3].perm_flag );
-  sim2app_rx          = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
+  sim2app_alloc_rx    = mqueue_open( mq_array[4].name, mq_array[4].perm_flag );
   sim2app_mmiorsp_rx  = mqueue_open( mq_array[5].name, mq_array[5].perm_flag );
   app2sim_portctrl_tx = mqueue_open( mq_array[6].name, mq_array[6].perm_flag );
+  app2sim_dealloc_tx  = mqueue_open( mq_array[7].name, mq_array[7].perm_flag );
+  sim2app_dealloc_rx  = mqueue_open( mq_array[8].name, mq_array[8].perm_flag );
 
   // Message queues have been established
   mq_exist_status = MQ_ESTABLISHED;
@@ -233,11 +241,14 @@ void session_deinit()
   
   mqueue_close(app2sim_mmioreq_tx);
   mqueue_close(sim2app_mmiorsp_rx);
-  mqueue_close(app2sim_tx);
-  mqueue_close(sim2app_rx);
+  mqueue_close(app2sim_alloc_tx);
+  mqueue_close(sim2app_alloc_rx);
   mqueue_close(app2sim_umsg_tx);
   mqueue_close(app2sim_simkill_tx);
   mqueue_close(app2sim_portctrl_tx);
+  mqueue_close(app2sim_dealloc_tx);
+  mqueue_close(sim2app_dealloc_rx);
+
 
   BEGIN_YELLOW_FONTCOLOR;
   printf(" DONE\n");
@@ -246,7 +257,7 @@ void session_deinit()
 
   free(umas_region);
   free(mmio_region);
-  free(ase_workdir_path);
+  // free(ase_workdir_path);
   
   // Lock deinit
   pthread_mutex_destroy(&app_lock);
@@ -605,10 +616,10 @@ void allocate_buffer(struct buffer_t *mem, uint64_t *suggested_vaddr)
 
   // Form message and transmit to DPI
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
+  mqueue_send(app2sim_alloc_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Receive message from DPI with pbase populated
-  while(mqueue_recv(sim2app_rx, tmp_msg, ASE_MQ_MSGSIZE)==0) { /* wait */ }
+  while(mqueue_recv(sim2app_alloc_rx, tmp_msg, ASE_MQ_MSGSIZE)==0) { /* wait */ }
   ase_str_to_buffer_t(tmp_msg, mem);
 
   // Print out the buffer
@@ -659,10 +670,10 @@ void deallocate_buffer(struct buffer_t *mem)
 
   // Send a one way message to request a deallocate
   ase_buffer_t_to_str(mem, tmp_msg);
-  mqueue_send(app2sim_tx, tmp_msg, ASE_MQ_MSGSIZE);
+  mqueue_send(app2sim_dealloc_tx, tmp_msg, ASE_MQ_MSGSIZE);
 
   // Wait for response to deallocate
-  mqueue_recv(sim2app_rx, tmp_msg, ASE_MQ_MSGSIZE);
+  mqueue_recv(sim2app_dealloc_rx, tmp_msg, ASE_MQ_MSGSIZE);
   ase_str_to_buffer_t(tmp_msg, mem);
   
   // Unmap the memory accordingly

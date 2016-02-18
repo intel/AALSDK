@@ -121,12 +121,14 @@ void wr_memline_dex(cci_pkt *pkt)
 
   uint64_t phys_addr;
   uint64_t *wr_target_vaddr = (uint64_t*)NULL;
+  int ret_fd;
 
-  if (pkt->wrfence == 0) 
+  if (pkt->mode == CCIPKT_WRITE_MODE) 
     {
       // Get cl_addr, deduce wr_target_vaddr
       phys_addr = (uint64_t)pkt->cl_addr << 6;
-      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr); 
+      wr_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd); 
+
       // Write to memory
       memcpy(wr_target_vaddr, (char*)pkt->qword, CL_BYTE_WIDTH);
    }
@@ -147,10 +149,11 @@ void rd_memline_dex(cci_pkt *pkt )
 
   uint64_t phys_addr;
   uint64_t *rd_target_vaddr = (uint64_t*)NULL;
+  int ret_fd;
 
   // Get cl_addr, deduce rd_target_vaddr
   phys_addr = (uint64_t)pkt->cl_addr << 6;
-  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr);
+  rd_target_vaddr = ase_fakeaddr_to_vaddr((uint64_t)phys_addr, &ret_fd);
 
   // Read from memory
   memcpy((char*)pkt->qword, rd_target_vaddr, CL_BYTE_WIDTH);
@@ -181,6 +184,16 @@ int count_error_flag = 0;
 void count_error_flag_pong(int flag)
 {
   count_error_flag = flag;
+}
+
+
+/*
+ * Update global disable/enable 
+ */
+int glbl_dealloc_allowed;
+void update_glbl_dealloc(int flag)
+{
+  glbl_dealloc_allowed = flag;
 }
 
 
@@ -250,24 +263,19 @@ int ase_listener()
 	  END_RED_FONTCOLOR;
 	}
     }
+  // ------------------------------------------------------------------------------- //
  
 
    /*
-    * Buffer Replicator
+    * Buffer Allocation Replicator
     */
-  // DPI buffer
   struct buffer_t ase_buffer;
-  // int ret;
-
-  // Logger string
   char logger_str[ASE_LOGGER_LEN];
-
-  // Prepare an empty buffer
-  ase_empty_buffer(&ase_buffer);
 
   // Receive a DPI message and get information from replicated buffer
   // if (ase_recv_msg(&ase_buffer)==ASE_MSG_PRESENT)
-  if (mqueue_recv(app2sim_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+  ase_empty_buffer(&ase_buffer);
+  if (mqueue_recv(app2sim_alloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
       // ALLOC request received
       if(ase_buffer.metadata == HDR_MEM_ALLOC_REQ)
@@ -304,20 +312,6 @@ int ase_listener()
 	  // Inject buffer message
 	  buffer_msg_inject ( logger_str );
 	}
-      // if DEALLOC request is received
-      else if(ase_buffer.metadata == HDR_MEM_DEALLOC_REQ)
-	{
-	  // Format workspace info string
-	  memset (logger_str, 0, ASE_LOGGER_LEN);
-	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
-	  sprintf(logger_str + strlen(logger_str), "\n");
-
-	  // Deallocate action
-	  ase_dealloc_action(&ase_buffer);
-
-	  // Inject buffer message
-	  buffer_msg_inject ( logger_str );
-	}
 
       // Standard oneline message ---> Hides internal info
       ase_buffer_oneline(&ase_buffer);
@@ -326,17 +320,52 @@ int ase_listener()
       if ( (ase_buffer.is_mmiomap == 0) || (ase_buffer.is_privmem == 0) )
 	{
 	  // Flush info to file
-	  fprintf(fp_workspace_log, "%s", logger_str);
-	  fflush(fp_workspace_log);
+	  if (fp_workspace_log != NULL)
+	    {
+	      fprintf(fp_workspace_log, "%s", logger_str);
+	      fflush(fp_workspace_log);
+	    }
 	}
 
       // Debug only
     #ifdef ASE_DEBUG
+      BEGIN_YELLOW_FONTCOLOR;
       ase_buffer_info(&ase_buffer);
+      END_YELLOW_FONTCOLOR;
     #endif
     }
+  // ------------------------------------------------------------------------------- //
 
+  ase_empty_buffer(&ase_buffer);
+  if (glbl_dealloc_allowed) 
+    {
+      if (mqueue_recv(app2sim_dealloc_rx, (char*)&ase_buffer, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
+	{
+	  // Format workspace info string
+	  memset (logger_str, 0, ASE_LOGGER_LEN);
+	  sprintf(logger_str + strlen(logger_str), "\nBuffer %d Deallocated =>\n", ase_buffer.index);
+	  sprintf(logger_str + strlen(logger_str), "\n");
+	  
+	  // Deallocate action
+	  ase_dealloc_action(&ase_buffer);
+	  
+	  // Inject buffer message
+	  buffer_msg_inject ( logger_str );
+	  
+	  // Standard oneline message ---> Hides internal info
+	  ase_buffer.valid = ASE_BUFFER_INVALID;
+	  ase_buffer_oneline(&ase_buffer);
 
+      // Debug only
+        #ifdef ASE_DEBUG
+	  BEGIN_YELLOW_FONTCOLOR;
+	  ase_buffer_info(&ase_buffer);
+	  END_YELLOW_FONTCOLOR;
+       #endif
+	}
+    }
+  
+  // ------------------------------------------------------------------------------- //
   /*
    * MMIO request listener
    */
@@ -359,6 +388,7 @@ int ase_listener()
       // *FIXME*: Synchronizer must go here... TEST CODE
       ase_memory_barrier();
     }
+  // ------------------------------------------------------------------------------- //
 
 
   /*
@@ -387,6 +417,7 @@ int ase_listener()
       // dispatch to event processing
       umsg_dispatch(0, umsg_pkt);
     }
+  // ------------------------------------------------------------------------------- //
 
 
   /*
@@ -396,7 +427,6 @@ int ase_listener()
   memset (ase_simkill_str, 0, ASE_MQ_MSGSIZE);
   if(mqueue_recv(app2sim_simkill_rx, (char*)ase_simkill_str, ASE_MQ_MSGSIZE)==ASE_MSG_PRESENT)
     {
-      // if (memcmp (ase_simkill_str, (char*)ASE_SIMKILL_MSG, ASE_MQ_MSGSIZE) == 0)
       // Update regression counter
       glbl_test_cmplt_cnt = glbl_test_cmplt_cnt + 1;
 
@@ -443,6 +473,8 @@ int ase_listener()
 	}				
 #endif
     }
+  // ------------------------------------------------------------------------------- //
+
 
   //  FUNC_CALL_EXIT;
   return 0;
@@ -503,14 +535,23 @@ int ase_init()
   // Evaluate PWD
   ase_run_path = ase_malloc(ASE_FILEPATH_LEN);
   ase_run_path = getenv("PWD");
+#ifdef ASE_DEBUG
+  if (ase_run_path == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : getenv(PWD) evaluated NULL -- this is unexpected !\n");
+      END_RED_FONTCOLOR;
+    }
+#endif
 
   // ASE configuration management
   ase_config_parse(ASE_CONFIG_FILE);
 
   // Evaluate Session directory
-  ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
+  // ase_workdir_path = ase_malloc(ASE_FILEPATH_LEN);
   /* ase_workdir_path = ase_eval_session_directory();   */
-  sprintf(ase_workdir_path, "%s/", ase_run_path);
+  ase_eval_session_directory();
+  // sprintf(ase_workdir_path, "%s/", ase_run_path);
   printf("SIM-C : ASE Session Directory located at =>\n");
   printf("        %s\n", ase_workdir_path);
   printf("SIM-C : ASE Run path =>\n");
@@ -519,19 +560,25 @@ int ase_init()
   // Evaluate IPCs
   ipc_init();
 
-  // Generate timstamp (used as session ID)
-#if 0
-  put_timestamp();
-  tstamp_filepath = ase_malloc(ASE_FILEPATH_LEN);
-  strcpy(tstamp_filepath, ase_workdir_path);
-  strcat(tstamp_filepath, TSTAMP_FILENAME);
-
-  // Print timestamp
-  printf("SIM-C : Session ID => %s\n", get_timestamp(0) );
-#endif
-
   // Create IPC cleanup setup
   create_ipc_listfile();
+
+  // Create a memory access log
+#ifdef ASE_DEBUG
+  fp_memaccess_log = fopen("aseafu_access.log", "w");
+  if (fp_memaccess_log == NULL)
+    {
+      BEGIN_RED_FONTCOLOR;
+      printf("SIM-C : Memory access debug logger initialization failed !\n");
+      END_RED_FONTCOLOR;
+    }
+  else
+    {
+      BEGIN_YELLOW_FONTCOLOR;
+      printf("SIM-C : Memory access debug logger initialized\n");
+      END_YELLOW_FONTCOLOR;
+    }
+#endif
 
   // Set up message queues
   printf("SIM-C : Creating Messaging IPCs...\n");
@@ -540,13 +587,15 @@ int ase_init()
     mqueue_create( mq_array[ipc_iter].name );
 
   // Open message queues
-  app2sim_rx          = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
+  app2sim_alloc_rx    = mqueue_open(mq_array[0].name,  mq_array[0].perm_flag);
   app2sim_mmioreq_rx  = mqueue_open(mq_array[1].name,  mq_array[1].perm_flag);
   app2sim_umsg_rx     = mqueue_open(mq_array[2].name,  mq_array[2].perm_flag);
   app2sim_simkill_rx  = mqueue_open(mq_array[3].name,  mq_array[3].perm_flag);
-  sim2app_tx          = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
+  sim2app_alloc_tx    = mqueue_open(mq_array[4].name,  mq_array[4].perm_flag);
   sim2app_mmiorsp_tx  = mqueue_open(mq_array[5].name,  mq_array[5].perm_flag);
   app2sim_portctrl_rx = mqueue_open(mq_array[6].name,  mq_array[6].perm_flag);
+  app2sim_dealloc_rx  = mqueue_open(mq_array[7].name,  mq_array[7].perm_flag);
+  sim2app_dealloc_tx  = mqueue_open(mq_array[8].name,  mq_array[8].perm_flag);
 
   // Calculate memory map regions
   printf("SIM-C : Calculating memory map...\n");
@@ -600,9 +649,19 @@ int ase_ready()
   // Indicate readiness with .ase_ready file
   ase_ready_filepath = ase_malloc (ASE_FILEPATH_LEN);
   sprintf(ase_ready_filepath, "%s/%s", ase_workdir_path, ASE_READY_FILENAME);
+
+  // Write .ase_ready file
   ase_ready_fd = fopen( ase_ready_filepath, "w");
-  fprintf(ase_ready_fd, "%d", ase_pid);
-  fclose(ase_ready_fd);
+  if (ase_ready_fd != NULL) 
+    {
+      fprintf(ase_ready_fd, "%d", ase_pid);
+      fclose(ase_ready_fd);
+    }
+  else
+    {
+      printf("SIM-C : Error creating ready file\n");
+      ase_error_report("fopen", errno, ASE_OS_FOPEN_ERR);
+    }
 
   // Display "Ready for simulation"
   BEGIN_GREEN_FONTCOLOR;
@@ -677,7 +736,17 @@ void start_simkill_countdown()
   final_ipc_cleanup();
 
   // Close workspace log
-  fclose(fp_workspace_log);
+  if (fp_workspace_log != NULL)
+    {
+      fclose(fp_workspace_log);
+    }
+
+#ifdef ASE_DEBUG
+  if (fp_memaccess_log != NULL) 
+    {
+      fclose(fp_memaccess_log);
+    }
+#endif
 
   // Remove session files
   printf("SIM-C : Cleaning session files...\n");
@@ -775,14 +844,12 @@ void ase_config_parse(char *filename)
   ssize_t read;
   char *parameter;
   int value;
-  // int tmp_umsg_log2;
 
   char *ase_cfg_filepath;
   ase_cfg_filepath = ase_malloc(256);
   memset (ase_cfg_filepath, 0, 256);
   if ( strlen(sv2c_config_filepath) != 0 )
     {
-      // strcpy(ase_cfg_filepath, sv2c_config_filepath);
       sprintf(ase_cfg_filepath, "%s", sv2c_config_filepath);
     }
   else
@@ -798,11 +865,7 @@ void ase_config_parse(char *filename)
       printf("SIM-C : ASE config structure could not be allocated... EXITING\n");
       END_RED_FONTCOLOR;
       ase_error_report("malloc", errno, ASE_OS_MALLOC_ERR);
-    /* #ifdef SIM_SIDE */
       start_simkill_countdown();
-    /* #else */
-    /*   exit(1); */
-    /* #endif */
     }
   line = ase_malloc(sizeof(char) * 80);
 
@@ -811,9 +874,6 @@ void ase_config_parse(char *filename)
   cfg->ase_timeout = 500;
   cfg->ase_num_tests = 1;
   cfg->enable_reuse_seed = 0;
-  /* cfg->enable_capcm = 0; */
-  /* cfg->memmap_sad_setting = 0; */
-  /* cfg->num_umsg_log2 = 5; */
   cfg->enable_cl_view = 1;
   cfg->phys_memory_available_gb = 256;
 
@@ -845,12 +905,6 @@ void ase_config_parse(char *filename)
 	      	cfg->ase_num_tests = value;
 	      else if (strcmp (parameter, "ENABLE_REUSE_SEED") == 0)
 		cfg->enable_reuse_seed = value;
-	      /* else if (strcmp (parameter,"ENABLE_CAPCM") == 0) */
-	      /* 	cfg->enable_capcm = value; */
-	      /* else if (strcmp (parameter,"MEMMAP_SAD_SETTING") == 0) */
-	      /* 	cfg->memmap_sad_setting = value; */
-	      /* else if (strcmp (parameter,"NUM_UMSG_LOG2") == 0) */
-	      /* 	cfg->num_umsg_log2 = value; */
 	      else if (strcmp (parameter,"ENABLE_CL_VIEW") == 0)
 		cfg->enable_cl_view = value;
 	      else if (strcmp(parameter,"PHYS_MEMORY_AVAILABLE_GB") == 0)
@@ -909,32 +963,6 @@ void ase_config_parse(char *filename)
 	  cfg->ase_num_tests = 0;
 	}
 
-
-      // CAPCM size implementation
-      /* if (cfg->enable_capcm != 0) */
-      /* 	{ */
-      /* 	  if ((cfg->memmap_sad_setting > 15) || (cfg->memmap_sad_setting < 0)) */
-      /* 	    { */
-      /* 	      BEGIN_YELLOW_FONTCOLOR; */
-      /* 	      printf("SIM-C : In config file %s, there was an error in setting MEMMAP_SAD_SETTING\n", ASE_CONFIG_FILE); */
-      /* 	      printf("        MEMMAP_SAD_SETTING was %d\n", cfg->memmap_sad_setting); */
-      /* 	      printf("        Setting default MEMMAP_SAD_SETTING to default '2', see ase.cfg and ASE User Guide \n"); */
-      /* 	      cfg->memmap_sad_setting = 2; */
-      /* 	      END_YELLOW_FONTCOLOR; */
-      /* 	    } */
-      /* 	} */
-
-      // UMSG implementation
-      /* if (cfg->num_umsg_log2 == 0) */
-      /* 	{ */
-      /* 	  BEGIN_YELLOW_FONTCOLOR; */
-      /* 	  printf("SIM-C : In config file %s, there was an error in setting NUM_UMSG_LOG2\n", ASE_CONFIG_FILE); */
-      /* 	  printf("        NUM_UMSG_LOG2 was %d\n", cfg->num_umsg_log2); */
-      /* 	  printf("        Setting default NUM_UMSG_LOG2 to default 5\n"); */
-      /* 	  cfg->num_umsg_log2 = 5; */
-      /* 	  END_YELLOW_FONTCOLOR; */
-      /* 	} */
-
       // Close file
       fclose(fp);
     }
@@ -968,17 +996,6 @@ void ase_config_parse(char *filename)
     printf("        Reuse simulation seed      ... ENABLED \n");
   else
     printf("        Reuse simulation seed      ... DISABLED \n");
-
-  // UMSG
-  /* printf("        Number of UMSG buffers     ... %d (NUM_UMSG_LOG2 = %d) \n", (int)pow((float)2, (float)cfg->num_umsg_log2), cfg->num_umsg_log2); */
-
-  // CAPCM
-  /* if (cfg->enable_capcm != 0) */
-  /*   { */
-  /*     printf("        CA Private memory          ... ENABLED\n"); */
-  /*   } */
-  /* else */
-  /*   printf("        CA Private memory          ... DISABLED\n"); */
 
   // CL view
   if (cfg->enable_cl_view != 0)
