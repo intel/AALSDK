@@ -33,9 +33,9 @@ module tb_channel();
    int x;
       
    initial begin
-      rst = 1;
+      rst <= 1;
       #200;
-      rst = 0;
+      rst <= 0;
       wait (wr_i == MAX_ITEMS);
       #50000;
       `ifdef ASE_DEBUG
