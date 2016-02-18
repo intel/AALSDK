@@ -197,13 +197,16 @@ enum e_FME_PR_REGION_ID {
 enum e_CCIP_PORT_PR_status {
    CCIP_PORT_PR_Idle = 0x0,
    CCIP_PORT_PR_RecStart = 0x1,
-   CCIP_PORT_DoingPR1 = 0x2,
-   CCIP_PORT_DoingPR2 = 0x3,
-   CCIP_PORT_DoingPR3 = 0x4,
-   CCIP_PORT_DoingPR4 = 0x5,
-   CCIP_PORT_DoingPR5 = 0x6,
-   CCIP_PORT_PR_complete = 0x7,
-   CCIP_PORT_PR_error = 0x8
+   CCIP_PORT_PR_ReSet = 0x2,
+   CCIP_PORT_WaitFreeze = 0x3,
+   CCIP_PORT_WaitPR = 0x4,
+   CCIP_PORT_SendFrst_Data = 0x5,
+   CCIP_PORT_WaitPRReady = 0x6,
+   CCIP_PORT_PushFIFO_IP = 0x7,
+   CCIP_PORT_WaitPR_Resp = 0x8,
+   CCIP_PORT_PR_Complete = 0x9,
+   CCIP_PORT_PR_UnFreeze = 0xA,
+   CCIP_PORT_PR_DeAssert = 0xB
 };
 
 /// Partial Reconfiguration  mega function status codes
@@ -283,16 +286,12 @@ struct CCIP_DFH {
    union {
       btUnsigned64bitInt csr;
       struct {
-         btUnsigned64bitInt Feature_ID :12;     // Feature ID
-
-         //enum e_CCIP_DFL_ID Feature_ID :12;     // Feature ID
-
-         btUnsigned64bitInt Feature_rev :4;     // Feature revision
-         btUnsigned64bitInt next_DFH_offset :24;// Next Device Feature header offset
-         btUnsigned64bitInt rsvd :20;           // Reserved
-         btUnsigned64bitInt Type :4;            // Type of Device
-
-         //enum e_CCIP_DEVTPPE_ID Type :4;
+         btUnsigned64bitInt Feature_ID :12;      // Feature ID
+         btUnsigned64bitInt Feature_rev :4;      // Feature revision
+         btUnsigned64bitInt next_DFH_offset :24; // Next Device Feature header offset
+         btUnsigned64bitInt end_of_list :1;      // End of Device feature list
+         btUnsigned64bitInt rsvd :19;            // Reserved
+         btUnsigned64bitInt Type :4;             // Type of Device
 
       }; //end struct
    }; // end union
@@ -782,7 +781,7 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_port_access :1; // Enable PR Port access
+            btUnsigned64bitInt enable_pr_port_access :1; // Enable PR Port access
             btUnsigned64bitInt rsvd3 :7;
             btUnsigned64bitInt pr_regionid :2; // PR Region ID
 
@@ -790,7 +789,8 @@ struct CCIP_FME_DFL_PR {
 
             btUnsigned64bitInt rsvd1 :2;
             btUnsigned64bitInt pr_start_req :1; // PR Start Request
-            btUnsigned64bitInt rsvd :51;
+            btUnsigned64bitInt pr_push_complete :1; // PR Data push complete
+            btUnsigned64bitInt rsvd :50;
          }; // end struct
       }; //end union
 
@@ -803,22 +803,16 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt pr_credit :9;           // PR Credits
+            btUnsigned64bitInt pr_credit :9;             // PR Credits
             btUnsigned64bitInt rsvd2 :7;
-            btUnsigned64bitInt pr_timeout_err :1;      // PR timeout error
-            btUnsigned64bitInt pr_engine_error :1;     //  PR engine Error
-            btUnsigned64bitInt pr_data_overfw_error :1; // PR data overflow error
-            btUnsigned64bitInt rsvd3 :1;
-            btUnsigned64bitInt pr_mega_fun_status :3;    // Altra PR Contoller Block status
-
-            //enum e_CCIP_PR_Megafun_status pr_mega_fun_status :3;
+            btUnsigned64bitInt pr_status :1;             // PR status
+            btUnsigned64bitInt rsvd :3;
+            btUnsigned64bitInt pr_contoller_status :3;    // Altra PR Controller Block status
 
             btUnsigned64bitInt rsvd1 :1;
-            btUnsigned64bitInt pr_status :4;
+            btUnsigned64bitInt pr_host_status :4;  // PR Host status
 
-            // enum e_CCIP_PORT_PR_status  pr_status :4;
-
-            btUnsigned64bitInt rsvd :35;
+            btUnsigned64bitInt rsvd3 :36;
          }; // end struct
       }; // end union
 
@@ -843,12 +837,12 @@ struct CCIP_FME_DFL_PR {
       union {
          btUnsigned64bitInt csr;
          struct {
-            btUnsigned64bitInt PR_Timeout_err :1;
-            btUnsigned64bitInt PR_FIFO_err :1;
-            btUnsigned64bitInt PR_IP_err :1;
-            btUnsigned64bitInt PR_bitstream_err :1;
+            btUnsigned64bitInt PR_operation_err :1;
             btUnsigned64bitInt PR_CRC_err :1;
-            btUnsigned64bitInt PR_clear_status_err :1;
+            btUnsigned64bitInt PR_bitstream_err :1;
+            btUnsigned64bitInt PR_IP_err :1;
+            btUnsigned64bitInt PR_FIFIO_err :1;
+            btUnsigned64bitInt PR_timeout_err :1;
             btUnsigned64bitInt rsvd : 58;
          }; // end struct
       }; // end union

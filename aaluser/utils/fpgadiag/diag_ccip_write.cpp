@@ -42,7 +42,7 @@
 //WRITE: This is a write only test with no data checking. AFU writes CSR_NUM_LINES
 //starting from CSR_DST_ADDR location. This test is used to stress the write
 //path and measure 100% write bandwidth and latency.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -98,18 +98,18 @@ btInt CNLBCcipWrite::RunTest(const NLBCmdLine &cmd)
    {
 	   cfg |= (csr_type)NLB_TEST_MODE_WT;
    }
-   // Select the channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_QPI))
+   // Select the virtual channel.
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_QPI;
+	cfg |= (csr_type)NLB_TEST_MODE_VL0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_PCIE0;
+	cfg |= (csr_type)NLB_TEST_MODE_VH0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE1))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
+	cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))

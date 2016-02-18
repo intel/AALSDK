@@ -400,6 +400,42 @@ void RuntimeEvent::operator() ()
    delete this;
 }
 
+ServiceRevoke::ServiceRevoke(IServiceRevoke *pRevoke)
+: m_pRevoke(pRevoke)
+{
+   ASSERT(NULL != m_pRevoke);
+}
+
+void ServiceRevoke::operator ()()
+{
+   m_pRevoke->serviceRevoke();
+   delete this;
+}
+
+ReleaseServiceRequest::ReleaseServiceRequest(IBase *pServiceBase, const IEvent   *pEvent)
+: m_pSvcBase(pServiceBase),
+  m_pEvent(pEvent)
+{
+   ASSERT(NULL != m_pSvcBase);
+}
+
+void ReleaseServiceRequest::operator ()()
+{
+   IServiceClient * psvcClient = dynamic_ptr<IServiceClient>(iidServiceClient, m_pSvcBase);
+
+   ASSERT(NULL != psvcClient);
+   psvcClient->serviceReleaseRequest(m_pSvcBase, *m_pEvent);
+   delete this;
+
+}
+
+ReleaseServiceRequest::~ReleaseServiceRequest()
+{
+   if( NULL != m_pEvent){
+      delete m_pEvent;
+   }
+}
+
 END_NAMESPACE(AAL)
 
 /// @}

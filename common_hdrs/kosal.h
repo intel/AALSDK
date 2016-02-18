@@ -949,6 +949,8 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
 # include <linux/workqueue.h>
    //struct workqueue_struct   * kosal_work_queue
    #define kosal_create_workqueue(pd)  create_workqueue( aaldev_to_basedev(pd) )
+
+#define kosal_destroy_workqueue(pd)  destroy_workqueue( aaldev_to_basedev(pd) )
     // Worker thread items
 
    #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19)
@@ -977,11 +979,12 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
    void task_poller(struct work_struct *work);
 
 
-#define KOSAL_INIT_WORK(w,f)      do {(w->fnct) = f; \
+#define KOSAL_INIT_WORK(w,f,callbackfun)      do {(w->fnct) = f; \
                                       (w->context)=(&w); \
-                                      (w->callback)=WorkItemCallback; \
-                                      INIT_DELAYED_WORK(w->workobj,f); \
+                                      (w->callback)=&callbackfun; \
+                                      INIT_DELAYED_WORK(&(w->workobj),f); \
                                      }while(0);
+
 
 #define kosal_init_waitqueue_head(q) init_waitqueue_head(q)
 
@@ -991,6 +994,8 @@ KOSAL_WSSIZE kosal_round_up_to_page_size(KOSAL_WSSIZE s) {
 #define kosal_init_waitqueue_head(q)
 
 #define kosal_create_workqueue(pd)  IoAllocateWorkItem(aaldev_to_basedev(pd))
+
+#define kosal_destroy_workqueue(pd)  IoFreeWorkItem(aaldev_to_basedev(pd))
 //kosal_create_workqueue
 
 typedef void (*osfunc)(PDEVICE_OBJECT,PVOID);

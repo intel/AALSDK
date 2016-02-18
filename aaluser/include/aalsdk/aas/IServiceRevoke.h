@@ -24,56 +24,50 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //****************************************************************************
-//        FILE: IServiceBroker.h
-//     CREATED: Mar 14, 2014
+//        FILE: IServiceRevoked.h
+//     CREATED: Feb 4, 2016
 //      AUTHOR: Joseph Grecco <joe.grecco@intel.com>
 //
-// PURPOSE:   Definitions for the public IServiceBroker interface
+// PURPOSE:   Definitions for the public IServiceRevoked interface
 // HISTORY:
-// COMMENTS:  Service Broker is responsible for servicing requests for Service
-//            allocation. It interacts with components such as the Resource
-//            manager.
+// COMMENTS:  This interface is called when resources associated with a Service
+//            are forcibly revoked from the Service.
+//            This API is intended to be used by the ServiceBase class.
 // WHEN:          WHO:     WHAT:
 //****************************************************************************///
-#ifndef __AALSDK_AAS_ISERVICEBROKER_H__
-#define __AALSDK_AAS_ISERVICEBROKER_H__
-#include <aalsdk/AALTypes.h>
-#include <aalsdk/Runtime.h>
-#include <aalsdk/IServiceClient.h>
+#ifndef __AALSDK_AAS_ISERVICEREVOKE_H__
+#define __AALSDK_AAS_ISERVICEREVOKE_H__
+
 
 BEGIN_NAMESPACE(AAL)
 
-/// @ingroup ServiceBroker
+/// @ingroup Service
 /// @{
 
-/// @interface IServiceBroker
-/// @brief Interface to the Service Broker Platform Service.
+/// @interface IServiceRevoke
+/// @brief Interface to enable Revok Service Requests.
 ///
-/// AAL implements a Factory design pattern to abstract the instantiation of Services from the
-/// application. The AAL Service Broker provides the interface used to request a Service. The
-/// Service Broker interacts with the Registrar to determine how a Service is to be instantiated.
-/// Service Brokers are Platform Services loaded by the AAL Runtime object.
-class IServiceBroker
+/// The intent of this API is to enable the Service at the root
+///  of a Service hierarchy to Release. This call is typically invoked by a
+///  lower level component to cause the Service stack to unwind cleanly. An
+///   example of the intended us is:  An arbitrarily deep Service stack (i.e.,
+///   a Service has allocated Services that may allocate Services). In the case that
+///   a resource fails or becomes unavailable teh Service stack may no longer be usable.
+///   In order to clean up gracefully a Release() must be called on the root Service. This
+///   interface is implemented by the root Service.  The Service is expected to call
+//    Release() on itself.
+class IServiceRevoke
 {
 public:
-   /// Allocate a Service
-   ///@param[in] pProxy Runtime Proxy for this Service
-   ///@param[in] pRuntimClient of client for this Service
-   ///@param[in] pServiceClient IBase of client for this Service
-   ///@param[in] rManifest Manifest describing the Service to allocate
-   ///@param[in] rTranID Transaction ID
-   virtual void allocService(IRuntime            *pProxy,
-                             IRuntimeClient      *pRuntimClient,
-                             IBase               *pServiceClientBase,
-                             const NamedValueSet &rManifest,
-                             TransactionID const &rTranID) = 0;
 
-   virtual ~IServiceBroker() {}
+   virtual void serviceRevoke() = 0;
+
+   virtual ~IServiceRevoke() {}
 };
 
 /// @}
 
 END_NAMESPACE(AAL)
 
-#endif // __AALSDK_AAS_ISERVICEBROKER_H__
+#endif // __AALSDK_AAS_ISERVICEREVOKE_H__
 

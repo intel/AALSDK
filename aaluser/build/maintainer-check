@@ -1197,7 +1197,6 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'AALTransactionID_s.h' \
 'aaltypes.h' \
 'aalui-events.h' \
-'aalui.h' \
 'AALWorkspace.h' \
 'aalwsservice.h' \
 'ahmpipdefs.h' \
@@ -1211,6 +1210,13 @@ declare -ra COPYRIGHT_USER_EXCEPT_NAMES=(\
 'spl2defs.h' \
 'fappip.h' \
 'vafu2defs.h' \
+'mm_debug_link_interface.h' \
+'mm_debug_link_linux.cpp' \
+'mm_debug_link_linux.h' \
+'mmlink_connection.cpp' \
+'mmlink_connection.h' \
+'mmlink_server.cpp' \
+'mmlink_server.h'\
 )
 
 declare -ra COPYRIGHT_KERNEL_CHECKED_PREFIXES=(\

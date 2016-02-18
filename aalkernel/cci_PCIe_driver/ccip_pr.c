@@ -84,6 +84,9 @@
 
 #include "cci_pcie_driver_PIPsession.h"
 
+#include <linux/workqueue.h>
+#define PR_STATUS_MAX_TRY 30000
+
 extern ulong sim;
 
 extern struct cci_aal_device   *
@@ -105,7 +108,7 @@ static int CommandHandler( struct aaldev_ownerSession *,
 static int cci_mmap(struct aaldev_ownerSession *pownerSess,
                            struct aal_wsid *wsidp,
                            btAny os_specific);
-
+bool  reconfigure_activateAFU(struct port_device  *pportdev,struct cci_aal_device  *pdev );
 ///=============================================================================
 /// Name: cci_PRpip
 /// @brief Physical Interface Protocol Interface for the PR AFU
@@ -140,14 +143,14 @@ struct aal_ipip cci_PRpip = {
 //=============================================================================
 
 inline void GetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *pcsrval){
-   bt32bitCSR *p32 = (bt32bitCSR *)ptr;
+   volatile bt32bitCSR *p32 = (bt32bitCSR *)ptr;
 
    *pcsrval = *p32;
 }
 
 inline void SetCSR(btUnsigned64bitInt *ptr, bt32bitCSR *csrval)
 {
-   bt32bitCSR *p32 = (bt32bitCSR *)ptr;
+   volatile bt32bitCSR *p32 = (bt32bitCSR *)ptr;
 
    *p32 = *csrval;
 }
@@ -403,6 +406,627 @@ int program_afu( struct cci_aal_device *pdev,  btVirtAddr kptr, btWSSize len )
   return 0;
 }
 
+struct pr_program_context pr_program_ctx;
+struct pr_program_context
+{
+   btUnsigned64bitInt               cmd;
+   struct port_device              *pportdev;
+   struct cci_aal_device           *pPR_dev;
+   struct cci_aal_device           *pAFU_dev;
+   struct aaldev_ownerSession      *pownerSess;
+   btVirtAddr                       kbufferptr;
+   btWSSize                         bufferlen;
+   int                              prregion_id ;
+   btUnsigned64bitInt               reconfTimeout;
+   btUnsigned64bitInt               reconfAction;
+   uid_afurespID_e                  respID;
+   btUnsigned64bitInt               evt_data;
+   uid_errnum_e                     eno;
+   btBool                           leaveDeactivated;
+
+};
+
+///============================================================================
+/// Name: program_afu_callback
+/// @brief Reconfigures  AFU with bitstream
+///
+///
+/// @param[in] pr_context - pr program context
+/// @param[in] ptr -null pointer.
+/// @return    void
+///============================================================================
+void program_afu_callback(void* pr_context,void* ptr)
+{
+
+
+   btVirtAddr                 kptr = NULL;
+   btWSSize                   len = 0;
+   bt32bitInt                 counter =0;
+   bt32bitCSR                 PR_FIFO_credits = 0;
+   uint32_t                   *byteRead = NULL;
+   uid_errnum_e               errno= uid_errnumOK;
+
+   struct fme_device          *pfme_dev = NULL;
+   struct CCIP_FME_DFL_PR     *pr_dev  = NULL;
+   struct pr_program_context  *ppr_program_ctx =NULL;
+   struct ccipdrv_event_afu_response_event *pafuws_evt  = NULL;
+
+
+   PTRACEIN;
+   UNREFERENCED_PARAMETER(ptr);
+
+   ppr_program_ctx = (struct pr_program_context*) pr_context;
+   if(NULL == ppr_program_ctx) {
+
+      PERR("Invalid PR Context\n");
+      return ;
+   }
+
+   pfme_dev = cci_dev_pfme(ppr_program_ctx->pPR_dev);
+   pr_dev = ccip_fme_pr(pfme_dev);
+
+   kptr = ppr_program_ctx->kbufferptr;
+   len = ppr_program_ctx->bufferlen;
+
+   PDEBUG("kptr =%p", kptr);
+   PDEBUG("len =%d\n", (unsigned)len);
+   PDEBUG("prregion_id =%d\n",ppr_program_ctx->prregion_id);
+
+   // Don't do anything under simulation
+   if(0 != sim){
+      PDEBUG("Simulated reprogram \n");
+
+      kosal_free_user_buffer(ppr_program_ctx->kbufferptr, ppr_program_ctx->bufferlen);
+      reconfigure_activateAFU(ppr_program_ctx->pportdev,ppr_program_ctx->pPR_dev);
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
+                                                             rspid_AFU_Response,
+                                                             0,
+                                                             ppr_program_ctx->pownerSess->m_device,
+                                                             ppr_program_ctx->pownerSess->m_ownerContext,
+                                                             uid_errnumOK);
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                        AALQIP(pafuws_evt));
+      return ;
+   }
+
+   // Program the AFU
+   // For BDX-P only FME initiated PR is supported. So, CSR_FME_PR_CONTROL[0] = 0
+   // ---------------------------------------------------------------------------
+   PVERBOSE("Setting up PR access mode to FME initiated PR \n");
+
+   // Disable PORT PR access ,SW use the FME to PR
+   pr_dev->ccip_fme_pr_control.enable_pr_port_access=0x0;
+
+   // Step 1 - Check FME_PR_STATUS[27:24] == 4'h0
+   // -------------------------------------------
+   // Both Initially as well as after PR, HW updates PR status to this state
+   PVERBOSE("Waiting for PR Resource in HW to be initialized and ready \n");
+
+   do {
+      counter++;
+      if (counter > PR_STATUS_MAX_TRY)    {
+         PERR(" Maximum number of PR Status has been reached \n");
+         errno=uid_errnumPRTimeout;
+         goto ERR;
+      }
+   }
+   while( CCIP_PORT_PR_Idle != pr_dev->ccip_fme_pr_status.pr_host_status);
+   PVERBOSE("HW is ready for PR \n");
+
+
+   // Step 2 - Check FME_PR_STATUS[16] for any previous PR errors
+   // --------------------------------------------------------------
+   // FME_PR_STATUS[16] is PR PASS or FAIL bit. Different from SAS.
+   // FME_PR_STATUS[16] is RO from SW point of view.
+   PVERBOSE("Checking for errors in previous PR operation");
+
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+      PERR(" PR Previous PR Operation Error  Detected \n");
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+      PERR(" PR CRC Error Detected \n");
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+      PERR(" PR Incomparable bitstream Error  Detected \n");
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+      PERR(" PR IP Protocol Error Detected \n");
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+      PERR(" PR  FIFO Overflow Error Detected \n");
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+      PERR(" PR Timeout  Error Detected \n");
+   }
+
+
+   // Step 3 - Clear FME_PR_ERROR[5:0] - if needed based on Step - 2
+   // -----------------------------------------------------------------
+   // Upon failure, FME_PR_ERROR[5:0] gives additional error info.
+   // FME_PR_ERROR[5:0] - All 6 bits are RW1CS - HW writes 1 upon error to set the bit. SW writes 1 to clear the bit
+   // Once All error bits set in FME_PR_ERROR[5:0] are cleared by SW, HW will clear FME_PR_STATUS[16]
+   // TODO: This step is different from SAS flow. Update SAS
+   // NOTE: Error Logging and propagation might change based on SKX RAS
+
+   pr_dev->ccip_fme_pr_err.PR_operation_err =0x0;
+   pr_dev->ccip_fme_pr_err.PR_CRC_err =0x0;
+   pr_dev->ccip_fme_pr_err.PR_bitstream_err =0x0;
+   pr_dev->ccip_fme_pr_err.PR_IP_err =0x0;
+   pr_dev->ccip_fme_pr_err.PR_FIFIO_err =0x0;
+   pr_dev->ccip_fme_pr_err.PR_timeout_err =0x0;
+
+
+   PVERBOSE("Previous PR errors cleared \n ");
+
+   // Step 4 - Write PR Region ID to FME_PR_CONTROL[9:8]
+   // --------------------------------------------------
+   // NOTE: For BDX-P only 1 AFU is supported in HW. So, CSR_FME_PR_CONTROL[9:8] should always be 0
+   // This will change for SKX
+
+   // set PR Region ID
+   pr_dev->ccip_fme_pr_control.pr_regionid=0x0;
+
+
+   // Step 5 - Initiate PR - Write 1 to FME_PR_CONTROL[12]
+   // ---------------------------------------------------
+   // SW can only initiate PR. HW will auto clear this bit upon failure or success or timeout
+   PDEBUG("Initiate PR");
+   // PR Start Request
+   pr_dev->ccip_fme_pr_control.pr_start_req=0x1;
+
+
+   // Step 6 - Check available credits: FME_PR_STATUS[8:0] for PR data push and push Data to FME_PR_DATA[31:0]
+   // -------------------------------------------------------------------------------------------------------
+   // For instance,
+   // if FME_PR_STATUS[8:0] read yields 511, SW can perform 511 32-bit writes from rbf file to FME_PR_DATA[31:0] and check credits again
+
+   PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+   byteRead = (uint32_t  *)kptr;
+   PDEBUG("Pushing Data from rbf to HW \n");
+
+   while(len >0) {
+
+      if (PR_FIFO_credits <= 1)  {
+         do {
+
+            PR_FIFO_credits = pr_dev->ccip_fme_pr_status.pr_credit;
+         }
+         while (PR_FIFO_credits <=1);
+      }
+
+      pr_dev->ccip_fme_pr_data.pr_data_raw =*byteRead;
+      PR_FIFO_credits --;
+      byteRead++;
+      len -= 4;
+   }
+
+   // Step 7 - Notify the HW that bitstream push is complete
+   // ------------------------------------------------------
+   // Write 1 to CSR_FME_PR_CONTROL[13]. This bit is RW1S. SW writes 1 to set this bit.
+   // Hardware will auto clear this bit upon PR completion
+   // TODO: This step is currently not defined in SAS. Update SAS
+
+   pr_dev->ccip_fme_pr_control.pr_push_complete=0x1;
+
+   PVERBOSE("Green bitstream push complete \n");
+
+   // Step 8 - Once all data is pushed from rbf file, wait for PR completion
+   // ----------------------------------------------------------------------
+   // Check FME_PR_CONTROL[12] == 0.
+   // Note: PR status bits are valid only when FME_PR_CONTROL[12] == 0.
+   // FME_PR_CONTROL[12] is an atomic status check bit for initiating PR and also checking for PR completion
+   // This bit set to 0 essentially means that HW has released the PR resource either due to PR PASS or PR FAIL.
+
+   PVERBOSE("Waiting for HW to release PR resource");
+   // kosal_mdelay(10);        // Workaround for potential HW timing issue
+
+   counter =0;
+   do {
+
+      counter++;
+      if (counter > PR_STATUS_MAX_TRY)    {
+         PERR(" Maximum number of PR Start Request has been reached \n");
+         goto ERR;
+      }
+   }
+   while(0x0 != pr_dev->ccip_fme_pr_control.pr_start_req);
+   PVERBOSE("PR operation complete, checking Status ...");
+
+
+   // Step 9 - Check PR PASS / FAIL
+   // -----------------------------
+   // Read the FME_PR_STATUS[16] to check PR success / fail
+   // FME_PR_STATUS[16] = 0 implies PR Passed
+   // FME_PR_STATUS[16] = 1 implies PR Failed. Read FME_PR_ERROR for more info upon failure
+   // TODO: This step is different from SAS. Update SAS
+   // NOTE: Error Register updating/ clearing may change based on SKX RAS requirement
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_operation_err ) {
+      PERR(" PR Previous PR Operation Error  Detected \n");
+      errno=uid_errnumPROperationErr;
+      goto ERR;
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_CRC_err ) {
+      PERR(" PR CRC Error Detected \n");
+      errno=uid_errnumPRCRCErr;
+      goto ERR;
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_bitstream_err ) {
+      PERR(" PR Incomparable bitstream Error  Detected \n");
+      errno=uid_errnumPRIncomparableBitstreamErr;
+      goto ERR;
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_IP_err ) {
+      PERR(" PR IP Protocol Error Detected \n");
+      errno=uid_errnumPRIPProtocalErr;
+      goto ERR;
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_FIFIO_err ) {
+      PERR(" PR  FIFO Overflow Error Detected \n");
+      errno=uid_errnumPRFIFOErr;
+      goto ERR;
+   }
+
+   if(0x1 == pr_dev->ccip_fme_pr_err.PR_timeout_err ) {
+      PERR(" PR Timeout  Error Detected \n");
+      errno=uid_errnumPRTimeout;
+      goto ERR;
+   }
+
+
+      // No need to AFU Active
+   if( ReConf_Action_InActive == ((ppr_program_ctx->reconfAction >> 1) & 0x1) )   {
+
+      PVERBOSE( "Msg ReConf_Action_InActive \n");
+
+      kosal_free_user_buffer(ppr_program_ctx->kbufferptr, ppr_program_ctx->bufferlen);
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
+                                                             rspid_AFU_Response,
+                                                             0,
+                                                             ppr_program_ctx->pownerSess->m_device,
+                                                             ppr_program_ctx->pownerSess->m_ownerContext,
+                                                             uid_errnumOK);
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                       AALQIP(pafuws_evt));
+
+
+      PTRACEOUT;
+      return ;
+   }
+
+
+   if(reconfigure_activateAFU(ppr_program_ctx->pportdev,ppr_program_ctx->pPR_dev) )
+   {
+      PVERBOSE("PR PASSED\n");
+
+      kosal_free_user_buffer(ppr_program_ctx->kbufferptr, ppr_program_ctx->bufferlen);
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
+                                                               rspid_AFU_Response,
+                                                               0,
+                                                               ppr_program_ctx->pownerSess->m_device,
+                                                               ppr_program_ctx->pownerSess->m_ownerContext,
+                                                               uid_errnumOK);
+
+       ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                         AALQIP(pafuws_evt));
+   }
+   else
+   {
+
+      errno=uid_errnumAFUActivationFail;
+      goto ERR;
+   }
+
+
+
+
+   PVERBOSE("PR PASSED\n");
+
+   PTRACEOUT;
+   return ;
+
+ERR:
+
+   kosal_free_user_buffer(ppr_program_ctx->kbufferptr, ppr_program_ctx->bufferlen);
+
+   pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespConfigureComplete,
+                                                           rspid_AFU_Response,
+                                                           0,
+                                                           ppr_program_ctx->pownerSess->m_device,
+                                                           ppr_program_ctx->pownerSess->m_ownerContext,
+                                                           errno);
+
+   ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                     AALQIP(pafuws_evt));
+
+   PTRACEOUT;
+   return  ;
+
+
+}
+
+///============================================================================
+/// Name: reconfigure_activateAFU
+/// @brief Activates afu after reconfiguration
+///
+///
+/// @param[in] pportdev - Port device pointer
+/// @param[in] pdev - cci aal device pointer
+/// @return    AFU activate status
+///============================================================================
+bool  reconfigure_activateAFU(struct port_device  *pportdev,struct cci_aal_device  *pdev )
+{
+
+    // Get the AFU header pointer by adding the offset to the port header address
+    struct cci_aal_device         *pcci_aaldev = NULL;
+    struct aal_device_id           aalid;
+    struct aal_device             *paaldevice = NULL;
+    struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)ccip_port_hdr(pportdev) ) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset);
+    btPhysAddr                     pafu_phys = ccip_port_phys_mmio(pportdev) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset;
+
+    PTRACEIN;
+
+    // Get the address of the PR. User AFU instance number always follows PR.
+    paaldevice = cci_aaldev_to_aaldev(pdev);
+    aalid = aaldev_devid(paaldevice);
+
+    // If the device is present
+    if(~0ULL != pafu_hdr->ccip_dfh.csr){
+
+       // Instantiate it
+       aaldevid_devaddr_instanceNum(aalid)++;
+       pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
+                                                  pafu_phys,
+                                                  pafu_hdr,
+                                                 &aalid);
+       ASSERT(NULL != pcci_aaldev);
+
+       if(NULL == pcci_aaldev){
+          PDEBUG("ERROR: Creating User AFU device\n");
+          return false;     // TODO This is a BUG if we get here but should cleanup correctly.
+       }
+
+       // Add the device to the CCI Board device's device list
+       kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
+
+    } // End if(~0ULL == pafu_hdr->ccip_dfh.csr){
+
+    PTRACEOUT;
+    return true;
+}
+
+///============================================================================
+/// Name: task_afu_deactivate_callback
+/// @brief
+///
+///
+/// @param[in] pr_context -pr configuration context
+/// @param[in] ptr - null pointer.
+/// @return    void
+///============================================================================
+void task_afu_deactivate_callback(void* pr_context,void* ptr)
+{
+
+   struct aal_device          *pafu_aal_dev = NULL;
+   kosal_list_head            *pitr= NULL;
+   kosal_list_head            *temp= NULL;
+   struct aaldev_owner        *pOwner = NULL;
+  // uid_msgIDs_e               msgID;
+
+   struct pr_program_context  *ppr_program_ctx =NULL;
+   struct ccipdrv_event_afu_response_event *pafuws_evt  = NULL;
+
+   PTRACEIN;
+   UNREFERENCED_PARAMETER(ptr);
+
+   ppr_program_ctx = (struct pr_program_context *)pr_context;
+   pafu_aal_dev = ppr_program_ctx->pAFU_dev->m_aaldev;
+
+
+   // TODO Revoke AFU and kickoff another timer to wait for release
+
+   // Determine whether everyone released
+   if ( !kosal_list_is_empty(&pafu_aal_dev->m_ownerlist) )  {
+
+
+      PVERBOSE( "AFU owners count= %d \n",pafu_aal_dev->m_numowners);
+      // Loop through the list looking for a match
+      kosal_list_for_each_safe(pitr, temp, &pafu_aal_dev->m_ownerlist) {
+
+         // finds afu owner
+         pOwner = kosal_container_of(pitr, struct aaldev_owner, m_ownerlist);
+
+         PVERBOSE(  "AFU Owner pid= %d \n" , pOwner->m_pid);
+        // We've timed out waiting for owner to release
+
+         if(ReConf_Action_Honor_Owner == ppr_program_ctx->reconfAction){
+           // TODO Issue PR timeout tp  PR app
+
+
+        }else if(ReConf_Action_Honor_request == ppr_program_ctx->reconfAction){
+           // We've timed out waiting for owner to release. Send a revoke
+           //  and wait again
+
+            pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( 0,
+                                                                   rspid_AFU_PR_Revoke_Event,
+                                                                   0,
+                                                                   pOwner->m_sess.m_device,
+                                                                   pOwner->m_sess.m_ownerContext,
+                                                                   uid_errnumOK);
+            ccidrv_sendevent(&(pOwner->m_sess),
+                             AALQIP(pafuws_evt));
+         } //end for
+
+   } // end if
+
+   }// end else if
+
+   PTRACEOUT;
+
+}
+
+///============================================================================
+/// Name: task_afu_deactimeout_callback
+/// @brief AFU Deactivate /reconfigure timeout callback
+///
+///
+/// @param[in] pr_context -pr configuration context
+/// @param[in] ptr - null pointer.
+/// @return    void
+///============================================================================
+void task_afu_deactimeout_callback(void* pr_context,void* ptr)
+{
+
+   struct aal_device          *pafu_aal_dev = NULL;
+   struct aal_device          *ppr_aal_dev = NULL;
+   work_object                *pworkobj =NULL;
+   //uid_msgIDs_e                msgID =0;
+
+   struct pr_program_context  *ppr_program_ctx = NULL;
+   struct ccipdrv_event_afu_response_event *pafuws_evt  = NULL;
+
+   PTRACEIN;
+   UNREFERENCED_PARAMETER(ptr);
+
+   ppr_program_ctx = (struct pr_program_context *)pr_context;
+   pafu_aal_dev = ppr_program_ctx->pAFU_dev->m_aaldev;
+   ppr_aal_dev =  ppr_program_ctx->pPR_dev->m_aaldev;
+
+   PVERBOSE( "AFU count %d \n",pafu_aal_dev->m_numowners);
+   PVERBOSE( "ppr_program_ctx->respID %d \n",ppr_program_ctx->respID);
+   PVERBOSE( "ppr_program_ctx->leaveDeactivated %d \n",ppr_program_ctx->leaveDeactivated);
+   PVERBOSE( "ppr_program_ctx->eno %d \n",ppr_program_ctx->eno);
+
+/*
+   //  checks reconfAction flags
+   // default  reconfAction flag is rspid_AFU_PR_Honor_Request_Event
+   if( ReConf_Action_Honor_Owner == (ppr_program_ctx->reconfAction & 0x1) )   {
+
+      PVERBOSE( "Msg rspid_AFU_PR_Honar_Owner_Event \n");
+      msgID =rspid_AFU_PR_Honar_Owner_Event ;
+
+   } else {
+
+      PVERBOSE( "Msg rspid_AFU_PR_Honor_Request_Event \n");
+      msgID =rspid_AFU_PR_Honor_Request_Event ;
+
+   }
+*/
+   // If Owner count is zero , Deactivate AFU
+   if( 0 == pafu_aal_dev->m_numowners)  {
+
+      // Deactivate  (TODO Could be made a function as its called in multiple places.)
+      cci_unpublish_aaldevice(ccip_port_uafu_dev(ppr_program_ctx->pportdev));
+      cci_destroy_aal_device( ccip_port_uafu_dev(ppr_program_ctx->pportdev) );
+      ccip_port_uafu_dev(ppr_program_ctx->pportdev) = NULL;
+
+      //  If we are reconfiguring, start that  (TODO:  May be able to refactor so we don't spin this in another thread. We are already in a kernel thread so why not just program now?)
+      if(ppr_program_ctx->respID == uid_afurespConfigureComplete)
+      {
+         pworkobj = &cci_dev_task_prcconfigure_handler(ppr_program_ctx->pPR_dev);
+         pworkobj->context = (void*) ppr_program_ctx;
+         queue_delayed_work(cci_dev_workq_prcconfigure(ppr_program_ctx->pPR_dev), &(cci_dev_task_prcconfigure_handler(ppr_program_ctx->pPR_dev).workobj), msecs_to_jiffies(1000));
+
+         PTRACEOUT;
+         return;
+      }
+
+
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( ppr_program_ctx->respID,
+                                                              rspid_AFU_Response,
+                                                              0,
+                                                              ppr_program_ctx->pownerSess->m_device,
+                                                              ppr_program_ctx->pownerSess->m_ownerContext,
+                                                              uid_errnumOK);
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                        AALQIP(pafuws_evt));
+      PVERBOSE(" AFU  DeActiavated  \n" );
+
+      PTRACEOUT;
+      return ;
+
+    } // end if
+
+   PDEBUG("AFU Owner Count=%d\n", pafu_aal_dev->m_numowners);
+
+   // If we are told to honor then since owner did not relinquish AFU timeout request
+   if((pafu_aal_dev->m_numowners >0 ) &&
+      (ReConf_Action_Honor_Owner == ppr_program_ctx->reconfAction)) {
+
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( uid_afurespDeactivateComplete,
+                                                             rspid_AFU_Response,                // TODO This ID will ALWYAS BE AFU Response so just but in constructor
+                                                              0,
+                                                              ppr_program_ctx->pownerSess->m_device,
+                                                              ppr_program_ctx->pownerSess->m_ownerContext,
+                                                              uid_errnumDeActiveTimeout);
+
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                       AALQIP(pafuws_evt));
+      PVERBOSE("AFU  DeActiavated Timeout  \n" );
+
+    } else {
+
+       // TODO IF YOU ARE TRYING TO CREATE A STATE MACHINE e.g., Using msgID to know whether you are in Deactivate or Configure why not just save Command ID?
+
+       //  Release AFU
+
+       // DeActivate afu or Reconfigure afu
+//       ppr_program_ctx->msgID = rspid_AFU_PR_Revoked_Event;
+
+       task_afu_deactivate_callback((void*)ppr_program_ctx,NULL);
+
+     // Forced  Release AFU
+
+     kosal_mdelay(1000); // work around
+
+     cci_unpublish_aaldevice(ccip_port_uafu_dev(ppr_program_ctx->pportdev));
+     cci_destroy_aal_device( ccip_port_uafu_dev(ppr_program_ctx->pportdev) );
+     ccip_port_uafu_dev(ppr_program_ctx->pportdev) = NULL;
+
+
+     if(ppr_program_ctx->respID == uid_afurespConfigureComplete)
+     {
+        pworkobj = &cci_dev_task_prcconfigure_handler(ppr_program_ctx->pPR_dev);
+        pworkobj->context = (void*) ppr_program_ctx;
+        queue_delayed_work(cci_dev_workq_prcconfigure(ppr_program_ctx->pPR_dev), &(cci_dev_task_prcconfigure_handler(ppr_program_ctx->pPR_dev).workobj), msecs_to_jiffies(1000));
+
+        PTRACEOUT;
+        return;
+     }
+
+      pafuws_evt =ccipdrv_event_afu_aysnc_pr_release_create( ppr_program_ctx->respID,
+                                                             rspid_AFU_Response,
+                                                              0,
+                                                              ppr_program_ctx->pownerSess->m_device,
+                                                              ppr_program_ctx->pownerSess->m_ownerContext,
+                                                              uid_errnumOK);
+
+
+      ccidrv_sendevent(ppr_program_ctx->pownerSess,
+                       AALQIP(pafuws_evt));
+      PVERBOSE("AFU  DeActiavated  DONE  \n" );
+
+    }
+
+
+   PTRACEOUT;
+}
+
+
 ///============================================================================
 /// Name: cci_create_AAL_PR_Device
 /// @brief Creates and registers PR objects (resources) we want to
@@ -417,6 +1041,7 @@ struct cci_aal_device   *
                                           struct aal_device_id *paalid)
 {
    struct cci_aal_device   *pcci_aaldev = NULL;
+   work_object             *pworkobj =NULL;
    int ret;
 
    PTRACEIN;
@@ -460,13 +1085,24 @@ struct cci_aal_device   *
    //===========================================================
    // Set up the optional aal_device attributes
    //
-#if 0
+
    // Initialize the worker thread
-   cci_dev_workq(pcci_aaldev) = kosal_create_workqueue( cci_aaldev_to_aaldev(pcci_aaldev) );
+   cci_dev_workq_deactivate(pcci_aaldev) = create_workqueue("DeActivate");
+   cci_dev_workq_deactimeout(pcci_aaldev) = create_workqueue("DeActivateTimeOut");
+   cci_dev_workq_prcconfigure(pcci_aaldev) = create_workqueue("prConfiguration");
+
+   pworkobj = &cci_dev_task_deactivate_handler(pcci_aaldev);
+   KOSAL_INIT_WORK(pworkobj,task_poller,task_afu_deactivate_callback);
 
 
-   KOSAL_INIT_WORK(cci_dev_task_handler(pcci_aaldev),task_poller);
-#endif
+   pworkobj = &cci_dev_task_deactimeout_handler(pcci_aaldev);
+   KOSAL_INIT_WORK(pworkobj,task_poller,task_afu_deactimeout_callback);
+
+   pworkobj = &cci_dev_task_prcconfigure_handler(pcci_aaldev);
+   KOSAL_INIT_WORK(pworkobj,task_poller,program_afu_callback);
+
+
+
    // Set how many owners are allowed access to this device simultaneously
    cci_aaldev_to_aaldev(pcci_aaldev)->m_maxowners = 1;
 
@@ -561,25 +1197,32 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
       struct ccipdrv_event_afu_response_event *pafuws_evt       = NULL;
       AFU_COMMAND_CASE(ccipdrv_deactivateAFU) {
 
+         struct aal_device        *paaldev            = NULL;
+         struct port_device       *pportdev           = NULL;
+         btUnsigned64bitInt       reconfTimeout       = 0;
+         btUnsigned64bitInt       reconfAction        = 0;
+         btBool                   leaveDeactivated    = 0;
+         work_object              *pworkobj           = NULL;
+
+         struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
+         memset(&pr_program_ctx,0x0,sizeof(struct pr_program_context));
+
+         // Extract arguments
+         reconfTimeout     = preq->ahmreq.u.pr_config.reconfTimeout;
+         reconfAction      = RECONF_ACTION_HONOR_PARAMETER(preq->ahmreq.u.pr_config.reconfAction);
+         leaveDeactivated  = RECONF_ACTION_ACTIVATE_PARAMETER(preq->ahmreq.u.pr_config.reconfAction);
+
+         PDEBUG("reconfTimeout=%lld\n",reconfTimeout);
+         PDEBUG("reconfAction=%lld\n",reconfAction);
+
          // Port for this AAL PR object
-         struct port_device  *pportdev = cci_dev_pport(pdev);
+         pportdev = cci_dev_pport(pdev);
 
          // Find the AFU device associated with this port
-         if(NULL == ccip_port_uafu_dev(pportdev)){
-            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
-                                                                     pownerSess->m_device,
-                                                                     &Message->m_tranID,
-                                                                     Message->m_context,
-                                                                     uid_errnumNoAFU);
-
-            ccidrv_sendevent(pownerSess,
-                             AALQIP(pafuws_evt));
-
-            goto ERROR;
-         }
-
          // Make sure device is not in use. If it is notify user and start time out timer.
          if(NULL == ccip_port_uafu_dev(pportdev)){
+
+            PDEBUG("NULL == ccip_port_uafu_dev(pportdev) `\n");
             pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
                                                                      pownerSess->m_device,
                                                                      &Message->m_tranID,
@@ -592,20 +1235,73 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
 
          }
-         // TODO FOR NOW JUST DO IT
-         cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
-         cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
-         ccip_port_uafu_dev(pportdev) = NULL;
-         pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
-                                                                  pownerSess->m_device,
-                                                                  &Message->m_tranID,
-                                                                  Message->m_context,
-                                                                  uid_errnumOK);
 
-         ccidrv_sendevent(pownerSess,
-                          AALQIP(pafuws_evt));
+         // Determine if applications currently have the AFU in use
+         paaldev = cci_aaldev_to_aaldev(ccip_port_uafu_dev(pportdev));
+         if( 0 == paaldev->m_numowners)  {
+
+            PDEBUG("AFU Owner Count=%d\n", paaldev->m_numowners);
+
+            // AFU is free so deactivate   (TODO;  We need to make sure there are no races of something trying allocate this.  May need to lock the device
+                                            // from getting a bind request.)
+            cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
+            cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
+            ccip_port_uafu_dev(pportdev) = NULL;
+            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
+                                                            pownerSess->m_device,
+                                                            &Message->m_tranID,
+                                                            Message->m_context,
+                                                            uid_errnumOK);
+
+            ccidrv_sendevent(pownerSess,
+                    AALQIP(pafuws_evt));
+            break;
+         } else {
+            // Number of owner is more then 0 but Reconfiguration timeout is 0 Seconds
+            //   We generate an event to the application to release (TODO) and time out the deactivate will timeout
+            if( 0 == reconfTimeout )  {
+
+               PDEBUG("AFU Owner Count=%d\n", paaldev->m_numowners);
+               pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespDeactivateComplete,
+                                                                                  pownerSess->m_device,
+                                                                                  &Message->m_tranID,
+                                                                                  Message->m_context,
+                                                                                  uid_errnumDeActiveTimeout);
+
+               ccidrv_sendevent(pownerSess,
+                                AALQIP(pafuws_evt));
+               break;
+            }
+         }
+
+         // AFU in use and a timeout has been specified
+         PDEBUG("DeActiavte Worker Thread \n");
+         pr_program_ctx.cmd               = ccipdrv_deactivateAFU;
+         pr_program_ctx.pPR_dev           = pdev;
+         pr_program_ctx.pAFU_dev          = ccip_port_uafu_dev(pportdev);
+         pr_program_ctx.pportdev          = pportdev;
+         pr_program_ctx.pownerSess        = pownerSess;
+         pr_program_ctx.respID            = uid_afurespDeactivateComplete;
+         pr_program_ctx.leaveDeactivated  = leaveDeactivated;
+
+         //  Process the input arguments to determine desired behavior
+         //  checks reconfAction flags
+
+         // TODO Send a Release Request to every owner then start timer to wait for them to Release
+         // HERE
+
+         // De Active Work Queue  TODO: ANANDA I AM CONFUSED BY THIS CODE. pworkobj is not doing anything.  Please make KOSAL
+         pworkobj = &cci_dev_task_deactivate_handler(pdev);
+         pworkobj->context = (void*)&pr_program_ctx;
+         queue_delayed_work(cci_dev_workq_deactivate(pdev), &(cci_dev_task_deactivate_handler(pdev).workobj), msecs_to_jiffies(1000));
 
 
+         pworkobj = &cci_dev_task_deactimeout_handler(pdev);
+         pworkobj->context = (void*)&pr_program_ctx;
+         queue_delayed_work(cci_dev_workq_deactimeout(pdev), &(cci_dev_task_deactimeout_handler(pdev).workobj), msecs_to_jiffies( 60 *1000));
+
+
+         return 0;
 
       } break;
 
@@ -628,43 +1324,21 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
             goto ERROR;
          }
 
-         // TODO FOR NOW JUST DO IT
+
+
+         if(!reconfigure_activateAFU(pportdev,pdev))
          {
-              // Get the AFU header pointer by adding the offset to the port header address
-              struct CCIP_AFU_Header        *pafu_hdr = (struct CCIP_AFU_Header *)(((btVirtAddr)ccip_port_hdr(pportdev) ) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset);
-              btPhysAddr                     pafu_phys = ccip_port_phys_mmio(pportdev) + ccip_port_hdr(pportdev)->ccip_port_next_afu.afu_id_offset;
-              struct cci_aal_device         *pcci_aaldev = NULL;
-              struct aal_device_id           aalid;
-              struct aal_device             *paaldevice = NULL;
 
-              // Get the address of the PR. User AFU instance number always follows PR.
-              paaldevice = cci_aaldev_to_aaldev(pdev);
-              aalid = aaldev_devid(paaldevice);
+            pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
+                                                                              pownerSess->m_device,
+                                                                              &Message->m_tranID,
+                                                                              Message->m_context,
+                                                                              uid_errnumAFUActivated);
 
-
-              // If the device is present
-              if(~0ULL != pafu_hdr->ccip_dfh.csr){
-
-                 // Instantiate it
-                 aaldevid_devaddr_instanceNum(aalid)++;
-                 pcci_aaldev = cci_create_AAL_UAFU_Device(  pportdev,
-                                                            pafu_phys,
-                                                            pafu_hdr,
-                                                           &aalid);
-                 ASSERT(NULL != pcci_aaldev);
-
-                 if(NULL == pcci_aaldev){
-                    PDEBUG("ERROR: Creating User AFU device\n");
-                    return false;     // TODO This is a BUG if we get here but should cleanup correctly.
-                 }
-
-                 // Add the device to the CCI Board device's device list
-                 kosal_list_add( &cci_dev_list_head(pcci_aaldev), &ccip_aal_dev_list( ccip_port_to_ccidev(pportdev) ));
-
-              } // End if(~0ULL == pafu_hdr->ccip_dfh.csr){
-           } //End block
-
-
+                     ccidrv_sendevent(pownerSess,
+                                      AALQIP(pafuws_evt));
+            return 0;
+         }
 
 
          pafuws_evt = ccipdrv_event_activationchange_event_create(uid_afurespActivateComplete,
@@ -682,13 +1356,37 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
 
       AFU_COMMAND_CASE(ccipdrv_configureAFU) {
          struct ccidrvreq *preq = (struct ccidrvreq *)pmsg->payload;
-         btWSSize buflen = preq->ahmreq.u.mem_uv2id.size;
-         btVirtAddr uptr = preq->ahmreq.u.mem_uv2id.vaddr;
-         btVirtAddr kptr = NULL;
-
          // Get a copy of the bitfile image from user space.
          //  This function returns a safe pointer to the user data.
          //  This may involve copying into kernel space.
+
+         // ANANDA
+         //------------------------------------------------------------------------------------------------------
+         struct aal_device        *paaldev = NULL;
+         struct port_device       *pportdev =NULL;
+         btUnsigned64bitInt       reconfTimeout = 0;
+         btUnsigned64bitInt       reconfAction= 0;
+         work_object              *pworkobj =NULL;
+         btBool                   leaveDeactivated    = 0;
+
+         btWSSize buflen = preq->ahmreq.u.pr_config.size;
+         btVirtAddr uptr = preq->ahmreq.u.pr_config.vaddr;
+         btVirtAddr kptr = NULL;
+
+         PVERBOSE( "ccipdrv_configureAFU Enter  \n");
+
+         memset(&pr_program_ctx,0x0,sizeof(struct pr_program_context));
+
+         // Extract arguments
+         reconfTimeout = preq->ahmreq.u.pr_config.reconfTimeout;
+         reconfAction= RECONF_ACTION_HONOR_PARAMETER(preq->ahmreq.u.pr_config.reconfAction);
+         leaveDeactivated  = RECONF_ACTION_ACTIVATE_PARAMETER(preq->ahmreq.u.pr_config.reconfAction);
+
+
+         PDEBUG("reconfTimeout=%lld\n",reconfTimeout);
+         PDEBUG("reconfAction=%lld\n",reconfAction);
+
+          pportdev = cci_dev_pport(pdev);
 
          if((NULL == uptr) || (0 == buflen)){
             PERR("AFU reprogramming failed\n");
@@ -699,6 +1397,9 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                              uid_errnumBadParameter);
          }else{
             kptr = kosal_get_user_buffer(uptr, buflen);
+
+            PVERBOSE( " Buffer allocated  \n");
+
             if(NULL == kptr ){
                PERR("kosal_get_user_buffer returned NULL");
                pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
@@ -707,34 +1408,113 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
                                                                 Message->m_context,
                                                                 uid_errnumBadParameter);
             }else{
-/* Test Code
-               printk (KERN_INFO DRV_NAME "[%d]%s\n",buflen,kptr);
+
+
+            PDEBUG("Worker Thead \n");
+            pr_program_ctx.cmd = ccipdrv_configureAFU;
+            pr_program_ctx.pPR_dev = pdev;
+            pr_program_ctx.pportdev = pportdev;
+            pr_program_ctx.pownerSess=pownerSess;
+            pr_program_ctx.respID=uid_afurespConfigureComplete;
+            pr_program_ctx.kbufferptr =kptr;
+            pr_program_ctx.bufferlen=buflen;
+            pr_program_ctx.leaveDeactivated  = leaveDeactivated;
+
+            // No AFU, DeActivated AFU
+            if(NULL == ccip_port_uafu_dev(pportdev))
+            {
+               PDEBUG("NULL == ccip_port_uafu_dev(pportdev)  \n");
+
+               pworkobj = &cci_dev_task_prcconfigure_handler(pdev);
+               pworkobj->context = (void*)&pr_program_ctx;
+// TODO USE KOSAL VERSION OF THIS
+               queue_delayed_work(cci_dev_workq_prcconfigure(pdev), &(cci_dev_task_prcconfigure_handler(pdev).workobj), msecs_to_jiffies(1000));
+
+               return 0;
             }
 
+
+            paaldev = cci_aaldev_to_aaldev(ccip_port_uafu_dev(pportdev));
+
+            pr_program_ctx.pAFU_dev = ccip_port_uafu_dev(pportdev);
+
+            PDEBUG(" paaldev->m_numowners=%d  \n",paaldev->m_numowners);
+
+            // AFU has no owner , unpublish AFU configure with bitstream
+            if( 0 == paaldev->m_numowners)  {
+
+              PDEBUG("0 == paaldev->m_numowners  PR AFU Owner Count=%d\n", paaldev->m_numowners);
+              //paal_dev->m_numowners
+              // TODO FOR NOW JUST DO IT
+              cci_unpublish_aaldevice(ccip_port_uafu_dev(pportdev));
+              cci_destroy_aal_device( ccip_port_uafu_dev(pportdev) );
+              ccip_port_uafu_dev(pportdev) = NULL;
+
+              pworkobj = &cci_dev_task_prcconfigure_handler(pdev);
+              pworkobj->context = (void*)&pr_program_ctx;
+// TODO USE KOSAL VERSION OF THIS
+              queue_delayed_work(cci_dev_workq_prcconfigure(pdev), &(cci_dev_task_prcconfigure_handler(pdev).workobj), msecs_to_jiffies(1000));
+
+              PDEBUG(" Doing PR  \n");
+              return 0;
+            }
+
+            // AFU has  owners , unpublish AFU configure with bitstream
+            if( ( paaldev->m_numowners  >0) &&
+                  (0 == reconfTimeout) )   {
+
+                PDEBUG(" AFU has owner and reconfTimeout timeout  \n");
+
+                kosal_free_user_buffer(kptr, buflen);
+                pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
+                                                                             pownerSess->m_device,
+                                                                             &Message->m_tranID,
+                                                                             Message->m_context,
+                                                                             uid_errnumDeActiveTimeout);
+
+
+
+                ccidrv_sendevent(pownerSess,
+                                 AALQIP(pafuws_evt));
+                return 0;
+              }
+
+            // AFU has  owners , unpublish AFU and configure with bitstream in worker thread
+            if( (paaldev->m_numowners >0) &&
+                 ( reconfTimeout >0) )
+            {
+
+               PDEBUG(" AFU has owner and reconfTimeout timeout >0 \n");
+
+
+               // De Active Work Queue
+                 pworkobj = &cci_dev_task_deactivate_handler(pdev);
+                 pworkobj->context = (void*)&pr_program_ctx;
+// TODO MUST USE PORTABLE VERSIONS FROM KOSAL.  msecs_to_jiffies not portable
+                 queue_delayed_work(cci_dev_workq_deactivate(pdev), &(cci_dev_task_deactivate_handler(pdev).workobj), msecs_to_jiffies(1000));
+
+
+                 pworkobj = &cci_dev_task_deactimeout_handler(pdev);
+                 pworkobj->context = (void*)&pr_program_ctx;
+                 // TODO MUST USE PORTABLE VERSIONS FROM KOSAL.  msecs_to_jiffies not portable
+                 queue_delayed_work(cci_dev_workq_deactimeout(pdev), &(cci_dev_task_deactimeout_handler(pdev).workobj), msecs_to_jiffies( 60 *1000));
+
+               return 0;
+            }
+
+            PDEBUG(" NO  Matching Case  \n");
+// TODO ????????  What does this mean?  Should it be BadParameter?
+            kosal_free_user_buffer(kptr, buflen);
             pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
                                                              pownerSess->m_device,
                                                              &Message->m_tranID,
                                                              Message->m_context,
-                                                             uid_errnumOK);
-*/
+                                                             uid_errnumNoAFU);
 
-            // Program the afu  TODO   kosal_queue_delayed_work(cci_dev_workq(pdev), cci_dev_task_handler(pdev), 0);
-               if(0 != program_afu(pdev,  kptr, buflen )){
-                  PERR("AFU reprogramming failed\n");
-                  pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
-                                                                   pownerSess->m_device,
-                                                                   &Message->m_tranID,
-                                                                   Message->m_context,
-                                                                   uid_errnumNoAFU);
-               }else {
-                  pafuws_evt = ccipdrv_event_reconfig_event_create(uid_afurespConfigureComplete,
-                                                                   pownerSess->m_device,
-                                                                   &Message->m_tranID,
-                                                                   Message->m_context,
-                                                                   uid_errnumOK);
-               }
-               kosal_free_user_buffer(kptr, buflen);
+
+
             }
+
          }
          ccidrv_sendevent(pownerSess,
                           AALQIP(pafuws_evt));

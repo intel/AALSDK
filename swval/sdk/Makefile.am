@@ -77,6 +77,7 @@ include/aalsdk/aas/AALService.h \
 include/aalsdk/aas/AALServiceModule.h \
 include/aalsdk/aas/AASService.h \
 include/aalsdk/aas/IServiceBroker.h \
+include/aalsdk/aas/IServiceRevoke.h \
 include/aalsdk/aas/ServiceHost.h \
 include/aalsdk/aas/Dispatchables.h 
 

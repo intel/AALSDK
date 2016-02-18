@@ -375,6 +375,7 @@ TEST_F(ServiceBroker_f_2, aal0715)
       }
       virtual void serviceAllocateFailed(const AAL::IEvent &rEvent)                                {}
       virtual void       serviceReleased(AAL::TransactionID const &rTranID = AAL::TransactionID()) {}
+      virtual void serviceReleaseRequest(IBase*, const IEvent &rEvent)                             {}
       virtual void  serviceReleaseFailed(const AAL::IEvent &rEvent)                                {}
       virtual void          serviceEvent(const AAL::IEvent &rEvent)                                {}
       // </IServiceClient>

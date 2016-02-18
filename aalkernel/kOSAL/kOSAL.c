@@ -72,6 +72,7 @@
 #define MODULE_FLAGS KOSAL_DBG_MOD
 
 #if defined( __AAL_LINUX__ )
+#include <linux/vmalloc.h>
 # include <linux/delay.h>
 #endif // __AAL_LINUX__
 
@@ -461,7 +462,8 @@ void task_poller(struct work_struct *work)
    struct delayed_work *delayedWork = container_of(work, struct delayed_work, work);
    pwork_object         pwork       = container_of(delayedWork, work_object, workobj);
 
-   pwork->fnct(pwork->context);
+   pwork->callback(pwork->context,NULL);
+
 }
 
 #elif defined( __AAL_WINDOWS__ )

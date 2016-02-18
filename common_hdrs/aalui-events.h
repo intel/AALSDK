@@ -85,7 +85,7 @@
 #include <aalsdk/kernel/kosal.h>
 #include <aalsdk/kernel/aaldevice.h>
 #include <aalsdk/kernel/aalqueue.h>
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 
 BEGIN_NAMESPACE(AAL)
 
@@ -190,7 +190,7 @@ struct uidrv_event_afu_response_event
    };
 
 };
-
+#if 0
 //=============================================================================
 // Name: uidrv_event_afu_afucsrgetset_create
 // Description: Constructor
@@ -253,7 +253,7 @@ uidrv_event_afu_afucsrgetset_create(btObjectType        devhandle,
    kosal_list_init(&AALQ_QUEUE(This));
    return This;
 }
-
+#endif
 
 //=============================================================================
 // Name: uidrv_event_afutrancmplt_create
@@ -608,7 +608,7 @@ uidrv_event_afu_afugetphysws_create(btObjectType      devhandle,
    return This;
 }
 
-
+#if 0
 //=============================================================================
 // Name: uidrv_event_afu_afugetcsrmap_create
 // Description: Constructor
@@ -665,7 +665,7 @@ uidrv_event_afucwsevent_destroy(struct uidrv_event_afu_workspace_event *This)
 {
    kosal_kfree(This, sizeof(struct uidrv_event_afu_workspace_event));
 }
-
+#endif
 
 END_NAMESPACE(AAL)
 

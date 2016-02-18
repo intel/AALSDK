@@ -51,6 +51,7 @@
 #include "ALIAIATransactions.h"
 
 #include "HWALIAFU.h"
+#include "aalsdk/aas/Dispatchables.h"
 
 BEGIN_NAMESPACE(AAL)
 
@@ -414,6 +415,11 @@ void HWALIAFU::serviceAllocated(IBase               *pServiceBase,
 
    initComplete(m_tidSaved);
 
+}
+
+void HWALIAFU::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   ERR("Recieved unhandled serviceReleaseRequest() from AFU PRoxy\n");
 }
 
 // Service allocated failed callback
@@ -868,7 +874,7 @@ btBool HWALIAFU::performanceCountersGet ( INamedValueSet * const  pResult,
 void HWALIAFU::reconfDeactivate( TransactionID const &rTranID,
                                  NamedValueSet const &rInputArgs)
 {
-   AFUDeactivateTransaction deactivatetrans(rTranID);
+   AFUDeactivateTransaction deactivatetrans(rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&deactivatetrans);
    if(deactivatetrans.getErrno() != uid_errnumOK){
@@ -925,7 +931,7 @@ void HWALIAFU::reconfConfigure( TransactionID const &rTranID,
 #endif
    }
 
-   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID);
+   AFUConfigureTransaction configuretrans(reinterpret_cast<btVirtAddr>(bufptr), filesize, rTranID,rInputArgs);
    // Send transaction
    m_pAFUProxy->SendTransaction(&configuretrans);
    if(configuretrans.getErrno() != uid_errnumOK){
@@ -978,13 +984,30 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    ASSERT(NULL != puidEvent);
 
-//   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
+   std::cerr << "Got AFU event type " << puidEvent->MessageID() << "\n" << std::endl;
 
    switch(puidEvent->MessageID())
    {
-   //===========================
-   // WSM response
-   // ==========================
+
+   case rspid_AFU_PR_Revoke_Event:
+   {
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+
+      getRuntime()->schedDispatchable( new ServiceRevoke(dynamic_ptr<IServiceRevoke>(iidServiceRevoke,this)) );
+
+   }
+   break;
+
+   case rspid_AFU_PR_Release_Request_Event:
+   {
+      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Revoked_Event \n" << std::endl;
+      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
+      // TODO CREATE THE CROOERCT EVENT WHICH WILL INCLUDE TIMEOUT AND OPTION (HONOR_OWNER OR REQUEST)
+      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, NULL) );
+   }
+   break;
+
    case rspid_WSM_Response:
       {
          // TODO check result code

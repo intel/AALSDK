@@ -43,7 +43,7 @@
 //and no dependency between read and writes. It reads CSR_NUM_LINES starting from
 //CSR_SRC_ADDR location and writes CSR_NUM_LINS to CSR_DST_ADDR. It is also used
 //to measure 50% read + 50% write bandwidth.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"

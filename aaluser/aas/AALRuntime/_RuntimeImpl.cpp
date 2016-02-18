@@ -651,8 +651,11 @@ _runtime::~_runtime()
 // Name: InstallDefaults
 // Description: Install Default Services
 // Interface: public
-// Outputs: none.
-// Comments:
+// Outputs: return false ONLY if and event was NOT generated internally.
+// Comments: If something fails during installation of defaults but we are sane
+//           enough to generate a meaningful event return true. Only return
+//           false if no event was generated. Returning false will result in
+//           caller generating a failure event which is redundant.
 //=============================================================================
 btBool _runtime::InstallDefaults()
 {
@@ -660,7 +663,9 @@ btBool _runtime::InstallDefaults()
 
    // Service Broker. The m_Proxy is _runtime's Proxy which has a pointer to _runtime's IRuntimeClient
    m_pBrokerSvcHost = new ServiceHost(AAL_SVC_MOD_ENTRY_POINT(localServiceBroker));
-   m_pBrokerSvcHost->InstantiateService(m_pProxy, dynamic_cast<IBase *>(this), NamedValueSet(), TransactionID(Broker));
+   if(!m_pBrokerSvcHost->InstantiateService(m_pProxy, dynamic_cast<IBase *>(this), NamedValueSet(), TransactionID(Broker))){
+      return false;
+   }
 
    m_sem.Wait(); // for the local Broker
 
@@ -668,16 +673,6 @@ btBool _runtime::InstallDefaults()
       return true;
    }
 
-   // Dispatch the event ourselves, because MDS is no more.
-
-   // Fire the final event and wait for it to be dispatched.
-   FireAndWait( new RuntimeCreateOrGetProxyFailed(m_pOwnerClient,
-                                                  new CExceptionTransactionEvent(m_pOwner,
-                                                                                 extranevtRuntimeCreateorProxy,
-                                                                                 TransactionID(),
-                                                                                 errCreationFailure,
-                                                                                 reasSubModuleFailed,
-                                                                                 "Failed to load Broker Service")) );
    return false;
 }
 
@@ -845,6 +840,19 @@ void _runtime::serviceReleased(TransactionID const &rTranID)
          ASSERT(false);
       break;
    }
+}
+
+//=============================================================================
+// Name: serviceReleaseRequest
+// Description: A Service requested to be Released
+// Interface: public
+// Inputs: rEvent - Event detailing request
+// Outputs: none.
+// Comments: Not much to do but report. TODO - Dosomething proper
+//=============================================================================
+void _runtime::serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent)
+{
+   AAL_DEBUG(LM_AAS, "_runtime::serviceReleaseRequest received but not currently supported" << std::endl);
 }
 
 //=============================================================================

@@ -744,11 +744,12 @@ class EmptyIServiceClient : public AAL::IServiceClient,
 public:
    EmptyIServiceClient(btApplicationContext Ctx=NULL);
    virtual void      serviceAllocated(IBase               * ,
-                                      TransactionID const & ) {}
-   virtual void serviceAllocateFailed(const IEvent & )        {}
-   virtual void       serviceReleased(TransactionID const & ) {}
-   virtual void  serviceReleaseFailed(const IEvent & )        {}
-   virtual void          serviceEvent(const IEvent & )        {}
+                                      TransactionID const & )    {}
+   virtual void serviceAllocateFailed(const IEvent & )           {}
+   virtual void       serviceReleased(TransactionID const & )    {}
+   virtual void serviceReleaseRequest(IBase *, const IEvent & )  {} 
+   virtual void  serviceReleaseFailed(const IEvent & )           {}
+   virtual void          serviceEvent(const IEvent & )           {}
 };
 
 class CallTrackingIServiceClient : public EmptyIServiceClient,

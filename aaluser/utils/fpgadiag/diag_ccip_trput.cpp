@@ -43,7 +43,7 @@
 //and no dependency between read and writes. It reads CSR_NUM_LINES starting from
 //CSR_SRC_ADDR location and writes CSR_NUM_LINS to CSR_DST_ADDR. It is also used
 //to measure 50% read + 50% write bandwidth.
-#include <aalsdk/kernel/aalui.h>
+#include <aalsdk/kernel/ccipdriver.h>
 #include "diag_defaults.h"
 #include "diag-common.h"
 #include "nlb-specific.h"
@@ -107,17 +107,17 @@ btInt CNLBCcipTrput::RunTest(const NLBCmdLine &cmd)
     cfg |= (csr_type)NLB_TEST_MODE_RDO;
    }
    // Select the channel.
-   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_QPI))
+   if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VL0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_QPI;
+	cfg |= (csr_type)NLB_TEST_MODE_VL0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE0))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH0))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_PCIE0;
+	cfg |= (csr_type)NLB_TEST_MODE_VH0;
    }
-   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_PCIE1))
+   else if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_VH1))
    {
-	cfg |= (csr_type)NLB_TEST_MODE_PCIE1;
+	cfg |= (csr_type)NLB_TEST_MODE_VH1;
    }
    // Set Multi CL CSR.
    if ( flag_is_set(cmd.cmdflags, NLB_CMD_FLAG_MULTICL))

@@ -458,7 +458,21 @@ int cci_destroy_aal_device( struct cci_aal_device* pcci_aaldev)
       PERR("Attempting to destroy NULL pointer to cci_aal_device object\n");
       return -EINVAL;
    }
+#if  0 
+   if(NULL != pcci_aaldev->m_workq_deactivate) {
+      kosal_destroy_workqueue(pcci_aaldev->m_workq_deactivate);
+   }
 
+
+   if(NULL != pcci_aaldev->m_workq_deactimeout) {
+      kosal_destroy_workqueue( pcci_aaldev->m_workq_deactimeout );
+   }
+
+   if(NULL != pcci_aaldev->m_workq_prconifg) {
+      kosal_destroy_workqueue( pcci_aaldev->m_workq_prconifg );
+   }
+
+#endif  // TODO FIX THIS
    kosal_list_del( &cci_dev_list_head(pcci_aaldev));
 
    kosal_kfree(pcci_aaldev, sizeof(struct cci_aal_device));

@@ -153,6 +153,7 @@ private:
                                        TransactionID const &rTranID=TransactionID());
    virtual void  serviceAllocateFailed(const IEvent &rEvent);
    virtual void        serviceReleased(TransactionID const &rTranID=TransactionID());
+   virtual void  serviceReleaseRequest(IBase *pServiceBase, const IEvent &rEvent);
    virtual void   serviceReleaseFailed(const IEvent &rEvent);
    // Message Handler
    //   Input: rEvent - Event contains message/event.  Typically used for

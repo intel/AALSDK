@@ -646,9 +646,13 @@ CommandHandler(struct aaldev_ownerSession *pownerSess,
          if(respBufSize >= sizeof(struct aalui_WSMEvent)){
             *((struct aalui_WSMEvent*)Message->m_response) = WSID;
             Message->m_respbufSize = sizeof(struct aalui_WSMEvent);
+            PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
+            Message->m_errcode = uid_errnumOK;
+         }else{
+            PERR("No room to return WSID\n");
+            Message->m_errcode = uid_errnumNoMem;
          }
-         PDEBUG("Buf size =  %u Returning WSID %llx\n",(unsigned int)Message->m_respbufSize, WSID.wsParms.wsid  );
-         Message->m_errcode = uid_errnumOK;
+
 
       } break; // case ccipdrv_afucmdGet_UmsgBase
 
