@@ -1066,10 +1066,12 @@ void HWALIAFU::AFUEvent(AAL::IEvent const &theEvent)
 
    case rspid_AFU_PR_Release_Request_Event:
    {
-      std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Release_Request_Event \n" << std::endl;
-      std::cout << "puidEvent->ResultCode()\n" << puidEvent->ResultCode()<< std::endl;
-      // TODO CREATE THE CROOERCT EVENT WHICH WILL INCLUDE TIMEOUT AND OPTION (HONOR_OWNER OR REQUEST)
-      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, NULL) );
+      //std::cout << "HWALIAFU::AFUEvent rspid_AFU_PR_Release_Request_Event \n" << std::endl;
+      struct aalui_PREvent *pResult = reinterpret_cast<struct aalui_PREvent *>(puidEvent->Payload());
+      getRuntime()->schedDispatchable( new ReleaseServiceRequest(m_pSvcClient, new CReleaseRequestEvent(NULL,
+                                                                                                        pResult->reconfTimeout,
+                                                                                                        IReleaseRequestEvent::resource_revokeing,
+                                                                                                        "AFU Release Request")) );
    }
    break;
 

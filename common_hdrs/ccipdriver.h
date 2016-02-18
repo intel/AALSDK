@@ -304,12 +304,12 @@ struct ccidrvreq
    btTime            pollrate;
 };
 
-enum aalconf_reconfig_action
+typedef enum
 {
    ReConf_Action_Honor_request  =0x0,
    ReConf_Action_Honor_Owner    =0x1,
    ReConf_Action_InActive       =0x80
-};
+}aalconf_reconfig_action_e;
 
 // Mask off Inactive Flag
 #define RECONF_ACTION_HONOR_PARAMETER(p)    (p & (btUnsigned64bitInt)~(ReConf_Action_InActive))
@@ -365,6 +365,19 @@ struct aalui_AFUResponse
    btUnsignedInt       payloadsize;
 };
 #define aalui_AFURespPayload(__ptr) ( ((btVirtAddr)(__ptr)) + sizeof(struct aalui_AFUResponse) )
+
+
+//=============================================================================
+// Name: aalui_PREvent
+// Description: Partial reconfiguration release request event.
+//=============================================================================
+//=============================================================================
+struct aalui_PREvent {
+   btUnsigned32bitInt         respID;
+   btUnsigned64bitInt         evtData;
+   btUnsigned64bitInt         reconfTimeout;
+};
+
 
 //=============================================================================
 // Name: aalui_Shutdown

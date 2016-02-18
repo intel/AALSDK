@@ -419,9 +419,9 @@ ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
                                                   btUnsigned64bitInt timeout,
                                                   uid_errnum_e       eno)
 {
-   struct aalui_AFUResponse *response = NULL;
+   struct aalui_PREvent *response = NULL;
    struct ccipdrv_event_afu_response_event *This =
-      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_AFUResponse));
+      (struct ccipdrv_event_afu_response_event *)kosal_kzmalloc( sizeof(struct ccipdrv_event_afu_response_event) + sizeof(struct aalui_PREvent));
 
    if ( NULL == This ) {
       return NULL;
@@ -432,14 +432,14 @@ ccipdrv_event_afu_aysnc_pr_request_release_create(uid_afurespID_e    respID,
    This->m_context    = context;
 
    // Point at the payload
-   response = (struct aalui_AFUResponse*)This->m_payload;
+   response = (struct aalui_PREvent*)This->m_payload;
 
-   response->respID      = respID;
-   response->evtData     = 0;
-   response->payloadsize = 0;
+   response->respID        = respID;
+   response->evtData       = 0;
+   response->reconfTimeout = timeout;
 
    AALQ_QID(This)  = rspid_AFU_PR_Release_Request_Event;
-   AALQ_QLEN(This) = sizeof(struct aalui_AFUResponse );
+   AALQ_QLEN(This) = sizeof(struct aalui_PREvent );
 
    // Initialize the queue item
    kosal_list_init(&AALQ_QUEUE(This));
