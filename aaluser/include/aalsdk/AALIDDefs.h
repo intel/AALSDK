@@ -434,6 +434,9 @@
 /// IExceptionTransactionEvent interface id.
 #define iidExTranEvent               __AAL_ExTranEvt(AAL_sysAAS, 0x0000)
 
+/// IReleaseRequestEvent interface id.
+#define iidReleaseRequestEvent       __AAL_ExTranEvt(AAL_sysAAS, 0x0000)
+
 /// @}
 
 /// IAASServiceContainer interface id.
