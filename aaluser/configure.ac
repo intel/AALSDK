@@ -74,7 +74,6 @@ AALSDK_LTLIB_VERSION([AIASERVICE],   [libaia],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([AALCLP],       [libaalclp],       [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASE],          [libASE],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([ALIAFU],       [libALIAFU],       [0],[0],[0])
-#AALSDK_LTLIB_VERSION([VTP],          [libVTP],          [0],[0],[0])
 AALSDK_LTLIB_VERSION([HWALIAFU],     [libHWALIAFU],     [0],[0],[0])
 AALSDK_LTLIB_VERSION([ASEALIAFU],    [libASEALIAFU],    [0],[0],[0])
 AALSDK_LTLIB_VERSION([SWSIMALIAFU],  [libSWSimALIAFU],  [0],[0],[0])
@@ -174,7 +173,6 @@ AC_CONFIG_FILES([include/aalsdk/osal/OSALService.h
                  include/aalsdk/service/HWALIAFUService.h
                  include/aalsdk/service/ASEALIAFUService.h
                  include/aalsdk/service/SWSimALIAFUService.h])
-                 #include/aalsdk/service/VTPService.h
 
 AC_CONFIG_LINKS([include/aalsdk/ase/ase_common.h:ase/sw/ase_common.h])
 
@@ -196,7 +194,6 @@ AC_CONFIG_FILES([ase/sw/Makefile
                  utils/ALIAFU/HWALIAFU/Makefile
                  utils/ALIAFU/ASEALIAFU/Makefile
                  utils/ALIAFU/SWSimALIAFU/Makefile])
-                 #utils/ALIAFU/VTP/Makefile
 
 # temporarily removed fpgasane
 #                 utils/fpgasane/Makefile
