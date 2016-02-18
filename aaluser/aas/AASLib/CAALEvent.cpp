@@ -799,4 +799,84 @@ CExceptionTransactionEvent::CExceptionTransactionEvent() {/*empty*/}
 CExceptionTransactionEvent::CExceptionTransactionEvent(IBase * ) {/*empty*/}
 
 
+
+//=============================================================================
+// Name: CReleaseRequestEvent
+// Description: CReleaseRequestEvent base class constructor
+// Comments: Must Initialize base to ensure Interface registration.
+//           Must be constructed with an object .
+//=============================================================================
+CReleaseRequestEvent::CReleaseRequestEvent(IBase               *pObject,
+                                           btUnsigned64bitInt   Timeout,
+                                           ReleaseReason_e      Reason,
+                                           btcString            Description) :
+   CAALEvent(pObject),
+   m_Timeout(Timeout),
+   m_Reason(Reason),
+   m_strDescription(Description)
+{
+   AutoLock(this);
+
+   if ( SetSubClassInterface(iidReleaseRequestEvent, dynamic_cast<IReleaseRequestEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
+}
+
+//=============================================================================
+// Name: CReleaseRequestEvent
+// Description: CReleaseRequestEvent base class constructor
+// Comments: Must Initialize base to ensure Interface registration.
+//           Must be constructed with an object .
+//=============================================================================
+CReleaseRequestEvent::CReleaseRequestEvent(IBase               *pObject,
+                                           btIID                SubClassID,
+                                           btUnsigned64bitInt   Timeout,
+                                           ReleaseReason_e       Reason,
+                                           btcString            Description) :
+   CAALEvent(pObject),
+   m_Timeout(Timeout),
+   m_Reason(Reason),
+   m_strDescription(Description)
+{
+   AutoLock(this);
+
+
+   if ( SetInterface(iidReleaseRequestEvent, dynamic_cast<IReleaseRequestEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
+
+   // Default native subclass interface unless overridden by a subclass.
+   if ( SetSubClassInterface(SubClassID, dynamic_cast<IReleaseRequestEvent *>(this)) != EObjOK ) {
+      m_bIsOK = false;
+      return;
+   }
+}
+
+
+btID CReleaseRequestEvent::Timeout() const {
+
+   AutoLock(this);
+   return m_Timeout;
+}
+
+IReleaseRequestEvent::ReleaseReason_e CReleaseRequestEvent::Reason() const {
+
+   AutoLock(this);
+   return m_Reason;
+}
+
+btString CReleaseRequestEvent::Description() const {
+
+   AutoLock(this);
+   return (btString)(char *)m_strDescription.c_str();
+}
+
+
+
+CReleaseRequestEvent::CReleaseRequestEvent() {/*empty*/}
+CReleaseRequestEvent::CReleaseRequestEvent(IBase * ) {/*empty*/}
+
+
 END_NAMESPACE(AAL)

@@ -140,16 +140,15 @@ struct cci_aal_device {
    int                        m_protocolID;
 
    // For background tasks handling
-   kosal_work_queue           m_workq_deactivate;
-   work_object                task_deactivate_handler;
-
-
    kosal_work_queue           m_workq_deactimeout;
    work_object                task_deactimeout_handler;
 
 
    kosal_work_queue           m_workq_prconifg;
    work_object                task_prconfig_handler;
+
+   kosal_work_queue           m_workq_revokeafu;
+   work_object                task_revokeafu_handler;
 
 
    // AFU MMIO Space
@@ -240,15 +239,14 @@ struct cci_aal_device {
 #define cci_dev_psem(pdev)                  (&(pdev)->m_sem)
 
 
-#define cci_dev_workq_deactivate(pdev)                 ( (pdev)->m_workq_deactivate )
-#define cci_dev_task_deactivate_handler(pdev)          ((pdev)->task_deactivate_handler)
+#define cci_dev_workq_deactimeout(pdev)               ((pdev)->m_workq_deactimeout )
+#define cci_dev_task_deactimeout_handler(pdev)        ((pdev)->task_deactimeout_handler)
 
-#define cci_dev_workq_deactimeout(pdev)                 ( (pdev)->m_workq_deactimeout )
-#define cci_dev_task_deactimeout_handler(pdev)          ((pdev)->task_deactimeout_handler)
+#define cci_dev_workq_prcconfigure(pdev)              ((pdev)->m_workq_prconifg )
+#define cci_dev_task_prcconfigure_handler(pdev)       ((pdev)->task_prconfig_handler)
 
-#define cci_dev_workq_prcconfigure(pdev)                 ( (pdev)->m_workq_prconifg )
-#define cci_dev_task_prcconfigure_handler(pdev)          ((pdev)->task_prconfig_handler)
-
+#define cci_dev_workq_revokeafu(pdev)                 ((pdev)->m_workq_revokeafu )
+#define cci_dev_task_revokeafu_handler(pdev)          ((pdev)->task_revokeafu_handler)
 
 ///============================================================================
 /// Name: ccip_device

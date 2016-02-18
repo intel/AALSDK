@@ -699,7 +699,7 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
       rInputArgs.Get(AALCONF_RECONF_ACTION, &reconfAction);
       printf("reconfAction= %lld \n",reconfAction);
 
-      if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) ||
+      if((AALCONF_RECONF_ACTION_HONOR_REQUEST_ID != reconfAction ) &&
         (AALCONF_RECONF_ACTION_HONOR_OWNER_ID != reconfAction ))    {
 
            m_bIsOK = false;
@@ -711,8 +711,8 @@ AFUDeactivateTransaction::AFUDeactivateTransaction(AAL::TransactionID const &rTr
    req->u.pr_config.reconfTimeout  = reconfTimeout;
    req->u.pr_config.reconfAction   = reconfAction;
 
-   printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
-   printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
+   //printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
+   //printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
 
    // fill out aalui_CCIdrvMessage
     afumsg->cmd     = ccipdrv_deactivateAFU;
@@ -801,7 +801,7 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    }
 
    // What state should the AFU be left in?
-   if(rNVS.Has(AALCONF_RECONF_DISABLED)){
+   if(rNVS.Has(AALCONF_REACTIVATE_DISABLED)){
       btBool bDisabled = true;   // Asssume if the key present it probably true
       rNVS.Get(AALCONF_RECONF_ACTION, &bDisabled);
 
@@ -820,8 +820,8 @@ AFUConfigureTransaction::AFUConfigureTransaction(AAL::btVirtAddr pBuf,
    req->u.pr_config.reconfTimeout  = reconfTimeout;
 
 
-   printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
-   printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
+   //printf("req->u.pr_config.reconfTimeout= %lld \n",req->u.pr_config.reconfTimeout );
+   //printf("req->u.pr_config.reconfAction= %lld \n",req->u.pr_config.reconfAction);
 
 // package in AIA transaction
    m_payload = reinterpret_cast<AAL::btVirtAddr>(afumsg);

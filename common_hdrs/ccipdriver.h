@@ -112,11 +112,11 @@ typedef enum
    uid_errnumAFUActivated,                       // 29
    uid_errnumDeActiveTimeout,                    // 30
    uid_errnumPRTimeout,                          // 31
-   uid_errnumPROperationErr,                     // 32
-   uid_errnumPRCRCErr,                           // 33
-   uid_errnumPRIncomparableBitstreamErr,         // 34
-   uid_errnumPRIPProtocalErr,                    // 35
-   uid_errnumPRFIFOErr,                          // 36
+   uid_errnumPROperation,                        // 32
+   uid_errnumPRCRC,                              // 33
+   uid_errnumPRIncomparableBitstream,            // 34
+   uid_errnumPRIPProtocal,                       // 35
+   uid_errnumPRFIFO,                             // 36
    uid_errnumAFUActivationFail,                  // 37
    uid_errnumRequestAFURelease                   // 38
 
@@ -285,12 +285,11 @@ struct ahm_req
          btUnsigned64bitInt mem_id; /* OUT  */
       } mem_uv2id;
 
-      // PR reconfiguraton
+      // PR reconfiguration
       struct {
         btVirtAddr               vaddr;           /* IN   */
         btWSSize                 size;            /* IN   */
         btUnsigned64bitInt       reconfTimeout;   /* IN   */
-        btUnsigned64bitInt       programTimeout;  /* IN   */
         btUnsigned64bitInt       reconfAction;    /* IN   */
         btUnsigned64bitInt       pr_status ;      /* OUT  */
       } pr_config;
@@ -305,12 +304,12 @@ struct ccidrvreq
    btTime            pollrate;
 };
 
-enum aalconf_reconfig_action
+typedef enum
 {
    ReConf_Action_Honor_request  =0x0,
    ReConf_Action_Honor_Owner    =0x1,
    ReConf_Action_InActive       =0x80
-};
+}aalconf_reconfig_action_e;
 
 // Mask off Inactive Flag
 #define RECONF_ACTION_HONOR_PARAMETER(p)    (p & (btUnsigned64bitInt)~(ReConf_Action_InActive))
@@ -366,6 +365,19 @@ struct aalui_AFUResponse
    btUnsignedInt       payloadsize;
 };
 #define aalui_AFURespPayload(__ptr) ( ((btVirtAddr)(__ptr)) + sizeof(struct aalui_AFUResponse) )
+
+
+//=============================================================================
+// Name: aalui_PREvent
+// Description: Partial reconfiguration release request event.
+//=============================================================================
+//=============================================================================
+struct aalui_PREvent {
+   btUnsigned32bitInt         respID;
+   btUnsigned64bitInt         evtData;
+   btUnsigned64bitInt         reconfTimeout;
+};
+
 
 //=============================================================================
 // Name: aalui_Shutdown
@@ -483,8 +495,6 @@ struct  PERFCOUNTER_EVENT
 {
    char  name[50];
    btUnsigned64bitInt value;
-   //btUnsigned64bitInt offset;
-   //btUnsigned64bitInt rsvd[9];
 };
 
 struct  CCIP_PERF_COUNTERS
